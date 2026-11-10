@@ -110,10 +110,8 @@ first. Gold (next section) is never produced by the factory.
   player's purchase. With a shared board this is normal play, not a problem.
 - **EC-5 [PROPOSED]** No interest/banking mechanic in the first playable; add
   only if the economy needs a saving-vs-spending tension.
-- **EC-6 [PROPOSED]** Loss compensation: a small consolation payout after a
-  lost PvP battle to soften snowballing, since the party is already paying in
-  lives.
-
+- **EC-6 [DECIDED]** A party that loses a PvP battle receives a small
+  consolation payout of gold. The amount is configuration.
 ## Rewards
 
 - **EC-7 [DECIDED/PROPOSED detail]** **Battle rewards are gold only**;
