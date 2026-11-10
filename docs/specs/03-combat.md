@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v1.9
+Status: Draft v2.0
 
 ## Direction
 
@@ -93,10 +93,29 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   whole map visible (CB-3e). Deep and sheltered is safer; forward and
   central shortens the party's own supply lines. Generation guarantees at
   least one walkable path from the front edge to every legal Core position.
-- **CB-8** **The battlefield** is the two sides' boards joined front edge to
-  front edge (the opponent's board is rotated to face the party's). Units
-  cross from one board to the other over that edge. Both parties in a ghost
-  battle have the same party size and therefore the same front width.
+- **CB-8 [DECIDED]** **The battlefield** is the two sides' boards with a
+  **small neutral zone generated between them for each battle**. Units
+  leave their own board over its front edge, cross the neutral zone, and
+  enter the enemy board over its front edge.
+  - The neutral zone **can contain natural features** such as cliffs and
+    lakes.
+  - Its features are **different every battle** and are **hidden from the
+    players until the battle begins**, so there is nothing to plan around
+    and no reason to rearrange the whole factory for each battle.
+- **CB-8a [PROPOSED]** Details of the neutral zone:
+  - It is generated from the battle seed, so a battle remains reproducible
+    (CB-30).
+  - Nothing can be built in it and neither side's buildings act in it
+    (CB-3j); only units fight there.
+  - It is as wide as the front edges and only a few cells deep (starting
+    proposal: 4–6).
+  - Generation guarantees open paths across it, and that its features can
+    shift where units arrive along a front edge but cannot seal part of an
+    edge off entirely.
+  - PvE battles have one too, between the party's board and the stronghold.
+- **CB-8b [PROPOSED]** Both parties in a ghost battle have the same party
+  size and therefore the same front width. The opponent's board is rotated
+  to face the party's.
 
 ## The factory
 
@@ -290,7 +309,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   and damage for both sides) and where the party's defenses were breached.
 - **CB-43** **Preview while building:** a dry run shows resource flow,
   projected production over time, and the **paths enemy units would take**
-  to the Core with the current layout.
+  to the Core with the current layout, from every point along the front
+  edge — where they actually arrive depends on the hidden neutral zone
+  (CB-8).
 - **CB-44** Any past battle can be replayed from
   `(team, opponent, seed, version)`.
 

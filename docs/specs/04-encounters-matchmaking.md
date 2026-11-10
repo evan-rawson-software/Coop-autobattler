@@ -52,7 +52,8 @@ The loop is defined in `01-run-structure.md` RS-1.
 - **MM-5 [DECIDED]** If no eligible snapshot exists, a **PvE boss** is
   generated instead, based on the party's progress (see below).
 - **MM-6 [PROPOSED]** The ghost's factory runs in the standard simulation
-  against the party's, the two boards joined front to front (CB-8, CB-28).
+  against the party's, the two boards facing each other across a freshly generated neutral zone
+  (CB-8, CB-28).
   The original ghost party is not notified and is not affected by the result.
   (Optional later: "your ghost won N fights" stat.)
 - **MM-7 [PROPOSED]** Opponent selection and the combat seed are chosen

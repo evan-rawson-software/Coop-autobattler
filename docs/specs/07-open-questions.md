@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v1.9
+Status: Draft v2.0
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -23,8 +23,8 @@ everything else movable. Open:
 
 - Decided: units fight each other when they meet (CB-16); route buildings
   can be destroyed (CB-9a).
-- **How the two boards meet.** Proposed: joined front edge to front edge
-  (CB-8). Alternative: a neutral strip of ground between them.
+- Decided: a small neutral zone with its own natural features is generated
+  between the boards each battle and hidden until the battle begins (CB-8).
 - **Map and plot size**, and board shape at 2–4 players (CB-4).
 - Decided: buildings can be rotated. Conduits are free and unlimited, take
   space, cannot cross without a route building, and cannot be targeted

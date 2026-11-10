@@ -114,6 +114,7 @@ does not block systems work.
 | Resource node | A map cell where a source can be built. |
 | Natural feature | Terrain such as a lake or cliff that blocks building and movement. |
 | Front edge | The side of a board that faces the enemy; units cross it. |
+| Neutral zone | A small strip generated between the two boards for each battle, with its own lakes and cliffs, hidden until the battle begins. |
 | Core | The party's health and the enemy's final target. Placed once per run; never moves. |
 | Resource | What sources extract from nodes and other buildings consume. There are about three kinds. |
 | Plot | The area one player adds to the shared board. |
