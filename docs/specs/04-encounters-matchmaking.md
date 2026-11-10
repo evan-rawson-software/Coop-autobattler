@@ -1,6 +1,6 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v2.5
+Status: Draft v4.4
 
 ## Encounter types
 
@@ -18,14 +18,18 @@ The loop is defined in `01-run-structure.md` RS-1.
   host saves a **snapshot** of the party's team state to the ghost pool
   (stored on Steam; see TA-15 to TA-19). A snapshot
   contains:
-  - game version (content + simulation version; see TA-8)
+  - the run version (`major.minor`; see TA-8) and a snapshot format version
   - party size
   - cycle number
-  - full team state: the party's map, Core position, and buildings
-    (CB-32, CP-6)
+  - full team state: the party's map, Core position, buildings, conduits,
+    and run modifiers (CB-32, CP-6)
+  - the run's ID and seed, and a signature (TA-22a)
   - party members' Steam IDs (display names are looked up from Steam)
   - metadata: lives remaining and PvP record at that point (for optional
     match-quality filtering)
+- **MM-1d [PROPOSED]** The run's action log, needed only for verification by
+  replay (TA-22b), is stored alongside the snapshot as a separate file and
+  is not downloaded for an ordinary battle (TA-19).
 - **MM-1a [PROPOSED]** Snapshots are taken *before* the fight and are saved
   regardless of whether the party then wins or loses. Saving only winners
   would make the pool progressively harder than the real population.
@@ -58,7 +62,7 @@ The loop is defined in `01-run-structure.md` RS-1.
   (Optional later: "your ghost won N fights" stat.)
 - **MM-7 [PROPOSED]** Opponent selection and the combat seed are chosen
   by the host's game, and the opponent is not revealed until the party's
-  boards are locked. The ghost may be fetched earlier in the cycle to avoid a
+  board is locked. The ghost may be fetched earlier in the cycle to avoid a
   wait (TA-19).
 
 ## Boss fallback
@@ -86,31 +90,36 @@ The loop is defined in `01-run-structure.md` RS-1.
 
 ## Pool health
 
-- **MM-12 [PROPOSED]** **Cold start**: a new game version starts with an empty
+- **MM-12 [PROPOSED]** **Cold start**: a new minor or major version starts with an empty
   pool, so early parties fight bosses. Mitigations, in order of preference:
   (a) accept it — bosses are a designed fallback; (b) seed the pool for early
   cycles with snapshots from internal playtests or bot-driven runs on the new
   version.
-- **MM-13 [PROPOSED]** **Retention**: bounded by one snapshot per host per
-  bucket (MM-1c). Pools for old versions are simply never read again; whether
-  they need active cleanup is a spike question (TA-30).
+- **MM-13 [DECIDED]** **Retention**: all ghost data for old versions is
+  deleted on a major version release (TA-8, TA-9).
+- **MM-13a [PROPOSED]** Between major releases the pool is bounded by one
+  snapshot per host per bucket (MM-1c), which assumes Steam keeps one entry
+  per player per leaderboard (unconfirmed, TA-18).
 - **MM-14 [PROPOSED]** **Thin buckets**: 3- and 4-player buckets and deep
   cycles will be sparse. This is acceptable by design (boss fallback), and
   bucket sizes can be read directly from the entry counts to inform tuning.
-- **MM-15 [OPEN]** Whether a version bump that changes only non-combat things
-  (UI, bug fixes outside the sim) should invalidate the pool. Recommended: no
-  — see TA-8.
+- **MM-15 [DECIDED]** A run only meets ghosts played on the same version as
+  the run itself, including after the game has been updated (TA-8).
+- **MM-15a [PROPOSED]** Patch releases that do not touch combat do not split
+  the pool (TA-8).
 
 ## Integrity
 
 - **MM-16 [PROPOSED]** There is no trusted server, so snapshots are uploaded
   by players' games and could be forged by a modified client. This is an
   accepted risk with limited damage; see "Trust model" (TA-21 to TA-24).
-- **MM-17 [PROPOSED]** Every downloaded snapshot is validated before use:
+- **MM-17 [PROPOSED]** Every downloaded snapshot is validated before use: its signature (TA-22a),
   schema, legal placement on its own map (sources on nodes, nothing on
   natural features, a valid Core position), a map that the generator could
   have produced, and a plausibility bound on total power for its cycle
-  (TA-22). A snapshot that fails is skipped and another is drawn.
+  (TA-22). The generator and the numbers used for these checks are the
+  installed version's; a snapshot from a run that spanned an update is
+  given more tolerance on the power bound. A snapshot that fails is skipped and another is drawn.
 - **MM-17a [PROPOSED]** Players can report a ghost (TA-23).
 
 ## PvE encounters

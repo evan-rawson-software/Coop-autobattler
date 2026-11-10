@@ -1,13 +1,12 @@
 # 00 — Vision & Pillars
 
-Status: Draft v2.5
+Status: Draft v4.4
 
 ## Elevator pitch
 
-A co-op roguelite autobattler for 1–4 players. Between fights, the party
-each player
-drafts buildings and adds them to one large shared factory board that the whole
-party builds together. Fights
+A co-op roguelite autobattler for 1–4 players. Between fights, each
+player buys buildings and adds them to one large shared factory board that
+the whole party builds together. Fights
 resolve automatically. Opponents alternate between hand-authored-style PvE
 encounters and **ghost PvP** — saved snapshots of other real parties at the
 same point in their run. PvE power grows exponentially, so no run lasts
@@ -68,9 +67,10 @@ forever; the score is how deep you went.
 4. **Decisions in the build, spectacle in the fight.** Players have zero input
    during combat. All skill expression is in drafting, economy, and how buildings
    are arranged on the board.
-5. **Short sessions, legible cycles.** A cycle is a few minutes; a run fits in
-   an evening; a party can drop a run and it does not hurt anyone else,
-   because all PvP is asynchronous.
+5. **Unhurried, and easy to put down.** Nothing is timed; a party thinks
+   for as long as it likes. A run can be long, so it can be saved and
+   resumed at any point, and a party can drop a run without hurting anyone
+   else, because all PvP is asynchronous.
 
 ## Target experience
 
@@ -121,7 +121,7 @@ does not block systems work.
 | Plot | The area one player adds to the shared board. |
 | Ramp | The factory getting stronger over the course of one battle; what "economy" buildings provide. |
 | Threat | A PvE opponent: scripted waves of units plus a stronghold to attack, not a factory. |
-| Snapshot | A saved, immutable copy of a party's team at the start of an encounter. |
+| Snapshot | A saved copy of a party's board, taken at the start of a PvP battle. |
 | Ghost | A snapshot being used as another party's opponent. |
 | Boss | A generated PvE opponent used when no ghost is available. |
 | Depth | The highest cycle a party reached; the primary score. |

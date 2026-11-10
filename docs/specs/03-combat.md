@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v2.9
+Status: Draft v4.4
 
 ## Direction
 
@@ -183,7 +183,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 
 ## The factory
 
-- **CB-9** Buildings have a **footprint**, a **tier**, **health**, **tags**,
+- **CB-9** Buildings have a **footprint**, a **tier**, **health**,
   and a **kind**:
 
 | Kind | Role | Examples |
@@ -297,8 +297,21 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-26** Buildings are bought with gold in shops between battles, or won
   as rewards, and go into the owning player's stash. Placing, moving, and
   rotating them costs nothing; gold plays no part in building or in battle
-  (CB-3i). Combining duplicates raises a building's tier. Tag counts unlock board-wide
-  bonuses.
+  (CB-3i). 
+- **CB-26b [DECIDED for now]** There are no building tags or tag bonuses; to
+  be reconsidered once the game has been played.
+- **CB-26a [DECIDED]** **Buildings have tiers, and there is no combining.**
+  Owning several identical buildings never merges them. Higher-tier
+  buildings come from shops (which offer higher tiers as the run goes on),
+  from rewards, and from events such as the Workshop, which raises one
+  building by a tier. The factory layout therefore only changes when
+  players change it.
+- **CB-26c [DECIDED for now]** There are **three tiers**. Nothing can raise
+  a building above tier 3. The cap may change later.
+- **CB-26d [PROPOSED]** What a tier is: the same building with better
+  numbers (for example health, rate, or output), set per tier in content
+  data. Every building exists at all three tiers and keeps its footprint
+  and inputs at each. Tiers apply to buildings only.
 - **CB-27** Moving and rotating buildings between battles is free; sources
   must stay on nodes, and the Core never moves (CB-3e). The map itself never
   changes during a run.
@@ -331,9 +344,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 3. **Balance of the three strategies**, and of terrain luck: some maps will
    be much easier to defend than others. Generation needs fairness
    constraints, and ghosts carry their terrain with them.
-4. **Build time.** Laying out a factory around terrain is slow and
-   thoughtful. Session targets (RS-12) will need to grow, or per-cycle
-   changes must stay small.
+4. **Run length.** Laying out a factory around terrain is slow and
+   thoughtful, and nothing is timed (RS-12), so runs may be long. Resuming
+   a run later has to work well.
 5. **Readability** of a four-player battlefield (two 96 × 16 boards, many
    units).
 6. **Simulation cost.** Pathfinding and many units are far heavier than
@@ -342,7 +355,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 ## Structural requirements
 
 - **CB-30 [PROPOSED → effectively required]** Combat is **deterministic**:
-  the outcome is a pure function of `(team, opponent, seed, game version)`.
+  the outcome is a pure function of `(team, opponent, seed, installed
+  version)` (TA-8).
   Integer math, fixed tick order, deterministic pathfinding and
   tie-breaking, no wall-clock time, no unordered iteration.
 - **CB-31** Combat runs in a **headless simulation** that produces an
@@ -351,7 +365,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   (authoritative, TA-6), in tests, and in balance tools.
 - **CB-32** A party is fully described by a serializable **team state**
   (CP-6): the map (terrain, nodes, features), the Core
-  position, every building with tier, position and orientation, and run
+  position, every building with tier, position and orientation, every
+  conduit, and run
   modifiers that affect combat. This is exactly what a snapshot stores
   (MM-1).
 - **CB-33** If both Cores are destroyed on the same tick, a deterministic
@@ -359,12 +374,29 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-34** An **opponent** is either a team state (ghost) or a threat
   profile (PvE, CB-29). Both are data and run through the same simulation
   entry point.
-- **CB-35** All content (buildings, units, tags, terrain rules, threat
+- **CB-35** All content (buildings, units, terrain rules, threat
   profiles, strongholds) is **data-driven**: versioned data files validated
   against schemas.
 - **CB-36** Performance budget, set in the first simulation milestone:
-  maximum units alive per side, maximum battle length in ticks, and a
-  battles-per-second target for the balance harness at four-plot size.
+  maximum units alive per side, maximum battle length in ticks, a
+  battles-per-second target for the balance harness at four-plot size, and
+  the **time to simulate one full battle before playback starts** (target:
+  not noticeable for a solo battle, and about a second at most for a
+  four-player battle on modest hardware).
+- **CB-37** **What players watch is the recorded battle, not a second run of
+  it.** Playback draws the event log and applies no rules, so what is shown
+  cannot diverge from the result. Movement between logged events may be
+  smoothed for display only.
+- **CB-38** If the pre-playback wait or the size of the event log sent to
+  other players proves too large, two fallbacks exist, to be chosen on
+  measurements: start playback while the simulation is still running ahead
+  of it; or send each player the battle's inputs and have every game
+  simulate it, comparing a hash of the result with the host's and falling
+  back to the host's log on any mismatch. Neither is part of the design
+  unless adopted: the first would weaken the guarantee that players can
+  finish watching if the host leaves (TA-11), and the second would mean
+  guests run the simulation, which CB-37, TA-7, and TA-14 currently rule
+  out. Adopting either means revising those.
 
 ## Playback and understanding the factory
 
@@ -382,7 +414,32 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   edge — where they actually arrive depends on the hidden neutral zone
   (CB-8).
 - **CB-44** Any past battle can be replayed from
-  `(team, opponent, seed, version)`.
+  `(team, opponent, seed)` on the same installed version. After a game
+  update, an already-fought battle is shown from its saved result and event
+  log, not re-simulated (CP-23a).
+
+## Screen layout
+
+- **CB-45 [DECIDED]** **Top/bottom orientation.** The party's board is drawn
+  at the bottom of the screen with its front edge along the top; the enemy
+  is above, across the neutral zone. The front edge therefore runs
+  horizontally, so each extra player makes the board wider, which is the
+  direction a 1080p screen has room in.
+- **CB-46 [PROPOSED]** The design target is **1920×1080**. At the current
+  sizes a whole solo battle fits at about 25 pixels per cell and a whole
+  four-player battle at about 20.
+- **CB-47 [PROPOSED]** The board is viewed through a **camera that pans and
+  zooms**, from the first playable version, with presets (fit the whole
+  battle, own base, front line). Interface panels are docked around the
+  view — along the bottom when building; at the sides during battle
+  where there is room, and over the view otherwise —
+  rather than laid out around a fixed-size board. Map size can then be
+  increased later as a tuning change, not a redesign.
+- **CB-47a [DECIDED]** The camera **starts at the center of the map**.
+  Proposed reading: when building, the center of the party's board; in a
+  battle, the center of the whole battlefield.
+- **CB-48 [PROPOSED]** Shop and Build are two tabs of the same step
+  (RS-5f), so players can buy, place, and return to the shop.
 
 ## First playable content budget
 

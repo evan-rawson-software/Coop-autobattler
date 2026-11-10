@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v3.0
+Status: Draft v4.4
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -51,6 +51,36 @@ everything else movable. Open:
 - Decided: no long-range buildings; defenses only target enemy units on
   the party's own side (CB-3j).
 
+## Q3. Screens
+
+Decided: top/bottom orientation with the party at the bottom (CB-45).
+Wireframes of the battle, event, shop, and build screens have been shared
+with the project owner outside the repo.
+
+- Decided: nothing is timed; every player readies up to move on (CP-17).
+- Decided for now: players do not see each other's shops; revisit after
+  playtesting (CP-19).
+- Decided: the camera starts at the center of the map (CB-47a).
+
+## Q3a. Saving and disconnects
+
+Decided:
+
+- Battles continue while at least one player remains (CP-21).
+- A disconnected player must return before the run continues; the event
+  waits for every player's vote, including theirs (CP-21a, CP-21h).
+- During the shop, the others can shop and move buildings, including the
+  absent player's, but cannot continue past it (CP-21f).
+- Players can leave at any time; the host can save to resume later; only
+  the host can fully abandon a run (CP-21d).
+- The host carries the save; other players hold none (CP-23c).
+- Any number of saved runs, each saved only once (CP-22a, CP-23d).
+- Auto-save after each action, storing outcomes so nothing already rolled
+  or fought changes, even across an update (CP-23, CP-23a).
+
+Still open: whether a run should ever be transferable to a different host
+(proposed: not for now).
+
 ## Q4. Details of the loop
 
 Decided (RS-1): each cycle is PvE battle → event → shop → PvP battle →
@@ -89,14 +119,8 @@ Remaining:
 - **Godot language:** typed GDScript *(recommended)* or C# (TA-28).
 - **Steamworks spike** (TA-30): confirm leaderboards with attached files work
   as the ghost pool, and learn the limits.
-- **Trust:** is the accepted-risk position on forged ghosts and scores
-  (TA-21) acceptable for launch?
-
-## Q7. Session length
-
-Factory building and ramping battles may not fit the earlier targets (short
-phases, 30–45 minute runs; RS-12). Decide after the first playtests whether
-to lengthen the targets or constrain the building.
+- Decided: full anti-cheat using a server will be completed before final
+  release, as a later milestone (TA-24).
 
 ## Q8. Ghost selection fairness
 
@@ -104,10 +128,16 @@ Uniform random among eligible snapshots, or weighted toward parties with a
 similar lives/record profile? Recommended: uniform first, measure, then
 refine (MM-4).
 
-## Q9. What happens to runs on a version bump?
+## Q9. Versions
 
-Close out at current depth *(recommended, simplest; TA-9)* vs let them
-continue against bosses only.
+Decided: a run only meets ghosts played on its own version; a major release
+deletes old saves and old ghost data (TA-8). Open:
+
+- Decided: old rules and numbers are not kept; loading an older save
+  shows a prompt that some things may have changed (CP-23e).
+- What counts as major versus minor (proposed definitions in TA-8).
+- If Steam does not allow old ghost data to be deleted in bulk, is leaving
+  unreadable leaderboard entries behind acceptable (TA-37)?
 
 ## Q10. Theme and tone
 

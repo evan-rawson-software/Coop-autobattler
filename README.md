@@ -21,7 +21,7 @@ refined and then broken down into backlog items for coding agents.
 | # | Spec | Covers |
 |---|------|--------|
 | 00 | [Vision & pillars](docs/specs/00-vision.md) | What the game is, who it is for, design pillars, scope |
-| 01 | [Run structure](docs/specs/01-run-structure.md) | Core loop, cycles, steps, lives, run end, meta-progression |
+| 01 | [Run structure](docs/specs/01-run-structure.md) | Core loop, cycles, steps, lives, run end |
 | 02 | [Co-op & party](docs/specs/02-coop-party.md) | 1–4 player model, the shared board, ownership, building together, disconnects |
 | 03 | [Combat](docs/specs/03-combat.md) | The shared factory and battlefield: terrain, resources and conduits, units, in-battle ramp, defenses, opponents |
 | 04 | [Encounters & matchmaking](docs/specs/04-encounters-matchmaking.md) | PvE encounters, ghost PvP, snapshot matching, boss fallback |
@@ -34,5 +34,12 @@ refined and then broken down into backlog items for coding agents.
 - **[DECIDED]** — stated by the project owner; treat as a requirement.
 - **[PROPOSED]** — a recommended default from brainstorming; open to change.
 - **[OPEN]** — undecided; tracked in `07-open-questions.md`.
+- **[DECIDED for now]** — an owner decision that is expected to be
+  revisited after playtesting.
+- **[DECIDED/PROPOSED detail]** — the headline rule is the owner's decision;
+  the rest is a suggested default. Where the requirement has a "Proposed
+  detail" list, that list is the proposed part.
+- Other bracketed variants (for example "[DECIDED shape / PROPOSED
+  formula]") name which part is decided in the tag itself.
 - Requirements carry stable IDs (e.g. `MM-3`) so backlog items can reference
   them.

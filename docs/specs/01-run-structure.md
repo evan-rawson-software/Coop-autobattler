@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v3.0
+Status: Draft v4.4
 
 ## Core loop
 
@@ -52,7 +52,7 @@ Lobby -> Map + Core placement ->
 - **RS-4a [DECIDED as a starting set; to be refined later]** An event is a
   short non-combat moment that changes the run in some way other than
   buying. Starting types:
-  - **Workshop** — upgrade or modify a building the party owns.
+  - **Workshop** — raise one building the party owns by one tier.
   - **Shrine** — choose one of several run modifiers.
   - **Gamble** — risk gold or a building for a chance at something better.
   - **Salvage** — trade buildings in for something of a different kind.
@@ -89,7 +89,7 @@ Lobby -> Map + Core placement ->
 
 - **RS-6 [PROPOSED]** New buildings come from shops, battle rewards, and
   some events. **Arranging** the factory — placing, moving, rotating, and
-  re-routing buildings, drawing conduits, combining duplicates, giving to
+  re-routing buildings, drawing conduits, giving to
   teammates — happens during the shop step (RS-5f), which always comes
   immediately before a battle. No separate prep phase is needed.
 - **RS-6a [PROPOSED]** The next PvE options (archetype and reward) are
@@ -106,8 +106,9 @@ Lobby -> Map + Core placement ->
   eventual defeat (V-5). The run ends when lives reach 0.
 - **RS-7c [PROPOSED]** No way to regain lives in the first playable. (A rare,
   expensive event option could be added later.)
-- **RS-7d [PROPOSED]** A party may abandon a run at any time; it is recorded
-  at its current depth.
+- **RS-7d [DECIDED]** Players can leave a run at any time. Only the host can
+  fully abandon a run; an abandoned run is recorded at its current depth
+  (CP-21d).
 
 Note the interaction with V-5: lives are only lost in PvP battles, so the
 exponential wall must reach the party there. It does so in two ways — bosses
@@ -124,15 +125,25 @@ the party's income so it falls behind the ghosts it meets. See
 
 ## Meta-progression
 
-- **RS-10 [PROPOSED]** Meta-progression unlocks **options, not power**: new
-  buildings, starting loadouts, and cosmetic records. Power unlocks would
-  break ghost fairness, since a snapshot would encode player-level advantages.
+- **RS-10 [DECIDED for now]** There is **no meta-progression**. Nothing
+  carries over from one run to the next except records such as depth
+  reached. To be reconsidered once the game has been played.
 
-## Session length targets
+## Pace
 
-- **RS-12 [PROPOSED]** Placeholder targets, to be set by playtests: event
-  under a minute; shop and build phase a few minutes (longer early in a
-  run while the factory takes shape, shorter once it is established);
-  battle playback 1–3 minutes with fast-forward when all players agree.
-  Factory building makes runs longer than a typical autobattler; an hour or
-  more is plausible, which makes resumable runs (CP-23) important.
+- **RS-12 [DECIDED]** No step is timed, and the party only moves on when
+  every player is ready (CP-17). There are no session-length targets to
+  hit; a run takes as long as the party wants to spend thinking.
+- **RS-12b [PROPOSED]** How each step ends:
+  - **Core placement** (start of run) — the party votes on a position; it
+    is fixed once every player has confirmed.
+  - **PvE difficulty choice** — every player votes; the battle starts when
+    all have voted.
+  - **Battle** — playback ends at a summary; the party moves on when every
+    connected player has readied up there.
+  - **Event** — every player votes, **including any player who is
+    disconnected**: the event waits for them (CP-21h). It resolves when all
+    have voted and any follow-up choice has been made.
+  - **Shop and build** — every player readies up.
+- **RS-12a [PROPOSED]** Because runs can be long, they must be easy to stop
+  and resume (CP-22, CP-23). Battle playback keeps its speed controls.
