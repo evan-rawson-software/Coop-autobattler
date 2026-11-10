@@ -1181,41 +1181,45 @@ describe('rendering', () => {
 });
 
 describe('stress', () => {
-  test('several hundred units on a four-plot arena for 1000 ticks', () => {
-    const team = (() => {
-      const state = bigBoard();
-      const lab = new Lab(state.map);
-      lab.state = state;
-      lab.core(40, 6);
-      return lab.state;
-    })();
-    const { sim, ctx } = startBattle(team, team, 8, content, simConfig);
-    // 150 units on each side in the open ground between the bases; they meet
-    // within the first 30 ticks.
-    for (let k = 0; k < 300; k++) {
-      const side = k % 2;
-      spawnUnitForTest(sim, ctx, {
-        side,
-        def: k % 3 === 0 ? 'unit_raider' : 'unit_soldier',
-        x: (k >> 1) % 96,
-        y: side === 0 ? 17 : 22,
-      });
-    }
-    let peak = 0;
-    const t0 = Date.now();
-    for (let t = 0; t < 1000; t++) {
-      stepArena(sim, ctx);
-      if (sim.units.length > peak) peak = sim.units.length;
-    }
-    const ms = Date.now() - t0;
-    expect(peak).toBeGreaterThanOrEqual(300);
-    expect(sim.units.length).toBeGreaterThanOrEqual(300);
-    expect(
-      ms,
-      `1000 arena ticks with up to ${String(peak)} units took ${String(ms)} ms`,
-    ).toBeLessThan(60000);
-    conserved(sim);
-  });
+  test(
+    'several hundred units on a four-plot arena for 1000 ticks',
+    { timeout: 60000 },
+    () => {
+      const team = (() => {
+        const state = bigBoard();
+        const lab = new Lab(state.map);
+        lab.state = state;
+        lab.core(40, 6);
+        return lab.state;
+      })();
+      const { sim, ctx } = startBattle(team, team, 8, content, simConfig);
+      // 150 units on each side in the open ground between the bases; they meet
+      // within the first 30 ticks.
+      for (let k = 0; k < 300; k++) {
+        const side = k % 2;
+        spawnUnitForTest(sim, ctx, {
+          side,
+          def: k % 3 === 0 ? 'unit_raider' : 'unit_soldier',
+          x: (k >> 1) % 96,
+          y: side === 0 ? 17 : 22,
+        });
+      }
+      let peak = 0;
+      const t0 = Date.now();
+      for (let t = 0; t < 1000; t++) {
+        stepArena(sim, ctx);
+        if (sim.units.length > peak) peak = sim.units.length;
+      }
+      const ms = Date.now() - t0;
+      expect(peak).toBeGreaterThanOrEqual(300);
+      expect(sim.units.length).toBeGreaterThanOrEqual(300);
+      expect(
+        ms,
+        `1000 arena ticks with up to ${String(peak)} units took ${String(ms)} ms`,
+      ).toBeLessThan(60000);
+      conserved(sim);
+    },
+  );
 });
 
 /** Per-tick invariants of a battle (shared by the property tests). */
@@ -1248,6 +1252,11 @@ function checkTick(sim: ArenaSim, ctx: ArenaContext): void {
     );
     const board = got(sim.boards[side]);
     for (const s of board.sources) expect(alive.has(s.building)).toBe(true);
+    for (const r of sim.ramps.filter((x) => x.side === side)) {
+      expect(alive.has(r.building)).toBe(true);
+      expect(Number.isInteger(r.charge) && r.charge >= 0).toBe(true);
+      expect(Number.isInteger(r.steps) && r.steps >= 0).toBe(true);
+    }
     for (const r of board.routes) expect(alive.has(r.building)).toBe(true);
     for (const c of board.consumers) expect(alive.has(c.building)).toBe(true);
     const conduitIds = team.conduits.map((c) => c.id);

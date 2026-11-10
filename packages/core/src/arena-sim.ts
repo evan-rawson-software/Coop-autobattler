@@ -35,8 +35,9 @@ import {
   type FlowContext,
   type SimEvent,
 } from './flow-sim.js';
-import type { Side } from './buildings.js';
-import { divFloor } from './int.js';
+import type { EconomyEffectType, Side } from './buildings.js';
+import { divFloor, mulPct } from './int.js';
+import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
 import type { Cell } from './map.js';
 import type { ResourceId } from './resources.js';
 import type { SimConfig } from './sim-config.js';
@@ -141,6 +142,26 @@ export type ArenaEvent =
       readonly tick: number;
       readonly type: 'core_destroyed';
       readonly side: number;
+    }
+  | {
+      readonly tick: number;
+      readonly type: 'ramp_step';
+      readonly side: number;
+      readonly building: number;
+      readonly effect: EconomyEffectType;
+      readonly steps: number;
+    }
+  | { readonly tick: number; readonly type: 'overload_started' }
+  | {
+      readonly tick: number;
+      readonly type: 'overload_level';
+      readonly level: number;
+    }
+  | {
+      readonly tick: number;
+      readonly type: 'overload_core_damage';
+      readonly side: number;
+      readonly damage: number;
     };
 
 // ---------------------------------------------------------------------------
@@ -154,6 +175,8 @@ export interface UnitSim {
   x: number;
   y: number;
   hp: number;
+  /** Attack damage fixed at spawn (base damage with the side's strength bonus). */
+  damage: number;
   moveCooldown: number;
   attackCooldown: number;
 }
@@ -173,6 +196,15 @@ export interface TurretSim {
   charge: number;
   /** Ticks until the turret may fire again. */
   cooldown: number;
+}
+
+export interface RampSim {
+  readonly side: number;
+  readonly building: number;
+  /** Resource units collected towards the next step (0 .. costPerStep - 1). */
+  charge: number;
+  /** Steps taken so far (0 .. maxSteps). */
+  steps: number;
 }
 
 export interface ProducerSim {
@@ -199,6 +231,8 @@ export interface ArenaSim {
   producers: ProducerSim[];
   /** Living turrets, by (side, building). */
   turrets: TurretSim[];
+  /** Living economy (in-battle ramp) buildings, by (side, building). */
+  ramps: RampSim[];
   /** Living units, sorted by `id`. */
   units: UnitSim[];
   /** Units spawned, by side. */
@@ -217,11 +251,23 @@ export interface ArenaOptions {
 
 /**
  * The stats a unit of `side` and type `def` fights with. Every read of unit
- * health, damage, range and cooldowns goes through here, so W1-7 can apply a
- * per-side modifier in one place.
+ * health, damage, range and cooldowns goes through here. With a
+ * `strengthPercent` P above 0 (the side's capped `unit_strength` bonus at the
+ * moment of spawning), health and damage become `mulPct(base, 100 + P)`
+ * (rounded down); everything else is unchanged. Units keep the result they
+ * were spawned with (`hp`, `damage`).
  */
-export function unitStats(_side: number, def: UnitDef): UnitDef {
-  return def;
+export function unitStats(
+  _side: number,
+  def: UnitDef,
+  strengthPercent = 0,
+): UnitDef {
+  if (strengthPercent === 0) return def;
+  return {
+    ...def,
+    health: mulPct(def.health, 100 + strengthPercent),
+    damage: mulPct(def.damage, 100 + strengthPercent),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -241,6 +287,13 @@ interface TurretInfo {
   readonly costPerShot: number;
 }
 
+interface RampInfo {
+  readonly effect: EconomyEffectType;
+  readonly costPerStep: number;
+  readonly stepPercent: number;
+  readonly maxSteps: number;
+}
+
 export interface ArenaContext {
   readonly content: ArenaContent;
   readonly simConfig: SimConfig;
@@ -253,6 +306,7 @@ export interface ArenaContext {
   readonly healthIndex: Int32Array;
   readonly producers: Map<number, ProducerInfo>;
   readonly turrets: Map<number, TurretInfo>;
+  readonly ramps: Map<number, RampInfo>;
   readonly flowEvents: SimEvent[][];
   /** Lazily computed, dropped whenever a building is destroyed. */
   fields: (Field | undefined)[];
@@ -305,6 +359,7 @@ export function createArenaContext(
   }
   const producers = new Map<number, ProducerInfo>();
   const turrets = new Map<number, TurretInfo>();
+  const ramps = new Map<number, RampInfo>();
   sim.teams.forEach((team, side) => {
     for (const p of team.buildings) {
       const def = content.buildings.get(p.def);
@@ -317,6 +372,15 @@ export function createArenaContext(
           ref,
           unit: def.unit,
           cost: tier.costPerUnit,
+        });
+      } else if (def.kind === 'economy') {
+        const tier = def.tiers[p.tier - 1];
+        if (tier === undefined) continue;
+        ramps.set(bkey(side, p.id), {
+          effect: def.effect.type,
+          costPerStep: tier.costPerStep,
+          stepPercent: tier.stepPercent,
+          maxSteps: tier.maxSteps,
         });
       } else if (def.kind === 'defense' && def.defenseType === 'turret') {
         const tier = def.tiers[p.tier - 1];
@@ -347,6 +411,7 @@ export function createArenaContext(
     healthIndex,
     producers,
     turrets,
+    ramps,
     flowEvents,
     fields: new Array<Field | undefined>(2 * TARGETINGS.length).fill(undefined),
     breach: [undefined, undefined] as (Int32Array | undefined)[],
@@ -405,6 +470,12 @@ export function createArenaSim(
       turrets.push({ side: b.side, building: b.id, charge: 0, cooldown: 0 });
     }
   }
+  const ramps: RampSim[] = [];
+  for (const b of arena.buildings) {
+    if (b.kind === 'economy') {
+      ramps.push({ side: b.side, building: b.id, charge: 0, steps: 0 });
+    }
+  }
   return {
     tick: 0,
     nextUnitId: 1,
@@ -418,6 +489,7 @@ export function createArenaSim(
     health,
     producers,
     turrets,
+    ramps,
     units: [],
     spawned: [0, 0],
     unitsDied: [0, 0],
@@ -458,6 +530,33 @@ function breachFor(sim: ArenaSim, ctx: ArenaContext, side: number): Int32Array {
     ctx.breach[side] = f;
   }
   return f;
+}
+
+/**
+ * A side's bonus percent for one effect: the sum over its living economy
+ * buildings of that effect of `steps * stepPercent`, capped at the global
+ * maximum from `sim.json`. Destroyed buildings are no longer in `sim.ramps`,
+ * so their share leaves the total at once.
+ */
+export function rampBonus(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  side: number,
+  effect: EconomyEffectType,
+): number {
+  let raw = 0;
+  for (const r of sim.ramps) {
+    if (r.side !== side) continue;
+    const info = ctx.ramps.get(bkey(r.side, r.building));
+    if (info === undefined || info.effect !== effect) continue;
+    raw += r.steps * info.stepPercent;
+  }
+  return cappedBonus(
+    raw,
+    effect === 'source_speed'
+      ? ctx.simConfig.maxSourceSpeedPercent
+      : ctx.simConfig.maxUnitStrengthPercent,
+  );
 }
 
 function defOf(ctx: ArenaContext, unit: UnitSim): UnitDef {
@@ -542,7 +641,11 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     const { width } = ctx.arena.geom;
     const x = k % width;
     const y = divFloor(k, width);
-    const stats = unitStats(p.side, unitDef);
+    const stats = unitStats(
+      p.side,
+      unitDef,
+      rampBonus(sim, ctx, p.side, 'unit_strength'),
+    );
     const unit: UnitSim = {
       id: sim.nextUnitId,
       side: p.side,
@@ -550,6 +653,7 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
       x,
       y,
       hp: stats.health,
+      damage: stats.damage,
       moveCooldown: stats.moveCooldownTicks,
       attackCooldown: 0,
     };
@@ -586,6 +690,42 @@ function chargeTurrets(sim: ArenaSim, ctx: ArenaContext): void {
       if (take > 0 && takeFromBuffer(board, t.building, input.side, take)) {
         t.charge += take;
       }
+    }
+  }
+}
+
+/**
+ * Ramp charging (step 2, after turret charging): each living economy
+ * building, in side then building-ID order, that has `steps < maxSteps` takes
+ * from its input buffers only as many items as it needs to reach
+ * `costPerStep`. When the charge is complete it takes one step (at most one
+ * per tick), the charge resets to 0 and `ramp_step` is recorded. A building at
+ * its cap takes nothing, so its buffer fills and its conduit backs up.
+ */
+function chargeRamps(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
+  for (const r of sim.ramps) {
+    const info = ctx.ramps.get(bkey(r.side, r.building));
+    if (info === undefined || r.steps >= info.maxSteps) continue;
+    const board = sim.boards[r.side === 0 ? 0 : 1];
+    const consumer = board.consumers.find((c) => c.building === r.building);
+    if (consumer === undefined) continue;
+    for (const input of consumer.inputs) {
+      const take = Math.min(input.count, info.costPerStep - r.charge);
+      if (take > 0 && takeFromBuffer(board, r.building, input.side, take)) {
+        r.charge += take;
+      }
+    }
+    if (r.charge >= info.costPerStep) {
+      r.charge = 0;
+      r.steps += 1;
+      ctx.events?.push({
+        tick,
+        type: 'ramp_step',
+        side: r.side,
+        building: r.building,
+        effect: info.effect,
+        steps: r.steps,
+      });
     }
   }
 }
@@ -662,7 +802,11 @@ export function spawnUnitForTest(
       `spawnUnitForTest: (${String(args.x)}, ${String(args.y)}) is not open.`,
     );
   }
-  const stats = unitStats(args.side, def);
+  const stats = unitStats(
+    args.side,
+    def,
+    rampBonus(sim, ctx, args.side, 'unit_strength'),
+  );
   const unit: UnitSim = {
     id: sim.nextUnitId,
     side: args.side,
@@ -670,6 +814,7 @@ export function spawnUnitForTest(
     x: args.x,
     y: args.y,
     hp: stats.health,
+    damage: stats.damage,
     moveCooldown: stats.moveCooldownTicks,
     attackCooldown: 0,
   };
@@ -924,6 +1069,9 @@ function destroyBuilding(
   sim.turrets = sim.turrets.filter(
     (t) => !(t.side === b.side && t.building === b.id),
   );
+  sim.ramps = sim.ramps.filter(
+    (r) => !(r.side === b.side && r.building === b.id),
+  );
   const { sim: board, plan } = rebuildFlow(
     sim.boards[b.side === 0 ? 0 : 1],
     newTeam,
@@ -952,12 +1100,22 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   const arena = ctx.arena;
   const { width } = arena.geom;
 
+  // 0. Overload level (derived from the tick; events on the ticks it rises).
+  const cfg = ctx.simConfig;
+  const level = overloadLevel(tick, cfg);
+  const beat = isOverloadBeat(tick, cfg);
+  if (beat) {
+    if (level === 1) events?.push({ tick, type: 'overload_started' });
+    events?.push({ tick, type: 'overload_level', level });
+  }
+
   // 1. Flow.
   for (const side of [0, 1] as const) {
     const buf = ctx.flowEvents[side];
     if (buf !== undefined) buf.length = 0;
     const flow = ctx.flows[side];
     if (flow === undefined) throw new Error('Arena: missing flow context.');
+    flow.sourceSpeedPercent = rampBonus(sim, ctx, side, 'source_speed');
     stepFlow(sim.boards[side], flow);
     if (events !== undefined && buf !== undefined) {
       for (const e of buf) {
@@ -978,6 +1136,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   // 2. Production (unit producers, then turret charging).
   produce(sim, ctx, tick);
   chargeTurrets(sim, ctx);
+  chargeRamps(sim, ctx, tick);
 
   // 3. Decide, from a snapshot.
   const units = sim.units;
@@ -1009,17 +1168,21 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     if (u === undefined || (act !== ACT_UNIT && act !== ACT_BUILDING)) continue;
     if (u.attackCooldown > 0) continue; // holds position
     const stats = unitStats(u.side, defOf(ctx, u));
+    const damage = mulPct(
+      u.damage,
+      100 + level * cfg.overloadDamageStepPercent,
+    );
     const arg = ctx.arg[i] ?? 0;
     let target: UnitTarget;
     if (act === ACT_UNIT) {
       const t = units[arg];
       if (t === undefined) continue;
-      ctx.unitDamage[arg] = (ctx.unitDamage[arg] ?? 0) + stats.damage;
+      ctx.unitDamage[arg] = (ctx.unitDamage[arg] ?? 0) + damage;
       target = { kind: 'unit', unit: t.id };
     } else {
       const b = arena.buildings[arg];
       if (b === undefined) continue;
-      ctx.buildingDamage[arg] = (ctx.buildingDamage[arg] ?? 0) + stats.damage;
+      ctx.buildingDamage[arg] = (ctx.buildingDamage[arg] ?? 0) + damage;
       target =
         b.kind === 'core'
           ? { kind: 'core', side: b.side }
@@ -1031,8 +1194,18 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
       type: 'unit_attacked',
       unit: u.id,
       target,
-      damage: stats.damage,
+      damage,
     });
+  }
+  // Overload Core decay, applied together with the damage above.
+  if (beat) {
+    const decay = level * cfg.overloadCoreDamageStep;
+    for (const side of [0, 1]) {
+      const ref = arena.coreRef[side] ?? -1;
+      if (ref < 0 || arena.buildings[ref]?.alive !== true) continue;
+      ctx.buildingDamage[ref] = (ctx.buildingDamage[ref] ?? 0) + decay;
+      events?.push({ tick, type: 'overload_core_damage', side, damage: decay });
+    }
   }
   for (let i = 0; i < n; i++) {
     const dmg = ctx.unitDamage[i] ?? 0;

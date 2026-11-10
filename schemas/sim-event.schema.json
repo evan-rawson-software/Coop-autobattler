@@ -398,6 +398,57 @@
           "minimum": 0
         }
       }
+    },
+    {
+      "title": "ramp_step",
+      "description": "An economy building completed one upgrade step (in-battle ramp).",
+      "type": "object",
+      "required": ["tick", "type", "side", "building", "effect", "steps"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "ramp_step" },
+        "side": { "type": "integer", "enum": [0, 1] },
+        "building": { "type": "integer", "minimum": 1 },
+        "effect": { "enum": ["source_speed", "unit_strength"] },
+        "steps": { "type": "integer", "minimum": 1 },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "title": "overload_started",
+      "description": "Overload level 1 began (CB-12).",
+      "type": "object",
+      "required": ["tick", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "overload_started" },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "title": "overload_level",
+      "description": "The Overload level rose to `level` (also emitted for level 1).",
+      "type": "object",
+      "required": ["tick", "type", "level"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "overload_level" },
+        "level": { "type": "integer", "minimum": 1 },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "title": "overload_core_damage",
+      "description": "Overload Core decay hit a side's living Core.",
+      "type": "object",
+      "required": ["tick", "type", "side", "damage"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "overload_core_damage" },
+        "side": { "type": "integer", "enum": [0, 1] },
+        "damage": { "type": "integer", "minimum": 1 },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
     }
   ]
 }

@@ -19,6 +19,18 @@ export interface SimConfig {
   readonly breachHealthPerCost: number;
   /** Manhattan range within which a unit chases an enemy unit (CB-16). */
   readonly aggroRangeCells: number;
+  /** Global cap on the summed `source_speed` bonus of one side, percent (SC-8). */
+  readonly maxSourceSpeedPercent: number;
+  /** Global cap on the summed `unit_strength` bonus of one side, percent (SC-8). */
+  readonly maxUnitStrengthPercent: number;
+  /** First tick at which Overload applies (CB-12). */
+  readonly overloadStartTick: number;
+  /** Ticks between Overload levels. */
+  readonly overloadIntervalTicks: number;
+  /** Percent of extra unit damage per Overload level. */
+  readonly overloadDamageStepPercent: number;
+  /** Core damage per Overload level, applied once per interval to both Cores. */
+  readonly overloadCoreDamageStep: number;
 }
 
 export type SimConfigLoadResult = LoadResult<SimConfig>;
@@ -30,6 +42,12 @@ const KEYS = new Set([
   'breachBaseCost',
   'breachHealthPerCost',
   'aggroRangeCells',
+  'maxSourceSpeedPercent',
+  'maxUnitStrengthPercent',
+  'overloadStartTick',
+  'overloadIntervalTicks',
+  'overloadDamageStepPercent',
+  'overloadCoreDamageStep',
 ]);
 
 /** Validate parsed simulation configuration (the contents of sim.json). */
@@ -50,8 +68,56 @@ export function loadSimConfig(data: unknown): SimConfigLoadResult {
     errors,
   );
   const aggroRangeCells = readInt(data, 'aggroRangeCells', 0, 'sim', errors);
+  const maxSourceSpeedPercent = readInt(
+    data,
+    'maxSourceSpeedPercent',
+    0,
+    'sim',
+    errors,
+  );
+  const maxUnitStrengthPercent = readInt(
+    data,
+    'maxUnitStrengthPercent',
+    0,
+    'sim',
+    errors,
+  );
+  const overloadStartTick = readInt(
+    data,
+    'overloadStartTick',
+    0,
+    'sim',
+    errors,
+  );
+  const overloadIntervalTicks = readInt(
+    data,
+    'overloadIntervalTicks',
+    1,
+    'sim',
+    errors,
+  );
+  const overloadDamageStepPercent = readInt(
+    data,
+    'overloadDamageStepPercent',
+    0,
+    'sim',
+    errors,
+  );
+  const overloadCoreDamageStep = readInt(
+    data,
+    'overloadCoreDamageStep',
+    0,
+    'sim',
+    errors,
+  );
   if (
     errors.length > 0 ||
+    maxSourceSpeedPercent === undefined ||
+    maxUnitStrengthPercent === undefined ||
+    overloadStartTick === undefined ||
+    overloadIntervalTicks === undefined ||
+    overloadDamageStepPercent === undefined ||
+    overloadCoreDamageStep === undefined ||
     aggroRangeCells === undefined ||
     ticksPerSecond === undefined ||
     inputBufferUnits === undefined ||
@@ -68,6 +134,12 @@ export function loadSimConfig(data: unknown): SimConfigLoadResult {
       breachBaseCost,
       breachHealthPerCost,
       aggroRangeCells,
+      maxSourceSpeedPercent,
+      maxUnitStrengthPercent,
+      overloadStartTick,
+      overloadIntervalTicks,
+      overloadDamageStepPercent,
+      overloadCoreDamageStep,
     },
   };
 }

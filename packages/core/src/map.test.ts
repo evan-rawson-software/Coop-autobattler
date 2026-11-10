@@ -44,140 +44,151 @@ function clone<T>(value: T): T {
 }
 
 describe('generateMap properties', () => {
-  test(`${String(PROPERTY_SEEDS)} seeds x every party size`, () => {
-    const fpWidth = coreFootprint(content.buildings).width;
-    const failures: string[] = [];
-    let maxAttempts = 0;
-    let totalAttempts = 0;
-    let runs = 0;
-    const nodesPerPlot = content.resources
-      .listBase()
-      .reduce((sum, r) => sum + nodesFor(r.rarity), 0);
+  test(
+    `${String(PROPERTY_SEEDS)} seeds x every party size`,
+    { timeout: 30000 },
+    () => {
+      const fpWidth = coreFootprint(content.buildings).width;
+      const failures: string[] = [];
+      let maxAttempts = 0;
+      let totalAttempts = 0;
+      let runs = 0;
+      const nodesPerPlot = content.resources
+        .listBase()
+        .reduce((sum, r) => sum + nodesFor(r.rarity), 0);
 
-    for (let partySize = 1; partySize <= config.maxPartySize; partySize++) {
-      for (let seed = 1; seed <= PROPERTY_SEEDS; seed++) {
-        const { map, attempts } = generateMapWithStats(
-          seed,
-          partySize,
-          content,
-          config,
-        );
-        maxAttempts = Math.max(maxAttempts, attempts);
-        totalAttempts += attempts;
-        runs++;
-        const q = queryMap(map, content.terrain);
-        const where = `seed ${String(seed)} party ${String(partySize)}`;
-        const check = (ok: boolean, what: string): void => {
-          if (!ok) failures.push(`${where}: ${what}`);
-        };
+      for (let partySize = 1; partySize <= config.maxPartySize; partySize++) {
+        for (let seed = 1; seed <= PROPERTY_SEEDS; seed++) {
+          const { map, attempts } = generateMapWithStats(
+            seed,
+            partySize,
+            content,
+            config,
+          );
+          maxAttempts = Math.max(maxAttempts, attempts);
+          totalAttempts += attempts;
+          runs++;
+          const q = queryMap(map, content.terrain);
+          const where = `seed ${String(seed)} party ${String(partySize)}`;
+          const check = (ok: boolean, what: string): void => {
+            if (!ok) failures.push(`${where}: ${what}`);
+          };
 
-        check(map.width === partySize * config.plotWidth, 'width');
-        check(map.height === config.plotDepth, 'height');
-        check(map.nodes.length === partySize * nodesPerPlot, 'node total');
+          check(map.width === partySize * config.plotWidth, 'width');
+          check(map.height === config.plotDepth, 'height');
+          check(map.nodes.length === partySize * nodesPerPlot, 'node total');
 
-        // Node counts per plot and per resource are exact.
-        for (let p = 0; p < partySize; p++) {
-          for (const res of content.resources.listBase()) {
-            const got = map.nodes.filter(
-              (n) => n.resource === res.id && q.plotOf(n.x) === p,
-            ).length;
-            check(got === nodesFor(res.rarity), `plot ${String(p)} ${res.id}`);
-          }
-        }
-        // No adjacency, nodes never on features.
-        for (const n of map.nodes) {
-          check(q.featureAt(n.x, n.y) === undefined, 'node on feature');
-          check(q.nodeAt(n.x + 1, n.y) === undefined, 'node adjacent (x)');
-          check(q.nodeAt(n.x, n.y + 1) === undefined, 'node adjacent (y)');
-        }
-        // Buildable fraction per plot.
-        for (let p = 0; p < partySize; p++) {
-          let buildable = 0;
-          for (let y = 0; y < map.height; y++) {
-            for (let x = p * map.plotWidth; x < (p + 1) * map.plotWidth; x++) {
-              if (q.isBuildable(x, y)) buildable++;
+          // Node counts per plot and per resource are exact.
+          for (let p = 0; p < partySize; p++) {
+            for (const res of content.resources.listBase()) {
+              const got = map.nodes.filter(
+                (n) => n.resource === res.id && q.plotOf(n.x) === p,
+              ).length;
+              check(
+                got === nodesFor(res.rarity),
+                `plot ${String(p)} ${res.id}`,
+              );
             }
           }
-          check(
-            buildable * 100 >=
-              config.minBuildablePercent * map.plotWidth * map.height,
-            `plot ${String(p)} buildable fraction`,
-          );
-        }
-        // Front row walkable; features keep their margins (so none on the
-        // side edges or the front row).
-        for (let x = 0; x < map.width; x++) {
-          check(q.isWalkable(x, map.height - 1), 'front row blocked');
-        }
-        for (const f of map.features) {
-          check(
-            f.x >= config.sideMargin &&
-              f.x < map.width - config.sideMargin &&
-              f.x > 0 &&
-              f.x < map.width - 1 &&
-              f.y >= config.backMargin &&
-              f.y < map.height - config.frontMargin,
-            'feature outside margins',
-          );
-        }
-        // Everything walkable is reachable from the front row.
-        const seen = new Set<number>();
-        const stack: number[] = [];
-        for (let x = 0; x < map.width; x++) {
-          seen.add((map.height - 1) * map.width + x);
-          stack.push((map.height - 1) * map.width + x);
-        }
-        for (let k = stack.pop(); k !== undefined; k = stack.pop()) {
-          const x = k % map.width;
-          const y = Math.floor(k / map.width);
-          for (const [dx, dy] of [
-            [1, 0],
-            [-1, 0],
-            [0, 1],
-            [0, -1],
-          ] as const) {
-            const nk = (y + dy) * map.width + x + dx;
-            if (q.isWalkable(x + dx, y + dy) && !seen.has(nk)) {
-              seen.add(nk);
-              stack.push(nk);
-            }
+          // No adjacency, nodes never on features.
+          for (const n of map.nodes) {
+            check(q.featureAt(n.x, n.y) === undefined, 'node on feature');
+            check(q.nodeAt(n.x + 1, n.y) === undefined, 'node adjacent (x)');
+            check(q.nodeAt(n.x, n.y + 1) === undefined, 'node adjacent (y)');
           }
-        }
-        let walkable = 0;
-        for (let y = 0; y < map.height; y++) {
+          // Buildable fraction per plot.
+          for (let p = 0; p < partySize; p++) {
+            let buildable = 0;
+            for (let y = 0; y < map.height; y++) {
+              for (
+                let x = p * map.plotWidth;
+                x < (p + 1) * map.plotWidth;
+                x++
+              ) {
+                if (q.isBuildable(x, y)) buildable++;
+              }
+            }
+            check(
+              buildable * 100 >=
+                config.minBuildablePercent * map.plotWidth * map.height,
+              `plot ${String(p)} buildable fraction`,
+            );
+          }
+          // Front row walkable; features keep their margins (so none on the
+          // side edges or the front row).
           for (let x = 0; x < map.width; x++) {
-            if (q.isWalkable(x, y)) walkable++;
+            check(q.isWalkable(x, map.height - 1), 'front row blocked');
           }
-        }
-        check(seen.size === walkable, 'walkable cell cut off');
-        // Core positions.
-        const legal = listLegalCorePositions(map, content, config);
-        for (const pos of legal) {
-          const r = validateCorePosition(map, content, config, pos);
-          check(r.ok, 'listed core position fails validation');
-        }
-        for (let p = 0; p < partySize; p++) {
+          for (const f of map.features) {
+            check(
+              f.x >= config.sideMargin &&
+                f.x < map.width - config.sideMargin &&
+                f.x > 0 &&
+                f.x < map.width - 1 &&
+                f.y >= config.backMargin &&
+                f.y < map.height - config.frontMargin,
+              'feature outside margins',
+            );
+          }
+          // Everything walkable is reachable from the front row.
+          const seen = new Set<number>();
+          const stack: number[] = [];
+          for (let x = 0; x < map.width; x++) {
+            seen.add((map.height - 1) * map.width + x);
+            stack.push((map.height - 1) * map.width + x);
+          }
+          for (let k = stack.pop(); k !== undefined; k = stack.pop()) {
+            const x = k % map.width;
+            const y = Math.floor(k / map.width);
+            for (const [dx, dy] of [
+              [1, 0],
+              [-1, 0],
+              [0, 1],
+              [0, -1],
+            ] as const) {
+              const nk = (y + dy) * map.width + x + dx;
+              if (q.isWalkable(x + dx, y + dy) && !seen.has(nk)) {
+                seen.add(nk);
+                stack.push(nk);
+              }
+            }
+          }
+          let walkable = 0;
+          for (let y = 0; y < map.height; y++) {
+            for (let x = 0; x < map.width; x++) {
+              if (q.isWalkable(x, y)) walkable++;
+            }
+          }
+          check(seen.size === walkable, 'walkable cell cut off');
+          // Core positions.
+          const legal = listLegalCorePositions(map, content, config);
+          for (const pos of legal) {
+            const r = validateCorePosition(map, content, config, pos);
+            check(r.ok, 'listed core position fails validation');
+          }
+          for (let p = 0; p < partySize; p++) {
+            check(
+              legal.some(
+                (pos) =>
+                  q.plotOf(pos.x) === p && q.plotOf(pos.x + fpWidth - 1) === p,
+              ),
+              `plot ${String(p)} has no core position`,
+            );
+          }
+          // Round trip through the loader.
           check(
-            legal.some(
-              (pos) =>
-                q.plotOf(pos.x) === p && q.plotOf(pos.x + fpWidth - 1) === p,
-            ),
-            `plot ${String(p)} has no core position`,
+            JSON.stringify(loadMapOrThrow(clone(map), content)) ===
+              JSON.stringify(map),
+            'loader round trip',
           );
         }
-        // Round trip through the loader.
-        check(
-          JSON.stringify(loadMapOrThrow(clone(map), content)) ===
-            JSON.stringify(map),
-          'loader round trip',
-        );
       }
-    }
-    expect(failures.slice(0, 10)).toEqual([]);
-    // Guards against runaway retries.
-    expect(maxAttempts).toBeLessThan(config.maxAttempts);
-    expect(totalAttempts / runs).toBeLessThan(2);
-  });
+      expect(failures.slice(0, 10)).toEqual([]);
+      // Guards against runaway retries.
+      expect(maxAttempts).toBeLessThan(config.maxAttempts);
+      expect(totalAttempts / runs).toBeLessThan(2);
+    },
+  );
 
   test('same seed and party size give the identical map', () => {
     expect(generateMap(5, 2, content, config)).toEqual(

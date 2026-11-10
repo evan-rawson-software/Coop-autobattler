@@ -37,6 +37,10 @@
       "name": "Overclocker",
       "description": "Consumes {res_c} to make sources faster for the rest of the battle."
     },
+    "bld_armory": {
+      "name": "Armory",
+      "description": "Consumes {res_a} to make units spawned later in the battle stronger."
+    },
     "bld_core": {
       "name": "Core",
       "description": "Your party's health. If it falls, the battle is lost."
