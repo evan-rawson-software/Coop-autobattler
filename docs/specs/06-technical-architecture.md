@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v0.2
+Status: Draft v0.3
 
 Technology choices here are recommendations, not decisions. The component
 boundaries matter more than the specific stack.
@@ -86,13 +86,14 @@ server unless the server also runs that runtime. See Q6.
 ## Suggested milestones
 
 1. **M0 — Sim core:** deterministic headless fights between two hard-coded
-   teams; CLI runner; golden tests.
+   teams of 1–4 boards each (lanes from the start, so co-op is not a
+   retrofit); CLI runner; golden tests.
 2. **M1 — Solo loop, local:** PvE battle (3 difficulties) + shop event + exponential scaling +
    lives; minimal UI; placeholder content (CB-18).
 3. **M2 — Server authority:** run state on the server; accounts; resumable
    runs.
 4. **M3 — Ghosts:** snapshot save, matching, boss fallback, the full three-step cycle.
-5. **M4 — Co-op:** lobby, 2–4 players, shared board, giving, votes,
+5. **M4 — Co-op:** lobby, 2–4 players, one board each, giving, votes,
    disconnect handling.
 6. **M5 — Balance & content:** balance harness, content expansion,
    meta-progression, events.

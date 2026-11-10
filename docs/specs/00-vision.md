@@ -1,11 +1,13 @@
 # 00 — Vision & Pillars
 
-Status: Draft v0.2
+Status: Draft v0.3
 
 ## Elevator pitch
 
 A co-op roguelite autobattler for 1–4 players. Between fights, the party
-drafts units and items, combines them, and positions a shared team. Fights
+each player
+drafts units and items and builds their own board; the party's boards fight
+together. Fights
 resolve automatically. Opponents alternate between hand-authored-style PvE
 encounters and **ghost PvP** — saved snapshots of other real parties at the
 same point in their run. PvE power grows exponentially, so no run lasts
@@ -29,6 +31,8 @@ forever; the score is how deep you went.
   battle.
 - **V-8 [DECIDED]** The party has 5 lives. Losing a PvP battle costs a life.
   Losing a PvE battle costs no life but grants no reward.
+- **V-9 [DECIDED]** Each player has their own full board, so the game scales
+  from 1 to 4 players by adding boards.
 
 ## Design pillars
 
@@ -82,7 +86,9 @@ does not block systems work.
 | Prep phase | A short window before each battle to arrange the team. |
 | PvP battle | The third step of a cycle: a ghost, or a boss if no ghost matches. |
 | Encounter | A single automated fight (PvE or ghost PvP). |
-| Team | The full set of units/items the party fields in an encounter. |
+| Board | One player's units, items, and positions. Each player has one. |
+| Team | All of the party's boards together; what fights in a battle. |
+| Lane | A board's place on the battlefield, opposite one enemy board. |
 | Snapshot | A saved, immutable copy of a party's team at the start of an encounter. |
 | Ghost | A snapshot being used as another party's opponent. |
 | Boss | A generated PvE opponent used when no ghost is available. |

@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v0.2
+Status: Draft v0.3
 
 ## Core loop
 
@@ -58,7 +58,7 @@ Lobby -> [ 1. PvE battle -> 2. Event -> 3. PvP battle ] x N -> Defeat -> Run sum
 ## Team management
 
 - **RS-6 [PROPOSED]** Acquiring things happens at events and through rewards.
-  **Arranging** the team — positioning, equipping items, combining
+  **Arranging** boards — positioning, equipping items, combining
   duplicates, swapping bench and board, giving to teammates — is available in
   a short **prep phase** before every battle (steps 1 and 3) as well as
   during the event. Without this, a reward from the PvE battle could not be

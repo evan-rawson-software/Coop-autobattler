@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v0.2
+Status: Draft v0.3
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.
@@ -19,6 +19,9 @@ the specification.
   - `g` — per-cycle growth factor (starting proposal: 1.3–1.5)
   - `m(type)` — encounter multiplier (easy < medium < hard; boss tuned
     separately, see SC-5)
+
+  The budget is **per board**. An enemy team has one board per player in the
+  party (CP-7), so total enemy power scales linearly with party size.
 
 - **SC-2 [PROPOSED]** "Budget" is an abstract power currency spent by the
   encounter generator on unit count, unit tier, stat multipliers, and
@@ -72,14 +75,12 @@ the missed reward (RS-3a). The exponential curve still ends every run:
 - **EC-3 [PROPOSED]** Shop offers are per player and drawn from tiered pools
   whose odds improve with shop tier / cycle. Whether unit pools are finite and
   shared within the party (contested draws) or infinite is **[OPEN]** (Q5).
-- **EC-4 [OPEN]** **Party-size economy**: with constant total team capacity
-  (CP-5), total party income should be roughly constant too, otherwise bigger
-  parties out-scale smaller ones. Options:
-  - (a) Fixed party income split evenly between players *(recommended; solo
-    gets all of it)*.
-  - (b) Per-player income with a party-size discount curve.
-  - (c) Full per-player income, and compensate by scaling PvE with party size.
-    Ghosts already match on party size, so only PvE needs compensating.
+- **EC-4 [PROPOSED]** **Party-size economy**: every player earns full income
+  for their own board, at every party size. Enemy teams scale by the same
+  factor (one board per player), so no discount curve is needed. Battle
+  rewards are paid per player; party picks (CP-14) are per party.
+- **EC-4a [PROPOSED]** Giving (CP-11) lets a party funnel gold into one
+  board. Cap or tax it only if funnelling proves dominant in testing.
 - **EC-5 [PROPOSED]** No interest/banking mechanic in the first playable; add
   only if the economy needs a saving-vs-spending tension.
 - **EC-6 [PROPOSED]** Loss compensation: a small consolation payout after a
@@ -89,7 +90,7 @@ the missed reward (RS-3a). The exponential curve still ends every run:
 ## Rewards
 
 - **EC-7 [PROPOSED]** PvE win rewards by difficulty — easy: gold; medium:
-  more gold plus a party pick (CP-11); hard: more gold plus a better party
+  more gold plus a party pick (CP-14); hard: more gold plus a better party
   pick. PvE loss: nothing (RS-3a). PvP win: a party pick and/or a permanent
   run modifier.
 - **EC-9 [PROPOSED]** Base income per cycle is deliberately small relative to

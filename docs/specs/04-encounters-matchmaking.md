@@ -1,6 +1,6 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v0.2
+Status: Draft v0.3
 
 ## Encounter types
 
@@ -20,7 +20,7 @@ The loop is defined in `01-run-structure.md` RS-1.
   - game version (content + simulation version; see TA-8)
   - party size
   - cycle number
-  - full team state (CB-4)
+  - full team state: all N boards in lane order (CB-4, CP-6)
   - party display info (player display names, optional cosmetic info)
   - metadata: creation time, run ID, the party's lives remaining and
     PvP record at that point (for optional match-quality filtering)
@@ -66,7 +66,12 @@ The loop is defined in `01-run-structure.md` RS-1.
   2. Pick a **boss template** (a themed core unit/ability set) valid for that
      depth band.
   3. Spend the remaining budget on stat scaling, minions, and modifiers.
-  4. Emit a normal team state (CB-6).
+  4. Emit a normal team state (CB-6) with **one board per player in the
+     party** (CP-7). The budget is per board, so difficulty per player is the
+     same at every party size. The boss itself may occupy one lane with
+     minion boards in the others, or be a set of N themed boards.
+- **MM-9a [PROPOSED]** A ghost's boards face the party's boards lane for lane
+  in their saved order (CP-10).
 - **MM-10 [PROPOSED]** A boss should be tuned to be roughly as dangerous as
   the *median* ghost at that cycle while ghosts exist at that depth, and to
   follow the exponential curve beyond it. In practice the snapshot pool thins
@@ -106,7 +111,8 @@ The loop is defined in `01-run-structure.md` RS-1.
 
 - **MM-18 [PROPOSED]** PvE enemy teams come from **encounter templates**
   scaled by the same budget function as bosses, with a multiplier per
-  difficulty (easy < medium < hard; see SC-1).
+  difficulty (easy < medium < hard; see SC-1), generating one enemy board per
+  player (CP-7).
 - **MM-19 [DECIDED/PROPOSED detail]** The party is offered easy, medium, and
   hard each cycle (RS-3). Each option shows the enemy archetype and the
   reward; the party votes (CP-12). The three options may be different

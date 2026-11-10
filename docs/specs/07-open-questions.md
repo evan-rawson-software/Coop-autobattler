@@ -1,33 +1,38 @@
 # 07 — Open Questions
 
-Status: Draft v0.2
+Status: Draft v0.3
 
 Each question lists options and a recommendation. Answering Q1, Q2, and Q6
 unblocks most backlog work.
 
-## Q1. Co-op ownership model (highest impact)
+## Q1. How do a party's boards fight together? (highest impact)
 
-How do multiple players share a team?
+Decided: each player has their own full board (CP-4). Open: what happens in a
+battle with N boards per side.
 
-- **(a) One shared team, constant capacity split between players**
-  *(recommended; specced in `02-coop-party.md`)*. One readable fight; real
-  interdependence; party sizes stay balanced.
-- **(b) Each player has a full board; boards fight side by side** against a
-  proportionally larger enemy. More personal agency, much heavier fights,
-  party sizes become different games.
-- **(c) One shared team, fully communal** — shared gold, shared shop, anyone
-  does anything. Simplest rules, but prone to one player "quarterbacking".
-- **(d) Role-based** — players have asymmetric jobs (e.g. one drafts units,
-  one manages items). Novel, but awkward at 1 and 3 players.
+- **(a) Lanes on one battlefield with crossing** *(recommended; specced in
+  `02-coop-party.md` CP-8)*. Each board faces one enemy board; survivors of a
+  cleared lane reinforce neighbours; last side standing wins. One shared
+  outcome, strong players can carry, lane order matters.
+- **(b) Parallel duels, majority wins.** N independent 1v1 battles; the party
+  wins if it wins more duels (ties need a rule at 2 and 4 players). Simplest
+  to build and watch, but boards never interact in combat.
+- **(c) Parallel duels, pooled health.** N independent 1v1 battles, but damage
+  dealt goes to a shared party health pool. Still simple; a blowout in one
+  lane can offset a loss in another.
+- **(d) One merged battlefield.** All boards are placed on a single large
+  grid with no lanes. Maximum interaction, hardest to read and balance.
+
+Related: how much cross-board content there should be (CP-12), and whether a
+teammate may manage a disconnected player's board (CP-21).
 
 ## Q2. Combat style
 
 - **(a) Units on a small grid with positioning** *(recommended; specced in
-  `03-combat.md`)*. Classic autobattler; ownership of units maps cleanly onto
-  players.
+  `03-combat.md`)*. Classic autobattler; works naturally with one board per player.
 - **(b) Bazaar-style item boards** — no units; each side has a row of items
   on cooldowns attacking a shared health pool. Cheaper to build and render;
-  co-op would be "each player owns a segment of the item row".
+  one item row per player.
 - **(c) Hero + items hybrid** — each player is one hero unit on the board
   that they gear up. Strongest player identity; solo would need to field
   multiple heroes or AI companions.
@@ -72,9 +77,11 @@ Web/TypeScript *(recommended; `06-technical-architecture.md`)* vs a game
 engine. Depends on target platforms (browser, Steam, mobile) and on the art
 ambition.
 
-## Q7. Party-size economy
+## Q7. Gold funnelling
 
-See EC-4. Recommended: fixed party income split evenly.
+With full per-player income and free giving, a party can pour everything into
+one board. Is that a fun strategy or a degenerate one? Recommended: allow it,
+measure, then cap or tax if needed (EC-4a).
 
 ## Q8. Ghost selection fairness
 
