@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v1.3
+Status: Draft v1.4
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -38,8 +38,8 @@ everything else movable. Open:
 - **PvE as waves plus a stronghold** rather than a factory (CB-29): confirm.
 - **Does expansion reveal new land** (CB-25), or is the whole map visible
   and buildable from the start?
-- **Direct-fire buildings.** Is all offence through units, or are there
-  also long-range buildings (artillery) that hit the enemy base directly?
+- Decided: no long-range buildings; defenses only target enemy units on
+  the party's own side (CB-3j).
 
 ## Q3. Player identity
 

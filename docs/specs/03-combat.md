@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v1.3
+Status: Draft v1.4
 
 ## Direction
 
@@ -37,6 +37,10 @@ Status: Draft v1.3
   at shops between battles, to purchase buildings. Only buildings the party
   has purchased (or won) can be placed, and placing costs nothing. Conduits
   are the one exception: unlimited, never purchased.
+- **CB-3j [DECIDED]** **No long-range buildings.** Buildings never attack
+  the enemy's side of the battlefield; all offence is carried by units.
+  **Defensive buildings only target enemy units that have crossed onto the
+  party's own side.**
 - **CB-3e [DECIDED]** The **Core's position is chosen by the team at the
   start of the run and cannot be moved**. All other buildings can be moved
   freely between battles.
@@ -134,8 +138,10 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 
 ## Defense and terrain
 
-- **CB-18** **Walls** block movement and have health. **Turrets** kill units
-  in range but need charge. **Gates** block enemies but let the party's own
+- **CB-18** **Walls** block movement and have health. **Turrets** kill enemy
+  units in range once those units are on the party's side of the front edge
+  (CB-3j), and need charge. A turret's range never reaches across the front
+  edge, however close to it the turret stands. **Gates** block enemies but let the party's own
   units through.
 - **CB-19** **Funnelling.** Lakes, cliffs, and walls together determine the
   paths enemy units can take. A party that leaves one long, turret-lined
