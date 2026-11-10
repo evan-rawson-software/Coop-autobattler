@@ -2,6 +2,7 @@ import {
   loadBuildings,
   loadMapgen,
   loadPresentation,
+  loadSimConfig,
   loadResources,
   loadTerrain,
   loadUnits,
@@ -9,6 +10,7 @@ import {
   type MapgenConfig,
   type PresentationConfig,
   type ResourceConfig,
+  type SimConfig,
   type TerrainConfig,
   type UnitConfig,
 } from '@game/core';
@@ -20,6 +22,7 @@ export interface LoadedContent {
   units?: UnitConfig;
   buildings?: BuildingConfig;
   mapgen?: MapgenConfig;
+  sim?: SimConfig;
   presentation?: PresentationConfig;
 }
 
@@ -101,6 +104,12 @@ export const contentRegistry: readonly ContentEntry[] = [
     needs: ['terrain'],
     load: (data, loaded) =>
       wrap(loadMapgen(data, { terrain: need(loaded, 'terrain') })),
+  },
+  {
+    key: 'sim',
+    contentFile: 'sim.json',
+    schemaFile: 'sim.schema.json',
+    load: (data) => wrap(loadSimConfig(data)),
   },
   {
     key: 'presentation',

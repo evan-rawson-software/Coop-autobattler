@@ -181,3 +181,32 @@ export {
   makeTeamStateOpsKind,
   runTeamStateOps,
 } from './team-state-ops.js';
+export { loadSimConfig, loadSimConfigOrThrow } from './sim-config.js';
+export type { SimConfig, SimConfigLoadResult } from './sim-config.js';
+export {
+  cloneBoardSim,
+  createBoardSim,
+  createFlowContext,
+  dryRunFlow,
+  flowTotals,
+  stepFlow,
+  takeFromBuffer,
+} from './flow-sim.js';
+export type {
+  BoardSim,
+  ConduitSim,
+  ConsumerInputSim,
+  ConsumerMode,
+  ConsumerSim,
+  DryRunConsumerInput,
+  DryRunResult,
+  DryRunRoute,
+  DryRunSource,
+  FlowContext,
+  FlowPlan,
+  FlowTotals,
+  RouteSim,
+  SimEvent,
+  SourceSim,
+} from './flow-sim.js';
+export { makeFlowSimKind } from './flow-sim-kind.js';

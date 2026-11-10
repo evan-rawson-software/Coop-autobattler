@@ -1,0 +1,5 @@
+{
+  "$schema": "../schemas/sim.schema.json",
+  "ticksPerSecond": 10,
+  "inputBufferUnits": 4
+}

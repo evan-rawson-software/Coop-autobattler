@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sim.schema.json",
+  "title": "Simulation configuration",
+  "description": "Battle clock and resource-flow constants (W1-4). Later issues add fields.",
+  "type": "object",
+  "required": ["ticksPerSecond", "inputBufferUnits"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "ticksPerSecond": {
+      "description": "Fixed ticks per second of battle time (CB-10).",
+      "type": "integer",
+      "minimum": 1
+    },
+    "inputBufferUnits": {
+      "description": "Capacity, in units, of each consumer input buffer.",
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

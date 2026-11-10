@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sim-event.schema.json",
+  "title": "Simulation event",
+  "description": "One entry of a battle event log. Plain JSON: integers and strings only. Later issues add event types by adding branches to oneOf. Movement along conduits is deliberately not logged.",
+  "oneOf": [
+    {
+      "title": "produced",
+      "description": "A source emitted one item (into a conduit, onward, or into a dead end).",
+      "type": "object",
+      "required": ["tick", "type", "building", "resource"],
+      "additionalProperties": false,
+      "properties": {
+        "tick": { "type": "integer", "minimum": 0 },
+        "type": { "const": "produced" },
+        "building": { "type": "integer", "minimum": 1 },
+        "resource": { "type": "string" }
+      }
+    },
+    {
+      "title": "delivered",
+      "description": "A consumer input buffer accepted one item.",
+      "type": "object",
+      "required": ["tick", "type", "building", "side", "resource"],
+      "additionalProperties": false,
+      "properties": {
+        "tick": { "type": "integer", "minimum": 0 },
+        "type": { "const": "delivered" },
+        "building": { "type": "integer", "minimum": 1 },
+        "side": { "enum": ["north", "east", "south", "west"] },
+        "resource": { "type": "string" }
+      }
+    },
+    {
+      "title": "lost",
+      "description": "An item reached a dead end at this building and was discarded.",
+      "type": "object",
+      "required": ["tick", "type", "building", "resource"],
+      "additionalProperties": false,
+      "properties": {
+        "tick": { "type": "integer", "minimum": 0 },
+        "type": { "const": "lost" },
+        "building": { "type": "integer", "minimum": 1 },
+        "resource": { "type": "string" }
+      }
+    },
+    {
+      "title": "stalled",
+      "description": "A source could not place its item; recorded only on the tick it first stalls.",
+      "type": "object",
+      "required": ["tick", "type", "building"],
+      "additionalProperties": false,
+      "properties": {
+        "tick": { "type": "integer", "minimum": 0 },
+        "type": { "const": "stalled" },
+        "building": { "type": "integer", "minimum": 1 }
+      }
+    }
+  ]
+}

@@ -7,6 +7,8 @@ import {
   goldenKinds as coreKinds,
   loadAllContentOrThrow,
   loadMapgenOrThrow,
+  loadSimConfigOrThrow,
+  makeFlowSimKind,
   makeFlowGraphKind,
   makeMapGenKind,
   makeTeamStateOpsKind,
@@ -17,6 +19,7 @@ import {
   rawMapgen,
   rawPresentationEn,
   rawResources,
+  rawSim,
   rawTerrain,
   rawUnits,
 } from '@game/content';
@@ -29,6 +32,7 @@ const content = loadAllContentOrThrow({
   presentation: rawPresentationEn,
 });
 const mapgen = loadMapgenOrThrow(rawMapgen, { terrain: content.terrain });
+const simConfig = loadSimConfigOrThrow(rawSim);
 
 /** Every golden kind: those in `core` plus the content-dependent ones. */
 export const goldenKinds: Readonly<Record<string, SimulationFn>> = {
@@ -36,4 +40,5 @@ export const goldenKinds: Readonly<Record<string, SimulationFn>> = {
   'map-gen': makeMapGenKind(content, mapgen),
   'team-state-ops': makeTeamStateOpsKind(content, mapgen),
   'flow-graph': makeFlowGraphKind(content, mapgen),
+  'flow-sim': makeFlowSimKind(content, mapgen, simConfig),
 };

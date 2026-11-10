@@ -172,7 +172,7 @@ Kinds currently defined: `placeholder-duel` (pipeline check only, not a rule),
 `nextInt(bound)`, then `shuffle` of `0..shuffleLength-1`, then `pick` of the
 same list, and the final state), `prng-child` (the parent state and the first
 `count` outputs of `child(label)`), `map-gen` (see Map generation),
-`team-state-ops` (see Team state and placement), `flow-graph` (see Conduits).
+`team-state-ops` (see Team state and placement), `flow-graph` (see Conduits), `flow-sim` (see Tick order).
 
 In the reference implementation the registry is `goldenKinds` in
 `packages/core/src/golden-kinds.ts`; a new kind is one added entry. Kinds that
@@ -701,9 +701,225 @@ an upstream source is connected last, and a loop are covered by vectors in
 
 ## Tick order
 
-To be written by the issue that implements the battle simulation loop.
+Implemented in `packages/core/src/flow-sim.ts` (golden kind `flow-sim`:
+`flow-sim-kind.ts`). This is the part of the battle simulation that exists so
+far: the resource flow of **one board on its own** (CB-10, CB-11). Units,
+defenses, economy effects and the second board are added by later issues; the
+sub-heading "Later" at the end of this section is a placeholder for them.
+
+### Constants (`content/sim.json`)
+
+`ticksPerSecond` (10, fixed battle time per second) and `inputBufferUnits` (4,
+the capacity of each consumer input buffer). Later issues add fields.
+
+### Items
+
+An item is one unit of one resource type, stored as the resource ID. Items have
+no identity. A conduit with `L` path cells (`FlowEdge.length`) has `L` slots,
+numbered `0 .. L - 1`, slot 0 nearest the `from` building; each is empty or
+holds one item. A direct connection (`L = 0`) has no slots: an item offered to
+it goes straight to the `to` building.
+
+### State (plain JSON)
+
+`createBoardSim(teamState, content, simConfig)` builds the state of a validated
+team state. Nothing is carried in from outside (CB-11): the state is a function
+of the team state and `sim.json` only. Fields, with every list in a fixed order:
+
+- `tick`: ticks completed; starts at 0.
+- `bufferCapacity`: `inputBufferUnits`.
+- `sources`: one per placed source building (connected or not), by building ID:
+  `building`, `resource` (its node's), `countdown` (starts at the tier's
+  `intervalTicks`, so the first item appears after one full interval), `stalled`
+  (0 or 1, starts 0), `pointer` (starts 0), and the counters `produced`, `lost`,
+  `stalledTicks` (start 0).
+- `conduits`: one per conduit, by conduit ID: `id` and `slots`, a list of `L`
+  entries, each a resource ID or `null` (all `null` at the start).
+- `routes`: one per flow-graph route node (splitter, merger, or one crossover
+  channel), in flow-node order (building ID, then channel): `key` (the node
+  key), `building`, `held` (the one-item holding cell, `null` when empty),
+  `pointer` (starts 0) and the counter `lost`.
+- `consumers`: one per placed building that has input sides and is not a source
+  or route, by building ID: `building` and `inputs`, one per input side
+  clockwise from north: `side`, `resource` (what that side requires), `count`
+  (the input buffer, starts 0) and the counters `delivered` and `consumed`.
+
+The compiled wiring (which conduit feeds which input, and the processing
+orders below) is derived from the team state by the same code and is not part
+of the saved state.
+
+### One tick: `stepFlow`
+
+The reference implementation changes the state in place. The step context
+chooses the consumer mode, `hold` or `drain`, and may carry an event list that
+the step appends to. Let `T` be `tick` at the start of the step; every event of
+the step has `tick = T`. In this order:
+
+**0. Merger arbitration.** For each merger whose holding cell is empty: let `n`
+be its number of input sides (the order of `FlowNode.inputs`, clockwise from
+north, including sides with no conduit). Look at input indices `pointer,
+pointer + 1, ...` (mod `n`) and pick the first whose conduit exists, has
+`L >= 1` and whose **last slot holds an item** (as the tick began, before
+anything moves). That input is the merger's _winner_ for this tick; if there is
+none, the merger has no winner. This is decided before any item moves, so it
+does not depend on the order in which conduits are processed.
+
+**1. Deliver and advance, downstream first.** Process the conduits with
+`L >= 1` in this order: reverse of the position of the conduit's `from` node in
+`FlowGraph.order`, ties (several conduits leaving one node) by conduit ID
+ascending. For each:
+
+- a. If the last slot holds an item, offer it to the `to` building (see
+  "Accepting"). If accepted, the slot becomes empty.
+- b. For slot `i` from `L - 2` down to 0: if slot `i` holds an item and slot
+  `i + 1` is empty, move the item to slot `i + 1`.
+
+Because downstream conduits are processed first, a slot freed downstream is
+usable by the conduit upstream in the same tick, so a full line moves as one.
+An item moves at most one slot per tick.
+
+**2. Route buildings push.** In `FlowGraph.order` (topological), each route
+node whose holding cell holds an item tries to push it:
+
+- _Splitter._ Let `n` be its number of outputs (`FlowNode.outputs`, clockwise
+  from north, including sides with no conduit). For `k = 0 .. n - 1`, take
+  output `o = (pointer + k) mod n`; skip it if it has no conduit; otherwise try
+  to push (below). The first output that takes the item wins: the cell is
+  emptied and `pointer = (o + 1) mod n`. If no output has room, the item stays
+  held and the pointer does not move. If **no** output has a conduit, the item
+  is lost.
+- _Merger or crossover channel._ One output. If it has no conduit the item is
+  lost; otherwise try to push, and keep the item if it is refused.
+
+_Pushing onto a conduit_ means: if it has slots, put the item in slot 0 if that
+slot is empty (otherwise refuse); if it is a direct connection, offer the item
+to the `to` building (see "Accepting"). A push in step 2 can fill a cell that a
+later route in the order then empties in the same tick, so an item can cross
+several directly connected routes in one tick.
+
+_Lost_ (dead end): the item is removed, the route's `lost` counter increases,
+and `{tick: T, type: "lost", building, resource}` is recorded, `building` being
+the route building (for a crossover, the crossover building).
+
+**3. Sources produce.** In building ID order, for each source:
+
+1. If `countdown > 0`, decrease it by 1. If it is still above 0, the source is
+   done for this tick.
+2. Otherwise (the item is ready; `countdown` is 0), let `n` be its number of
+   output sides (clockwise from north). Try the outputs exactly as a splitter
+   does (preferred `pointer`, then the following ones, skipping outputs with no
+   conduit; on success `pointer = (o + 1) mod n`), pushing onto the conduit as
+   in step 2.
+3. If the item was placed: `produced` increases,
+   `{tick: T, type: "produced", building, resource}` is recorded,
+   `countdown = intervalTicks`, `stalled = 0`.
+4. If **no** output has a conduit: the item is lost at once: `produced` and
+   `lost` both increase, the `produced` event and then a `lost` event (with the
+   source as `building`) are recorded, and `countdown = intervalTicks`.
+5. Otherwise the source **stalls**: the item waits, `countdown` stays 0 (so no
+   new production), and it is retried at every following tick. `stalledTicks`
+   increases by 1 on every tick it fails. If `stalled` was 0 it becomes 1 and
+   `{tick: T, type: "stalled", building}` is recorded (only on the first
+   failing tick). Production is delayed, not lost; nothing is counted as
+   `produced` until the item is placed.
+
+**Consumers.** With `consumers: "drain"` (tests and dry runs), after step 3
+every consumer input's `count` is added to its `consumed` counter and set to 0.
+With `"hold"` buffers stay as they are; later issues remove units from them
+with `takeFromBuffer` (below).
+
+**4. The tick counter** increases by 1.
+
+### Accepting
+
+An item offered to a building's input side (by step 1a, or by a push):
+
+- _Consumer_ (unit producer, turret, economy building): accepted if that input's
+  `count` is below `bufferCapacity`. Then `count` and `delivered` increase by 1
+  and `{tick: T, type: "delivered", building, side, resource}` is recorded.
+  Otherwise refused, and the conduit backs up.
+- _Route building or crossover channel_: accepted if its holding cell is empty;
+  the item goes into the cell. Offers from a conduit in step 1a to a **merger**
+  are additionally accepted only from the merger's winner of step 0. An offer
+  to a merger by a direct connection (step 2 or 3) is accepted when the cell is
+  empty, whichever input it comes through. Whenever a merger accepts an item
+  through input index `i`, its `pointer` becomes `(i + 1) mod n`. A splitter
+  or crossover channel has one input, so there is nothing to arbitrate (their
+  pointers do not change on input).
+- Anything else (cannot happen in a valid state): refused.
+
+Because step 1 comes before steps 2 and 3, a conduit delivery into a merger's
+empty cell beats a direct connection arriving in the same tick, and a source
+stalls rather than push into a cell that is already full.
+
+### Consumer seam
+
+`takeFromBuffer(sim, buildingId, sideOrResource, n)` returns whether `n` units
+were available and, if so, removes them (adding `n` to `consumed`); if not it
+removes nothing. `sideOrResource` is an absolute side (`north` ...) or a
+resource ID; for a resource it draws from the inputs that take that resource,
+clockwise from north, and the sum must cover `n`. An unknown building or side
+gives `false`. What a consumer does with the units (spawning, firing, upgrades)
+belongs to later issues, which call this function between ticks, before the
+next `stepFlow`.
+
+### Events
+
+`{tick, type, ...}` with `type` one of `produced` (`building`, `resource`),
+`delivered` (`building`, `side`, `resource`), `lost` (`building`, `resource`)
+and `stalled` (`building`); `schemas/sim-event.schema.json`. Movement along
+conduits is not logged (playback animates it from conduit contents). Events
+within a tick appear in the order the steps produce them.
+
+### Conservation
+
+At the end of every tick: items produced = items in conduit slots + items in
+route holding cells + items in consumer buffers + items consumed + items lost
+(`flowTotals`). A source's waiting (stalled) item is not yet counted as
+produced.
+
+### Dry run (CB-43)
+
+`dryRunFlow(teamState, content, simConfig, ticks)` runs `createBoardSim` and
+`stepFlow` with `consumers: "drain"` for `ticks` ticks and reports, per source:
+`produced`, `lost`, `stalledTicks`; per route: `lost`; per consumer input:
+`delivered` and `ratePer1000` = `floor(1000 * d / w)` where
+`w = ticks - floor(ticks / 2)` and `d` is the number of deliveries during the
+last `w` ticks (so the cold start does not distort it; 0 when `w` is 0).
+
+### Golden kind `flow-sim`
+
+Input: a `team-state-ops` script (`seed`, `partySize`, `ops`) plus `ticks` and
+`consumers` (`"hold"` or `"drain"`). The script builds the board, then the flow
+simulation runs for `ticks` ticks from the cold start. Result:
+`{ tick, stateHash, flow, sources, routes, consumers }`: `stateHash` is the
+hash of the final state, `flow` the conservation totals, and the lists give
+per-building counters (and, for consumers and routes, what they hold at the
+end). The event log of the run is the vector's event log (`eventLogHash`).
+Vectors: `golden/flow-sim.json` (a long conduit, a splitter, a merger, a
+crossover with two resources, a dead end, and a full-buffer backpressure case).
+
+### Later: units, defenses, economy, two-board battles
+
+To be written by the issues that add them (units, defenses, economy effects,
+two-board battles): where their steps fall in the tick order above, and how
+the two boards interleave.
 
 ## Resolution order
+
+What exists so far is the order in which simultaneous flow events resolve; all
+of it is fixed by the tick order above and uses no random numbers:
+
+- Conduits resolve downstream first, ties by conduit ID; routes in topological
+  order of the flow graph (ties by building ID, then channel); sources by
+  building ID.
+- A merger arbitrates between inputs with its round-robin pointer (step 0);
+  splitters and sources with several outputs alternate with theirs.
+- When two things want the same space in one tick, the earlier step wins
+  (conduits, then routes, then sources), and within a step the earlier one in
+  the orders above.
+
+### Later: combat
 
 To be written by the issue that implements combat resolution (damage,
 targeting and tie-breaking).

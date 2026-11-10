@@ -1,0 +1,858 @@
+[
+  {
+    "id": "flow-sim.long-conduit",
+    "kind": "flow-sim",
+    "description": "One extractor feeds a barracks through a five-cell conduit; buffers drained each tick.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 20,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 2,
+          "x": 20,
+          "y": 12,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 20,
+              "y": 7
+            },
+            {
+              "x": 20,
+              "y": 8
+            },
+            {
+              "x": 20,
+              "y": 9
+            },
+            {
+              "x": 20,
+              "y": 10
+            },
+            {
+              "x": 20,
+              "y": 11
+            }
+          ]
+        }
+      ],
+      "ticks": 300,
+      "consumers": "drain"
+    },
+    "expected": {
+      "result": {
+        "tick": 300,
+        "stateHash": "0badd229",
+        "flow": {
+          "produced": 15,
+          "inConduits": 1,
+          "held": 0,
+          "inBuffers": 0,
+          "consumed": 14,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 15,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [],
+        "consumers": [
+          {
+            "building": 2,
+            "side": "south",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 14,
+            "consumed": 14
+          }
+        ]
+      },
+      "eventLogHash": "499e0173"
+    }
+  },
+  {
+    "id": "flow-sim.splitter",
+    "kind": "flow-sim",
+    "description": "A splitter alternates between a direct barracks and a barracks two cells away; drained.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 10,
+          "y": 3,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_splitter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 2,
+          "x": 10,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 3,
+          "x": 10,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 4,
+          "x": 13,
+          "y": 4,
+          "rotation": 90
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 2,
+            "side": "east"
+          },
+          "to": {
+            "building": 4,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 11,
+              "y": 4
+            },
+            {
+              "x": 12,
+              "y": 4
+            }
+          ]
+        }
+      ],
+      "ticks": 400,
+      "consumers": "drain"
+    },
+    "expected": {
+      "result": {
+        "tick": 400,
+        "stateHash": "55a8f67e",
+        "flow": {
+          "produced": 20,
+          "inConduits": 0,
+          "held": 1,
+          "inBuffers": 0,
+          "consumed": 19,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 20,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [
+          {
+            "building": 2,
+            "key": "2",
+            "lost": 0,
+            "held": "res_a"
+          }
+        ],
+        "consumers": [
+          {
+            "building": 3,
+            "side": "south",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 10,
+            "consumed": 10
+          },
+          {
+            "building": 4,
+            "side": "west",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 9,
+            "consumed": 9
+          }
+        ]
+      },
+      "eventLogHash": "6fdab882"
+    }
+  },
+  {
+    "id": "flow-sim.merger",
+    "kind": "flow-sim",
+    "description": "Two sources of the same resource join in a merger feeding a turret; drained.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 4,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_merger",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 2,
+          "x": 4,
+          "y": 1,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_turret",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 3,
+          "x": 4,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 4,
+          "x": 11,
+          "y": 0,
+          "rotation": 270
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 4,
+            "side": "west"
+          },
+          "to": {
+            "building": 2,
+            "side": "east"
+          },
+          "cells": [
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 9,
+              "y": 0
+            },
+            {
+              "x": 8,
+              "y": 0
+            },
+            {
+              "x": 7,
+              "y": 0
+            },
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 6,
+              "y": 1
+            },
+            {
+              "x": 5,
+              "y": 1
+            }
+          ]
+        }
+      ],
+      "ticks": 400,
+      "consumers": "drain"
+    },
+    "expected": {
+      "result": {
+        "tick": 400,
+        "stateHash": "89d4fd3c",
+        "flow": {
+          "produced": 40,
+          "inConduits": 1,
+          "held": 1,
+          "inBuffers": 0,
+          "consumed": 38,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_b",
+            "produced": 20,
+            "lost": 0,
+            "stalledTicks": 0
+          },
+          {
+            "building": 4,
+            "resource": "res_b",
+            "produced": 20,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [
+          {
+            "building": 2,
+            "key": "2",
+            "lost": 0,
+            "held": "res_b"
+          }
+        ],
+        "consumers": [
+          {
+            "building": 3,
+            "side": "south",
+            "resource": "res_b",
+            "count": 0,
+            "delivered": 38,
+            "consumed": 38
+          }
+        ]
+      },
+      "eventLogHash": "bd6a82ad"
+    }
+  },
+  {
+    "id": "flow-sim.crossover",
+    "kind": "flow-sim",
+    "description": "A crossover carries two resources through each other to a turret and an overclocker; drained.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 3,
+          "y": 3,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_crossover",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 2,
+          "x": 3,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_turret",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 3,
+          "x": 3,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 4,
+          "x": 1,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_overclocker",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 5,
+          "x": 4,
+          "y": 6,
+          "rotation": 90
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 4
+            },
+            {
+              "x": 3,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 4,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 1,
+              "y": 4
+            },
+            {
+              "x": 1,
+              "y": 5
+            },
+            {
+              "x": 1,
+              "y": 6
+            },
+            {
+              "x": 2,
+              "y": 6
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 2,
+            "side": "east"
+          },
+          "to": {
+            "building": 5,
+            "side": "west"
+          },
+          "cells": []
+        }
+      ],
+      "ticks": 400,
+      "consumers": "drain"
+    },
+    "expected": {
+      "result": {
+        "tick": 400,
+        "stateHash": "0469412d",
+        "flow": {
+          "produced": 40,
+          "inConduits": 2,
+          "held": 0,
+          "inBuffers": 0,
+          "consumed": 38,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_b",
+            "produced": 20,
+            "lost": 0,
+            "stalledTicks": 0
+          },
+          {
+            "building": 4,
+            "resource": "res_c",
+            "produced": 20,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [
+          {
+            "building": 2,
+            "key": "2.south",
+            "lost": 0,
+            "held": null
+          },
+          {
+            "building": 2,
+            "key": "2.west",
+            "lost": 0,
+            "held": null
+          }
+        ],
+        "consumers": [
+          {
+            "building": 3,
+            "side": "south",
+            "resource": "res_b",
+            "count": 0,
+            "delivered": 19,
+            "consumed": 19
+          },
+          {
+            "building": 5,
+            "side": "west",
+            "resource": "res_c",
+            "count": 0,
+            "delivered": 19,
+            "consumed": 19
+          }
+        ]
+      },
+      "eventLogHash": "2e15f68f"
+    }
+  },
+  {
+    "id": "flow-sim.dead-end",
+    "kind": "flow-sim",
+    "description": "A splitter with no output conduit: every item is lost.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 10,
+          "y": 3,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_splitter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 2,
+          "x": 10,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        }
+      ],
+      "ticks": 100,
+      "consumers": "drain"
+    },
+    "expected": {
+      "result": {
+        "tick": 100,
+        "stateHash": "c769750d",
+        "flow": {
+          "produced": 5,
+          "inConduits": 0,
+          "held": 1,
+          "inBuffers": 0,
+          "consumed": 0,
+          "lost": 4
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 5,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [
+          {
+            "building": 2,
+            "key": "2",
+            "lost": 4,
+            "held": "res_a"
+          }
+        ],
+        "consumers": []
+      },
+      "eventLogHash": "baf1e667"
+    }
+  },
+  {
+    "id": "flow-sim.backpressure",
+    "kind": "flow-sim",
+    "description": "Buffers are never drained: the buffer fills, the conduit fills, the source stalls, nothing is lost.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 20,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 2,
+          "x": 20,
+          "y": 12,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 20,
+              "y": 7
+            },
+            {
+              "x": 20,
+              "y": 8
+            },
+            {
+              "x": 20,
+              "y": 9
+            },
+            {
+              "x": 20,
+              "y": 10
+            },
+            {
+              "x": 20,
+              "y": 11
+            }
+          ]
+        }
+      ],
+      "ticks": 400,
+      "consumers": "hold"
+    },
+    "expected": {
+      "result": {
+        "tick": 400,
+        "stateHash": "bf54e10f",
+        "flow": {
+          "produced": 9,
+          "inConduits": 5,
+          "held": 0,
+          "inBuffers": 4,
+          "consumed": 0,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 9,
+            "lost": 0,
+            "stalledTicks": 201
+          }
+        ],
+        "routes": [],
+        "consumers": [
+          {
+            "building": 2,
+            "side": "south",
+            "resource": "res_a",
+            "count": 4,
+            "delivered": 4,
+            "consumed": 0
+          }
+        ]
+      },
+      "eventLogHash": "1b9b26ad"
+    }
+  }
+]
