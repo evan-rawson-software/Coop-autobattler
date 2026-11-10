@@ -66,6 +66,7 @@ forever; the score is how deep you went.
 ## Non-goals (for now)
 
 - Live, synchronous PvP between two human parties.
+- Offline play. The game always requires the server.
 - Ranked ladders, seasons, monetization, cosmetics.
 - Mid-run drop-in of new players (party size is fixed for a run; see
   `02-coop-party.md`).

@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v0.5
+Status: Draft v0.6
 
 - **TA-0 [DECIDED]** The first version is a **web application**. It must be
   architected so the client can later be **ported to Godot** without
@@ -55,9 +55,9 @@ back event logs. Replacing the client does not touch the rules.
 - **TA-6 [PROPOSED]** **Content is data** (CB-35): items, tags,
   encounter and boss templates, and scaling constants live in versioned data
   files with schema validation in CI.
-- **TA-7 [PROPOSED]** **Solo uses the same path** as multiplayer (a party of
-  one on the server). No separate offline mode initially; it would fork the
-  authority model and allow forged snapshots.
+- **TA-7 [DECIDED]** **There is no offline mode.** The game always requires
+  a connection to the server. Solo uses the same path as multiplayer (a party
+  of one on the server).
 
 ## Versioning
 
@@ -118,8 +118,9 @@ every shared artifact engine-neutral.
   tokens the client stores and sends explicitly, not browser-only mechanisms
   such as cookies, so a desktop client can log in the same way. Leave room
   for platform logins (e.g. Steam) to link to the same account.
-- **TA-17 [PROPOSED]** **Simulation written to be portable, in case it is
-  ever needed off-server** (offline practice, a server rewrite): integer or
+- **TA-17 [PROPOSED]** **The simulation is server-only** and is not ported
+  to Godot (TA-7). It is still written cleanly enough to survive a server
+  rewrite: integer or
   fixed-point math only, explicit seeded PRNG with a documented algorithm, no
   reliance on language-specific behaviour (hash-map order, sort stability,
   float formatting). **Golden test vectors** are stored as language-neutral
