@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v3.9
+Status: Draft v4.0
 
 ## Direction
 
@@ -67,14 +67,14 @@ tune them, as cheaply as possible. It is a prototype, not the product.
   adding them is not a rewrite.
 - **TA-47 [PROPOSED]** Explicitly **out of scope** for the proof of concept:
   co-op, lobbies, online ghosts, Steam, saves beyond the browser,
-  meta-progression, polish.
+  polish.
 
 ### What carries over to Godot
 
 The port rewrites code, so the things that must survive are kept
 language-neutral from the start:
 
-- **TA-48 [PROPOSED]** **Content data** — buildings, tags, encounter and boss
+- **TA-48 [PROPOSED]** **Content data** — buildings, encounter and boss
   templates, scaling constants — in JSON with schemas, rules separate from
   names/descriptions/art (TA-27). Godot loads the same files.
 - **TA-49 [PROPOSED]** **Golden test vectors** — JSON files of
@@ -141,7 +141,7 @@ Everything from here down describes the Godot game.
 | Co-op networking | Steam Networking Sockets over Steam Datagram Relay | Peer-to-peer through Valve's relays; no port forwarding, no servers of ours. |
 | Ghost pool | Steam Leaderboards with attached shared files | See "Ghost pool on Steam". |
 | Depth leaderboards | Steam Leaderboards | One per party size (and per version or season). Friends/global views for free. |
-| Saves, resumable runs | Steam Cloud | Run save and meta-progression. |
+| Saves, resumable runs | Steam Cloud | Run saves and records. |
 | Presence and invites | Rich Presence, friends list, overlay | "In a run — cycle 7, 3/4 players", join-game button. |
 | Achievements, stats | Steam Stats & Achievements | Later milestone. |
 | Controller / Steam Deck | Steam Input | Later milestone; keep UI controller-friendly from the start. |
@@ -331,14 +331,14 @@ is deliberate.
 ## Persistence
 
 - **TA-25 [PROPOSED]** Local save files synchronized by Steam Cloud:
-  - meta-progression (unlocks, records)
+  - records (depth reached, run history)
   - run saves, one per slot (TA-12)
   - settings
 - **TA-26 [PROPOSED]** Save files are versioned and carry the sim version.
 
 ## Content
 
-- **TA-27 [PROPOSED]** **Content is data** (CB-35): buildings, tags, encounter
+- **TA-27 [PROPOSED]** **Content is data** (CB-35): buildings, encounter
   and boss templates, and scaling constants live in versioned data files
   (JSON or Godot resources — prefer a text format that diffs well and can be
   validated in CI). Rules data is kept separate from names, descriptions, and
@@ -355,7 +355,7 @@ is deliberate.
   as well as in Godot, and the file is one of the things that carries over
   (TA-48).
 - **TA-27b [PROPOSED]** The same approach applies to all player-facing names
-  (buildings, units, tags): stable IDs in rules data, display text in
+  (buildings, units): stable IDs in rules data, display text in
   separate files (TA-27).
 
 ## Language
@@ -481,5 +481,5 @@ is deliberate.
 12. **S2b — Anti-cheat server** (TA-24): required before final release.
 13. **S2c — Release pipeline** (TA-33): automated deployment including
     version-based deletion of old ghost data.
-14. **S3 — Release work:** content expansion, meta-progression,
+14. **S3 — Release work:** content expansion,
     achievements, Steam Deck/controller, playtest branch.

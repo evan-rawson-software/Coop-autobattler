@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v3.9
+Status: Draft v4.0
 
 ## Direction
 
@@ -183,7 +183,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 
 ## The factory
 
-- **CB-9** Buildings have a **footprint**, a **tier**, **health**, **tags**,
+- **CB-9** Buildings have a **footprint**, a **tier**, **health**,
   and a **kind**:
 
 | Kind | Role | Examples |
@@ -297,8 +297,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-26** Buildings are bought with gold in shops between battles, or won
   as rewards, and go into the owning player's stash. Placing, moving, and
   rotating them costs nothing; gold plays no part in building or in battle
-  (CB-3i). Tag counts unlock board-wide
-  bonuses.
+  (CB-3i). There are **no building tags or tag bonuses for now** [DECIDED]; to be
+  reconsidered once the game has been played.
 - **CB-26a [DECIDED]** **Buildings have tiers, and there is no combining.**
   Owning several identical buildings never merges them. Higher-tier
   buildings come only from shops (which offer higher tiers as the run goes
@@ -365,7 +365,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-34** An **opponent** is either a team state (ghost) or a threat
   profile (PvE, CB-29). Both are data and run through the same simulation
   entry point.
-- **CB-35** All content (buildings, units, tags, terrain rules, threat
+- **CB-35** All content (buildings, units, terrain rules, threat
   profiles, strongholds) is **data-driven**: versioned data files validated
   against schemas.
 - **CB-36** Performance budget, set in the first simulation milestone:
