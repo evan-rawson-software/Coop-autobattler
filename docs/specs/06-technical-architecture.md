@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v3.6
+Status: Draft v3.7
 
 ## Direction
 
@@ -200,11 +200,11 @@ Everything from here down describes the Godot game.
 - **TA-9 [PROPOSED]** Consequences of TA-8:
   - **Runs on an older minor version** continue normally. Their pool only
     gets new snapshots from other runs still on that version, so it thins
-    over time and they will meet the boss fallback more often. The battle
-    itself is simulated by the current game, which contains one set of
-    rules; an old-version run therefore fights same-version *builds* under
-    current *numbers*. Shipping every old rule set inside the game is the
-    alternative and is not proposed (Q9).
+    over time and they will meet the boss fallback more often. **Old
+    rules and numbers are not kept** [DECIDED]: the game contains one set
+    of rules, so an old-version run fights same-version *builds* under
+    current *numbers*. Loading a save from an older version shows a prompt
+    saying that some things may have changed (CP-23e).
   - **On a major release** the game deletes local and Steam Cloud saves
     from older major versions at first launch and tells the player. Ghost
     data for old versions lives in Steam leaderboards and shared files that
@@ -292,7 +292,7 @@ client can upload can in principle be forged by a modified client. This is
 the main cost of the Steam-only approach, and it is stated here so the choice
 is deliberate.
 
-- **TA-21 [PROPOSED]** **Accepted risk:** forged ghost snapshots and forged
+- **TA-21 [PROPOSED]** **Accepted risk until the server exists (TA-24):** forged ghost snapshots and forged
   depth-leaderboard scores are possible. The damage is limited: a forged
   ghost costs another party one life in one battle; forged scores affect
   bragging rights only. There is no economy, ranking reward, or trade to
@@ -321,10 +321,12 @@ is deliberate.
 - **TA-23 [PROPOSED]** **Mitigation — reporting and cleanup:** players can
   flag a ghost; flagged entries can be removed by the developers through
   Steamworks tools.
-- **TA-24 [PROPOSED]** **Escape hatch:** if abuse becomes a real problem
-  after launch, add a small trusted service that re-simulates or validates
-  submissions and writes to leaderboards configured to accept trusted writes
-  only. TA-20 keeps this possible without redesign. Not built unless needed.
+- **TA-24 [DECIDED]** **Full anti-cheat using a server is to be completed
+  before final release**, but not now. It is a later milestone: a small
+  trusted service that verifies submissions (by replay, TA-22b) and writes
+  to leaderboards configured to accept trusted writes only. Until then the
+  game relies on TA-22 to TA-23, which deter and detect. TA-20 keeps the
+  ghost store swappable so adding the server is not a redesign.
 
 ## Persistence
 
@@ -440,5 +442,6 @@ is deliberate.
     disconnect and re-host.
 11. **S2 — Steam:** lobbies, relay networking, leaderboard ghost store,
     Cloud saves, rich presence.
-12. **S3 — Release work:** content expansion, meta-progression,
+12. **S2b — Anti-cheat server** (TA-24): required before final release.
+13. **S3 — Release work:** content expansion, meta-progression,
     achievements, Steam Deck/controller, playtest branch.

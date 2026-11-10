@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v3.3
+Status: Draft v3.7
 
 ## Direction
 
@@ -400,6 +400,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   view — along the bottom when building, at the sides during battle —
   rather than laid out around a fixed-size board. Map size can then be
   increased later as a tuning change, not a redesign.
+- **CB-47a [DECIDED]** The camera **starts at the center of the map**.
 - **CB-48 [PROPOSED]** Shop and Build are two tabs of the same step
   (RS-5f), so players can buy, place, and return to the shop.
 

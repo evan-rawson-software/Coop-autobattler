@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v3.6
+Status: Draft v3.7
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -58,10 +58,9 @@ Wireframes of the battle, event, shop, and build screens have been shared
 with the project owner outside the repo. Open:
 
 - Decided: nothing is timed; every player readies up to move on (CP-17).
-- How much of a teammate's shop is visible: everything, or only what they
-  ping?
-- In a four-player battle, does the camera start on the whole battlefield or
-  on the player's own part of the base?
+- Decided for now: players do not see each other's shops; revisit after
+  playtesting (CP-19).
+- Decided: the camera starts at the center of the map (CB-47a).
 
 ## Q3a. Saving and disconnects
 
@@ -71,9 +70,8 @@ from the save are supported; multiple save slots, one run per slot, no
 copies; auto-save after each action (CP-21 to CP-23). Open:
 
 - Decided: 5 save slots.
-- If a player never comes back, the run can only be abandoned (proposed).
-  Should the party instead be allowed to continue without them at some
-  cost?
+- Decided: if a player never returns, the party saves and quits or
+  abandons (CP-21d).
 
 ## Q4. Details of the loop
 
@@ -113,8 +111,8 @@ Remaining:
 - **Godot language:** typed GDScript *(recommended)* or C# (TA-28).
 - **Steamworks spike** (TA-30): confirm leaderboards with attached files work
   as the ghost pool, and learn the limits.
-- **Trust:** is the accepted-risk position on forged ghosts and scores
-  (TA-21) acceptable for launch?
+- Decided: full anti-cheat using a server will be completed before final
+  release, as a later milestone (TA-24).
 
 ## Q8. Ghost selection fairness
 
@@ -127,10 +125,8 @@ refine (MM-4).
 Decided: a run only meets ghosts played on its own version; a major release
 deletes old saves and old ghost data (TA-8). Open:
 
-- When an older-version run fights after a minor update, the battle runs
-  under the current rules and numbers (proposed, TA-9). Is that acceptable,
-  or must old runs also keep their old numbers? The second means shipping
-  old rule sets inside the game.
+- Decided: old rules and numbers are not kept; loading an older save
+  shows a prompt that some things may have changed (CP-23e).
 - What counts as major versus minor (proposed definitions in TA-8).
 
 ## Q10. Theme and tone

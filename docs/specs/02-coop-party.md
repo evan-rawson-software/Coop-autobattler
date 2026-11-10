@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v3.6
+Status: Draft v3.7
 
 ## Party basics
 
@@ -82,10 +82,13 @@ Status: Draft v3.6
   and held building visible. If two players act on the same cell or building, the
   first action the host receives wins and the other player is shown why
   theirs did not apply.
-- **CP-19 [PROPOSED]** Coordination aids: see teammates' gold, stashes, and
-  shops (read-only); pings and markers on board cells and shop buildings
-  ("put a generator here", "buy this"); a shared view of what the factory
-  will do (CB-43).
+- **CP-19 [DECIDED for now]** **Players do not see each other's shop
+  screens.** Each player sees only their own offers. This may change after
+  playtesting.
+- **CP-19a [PROPOSED]** Coordination aids that remain: teammates' gold and
+  stashes are visible; pings and markers on board cells ("put a generator
+  here"); a shared view of what the factory will do (CB-43). A player who
+  wants a teammate to know about an offer has to tell them.
 - **CP-20 [PROPOSED]** Solo follows the same rule with one player: the step
   ends when they say so.
 
@@ -103,11 +106,12 @@ Status: Draft v3.6
   rejoin the run in progress and carries on from the current state.
 - **CP-21c [DECIDED]** **The host can leave**, and the run can be **re-hosted
   from the save** by a member of the party.
-- **CP-21d [PROPOSED]** A disconnected player's buildings stay on the board
-  and keep working. While the party waits for them between battles, the
-  remaining players can keep shopping and building but cannot advance. The
-  party's ways out are to wait, to save and continue later (CP-22), or to
-  abandon the run, which records it at its current depth.
+- **CP-21d [DECIDED]** **If a player never returns, the party must decide to
+  save and quit, or to abandon the run.** The run cannot continue without
+  them. Abandoning records the run at its current depth.
+- **CP-21f [PROPOSED]** A disconnected player's buildings stay on the board
+  and keep working. While the party waits between battles, the remaining
+  players can keep shopping and building but cannot advance.
 - **CP-21e [PROPOSED]** If every player leaves during a battle, the battle
   is not replayed on return: its opponent and seed were fixed and saved when
   it started, so the same result is shown when the party comes back (CP-23).
@@ -141,8 +145,11 @@ Status: Draft v3.6
   the player took part occupies one of that player's slots until it ends or
   is abandoned.
 - **CP-23e [DECIDED]** Saves survive minor updates and keep playing against
-  ghosts from the version they were played on. **A major version release
-  deletes old saves** (TA-8, TA-9).
+  ghosts from the version they were played on. The game does **not** keep
+  old rules or numbers: an older save plays under the current ones. **When
+  players load a save from an older version, they are shown a prompt
+  telling them some things may have changed.** A major version release
+  deletes old saves (TA-8, TA-9).
 
 ## Balance across party sizes
 
