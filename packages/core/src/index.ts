@@ -260,3 +260,30 @@ export { previewEnemyPaths } from './enemy-paths.js';
 export type { EnemyPath } from './enemy-paths.js';
 export { makeEnemyPathsKind } from './enemy-paths-kind.js';
 export { makeArenaSimKind, summarizeArena } from './arena-sim-kind.js';
+export { pickWeightedIndex } from './weighted.js';
+export { loadEconomy, loadEconomyOrThrow } from './economy.js';
+export type {
+  EconomyConfig,
+  EconomyLoadContext,
+  EconomyLoadResult,
+  KitEntry,
+  OfferWeight,
+  TierOddsRow,
+} from './economy.js';
+export {
+  buyOffer,
+  rerollOffers,
+  rollOffers,
+  sellFromStash,
+  sellValue,
+  tierOddsFor,
+  tierPrice,
+} from './shop.js';
+export type {
+  PlayerShop,
+  ShopContent,
+  ShopFailure,
+  ShopOffer,
+  ShopReason,
+  ShopResult,
+} from './shop.js';

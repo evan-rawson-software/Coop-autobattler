@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "run-state.schema.json",
+  "title": "Run state",
+  "description": "A run in progress (W2-1): who is playing, where the step machine is, the team's board, the per-player gold and ready flags, the open votes, the history of finished rounds and the log of every accepted intent. Plain JSON. Consistency rules a schema cannot express (ready and vote arrays match players, step-specific invariants, action counter equals log length) are checked by validateRunState in the session package.",
+  "type": "object",
+  "required": [
+    "runId",
+    "runVersion",
+    "formatVersion",
+    "seed",
+    "rng",
+    "actionCounter",
+    "players",
+    "host",
+    "round",
+    "step",
+    "leg",
+    "lives",
+    "team",
+    "perPlayer",
+    "votes",
+    "pending",
+    "history",
+    "thisRound",
+    "actionLog",
+    "outcome"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "runVersion": {
+      "description": "The game version the run was started on, as major.minor.",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$"
+    },
+    "formatVersion": { "const": 1 },
+    "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+    "rng": {
+      "description": "The saved state of the run's Rng: four u32 words, not all zero.",
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+    },
+    "actionCounter": {
+      "description": "Accepted intents so far; equals the length of actionLog.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "players": {
+      "description": "One entry per player; index is the position in this array.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["index", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "index": { "type": "integer", "minimum": 0, "maximum": 3 },
+          "name": { "type": "string" }
+        }
+      }
+    },
+    "host": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "round": { "type": "integer", "minimum": 1 },
+    "step": {
+      "description": "The current step. pve_battle and pvp_battle are transient and never appear in a saved state.",
+      "enum": [
+        "core_placement",
+        "build",
+        "pve_choice",
+        "pve_summary",
+        "event_choice",
+        "event_resolve",
+        "shop",
+        "pvp_summary",
+        "run_over"
+      ]
+    },
+    "leg": {
+      "description": "Which battle the current stretch of the round leads up to or follows.",
+      "enum": ["pve", "pvp"]
+    },
+    "lives": { "type": "integer", "minimum": 0 },
+    "team": { "$ref": "team-state.schema.json" },
+    "perPlayer": {
+      "description": "Parallel to players.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["gold", "ready", "shop"],
+        "additionalProperties": false,
+        "properties": {
+          "gold": { "type": "integer", "minimum": 0 },
+          "ready": { "type": "boolean" },
+          "shop": {
+            "description": "This player's shop: null before a shop was entered, else the offers (null once bought) and the saved state of the player's shop RNG stream.",
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["offers", "stream"],
+                "additionalProperties": false,
+                "properties": {
+                  "offers": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        { "type": "null" },
+                        {
+                          "type": "object",
+                          "required": ["slot", "def", "tier", "price"],
+                          "additionalProperties": false,
+                          "properties": {
+                            "slot": { "type": "integer", "minimum": 0 },
+                            "def": { "type": "string", "minLength": 1 },
+                            "tier": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 3
+                            },
+                            "price": { "type": "integer", "minimum": 0 }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "stream": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4294967295
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "votes": {
+      "description": "The open vote of the current step, or null. A choice is null until the player votes; for core it is a {x, y} position, otherwise the id of an option in pending.options.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["topic", "choices"],
+          "additionalProperties": false,
+          "properties": {
+            "topic": { "enum": ["core", "pve", "event"] },
+            "choices": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 4,
+              "items": {
+                "oneOf": [
+                  { "type": "null" },
+                  { "type": "string" },
+                  {
+                    "type": "object",
+                    "required": ["x", "y"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "x": { "type": "integer" },
+                      "y": { "type": "integer" }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "pending": {
+      "description": "Step-specific data, opaque JSON: Core proposals, PvE options, event offers, or the battle result being shown."
+    },
+    "history": {
+      "description": "One entry per finished round; the last entry may be a round cut short by the end of the run.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["round", "pve", "pvp"],
+        "additionalProperties": false,
+        "properties": {
+          "round": { "type": "integer", "minimum": 1 },
+          "pve": {
+            "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/pveRecord" }]
+          },
+          "pvp": {
+            "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/pvpRecord" }]
+          }
+        }
+      }
+    },
+    "thisRound": {
+      "description": "The battles fought so far in the current round.",
+      "type": "object",
+      "required": ["pve", "pvp"],
+      "additionalProperties": false,
+      "properties": {
+        "pve": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/pveRecord" }]
+        },
+        "pvp": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/pvpRecord" }]
+        }
+      }
+    },
+    "actionLog": {
+      "description": "Every accepted intent, in order, numbered from 1.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["n", "player", "intent"],
+        "additionalProperties": false,
+        "properties": {
+          "n": { "type": "integer", "minimum": 1 },
+          "player": { "type": "integer", "minimum": 0, "maximum": 3 },
+          "intent": {
+            "description": "The intent as sent; always has a string type.",
+            "type": "object",
+            "required": ["type"],
+            "properties": { "type": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "outcome": {
+      "description": "Null while the run is going.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["reason", "round"],
+          "additionalProperties": false,
+          "properties": {
+            "reason": { "enum": ["defeated", "abandoned"] },
+            "round": { "type": "integer", "minimum": 1 }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "opponent": {
+      "type": "object",
+      "required": ["kind", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["pve", "ghost", "boss"] },
+        "label": { "type": "string" }
+      }
+    },
+    "pveRecord": {
+      "type": "object",
+      "required": ["difficulty", "won", "opponent"],
+      "additionalProperties": false,
+      "properties": {
+        "difficulty": { "type": "string" },
+        "won": { "type": "boolean" },
+        "opponent": { "$ref": "#/$defs/opponent" }
+      }
+    },
+    "pvpRecord": {
+      "type": "object",
+      "required": ["won", "opponent"],
+      "additionalProperties": false,
+      "properties": {
+        "won": { "type": "boolean" },
+        "opponent": { "$ref": "#/$defs/opponent" }
+      }
+    }
+  }
+}

@@ -1,1 +1,83 @@
 export { add } from '@game/core';
+export {
+  applyIntent,
+  createRun,
+  replayRun,
+  type CreateRunResult,
+  type ReplayResult,
+} from './machine.js';
+export { validateRunState, type ValidateRunStateResult } from './validate.js';
+export {
+  allowedIntents,
+  openVote,
+  whoIsReady,
+  type OpenVoteView,
+} from './selectors.js';
+export {
+  createDeps,
+  defaultHooks,
+  defaultRunRules,
+  fixedBattle,
+  stubBattle,
+} from './defaults.js';
+export {
+  createEconomyDeps,
+  economyHandlers,
+  economyHooks,
+  playerShopLabel,
+  readShop,
+  type ShopData,
+} from './economy.js';
+export {
+  initSaves,
+  openRun,
+  removeRun,
+  startRun,
+  type DispatchResult,
+  type InitSavesResult,
+  type OpenRunResult,
+  type RemoveRunResult,
+  type RunController,
+  type StartRunResult,
+} from './run-controller.js';
+export {
+  SAVE_FORMAT_VERSION,
+  bestDepthFromHistory,
+  buildSaveRecord,
+  checkSaveShape,
+  compareListItems,
+  historyEntryFor,
+  parseSaveRecord,
+  summarize,
+  summarizeStored,
+  type CorruptListEntry,
+  type HistoryEntry,
+  type HistoryReason,
+  type ParseSaveResult,
+  type SaveListEntry,
+  type SaveListItem,
+  type SaveRecord,
+  type SaveStore,
+  type SaveSummary,
+} from './save.js';
+export {
+  createMemorySaveStore,
+  type MemorySaveStore,
+  type MemorySaveStoreOptions,
+} from './save-store-memory.js';
+export {
+  classify,
+  compareVersions,
+  parseVersion,
+  type ParsedVersion,
+  type VersionClass,
+} from './version.js';
+export { drawStream, streamLabels } from './streams.js';
+export { STEP_INTENTS } from './step-table.js';
+export {
+  BUILTIN_INTENT_TYPES,
+  MAX_PLAYERS,
+  STEPS,
+  TRANSIENT_STEPS,
+} from './types.js';
+export type * from './types.js';

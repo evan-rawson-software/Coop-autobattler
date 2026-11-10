@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "save.schema.json",
+  "title": "Saved run",
+  "description": "One saved run (W2-4): the full run state, the arguments the run was created with (so it can be replayed from its seed and action log), and a small summary for list screens. Plain JSON. Cross-field rules a schema cannot express (the copies of runId, runVersion, actionCounter, players and summary agree with the state; the state itself is valid) are checked by parseSaveRecord in the session package. signature is reserved for a later phase and is never computed by the session package.",
+  "type": "object",
+  "required": [
+    "saveFormatVersion",
+    "runId",
+    "runVersion",
+    "installedVersionAtSave",
+    "actionCounter",
+    "hostName",
+    "playerNames",
+    "createArgs",
+    "state",
+    "summary",
+    "updatedAt"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "saveFormatVersion": { "const": 1 },
+    "runId": { "type": "string", "minLength": 1 },
+    "runVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "installedVersionAtSave": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(\\.(0|[1-9][0-9]*))?$"
+    },
+    "actionCounter": { "type": "integer", "minimum": 0 },
+    "hostName": { "type": "string" },
+    "playerNames": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": { "type": "string" }
+    },
+    "createArgs": {
+      "type": "object",
+      "required": ["runId", "runVersion", "seed", "players", "host"],
+      "additionalProperties": false,
+      "properties": {
+        "runId": { "type": "string", "minLength": 1 },
+        "runVersion": { "type": "string" },
+        "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+        "players": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": { "type": "string" }
+        },
+        "host": { "type": "integer", "minimum": 0, "maximum": 3 }
+      }
+    },
+    "state": { "$ref": "run-state.schema.json" },
+    "summary": {
+      "type": "object",
+      "required": ["round", "lives", "step", "outcome"],
+      "additionalProperties": false,
+      "properties": {
+        "round": { "type": "integer", "minimum": 1 },
+        "lives": { "type": "integer", "minimum": 0 },
+        "step": { "type": "string" },
+        "outcome": { "enum": ["defeated", "abandoned", null] }
+      }
+    },
+    "updatedAt": { "type": "integer", "minimum": 0 },
+    "signature": { "type": "string" }
+  }
+}
