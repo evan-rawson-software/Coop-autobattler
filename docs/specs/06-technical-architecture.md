@@ -31,7 +31,7 @@ tune them, as cheaply as possible. It is a prototype, not the product.
   backend, no accounts, no networking, no Steam.
 - **TA-41 [PROPOSED]** Scope:
   - the factory and battlefield simulation (`03-combat.md`), cut to the
-    minimum: map generation with nodes, lakes, and cliffs; charge routing;
+    minimum: map generation with nodes, lakes, and cliffs; three resources routed by conduits;
     a few buildings of each kind; 3–4 unit types with pathfinding;
     in-battle ramp; PvE waves and strongholds
   - the full run loop: PvE battle with three difficulties → event (shop

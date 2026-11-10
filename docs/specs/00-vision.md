@@ -1,6 +1,6 @@
 # 00 — Vision & Pillars
 
-Status: Draft v1.3
+Status: Draft v1.9
 
 ## Elevator pitch
 
@@ -109,13 +109,13 @@ does not block systems work.
 | Encounter | A single automated fight (PvE or ghost PvP). |
 | Board | The party's single shared map and everything built on it: the factory. |
 | Building | Anything the party places on the board: sources, unit producers, defenses, economy buildings. Bought in shops or won as rewards. |
-| Conduit | A free, unlimited connection that carries charge between buildings. Takes space, cannot cross another conduit, cannot be attacked. |
+| Conduit | A free, unlimited connection that carries one resource between buildings. Takes space, cannot cross another conduit, cannot be attacked. |
 | Unit | A fighter produced by a building during battle; walks to the enemy base and attacks. |
 | Resource node | A map cell where a source can be built. |
 | Natural feature | Terrain such as a lake or cliff that blocks building and movement. |
 | Front edge | The side of a board that faces the enemy; units cross it. |
 | Core | The party's health and the enemy's final target. Placed once per run; never moves. |
-| Charge | What sources produce and other buildings consume; a building fires when charge reaches it. |
+| Resource | What sources extract from nodes and other buildings consume. There are about three kinds. |
 | Plot | The area one player adds to the shared board. |
 | Ramp | The factory getting stronger over the course of one battle; what "economy" buildings provide. |
 | Threat | A PvE opponent: scripted waves of units plus a stronghold to attack, not a factory. |

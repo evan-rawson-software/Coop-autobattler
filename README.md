@@ -23,7 +23,7 @@ refined and then broken down into backlog items for coding agents.
 | 00 | [Vision & pillars](docs/specs/00-vision.md) | What the game is, who it is for, design pillars, scope |
 | 01 | [Run structure](docs/specs/01-run-structure.md) | Core loop, cycles, steps, lives, run end, meta-progression |
 | 02 | [Co-op & party](docs/specs/02-coop-party.md) | 1–4 player model, the shared board, ownership, building together, disconnects |
-| 03 | [Combat](docs/specs/03-combat.md) | The shared factory and battlefield: terrain, charge routing, units, in-battle ramp, defenses, opponents |
+| 03 | [Combat](docs/specs/03-combat.md) | The shared factory and battlefield: terrain, resources and conduits, units, in-battle ramp, defenses, opponents |
 | 04 | [Encounters & matchmaking](docs/specs/04-encounters-matchmaking.md) | PvE encounters, ghost PvP, snapshot matching, boss fallback |
 | 05 | [Scaling & economy](docs/specs/05-scaling-economy.md) | Exponential PvE scaling, player power curve, economy |
 | 06 | [Technical architecture](docs/specs/06-technical-architecture.md) | Phases (web proof of concept → Godot → Steam multiplayer), Steam as the backend, trust model |

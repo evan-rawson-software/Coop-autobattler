@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v1.8
+Status: Draft v1.9
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -32,8 +32,9 @@ everything else movable. Open:
 - Decided: units walk over conduits; destroying a building destroys its
   attached conduits up to the next building (CB-9a).
 - **Loops.** May a conduit network feed back into itself?
-- **Resources.** Charge only *(recommended to start)*, or several node types
-  with recipes?
+- Decided: about three resources (CB-3k). Open: their roles and names
+  (CB-5a), whether a conduit carries a single resource type (proposed,
+  CB-5b), and whether there are refining chains (proposed: not at first).
 - Decided: PvE enemies are scripted waves plus a stronghold (CB-29).
 - Decided: the board never expands; it starts fairly large and its size
   is an endgame constraint (CB-25).
