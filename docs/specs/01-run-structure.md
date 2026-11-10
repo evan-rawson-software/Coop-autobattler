@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v0.3
+Status: Draft v0.4
 
 ## Core loop
 
@@ -37,10 +37,10 @@ Lobby -> [ 1. PvE battle -> 2. Event -> 3. PvP battle ] x N -> Defeat -> Run sum
 - **RS-4 [DECIDED]** The event step is a non-combat step. The shop is one
   event type; others exist.
 - **RS-4a [PROPOSED]** Event types (first playable needs only the shop):
-  - **Shop** — buy/sell units and items, re-roll.
-  - **Trainer** — upgrade or modify an existing unit.
+  - **Shop** — buy/sell items, re-roll.
+  - **Trainer** — upgrade or modify an existing item.
   - **Shrine** — choose one of several run modifiers.
-  - **Gamble** — risk gold or a unit for a chance at something better.
+  - **Gamble** — risk gold or an item for a chance at something better.
 - **RS-4b [OPEN]** How the event is selected, and whether a shop is always
   available. See `07-open-questions.md` Q4. Recommended: the party chooses
   between 2–3 offered events and a shop is always one of the options, so a
@@ -58,8 +58,8 @@ Lobby -> [ 1. PvE battle -> 2. Event -> 3. PvP battle ] x N -> Defeat -> Run sum
 ## Team management
 
 - **RS-6 [PROPOSED]** Acquiring things happens at events and through rewards.
-  **Arranging** boards — positioning, equipping items, combining
-  duplicates, swapping bench and board, giving to teammates — is available in
+  **Arranging** boards — placing and moving items, combining
+  duplicates, swapping stash and board, giving to teammates — is available in
   a short **prep phase** before every battle (steps 1 and 3) as well as
   during the event. Without this, a reward from the PvE battle could not be
   used until after the PvP battle.
@@ -92,7 +92,7 @@ the party's income so it falls behind the ghosts it meets. See
 ## Meta-progression
 
 - **RS-10 [PROPOSED]** Meta-progression unlocks **options, not power**: new
-  units, items, starting loadouts, and cosmetic records. Power unlocks would
+  items, starting loadouts, and cosmetic records. Power unlocks would
   break ghost fairness, since a snapshot would encode account-level advantages.
 - **RS-11 [OPEN]** Whether there are selectable heroes/classes per player at
   run start. See `07-open-questions.md` Q3.

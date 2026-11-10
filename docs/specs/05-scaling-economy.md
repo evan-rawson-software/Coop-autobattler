@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v0.3
+Status: Draft v0.4
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.
@@ -24,7 +24,7 @@ the specification.
   party (CP-7), so total enemy power scales linearly with party size.
 
 - **SC-2 [PROPOSED]** "Budget" is an abstract power currency spent by the
-  encounter generator on unit count, unit tier, stat multipliers, and
+  encounter generator on item count, item tier, Core health, and
   modifiers. A reference conversion from budget to stats must exist so that
   budget can be compared with player team power.
 - **SC-3 [PROPOSED]** Player power must grow **sub-exponentially** in the long
@@ -69,11 +69,11 @@ the missed reward (RS-3a). The exponential curve still ends every run:
 
 - **EC-1 [PROPOSED]** One primary currency: **gold**, earned per cycle (base
   income), from winning PvE encounters, and from selling.
-- **EC-2 [PROPOSED]** Gold is spent on units, items (if sold in shops), shop
+- **EC-2 [PROPOSED]** Gold is spent on items, shop
   re-rolls, and team/shop upgrades (e.g. raising shop tier to see stronger
-  units).
+  items, or adding board columns).
 - **EC-3 [PROPOSED]** Shop offers are per player and drawn from tiered pools
-  whose odds improve with shop tier / cycle. Whether unit pools are finite and
+  whose odds improve with shop tier / cycle. Whether item pools are finite and
   shared within the party (contested draws) or infinite is **[OPEN]** (Q5).
 - **EC-4 [PROPOSED]** **Party-size economy**: every player earns full income
   for their own board, at every party size. Enemy teams scale by the same
@@ -96,4 +96,4 @@ the missed reward (RS-3a). The exponential curve still ends every run:
 - **EC-9 [PROPOSED]** Base income per cycle is deliberately small relative to
   PvE rewards, so that PvE results are what drive a party's growth.
 - **EC-8 [PROPOSED]** Run modifiers that affect combat are part of team state
-  (CB-4) and therefore travel with snapshots.
+  (CB-32) and therefore travel with snapshots.

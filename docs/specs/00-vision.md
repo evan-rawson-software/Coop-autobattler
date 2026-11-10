@@ -1,12 +1,12 @@
 # 00 — Vision & Pillars
 
-Status: Draft v0.3
+Status: Draft v0.4
 
 ## Elevator pitch
 
 A co-op roguelite autobattler for 1–4 players. Between fights, the party
 each player
-drafts units and items and builds their own board; the party's boards fight
+drafts items and arranges them to build their own board; the party's boards fight
 together. Fights
 resolve automatically. Opponents alternate between hand-authored-style PvE
 encounters and **ghost PvP** — saved snapshots of other real parties at the
@@ -33,6 +33,8 @@ forever; the score is how deep you went.
   Losing a PvE battle costs no life but grants no reward.
 - **V-9 [DECIDED]** Each player has their own full board, so the game scales
   from 1 to 4 players by adding boards.
+- **V-10 [DECIDED]** Combat is item-based in the style of *The Bazaar* and
+  *Backpack Battles*, but with its own distinct core mechanic.
 
 ## Design pillars
 
@@ -48,8 +50,8 @@ forever; the score is how deep you went.
    the same result, on any machine. This is what makes ghost PvP, replays, and
    server validation possible.
 4. **Decisions in the shop, spectacle in the fight.** Players have zero input
-   during combat. All skill expression is in drafting, economy, composition,
-   and positioning.
+   during combat. All skill expression is in drafting, economy, and how items
+   are arranged on the board.
 5. **Short sessions, legible cycles.** A cycle is a few minutes; a run fits in
    an evening; a party can drop a run and it does not hurt anyone else,
    because all PvP is asynchronous.
@@ -71,7 +73,7 @@ forever; the score is how deep you went.
 
 ## Theme
 
-**[OPEN]** No setting chosen yet. Specs use neutral terms: *unit*, *item*,
+**[OPEN]** No setting chosen yet. Specs use neutral terms: *item*, *board*,
 *party*, *cycle*, *boss*. Theme should be chosen before content authoring but
 does not block systems work.
 
@@ -86,7 +88,9 @@ does not block systems work.
 | Prep phase | A short window before each battle to arrange the team. |
 | PvP battle | The third step of a cycle: a ghost, or a boss if no ghost matches. |
 | Encounter | A single automated fight (PvE or ghost PvP). |
-| Board | One player's units, items, and positions. Each player has one. |
+| Board | One player's grid of items. Each player has one. |
+| Core | A board's health pool; what enemy items attack. |
+| Pulse | The sweep across a board that fires items in column order (proposed). |
 | Team | All of the party's boards together; what fights in a battle. |
 | Lane | A board's place on the battlefield, opposite one enemy board. |
 | Snapshot | A saved, immutable copy of a party's team at the start of an encounter. |

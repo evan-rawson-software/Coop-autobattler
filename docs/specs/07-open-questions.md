@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v0.3
+Status: Draft v0.4
 
 Each question lists options and a recommendation. Answering Q1, Q2, and Q6
 unblocks most backlog work.
@@ -26,16 +26,23 @@ battle with N boards per side.
 Related: how much cross-board content there should be (CP-12), and whether a
 teammate may manage a disconnected player's board (CP-21).
 
-## Q2. Combat style
+## Q2. Core combat mechanic
 
-- **(a) Units on a small grid with positioning** *(recommended; specced in
-  `03-combat.md`)*. Classic autobattler; works naturally with one board per player.
-- **(b) Bazaar-style item boards** — no units; each side has a row of items
-  on cooldowns attacking a shared health pool. Cheaper to build and render;
-  one item row per player.
-- **(c) Hero + items hybrid** — each player is one hero unit on the board
-  that they gear up. Strongest player identity; solo would need to field
-  multiple heroes or AI companions.
+Decided: item-based combat in the family of *The Bazaar* / *Backpack Battles*,
+but distinct (CB-2, CB-3). Open: which core mechanic makes it distinct.
+
+- **(a) The Pulse** *(recommended; specced in `03-combat.md`)*. A sweep moves
+  across each board and fires items in column order, so placement decides
+  timing; special effects bend the pulse.
+- **(b) Gearworks.** Boards are wheels of items turning past a striker;
+  neighbouring players' wheels mesh.
+- **(c) Conduits.** Charge flows along paths between adjacent items; weapons
+  fire when charge reaches them.
+
+Sub-questions for (a): board dimensions; whether the board grows during a
+run; whether a dark board is out for the whole battle or can be revived;
+whether opposing boards interact only through Cores or can also target
+specific enemy items/columns.
 
 ## Q3. Player identity
 
@@ -65,7 +72,7 @@ details:
 
 ## Q5. Shop pools
 
-Finite shared unit pool within the party (teammates compete for copies,
+Finite shared item pool within the party (teammates compete for copies,
 encourages splitting archetypes) vs infinite independent pools (simpler)?
 Recommended: infinite pools initially; there is no opposing live player to
 contest, and teammates competing for copies may feel bad rather than

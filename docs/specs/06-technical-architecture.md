@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v0.3
+Status: Draft v0.4
 
 Technology choices here are recommendations, not decisions. The component
 boundaries matter more than the specific stack.
@@ -34,7 +34,7 @@ boundaries matter more than the specific stack.
   suite** (stored inputs → expected result hash) guards against accidental
   behaviour changes.
 - **TA-3 [PROPOSED]** **Server-authoritative runs.** The server owns run state
-  (gold, shops, benches, board, lives, cycle, step). Clients send intents (buy,
+  (gold, shops, stashes, boards, lives, cycle, step). Clients send intents (buy,
   sell, move, give, ready, vote); the server validates and broadcasts state.
   The server rolls shops, selects opponents, picks seeds, and runs the fight.
 - **TA-4 [PROPOSED]** **Realtime transport** (e.g. WebSocket) for the lobby
@@ -45,7 +45,7 @@ boundaries matter more than the specific stack.
   - runs (resumable state, history, final depth)
   - snapshots, indexed by `(sim version, party size, cycle)` for MM-2 lookups
   - leaderboards per party size
-- **TA-6 [PROPOSED]** **Content is data** (CB-14): units, items, traits,
+- **TA-6 [PROPOSED]** **Content is data** (CB-35): items, tags,
   encounter and boss templates, and scaling constants live in versioned data
   files with schema validation in CI.
 - **TA-7 [PROPOSED]** **Solo uses the same path** as multiplayer (a party of
@@ -89,7 +89,7 @@ server unless the server also runs that runtime. See Q6.
    teams of 1–4 boards each (lanes from the start, so co-op is not a
    retrofit); CLI runner; golden tests.
 2. **M1 — Solo loop, local:** PvE battle (3 difficulties) + shop event + exponential scaling +
-   lives; minimal UI; placeholder content (CB-18).
+   lives; minimal UI; placeholder content (CB-50).
 3. **M2 — Server authority:** run state on the server; accounts; resumable
    runs.
 4. **M3 — Ghosts:** snapshot save, matching, boss fallback, the full three-step cycle.

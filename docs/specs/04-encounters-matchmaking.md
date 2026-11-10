@@ -1,6 +1,6 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v0.3
+Status: Draft v0.4
 
 ## Encounter types
 
@@ -20,7 +20,7 @@ The loop is defined in `01-run-structure.md` RS-1.
   - game version (content + simulation version; see TA-8)
   - party size
   - cycle number
-  - full team state: all N boards in lane order (CB-4, CP-6)
+  - full team state: all N boards in lane order (CB-32, CP-6)
   - party display info (player display names, optional cosmetic info)
   - metadata: creation time, run ID, the party's lives remaining and
     PvP record at that point (for optional match-quality filtering)
@@ -48,7 +48,7 @@ The loop is defined in `01-run-structure.md` RS-1.
   snapshot can be served so no single party dominates the pool.
 - **MM-5 [DECIDED]** If no eligible snapshot exists, a **PvE boss** is
   generated instead, based on the party's progress (see below).
-- **MM-6 [PROPOSED]** The ghost is fought with the standard simulation (CB-6).
+- **MM-6 [PROPOSED]** The ghost is fought with the standard simulation (CB-34).
   The original ghost party is not notified and is not affected by the result.
   (Optional later: "your ghost won N fights" stat.)
 - **MM-7 [PROPOSED]** Opponent selection and the combat seed are chosen
@@ -63,13 +63,13 @@ The loop is defined in `01-run-structure.md` RS-1.
   `(game version, party size, cycle number, seed)`:
   1. Compute a **power budget** from the cycle number using the PvE scaling
      curve (`05-scaling-economy.md` SC-1).
-  2. Pick a **boss template** (a themed core unit/ability set) valid for that
+  2. Pick a **boss template** (a themed set of signature items) valid for that
      depth band.
-  3. Spend the remaining budget on stat scaling, minions, and modifiers.
-  4. Emit a normal team state (CB-6) with **one board per player in the
+  3. Spend the remaining budget on item tiers, Core health, extra items, and modifiers.
+  4. Emit a normal team state (CB-34) with **one board per player in the
      party** (CP-7). The budget is per board, so difficulty per player is the
      same at every party size. The boss itself may occupy one lane with
-     minion boards in the others, or be a set of N themed boards.
+     support boards in the others, or be a set of N themed boards.
 - **MM-9a [PROPOSED]** A ghost's boards face the party's boards lane for lane
   in their saved order (CP-10).
 - **MM-10 [PROPOSED]** A boss should be tuned to be roughly as dangerous as
