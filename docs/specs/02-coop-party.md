@@ -24,7 +24,7 @@ Status: Draft v1.1
   wider with each player. Solo plays on one plot.
   Everything therefore scales linearly from 1 to 4 players.
 - **CP-6 [PROPOSED]** The party's **team state** is that one board: its map
-  (terrain, resource nodes, natural features), the Core position, structures
+  (terrain, resource nodes, natural features), the Core position, buildings
   with tiers, positions and orientation, and run modifiers. It is what combat consumes and what a snapshot stores
   (CB-32, MM-1).
 - **CP-7 [PROPOSED]** Opponents are scaled to party size: ghosts match on
@@ -45,17 +45,17 @@ Status: Draft v1.1
   own stash**. Buying is an individual decision. This keeps personal agency
   inside a shared build and makes it harder for one player to play the game
   for everyone.
-- **CP-11 [PROPOSED]** **Giving.** Players can give gold and items to
+- **CP-11 [PROPOSED]** **Giving.** Players can give gold and buildings to
   teammates during events and prep phases, freely and instantly.
-- **CP-12 [PROPOSED]** **Space is shared.** A player can place their items
+- **CP-12 [PROPOSED]** **Space is shared.** A player can place their buildings
   anywhere on the board, not only on "their" plot. Plots determine the
   board's size, not territory.
-- **CP-13 [PROPOSED]** Each item shows who placed it. Starting rule: anyone
-  can move or rotate any item (it is a co-op game among friends, and
+- **CP-13 [PROPOSED]** Each building shows who placed it. Starting rule: anyone
+  can move or rotate any building (it is a co-op game among friends, and
   re-routing the factory often means moving several players' pieces); only
   the owner can sell it. To be revisited after co-op playtests.
 - **CP-14 [PROPOSED]** **Party picks.** Some rewards belong to the party as a
-  whole — a choice of one item among several, a board expansion, a Core
+  whole — a choice of one building among several, a board expansion, a Core
   upgrade — and are decided together (CP-16). Resource nodes are party
   property too: who builds the source on a node is something to agree on.
 
@@ -74,23 +74,23 @@ Status: Draft v1.1
   ready up. Timers must be generous enough for factory building (RS-12).
 - **CP-18 [PROPOSED]** **Simultaneous editing.** All players edit the same
   board at once and see each other's changes live, with each player's cursor
-  and held item visible. If two players act on the same cell or item, the
+  and held building visible. If two players act on the same cell or building, the
   first action the host receives wins and the other player is shown why
   theirs did not apply.
 - **CP-19 [PROPOSED]** Coordination aids: see teammates' gold, stashes, and
-  shops (read-only); pings and markers on board cells and shop items
+  shops (read-only); pings and markers on board cells and shop buildings
   ("put a generator here", "buy this"); a shared view of what the factory
   will do (CB-43).
 - **CP-20 [PROPOSED]** Solo play removes the timer (or makes it generous).
 
 ## Disconnects and leavers
 
-- **CP-21 [PROPOSED]** A disconnected player's items stay on the board and
+- **CP-21 [PROPOSED]** A disconnected player's buildings stay on the board and
   keep working. They can rejoin at any time while the run is live. The run
   keeps its original party size (and board size) for matchmaking. If the
   host disconnects, the run pauses until a remaining player re-hosts (TA-11).
 - **CP-22 [PROPOSED]** While a player is absent, their gold and shop are
-  frozen; teammates can still move their items (CP-13).
+  frozen; teammates can still move their buildings (CP-13).
 - **CP-23 [PROPOSED]** Runs are resumable: if everyone leaves, the run is
   suspended at the start of the current step and can be continued later by
   the same party from the save in Steam Cloud (TA-12). Suspended runs on an

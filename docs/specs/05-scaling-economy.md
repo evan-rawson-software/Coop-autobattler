@@ -74,7 +74,7 @@ first. Gold (next section) is never produced by the factory.
 - **SC-8 [PROPOSED]** In-battle ramp (CB-3) must not let the party outgrow
   PvE indefinitely. Limits, in order of importance: board space and steep
   expansion costs (CB-24, CB-25); caps or diminishing returns on each
-  economy item's in-battle effect; PvE threats whose early pressure grows
+  economy building's in-battle effect; PvE threats whose early pressure grows
   with depth, leaving less time to ramp. The balance harness must chart
   party power **over battle time** as well as over cycles.
 - **SC-9 [PROPOSED]** The three strategies (CB-21) should each have PvE
@@ -85,19 +85,19 @@ first. Gold (next section) is never produced by the factory.
   comparable buildable area, and at least one defensible approach, while
   still differing enough to matter. The balance harness should measure how
   much win rate varies by map seed.
-- **SC-10 [PROPOSED]** Economy items should be clearly worse than attack or
-  defense items of the same price in a short battle and clearly better in a
+- **SC-10 [PROPOSED]** Economy buildings should be clearly worse than attack or
+  defense buildings of the same price in a short battle and clearly better in a
   long one, with the crossover point moving earlier as the run deepens.
 
 ## Economy (gold)
 
 - **EC-1 [PROPOSED]** One primary currency: **gold**, earned per cycle (base
   income), from winning PvE encounters, and from selling.
-- **EC-2 [PROPOSED]** Gold is spent on items, shop
+- **EC-2 [PROPOSED]** Gold is spent on buildings, shop
   re-rolls, and team/shop upgrades (e.g. raising shop tier to see stronger
-  items), and board expansion.
+  buildings), and board expansion.
 - **EC-3 [PROPOSED]** Shop offers are per player and drawn from tiered pools
-  whose odds improve with shop tier / cycle. Whether item pools are finite and
+  whose odds improve with shop tier / cycle. Whether building pools are finite and
   shared within the party (contested draws) or infinite is **[OPEN]** (Q5).
 - **EC-4 [PROPOSED]** **Party-size economy**: every player earns full income
   at every party size. PvE threats scale by the same

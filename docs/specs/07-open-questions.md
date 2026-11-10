@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v1.1
+Status: Draft v1.2
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -11,13 +11,13 @@ one-board-per-player and removed the question of how separate boards fight
 together. Remaining details:
 
 - **Ownership.** Proposed: personal gold, shops, and stashes; shared space;
-  anyone can move any item, only the owner can sell (CP-10 to CP-13).
+  anyone can move any building, only the owner can sell (CP-10 to CP-13).
   Alternative: everything pooled.
 
 ## Q2. Factory and battlefield rules
 
 Decided (CB-2 to CB-3e): shared factory; economy is in-battle ramp; defense
-buys time; random resource nodes and natural features; structures that
+buys time; random resource nodes and natural features; buildings that
 produce units which march on the enemy base; Core fixed for the run,
 everything else movable. Open:
 
@@ -27,15 +27,17 @@ everything else movable. Open:
 - **How the two boards meet.** Proposed: joined front edge to front edge
   (CB-8). Alternative: a neutral strip of ground between them.
 - **Map and plot size**, and board shape at 2–4 players (CB-4).
-- **Routing direction.** Rotatable structures *(recommended)*, fixed
-  arrows, or pass to any adjacent structure? Are loops allowed?
+- Decided: buildings can be rotated; conduits are free (CB-3f, CB-3g).
+- **Conduits and space.** Do conduits occupy the cells they cross
+  *(proposed, CB-9a)*, or are they drawn over the map without taking space?
+  Can units walk over them? Are loops allowed?
 - **Resources.** Charge only *(recommended to start)*, or several node types
   with recipes?
 - **PvE as waves plus a stronghold** rather than a factory (CB-29): confirm.
 - **Does expansion reveal new land** (CB-25), or is the whole map visible
   and buildable from the start?
-- **Direct-fire structures.** Is all offence through units, or are there
-  also long-range structures (artillery) that hit the enemy base directly?
+- **Direct-fire buildings.** Is all offence through units, or are there
+  also long-range buildings (artillery) that hit the enemy base directly?
 
 ## Q3. Player identity
 
@@ -65,7 +67,7 @@ details:
 
 ## Q5. Shop pools
 
-Finite shared item pool within the party (teammates compete for copies,
+Finite shared building pool within the party (teammates compete for copies,
 encourages splitting archetypes) vs infinite independent pools (simpler)?
 Recommended: infinite pools initially; there is no opposing live player to
 contest, and teammates competing for copies may feel bad rather than

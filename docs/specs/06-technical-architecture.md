@@ -32,7 +32,7 @@ tune them, as cheaply as possible. It is a prototype, not the product.
 - **TA-41 [PROPOSED]** Scope:
   - the factory and battlefield simulation (`03-combat.md`), cut to the
     minimum: map generation with nodes, lakes, and cliffs; charge routing;
-    a few structures of each kind; 3–4 unit types with pathfinding;
+    a few buildings of each kind; 3–4 unit types with pathfinding;
     in-battle ramp; PvE waves and strongholds
   - the full run loop: PvE battle with three difficulties → event (shop
     first) → PvP battle; 5 lives; exponential scaling
@@ -68,7 +68,7 @@ tune them, as cheaply as possible. It is a prototype, not the product.
 The port rewrites code, so the things that must survive are kept
 language-neutral from the start:
 
-- **TA-48 [PROPOSED]** **Content data** — items, tags, encounter and boss
+- **TA-48 [PROPOSED]** **Content data** — buildings, tags, encounter and boss
   templates, scaling constants — in JSON with schemas, rules separate from
   names/descriptions/art (TA-27). Godot loads the same files.
 - **TA-49 [PROPOSED]** **Golden test vectors** — JSON files of
@@ -222,7 +222,7 @@ The async PvP pool needs: store a snapshot, look up snapshots by
   each host has **at most one snapshot per bucket** — their most recent run
   to reach that cycle replaces the previous one. This bounds the pool
   naturally and stops one prolific player from flooding a bucket.
-- **TA-19 [PROPOSED]** Snapshots are compact (a few kilobytes at most): item
+- **TA-19 [PROPOSED]** Snapshots are compact (a few kilobytes at most): building
   IDs, tiers, positions, Core stats, modifiers. Ghost lookup and download
   happen during the event step so the PvP battle starts without a wait; a
   timeout falls back to the boss.
@@ -244,8 +244,8 @@ is deliberate.
   bragging rights only. There is no economy, ranking reward, or trade to
   exploit.
 - **TA-22 [PROPOSED]** **Mitigation — validate every downloaded snapshot**
-  before use: schema check, legal item placement, and a **plausibility
-  bound** (total item value and tiers cannot exceed what is achievable by
+  before use: schema check, legal building placement, and a **plausibility
+  bound** (total building value and tiers cannot exceed what is achievable by
   that cycle). Invalid snapshots are skipped and another is drawn.
 - **TA-23 [PROPOSED]** **Mitigation — reporting and cleanup:** players can
   flag a ghost; flagged entries can be removed by the developers through
@@ -265,11 +265,11 @@ is deliberate.
 
 ## Content
 
-- **TA-27 [PROPOSED]** **Content is data** (CB-35): items, tags, encounter
+- **TA-27 [PROPOSED]** **Content is data** (CB-35): buildings, tags, encounter
   and boss templates, and scaling constants live in versioned data files
   (JSON or Godot resources — prefer a text format that diffs well and can be
   validated in CI). Rules data is kept separate from names, descriptions, and
-  art references, keyed by a stable item ID.
+  art references, keyed by a stable building ID.
 
 ## Language
 
@@ -298,7 +298,7 @@ is deliberate.
   5. What can be tested with Valve's public test app ID versus what needs
      our own (leaderboards and Cloud need our own app).
 
-  Fallback candidates if (1) disappoints: Steam Workshop items as hidden
+  Fallback candidates if (1) disappoints: Steam Workshop buildings as hidden
   snapshot containers, or the small service in TA-24.
 
 ## Testing and CI

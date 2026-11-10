@@ -1,30 +1,34 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v1.1
+Status: Draft v1.2
 
 ## Direction
 
 - **CB-1 [DECIDED]** Combat is fully automated. Players give no input once a
   battle starts.
 - **CB-2 [DECIDED]** The party's one shared board (CP-4) is an **automation
-  factory** in the spirit of *Factorio*, built from **structures** the
+  factory** in the spirit of *Factorio*, built from **buildings** the
   players buy and place. (This supersedes the earlier "items only, no
   units" direction; the game has moved away from the *Bazaar* /
   *Backpack Battles* model toward its own factory-and-battlefield design.)
-- **CB-3 [DECIDED]** **Economy means in-battle ramp** — structures that make
+- **CB-3 [DECIDED]** **Economy means in-battle ramp** — buildings that make
   the factory stronger the longer a battle lasts. It does not mean producing
   gold or anything else spent outside combat.
-- **CB-3a [DECIDED]** **Defense buys time**: walls and similar structures
+- **CB-3a [DECIDED]** **Defense buys time**: walls and similar buildings
   slow down the enemy's attack while the factory ramps up.
 - **CB-3b [DECIDED]** Rewards are a choice between **economy** (pays off
   later) and **attack or defense** (helps in the upcoming battles).
 - **CB-3c [DECIDED]** Boards start with **randomized resource placement**
   and randomized **natural features** such as lakes and cliffs. Players must
   build around them, and can use them to **funnel enemy units**.
-- **CB-3d [DECIDED]** Some structures **produce units** that move toward the
+- **CB-3d [DECIDED]** Some buildings **produce units** that move toward the
   enemy base, attack its infrastructure, and eventually kill its Core.
+- **CB-3f [DECIDED]** The things players place are called **buildings**.
+  Buildings can be **rotated**.
+- **CB-3g [DECIDED]** **Conduits** — the connections that carry charge
+  between buildings — are **free to build**.
 - **CB-3e [DECIDED]** The **Core's position is chosen by the team at the
-  start of the run and cannot be moved**. All other structures can be moved
+  start of the run and cannot be moved**. All other buildings can be moved
   freely between battles.
 
 Everything below is [PROPOSED] detail unless marked otherwise.
@@ -36,7 +40,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   proposal for size: one plot is about 16 cells wide × 12 deep, and plots
   join side by side, so a four-player board is 64 × 12 (CP-5). Sizes are
   placeholders for the prototype to tune.
-- **CB-5** **Resource nodes** are cells where a source structure can be
+- **CB-5** **Resource nodes** are cells where a source building can be
   built. Sources can only be placed on nodes, so node positions shape the
   whole factory. Start with one resource (charge); a second node type with
   simple recipes is a possible later layer.
@@ -58,26 +62,36 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 
 ## The factory
 
-- **CB-9** Structures have a **footprint**, a **tier**, **health**, **tags**,
+- **CB-9** Buildings have a **footprint**, a **tier**, **health**, **tags**,
   and a **kind**:
 
 | Kind | Role | Examples |
 |------|------|----------|
 | **Source** | Built on a resource node; makes charge on a timer | Extractor |
-| **Route** | Moves charge unchanged | Conduit; Splitter |
+| **Route** | Splits or redirects charge between conduits | Splitter; Junction |
 | **Modifier** | Changes charge passing through | Amplifier; Capacitor (stores, then releases a large charge) |
-| **Unit producer** | Consumes charge → spawns units | Barracks (cheap swarm); Foundry (slow, heavy unit); Siege works (anti-structure) |
+| **Unit producer** | Consumes charge → spawns units | Barracks (cheap swarm); Foundry (slow, heavy unit); Siege works (anti-building) |
 | **Defense** | Blocks or kills enemy units | Wall; Gate; Turret (needs charge to fire); Repair station |
 | **Economy** | Consumes charge → the factory gets stronger for the rest of this battle | Overclocker (sources faster); Refit bay (later units spawn stronger); Reactor (becomes a new source once fed enough) |
 | **Core** | The party's health. Fixed position (CB-3e). | — |
 
-- **CB-10** Time advances in fixed **ticks**. Charge moves one structure per
-  tick along the routes the players lay out. Charge with nowhere to go is
-  lost; a structure nothing feeds does nothing. Routes must go around
+- **CB-9a** **Conduits** are not buildings and are not bought: players draw
+  them between buildings at no cost (CB-3g), in any quantity. Starting
+  proposal: a conduit still **occupies the cells it runs through** — nothing
+  else can be built there and it must go around natural features — and it
+  can be destroyed by enemy units and blocks nothing. So conduits cost
+  space and exposure, never gold. (Whether conduits take up space at all is
+  open; see Q2.)
+- **CB-9b** A building's **rotation** sets which sides take charge in and
+  send it out, and for defenses which way they face.
+- **CB-10** Time advances in fixed **ticks**. Charge moves one cell per
+  tick along the conduits the players lay out, so longer conduits mean a
+  longer delay. Charge with nowhere to go is
+  lost; a building nothing feeds does nothing. Routes must go around
   natural features, which is half of the layout puzzle.
 - **CB-11** **Every battle starts cold.** All battle state resets at the
   start of each battle: stored charge, economy upgrades, units, damage. What
-  persists is the layout and the structures' permanent tiers. Structures
+  persists is the layout and the buildings' permanent tiers. Buildings
   destroyed in a battle are back for the next one.
 - **CB-12** **Overload**: late in a battle, both sides' units and damage
   escalate, so that two fortified sides cannot stall forever.
@@ -88,7 +102,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   charge. More charge means more or stronger units, so unit output follows
   the factory's ramp.
 - **CB-14** **Movement.** Units walk over open ground: around natural
-  features, around structures, across the front edge into the enemy board.
+  features, around buildings, across the front edge into the enemy board.
   Pathfinding is grid-based and deterministic (CB-30).
 - **CB-15** **Targeting.** By default a unit heads for the enemy Core by the
   shortest open path and attacks whatever blocks it. Unit types vary this:
@@ -128,20 +142,20 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   everything but the Core can move, so the factory can be re-routed for a
   PvE threat whose style is shown in advance, or hedged for the unknown PvP
   opponent.
-- **CB-23** Reward choices follow the same split (CB-3b). Economy structures
+- **CB-23** Reward choices follow the same split (CB-3b). Economy buildings
   are weak in the next battle and grow in value as the run goes on.
 
 ## Space and building
 
 - **CB-24** **Space is the limiter.** Buildable cells — and especially
-  resource nodes — are scarce. Conduits, defenses, and economy structures
-  compete for ground, and structures also shape where units can walk.
+  resource nodes — are scarce. Conduits, defenses, and economy buildings
+  compete for ground, and buildings also shape where units can walk.
 - **CB-25** **Expansion** is a major party reward or purchase with steeply
   rising cost. It reveals new land, with its own nodes and features.
-- **CB-26** Structures are bought in shops and won as rewards. Combining
-  duplicates raises a structure's tier. Tag counts unlock board-wide
+- **CB-26** Buildings are bought in shops and won as rewards. Combining
+  duplicates raises a building's tier. Tag counts unlock board-wide
   bonuses.
-- **CB-27** Moving and rotating structures between battles is free; sources
+- **CB-27** Moving and rotating buildings between battles is free; sources
   must stay on nodes, and the Core never moves (CB-3e). The map itself never
   changes during a run except by expansion.
 
@@ -165,7 +179,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 
 1. **Scope.** This is now a factory builder, a tower defense, and a unit
    autobattler in one. The proof of concept must cut hard: one resource, a
-   handful of structures and unit types, small maps (TA-41).
+   handful of buildings and unit types, small maps (TA-41).
 2. **Ramp versus the exponential wall** (SC-8). In-battle economy can be
    exponential; space, caps, and rising PvE pressure must contain it.
 3. **Balance of the three strategies**, and of terrain luck: some maps will
@@ -191,7 +205,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   (authoritative, TA-6), in tests, and in balance tools.
 - **CB-32** A party is fully described by a serializable **team state**
   (CP-6): the map (terrain, nodes, features, revealed area), the Core
-  position, every structure with tier, position and orientation, and run
+  position, every building with tier, position and orientation, and run
   modifiers that affect combat. This is exactly what a snapshot stores
   (MM-1).
 - **CB-33** If both Cores are destroyed on the same tick, a deterministic
@@ -199,7 +213,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-34** An **opponent** is either a team state (ghost) or a threat
   profile (PvE, CB-29). Both are data and run through the same simulation
   entry point.
-- **CB-35** All content (structures, units, tags, terrain rules, threat
+- **CB-35** All content (buildings, units, tags, terrain rules, threat
   profiles, strongholds) is **data-driven**: versioned data files validated
   against schemas.
 - **CB-36** Performance budget, set in the first simulation milestone:
@@ -224,6 +238,6 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 
 ## First playable content budget
 
-- **CB-50** One resource; ~15 structures across the kinds; 3–4 unit types;
+- **CB-50** One resource; ~15 buildings across the kinds; 3–4 unit types;
   lakes and cliffs; 3 PvE archetypes; 1 boss. Enough to validate the loop;
   no more.

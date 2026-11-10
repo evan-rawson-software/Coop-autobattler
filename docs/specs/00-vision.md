@@ -1,12 +1,12 @@
 # 00 — Vision & Pillars
 
-Status: Draft v1.1
+Status: Draft v1.2
 
 ## Elevator pitch
 
 A co-op roguelite autobattler for 1–4 players. Between fights, the party
 each player
-drafts items and adds them to one large shared factory board that the whole
+drafts buildings and adds them to one large shared factory board that the whole
 party builds together. Fights
 resolve automatically. Opponents alternate between hand-authored-style PvE
 encounters and **ghost PvP** — saved snapshots of other real parties at the
@@ -44,7 +44,7 @@ forever; the score is how deep you went.
   the enemy base, on a map with randomized resources and natural features
   (lakes, cliffs) that shape both building and enemy movement.
 - **V-10a [DECIDED]** The Core's position is chosen by the team at the start
-  of the run and never moves; every other structure can be moved freely
+  of the run and never moves; every other building can be moved freely
   between battles.
 - **V-11 [DECIDED]** Built in Godot, for release on Steam, using Steam
   features for backend needs (lobbies, multiplayer, async PvP) wherever
@@ -66,7 +66,7 @@ forever; the score is how deep you went.
    the same result. This is what makes ghost PvP, replays, and testing
    possible.
 4. **Decisions in the build, spectacle in the fight.** Players have zero input
-   during combat. All skill expression is in drafting, economy, and how items
+   during combat. All skill expression is in drafting, economy, and how buildings
    are arranged on the board.
 5. **Short sessions, legible cycles.** A cycle is a few minutes; a run fits in
    an evening; a party can drop a run and it does not hurt anyone else,
@@ -76,7 +76,7 @@ forever; the score is how deep you went.
 
 - **Solo:** a complete game on its own, comparable to a single-player
   autobattler run.
-- **2–4 players:** friends on voice chat arguing about who gets the item,
+- **2–4 players:** friends on voice chat arguing about who gets the reward,
   pooling gold for a key purchase, and cheering or groaning at the same fight.
 
 ## Non-goals (for now)
@@ -92,7 +92,7 @@ forever; the score is how deep you went.
 
 ## Theme
 
-**[OPEN]** No setting chosen yet. Specs use neutral terms: *item*, *board*,
+**[OPEN]** No setting chosen yet. Specs use neutral terms: *building*, *board*,
 *party*, *cycle*, *boss*. Theme should be chosen before content authoring but
 does not block systems work.
 
@@ -108,15 +108,16 @@ does not block systems work.
 | PvP battle | The third step of a cycle: a ghost, or a boss if no ghost matches. |
 | Encounter | A single automated fight (PvE or ghost PvP). |
 | Board | The party's single shared map and everything built on it: the factory. |
-| Structure | An item once placed on the board. Shops sell items; the board holds structures. |
-| Unit | A fighter produced by a structure during battle; walks to the enemy base and attacks. |
+| Building | Anything the party places on the board: sources, unit producers, defenses, economy buildings. Bought in shops or won as rewards. |
+| Conduit | A free connection that carries charge between buildings. |
+| Unit | A fighter produced by a building during battle; walks to the enemy base and attacks. |
 | Resource node | A map cell where a source can be built. |
 | Natural feature | Terrain such as a lake or cliff that blocks building and movement. |
 | Front edge | The side of a board that faces the enemy; units cross it. |
 | Core | The party's health and the enemy's final target. Placed once per run; never moves. |
-| Charge | What sources produce and other items consume; an item fires when charge reaches it. |
+| Charge | What sources produce and other buildings consume; a building fires when charge reaches it. |
 | Plot | The area one player adds to the shared board. |
-| Ramp | The factory getting stronger over the course of one battle; what "economy" items provide. |
+| Ramp | The factory getting stronger over the course of one battle; what "economy" buildings provide. |
 | Threat | A PvE opponent: scripted waves of units plus a stronghold to attack, not a factory. |
 | Snapshot | A saved, immutable copy of a party's team at the start of an encounter. |
 | Ghost | A snapshot being used as another party's opponent. |
