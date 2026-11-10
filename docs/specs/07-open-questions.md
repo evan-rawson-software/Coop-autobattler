@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v1.2
+Status: Draft v1.3
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -27,10 +27,12 @@ everything else movable. Open:
 - **How the two boards meet.** Proposed: joined front edge to front edge
   (CB-8). Alternative: a neutral strip of ground between them.
 - **Map and plot size**, and board shape at 2–4 players (CB-4).
-- Decided: buildings can be rotated; conduits are free (CB-3f, CB-3g).
-- **Conduits and space.** Do conduits occupy the cells they cross
-  *(proposed, CB-9a)*, or are they drawn over the map without taking space?
-  Can units walk over them? Are loops allowed?
+- Decided: buildings can be rotated. Conduits are free and unlimited, take
+  space, cannot cross without a route building, and cannot be targeted
+  (CB-3f to CB-3h). Gold is only for buying buildings at shops (CB-3i).
+- **Units and conduits.** Proposed: units walk over conduits freely, so
+  conduits never act as walls (CB-9a). Confirm.
+- **Loops.** May a conduit network feed back into itself?
 - **Resources.** Charge only *(recommended to start)*, or several node types
   with recipes?
 - **PvE as waves plus a stronghold** rather than a factory (CB-29): confirm.
@@ -65,7 +67,11 @@ details:
 - **Regaining lives.** Proposed: not possible initially (RS-7c).
 - **Ghost-only endgame guard.** See SC-7.
 
-## Q5. Shop pools
+## Q5. Shops
+
+May gold also buy shop services — re-rolls, a better shop tier, board
+expansion — or strictly buildings only (EC-2)?
+
 
 Finite shared building pool within the party (teammates compete for copies,
 encourages splitting archetypes) vs infinite independent pools (simpler)?

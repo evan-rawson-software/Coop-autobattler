@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v1.2
+Status: Draft v1.3
 
 ## Direction
 
@@ -26,7 +26,17 @@ Status: Draft v1.2
 - **CB-3f [DECIDED]** The things players place are called **buildings**.
   Buildings can be **rotated**.
 - **CB-3g [DECIDED]** **Conduits** — the connections that carry charge
-  between buildings — are **free to build**.
+  between buildings — are **free and unlimited**. They **take up space**
+  and **cannot cross each other**, except through a building made for it
+  (a splitter, a merger, or a building that lets two conduits pass at 90
+  degrees). Organizing conduit paths well is meant to be one of the main
+  limits on a factory and a skill the game rewards.
+- **CB-3h [DECIDED]** **Conduits cannot be targeted by enemies** (otherwise
+  players could spam them to delay enemy units).
+- **CB-3i [DECIDED]** **Gold is not a building resource.** Gold is spent only
+  at shops between battles, to purchase buildings. Only buildings the party
+  has purchased (or won) can be placed, and placing costs nothing. Conduits
+  are the one exception: unlimited, never purchased.
 - **CB-3e [DECIDED]** The **Core's position is chosen by the team at the
   start of the run and cannot be moved**. All other buildings can be moved
   freely between battles.
@@ -68,20 +78,26 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 | Kind | Role | Examples |
 |------|------|----------|
 | **Source** | Built on a resource node; makes charge on a timer | Extractor |
-| **Route** | Splits or redirects charge between conduits | Splitter; Junction |
+| **Route** | Splits, joins, or crosses conduits | Splitter (one in, several out); Merger (several in, one out); Crossover (two conduits pass at 90°) |
 | **Modifier** | Changes charge passing through | Amplifier; Capacitor (stores, then releases a large charge) |
 | **Unit producer** | Consumes charge → spawns units | Barracks (cheap swarm); Foundry (slow, heavy unit); Siege works (anti-building) |
 | **Defense** | Blocks or kills enemy units | Wall; Gate; Turret (needs charge to fire); Repair station |
 | **Economy** | Consumes charge → the factory gets stronger for the rest of this battle | Overclocker (sources faster); Refit bay (later units spawn stronger); Reactor (becomes a new source once fed enough) |
 | **Core** | The party's health. Fixed position (CB-3e). | — |
 
-- **CB-9a** **Conduits** are not buildings and are not bought: players draw
-  them between buildings at no cost (CB-3g), in any quantity. Starting
-  proposal: a conduit still **occupies the cells it runs through** — nothing
-  else can be built there and it must go around natural features — and it
-  can be destroyed by enemy units and blocks nothing. So conduits cost
-  space and exposure, never gold. (Whether conduits take up space at all is
-  open; see Q2.)
+- **CB-9a** **Conduits** (CB-3g, CB-3h) are not buildings: players draw
+  them between buildings at no cost and in any quantity.
+  - A conduit **occupies the cells it runs through**. No building can stand
+    on a conduit cell, and conduits must go around natural features.
+  - Two conduits **cannot share or cross a cell**. To cross, split, or join
+    them the party needs a route building (see table), which must be owned
+    like any other building.
+  - Conduits **cannot be targeted or damaged**, and they **do not block
+    movement**: units of both sides walk over them. A conduit therefore
+    never works as a wall. (Proposed consequence of CB-3h.)
+  - A network can still be cut by destroying a **building** on it — a
+    source, splitter, merger, or crossover — which makes those junctions
+    worth protecting.
 - **CB-9b** A building's **rotation** sets which sides take charge in and
   send it out, and for defenses which way they face.
 - **CB-10** Time advances in fixed **ticks**. Charge moves one cell per
@@ -106,9 +122,10 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   Pathfinding is grid-based and deterministic (CB-30).
 - **CB-15** **Targeting.** By default a unit heads for the enemy Core by the
   shortest open path and attacks whatever blocks it. Unit types vary this:
-  raiders go for sources and conduits, siege units for walls and turrets,
-  and so on. Killing infrastructure matters — cutting a conduit or
-  destroying a source cripples the enemy's ramp for the rest of the battle.
+  raiders go for sources and route buildings, siege units for walls and
+  turrets, and so on. Killing infrastructure matters — destroying a source
+  or a junction cripples the enemy's ramp for the rest of the battle.
+  Conduits themselves are never targets (CB-3h).
 - **CB-16** **Units fight units.** Opposing units that meet engage each
   other, so a front line forms between the bases and moves with the balance
   of production. (Alternative: units ignore each other and only defenses
@@ -149,11 +166,14 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 
 - **CB-24** **Space is the limiter.** Buildable cells — and especially
   resource nodes — are scarce. Conduits, defenses, and economy buildings
-  compete for ground, and buildings also shape where units can walk.
-- **CB-25** **Expansion** is a major party reward or purchase with steeply
-  rising cost. It reveals new land, with its own nodes and features.
-- **CB-26** Buildings are bought in shops and won as rewards. Combining
-  duplicates raises a building's tier. Tag counts unlock board-wide
+  compete for ground, and because conduits cannot cross (CB-3g) a tidy
+  layout fits far more factory into the same area than a tangled one; and buildings also shape where units can walk.
+- **CB-25** **Expansion** — new land with its own nodes and features — is a
+  major party reward, or a rare, expensive shop offer.
+- **CB-26** Buildings are bought with gold in shops between battles, or won
+  as rewards, and go into the owning player's stash. Placing, moving, and
+  rotating them costs nothing; gold plays no part in building or in battle
+  (CB-3i). Combining duplicates raises a building's tier. Tag counts unlock board-wide
   bonuses.
 - **CB-27** Moving and rotating buildings between battles is free; sources
   must stay on nodes, and the Core never moves (CB-3e). The map itself never

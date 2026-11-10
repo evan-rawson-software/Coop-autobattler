@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v1.1
+Status: Draft v1.3
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.
@@ -91,11 +91,15 @@ first. Gold (next section) is never produced by the factory.
 
 ## Economy (gold)
 
-- **EC-1 [PROPOSED]** One primary currency: **gold**, earned per cycle (base
-  income), from winning PvE encounters, and from selling.
-- **EC-2 [PROPOSED]** Gold is spent on buildings, shop
-  re-rolls, and team/shop upgrades (e.g. raising shop tier to see stronger
-  buildings), and board expansion.
+- **EC-0 [DECIDED]** Gold is spent **only at shops between battles**, to
+  purchase buildings. It is never a resource for placing buildings or for
+  anything during a battle. Only purchased (or won) buildings can be placed;
+  conduits are free and unlimited (CB-3g, CB-3i).
+- **EC-1 [PROPOSED]** One currency: **gold**, earned per cycle (base
+  income), from winning PvE battles, and from selling buildings back.
+- **EC-2 [PROPOSED]** Besides buildings, shops may also sell shop services
+  for gold: re-rolls, raising shop tier to see stronger buildings, and
+  occasionally board expansion. To be confirmed (Q5).
 - **EC-3 [PROPOSED]** Shop offers are per player and drawn from tiered pools
   whose odds improve with shop tier / cycle. Whether building pools are finite and
   shared within the party (contested draws) or infinite is **[OPEN]** (Q5).
