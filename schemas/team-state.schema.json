@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "team-state.schema.json",
+  "title": "Team state",
+  "description": "The party's whole state for combat (W1-2): the map, the Core position and every building. Arrays are sorted by ascending id. The Core is not an entry in buildings or stash. Placement legality is checked by the validator, not by this schema.",
+  "type": "object",
+  "required": ["map", "core", "buildings", "stash", "nextId", "conduits"],
+  "additionalProperties": false,
+  "properties": {
+    "map": { "$ref": "map.schema.json" },
+    "core": {
+      "description": "The Core's lowest-x, lowest-y cell, or null before it is placed.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["x", "y"],
+          "additionalProperties": false,
+          "properties": {
+            "x": { "type": "integer", "minimum": 0 },
+            "y": { "type": "integer", "minimum": 0 }
+          }
+        }
+      ]
+    },
+    "buildings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "def", "tier", "x", "y", "rotation", "owner"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "def": { "type": "string", "pattern": "^bld_[a-z0-9_]+$" },
+          "tier": { "type": "integer", "minimum": 1, "maximum": 3 },
+          "x": { "type": "integer", "minimum": 0 },
+          "y": { "type": "integer", "minimum": 0 },
+          "rotation": { "enum": [0, 90, 180, 270] },
+          "owner": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "stash": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "def", "tier", "owner"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "def": { "type": "string", "pattern": "^bld_[a-z0-9_]+$" },
+          "tier": { "type": "integer", "minimum": 1, "maximum": 3 },
+          "owner": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "nextId": { "type": "integer", "minimum": 1 },
+    "conduits": {
+      "description": "Reserved for W1-3; always empty for now.",
+      "type": "array",
+      "maxItems": 0
+    }
+  }
+}

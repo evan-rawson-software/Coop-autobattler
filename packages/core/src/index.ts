@@ -128,3 +128,33 @@ export {
   makeMapGenKind,
 } from './generate-map.js';
 export type { GeneratedMap } from './generate-map.js';
+export {
+  ROTATIONS,
+  addToStash,
+  createTeamState,
+  moveBuilding,
+  occupancy,
+  placeCore,
+  placeFromStash,
+  removeFromStash,
+  renderTeamStateAscii,
+  returnToStash,
+  validateTeamState,
+} from './team-state.js';
+export type {
+  AddToStashResult,
+  AnyReason,
+  Conduit,
+  CoreReason,
+  Occupancy,
+  OpFailure,
+  OpResult,
+  PlacedBuilding,
+  PlacementReason,
+  StashReason,
+  StashedBuilding,
+  TeamContent,
+  TeamState,
+  ValidateTeamStateResult,
+} from './team-state.js';
+export { makeTeamStateOpsKind } from './team-state-ops.js';

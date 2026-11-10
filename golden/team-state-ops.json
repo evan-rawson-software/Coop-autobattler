@@ -1,0 +1,1518 @@
+[
+  {
+    "id": "team-state-ops.stash-and-core",
+    "kind": "team-state-ops",
+    "description": "Stash additions (accepted and rejected) and Core placement rules.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_core",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall",
+          "tier": 4,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall",
+          "tier": 1,
+          "owner": 1
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_nope",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeCore",
+          "x": 14,
+          "y": 6
+        },
+        {
+          "op": "placeCore",
+          "x": 0,
+          "y": 15
+        },
+        {
+          "op": "placeCore",
+          "x": 0,
+          "y": 7
+        },
+        {
+          "op": "placeCore",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "op": "placeCore",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "op": "placeCore",
+          "x": 5,
+          "y": 5
+        },
+        {
+          "op": "placeFromStash",
+          "id": 3,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "op": "placeCore",
+          "x": 20,
+          "y": 0
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3
+          },
+          {
+            "op": "addToStash",
+            "ok": false,
+            "reason": "core_not_allowed"
+          },
+          {
+            "op": "addToStash",
+            "ok": false,
+            "reason": "invalid_tier"
+          },
+          {
+            "op": "addToStash",
+            "ok": false,
+            "reason": "invalid_owner"
+          },
+          {
+            "op": "addToStash",
+            "ok": false,
+            "reason": "unknown_definition"
+          },
+          {
+            "op": "placeCore",
+            "ok": false,
+            "reason": "blocked"
+          },
+          {
+            "op": "placeCore",
+            "ok": false,
+            "reason": "out_of_bounds"
+          },
+          {
+            "op": "placeCore",
+            "ok": false,
+            "reason": "too_far_forward"
+          },
+          {
+            "op": "placeCore",
+            "ok": false,
+            "reason": "on_node"
+          },
+          {
+            "op": "placeCore",
+            "ok": true
+          },
+          {
+            "op": "placeCore",
+            "ok": false,
+            "reason": "core_already_placed"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "overlaps_core"
+          },
+          {
+            "op": "placeCore",
+            "ok": false,
+            "reason": "core_already_placed"
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 24,
+            "height": 16,
+            "partySize": 1,
+            "plotWidth": 24,
+            "features": [
+              {
+                "x": 22,
+                "y": 3,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 22,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 22,
+                "y": 5,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 14,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 15,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 22,
+                "y": 6,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 15,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 22,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 13,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 14,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 15,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 17,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 17,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 10,
+                "feature": "ter_lake"
+              }
+            ],
+            "nodes": [
+              {
+                "x": 4,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 11,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 1,
+                "y": 2,
+                "resource": "res_c"
+              },
+              {
+                "x": 3,
+                "y": 3,
+                "resource": "res_b"
+              },
+              {
+                "x": 10,
+                "y": 3,
+                "resource": "res_a"
+              },
+              {
+                "x": 20,
+                "y": 6,
+                "resource": "res_a"
+              },
+              {
+                "x": 22,
+                "y": 10,
+                "resource": "res_a"
+              }
+            ]
+          },
+          "core": {
+            "x": 0,
+            "y": 0
+          },
+          "buildings": [],
+          "stash": [
+            {
+              "id": 1,
+              "def": "bld_extractor",
+              "tier": 1,
+              "owner": 0
+            },
+            {
+              "id": 2,
+              "def": "bld_barracks",
+              "tier": 2,
+              "owner": 0
+            },
+            {
+              "id": 3,
+              "def": "bld_wall",
+              "tier": 1,
+              "owner": 0
+            }
+          ],
+          "nextId": 4,
+          "conduits": []
+        },
+        "hash": "32ac942b"
+      }
+    }
+  },
+  {
+    "id": "team-state-ops.placement-rules",
+    "kind": "team-state-ops",
+    "description": "Placing from the stash: each placement rejection, then accepted placements.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeCore",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 4,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 2,
+          "x": 4,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 3,
+          "x": 14,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 3,
+          "x": 11,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 3,
+          "x": 1,
+          "y": 1,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 3,
+          "x": -1,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 3,
+          "x": 6,
+          "y": 6,
+          "rotation": 45
+        },
+        {
+          "op": "placeFromStash",
+          "id": 2,
+          "x": 23,
+          "y": 15,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 99,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 5,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 3,
+          "x": 6,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 2,
+          "x": 7,
+          "y": 4,
+          "rotation": 90
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3
+          },
+          {
+            "op": "placeCore",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "overlaps_building"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "blocked_by_feature"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "node_reserved"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "overlaps_core"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "out_of_bounds"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "invalid_rotation"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "out_of_bounds"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "unknown_building"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "unknown_building"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 24,
+            "height": 16,
+            "partySize": 1,
+            "plotWidth": 24,
+            "features": [
+              {
+                "x": 22,
+                "y": 3,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 22,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 22,
+                "y": 5,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 14,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 15,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 22,
+                "y": 6,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 15,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 22,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 13,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 14,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 15,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 17,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 17,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 10,
+                "feature": "ter_lake"
+              }
+            ],
+            "nodes": [
+              {
+                "x": 4,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 11,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 1,
+                "y": 2,
+                "resource": "res_c"
+              },
+              {
+                "x": 3,
+                "y": 3,
+                "resource": "res_b"
+              },
+              {
+                "x": 10,
+                "y": 3,
+                "resource": "res_a"
+              },
+              {
+                "x": 20,
+                "y": 6,
+                "resource": "res_a"
+              },
+              {
+                "x": 22,
+                "y": 10,
+                "resource": "res_a"
+              }
+            ]
+          },
+          "core": {
+            "x": 0,
+            "y": 0
+          },
+          "buildings": [
+            {
+              "id": 1,
+              "def": "bld_extractor",
+              "tier": 1,
+              "x": 4,
+              "y": 0,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 2,
+              "def": "bld_barracks",
+              "tier": 2,
+              "x": 7,
+              "y": 4,
+              "rotation": 90,
+              "owner": 0
+            },
+            {
+              "id": 3,
+              "def": "bld_wall",
+              "tier": 1,
+              "x": 6,
+              "y": 6,
+              "rotation": 0,
+              "owner": 0
+            }
+          ],
+          "stash": [],
+          "nextId": 4,
+          "conduits": []
+        },
+        "hash": "8dcb6892"
+      }
+    }
+  },
+  {
+    "id": "team-state-ops.move-return-remove",
+    "kind": "team-state-ops",
+    "description": "Moving, rotating, returning and removing buildings.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 2,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeCore",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 4,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 2,
+          "x": 7,
+          "y": 4,
+          "rotation": 90
+        },
+        {
+          "op": "placeFromStash",
+          "id": 3,
+          "x": 6,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "moveBuilding",
+          "id": 2,
+          "x": 7,
+          "y": 4,
+          "rotation": 180
+        },
+        {
+          "op": "moveBuilding",
+          "id": 2,
+          "x": 23,
+          "y": 15,
+          "rotation": 0
+        },
+        {
+          "op": "moveBuilding",
+          "id": 1,
+          "x": 5,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "moveBuilding",
+          "id": 99,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "op": "moveBuilding",
+          "id": 3,
+          "x": 6,
+          "y": 6,
+          "rotation": 45
+        },
+        {
+          "op": "moveBuilding",
+          "id": 3,
+          "x": 7,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "moveBuilding",
+          "id": 3,
+          "x": 10,
+          "y": 3,
+          "rotation": 0
+        },
+        {
+          "op": "moveBuilding",
+          "id": 3,
+          "x": 11,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "op": "moveBuilding",
+          "id": 1,
+          "x": 11,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "op": "returnToStash",
+          "id": 1
+        },
+        {
+          "op": "returnToStash",
+          "id": 1
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 10,
+          "y": 3,
+          "rotation": 0
+        },
+        {
+          "op": "removeFromStash",
+          "id": 1
+        },
+        {
+          "op": "removeFromStash",
+          "id": 1
+        },
+        {
+          "op": "returnToStash",
+          "id": 3
+        },
+        {
+          "op": "removeFromStash",
+          "id": 3
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3
+          },
+          {
+            "op": "placeCore",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "moveBuilding",
+            "ok": true
+          },
+          {
+            "op": "moveBuilding",
+            "ok": false,
+            "reason": "out_of_bounds"
+          },
+          {
+            "op": "moveBuilding",
+            "ok": false,
+            "reason": "source_needs_node"
+          },
+          {
+            "op": "moveBuilding",
+            "ok": false,
+            "reason": "unknown_building"
+          },
+          {
+            "op": "moveBuilding",
+            "ok": false,
+            "reason": "invalid_rotation"
+          },
+          {
+            "op": "moveBuilding",
+            "ok": false,
+            "reason": "overlaps_building"
+          },
+          {
+            "op": "moveBuilding",
+            "ok": false,
+            "reason": "node_reserved"
+          },
+          {
+            "op": "moveBuilding",
+            "ok": false,
+            "reason": "node_reserved"
+          },
+          {
+            "op": "moveBuilding",
+            "ok": true
+          },
+          {
+            "op": "returnToStash",
+            "ok": true
+          },
+          {
+            "op": "returnToStash",
+            "ok": false,
+            "reason": "unknown_building"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "removeFromStash",
+            "ok": false,
+            "reason": "unknown_building"
+          },
+          {
+            "op": "removeFromStash",
+            "ok": false,
+            "reason": "unknown_building"
+          },
+          {
+            "op": "returnToStash",
+            "ok": true
+          },
+          {
+            "op": "removeFromStash",
+            "ok": true
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 24,
+            "height": 16,
+            "partySize": 1,
+            "plotWidth": 24,
+            "features": [
+              {
+                "x": 22,
+                "y": 3,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 22,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 22,
+                "y": 5,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 14,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 15,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 22,
+                "y": 6,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 15,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 22,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 13,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 14,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 15,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 17,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 17,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 10,
+                "feature": "ter_lake"
+              }
+            ],
+            "nodes": [
+              {
+                "x": 4,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 11,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 1,
+                "y": 2,
+                "resource": "res_c"
+              },
+              {
+                "x": 3,
+                "y": 3,
+                "resource": "res_b"
+              },
+              {
+                "x": 10,
+                "y": 3,
+                "resource": "res_a"
+              },
+              {
+                "x": 20,
+                "y": 6,
+                "resource": "res_a"
+              },
+              {
+                "x": 22,
+                "y": 10,
+                "resource": "res_a"
+              }
+            ]
+          },
+          "core": {
+            "x": 0,
+            "y": 0
+          },
+          "buildings": [
+            {
+              "id": 1,
+              "def": "bld_extractor",
+              "tier": 1,
+              "x": 10,
+              "y": 3,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 2,
+              "def": "bld_barracks",
+              "tier": 2,
+              "x": 7,
+              "y": 4,
+              "rotation": 180,
+              "owner": 0
+            }
+          ],
+          "stash": [],
+          "nextId": 4,
+          "conduits": []
+        },
+        "hash": "c8d5566f"
+      }
+    }
+  },
+  {
+    "id": "team-state-ops.two-players",
+    "kind": "team-state-ops",
+    "description": "Owners in a two-player party.",
+    "input": {
+      "seed": 1,
+      "partySize": 2,
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_wall",
+          "tier": 1,
+          "owner": 1
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall",
+          "tier": 1,
+          "owner": 2
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall",
+          "tier": 1,
+          "owner": -1
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 30,
+          "y": 5,
+          "rotation": 90
+        },
+        {
+          "op": "moveBuilding",
+          "id": 1,
+          "x": 31,
+          "y": 6,
+          "rotation": 270
+        },
+        {
+          "op": "returnToStash",
+          "id": 1
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2
+          },
+          {
+            "op": "addToStash",
+            "ok": false,
+            "reason": "invalid_owner"
+          },
+          {
+            "op": "addToStash",
+            "ok": false,
+            "reason": "invalid_owner"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "moveBuilding",
+            "ok": true
+          },
+          {
+            "op": "returnToStash",
+            "ok": true
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 48,
+            "height": 16,
+            "partySize": 2,
+            "plotWidth": 24,
+            "features": [
+              {
+                "x": 2,
+                "y": 3,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 2,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 2,
+                "y": 5,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 2,
+                "y": 6,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 13,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 14,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 26,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 2,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 14,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 15,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 12,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 13,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 14,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 15,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 28,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 42,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 43,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 44,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 45,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 15,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 28,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 9,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 15,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 26,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 28,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 29,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 30,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 10,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 27,
+                "y": 11,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 11,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 27,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 12,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 40,
+                "y": 13,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 40,
+                "y": 14,
+                "feature": "ter_cliff"
+              }
+            ],
+            "nodes": [
+              {
+                "x": 4,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 11,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 34,
+                "y": 1,
+                "resource": "res_a"
+              },
+              {
+                "x": 1,
+                "y": 2,
+                "resource": "res_c"
+              },
+              {
+                "x": 4,
+                "y": 3,
+                "resource": "res_b"
+              },
+              {
+                "x": 11,
+                "y": 3,
+                "resource": "res_a"
+              },
+              {
+                "x": 46,
+                "y": 5,
+                "resource": "res_b"
+              },
+              {
+                "x": 21,
+                "y": 6,
+                "resource": "res_a"
+              },
+              {
+                "x": 38,
+                "y": 9,
+                "resource": "res_a"
+              },
+              {
+                "x": 43,
+                "y": 9,
+                "resource": "res_a"
+              },
+              {
+                "x": 22,
+                "y": 10,
+                "resource": "res_a"
+              },
+              {
+                "x": 34,
+                "y": 10,
+                "resource": "res_b"
+              },
+              {
+                "x": 47,
+                "y": 12,
+                "resource": "res_b"
+              },
+              {
+                "x": 34,
+                "y": 15,
+                "resource": "res_c"
+              }
+            ]
+          },
+          "core": null,
+          "buildings": [],
+          "stash": [
+            {
+              "id": 1,
+              "def": "bld_wall",
+              "tier": 1,
+              "owner": 1
+            },
+            {
+              "id": 2,
+              "def": "bld_wall",
+              "tier": 3,
+              "owner": 0
+            }
+          ],
+          "nextId": 3,
+          "conduits": []
+        },
+        "hash": "5276f4d5"
+      }
+    }
+  }
+]

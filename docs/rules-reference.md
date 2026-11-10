@@ -171,7 +171,8 @@ Kinds currently defined: `placeholder-duel` (pipeline check only, not a rule),
 `prng-u32` (first `count` outputs for `seed`), `prng-sample` (`count` calls of
 `nextInt(bound)`, then `shuffle` of `0..shuffleLength-1`, then `pick` of the
 same list, and the final state), `prng-child` (the parent state and the first
-`count` outputs of `child(label)`), `map-gen` (see Map generation).
+`count` outputs of `child(label)`), `map-gen` (see Map generation),
+`team-state-ops` (see Team state and placement).
 
 In the reference implementation the registry is `goldenKinds` in
 `packages/core/src/golden-kinds.ts`; a new kind is one added entry. Kinds that
@@ -341,6 +342,163 @@ is a legend.
 Input `{ "seed": u32, "partySize": 1..4 }`, generated with the repository's real
 content and `content/mapgen.json`. Result `{ "map": <map>, "hash": <8 hex
 digits, hash of the map>, "attempts": <number> }`. Vectors: `golden/map-gen.json`.
+
+## Team state and placement
+
+Implemented in `packages/core/src/team-state.ts` (golden kind `team-state-ops`:
+`team-state-ops.ts`). The party's whole state for combat is one board (CP-6,
+CB-32). All operations are pure: each returns a new state or a rejection and
+never changes its input.
+
+### Format (plain JSON, `schemas/team-state.schema.json`)
+
+```
+{ map, core, buildings, stash, nextId, conduits }
+```
+
+- `map`: the map format above.
+- `core`: `{ x, y }`, the Core footprint's lowest-x, lowest-y cell, or `null`
+  before it is placed. The Core is **not** an entry in `buildings` or `stash`;
+  its definition is the content building of kind `core` (found by kind) and it
+  can never be moved, returned or sold: no instance ID addresses it.
+  `placeCore` is the only operation that touches `core`, and works once.
+- `buildings`: placed buildings `{ id, def, tier, x, y, rotation, owner }`.
+  `id` is a unique positive integer instance ID, `def` a building definition
+  ID, `tier` 1 to 3, `rotation` 0, 90, 180 or 270, `owner` a 0-based player
+  index below `map.partySize`. `(x, y)` is the lowest-x, lowest-y cell of the
+  footprint **after rotation**.
+- `stash`: owned buildings off the board `{ id, def, tier, owner }`.
+- `nextId`: the next instance ID to assign. IDs start at 1, are taken from
+  `nextId` by `addToStash`, and are never reused (not even after
+  `removeFromStash`). A building keeps its ID when it moves between `stash`
+  and `buildings`.
+- `conduits`: reserved (W1-3); always `[]` for now and preserved untouched.
+
+Buildings of kind `core` never appear in `buildings` or `stash`.
+
+**Canonical order.** `buildings` and `stash` are each sorted by ascending
+`id`, so one state always serialises identically (and hashes identically).
+`createTeamState(map)` gives an empty state with `nextId` 1.
+
+### Rotation, footprint cells and sides
+
+Board directions: **north** is toward increasing `y` (toward the front row, the
+enemy side, drawn at the top of the ASCII rendering); **east** is toward
+increasing `x`; south is decreasing `y`; west is decreasing `x`. Rotation is
+clockwise as drawn with the front row on top: north to east to south to west.
+
+- Sides: a side at rotation 0 becomes, at rotation `r`, the side `r / 90`
+  clockwise steps on: at 90, north to east, east to south, south to west, west
+  to north; at 180 each side to its opposite; at 270 north to west, west to
+  south, south to east, east to north. Input and output lists keep their
+  order (`rotateBuilding`).
+- Footprint: a definition's footprint `(w, h)` is its size at rotation 0
+  (`w` along x, `h` along y). At 90 and 270 it is `(h, w)`. A building at
+  `(x, y)` covers every cell `(x + i, y + j)` with `0 <= i < w'` and
+  `0 <= j < h'` (the rotated size). The rotated box is always anchored at its
+  lowest-x, lowest-y cell; rotating in place keeps `(x, y)` and so can change
+  which cells are covered. All footprints are full rectangles, so there is no
+  finer mapping of "which cell is which".
+- The Core is never rotated: it covers `core.x .. core.x + w - 1` by
+  `core.y .. core.y + h - 1`.
+- `cellsOf` lists a building's cells in `(y, x)` order. `absoluteSides` gives
+  its input sides (with resources) and output sides at its rotation.
+  `sourceResource` is the resource of the node under a source. `buildingAt`
+  returns the placed building, the string `core`, or `null`.
+
+### Operations
+
+Each returns `{ ok: true, state }` (`addToStash` also the new `id`) or
+`{ ok: false, reason, detail? }`. All are free (no gold).
+
+- `addToStash(def, tier, owner)`: reasons `unknown_definition`,
+  `core_not_allowed` (the definition is of kind `core`), `invalid_tier` (not an
+  integer 1 to 3), `invalid_owner` (not an integer from 0 to `partySize - 1`),
+  checked in that order. Appends `{ id: nextId, def, tier, owner }` and
+  increments `nextId`.
+- `placeCore(x, y)`: reasons in order: `core_already_placed`; then those of
+  `validateCorePosition` (`out_of_bounds`, `blocked`, `on_node`,
+  `too_far_forward`); then `overlaps_building` if the footprint covers a placed
+  building.
+- `placeFromStash(id, x, y, rotation)`: `id` must be in `stash`. Moves the entry
+  to `buildings` (same ID, tier, owner).
+- `moveBuilding(id, x, y, rotation)`: `id` must be in `buildings`. Sets position
+  and rotation in one step; moving to the same position with a new rotation is
+  a rotate in place. The building's own current cells never count as overlap.
+  Anyone may move any building (CP-13); owner is not checked.
+- `returnToStash(id)`: `id` must be in `buildings`; the entry goes back to
+  `stash` (sorted by ID). Only `unknown_building` can reject.
+- `removeFromStash(id)`: `id` must be in `stash`; the entry is deleted
+  (selling and refunds come later). Only `unknown_building` can reject.
+
+**Rule order for `placeFromStash` and `moveBuilding`.** The first failing rule
+in this order is the reported reason:
+
+1. `unknown_building`: no such instance ID where expected (stash for place,
+   buildings for move).
+2. `invalid_rotation`: not 0, 90, 180 or 270.
+3. `out_of_bounds`: a non-integer position, or any cell of the rotated
+   footprint outside `0 <= x < width`, `0 <= y < height`.
+4. `blocked_by_feature`: a cell holds a feature whose `blocksBuilding` is true.
+5. `overlaps_core`: a cell is in the Core footprint (when the Core is placed).
+6. `overlaps_building`: a cell is covered by another placed building.
+7. `overlaps_conduit`: a cell holds a conduit. Reserved for W1-3; cannot occur
+   while `conduits` is empty.
+8. Node rules:
+   - `source_needs_node`: a building of kind `source` must have every
+     footprint cell on a resource node, all of the same resource (a
+     placeholder source is 1x1). It produces that resource.
+   - `node_reserved`: a building that is not a source may not cover any node
+     cell. A resource node cell is otherwise buildable, so this keeps nodes
+     for sources.
+
+A rejected operation changes nothing. Placement does not require the Core to
+be placed first, and CP-12 applies: a building may go anywhere on the board
+whoever owns it.
+
+### Conduits attached to a moved building
+
+Rule (decided in W1-2, implemented by W1-3): moving, rotating or returning a
+building **removes every conduit attached to it**. Conduits do not exist yet;
+the hook is the internal function `detachConduits(state, buildingId)` in
+`team-state.ts`, which currently returns the state unchanged. `moveBuilding`
+and `returnToStash` call it after the building has been updated. W1-3 fills it
+in. No other operation touches `conduits`.
+
+### Whole-state validation
+
+`validateTeamState(data, content, mapgenConfig)` takes any value and returns
+`{ ok: true, state }` or `{ ok: false, errors }` (readable strings). It never
+throws, and re-checks everything without trusting how the state was built (it
+will vet other players' snapshots, MM-17): the shape and no unknown fields; the
+map with `loadMap`; the Core position with `validateCorePosition` when placed;
+every entry's `id` (positive integer), `def` (known, never kind `core`), `tier`
+(1 to 3), `owner` (in range) and, for placed buildings, integer `x`, `y` and a
+legal `rotation`; IDs unique across `buildings` and `stash`; both lists sorted
+by ascending `id`; `nextId` greater than every ID; `conduits` empty; and every
+placement rule above for every building (each against the Core and all other
+placed buildings). It does not check that the map is one the generator could
+produce.
+
+### ASCII rendering
+
+`renderTeamStateAscii` prints the map rendering (front row on top) with
+buildings drawn over it, one character per covered cell: `S` source, `R`
+route, `U` unit producer, `D` defense, `E` economy, `C` Core. The last line is
+the map legend followed by the building legend.
+
+### Golden kind `team-state-ops`
+
+Input `{ "seed": u32, "partySize": 1..4, "ops": [...] }`. The map is the
+`map-gen` map for that seed and party size, the state starts as
+`createTeamState(map)`, and the ops run in order. An op is an object with an
+`op` field and its arguments: `addToStash` (`def`, `tier`, `owner`),
+`placeCore` (`x`, `y`), `placeFromStash` and `moveBuilding` (`id`, `x`, `y`,
+`rotation`), `returnToStash` and `removeFromStash` (`id`). A rejected op leaves
+the state as it was and the run continues. Result `{ "results": [...],
+"state": <final state>, "hash": <hash of the final state> }`, with one entry
+per op: `{ "op", "ok": true }` (plus `"id"` for `addToStash`) or `{ "op",
+"ok": false, "reason" }`. Vectors: `golden/team-state-ops.json`.
 
 ## Tick order
 

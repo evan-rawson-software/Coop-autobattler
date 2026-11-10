@@ -8,6 +8,7 @@ import {
   loadAllContentOrThrow,
   loadMapgenOrThrow,
   makeMapGenKind,
+  makeTeamStateOpsKind,
   type SimulationFn,
 } from '@game/core';
 import {
@@ -32,4 +33,5 @@ const mapgen = loadMapgenOrThrow(rawMapgen, { terrain: content.terrain });
 export const goldenKinds: Readonly<Record<string, SimulationFn>> = {
   ...coreKinds,
   'map-gen': makeMapGenKind(content, mapgen),
+  'team-state-ops': makeTeamStateOpsKind(content, mapgen),
 };
