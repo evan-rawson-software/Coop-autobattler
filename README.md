@@ -29,6 +29,11 @@ refined and then broken down into backlog items for coding agents.
 | 06 | [Technical architecture](docs/specs/06-technical-architecture.md) | Phases (web proof of concept → Godot → Steam multiplayer), Steam as the backend, trust model |
 | 07 | [Open questions](docs/specs/07-open-questions.md) | Decisions still to be made, with recommendations |
 
+## Wireframes
+
+Layout sketches of the battle, event choice, shop, and build screens are in
+[`docs/wireframes/`](docs/wireframes/).
+
 ## Conventions used in the specs
 
 - **[DECIDED]** — stated by the project owner; treat as a requirement.

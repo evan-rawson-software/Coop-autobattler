@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Factory Game Screen Wireframes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; each screen is a 16:9 drafting sheet followed by its numbered callouts. */
+:root {
+  --bg: #f3f5f7; --sheet: #ffffff; --panel: #eef1f4; --ink: #18222d; --muted: #5b6876; --line: #c3ccd6; --grid: #e4e9ee;
+  --ally: #0f6f78; --ally-soft: #d9eff0; --enemy: #a8323a; --enemy-soft: #f6dfe1; --neutral: #7a6a3a;
+  --ore: #b86a00; --power: #2a62b8; --flux: #7a3fa6;
+  --water: #cfe3f5; --cliff: #b9b2a6; --accent: #c77700; --accent-ink: #ffffff;
+  --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11171d; --sheet: #19212a; --panel: #212b36; --ink: #e6ebf0; --muted: #9aa7b4; --line: #3a4653; --grid: #26313c;
+    --ally: #5cc4cc; --ally-soft: #153438; --enemy: #ef7f86; --enemy-soft: #3b1d20; --neutral: #c9b26a;
+    --ore: #f2a93b; --power: #7fb0f5; --flux: #c394ea;
+    --water: #1f3a52; --cliff: #5a554c; --accent: #f2a93b; --accent-ink: #11171d; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11171d; --sheet: #19212a; --panel: #212b36; --ink: #e6ebf0; --muted: #9aa7b4; --line: #3a4653; --grid: #26313c;
+  --ally: #5cc4cc; --ally-soft: #153438; --enemy: #ef7f86; --enemy-soft: #3b1d20; --neutral: #c9b26a;
+  --ore: #f2a93b; --power: #7fb0f5; --flux: #c394ea;
+  --water: #1f3a52; --cliff: #5a554c; --accent: #f2a93b; --accent-ink: #11171d; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.page { max-width: 1240px; margin: 0 auto; padding-block: 40px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 44px; }
+h1, h2 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: 2rem; } h2 { font-size: 1.35rem; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--muted); font-size: 1.05rem; }
+header, section { display: flex; flex-direction: column; gap: 14px; }
+.caption { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.flowline { font-family: var(--font-mono); font-size: 0.85rem; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.flowline span { border: 1px solid var(--line); background: var(--sheet); padding: 3px 8px; }
+.flowline span.on { border-color: var(--ink); font-weight: 500; }
+.flowline i { color: var(--muted); font-style: normal; }
+.sheet { background: var(--sheet); border: 1px solid var(--line); overflow-x: auto; }
+.sheet svg { display: block; width: 100%; min-width: 860px; height: auto; }
+ol.notes { margin: 0; padding-left: 1.4em; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 6px 32px; font-size: 0.94rem; }
+ol.notes li { min-width: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); }
+.legend b { color: var(--ink); font-weight: 500; }
+ul.open { margin: 0; padding-left: 1.3em; max-width: 68ch; display: flex; flex-direction: column; gap: 6px; }
+/* svg */
+svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
+.t { font-size: 11px; } .ts { font-size: 9.5px; } .tm { fill: var(--muted); } .th { font-size: 12px; font-weight: 500; }
+.tb { font-family: var(--font-display); font-size: 16px; font-weight: 600; }
+.frame { fill: var(--sheet); } .bar { fill: var(--panel); stroke: var(--line); }
+.panel { fill: var(--panel); stroke: var(--line); } .box { fill: var(--sheet); stroke: var(--ink); stroke-width: 1.2; }
+.btn { fill: var(--sheet); stroke: var(--ink); stroke-width: 1.2; } .btn-go { fill: var(--accent); stroke: var(--accent); }
+.go-t { fill: var(--accent-ink); font-weight: 500; }
+.ground { fill: var(--sheet); stroke: var(--ink); stroke-width: 1.2; } .gridl { stroke: var(--grid); stroke-width: 1; }
+.zone { fill: var(--panel); stroke: var(--neutral); stroke-dasharray: 5 4; }
+.water { fill: var(--water); } .cliff { fill: var(--cliff); }
+.bld { fill: var(--ally-soft); stroke: var(--ally); stroke-width: 1.2; } .bld.e { fill: var(--enemy-soft); stroke: var(--enemy); }
+.wall { fill: var(--ally); } .wall.e { fill: var(--enemy); }
+.core { fill: var(--ally); stroke: var(--ink); stroke-width: 2; } .core.e { fill: var(--enemy); }
+.core-t { fill: var(--sheet); font-size: 8.5px; font-weight: 500; }
+.c-ore { stroke: var(--ore); } .c-power { stroke: var(--power); } .c-flux { stroke: var(--flux); }
+.cond { fill: none; stroke-width: 4; stroke-linejoin: round; opacity: 0.85; }
+.n-ore { fill: var(--ore); } .n-power { fill: var(--power); } .n-flux { fill: var(--flux); }
+.node-t { fill: var(--sheet); font-size: 8px; font-weight: 500; }
+.path { fill: none; stroke: var(--enemy); stroke-width: 1.6; stroke-dasharray: 5 4; }
+.u-a { fill: var(--ally); } .u-e { fill: var(--enemy); } .u-n { fill: var(--neutral); }
+.hp { fill: var(--line); } .hp-a { fill: var(--ally); } .hp-e { fill: var(--enemy); }
+.mark { fill: var(--ink); } .mark-t { fill: var(--sheet); font-size: 10px; font-weight: 500; }
+.sel { fill: none; stroke: var(--accent); stroke-width: 2.5; }
+.chart-a { fill: none; stroke: var(--ally); stroke-width: 2; } .chart-e { fill: none; stroke: var(--enemy); stroke-width: 2; }
+.card { fill: var(--sheet); stroke: var(--ink); stroke-width: 1.2; } .card.pick { stroke: var(--accent); stroke-width: 3; }
+.rule { stroke: var(--line); }
+.bl { font-size: 9.5px; }
+.plot { fill: none; stroke: var(--muted); stroke-dasharray: 6 5; }
+.big .t { font-size: 14px; } .big .ts { font-size: 12px; } .big .th { font-size: 15px; } .big .tb { font-size: 20px; }
+.big .bl { font-size: 10px; } .big .mark-t { font-size: 12px; } .big .node-t { font-size: 9px; } .big .core-t { font-size: 10px; }
+</style>
+
+</head>
+<body style="margin:0">
+<div class="page">
+  <header>
+    <span class="caption">Wireframes · solo view with co-op elements marked</span>
+    <h1>Four screens of one cycle</h1>
+    <p class="lede">Layout sketches for the battle, the event choice, the shop, and the factory builder, drawn for a 1080p screen. Your base is at the bottom and the enemy is at the top, so the front edge runs across the screen and a bigger party makes the board wider, not taller. Sizes, numbers, and building names are placeholders.</p>
+    <div class="flowline" aria-label="Order of steps in a cycle">
+      <span class="on">Battle</span><i>→</i><span class="on">Event</span><i>→</i><span class="on">Shop + Build</span><i>→</i><span>Battle</span><i>→</i><span>Event</span><i>→</i><span>Shop + Build</span>
+    </div>
+    <div class="legend" aria-label="Map legend">
+      <span><b>Ex</b> extractor</span><span><b>Bk</b> barracks</span><span><b>Fo</b> foundry</span><span><b>Tu</b> turret</span><span><b>Sp</b> splitter</span><span><b>Ar</b> armory (economy)</span><span><b>■</b> wall</span><span><b>O / P / F</b> Ore, Power, Flux node</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>1. Battle</h2>
+    <p>Nobody gives orders here. The party watches its factory start cold, ramp up, and send units across the neutral zone while the enemy does the same.</p>
+    <div class="sheet"><svg id="s-battle" class="big" viewBox="0 0 1280 720" role="img" aria-label="Battle screen wireframe: the enemy board at the top, a neutral zone in the middle, the party's board at the bottom, with status panels on both sides."></svg></div>
+    <ol class="notes">
+      <li>Who you are fighting and what kind of battle it is. A ghost shows the other party's names; a boss says so.</li>
+      <li>Your board, at the bottom, exactly as you built it. Conduits light up as resources flow.</li>
+      <li>The neutral zone. Its lakes and cliffs are generated for this battle and revealed when it starts. Buildings do nothing here; only units fight.</li>
+      <li>The enemy board, at the top. Your units attack buildings in their way and finally the Core.</li>
+      <li>Units from both sides meet and form a front line.</li>
+      <li>Your Core's health and how many walls still stand. The enemy's is in the matching panel on the right.</li>
+      <li>Live production and army counts, so you can see the ramp.</li>
+      <li>Army strength over time for both sides. Useful afterwards for seeing when you fell behind.</li>
+      <li>Speed controls. In co-op, a change applies once everyone agrees.</li>
+      <li>A log of the moments that mattered, such as a junction being destroyed.</li>
+      <li>Camera. It starts at the center of the map, and the view pans and zooms, so a larger map or a four-player battle still works on the same screen.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>2. Event choice</h2>
+    <p>After every battle the party picks one of three events. It opens with the battle result so the reward is seen before the next decision.</p>
+    <div class="sheet"><svg id="s-event" viewBox="0 0 960 540" role="img" aria-label="Event choice screen wireframe: a result strip above three event cards with vote markers."></svg></div>
+    <ol class="notes">
+      <li>Result of the battle just fought and what it paid.</li>
+      <li>Three offered events. Each says exactly what it does before you choose.</li>
+      <li>Votes from each player. The highlighted card is currently winning.</li>
+      <li>Who has voted and how ties are settled. There is no time limit; the event resolves once everyone has voted.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>3. Shop</h2>
+    <p>The shop always follows the event. Each player has their own offers and their own gold. Shop and Build are two tabs of the same step, so you can buy, place, and come back. Nothing is timed: the party moves on when every player has pressed Ready.</p>
+    <div class="sheet"><svg id="s-shop" viewBox="0 0 960 540" role="img" aria-label="Shop screen wireframe: five building offers, gold and re-roll, the player's stash, teammates, and a small view of the board."></svg></div>
+    <ol class="notes">
+      <li>Tabs for the two halves of this step.</li>
+      <li>Your offers. A card shows the kind, what it needs, what it does, and its price.</li>
+      <li>Gold buys buildings and re-rolls, nothing else.</li>
+      <li>Your stash: buildings you own that are not on the board. Drag here to sell.</li>
+      <li>Teammates' gold and stash, with a way to give gold. You do not see their offers. Hidden in solo.</li>
+      <li>What comes next. PvE options are shown ahead of time; a PvP opponent never is.</li>
+      <li>A small live view of the board that jumps to the Build tab.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>4. Build</h2>
+    <p>Where the factory is laid out. Everything except the Core can be moved, and conduits are free. In co-op every player edits this same board at once.</p>
+    <div class="sheet"><svg id="s-build" class="big" viewBox="0 0 1280 720" role="img" aria-label="Build screen wireframe: the board across the top with its front edge along the top, room for other players' plots on either side, and a dock along the bottom with stash, tools, inspector, overlays, and party panel."></svg></div>
+    <ol class="notes">
+      <li>Stash. Drag a building onto the board to place it; placing is free.</li>
+      <li>Tools. Conduit is always available and unlimited. Rotate turns the selected building.</li>
+      <li>The board. Lakes and cliffs cannot be built on. Extractors only go on resource nodes.</li>
+      <li>Conduits, one resource each, coloured by resource. They cannot cross; the splitter is what lets one line feed two buildings.</li>
+      <li>The Core. Placed once at the start of the run; it has no move handle.</li>
+      <li>The front edge, along the top. Enemy units enter along it.</li>
+      <li>Preview of the routes enemy units would take to the Core with this layout.</li>
+      <li>Inspector for the selected building: what it needs, what it is getting, what it produces.</li>
+      <li>Overlays and problems: a dry run of resource flow, the enemy-path preview, and anything unconnected.</li>
+      <li>Party panel: who is editing where, pings, and the Ready button. The battle starts when everyone is ready.</li>
+      <li>In co-op each extra player adds a plot to the side. A four-player board still fits the width of a 1080p screen, and everything below the board stays free for panels.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Questions these sketches raise</h2>
+    <ul class="open">
+      <li>Should teammates' shop offers become visible later? They are hidden for now, to be revisited after playtesting.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function () {
+  var NS = "http://www.w3.org/2000/svg";
+  function el(p, n, a, txt) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; p.appendChild(e); return e; }
+  function R(p, x, y, w, h, c) { return el(p, "rect", { x: x, y: y, width: w, height: h, class: c }); }
+  function T(p, x, y, s, c, anchor) { return el(p, "text", { x: x, y: y, class: c || "t", "text-anchor": anchor || "start" }, s); }
+  function lines(p, x, y, arr, c, lh) { arr.forEach(function (s, i) { T(p, x, y + i * (lh || 14), s, c); }); }
+  function btn(p, x, y, w, h, label, go) { R(p, x, y, w, h, go ? "btn-go" : "btn"); T(p, x + w / 2, y + h / 2 + 4, label, go ? "t go-t" : "t", "middle"); }
+  function mark(p, x, y, n, r) { el(p, "circle", { cx: x, cy: y, r: r || 9, class: "mark" }); T(p, x, y + (r ? 4.5 : 3.5), String(n), "mark-t", "middle"); }
+  function topbar(p, left, mid, right, w, h) {
+    w = w || 960; h = h || 540; var bh = w > 960 ? 40 : 36;
+    R(p, 0, 0, w, h, "frame"); R(p, 0, 0, w, bh, "bar");
+    T(p, 14, bh / 2 + 5, left, "th"); if (mid) T(p, w / 2, bh / 2 + 5, mid, "t tm", "middle"); T(p, w - 14, bh / 2 + 5, right, "t", "end");
+  }
+
+  // ---- board data: first number = depth (0 back .. 15 front), second = 0..23 along the front.
+  // Own board is drawn with its front edge at the top; the enemy board is flipped to face it.
+  var W = 16, H = 24;
+  var mine = {
+    lake: [[9,3],[10,3],[11,3],[9,4],[10,4],[11,4],[8,5],[9,5],[10,5],[11,5],[9,6],[10,6],[10,7]],
+    cliff: [[5,21],[6,21],[7,21],[8,21],[9,21],[9,22]],
+    nodes: [[4,4,"ore"],[5,18,"ore"],[7,10,"power"],[11,22,"flux"],[13,13,"power"]],
+    cond: [
+      ["ore", [[4,4],[4,8],[12,8]]],
+      ["power", [[7,10],[10,10],[10,12]]],
+      ["ore", [[5,18],[8,18]]],
+      ["ore", [[8,18],[12,18]]],
+      ["ore", [[8,18],[8,14]]]
+    ],
+    bld: [[4,4,1,1,"Ex"],[5,18,1,1,"Ex"],[7,10,1,1,"Ex"],[12,8,2,2,"Bk"],[10,12,1,1,"Tu"],[8,18,1,1,"Sp"],[12,17,2,2,"Fo"],[8,13,1,1,"Ar"]],
+    walls: [[14,0],[14,1],[14,2],[14,3],[14,4],[14,5],[14,11],[14,12],[14,13],[14,14],[14,15]],
+    core: [2,11]
+  };
+  var theirs = {
+    lake: [[6,14],[7,14],[8,14],[6,15],[7,15],[8,15],[7,16],[7,13]],
+    cliff: [[10,5],[10,6],[10,7],[11,7],[12,7]],
+    nodes: [[4,7,"ore"],[6,19,"power"],[9,10,"ore"],[12,20,"flux"]],
+    cond: [["ore", [[4,7],[4,3],[11,3]]], ["power", [[6,19],[11,19]]], ["ore", [[9,10],[12,10]]]],
+    bld: [[4,7,1,1,"Ex"],[6,19,1,1,"Ex"],[9,10,1,1,"Ex"],[11,2,2,2,"Bk"],[11,19,1,1,"Tu"],[12,10,2,2,"Fo"]],
+    walls: [[13,13],[13,14],[13,15],[13,16],[13,17]],
+    core: [2,8]
+  };
+  function board(p, ox, oy, S, d, enemy, bare) {
+    var g = el(p, "g", { transform: "translate(" + ox + "," + oy + ")" });
+    function C(dp, fr, wd, wf) { wd = wd || 1; wf = wf || 1;
+      return enemy ? { x: (H - fr - wf) * S, y: dp * S, w: wf * S, h: wd * S } : { x: fr * S, y: (W - dp - wd) * S, w: wf * S, h: wd * S }; }
+    function P(dp, fr) { return enemy ? [(H - fr - 0.5) * S, (dp + 0.5) * S] : [(fr + 0.5) * S, (W - dp - 0.5) * S]; }
+    R(g, 0, 0, H * S, W * S, "ground");
+    for (var i = 1; i < H; i++) el(g, "line", { x1: i * S, y1: 0, x2: i * S, y2: W * S, class: "gridl" });
+    for (var j = 1; j < W; j++) el(g, "line", { x1: 0, y1: j * S, x2: H * S, y2: j * S, class: "gridl" });
+    d.lake.forEach(function (c) { var q = C(c[0], c[1]); R(g, q.x, q.y, S, S, "water"); });
+    d.cliff.forEach(function (c) { var q = C(c[0], c[1]); R(g, q.x, q.y, S, S, "cliff"); });
+    d.cond.forEach(function (c) {
+      el(g, "polyline", { class: "cond c-" + c[0], points: c[1].map(function (q) { return P(q[0], q[1]).join(","); }).join(" ") });
+    });
+    d.nodes.forEach(function (n) {
+      var c = P(n[0], n[1]), cx = c[0], cy = c[1], r = S * 0.36;
+      el(g, "path", { class: "n-" + n[2], d: "M" + cx + "," + (cy - r) + " L" + (cx + r) + "," + cy + " L" + cx + "," + (cy + r) + " L" + (cx - r) + "," + cy + " Z" });
+      if (!bare) T(g, cx, cy + 3, n[2][0].toUpperCase(), "node-t", "middle");
+    });
+    d.walls.forEach(function (c) { var q = C(c[0], c[1]); R(g, q.x + 1, q.y + 2, S - 2, S - 4, "wall" + (enemy ? " e" : "")); });
+    d.bld.forEach(function (b) {
+      var q = C(b[0], b[1], b[2], b[3]);
+      R(g, q.x + 1.5, q.y + 1.5, q.w - 3, q.h - 3, "bld" + (enemy ? " e" : ""));
+      if (!bare) T(g, q.x + q.w / 2, q.y + q.h / 2 + 3.5, b[4], "bl", "middle");
+    });
+    var k = C(d.core[0], d.core[1], 2, 2);
+    R(g, k.x + 1, k.y + 1, k.w - 2, k.h - 2, "core" + (enemy ? " e" : ""));
+    if (!bare) T(g, k.x + k.w / 2, k.y + k.h / 2 + 3.5, "CORE", "core-t", "middle");
+    return g;
+  }
+  function units(p, list, cls, r) { list.forEach(function (u) { el(p, "circle", { cx: u[0], cy: u[1], r: r || 3.5, class: cls }); }); }
+
+  // ================= 1. BATTLE =================
+  (function () {
+    var s = document.getElementById("s-battle"), S = 16, bx = 448, by = 52;
+    topbar(s, "Cycle 4 \u00B7 PvP battle", "vs. ghost of \u201cAna + Bo\u201d", "Battle time 1:24  \u00B7  Lives 4 / 5", 1280, 720);
+    var zy = by + W * S, zh = 7 * S, my = zy + zh, bw = H * S;
+    board(s, bx, by, S, theirs, true);
+    R(s, bx, zy, bw, zh, "zone");
+    [[6,2],[7,2],[6,3],[7,3],[8,3],[7,4]].forEach(function (c) { R(s, bx + c[0] * S, zy + c[1] * S, S, S, "water"); });
+    [[14,3],[15,3],[16,3],[17,3],[17,4]].forEach(function (c) { R(s, bx + c[0] * S, zy + c[1] * S, S, S, "cliff"); });
+    T(s, bx + bw - 8, zy + 16, "NEUTRAL ZONE", "ts tm", "end");
+    board(s, bx, my, S, mine, false);
+    function side(label, y) { var x = bx - 9; T(s, x, y, label, "ts tm", "middle").setAttribute("transform", "rotate(-90 " + x + " " + y + ")"); }
+    side("ENEMY BOARD", by + W * S / 2); side("YOUR BOARD", my + W * S / 2);
+    function U(list, cls) { units(s, list.map(function (u) { return [bx + u[0] * S, by + u[1] * S]; }), cls, 4); }
+    U([[9,21.5],[10,20.6],[11,21],[12,21.4],[8,22.4],[13,22],[10,24],[12,25.2],[3,19.6],[4,20.6],[18,10],[19,11]], "u-a");
+    U([[9.5,19.6],[10.5,19],[11.5,19.7],[12.5,19.2],[11,18],[10,17.4],[3.5,18.6],[4.5,18],[20,27],[21,28.2]], "u-e");
+    // left: your side
+    var lx = 16, pw = 400;
+    R(s, lx, 52, pw, 110, "panel"); T(s, lx + 12, 76, "YOUR SIDE", "ts tm");
+    T(s, lx + 12, 106, "Core", "t"); R(s, lx + 84, 94, 300, 14, "hp"); R(s, lx + 84, 94, 236, 14, "hp-a");
+    T(s, lx + 12, 140, "Walls: 6 / 11 standing", "ts tm");
+    R(s, lx, 174, pw, 190, "panel"); T(s, lx + 12, 198, "PRODUCTION (per sec)", "ts tm");
+    lines(s, lx + 12, 226, ["Ore     3.0   \u25B2 ramping", "Power   1.0", "Flux    0.0"], "t", 22);
+    el(s, "line", { x1: lx + 12, y1: 286, x2: lx + pw - 12, y2: 286, class: "rule" });
+    lines(s, lx + 12, 312, ["Units alive   12  vs  10", "Units lost     7  vs  11"], "t", 22);
+    R(s, lx, 376, pw, 130, "panel"); T(s, lx + 12, 400, "PARTY", "ts tm");
+    lines(s, lx + 12, 428, ["You   watching: front line", "Ana   watching: enemy Core", "Bo    watching: own base"], "ts", 22);
+    R(s, lx, 518, pw, 158, "panel"); T(s, lx + 12, 542, "ARMY STRENGTH", "ts tm");
+    el(s, "line", { x1: lx + 16, y1: 656, x2: lx + pw - 16, y2: 656, class: "rule" });
+    el(s, "polyline", { class: "chart-a", points: "32,650 90,644 150,628 210,610 270,596 300,588" });
+    el(s, "polyline", { class: "chart-e", points: "32,646 90,632 150,624 210,620 270,612 300,608" });
+    el(s, "line", { x1: 300, y1: 556, x2: 300, y2: 656, class: "rule" }); T(s, 308, 572, "now", "ts tm");
+    T(s, lx + pw - 14, 672, "overload begins 4:00", "ts tm", "end");
+    // right: enemy and controls
+    var rx = 864;
+    R(s, rx, 52, pw, 110, "panel"); T(s, rx + 12, 76, "ENEMY", "ts tm");
+    T(s, rx + 12, 106, "Core", "t"); R(s, rx + 84, 94, 300, 14, "hp"); R(s, rx + 84, 94, 168, 14, "hp-e");
+    T(s, rx + 12, 140, "Walls: 3 / 5 standing", "ts tm");
+    R(s, rx, 174, pw, 190, "panel"); T(s, rx + 12, 198, "BATTLE LOG", "ts tm");
+    lines(s, rx + 12, 226, ["1:22  Your soldiers broke through on the left", "1:18  Enemy barracks destroyed", "1:05  Your splitter destroyed:", "      foundry and armory cut off", "0:02  Neutral zone revealed"], "ts", 22);
+    R(s, rx, 376, pw, 130, "panel"); T(s, rx + 12, 400, "SPEED", "ts tm");
+    btn(s, rx + 12, 414, 86, 34, "1\u00D7", true); btn(s, rx + 108, 414, 86, 34, "2\u00D7"); btn(s, rx + 204, 414, 86, 34, "4\u00D7"); btn(s, rx + 300, 414, 88, 34, "Skip");
+    T(s, rx + 12, 480, "co-op: all players must agree", "ts tm");
+    R(s, rx, 518, pw, 158, "panel"); T(s, rx + 12, 542, "CAMERA", "ts tm");
+    btn(s, rx + 12, 556, 120, 34, "Center", true); btn(s, rx + 140, 556, 120, 34, "My base"); btn(s, rx + 268, 556, 120, 34, "Fit battle");
+    lines(s, rx + 12, 622, ["Drag to pan \u00B7 scroll to zoom.", "Click a building to see what it is doing."], "ts tm", 22);
+    // marks
+    mark(s, 478, 20, 1, 11); mark(s, bx + 30, my + W * S - 24, 2, 11); mark(s, bx + 30, zy + 24, 3, 11); mark(s, bx + 30, by + 24, 4, 11);
+    mark(s, bx + 15 * S, by + 20.4 * S, 5, 11); mark(s, lx + pw - 18, 68, 6, 11); mark(s, lx + pw - 18, 190, 7, 11); mark(s, lx + pw - 18, 534, 8, 11);
+    mark(s, rx + pw - 18, 392, 9, 11); mark(s, rx + pw - 18, 190, 10, 11); mark(s, rx + pw - 18, 534, 11, 11);
+  })();
+
+  // ================= 2. EVENT =================
+  (function () {
+    var s = document.getElementById("s-event");
+    topbar(s, "Cycle 4 · Event", "pick one of three", "Lives 4 / 5");
+    R(s, 24, 48, 912, 40, "panel");
+    T(s, 38, 73, "PvE battle won  ·  Hard  ·  Rusher", "th"); T(s, 922, 73, "+12 gold each   ·   party pick: Turret (tier 2)", "t", "end");
+    var cards = [
+      ["Workshop", ["Raise one building the party", "owns by one tier."], ["Party chooses which building."], ["You", "Ana"], true],
+      ["Shrine", ["Choose 1 of 3 run modifiers.", "Lasts until the run ends."], ["e.g. walls +25% health,", "extractors start faster."], ["Bo"], false],
+      ["Gamble", ["Give up a building for a random", "one a tier higher. It may be", "a different kind."], ["Each player decides for", "themselves."], [], false]
+    ];
+    cards.forEach(function (c, i) {
+      var x = 40 + i * 300, y = 112, w = 280, h = 320;
+      R(s, x, y, w, h, "card" + (c[4] ? " pick" : ""));
+      R(s, x + 16, y + 16, 56, 56, "panel"); T(s, x + 44, y + 49, "icon", "ts tm", "middle");
+      T(s, x + 86, y + 52, c[0], "tb");
+      el(s, "line", { x1: x + 16, y1: y + 90, x2: x + w - 16, y2: y + 90, class: "rule" });
+      lines(s, x + 16, y + 116, c[1], "t", 17);
+      lines(s, x + 16, y + 196, c[2], "t tm", 17);
+      el(s, "line", { x1: x + 16, y1: y + 252, x2: x + w - 16, y2: y + 252, class: "rule" });
+      T(s, x + 16, y + 274, "VOTES", "ts tm");
+      c[3].forEach(function (n, k) { R(s, x + 16 + k * 62, y + 284, 56, 22, "btn"); T(s, x + 44 + k * 62, y + 299, n, "ts", "middle"); });
+      if (!c[3].length) T(s, x + 16, y + 299, "none yet", "ts tm");
+    });
+    R(s, 24, 456, 912, 60, "panel");
+    T(s, 38, 482, "2 of 3 voted \u00B7 waiting for Bo", "th"); T(s, 38, 502, "No time limit. Most votes wins; a tie is settled by the party leader.", "ts tm");
+    btn(s, 776, 468, 146, 36, "Confirm vote", true);
+    mark(s, 30, 54, 1); mark(s, 320, 120, 2); mark(s, 306, 390, 3); mark(s, 30, 462, 4);
+  })();
+
+  // ================= 3. SHOP =================
+  (function () {
+    var s = document.getElementById("s-shop");
+    topbar(s, "Cycle 4 · Shop + Build", "", "1 of 3 ready  ·  Lives 4 / 5");
+    btn(s, 380, 5, 96, 26, "Shop", true); btn(s, 482, 5, 96, 26, "Build");
+    T(s, 24, 62, "YOUR OFFERS", "ts tm");
+    var offers = [
+      ["Turret", "Defense · tier 1", "Needs: Power", ["Shoots enemy units", "on your side."], "4"],
+      ["Barracks", "Units · tier 1", "Needs: Ore", ["Spawns a soldier", "every few seconds."], "5"],
+      ["Wall", "Defense · tier 1", "Needs: nothing", ["Blocks movement.", "Has health."], "2"],
+      ["Splitter", "Route · tier 1", "Passes: any one", ["One conduit in,", "two out."], "3"],
+      ["Armory", "Economy · tier 2", "Needs: Ore", ["Units spawn stronger", "as the battle goes on."], "8"]
+    ];
+    offers.forEach(function (o, i) {
+      var x = 24 + i * 150, y = 72, w = 140, h = 230;
+      R(s, x, y, w, h, "card");
+      R(s, x + 12, y + 12, w - 24, 60, "panel"); T(s, x + w / 2, y + 46, "art", "ts tm", "middle");
+      T(s, x + 12, y + 94, o[0], "th"); T(s, x + 12, y + 110, o[1], "ts tm");
+      T(s, x + 12, y + 132, o[2], "ts");
+      lines(s, x + 12, y + 154, o[3], "ts", 13);
+      btn(s, x + 12, y + 190, w - 24, 28, "Buy  ·  " + o[4] + " gold", i === 0);
+    });
+    var px = 782, pw = 154;
+    R(s, px, 48, pw, 110, "panel"); T(s, px + 10, 66, "GOLD", "ts tm"); T(s, px + 10, 94, "14", "tb");
+    btn(s, px + 10, 112, pw - 20, 32, "Re-roll · 1 gold");
+    R(s, px, 166, pw, 136, "panel"); T(s, px + 10, 184, "YOUR STASH", "ts tm");
+    lines(s, px + 10, 204, ["Wall × 3", "Turret × 1", "Extractor × 1"], "t", 17);
+    R(s, px + 10, 262, pw - 20, 30, "box"); T(s, px + pw / 2, 281, "drag here to sell", "ts tm", "middle");
+    // party
+    R(s, 24, 318, 440, 206, "panel"); T(s, 36, 338, "PARTY (co-op)", "ts tm");
+    [["Ana", "9 gold", "stash: 2 buildings · ready"], ["Bo", "21 gold", "stash: empty · still shopping"]].forEach(function (r, i) {
+      var y = 352 + i * 62;
+      R(s, 36, y, 416, 52, "box"); T(s, 48, y + 22, r[0], "th"); T(s, 48, y + 40, r[2], "ts tm"); T(s, 150, y + 22, r[1], "t");
+      btn(s, 330, y + 12, 110, 28, "Give gold");
+    });
+    T(s, 36, 508, "You see only your own offers. Gold and buildings can be given.", "ts tm");
+    // next battle
+    R(s, 476, 318, 216, 206, "panel"); T(s, 488, 338, "NEXT BATTLE", "ts tm");
+    T(s, 488, 362, "PvP", "tb"); lines(s, 488, 384, ["Opponent unknown until", "the battle starts.", "", "Lose: −1 life", "Win: party pick"], "ts", 15);
+    // mini board
+    R(s, 704, 318, 232, 206, "panel"); T(s, 716, 338, "YOUR FACTORY", "ts tm");
+    var mg = el(s, "g", { transform: "translate(716,348) rotate(0)" });
+    board(mg, 0, 0, 6, mine, false, true);
+    T(s, 716, 462, "8 buildings placed \u00B7 1 unconnected", "ts tm");
+    btn(s, 716, 478, 208, 34, "Go to Build");
+    mark(s, 590, 18, 1); mark(s, 160, 80, 2); mark(s, px + pw - 14, 62, 3); mark(s, px + pw - 14, 180, 4); mark(s, 450, 332, 5); mark(s, 678, 332, 6); mark(s, 922, 332, 7);
+  })();
+
+  // ================= 4. BUILD =================
+  (function () {
+    var s = document.getElementById("s-build"), S = 20, bx = 400, by = 70, bw = H * S, bh = W * S;
+    topbar(s, "Cycle 4 \u00B7 Shop + Build", "", "1 of 3 ready  \u00B7  Lives 4 / 5", 1280, 720);
+    btn(s, 536, 6, 100, 28, "Shop"); btn(s, 644, 6, 100, 28, "Build", true);
+    T(s, bx + bw / 2, by - 8, "FRONT EDGE \u00B7 enemy units enter here", "ts tm", "middle");
+    R(s, 16, by, 368, bh, "plot"); T(s, 200, by + bh / 2, "co-op: another player\u2019s plot", "ts tm", "middle"); T(s, 200, by + bh / 2 + 18, "joins the board here", "ts tm", "middle");
+    R(s, 896, by, 368, bh, "plot"); T(s, 1080, by + bh / 2, "co-op: another player\u2019s plot", "ts tm", "middle"); T(s, 1080, by + bh / 2 + 18, "joins the board here", "ts tm", "middle");
+    board(s, bx, by, S, mine, false);
+    function path(pts) { el(s, "polyline", { class: "path", points: pts.map(function (q) { return (bx + q[1] * S) + "," + (by + (W - q[0]) * S); }).join(" ") }); }
+    path([[16,20],[10.5,20],[10.5,16.5],[4.5,16.5],[4.5,12.5],[4,12.5]]);
+    path([[16,9.5],[14.5,9.5],[14.5,10.5],[11.5,10.5],[11.5,11.5],[4,11.5]]);
+    R(s, bx + 8 * S - 2, by + 2 * S - 2, 2 * S + 4, 2 * S + 4, "sel");
+    // dock A: stash + tools
+    R(s, 16, 404, 320, 156, "panel"); T(s, 28, 426, "STASH \u00B7 drag onto the board", "ts tm");
+    [["Wall", "\u00D7 3"], ["Turret", "\u00D7 1"], ["Extractor", "\u00D7 1"]].forEach(function (r, i) {
+      var y = 436 + i * 40; R(s, 28, y, 296, 34, "box"); R(s, 34, y + 5, 24, 24, "bld"); T(s, 70, y + 22, r[0], "t"); T(s, 314, y + 22, r[1], "t", "end");
+    });
+    R(s, 16, 568, 320, 140, "panel"); T(s, 28, 590, "TOOLS", "ts tm");
+    [["Select / move", 0], ["Conduit \u00B7 free", 1], ["Rotate (R)", 0], ["Erase conduit", 0], ["To stash", 0], ["Undo", 0]].forEach(function (b, i) {
+      btn(s, 28 + (i % 2) * 152, 600 + Math.floor(i / 2) * 35, 144, 29, b[0], !!b[1]);
+    });
+    // dock B: inspector
+    R(s, 352, 404, 448, 304, "panel"); T(s, 364, 426, "SELECTED", "ts tm");
+    T(s, 364, 458, "Barracks", "tb"); T(s, 474, 458, "Units \u00B7 tier 1 \u00B7 bought by You", "ts tm");
+    lines(s, 364, 492, ["Needs      Ore 2.0 / sec", "Receiving  Ore 1.5 / sec", "           extractor is 12 cells away", "Produces   1 soldier / 5.3 s (4.0 s at full)", "Health     120"], "t", 24);
+    btn(s, 364, 664, 120, 30, "Rotate"); btn(s, 492, 664, 150, 30, "To stash"); btn(s, 650, 664, 138, 30, "Sell in Shop");
+    // dock C: overlays + party
+    R(s, 816, 404, 448, 156, "panel"); T(s, 828, 426, "OVERLAYS", "ts tm");
+    btn(s, 828, 436, 136, 30, "Resource flow"); btn(s, 972, 436, 136, 30, "Enemy paths", true); btn(s, 1116, 436, 136, 30, "Dry run 60s");
+    T(s, 828, 492, "PROBLEMS", "ts tm");
+    lines(s, 828, 512, ["\u26A0 Extractor in stash: 2 free nodes (Power, Flux)", "\u26A0 Armory is fed through a 9-cell conduit", "\u2713 No conduits cross"], "ts", 18);
+    R(s, 816, 568, 448, 140, "panel"); T(s, 828, 590, "PARTY (co-op) \u00B7 everyone edits this board", "ts tm");
+    lines(s, 828, 614, ["You   placing walls near the front    ready: no", "Ana   routing Power to turrets        ready: yes", "Bo    in Shop                         ready: no"], "ts", 18);
+    T(s, 828, 690, "Next: PvP \u00B7 opponent unknown", "ts tm");
+    btn(s, 1104, 668, 148, 30, "Ready", true);
+    // marks
+    mark(s, 318, 420, 1, 11); mark(s, 318, 584, 2, 11); mark(s, bx + 450, by + 290, 3, 11); mark(s, bx + 150, by + 165, 4, 11); mark(s, bx + 284, by + 262, 5, 11);
+    mark(s, 790, by - 12, 6, 11); mark(s, bx + 424, by + 60, 7, 11); mark(s, 782, 420, 8, 11); mark(s, 1246, 420, 9, 11); mark(s, 1246, 584, 10, 11); mark(s, 200, by + 40, 11, 11);
+  })();
+})();
+</script>
+
+</body>
+</html>
