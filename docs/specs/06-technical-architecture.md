@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v4.1
+Status: Draft v4.2
 
 ## Direction
 
@@ -18,9 +18,10 @@ Status: Draft v4.1
   servers, no database, no account system of our own. Anything Steam cannot
   provide is either designed around or deferred (see "Trust model").
 
-Specific Steamworks behaviours and limits below are from general knowledge of
-the API and **must be confirmed against current Steamworks documentation in a
-spike** (TA-30) before the dependent backlog items are written.
+Steamworks behaviours and limits below are a mix of points checked against
+documentation and points still from general knowledge. "What has been
+checked" lists which is which; the rest **must be confirmed in a spike**
+(TA-30) before the dependent backlog items are written.
 
 ## Phase 1 — Web proof of concept
 
@@ -401,6 +402,52 @@ is deliberate.
   replays, and bug reports. Golden test vectors (stored inputs → expected
   result hash) guard against accidental behaviour changes.
 
+## What has been checked
+
+Looked up in November 2026 through web search. The Steamworks documentation
+site itself could not be opened from the environment these specs were
+written in, so each point rests on search results quoting or summarizing
+the page named, not on a direct reading. Treat them as strong leads and
+re-read the pages during the spike.
+
+| Point | Finding | Source |
+|-------|---------|--------|
+| Attaching a file to a leaderboard entry | `AttachLeaderboardUGC` attaches content to the current user's entry; the handle comes from a file shared with `ISteamRemoteStorage::FileShare` | Steamworks `ISteamUserStats` reference |
+| Creating leaderboards from the game | Possible with `FindOrCreateLeaderboard`; Valve recommends creating them in the admin panel unless many are created dynamically, which is this case | Steamworks leaderboards docs; Facepunch wiki |
+| Leaderboards per game | **Up to 10,000** | Search summary of Steamworks leaderboards docs |
+| Upload rate | **10 score uploads per 10 minutes** per user, one outstanding call at a time | Forum post quoting Valve's `UploadLeaderboardScore` docs |
+| Deleting old leaderboards | The Web API `ISteamLeaderboards` has `DeleteLeaderboard`, `ResetLeaderboard`, and `GetLeaderboardsForGame`. They need the **publisher key** and must be called from a secure server, never from the game | Steamworks `ISteamLeaderboards` and Web API auth docs |
+| Trusted writes | A leaderboard can be set so that only a server with the publisher key can write scores | Third-party toolkit docs (Heathen); confirm with Valve's |
+| Steam Cloud quota | Set by the developer per game: bytes per user and files per user | Steamworks Cloud docs |
+
+What this changes:
+
+- **The 10,000 limit makes deletion matter.** Ghost buckets use about 4
+  party sizes × the number of cycles, per run version — roughly 120 per
+  version if runs reach cycle 30. Without cleanup that is around 80 versions
+  before the limit; with cleanup on major releases it is not a concern.
+  Buckets for very deep cycles should share one leaderboard ("cycle N and
+  beyond") so a single long run cannot create an unbounded number.
+- **Bulk deletion looks feasible** (TA-36): list with
+  `GetLeaderboardsForGame`, select by the version in the name, delete with
+  `DeleteLeaderboard`. It needs the publisher key, which fits the pipeline
+  design in TA-35 (a secret, used from a server, never shipped in the game).
+- **The upload limit fits**: a party uploads one snapshot per PvP battle,
+  far below 10 per 10 minutes.
+- **Trusted writes exist**, which is what the anti-cheat server (TA-24)
+  would rely on.
+
+Still unconfirmed:
+
+- whether Steam charges anything for leaderboards or shared files (nothing
+  found either way);
+- whether deleting a leaderboard also removes the files attached to its
+  entries;
+- whether a shared file counts against the uploader's Cloud quota;
+- the size of the per-entry details payload, and that a user has only one
+  entry per leaderboard (TA-18 assumes both);
+- how a game picks a random entry (rank-range download and entry count).
+
 ## Spikes needed before committing to details
 
 - **TA-30 [PROPOSED]** A short Steamworks spike, using a real app ID, to
@@ -460,12 +507,11 @@ is deliberate.
   - It can be run in a dry-run mode that only lists what would be deleted.
   - The Steamworks credentials it needs are stored as pipeline secrets,
     never in the repository.
-- **TA-36 [PROPOSED]** Which Steamworks interface can delete leaderboards and
-  their attached files in bulk, and with what credentials, is unconfirmed
-  and is part of the spike (TA-30). So is whether Steam charges for, or
-  limits, this storage; the working assumption, to be confirmed, is that
-  leaderboards and players' shared files carry no fee but are subject to
-  per-game limits and to each player's own storage quota.
+- **TA-36 [PROPOSED]** Deletion uses the Steamworks Web API
+  (`GetLeaderboardsForGame`, then `DeleteLeaderboard` for each old-version
+  bucket), authenticated with the publisher key; see "What has been
+  checked". Whether that also removes attached files, and whether Steam
+  charges for this storage, are unconfirmed and part of the spike (TA-30).
 - **TA-37 [OPEN]** If bulk deletion by the developers turns out not to be
   possible, old ghost data cannot be fully deleted as TA-8 requires. What
   would remain is leaderboard entries that no game version reads; the files
