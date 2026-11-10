@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { Ajv2020 } from 'ajv/dist/2020.js';
-import type { ContentEntry } from './registry.js';
+import type { ContentEntry, LoadedContent } from './registry.js';
 
 function readJson(file: string): unknown {
   try {
@@ -23,6 +23,7 @@ export function validateContent(
   registry: readonly ContentEntry[],
 ): string[] {
   const problems: string[] = [];
+  const loadedContent: LoadedContent = {};
   for (const entry of registry) {
     const contentPath = path.join(repoRoot, 'content', entry.contentFile);
     const schemaPath = path.join(repoRoot, 'schemas', entry.schemaFile);
@@ -45,8 +46,11 @@ export function validateContent(
         );
       }
     }
-    const loaded = entry.load(data);
-    if (!loaded.ok) {
+    if (entry.needs?.some((k) => loadedContent[k] === undefined)) continue;
+    const loaded = entry.load(data, loadedContent);
+    if (loaded.ok) {
+      (loadedContent as Record<string, unknown>)[entry.key] = loaded.value;
+    } else {
       for (const message of loaded.errors) {
         problems.push(`${label}: loader: ${message}`);
       }

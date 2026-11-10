@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "presentation.schema.json",
+  "title": "Presentation text (one language)",
+  "description": "Display names and descriptions keyed by content ID. No rules. Descriptions may mention a resource as {res_x}, which is replaced by its configured name. A cross-file check requires exactly one entry per building, unit, and terrain feature.",
+  "type": "object",
+  "required": ["buildings", "units", "terrain"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "buildings": { "$ref": "#/$defs/groupBuildings" },
+    "units": { "$ref": "#/$defs/groupUnits" },
+    "terrain": { "$ref": "#/$defs/groupTerrain" }
+  },
+  "$defs": {
+    "groupBuildings": {
+      "type": "object",
+      "propertyNames": { "pattern": "^bld_[a-z0-9_]+$" },
+      "additionalProperties": { "$ref": "#/$defs/entry" }
+    },
+    "groupUnits": {
+      "type": "object",
+      "propertyNames": { "pattern": "^unit_[a-z0-9_]+$" },
+      "additionalProperties": { "$ref": "#/$defs/entry" }
+    },
+    "groupTerrain": {
+      "type": "object",
+      "propertyNames": { "pattern": "^ter_[a-z0-9_]+$" },
+      "additionalProperties": { "$ref": "#/$defs/entry" }
+    },
+    "entry": {
+      "type": "object",
+      "required": ["name", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "description": { "type": "string", "minLength": 1, "pattern": "\\S" }
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "../schemas/units.schema.json",
+  "units": [
+    {
+      "id": "unit_soldier",
+      "health": 40,
+      "damage": 6,
+      "attackCooldownTicks": 10,
+      "rangeCells": 0,
+      "moveCooldownTicks": 6,
+      "targeting": "core"
+    },
+    {
+      "id": "unit_raider",
+      "health": 25,
+      "damage": 8,
+      "attackCooldownTicks": 8,
+      "rangeCells": 0,
+      "moveCooldownTicks": 4,
+      "targeting": "infrastructure"
+    }
+  ]
+}

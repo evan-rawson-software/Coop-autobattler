@@ -4,5 +4,13 @@
  * without validation.
  */
 import resourcesJson from '../../../content/resources.json';
+import terrainJson from '../../../content/terrain.json';
+import unitsJson from '../../../content/units.json';
+import buildingsJson from '../../../content/buildings.json';
+import presentationEnJson from '../../../content/presentation.en.json';
 
 export const rawResources: unknown = resourcesJson;
+export const rawTerrain: unknown = terrainJson;
+export const rawUnits: unknown = unitsJson;
+export const rawBuildings: unknown = buildingsJson;
+export const rawPresentationEn: unknown = presentationEnJson;

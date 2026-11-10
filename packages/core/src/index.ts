@@ -7,6 +7,69 @@ export type {
   ResourceId,
   ResourceLoadResult,
 } from './resources.js';
+export { loadTerrain, loadTerrainOrThrow } from './terrain.js';
+export type {
+  TerrainConfig,
+  TerrainFeatureDef,
+  TerrainFeatureId,
+  TerrainLoadResult,
+} from './terrain.js';
+export { loadUnits, loadUnitsOrThrow } from './units.js';
+export type {
+  Targeting,
+  UnitConfig,
+  UnitDef,
+  UnitId,
+  UnitLoadResult,
+} from './units.js';
+export {
+  loadBuildings,
+  loadBuildingsOrThrow,
+  oppositeSide,
+  rotateBuilding,
+  rotateSide,
+} from './buildings.js';
+export type {
+  BuildingConfig,
+  BuildingDef,
+  BuildingId,
+  BuildingInput,
+  BuildingKind,
+  BuildingLoadContext,
+  BuildingLoadResult,
+  CoreBuildingDef,
+  CoreTier,
+  DefenseBuildingDef,
+  DefenseType,
+  EconomyBuildingDef,
+  EconomyEffectType,
+  EconomyTier,
+  Footprint,
+  RotatedBuilding,
+  Rotation,
+  RouteBuildingDef,
+  RouteType,
+  Side,
+  SourceBuildingDef,
+  SourceTier,
+  TierBase,
+  Tiers3,
+  TurretBuildingDef,
+  TurretTier,
+  UnitProducerBuildingDef,
+  UnitProducerTier,
+  WallOrGateBuildingDef,
+} from './buildings.js';
+export { loadPresentation, loadPresentationOrThrow } from './presentation.js';
+export type {
+  PresentationConfig,
+  PresentationEntry,
+  PresentationLoadContext,
+  PresentationLoadResult,
+} from './presentation.js';
+export { formatText, placeholderIds } from './text.js';
+export { loadAllContent, loadAllContentOrThrow } from './content.js';
+export type { Content, ContentLoadResult, RawContent } from './content.js';
 export { Rng } from './rng.js';
 export {
   BPS_SCALE,

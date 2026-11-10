@@ -1,0 +1,7 @@
+{
+  "$schema": "../schemas/terrain.schema.json",
+  "features": [
+    { "id": "ter_lake", "blocksBuilding": true, "blocksMovement": true },
+    { "id": "ter_cliff", "blocksBuilding": true, "blocksMovement": true }
+  ]
+}
