@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v2.9
+Status: Draft v3.0
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -50,13 +50,6 @@ everything else movable. Open:
   is an endgame constraint (CB-25).
 - Decided: no long-range buildings; defenses only target enemy units on
   the party's own side (CB-3j).
-
-## Q3. Player identity
-
-Do players pick a hero/class at run start that shapes their shop or grants a
-passive? Recommended: yes, but after the first playable. It gives each party
-member a distinct role and adds run variety. Must be encoded in team state if
-it affects combat.
 
 ## Q4. Details of the loop
 
