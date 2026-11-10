@@ -88,6 +88,9 @@ importers:
       '@game/core':
         specifier: workspace:*
         version: link:../core
+      '@game/session':
+        specifier: workspace:*
+        version: link:../session
       ajv:
         specifier: 8.20.0
         version: 8.20.0
