@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v2.0
+Status: Draft v2.1
 
 ## Direction
 
@@ -102,13 +102,36 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   - Its features are **different every battle** and are **hidden from the
     players until the battle begins**, so there is nothing to plan around
     and no reason to rearrange the whole factory for each battle.
+  - It can also contain **points of interest** that **give buffs to the
+    side that controls them**, and that are **guarded by neutral units**.
+- **CB-8c [PROPOSED]** Points of interest:
+  - **Guards** are neutral units that hold their position and attack any
+    unit of either side that comes within reach.
+  - **Control**: once the guards are dead, a point belongs to whichever
+    side has units on it and the other does not; it can change hands during
+    the battle. The buff applies while the point is held and ends with the
+    battle.
+  - **Buffs** are battle-wide for the controlling side, e.g. sources
+    produce faster, units spawn stronger, units heal near the point, a
+    trickle of a rare resource.
+  - **Who goes for them**: since players never command units, capturing has
+    to come from the build. Starting proposal: most units ignore points of
+    interest and march on the enemy; certain unit types (scouts, raiders)
+    are drawn to the nearest uncontrolled or enemy-held point first. A party
+    chooses how much to invest in contesting the middle without knowing what
+    will be there. See Q2.
+  - Like the rest of the zone, points and guards are generated from the
+    battle seed, hidden until the battle begins, and placed fairly: mirrored
+    or equidistant so neither side is favoured.
+  - Guard strength scales with the cycle so points stay worth fighting for
+    at any depth.
 - **CB-8a [PROPOSED]** Details of the neutral zone:
   - It is generated from the battle seed, so a battle remains reproducible
     (CB-30).
   - Nothing can be built in it and neither side's buildings act in it
     (CB-3j); only units fight there.
   - It is as wide as the front edges and only a few cells deep (starting
-    proposal: 4–6).
+    proposal: 6–8, enough to hold a point of interest and its guards).
   - Generation guarantees open paths across it, and that its features can
     shift where units arrive along a front edge but cannot seal part of an
     edge off entirely.

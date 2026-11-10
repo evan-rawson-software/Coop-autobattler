@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v2.0
+Status: Draft v2.1
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -25,6 +25,10 @@ everything else movable. Open:
   can be destroyed (CB-9a).
 - Decided: a small neutral zone with its own natural features is generated
   between the boards each battle and hidden until the battle begins (CB-8).
+- Decided: the neutral zone can hold points of interest that buff whoever
+  controls them, guarded by neutral units (CB-8). Open: how units decide to
+  go for them (proposed: dedicated unit types, CB-8c), how control is
+  held, and what the buffs are.
 - **Map and plot size**, and board shape at 2–4 players (CB-4).
 - Decided: buildings can be rotated. Conduits are free and unlimited, take
   space, cannot cross without a route building, and cannot be targeted
