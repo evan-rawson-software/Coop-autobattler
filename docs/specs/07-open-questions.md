@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v1.5
+Status: Draft v1.6
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -21,9 +21,8 @@ buys time; random resource nodes and natural features; buildings that
 produce units which march on the enemy base; Core fixed for the run,
 everything else movable. Open:
 
-- **Do units fight units?** Proposed yes — opposing units engage and a
-  front line forms (CB-16). Alternative: units ignore each other and only
-  defenses kill them.
+- Decided: units fight each other when they meet (CB-16); route buildings
+  can be destroyed (CB-9a).
 - **How the two boards meet.** Proposed: joined front edge to front edge
   (CB-8). Alternative: a neutral strip of ground between them.
 - **Map and plot size**, and board shape at 2–4 players (CB-4).

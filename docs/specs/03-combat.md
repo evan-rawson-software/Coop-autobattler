@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v1.5
+Status: Draft v1.6
 
 ## Direction
 
@@ -105,6 +105,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
     conduit directly. Junctions (splitters, mergers, crossovers) take every
     stretch attached to them when they fall, which makes them worth
     protecting.
+  - **Route buildings can be destroyed** like any other building [DECIDED].
   - Like all battle damage, destroyed conduits and buildings are restored
     for the next battle (CB-11).
 - **CB-9b** A building's **rotation** sets which sides take charge in and
@@ -135,10 +136,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   turrets, and so on. Killing infrastructure matters — destroying a source
   or a junction cripples the enemy's ramp for the rest of the battle.
   Conduits themselves are never targets (CB-3h).
-- **CB-16** **Units fight units.** Opposing units that meet engage each
-  other, so a front line forms between the bases and moves with the balance
-  of production. (Alternative: units ignore each other and only defenses
-  kill units — simpler, more like pure tower defense. See Q2.)
+- **CB-16 [DECIDED]** **Units fight units.** Opposing units that meet engage
+  each other, so a front line forms between the bases and moves with the
+  balance of production.
 - **CB-17** A side loses when its Core is destroyed.
 
 ## Defense and terrain
