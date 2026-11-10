@@ -1,5 +1,6 @@
 import {
   loadBuildings,
+  loadEconomy,
   loadMapgen,
   loadPresentation,
   loadSimConfig,
@@ -7,6 +8,7 @@ import {
   loadTerrain,
   loadUnits,
   type BuildingConfig,
+  type EconomyConfig,
   type MapgenConfig,
   type PresentationConfig,
   type ResourceConfig,
@@ -22,6 +24,7 @@ export interface LoadedContent {
   units?: UnitConfig;
   buildings?: BuildingConfig;
   mapgen?: MapgenConfig;
+  economy?: EconomyConfig;
   sim?: SimConfig;
   presentation?: PresentationConfig;
 }
@@ -110,6 +113,14 @@ export const contentRegistry: readonly ContentEntry[] = [
     contentFile: 'sim.json',
     schemaFile: 'sim.schema.json',
     load: (data) => wrap(loadSimConfig(data)),
+  },
+  {
+    key: 'economy',
+    contentFile: 'economy.json',
+    schemaFile: 'economy.schema.json',
+    needs: ['buildings'],
+    load: (data, loaded) =>
+      wrap(loadEconomy(data, { buildings: need(loaded, 'buildings') })),
   },
   {
     key: 'presentation',

@@ -9,6 +9,7 @@ import unitsJson from '../../../content/units.json';
 import buildingsJson from '../../../content/buildings.json';
 import mapgenJson from '../../../content/mapgen.json';
 import simJson from '../../../content/sim.json';
+import economyJson from '../../../content/economy.json';
 import presentationEnJson from '../../../content/presentation.en.json';
 
 export const rawResources: unknown = resourcesJson;
@@ -18,3 +19,4 @@ export const rawBuildings: unknown = buildingsJson;
 export const rawPresentationEn: unknown = presentationEnJson;
 export const rawMapgen: unknown = mapgenJson;
 export const rawSim: unknown = simJson;
+export const rawEconomy: unknown = economyJson;

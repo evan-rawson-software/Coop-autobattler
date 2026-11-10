@@ -95,10 +95,53 @@
         "required": ["gold", "ready", "shop"],
         "additionalProperties": false,
         "properties": {
-          "gold": { "type": "integer" },
+          "gold": { "type": "integer", "minimum": 0 },
           "ready": { "type": "boolean" },
           "shop": {
-            "description": "This player's shop offers. Opaque JSON owned by the shop rules."
+            "description": "This player's shop: null before a shop was entered, else the offers (null once bought) and the saved state of the player's shop RNG stream.",
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["offers", "stream"],
+                "additionalProperties": false,
+                "properties": {
+                  "offers": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        { "type": "null" },
+                        {
+                          "type": "object",
+                          "required": ["slot", "def", "tier", "price"],
+                          "additionalProperties": false,
+                          "properties": {
+                            "slot": { "type": "integer", "minimum": 0 },
+                            "def": { "type": "string", "minLength": 1 },
+                            "tier": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 3
+                            },
+                            "price": { "type": "integer", "minimum": 0 }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "stream": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4294967295
+                    }
+                  }
+                }
+              }
+            ]
           }
         }
       }

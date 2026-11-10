@@ -42,6 +42,28 @@ function isJson(v: unknown, depth = 0): boolean {
   return false;
 }
 
+/** Shop data: null, or {offers: (offer | null)[], stream: 4 u32}. */
+function validShop(v: unknown): boolean {
+  if (v === null) return true;
+  if (!isRec(v) || !Array.isArray(v['offers']) || !Array.isArray(v['stream'])) {
+    return false;
+  }
+  const stream = v['stream'] as unknown[];
+  if (stream.length !== 4 || !stream.every(isU32)) return false;
+  return (v['offers'] as unknown[]).every(
+    (o, slot) =>
+      o === null ||
+      (isRec(o) &&
+        o['slot'] === slot &&
+        typeof o['def'] === 'string' &&
+        isInt(o['tier']) &&
+        o['tier'] >= 1 &&
+        o['tier'] <= 3 &&
+        isInt(o['price']) &&
+        o['price'] >= 0),
+  );
+}
+
 const KEYS = [
   'runId',
   'runVersion',
@@ -205,12 +227,17 @@ function check(
       if (
         !isRec(p) ||
         !isInt(p['gold']) ||
+        p['gold'] < 0 ||
         typeof p['ready'] !== 'boolean' ||
         !('shop' in p) ||
         !isJson(p['shop'])
       ) {
         err(
-          `perPlayer[${String(i)}]: must be {gold: integer, ready: boolean, shop: JSON}.`,
+          `perPlayer[${String(i)}]: must be {gold: integer >= 0, ready: boolean, shop: JSON}.`,
+        );
+      } else if (!validShop(p['shop'])) {
+        err(
+          `perPlayer[${String(i)}].shop: must be null or {offers, stream} with offers {slot, def, tier, price} or null.`,
         );
       } else if (p['ready'] && !READY_STEPS.includes(st)) {
         err(`perPlayer[${String(i)}]: ready is not possible in step "${st}".`);

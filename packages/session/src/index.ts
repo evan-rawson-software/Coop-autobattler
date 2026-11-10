@@ -20,6 +20,14 @@ export {
   fixedBattle,
   stubBattle,
 } from './defaults.js';
+export {
+  createEconomyDeps,
+  economyHandlers,
+  economyHooks,
+  playerShopLabel,
+  readShop,
+  type ShopData,
+} from './economy.js';
 export { drawStream, streamLabels } from './streams.js';
 export { STEP_INTENTS } from './step-table.js';
 export {

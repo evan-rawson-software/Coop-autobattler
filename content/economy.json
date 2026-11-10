@@ -1,0 +1,32 @@
+{
+  "$schema": "../schemas/economy.schema.json",
+  "startingGold": 10,
+  "startingKit": [
+    { "def": "bld_extractor", "tier": 1, "count": 2 },
+    { "def": "bld_barracks", "tier": 1, "count": 1 },
+    { "def": "bld_wall", "tier": 1, "count": 3 },
+    { "def": "bld_turret", "tier": 1, "count": 1 }
+  ],
+  "baseIncomePerShop": 3,
+  "shopOfferCount": 5,
+  "rerollCost": 1,
+  "sellRefundPercent": 50,
+  "offerWeights": [
+    { "def": "bld_extractor", "weight": 10 },
+    { "def": "bld_splitter", "weight": 6 },
+    { "def": "bld_merger", "weight": 6 },
+    { "def": "bld_crossover", "weight": 4 },
+    { "def": "bld_barracks", "weight": 10 },
+    { "def": "bld_wall", "weight": 8 },
+    { "def": "bld_gate", "weight": 5 },
+    { "def": "bld_turret", "weight": 8 },
+    { "def": "bld_overclocker", "weight": 3 }
+  ],
+  "tierOdds": [
+    { "fromRound": 1, "weights": [100, 0, 0] },
+    { "fromRound": 3, "weights": [80, 20, 0] },
+    { "fromRound": 5, "weights": [60, 35, 5] },
+    { "fromRound": 8, "weights": [40, 40, 20] },
+    { "fromRound": 12, "weights": [25, 40, 35] }
+  ]
+}

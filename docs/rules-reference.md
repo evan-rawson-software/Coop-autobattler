@@ -1224,3 +1224,75 @@ broken as follows:
   battle (same team, 180-degree rotated) stays exactly symmetric.
 - **Breach routes:** least total cost; equal-cost neighbours by tie key. The
   cost of a building depends on its health when the breach field was computed.
+
+## Shops and gold
+
+Placeholder numbers live in `content/economy.json`; the rules below are what
+the code does. Code: `packages/core/src/shop.ts`, `weighted.ts`, `economy.ts`
+and `packages/session/src/economy.ts`.
+
+### Gold
+
+Each player has their own gold (an integer, never negative). Gold is spent
+only at shops, on buildings and re-rolls. It never appears in the battle
+simulation. Each player starts the run with `startingGold` and, once per
+player, the `startingKit` buildings in their stash (owner = that player); this
+happens when the Core is placed, on entering the first `build` step.
+
+### Income
+
+On entering each `shop` step (both shops of every round), every player is paid
+`baseIncomePerShop`, and their offers are rolled in the same step. The first
+`build` step has no income and no offers.
+
+### Weighted pick
+
+`pickWeightedIndex(rng, weights)`: weights are non-negative integers with a
+positive sum `T`. Draw `x = rng.nextInt(T)` (one draw). Return the first index
+`i` with `x < w0 + ... + wi`.
+
+### Offer roll
+
+`rollOffers(rng, round)` makes `shopOfferCount` offers, for slot 0, 1, ... in
+order. Per slot, exactly two draws, in this order:
+
+1. the building: `pickWeightedIndex` over `offerWeights` (file order);
+2. the tier: `pickWeightedIndex` over the weights `[w1, w2, w3]` of the
+   applicable `tierOdds` row; the result plus 1 is the tier.
+
+Duplicates across slots are allowed. The offer is `{slot, def, tier, price}`
+where `price` is that tier's `price` in `buildings.json`. Buildings not in
+`offerWeights` are never offered; the Core cannot be listed.
+
+### Tier odds lookup
+
+`tierOdds` rows are sorted by `fromRound`, starting at 1. The row with the
+largest `fromRound` not greater than the current round applies (a round past
+the last row uses the last row). The maximum tier is 3, fixed by the building
+content.
+
+### Streams
+
+Entering a shop gives the hook the stream `shop:r<round>:<leg>`. Player `i`'s
+offers are rolled from that stream's child `p<i>`. The saved state of that
+child stream is stored with the offers in `perPlayer[i].shop`
+(`{offers, stream}`), so offers exist in the run state before anything is
+shown, and reloading or replaying never changes them.
+
+### Buying, selling, re-rolling
+
+- Buy `{slot}`: needs the slot to hold an offer (`no_such_offer` otherwise,
+  including a slot already bought) and `gold >= price` (`not_enough_gold`).
+  Pays `price`, adds a new stash entry for the buyer, and empties the slot
+  until the next roll. Buildings never merge: three identical purchases are
+  three entries.
+- Sell `{id}`: only a stash entry (`not_in_stash` if it does not exist or is
+  placed on the board) of the seller (`not_owner` otherwise). Refund =
+  floor(tier price x `sellRefundPercent` / 100). Selling is also allowed in the
+  first `build` step.
+- Re-roll `{}`: needs `gold >= rerollCost` (`not_enough_gold`). Pays it and
+  replaces all of that player's offers with a roll from the next draws of that
+  player's stored shop stream (so two re-rolls differ). A re-roll also brings
+  back bought slots.
+- Buy and re-roll are legal only in the `shop` step (`wrong_step` elsewhere,
+  including the first `build`). None of these can be undone.

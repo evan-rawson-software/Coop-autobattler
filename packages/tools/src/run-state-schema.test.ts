@@ -60,7 +60,10 @@ describe('run-state.schema.json', () => {
         perPlayer: s.perPlayer.map((p) => ({
           ...p,
           gold: 3,
-          shop: { offers: ['bld_extractor'] },
+          shop: {
+            offers: [{ slot: 0, def: 'bld_extractor', tier: 1, price: 10 }],
+            stream: [1, 2, 3, 4],
+          },
         })),
         team: {
           ...s.team,

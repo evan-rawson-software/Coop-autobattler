@@ -53,14 +53,14 @@ All are fields of `RunDeps`; `createDeps` fills the defaults.
 | Seam                         | Default                                 | Filled by                      |
 | ---------------------------- | --------------------------------------- | ------------------------------ |
 | `battle.resolve`             | `stubBattle` (seeded roll vs buildings) | the battle simulation          |
-| `hooks.startingKit`          | no-op                                   | W2-2 (starting buildings, gold) |
-| `hooks.onShopEnter`          | no-op                                   | W2-2 (roll offers, base income) |
+| `hooks.startingKit`          | no-op                                   | W2-2: `economyHooks` / `createEconomyDeps` |
+| `hooks.onShopEnter`          | no-op                                   | W2-2: `economyHooks` (offers, income; `shop:r<r>:<leg>` child `p<i>`) |
 | `hooks.pveOptions`           | easy, medium, hard                      | W2-3                           |
 | `hooks.eventOffers`          | three placeholder offers                | W2-3                           |
 | `hooks.resolveEvent`         | no effect, no follow-up                 | W2-3                           |
 | `hooks.rewards`              | no-op                                   | W2-3 (gold, consolation gold)  |
 | `rules` (`RunRules`)         | 5 lives, PvP loss costs 1               | difficulty options (W2-3)      |
-| `handlers` (intent registry) | empty                                   | W2-2 (buy, sell, re-roll), W2-3 (event follow-ups) |
+| `handlers` (intent registry) | empty                                   | W2-2 `buy`, `sell` (shop, build), `reroll` via `economyHandlers`, W2-3 (event follow-ups) |
 | `perPlayer[i].shop`, `pending` | `null`, per step                      | opaque JSON owned by W2-2 / W2-3 |
 
 State hooks return a `StatePatch` (`team` and/or `perPlayer`); the machine
