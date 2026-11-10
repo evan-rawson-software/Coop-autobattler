@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v1.3
+Status: Draft v1.7
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.
@@ -72,8 +72,8 @@ the missed reward (RS-3a). The exponential curve still ends every run:
 first. Gold (next section) is never produced by the factory.
 
 - **SC-8 [PROPOSED]** In-battle ramp (CB-3) must not let the party outgrow
-  PvE indefinitely. Limits, in order of importance: board space and steep
-  expansion costs (CB-24, CB-25); caps or diminishing returns on each
+  PvE indefinitely. Limits, in order of importance: a fixed board size that
+  the factory eventually fills (CB-24, CB-25); caps or diminishing returns on each
   economy building's in-battle effect; PvE threats whose early pressure grows
   with depth, leaving less time to ramp. The balance harness must chart
   party power **over battle time** as well as over cycles.
@@ -97,9 +97,8 @@ first. Gold (next section) is never produced by the factory.
   conduits are free and unlimited (CB-3g, CB-3i).
 - **EC-1 [PROPOSED]** One currency: **gold**, earned per cycle (base
   income), from winning PvE battles, and from selling buildings back.
-- **EC-2 [PROPOSED]** Besides buildings, shops may also sell shop services
-  for gold: re-rolls, raising shop tier to see stronger buildings, and
-  occasionally board expansion. To be confirmed (Q5).
+- **EC-2 [DECIDED]** Gold buys two things: **buildings** and **shop
+  re-rolls**. It does not buy board expansion (there is none, CB-25).
 - **EC-3 [PROPOSED]** Shop offers are per player and drawn from tiered pools
   whose odds improve with shop tier / cycle. Whether building pools are finite and
   shared within the party (contested draws) or infinite is **[OPEN]** (Q5).

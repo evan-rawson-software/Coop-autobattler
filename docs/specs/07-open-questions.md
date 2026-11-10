@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v1.6
+Status: Draft v1.7
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -35,8 +35,8 @@ everything else movable. Open:
 - **Resources.** Charge only *(recommended to start)*, or several node types
   with recipes?
 - **PvE as waves plus a stronghold** rather than a factory (CB-29): confirm.
-- **Does expansion reveal new land** (CB-25), or is the whole map visible
-  and buildable from the start?
+- Decided: the board never expands; it starts fairly large and its size
+  is an endgame constraint (CB-25).
 - Decided: no long-range buildings; defenses only target enemy units on
   the party's own side (CB-3j).
 
@@ -68,9 +68,7 @@ details:
 
 ## Q5. Shops
 
-May gold also buy shop services — re-rolls, a better shop tier, board
-expansion — or strictly buildings only (EC-2)?
-
+Decided: gold buys buildings and shop re-rolls, nothing else (EC-2).
 
 Finite shared building pool within the party (teammates compete for copies,
 encourages splitting archetypes) vs infinite independent pools (simpler)?

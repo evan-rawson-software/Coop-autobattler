@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v1.6
+Status: Draft v1.7
 
 ## Direction
 
@@ -50,9 +50,11 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 ## The map
 
 - **CB-4** At the start of a run the party's board is generated from a seed:
-  a grid of terrain with resource nodes and natural features. Starting
-  proposal for size: one plot is about 16 cells wide × 12 deep, and plots
-  join side by side, so a four-player board is 64 × 12 (CP-5). Sizes are
+  a grid of terrain with resource nodes and natural features. The whole
+  map is visible and buildable from the start, and it is **fairly large**
+  [DECIDED] — early on the party has far more room than buildings. Starting
+  proposal for size: one plot is about 24 cells wide × 16 deep, and plots
+  join side by side, so a four-player board is 96 × 16 (CP-5). Sizes are
   placeholders for the prototype to tune.
 - **CB-5** **Resource nodes** are cells where a source building can be
   built. Sources can only be placed on nodes, so node positions shape the
@@ -179,8 +181,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   resource nodes — are scarce. Conduits, defenses, and economy buildings
   compete for ground, and because conduits cannot cross (CB-3g) a tidy
   layout fits far more factory into the same area than a tangled one; and buildings also shape where units can walk.
-- **CB-25** **Expansion** — new land with its own nodes and features — is a
-  major party reward, or a rare, expensive shop offer.
+- **CB-25 [DECIDED]** **The board never expands.** It starts fairly large and
+  stays that size for the whole run. Running out of room is intended to be
+  one of the constraints on long endgame play.
 - **CB-26** Buildings are bought with gold in shops between battles, or won
   as rewards, and go into the owning player's stash. Placing, moving, and
   rotating them costs nothing; gold plays no part in building or in battle
@@ -188,7 +191,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   bonuses.
 - **CB-27** Moving and rotating buildings between battles is free; sources
   must stay on nodes, and the Core never moves (CB-3e). The map itself never
-  changes during a run except by expansion.
+  changes during a run.
 
 ## Opponents
 
@@ -219,7 +222,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 4. **Build time.** Laying out a factory around terrain is slow and
    thoughtful. Session targets (RS-12) will need to grow, or per-cycle
    changes must stay small.
-5. **Readability** of a four-player battlefield (two 64 × 12 boards, many
+5. **Readability** of a four-player battlefield (two 96 × 16 boards, many
    units).
 6. **Simulation cost.** Pathfinding and many units are far heavier than
    item timers; the balance harness needs thousands of battles (CB-36).
@@ -235,7 +238,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   decides outcomes. The same simulation runs in the host's game
   (authoritative, TA-6), in tests, and in balance tools.
 - **CB-32** A party is fully described by a serializable **team state**
-  (CP-6): the map (terrain, nodes, features, revealed area), the Core
+  (CP-6): the map (terrain, nodes, features), the Core
   position, every building with tier, position and orientation, and run
   modifiers that affect combat. This is exactly what a snapshot stores
   (MM-1).

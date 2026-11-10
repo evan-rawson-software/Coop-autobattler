@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v1.1
+Status: Draft v1.7
 
 ## Party basics
 
@@ -19,7 +19,7 @@ Status: Draft v1.1
   factory (see `03-combat.md`). Players coordinate to build the best overall
   factory. (This replaces the earlier one-board-per-player model.)
 - **CP-5 [PROPOSED]** Board area scales with party size: each player adds one
-  **plot** of the same size (starting proposal: about 16×12 cells, CB-4),
+  **plot** of the same size (starting proposal: about 24×16 cells, CB-4),
   joined side by side into a single continuous map, so the front edge gets
   wider with each player. Solo plays on one plot.
   Everything therefore scales linearly from 1 to 4 players.
@@ -55,7 +55,7 @@ Status: Draft v1.1
   re-routing the factory often means moving several players' pieces); only
   the owner can sell it. To be revisited after co-op playtests.
 - **CP-14 [PROPOSED]** **Party picks.** Some rewards belong to the party as a
-  whole — a choice of one building among several, a board expansion, a Core
+  whole — a choice of one building among several, a Core
   upgrade — and are decided together (CP-16). Resource nodes are party
   property too: who builds the source on a node is something to agree on.
 
