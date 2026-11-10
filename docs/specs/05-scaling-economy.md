@@ -112,6 +112,7 @@ first. Gold (next section) is never produced by the factory.
   only if the economy needs a saving-vs-spending tension.
 - **EC-6 [DECIDED]** A party that loses a PvP battle receives a small
   consolation payout of gold. The amount is configuration.
+
 ## Rewards
 
 - **EC-7 [DECIDED/PROPOSED detail]** **Battle rewards are gold only**;
