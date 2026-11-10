@@ -132,6 +132,10 @@ export default tseslint.config(
     },
   },
   {
+    files: ['packages/tools/**/*.ts'],
+    languageOptions: { globals: globals.node },
+  },
+  {
     files: ['packages/session/**/*.ts'],
     rules: {
       'no-restricted-imports': [

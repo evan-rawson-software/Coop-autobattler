@@ -10,6 +10,7 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@game/content": "workspace:*",
     "@game/core": "workspace:*",
     "@game/session": "workspace:*"
   },

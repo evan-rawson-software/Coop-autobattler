@@ -11,6 +11,8 @@ A pnpm workspace. The packages mirror the layer boundaries in
 | `packages/core`    | `@game/core`    | Pure game logic: simulation, run rules, generators, content loading.  |
 | `packages/session` | `@game/session` | Owns a run in progress; exposes intents and state. Solo only for now. |
 | `packages/web`     | `@game/web`     | Presentation: a static site built with Vite.                          |
+| `packages/content` | `@game/content` | Exports the parsed `content/*.json` files for `web` and tests.        |
+| `packages/tools`   | `@game/tools`   | Node scripts: content validation, source scans. May use Node I/O.     |
 | `content/`         |                 | Data files (see its README).                                          |
 | `schemas/`         |                 | Schemas for those files (see its README).                             |
 
@@ -29,7 +31,13 @@ pnpm build          # static site into packages/web/dist
 pnpm preview        # serve that build locally (run pnpm build first)
 pnpm format         # prettier --write
 pnpm format:check   # prettier --check
+pnpm validate:content  # check content/ against schemas/ and the core loaders
 ```
+
+Resource names live only in `content/resources.json` (TA-27a). Refer to
+resources by ID or through the `core` loader; a test in `packages/tools`
+fails if a display name appears as a string literal in source. To register
+another content file, add a row to `packages/tools/src/registry.ts`.
 
 CI (`.github/workflows/ci.yml`) runs install with a frozen lockfile, then
 typecheck, lint, format:check, test, and build.

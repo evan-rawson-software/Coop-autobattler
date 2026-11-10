@@ -1,0 +1,23 @@
+{
+  "$schema": "../schemas/resources.schema.json",
+  "resources": [
+    {
+      "id": "res_a",
+      "name": "Ore",
+      "rarity": "common",
+      "color": "#b0713b"
+    },
+    {
+      "id": "res_b",
+      "name": "Power",
+      "rarity": "common",
+      "color": "#e5c230"
+    },
+    {
+      "id": "res_c",
+      "name": "Flux",
+      "rarity": "rare",
+      "color": "#8a5cf6"
+    }
+  ]
+}

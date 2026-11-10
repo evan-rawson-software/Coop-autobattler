@@ -1,9 +1,16 @@
-import { add } from '@game/core';
+import { add, loadResourcesOrThrow } from '@game/core';
+import { rawResources } from '@game/content';
+
+const resources = loadResourcesOrThrow(rawResources);
 
 const app = document.querySelector<HTMLElement>('#app');
 if (app) {
+  const names = resources
+    .list()
+    .map((r) => resources.displayName(r.id))
+    .join(', ');
   const content = document.createElement('p');
-  content.textContent = `Placeholder page. core says 2 + 3 = ${String(add(2, 3))}`;
+  content.textContent = `Placeholder page. core says 2 + 3 = ${String(add(2, 3))}. Resources: ${names}`;
 
   const footer = document.createElement('footer');
   footer.id = 'build-id';
