@@ -27,6 +27,7 @@ refined and then broken down into backlog items for coding agents.
 | 04 | [Encounters & matchmaking](docs/specs/04-encounters-matchmaking.md) | PvE encounters, ghost PvP, snapshot matching, boss fallback |
 | 05 | [Scaling & economy](docs/specs/05-scaling-economy.md) | Exponential PvE scaling, player power curve, economy |
 | 06 | [Technical architecture](docs/specs/06-technical-architecture.md) | Phases (web proof of concept → Godot → Steam multiplayer), Steam as the backend, trust model |
+| 08 | [Concept: the shared factory](docs/specs/08-shared-factory-concept.md) | **Under evaluation** — one large shared factory board for the whole party; would supersede parts of 02 and 03 |
 | 07 | [Open questions](docs/specs/07-open-questions.md) | Decisions still to be made, with recommendations |
 
 ## Conventions used in the specs

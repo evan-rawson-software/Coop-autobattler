@@ -2,6 +2,9 @@
 
 Status: Draft v0.7
 
+> **Under review.** A shared-board alternative to the one-board-per-player
+> model below is being evaluated in `08-shared-factory-concept.md`.
+
 ## Party basics
 
 - **CP-1 [DECIDED]** A party has 1–4 players.

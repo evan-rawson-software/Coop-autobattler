@@ -2,6 +2,9 @@
 
 Status: Draft v0.9
 
+> **Under review.** `08-shared-factory-concept.md` proposes extending
+> Conduits into a single shared factory board for the whole party.
+
 ## Direction
 
 - **CB-1 [DECIDED]** Combat is fully automated. Players give no input once a

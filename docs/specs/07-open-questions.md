@@ -2,8 +2,14 @@
 
 Status: Draft v0.9
 
-Each question lists options and a recommendation. Answering Q1, Q2, and Q6
-unblocks most backlog work.
+Each question lists options and a recommendation. The biggest open decision is **Q0**; it changes Q1 and Q2.
+
+## Q0. Shared factory board?
+
+Should the party build one large shared factory board instead of one board
+per player? See `08-shared-factory-concept.md` for the concept, its risks,
+and the four decisions it needs. If adopted, Q1 disappears and Q2 is settled
+as Conduits-plus-economy.
 
 ## Q1. How do a party's boards fight together? (highest impact)
 
