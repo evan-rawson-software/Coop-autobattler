@@ -1,5 +1,7 @@
 /** Resource configuration (TA-27a): loaded from already-parsed data. */
 
+import { sortedKeys } from './hash.js';
+
 export type ResourceId = string;
 export type Rarity = 'common' | 'rare';
 
@@ -110,7 +112,7 @@ export function loadResources(data: unknown): ResourceLoadResult {
     if (icon !== undefined && (typeof icon !== 'string' || icon === '')) {
       errors.push(`${label}: "icon" must be a non-empty string.`);
     }
-    for (const key of Object.keys(entry)) {
+    for (const key of sortedKeys(entry)) {
       if (!KNOWN_KEYS.has(key))
         errors.push(`${label}: unknown field "${key}".`);
     }

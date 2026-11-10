@@ -15,6 +15,8 @@ A pnpm workspace. The packages mirror the layer boundaries in
 | `packages/tools`   | `@game/tools`   | Node scripts: content validation, source scans. May use Node I/O.     |
 | `content/`         |                 | Data files (see its README).                                          |
 | `schemas/`         |                 | Schemas for those files (see its README).                             |
+| `packages/golden`  | `@game/golden`  | Golden vector runner and update command. May use Node I/O.            |
+| `golden/`          |                 | Golden vectors (JSON). See docs/rules-reference.md.                   |
 
 `core` and `session` are consumed as TypeScript source (no build step).
 
@@ -29,6 +31,7 @@ pnpm lint           # eslint, including the layer rule
 pnpm test           # vitest in every package
 pnpm build          # static site into packages/web/dist
 pnpm preview        # serve that build locally (run pnpm build first)
+pnpm golden:update   # regenerate golden/ expected values (deliberate)
 pnpm format         # prettier --write
 pnpm format:check   # prettier --check
 pnpm validate:content  # check content/ against schemas/ and the core loaders

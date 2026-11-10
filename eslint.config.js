@@ -95,6 +95,46 @@ const restrictedGlobals = (names, what) =>
     message: `${what} globals are not allowed in this layer.`,
   }));
 
+// Determinism rules (CB-30, TA-29): simulation code must not read the clock,
+// use ambient randomness, schedule timers, or depend on iteration order.
+const clockAndTimerGlobalNames = [
+  'Date',
+  'performance',
+  'setTimeout',
+  'setInterval',
+  'setImmediate',
+  'clearTimeout',
+  'clearInterval',
+  'queueMicrotask',
+  'requestIdleCallback',
+  'Intl',
+];
+const determinismProperties = [
+  {
+    object: 'Math',
+    property: 'random',
+    message: 'Use the seeded Rng from core; Math.random is not deterministic.',
+  },
+  ...['keys', 'values', 'entries'].map((property) => ({
+    object: 'Object',
+    property,
+    message:
+      'Object key order is not portable; iterate a sorted or explicit list of keys.',
+  })),
+];
+const determinismSyntax = [
+  {
+    selector: 'ForInStatement',
+    message: 'for...in order is not portable; iterate an explicit array.',
+  },
+  {
+    selector:
+      'CallExpression[callee.property.name=/^(sort|toSorted)$/][arguments.length=0]',
+    message:
+      'Pass an explicit integer comparator; the default sort is by string.',
+  },
+];
+
 export default tseslint.config(
   { ignores: ['**/dist/**', '**/coverage/**', 'docs/**', '.claude/**'] },
   js.configs.recommended,
@@ -134,6 +174,24 @@ export default tseslint.config(
   {
     files: ['packages/tools/**/*.ts'],
     languageOptions: { globals: globals.node },
+  },
+  {
+    // Non-test core code: the layer globals above plus the determinism rules.
+    files: ['packages/core/src/**/*.ts'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        ...restrictedGlobals(domGlobalNames, 'Browser/DOM'),
+        ...restrictedGlobals(nodeGlobalNames, 'Node'),
+        ...restrictedGlobals(
+          clockAndTimerGlobalNames,
+          'Clock, timer and locale (non-deterministic)',
+        ),
+      ],
+      'no-restricted-properties': ['error', ...determinismProperties],
+      'no-restricted-syntax': ['error', ...determinismSyntax],
+    },
   },
   {
     files: ['packages/session/**/*.ts'],

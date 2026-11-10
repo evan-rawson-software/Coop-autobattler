@@ -1,0 +1,59 @@
+[
+  {
+    "id": "prng-sample.seed-1",
+    "kind": "prng-sample",
+    "description": "nextInt, shuffle, pick.",
+    "input": {
+      "seed": 1,
+      "bound": 10,
+      "count": 12,
+      "shuffleLength": 10
+    },
+    "expected": {
+      "result": {
+        "ints": [8, 3, 1, 2, 6, 7, 0, 9, 5, 4, 5, 6],
+        "shuffled": [0, 5, 9, 2, 4, 7, 6, 3, 1, 8],
+        "picked": 8,
+        "state": [1219142881, 3862212346, 3658030628, 4136065796]
+      }
+    }
+  },
+  {
+    "id": "prng-sample.seed-12345",
+    "kind": "prng-sample",
+    "description": "nextInt, shuffle, pick.",
+    "input": {
+      "seed": 12345,
+      "bound": 6,
+      "count": 12,
+      "shuffleLength": 8
+    },
+    "expected": {
+      "result": {
+        "ints": [3, 5, 5, 0, 2, 3, 4, 1, 0, 0, 1, 0],
+        "shuffled": [7, 3, 4, 6, 0, 2, 5, 1],
+        "picked": 0,
+        "state": [3418559188, 2860460927, 3074499243, 584657241]
+      }
+    }
+  },
+  {
+    "id": "prng-sample.big-bound",
+    "kind": "prng-sample",
+    "description": "Bound above 2^31 exercises rejection sampling.",
+    "input": {
+      "seed": 7,
+      "bound": 3000000000,
+      "count": 8,
+      "shuffleLength": 5
+    },
+    "expected": {
+      "result": {
+        "ints": [993689120, 1089369890, 1706118055, 2746022466, 1316796690, 2822620451, 56969920, 1304036932],
+        "shuffled": [2, 1, 0, 4, 3],
+        "picked": 0,
+        "state": [654641320, 1704916971, 3842266307, 3172159273]
+      }
+    }
+  }
+]

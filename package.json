@@ -14,6 +14,7 @@
     "build": "pnpm -r run build",
     "preview": "pnpm --filter @game/web exec vite preview",
     "validate:content": "pnpm --filter @game/tools run validate:content",
+    "golden:update": "pnpm --filter @game/golden run update",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
