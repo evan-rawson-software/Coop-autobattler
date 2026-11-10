@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v1.1
+Status: Draft v2.5
 
 ## Core loop
 
@@ -8,26 +8,36 @@ Before the first cycle, the party's map is generated and revealed and the
 team places its Core, which then stays put for the whole run (CB-3e, CB-7).
 
 ```
-Lobby -> Map + Core placement -> [ 1. PvE battle -> 2. Event -> 3. PvP battle ] x N -> Defeat -> Run summary
+Lobby -> Map + Core placement ->
+  [ PvE battle -> Event -> Shop -> PvP battle -> Event -> Shop ] x N
+-> Defeat -> Run summary
 ```
 
-- **RS-1 [DECIDED]** A run is an unbounded sequence of **cycles**. Each cycle
-  has three steps, always in this order:
+- **RS-1 [DECIDED]** A run is an unbounded sequence of **cycles**. A cycle
+  has two battles — a **PvE battle** and then a **PvP battle** — and
+  **after each battle there is an event, and after the event there is
+  always a shop**:
   1. **PvE battle** — the party chooses easy, medium, or hard.
-  2. **Event** — a shop or another non-combat event.
-  3. **PvP battle** — against a ghost, or a generated boss if no ghost
+  2. **Event**
+  3. **Shop**
+  4. **PvP battle** — against a ghost, or a generated boss if no ghost
      matches (see `04-encounters-matchmaking.md`).
+  5. **Event**
+  6. **Shop**
 - **RS-2 [PROPOSED]** The **cycle number** is the single "progress" value used
   for PvE scaling and ghost matching. Every party at cycle *c* has had exactly
-  the same number of PvE battles and events.
+  the same number of battles, events, and shops.
+- **RS-2a [PROPOSED]** A new run opens with a starting set of buildings and a
+  first build phase before the first PvE battle, so the party never enters
+  a battle with an empty board.
 
-## Step 1 — PvE battle
+## PvE battle
 
 - **RS-3 [DECIDED]** Before the battle, the party chooses a difficulty: easy,
   medium, or hard.
 - **RS-3a [DECIDED]** Losing a PvE battle costs **no life**, but the party
   receives **no reward**.
-- **RS-3b [PROPOSED]** Harder difficulties face a stronger enemy team and give
+- **RS-3b [PROPOSED]** Harder difficulties face a stronger threat and give
   a better reward (see SC-1, EC-7). The choice shows the enemy archetype and
   the reward for each option, and is made by party vote (CP-16).
 - **RS-3c [PROPOSED]** Because a PvE loss is otherwise free, the reward gap
@@ -35,37 +45,54 @@ Lobby -> Map + Core placement -> [ 1. PvE battle -> 2. Event -> 3. PvP battle ] 
   hard and losing should leave the party clearly behind a party that picked
   easy and won.
 
-## Step 2 — Event
+## Event
 
-- **RS-4 [DECIDED]** The event step is a non-combat step. The shop is one
-  event type; others exist.
-- **RS-4a [PROPOSED]** Event types (first playable needs only the shop):
-  - **Shop** — buy/sell buildings, re-roll.
-  - **Trainer** — upgrade or modify an existing building.
+- **RS-4 [DECIDED]** An event follows every battle. Events are separate from
+  the shop: the shop is its own guaranteed step, not an event type.
+- **RS-4a [PROPOSED]** An event is a short non-combat moment that changes
+  the run in some way other than buying. Candidate types:
+  - **Workshop** — upgrade or modify a building the party owns.
   - **Shrine** — choose one of several run modifiers.
   - **Gamble** — risk gold or a building for a chance at something better.
-- **RS-4b [OPEN]** How the event is selected, and whether a shop is always
-  available. See `07-open-questions.md` Q4. Recommended: the party chooses
-  between 2–3 offered events and a shop is always one of the options, so a
-  party can never be locked out of spending for several cycles.
+  - **Salvage** — trade buildings in for something of a different kind.
+  - **Survey** — information about what is coming (the next PvE options, or
+    a hint about the next opponent).
+- **RS-4b [OPEN]** How the event is selected: at random, or chosen by the
+  party from 2–3 offered events *(recommended)*. Whether the event after a
+  lost battle differs from the event after a win. See Q4.
+- **RS-4c [PROPOSED]** The first playable can ship with one or two event
+  types; the step exists from the start so the loop has its final shape.
 
-## Step 3 — PvP battle
+## Shop
+
+- **RS-5d [DECIDED]** A shop **always** follows the event. Every battle is
+  therefore followed by a chance to buy.
+- **RS-5e [PROPOSED]** In the shop each player sees their own offers and
+  spends their own gold on buildings and re-rolls (EC-2, CP-10), and can
+  sell buildings back.
+- **RS-5f [PROPOSED]** The shop step is also the **build phase**: the whole
+  board is open for placing, moving, rotating, and re-routing, and it is the
+  last stop before the next battle.
+
+## PvP battle
 
 - **RS-5 [DECIDED]** Losing a PvP battle costs **one life**.
 - **RS-5a [PROPOSED]** A boss that replaces a ghost (V-4) is the PvP battle
   for that cycle and has the same stakes: losing costs one life.
-- **RS-5b [PROPOSED]** There is one PvP battle per cycle. (Multiple PvP
-  battles per cycle is recorded as an option in Q4.)
+- **RS-5b [PROPOSED]** There is one PvP battle per cycle.
 - **RS-5c [PROPOSED]** Winning a PvP battle grants a reward (EC-7).
 
-## Team management
+## Building the factory
 
-- **RS-6 [PROPOSED]** Acquiring things happens at events and through rewards.
-  **Arranging** the factory — placing, moving, and re-routing buildings,
-  combining duplicates, swapping stash and board, giving to teammates — is available in
-  a short **prep phase** before every battle (steps 1 and 3) as well as
-  during the event. Without this, a reward from the PvE battle could not be
-  used until after the PvP battle.
+- **RS-6 [PROPOSED]** New buildings come from shops, battle rewards, and
+  some events. **Arranging** the factory — placing, moving, rotating, and
+  re-routing buildings, drawing conduits, combining duplicates, giving to
+  teammates — happens during the shop step (RS-5f), which always comes
+  immediately before a battle. No separate prep phase is needed.
+- **RS-6a [PROPOSED]** The next PvE options (archetype and reward) are
+  visible during the shop before the PvE battle, so the party can build for
+  the threat it intends to pick. The next PvP opponent is never visible in
+  advance.
 
 ## Lives and run end
 
@@ -79,7 +106,7 @@ Lobby -> Map + Core placement -> [ 1. PvE battle -> 2. Event -> 3. PvP battle ] 
 - **RS-7d [PROPOSED]** A party may abandon a run at any time; it is recorded
   at its current depth.
 
-Note the interaction with V-5: lives are only lost in step 3, so the
+Note the interaction with V-5: lives are only lost in PvP battles, so the
 exponential wall must reach the party there. It does so in two ways — bosses
 replace ghosts as the pool thins at depth (MM-10), and lost PvE battles stop
 the party's income so it falls behind the ghosts it meets. See
@@ -102,7 +129,9 @@ the party's income so it falls behind the ghosts it meets. See
 
 ## Session length targets
 
-- **RS-12 [PROPOSED]** (To be revisited: factory building and ramping
-  battles may need longer phases than these.) Prep phase: up to 30 s. Event: 45–90 s. Battle
-  playback: 20–45 s (hard combat time limit; fast-forward when all players
-  agree). A cycle is about 3–5 minutes; a median run is 30–45 minutes.
+- **RS-12 [PROPOSED]** Placeholder targets, to be set by playtests: event
+  under a minute; shop and build phase a few minutes (longer early in a
+  run while the factory takes shape, shorter once it is established);
+  battle playback 1–3 minutes with fast-forward when all players agree.
+  Factory building makes runs longer than a typical autobattler; an hour or
+  more is plausible, which makes resumable runs (CP-23) important.

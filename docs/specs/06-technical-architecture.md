@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v2.2
+Status: Draft v2.5
 
 ## Direction
 
@@ -34,8 +34,8 @@ tune them, as cheaply as possible. It is a prototype, not the product.
     minimum: map generation with nodes, lakes, and cliffs; three resources routed by conduits;
     a few buildings of each kind; 3–4 unit types with pathfinding;
     in-battle ramp; PvE waves and strongholds
-  - the full run loop: PvE battle with three difficulties → event (shop
-    first) → PvP battle; 5 lives; exponential scaling
+  - the full run loop: PvE battle with three difficulties → event → shop
+    → PvP battle → event → shop; 5 lives; exponential scaling
   - one player, one plot
   - battle playback, a post-battle summary, and a minimal UI
   - placeholder art; a small content set (CB-50)
@@ -224,7 +224,7 @@ The async PvP pool needs: store a snapshot, look up snapshots by
   naturally and stops one prolific player from flooding a bucket.
 - **TA-19 [PROPOSED]** Snapshots are compact (a few kilobytes at most): building
   IDs, tiers, positions, Core stats, modifiers. Ghost lookup and download
-  happen during the event step so the PvP battle starts without a wait; a
+  happen during the preceding shop step so the PvP battle starts without a wait; a
   timeout falls back to the boss.
 - **TA-20 [PROPOSED]** The ghost store is one of the Platform interfaces
   (TA-5), so the leaderboard mechanism can be swapped — for a different Steam
@@ -336,7 +336,7 @@ is deliberate.
    pathfinding, boards of 1–4 plots, factory versus factory and factory
    versus threat; performance budget (CB-36);
    command-line runner; golden vectors; rules reference started.
-3. **W2 — Playable loop:** PvE battle (3 difficulties) + shop + prep phases +
+3. **W2 — Playable loop:** PvE battle (3 difficulties) + event + shop +
    lives + exponential scaling; Core placement; factory editing UI with flow and enemy-path preview; battle
    playback.
 4. **W3 — PvP step:** local ghost pool, matching, snapshot validation, boss

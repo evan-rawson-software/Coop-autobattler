@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v2.4
+Status: Draft v2.5
 
 ## Direction
 
@@ -238,7 +238,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
     overwhelming army late; beats a rush that cannot break through.
   - **Siege** — steady pressure with units that dismantle defenses and
     infrastructure before the ramp pays off.
-- **CB-22** The party can **re-plan before each battle** (prep phase, RS-6):
+- **CB-22** The party can **re-plan before each battle** (the shop step, RS-5f):
   everything but the Core can move, so the factory can be re-routed for a
   PvE threat whose style is shown in advance, or hedged for the unknown PvP
   opponent.

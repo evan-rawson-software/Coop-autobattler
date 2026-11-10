@@ -1,6 +1,6 @@
 # 00 — Vision & Pillars
 
-Status: Draft v1.9
+Status: Draft v2.5
 
 ## Elevator pitch
 
@@ -27,8 +27,8 @@ forever; the score is how deep you went.
 - **V-6 [DECIDED]** Combat-encounter structure is in the spirit of *The
   Bazaar*.
 - **V-7 [DECIDED]** A run is a repeating loop of: (1) a PvE battle at a chosen
-  difficulty — easy, medium, or hard; (2) an event, such as a shop; (3) a PvP
-  battle.
+  difficulty — easy, medium, or hard; (2) a PvP battle. After each battle
+  there is an event, and after the event there is always a shop.
 - **V-8 [DECIDED]** The party has 5 lives. Losing a PvP battle costs a life.
   Losing a PvE battle costs no life but grants no reward.
 - **V-9 [DECIDED]** The party builds **one large shared board**: an
@@ -102,9 +102,9 @@ does not block systems work.
 |------|---------|
 | Party | The 1–4 players in a run together. |
 | Run | One playthrough, from cycle 1 until the party is eliminated. |
-| Cycle | One pass through the loop: PvE battle, event, PvP battle. |
-| Event | The non-combat step of a cycle, e.g. a shop. |
-| Prep phase | A short window before each battle to arrange the team. |
+| Cycle | One pass through the loop: PvE battle, event, shop, PvP battle, event, shop. |
+| Event | A short non-combat step after every battle, before the shop. |
+| Shop | The guaranteed step after every event: buy buildings, re-roll, and rearrange the factory before the next battle. |
 | PvP battle | The third step of a cycle: a ghost, or a boss if no ghost matches. |
 | Encounter | A single automated fight (PvE or ghost PvP). |
 | Board | The party's single shared map and everything built on it: the factory. |

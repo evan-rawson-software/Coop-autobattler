@@ -1,14 +1,14 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v1.1
+Status: Draft v2.5
 
 ## Encounter types
 
 | Type | Opponent | When | Stakes |
 |------|----------|------|--------|
-| PvE battle (easy / medium / hard) | Scripted waves plus a stronghold, scaled to cycle, difficulty, and party size | Step 1 of each cycle | Reward on win; no reward and no life loss on defeat |
-| PvP battle — ghost | Snapshot of another real party's factory | Step 3 of each cycle | Reward on win; lose 1 life on defeat |
-| PvP battle — boss | Generated boss threat | Step 3 of each cycle, when no ghost matches | Same as ghost |
+| PvE battle (easy / medium / hard) | Scripted waves plus a stronghold, scaled to cycle, difficulty, and party size | First battle of each cycle | Reward on win; no reward and no life loss on defeat |
+| PvP battle — ghost | Snapshot of another real party's factory | Second battle of each cycle | Reward on win; lose 1 life on defeat |
+| PvP battle — boss | Generated boss threat | Second battle of each cycle, when no ghost matches | Same as ghost |
 
 The loop is defined in `01-run-structure.md` RS-1.
 

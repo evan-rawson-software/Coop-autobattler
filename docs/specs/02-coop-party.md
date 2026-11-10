@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v1.7
+Status: Draft v2.5
 
 ## Party basics
 
@@ -46,7 +46,7 @@ Status: Draft v1.7
   inside a shared build and makes it harder for one player to play the game
   for everyone.
 - **CP-11 [PROPOSED]** **Giving.** Players can give gold and buildings to
-  teammates during events and prep phases, freely and instantly.
+  teammates during events and shops, freely and instantly.
 - **CP-12 [PROPOSED]** **Space is shared.** A player can place their buildings
   anywhere on the board, not only on "their" plot. Plots determine the
   board's size, not territory.
@@ -69,7 +69,7 @@ Status: Draft v1.7
 
 ## Building together
 
-- **CP-17 [PROPOSED]** Events and prep phases are simultaneous and real-time
+- **CP-17 [PROPOSED]** Events and shops are simultaneous and real-time
   for all players, with a shared timer. They end early when all players
   ready up. Timers must be generous enough for factory building (RS-12).
 - **CP-18 [PROPOSED]** **Simultaneous editing.** All players edit the same

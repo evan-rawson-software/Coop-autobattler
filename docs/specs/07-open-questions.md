@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v2.4
+Status: Draft v2.5
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -56,18 +56,12 @@ it affects combat.
 
 ## Q4. Details of the loop
 
-The loop itself is decided (RS-1: PvE battle → event → PvP battle; 5 lives;
-PvE loss costs no life and gives no reward; PvP loss costs a life). Remaining
-details:
+Decided (RS-1): each cycle is PvE battle → event → shop → PvP battle →
+event → shop. A shop always follows the event. 5 lives; a PvE loss costs no
+life and gives no reward; a PvP loss costs a life. Remaining details:
 
-- **Event selection.** Is the event each cycle random, fixed, or chosen by
-  the party from 2–3 options? Is a shop always available? Recommended: party
-  chooses from 2–3 options and a shop is always one of them (RS-4b).
-- **PvP battles per cycle.** One *(proposed, RS-5b)*, or several in a row
-  against different ghosts?
-- **Arranging the team outside events.** Proposed: a short prep phase before
-  every battle (RS-6). Alternative: the team can only be changed during the
-  event step.
+- **Event selection.** Random, or chosen by the party from 2–3 options
+  *(recommended)*? Which event types exist (RS-4a)?
 - **Boss fallback stakes.** Proposed: same as a PvP battle, costs a life on
   defeat (RS-5a).
 - **Regaining lives.** Proposed: not possible initially (RS-7c).
