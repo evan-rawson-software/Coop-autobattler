@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v2.6
+Status: Draft v3.1
 
 ## Direction
 
@@ -59,6 +59,12 @@ tune them, as cheaply as possible. It is a prototype, not the product.
 - **TA-46 [PROPOSED]** A **balance harness** (command-line, no UI) runs
   thousands of simulated battles and bot-played runs (SC-6). The numbers it
   produces are a main output of this phase.
+- **TA-41a [DECIDED]** **Refining and points of interest are left out of the
+  first playable build** and added afterwards, once the core loop can be
+  played. The first build has the three base resources, conduits, base
+  buildings, units, the neutral zone with terrain only, and PvE threats.
+  Formats and the resource configuration file must leave room for both so
+  adding them is not a rewrite.
 - **TA-47 [PROPOSED]** Explicitly **out of scope** for the proof of concept:
   co-op, lobbies, online ghosts, Steam, saves beyond the browser,
   meta-progression, polish.
@@ -326,6 +332,12 @@ is deliberate.
   against the Steam client; everything above the Platform interface is
   covered by automated tests on the Local implementation.
 
+## Backlog
+
+- **TA-54 [DECIDED]** Backlog items are tracked as **GitHub issues** on
+  this repository, one issue per piece of work a coding agent can pick up,
+  each citing the requirement IDs it implements.
+
 ## Suggested milestones
 
 **Phase 1 — Web proof of concept (offline, solo)**
@@ -341,6 +353,7 @@ is deliberate.
    playback.
 4. **W3 — PvP step:** local ghost pool, matching, snapshot validation, boss
    fallback; scripted bot; bundled bot ghosts.
+5. **W3b — Refining and points of interest** (TA-41a).
 5. **W4 — Tune:** balance harness, content iteration, more event types,
    playtests. Ends at the exit criteria (TA-53).
 

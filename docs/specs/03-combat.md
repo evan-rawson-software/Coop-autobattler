@@ -386,6 +386,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 
 ## First playable content budget
 
-- **CB-50** Three base resources and at least one refined resource; ~15 buildings across the kinds; 3–4 unit types;
+- **CB-50** Three base resources (refining and points of interest come
+  after the first playable, TA-41a); ~15 buildings across the kinds; 3–4 unit types;
   lakes and cliffs; 3 PvE archetypes; 1 boss. Enough to validate the loop;
   no more.
