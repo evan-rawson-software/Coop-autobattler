@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v4.1
+Status: Draft v4.3
 
 ## Party basics
 
@@ -103,8 +103,9 @@ Status: Draft v4.1
   the shop without them, because every player must ready up (CP-17).
 - **CP-21b [DECIDED]** **Reconnecting is supported.** A player who drops can
   rejoin the run in progress and carries on from the current state.
-- **CP-21c [DECIDED]** **The host can leave**, and the run can be **re-hosted
-  from the save** by a member of the party.
+- **CP-21c [DECIDED]** **The host can leave**, and the host can **re-host
+  the run from the save** later. Only the host can, because only the host
+  holds the save (CP-23c).
 - **CP-21d [DECIDED]** **If a player never returns, the party must decide to
   save and quit, or to abandon the run.** The run cannot continue without
   them. Abandoning records the run at its current depth.
@@ -117,8 +118,10 @@ Status: Draft v4.1
     or taken from while they are away.
   - The event step still needs everyone's vote, so it also waits.
   - Saving and quitting needs no agreement: any player can leave, and the
-    run is already saved (CP-23). Abandoning ends the run for everyone, so
-    it needs every connected player to agree.
+    run is already saved by the host (CP-23). If it is the host who is
+    away, the others can do nothing until the host returns, because the
+    host's game runs the session (TA-11). Abandoning ends the run for
+    everyone and is done by the host (CP-23f).
   - In battle, speed changes need agreement only from connected players.
 - **CP-21e [PROPOSED]** If every player leaves during a battle, the battle
   is not replayed on return: its opponent and seed were fixed and saved when
@@ -129,10 +132,8 @@ Status: Draft v4.1
 - **CP-22 [DECIDED]** A run can be **saved to continue later with the same
   players**.
 - **CP-22a [DECIDED]** A player can have **many saved runs**, and **a single
-  run cannot be saved more than once**: each run appears exactly once in a
-  player's list of saves and cannot be duplicated or branched. (Every member
-  of the party has the run in their own list; those are the same run, not
-  copies that can diverge — see CP-23c.)
+  run cannot be saved more than once**: each run appears exactly once in its
+  host's list of saves and cannot be duplicated or branched.
 - **CP-23 [DECIDED]** The game **auto-saves after each action**, so that
   saving and loading cannot be abused to undo a bad purchase, re-roll a
   shop, or replay a lost battle. There is no manual save point to go back
@@ -151,22 +152,29 @@ Status: Draft v4.1
     different battle result, **even if the game was updated in between**
     [DECIDED]. An update changes what happens next, never what has already
     been rolled or fought.
-- **CP-23b [PROPOSED]** A saved run can only be resumed when the **same
-  players** are present (checked by Steam ID). It cannot be continued with
-  fewer players, different players, or solo, which also keeps party size
-  fixed for ghost matching (CP-2). Only one of them needs to still hold the
-  save.
-- **CP-23c [PROPOSED]** Every player's game keeps the run's save up to date
-  as actions happen, so any of them can re-host. When a run is resumed, the
-  most recent version among the players present is used, so an older one
-  cannot be used to roll the run back (TA-11, TA-12).
+- **CP-23c [DECIDED]** **The host carries the save for the run; the other
+  players do not.** The party already trusts the host (TA-14), so there is
+  one save, in one place.
+- **CP-23b [PROPOSED]** A saved run can only be resumed when the **host and
+  the same players** are present (checked by Steam ID). It cannot be
+  continued with fewer players, different players, or solo, which also
+  keeps party size fixed for ghost matching (CP-2).
+- **CP-23g [PROPOSED]** Consequences of the host carrying the save:
+  - The host of a run is fixed for that run. Nobody else can re-host it,
+    and the run cannot continue without the host.
+  - Guests see the run in their list of runs they are part of, as a
+    pointer to the host, but hold no save of their own. To resume, they join
+    the host's lobby.
+  - If the host loses the save (for example by deleting it), the run is
+    over for everyone. Steam Cloud keeps it safe across the host's own
+    computers.
+  - Handing a run over to a different host is not supported for now.
 - **CP-23d [DECIDED]** **The number of saved runs is not limited.** (This
   replaces the earlier five-slot limit.)
-- **CP-23f [PROPOSED]** A player can remove a run from their own list at any
-  time. That does not end the run for the others, who can still resume it if
-  the whole party gathers again; it only clears it from that player's list.
-  This is what stops a run with a teammate who never returns from sitting in
-  someone's list forever.
+- **CP-23f [PROPOSED]** The host can delete a saved run, which abandons it
+  for the whole party and records it at its current depth. A guest can
+  remove a run from their own list, which only hides it for them; they can
+  still rejoin if the host resumes it.
 - **CP-23e [DECIDED]** Saves survive minor updates (as defined in TA-8) and keep playing against
   ghosts from the version they were played on. The game does **not** keep
   old rules or numbers: an older save plays under the current ones. **When

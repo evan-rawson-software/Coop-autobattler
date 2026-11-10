@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v4.1
+Status: Draft v4.3
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -67,14 +67,18 @@ with the project owner outside the repo. Open:
 Decided: battles continue while at least one player remains; a disconnected
 player must return before the party can move past the shop, and meanwhile
 the others can shop and move buildings, including the absent player's
-(CP-21 to CP-21f); reconnecting and re-hosting from the save are supported;
+(CP-21 to CP-21f); reconnecting is supported, and the host can leave and re-host from the
+save;
 any number of saved runs, each run saved only once (CP-22a, CP-23d);
 auto-save after each action, storing outcomes so that nothing already
 rolled or fought changes, even across an update (CP-23, CP-23a); if a
 player never returns, the party saves and quits or abandons (CP-21d).
 
-Still open: whether removing a run from one's own list (CP-23f) and
-needing every connected player to agree to abandon (CP-21g) are right.
+The host carries the save; other players hold none, so only the host can
+re-host and the run needs the host to continue (CP-23c, CP-23g).
+
+Still open: whether a run should ever be transferable to a different host
+(proposed: not for now).
 
 ## Q4. Details of the loop
 

@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v4.2
+Status: Draft v4.3
 
 ## Direction
 
@@ -233,38 +233,37 @@ Everything from here down describes the Godot game.
   mismatched players cannot join. (The run version of a resumed run can be
   older than the installed version; that is expected, TA-8.)
 - **TA-11 [DECIDED/PROPOSED detail]** **Host loss and re-hosting.** Decided:
-  the host can leave and the run can be re-hosted from the save (CP-21c).
-  Proposed detail: the host already sends every state change to every
-  player, so each player's game writes the same auto-save after each action
-  (TA-12). If the host leaves outside a battle, play stops until a member
-  re-hosts from their copy and the others rejoin; nothing can be bought or
-  moved while there is no host. (A non-host leaving does not stop the
-  others from shopping and building, CP-21f.) A battle is simulated in full
-  before playback begins, and its result and event log are sent to every
-  player and saved (CP-23a), so if the host leaves during a battle the
-  others simply finish watching; nobody has to take over the simulation.
-  Seamless automatic host migration outside battles is a later
-  improvement.
+  the host can leave and re-host the run from the save, and only the host
+  holds the save (CP-21c, CP-23c). Proposed detail: if the host leaves
+  outside a battle, the session ends for everyone until the host re-hosts
+  and the others rejoin; nothing can be bought or moved while there is no
+  host. (A non-host leaving does not stop the others from shopping and
+  building, CP-21f.) A battle is simulated in full before playback begins
+  and its result and event log are sent to every player for playback, so if
+  the host leaves during a battle the others can finish watching; the run
+  then waits for the host. There is no host migration: the host of a run is
+  fixed (CP-23g).
 - **TA-12 [DECIDED/PROPOSED detail]** **Auto-save and saved runs.** Decided:
   auto-save after each action (CP-23); any number of saved runs (CP-23d); a
   run cannot be saved more than once (CP-22a); resume later with the same
   players (CP-22).
   Proposed detail:
   - A run has a unique ID and an **action counter** that increases with
-    every saved action. A player's list of saves holds at most one entry
+    every saved action. The host's list of saves holds at most one entry
     per run ID; the game offers no "save as" or copy and refuses to keep
     two entries with the same run ID.
   - The save holds the full run state, including outcomes already rolled
     but not yet revealed, stored as the outcomes themselves, and the result
     and event log of any battle already simulated (CP-23a).
-  - Because every player's game holds the save, it contains information
-    that the screens hide, such as teammates' shop offers and the next PvP
-    opponent. Hiding those (CP-19, RS-6a) is a rule about what is shown,
-    not a security boundary.
-  - On resume, the players present compare action counters and the highest
-    wins, so nobody can re-host from an older copy to undo something.
-  - Saves are written locally after each action and synchronized through
-    Steam Cloud. Writes must be atomic so a crash mid-save cannot corrupt a
+  - **Only the host's game writes the save** (CP-23c). Guests receive the
+    state they need to play and to watch battles, but keep nothing on disk
+    beyond a pointer to the run and its host.
+  - The host's save contains information the screens hide from the host as
+    a player, such as teammates' shop offers and the next PvP opponent.
+    Hiding those (CP-19, RS-6a) is a rule about what is shown, not a
+    security boundary; the host is trusted (TA-14).
+  - The save is written locally on the host's machine after each action
+    and synchronized through the host's Steam Cloud. Writes must be atomic so a crash mid-save cannot corrupt a
     run.
   - This stops casual save abuse. A player who edits or restores save files
     by hand can still cheat; that falls under the accepted-risk position in
@@ -331,9 +330,9 @@ is deliberate.
   that cycle). Invalid snapshots are skipped and another is drawn.
 - **TA-22a [PROPOSED]** **Mitigation — sign and encrypt saves and
   snapshots.** Save files and ghost snapshots are encrypted and carry a
-  signature. A save's signature is bound to the run ID and the Steam IDs of
-  the whole party, so any member's copy is valid for that party and for
-  nobody else. A snapshot's signature is bound to the run ID and the Steam
+  signature. A save's signature is bound to the run ID, the host's Steam ID,
+  and the Steam IDs of the party, so it is valid only for that host and
+  that party. A snapshot's signature is bound to the run ID and the Steam
   ID of the player who uploaded it. A file that fails the check is
   rejected. The key necessarily ships inside the game, so this
   is a **deterrent, not a guarantee**: it stops editing with a text or hex
