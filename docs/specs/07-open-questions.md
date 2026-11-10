@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v2.8
+Status: Draft v2.9
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -41,8 +41,10 @@ everything else movable. Open:
   in one configuration file (CB-5a, TA-27a). A conduit carries one
   resource type; some rarer buildings need more than one type (CB-5a,
   CB-5b). Refined resources exist and the
-  rarer, stronger buildings need them (CB-5d). Open: refinery details —
-  one refined form per base resource, one step deep, at a loss (proposed).
+  rarer, stronger buildings need them (CB-5d). Common refineries take one resource;
+  rarer ones take two to make a single refined resource. Open: the exact
+  list of refined resources, and whether refining stays one step deep
+  (proposed).
 - Decided: PvE enemies are scripted waves plus a stronghold (CB-29).
 - Decided: the board never expands; it starts fairly large and its size
   is an endgame constraint (CB-25).

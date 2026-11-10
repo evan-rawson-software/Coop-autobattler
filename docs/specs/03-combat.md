@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v2.8
+Status: Draft v2.9
 
 ## Direction
 
@@ -83,13 +83,29 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-5d [DECIDED/PROPOSED detail]** **Refined resources.** Decided:
   refined resources exist, and the rarer, stronger buildings need them.
   Proposed detail:
-  - A **refinery** is a building (bought like any other) that takes a base
-    resource in and puts a refined resource out, at a loss (e.g. 3 in, 1
+  - A **refinery** is a building (bought like any other) that takes
+    resources in and puts a refined resource out, at a loss (e.g. 3 in, 1
     out) and after a delay.
-  - Each base resource has one refined form — working names **Alloy** (from
-    Ore), **Surge** (from Power), **Essence** (from Flux) — defined in the
-    same configuration file as the base resources and renameable there
-    (TA-27a).
+  - **Common refineries take one resource. Rarer refineries take two
+    different resources to make a single refined resource** [DECIDED].
+  - Proposed set of refined resources, with working names, all defined in
+    the same configuration file as the base resources and renameable there
+    (TA-27a):
+
+    | Refined | Made from | Refinery |
+    |---------|-----------|----------|
+    | Alloy | Ore | Common |
+    | Surge | Power | Common |
+    | Essence | Flux | Common |
+    | *(compound A)* | Ore + Power | Rare |
+    | *(compound B)* | Ore + Flux | Rare |
+    | *(compound C)* | Power + Flux | Rare |
+
+    The compounds feed the strongest buildings in the game. Not all six
+    need to exist in the first playable.
+  - A two-input refinery needs a conduit for each input (CB-5b), so it has
+    to sit where two networks can reach it without crossing — the hardest
+    placement problem in the game, by design.
   - Refining is **one step deep**: refined resources are not refined
     further. This keeps factories legible while still creating real chains.
   - A refined resource is its own conduit type (CB-5b), so a refined
@@ -174,7 +190,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 |------|------|----------|
 | **Source** | Built on a resource node; produces that node's resource on a timer | Extractor |
 | **Route** | Splits, joins, or crosses conduits | Splitter (one in, several out); Merger (several in, one out); Crossover (two conduits pass at 90°) |
-| **Refinery** | Turns a base resource into its refined form | Smelter (Ore → Alloy) |
+| **Refinery** | Turns one resource (common) or two (rare) into a refined resource | Smelter (Ore → Alloy) |
 | **Modifier** | Changes the flow passing through | Booster (more per tick); Buffer (stores, then releases a burst) |
 | **Unit producer** | Consumes resources → spawns units | Barracks (cheap swarm); Foundry (slow, heavy unit); Siege works (anti-building) |
 | **Defense** | Blocks or kills enemy units | Wall; Gate; Turret (needs Power to fire); Repair station |
