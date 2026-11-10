@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v3.3
+Status: Draft v3.9
 
 ## Core loop
 
@@ -89,7 +89,7 @@ Lobby -> Map + Core placement ->
 
 - **RS-6 [PROPOSED]** New buildings come from shops, battle rewards, and
   some events. **Arranging** the factory — placing, moving, rotating, and
-  re-routing buildings, drawing conduits, combining duplicates, giving to
+  re-routing buildings, drawing conduits, giving to
   teammates — happens during the shop step (RS-5f), which always comes
   immediately before a battle. No separate prep phase is needed.
 - **RS-6a [PROPOSED]** The next PvE options (archetype and reward) are

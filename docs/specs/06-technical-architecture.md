@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v3.8
+Status: Draft v3.9
 
 ## Direction
 
@@ -154,7 +154,7 @@ Everything from here down describes the Godot game.
 - **TA-4 [PROPOSED]** **Core** is pure logic with no dependency on scenes,
   nodes, rendering, or Steam: the combat simulation
   (`simulate(teamA, teamB, seed) -> { result, eventLog }`), run rules (shop
-  rolls, prices, combining, rewards), encounter and boss generators, and
+  rolls, prices, rewards), encounter and boss generators, and
   content loading. It runs under headless Godot for tests and the balance
   harness (SC-6).
 - **TA-5 [PROPOSED]** **Platform** is an interface with two implementations:

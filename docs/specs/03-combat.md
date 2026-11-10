@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v3.7
+Status: Draft v3.9
 
 ## Direction
 
@@ -297,8 +297,14 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-26** Buildings are bought with gold in shops between battles, or won
   as rewards, and go into the owning player's stash. Placing, moving, and
   rotating them costs nothing; gold plays no part in building or in battle
-  (CB-3i). Combining duplicates raises a building's tier. Tag counts unlock board-wide
+  (CB-3i). Tag counts unlock board-wide
   bonuses.
+- **CB-26a [DECIDED]** **Buildings have tiers, and there is no combining.**
+  Owning several identical buildings never merges them. Higher-tier
+  buildings come only from shops (which offer higher tiers as the run goes
+  on), from rewards, and from the Workshop event, which raises one building
+  by a tier. The factory layout therefore only changes when players change
+  it.
 - **CB-27** Moving and rotating buildings between battles is free; sources
   must stay on nodes, and the Core never moves (CB-3e). The map itself never
   changes during a run.
