@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v0.1
+Status: Draft v0.2
 
 Each question lists options and a recommendation. Answering Q1, Q2, and Q6
 unblocks most backlog work.
@@ -39,13 +39,24 @@ passive? Recommended: yes, but after the first playable. It gives each party
 member a distinct role and adds run variety. Must be encoded in team state if
 it affects combat.
 
-## Q4. Showdown cadence and loss cost
+## Q4. Details of the loop
 
-- How many PvE rounds between Showdowns (proposal: 3)?
-- Starting lives (proposal: 5) and whether Showdown loss cost grows with
-  depth.
-- Should every round snapshot (larger pool, finer matching) or only
-  Showdowns (proposal)?
+The loop itself is decided (RS-1: PvE battle → event → PvP battle; 5 lives;
+PvE loss costs no life and gives no reward; PvP loss costs a life). Remaining
+details:
+
+- **Event selection.** Is the event each cycle random, fixed, or chosen by
+  the party from 2–3 options? Is a shop always available? Recommended: party
+  chooses from 2–3 options and a shop is always one of them (RS-4b).
+- **PvP battles per cycle.** One *(proposed, RS-5b)*, or several in a row
+  against different ghosts?
+- **Arranging the team outside events.** Proposed: a short prep phase before
+  every battle (RS-6). Alternative: the team can only be changed during the
+  event step.
+- **Boss fallback stakes.** Proposed: same as a PvP battle, costs a life on
+  defeat (RS-5a).
+- **Regaining lives.** Proposed: not possible initially (RS-7c).
+- **Ghost-only endgame guard.** See SC-7.
 
 ## Q5. Shop pools
 

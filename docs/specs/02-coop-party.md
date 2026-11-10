@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v0.1
+Status: Draft v0.2
 
 ## Party basics
 
@@ -29,8 +29,8 @@ The model below is the recommended starting point. Alternatives are recorded in
 - **CP-7** Synergies (traits, adjacency effects, auras) are evaluated across
   the **whole team**, regardless of owner. This is the main source of
   interdependence: your tank makes my carry work.
-- **CP-8** Players can **give** gold, units, and items to teammates during the
-  build phase. Giving is free and instant; there is no trade negotiation UI.
+- **CP-8** Players can **give** gold, units, and items to teammates during
+  events and prep phases. Giving is free and instant; there is no trade negotiation UI.
 - **CP-9** Board positioning is shared: any player may move any unit on the
   board. Conflicts resolve last-write-wins with visible cursors/indicators.
   (Alternative: only the owner moves their units.)
@@ -43,18 +43,19 @@ also weakens interdependence. Kept as an alternative in Q1.
 
 ## Shared stakes
 
-- **CP-10 [PROPOSED]** Lives are shared (RS-4). The party wins and loses
+- **CP-10 [PROPOSED]** Lives are shared (RS-7a). The party wins and loses
   encounters together.
 - **CP-11 [PROPOSED]** Rewards from encounters are split: a per-player gold
   payout plus one or more **party picks** (e.g. choose 1 of 3 items) that the
   party must allocate to one player — a deliberate discussion point.
-- **CP-12 [PROPOSED]** Party-wide choices (which PvE encounter to take,
+- **CP-12 [PROPOSED]** Party-wide choices (PvE difficulty, which event to take,
   party picks) use a quick vote; ties broken by the party leader or randomly.
 
-## Build phase in co-op
+## Events and prep phases in co-op
 
-- **CP-13 [PROPOSED]** The build phase is simultaneous and real-time for all
-  players, with a shared timer. It ends early when all players ready up.
+- **CP-13 [PROPOSED]** Events and prep phases are simultaneous and real-time
+  for all players, with a shared timer. They end early when all players
+  ready up.
 - **CP-14 [PROPOSED]** Players can see teammates' benches, gold, and shops
   (read-only) to enable coordination. Pings/markers ("I want this", "buy this
   for me") reduce dependence on voice chat.
@@ -69,7 +70,7 @@ also weakens interdependence. Kept as an alternative in Q1.
   that player's slots and spend their gold (or a simple auto-pilot holds
   state unchanged). The run keeps its original party size for matchmaking.
 - **CP-18 [PROPOSED]** Runs are resumable: if everyone leaves, the run is
-  suspended at the start of the current build phase and can be continued
+  suspended at the start of the current step and can be continued
   later by the same party. Suspended runs on an old game version are closed
   out at their current depth (see TA-9).
 

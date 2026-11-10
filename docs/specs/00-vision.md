@@ -1,6 +1,6 @@
 # 00 — Vision & Pillars
 
-Status: Draft v0.1
+Status: Draft v0.2
 
 ## Elevator pitch
 
@@ -23,8 +23,12 @@ forever; the score is how deep you went.
 - **V-5 [DECIDED]** PvE enemies scale exponentially so that every run is
   eventually forced to end in defeat.
 - **V-6 [DECIDED]** Combat-encounter structure is in the spirit of *The
-  Bazaar*: a run is a sequence of days mixing PvE fights with a ghost PvP
-  fight.
+  Bazaar*.
+- **V-7 [DECIDED]** A run is a repeating loop of: (1) a PvE battle at a chosen
+  difficulty — easy, medium, or hard; (2) an event, such as a shop; (3) a PvP
+  battle.
+- **V-8 [DECIDED]** The party has 5 lives. Losing a PvP battle costs a life.
+  Losing a PvE battle costs no life but grants no reward.
 
 ## Design pillars
 
@@ -42,7 +46,7 @@ forever; the score is how deep you went.
 4. **Decisions in the shop, spectacle in the fight.** Players have zero input
    during combat. All skill expression is in drafting, economy, composition,
    and positioning.
-5. **Short sessions, legible rounds.** A round is a few minutes; a run fits in
+5. **Short sessions, legible cycles.** A cycle is a few minutes; a run fits in
    an evening; a party can drop a run and it does not hurt anyone else,
    because all PvP is asynchronous.
 
@@ -64,7 +68,7 @@ forever; the score is how deep you went.
 ## Theme
 
 **[OPEN]** No setting chosen yet. Specs use neutral terms: *unit*, *item*,
-*party*, *round*, *boss*. Theme should be chosen before content authoring but
+*party*, *cycle*, *boss*. Theme should be chosen before content authoring but
 does not block systems work.
 
 ## Glossary
@@ -72,12 +76,14 @@ does not block systems work.
 | Term | Meaning |
 |------|---------|
 | Party | The 1–4 players in a run together. |
-| Run | One playthrough, from round 1 until the party is eliminated. |
-| Round | One build phase followed by one encounter. |
-| Build phase | The between-fights phase: shop, draft, combine, position. |
+| Run | One playthrough, from cycle 1 until the party is eliminated. |
+| Cycle | One pass through the loop: PvE battle, event, PvP battle. |
+| Event | The non-combat step of a cycle, e.g. a shop. |
+| Prep phase | A short window before each battle to arrange the team. |
+| PvP battle | The third step of a cycle: a ghost, or a boss if no ghost matches. |
 | Encounter | A single automated fight (PvE or ghost PvP). |
 | Team | The full set of units/items the party fields in an encounter. |
 | Snapshot | A saved, immutable copy of a party's team at the start of an encounter. |
 | Ghost | A snapshot being used as another party's opponent. |
 | Boss | A generated PvE opponent used when no ghost is available. |
-| Depth | The highest round a party reached; the primary score. |
+| Depth | The highest cycle a party reached; the primary score. |

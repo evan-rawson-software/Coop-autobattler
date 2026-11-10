@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v0.1
+Status: Draft v0.2
 
 Technology choices here are recommendations, not decisions. The component
 boundaries matter more than the specific stack.
@@ -34,16 +34,16 @@ boundaries matter more than the specific stack.
   suite** (stored inputs → expected result hash) guards against accidental
   behaviour changes.
 - **TA-3 [PROPOSED]** **Server-authoritative runs.** The server owns run state
-  (gold, shops, benches, board, lives, round). Clients send intents (buy,
+  (gold, shops, benches, board, lives, cycle, step). Clients send intents (buy,
   sell, move, give, ready, vote); the server validates and broadcasts state.
   The server rolls shops, selects opponents, picks seeds, and runs the fight.
 - **TA-4 [PROPOSED]** **Realtime transport** (e.g. WebSocket) for the lobby
-  and build phase. A party's run lives in a "room" that survives individual
+  events, and prep phases. A party's run lives in a "room" that survives individual
   disconnects (CP-16).
 - **TA-5 [PROPOSED]** **Persistence**:
   - accounts / identities
   - runs (resumable state, history, final depth)
-  - snapshots, indexed by `(sim version, party size, round)` for MM-2 lookups
+  - snapshots, indexed by `(sim version, party size, cycle)` for MM-2 lookups
   - leaderboards per party size
 - **TA-6 [PROPOSED]** **Content is data** (CB-14): units, items, traits,
   encounter and boss templates, and scaling constants live in versioned data
@@ -87,11 +87,11 @@ server unless the server also runs that runtime. See Q6.
 
 1. **M0 — Sim core:** deterministic headless fights between two hard-coded
    teams; CLI runner; golden tests.
-2. **M1 — Solo loop, local:** build phase + PvE rounds + exponential scaling +
+2. **M1 — Solo loop, local:** PvE battle (3 difficulties) + shop event + exponential scaling +
    lives; minimal UI; placeholder content (CB-18).
 3. **M2 — Server authority:** run state on the server; accounts; resumable
    runs.
-4. **M3 — Ghosts:** snapshot save, matching, boss fallback, Showdown cadence.
+4. **M3 — Ghosts:** snapshot save, matching, boss fallback, the full three-step cycle.
 5. **M4 — Co-op:** lobby, 2–4 players, shared board, giving, votes,
    disconnect handling.
 6. **M5 — Balance & content:** balance harness, content expansion,
