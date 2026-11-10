@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v2.5
+Status: Draft v2.8
 
 ## Core loop
 
@@ -57,9 +57,11 @@ Lobby -> Map + Core placement ->
   - **Salvage** — trade buildings in for something of a different kind.
   - **Survey** — information about what is coming (the next PvE options, or
     a hint about the next opponent).
-- **RS-4b [OPEN]** How the event is selected: at random, or chosen by the
-  party from 2–3 offered events *(recommended)*. Whether the event after a
-  lost battle differs from the event after a win. See Q4.
+- **RS-4b [DECIDED]** At each event step the **party picks one of three
+  offered events**. The choice is made by party vote (CP-16).
+- **RS-4d [PROPOSED]** The three offers are drawn at random from the event
+  types available at that depth, without duplicates. Each offer shows what
+  it does before the party chooses.
 - **RS-4c [PROPOSED]** The first playable can ship with one or two event
   types; the step exists from the start so the loop has its final shape.
 
