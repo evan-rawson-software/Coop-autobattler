@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v3.7
+Status: Draft v3.8
 
 ## Direction
 
@@ -400,6 +400,42 @@ is deliberate.
   against the Steam client; everything above the Platform interface is
   covered by automated tests on the Local implementation.
 
+## Release pipeline
+
+- **TA-33 [DECIDED]** There will eventually be a **continuous deployment
+  pipeline** for releases, and it **automatically includes the step that
+  deletes old ghost data, based on the type of update being deployed**
+  (TA-8, TA-9). Not needed for the web proof of concept; required before
+  the game has real players on Steam.
+- **TA-34 [PROPOSED]** How it works:
+  - The pipeline reads the version being released and compares it with the
+    last released version to classify the update as patch, minor, or major.
+    The CI check from TA-8 has already confirmed the classification is at
+    least as high as the changes require.
+  - **Patch:** build, test, upload to Steam. No data changes.
+  - **Minor:** the same. A new ghost pool starts by itself because bucket
+    names include the version; old pools are left for runs still on them.
+  - **Major:** the same, followed by deleting all ghost data for older
+    versions. Old saves are deleted by each player's game at first launch
+    (TA-9), not by the pipeline.
+- **TA-35 [PROPOSED]** Safeguards, because the deletion cannot be undone:
+  - The deletion step only ever targets data whose version is older than
+    the one being released, selected by the version in the bucket name. It
+    cannot touch the current version's pool or the depth leaderboards.
+  - It runs only after the new build is live, so a failed release never
+    leaves players without both the old data and the new game.
+  - It prints what it is about to delete and waits for a person to approve
+    before a major release proceeds. Patch and minor releases need no
+    approval.
+  - It can be run in a dry-run mode that only lists what would be deleted.
+  - The Steamworks credentials it needs are stored as pipeline secrets,
+    never in the repository.
+- **TA-36 [PROPOSED]** Which Steamworks interface can delete leaderboards and
+  their attached files in bulk, and with what credentials, is unconfirmed
+  and is part of the spike (TA-30). If bulk deletion is not possible, the
+  fallback is to leave old data in place and unreachable: no game version
+  ever reads a bucket from an older major version.
+
 ## Backlog
 
 - **TA-54 [DECIDED]** Backlog items are tracked as **GitHub issues** on
@@ -443,5 +479,7 @@ is deliberate.
 11. **S2 — Steam:** lobbies, relay networking, leaderboard ghost store,
     Cloud saves, rich presence.
 12. **S2b — Anti-cheat server** (TA-24): required before final release.
-13. **S3 — Release work:** content expansion, meta-progression,
+13. **S2c — Release pipeline** (TA-33): automated deployment including
+    version-based deletion of old ghost data.
+14. **S3 — Release work:** content expansion, meta-progression,
     achievements, Steam Deck/controller, playtest branch.
