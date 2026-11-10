@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v4.4
+Status: Draft v4.5
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -54,8 +54,7 @@ everything else movable. Open:
 ## Q3. Screens
 
 Decided: top/bottom orientation with the party at the bottom (CB-45).
-Wireframes of the battle, event, shop, and build screens have been shared
-with the project owner outside the repo.
+Wireframes of the screens of a run are in `docs/wireframes/`.
 
 - Decided: nothing is timed; every player readies up to move on (CP-17).
 - Decided for now: players do not see each other's shops; revisit after
@@ -83,7 +82,7 @@ Still open: whether a run should ever be transferable to a different host
 
 ## Q4. Details of the loop
 
-Decided (RS-1): each cycle is PvE battle → event → shop → PvP battle →
+Decided (RS-1): each round is PvE battle → event → shop → PvP battle →
 event → shop. A shop always follows the event. 5 lives; a PvE loss costs no
 life and gives no reward; a PvP loss costs a life. Remaining details:
 

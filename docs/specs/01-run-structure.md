@@ -1,10 +1,10 @@
 # 01 — Run Structure
 
-Status: Draft v4.4
+Status: Draft v4.5
 
 ## Core loop
 
-Before the first cycle, the party's map is generated and revealed and the
+Before the first round, the party's map is generated and revealed and the
 team places its Core, which then stays put for the whole run (CB-3e, CB-7).
 
 ```
@@ -13,7 +13,7 @@ Lobby -> Map + Core placement ->
 -> Defeat -> Run summary
 ```
 
-- **RS-1 [DECIDED]** A run is an unbounded sequence of **cycles**. A cycle
+- **RS-1 [DECIDED]** A run is an unbounded sequence of **rounds**. A round
   has two battles — a **PvE battle** and then a **PvP battle** — and
   **after each battle there is an event, and after the event there is
   always a shop**:
@@ -24,8 +24,8 @@ Lobby -> Map + Core placement ->
      matches (see `04-encounters-matchmaking.md`).
   5. **Event**
   6. **Shop**
-- **RS-2 [PROPOSED]** The **cycle number** is the single "progress" value used
-  for PvE scaling and ghost matching. Every party at cycle *c* has had exactly
+- **RS-2 [PROPOSED]** The **round number** is the single "progress" value used
+  for PvE scaling and ghost matching. Every party at round *r* has had exactly
   the same number of battles, events, and shops.
 - **RS-2a [PROPOSED]** A new run opens with a starting set of buildings and a
   first build phase before the first PvE battle, so the party never enters
@@ -54,10 +54,12 @@ Lobby -> Map + Core placement ->
   buying. Starting types:
   - **Workshop** — raise one building the party owns by one tier.
   - **Shrine** — choose one of several run modifiers.
-  - **Gamble** — risk gold or a building for a chance at something better.
-  - **Salvage** — trade buildings in for something of a different kind.
-  - **Survey** — information about what is coming (the next PvE options, or
-    a hint about the next opponent).
+  - **Gamble** — stake gold for a chance at more.
+  - **Salvage** — trade a building in for gold, at a better rate than
+    selling.
+  - **Survey** — extra information about the coming PvE battles, beyond the
+    archetype and reward already shown. It never reveals a PvP opponent
+    (RS-6a).
 - **RS-4b [DECIDED]** At each event step the **party picks one of three
   offered events**. The choice is made by party vote (CP-16).
 - **RS-4d [PROPOSED]** The three offers are drawn at random from the event
@@ -76,19 +78,24 @@ Lobby -> Map + Core placement ->
 - **RS-5f [PROPOSED]** The shop step is also the **build phase**: the whole
   board is open for placing, moving, rotating, and re-routing, and it is the
   last stop before the next battle.
+- **RS-5g [DECIDED]** **Undo covers layout changes only**: placing, moving,
+  rotating, and drawing or erasing conduits can be undone and redone within
+  the current shop step, since they are free anyway. Buying, selling, and
+  re-rolling can never be undone.
 
 ## PvP battle
 
 - **RS-5 [DECIDED]** Losing a PvP battle costs **one life**.
 - **RS-5a [PROPOSED]** A boss that replaces a ghost (V-4) is the PvP battle
-  for that cycle and has the same stakes: losing costs one life.
-- **RS-5b [PROPOSED]** There is one PvP battle per cycle.
+  for that round and has the same stakes: losing costs one life.
+- **RS-5b [PROPOSED]** There is one PvP battle per round.
 - **RS-5c [PROPOSED]** Winning a PvP battle grants a reward (EC-7).
 
 ## Building the factory
 
-- **RS-6 [PROPOSED]** New buildings come from shops, battle rewards, and
-  some events. **Arranging** the factory — placing, moving, rotating, and
+- **RS-6 [DECIDED]** **Battle rewards are gold. Buildings are acquired in
+  the shop.** The only buildings that do not come from a shop are the
+  starting kit (RS-2a). **Arranging** the factory — placing, moving, rotating, and
   re-routing buildings, drawing conduits, giving to
   teammates — happens during the shop step (RS-5f), which always comes
   immediately before a battle. No separate prep phase is needed.
@@ -112,16 +119,16 @@ Lobby -> Map + Core placement ->
 
 Note the interaction with V-5: lives are only lost in PvP battles, so the
 exponential wall must reach the party there. It does so in two ways — bosses
-replace ghosts as the pool thins at depth (MM-10), and lost PvE battles stop
-the party's income so it falls behind the ghosts it meets. See
+replace ghosts as the pool thins at depth (MM-10), and lost PvE battles cut
+the party's income to a trickle, so it falls behind the ghosts it meets. See
 `05-scaling-economy.md` "How runs end".
 
 ## Score and run summary
 
-- **RS-8 [PROPOSED]** Primary score: **depth** (highest cycle reached).
+- **RS-8 [PROPOSED]** Primary score: **depth** (highest round reached).
   Secondary: PvP win count and win rate against ghosts.
-- **RS-9 [PROPOSED]** The run summary shows depth, the final team, a per-cycle
-  history, and which ghosts were fought (party display names only).
+- **RS-9 [PROPOSED]** The run summary shows depth, the final team, a per-round
+  history that names each ghost party fought (display names only).
 
 ## Meta-progression
 

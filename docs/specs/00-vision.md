@@ -1,6 +1,6 @@
 # 00 — Vision & Pillars
 
-Status: Draft v4.4
+Status: Draft v4.5
 
 ## Elevator pitch
 
@@ -34,9 +34,10 @@ forever; the score is how deep you went.
   automation factory in the spirit of *Factorio*. Players coordinate to
   build the best overall factory. (Replaces the earlier one-board-per-player
   decision.)
-- **V-9a [DECIDED]** Rewards are a choice between economy — in-battle ramp,
-  not gold — and attack or defense for the upcoming battles. Defense, such
-  as walls, buys time for the factory to ramp up.
+- **V-9a [DECIDED]** What the party buys is a choice between economy —
+  in-battle ramp, not gold — and attack or defense for the upcoming battles.
+  The choice is made in the shop; battle rewards themselves are gold (RS-6).
+  Defense, such as walls, buys time for the factory to ramp up.
 - **V-10 [DECIDED]** The game is its own thing. It began from the
   item-board style of *The Bazaar* and *Backpack Battles* and has moved to a
   factory-and-battlefield design: the factory produces units that march on
@@ -76,7 +77,7 @@ forever; the score is how deep you went.
 
 - **Solo:** a complete game on its own, comparable to a single-player
   autobattler run.
-- **2–4 players:** friends on voice chat arguing about who gets the reward,
+- **2–4 players:** friends on voice chat arguing about what to buy and where it goes,
   pooling gold for a key purchase, and cheering or groaning at the same fight.
 
 ## Non-goals (for now)
@@ -93,7 +94,7 @@ forever; the score is how deep you went.
 ## Theme
 
 **[OPEN]** No setting chosen yet. Specs use neutral terms: *building*, *board*,
-*party*, *cycle*, *boss*. Theme should be chosen before content authoring but
+*party*, *round*, *boss*. Theme should be chosen before content authoring but
 does not block systems work.
 
 ## Glossary
@@ -101,14 +102,14 @@ does not block systems work.
 | Term | Meaning |
 |------|---------|
 | Party | The 1–4 players in a run together. |
-| Run | One playthrough, from cycle 1 until the party is eliminated. |
-| Cycle | One pass through the loop: PvE battle, event, shop, PvP battle, event, shop. |
+| Run | One playthrough, from round 1 until the party is eliminated. |
+| Round | One pass through the loop: PvE battle, event, shop, PvP battle, event, shop. (Called a "cycle" in earlier drafts.) |
 | Event | A short non-combat step after every battle, before the shop. |
 | Shop | The guaranteed step after every event: buy buildings, re-roll, and rearrange the factory before the next battle. |
-| PvP battle | The third step of a cycle: a ghost, or a boss if no ghost matches. |
+| PvP battle | The second battle of a round, after the first shop: a ghost, or a boss if no ghost matches. |
 | Encounter | A single automated fight (PvE or ghost PvP). |
 | Board | The party's single shared map and everything built on it: the factory. |
-| Building | Anything the party places on the board: sources, unit producers, defenses, economy buildings. Bought in shops or won as rewards. |
+| Building | Anything the party places on the board: sources, unit producers, defenses, economy buildings. Bought in shops, apart from the starting kit. |
 | Conduit | A free, unlimited connection that carries one resource between buildings. Takes space, cannot cross another conduit, cannot be attacked. |
 | Unit | A fighter produced by a building during battle; walks to the enemy base and attacks. |
 | Resource node | A map cell where a source can be built. |
@@ -124,4 +125,4 @@ does not block systems work.
 | Snapshot | A saved copy of a party's board, taken at the start of a PvP battle. |
 | Ghost | A snapshot being used as another party's opponent. |
 | Boss | A generated PvE opponent used when no ghost is available. |
-| Depth | The highest cycle a party reached; the primary score. |
+| Depth | The highest round a party reached; the primary score. |

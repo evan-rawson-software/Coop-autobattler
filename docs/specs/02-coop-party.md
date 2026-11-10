@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v4.4
+Status: Draft v4.5
 
 ## Party basics
 
@@ -54,17 +54,15 @@ Status: Draft v4.4
   can move or rotate any building (it is a co-op game among friends, and
   re-routing the factory often means moving several players' pieces); only
   the owner can sell it. To be revisited after co-op playtests.
-- **CP-14 [PROPOSED]** **Party picks.** Some rewards belong to the party as a
-  whole — a choice of one building among several, a Core
-  upgrade — and are decided together (CP-16). Resource nodes are party
-  property too: who builds the source on a node is something to agree on.
+- **CP-14 [PROPOSED]** Resource nodes belong to the party as a whole: who
+  builds the source on a node is something to agree on.
 
 ## Shared stakes
 
 - **CP-15 [PROPOSED]** Lives are a single shared pool (RS-7a). The party wins
   and loses battles together.
 - **CP-16 [PROPOSED]** Party-wide choices (PvE difficulty, which event to
-  take, party picks) use a vote; a tie is settled by the host (CP-3a).
+  take, where the Core goes) use a vote; a tie is settled by the host (CP-3a).
 
 ## Building together
 
@@ -74,8 +72,10 @@ Status: Draft v4.4
   step.**
 - **CP-17a [PROPOSED]** All players act at the same time within a step
   (everyone shops and builds simultaneously), and any player can un-ready
-  until the last player readies. Event votes work the same way: the event
-  resolves once everyone has voted.
+  until the last player readies.
+- **CP-17b [DECIDED]** **A vote counts as soon as it is cast and can be
+  changed until the last player has voted.** There is no separate confirm
+  step. The choice resolves once everyone has voted.
 - **CP-18 [PROPOSED]** **Simultaneous editing.** All players edit the same
   board at once and see each other's changes live, with each player's cursor
   and held building visible. If two players act on the same cell or building, the
