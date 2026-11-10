@@ -5,3 +5,7 @@ coverage/
 
 # Local agent worktrees
 .claude/worktrees/
+
+# Browser smoke test (pnpm smoke)
+packages/web/dist-debug/
+packages/web/smoke-output/

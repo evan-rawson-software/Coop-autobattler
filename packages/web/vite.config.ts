@@ -21,6 +21,8 @@ const buildDate = new Date().toISOString().slice(0, 16) + 'Z';
 
 export default defineConfig({
   base: './',
+  // Preact's JSX runtime; no Vite preset needed.
+  oxc: { jsx: { runtime: 'automatic', importSource: 'preact' } },
   build: { outDir: 'dist' },
   define: {
     __BUILD_COMMIT__: JSON.stringify(commitHash()),

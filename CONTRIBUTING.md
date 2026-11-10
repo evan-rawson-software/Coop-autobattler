@@ -31,6 +31,7 @@ pnpm lint           # eslint, including the layer rule
 pnpm test           # vitest in every package
 pnpm build          # static site into packages/web/dist
 pnpm preview        # serve that build locally (run pnpm build first)
+pnpm smoke          # browser smoke test of the web app (local only, see below)
 pnpm golden:update   # regenerate golden/ expected values (deliberate)
 pnpm format         # prettier --write
 pnpm format:check   # prettier --check
@@ -44,6 +45,24 @@ another content file, add a row to `packages/tools/src/registry.ts`.
 
 CI (`.github/workflows/ci.yml`) runs install with a frozen lockfile, then
 typecheck, lint, format:check, test, and build.
+
+## Web app
+
+`packages/web` is a Preact app (TypeScript JSX, plain CSS with custom
+properties for light and dark) that draws the board on a `<canvas>`. Panels,
+the top bar and menus are ordinary DOM. State lives in plain modules (no
+router or state library). The page you land on is the debug screen
+(`#debug`); real screens register in `src/shell/screens.ts`. The pure camera
+and gesture code (`src/board/camera.ts`, `gestures.ts`, `layout.ts`) has unit
+tests that run with `pnpm test`.
+
+`pnpm smoke` builds the site with `--mode debug` (which adds a read-only
+`window.__debug` hook that production builds leave out), serves it, and drives
+it with Playwright: page checks, camera and selection checks, a performance
+run, and screenshots into `packages/web/smoke-output/` (git-ignored). It needs
+Playwright with Chromium installed on your machine. CI has no browser
+installed, so CI does not run it: run it locally before changing the board
+view or the shell.
 
 ## Layer rule
 

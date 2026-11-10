@@ -6,3 +6,5 @@ coverage/
 node_modules/
 .claude/
 golden/
+dist-debug/
+smoke-output/
