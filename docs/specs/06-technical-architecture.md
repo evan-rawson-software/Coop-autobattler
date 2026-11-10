@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v1.1
+Status: Draft v2.2
 
 ## Direction
 
@@ -270,6 +270,20 @@ is deliberate.
   (JSON or Godot resources — prefer a text format that diffs well and can be
   validated in CI). Rules data is kept separate from names, descriptions, and
   art references, keyed by a stable building ID.
+
+- **TA-27a [DECIDED]** **Resource names are configuration, not code.** The
+  three resources are defined in a single configuration file that gives each
+  a stable internal ID and a display name (and, later, icon and colour).
+  Renaming a resource means editing that one file. Code, content data,
+  tests, and save files refer to resources only by ID or through the
+  configuration, never by a hard-coded display name. Internal IDs are
+  neutral (e.g. `res_a`, `res_b`, `res_c`) so that a rename never leaves
+  misleading identifiers behind. This applies in the web proof of concept
+  as well as in Godot, and the file is one of the things that carries over
+  (TA-48).
+- **TA-27b [PROPOSED]** The same approach applies to all player-facing names
+  (buildings, units, tags): stable IDs in rules data, display text in
+  separate files (TA-27).
 
 ## Language
 

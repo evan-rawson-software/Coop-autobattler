@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v2.1
+Status: Draft v2.2
 
 ## Direction
 
@@ -61,8 +61,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-5** **Resource nodes** are cells where a source building can be
   built. Sources can only be placed on nodes, so node positions shape the
   whole factory. Each node yields one of the resources (CB-5a).
-- **CB-5a** **Three resources** (CB-3k). Names are placeholders until the
-  theme is chosen; the roles are the proposal:
+- **CB-5a [DECIDED for now]** **Three resources** (CB-3k): **Ore, Power,
+  and Flux**. The names are working names and must be **renameable in one
+  configuration file** (TA-27a). The roles:
 
   | Resource | Nodes | Mainly used for |
   |----------|-------|-----------------|
