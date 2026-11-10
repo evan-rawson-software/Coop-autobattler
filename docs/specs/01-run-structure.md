@@ -54,8 +54,9 @@ Lobby -> Map + Core placement ->
   buying. Starting types:
   - **Workshop** — raise one building the party owns by one tier.
   - **Shrine** — choose one of several run modifiers.
-  - **Gamble** — risk gold or a building for a chance at something better.
-  - **Salvage** — trade buildings in for something of a different kind.
+  - **Gamble** — stake gold for a chance at more.
+  - **Salvage** — trade a building in for gold, at a better rate than
+    selling.
   - **Survey** — information about what is coming (the next PvE options, or
     a hint about the next opponent).
 - **RS-4b [DECIDED]** At each event step the **party picks one of three
@@ -87,8 +88,8 @@ Lobby -> Map + Core placement ->
 
 ## Building the factory
 
-- **RS-6 [PROPOSED]** New buildings come from shops, battle rewards, and
-  some events. **Arranging** the factory — placing, moving, rotating, and
+- **RS-6 [DECIDED]** **Battle rewards are gold. Buildings are acquired in
+  the shop.** **Arranging** the factory — placing, moving, rotating, and
   re-routing buildings, drawing conduits, giving to
   teammates — happens during the shop step (RS-5f), which always comes
   immediately before a battle. No separate prep phase is needed.

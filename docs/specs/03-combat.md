@@ -35,7 +35,7 @@ Status: Draft v4.4
   players could spam them to delay enemy units).
 - **CB-3i [DECIDED]** **Gold is not a building resource.** Gold is spent only
   at shops between battles, to purchase buildings. Only buildings the party
-  has purchased (or won) can be placed, and placing costs nothing. Conduits
+  has purchased can be placed, and placing costs nothing. Conduits
   are the one exception: unlimited, never purchased.
 - **CB-3j [DECIDED]** **No long-range buildings.** Buildings never attack
   the enemy's side of the battlefield; all offence is carried by units.
@@ -294,8 +294,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-25 [DECIDED]** **The board never expands.** It starts fairly large and
   stays that size for the whole run. Running out of room is intended to be
   one of the constraints on long endgame play.
-- **CB-26** Buildings are bought with gold in shops between battles, or won
-  as rewards, and go into the owning player's stash. Placing, moving, and
+- **CB-26** Buildings are bought with gold in shops between battles and go into the owning player's stash. Placing, moving, and
   rotating them costs nothing; gold plays no part in building or in battle
   (CB-3i). 
 - **CB-26b [DECIDED for now]** There are no building tags or tag bonuses; to
@@ -303,7 +302,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-26a [DECIDED]** **Buildings have tiers, and there is no combining.**
   Owning several identical buildings never merges them. Higher-tier
   buildings come from shops (which offer higher tiers as the run goes on),
-  from rewards, and from events such as the Workshop, which raises one
+  and from the Workshop event, which raises one
   building by a tier. The factory layout therefore only changes when
   players change it.
 - **CB-26c [DECIDED for now]** There are **three tiers**. Nothing can raise

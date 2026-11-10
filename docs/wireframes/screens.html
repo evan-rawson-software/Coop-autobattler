@@ -210,11 +210,11 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     <p>Shown when playback ends. It says what happened and why, so the party can decide what to change.</p>
     <div class="sheet"><svg id="s-summary" viewBox="0 0 960 540" role="img" aria-label="Battle summary wireframe: result strip, a chart over time, a small map showing where defenses were breached, per-building totals, costs and rewards, and ready controls."></svg></div>
     <ol class="notes">
-      <li>The result, and in the corner what it cost or paid: lives lost and gold gained.</li>
+      <li>The result, and in the corner what it cost or paid: lives lost and gold gained. Battle rewards are always gold.</li>
       <li>Army strength over the battle for both sides, with the moments that mattered marked.</li>
       <li>Where the enemy got through.</li>
       <li>What each building did.</li>
-      <li>The party pick, shown only after a win: the party chooses one of three buildings together. After a loss this area is empty.</li>
+      <li>What comes next in the round.</li>
       <li>Watch the battle again, or ready up. The party moves on to the event when everyone is ready.</li>
     </ol>
   </section>
@@ -371,11 +371,11 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     var s = document.getElementById("s-event");
     topbar(s, "Round 4 · Event", "pick one of three", "Lives 4 / 5");
     R(s, 24, 48, 912, 40, "panel");
-    T(s, 38, 73, "PvE battle won  ·  Hard  ·  Rusher", "th"); T(s, 922, 73, "+12 gold each   ·   party pick: Turret (tier 2)", "t", "end");
+    T(s, 38, 73, "PvE battle won  ·  Hard  ·  Rusher", "th"); T(s, 922, 73, "+12 gold each", "t", "end");
     var cards = [
       ["Workshop", ["Raise one building the party", "owns by one tier."], ["Party chooses which building."], ["You", "Ana"], true],
       ["Shrine", ["Choose 1 of 3 run modifiers.", "Lasts until the run ends."], ["e.g. walls +25% health,", "extractors start faster."], ["Bo"], false],
-      ["Gamble", ["Give up a building for a random", "one a tier higher. It may be", "a different kind."], ["Each player decides for", "themselves."], [], false]
+      ["Gamble", ["Stake some of your gold for", "an even chance to double it."], ["Each player decides for", "themselves."], [], false]
     ];
     cards.forEach(function (c, i) {
       var x = 40 + i * 300, y = 112, w = 280, h = 320;
@@ -434,7 +434,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     T(s, 36, 508, "You see only your own offers. Gold and buildings can be given.", "ts tm");
     // next battle
     R(s, 476, 318, 216, 206, "panel"); T(s, 488, 338, "NEXT BATTLE", "ts tm");
-    T(s, 488, 362, "PvP", "tb"); lines(s, 488, 384, ["Opponent unknown until", "the battle starts.", "", "Lose: −1 life", "Win: party pick"], "ts", 15);
+    T(s, 488, 362, "PvP", "tb"); lines(s, 488, 384, ["Opponent unknown until", "the battle starts.", "", "Lose: −1 life", "Win: gold"], "ts", 15);
     // mini board
     R(s, 704, 318, 232, 206, "panel"); T(s, 716, 338, "YOUR FACTORY", "ts tm");
     var mg = el(s, "g", { transform: "translate(716,348) rotate(0)" });
@@ -538,8 +538,8 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     R(s, 24, 48, 912, 40, "panel"); T(s, 38, 73, "Win: take the reward.    Lose: no reward, and no life lost.", "th");
     var cards = [
       ["Easy", "Fortress", ["A heavily defended", "stronghold. Light waves."], "Tests: ramp and siege", "+6 gold each", 1, [], false],
-      ["Medium", "Escalator", ["Waves that grow", "quickly."], "Tests: speed", "+10 gold each · party pick", 2, ["Bo"], false],
-      ["Hard", "Rusher", ["Heavy waves from the", "first seconds."], "Tests: defense", "+14 gold each · better pick", 3, ["You", "Ana"], true]
+      ["Medium", "Escalator", ["Waves that grow", "quickly."], "Tests: speed", "+10 gold each", 2, ["Bo"], false],
+      ["Hard", "Rusher", ["Heavy waves from the", "first seconds."], "Tests: defense", "+14 gold each", 3, ["You", "Ana"], true]
     ];
     cards.forEach(function (c, i) {
       var x = 40 + i * 300, y = 104, w = 280, h = 336;
@@ -577,13 +577,11 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     lines(s, 488, 290, ["Enemy units came through", "the open right flank and", "cut the splitter at 1:05."], "ts", 16);
     R(s, 708, 104, 228, 250, "panel"); T(s, 720, 124, "YOUR BUILDINGS", "ts tm");
     lines(s, 720, 150, ["Barracks    14 soldiers", "Foundry      3 heavies", "Turret      22 kills", "Armory       2 upgrades", "Walls        5 of 11 lost", "Splitter     destroyed 1:05"], "t", 22);
-    R(s, 24, 366, 440, 150, "plot"); T(s, 36, 386, "PARTY PICK · only after a win", "ts tm");
-    [0, 1, 2].forEach(function (i) { R(s, 36 + i * 140, 396, 128, 80, "plot"); T(s, 100 + i * 140, 440, "building " + (i + 1), "ts tm", "middle"); });
-    T(s, 36, 500, "Not shown here: this battle was lost. A win offers 1 of 3 buildings.", "ts tm");
-    R(s, 476, 366, 220, 150, "panel"); T(s, 488, 386, "NEXT", "ts tm");
-    lines(s, 488, 412, ["Event", "Shop + Build", "PvE battle (round 5)"], "t", 22);
+    R(s, 24, 366, 672, 150, "panel"); T(s, 36, 386, "NEXT", "ts tm");
+    ["Event", "Shop + Build", "PvE battle (round 5)"].forEach(function (k, i) { R(s, 36 + i * 220, 404, 200, 44, "box"); T(s, 136 + i * 220, 431, k, "t", "middle"); if (i < 2) T(s, 246 + i * 220, 431, "→", "t tm", "middle"); });
+    T(s, 36, 494, "Your factory was saved as a ghost for other parties to fight.", "ts tm");
     R(s, 708, 366, 228, 150, "panel"); btn(s, 720, 382, 204, 36, "Watch again"); btn(s, 720, 428, 204, 36, "Ready", true); T(s, 720, 494, "1 of 3 ready", "ts tm");
-    mark(s, 30, 56, 1); mark(s, 450, 118, 2); mark(s, 682, 118, 3); mark(s, 922, 118, 4); mark(s, 450, 380, 5); mark(s, 922, 478, 6);
+    mark(s, 30, 56, 1); mark(s, 450, 118, 2); mark(s, 682, 118, 3); mark(s, 922, 118, 4); mark(s, 682, 380, 5); mark(s, 922, 478, 6);
   })();
 
   // ================= 9. RUN OVER =================

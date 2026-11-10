@@ -131,11 +131,11 @@ Shown when playback ends. It says what happened and why, so the party can decide
 
 ![Battle summary screen wireframe](8-battle-summary.png)
 
-1. The result, and in the corner what it cost or paid: lives lost and gold gained.
+1. The result, and in the corner what it cost or paid: lives lost and gold gained. Battle rewards are always gold.
 2. Army strength over the battle for both sides, with the moments that mattered marked.
 3. Where the enemy got through.
 4. What each building did.
-5. The party pick, shown only after a win: the party chooses one of three buildings together. After a loss this area is empty.
+5. What comes next in the round.
 6. Watch the battle again, or ready up. The party moves on to the event when everyone is ready.
 
 ## 9. Run over

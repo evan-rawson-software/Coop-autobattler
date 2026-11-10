@@ -108,7 +108,7 @@ does not block systems work.
 | PvP battle | The third step of a round: a ghost, or a boss if no ghost matches. |
 | Encounter | A single automated fight (PvE or ghost PvP). |
 | Board | The party's single shared map and everything built on it: the factory. |
-| Building | Anything the party places on the board: sources, unit producers, defenses, economy buildings. Bought in shops or won as rewards. |
+| Building | Anything the party places on the board: sources, unit producers, defenses, economy buildings. Bought in shops. |
 | Conduit | A free, unlimited connection that carries one resource between buildings. Takes space, cannot cross another conduit, cannot be attacked. |
 | Unit | A fighter produced by a building during battle; walks to the enemy base and attacks. |
 | Resource node | A map cell where a source can be built. |

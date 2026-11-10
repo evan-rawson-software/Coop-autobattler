@@ -54,17 +54,16 @@ Status: Draft v4.4
   can move or rotate any building (it is a co-op game among friends, and
   re-routing the factory often means moving several players' pieces); only
   the owner can sell it. To be revisited after co-op playtests.
-- **CP-14 [PROPOSED]** **Party picks.** Some rewards belong to the party as a
-  whole — a choice of one building among several, a Core
-  upgrade — and are decided together (CP-16). Resource nodes are party
-  property too: who builds the source on a node is something to agree on.
+- **CP-14 [PROPOSED]** Resource nodes belong to the party as a whole: who
+  builds the source on a node is something to agree on. (There are no
+  party-pick rewards; battle rewards are gold, RS-6.)
 
 ## Shared stakes
 
 - **CP-15 [PROPOSED]** Lives are a single shared pool (RS-7a). The party wins
   and loses battles together.
 - **CP-16 [PROPOSED]** Party-wide choices (PvE difficulty, which event to
-  take, party picks) use a vote; a tie is settled by the host (CP-3a).
+  take, where the Core goes) use a vote; a tie is settled by the host (CP-3a).
 
 ## Building together
 

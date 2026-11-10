@@ -93,7 +93,7 @@ first. Gold (next section) is never produced by the factory.
 
 - **EC-0 [DECIDED]** Gold is spent **only at shops between battles**, to
   purchase buildings. It is never a resource for placing buildings or for
-  anything during a battle. Only purchased (or won) buildings can be placed;
+  anything during a battle. Only purchased buildings can be placed;
   conduits are free and unlimited (CB-3g, CB-3i).
 - **EC-1 [PROPOSED]** One currency: **gold**, earned per round (base
   income), from winning PvE battles, and from selling buildings back.
@@ -105,7 +105,7 @@ first. Gold (next section) is never produced by the factory.
 - **EC-4 [PROPOSED]** **Party-size economy**: every player earns full income
   at every party size. PvE threats scale by the same
   factor, so no discount curve is needed. Battle
-  rewards are paid per player; party picks (CP-14) are per party.
+  rewards are paid per player.
 - **EC-4a [PROPOSED]** Giving (CP-11) lets a party pool gold for one
   player's purchase. With a shared board this is normal play, not a problem.
 - **EC-5 [PROPOSED]** No interest/banking mechanic in the first playable; add
@@ -116,14 +116,10 @@ first. Gold (next section) is never produced by the factory.
 
 ## Rewards
 
-- **EC-7 [PROPOSED]** PvE win rewards by difficulty — easy: gold; medium:
-  more gold plus a party pick (CP-14); hard: more gold plus a better party
-  pick. PvE loss: nothing (RS-3a). PvP win: a party pick and/or a permanent
-  run modifier.
-- **EC-7a [PROPOSED]** A party pick is chosen on the battle summary screen,
-  straight after the win: three buildings are offered, the party votes, and
-  the chosen building goes to the player the party names. After a loss there
-  is no pick and nothing is shown in its place.
+- **EC-7 [DECIDED/PROPOSED detail]** **Battle rewards are gold only**;
+  buildings are acquired in the shop (RS-6). Proposed detail: a PvE win pays
+  gold by difficulty (easy < medium < hard); a PvE loss pays nothing
+  (RS-3a); a PvP win pays gold. Amounts are configuration.
 - **EC-9 [PROPOSED]** Base income per round is deliberately small relative to
   PvE rewards, so that PvE results are what drive a party's growth.
 - **EC-8 [PROPOSED]** Run modifiers that affect combat are part of team state
