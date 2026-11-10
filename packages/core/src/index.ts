@@ -328,3 +328,66 @@ export type {
   TimelineSide,
 } from './battle.js';
 export { makeBattleKind } from './battle-kind.js';
+
+// PvE threats (W1-9).
+export {
+  THREAT_TYPES,
+  budgetLimit,
+  findArchetype,
+  loadThreats,
+  loadThreatsOrThrow,
+  maxThreatRound,
+  threatBudget,
+} from './threats.js';
+export type {
+  ArchetypeDef,
+  ArchetypeId,
+  LayoutId,
+  StrongholdTemplate,
+  ThreatType,
+  ThreatsConfig,
+  ThreatsLoadContext,
+  ThreatsLoadResult,
+  UnitCost,
+  WaveComposition,
+  WaveTemplate,
+} from './threats.js';
+export {
+  buildStronghold,
+  generateThreat,
+  pickArchetypes,
+  scaleShare,
+  threatSummary,
+} from './threat-gen.js';
+export type {
+  ArchetypePick,
+  Stronghold,
+  StrongholdBuilding,
+  ThreatConfigs,
+  ThreatContent,
+  ThreatInput,
+  ThreatProfile,
+  ThreatSummary,
+  ThreatWave,
+} from './threat-gen.js';
+export { layoutStronghold } from './threat-layouts.js';
+export {
+  simulatePveBattle,
+  startPveBattle,
+  threatSideOptions,
+} from './pve-battle.js';
+export type {
+  PveBattle,
+  PveBattleInput,
+  SimulatePveBattleResult,
+  StartPveBattleResult,
+} from './pve-battle.js';
+export type { ScheduledWave, SideOptions } from './arena-sim.js';
+export {
+  REFERENCE_BOARDS,
+  REFERENCE_SEED,
+  buildReferenceBoard,
+  referenceBoardScript,
+} from './reference-boards.js';
+export type { ReferenceBoardName, TeamScript } from './reference-boards.js';
+export { makePveBattleKind, makeThreatGenKind } from './threat-kind.js';

@@ -5,6 +5,7 @@ import presentationJson from '../../../content/presentation.en.json';
 import resourcesJson from '../../../content/resources.json';
 import simJson from '../../../content/sim.json';
 import terrainJson from '../../../content/terrain.json';
+import threatsJson from '../../../content/threats.json';
 import unitsJson from '../../../content/units.json';
 import type { Side } from './buildings.js';
 import { addConduit } from './conduits.js';
@@ -14,6 +15,7 @@ import { listLegalCorePositions, type Cell, type GameMap } from './map.js';
 import { loadMapgenOrThrow } from './mapgen.js';
 import { Rng } from './rng.js';
 import { loadSimConfigOrThrow } from './sim-config.js';
+import { loadThreatsOrThrow } from './threats.js';
 import {
   addToStash,
   createTeamState,
@@ -33,6 +35,10 @@ export const mapgen = loadMapgenOrThrow(mapgenJson, {
   terrain: content.terrain,
 });
 export const simConfig = loadSimConfigOrThrow(simJson);
+export const threats = loadThreatsOrThrow(threatsJson, {
+  units: content.units,
+  buildings: content.buildings,
+});
 // ---------------------------------------------------------------------------
 // Helpers
 

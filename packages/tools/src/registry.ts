@@ -6,6 +6,7 @@ import {
   loadSimConfig,
   loadResources,
   loadTerrain,
+  loadThreats,
   loadUnits,
   type BuildingConfig,
   type EconomyConfig,
@@ -14,6 +15,7 @@ import {
   type ResourceConfig,
   type SimConfig,
   type TerrainConfig,
+  type ThreatsConfig,
   type UnitConfig,
 } from '@game/core';
 
@@ -26,6 +28,7 @@ export interface LoadedContent {
   mapgen?: MapgenConfig;
   economy?: EconomyConfig;
   sim?: SimConfig;
+  threats?: ThreatsConfig;
   presentation?: PresentationConfig;
 }
 
@@ -121,6 +124,19 @@ export const contentRegistry: readonly ContentEntry[] = [
     needs: ['buildings'],
     load: (data, loaded) =>
       wrap(loadEconomy(data, { buildings: need(loaded, 'buildings') })),
+  },
+  {
+    key: 'threats',
+    contentFile: 'threats.json',
+    schemaFile: 'threats.schema.json',
+    needs: ['units', 'buildings'],
+    load: (data, loaded) =>
+      wrap(
+        loadThreats(data, {
+          units: need(loaded, 'units'),
+          buildings: need(loaded, 'buildings'),
+        }),
+      ),
   },
   {
     key: 'presentation',
