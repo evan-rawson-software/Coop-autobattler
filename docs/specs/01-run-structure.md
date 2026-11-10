@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v2.8
+Status: Draft v2.9
 
 ## Core loop
 
@@ -49,8 +49,9 @@ Lobby -> Map + Core placement ->
 
 - **RS-4 [DECIDED]** An event follows every battle. Events are separate from
   the shop: the shop is its own guaranteed step, not an event type.
-- **RS-4a [PROPOSED]** An event is a short non-combat moment that changes
-  the run in some way other than buying. Candidate types:
+- **RS-4a [DECIDED as a starting set; to be refined later]** An event is a
+  short non-combat moment that changes the run in some way other than
+  buying. Starting types:
   - **Workshop** — upgrade or modify a building the party owns.
   - **Shrine** — choose one of several run modifiers.
   - **Gamble** — risk gold or a building for a chance at something better.

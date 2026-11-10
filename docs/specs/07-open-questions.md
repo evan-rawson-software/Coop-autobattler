@@ -64,8 +64,8 @@ Decided (RS-1): each cycle is PvE battle → event → shop → PvP battle →
 event → shop. A shop always follows the event. 5 lives; a PvE loss costs no
 life and gives no reward; a PvP loss costs a life. Remaining details:
 
-- Decided: the party picks one of three offered events (RS-4b). Open:
-  which event types exist (RS-4a).
+- Decided: the party picks one of three offered events (RS-4b). The
+  starting event types are those in RS-4a, to be refined later.
 - **Boss fallback stakes.** Proposed: same as a PvP battle, costs a life on
   defeat (RS-5a).
 - **Regaining lives.** Proposed: not possible initially (RS-7c).
