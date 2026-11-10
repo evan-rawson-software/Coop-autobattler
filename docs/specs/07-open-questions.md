@@ -54,8 +54,7 @@ everything else movable. Open:
 ## Q3. Screens
 
 Decided: top/bottom orientation with the party at the bottom (CB-45).
-Wireframes of the battle, event, shop, and build screens are in
-`docs/wireframes/`.
+Wireframes of the screens of a run are in `docs/wireframes/`.
 
 - Decided: nothing is timed; every player readies up to move on (CP-17).
 - Decided for now: players do not see each other's shops; revisit after

@@ -1,7 +1,7 @@
 # Screen wireframes
 
-Layout sketches for the four screens of one cycle, drawn for a 1920×1080
-screen with the party's base at the bottom and the enemy at the top
+Layout sketches for the screens of a run, drawn for a 1920×1080 screen with
+the party's base at the bottom and the enemy at the top
 (`../specs/03-combat.md` CB-45 to CB-48). They show what is on each screen
 and where. Sizes, numbers, and building names are placeholders, and the
 sketches show a solo view with co-op elements marked.
@@ -9,10 +9,17 @@ sketches show a solo view with co-op elements marked.
 The specs are the source of truth. Where a wireframe and a spec disagree,
 the spec wins and the wireframe should be corrected.
 
-- `screens.html` — all four wireframes on one page, with the callouts. Open
+Order in a run: 5 main menu → 6 Core placement → 4 build → then each cycle:
+7 PvE choice → 1 battle → 8 summary → 2 event → 3 shop + 4 build → PvP
+battle (1, 8) → 2 event → 3 shop + 4 build → … → 9 run over.
+
+- `screens.html` — all the wireframes on one page, with the callouts. Open
   it in a browser. The screens are drawn by a script in the page, so edit
   that script to change them, then re-export the images.
-- `1-battle.png` to `4-build.png` — the same screens as images.
+- `1-battle.png` to `9-run-over.png` — the same screens as images.
+
+Not drawn: the lobby for forming a party, settings, and the screens for the
+deferred features (refining, points of interest).
 
 Map legend: **Ex** extractor, **Bk** barracks, **Fo** foundry, **Tu** turret,
 **Sp** splitter, **Ar** armory (an economy building), solid blocks are
@@ -79,3 +86,67 @@ Where the factory is laid out. Everything except the Core can be moved, and cond
 9. Overlays and problems: a dry run of resource flow, the enemy-path preview, and anything unconnected.
 10. Party panel: who is editing where, pings, and the Ready button. The battle starts when everyone is ready.
 11. In co-op each extra player adds a plot to the side. A four-player board still fits the width of a 1080p screen, and everything below the board stays free for panels.
+
+## 5. Main menu
+
+Where a run starts or resumes. Saved runs are listed without limit. The host of a run holds its save; guests see the run as a pointer to the host.
+
+![Main menu screen wireframe](5-main-menu.png)
+
+1. New run starts a lobby (or goes straight in, solo).
+2. Saved runs. There is no limit, and each run appears once.
+3. A run you host: you can resume it, or abandon it for the whole party.
+4. A save from an older version says so before you resume: some things may have changed.
+5. A run someone else hosts. They hold the save, so you can only join when they open it. Hide removes it from your list without ending it.
+6. Records: the deepest cycle reached, kept per party size. Nothing else carries over between runs.
+
+## 6. Core placement
+
+The first decision of a run. The whole map is shown, and the party chooses where the Core goes. It cannot be moved afterwards.
+
+![Core placement screen wireframe](6-core-placement.png)
+
+1. The whole map, visible and buildable from the start. It never expands.
+2. The front edge, where enemy units will enter.
+3. The proposed Core position, with the routes enemy units would take to reach it.
+4. Resource nodes. Where the rare one sits is a big part of the choice.
+5. In co-op any player can propose a spot and the party confirms it by vote. Solo just confirms.
+6. The starting kit, waiting in the stash for the first build.
+
+## 7. PvE difficulty choice
+
+Before each PvE battle the party picks easy, medium, or hard. Each option shows what kind of enemy it is and what it pays.
+
+![PvE difficulty choice screen wireframe](7-pve-choice.png)
+
+1. The stakes: losing a PvE battle costs no life, only the reward.
+2. Difficulty and enemy type. The type tells you what the battle will test.
+3. How strong the threat is.
+4. What winning pays. Harder options pay more.
+5. Votes. No time limit; the battle starts once everyone has voted.
+
+## 8. Battle summary
+
+Shown when playback ends. It says what happened and why, so the party can decide what to change.
+
+![Battle summary screen wireframe](8-battle-summary.png)
+
+1. The result and what it cost or paid.
+2. Army strength over the battle for both sides, with the moments that mattered marked.
+3. Where the enemy got through.
+4. What each building did.
+5. Lives, gold, and any party pick.
+6. Watch the battle again, or ready up. The party moves on to the event when everyone is ready.
+
+## 9. Run over
+
+Every run ends in defeat; this screen says how far it got. An abandoned run ends here too.
+
+![Run over screen wireframe](9-run-over.png)
+
+1. Depth reached, the score of the run.
+2. Whether it beat the party's previous best for this party size.
+3. Battle records for the run.
+4. The factory as it stood at the end.
+5. What was fought each cycle and how it went.
+6. Start again or go back to the menu. The run leaves the saved list; only its depth is kept.

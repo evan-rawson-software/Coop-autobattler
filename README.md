@@ -31,7 +31,8 @@ refined and then broken down into backlog items for coding agents.
 
 ## Wireframes
 
-Layout sketches of the battle, event choice, shop, and build screens are in
+Layout sketches of the screens of a run (menu, Core placement, PvE choice,
+battle, summary, event, shop, build, and run over) are in
 [`docs/wireframes/`](docs/wireframes/).
 
 ## Conventions used in the specs
