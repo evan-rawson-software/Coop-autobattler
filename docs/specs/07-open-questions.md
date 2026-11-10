@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v3.3
+Status: Draft v3.4
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -62,6 +62,18 @@ with the project owner outside the repo. Open:
   ping?
 - In a four-player battle, does the camera start on the whole battlefield or
   on the player's own part of the base?
+
+## Q3a. Saving and disconnects
+
+Decided: battles continue while at least one player remains; a disconnected
+player must return before the run continues; reconnecting and re-hosting
+from the save are supported; multiple save slots, one run per slot, no
+copies; auto-save after each action (CP-21 to CP-23). Open:
+
+- How many save slots (proposed: 5)?
+- If a player never comes back, the run can only be abandoned (proposed).
+  Should the party instead be allowed to continue without them at some
+  cost?
 
 ## Q4. Details of the loop
 

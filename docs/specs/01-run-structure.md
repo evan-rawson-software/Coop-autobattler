@@ -134,4 +134,4 @@ the party's income so it falls behind the ghosts it meets. See
   readied up (CP-17). There are no session-length targets to hit; a run
   takes as long as the party wants to spend thinking.
 - **RS-12a [PROPOSED]** Because runs can be long, they must be easy to stop
-  and resume (CP-23). Battle playback keeps its speed controls.
+  and resume (CP-22, CP-23). Battle playback keeps its speed controls.

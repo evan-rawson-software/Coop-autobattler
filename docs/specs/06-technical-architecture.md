@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v3.1
+Status: Draft v3.4
 
 ## Direction
 
@@ -190,13 +190,32 @@ Everything from here down describes the Godot game.
 
 - **TA-10 [PROPOSED]** All party members must be on the same sim version; the
   lobby advertises it and mismatched players cannot join.
-- **TA-11 [PROPOSED]** **Host loss.** The host sends every player a full run
-  save at the start of each step. If the host disconnects, the run pauses;
-  any remaining player can re-host from their copy and the others rejoin.
-  Seamless automatic host migration is a later improvement.
-- **TA-12 [PROPOSED]** **Resuming later.** The run save lives in each
-  member's Steam Cloud. A run can be resumed when the same party re-forms a
-  lobby (membership checked by Steam ID), hosted by anyone holding the save.
+- **TA-11 [DECIDED/PROPOSED detail]** **Host loss and re-hosting.** Decided:
+  the host can leave and the run can be re-hosted from the save (CP-21c).
+  Proposed detail: the host already sends every state change to every
+  player, so each player's game writes the same auto-save after each action
+  (TA-12). If the host leaves outside a battle, the run pauses and any
+  member re-hosts from their copy; the others rejoin. If the host leaves
+  during a battle, the battle's inputs are already in every player's save,
+  so a remaining player's game finishes it and produces the same result
+  (CB-30). Seamless automatic host migration is a later improvement.
+- **TA-12 [DECIDED/PROPOSED detail]** **Auto-save and save slots.** Decided:
+  auto-save after each action; multiple save slots; one run cannot be in
+  more than one slot; resume later with the same players (CP-22, CP-23).
+  Proposed detail:
+  - A run has a unique ID and an **action counter** that increases with
+    every saved action. A slot stores one run ID; the game refuses to load
+    two slots with the same run ID and offers no "save as" or copy.
+  - The save holds the full run state including the PRNG state and any
+    outcome already rolled but not yet revealed (CP-23a).
+  - On resume, the players present compare action counters and the highest
+    wins, so nobody can re-host from an older copy to undo something.
+  - Saves are written locally after each action and synchronized through
+    Steam Cloud. Writes must be atomic so a crash mid-save cannot corrupt a
+    run.
+  - This stops casual save abuse. A player who edits or restores save files
+    by hand can still cheat; that falls under the accepted-risk position in
+    the trust model (TA-21).
 - **TA-13 [DECIDED]** No offline mode. The shipped game requires Steam. (The
   web proof of concept is offline by nature; that is a prototype, not a
   shipped mode.)
@@ -265,7 +284,7 @@ is deliberate.
 
 - **TA-25 [PROPOSED]** Local save files synchronized by Steam Cloud:
   - meta-progression (unlocks, records)
-  - the current run save (one per party the player is in)
+  - run saves, one per slot (TA-12)
   - settings
 - **TA-26 [PROPOSED]** Save files are versioned and carry the sim version.
 
