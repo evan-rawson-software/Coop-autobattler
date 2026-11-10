@@ -24,12 +24,14 @@ export const NEIGHBORS: readonly (readonly [number, number])[] = [
 ];
 
 /**
- * The single predicate that says which buildings block which side's units
- * (W1-6 will change it: gates let their own side through). Movement fields,
- * the breach field and spawn cells all go through `openFor`.
+ * The single predicate that says which buildings block which side's units: a
+ * living building blocks every unit, except that a gate lets the units of its
+ * own side through (W1-6). Movement fields, the breach field, spawn cells and
+ * aggro steps all go through `openFor`.
  */
 export function blocksUnit(building: ArenaBuilding, unitSide: number): boolean {
-  return building.alive && unitSide >= 0; // `unitSide` is for W1-6 (gates)
+  if (!building.alive) return false;
+  return !(building.defenseType === 'gate' && building.side === unitSide);
 }
 
 /** Open for a unit of `side`: no terrain block and no blocking building. */
@@ -57,6 +59,93 @@ export function tieKey(
   return side === 0
     ? y * width + x
     : (height - 1 - y) * width + (width - 1 - x);
+}
+
+/**
+ * The 4-neighbour of cell `(x, y)` with the lowest non-negative score (ties:
+ * the tie key of `side`), as a cell index, or -1 when every score is negative
+ * (a negative score means "not allowed").
+ */
+export function bestNeighbour(
+  arena: Arena,
+  side: number,
+  x: number,
+  y: number,
+  score: (cell: number) => number,
+): number {
+  const { width, height } = arena.geom;
+  let best = -1;
+  let bestScore = 0;
+  let bestTie = 0;
+  for (const [dx, dy] of NEIGHBORS) {
+    const nx = x + dx;
+    const ny = y + dy;
+    if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+    const k = ny * width + nx;
+    const s = score(k);
+    if (s < 0) continue;
+    const tie = tieKey(arena, side, nx, ny);
+    if (best < 0 || s < bestScore || (s === bestScore && tie < bestTie)) {
+      best = k;
+      bestScore = s;
+      bestTie = tie;
+    }
+  }
+  return best;
+}
+
+/**
+ * One step along a movement field from cell index `here` (which must have a
+ * distance `d > 0`): the neighbour with distance below `d`, smallest first,
+ * ties by tie key. -1 when there is none.
+ */
+export function fieldStep(
+  arena: Arena,
+  side: number,
+  field: Field,
+  here: number,
+): number {
+  const { width } = arena.geom;
+  const d = field.dist[here] ?? -1;
+  return bestNeighbour(
+    arena,
+    side,
+    here % width,
+    divFloor(here, width),
+    (c) => {
+      const v = field.dist[c] ?? -1;
+      return v >= 0 && v < d ? v : -1;
+    },
+  );
+}
+
+/**
+ * One step on a breach route from cell index `here` (distance `> 0`): the
+ * passable neighbour minimising (its distance + the cost of entering it),
+ * ties by tie key. The result may be covered by an enemy building. -1 when
+ * there is none.
+ */
+export function breachStep(
+  arena: Arena,
+  side: number,
+  dist: Int32Array,
+  here: number,
+  hpOf: (ref: number) => number,
+  base: number,
+  perCost: number,
+): number {
+  const { width } = arena.geom;
+  return bestNeighbour(
+    arena,
+    side,
+    here % width,
+    divFloor(here, width),
+    (c) => {
+      const v = dist[c] ?? -1;
+      if (v < 0 || !breachPassable(arena, side, c)) return -1;
+      return v + breachCost(arena, side, c, hpOf, base, perCost);
+    },
+  );
 }
 
 /** The goal set for a side's targeting preference (see the rules reference). */

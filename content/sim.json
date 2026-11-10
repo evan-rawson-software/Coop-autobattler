@@ -3,5 +3,6 @@
   "ticksPerSecond": 10,
   "inputBufferUnits": 4,
   "breachBaseCost": 10,
-  "breachHealthPerCost": 10
+  "breachHealthPerCost": 10,
+  "aggroRangeCells": 3
 }

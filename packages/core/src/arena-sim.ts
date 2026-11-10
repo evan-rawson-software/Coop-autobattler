@@ -17,10 +17,11 @@ import {
 import {
   NEIGHBORS,
   TARGETINGS,
-  breachCost,
-  breachPassable,
+  bestNeighbour,
+  breachStep,
   computeBreach,
   computeField,
+  fieldStep,
   openFor,
   tieKey,
   type Field,
@@ -116,6 +117,14 @@ export type ArenaEvent =
       readonly target: UnitTarget;
       readonly damage: number;
     }
+  | {
+      readonly tick: number;
+      readonly type: 'turret_fired';
+      readonly side: number;
+      readonly building: number;
+      readonly unit: number;
+      readonly damage: number;
+    }
   | { readonly tick: number; readonly type: 'unit_died'; readonly unit: number }
   | {
       readonly tick: number;
@@ -158,6 +167,15 @@ export interface HealthSim {
   hp: number;
 }
 
+export interface TurretSim {
+  readonly side: number;
+  readonly building: number;
+  /** Resource units collected towards the next shot (0 .. costPerShot). */
+  charge: number;
+  /** Ticks until the turret may fire again. */
+  cooldown: number;
+}
+
 export interface ProducerSim {
   readonly side: number;
   readonly building: number;
@@ -180,6 +198,8 @@ export interface ArenaSim {
   readonly health: HealthSim[];
   /** Living unit producers, by (side, building). */
   producers: ProducerSim[];
+  /** Living turrets, by (side, building). */
+  turrets: TurretSim[];
   /** Living units, sorted by `id`. */
   units: UnitSim[];
   /** Units spawned, by side. */
@@ -214,6 +234,14 @@ interface ProducerInfo {
   readonly cost: number;
 }
 
+interface TurretInfo {
+  readonly ref: number;
+  readonly damage: number;
+  readonly rangeCells: number;
+  readonly cooldownTicks: number;
+  readonly costPerShot: number;
+}
+
 export interface ArenaContext {
   readonly content: ArenaContent;
   readonly simConfig: SimConfig;
@@ -225,6 +253,7 @@ export interface ArenaContext {
   /** `ref` -> index into `sim.health`. */
   readonly healthIndex: Int32Array;
   readonly producers: Map<number, ProducerInfo>;
+  readonly turrets: Map<number, TurretInfo>;
   readonly flowEvents: SimEvent[][];
   /** Lazily computed, dropped whenever a building is destroyed. */
   fields: (Field | undefined)[];
@@ -276,18 +305,31 @@ export function createArenaContext(
     healthIndex[b.ref] = i;
   }
   const producers = new Map<number, ProducerInfo>();
+  const turrets = new Map<number, TurretInfo>();
   sim.teams.forEach((team, side) => {
     for (const p of team.buildings) {
       const def = content.buildings.get(p.def);
-      if (def?.kind !== 'unit_producer') continue;
-      const tier = def.tiers[p.tier - 1];
       const ref = arena.byId[side]?.get(p.id);
-      if (tier === undefined || ref === undefined) continue;
-      producers.set(bkey(side, p.id), {
-        ref,
-        unit: def.unit,
-        cost: tier.costPerUnit,
-      });
+      if (def === undefined || ref === undefined) continue;
+      if (def.kind === 'unit_producer') {
+        const tier = def.tiers[p.tier - 1];
+        if (tier === undefined) continue;
+        producers.set(bkey(side, p.id), {
+          ref,
+          unit: def.unit,
+          cost: tier.costPerUnit,
+        });
+      } else if (def.kind === 'defense' && def.defenseType === 'turret') {
+        const tier = def.tiers[p.tier - 1];
+        if (tier === undefined) continue;
+        turrets.set(bkey(side, p.id), {
+          ref,
+          damage: tier.damage,
+          rangeCells: tier.rangeCells,
+          cooldownTicks: tier.cooldownTicks,
+          costPerShot: tier.costPerShot,
+        });
+      }
     }
   });
   const cells = arena.geom.width * arena.geom.height;
@@ -305,6 +347,7 @@ export function createArenaContext(
     flows,
     healthIndex,
     producers,
+    turrets,
     flowEvents,
     fields: new Array<Field | undefined>(2 * TARGETINGS.length).fill(undefined),
     breach: [undefined, undefined] as (Int32Array | undefined)[],
@@ -357,6 +400,12 @@ export function createArenaSim(
       producers.push({ side: b.side, building: b.id, progress: 0 });
     }
   }
+  const turrets: TurretSim[] = [];
+  for (const b of arena.buildings) {
+    if (b.defenseType === 'turret') {
+      turrets.push({ side: b.side, building: b.id, charge: 0, cooldown: 0 });
+    }
+  }
   return {
     tick: 0,
     nextUnitId: 1,
@@ -369,6 +418,7 @@ export function createArenaSim(
     ],
     health,
     producers,
+    turrets,
     units: [],
     spawned: [0, 0],
     unitsDied: [0, 0],
@@ -440,7 +490,7 @@ function spawnCell(
       const y = c.y + dy;
       if (x < 0 || y < 0 || x >= width || y >= height) continue;
       const k = y * width + x;
-      if (arena.blocked[k] === 1 || (arena.occupant[k] ?? -1) >= 0) continue;
+      if (!openFor(arena, side, k)) continue;
       let cls = 0;
       let d = field.dist[k] ?? -1;
       if (d < 0) {
@@ -521,8 +571,78 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
 }
 
 /**
+ * Turret charging (step 2, after the unit producers): each living turret, in
+ * side then building-ID order, takes from its input buffers only as many items
+ * as it still needs to reach `costPerShot`.
+ */
+function chargeTurrets(sim: ArenaSim, ctx: ArenaContext): void {
+  for (const t of sim.turrets) {
+    const info = ctx.turrets.get(bkey(t.side, t.building));
+    if (info === undefined || t.charge >= info.costPerShot) continue;
+    const board = sim.boards[t.side === 0 ? 0 : 1];
+    const consumer = board.consumers.find((c) => c.building === t.building);
+    if (consumer === undefined) continue;
+    for (const input of consumer.inputs) {
+      const take = Math.min(input.count, info.costPerShot - t.charge);
+      if (take > 0 && takeFromBuffer(board, t.building, input.side, take)) {
+        t.charge += take;
+      }
+    }
+  }
+}
+
+/**
+ * Turret fire (end of step 3). Each ready turret (cooldown 0, fully charged),
+ * side 0 first then by building ID, shoots the nearest enemy unit that is
+ * within range and standing inside the arena rows of the turret owner's own
+ * board; ties by lowest unit ID. Damage joins the pending damage.
+ */
+function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
+  const geom = ctx.arena.geom;
+  const units = sim.units;
+  for (const t of sim.turrets) {
+    if (t.cooldown > 0) continue;
+    const info = ctx.turrets.get(bkey(t.side, t.building));
+    if (info === undefined || t.charge < info.costPerShot) continue;
+    const turret = ctx.arena.buildings[info.ref];
+    if (turret === undefined) continue;
+    const rowLo = t.side === 0 ? 0 : geom.height - geom.boardHeight;
+    const rowHi = rowLo + geom.boardHeight - 1;
+    let best = -1;
+    let bestD = info.rangeCells + 1;
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i];
+      if (u === undefined || u.side === t.side) continue;
+      if (u.y < rowLo || u.y > rowHi) continue;
+      let d = bestD;
+      for (const c of turret.cells) {
+        d = Math.min(d, Math.abs(c.x - u.x) + Math.abs(c.y - u.y));
+      }
+      if (d < bestD) {
+        best = i;
+        bestD = d; // units are in ID order, so a tie keeps the lower ID
+      }
+    }
+    const target = units[best];
+    if (target === undefined) continue;
+    t.charge = 0;
+    t.cooldown = info.cooldownTicks;
+    ctx.unitDamage[best] = (ctx.unitDamage[best] ?? 0) + info.damage;
+    ctx.events?.push({
+      tick,
+      type: 'turret_fired',
+      side: t.side,
+      building: t.building,
+      unit: target.id,
+      damage: info.damage,
+    });
+  }
+}
+
+/**
  * Put a unit on an open cell, as if spawned (tests and scenarios). Throws if
- * the cell is blocked or covered by a building. Emits no event.
+ * the cell is blocked or covered by a building that blocks the unit's side
+ * (a gate of its own side does not). Emits no event.
  */
 export function spawnUnitForTest(
   sim: ArenaSim,
@@ -537,8 +657,7 @@ export function spawnUnitForTest(
     args.y < 0 ||
     args.x >= width ||
     args.y >= height ||
-    ctx.arena.blocked[args.y * width + args.x] === 1 ||
-    (ctx.arena.occupant[args.y * width + args.x] ?? -1) >= 0
+    !openFor(ctx.arena, args.side, args.y * width + args.x)
   ) {
     throw new Error(
       `spawnUnitForTest: (${String(args.x)}, ${String(args.y)}) is not open.`,
@@ -648,33 +767,6 @@ function goalInReach(
   return best;
 }
 
-/** The neighbour with the lowest score (ties: tie key), or -1 when none. */
-function bestStep(
-  ctx: ArenaContext,
-  u: UnitSim,
-  score: (cell: number) => number,
-): number {
-  const { width, height } = ctx.arena.geom;
-  let best = -1;
-  let bestScore = 0;
-  let bestTie = 0;
-  for (const [dx, dy] of NEIGHBORS) {
-    const x = u.x + dx;
-    const y = u.y + dy;
-    if (x < 0 || y < 0 || x >= width || y >= height) continue;
-    const k = y * width + x;
-    const s = score(k);
-    if (s < 0) continue;
-    const tie = tieKey(ctx.arena, u.side, x, y);
-    if (best < 0 || s < bestScore || (s === bestScore && tie < bestTie)) {
-      best = k;
-      bestScore = s;
-      bestTie = tie;
-    }
-  }
-  return best;
-}
-
 function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
   const arena = ctx.arena;
   const { width } = arena.geom;
@@ -690,6 +782,27 @@ function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
     return;
   }
 
+  // a2. Aggro (CB-16): step towards the nearest enemy unit within aggro range.
+  const aggro = ctx.simConfig.aggroRangeCells;
+  if (aggro > reach && u.moveCooldown === 0) {
+    const a = nearestEnemy(sim, ctx, u, aggro);
+    const e = a >= 0 ? sim.units[a] : undefined;
+    if (e !== undefined) {
+      const cur = Math.abs(e.x - u.x) + Math.abs(e.y - u.y);
+      const k = bestNeighbour(arena, u.side, u.x, u.y, (c) => {
+        if (!openFor(arena, u.side, c)) return -1;
+        const dd =
+          Math.abs(e.x - (c % width)) + Math.abs(e.y - divFloor(c, width));
+        return dd < cur ? dd : -1;
+      });
+      if (k >= 0) {
+        ctx.action[i] = ACT_MOVE;
+        ctx.arg[i] = k;
+        return;
+      }
+    }
+  }
+
   const here = u.y * width + u.x;
   const field = fieldFor(ctx, u.side, def.targeting);
   const d = field.dist[here] ?? -1;
@@ -703,10 +816,7 @@ function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
     }
     // c. Move one step along the field.
     if (u.moveCooldown === 0 && d > 0) {
-      const k = bestStep(ctx, u, (c) => {
-        const v = field.dist[c] ?? -1;
-        return v >= 0 && v < d ? v : -1;
-      });
+      const k = fieldStep(arena, u.side, field, here);
       if (k >= 0) {
         ctx.action[i] = ACT_MOVE;
         ctx.arg[i] = k;
@@ -729,13 +839,15 @@ function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
   }
   const base = ctx.simConfig.breachBaseCost;
   const per = ctx.simConfig.breachHealthPerCost;
-  const k = bestStep(ctx, u, (c) => {
-    const v = bd[c] ?? -1;
-    if (v < 0 || !breachPassable(arena, u.side, c)) return -1;
-    return (
-      v + breachCost(arena, u.side, c, (r) => hpOf(sim, ctx, r), base, per)
-    );
-  });
+  const k = breachStep(
+    arena,
+    u.side,
+    bd,
+    here,
+    (r) => hpOf(sim, ctx, r),
+    base,
+    per,
+  );
   if (k < 0) return;
   const occ = arena.occupant[k] ?? -1;
   if (occ >= 0 && !openFor(arena, u.side, k)) {
@@ -792,6 +904,9 @@ function destroyBuilding(
   sim.producers = sim.producers.filter(
     (p) => !(p.side === b.side && p.building === b.id),
   );
+  sim.turrets = sim.turrets.filter(
+    (t) => !(t.side === b.side && t.building === b.id),
+  );
   const { sim: board, plan } = rebuildFlow(
     sim.boards[b.side === 0 ? 0 : 1],
     newTeam,
@@ -810,7 +925,8 @@ function destroyBuilding(
 
 /**
  * Advance the battle by one tick, in place. Order: (1) flow on both boards;
- * (2) production; (3) decisions from a snapshot; (4) simultaneous attacks;
+ * (2) production and turret charging; (3) decisions from a snapshot, then
+ * turret fire; (4) simultaneous attacks;
  * (5) moves; (6) deaths and destruction; (7) cooldowns and the tick counter.
  */
 export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
@@ -842,8 +958,9 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     }
   }
 
-  // 2. Production.
+  // 2. Production (unit producers, then turret charging).
   produce(sim, ctx, tick);
+  chargeTurrets(sim, ctx);
 
   // 3. Decide, from a snapshot.
   const units = sim.units;
@@ -860,13 +977,14 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     ctx.next[i] = heads[k] ?? -1;
     heads[k] = i;
   }
+  ctx.unitDamage.fill(0, 0, n);
   for (let i = 0; i < n; i++) {
     const u = units[i];
     if (u !== undefined) decide(sim, ctx, i, u);
   }
+  fireTurrets(sim, ctx, tick);
 
   // 4. Resolve attacks simultaneously.
-  ctx.unitDamage.fill(0, 0, n);
   ctx.buildingDamage.fill(0);
   for (let i = 0; i < n; i++) {
     const u = units[i];
@@ -950,6 +1068,9 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   }
 
   // 7. Cooldowns, then the tick counter.
+  for (const t of sim.turrets) {
+    if (t.cooldown > 0) t.cooldown -= 1;
+  }
   for (const u of sim.units) {
     if (u.moveCooldown > 0) u.moveCooldown -= 1;
     if (u.attackCooldown > 0) u.attackCooldown -= 1;

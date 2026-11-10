@@ -97,6 +97,8 @@ describe('sim-event.schema.json', () => {
       'delivered',
       'lost',
       'produced',
+      'stalled',
+      'turret_fired',
       'unit_attacked',
       'unit_died',
       'unit_moved',
@@ -130,6 +132,19 @@ describe('sim-event.schema.json', () => {
       }),
     ).toBe(false);
     expect(validate({ tick: 1, type: 'core_destroyed', side: 2 })).toBe(false);
+    expect(
+      validate({
+        tick: 1,
+        type: 'turret_fired',
+        side: 0,
+        building: 3,
+        unit: 4,
+        damage: 5,
+      }),
+    ).toBe(true);
+    expect(
+      validate({ tick: 1, type: 'turret_fired', side: 0, building: 3 }),
+    ).toBe(false);
     expect(validate({ tick: 1, type: 'stalled', building: 2, extra: 1 })).toBe(
       false,
     );

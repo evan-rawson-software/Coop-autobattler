@@ -230,6 +230,7 @@ export {
   computeField,
   goalBuildings,
   blocksUnit,
+  openFor,
   TARGETINGS,
 } from './arena-paths.js';
 export type { Field } from './arena-paths.js';
@@ -250,8 +251,12 @@ export type {
   ArenaSim,
   HealthSim,
   ProducerSim,
+  TurretSim,
   UnitSim,
   UnitTarget,
 } from './arena-sim.js';
 export { renderArenaAscii } from './arena-render.js';
+export { previewEnemyPaths } from './enemy-paths.js';
+export type { EnemyPath } from './enemy-paths.js';
+export { makeEnemyPathsKind } from './enemy-paths-kind.js';
 export { makeArenaSimKind, summarizeArena } from './arena-sim-kind.js';

@@ -74,6 +74,7 @@ describe('simulation config', () => {
       inputBufferUnits: 4,
       breachBaseCost: 10,
       breachHealthPerCost: 10,
+      aggroRangeCells: 3,
     });
   });
   test('bad data is reported', () => {
@@ -100,6 +101,7 @@ describe('simulation config', () => {
       inputBufferUnits: 4,
       breachBaseCost: 10,
       breachHealthPerCost: 10,
+      aggroRangeCells: 3,
       extra: 1,
     });
     expect(r.ok).toBe(false);

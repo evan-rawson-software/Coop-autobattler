@@ -6,6 +6,7 @@ import {
   type Arena,
   type ArenaContent,
 } from './arena.js';
+import { openFor } from './arena-paths.js';
 import { renderArenaAscii } from './arena-render.js';
 import {
   createArenaContext,
@@ -20,6 +21,7 @@ import {
 } from './arena-sim.js';
 import { cloneBoardSim, flowTotals } from './flow-sim.js';
 import { hashJson } from './hash.js';
+import { Rng } from './rng.js';
 import { loadUnitsOrThrow } from './units.js';
 import type { Cell, GameMap } from './map.js';
 import type { TeamState } from './team-state.js';
@@ -1216,6 +1218,188 @@ describe('stress', () => {
   });
 });
 
+/** Per-tick invariants of a battle (shared by the property tests). */
+function checkTick(sim: ArenaSim, ctx: ArenaContext): void {
+  const { width } = ctx.arena.geom;
+  let prev = 0;
+  for (const u of sim.units) {
+    expect(u.id).toBeGreaterThan(prev);
+    prev = u.id;
+    const k = u.y * width + u.x;
+    expect(ctx.arena.blocked[k]).toBe(0);
+    expect(openFor(ctx.arena, u.side, k)).toBe(true);
+    expect(Number.isInteger(u.hp)).toBe(true);
+    expect(u.hp).toBeGreaterThan(0);
+  }
+  for (const h of sim.health) {
+    expect(Number.isInteger(h.hp)).toBe(true);
+    expect(h.hp).toBeGreaterThanOrEqual(0);
+  }
+  // No destroyed building is left in a team state or a flow plan.
+  for (const side of [0, 1] as const) {
+    const alive = new Set(
+      sim.health
+        .filter((h) => h.side === side && h.building > 0 && h.hp > 0)
+        .map((h) => h.building),
+    );
+    const team = got(sim.teams[side]);
+    expect(team.buildings.map((x) => x.id).sort((p, q) => p - q)).toEqual(
+      [...alive].sort((p, q) => p - q),
+    );
+    const board = got(sim.boards[side]);
+    for (const s of board.sources) expect(alive.has(s.building)).toBe(true);
+    for (const r of board.routes) expect(alive.has(r.building)).toBe(true);
+    for (const c of board.consumers) expect(alive.has(c.building)).toBe(true);
+    const conduitIds = team.conduits.map((c) => c.id);
+    expect(board.conduits.map((c) => c.id)).toEqual(conduitIds);
+    for (const c of team.conduits) {
+      expect(alive.has(c.from.building)).toBe(true);
+      expect(alive.has(c.to.building)).toBe(true);
+    }
+  }
+  conserved(sim);
+}
+
+/**
+ * One tick with the turret-fire invariant: every `turret_fired` event of the
+ * tick names a unit of the other side that stood, before the tick's moves,
+ * inside the arena rows of the turret owner's own board and within range.
+ */
+function stepChecked(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  events: ArenaEvent[],
+): number {
+  const before = new Map(
+    sim.units.map((u) => [u.id, { y: u.y, side: u.side }]),
+  );
+  const start = events.length;
+  const { boardHeight, height } = ctx.arena.geom;
+  stepArena(sim, ctx);
+  let shots = 0;
+  for (const e of events.slice(start)) {
+    if (e.type !== 'turret_fired') continue;
+    shots += 1;
+    const u = got(before.get(e.unit));
+    expect(u.side).toBe(1 - e.side);
+    const lo = e.side === 0 ? 0 : height - boardHeight;
+    expect(u.y).toBeGreaterThanOrEqual(lo);
+    expect(u.y).toBeLessThanOrEqual(lo + boardHeight - 1);
+  }
+  return shots;
+}
+
+/**
+ * A 12 x 16 board with random lakes, walls and gates, several powered turret
+ * lanes (an extractor, a conduit and a turret) and a barracks lane.
+ */
+function defenseBoard(seed: number): TeamState {
+  const rng = Rng.fromSeed(seed * 104729);
+  const bx = rng.nextInt(10);
+  const cols = rng
+    .shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+    .filter((x) => x !== bx && x !== bx + 1);
+  const lanes = [bx, ...cols.slice(0, 3)];
+  const lakes: [number, number][] = [];
+  for (let k = 0; k < 6; k++) {
+    const x = rng.nextInt(12);
+    const y = 5 + rng.nextInt(8);
+    if (
+      !lanes.includes(x) &&
+      x !== bx + 1 &&
+      !lakes.some(([a, b]) => a === x && b === y)
+    )
+      lakes.push([x, y]);
+  }
+  const lab = new Lab(
+    tiny(
+      lanes.map((x, i) => [x, 2, i === 0 ? 'res_a' : 'res_b']),
+      lakes,
+    ),
+  );
+  lab.core(1 + rng.nextInt(9), 0);
+  lanes.forEach((x, i) => {
+    const src = lab.put('bld_extractor', x, 2, 0, 1 + rng.nextInt(3));
+    if (i === 0) {
+      const rax = lab.put('bld_barracks', x, 6, 0, 1 + rng.nextInt(3));
+      lab.link(src, 'north', rax, 'south', [
+        [x, 3],
+        [x, 4],
+        [x, 5],
+      ]);
+      return;
+    }
+    const ty = 9 + rng.nextInt(6);
+    const turret = lab.put('bld_turret', x, ty, 0, 1 + rng.nextInt(3));
+    const cells: [number, number][] = [];
+    for (let y = 3; y < ty; y++) cells.push([x, y]);
+    lab.link(src, 'north', turret, 'south', cells);
+  });
+  for (let k = 0; k < 14; k++) {
+    try {
+      lab.put(
+        rng.nextInt(3) === 0 ? 'bld_gate' : 'bld_wall',
+        rng.nextInt(12),
+        4 + rng.nextInt(11),
+        0,
+        1 + rng.nextInt(3),
+      );
+    } catch {
+      // The cell was taken; skip.
+    }
+  }
+  return lab.state;
+}
+
+describe('property: turrets and gates', () => {
+  test(
+    'no turret fires outside its owner rows; invariants hold',
+    { timeout: 120000 },
+    () => {
+      let shots = 0;
+      let gates = 0;
+      let died = 0;
+      for (let seed = 1; seed <= 10; seed++) {
+        const a = defenseBoard(seed);
+        const b = defenseBoard(seed + 40);
+        gates += [a, b].reduce(
+          (n, t) => n + t.buildings.filter((x) => x.def === 'bld_gate').length,
+          0,
+        );
+        const { sim, ctx, events } = startBattle(
+          a,
+          b,
+          seed % 4,
+          content,
+          simConfig,
+        );
+        const { width, height } = ctx.arena.geom;
+        for (let k = 0; k < 28; k++) {
+          const side = k % 2;
+          const x = (k * 5 + seed) % width;
+          const y = side === 0 ? 14 + (k % 6) : height - 15 - (k % 6);
+          const idx = y * width + x;
+          if (!openFor(ctx.arena, side, idx)) continue;
+          spawnUnitForTest(sim, ctx, {
+            side,
+            def: k % 3 === 0 ? 'unit_raider' : 'unit_soldier',
+            x,
+            y,
+          });
+        }
+        for (let t = 0; t < 400; t++) {
+          shots += stepChecked(sim, ctx, events);
+          checkTick(sim, ctx);
+        }
+        died += sim.unitsDied[0] + sim.unitsDied[1];
+      }
+      expect(shots).toBeGreaterThan(30);
+      expect(gates).toBeGreaterThan(3);
+      expect(died).toBeGreaterThan(10);
+    },
+  );
+});
+
 describe('property: random battles', () => {
   test('invariants hold every tick', { timeout: 120000 }, () => {
     let spawned = 0;
@@ -1224,7 +1408,13 @@ describe('property: random battles', () => {
     for (let seed = 1; seed <= 12; seed++) {
       const a = randomNetwork(seed, { core: true });
       const b = randomNetwork(seed + 3, { core: true });
-      const { sim, ctx } = startBattle(a, b, seed % 4, content, simConfig);
+      const { sim, ctx, events } = startBattle(
+        a,
+        b,
+        seed % 4,
+        content,
+        simConfig,
+      );
       // Extra units so that fights start early.
       const { width, height } = ctx.arena.geom;
       for (let k = 0; k < 24; k++) {
@@ -1245,47 +1435,8 @@ describe('property: random battles', () => {
         });
       }
       for (let t = 0; t < 300; t++) {
-        stepArena(sim, ctx);
-        let prev = 0;
-        for (const u of sim.units) {
-          expect(u.id).toBeGreaterThan(prev);
-          prev = u.id;
-          const k = u.y * width + u.x;
-          expect(ctx.arena.blocked[k]).toBe(0);
-          expect(ctx.arena.occupant[k]).toBe(-1);
-          expect(Number.isInteger(u.hp)).toBe(true);
-          expect(u.hp).toBeGreaterThan(0);
-        }
-        for (const h of sim.health) {
-          expect(Number.isInteger(h.hp)).toBe(true);
-          expect(h.hp).toBeGreaterThanOrEqual(0);
-        }
-        // No destroyed building is left in a team state or a flow plan.
-        for (const side of [0, 1] as const) {
-          const alive = new Set(
-            sim.health
-              .filter((h) => h.side === side && h.building > 0 && h.hp > 0)
-              .map((h) => h.building),
-          );
-          const team = got(sim.teams[side]);
-          expect(team.buildings.map((x) => x.id).sort((p, q) => p - q)).toEqual(
-            [...alive].sort((p, q) => p - q),
-          );
-          const board = got(sim.boards[side]);
-          for (const s of board.sources)
-            expect(alive.has(s.building)).toBe(true);
-          for (const r of board.routes)
-            expect(alive.has(r.building)).toBe(true);
-          for (const c of board.consumers)
-            expect(alive.has(c.building)).toBe(true);
-          const conduitIds = team.conduits.map((c) => c.id);
-          expect(board.conduits.map((c) => c.id)).toEqual(conduitIds);
-          for (const c of team.conduits) {
-            expect(alive.has(c.from.building)).toBe(true);
-            expect(alive.has(c.to.building)).toBe(true);
-          }
-        }
-        conserved(sim);
+        stepChecked(sim, ctx, events);
+        checkTick(sim, ctx);
       }
       spawned += sim.spawned[0] + sim.spawned[1];
       died += sim.unitsDied[0] + sim.unitsDied[1];

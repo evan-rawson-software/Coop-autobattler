@@ -280,6 +280,38 @@
       }
     },
     {
+      "title": "turret_fired",
+      "description": "A turret fired at an enemy unit standing on the turret owner's own side of the front edge, adding `damage` to that unit's pending damage (resolved simultaneously with unit attacks). `side` is the turret owner's side, `building` the turret's instance ID, `unit` the target.",
+      "type": "object",
+      "required": ["tick", "type", "side", "building", "unit", "damage"],
+      "additionalProperties": false,
+      "properties": {
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "turret_fired"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "unit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "damage": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    {
       "title": "unit_died",
       "description": "A unit's health reached 0 or less and it was removed.",
       "type": "object",

@@ -1,5 +1,6 @@
 /**
- * Golden-vector kind `team-state-ops`. Input `{ seed, partySize, ops }` where
+ * Golden-vector kind `team-state-ops`. Input `{ seed, partySize, ops }` (or
+ * `{ map, ops }` with an explicit map in the map format) where
  * each op is `{ op, ...args }` (`addToStash` {def, tier, owner}; `placeCore`
  * {x, y}; `placeFromStash` and `moveBuilding` {id, x, y, rotation};
  * `returnToStash` and `removeFromStash` {id}). The map is `generateMap(seed,
@@ -16,7 +17,7 @@
 import { generateMap } from './generate-map.js';
 import { hashJson, type Json } from './hash.js';
 import type { SimulationFn } from './golden-kinds.js';
-import type { MapContent } from './map.js';
+import { loadMapOrThrow, type MapContent } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
 import { addConduit, buildFlowGraph } from './conduits.js';
 import {
@@ -91,12 +92,13 @@ export function runTeamStateOps(
     if (!Array.isArray(ops)) {
       throw new TypeError('team-state-ops: ops must be an array');
     }
-    const map = generateMap(
-      int(o, 'seed'),
-      int(o, 'partySize'),
-      content,
-      config,
-    );
+    // `map` (optional) is an explicit map in the map format; without it the
+    // map is generated from `seed` and `partySize`.
+    const given = o['map'];
+    const map =
+      given === undefined
+        ? generateMap(int(o, 'seed'), int(o, 'partySize'), content, config)
+        : loadMapOrThrow(given, content);
     let state: TeamState = createTeamState(map);
     const results: Json[] = [];
     for (const raw of ops) {

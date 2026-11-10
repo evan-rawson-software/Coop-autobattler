@@ -17,6 +17,8 @@ export interface SimConfig {
   readonly breachBaseCost: number;
   /** Building health that adds 1 to that cost (rounded up). */
   readonly breachHealthPerCost: number;
+  /** Manhattan range within which a unit chases an enemy unit (CB-16). */
+  readonly aggroRangeCells: number;
 }
 
 export type SimConfigLoadResult = LoadResult<SimConfig>;
@@ -27,6 +29,7 @@ const KEYS = new Set([
   'inputBufferUnits',
   'breachBaseCost',
   'breachHealthPerCost',
+  'aggroRangeCells',
 ]);
 
 /** Validate parsed simulation configuration (the contents of sim.json). */
@@ -46,8 +49,10 @@ export function loadSimConfig(data: unknown): SimConfigLoadResult {
     'sim',
     errors,
   );
+  const aggroRangeCells = readInt(data, 'aggroRangeCells', 0, 'sim', errors);
   if (
     errors.length > 0 ||
+    aggroRangeCells === undefined ||
     ticksPerSecond === undefined ||
     inputBufferUnits === undefined ||
     breachBaseCost === undefined ||
@@ -62,6 +67,7 @@ export function loadSimConfig(data: unknown): SimConfigLoadResult {
       inputBufferUnits,
       breachBaseCost,
       breachHealthPerCost,
+      aggroRangeCells,
     },
   };
 }

@@ -8,7 +8,8 @@
     "ticksPerSecond",
     "inputBufferUnits",
     "breachBaseCost",
-    "breachHealthPerCost"
+    "breachHealthPerCost",
+    "aggroRangeCells"
   ],
   "additionalProperties": false,
   "properties": {
@@ -32,6 +33,11 @@
       "description": "Health that adds 1 to the cost of stepping through a building (rounded up): cost = breachBaseCost + ceil(health / breachHealthPerCost).",
       "type": "integer",
       "minimum": 1
+    },
+    "aggroRangeCells": {
+      "description": "Manhattan range within which a unit that has no enemy in reach chases the nearest enemy unit (CB-16). 0 turns chasing off.",
+      "type": "integer",
+      "minimum": 0
     }
   }
 }

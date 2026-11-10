@@ -173,7 +173,7 @@ Kinds currently defined: `placeholder-duel` (pipeline check only, not a rule),
 same list, and the final state), `prng-child` (the parent state and the first
 `count` outputs of `child(label)`), `map-gen` (see Map generation),
 `team-state-ops` (see Team state and placement), `flow-graph` (see Conduits), `flow-sim` (see Tick order), `arena-sim` (see
-"Golden kind `arena-sim`").
+"Golden kind `arena-sim`"), `enemy-paths` (see "Enemy-path preview").
 
 In the reference implementation the registry is `goldenKinds` in
 `packages/core/src/golden-kinds.ts`; a new kind is one added entry. Kinds that
@@ -706,14 +706,17 @@ Implemented in `packages/core/src/flow-sim.ts` (golden kind `flow-sim`:
 `flow-sim-kind.ts`). This is the resource flow of **one board on its own**
 (CB-10, CB-11). It is step 1 of the two-board battle tick described under "One
 battle tick" below, which adds units, production, combat and destruction.
-Turret fire and economy effects are added by later issues.
+Economy effects are added by a later issue (turret charging and fire are
+described under "One battle tick").
 
 ### Constants (`content/sim.json`)
 
 `ticksPerSecond` (10, fixed battle time per second), `inputBufferUnits` (4,
 the capacity of each consumer input buffer), `breachBaseCost` (10) and
 `breachHealthPerCost` (10), the last two used by the breach field (see "Goals
-and movement fields"). Later issues add fields.
+and movement fields"), and `aggroRangeCells` (3, the range within which a unit
+chases an enemy unit; see "One battle tick", step 3a2). Later issues add
+fields.
 
 ### Items
 
@@ -985,6 +988,8 @@ state at tick 0:
   destroyed building stays in the list with `hp = 0`;
 - `producers`: `{side, building, progress}` for each living unit producer, by
   side then building ID;
+- `turrets`: `{side, building, charge, cooldown}` for each living turret, by
+  side then building ID, all starting at `charge = 0`, `cooldown = 0`;
 - `units`; and counters `spawned` and `unitsDied`, each a pair indexed by side.
 
 Everything else (the grid, the compiled wiring, cached fields) is derived from
@@ -1008,8 +1013,9 @@ exactly like the original.
    2. At most once per tick: if `progress >= costPerUnit` (the building's tier)
       and a spawn cell exists, subtract `costPerUnit` and spawn one unit of the
       producer's `unit` type. The **spawn cell** is chosen among the cells
-      4-adjacent to the producer's footprint that are open (not blocked and not
-      covered by any building) by the smallest key (class, distance, tie key):
+      4-adjacent to the producer's footprint that are open for the producer's
+      side (not blocked and not covered by a building that blocks that side;
+      an own gate counts as open) by the smallest key (class, distance, tie key):
       class 0 if the cell has a finite distance in the unit's movement field
       (below) and then that distance; else class 1 with its distance in the
       breach field; else class 2. Ties by the **tie key** (below). If there is
@@ -1020,11 +1026,32 @@ exactly like the original.
       some `costPerUnit` values, so the progress counter is what makes those
       producers work; with the drain in 2.1 the buffer is empty after every
       production step.)
+
+   Then, **turret charging**, after all unit producers: for each living turret,
+   side 0 first and each side in instance-ID order, if `charge < costPerShot`
+   (the turret's tier), go through its inputs clockwise from north and, for
+   each, take `min(input buffer count, costPerShot - charge)` items out of the
+   buffer (`takeFromBuffer`) and add them to `charge`. A turret that is fully
+   charged takes nothing, so an idle turret lets its buffer fill and its
+   conduit back up (the source stalls) instead of draining the network.
+   `charge` never exceeds `costPerShot`.
 3. **Decide.** Using the state as it is now (a snapshot: no decision sees
    another unit's decision), for each unit in `id` order choose one action. Let
    `reach = max(1, rangeCells)`; all distances below are Manhattan distances:
    - **a. Attack a unit.** If any enemy unit is within `reach`, target the
      nearest; ties by lowest unit `id`.
+   - **a2. Aggro (CB-16).** Otherwise, if `moveCooldown` is 0 and an enemy unit
+     is within `aggroRangeCells` (Manhattan; this only matters when
+     `aggroRangeCells > reach`), let `E` be the nearest such unit (ties by
+     lowest unit `id`). Consider the four neighbours `n` of the unit's cell
+     that the unit may enter (open for its side, see Goals below: in bounds,
+     not terrain, no building that blocks its side) and that are strictly closer
+     to `E`, i.e. `manhattan(n, E) < manhattan(unit, E)` (every such neighbour
+     is exactly one closer). Of these the one with the lowest **tie key** is
+     chosen and the unit moves there (it is an ordinary move, step 5). If there
+     is no such neighbour, or `moveCooldown` is above 0, the unit falls
+     through to b. An aggro move never enters a cell the unit could not enter
+     otherwise, and ignores the movement field entirely.
    - **b. Attack a building.** Otherwise, if a **goal building** of the unit is
      within `reach` of any of its cells, target it: the nearest such building
      (distance to its nearest cell); ties by Core first, then lowest instance
@@ -1036,11 +1063,30 @@ exactly like the original.
    A unit that chose (a) or (b) but whose `attackCooldown` is above 0 holds
    position: it does not move this tick and does not attack. A unit that
    would move but has `moveCooldown > 0` waits.
+
+   **Turret fire.** After every unit has decided (same snapshot), each living
+   turret, side 0 first and each side in instance-ID order, with `cooldown = 0`
+   and `charge = costPerShot`, looks for a target: an enemy unit that stands
+   inside the arena rows of the **turret owner's own board** (side 0: rows
+   `0 .. h - 1`; side 1: rows `H - h .. H - 1`; the gap and the enemy board
+   never qualify) and whose Manhattan distance to the turret is at most its
+   tier's `rangeCells`. The distance to a multi-cell turret is the minimum over
+   its cells. The target is the nearest such unit; ties by lowest unit `id`. A
+   unit that is dying this tick or has already been chosen by another turret is
+   still a valid target (no turret sees another's choice). If there is a
+   target the turret fires: `charge` becomes 0, `cooldown` becomes
+   `cooldownTicks`, the tier's `damage` is added to the unit's pending damage,
+   and `turret_fired` is recorded (in this step, after all decisions, before
+   the `unit_attacked` events of step 4). A turret with no valid target keeps
+   its charge and its (already 0) cooldown. A turret's range therefore never
+   reaches across its owner's front edge, however close to the edge it stands
+   (CB-18). Turrets do not otherwise affect movement: they are buildings, they
+   block all units and have health.
 4. **Resolve attacks simultaneously.** Every unit that chose (a) or (b) and has
    `attackCooldown = 0` deals its `damage` to its target. Damage from all
-   attackers is summed per target and applied together (so two units can kill
-   each other in the same tick; a target that is killed this tick still
-   receives every blow aimed at it). Each attacker's `attackCooldown` becomes
+   attackers, and from turret shots, is summed per target and applied together
+   (so two units can kill each other in the same tick; a target that is killed
+   this tick still receives every blow aimed at it). Each attacker's `attackCooldown` becomes
    `attackCooldownTicks`. A building's health stops at 0. Events
    (`unit_attacked`) are recorded in unit-`id` order.
 5. **Resolve moves.** Every unit that chose (c) moves to its chosen cell, in
@@ -1055,17 +1101,21 @@ exactly like the original.
      removed from the arena; for a building (not a Core), every conduit
      attached to it, "up to the next building" (CB-9a), is removed, each
      recorded as `conduit_destroyed` in conduit-ID order; it is dropped from its
-     side's team state, producer list and flow plan (see Mid-battle removal),
+     side's team state, producer list, turret list and flow plan (see
+     Mid-battle removal),
      so items in its conduits or held by it are lost and buildings downstream
      simply stop receiving. A destroyed Core is only recorded: the Core's
      cells become open and the battle goes on (ending it belongs to a later
      issue).
    - After any destruction every cached movement field is dropped.
-7. **Cooldowns.** Each surviving unit's non-zero `moveCooldown` and
-   `attackCooldown` decreases by 1. Then `tick` increases by 1. (Because the
+7. **Cooldowns.** Each living turret's non-zero `cooldown` and each surviving
+   unit's non-zero `moveCooldown` and `attackCooldown` decreases by 1. Then
+   `tick` increases by 1. (Because the
    decrease also applies to the tick of the action, a unit with
    `moveCooldownTicks = 6` that moved in tick `t` moves again in tick
-   `t + 6`; a new unit spawned in tick `t` first moves in tick `t + 6`.)
+   `t + 6`; a new unit spawned in tick `t` first moves in tick `t + 6`. In the
+   same way a turret that fires in tick `t` with `cooldownTicks = 8` may fire
+   again in tick `t + 8`.)
 
 ### Goals and movement fields
 
@@ -1077,10 +1127,21 @@ A unit's **targeting** comes from its definition: `core`, `infrastructure`
   `infrastructure` and `defenses`, the enemy's living buildings of those kinds,
   or, if none remain, the enemy Core. A destroyed Core is not a goal; with no
   goals the unit waits.
-- Which buildings block which side's units is one predicate (`blocksUnit`).
-  Currently every building blocks both sides; W1-6 will change it for gates.
-  A cell is **open for a side** if it is not blocked and not covered by a
-  building that blocks that side.
+- Which buildings block which side's units is one predicate (`blocksUnit`): a
+  living building blocks the units of both sides, **except** that a gate
+  (`defenseType` `gate`) does not block the units of its own side. A cell is
+  **open for a side** if it is not blocked (terrain or blocked gap cell) and
+  not covered by a building that blocks that side. Everything that asks "may
+  this unit be here" uses it: the movement fields, the breach field (open
+  cells cost 1, so an owner's gate costs 1 to the owner and is a costly
+  enemy building to the enemy), spawn cells, aggro steps, and
+  `spawnUnitForTest`. So a gate is open ground for its owner (units walk
+  through it and stand on it; a producer may spawn a unit onto it) and a
+  blocking building for the enemy, which can attack and breach it like a wall.
+  A gate is a building of kind `defense`, so it is in the goal set of
+  `defenses` and is attacked as a goal or breach building like any other.
+  When a gate is destroyed it is removed like any building and is open ground
+  for everyone. Walls and turrets block both sides.
 - The **movement field** of (side, targeting) is a breadth-first distance map
   over open cells: distance 0 for every open cell 4-adjacent to a cell of a goal
   building, then +1 per 4-directional step. Unreached cells have no distance.
@@ -1121,13 +1182,15 @@ A unit's **targeting** comes from its definition: `core`, `infrastructure`
 
 ### Events (arena log)
 
-Arena events, in order of the steps above, use arena coordinates:
+Arena events, in order of the steps above, use arena coordinates (a turret
+shot is recorded in step 3, before the step 4 attack events):
 
 | `type`               | Fields (besides `tick`)                                         |
 | -------------------- | --------------------------------------------------------------- |
 | `unit_spawned`       | `unit`, `side`, `def`, `x`, `y`, `building` (the producer's ID) |
 | `unit_moved`         | `unit`, `x`, `y` (the new cell)                                 |
 | `unit_attacked`      | `unit`, `target`, `damage`                                      |
+| `turret_fired`       | `side` (the owner), `building` (the turret), `unit`, `damage`   |
 | `unit_died`          | `unit`                                                          |
 | `building_destroyed` | `side`, `building`                                              |
 | `conduit_destroyed`  | `side`, `conduit`                                               |
@@ -1152,8 +1215,14 @@ summaries `{spawned, alive, unitsDied, buildingsDestroyed, coreHealth}`
 (`buildingsDestroyed` does not count the Core; `coreHealth` is 0 when it was
 destroyed). The event log is the vector's event log (`eventLogHash`). Vectors:
 `golden/arena-sim.json` (a mirror match, a rush against an almost empty base, a
-sealed base that is breached at its weakest wall, and raiders cutting a
-splitter).
+sealed base that is breached at its weakest wall, raiders cutting a splitter,
+three turrets killing a wave that crosses the front edge, the same turrets
+unpowered, a gate that lets its owner out while holding the enemy, and a funnel
+of a lake band and walls leaving one approach above eight turrets).
+
+The team scripts of this kind and of `team-state-ops` may give an explicit
+`map` (in the map format) instead of `seed` and `partySize`; the vectors that
+need a hand-placed resource node do.
 
 ### ASCII rendering
 
@@ -1164,11 +1233,48 @@ defense, economy, Core) in upper case for side 0 and lower case for side 1;
 terrain is `~` lake, `#` cliff, `?` other, `%` a blocked gap cell; `.` is open.
 The last line is a legend.
 
+### Enemy-path preview
+
+`previewEnemyPaths(teamState, content, simConfig)` (`enemy-paths.ts`) is the
+build-screen helper (CB-43). For a single board whose Core is placed (otherwise
+it throws) it builds an arena with the board as side 0 and an empty board as
+side 1 (gap 0), so that the board's cells are arena cells, and answers, **as
+seen from the enemy side (side 1)**, with the same field and breach code as
+the simulation (`computeField`, `fieldStep`, `computeBreach`, `breachStep`;
+no second pathfinder; gates, walls and turrets all block the enemy):
+
+For every `x` from 0 to `width - 1`, in order, such that the front-row cell
+`(x, height - 1)` is open for the enemy side (no terrain, no building that
+blocks it), an entry `{entry: {x, y}, cells, breach}`:
+
+- `cells` is the walked path in board coordinates, **starting with the entry
+  cell**. If the entry has a distance in the movement field of an enemy
+  Core-targeting unit (side 1, `core`), the unit takes `fieldStep` (the
+  neighbour with a smaller field distance, ties by tie key) until the distance
+  is 0; the last cell is the one beside the Core and `breach` is `null`.
+- Otherwise (sealed) it follows the breach field: while the breach distance of
+  the current cell is above 0, take `breachStep` (minimise entering cost plus
+  distance, ties by tie key). If that cell is open the unit walks into it
+  (appended to `cells`); if it is covered by a building the walk stops: `cells`
+  ends at the last open cell before it and `breach` is `{building, cell}`, the
+  instance ID of the building the unit would attack and the cell of it entered.
+  If the walk reaches a cell with breach distance 0, `cells` ends there and
+  `breach` is `null`. The cost of a building uses its tier's full health.
+- An entry that has neither a field nor a breach distance (cut off by terrain)
+  has `cells` = just the entry cell and `breach` = `null`.
+
+The order of entries is by ascending `x`; the output depends only on the team
+state and content (no random numbers). Identical tails are not merged.
+
+Golden kind `enemy-paths`: input is a team script (`team-state-ops` format,
+with `map` or `seed`/`partySize`) that places the Core; result
+`{paths: [{entry: [x, y], cells: [[x, y], ...], breach: null | {building,
+cell: [x, y]}}, ...]}`. Vectors: `golden/enemy-paths.json` (an open base around
+terrain, a wall, a gate and a turret; a sealed base with one weak wall).
+
 ### Seams for later issues
 
-Walls, gates and turrets are ordinary buildings here: they block movement and
-have health, nothing more. `blocksUnit` is the single predicate that W1-6
-changes. `unitStats` is the single place W1-7 modifies unit stats. `stepArena`
+`unitStats` is the single place W1-7 modifies unit stats. `stepArena`
 does not assume the gap is open ground (blocked gap cells already work), and
 does not end the battle: W1-8 adds the neutral zone, battle end and the top
 level entry point.
@@ -1183,6 +1289,12 @@ level entry point.
   impassable even for the breach field); a trapped unit waits.
 - Ranged attacks ignore walls and terrain (no line of sight).
 - A destroyed Core's cells become open ground and nothing else changes.
+- Units do not collide, and two units that step towards each other on
+  neighbouring columns at the same tick can swap places instead of meeting
+  (the tie key makes both choose the sideways step); the front line forms
+  once their timings differ or they are in the same column.
+- Aggro ignores walls: a unit may chase an enemy it cannot reach, taking a
+  step closer, then following the field away again, and so oscillate.
 
 ## Resolution order
 
@@ -1208,16 +1320,23 @@ broken as follows:
   are destroyed in side then `health`-list order (Core first, then instance
   ID); conduits of a destroyed building are reported in conduit-ID order.
 - **Which enemy unit to hit:** the nearest by Manhattan distance, then the
-  lowest unit `id`.
+  lowest unit `id`. The same rule picks the unit a turret shoots (distance from
+  the nearest turret cell, only units on the owner's board rows) and the unit
+  a unit chases when it aggroes.
 - **Which building to hit:** the nearest by Manhattan distance to its nearest
   cell, then the Core before other buildings, then the lowest instance ID.
-- **Which way to step** (equal distance, equal cost) and **where to spawn**
-  (equal distance): the lowest `y`, then the lowest `x`, in the board frame of
-  the unit's own side (the tie key). Equal-length shortest paths are therefore
+- **Which way to step** (equal distance, equal cost, or equally close to a
+  chased enemy) and **where to spawn** (equal distance): the lowest `y`, then
+  the lowest `x`, in the board frame of the unit's own side (the tie key). Equal-length shortest paths are therefore
   resolved cell by cell by this rule, never by search order.
-- **Simultaneous attacks:** all damage is computed from the same snapshot and
-  applied together; nobody's death during the tick changes another unit's
-  action in that tick.
+- **Simultaneous attacks:** all damage (unit attacks and turret shots) is
+  computed from the same snapshot and applied together; nobody's death during
+  the tick changes another unit's or turret's action in that tick.
+- **Turrets:** charged in side then instance-ID order after the unit
+  producers; they fire in side then instance-ID order after all unit
+  decisions; each picks its own target without seeing the others' (so several
+  turrets may shoot one unit, overkilling it); the turret events precede the
+  unit attack events of the tick.
 - **Spawn order and IDs:** side 0's producers spawn before side 1's within a
   tick, so at equal times side 0's units have the lower IDs. Because the
   relative order of IDs inside a side is the same on both sides, a mirrored
