@@ -9,6 +9,8 @@ import {
   loadMapgenOrThrow,
   loadSimConfigOrThrow,
   makeArenaSimKind,
+  makeBattleKind,
+  makeNeutralZoneKind,
   makeEnemyPathsKind,
   makeFlowSimKind,
   makeFlowGraphKind,
@@ -45,4 +47,6 @@ export const goldenKinds: Readonly<Record<string, SimulationFn>> = {
   'flow-sim': makeFlowSimKind(content, mapgen, simConfig),
   'arena-sim': makeArenaSimKind(content, mapgen, simConfig),
   'enemy-paths': makeEnemyPathsKind(content, mapgen, simConfig),
+  'neutral-zone': makeNeutralZoneKind(content, mapgen),
+  battle: makeBattleKind(content, mapgen, simConfig),
 };

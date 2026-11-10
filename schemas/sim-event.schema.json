@@ -449,6 +449,60 @@
         "damage": { "type": "integer", "minimum": 1 },
         "tick": { "type": "integer", "minimum": 0 }
       }
+    },
+    {
+      "title": "zone_revealed",
+      "description": "The neutral zone between the boards, revealed at tick 0 of a battle (W1-8). The zone has the format of neutral-zone.schema.json; its coordinates are zone-local (y = 0 touches side 0's front edge).",
+      "type": "object",
+      "required": ["tick", "type", "zone"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "zone_revealed" },
+        "zone": {
+          "type": "object",
+          "required": ["width", "depth", "features", "pointsOfInterest"],
+          "additionalProperties": false,
+          "properties": {
+            "width": { "type": "integer", "minimum": 1 },
+            "depth": { "type": "integer", "minimum": 0 },
+            "features": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["x", "y", "feature"],
+                "additionalProperties": false,
+                "properties": {
+                  "x": { "type": "integer", "minimum": 0 },
+                  "y": { "type": "integer", "minimum": 0 },
+                  "feature": { "type": "string", "pattern": "^ter_[a-z0-9_]+$" }
+                }
+              }
+            },
+            "pointsOfInterest": { "type": "array" }
+          }
+        },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "title": "battle_ended",
+      "description": "The last event of a battle: the winner (0 = the party, 1 = the opponent) and why. Its tick is the last tick that ran.",
+      "type": "object",
+      "required": ["tick", "type", "winner", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "battle_ended" },
+        "winner": { "type": "integer", "enum": [0, 1] },
+        "reason": {
+          "enum": [
+            "core_destroyed",
+            "tiebreak_overkill",
+            "tiebreak_defender",
+            "time_limit"
+          ]
+        },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
     }
   ]
 }

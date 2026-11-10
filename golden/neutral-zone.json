@@ -1,0 +1,490 @@
+[
+  {
+    "id": "neutral-zone.party1",
+    "kind": "neutral-zone",
+    "description": "The neutral zone for a 1-plot front (width 24).",
+    "input": {
+      "seed": 105,
+      "partySize": 1
+    },
+    "expected": {
+      "result": {
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 5,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 6,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 7,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 7,
+              "y": 5,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "hash": "801f04c1",
+        "attempts": 1
+      }
+    }
+  },
+  {
+    "id": "neutral-zone.party2",
+    "kind": "neutral-zone",
+    "description": "The neutral zone for a 2-plot front (width 48).",
+    "input": {
+      "seed": 106,
+      "partySize": 2
+    },
+    "expected": {
+      "result": {
+        "zone": {
+          "width": 48,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 13,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 14,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 15,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 38,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 39,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 15,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 31,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 32,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 33,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 34,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 31,
+              "y": 4,
+              "feature": "ter_cliff"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "hash": "aa73539d",
+        "attempts": 1
+      }
+    }
+  },
+  {
+    "id": "neutral-zone.party3",
+    "kind": "neutral-zone",
+    "description": "The neutral zone for a 3-plot front (width 72).",
+    "input": {
+      "seed": 106,
+      "partySize": 3
+    },
+    "expected": {
+      "result": {
+        "zone": {
+          "width": 72,
+          "depth": 7,
+          "features": [
+            {
+              "x": 50,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 42,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 43,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 47,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 48,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 49,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 50,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 51,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 8,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 9,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 10,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 19,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 49,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 7,
+              "y": 4,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 18,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 19,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 50,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 18,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 19,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 20,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 48,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 49,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 50,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 51,
+              "y": 5,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "hash": "6711dd58",
+        "attempts": 1
+      }
+    }
+  },
+  {
+    "id": "neutral-zone.party4",
+    "kind": "neutral-zone",
+    "description": "The neutral zone for a 4-plot front (width 96).",
+    "input": {
+      "seed": 104,
+      "partySize": 4
+    },
+    "expected": {
+      "result": {
+        "zone": {
+          "width": 96,
+          "depth": 7,
+          "features": [
+            {
+              "x": 30,
+              "y": 1,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 31,
+              "y": 1,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 32,
+              "y": 1,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 33,
+              "y": 1,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 34,
+              "y": 1,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 2,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 55,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 56,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 57,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 58,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 1,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 2,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 3,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 4,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 28,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 29,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 30,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 31,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 87,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 88,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 86,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 87,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 88,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 89,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 90,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 45,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 46,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 47,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 79,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 80,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 81,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 88,
+              "y": 5,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "hash": "093eb3d7",
+        "attempts": 1
+      }
+    }
+  }
+]

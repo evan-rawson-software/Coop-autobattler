@@ -10,5 +10,7 @@
   "overloadStartTick": 2400,
   "overloadIntervalTicks": 100,
   "overloadDamageStepPercent": 20,
-  "overloadCoreDamageStep": 5
+  "overloadCoreDamageStep": 5,
+  "maxBattleTicks": 12000,
+  "timelineSampleTicks": 50
 }

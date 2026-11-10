@@ -17,7 +17,8 @@
     "sideMargin",
     "coreFrontClearance",
     "placementTries",
-    "maxAttempts"
+    "maxAttempts",
+    "neutralZone"
   ],
   "additionalProperties": false,
   "properties": {
@@ -85,6 +86,48 @@
       "minimum": 1,
       "description": "Tries per lake or cliff before the attempt is abandoned."
     },
-    "maxAttempts": { "type": "integer", "minimum": 1 }
+    "maxAttempts": { "type": "integer", "minimum": 1 },
+    "neutralZone": {
+      "type": "object",
+      "description": "The neutral zone generated between the boards of a battle (W1-8). Feature IDs are those of lakes and cliffs above; per-plot counts are multiplied by the number of plots of front width.",
+      "required": ["depth", "lakes", "cliffs", "maxAttempts"],
+      "additionalProperties": false,
+      "properties": {
+        "depth": { "type": "integer", "minimum": 1 },
+        "lakes": {
+          "type": "object",
+          "required": [
+            "countMinPerPlot",
+            "countMaxPerPlot",
+            "sizeMin",
+            "sizeMax"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "countMinPerPlot": { "type": "integer", "minimum": 0 },
+            "countMaxPerPlot": { "type": "integer", "minimum": 0 },
+            "sizeMin": { "type": "integer", "minimum": 1 },
+            "sizeMax": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "cliffs": {
+          "type": "object",
+          "required": [
+            "countMinPerPlot",
+            "countMaxPerPlot",
+            "lengthMin",
+            "lengthMax"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "countMinPerPlot": { "type": "integer", "minimum": 0 },
+            "countMaxPerPlot": { "type": "integer", "minimum": 0 },
+            "lengthMin": { "type": "integer", "minimum": 2 },
+            "lengthMax": { "type": "integer", "minimum": 2 }
+          }
+        },
+        "maxAttempts": { "type": "integer", "minimum": 1 }
+      }
+    }
   }
 }

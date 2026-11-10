@@ -39,6 +39,7 @@ import type { EconomyEffectType, Side } from './buildings.js';
 import { divFloor, mulPct } from './int.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
 import type { Cell } from './map.js';
+import type { NeutralZone } from './neutral-zone.js';
 import type { ResourceId } from './resources.js';
 import type { SimConfig } from './sim-config.js';
 import type { TeamState } from './team-state.js';
@@ -162,6 +163,17 @@ export type ArenaEvent =
       readonly type: 'overload_core_damage';
       readonly side: number;
       readonly damage: number;
+    }
+  | {
+      readonly tick: number;
+      readonly type: 'zone_revealed';
+      readonly zone: NeutralZone;
+    }
+  | {
+      readonly tick: number;
+      readonly type: 'battle_ended';
+      readonly winner: number;
+      readonly reason: string;
     };
 
 // ---------------------------------------------------------------------------
@@ -304,6 +316,12 @@ export interface ArenaContext {
   readonly events?: ArenaEvent[];
   /** `ref` -> index into `sim.health`. */
   readonly healthIndex: Int32Array;
+  /**
+   * Per side, the Core's health after all damage of the latest tick that
+   * damaged it, NOT clamped at 0 (so a destroyed Core's overkill is known,
+   * CB-33). Equals the Core's health while it is alive.
+   */
+  readonly coreRemaining: [number, number];
   readonly producers: Map<number, ProducerInfo>;
   readonly turrets: Map<number, TurretInfo>;
   readonly ramps: Map<number, RampInfo>;
@@ -395,6 +413,10 @@ export function createArenaContext(
       }
     }
   });
+  const coreRemaining: [number, number] = [0, 0];
+  for (const h of sim.health) {
+    if (h.building === 0) coreRemaining[h.side === 0 ? 0 : 1] = h.hp;
+  }
   const cells = arena.geom.width * arena.geom.height;
   const flowEvents: SimEvent[][] = [[], []];
   const flows = sim.teams.map((team, side) =>
@@ -409,6 +431,7 @@ export function createArenaContext(
     arena,
     flows,
     healthIndex,
+    coreRemaining,
     producers,
     turrets,
     ramps,
@@ -1216,7 +1239,10 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     const dmg = ctx.buildingDamage[r] ?? 0;
     if (dmg === 0) continue;
     const h = sim.health[ctx.healthIndex[r] ?? 0];
-    if (h !== undefined) h.hp = Math.max(0, h.hp - dmg);
+    if (h === undefined) continue;
+    const remaining = h.hp - dmg;
+    if (h.building === 0) ctx.coreRemaining[h.side === 0 ? 0 : 1] = remaining;
+    h.hp = Math.max(0, remaining);
   }
 
   // 5. Resolve moves.
@@ -1282,8 +1308,8 @@ export function runArena(
   return ctx.events === undefined ? [] : ctx.events.slice(start);
 }
 
-/** A state and a context with an event list: the usual way to start a battle. */
-export function startBattle(
+/** A state and a context with an event list: the usual way to start an arena. */
+export function startArenaBattle(
   teamA: TeamState,
   teamB: TeamState,
   gapRows: number,

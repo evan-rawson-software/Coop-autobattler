@@ -5,7 +5,7 @@ import {
   rampBonus,
   runArena,
   spawnUnitForTest,
-  startBattle,
+  startArenaBattle,
   stepArena,
   unitStats,
   type ArenaEvent,
@@ -72,7 +72,7 @@ describe('Overload level (CB-12)', () => {
   });
 
   test('events fire once per level, at the tick the level rises', () => {
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnlyTeam(),
       coreOnlyTeam(),
       GAP,
@@ -190,7 +190,7 @@ describe('economy buildings: charging and steps (CB-11)', () => {
   }
 
   test('state starts at zero; a step takes costPerStep items and resets the charge', () => {
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       overclockerBoard(1),
       coreOnlyTeam(),
       GAP,
@@ -217,7 +217,7 @@ describe('economy buildings: charging and steps (CB-11)', () => {
   });
 
   test('a building at maxSteps stops growing and stops consuming; its conduit backs up', () => {
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       overclockerBoard(1),
       coreOnlyTeam(),
       GAP,
@@ -251,7 +251,7 @@ describe('economy buildings: charging and steps (CB-11)', () => {
     const lab = new Lab(tinyMap());
     lab.core(5, 6);
     for (const x of [0, 2, 4, 6]) lab.put('bld_overclocker', x, 0, 0, 3);
-    const { sim, ctx } = startBattle(
+    const { sim, ctx } = startArenaBattle(
       lab.state,
       coreOnlyTeam(),
       GAP,
@@ -273,7 +273,7 @@ describe('economy buildings: charging and steps (CB-11)', () => {
     const lab = new Lab(tinyMap());
     lab.core(5, 6);
     for (const x of [0, 2, 4, 6, 8, 10]) lab.put('bld_armory', x, 0, 0, 3);
-    const { sim, ctx } = startBattle(
+    const { sim, ctx } = startArenaBattle(
       lab.state,
       coreOnlyTeam(),
       GAP,
@@ -301,7 +301,7 @@ describe('economy buildings: charging and steps (CB-11)', () => {
     const s = lab.put('bld_extractor', 11, 0);
     const b = lab.put('bld_barracks', 10, 1);
     lab.link(s, 'north', b, 'south');
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       lab.state,
       coreOnlyTeam(),
       GAP,
@@ -322,7 +322,7 @@ describe('economy buildings: charging and steps (CB-11)', () => {
 
 describe('an overclocker speeds up a source', () => {
   const oreTicks = (withOverclocker: boolean) => {
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       overclockerSpeedTeam(withOverclocker),
       coreOnlyTeam(),
       GAP,
@@ -375,7 +375,7 @@ describe('crossover: ramp versus the same resources elsewhere (criterion 1)', ()
   // ticks each: 3 / 66 per tick against Y's 4 / 120 per tick (1.36 times).
   // Until the ramp has paid for the missing fourth barracks X is behind.
   const run = (variant: 'barracks' | 'overclocker', ticks: number[]) => {
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       crossoverTeam(variant),
       coreOnlyTeam(),
       GAP,
@@ -441,7 +441,7 @@ describe('unit_strength (armory)', () => {
 
   test('units spawned later are stronger; units already on the field keep their stats', () => {
     const { team, armory } = armoryBoard();
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       team,
       coreOnlyTeam(),
       GAP,
@@ -499,7 +499,7 @@ describe('unit_strength (armory)', () => {
 
   test('a unit attacks with the damage it was spawned with', () => {
     const { team } = armoryBoard();
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       team,
       coreOnlyTeam(),
       GAP,
@@ -533,7 +533,7 @@ describe('unit_strength (armory)', () => {
 
 describe('destroying an economy building removes its bonus (criterion 4)', () => {
   test('source speed returns to base on the next reset', () => {
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       crossoverTeam('overclocker'),
       coreOnlyTeam(),
       GAP,
@@ -587,7 +587,7 @@ describe('destroying an economy building removes its bonus (criterion 4)', () =>
     const s2 = lab.put('bld_extractor', 4, 0, 0, 3);
     const a = lab.put('bld_armory', 4, 1, 0, 3); // costPerStep 5, +6, max 10
     lab.link(s2, 'north', a, 'south');
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       lab.state,
       coreOnlyTeam(),
       GAP,
@@ -627,7 +627,13 @@ describe('no upgrade state survives into a second battle (criterion 3)', () => {
     const team = crossoverTeam('overclocker');
     const other = coreOnlyTeam();
     const before = hashJson(team);
-    const first = startBattle(team, other, GAP, overclockerOnOre, simConfig);
+    const first = startArenaBattle(
+      team,
+      other,
+      GAP,
+      overclockerOnOre,
+      simConfig,
+    );
     runArena(first.sim, first.ctx, 300);
     expect(first.sim.ramps.some((r) => r.steps > 0)).toBe(true);
     // The team state was not touched by the first battle.
@@ -662,7 +668,7 @@ describe('Overload damage (criterion 6)', () => {
     simConfig.overloadStartTick + (level - 1) * simConfig.overloadIntervalTicks;
 
   function duel(level: number) {
-    const b = startBattle(
+    const b = startArenaBattle(
       coreOnlyTeam(),
       coreOnlyTeam(),
       GAP,
@@ -702,7 +708,7 @@ describe('Overload damage (criterion 6)', () => {
       expect(d.a1.hp).toBe(40 - damage);
     }
     // Before Overload nothing changes.
-    const before = startBattle(
+    const before = startArenaBattle(
       coreOnlyTeam(),
       coreOnlyTeam(),
       GAP,
@@ -734,7 +740,13 @@ describe('Overload damage (criterion 6)', () => {
     const lab = new Lab(tinyMap());
     lab.core(5, 6);
     const wall = lab.put('bld_wall', 1, 6);
-    const b = startBattle(lab.state, coreOnlyTeam(), GAP, content, simConfig);
+    const b = startArenaBattle(
+      lab.state,
+      coreOnlyTeam(),
+      GAP,
+      content,
+      simConfig,
+    );
     b.sim.tick = levelTick(5);
     spawnUnitForTest(b.sim, b.ctx, {
       side: 1,
@@ -756,7 +768,13 @@ describe('Overload damage (criterion 6)', () => {
     const lab = new Lab(tinyMap());
     lab.core(5, 6);
     lab.put('bld_turret', 5, 3); // tier 1: damage 5, range 4, costPerShot 1
-    const b = startBattle(lab.state, coreOnlyTeam(), GAP, content, simConfig);
+    const b = startArenaBattle(
+      lab.state,
+      coreOnlyTeam(),
+      GAP,
+      content,
+      simConfig,
+    );
     b.sim.tick = levelTick(5);
     got(b.sim.turrets[0]).charge = 1;
     const foe = spawnUnitForTest(b.sim, b.ctx, {
@@ -796,7 +814,7 @@ describe('Overload ends walled stand-offs (criterion 5)', () => {
     //   13 beats (last at 3600): 5 * 91 = 455 -> 45 health left;
     //   14 beats (last at 3700): 5 * 105 = 525 >= 500 -> destroyed.
     const team = walledCore();
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       team,
       team,
       GAP,
@@ -823,7 +841,7 @@ describe('Overload ends walled stand-offs (criterion 5)', () => {
 
   test('stepping on after both Cores fell is safe and silent', () => {
     const team = walledCore();
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       team,
       team,
       GAP,
@@ -869,7 +887,7 @@ describe('symmetry with economy buildings on both sides', () => {
 
   test('a mirror match stays exactly symmetric, ramp state included', () => {
     const t = team();
-    const { sim, ctx } = startBattle(t, t, GAP, content, simConfig);
+    const { sim, ctx } = startArenaBattle(t, t, GAP, content, simConfig);
     let steps = 0;
     for (let tick = 0; tick < 900; tick++) {
       stepArena(sim, ctx);
@@ -905,7 +923,7 @@ describe('symmetry with economy buildings on both sides', () => {
 
   test('a restored state continues exactly like the original, ramp included', () => {
     const t = team();
-    const a = startBattle(t, t, GAP, content, simConfig);
+    const a = startArenaBattle(t, t, GAP, content, simConfig);
     runArena(a.sim, a.ctx, 250);
     const copy = JSON.parse(JSON.stringify(a.sim)) as ArenaSim;
     const events: ArenaEvent[] = [];
