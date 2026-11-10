@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v4.4
+Status: Draft v4.5
 
 ## Party basics
 
@@ -55,8 +55,7 @@ Status: Draft v4.4
   re-routing the factory often means moving several players' pieces); only
   the owner can sell it. To be revisited after co-op playtests.
 - **CP-14 [PROPOSED]** Resource nodes belong to the party as a whole: who
-  builds the source on a node is something to agree on. (There are no
-  party-pick rewards; battle rewards are gold, RS-6.)
+  builds the source on a node is something to agree on.
 
 ## Shared stakes
 
@@ -73,8 +72,10 @@ Status: Draft v4.4
   step.**
 - **CP-17a [PROPOSED]** All players act at the same time within a step
   (everyone shops and builds simultaneously), and any player can un-ready
-  until the last player readies. Event votes work the same way: the event
-  resolves once everyone has voted.
+  until the last player readies.
+- **CP-17b [DECIDED]** **A vote counts as soon as it is cast and can be
+  changed until the last player has voted.** There is no separate confirm
+  step. The choice resolves once everyone has voted.
 - **CP-18 [PROPOSED]** **Simultaneous editing.** All players edit the same
   board at once and see each other's changes live, with each player's cursor
   and held building visible. If two players act on the same cell or building, the

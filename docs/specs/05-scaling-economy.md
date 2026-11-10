@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v4.4
+Status: Draft v4.5
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.
@@ -11,10 +11,10 @@ the specification.
   with round number:
 
   ```
-  budget(c) = B0 * g^(c - 1) * m(type)
+  budget(r) = B0 * g^(r - 1) * m(type)
   ```
 
-  - `c` — round number
+  - `r` — round number
   - `B0` — base budget at round 1
   - `g` — per-round growth factor (starting proposal: 1.3–1.5)
   - `m(type)` — encounter multiplier (easy < medium < hard; boss tuned
@@ -54,7 +54,8 @@ the missed reward (RS-3a). The exponential curve still ends every run:
 1. Early/mid run: PvP battles are mostly ghosts; lives are lost to better
    human builds.
 2. PvE outgrows the party: first hard, then medium, then easy become
-   unwinnable. Rewards dry up and the party's power plateaus.
+   unwinnable. PvE rewards dry up, income falls to a trickle, and the party's
+   power plateaus.
 3. Deep run: fewer parties have reached this round, so buckets are sparse and
    PvP battles become bosses on the exponential curve (MM-10). A plateaued
    party loses a life per round.
@@ -93,10 +94,11 @@ first. Gold (next section) is never produced by the factory.
 
 - **EC-0 [DECIDED]** Gold is spent **only at shops between battles**, to
   purchase buildings. It is never a resource for placing buildings or for
-  anything during a battle. Only purchased buildings can be placed;
+  anything during a battle. Only purchased buildings, plus the starting kit, can be placed;
   conduits are free and unlimited (CB-3g, CB-3i).
-- **EC-1 [PROPOSED]** One currency: **gold**, earned per round (base
-  income), from winning PvE battles, and from selling buildings back.
+- **EC-1 [PROPOSED]** One currency: **gold**, earned from base income each
+  round, PvE wins, PvP wins, the consolation payout after a PvP loss
+  (EC-6), selling buildings back, and some events.
 - **EC-2 [DECIDED]** Gold buys two things: **buildings** and **shop
   re-rolls**. It does not buy board expansion (there is none, CB-25).
 - **EC-3 [PROPOSED]** Shop offers are per player and drawn from tiered pools

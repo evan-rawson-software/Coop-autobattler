@@ -90,8 +90,8 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   <header>
     <span class="caption">Wireframes · solo view with co-op elements marked</span>
     <h1>Screens of a run</h1>
-    <p class="lede">Layout sketches for the screens of a run, drawn for a 1080p screen. Screens 1 to 4 are the repeating round; 5 to 9 are the screens around it. Your base is at the bottom and the enemy is at the top, so the front edge runs across the screen and a bigger party makes the board wider, not taller. Sizes, numbers, and building names are placeholders.</p>
-    <div class="flowline" aria-label="Order of steps in a round">
+    <p class="lede">Layout sketches for the screens of a run, drawn for a 1080p screen. Screens 1 to 4, 7 and 8 repeat every round; 5, 6 and 9 start and end a run. Specific numbers and example effects in the sketches are placeholders, not rules. Your base is at the bottom and the enemy is at the top, so the front edge runs across the screen and a bigger party makes the board wider, not taller. Sizes, numbers, and building names are placeholders.</p>
+    <div class="flowline" aria-label="Order of screens in a run">
       <span>5 Main menu</span><i>→</i><span>6 Core placement</span><i>→</i><span>4 Build</span><i>→</i><span>7 PvE choice</span><i>→</i><span class="on">1 Battle</span><i>→</i><span>8 Summary</span><i>→</i><span class="on">2 Event</span><i>→</i><span class="on">3 Shop</span><i>+</i><span class="on">4 Build</span><i>→</i><span>PvP battle …</span><i>→</i><span>9 Run over</span>
     </div>
     <div class="legend" aria-label="Map legend">
@@ -125,7 +125,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     <ol class="notes">
       <li>Result of the battle just fought and what it paid.</li>
       <li>Three offered events. Each says exactly what it does before you choose.</li>
-      <li>Votes from each player. The highlighted card is currently winning.</li>
+      <li>Votes from each player. The highlighted card is your own vote; you can change it until the last player has voted.</li>
       <li>Who has voted and how ties are settled. There is no time limit; the event resolves once everyone has voted.</li>
     </ol>
   </section>
@@ -142,6 +142,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>Teammates' gold and stash, with a way to give gold. You do not see their offers. Hidden in solo.</li>
       <li>What comes next. PvE options are shown ahead of time; a PvP opponent never is.</li>
       <li>A small live view of the board that jumps to the Build tab.</li>
+      <li>Ready is available on both tabs.</li>
     </ol>
   </section>
 
@@ -151,7 +152,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     <div class="sheet"><svg id="s-build" class="big" viewBox="0 0 1280 720" role="img" aria-label="Build screen wireframe: the board across the top with its front edge along the top, room for other players' plots on either side, and a dock along the bottom with stash, tools, inspector, overlays, and party panel."></svg></div>
     <ol class="notes">
       <li>Stash. Drag a building onto the board to place it; placing is free.</li>
-      <li>Tools. Conduit is always available and unlimited. Rotate turns the selected building.</li>
+      <li>Tools. Conduit is always available and unlimited. Rotate turns the selected building. Undo covers layout changes only, never buying, selling, or re-rolling.</li>
       <li>The board. Lakes and cliffs cannot be built on. Extractors only go on resource nodes.</li>
       <li>Conduits, one resource each, coloured by resource. They cannot cross; the splitter is what lets one line feed two buildings.</li>
       <li>The Core. Placed once at the start of the run; it has no move handle.</li>
@@ -159,7 +160,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>Preview of the routes enemy units would take to the Core with this layout.</li>
       <li>Inspector for the selected building: what it needs, what it is getting, what it produces.</li>
       <li>Overlays and problems: a dry run of resource flow, the enemy-path preview, and anything unconnected.</li>
-      <li>Party panel: who is editing where, pings, and the Ready button. The battle starts when everyone is ready.</li>
+      <li>Party panel: who is editing where, pings, and the Ready button. The party moves on when everyone is ready.</li>
       <li>In co-op each extra player adds a plot to the side. A four-player board still fits the width of a 1080p screen, and everything below the board stays free for panels.</li>
     </ol>
   </section>
@@ -201,7 +202,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>Difficulty and enemy type. The type tells you what the battle will test.</li>
       <li>How strong the threat is.</li>
       <li>What winning pays. Harder options pay more.</li>
-      <li>Votes. No time limit; the battle starts once everyone has voted.</li>
+      <li>Votes. No time limit; you can change yours until the last player has voted, and then the battle starts.</li>
     </ol>
   </section>
 
@@ -229,7 +230,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>Battle records for the run.</li>
       <li>The factory as it stood at the end.</li>
       <li>What was fought each round and how it went.</li>
-      <li>Start again or go back to the menu. The run leaves the saved list; only its depth is kept.</li>
+      <li>Start again or go back to the menu. The run leaves the saved list; its depth and history go into your records.</li>
     </ol>
   </section>
 
@@ -317,7 +318,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   // ================= 1. BATTLE =================
   (function () {
     var s = document.getElementById("s-battle"), S = 16, bx = 448, by = 52;
-    topbar(s, "Round 4 \u00B7 PvP battle", "vs. ghost of \u201cAna + Bo\u201d", "Battle time 1:24  \u00B7  Lives 4 / 5", 1280, 720);
+    topbar(s, "Round 4 · PvP battle", "vs. ghost of “Kai + Lin + Mo”", "Battle time 1:24  ·  Lives 4 / 5", 1280, 720);
     var zy = by + W * S, zh = 7 * S, my = zy + zh, bw = H * S;
     board(s, bx, by, S, theirs, true);
     R(s, bx, zy, bw, zh, "zone");
@@ -334,9 +335,9 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     var lx = 16, pw = 400;
     R(s, lx, 52, pw, 110, "panel"); T(s, lx + 12, 76, "YOUR SIDE", "ts tm");
     T(s, lx + 12, 106, "Core", "t"); R(s, lx + 84, 94, 300, 14, "hp"); R(s, lx + 84, 94, 236, 14, "hp-a");
-    T(s, lx + 12, 140, "Walls: 6 / 11 standing", "ts tm");
+    T(s, lx + 12, 140, "Walls: 11 / 11 standing", "ts tm");
     R(s, lx, 174, pw, 190, "panel"); T(s, lx + 12, 198, "PRODUCTION (per sec)", "ts tm");
-    lines(s, lx + 12, 226, ["Ore     3.0   \u25B2 ramping", "Power   1.0", "Flux    0.0"], "t", 22);
+    lines(s, lx + 12, 226, ["Ore     3.0   ▲ ramping", "Power   1.0", "Flux    0.0"], "t", 22);
     el(s, "line", { x1: lx + 12, y1: 286, x2: lx + pw - 12, y2: 286, class: "rule" });
     lines(s, lx + 12, 312, ["Units alive   12  vs  10", "Units lost     7  vs  11"], "t", 22);
     R(s, lx, 376, pw, 130, "panel"); T(s, lx + 12, 400, "PARTY", "ts tm");
@@ -351,15 +352,15 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     var rx = 864;
     R(s, rx, 52, pw, 110, "panel"); T(s, rx + 12, 76, "ENEMY", "ts tm");
     T(s, rx + 12, 106, "Core", "t"); R(s, rx + 84, 94, 300, 14, "hp"); R(s, rx + 84, 94, 168, 14, "hp-e");
-    T(s, rx + 12, 140, "Walls: 3 / 5 standing", "ts tm");
+    T(s, rx + 12, 140, "Walls: 5 / 5 standing", "ts tm");
     R(s, rx, 174, pw, 190, "panel"); T(s, rx + 12, 198, "BATTLE LOG", "ts tm");
-    lines(s, rx + 12, 226, ["1:22  Your soldiers broke through on the left", "1:18  Enemy barracks destroyed", "1:05  Your splitter destroyed:", "      foundry and armory cut off", "0:02  Neutral zone revealed"], "ts", 22);
+    lines(s, rx + 12, 226, ["1:22  Your soldiers reached the enemy walls", "1:10  Front line formed in the neutral zone", "0:45  Enemy raiders stopped by your turret", "0:20  First units spawned on both sides", "0:02  Neutral zone revealed"], "ts", 22);
     R(s, rx, 376, pw, 130, "panel"); T(s, rx + 12, 400, "SPEED", "ts tm");
-    btn(s, rx + 12, 414, 86, 34, "1\u00D7", true); btn(s, rx + 108, 414, 86, 34, "2\u00D7"); btn(s, rx + 204, 414, 86, 34, "4\u00D7"); btn(s, rx + 300, 414, 88, 34, "Skip");
+    btn(s, rx + 12, 414, 86, 34, "1×", true); btn(s, rx + 108, 414, 86, 34, "2×"); btn(s, rx + 204, 414, 86, 34, "4×"); btn(s, rx + 300, 414, 88, 34, "Skip");
     T(s, rx + 12, 480, "co-op: all players must agree", "ts tm");
     R(s, rx, 518, pw, 158, "panel"); T(s, rx + 12, 542, "CAMERA", "ts tm");
     btn(s, rx + 12, 556, 120, 34, "Center", true); btn(s, rx + 140, 556, 120, 34, "My base"); btn(s, rx + 268, 556, 120, 34, "Fit battle");
-    lines(s, rx + 12, 622, ["Drag to pan \u00B7 scroll to zoom.", "Click a building to see what it is doing."], "ts tm", 22);
+    lines(s, rx + 12, 622, ["Drag to pan · scroll to zoom.", "Click a building to see what it is doing."], "ts tm", 22);
     // marks
     mark(s, 478, 20, 1, 11); mark(s, bx + 30, my + W * S - 24, 2, 11); mark(s, bx + 30, zy + 24, 3, 11); mark(s, bx + 30, by + 24, 4, 11);
     mark(s, bx + 15 * S, by + 20.4 * S, 5, 11); mark(s, lx + pw - 18, 68, 6, 11); mark(s, lx + pw - 18, 190, 7, 11); mark(s, lx + pw - 18, 534, 8, 11);
@@ -373,7 +374,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     R(s, 24, 48, 912, 40, "panel");
     T(s, 38, 73, "PvE battle won  ·  Hard  ·  Rusher", "th"); T(s, 922, 73, "+12 gold each", "t", "end");
     var cards = [
-      ["Workshop", ["Raise one building the party", "owns by one tier."], ["Party chooses which building."], ["You", "Ana"], true],
+      ["Workshop", ["Raise one building the party", "owns by one tier."], ["Party chooses which building."], ["You"], true],
       ["Shrine", ["Choose 1 of 3 run modifiers.", "Lasts until the run ends."], ["e.g. walls +25% health,", "extractors start faster."], ["Bo"], false],
       ["Gamble", ["Stake some of your gold for", "an even chance to double it."], ["Each player decides for", "themselves."], [], false]
     ];
@@ -391,8 +392,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       if (!c[3].length) T(s, x + 16, y + 299, "none yet", "ts tm");
     });
     R(s, 24, 456, 912, 60, "panel");
-    T(s, 38, 482, "2 of 3 voted \u00B7 waiting for Bo", "th"); T(s, 38, 502, "No time limit. Most votes wins; a tie is settled by the host.", "ts tm");
-    btn(s, 776, 468, 146, 36, "Confirm vote", true);
+    T(s, 38, 482, "2 of 3 voted · waiting for Ana", "th"); T(s, 38, 502, "No time limit. Change your vote until everyone has voted. Most votes wins; a tie is settled by the host.", "ts tm");
     mark(s, 30, 54, 1); mark(s, 320, 120, 2); mark(s, 306, 390, 3); mark(s, 30, 462, 4);
   })();
 
@@ -435,50 +435,51 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     // next battle
     R(s, 476, 318, 216, 206, "panel"); T(s, 488, 338, "NEXT BATTLE", "ts tm");
     T(s, 488, 362, "PvP", "tb"); lines(s, 488, 384, ["Opponent unknown until", "the battle starts.", "", "Lose: −1 life", "Win: gold"], "ts", 15);
+    btn(s, 488, 478, 192, 34, "Ready", true);
     // mini board
     R(s, 704, 318, 232, 206, "panel"); T(s, 716, 338, "YOUR FACTORY", "ts tm");
     var mg = el(s, "g", { transform: "translate(716,348) rotate(0)" });
     board(mg, 0, 0, 6, mine, false, true);
-    T(s, 716, 462, "8 buildings placed \u00B7 1 unconnected", "ts tm");
+    T(s, 716, 462, "8 buildings placed · 5 in stash", "ts tm");
     btn(s, 716, 478, 208, 34, "Go to Build");
-    mark(s, 590, 18, 1); mark(s, 160, 80, 2); mark(s, px + pw - 14, 62, 3); mark(s, px + pw - 14, 180, 4); mark(s, 450, 332, 5); mark(s, 678, 332, 6); mark(s, 922, 332, 7);
+    mark(s, 590, 18, 1); mark(s, 160, 80, 2); mark(s, px + pw - 14, 62, 3); mark(s, px + pw - 14, 180, 4); mark(s, 450, 332, 5); mark(s, 678, 332, 6); mark(s, 922, 332, 7); mark(s, 678, 466, 8);
   })();
 
   // ================= 4. BUILD =================
   (function () {
     var s = document.getElementById("s-build"), S = 20, bx = 400, by = 70, bw = H * S, bh = W * S;
-    topbar(s, "Round 4 \u00B7 Shop + Build", "", "1 of 3 ready  \u00B7  Lives 4 / 5", 1280, 720);
+    topbar(s, "Round 4 · Shop + Build", "", "1 of 3 ready  ·  Lives 4 / 5", 1280, 720);
     btn(s, 536, 6, 100, 28, "Shop"); btn(s, 644, 6, 100, 28, "Build", true);
-    T(s, bx + bw / 2, by - 8, "FRONT EDGE \u00B7 enemy units enter here", "ts tm", "middle");
-    R(s, 16, by, 368, bh, "plot"); T(s, 200, by + bh / 2, "co-op: another player\u2019s plot", "ts tm", "middle"); T(s, 200, by + bh / 2 + 18, "joins the board here", "ts tm", "middle");
-    R(s, 896, by, 368, bh, "plot"); T(s, 1080, by + bh / 2, "co-op: another player\u2019s plot", "ts tm", "middle"); T(s, 1080, by + bh / 2 + 18, "joins the board here", "ts tm", "middle");
+    T(s, bx + bw / 2, by - 8, "FRONT EDGE · enemy units enter here", "ts tm", "middle");
+    R(s, 16, by, 368, bh, "plot"); T(s, 200, by + bh / 2, "co-op: another player’s plot", "ts tm", "middle"); T(s, 200, by + bh / 2 + 18, "joins the board here", "ts tm", "middle");
+    R(s, 896, by, 368, bh, "plot"); T(s, 1080, by + bh / 2, "co-op: another player’s plot", "ts tm", "middle"); T(s, 1080, by + bh / 2 + 18, "joins the board here", "ts tm", "middle");
     board(s, bx, by, S, mine, false);
     function path(pts) { el(s, "polyline", { class: "path", points: pts.map(function (q) { return (bx + q[1] * S) + "," + (by + (W - q[0]) * S); }).join(" ") }); }
     path([[16,20],[10.5,20],[10.5,16.5],[4.5,16.5],[4.5,12.5],[4,12.5]]);
     path([[16,9.5],[14.5,9.5],[14.5,10.5],[11.5,10.5],[11.5,11.5],[4,11.5]]);
     R(s, bx + 8 * S - 2, by + 2 * S - 2, 2 * S + 4, 2 * S + 4, "sel");
     // dock A: stash + tools
-    R(s, 16, 404, 320, 156, "panel"); T(s, 28, 426, "STASH \u00B7 drag onto the board", "ts tm");
-    [["Wall", "\u00D7 3"], ["Turret", "\u00D7 1"], ["Extractor", "\u00D7 1"]].forEach(function (r, i) {
+    R(s, 16, 404, 320, 156, "panel"); T(s, 28, 426, "STASH · drag onto the board", "ts tm");
+    [["Wall", "× 3"], ["Turret", "× 1"], ["Extractor", "× 1"]].forEach(function (r, i) {
       var y = 436 + i * 40; R(s, 28, y, 296, 34, "box"); R(s, 34, y + 5, 24, 24, "bld"); T(s, 70, y + 22, r[0], "t"); T(s, 314, y + 22, r[1], "t", "end");
     });
     R(s, 16, 568, 320, 140, "panel"); T(s, 28, 590, "TOOLS", "ts tm");
-    [["Select / move", 0], ["Conduit \u00B7 free", 1], ["Rotate (R)", 0], ["Erase conduit", 0], ["To stash", 0], ["Undo", 0]].forEach(function (b, i) {
+    [["Select / move", 0], ["Conduit · free", 1], ["Rotate (R)", 0], ["Erase conduit", 0], ["To stash", 0], ["Undo", 0]].forEach(function (b, i) {
       btn(s, 28 + (i % 2) * 152, 600 + Math.floor(i / 2) * 35, 144, 29, b[0], !!b[1]);
     });
     // dock B: inspector
     R(s, 352, 404, 448, 304, "panel"); T(s, 364, 426, "SELECTED", "ts tm");
-    T(s, 364, 458, "Barracks", "tb"); T(s, 474, 458, "Units \u00B7 tier 1 \u00B7 bought by You", "ts tm");
+    T(s, 364, 458, "Barracks", "tb"); T(s, 474, 458, "Units · tier 1 · bought by You", "ts tm");
     lines(s, 364, 492, ["Needs      Ore 2.0 / sec", "Receiving  Ore 1.5 / sec", "           extractor is 12 cells away", "Produces   1 soldier / 5.3 s (4.0 s at full)", "Health     120"], "t", 24);
     btn(s, 364, 664, 120, 30, "Rotate"); btn(s, 492, 664, 150, 30, "To stash"); btn(s, 650, 664, 138, 30, "Sell in Shop");
     // dock C: overlays + party
     R(s, 816, 404, 448, 156, "panel"); T(s, 828, 426, "OVERLAYS", "ts tm");
     btn(s, 828, 436, 136, 30, "Resource flow"); btn(s, 972, 436, 136, 30, "Enemy paths", true); btn(s, 1116, 436, 136, 30, "Dry run 60s");
     T(s, 828, 492, "PROBLEMS", "ts tm");
-    lines(s, 828, 512, ["\u26A0 Extractor in stash: 2 free nodes (Power, Flux)", "\u26A0 Armory is fed through a 9-cell conduit", "\u2713 No conduits cross"], "ts", 18);
-    R(s, 816, 568, 448, 140, "panel"); T(s, 828, 590, "PARTY (co-op) \u00B7 everyone edits this board", "ts tm");
+    lines(s, 828, 512, ["⚠ Extractor in stash: 2 free nodes (Power, Flux)", "⚠ Armory is fed through a 9-cell conduit", "✓ No conduits cross"], "ts", 18);
+    R(s, 816, 568, 448, 140, "panel"); T(s, 828, 590, "PARTY (co-op) · everyone edits this board", "ts tm");
     lines(s, 828, 614, ["You   placing walls near the front    ready: no", "Ana   routing Power to turrets        ready: yes", "Bo    in Shop                         ready: no"], "ts", 18);
-    T(s, 828, 690, "Next: PvP \u00B7 opponent unknown", "ts tm");
+    T(s, 828, 690, "Next: PvP · opponent unknown", "ts tm");
     btn(s, 1104, 668, 148, 30, "Ready", true);
     // marks
     mark(s, 318, 420, 1, 11); mark(s, 318, 584, 2, 11); mark(s, bx + 450, by + 290, 3, 11); mark(s, bx + 150, by + 165, 4, 11); mark(s, bx + 284, by + 262, 5, 11);
@@ -534,12 +535,12 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   // ================= 7. PVE CHOICE =================
   (function () {
     var s = document.getElementById("s-pve");
-    topbar(s, "Round 5 · PvE battle", "choose a difficulty", "Lives 4 / 5");
+    topbar(s, "Round 5 · PvE battle", "choose a difficulty", "Lives 3 / 5");
     R(s, 24, 48, 912, 40, "panel"); T(s, 38, 73, "Win: take the reward.    Lose: no reward, and no life lost.", "th");
     var cards = [
       ["Easy", "Fortress", ["A heavily defended", "stronghold. Light waves."], "Tests: ramp and siege", "+6 gold each", 1, [], false],
       ["Medium", "Escalator", ["Waves that grow", "quickly."], "Tests: speed", "+10 gold each", 2, ["Bo"], false],
-      ["Hard", "Rusher", ["Heavy waves from the", "first seconds."], "Tests: defense", "+14 gold each", 3, ["You", "Ana"], true]
+      ["Hard", "Rusher", ["Heavy waves from the", "first seconds."], "Tests: defense", "+14 gold each", 3, ["You"], true]
     ];
     cards.forEach(function (c, i) {
       var x = 40 + i * 300, y = 104, w = 280, h = 336;
@@ -556,8 +557,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       if (!c[6].length) T(s, x + 16, y + 309, "none yet", "ts tm");
     });
     R(s, 24, 456, 912, 60, "panel");
-    T(s, 38, 482, "2 of 3 voted · waiting for Bo", "th"); T(s, 38, 502, "No time limit. Most votes wins; a tie is settled by the host. These options were already visible in the shop.", "ts tm");
-    btn(s, 776, 468, 146, 36, "Confirm vote", true);
+    T(s, 38, 482, "2 of 3 voted · waiting for Ana", "th"); T(s, 38, 502, "No time limit. Change your vote until everyone has voted. Most votes wins; a tie is settled by the host.", "ts tm");
     mark(s, 30, 54, 1); mark(s, 180, 112, 2); mark(s, 306, 104 + 162, 3); mark(s, 306, 104 + 212, 4); mark(s, 306, 104 + 280, 5);
   })();
 
@@ -565,7 +565,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   (function () {
     var s = document.getElementById("s-summary");
     topbar(s, "Round 4 · PvP battle · Summary", "", "Lives 3 / 5");
-    R(s, 24, 48, 912, 44, "panel"); T(s, 38, 77, "Defeat · vs. ghost of “Ana + Bo”", "tb"); T(s, 922, 75, "−1 life   ·   +3 gold each", "t", "end");
+    R(s, 24, 48, 912, 44, "panel"); T(s, 38, 77, "Defeat · vs. ghost of “Kai + Lin + Mo”", "tb"); T(s, 922, 75, "−1 life   ·   +3 gold each", "t", "end");
     R(s, 24, 104, 440, 250, "panel"); T(s, 36, 124, "ARMY STRENGTH OVER TIME", "ts tm");
     el(s, "line", { x1: 40, y1: 330, x2: 448, y2: 330, class: "rule" });
     el(s, "polyline", { class: "chart-a", points: "40,326 100,318 160,300 220,290 280,296 340,306 448,318" });
@@ -590,12 +590,12 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     topbar(s, "Run over", "", "You + Ana + Bo");
     R(s, 24, 48, 912, 60, "panel"); T(s, 56, 86, "Reached round 9", "tb"); T(s, 904, 84, "New best for 3 players (was round 7)", "t", "end");
     R(s, 24, 120, 280, 250, "panel"); T(s, 36, 140, "THIS RUN", "ts tm");
-    lines(s, 36, 166, ["PvP battles   5 won · 4 lost", "  vs. ghosts  4 won · 3 lost", "  vs. bosses  1 won · 1 lost", "PvE battles   7 won · 2 lost", "  easy 2 · medium 3 · hard 4", "Lives lost    5", "Version       1.2"], "t", 22);
+    lines(s, 36, 166, ["PvP battles   4 won · 5 lost", "  vs. ghosts  3 won · 4 lost", "  vs. bosses  1 won · 1 lost", "PvE battles   7 won · 2 lost", "  easy 2 · medium 3 · hard 4", "Lives lost    5", "Version       1.2"], "t", 22);
     R(s, 316, 120, 300, 250, "panel"); T(s, 328, 140, "FINAL FACTORY", "ts tm");
     board(s, 346, 152, 10, mine, false, true); T(s, 346, 334, "23 buildings · 3 at tier 3", "ts tm");
     R(s, 628, 120, 308, 250, "panel"); T(s, 640, 140, "ROUND BY ROUND", "ts tm");
-    T(s, 640, 162, "#   PvE            PvP", "ts tm");
-    lines(s, 640, 182, ["1   Hard    won    ghost   won", "2   Hard    won    ghost   won", "3   Medium  won    ghost   lost", "4   Hard    won    ghost   lost", "5   Medium  won    boss    won", "…", "8   Easy    lost   ghost   lost", "9   Easy    lost   boss    lost"], "ts", 20);
+    T(s, 640, 162, "#   PvE          PvP opponent", "ts tm");
+    lines(s, 640, 182, ["1   Hard   won   Kai, Lin, Mo    won", "2   Hard   won   Ivy, Jo, Sam    won", "3   Medium won   Pat, Quin, Ro   lost", "4   Hard   won   Uma, Val, Wes   lost", "5   Medium won   boss            won", "…", "8   Easy   lost  Xi, Yas, Zed    lost", "9   Easy   lost  boss            lost"], "ts", 20);
     R(s, 24, 382, 912, 134, "panel"); T(s, 36, 402, "WHAT NEXT", "ts tm");
     btn(s, 40, 414, 200, 40, "New run", true); btn(s, 250, 414, 200, 40, "Main menu"); btn(s, 460, 414, 200, 40, "View final factory");
     T(s, 40, 482, "The run leaves your saved runs. Its depth is kept in your records.", "ts tm"); T(s, 40, 500, "Nothing else carries over to the next run.", "ts tm");

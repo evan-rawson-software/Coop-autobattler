@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v4.4
+Status: Draft v4.5
 
 ## Direction
 
@@ -351,7 +351,7 @@ is deliberate.
   rules are deterministic, so from its seed and the log of the party's
   actions a checker can confirm that a board is one the run could really
   have produced: the map matches the seed, every building was actually
-  offered in a shop or reward, and the gold spent does not exceed what the
+  offered in a shop or was in the starting kit, and the gold spent does not exceed what the
   run could have earned.
   - This requires the run to **keep an action log**: every accepted action
     in order, stored in the save (TA-12) and uploaded with each snapshot as
@@ -475,9 +475,9 @@ Still unconfirmed:
      on a major release (TA-9).
   4. Lobbies + relay networking through GodotSteam with Godot's multiplayer
      API, including reconnect.
-  6. Whether a Steam lobby's owner can change when the owner leaves, and
+  5. Whether a Steam lobby's owner can change when the owner leaves, and
      how to keep the run's host fixed regardless (CP-23g).
-  5. What can be tested with Valve's public test app ID versus what needs
+  6. What can be tested with Valve's public test app ID versus what needs
      our own (leaderboards and Cloud need our own app).
 
   Fallback candidates if (1) disappoints: Steam Workshop buildings as hidden

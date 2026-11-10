@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v4.4
+Status: Draft v4.5
 
 ## Direction
 
@@ -16,8 +16,9 @@ Status: Draft v4.4
   gold or anything else spent outside combat.
 - **CB-3a [DECIDED]** **Defense buys time**: walls and similar buildings
   slow down the enemy's attack while the factory ramps up.
-- **CB-3b [DECIDED]** Rewards are a choice between **economy** (pays off
-  later) and **attack or defense** (helps in the upcoming battles).
+- **CB-3b [DECIDED]** What the party buys is a choice between **economy**
+  (pays off later) and **attack or defense** (helps in the upcoming
+  battles). The choice is made in the shop; battle rewards are gold (RS-6).
 - **CB-3c [DECIDED]** Boards start with **randomized resource placement**
   and randomized **natural features** such as lakes and cliffs. Players must
   build around them, and can use them to **funnel enemy units**.
@@ -35,7 +36,7 @@ Status: Draft v4.4
   players could spam them to delay enemy units).
 - **CB-3i [DECIDED]** **Gold is not a building resource.** Gold is spent only
   at shops between battles, to purchase buildings. Only buildings the party
-  has purchased can be placed, and placing costs nothing. Conduits
+  has purchased, plus its starting kit, can be placed, and placing costs nothing. Conduits
   are the one exception: unlimited, never purchased.
 - **CB-3j [DECIDED]** **No long-range buildings.** Buildings never attack
   the enemy's side of the battlefield; all offence is carried by units.
@@ -282,7 +283,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   everything but the Core can move, so the factory can be re-routed for a
   PvE threat whose style is shown in advance, or hedged for the unknown PvP
   opponent.
-- **CB-23** Reward choices follow the same split (CB-3b). Economy buildings
+- **CB-23** Shop purchases follow the same split (CB-3b). Economy buildings
   are weak in the next battle and grow in value as the run goes on.
 
 ## Space and building
@@ -400,13 +401,14 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 ## Playback and understanding the factory
 
 - **CB-40** All party members watch the same battle in sync, each free to
-  pan and zoom across both boards. Speed controls (1×/2×/skip) apply when
-  all players agree, or automatically in solo.
+  pan and zoom across both boards. Speed controls (1×, 2×, 4×, skip) apply when
+  all connected players agree, or automatically in solo.
 - **CB-41** A ghost's board is fully visible during the battle. A PvE
-  threat's archetype and stronghold are shown before the party commits
-  (RS-3b).
-- **CB-42** A post-battle summary shows a timeline (production, army size,
-  and damage for both sides) and where the party's defenses were breached.
+  threat's archetype and threat level are shown before the party commits
+  (RS-3b); its stronghold is seen in the battle.
+- **CB-42** A post-battle summary shows army strength over time for both
+  sides with notable moments marked, what each building did, and where the
+  party's defenses were breached.
 - **CB-43** **Preview while building:** a dry run shows resource flow,
   projected production over time, and the **paths enemy units would take**
   to the Core with the current layout, from every point along the front
@@ -428,8 +430,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   sizes a whole solo battle fits at about 25 pixels per cell and a whole
   four-player battle at about 20.
 - **CB-47 [PROPOSED]** The board is viewed through a **camera that pans and
-  zooms**, from the first playable version, with presets (fit the whole
-  battle, own base, front line). Interface panels are docked around the
+  zooms**, from the first playable version, with presets (center, own base,
+  fit the whole battle). Interface panels are docked around the
   view — along the bottom when building; at the sides during battle
   where there is room, and over the view otherwise —
   rather than laid out around a fixed-size board. Map size can then be

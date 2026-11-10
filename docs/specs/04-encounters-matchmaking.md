@@ -1,13 +1,13 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v4.4
+Status: Draft v4.5
 
 ## Encounter types
 
 | Type | Opponent | When | Stakes |
 |------|----------|------|--------|
 | PvE battle (easy / medium / hard) | Scripted waves plus a stronghold, scaled to round, difficulty, and party size | First battle of each round | Reward on win; no reward and no life loss on defeat |
-| PvP battle — ghost | Snapshot of another real party's factory | Second battle of each round | Reward on win; lose 1 life on defeat |
+| PvP battle — ghost | Snapshot of another real party's factory | Second battle of each round | Gold on win; on defeat, lose 1 life and receive a small consolation payout |
 | PvP battle — boss | Generated boss threat | Second battle of each round, when no ghost matches | Same as ghost |
 
 The loop is defined in `01-run-structure.md` RS-1.

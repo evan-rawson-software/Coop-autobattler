@@ -6,6 +6,10 @@ the party's base at the bottom and the enemy at the top
 and where. Sizes, numbers, and building names are placeholders, and the
 sketches show a solo view with co-op elements marked.
 
+Specific numbers and example effects in the sketches — gold amounts, the
+starting kit, threat pips, "an even chance to double it", "overload begins
+4:00", player and ghost names — are placeholders, not rules.
+
 The specs are the source of truth. Where a wireframe and a spec disagree,
 the spec wins and the wireframe should be corrected.
 
@@ -52,7 +56,7 @@ After every battle the party picks one of three events. It opens with the battle
 
 1. Result of the battle just fought and what it paid.
 2. Three offered events. Each says exactly what it does before you choose.
-3. Votes from each player. The highlighted card is currently winning.
+3. Votes from each player. The highlighted card is your own vote; you can change it until the last player has voted.
 4. Who has voted and how ties are settled. There is no time limit; the event resolves once everyone has voted.
 
 ## 3. Shop
@@ -68,6 +72,7 @@ The shop always follows the event. Each player has their own offers and their ow
 5. Teammates' gold and stash, with a way to give gold. You do not see their offers. Hidden in solo.
 6. What comes next. PvE options are shown ahead of time; a PvP opponent never is.
 7. A small live view of the board that jumps to the Build tab.
+8. Ready is available on both tabs.
 
 ## 4. Build
 
@@ -76,7 +81,7 @@ Where the factory is laid out. Everything except the Core can be moved, and cond
 ![Build screen wireframe](4-build.png)
 
 1. Stash. Drag a building onto the board to place it; placing is free.
-2. Tools. Conduit is always available and unlimited. Rotate turns the selected building.
+2. Tools. Conduit is always available and unlimited. Rotate turns the selected building. Undo covers layout changes only, never buying, selling, or re-rolling.
 3. The board. Lakes and cliffs cannot be built on. Extractors only go on resource nodes.
 4. Conduits, one resource each, coloured by resource. They cannot cross; the splitter is what lets one line feed two buildings.
 5. The Core. Placed once at the start of the run; it has no move handle.
@@ -84,7 +89,7 @@ Where the factory is laid out. Everything except the Core can be moved, and cond
 7. Preview of the routes enemy units would take to the Core with this layout.
 8. Inspector for the selected building: what it needs, what it is getting, what it produces.
 9. Overlays and problems: a dry run of resource flow, the enemy-path preview, and anything unconnected.
-10. Party panel: who is editing where, pings, and the Ready button. The battle starts when everyone is ready.
+10. Party panel: who is editing where, pings, and the Ready button. The party moves on when everyone is ready.
 11. In co-op each extra player adds a plot to the side. A four-player board still fits the width of a 1080p screen, and everything below the board stays free for panels.
 
 ## 5. Main menu
@@ -123,7 +128,7 @@ Before each PvE battle the party picks easy, medium, or hard. Each option shows 
 2. Difficulty and enemy type. The type tells you what the battle will test.
 3. How strong the threat is.
 4. What winning pays. Harder options pay more.
-5. Votes. No time limit; the battle starts once everyone has voted.
+5. Votes. No time limit; you can change yours until the last player has voted, and then the battle starts.
 
 ## 8. Battle summary
 
@@ -149,4 +154,4 @@ Every run ends in defeat; this screen says how far it got. An abandoned run ends
 3. Battle records for the run.
 4. The factory as it stood at the end.
 5. What was fought each round and how it went.
-6. Start again or go back to the menu. The run leaves the saved list; only its depth is kept.
+6. Start again or go back to the menu. The run leaves the saved list; its depth and history go into your records.

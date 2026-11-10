@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v4.4
+Status: Draft v4.5
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
