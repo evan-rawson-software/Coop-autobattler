@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v3.7
+Status: Draft v4.1
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -65,13 +65,16 @@ with the project owner outside the repo. Open:
 ## Q3a. Saving and disconnects
 
 Decided: battles continue while at least one player remains; a disconnected
-player must return before the run continues; reconnecting and re-hosting
-from the save are supported; multiple save slots, one run per slot, no
-copies; auto-save after each action (CP-21 to CP-23). Open:
+player must return before the party can move past the shop, and meanwhile
+the others can shop and move buildings, including the absent player's
+(CP-21 to CP-21f); reconnecting and re-hosting from the save are supported;
+any number of saved runs, each run saved only once (CP-22a, CP-23d);
+auto-save after each action, storing outcomes so that nothing already
+rolled or fought changes, even across an update (CP-23, CP-23a); if a
+player never returns, the party saves and quits or abandons (CP-21d).
 
-- Decided: 5 save slots.
-- Decided: if a player never returns, the party saves and quits or
-  abandons (CP-21d).
+Still open: whether removing a run from one's own list (CP-23f) and
+needing every connected player to agree to abandon (CP-21g) are right.
 
 ## Q4. Details of the loop
 
@@ -128,6 +131,8 @@ deletes old saves and old ghost data (TA-8). Open:
 - Decided: old rules and numbers are not kept; loading an older save
   shows a prompt that some things may have changed (CP-23e).
 - What counts as major versus minor (proposed definitions in TA-8).
+- If Steam does not allow old ghost data to be deleted in bulk, is leaving
+  unreadable leaderboard entries behind acceptable (TA-37)?
 
 ## Q10. Theme and tone
 

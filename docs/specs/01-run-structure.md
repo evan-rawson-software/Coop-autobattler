@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v4.0
+Status: Draft v4.1
 
 ## Core loop
 
@@ -130,8 +130,18 @@ the party's income so it falls behind the ghosts it meets. See
 
 ## Pace
 
-- **RS-12 [DECIDED]** No step is timed. A step ends when every player has
-  readied up (CP-17). There are no session-length targets to hit; a run
-  takes as long as the party wants to spend thinking.
+- **RS-12 [DECIDED]** No step is timed, and the party only moves on when
+  every player is ready (CP-17). There are no session-length targets to
+  hit; a run takes as long as the party wants to spend thinking.
+- **RS-12b [PROPOSED]** How each step ends:
+  - **Core placement** (start of run) — the party votes on a position; it
+    is fixed once every player has confirmed.
+  - **PvE difficulty choice** — every player votes; the battle starts when
+    all have voted.
+  - **Battle** — playback ends at a summary; the party moves on when every
+    connected player has readied up there.
+  - **Event** — every player votes; the event resolves when all have voted
+    and any follow-up choice has been made.
+  - **Shop and build** — every player readies up.
 - **RS-12a [PROPOSED]** Because runs can be long, they must be easy to stop
   and resume (CP-22, CP-23). Battle playback keeps its speed controls.

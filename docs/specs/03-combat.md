@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v4.0
+Status: Draft v4.1
 
 ## Direction
 
@@ -297,14 +297,17 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-26** Buildings are bought with gold in shops between battles, or won
   as rewards, and go into the owning player's stash. Placing, moving, and
   rotating them costs nothing; gold plays no part in building or in battle
-  (CB-3i). There are **no building tags or tag bonuses for now** [DECIDED]; to be
-  reconsidered once the game has been played.
+  (CB-3i). 
+- **CB-26b [DECIDED for now]** There are no building tags or tag bonuses; to
+  be reconsidered once the game has been played.
 - **CB-26a [DECIDED]** **Buildings have tiers, and there is no combining.**
   Owning several identical buildings never merges them. Higher-tier
-  buildings come only from shops (which offer higher tiers as the run goes
-  on), from rewards, and from the Workshop event, which raises one building
-  by a tier. The factory layout therefore only changes when players change
-  it.
+  buildings come from shops (which offer higher tiers as the run goes on),
+  from rewards, and from events such as the Workshop, which raises one
+  building by a tier. The factory layout therefore only changes when
+  players change it.
+- **CB-26c [DECIDED for now]** There are **three tiers**. Nothing can raise
+  a building above tier 3. The cap may change later.
 - **CB-27** Moving and rotating buildings between battles is free; sources
   must stay on nodes, and the Core never moves (CB-3e). The map itself never
   changes during a run.
@@ -357,7 +360,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   (authoritative, TA-6), in tests, and in balance tools.
 - **CB-32** A party is fully described by a serializable **team state**
   (CP-6): the map (terrain, nodes, features), the Core
-  position, every building with tier, position and orientation, and run
+  position, every building with tier, position and orientation, every
+  conduit, and run
   modifiers that affect combat. This is exactly what a snapshot stores
   (MM-1).
 - **CB-33** If both Cores are destroyed on the same tick, a deterministic
@@ -388,7 +392,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   edge — where they actually arrive depends on the hidden neutral zone
   (CB-8).
 - **CB-44** Any past battle can be replayed from
-  `(team, opponent, seed, version)`.
+  `(team, opponent, seed, version)` on that same version. After a game
+  update, an already-fought battle is shown from its saved result and event
+  log, not re-simulated (CP-23a).
 
 ## Screen layout
 
@@ -403,10 +409,13 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-47 [PROPOSED]** The board is viewed through a **camera that pans and
   zooms**, from the first playable version, with presets (fit the whole
   battle, own base, front line). Interface panels are docked around the
-  view — along the bottom when building, at the sides during battle —
+  view — along the bottom when building; at the sides during battle
+  where there is room, and over the view otherwise —
   rather than laid out around a fixed-size board. Map size can then be
   increased later as a tuning change, not a redesign.
 - **CB-47a [DECIDED]** The camera **starts at the center of the map**.
+  Proposed reading: when building, the center of the party's board; in a
+  battle, the center of the whole battlefield.
 - **CB-48 [PROPOSED]** Shop and Build are two tabs of the same step
   (RS-5f), so players can buy, place, and return to the shop.
 

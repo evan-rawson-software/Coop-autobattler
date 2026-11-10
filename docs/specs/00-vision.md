@@ -1,6 +1,6 @@
 # 00 — Vision & Pillars
 
-Status: Draft v2.5
+Status: Draft v4.1
 
 ## Elevator pitch
 
@@ -68,9 +68,10 @@ forever; the score is how deep you went.
 4. **Decisions in the build, spectacle in the fight.** Players have zero input
    during combat. All skill expression is in drafting, economy, and how buildings
    are arranged on the board.
-5. **Short sessions, legible cycles.** A cycle is a few minutes; a run fits in
-   an evening; a party can drop a run and it does not hurt anyone else,
-   because all PvP is asynchronous.
+5. **Unhurried, and easy to put down.** Nothing is timed; a party thinks
+   for as long as it likes. A run can be long, so it can be saved and
+   resumed at any point, and a party can drop a run without hurting anyone
+   else, because all PvP is asynchronous.
 
 ## Target experience
 

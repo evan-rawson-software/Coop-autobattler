@@ -1,6 +1,6 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v3.6
+Status: Draft v4.1
 
 ## Encounter types
 
@@ -21,11 +21,15 @@ The loop is defined in `01-run-structure.md` RS-1.
   - game version the run is being played on (`major.minor`; see TA-8)
   - party size
   - cycle number
-  - full team state: the party's map, Core position, and buildings
-    (CB-32, CP-6)
+  - full team state: the party's map, Core position, buildings, and
+    conduits (CB-32, CP-6)
+  - the run's ID and seed, and a signature (TA-22a)
   - party members' Steam IDs (display names are looked up from Steam)
   - metadata: lives remaining and PvP record at that point (for optional
     match-quality filtering)
+- **MM-1d [PROPOSED]** The run's action log, needed only for verification by
+  replay (TA-22b), is stored alongside the snapshot as a separate file and
+  is not downloaded for an ordinary battle (TA-19).
 - **MM-1a [PROPOSED]** Snapshots are taken *before* the fight and are saved
   regardless of whether the party then wins or loses. Saving only winners
   would make the pool progressively harder than the real population.
@@ -58,7 +62,7 @@ The loop is defined in `01-run-structure.md` RS-1.
   (Optional later: "your ghost won N fights" stat.)
 - **MM-7 [PROPOSED]** Opponent selection and the combat seed are chosen
   by the host's game, and the opponent is not revealed until the party's
-  boards are locked. The ghost may be fetched earlier in the cycle to avoid a
+  board is locked. The ghost may be fetched earlier in the cycle to avoid a
   wait (TA-19).
 
 ## Boss fallback
@@ -86,7 +90,7 @@ The loop is defined in `01-run-structure.md` RS-1.
 
 ## Pool health
 
-- **MM-12 [PROPOSED]** **Cold start**: a new game version starts with an empty
+- **MM-12 [PROPOSED]** **Cold start**: a new minor or major version starts with an empty
   pool, so early parties fight bosses. Mitigations, in order of preference:
   (a) accept it — bosses are a designed fallback; (b) seed the pool for early
   cycles with snapshots from internal playtests or bot-driven runs on the new
@@ -98,8 +102,9 @@ The loop is defined in `01-run-structure.md` RS-1.
   cycles will be sparse. This is acceptable by design (boss fallback), and
   bucket sizes can be read directly from the entry counts to inform tuning.
 - **MM-15 [DECIDED]** A run only meets ghosts played on the same version as
-  the run itself, including after the game has been updated (TA-8). Patch
-  releases that do not touch combat do not split the pool.
+  the run itself, including after the game has been updated (TA-8).
+- **MM-15a [PROPOSED]** Patch releases that do not touch combat do not split
+  the pool (TA-8).
 
 ## Integrity
 

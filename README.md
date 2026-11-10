@@ -34,5 +34,9 @@ refined and then broken down into backlog items for coding agents.
 - **[DECIDED]** — stated by the project owner; treat as a requirement.
 - **[PROPOSED]** — a recommended default from brainstorming; open to change.
 - **[OPEN]** — undecided; tracked in `07-open-questions.md`.
+- **[DECIDED for now]** — an owner decision that is expected to be
+  revisited after playtesting.
+- **[DECIDED/PROPOSED detail]** — the headline rule is the owner's decision;
+  the detail listed under "Proposed detail" is a suggested default.
 - Requirements carry stable IDs (e.g. `MM-3`) so backlog items can reference
   them.

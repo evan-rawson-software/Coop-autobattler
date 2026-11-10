@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v4.0
+Status: Draft v4.1
 
 ## Direction
 
@@ -82,7 +82,7 @@ language-neutral from the start:
   proof of concept. The Godot simulation must reproduce them exactly, which
   turns "port the simulation" into a checkable task.
 - **TA-50 [PROPOSED]** **A written rules reference** for the simulation
-  (beat order, resolution order, rounding, PRNG algorithm), kept in step
+  (tick order, resolution order, rounding, PRNG algorithm), kept in step
   with the code, so the port is made from a spec and not by reading
   TypeScript.
 - **TA-51 [PROPOSED]** **Formats** for team state, snapshots, and event logs
@@ -168,7 +168,7 @@ Everything from here down describes the Godot game.
   coding agents and CI build and test every feature without a Steam client.
 - **TA-6 [PROPOSED]** **Session** owns a run in progress and is
   **host-authoritative**: the lobby owner's game holds the run state, rolls
-  shops, validates intents (buy, sell, place, give, ready, vote), selects
+  shops, validates every intent (the full list of actions is in CP-23a), selects
   opponents, and runs battles. Other players send intents and receive state
   updates and battle event logs. Solo is a session with one player and no
   networking.
@@ -192,8 +192,15 @@ Everything from here down describes the Godot game.
     - **Major** — anything that old saves or snapshots cannot survive
       (format changes, removed buildings, reworked rules). Wipes saves and
       old ghost data.
-  - The ghost matching key (MM-2) uses the run's `major.minor`, stored in
-    the save and in every snapshot.
+  - Two versions are distinguished wherever it matters:
+    - the **installed version** — the full `major.minor.patch` of the game
+      a player is running;
+    - the **run version** — the `major.minor` that was installed when the
+      run **started**. It is stored in the save and in every snapshot and
+      never changes for that run.
+  - The ghost matching key (MM-2) uses the **run version**. Wherever other
+    specs say a ghost must be on "the same game version", this is what is
+    meant.
   - A check in CI compares combat rules and content against the last
     release, so a change that needs at least a minor bump cannot ship as a
     patch by mistake.
@@ -210,33 +217,49 @@ Everything from here down describes the Godot game.
     data for old versions lives in Steam leaderboards and shared files that
     players' games cannot delete for each other, so removing it is a
     release step carried out by the developers through Steamworks; how to
-    do that in bulk is part of the spike (TA-30).
+    do that in bulk is part of the spike (TA-30). Each player's game also
+    deletes the old ghost files that it uploaded itself, at first launch
+    after a major release; that is always possible and frees the space they
+    take in that player's own Steam storage.
   - Because a wipe ends every run in progress, major releases should be
     rare and announced in advance. Depth records on leaderboards can be
     kept, labelled by version.
 
 ## Co-op session details
 
-- **TA-10 [PROPOSED]** All party members must be running the same game
-  version; the lobby advertises it and mismatched players cannot join.
+- **TA-10 [PROPOSED]** All party members must have the same **installed
+  version**, exactly, including patch level; the lobby advertises it and
+  mismatched players cannot join. (The run version of a resumed run can be
+  older than the installed version; that is expected, TA-8.)
 - **TA-11 [DECIDED/PROPOSED detail]** **Host loss and re-hosting.** Decided:
   the host can leave and the run can be re-hosted from the save (CP-21c).
   Proposed detail: the host already sends every state change to every
   player, so each player's game writes the same auto-save after each action
-  (TA-12). If the host leaves outside a battle, the run pauses and any
-  member re-hosts from their copy; the others rejoin. If the host leaves
-  during a battle, the battle's inputs are already in every player's save,
-  so a remaining player's game finishes it and produces the same result
-  (CB-30). Seamless automatic host migration is a later improvement.
-- **TA-12 [DECIDED/PROPOSED detail]** **Auto-save and save slots.** Decided:
-  auto-save after each action; multiple save slots; one run cannot be in
-  more than one slot; resume later with the same players (CP-22, CP-23).
+  (TA-12). If the host leaves outside a battle, play stops until a member
+  re-hosts from their copy and the others rejoin; nothing can be bought or
+  moved while there is no host. (A non-host leaving does not stop the
+  others from shopping and building, CP-21f.) A battle is simulated in full
+  before playback begins, and its result and event log are sent to every
+  player and saved (CP-23a), so if the host leaves during a battle the
+  others simply finish watching; nobody has to take over the simulation.
+  Seamless automatic host migration outside battles is a later
+  improvement.
+- **TA-12 [DECIDED/PROPOSED detail]** **Auto-save and saved runs.** Decided:
+  auto-save after each action (CP-23); any number of saved runs (CP-23d); a
+  run cannot be saved more than once (CP-22a); resume later with the same
+  players (CP-22).
   Proposed detail:
   - A run has a unique ID and an **action counter** that increases with
-    every saved action. A slot stores one run ID; the game refuses to load
-    two slots with the same run ID and offers no "save as" or copy.
-  - The save holds the full run state including the PRNG state and any
-    outcome already rolled but not yet revealed (CP-23a).
+    every saved action. A player's list of saves holds at most one entry
+    per run ID; the game offers no "save as" or copy and refuses to keep
+    two entries with the same run ID.
+  - The save holds the full run state, including outcomes already rolled
+    but not yet revealed, stored as the outcomes themselves, and the result
+    and event log of any battle already simulated (CP-23a).
+  - Because every player's game holds the save, it contains information
+    that the screens hide, such as teammates' shop offers and the next PvP
+    opponent. Hiding those (CP-19, RS-6a) is a rule about what is shown,
+    not a security boundary.
   - On resume, the players present compare action counters and the highest
     wins, so nobody can re-host from an older copy to undo something.
   - Saves are written locally after each action and synchronized through
@@ -255,10 +278,11 @@ Everything from here down describes the Godot game.
 ## Ghost pool on Steam
 
 The async PvP pool needs: store a snapshot, look up snapshots by
-`(sim version, party size, cycle)`, pick one at random, download it.
+`(run version, party size, cycle)`, pick one at random, download it.
 
 - **TA-15 [PROPOSED]** **One leaderboard per bucket**, named from the match
-  key, e.g. `ghost_<simversion>_p<partysize>_c<cycle>`, created on demand by
+  key, e.g. `ghost_v<major>_<minor>_p<partysize>_c<cycle>`, using the run version
+  (TA-8), created on demand by
   the client. The leaderboard is used as an index, not as a ranking.
 - **TA-16 [PROPOSED]** **Upload** (by the host, at the start of each PvP
   battle): write the snapshot as a file, share it through Steam to obtain a
@@ -276,8 +300,11 @@ The async PvP pool needs: store a snapshot, look up snapshots by
   each host has **at most one snapshot per bucket** — their most recent run
   to reach that cycle replaces the previous one. This bounds the pool
   naturally and stops one prolific player from flooding a bucket.
-- **TA-19 [PROPOSED]** Snapshots are compact (a few kilobytes at most): building
-  IDs, tiers, positions, Core stats, modifiers. Ghost lookup and download
+- **TA-19 [PROPOSED]** The snapshot needed to fight a ghost is kept small
+  (target: tens of kilobytes at most for a four-player board): the map,
+  Core position, buildings, conduits, modifiers, and the run's ID and seed
+  (MM-1). The run's action log, which can be much larger, is a separate
+  file fetched only when a snapshot is being verified by replay (MM-1d). Ghost lookup and download
   happen during the preceding shop step so the PvP battle starts without a wait; a
   timeout falls back to the boss.
 - **TA-20 [PROPOSED]** The ghost store is one of the Platform interfaces
@@ -303,8 +330,11 @@ is deliberate.
   that cycle). Invalid snapshots are skipped and another is drawn.
 - **TA-22a [PROPOSED]** **Mitigation — sign and encrypt saves and
   snapshots.** Save files and ghost snapshots are encrypted and carry a
-  signature bound to the run ID and the owner's Steam ID; a file that fails
-  the check is rejected. The key necessarily ships inside the game, so this
+  signature. A save's signature is bound to the run ID and the Steam IDs of
+  the whole party, so any member's copy is valid for that party and for
+  nobody else. A snapshot's signature is bound to the run ID and the Steam
+  ID of the player who uploaded it. A file that fails the check is
+  rejected. The key necessarily ships inside the game, so this
   is a **deterrent, not a guarantee**: it stops editing with a text or hex
   editor and copying files between accounts, but not someone willing to
   reverse-engineer the game.
@@ -332,9 +362,9 @@ is deliberate.
 
 - **TA-25 [PROPOSED]** Local save files synchronized by Steam Cloud:
   - records (depth reached, run history)
-  - run saves, one per slot (TA-12)
+  - saved runs (TA-12)
   - settings
-- **TA-26 [PROPOSED]** Save files are versioned and carry the sim version.
+- **TA-26 [PROPOSED]** Save files carry the run version (TA-8) and a save-format version.
 
 ## Content
 
@@ -362,12 +392,12 @@ is deliberate.
 
 - **TA-28 [OPEN]** GDScript or C#. Recommended: **typed GDScript**
   throughout — simplest path with GodotSteam, one language for coding agents,
-  no .NET export requirements. The simulation is discrete and small (beats,
-  columns, a handful of effects), so performance should be adequate; confirm
-  with the M0 performance budget (CB-36) and revisit only if the balance
+  no .NET export requirements. The simulation is discrete (fixed ticks on a grid) but includes
+  pathfinding for many units, so performance is not a given; measure it
+  against the performance budget (CB-36) and revisit only if the balance
   harness is too slow. See Q6.
 - **TA-29 [PROPOSED]** Core uses integer math and an explicit seeded PRNG so
-  battles are reproducible from `(teams, seed, sim version)` for tests,
+  battles are reproducible from `(teams, seed, installed version)` for tests,
   replays, and bug reports. Golden test vectors (stored inputs → expected
   result hash) guard against accidental behaviour changes.
 
@@ -432,9 +462,15 @@ is deliberate.
     never in the repository.
 - **TA-36 [PROPOSED]** Which Steamworks interface can delete leaderboards and
   their attached files in bulk, and with what credentials, is unconfirmed
-  and is part of the spike (TA-30). If bulk deletion is not possible, the
-  fallback is to leave old data in place and unreachable: no game version
-  ever reads a bucket from an older major version.
+  and is part of the spike (TA-30). So is whether Steam charges for, or
+  limits, this storage; the working assumption, to be confirmed, is that
+  leaderboards and players' shared files carry no fee but are subject to
+  per-game limits and to each player's own storage quota.
+- **TA-37 [OPEN]** If bulk deletion by the developers turns out not to be
+  possible, old ghost data cannot be fully deleted as TA-8 requires. What
+  would remain is leaderboard entries that no game version reads; the files
+  themselves are removed by each player's own game (TA-9). Whether that is
+  acceptable is the owner's call once the spike reports (Q9).
 
 ## Backlog
 
@@ -446,40 +482,40 @@ is deliberate.
 
 **Phase 1 — Web proof of concept (offline, solo)**
 
-1. **W0 — Foundations:** repo layout, content and format schemas, test
-   runner, CI, static-site deploy for playtest builds.
-2. **W1 — Sim core:** map generation; deterministic headless battles with
-   pathfinding, boards of 1–4 plots, factory versus factory and factory
-   versus threat; performance budget (CB-36);
-   command-line runner; golden vectors; rules reference started.
-3. **W2 — Playable loop:** PvE battle (3 difficulties) + event + shop +
-   lives + exponential scaling; Core placement; factory editing UI with flow and enemy-path preview; battle
-   playback.
-4. **W3 — PvP step:** local ghost pool, matching, snapshot validation, boss
-   fallback; scripted bot; bundled bot ghosts.
-5. **W3b — Refining and points of interest** (TA-41a).
-5. **W4 — Tune:** balance harness, content iteration, more event types,
-   playtests. Ends at the exit criteria (TA-53).
+- **W0 — Foundations:** repo layout, content and format schemas, test
+  runner, CI, static-site deploy for playtest builds.
+- **W1 — Sim core:** map generation; deterministic headless battles with
+  pathfinding, boards of 1–4 plots, factory versus factory and factory
+  versus threat; performance budget (CB-36);
+  command-line runner; golden vectors; rules reference started.
+- **W2 — Playable loop:** PvE battle (3 difficulties) + event + shop +
+  lives + exponential scaling; Core placement; factory editing UI with flow and enemy-path preview; battle
+  playback.
+- **W3 — PvP step:** local ghost pool, matching, snapshot validation, boss
+  fallback; scripted bot; bundled bot ghosts.
+- **W3b — Refining and points of interest** (TA-41a).
+- **W4 — Tune:** balance harness, content iteration, more event types,
+  playtests. Ends at the exit criteria (TA-53).
 
 **Phase 2 — Godot port**
 
-6. **G0 — Foundations:** Godot project layout, layers, headless tests in CI,
-   Platform interface with the Local implementation.
-7. **G1 — Core port:** simulation and run rules in Godot, passing all golden
-   vectors; loads the same content files.
-8. **G2 — Solo game:** the full loop with real UI and presentation, at
-   parity with the proof of concept.
+- **G0 — Foundations:** Godot project layout, layers, headless tests in CI,
+  Platform interface with the Local implementation.
+- **G1 — Core port:** simulation and run rules in Godot, passing all golden
+  vectors; loads the same content files.
+- **G2 — Solo game:** the full loop with real UI and presentation, at
+  parity with the proof of concept.
 
 **Phase 3 — Multiplayer and Steam**
 
-9. **S0 — Steamworks spike** (TA-30). Can run any time; do it early.
-10. **S1 — Co-op (local):** host-authoritative session, 2–4 players over
-    loopback/LAN, simultaneous editing of the shared board, giving, votes,
-    disconnect and re-host.
-11. **S2 — Steam:** lobbies, relay networking, leaderboard ghost store,
-    Cloud saves, rich presence.
-12. **S2b — Anti-cheat server** (TA-24): required before final release.
-13. **S2c — Release pipeline** (TA-33): automated deployment including
-    version-based deletion of old ghost data.
-14. **S3 — Release work:** content expansion,
-    achievements, Steam Deck/controller, playtest branch.
+- **S0 — Steamworks spike** (TA-30). Can run any time; do it early.
+- **S1 — Co-op (local):** host-authoritative session, 2–4 players over
+  loopback/LAN, simultaneous editing of the shared board, giving, votes,
+  disconnect and re-host.
+- **S2 — Steam:** lobbies, relay networking, leaderboard ghost store,
+  Cloud saves, rich presence.
+- **S2b — Anti-cheat server** (TA-24): required before final release.
+- **S2c — Release pipeline** (TA-33): automated deployment including
+  version-based deletion of old ghost data.
+- **S3 — Release work:** content expansion,
+  achievements, Steam Deck/controller, playtest branch.

@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v3.7
+Status: Draft v4.1
 
 ## Party basics
 
@@ -25,8 +25,8 @@ Status: Draft v3.7
   Everything therefore scales linearly from 1 to 4 players.
 - **CP-6 [PROPOSED]** The party's **team state** is that one board: its map
   (terrain, resource nodes, natural features), the Core position, buildings
-  with tiers, positions and orientation, and run modifiers. It is what combat consumes and what a snapshot stores
-  (CB-32, MM-1).
+  with tiers, positions and orientation, every conduit, and run modifiers.
+  It is what combat consumes and what a snapshot stores (CB-32, MM-1).
 - **CP-7 [PROPOSED]** Opponents are scaled to party size: ghosts match on
   party size and so have the same area (MM-2); PvE threats are scaled by the
   number of plots (SC-1).
@@ -64,8 +64,7 @@ Status: Draft v3.7
 - **CP-15 [PROPOSED]** Lives are a single shared pool (RS-7a). The party wins
   and loses battles together.
 - **CP-16 [PROPOSED]** Party-wide choices (PvE difficulty, which event to
-  take, party picks) use a quick vote; ties broken by the party leader or
-  randomly.
+  take, party picks) use a vote; a tie is settled by the host (CP-3a).
 
 ## Building together
 
@@ -100,8 +99,8 @@ Status: Draft v3.7
   stop the battle: it continues as long as **at least one player remains**
   in the game.
 - **CP-21a [DECIDED]** **After the battle, the disconnected player must
-  return**; otherwise the run cannot continue. Every step outside a battle
-  needs the whole party present, and every player must ready up (CP-17).
+  return**; otherwise the run cannot continue. The party cannot move past
+  the shop without them, because every player must ready up (CP-17).
 - **CP-21b [DECIDED]** **Reconnecting is supported.** A player who drops can
   rejoin the run in progress and carries on from the current state.
 - **CP-21c [DECIDED]** **The host can leave**, and the run can be **re-hosted
@@ -109,42 +108,66 @@ Status: Draft v3.7
 - **CP-21d [DECIDED]** **If a player never returns, the party must decide to
   save and quit, or to abandon the run.** The run cannot continue without
   them. Abandoning records the run at its current depth.
-- **CP-21f [PROPOSED]** A disconnected player's buildings stay on the board
-  and keep working. While the party waits between battles, the remaining
-  players can keep shopping and building but cannot advance.
+- **CP-21f [DECIDED]** **While waiting, the remaining players can shop and
+  can move buildings, including the disconnected player's buildings, but
+  cannot continue past the shop.**
+- **CP-21g [PROPOSED]** Details of waiting:
+  - The disconnected player's buildings stay on the board and keep working.
+    Their gold, stash, and shop offers are untouched and cannot be given to
+    or taken from while they are away.
+  - The event step still needs everyone's vote, so it also waits.
+  - Saving and quitting needs no agreement: any player can leave, and the
+    run is already saved (CP-23). Abandoning ends the run for everyone, so
+    it needs every connected player to agree.
+  - In battle, speed changes need agreement only from connected players.
 - **CP-21e [PROPOSED]** If every player leaves during a battle, the battle
   is not replayed on return: its opponent and seed were fixed and saved when
-  it started, so the same result is shown when the party comes back (CP-23).
+  it started, so the same result is shown when the party comes back (CP-23a).
 
 ### Saving and resuming
 
 - **CP-22 [DECIDED]** A run can be **saved to continue later with the same
   players**.
-- **CP-22a [DECIDED]** There are **multiple save slots**, and **a single run
-  cannot be saved to more than one slot**. A slot holds one run; a run lives
-  in exactly one slot and cannot be copied.
+- **CP-22a [DECIDED]** A player can have **many saved runs**, and **a single
+  run cannot be saved more than once**: each run appears exactly once in a
+  player's list of saves and cannot be duplicated or branched. (Every member
+  of the party has the run in their own list; those are the same run, not
+  copies that can diverge — see CP-23c.)
 - **CP-23 [DECIDED]** The game **auto-saves after each action**, so that
   saving and loading cannot be abused to undo a bad purchase, re-roll a
   shop, or replay a lost battle. There is no manual save point to go back
-  to: loading a slot always resumes the run at its latest state.
+  to: loading a save always resumes the run at its latest state.
 - **CP-23a [PROPOSED]** What auto-save has to cover for that to hold:
-  - Every action that changes the run — buy, sell, re-roll, place, move,
-    vote, ready — is saved before its result is shown.
-  - Random outcomes are fixed in the save before they are revealed: shop
-    offers, re-roll results, event offers, and each battle's opponent and
-    seed. Leaving and coming back never produces a different roll.
+  - Every accepted action that changes the run is saved before its result
+    is shown. That means every kind of action: buying, selling, re-rolling,
+    placing, moving, rotating, drawing or erasing conduits, giving, voting,
+    readying, and un-readying.
+  - Random outcomes are fixed in the save before they are revealed, **as
+    the outcomes themselves, not as the inputs that would produce them**:
+    the actual shop offers, re-roll results, and event offers, and for a
+    battle its opponent, its seed, and — once it has been simulated — its
+    result and event log.
+  - Leaving and coming back therefore never produces a different roll or a
+    different battle result, **even if the game was updated in between**
+    [DECIDED]. An update changes what happens next, never what has already
+    been rolled or fought.
 - **CP-23b [PROPOSED]** A saved run can only be resumed when the **same
   players** are present (checked by Steam ID). It cannot be continued with
   fewer players, different players, or solo, which also keeps party size
-  fixed for ghost matching (CP-2).
-- **CP-23c [PROPOSED]** Every player holds a copy of the run's save, kept up
-  to date as actions happen, so any of them can re-host. When a run is
-  resumed, the most recent copy among the players present is used, so an
-  older copy cannot be used to roll the run back (TA-11, TA-12).
-- **CP-23d [DECIDED]** There are **5 save slots** per player. A run in which
-  the player took part occupies one of that player's slots until it ends or
-  is abandoned.
-- **CP-23e [DECIDED]** Saves survive minor updates and keep playing against
+  fixed for ghost matching (CP-2). Only one of them needs to still hold the
+  save.
+- **CP-23c [PROPOSED]** Every player's game keeps the run's save up to date
+  as actions happen, so any of them can re-host. When a run is resumed, the
+  most recent version among the players present is used, so an older one
+  cannot be used to roll the run back (TA-11, TA-12).
+- **CP-23d [DECIDED]** **The number of saved runs is not limited.** (This
+  replaces the earlier five-slot limit.)
+- **CP-23f [PROPOSED]** A player can remove a run from their own list at any
+  time. That does not end the run for the others, who can still resume it if
+  the whole party gathers again; it only clears it from that player's list.
+  This is what stops a run with a teammate who never returns from sitting in
+  someone's list forever.
+- **CP-23e [DECIDED]** Saves survive minor updates (as defined in TA-8) and keep playing against
   ghosts from the version they were played on. The game does **not** keep
   old rules or numbers: an older save plays under the current ones. **When
   players load a save from an older version, they are shown a prompt
@@ -166,4 +189,4 @@ Status: Draft v3.7
   and shops (CP-10) are the main counterweight. Cannot be tested until co-op
   exists.
 - **Editing conflicts and clutter** with four people rearranging one
-  machine. CP-18 and CP-19 are the mitigations.
+  machine. CP-18 and CP-19a are the mitigations.
