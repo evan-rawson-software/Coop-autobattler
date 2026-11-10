@@ -10,7 +10,7 @@ Status: Draft v1.1
 | PvP battle — ghost | Snapshot of another real party's factory | Step 3 of each cycle | Reward on win; lose 1 life on defeat |
 | PvP battle — boss | Generated boss threat | Step 3 of each cycle, when no ghost matches | Same as ghost |
 
-The loop is defined in `01-run-building.md` RS-1.
+The loop is defined in `01-run-structure.md` RS-1.
 
 ## Snapshots
 
