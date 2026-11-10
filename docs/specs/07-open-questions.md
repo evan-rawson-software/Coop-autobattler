@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v2.3
+Status: Draft v2.4
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -37,9 +37,10 @@ everything else movable. Open:
   attached conduits up to the next building (CB-9a).
 - Decided: conduit networks cannot loop (CB-9c).
 - Decided: three resources, named Ore, Power, and Flux for now, renameable
-  in one configuration file (CB-5a, TA-27a). Open: whether a conduit
-  carries a single resource type (proposed, CB-5b), and whether there are
-  refining chains (proposed: not at first).
+  in one configuration file (CB-5a, TA-27a). A conduit carries one
+  resource type; some rarer buildings need more than one type (CB-5a,
+  CB-5b). Open: whether there are refining chains (proposed: not at
+  first).
 - Decided: PvE enemies are scripted waves plus a stronghold (CB-29).
 - Decided: the board never expands; it starts fairly large and its size
   is an endgame constraint (CB-25).

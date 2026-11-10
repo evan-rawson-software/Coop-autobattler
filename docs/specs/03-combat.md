@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v2.3
+Status: Draft v2.4
 
 ## Direction
 
@@ -71,15 +71,16 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   | **Power** | Common | Running things: turrets firing, production speed |
   | **Flux** | Rare | Economy buildings, advanced units, upgrades |
 
-  Each building lists the resources it needs — one for simple buildings,
-  two for stronger ones (e.g. a heavy-unit foundry needs Ore and Power; an
-  overclocker needs Flux). There are no intermediate products to start
-  with: resources go straight from sources to the buildings that consume
-  them. Refining chains are a possible later layer.
-- **CB-5b** **A conduit carries one resource type**, set by what feeds it.
-  Mergers join conduits of the same type only. A building that needs two
-  resources needs two conduits to reach it, which — with no crossing
-  (CB-3g) — is where layout skill is tested hardest.
+  **Most buildings take a single resource type. Some rarer buildings
+  require inputs of more than one type** [DECIDED] (e.g. a heavy-unit
+  foundry needing Ore and Power). There are no intermediate products to
+  start with: resources go straight from sources to the buildings that
+  consume them. Refining chains are a possible later layer.
+- **CB-5b [DECIDED]** **A conduit carries one resource type**, set by what
+  feeds it. Mergers join conduits of the same type only. A multi-input
+  building therefore needs a separate conduit for each resource to reach
+  it, which — with no crossing (CB-3g) — is where layout skill is tested
+  hardest, and part of what makes those rarer buildings a commitment.
 - **CB-5c** Where the rare nodes are, and how far they sit from good
   defensive ground and from the Core, is the main way maps differ in
   character.
