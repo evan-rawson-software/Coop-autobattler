@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v1.7
+Status: Draft v1.8
 
 ## Direction
 
@@ -198,7 +198,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-28** **Ghosts** are other parties' boards — their map, their factory,
   their Core position — and run in the same simulation, joined to the
   party's board (CB-8).
-- **CB-29** **PvE enemies and bosses are scripted threats, not factories**:
+- **CB-29 [DECIDED]** **PvE enemies and bosses are scripted threats, not
+  factories**:
   a **wave schedule** (which units arrive at the party's front edge, and
   when) plus a **stronghold** for the party's units to attack (a Core with
   health and pre-placed defenses on a small authored map). Both are scaled

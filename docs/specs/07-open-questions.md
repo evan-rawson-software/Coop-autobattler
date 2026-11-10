@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v1.7
+Status: Draft v1.8
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -34,7 +34,7 @@ everything else movable. Open:
 - **Loops.** May a conduit network feed back into itself?
 - **Resources.** Charge only *(recommended to start)*, or several node types
   with recipes?
-- **PvE as waves plus a stronghold** rather than a factory (CB-29): confirm.
+- Decided: PvE enemies are scripted waves plus a stronghold (CB-29).
 - Decided: the board never expands; it starts fairly large and its size
   is an endgame constraint (CB-25).
 - Decided: no long-range buildings; defenses only target enemy units on
