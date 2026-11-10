@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mapgen.schema.json",
+  "title": "Map generation parameters",
+  "description": "Parameters for generateMap (W1-1). All lengths are in cells. Every plot gets the same counts.",
+  "type": "object",
+  "required": [
+    "plotWidth",
+    "plotDepth",
+    "maxPartySize",
+    "nodesPerPlot",
+    "lakes",
+    "cliffs",
+    "minBuildablePercent",
+    "backMargin",
+    "frontMargin",
+    "sideMargin",
+    "coreFrontClearance",
+    "placementTries",
+    "maxAttempts"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "plotWidth": { "type": "integer", "minimum": 1 },
+    "plotDepth": { "type": "integer", "minimum": 1 },
+    "maxPartySize": { "type": "integer", "minimum": 1 },
+    "nodesPerPlot": {
+      "type": "object",
+      "description": "Resource nodes per plot for each base resource of that rarity.",
+      "required": ["common", "rare"],
+      "additionalProperties": false,
+      "properties": {
+        "common": { "type": "integer", "minimum": 0 },
+        "rare": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "lakes": {
+      "type": "object",
+      "required": ["feature", "countMin", "countMax", "sizeMin", "sizeMax"],
+      "additionalProperties": false,
+      "properties": {
+        "feature": { "type": "string", "pattern": "^ter_[a-z0-9_]+$" },
+        "countMin": { "type": "integer", "minimum": 0 },
+        "countMax": { "type": "integer", "minimum": 0 },
+        "sizeMin": { "type": "integer", "minimum": 1 },
+        "sizeMax": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "cliffs": {
+      "type": "object",
+      "required": ["feature", "countMin", "countMax", "lengthMin", "lengthMax"],
+      "additionalProperties": false,
+      "properties": {
+        "feature": { "type": "string", "pattern": "^ter_[a-z0-9_]+$" },
+        "countMin": { "type": "integer", "minimum": 0 },
+        "countMax": { "type": "integer", "minimum": 0 },
+        "lengthMin": { "type": "integer", "minimum": 2 },
+        "lengthMax": { "type": "integer", "minimum": 2 }
+      }
+    },
+    "minBuildablePercent": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "backMargin": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Rows at the back of the board that stay free of features."
+    },
+    "frontMargin": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Rows at the front of the board that stay free of features."
+    },
+    "sideMargin": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Columns at the left and right board edges that stay free of features."
+    },
+    "coreFrontClearance": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "A Core footprint must end at least this many rows back from the board's height."
+    },
+    "placementTries": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Tries per lake or cliff before the attempt is abandoned."
+    },
+    "maxAttempts": { "type": "integer", "minimum": 1 }
+  }
+}

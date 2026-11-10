@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { goldenKinds, type SimulationFn } from '@game/core';
+import type { SimulationFn } from '@game/core';
+import { goldenKinds } from './kinds.js';
 import {
   compareVector,
   diffJson,

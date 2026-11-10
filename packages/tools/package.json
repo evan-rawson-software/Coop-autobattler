@@ -9,6 +9,7 @@
     "validate:content": "tsx src/validate-content.ts"
   },
   "dependencies": {
+    "@game/content": "workspace:*",
     "@game/core": "workspace:*",
     "ajv": "8.20.0"
   },

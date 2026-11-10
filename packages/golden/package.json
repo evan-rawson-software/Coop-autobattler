@@ -9,6 +9,7 @@
     "update": "tsx src/update.ts"
   },
   "dependencies": {
+    "@game/content": "workspace:*",
     "@game/core": "workspace:*"
   },
   "devDependencies": {

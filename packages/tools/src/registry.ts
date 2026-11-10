@@ -1,10 +1,12 @@
 import {
   loadBuildings,
+  loadMapgen,
   loadPresentation,
   loadResources,
   loadTerrain,
   loadUnits,
   type BuildingConfig,
+  type MapgenConfig,
   type PresentationConfig,
   type ResourceConfig,
   type TerrainConfig,
@@ -17,6 +19,7 @@ export interface LoadedContent {
   terrain?: TerrainConfig;
   units?: UnitConfig;
   buildings?: BuildingConfig;
+  mapgen?: MapgenConfig;
   presentation?: PresentationConfig;
 }
 
@@ -90,6 +93,14 @@ export const contentRegistry: readonly ContentEntry[] = [
           units: need(loaded, 'units'),
         }),
       ),
+  },
+  {
+    key: 'mapgen',
+    contentFile: 'mapgen.json',
+    schemaFile: 'mapgen.schema.json',
+    needs: ['terrain'],
+    load: (data, loaded) =>
+      wrap(loadMapgen(data, { terrain: need(loaded, 'terrain') })),
   },
   {
     key: 'presentation',

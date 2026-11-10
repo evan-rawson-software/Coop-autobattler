@@ -93,3 +93,38 @@ export {
 } from './hash.js';
 export { placeholderDuel, type SimulationOutput } from './placeholder-duel.js';
 export { goldenKinds, type SimulationFn } from './golden-kinds.js';
+export { loadMapgen, loadMapgenOrThrow } from './mapgen.js';
+export type {
+  MapgenCliffs,
+  MapgenConfig,
+  MapgenLakes,
+  MapgenLoadContext,
+  MapgenLoadResult,
+} from './mapgen.js';
+export {
+  compareCells,
+  coreFootprint,
+  listLegalCorePositions,
+  loadMap,
+  loadMapOrThrow,
+  queryMap,
+  renderMapAscii,
+  validateCorePosition,
+} from './map.js';
+export type {
+  Cell,
+  CorePositionProblem,
+  CorePositionResult,
+  FeatureCell,
+  GameMap,
+  MapContent,
+  MapLoadResult,
+  MapQuery,
+  ResourceNode,
+} from './map.js';
+export {
+  generateMap,
+  generateMapWithStats,
+  makeMapGenKind,
+} from './generate-map.js';
+export type { GeneratedMap } from './generate-map.js';

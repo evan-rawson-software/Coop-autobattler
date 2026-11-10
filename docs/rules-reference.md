@@ -171,13 +171,176 @@ Kinds currently defined: `placeholder-duel` (pipeline check only, not a rule),
 `prng-u32` (first `count` outputs for `seed`), `prng-sample` (`count` calls of
 `nextInt(bound)`, then `shuffle` of `0..shuffleLength-1`, then `pick` of the
 same list, and the final state), `prng-child` (the parent state and the first
-`count` outputs of `child(label)`).
+`count` outputs of `child(label)`), `map-gen` (see Map generation).
 
 In the reference implementation the registry is `goldenKinds` in
-`packages/core/src/golden-kinds.ts`; a new kind is one added entry. `pnpm test`
+`packages/core/src/golden-kinds.ts`; a new kind is one added entry. Kinds that
+need the real content files (`map-gen`) cannot be built in `core`, which reads
+no files: `core` exports a factory (`makeMapGenKind(content, config)`) and
+`packages/golden/src/kinds.ts` builds the full registry from `@game/content`
+and the `core` kinds. A port needs its own way to hand content to such kinds.
+`pnpm test`
 runs all vectors and never rewrites them. `pnpm golden:update` regenerates the
 `expected` parts and must be run deliberately; review the diff of `golden/`
 like any other change.
+
+## Map generation
+
+Implemented by `generateMap` in `packages/core/src/generate-map.ts`. Parameters
+come from `content/mapgen.json` (loader: `packages/core/src/mapgen.ts`), the
+terrain flags from `content/terrain.json`, and resources and the Core footprint
+from the resource and building content. Nothing is hard-coded in the generator.
+
+### Coordinates
+
+The board is a grid of cells `(x, y)`, integers only. `x` runs along the front
+edge, from `0` to `width - 1`. `y` is depth: `y = 0` is the **back** row and
+`y = height - 1` is the **front** row, the one facing the enemy; enemy units
+enter across the front edge, into cells with `y = height - 1`. Movement and
+adjacency are 4-directional (no diagonals). A cell is **buildable** if it has no
+feature with `blocksBuilding`; a resource node cell is buildable. A cell is
+**walkable** if it is in bounds and has no feature with `blocksMovement`.
+Cells are ordered by `(y, x)`: smaller `y` first, then smaller `x`.
+
+The board has one **plot** per player side by side: `width = partySize *
+plotWidth`, `height = plotDepth`. Plot `p` (0-based, left to right) is the
+columns `p * plotWidth` to `(p + 1) * plotWidth - 1`; `plotOf(x) =
+floor(x / plotWidth)`. `partySize` is an integer from 1 to `maxPartySize`.
+
+### Map format (plain JSON, `schemas/map.schema.json`)
+
+`{ width, height, partySize, plotWidth, features, nodes }`. `features` lists
+every blocked cell as `{ x, y, feature }` (`feature` is a terrain ID such as the
+lake or cliff ID), sorted by `(y, x)`; a cell not listed is open ground. `nodes`
+lists every resource node as `{ x, y, resource }`, sorted by `(y, x)`. Integers
+and strings only. Key order for the canonical hash is irrelevant (the hash
+sorts keys). A map's hash in the golden vectors is the FNV-1a 32 hash of its
+canonical JSON, as for any value. The loader `loadMap` re-checks: integers,
+`width = partySize * plotWidth`, every cell in bounds, no two entries on one
+cell within a list, lists sorted by `(y, x)`, known feature and resource IDs,
+no node on a feature cell.
+
+### Parameters (`content/mapgen.json`)
+
+`plotWidth`, `plotDepth`, `maxPartySize`; `nodesPerPlot.common` and
+`nodesPerPlot.rare`; `lakes` (`feature`, `countMin`, `countMax`, `sizeMin`,
+`sizeMax`); `cliffs` (`feature`, `countMin`, `countMax`, `lengthMin`,
+`lengthMax`); `minBuildablePercent`; `backMargin`, `frontMargin` (at least 1),
+`sideMargin` (at least 1); `coreFrontClearance`; `placementTries`;
+`maxAttempts`. Starting values: 24, 16, 4; 3 and 1; lakes 1 to 2 of 6 to 14
+cells; cliffs 1 to 2 of 4 to 8 cells; 80; 2, 1, 1; 8; 30; 64.
+
+### Random draws
+
+`between(rng, lo, hi)` means `lo + rng.nextInt(hi - lo + 1)`. It always makes
+exactly one `nextInt` call, even when `lo = hi`.
+
+Streams, using `child` (which does not advance its parent):
+
+- `root = Rng.fromSeed(seed)`. Nothing is ever drawn from `root`.
+- Attempt `a` (counting from 0): `A = root.child(a)` with `a` as an integer
+  label.
+- Plot `p`: `P = A.child(p)` with `p` as an integer label.
+- Per plot: `lakesRng = P.child("lakes")`, `cliffsRng = P.child("cliffs")`,
+  `nodesRng = P.child("nodes")` (string labels). Nothing is drawn from `A` or
+  `P` themselves.
+
+Each attempt generates all plots in order `p = 0 .. partySize - 1`; for each
+plot it runs lakes, then cliffs, then nodes. One shared set of feature cells
+and one shared set of nodes are kept across plots and across the steps.
+
+### Attempt steps
+
+Let `x0 = p * plotWidth`. The **feature region** of plot `p` is
+`xLo = max(x0, sideMargin)`, `xHi = min(x0 + plotWidth - 1, width - 1 -
+sideMargin)`, `yLo = backMargin`, `yHi = height - 1 - frontMargin` (inclusive).
+Features only ever occupy cells in their own plot's feature region, so none
+touch the left or right board edge, the front row, or the back `backMargin`
+rows.
+
+The four directions, in this fixed order, as `(dx, dy)`: `(0, -1)`, `(1, 0)`,
+`(0, 1)`, `(-1, 0)`.
+
+1. **Lakes** (`lakesRng`). `count = between(countMin, countMax)`. For each lake,
+   make up to `placementTries` tries; each try draws, in this order,
+   `size = between(sizeMin, sizeMax)`, `sx = between(xLo, xHi)`,
+   `sy = between(yLo, yHi)`. If `(sx, sy)` already has a feature, the try fails
+   (the draws stay consumed). Otherwise grow: `cells = [(sx, sy)]`; while
+   `len(cells) < size`, build the candidate list by going through `cells` in
+   order and, for each, the four directions in order, adding the neighbour if it
+   is inside the feature region, has no feature, is not in this lake, and is not
+   already a candidate; if the list is empty the try fails; otherwise
+   `cells.append(candidates[nextInt(len(candidates))])`. A successful try marks
+   all `cells` with the lake feature and ends this lake. If all tries fail, the
+   attempt fails.
+2. **Cliffs** (`cliffsRng`). `count = between(countMin, countMax)`. For each
+   cliff, up to `placementTries` tries; each try draws, in this order, all of:
+   `length = between(lengthMin, lengthMax)`, `bend = nextInt(2)`,
+   `d1 = nextInt(4)`, `sx = between(xLo, xHi)`, `sy = between(yLo, yHi)`,
+   `firstLen = 1 + nextInt(length - 1)`, `perp = nextInt(2)`. (All are drawn
+   even if unused.) `dir1` is direction `d1`; `dir2` is direction
+   `(d1 + 1) mod 4` if `perp = 0`, else `(d1 + 3) mod 4`. If `bend = 0` the cells
+   are `(sx, sy) + i * dir1` for `i = 0 .. length - 1`. If `bend = 1` they are
+   `(sx, sy) + i * dir1` for `i = 0 .. firstLen - 1`, then, with `L` the last of
+   those, `L + j * dir2` for `j = 1 .. length - firstLen`. The try fails if any
+   cell is outside the feature region or already has a feature; otherwise all
+   cells get the cliff feature. If all tries fail, the attempt fails.
+3. **Nodes** (`nodesRng`). Slots are built by going through the base resources
+   in resource-list order (`listBase`); each contributes `nodesPerPlot.rare`
+   slots if its rarity is `rare`, else `nodesPerPlot.common`. For each slot in
+   order, the candidates are all cells of plot `p` (`x` from `x0` to
+   `x0 + plotWidth - 1`, `y` from 0 to `height - 1`), listed by `(y, x)`, that
+   have no feature and where neither the cell nor any of its four neighbours
+   (on the whole board, so including the previous plot) holds a node. If there
+   are none the attempt fails. Otherwise the node goes on
+   `candidates[nextInt(len(candidates))]`.
+
+After all plots: sort `features` and `nodes` by `(y, x)`, then check the
+fairness constraints; the attempt fails on the first violation (the order does
+not matter, as any failure moves to the next attempt):
+
+- per plot, `buildableCells * 100 >= minBuildablePercent * plotWidth * height`;
+- every walkable cell is reachable from the front row (flood fill with 4-way
+  moves from all walkable front-row cells) - the front row itself is always
+  walkable because features keep off it;
+- every plot has at least one legal Core position whose footprint lies within
+  that plot's columns.
+
+**Retries.** Attempt `a + 1` is tried after attempt `a` fails, up to
+`maxAttempts`; the first accepted attempt is the result and its 1-based number is
+the `attempts` value recorded in the golden vectors. If all fail, generation
+throws an error.
+
+### Core positions
+
+The Core is the building of kind `core`; its footprint `(w, h)` comes from the
+building content. A position `(x, y)` is the footprint's lowest-x, lowest-y cell
+and the footprint covers `x .. x + w - 1`, `y .. y + h - 1` (no rotation is
+considered). `validateCorePosition` returns the first of these that applies:
+
+1. `out_of_bounds` if `x < 0`, `y < 0`, `x + w > width` or `y + h > height`;
+2. `blocked` if any footprint cell is not buildable;
+3. `on_node` if any footprint cell holds a resource node;
+4. `too_far_forward` if `y + h > height - coreFrontClearance` (the starting
+   value 8 puts the whole footprint in the back half of a 16-row board).
+
+Otherwise it is ok. `listLegalCorePositions` returns every ok position, sorted
+by `(y, x)`. A footprint spanning two plots is not rejected here (placement of
+the Core is not part of generation).
+
+### ASCII rendering
+
+`renderMapAscii` prints rows from `y = height - 1` (front, so the enemy side is
+at the top) down to `y = 0`, one character per cell: `.` open, `~` lake, `#`
+cliff, `?` any other feature, and for a node the letter at the resource's
+position in the resource list (`a` for the first, `b`, `c`, ...). The last line
+is a legend.
+
+### Golden kind `map-gen`
+
+Input `{ "seed": u32, "partySize": 1..4 }`, generated with the repository's real
+content and `content/mapgen.json`. Result `{ "map": <map>, "hash": <8 hex
+digits, hash of the map>, "attempts": <number> }`. Vectors: `golden/map-gen.json`.
 
 ## Tick order
 

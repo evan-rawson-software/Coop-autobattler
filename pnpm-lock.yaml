@@ -44,6 +44,9 @@ importers:
 
   packages/golden:
     dependencies:
+      '@game/content':
+        specifier: workspace:*
+        version: link:../content
       '@game/core':
         specifier: workspace:*
         version: link:../core
@@ -79,6 +82,9 @@ importers:
 
   packages/tools:
     dependencies:
+      '@game/content':
+        specifier: workspace:*
+        version: link:../content
       '@game/core':
         specifier: workspace:*
         version: link:../core

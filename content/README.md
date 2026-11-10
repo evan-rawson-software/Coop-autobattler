@@ -13,6 +13,7 @@ Filled by later issues.
 | `terrain.json`         | Natural-feature rules (`ter_*` IDs)                        | `schemas/terrain.schema.json`      |
 | `units.json`           | Unit numbers (`unit_*` IDs), integers only                 | `schemas/units.schema.json`        |
 | `buildings.json`       | Building rules (`bld_*` IDs): kind, footprint, tiers, sides | `schemas/buildings.schema.json`    |
+| `mapgen.json`          | Map generation parameters (board size, nodes, lakes, cliffs) | `schemas/mapgen.schema.json`       |
 | `presentation.en.json` | English names and descriptions for buildings, units, terrain | `schemas/presentation.schema.json` |
 
 Rules files hold no display text; the presentation file holds no rules and
