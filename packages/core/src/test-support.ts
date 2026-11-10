@@ -61,20 +61,24 @@ export type Pairs = [number, number][];
 
 export class Lab {
   state: TeamState;
-  constructor(map: GameMap) {
+  /** `with` lets a test build on a variant of the content. */
+  constructor(
+    map: GameMap,
+    private readonly with_: typeof content = content,
+  ) {
     this.state = createTeamState(map);
   }
   put(def: string, x: number, y: number, rotation = 0, tier = 1): number {
-    const s = addToStash(this.state, content, { def, tier, owner: 0 });
+    const s = addToStash(this.state, this.with_, { def, tier, owner: 0 });
     if (!s.ok) throw new Error(s.reason);
-    const p = placeFromStash(s.state, content, { id: s.id, x, y, rotation });
+    const p = placeFromStash(s.state, this.with_, { id: s.id, x, y, rotation });
     if (!p.ok) throw new Error(`${def}: ${p.reason}`);
     this.state = p.state;
     return s.id;
   }
   /** Place the Core with its lowest-x, lowest-y cell at `(x, y)`. */
   core(x: number, y: number): void {
-    const r = placeCore(this.state, content, mapgen, { x, y });
+    const r = placeCore(this.state, this.with_, mapgen, { x, y });
     if (!r.ok) throw new Error(`core: ${r.reason}`);
     this.state = r.state;
   }
@@ -85,7 +89,7 @@ export class Lab {
     toSide: Side,
     cells: Pairs = [],
   ): number {
-    const r = addConduit(this.state, content, {
+    const r = addConduit(this.state, this.with_, {
       from: { building: from, side: fromSide },
       to: { building: to, side: toSide },
       cells: cells.map(([x, y]) => ({ x, y })),

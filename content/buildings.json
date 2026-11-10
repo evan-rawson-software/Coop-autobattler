@@ -157,6 +157,37 @@
       ]
     },
     {
+      "id": "bld_armory",
+      "kind": "economy",
+      "effect": { "type": "unit_strength" },
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [{ "resource": "res_a", "side": "south" }],
+      "outputs": [],
+      "tiers": [
+        {
+          "health": 40,
+          "price": 30,
+          "costPerStep": 6,
+          "stepPercent": 4,
+          "maxSteps": 6
+        },
+        {
+          "health": 60,
+          "price": 60,
+          "costPerStep": 6,
+          "stepPercent": 5,
+          "maxSteps": 8
+        },
+        {
+          "health": 80,
+          "price": 100,
+          "costPerStep": 5,
+          "stepPercent": 6,
+          "maxSteps": 10
+        }
+      ]
+    },
+    {
       "id": "bld_core",
       "kind": "core",
       "footprint": { "width": 2, "height": 2 },

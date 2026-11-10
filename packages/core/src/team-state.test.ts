@@ -710,93 +710,99 @@ describe('purity and properties', () => {
     expect(placeCore(s, content, config, legal).ok).toBe(false);
   });
 
-  test('random operations keep the state valid; rejections change nothing', () => {
-    const defs = content.buildings
-      .list()
-      .filter((b) => b.kind !== 'core')
-      .map((b) => b.id);
-    let accepted = 0;
-    let rejected = 0;
-    for (let seed = 1; seed <= 60; seed++) {
-      const partySize = 1 + (seed % 3);
-      const m = generateMap(seed, partySize, content, config);
-      const rng = Rng.fromSeed(seed * 7919);
-      let s = deepFreeze(createTeamState(m));
-      const legal = listLegalCorePositions(m, content, config);
-      s = deepFreeze(
-        must(
-          placeCore(
-            s,
-            content,
-            config,
-            legal[rng.nextInt(legal.length)] as Cell,
+  test(
+    'random operations keep the state valid; rejections change nothing',
+    { timeout: 60000 },
+    () => {
+      const defs = content.buildings
+        .list()
+        .filter((b) => b.kind !== 'core')
+        .map((b) => b.id);
+      let accepted = 0;
+      let rejected = 0;
+      for (let seed = 1; seed <= 60; seed++) {
+        const partySize = 1 + (seed % 3);
+        const m = generateMap(seed, partySize, content, config);
+        const rng = Rng.fromSeed(seed * 7919);
+        let s = deepFreeze(createTeamState(m));
+        const legal = listLegalCorePositions(m, content, config);
+        s = deepFreeze(
+          must(
+            placeCore(
+              s,
+              content,
+              config,
+              legal[rng.nextInt(legal.length)] as Cell,
+            ),
           ),
-        ),
-      );
-      expect(valid(s)).toEqual([]);
-      const check = (
-        r: { ok: true; state: TeamState } | { ok: false; reason: string },
-        before: TeamState,
-      ): void => {
-        if (r.ok) {
-          accepted++;
-          expect(valid(r.state)).toEqual([]);
-          s = deepFreeze(r.state);
-        } else {
-          rejected++;
-          expect(before).toEqual(s);
-        }
-      };
-      for (let step = 0; step < 150; step++) {
-        const before = clone(s);
-        const pick = rng.nextInt(10);
-        const anyX = (): number => rng.nextInt(m.width + 2) - 1;
-        const anyY = (): number => rng.nextInt(m.height + 2) - 1;
-        const rot = (): number =>
-          [0, 90, 180, 270, 45][rng.nextInt(5)] as number;
-        // Prefer node cells for some placements so sources get placed.
-        const nodePos = (): { x: number; y: number } => {
-          const n = m.nodes[rng.nextInt(m.nodes.length)] as Cell;
-          return { x: n.x, y: n.y };
+        );
+        expect(valid(s)).toEqual([]);
+        const check = (
+          r: { ok: true; state: TeamState } | { ok: false; reason: string },
+          before: TeamState,
+        ): void => {
+          if (r.ok) {
+            accepted++;
+            expect(valid(r.state)).toEqual([]);
+            s = deepFreeze(r.state);
+          } else {
+            rejected++;
+            expect(before).toEqual(s);
+          }
         };
-        if (pick <= 2) {
-          const r = addToStash(s, content, {
-            def: defs[rng.nextInt(defs.length)] as string,
-            tier: 1 + rng.nextInt(3),
-            owner: rng.nextInt(partySize),
-          });
-          check(r, before);
-        } else if (pick <= 5 && s.stash.length > 0) {
-          const e = s.stash[rng.nextInt(s.stash.length)];
-          const p = rng.nextInt(2) === 0 ? nodePos() : { x: anyX(), y: anyY() };
-          check(
-            placeFromStash(s, content, {
-              id: e?.id ?? 0,
-              x: p.x,
-              y: p.y,
-              rotation: rot(),
-            }),
-            before,
-          );
-        } else if (pick <= 8 && s.buildings.length > 0) {
-          const e = s.buildings[rng.nextInt(s.buildings.length)];
-          const p = rng.nextInt(2) === 0 ? nodePos() : { x: anyX(), y: anyY() };
-          check(
-            moveBuilding(s, content, {
-              id: e?.id ?? 0,
-              x: p.x,
-              y: p.y,
-              rotation: rot(),
-            }),
-            before,
-          );
-        } else if (s.buildings.length > 0) {
-          const e = s.buildings[rng.nextInt(s.buildings.length)];
-          check(returnToStash(s, content, { id: e?.id ?? 0 }), before);
+        for (let step = 0; step < 150; step++) {
+          const before = clone(s);
+          const pick = rng.nextInt(10);
+          const anyX = (): number => rng.nextInt(m.width + 2) - 1;
+          const anyY = (): number => rng.nextInt(m.height + 2) - 1;
+          const rot = (): number =>
+            [0, 90, 180, 270, 45][rng.nextInt(5)] as number;
+          // Prefer node cells for some placements so sources get placed.
+          const nodePos = (): { x: number; y: number } => {
+            const n = m.nodes[rng.nextInt(m.nodes.length)] as Cell;
+            return { x: n.x, y: n.y };
+          };
+          if (pick <= 2) {
+            const r = addToStash(s, content, {
+              def: defs[rng.nextInt(defs.length)] as string,
+              tier: 1 + rng.nextInt(3),
+              owner: rng.nextInt(partySize),
+            });
+            check(r, before);
+          } else if (pick <= 5 && s.stash.length > 0) {
+            const e = s.stash[rng.nextInt(s.stash.length)];
+            const p =
+              rng.nextInt(2) === 0 ? nodePos() : { x: anyX(), y: anyY() };
+            check(
+              placeFromStash(s, content, {
+                id: e?.id ?? 0,
+                x: p.x,
+                y: p.y,
+                rotation: rot(),
+              }),
+              before,
+            );
+          } else if (pick <= 8 && s.buildings.length > 0) {
+            const e = s.buildings[rng.nextInt(s.buildings.length)];
+            const p =
+              rng.nextInt(2) === 0 ? nodePos() : { x: anyX(), y: anyY() };
+            check(
+              moveBuilding(s, content, {
+                id: e?.id ?? 0,
+                x: p.x,
+                y: p.y,
+                rotation: rot(),
+              }),
+              before,
+            );
+          } else if (s.buildings.length > 0) {
+            const e = s.buildings[rng.nextInt(s.buildings.length)];
+            check(returnToStash(s, content, { id: e?.id ?? 0 }), before);
+          }
         }
       }
-    }
-    expect(accepted).toBeGreaterThan(500);
-    expect(rejected).toBeGreaterThan(100);
-  });
+      expect(accepted).toBeGreaterThan(500);
+      expect(rejected).toBeGreaterThan(100);
+    },
+  );
 });

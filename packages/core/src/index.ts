@@ -287,3 +287,9 @@ export type {
   ShopReason,
   ShopResult,
 } from './shop.js';
+
+// In-battle ramp (economy buildings) and Overload (W1-7).
+export { rampBonus } from './arena-sim.js';
+export type { RampSim } from './arena-sim.js';
+export { scaledInterval } from './flow-sim.js';
+export { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';

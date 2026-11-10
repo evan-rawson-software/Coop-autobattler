@@ -11,7 +11,7 @@
 import { buildFlowGraph, SIDE_ORDER } from './conduits.js';
 import type { Side } from './buildings.js';
 import { rotateBuilding } from './buildings.js';
-import { divFloor } from './int.js';
+import { divFloor, mulDiv } from './int.js';
 import { queryMap } from './map.js';
 import type { ResourceId } from './resources.js';
 import type { SimConfig } from './sim-config.js';
@@ -175,6 +175,18 @@ export interface FlowContext {
   readonly consumers: ConsumerMode;
   /** Events are appended here when present. */
   readonly events?: SimEvent[];
+  /**
+   * Source interval modifier for the tick, in percent (default 0): when a
+   * source's countdown is reset its interval is
+   * `max(1, floor(interval * 100 / (100 + percent)))`. Set by the arena each
+   * tick from the side's `source_speed` total; a dry run leaves it at 0.
+   */
+  sourceSpeedPercent?: number;
+}
+
+/** A source's interval under a speed bonus (rounded down, at least 1). */
+export function scaledInterval(interval: number, percent: number): number {
+  return Math.max(1, mulDiv(interval, 100, 100 + percent));
 }
 
 function at<T>(list: readonly T[], i: number): T {
@@ -667,7 +679,7 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
           resource: s.resource,
         });
       }
-      s.countdown = ps.interval;
+      s.countdown = scaledInterval(ps.interval, ctx.sourceSpeedPercent ?? 0);
       s.stalled = 0;
     } else {
       if (s.stalled === 0) {

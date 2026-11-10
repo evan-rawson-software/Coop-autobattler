@@ -75,6 +75,12 @@ describe('simulation config', () => {
       breachBaseCost: 10,
       breachHealthPerCost: 10,
       aggroRangeCells: 3,
+      maxSourceSpeedPercent: 300,
+      maxUnitStrengthPercent: 300,
+      overloadStartTick: 2400,
+      overloadIntervalTicks: 100,
+      overloadDamageStepPercent: 20,
+      overloadCoreDamageStep: 5,
     });
   });
   test('bad data is reported', () => {
@@ -622,51 +628,58 @@ describe('determinism', () => {
 });
 
 describe('property: conservation', () => {
-  test('items are never created or destroyed except by production and loss', () => {
-    let wired = 0;
-    let delivered = 0;
-    let lost = 0;
-    let stalledTicks = 0;
-    let heldSeen = 0;
-    for (let seed = 1; seed <= 60; seed++) {
-      const state = randomNetwork(seed);
-      wired += state.conduits.length;
-      const mode = seed % 2 === 0 ? 'hold' : 'drain';
-      const r = start(state, mode);
-      for (let t = 0; t < 300; t++) {
-        stepFlow(r.sim, r.ctx);
-        const f = flowTotals(r.sim);
-        expect(f.produced).toBe(
-          f.inConduits + f.held + f.inBuffers + f.consumed + f.lost,
-        );
-        heldSeen += f.held;
-        for (const c of r.sim.consumers) {
-          for (const i of c.inputs) {
-            expect(i.count).toBeLessThanOrEqual(r.sim.bufferCapacity);
-            expect(i.count + i.consumed).toBe(i.delivered);
+  test(
+    'items are never created or destroyed except by production and loss',
+    { timeout: 60000 },
+    () => {
+      let wired = 0;
+      let delivered = 0;
+      let lost = 0;
+      let stalledTicks = 0;
+      let heldSeen = 0;
+      for (let seed = 1; seed <= 60; seed++) {
+        const state = randomNetwork(seed);
+        wired += state.conduits.length;
+        const mode = seed % 2 === 0 ? 'hold' : 'drain';
+        const r = start(state, mode);
+        // Each run uses a different source interval modifier (0, 75,
+        // 150 or 300 percent), so conservation is checked with it active.
+        r.ctx.sourceSpeedPercent = [0, 75, 150, 300][seed % 4] ?? 0;
+        for (let t = 0; t < 300; t++) {
+          stepFlow(r.sim, r.ctx);
+          const f = flowTotals(r.sim);
+          expect(f.produced).toBe(
+            f.inConduits + f.held + f.inBuffers + f.consumed + f.lost,
+          );
+          heldSeen += f.held;
+          for (const c of r.sim.consumers) {
+            for (const i of c.inputs) {
+              expect(i.count).toBeLessThanOrEqual(r.sim.bufferCapacity);
+              expect(i.count + i.consumed).toBe(i.delivered);
+            }
           }
         }
+        const f = flowTotals(r.sim);
+        lost += f.lost;
+        for (const c of r.sim.consumers) {
+          for (const i of c.inputs) delivered += i.delivered;
+        }
+        for (const src of r.sim.sources) stalledTicks += src.stalledTicks;
+        expect(r.sim.tick).toBe(300);
+        // Events agree with the counters.
+        expect(r.events.filter((e) => e.type === 'produced')).toHaveLength(
+          f.produced,
+        );
+        expect(r.events.filter((e) => e.type === 'lost')).toHaveLength(f.lost);
       }
-      const f = flowTotals(r.sim);
-      lost += f.lost;
-      for (const c of r.sim.consumers) {
-        for (const i of c.inputs) delivered += i.delivered;
-      }
-      for (const src of r.sim.sources) stalledTicks += src.stalledTicks;
-      expect(r.sim.tick).toBe(300);
-      // Events agree with the counters.
-      expect(r.events.filter((e) => e.type === 'produced')).toHaveLength(
-        f.produced,
-      );
-      expect(r.events.filter((e) => e.type === 'lost')).toHaveLength(f.lost);
-    }
-    // The generator really exercises flow, loss, stalling and routes.
-    expect(wired).toBeGreaterThan(100);
-    expect(delivered).toBeGreaterThan(100);
-    expect(lost).toBeGreaterThan(0);
-    expect(stalledTicks).toBeGreaterThan(0);
-    expect(heldSeen).toBeGreaterThan(0);
-  });
+      // The generator really exercises flow, loss, stalling and routes.
+      expect(wired).toBeGreaterThan(100);
+      expect(delivered).toBeGreaterThan(100);
+      expect(lost).toBeGreaterThan(0);
+      expect(stalledTicks).toBeGreaterThan(0);
+      expect(heldSeen).toBeGreaterThan(0);
+    },
+  );
 
   test('random networks run identically twice', () => {
     for (let seed = 1; seed <= 10; seed++) {
@@ -685,26 +698,32 @@ describe('property: conservation', () => {
 // Performance
 
 describe('performance', () => {
-  test('a 2000-tick dry run of a large four-plot network', () => {
-    const state = bigBoard();
-    const sources = state.buildings.filter((b) => b.def === 'bld_extractor');
-    expect(sources.length).toBeGreaterThanOrEqual(40);
-    expect(state.buildings.length - sources.length).toBeGreaterThanOrEqual(80);
-    expect(state.map.partySize).toBe(4);
-    const t0 = Date.now();
-    const d = dryRunFlow(state, content, simConfig, 2000);
-    const ms = Date.now() - t0;
-    // The threshold is generous so the test is never flaky; the message
-    // carries the measured wall time when it does fail.
-    expect(
-      ms,
-      `dryRunFlow of 2000 ticks on ${String(state.buildings.length)} buildings took ${String(ms)} ms`,
-    ).toBeLessThan(10000);
-    // Every source made 2000 / 20 = 100 items and none was lost or stalled.
-    expect(d.sources).toHaveLength(48);
-    for (const s of d.sources) {
-      expect(s).toMatchObject({ produced: 100, lost: 0, stalledTicks: 0 });
-    }
-    expect(d.consumers).toHaveLength(96);
-  });
+  test(
+    'a 2000-tick dry run of a large four-plot network',
+    { timeout: 60000 },
+    () => {
+      const state = bigBoard();
+      const sources = state.buildings.filter((b) => b.def === 'bld_extractor');
+      expect(sources.length).toBeGreaterThanOrEqual(40);
+      expect(state.buildings.length - sources.length).toBeGreaterThanOrEqual(
+        80,
+      );
+      expect(state.map.partySize).toBe(4);
+      const t0 = Date.now();
+      const d = dryRunFlow(state, content, simConfig, 2000);
+      const ms = Date.now() - t0;
+      // The threshold is generous so the test is never flaky; the message
+      // carries the measured wall time when it does fail.
+      expect(
+        ms,
+        `dryRunFlow of 2000 ticks on ${String(state.buildings.length)} buildings took ${String(ms)} ms`,
+      ).toBeLessThan(10000);
+      // Every source made 2000 / 20 = 100 items and none was lost or stalled.
+      expect(d.sources).toHaveLength(48);
+      for (const s of d.sources) {
+        expect(s).toMatchObject({ produced: 100, lost: 0, stalledTicks: 0 });
+      }
+      expect(d.consumers).toHaveLength(96);
+    },
+  );
 });

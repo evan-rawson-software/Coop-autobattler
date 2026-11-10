@@ -706,17 +706,22 @@ Implemented in `packages/core/src/flow-sim.ts` (golden kind `flow-sim`:
 `flow-sim-kind.ts`). This is the resource flow of **one board on its own**
 (CB-10, CB-11). It is step 1 of the two-board battle tick described under "One
 battle tick" below, which adds units, production, combat and destruction.
-Economy effects are added by a later issue (turret charging and fire are
-described under "One battle tick").
+Economy buildings (in-battle ramp) and Overload are described under "One
+battle tick"; the only thing they add to this single-board flow is the optional
+**source interval modifier** (step 3 below), which is 0 in a dry run.
 
 ### Constants (`content/sim.json`)
 
 `ticksPerSecond` (10, fixed battle time per second), `inputBufferUnits` (4,
 the capacity of each consumer input buffer), `breachBaseCost` (10) and
 `breachHealthPerCost` (10), the last two used by the breach field (see "Goals
-and movement fields"), and `aggroRangeCells` (3, the range within which a unit
-chases an enemy unit; see "One battle tick", step 3a2). Later issues add
-fields.
+and movement fields"), `aggroRangeCells` (3, the range within which a unit
+chases an enemy unit; see "One battle tick", step 3a2), `maxSourceSpeedPercent`
+(300) and `maxUnitStrengthPercent` (300), the global caps of the in-battle ramp
+(see "In-battle ramp (economy buildings)"), and the Overload constants
+`overloadStartTick` (2400), `overloadIntervalTicks` (100),
+`overloadDamageStepPercent` (20) and `overloadCoreDamageStep` (5) (see
+"Overload"). Later issues add fields.
 
 ### Items
 
@@ -818,10 +823,19 @@ the route building (for a crossover, the crossover building).
    in step 2.
 3. If the item was placed: `produced` increases,
    `{tick: T, type: "produced", building, resource}` is recorded,
-   `countdown = intervalTicks`, `stalled = 0`.
+   `countdown = scaledInterval`, `stalled = 0`, where `scaledInterval =
+max(1, floor(intervalTicks * 100 / (100 + P)))` and `P` is the board's
+   **source interval modifier** (percent) for this tick. `P` is an input of
+   the step, 0 unless the caller sets it (the arena sets it each tick, see
+   "In-battle ramp"; a dry run leaves it at 0, which gives `intervalTicks`
+   unchanged). The result is rounded **down** (a faster source never rounds
+   in favour of the slower one) and is never below 1, so a source produces at
+   most one item per tick. The modifier is only read at a reset: a countdown
+   that is already running is never rewritten, and the very first countdown
+   (at the cold start) is always the plain `intervalTicks`.
 4. If **no** output has a conduit: the item is lost at once: `produced` and
    `lost` both increase, the `produced` event and then a `lost` event (with the
-   source as `building`) are recorded, and `countdown = intervalTicks`.
+   source as `building`) are recorded, and `countdown = scaledInterval`.
 5. Otherwise the source **stalls**: the item waits, `countdown` stays 0 (so no
    new production), and it is retried at every following tick. `stalledTicks`
    increases by 1 on every tick it fails. If `stalled` was 0 it becomes 1 and
@@ -970,9 +984,14 @@ is kept sorted by `id`. `hp` starts at the unit definition's `health`.
 `moveCooldown` and `attackCooldown` count down in ticks. **Any number of units
 may share a cell**: there is no unit-unit collision (a decided simplification).
 
-All reads of a unit's stats (health, damage, range, cooldowns) go through one
-function, `unitStats(side, def)`, which returns the definition unchanged; W1-7
-changes it to apply per-side modifiers.
+A unit also stores `damage`, its attack damage **fixed at spawn**. All reads
+of a unit's stats (health, damage, range, cooldowns) go through one function,
+`unitStats(side, def, strengthPercent)`. With `strengthPercent = P` above 0 it
+returns the definition with `health = mulPct(health, 100 + P)` and
+`damage = mulPct(damage, 100 + P)` (rounded down); everything else is
+unchanged. A spawn passes the side's current `unit_strength` bonus (see "In-battle
+ramp"), and the unit starts with `hp = health` and `damage` of the result; units
+already on the field are never changed afterwards.
 
 ### State (plain JSON)
 
@@ -990,6 +1009,9 @@ state at tick 0:
   side then building ID;
 - `turrets`: `{side, building, charge, cooldown}` for each living turret, by
   side then building ID, all starting at `charge = 0`, `cooldown = 0`;
+- `ramps`: `{side, building, charge, steps}` for each living economy building
+  (in-battle ramp), by side then building ID, all starting at `charge = 0`,
+  `steps = 0` (CB-11);
 - `units`; and counters `spawned` and `unitsDied`, each a pair indexed by side.
 
 Everything else (the grid, the compiled wiring, cached fields) is derived from
@@ -1002,7 +1024,14 @@ exactly like the original.
 `stepArena(sim, ctx)` changes the state in place, in exactly this order. Let
 `T` be `sim.tick` at the start; every event of the step has `tick = T`.
 
-1. **Flow.** `stepFlow` for side 0's board, then side 1's. The two boards do
+0. **Overload level.** `level = overloadLevel(T)` (see "Overload"). On a tick
+   where `T >= overloadStartTick` and `(T - overloadStartTick) mod
+   overloadIntervalTicks = 0` (an Overload _beat_) the events
+   `overload_started` (only when `level = 1`) and `overload_level {level}` are
+   recorded. Nothing is stored: the level is a function of the tick.
+1. **Flow.** For each side the arena first sets the board's source interval
+   modifier to that side's current `source_speed` bonus (see "In-battle ramp"),
+   then runs `stepFlow` for side 0's board, then side 1's. The two boards do
    not interact. Their events are appended side 0 first, each tagged `side`
    (see Events).
 2. **Production.** For each living unit producer, side 0 first and each side in
@@ -1035,6 +1064,21 @@ exactly like the original.
    charged takes nothing, so an idle turret lets its buffer fill and its
    conduit back up (the source stalls) instead of draining the network.
    `charge` never exceeds `costPerShot`.
+
+   Then, **ramp charging**, after turret charging: for each living economy
+   building, side 0 first and each side in instance-ID order, if `steps <
+   maxSteps` (its tier), go through its inputs clockwise from north and, for
+   each, take `min(input buffer count, costPerStep - charge)` items out of
+   the buffer (`takeFromBuffer`) and add them to `charge`. If `charge =
+   costPerStep` afterwards: `steps += 1`, `charge = 0` and `ramp_step {side,
+   building, effect, steps}` is recorded. Since a building takes at most
+   `costPerStep` items per tick and resets after completing, it takes at most
+   one step per tick. A building with `steps = maxSteps` takes nothing, so
+   its buffer fills and its conduit backs up (the source stalls). Because the
+   ramp is charged after unit production, a unit spawned in a tick sees the
+   bonus as it was at the start of that tick's production step; a step taken
+   in tick `T` first affects spawns from tick `T + 1`, and source resets from
+   tick `T + 1` (the flow step of tick `T` ran before).
 3. **Decide.** Using the state as it is now (a snapshot: no decision sees
    another unit's decision), for each unit in `id` order choose one action. Let
    `reach = max(1, rangeCells)`. **Unit-to-unit distance is Chebyshev**,
@@ -1094,12 +1138,20 @@ exactly like the original.
    (CB-18). Turrets do not otherwise affect movement: they are buildings, they
    block all units and have health.
 4. **Resolve attacks simultaneously.** Every unit that chose (a) or (b) and has
-   `attackCooldown = 0` deals its `damage` to its target. Damage from all
+   `attackCooldown = 0` deals its `damage` (the unit's own stored `damage`)
+   escalated by Overload, `mulPct(damage, 100 + level * overloadDamageStepPercent)`
+   (see "Overload"), to its target; the `unit_attacked` event carries that
+   escalated value. Damage from all
    attackers, and from turret shots, is summed per target and applied together
    (so two units can kill each other in the same tick; a target that is killed
    this tick still receives every blow aimed at it). Each attacker's `attackCooldown` becomes
    `attackCooldownTicks`. A building's health stops at 0. Events
-   (`unit_attacked`) are recorded in unit-`id` order.
+   (`unit_attacked`) are recorded in unit-`id` order. **Core decay**: on an
+   Overload beat, each _living_ Core (side 0, then side 1) takes `level *
+   overloadCoreDamageStep` damage, added to the damage of this step (so it is
+   applied together with the unit attacks) and recorded as
+   `overload_core_damage {side, damage}` after the `unit_attacked` events. A
+   Core that is already destroyed takes nothing and records nothing.
 5. **Resolve moves.** Every unit that chose (c) moves to its chosen cell, in
    unit-`id` order (`unit_moved`), and its `moveCooldown` becomes
    `moveCooldownTicks`. Units that were killed in step 4 still complete their
@@ -1115,9 +1167,12 @@ exactly like the original.
      side's team state, producer list, turret list and flow plan (see
      Mid-battle removal),
      so items in its conduits or held by it are lost and buildings downstream
-     simply stop receiving. A destroyed Core is only recorded: the Core's
+     simply stop receiving. A destroyed economy building also leaves
+     `ramps`, so its contribution leaves the side's bonus total at once. A
+     destroyed Core is only recorded: the Core's
      cells become open and the battle goes on (ending it belongs to a later
-     issue).
+     issue; `stepArena` stays safe to call, and Core decay skips a destroyed
+     Core). Both Cores can fall in the same tick: nothing is decided here.
    - After any destruction every cached movement field is dropped.
 7. **Cooldowns.** Each living turret's non-zero `cooldown` and each surviving
    unit's non-zero `moveCooldown` and `attackCooldown` decreases by 1. Then
@@ -1191,6 +1246,78 @@ A unit's **targeting** comes from its definition: `core`, `infrastructure`
   depend on unit positions. (The breach field is not refreshed when health
   merely falls.)
 
+### In-battle ramp (economy buildings)
+
+"Economy" means buildings that make the factory stronger the longer a battle
+lasts (SC-8 to SC-10); it has nothing to do with gold. Each is a building of
+kind `economy` with `effect.type` `source_speed` or `unit_strength` and, per
+tier, `costPerStep`, `stepPercent` and `maxSteps`. Its battle state is the
+`ramps` entry `{side, building, charge, steps}` (all 0 at the start of every
+battle: the state is built from the team state and `sim.json` only, so no
+upgrade carries from one battle to the next, CB-11). Charging is described in
+"One battle tick", step 2.
+
+**Totals and caps.** For a side and an effect, the _raw total_ is the sum, over
+that side's **living** economy buildings with that effect, of `steps *
+stepPercent` (the building's tier value). The side's **bonus** `P` is the raw
+total capped: `P = min(raw, cap)` with `cap = maxSourceSpeedPercent` for
+`source_speed` and `maxUnitStrengthPercent` for `unit_strength` (both 300 at
+the moment). The total is recomputed whenever it is read. A building leaves
+the sum the moment it is destroyed (raiding ramp buildings matters, CB-15);
+what it already did stays: running source countdowns and units already
+spawned keep their values. Each building is also limited by its own
+`maxSteps`, so the ramp has two limits: per building and per side and effect.
+
+**`source_speed`.** Before each tick's flow step the arena sets the board's
+source interval modifier to the side's `source_speed` bonus. A source whose
+countdown is reset after producing uses `max(1, floor(intervalTicks * 100 /
+(100 + P)))` (integer division rounds down; at least 1, so at most one item
+per tick). With the maximum 300 a tier 1 extractor (20) drops to 5, a tier 3
+(10) to 2. The first countdown of a battle and any countdown already running
+are not changed when the bonus changes, only the next reset sees it.
+
+**`unit_strength`.** A unit spawned (or placed with `spawnUnitForTest`) while
+the side's bonus is `P` gets `hp = mulPct(base health, 100 + P)` and `damage =
+mulPct(base damage, 100 + P)`, each rounded down (for example, soldier health
+40 at 4 percent: 41 (41.6); damage 6 at 4 percent: 6 (6.24)). The damage is
+stored in the unit; later steps and later destruction of the building do not
+change units already on the field. The Overload escalation (below) is applied
+on top of the stored damage when it hits.
+
+**Why it can be outgrown.** Both limits are fixed by content, steps cost
+resources that could have gone elsewhere (for example a second barracks), and
+Overload (below) caps how long a battle can last, so an opponent that scales
+exponentially can overtake a capped ramp.
+
+### Overload (CB-12)
+
+Overload guarantees that battles end. Constants (`content/sim.json`):
+`overloadStartTick` (2400), `overloadIntervalTicks` (100),
+`overloadDamageStepPercent` (20), `overloadCoreDamageStep` (5).
+
+- **Level.** `level = 0` for `T < overloadStartTick`, and from then on `level =
+  1 + floor((T - overloadStartTick) / overloadIntervalTicks)`. The level is a
+  function of the tick; the state holds nothing for it, so a restored battle
+  continues identically. `overload_started` is recorded on the tick the level
+  becomes 1 and `overload_level {level}` on every tick the level rises
+  (including level 1, together with `overload_started`, which comes first).
+- **Damage escalation.** Every unit's attack damage (against units, buildings
+  and Cores, both sides alike) is `mulPct(damage, 100 + level *
+  overloadDamageStepPercent)`, rounded down: for soldier damage 6, level 1 gives
+  7 (7.2), level 2 gives 8 (8.4), level 5 gives 12, level 10 gives 18. **Turret
+  damage is not escalated**, so that defences eventually lose to offence
+  rather than prolonging the battle.
+- **Core decay.** On each Overload beat (`level >= 1` and `(T -
+  overloadStartTick) mod overloadIntervalTicks = 0`) both living Cores take `level *
+  overloadCoreDamageStep` damage directly, together with that tick's other
+  damage (step 4). Two walled boards with no units therefore still end: the
+  Cores take 5, 10, 15, ... on ticks 2400, 2500, 2600, ...; after `n` beats the
+  total is `5 * n * (n + 1) / 2`: 455 after 13 beats (last at 3600), 525 after
+  14 (last at 3700), so with the Core health of 500 both Cores are destroyed
+  at tick 3700 (level 14, damage 70). Both Cores may fall in the same tick; the
+  simulation records `core_destroyed` for each and decides nothing else (the
+  battle-end rule and the tiebreak belong to a later issue).
+
 ### Events (arena log)
 
 Arena events, in order of the steps above, use arena coordinates (a turret
@@ -1206,6 +1333,10 @@ shot is recorded in step 3, before the step 4 attack events):
 | `building_destroyed` | `side`, `building`                                              |
 | `conduit_destroyed`  | `side`, `conduit`                                               |
 | `core_destroyed`     | `side`                                                          |
+| `ramp_step`          | `side`, `building`, `effect`, `steps` (the new step count)      |
+| `overload_started`   | (none)                                                          |
+| `overload_level`     | `level` (the new level)                                         |
+| `overload_core_damage` | `side`, `damage`                                              |
 
 `target` is `{kind: "unit", unit}`, `{kind: "building", side, building}` or
 `{kind: "core", side}`. The four flow events (`produced`, `delivered`, `lost`,
@@ -1228,8 +1359,11 @@ destroyed). The event log is the vector's event log (`eventLogHash`). Vectors:
 `golden/arena-sim.json` (a mirror match, a rush against an almost empty base, a
 sealed base that is breached at its weakest wall, raiders cutting a splitter,
 three turrets killing a wave that crosses the front edge, the same turrets
-unpowered, a gate that lets its owner out while holding the enemy, and a funnel
-of a lake band and walls leaving one approach above eight turrets).
+unpowered, a gate that lets its owner out while holding the enemy, a funnel
+of a lake band and walls leaving one approach above eight turrets, an
+overclocker speeding up a source, an armory making later units stronger, an
+economy building reaching its cap, an overclocker destroyed mid-battle by a
+breach, and two walled Cores ending by Overload at tick 3700).
 
 The team scripts of this kind and of `team-state-ops` may give an explicit
 `map` (in the map format) instead of `seed` and `partySize`; the vectors that
@@ -1285,7 +1419,8 @@ terrain, a wall, a gate and a turret; a sealed base with one weak wall).
 
 ### Seams for later issues
 
-`unitStats` is the single place W1-7 modifies unit stats. `stepArena`
+`unitStats` is the single place unit stats are modified (the `unit_strength`
+bonus at spawn). `stepArena`
 does not assume the gap is open ground (blocked gap cells already work), and
 does not end the battle: W1-8 adds the neutral zone, battle end and the top
 level entry point.
@@ -1299,7 +1434,15 @@ level entry point.
 - Units can be trapped by buildings of their own side (own buildings are
   impassable even for the breach field); a trapped unit waits.
 - Ranged attacks ignore walls and terrain (no line of sight).
-- A destroyed Core's cells become open ground and nothing else changes.
+- A destroyed Core's cells become open ground and nothing else changes
+  (Overload Core decay skips it).
+- Economy buildings are not goals of any targeting (`infrastructure` means
+  sources and route buildings only); they are attacked only when a unit
+  breaches through them (CB-20). They block movement for both sides like any
+  building.
+- The bonus is read at the start of the tick for source resets and at the
+  moment of the spawn for units (see "In-battle ramp"); a step taken in a tick
+  takes effect from the next tick.
 - Aggro ignores obstacles between the units (no pathfinding): a unit may
   chase an enemy behind a wall or lake until neither axis step is enterable;
   it then falls through to its normal choices (goal building, movement
@@ -1341,6 +1484,8 @@ broken as follows:
 - **Simultaneous attacks:** all damage (unit attacks and turret shots) is
   computed from the same snapshot and applied together; nobody's death during
   the tick changes another unit's or turret's action in that tick.
+- **Economy buildings:** charged in side then instance-ID order after the
+  turrets; at most one step per building per tick.
 - **Turrets:** charged in side then instance-ID order after the unit
   producers; they fire in side then instance-ID order after all unit
   decisions; each picks its own target without seeing the others' (so several

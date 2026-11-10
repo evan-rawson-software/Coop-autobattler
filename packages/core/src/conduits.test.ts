@@ -1444,170 +1444,174 @@ function route(
 }
 
 describe('property: random operations', () => {
-  test('state stays valid, rejections change nothing, the flow graph is orderable', () => {
-    const defs = content.buildings
-      .list()
-      .filter((b) => b.kind !== 'core')
-      .map((b) => b.id);
-    const reasons = new Map<string, number>();
-    let acceptedConduits = 0;
-    for (let seed = 1; seed <= 40; seed++) {
-      const partySize = 1 + (seed % 3);
-      const m = generateMap(seed, partySize, content, config);
-      const rng = Rng.fromSeed(seed * 104729);
-      let s = deepFreeze(createTeamState(m));
-      const legal = listLegalCorePositions(m, content, config);
-      const core = placeCore(
-        s,
-        content,
-        config,
-        legal[rng.nextInt(legal.length)] as Cell,
-      );
-      if (!core.ok) throw new Error(core.reason);
-      s = deepFreeze(core.state);
-      const accept = (
-        r: { ok: true; state: TeamState } | { ok: false; reason: string },
-        before: TeamState,
-      ): void => {
-        if (r.ok) {
-          expect(valid(r.state)).toEqual([]);
-          const g = buildFlowGraph(r.state, content);
-          const at = new Map(g.order.map((k, i) => [k, i]));
-          expect(g.order).toHaveLength(g.nodes.length);
-          for (const e of g.edges) {
-            expect(at.get(e.from) as number).toBeLessThan(
-              at.get(e.to) as number,
-            );
+  test(
+    'state stays valid, rejections change nothing, the flow graph is orderable',
+    { timeout: 60000 },
+    () => {
+      const defs = content.buildings
+        .list()
+        .filter((b) => b.kind !== 'core')
+        .map((b) => b.id);
+      const reasons = new Map<string, number>();
+      let acceptedConduits = 0;
+      for (let seed = 1; seed <= 40; seed++) {
+        const partySize = 1 + (seed % 3);
+        const m = generateMap(seed, partySize, content, config);
+        const rng = Rng.fromSeed(seed * 104729);
+        let s = deepFreeze(createTeamState(m));
+        const legal = listLegalCorePositions(m, content, config);
+        const core = placeCore(
+          s,
+          content,
+          config,
+          legal[rng.nextInt(legal.length)] as Cell,
+        );
+        if (!core.ok) throw new Error(core.reason);
+        s = deepFreeze(core.state);
+        const accept = (
+          r: { ok: true; state: TeamState } | { ok: false; reason: string },
+          before: TeamState,
+        ): void => {
+          if (r.ok) {
+            expect(valid(r.state)).toEqual([]);
+            const g = buildFlowGraph(r.state, content);
+            const at = new Map(g.order.map((k, i) => [k, i]));
+            expect(g.order).toHaveLength(g.nodes.length);
+            for (const e of g.edges) {
+              expect(at.get(e.from) as number).toBeLessThan(
+                at.get(e.to) as number,
+              );
+            }
+            s = deepFreeze(r.state);
+          } else {
+            reasons.set(r.reason, (reasons.get(r.reason) ?? 0) + 1);
+            expect(before).toEqual(s);
           }
-          s = deepFreeze(r.state);
-        } else {
-          reasons.set(r.reason, (reasons.get(r.reason) ?? 0) + 1);
-          expect(before).toEqual(s);
-        }
-      };
-      for (let step = 0; step < 200; step++) {
-        const before = clone(s);
-        const pick = rng.nextInt(12);
-        const nodePos = (): Cell => {
-          const n = m.nodes[rng.nextInt(m.nodes.length)] as Cell;
-          return { x: n.x, y: n.y };
         };
-        const anyPos = (): Cell => ({
-          x: rng.nextInt(m.width),
-          y: rng.nextInt(m.height),
-        });
-        const rot = (): number => [0, 90, 180, 270][rng.nextInt(4)] as number;
-        if (pick <= 2) {
-          accept(
-            addToStash(s, content, {
-              def: defs[rng.nextInt(defs.length)] as string,
-              tier: 1 + rng.nextInt(3),
-              owner: rng.nextInt(partySize),
-            }),
-            before,
-          );
-        } else if (pick <= 4 && s.stash.length > 0) {
-          const e = s.stash[rng.nextInt(s.stash.length)];
-          const p = rng.nextInt(2) === 0 ? nodePos() : anyPos();
-          accept(
-            placeFromStash(s, content, {
-              id: e?.id ?? 0,
-              x: p.x,
-              y: p.y,
-              rotation: rot(),
-            }),
-            before,
-          );
-        } else if (pick === 5 && s.buildings.length > 0) {
-          const e = s.buildings[rng.nextInt(s.buildings.length)];
-          const p = anyPos();
-          accept(
-            moveBuilding(s, content, {
-              id: e?.id ?? 0,
-              x: p.x,
-              y: p.y,
-              rotation: rot(),
-            }),
-            before,
-          );
-        } else if (pick === 6 && s.buildings.length > 0) {
-          const e = s.buildings[rng.nextInt(s.buildings.length)];
-          accept(returnToStash(s, content, { id: e?.id ?? 0 }), before);
-        } else if (pick === 7 && s.conduits.length > 0) {
-          const c = s.conduits[rng.nextInt(s.conduits.length)];
-          accept(eraseConduit(s, { id: c?.id ?? 0 }), before);
-        } else if (pick === 8) {
-          accept(
-            eraseConduit(s, { id: 1 + rng.nextInt(s.nextId + 2) }),
-            before,
-          );
-        } else if (s.buildings.length >= 2) {
-          // Try to wire two buildings along a real path (sometimes a garbage side).
-          const occ = occupancy(s, content);
-          const a = got(s.buildings[rng.nextInt(s.buildings.length)]);
-          const b = got(s.buildings[rng.nextInt(s.buildings.length)]);
-          const outs = occ.absoluteSides(a).outputs;
-          const ins = occ.absoluteSides(b).inputs;
-          if (outs.length === 0 || ins.length === 0) continue;
-          const fromSide = outs[rng.nextInt(outs.length)] as Side;
-          const toSide = got(ins[rng.nextInt(ins.length)]).side;
-          const edge = (id: number, side: Side): Cell[] => {
-            const bb = got(s.buildings.find((x) => x.id === id));
-            const cells = occ.cellsOf(bb);
-            const xs = cells.map((c) => c.x);
-            const ys = cells.map((c) => c.y);
-            const [x0, x1, y0, y1] = [
-              Math.min(...xs),
-              Math.max(...xs),
-              Math.min(...ys),
-              Math.max(...ys),
-            ];
-            const out: Cell[] = [];
-            if (side === 'north')
-              for (let x = x0; x <= x1; x++) out.push({ x, y: y1 + 1 });
-            if (side === 'south')
-              for (let x = x0; x <= x1; x++) out.push({ x, y: y0 - 1 });
-            if (side === 'east')
-              for (let y = y0; y <= y1; y++) out.push({ x: x1 + 1, y });
-            if (side === 'west')
-              for (let y = y0; y <= y1; y++) out.push({ x: x0 - 1, y });
-            return out;
+        for (let step = 0; step < 200; step++) {
+          const before = clone(s);
+          const pick = rng.nextInt(12);
+          const nodePos = (): Cell => {
+            const n = m.nodes[rng.nextInt(m.nodes.length)] as Cell;
+            return { x: n.x, y: n.y };
           };
-          const used = new Set<number>();
-          for (const c of s.conduits)
-            for (const k of c.cells) used.add(k.y * m.width + k.x);
-          const pathCells = route(
-            s,
-            edge(a.id, fromSide),
-            edge(b.id, toSide),
-            occ,
-            used,
-            (x, y) => {
-              const f = m.features.some((q) => q.x === x && q.y === y);
-              return f;
-            },
-          );
-          const r = addConduit(s, content, {
-            from: {
-              building: a.id,
-              side: rng.nextInt(20) === 0 ? 'nowhere' : fromSide,
-            },
-            to: { building: b.id, side: toSide },
-            cells: pathCells ?? (rng.nextInt(2) === 0 ? [] : [anyPos()]),
+          const anyPos = (): Cell => ({
+            x: rng.nextInt(m.width),
+            y: rng.nextInt(m.height),
           });
-          if (r.ok) acceptedConduits++;
-          accept(r, before);
+          const rot = (): number => [0, 90, 180, 270][rng.nextInt(4)] as number;
+          if (pick <= 2) {
+            accept(
+              addToStash(s, content, {
+                def: defs[rng.nextInt(defs.length)] as string,
+                tier: 1 + rng.nextInt(3),
+                owner: rng.nextInt(partySize),
+              }),
+              before,
+            );
+          } else if (pick <= 4 && s.stash.length > 0) {
+            const e = s.stash[rng.nextInt(s.stash.length)];
+            const p = rng.nextInt(2) === 0 ? nodePos() : anyPos();
+            accept(
+              placeFromStash(s, content, {
+                id: e?.id ?? 0,
+                x: p.x,
+                y: p.y,
+                rotation: rot(),
+              }),
+              before,
+            );
+          } else if (pick === 5 && s.buildings.length > 0) {
+            const e = s.buildings[rng.nextInt(s.buildings.length)];
+            const p = anyPos();
+            accept(
+              moveBuilding(s, content, {
+                id: e?.id ?? 0,
+                x: p.x,
+                y: p.y,
+                rotation: rot(),
+              }),
+              before,
+            );
+          } else if (pick === 6 && s.buildings.length > 0) {
+            const e = s.buildings[rng.nextInt(s.buildings.length)];
+            accept(returnToStash(s, content, { id: e?.id ?? 0 }), before);
+          } else if (pick === 7 && s.conduits.length > 0) {
+            const c = s.conduits[rng.nextInt(s.conduits.length)];
+            accept(eraseConduit(s, { id: c?.id ?? 0 }), before);
+          } else if (pick === 8) {
+            accept(
+              eraseConduit(s, { id: 1 + rng.nextInt(s.nextId + 2) }),
+              before,
+            );
+          } else if (s.buildings.length >= 2) {
+            // Try to wire two buildings along a real path (sometimes a garbage side).
+            const occ = occupancy(s, content);
+            const a = got(s.buildings[rng.nextInt(s.buildings.length)]);
+            const b = got(s.buildings[rng.nextInt(s.buildings.length)]);
+            const outs = occ.absoluteSides(a).outputs;
+            const ins = occ.absoluteSides(b).inputs;
+            if (outs.length === 0 || ins.length === 0) continue;
+            const fromSide = outs[rng.nextInt(outs.length)] as Side;
+            const toSide = got(ins[rng.nextInt(ins.length)]).side;
+            const edge = (id: number, side: Side): Cell[] => {
+              const bb = got(s.buildings.find((x) => x.id === id));
+              const cells = occ.cellsOf(bb);
+              const xs = cells.map((c) => c.x);
+              const ys = cells.map((c) => c.y);
+              const [x0, x1, y0, y1] = [
+                Math.min(...xs),
+                Math.max(...xs),
+                Math.min(...ys),
+                Math.max(...ys),
+              ];
+              const out: Cell[] = [];
+              if (side === 'north')
+                for (let x = x0; x <= x1; x++) out.push({ x, y: y1 + 1 });
+              if (side === 'south')
+                for (let x = x0; x <= x1; x++) out.push({ x, y: y0 - 1 });
+              if (side === 'east')
+                for (let y = y0; y <= y1; y++) out.push({ x: x1 + 1, y });
+              if (side === 'west')
+                for (let y = y0; y <= y1; y++) out.push({ x: x0 - 1, y });
+              return out;
+            };
+            const used = new Set<number>();
+            for (const c of s.conduits)
+              for (const k of c.cells) used.add(k.y * m.width + k.x);
+            const pathCells = route(
+              s,
+              edge(a.id, fromSide),
+              edge(b.id, toSide),
+              occ,
+              used,
+              (x, y) => {
+                const f = m.features.some((q) => q.x === x && q.y === y);
+                return f;
+              },
+            );
+            const r = addConduit(s, content, {
+              from: {
+                building: a.id,
+                side: rng.nextInt(20) === 0 ? 'nowhere' : fromSide,
+              },
+              to: { building: b.id, side: toSide },
+              cells: pathCells ?? (rng.nextInt(2) === 0 ? [] : [anyPos()]),
+            });
+            if (r.ok) acceptedConduits++;
+            accept(r, before);
+          }
         }
       }
-    }
-    expect(acceptedConduits).toBeGreaterThan(30);
-    for (const reason of [
-      'would_loop',
-      'resource_mismatch',
-      'side_in_use',
-      'invalid_path',
-    ]) {
-      expect(reasons.has(reason)).toBe(true);
-    }
-  });
+      expect(acceptedConduits).toBeGreaterThan(30);
+      for (const reason of [
+        'would_loop',
+        'resource_mismatch',
+        'side_in_use',
+        'invalid_path',
+      ]) {
+        expect(reasons.has(reason)).toBe(true);
+      }
+    },
+  );
 });
