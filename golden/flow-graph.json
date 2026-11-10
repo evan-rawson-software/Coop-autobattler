@@ -1,0 +1,1256 @@
+[
+  {
+    "id": "flow-graph.splitter-merger-crossover",
+    "kind": "flow-graph",
+    "description": "Flow graph of the splitter, merger and crossover network.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 10,
+          "y": 3,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_splitter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 2,
+          "x": 10,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 3,
+          "x": 10,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 4,
+          "x": 13,
+          "y": 4,
+          "rotation": 90
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 5,
+          "x": 4,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_merger",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 6,
+          "x": 4,
+          "y": 1,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_turret",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 7,
+          "x": 4,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 8,
+          "x": 11,
+          "y": 0,
+          "rotation": 270
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 9,
+          "x": 3,
+          "y": 3,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_crossover",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 10,
+          "x": 3,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_turret",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 11,
+          "x": 3,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 12,
+          "x": 1,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_overclocker",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 13,
+          "x": 4,
+          "y": 6,
+          "rotation": 90
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 2,
+            "side": "east"
+          },
+          "to": {
+            "building": 4,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 11,
+              "y": 4
+            },
+            {
+              "x": 12,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 5,
+            "side": "north"
+          },
+          "to": {
+            "building": 6,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 6,
+            "side": "north"
+          },
+          "to": {
+            "building": 7,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 8,
+            "side": "west"
+          },
+          "to": {
+            "building": 6,
+            "side": "east"
+          },
+          "cells": [
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 9,
+              "y": 0
+            },
+            {
+              "x": 8,
+              "y": 0
+            },
+            {
+              "x": 7,
+              "y": 0
+            },
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 6,
+              "y": 1
+            },
+            {
+              "x": 5,
+              "y": 1
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 9,
+            "side": "north"
+          },
+          "to": {
+            "building": 10,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 4
+            },
+            {
+              "x": 3,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 12,
+            "side": "north"
+          },
+          "to": {
+            "building": 10,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 1,
+              "y": 4
+            },
+            {
+              "x": 1,
+              "y": 5
+            },
+            {
+              "x": 1,
+              "y": 6
+            },
+            {
+              "x": 2,
+              "y": 6
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 10,
+            "side": "north"
+          },
+          "to": {
+            "building": 11,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 10,
+            "side": "east"
+          },
+          "to": {
+            "building": 13,
+            "side": "west"
+          },
+          "cells": []
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "graph": {
+          "nodes": [
+            {
+              "key": "1",
+              "building": 1,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_a",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 14
+                }
+              ]
+            },
+            {
+              "key": "2",
+              "building": 2,
+              "channel": null,
+              "def": "bld_splitter",
+              "kind": "splitter",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 14,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 15
+                },
+                {
+                  "side": "east",
+                  "conduit": 16
+                },
+                {
+                  "side": "west",
+                  "conduit": null
+                }
+              ]
+            },
+            {
+              "key": "3",
+              "building": 3,
+              "channel": null,
+              "def": "bld_barracks",
+              "kind": "consumer",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 15,
+                  "requires": "res_a"
+                }
+              ],
+              "outputs": []
+            },
+            {
+              "key": "4",
+              "building": 4,
+              "channel": null,
+              "def": "bld_barracks",
+              "kind": "consumer",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "west",
+                  "conduit": 16,
+                  "requires": "res_a"
+                }
+              ],
+              "outputs": []
+            },
+            {
+              "key": "5",
+              "building": 5,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_b",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 17
+                }
+              ]
+            },
+            {
+              "key": "6",
+              "building": 6,
+              "channel": null,
+              "def": "bld_merger",
+              "kind": "merger",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "east",
+                  "conduit": 19,
+                  "requires": null
+                },
+                {
+                  "side": "south",
+                  "conduit": 17,
+                  "requires": null
+                },
+                {
+                  "side": "west",
+                  "conduit": null,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 18
+                }
+              ]
+            },
+            {
+              "key": "7",
+              "building": 7,
+              "channel": null,
+              "def": "bld_turret",
+              "kind": "consumer",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 18,
+                  "requires": "res_b"
+                }
+              ],
+              "outputs": []
+            },
+            {
+              "key": "8",
+              "building": 8,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_b",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "west",
+                  "conduit": 19
+                }
+              ]
+            },
+            {
+              "key": "9",
+              "building": 9,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_b",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 20
+                }
+              ]
+            },
+            {
+              "key": "10.south",
+              "building": 10,
+              "channel": "south",
+              "def": "bld_crossover",
+              "kind": "crossover",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 20,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 22
+                }
+              ]
+            },
+            {
+              "key": "10.west",
+              "building": 10,
+              "channel": "west",
+              "def": "bld_crossover",
+              "kind": "crossover",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "west",
+                  "conduit": 21,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "east",
+                  "conduit": 23
+                }
+              ]
+            },
+            {
+              "key": "11",
+              "building": 11,
+              "channel": null,
+              "def": "bld_turret",
+              "kind": "consumer",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 22,
+                  "requires": "res_b"
+                }
+              ],
+              "outputs": []
+            },
+            {
+              "key": "12",
+              "building": 12,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_c",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 21
+                }
+              ]
+            },
+            {
+              "key": "13",
+              "building": 13,
+              "channel": null,
+              "def": "bld_overclocker",
+              "kind": "consumer",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "west",
+                  "conduit": 23,
+                  "requires": "res_c"
+                }
+              ],
+              "outputs": []
+            }
+          ],
+          "edges": [
+            {
+              "conduitId": 14,
+              "from": "1",
+              "to": "2",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 0,
+              "resource": "res_a"
+            },
+            {
+              "conduitId": 15,
+              "from": "2",
+              "to": "3",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 0,
+              "resource": "res_a"
+            },
+            {
+              "conduitId": 16,
+              "from": "2",
+              "to": "4",
+              "fromSide": "east",
+              "toSide": "west",
+              "length": 2,
+              "resource": "res_a"
+            },
+            {
+              "conduitId": 17,
+              "from": "5",
+              "to": "6",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 0,
+              "resource": "res_b"
+            },
+            {
+              "conduitId": 18,
+              "from": "6",
+              "to": "7",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 0,
+              "resource": "res_b"
+            },
+            {
+              "conduitId": 19,
+              "from": "8",
+              "to": "6",
+              "fromSide": "west",
+              "toSide": "east",
+              "length": 7,
+              "resource": "res_b"
+            },
+            {
+              "conduitId": 20,
+              "from": "9",
+              "to": "10.south",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 2,
+              "resource": "res_b"
+            },
+            {
+              "conduitId": 21,
+              "from": "12",
+              "to": "10.west",
+              "fromSide": "north",
+              "toSide": "west",
+              "length": 5,
+              "resource": "res_c"
+            },
+            {
+              "conduitId": 22,
+              "from": "10.south",
+              "to": "11",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 0,
+              "resource": "res_b"
+            },
+            {
+              "conduitId": 23,
+              "from": "10.west",
+              "to": "13",
+              "fromSide": "east",
+              "toSide": "west",
+              "length": 0,
+              "resource": "res_c"
+            }
+          ],
+          "order": ["1", "2", "3", "4", "5", "8", "6", "7", "9", "10.south", "11", "12", "10.west", "13"]
+        },
+        "hash": "41e0eb78"
+      }
+    }
+  },
+  {
+    "id": "flow-graph.late-mismatch-board",
+    "kind": "flow-graph",
+    "description": "Flow graph after the rejected and accepted links of the late-mismatch script.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 11,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_splitter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 2,
+          "x": 11,
+          "y": 1,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_merger",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 3,
+          "x": 10,
+          "y": 1,
+          "rotation": 180
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_splitter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 4,
+          "x": 10,
+          "y": 2,
+          "rotation": 180
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 5,
+          "x": 10,
+          "y": 3,
+          "rotation": 180
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 2,
+            "side": "west"
+          },
+          "to": {
+            "building": 3,
+            "side": "east"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 4,
+            "side": "south"
+          },
+          "to": {
+            "building": 3,
+            "side": "north"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 5,
+            "side": "south"
+          },
+          "to": {
+            "building": 4,
+            "side": "north"
+          },
+          "cells": []
+        },
+        {
+          "op": "eraseConduit",
+          "id": 7
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 5,
+            "side": "south"
+          },
+          "to": {
+            "building": 4,
+            "side": "north"
+          },
+          "cells": []
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_merger",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 10,
+          "x": 5,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_splitter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 11,
+          "x": 5,
+          "y": 7,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_splitter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 12,
+          "x": 8,
+          "y": 7,
+          "rotation": 90
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 10,
+            "side": "north"
+          },
+          "to": {
+            "building": 11,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 11,
+            "side": "east"
+          },
+          "to": {
+            "building": 12,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 6,
+              "y": 7
+            },
+            {
+              "x": 7,
+              "y": 7
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 12,
+            "side": "south"
+          },
+          "to": {
+            "building": 10,
+            "side": "east"
+          },
+          "cells": [
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 7,
+              "y": 6
+            },
+            {
+              "x": 6,
+              "y": 6
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 12,
+            "side": "east"
+          },
+          "to": {
+            "building": 10,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 9,
+              "y": 7
+            },
+            {
+              "x": 9,
+              "y": 8
+            },
+            {
+              "x": 4,
+              "y": 8
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "graph": {
+          "nodes": [
+            {
+              "key": "1",
+              "building": 1,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_b",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 8
+                }
+              ]
+            },
+            {
+              "key": "2",
+              "building": 2,
+              "channel": null,
+              "def": "bld_splitter",
+              "kind": "splitter",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 8,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": null
+                },
+                {
+                  "side": "east",
+                  "conduit": null
+                },
+                {
+                  "side": "west",
+                  "conduit": 6
+                }
+              ]
+            },
+            {
+              "key": "3",
+              "building": 3,
+              "channel": null,
+              "def": "bld_merger",
+              "kind": "merger",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "north",
+                  "conduit": null,
+                  "requires": null
+                },
+                {
+                  "side": "east",
+                  "conduit": 6,
+                  "requires": null
+                },
+                {
+                  "side": "west",
+                  "conduit": null,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "south",
+                  "conduit": null
+                }
+              ]
+            },
+            {
+              "key": "4",
+              "building": 4,
+              "channel": null,
+              "def": "bld_splitter",
+              "kind": "splitter",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "north",
+                  "conduit": 9,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "east",
+                  "conduit": null
+                },
+                {
+                  "side": "south",
+                  "conduit": null
+                },
+                {
+                  "side": "west",
+                  "conduit": null
+                }
+              ]
+            },
+            {
+              "key": "5",
+              "building": 5,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_a",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "south",
+                  "conduit": 9
+                }
+              ]
+            },
+            {
+              "key": "10",
+              "building": 10,
+              "channel": null,
+              "def": "bld_merger",
+              "kind": "merger",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "east",
+                  "conduit": null,
+                  "requires": null
+                },
+                {
+                  "side": "south",
+                  "conduit": null,
+                  "requires": null
+                },
+                {
+                  "side": "west",
+                  "conduit": null,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 13
+                }
+              ]
+            },
+            {
+              "key": "11",
+              "building": 11,
+              "channel": null,
+              "def": "bld_splitter",
+              "kind": "splitter",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 13,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": null
+                },
+                {
+                  "side": "east",
+                  "conduit": 14
+                },
+                {
+                  "side": "west",
+                  "conduit": null
+                }
+              ]
+            },
+            {
+              "key": "12",
+              "building": 12,
+              "channel": null,
+              "def": "bld_splitter",
+              "kind": "splitter",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "west",
+                  "conduit": 14,
+                  "requires": null
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": null
+                },
+                {
+                  "side": "east",
+                  "conduit": null
+                },
+                {
+                  "side": "south",
+                  "conduit": null
+                }
+              ]
+            }
+          ],
+          "edges": [
+            {
+              "conduitId": 6,
+              "from": "2",
+              "to": "3",
+              "fromSide": "west",
+              "toSide": "east",
+              "length": 0,
+              "resource": "res_b"
+            },
+            {
+              "conduitId": 8,
+              "from": "1",
+              "to": "2",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 0,
+              "resource": "res_b"
+            },
+            {
+              "conduitId": 9,
+              "from": "5",
+              "to": "4",
+              "fromSide": "south",
+              "toSide": "north",
+              "length": 0,
+              "resource": "res_a"
+            },
+            {
+              "conduitId": 13,
+              "from": "10",
+              "to": "11",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 0,
+              "resource": null
+            },
+            {
+              "conduitId": 14,
+              "from": "11",
+              "to": "12",
+              "fromSide": "east",
+              "toSide": "west",
+              "length": 2,
+              "resource": null
+            }
+          ],
+          "order": ["1", "2", "3", "5", "4", "10", "11", "12"]
+        },
+        "hash": "b5b6535a"
+      }
+    }
+  }
+]

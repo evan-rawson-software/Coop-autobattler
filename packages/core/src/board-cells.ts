@@ -1,0 +1,48 @@
+/**
+ * Cell geometry shared by the team-state and conduit code: footprint cells
+ * of a building or the Core, and the cell index key. Pure.
+ */
+import {
+  rotateBuilding,
+  type BuildingDef,
+  type Rotation,
+} from './buildings.js';
+import type { Cell, GameMap } from './map.js';
+import { coreFootprint } from './map.js';
+import type { TeamContent } from './team-state.js';
+
+/**
+ * The absolute cells of a footprint of rotated size `(w, h)` anchored at
+ * `(x, y)`: `x .. x + w - 1` by `y .. y + h - 1`, in `(y, x)` order. The
+ * rotated bounding box is always anchored at the building's position.
+ */
+export function boxCells(x: number, y: number, w: number, h: number): Cell[] {
+  const out: Cell[] = [];
+  for (let dy = 0; dy < h; dy++) {
+    for (let dx = 0; dx < w; dx++) out.push({ x: x + dx, y: y + dy });
+  }
+  return out;
+}
+
+/** Cells covered by a definition at a position and rotation. */
+export function defCells(
+  def: BuildingDef,
+  x: number,
+  y: number,
+  rotation: Rotation,
+): Cell[] {
+  const fp = rotateBuilding(def, rotation).footprint;
+  return boxCells(x, y, fp.width, fp.height);
+}
+
+export function coreCells(
+  core: Cell,
+  content: Pick<TeamContent, 'buildings'>,
+): Cell[] {
+  const fp = coreFootprint(content.buildings);
+  return boxCells(core.x, core.y, fp.width, fp.height);
+}
+
+export function cellKey(map: GameMap, x: number, y: number): number {
+  return y * map.width + x;
+}

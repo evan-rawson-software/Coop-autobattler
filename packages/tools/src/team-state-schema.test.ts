@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { describe, expect, test } from 'vitest';
 import {
+  addConduit,
   addToStash,
   createTeamState,
   generateMap,
@@ -33,6 +34,11 @@ function readSchema(name: string): object {
   return JSON.parse(
     readFileSync(path.join(repoRoot, 'schemas', name), 'utf8'),
   ) as object;
+}
+
+function got<T>(v: T | undefined): T {
+  if (v === undefined) throw new Error('missing value');
+  return v;
 }
 
 describe('team-state.schema.json', () => {
@@ -92,6 +98,66 @@ describe('team-state.schema.json', () => {
     if (result.ok) expect(result.state).toEqual(state);
   });
 
+  test('a state with a conduit round-trips and validates', () => {
+    const map = generateMap(5, 1, content, config);
+    let found: TeamState | undefined;
+    for (const n of map.nodes) {
+      let s = createTeamState(map);
+      const src = addToStash(s, content, {
+        def: 'bld_extractor',
+        tier: 1,
+        owner: 0,
+      });
+      if (!src.ok) throw new Error(src.reason);
+      const spl = addToStash(src.state, content, {
+        def: 'bld_splitter',
+        tier: 1,
+        owner: 0,
+      });
+      if (!spl.ok) throw new Error(spl.reason);
+      s = spl.state;
+      const a = placeFromStash(s, content, {
+        id: src.id,
+        x: n.x,
+        y: n.y,
+        rotation: 0,
+      });
+      if (!a.ok) continue;
+      const b = placeFromStash(a.state, content, {
+        id: spl.id,
+        x: n.x,
+        y: n.y + 1,
+        rotation: 0,
+      });
+      if (!b.ok) continue;
+      const c = addConduit(b.state, content, {
+        from: { building: src.id, side: 'north' },
+        to: { building: spl.id, side: 'south' },
+        cells: [],
+      });
+      if (c.ok) {
+        found = c.state;
+        break;
+      }
+    }
+    if (found === undefined)
+      throw new Error('no node with room for a splitter');
+    expect(found.conduits).toHaveLength(1);
+    const round = JSON.parse(JSON.stringify(found)) as unknown;
+    expect(validate(round)).toBe(true);
+    const result = validateTeamState(round, content, config);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.state).toEqual(found);
+    const bad = JSON.parse(JSON.stringify(found)) as {
+      conduits: { from: { side: string }; cells: unknown[] }[];
+    };
+    got(bad.conduits[0]).from.side = 'up';
+    expect(validate(bad)).toBe(false);
+    got(bad.conduits[0]).from.side = 'north';
+    got(bad.conduits[0]).cells = [{ x: 1 }];
+    expect(validate(bad)).toBe(false);
+  });
+
   test('an empty state validates', () => {
     const map = generateMap(5, 1, content, config);
     expect(validate(JSON.parse(JSON.stringify(createTeamState(map))))).toBe(
@@ -107,6 +173,7 @@ describe('team-state.schema.json', () => {
     expect(validate({})).toBe(false);
     expect(validate({ ...good, nextId: 0 })).toBe(false);
     expect(validate({ ...good, conduits: [1] })).toBe(false);
+    expect(validate({ ...good, conduits: {} })).toBe(false);
     expect(validate({ ...good, extra: true })).toBe(false);
     expect(
       validate({

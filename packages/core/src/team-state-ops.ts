@@ -4,17 +4,25 @@
  * {x, y}; `placeFromStash` and `moveBuilding` {id, x, y, rotation};
  * `returnToStash` and `removeFromStash` {id}). The map is `generateMap(seed,
  * partySize)`. Result: `{ results, state, hash }` with one result per op
- * (`{ op, ok: true }` plus `id` for addToStash, or `{ op, ok: false, reason }`)
- * and `hash = hashJson(state)`.
+ * (`{ op, ok: true }` plus `id` for addToStash and addConduit, or
+ * `{ op, ok: false, reason }`) and `hash = hashJson(state)`. Conduit ops:
+ * `addConduit` {from: {building, side}, to: {building, side}, cells: [{x, y}]}
+ * and `eraseConduit` {id}.
+ *
+ * Golden-vector kind `flow-graph`: the same input; the result is
+ * `{ graph, hash }` with `graph = buildFlowGraph(final state)` and
+ * `hash = hashJson(graph)`.
  */
 import { generateMap } from './generate-map.js';
 import { hashJson, type Json } from './hash.js';
 import type { SimulationFn } from './golden-kinds.js';
 import type { MapContent } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
+import { addConduit, buildFlowGraph } from './conduits.js';
 import {
   addToStash,
   createTeamState,
+  eraseConduit,
   moveBuilding,
   placeCore,
   placeFromStash,
@@ -46,11 +54,38 @@ function int(o: Record<string, Json>, key: string): number {
 type Outcome =
   { ok: true; state: TeamState; id?: number } | { ok: false; reason: string };
 
-export function makeTeamStateOpsKind(
+function cellList(v: Json | undefined): { x: number; y: number }[] {
+  if (!Array.isArray(v)) {
+    throw new TypeError('team-state-ops: cells must be an array');
+  }
+  return (v as Json[]).map((c) => {
+    const r = rec(c, 'cell');
+    return { x: int(r, 'x'), y: int(r, 'y') };
+  });
+}
+
+function endOf(
+  v: Json | undefined,
+  what: string,
+): {
+  building: number;
+  side: string;
+} {
+  const r = rec(v, what);
+  const side = r['side'];
+  if (typeof side !== 'string') {
+    throw new TypeError(`team-state-ops: ${what}.side must be a string`);
+  }
+  return { building: int(r, 'building'), side };
+}
+
+/** Run a `team-state-ops` input script; shared by both kinds. */
+export function runTeamStateOps(
+  input: Json,
   content: MapContent,
   config: MapgenConfig,
-): SimulationFn {
-  return (input: Json) => {
+): { results: Json[]; state: TeamState } {
+  {
     const o = rec(input, 'input');
     const ops = o['ops'];
     if (!Array.isArray(ops)) {
@@ -109,6 +144,16 @@ export function makeTeamStateOpsKind(
         case 'removeFromStash':
           outcome = removeFromStash(state, { id: int(a, 'id') });
           break;
+        case 'addConduit':
+          outcome = addConduit(state, content, {
+            from: endOf(a['from'], 'from'),
+            to: endOf(a['to'], 'to'),
+            cells: cellList(a['cells']),
+          });
+          break;
+        case 'eraseConduit':
+          outcome = eraseConduit(state, { id: int(a, 'id') });
+          break;
         default:
           throw new TypeError('team-state-ops: unknown op');
       }
@@ -123,6 +168,16 @@ export function makeTeamStateOpsKind(
         results.push({ op: name, ok: false, reason: outcome.reason });
       }
     }
+    return { results, state };
+  }
+}
+
+export function makeTeamStateOpsKind(
+  content: MapContent,
+  config: MapgenConfig,
+): SimulationFn {
+  return (input: Json) => {
+    const { results, state } = runTeamStateOps(input, content, config);
     return {
       result: {
         results,
@@ -130,5 +185,16 @@ export function makeTeamStateOpsKind(
         hash: hashJson(state),
       },
     };
+  };
+}
+
+export function makeFlowGraphKind(
+  content: MapContent,
+  config: MapgenConfig,
+): SimulationFn {
+  return (input: Json) => {
+    const { state } = runTeamStateOps(input, content, config);
+    const graph = buildFlowGraph(state, content) as unknown as Json;
+    return { result: { graph, hash: hashJson(graph) } };
   };
 }

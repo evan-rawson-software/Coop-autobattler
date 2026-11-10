@@ -132,6 +132,8 @@ export {
   ROTATIONS,
   addToStash,
   createTeamState,
+  detachConduits,
+  eraseConduit,
   moveBuilding,
   occupancy,
   placeCore,
@@ -145,6 +147,7 @@ export type {
   AddToStashResult,
   AnyReason,
   Conduit,
+  ConduitEnd,
   CoreReason,
   Occupancy,
   OpFailure,
@@ -157,4 +160,24 @@ export type {
   TeamState,
   ValidateTeamStateResult,
 } from './team-state.js';
-export { makeTeamStateOpsKind } from './team-state-ops.js';
+export {
+  SIDE_ORDER,
+  addConduit,
+  buildFlowGraph,
+  conduitResource,
+} from './conduits.js';
+export type {
+  AddConduitResult,
+  ConduitReason,
+  FlowEdge,
+  FlowGraph,
+  FlowInput,
+  FlowNode,
+  FlowNodeKind,
+  FlowOutput,
+} from './conduits.js';
+export {
+  makeFlowGraphKind,
+  makeTeamStateOpsKind,
+  runTeamStateOps,
+} from './team-state-ops.js';

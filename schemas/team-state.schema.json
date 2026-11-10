@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "team-state.schema.json",
   "title": "Team state",
-  "description": "The party's whole state for combat (W1-2): the map, the Core position and every building. Arrays are sorted by ascending id. The Core is not an entry in buildings or stash. Placement legality is checked by the validator, not by this schema.",
+  "description": "The party's whole state for combat (W1-2, W1-3): the map, the Core position, every building and every conduit. Arrays are sorted by ascending id. The Core is not an entry in buildings or stash. Instance IDs of buildings and conduits are drawn from one counter (nextId). Placement and conduit legality are checked by the validator, not by this schema.",
   "type": "object",
   "required": ["map", "core", "buildings", "stash", "nextId", "conduits"],
   "additionalProperties": false,
@@ -56,9 +56,45 @@
     },
     "nextId": { "type": "integer", "minimum": 1 },
     "conduits": {
-      "description": "Reserved for W1-3; always empty for now.",
+      "description": "Conduits, sorted by ascending id. Each runs from a side of one placed building to a side of another; cells is the ordered path from the cell just outside the from side to the cell just outside the to side, empty for a direct connection.",
       "type": "array",
-      "maxItems": 0
+      "items": {
+        "type": "object",
+        "required": ["id", "from", "to", "cells"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "from": { "$ref": "#/$defs/conduitEnd" },
+          "to": { "$ref": "#/$defs/conduitEnd" },
+          "cells": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["x", "y"],
+              "additionalProperties": false,
+              "properties": {
+                "x": { "type": "integer", "minimum": 0 },
+                "y": { "type": "integer", "minimum": 0 }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "conduitEnd": {
+      "type": "object",
+      "required": ["building", "side"],
+      "additionalProperties": false,
+      "properties": {
+        "building": {
+          "description": "Instance ID of a placed building.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "side": { "enum": ["north", "east", "south", "west"] }
+      }
     }
   }
 }

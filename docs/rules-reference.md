@@ -172,7 +172,7 @@ Kinds currently defined: `placeholder-duel` (pipeline check only, not a rule),
 `nextInt(bound)`, then `shuffle` of `0..shuffleLength-1`, then `pick` of the
 same list, and the final state), `prng-child` (the parent state and the first
 `count` outputs of `child(label)`), `map-gen` (see Map generation),
-`team-state-ops` (see Team state and placement).
+`team-state-ops` (see Team state and placement), `flow-graph` (see Conduits).
 
 In the reference implementation the registry is `goldenKinds` in
 `packages/core/src/golden-kinds.ts`; a new kind is one added entry. Kinds that
@@ -372,7 +372,8 @@ never changes its input.
   `nextId` by `addToStash`, and are never reused (not even after
   `removeFromStash`). A building keeps its ID when it moves between `stash`
   and `buildings`.
-- `conduits`: reserved (W1-3); always `[]` for now and preserved untouched.
+- `conduits`: conduits `{ id, from, to, cells }`, sorted by `id` (see
+  Conduits). Their `id` comes from the same counter as building IDs.
 
 Buildings of kind `core` never appear in `buildings` or `stash`.
 
@@ -419,7 +420,7 @@ Each returns `{ ok: true, state }` (`addToStash` also the new `id`) or
 - `placeCore(x, y)`: reasons in order: `core_already_placed`; then those of
   `validateCorePosition` (`out_of_bounds`, `blocked`, `on_node`,
   `too_far_forward`); then `overlaps_building` if the footprint covers a placed
-  building.
+  building; then `overlaps_conduit` if it covers a conduit cell.
 - `placeFromStash(id, x, y, rotation)`: `id` must be in `stash`. Moves the entry
   to `buildings` (same ID, tier, owner).
 - `moveBuilding(id, x, y, rotation)`: `id` must be in `buildings`. Sets position
@@ -442,8 +443,9 @@ in this order is the reported reason:
 4. `blocked_by_feature`: a cell holds a feature whose `blocksBuilding` is true.
 5. `overlaps_core`: a cell is in the Core footprint (when the Core is placed).
 6. `overlaps_building`: a cell is covered by another placed building.
-7. `overlaps_conduit`: a cell holds a conduit. Reserved for W1-3; cannot occur
-   while `conduits` is empty.
+7. `overlaps_conduit`: a cell holds a conduit cell. For `moveBuilding`, conduits
+   attached to the moving building do not count (they are removed when the
+   move succeeds); conduits of other buildings do.
 8. Node rules:
    - `source_needs_node`: a building of kind `source` must have every
      footprint cell on a resource node, all of the same resource (a
@@ -458,12 +460,13 @@ whoever owns it.
 
 ### Conduits attached to a moved building
 
-Rule (decided in W1-2, implemented by W1-3): moving, rotating or returning a
-building **removes every conduit attached to it**. Conduits do not exist yet;
-the hook is the internal function `detachConduits(state, buildingId)` in
-`team-state.ts`, which currently returns the state unchanged. `moveBuilding`
-and `returnToStash` call it after the building has been updated. W1-3 fills it
-in. No other operation touches `conduits`.
+Moving, rotating or returning a building **removes every conduit attached to
+it** (every conduit whose `from.building` or `to.building` is that building),
+and no others. `detachConduits(state, buildingId)` in `team-state.ts` does it
+(it returns the same state object when nothing is attached); `moveBuilding` and
+`returnToStash` call it after the building has been updated, and only when the
+operation is accepted. A rejected operation detaches nothing. No other
+operation removes conduits, apart from `eraseConduit`.
 
 ### Whole-state validation
 
@@ -475,17 +478,20 @@ map with `loadMap`; the Core position with `validateCorePosition` when placed;
 every entry's `id` (positive integer), `def` (known, never kind `core`), `tier`
 (1 to 3), `owner` (in range) and, for placed buildings, integer `x`, `y` and a
 legal `rotation`; IDs unique across `buildings` and `stash`; both lists sorted
-by ascending `id`; `nextId` greater than every ID; `conduits` empty; and every
+by ascending `id`; `nextId` greater than every ID (building, stash and conduit); and every
 placement rule above for every building (each against the Core and all other
-placed buildings). It does not check that the map is one the generator could
-produce.
+placed buildings); then every conduit (shape, unique ID shared with buildings
+and stash, canonical order, each conduit's geometry rules against all the other
+conduits, no two conduits on one side, no loop, no resource mismatch; see
+Conduits). It does not check that the map is one the generator could produce.
 
 ### ASCII rendering
 
 `renderTeamStateAscii` prints the map rendering (front row on top) with
 buildings drawn over it, one character per covered cell: `S` source, `R`
-route, `U` unit producer, `D` defense, `E` economy, `C` Core. The last line is
-the map legend followed by the building legend.
+route, `U` unit producer, `D` defense, `E` economy, `C` Core, and `*` for each
+conduit path cell. The last line is the map legend followed by the building
+legend (`... C=core *=conduit`).
 
 ### Golden kind `team-state-ops`
 
@@ -494,11 +500,204 @@ Input `{ "seed": u32, "partySize": 1..4, "ops": [...] }`. The map is the
 `createTeamState(map)`, and the ops run in order. An op is an object with an
 `op` field and its arguments: `addToStash` (`def`, `tier`, `owner`),
 `placeCore` (`x`, `y`), `placeFromStash` and `moveBuilding` (`id`, `x`, `y`,
-`rotation`), `returnToStash` and `removeFromStash` (`id`). A rejected op leaves
+`rotation`), `returnToStash` and `removeFromStash` (`id`), `addConduit`
+(`from` and `to`, each `{ building, side }`, and `cells`, a list of `{ x, y }`)
+and `eraseConduit` (`id`). A rejected op leaves
 the state as it was and the run continues. Result `{ "results": [...],
 "state": <final state>, "hash": <hash of the final state> }`, with one entry
-per op: `{ "op", "ok": true }` (plus `"id"` for `addToStash`) or `{ "op",
+per op: `{ "op", "ok": true }` (plus `"id"` for `addToStash` and `addConduit`) or `{ "op",
 "ok": false, "reason" }`. Vectors: `golden/team-state-ops.json`.
+
+## Conduits
+
+Implemented in `packages/core/src/conduits.ts` (golden kinds `team-state-ops`
+and `flow-graph`: `team-state-ops.ts`). Conduits carry resources between
+buildings (CB-3g, CB-3h). They are free, unlimited, take up space, and can never
+cross or share a cell; the only way for two flows to cross is through a
+crossover building. All functions are pure.
+
+### Model
+
+A conduit is `{ id, from: { building, side }, to: { building, side }, cells }`
+(`schemas/team-state.schema.json`):
+
+- `id`: a unique positive integer taken from `nextId`, the same counter as
+  buildings, and never reused. `addConduit` assigns it and increments `nextId`.
+- `from.building`, `to.building`: instance IDs of **placed** buildings (never
+  the Core, which has no ID).
+- `side`: an absolute side (`north`, `east`, `south`, `west`) of that building
+  at its current rotation.
+- `cells`: the ordered path of `{ x, y }` from the cell just outside the `from`
+  side to the cell just outside the `to` side; empty for a direct connection.
+
+`conduits` is kept sorted by ascending `id` (new conduits get the largest ID, so
+appending keeps it sorted).
+
+### Sides, edges and directions
+
+A building's **side** is the set of cell edges on that side of its rotated
+footprint: one edge on a side of a 1x1 building, two on a side of a 2x2. The
+cell **directly outside** an edge is the cell next to it, across the edge. For
+a building whose rotated footprint covers `x0 .. x0 + w - 1` by
+`y0 .. y0 + h - 1`, the cells outside its sides are, in increasing coordinate
+order: north `(x0 + i, y0 + h)`, south `(x0 + i, y0 - 1)` for `i < w`; east
+`(x0 + w, y0 + j)`, west `(x0 - 1, y0 + j)` for `j < h`. A conduit attaches at
+one specific edge: its first cell is outside one edge of the `from` side and its
+last cell is outside one edge of the `to` side (they may be different edges of
+a 2x2 side; the same cell for a one-cell path). Each output side holds at most
+one conduit and each input side at most one, however many edges it has.
+
+**Input and output sides.** A building's input and output sides are those of
+its definition rotated by its rotation (`absoluteSides`). Sources have outputs
+only; route buildings have both; unit producers, turrets and economy buildings
+have inputs only; walls, gates and the Core have neither. Content guarantees
+that a side is never both an input and an output. A **splitter** has one input
+and two or three outputs, a **merger** two or three inputs and one output, a
+**crossover** two inputs and two outputs, each input's opposite side being its
+output (a straight-through path).
+
+**Direct connection.** The `from` side of building A *directly faces* the `to`
+side of building B when `to.side` is the opposite of `from.side` and the cell
+outside at least one edge of A's `from` side is a cell of B. Then (and only
+then) the conduit is a direct connection: `cells` must be empty, and a non-empty
+`cells` is `invalid_path`. When the sides do not directly face, `cells` must be
+non-empty (an empty list is `invalid_path`). So two facing sides are always
+joined directly. If A's `from` side touches B but the conduit names a `to` side
+of B that is not the opposite side, it does not count as facing: the path then
+has to start inside B and fails `overlaps_building`.
+
+**Path.** For a non-empty path: every cell is an in-bounds integer cell; each
+consecutive pair is 4-directionally adjacent; no cell appears twice; the first
+cell is outside an edge of the `from` side and the last outside an edge of the
+`to` side. Any violation is `invalid_path`.
+
+### `addConduit` rules and their order
+
+`addConduit(state, content, { from, to, cells })` returns `{ ok: true, state, id }`
+or `{ ok: false, reason, detail? }`. The rules are checked in this fixed order
+and the first failing rule is the reported reason:
+
+1. `unknown_building`: either end is not a placed building (an unknown ID, a
+   stashed building, or the Core).
+2. `not_an_output`: `from.side` is not one of the building's output sides at its
+   rotation (this includes buildings with no outputs and any value that is not a
+   side name). Then `not_an_input` likewise for `to.side`. `from` is checked
+   before `to`.
+3. `side_in_use`: that output side, or that input side, already has a conduit
+   (output first).
+4. `invalid_path`: see Path and Direct connection above.
+5. `blocked_by_feature`: a path cell holds a feature with `blocksBuilding`.
+6. `overlaps_core`: a path cell is in the Core footprint.
+7. `overlaps_building`: a path cell is covered by a placed building.
+8. `crosses_conduit`: a path cell is used by another conduit (CB-3g: conduits
+   never share or cross a cell).
+9. `resource_mismatch`: see Resource typing.
+10. `would_loop`: see Loops.
+
+A conduit may run over a resource node cell (it blocks that node while it is
+there, since `placeFromStash` and `moveBuilding` reject `overlaps_conduit`;
+conduits are free to erase). A rejected operation changes nothing.
+
+Other operations: `eraseConduit(state, { id })` removes one conduit (reason
+`unknown_conduit`); the ID is never reused. `detachConduits` is described under
+Team state and placement. Placement and moving respect conduits:
+`placeFromStash`, `moveBuilding` and `placeCore` reject `overlaps_conduit` when
+a footprint cell is a conduit cell (rule 7 there; for `placeCore` after
+`overlaps_building`).
+
+### Resource typing (CB-5b)
+
+Each conduit carries at most one resource type, set by what feeds it.
+`conduitResource(state, content, conduitId)` returns a resource ID or `null`
+(undetermined, also for an unknown ID):
+
+- A conduit leaving a **source** carries the source's node resource
+  (`sourceResource`).
+- A conduit leaving a **splitter** carries what the splitter's input conduit
+  carries, or `null` when the splitter has no input conduit or that conduit is
+  itself undetermined.
+- A conduit leaving a **merger** carries what its input conduits carry: the
+  first determined resource in the order north, east, south, west of the input
+  sides. In a valid state all determined inputs agree, so the order never
+  matters.
+- A conduit leaving a **crossover** carries what its channel's input conduit
+  carries; the two channels never mix (a crossover with only one input
+  connected has one determined and one undetermined output).
+- A conduit cannot depend on itself: if it somehow did (an invalid, looping
+  state), it is `null`.
+
+**When the source is not yet connected.** A conduit drawn downstream of an
+unfed splitter, merger or crossover channel is `null` and is always accepted:
+`null` never causes a rejection. The type is inferred later, when an upstream
+conduit is added; `conduitResource` always reflects the network as it is now.
+
+**The check.** After tentatively adding the conduit, the whole network is
+recomputed (connecting an upstream piece can determine types far downstream),
+and the addition is rejected with `resource_mismatch` if any consumer input
+receives a determined resource different from the one its definition names for
+that side, or any merger has two inputs with different determined resources.
+Consumers are all buildings with inputs except route buildings.
+
+Because sources take their resource from their node, moving a source to a
+different node could change types; this is fine because moving detaches the
+source's conduits first.
+
+### Loops (CB-9c)
+
+Conduit networks cannot loop. The graph used has one node per placed building
+and one per **channel** of a crossover (a channel is an input side with the
+opposite output side), and an edge `from -> to` per conduit. `addConduit` is
+rejected with `would_loop` if that directed graph would contain a cycle
+(including a building feeding itself). Two unrelated flows crossing through a
+crossover are two nodes and not a loop; a flow that reaches the same crossover
+channel twice is. The check is a topological sort (Kahn).
+
+### Flow graph (input to W1-4)
+
+`buildFlowGraph(state, content)` returns plain JSON-safe data (it throws on a
+state with a loop or an unknown definition; validate untrusted states first):
+
+```
+{ nodes: FlowNode[], edges: FlowEdge[], order: string[] }
+```
+
+- `nodes`: one per placed building that has at least one conduit attached; a
+  crossover becomes **two** nodes (both channels, whenever it has any conduit),
+  one per input side. Sorted by building ID, then channel (north, east, south,
+  west). A node is
+  `{ key, building, channel, def, kind, produces, inputs, outputs }`:
+  - `key`: the instance ID as a decimal string, or `"<id>.<input side>"` for a
+    crossover channel (for example `"7.south"`).
+  - `channel`: the channel's input side for a crossover node, else `null`.
+  - `kind`: `source`, `splitter`, `merger`, `crossover` or `consumer`.
+  - `produces`: a source's node resource, else `null`.
+  - `inputs`: `{ side, conduit, requires }` per input side, `conduit` the ID of
+    the conduit attached there or `null`, `requires` the resource that input
+    needs (consumers; `null` for routes and crossover channels).
+  - `outputs`: `{ side, conduit }` per output side, `conduit` as above.
+  - **Order of `inputs` and `outputs`**: clockwise starting from north, in the
+    building's current rotation (absolute sides): north, east, south, west,
+    keeping only the sides the building has. This is the order in which a
+    splitter alternates between its outputs; an output with `conduit: null` is
+    skipped by the simulation. A crossover channel has one input and the
+    opposite output.
+- `edges`: one per conduit, sorted by conduit ID:
+  `{ conduitId, from, to, fromSide, toSide, length, resource }`; `from` and `to`
+  are node keys, `length` is the number of path cells (0 for a direct
+  connection) and `resource` is the determined resource or `null`.
+- `order`: the node keys in topological order (every edge goes from an earlier
+  to a later node), which exists because there are no loops. Ties are broken by
+  the node sort order above (building ID, then channel): among the nodes with no
+  unprocessed predecessor the first in that order goes next.
+
+### Golden kind `flow-graph`
+
+Input as for `team-state-ops` (`seed`, `partySize`, `ops`). The result is
+`{ "graph": <flow graph of the final state>, "hash": <hash of the graph> }`.
+Vectors: `golden/flow-graph.json`. The conduit rejection reasons, a network with
+a splitter, a merger and a crossover, a merger mismatch that only appears when
+an upstream source is connected last, and a loop are covered by vectors in
+`golden/team-state-ops.json`.
 
 ## Tick order
 

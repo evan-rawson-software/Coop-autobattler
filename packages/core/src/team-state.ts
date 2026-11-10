@@ -7,6 +7,7 @@
  * docs/rules-reference.md, "Team state and placement".
  */
 
+import { cellKey, coreCells, defCells } from './board-cells.js';
 import {
   rotateBuilding,
   type BuildingDef,
@@ -17,7 +18,6 @@ import {
 import { sortedKeys } from './hash.js';
 import { isRecord } from './load-util.js';
 import {
-  coreFootprint,
   loadMap,
   queryMap,
   renderMapAscii,
@@ -30,6 +30,7 @@ import {
 } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
 import type { ResourceId } from './resources.js';
+import { checkConduitList, parseConduits } from './conduits.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -53,8 +54,23 @@ export interface StashedBuilding {
   readonly owner: number;
 }
 
-/** Reserved for W1-3 (conduits). Always empty for now. */
-export type Conduit = never;
+/** One end of a conduit: a placed building and one of its absolute sides. */
+export interface ConduitEnd {
+  readonly building: number;
+  readonly side: Side;
+}
+
+/**
+ * A conduit (W1-3). `cells` is the ordered path from the cell just outside
+ * the `from` side to the cell just outside the `to` side; it is empty for a
+ * direct connection. `id` comes from the same counter as building IDs.
+ */
+export interface Conduit {
+  readonly id: number;
+  readonly from: ConduitEnd;
+  readonly to: ConduitEnd;
+  readonly cells: readonly Cell[];
+}
 
 export interface TeamState {
   readonly map: GameMap;
@@ -66,7 +82,7 @@ export interface TeamState {
   readonly stash: readonly StashedBuilding[];
   /** The next instance ID to assign; IDs are never reused. */
   readonly nextId: number;
-  /** Reserved for W1-3; kept untouched by every function (see detachConduits). */
+  /** Conduits, sorted by `id`. */
   readonly conduits: readonly Conduit[];
 }
 
@@ -85,7 +101,10 @@ export type PlacementReason =
   | 'node_reserved';
 
 export type CoreReason =
-  'core_already_placed' | CorePositionProblem | 'overlaps_building';
+  | 'core_already_placed'
+  | CorePositionProblem
+  | 'overlaps_building'
+  | 'overlaps_conduit';
 
 export type StashReason =
   'unknown_definition' | 'core_not_allowed' | 'invalid_tier' | 'invalid_owner';
@@ -165,38 +184,6 @@ function isOwner(v: unknown, partySize: number): v is number {
 // ---------------------------------------------------------------------------
 // Geometry
 
-/**
- * The absolute cells of a footprint of rotated size `(w, h)` anchored at
- * `(x, y)`: `x .. x + w - 1` by `y .. y + h - 1`, in `(y, x)` order. The
- * rotated bounding box is always anchored at the building's position.
- */
-function boxCells(x: number, y: number, w: number, h: number): Cell[] {
-  const out: Cell[] = [];
-  for (let dy = 0; dy < h; dy++) {
-    for (let dx = 0; dx < w; dx++) out.push({ x: x + dx, y: y + dy });
-  }
-  return out;
-}
-
-/** Cells covered by a definition at a position and rotation. */
-function defCells(
-  def: BuildingDef,
-  x: number,
-  y: number,
-  rotation: Rotation,
-): Cell[] {
-  const fp = rotateBuilding(def, rotation).footprint;
-  return boxCells(x, y, fp.width, fp.height);
-}
-
-function coreCells(
-  core: Cell,
-  content: Pick<TeamContent, 'buildings'>,
-): Cell[] {
-  const fp = coreFootprint(content.buildings);
-  return boxCells(core.x, core.y, fp.width, fp.height);
-}
-
 // ---------------------------------------------------------------------------
 // Placement rules
 
@@ -207,16 +194,15 @@ interface RuleContext {
   readonly coreKeys: ReadonlySet<number>;
   /** Whether a placed building other than the one being checked is on a cell. */
   readonly occupiedByOther: (x: number, y: number) => boolean;
-}
-
-function cellKey(map: GameMap, x: number, y: number): number {
-  return y * map.width + x;
+  /** Cells of conduits that count as obstacles. */
+  readonly conduitKeys: ReadonlySet<number>;
 }
 
 function makeContext(
   state: TeamState,
   content: TeamContent,
   occupiedByOther: (x: number, y: number) => boolean,
+  conduitKeys: ReadonlySet<number>,
 ): RuleContext {
   const q = queryMap(state.map, content.terrain);
   const coreKeys = new Set<number>();
@@ -225,7 +211,7 @@ function makeContext(
       coreKeys.add(cellKey(state.map, c.x, c.y));
     }
   }
-  return { q, content, coreKeys, occupiedByOther };
+  return { q, content, coreKeys, occupiedByOther, conduitKeys };
 }
 
 /**
@@ -289,7 +275,15 @@ function checkPlacement(
       };
     }
   }
-  // overlaps_conduit: nothing to check until W1-3 (state.conduits is empty).
+  for (const c of cells) {
+    if (ctx.conduitKeys.has(cellKey(map, c.x, c.y))) {
+      return {
+        ok: false,
+        reason: 'overlaps_conduit',
+        detail: `(${String(c.x)}, ${String(c.y)})`,
+      };
+    }
+  }
   if (def.kind === 'source') {
     let resource: ResourceId | undefined;
     for (const c of cells) {
@@ -345,19 +339,68 @@ function sortById<T extends { id: number }>(list: readonly T[]): T[] {
 }
 
 // ---------------------------------------------------------------------------
-// Conduit hook (W1-3)
+// Conduits attached to buildings
+
+/** The cells of the given conduits, as cell keys. Out-of-bounds cells are skipped. */
+function conduitCellKeys(
+  map: GameMap,
+  conduits: readonly Conduit[],
+  skipBuilding?: number,
+): Set<number> {
+  const keys = new Set<number>();
+  for (const c of conduits) {
+    if (
+      skipBuilding !== undefined &&
+      (c.from.building === skipBuilding || c.to.building === skipBuilding)
+    ) {
+      continue;
+    }
+    for (const cell of c.cells) {
+      if (
+        cell.x >= 0 &&
+        cell.y >= 0 &&
+        cell.x < map.width &&
+        cell.y < map.height
+      ) {
+        keys.add(cellKey(map, cell.x, cell.y));
+      }
+    }
+  }
+  return keys;
+}
 
 /**
- * INTERNAL HOOK for W1-3. Rule: moving, rotating or returning a building
- * removes every conduit attached to it. Conduits do not exist yet, so this
- * returns the state unchanged. `moveBuilding` and `returnToStash` call it.
+ * Remove every conduit whose `from` or `to` is the given building. Moving,
+ * rotating or returning a building does this. Returns the same state object
+ * when nothing is attached.
  */
 export function detachConduits(
   state: TeamState,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- W1-3 hook
-  _buildingId: number,
+  buildingId: number,
 ): TeamState {
-  return state;
+  const kept = state.conduits.filter(
+    (c) => c.from.building !== buildingId && c.to.building !== buildingId,
+  );
+  return kept.length === state.conduits.length
+    ? state
+    : { ...state, conduits: kept };
+}
+
+/** Delete one conduit by ID. Free. */
+export function eraseConduit(
+  state: TeamState,
+  args: { id: number },
+): OpResult<'unknown_conduit'> {
+  if (!state.conduits.some((c) => c.id === args.id)) {
+    return { ok: false, reason: 'unknown_conduit' };
+  }
+  return {
+    ok: true,
+    state: {
+      ...state,
+      conduits: state.conduits.filter((c) => c.id !== args.id),
+    },
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -384,6 +427,10 @@ export function placeCore(
   for (const k of mine) {
     if (index.has(k)) return { ok: false, reason: 'overlaps_building' };
   }
+  const onConduit = conduitCellKeys(state.map, state.conduits);
+  for (const k of mine) {
+    if (onConduit.has(k)) return { ok: false, reason: 'overlaps_conduit' };
+  }
   return { ok: true, state: { ...state, core: { x: pos.x, y: pos.y } } };
 }
 
@@ -399,8 +446,11 @@ export function placeFromStash(
     return { ok: false, reason: 'unknown_building' };
   }
   const index = buildingCellIndex(state, content);
-  const ctx = makeContext(state, content, (x, y) =>
-    index.has(cellKey(state.map, x, y)),
+  const ctx = makeContext(
+    state,
+    content,
+    (x, y) => index.has(cellKey(state.map, x, y)),
+    conduitCellKeys(state.map, state.conduits),
   );
   const failure = checkPlacement(ctx, def, args.x, args.y, args.rotation);
   if (failure !== null) return failure;
@@ -439,10 +489,17 @@ export function moveBuilding(
     return { ok: false, reason: 'unknown_building' };
   }
   const index = buildingCellIndex(state, content);
-  const ctx = makeContext(state, content, (x, y) => {
-    const other = index.get(cellKey(state.map, x, y));
-    return other !== undefined && other !== item.id;
-  });
+  const ctx = makeContext(
+    state,
+    content,
+    (x, y) => {
+      const other = index.get(cellKey(state.map, x, y));
+      return other !== undefined && other !== item.id;
+    },
+    // Conduits attached to the moving building are detached on success, so
+    // they do not block it.
+    conduitCellKeys(state.map, state.conduits, item.id),
+  );
   const failure = checkPlacement(ctx, def, args.x, args.y, args.rotation);
   if (failure !== null) return failure;
   const moved: PlacedBuilding = {
@@ -791,12 +848,6 @@ function validateInner(
     }
   }
 
-  // Conduits (W1-3 will define them).
-  const conduits = data['conduits'];
-  if (!Array.isArray(conduits) || conduits.length !== 0) {
-    errors.push('conduits: must be an empty array.');
-  }
-
   // Placement rules for every building, against the others and the Core.
   const coreKeys = new Set<number>();
   if (core !== null && errors.every((e) => !e.startsWith('core:'))) {
@@ -826,6 +877,7 @@ function validateInner(
         const at = index.get(cellKey(map, x, y));
         return at !== undefined && at !== i;
       },
+      conduitKeys: new Set<number>(),
     };
     const failure = checkPlacement(ctx, def, b.x, b.y, b.rotation);
     if (failure !== null) {
@@ -835,6 +887,35 @@ function validateInner(
     }
   });
 
+  // Conduits: parsed hostilely, then every rule re-checked (conduits.ts).
+  const conduits = parseConduits(data['conduits'], errors);
+  const conduitIds = new Set<number>();
+  for (const c of conduits) {
+    if (seen.has(c.id) || conduitIds.has(c.id)) {
+      errors.push(`ids: duplicate instance ID ${String(c.id)}.`);
+    }
+    conduitIds.add(c.id);
+  }
+  ordered(conduits, 'conduits');
+  if (isInt(nextId) && nextId >= 1) {
+    for (const c of conduits) {
+      if (nextId <= c.id) {
+        errors.push(
+          `nextId: ${String(nextId)} must be greater than every ID (conduit ${String(c.id)}).`,
+        );
+      }
+    }
+  }
+  const partial: TeamState = {
+    map,
+    core: errors.some((e) => e.startsWith('core:')) ? null : core,
+    buildings: placed,
+    stash,
+    nextId: isInt(nextId) ? nextId : 1,
+    conduits,
+  };
+  checkConduitList(partial, content, errors);
+
   if (errors.length > 0 || !isInt(nextId)) return undefined;
   return {
     map,
@@ -842,7 +923,7 @@ function validateInner(
     buildings: placed,
     stash,
     nextId,
-    conduits: [],
+    conduits,
   };
 }
 
@@ -860,7 +941,7 @@ const KIND_LETTERS: Readonly<Record<string, string>> = {
 /**
  * Like `renderMapAscii` (front row on top), with buildings drawn over the
  * map: `S` source, `R` route, `U` unit producer, `D` defense, `E` economy,
- * `C` Core. A final line gives the legend. The map's own characters (`.`
+ * `C` Core, and `*` for each conduit path cell. A final line gives the legend. The map's own characters (`.`
  * open, `~` lake, `#` cliff, lowercase letters for resource nodes) show
  * where no building stands.
  */
@@ -881,11 +962,14 @@ export function renderTeamStateAscii(
     const ch = KIND_LETTERS[def.kind] ?? '?';
     for (const c of defCells(def, b.x, b.y, b.rotation)) paint(c, ch);
   }
+  for (const conduit of state.conduits) {
+    for (const c of conduit.cells) paint(c, '*');
+  }
   if (state.core !== null) {
     for (const c of coreCells(state.core, content)) paint(c, 'C');
   }
   return [
     ...grid.map((r) => r.join('')),
-    `${legend} | S=source R=route U=unit_producer D=defense E=economy C=core`,
+    `${legend} | S=source R=route U=unit_producer D=defense E=economy C=core *=conduit`,
   ].join('\n');
 }

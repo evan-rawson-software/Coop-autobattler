@@ -7,6 +7,7 @@ import {
   goldenKinds as coreKinds,
   loadAllContentOrThrow,
   loadMapgenOrThrow,
+  makeFlowGraphKind,
   makeMapGenKind,
   makeTeamStateOpsKind,
   type SimulationFn,
@@ -34,4 +35,5 @@ export const goldenKinds: Readonly<Record<string, SimulationFn>> = {
   ...coreKinds,
   'map-gen': makeMapGenKind(content, mapgen),
   'team-state-ops': makeTeamStateOpsKind(content, mapgen),
+  'flow-graph': makeFlowGraphKind(content, mapgen),
 };
