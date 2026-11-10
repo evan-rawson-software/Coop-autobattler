@@ -81,6 +81,8 @@ describe('simulation config', () => {
       overloadIntervalTicks: 100,
       overloadDamageStepPercent: 20,
       overloadCoreDamageStep: 5,
+      maxBattleTicks: 12000,
+      timelineSampleTicks: 50,
     });
   });
   test('bad data is reported', () => {

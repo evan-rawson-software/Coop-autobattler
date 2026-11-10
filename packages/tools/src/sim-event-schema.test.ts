@@ -8,6 +8,7 @@ import {
   loadMapgenOrThrow,
   loadSimConfigOrThrow,
   makeArenaSimKind,
+  makeBattleKind,
   makeFlowSimKind,
 } from '@game/core';
 import {
@@ -108,6 +109,43 @@ describe('sim-event.schema.json', () => {
       'unit_moved',
       'unit_spawned',
     ]);
+  });
+
+  test('every event of every battle vector validates', () => {
+    const seen = new Set<string>();
+    const content = loadAllContentOrThrow({
+      resources: rawResources,
+      terrain: rawTerrain,
+      units: rawUnits,
+      buildings: rawBuildings,
+      presentation: rawPresentationEn,
+    });
+    const kind = makeBattleKind(
+      content,
+      loadMapgenOrThrow(rawMapgen, { terrain: content.terrain }),
+      loadSimConfigOrThrow(rawSim),
+    );
+    const battleVectors = JSON.parse(
+      readFileSync(path.join(repoRoot, 'golden', 'battle.json'), 'utf8'),
+    ) as { id: string; input: never }[];
+    for (const v of battleVectors) {
+      for (const e of kind(v.input).eventLog ?? []) {
+        expect(validate(e), JSON.stringify(e)).toBe(true);
+        seen.add((e as { type: string }).type);
+      }
+    }
+    expect(seen.has('zone_revealed')).toBe(true);
+    expect(seen.has('battle_ended')).toBe(true);
+    expect(
+      validate({ tick: 3, type: 'battle_ended', winner: 2, reason: 'x' }),
+    ).toBe(false);
+    expect(
+      validate({
+        tick: 0,
+        type: 'zone_revealed',
+        zone: { width: 1, depth: 1, features: [] },
+      }),
+    ).toBe(false);
   });
 
   test('malformed events are rejected', () => {

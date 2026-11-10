@@ -26,6 +26,27 @@ export interface MapgenCliffs {
   readonly lengthMax: number;
 }
 
+/** The neutral zone between the two boards of a battle (W1-8, CB-8). */
+export interface NeutralZoneConfig {
+  /** Rows of the zone. */
+  readonly depth: number;
+  /** Lakes per plot of front width: the zone gets `plots * count` in total. */
+  readonly lakes: {
+    readonly countMinPerPlot: number;
+    readonly countMaxPerPlot: number;
+    readonly sizeMin: number;
+    readonly sizeMax: number;
+  };
+  readonly cliffs: {
+    readonly countMinPerPlot: number;
+    readonly countMaxPerPlot: number;
+    readonly lengthMin: number;
+    readonly lengthMax: number;
+  };
+  /** Attempts (each with a new child stream) before generation gives up. */
+  readonly maxAttempts: number;
+}
+
 export interface MapgenConfig {
   readonly plotWidth: number;
   readonly plotDepth: number;
@@ -47,6 +68,8 @@ export interface MapgenConfig {
   /** Tries per lake or cliff before the whole attempt is abandoned. */
   readonly placementTries: number;
   readonly maxAttempts: number;
+  /** The neutral zone generated between the boards of a battle. */
+  readonly neutralZone: NeutralZoneConfig;
 }
 
 export interface MapgenLoadContext {
@@ -70,6 +93,7 @@ const TOP_KEYS = new Set([
   'coreFrontClearance',
   'placementTries',
   'maxAttempts',
+  'neutralZone',
 ]);
 
 function section(
@@ -101,6 +125,99 @@ function readFeature(
     return undefined;
   }
   return feature;
+}
+
+function loadNeutralZone(
+  data: Record<string, unknown>,
+  errors: string[],
+): NeutralZoneConfig | undefined {
+  const rec = section(
+    data,
+    'neutralZone',
+    ['depth', 'lakes', 'cliffs', 'maxAttempts'],
+    errors,
+  );
+  if (!rec) return undefined;
+  const L = 'neutralZone';
+  const depth = readInt(rec, 'depth', 1, L, errors);
+  const maxAttempts = readInt(rec, 'maxAttempts', 1, L, errors);
+  const lakesRec = section(
+    { lakes: rec['lakes'] },
+    'lakes',
+    ['countMinPerPlot', 'countMaxPerPlot', 'sizeMin', 'sizeMax'],
+    errors,
+  );
+  const cliffsRec = section(
+    { cliffs: rec['cliffs'] },
+    'cliffs',
+    ['countMinPerPlot', 'countMaxPerPlot', 'lengthMin', 'lengthMax'],
+    errors,
+  );
+  let lakes: NeutralZoneConfig['lakes'] | undefined;
+  if (lakesRec) {
+    const l = 'neutralZone.lakes';
+    const countMinPerPlot = readInt(lakesRec, 'countMinPerPlot', 0, l, errors);
+    const countMaxPerPlot = readInt(lakesRec, 'countMaxPerPlot', 0, l, errors);
+    const sizeMin = readInt(lakesRec, 'sizeMin', 1, l, errors);
+    const sizeMax = readInt(lakesRec, 'sizeMax', 1, l, errors);
+    if (
+      countMinPerPlot !== undefined &&
+      countMaxPerPlot !== undefined &&
+      countMaxPerPlot < countMinPerPlot
+    )
+      errors.push(
+        `${l}: "countMaxPerPlot" must be at least "countMinPerPlot".`,
+      );
+    if (sizeMin !== undefined && sizeMax !== undefined && sizeMax < sizeMin)
+      errors.push(`${l}: "sizeMax" must be at least "sizeMin".`);
+    if (
+      countMinPerPlot !== undefined &&
+      countMaxPerPlot !== undefined &&
+      sizeMin !== undefined &&
+      sizeMax !== undefined
+    ) {
+      lakes = { countMinPerPlot, countMaxPerPlot, sizeMin, sizeMax };
+    }
+  }
+  let cliffs: NeutralZoneConfig['cliffs'] | undefined;
+  if (cliffsRec) {
+    const l = 'neutralZone.cliffs';
+    const countMinPerPlot = readInt(cliffsRec, 'countMinPerPlot', 0, l, errors);
+    const countMaxPerPlot = readInt(cliffsRec, 'countMaxPerPlot', 0, l, errors);
+    const lengthMin = readInt(cliffsRec, 'lengthMin', 2, l, errors);
+    const lengthMax = readInt(cliffsRec, 'lengthMax', 2, l, errors);
+    if (
+      countMinPerPlot !== undefined &&
+      countMaxPerPlot !== undefined &&
+      countMaxPerPlot < countMinPerPlot
+    )
+      errors.push(
+        `${l}: "countMaxPerPlot" must be at least "countMinPerPlot".`,
+      );
+    if (
+      lengthMin !== undefined &&
+      lengthMax !== undefined &&
+      lengthMax < lengthMin
+    )
+      errors.push(`${l}: "lengthMax" must be at least "lengthMin".`);
+    if (
+      countMinPerPlot !== undefined &&
+      countMaxPerPlot !== undefined &&
+      lengthMin !== undefined &&
+      lengthMax !== undefined
+    ) {
+      cliffs = { countMinPerPlot, countMaxPerPlot, lengthMin, lengthMax };
+    }
+  }
+  if (
+    depth === undefined ||
+    maxAttempts === undefined ||
+    lakes === undefined ||
+    cliffs === undefined
+  ) {
+    return undefined;
+  }
+  return { depth, lakes, cliffs, maxAttempts };
 }
 
 /** Validate parsed map generation data (the contents of mapgen.json). */
@@ -195,6 +312,8 @@ export function loadMapgen(
     }
   }
 
+  const neutralZone = loadNeutralZone(data, errors);
+
   if (plotDepth !== undefined) {
     if (
       backMargin !== undefined &&
@@ -229,7 +348,8 @@ export function loadMapgen(
     typeof nodeCommon !== 'number' ||
     typeof nodeRare !== 'number' ||
     lakes === undefined ||
-    cliffs === undefined
+    cliffs === undefined ||
+    neutralZone === undefined
   ) {
     return { ok: false, errors };
   }
@@ -249,6 +369,7 @@ export function loadMapgen(
       coreFrontClearance,
       placementTries,
       maxAttempts,
+      neutralZone,
     },
   };
 }

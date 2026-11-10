@@ -240,7 +240,7 @@ export {
   createArenaSim,
   runArena,
   spawnUnitForTest,
-  startBattle,
+  startArenaBattle,
   stepArena,
   unitStats,
 } from './arena-sim.js';
@@ -293,3 +293,38 @@ export { rampBonus } from './arena-sim.js';
 export type { RampSim } from './arena-sim.js';
 export { scaledInterval } from './flow-sim.js';
 export { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
+
+// The neutral zone and whole battles (W1-8).
+export {
+  NEUTRAL_ZONE_STREAM,
+  generateNeutralZone,
+  generateNeutralZoneWithStats,
+  makeNeutralZoneKind,
+  neutralZoneProblem,
+  renderNeutralZoneAscii,
+  zoneBlockedCells,
+} from './neutral-zone.js';
+export type {
+  GeneratedNeutralZone,
+  NeutralZone,
+  NeutralZoneContent,
+} from './neutral-zone.js';
+export type { NeutralZoneConfig } from './mapgen.js';
+export { simulateBattle, startBattle } from './battle.js';
+export type {
+  Battle,
+  BattleConfig,
+  BattleError,
+  BattleErrorCode,
+  BattleInput,
+  BattleOptions,
+  BattleReason,
+  BattleResult,
+  BattleSideSummary,
+  BattleSummary,
+  SimulateBattleResult,
+  StartBattleResult,
+  TimelineSample,
+  TimelineSide,
+} from './battle.js';
+export { makeBattleKind } from './battle-kind.js';

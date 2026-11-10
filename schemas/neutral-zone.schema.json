@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "neutral-zone.schema.json",
+  "title": "Neutral zone",
+  "description": "The ground generated between the two boards of a battle (W1-8). Zone-local coordinates: x along the front edge, y = 0 the row touching side 0's front edge, y = depth - 1 the row touching side 1's front edge. features is sorted by (y, x) and lists every blocked cell; the first and last rows and the first and last columns never hold a feature, and all open cells are 4-connected.",
+  "type": "object",
+  "required": ["width", "depth", "features", "pointsOfInterest"],
+  "additionalProperties": false,
+  "properties": {
+    "width": { "type": "integer", "minimum": 1 },
+    "depth": { "type": "integer", "minimum": 0 },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["x", "y", "feature"],
+        "additionalProperties": false,
+        "properties": {
+          "x": { "type": "integer", "minimum": 0 },
+          "y": { "type": "integer", "minimum": 0 },
+          "feature": { "type": "string", "pattern": "^ter_[a-z0-9_]+$" }
+        }
+      }
+    },
+    "pointsOfInterest": {
+      "type": "array",
+      "description": "Always empty for now; reserved so the format does not change when points of interest are added (TA-41a)."
+    }
+  }
+}

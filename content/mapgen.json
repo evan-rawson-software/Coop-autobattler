@@ -24,5 +24,21 @@
   "sideMargin": 1,
   "coreFrontClearance": 8,
   "placementTries": 30,
-  "maxAttempts": 64
+  "maxAttempts": 64,
+  "neutralZone": {
+    "depth": 7,
+    "lakes": {
+      "countMinPerPlot": 0,
+      "countMaxPerPlot": 1,
+      "sizeMin": 3,
+      "sizeMax": 8
+    },
+    "cliffs": {
+      "countMinPerPlot": 0,
+      "countMaxPerPlot": 1,
+      "lengthMin": 2,
+      "lengthMax": 5
+    },
+    "maxAttempts": 64
+  }
 }

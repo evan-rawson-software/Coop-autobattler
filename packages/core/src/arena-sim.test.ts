@@ -13,7 +13,7 @@ import {
   createArenaSim,
   runArena,
   spawnUnitForTest,
-  startBattle,
+  startArenaBattle,
   stepArena,
   type ArenaContext,
   type ArenaEvent,
@@ -239,7 +239,7 @@ describe('movement', () => {
     // A barrier across the gap with a way round at x = 10, 11.
     const wall: Cell[] = [];
     for (let x = 0; x <= 9; x++) wall.push({ x, y: 18 });
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       coreOnly(),
       GAP,
@@ -282,7 +282,7 @@ describe('movement', () => {
   });
 
   test('a unit moves once per moveCooldownTicks, starting after the first', () => {
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       coreOnly(),
       GAP,
@@ -299,7 +299,7 @@ describe('movement', () => {
   });
 
   test('ties between equal paths go to the lowest y, then lowest x of the mover', () => {
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(8, 0),
       coreOnly(8, 0),
       GAP,
@@ -342,7 +342,7 @@ describe('movement', () => {
       return lab.state;
     }
     const run = (withConduit: boolean) => {
-      const b = startBattle(
+      const b = startArenaBattle(
         coreOnly(),
         build(withConduit),
         GAP,
@@ -394,7 +394,7 @@ describe('movement', () => {
 
 describe('combat', () => {
   test('adjacent enemies hit each other simultaneously', () => {
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       coreOnly(),
       GAP,
@@ -431,7 +431,7 @@ describe('combat', () => {
   });
 
   test('a unit attacks the nearest enemy; ties go to the lowest ID', () => {
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       coreOnly(),
       GAP,
@@ -469,7 +469,7 @@ describe('combat', () => {
   test('two equal groups meeting annihilate each other symmetrically', () => {
     // An odd width gives a centre column, so mirrored units face each other.
     const odd = { ...tiny(), width: 11, plotWidth: 11 };
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(4, 0, odd),
       coreOnly(4, 0, odd),
       GAP,
@@ -525,7 +525,7 @@ describe('combat', () => {
     const lab = new Lab(tiny([[5, 12, 'res_a']]));
     lab.core(0, 0);
     const src = lab.put('bld_extractor', 5, 12, 0, 3);
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       lab.state,
       GAP,
@@ -559,7 +559,7 @@ describe('targeting', () => {
     const wall = lab.put('bld_wall', 6, 14);
     const src = lab.put('bld_extractor', 8, 5);
     const sp = lab.put('bld_splitter', 3, 5);
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       lab.state,
       GAP,
@@ -614,7 +614,7 @@ describe('targeting', () => {
         ],
       }),
     };
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       lab.state,
       GAP,
@@ -654,7 +654,7 @@ describe('targeting', () => {
         ],
       }),
     };
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       lab.state,
       GAP,
@@ -679,7 +679,7 @@ describe('targeting', () => {
   });
 
   test('with nothing left to attack, units wait', () => {
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       coreOnly(),
       GAP,
@@ -723,7 +723,7 @@ describe('breaching sealed bases (CB-20)', () => {
 
   test('units break through the weakest point and then reach the Core', () => {
     const { lab, weak, strong } = sealed();
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       lab.state,
       GAP,
@@ -769,7 +769,7 @@ describe('breaching sealed bases (CB-20)', () => {
     // Enemy base: Core in a corner, walled by a 100 hp wall at the front and a
     // 240 hp wall that is as near: the units pick by cost, not distance.
     const { lab, weak } = sealed();
-    const { sim, ctx } = startBattle(
+    const { sim, ctx } = startArenaBattle(
       coreOnly(),
       lab.state,
       GAP,
@@ -823,7 +823,7 @@ describe('destruction', () => {
 
   test('destroying a splitter removes its conduits and starves what is downstream', () => {
     const n = network();
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       n.lab.state,
       GAP,
@@ -896,7 +896,7 @@ describe('destruction', () => {
 
   test('a destroyed source stops producing and its counters stay in the totals', () => {
     const n = network();
-    const { sim, ctx } = startBattle(
+    const { sim, ctx } = startArenaBattle(
       coreOnly(),
       n.lab.state,
       GAP,
@@ -926,7 +926,13 @@ describe('destruction', () => {
 
   test('a restored state continues exactly like the original', () => {
     const n = network();
-    const a = startBattle(coreOnly(), n.lab.state, GAP, content, simConfig);
+    const a = startArenaBattle(
+      coreOnly(),
+      n.lab.state,
+      GAP,
+      content,
+      simConfig,
+    );
     spawnUnitForTest(a.sim, a.ctx, {
       side: 0,
       def: 'unit_raider',
@@ -973,7 +979,7 @@ describe('production', () => {
     // is delivered in tick 19 + 2 + 20 (k - 1); the sixth, in tick 121,
     // completes the first unit in that same tick. Then every 120 ticks.
     const { lab, bar } = farm(1, 2);
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       lab.state,
       GAP,
@@ -1000,7 +1006,7 @@ describe('production', () => {
 
   test('a tier 2 barracks (cost 5) over a direct-ish link spawns every 100 ticks', () => {
     const { lab } = farm(2, 1);
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       lab.state,
       GAP,
@@ -1016,7 +1022,7 @@ describe('production', () => {
 
   test('units spawn on the free neighbour closest to the goal, with fixed tie-breaks', () => {
     const { lab, bar } = farm(1, 2);
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       lab.state,
       GAP,
@@ -1075,7 +1081,7 @@ describe('determinism and symmetry', () => {
 
   test('a mirror match stays exactly symmetric for 700 ticks', () => {
     const team = farmTeam();
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       team,
       team,
       GAP,
@@ -1110,8 +1116,8 @@ describe('determinism and symmetry', () => {
 
   test('identical inputs give identical states and events', () => {
     const team = farmTeam();
-    const a = startBattle(team, team, GAP, content, simConfig);
-    const b = startBattle(team, team, GAP, content, simConfig);
+    const a = startArenaBattle(team, team, GAP, content, simConfig);
+    const b = startArenaBattle(team, team, GAP, content, simConfig);
     runArena(a.sim, a.ctx, 400);
     runArena(b.sim, b.ctx, 400);
     expect(hashJson(a.sim)).toBe(hashJson(b.sim));
@@ -1125,7 +1131,7 @@ describe('rendering', () => {
     lab.core(5, 0);
     lab.put('bld_extractor', 2, 2);
     lab.put('bld_barracks', 2, 6);
-    const { sim, ctx } = startBattle(
+    const { sim, ctx } = startArenaBattle(
       lab.state,
       coreOnly(),
       2,
@@ -1192,7 +1198,7 @@ describe('stress', () => {
         lab.core(40, 6);
         return lab.state;
       })();
-      const { sim, ctx } = startBattle(team, team, 8, content, simConfig);
+      const { sim, ctx } = startArenaBattle(team, team, 8, content, simConfig);
       // 150 units on each side in the open ground between the bases; they meet
       // within the first 30 ticks.
       for (let k = 0; k < 300; k++) {
@@ -1375,7 +1381,7 @@ describe('property: turrets and gates', () => {
           (n, t) => n + t.buildings.filter((x) => x.def === 'bld_gate').length,
           0,
         );
-        const { sim, ctx, events } = startBattle(
+        const { sim, ctx, events } = startArenaBattle(
           a,
           b,
           seed % 4,
@@ -1417,7 +1423,7 @@ describe('property: random battles', () => {
     for (let seed = 1; seed <= 12; seed++) {
       const a = randomNetwork(seed, { core: true });
       const b = randomNetwork(seed + 3, { core: true });
-      const { sim, ctx, events } = startBattle(
+      const { sim, ctx, events } = startArenaBattle(
         a,
         b,
         seed % 4,

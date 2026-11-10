@@ -31,6 +31,10 @@ export interface SimConfig {
   readonly overloadDamageStepPercent: number;
   /** Core damage per Overload level, applied once per interval to both Cores. */
   readonly overloadCoreDamageStep: number;
+  /** Hard cap on battle length in ticks (CB-33 safety net). */
+  readonly maxBattleTicks: number;
+  /** Ticks between timeline samples in a battle summary. */
+  readonly timelineSampleTicks: number;
 }
 
 export type SimConfigLoadResult = LoadResult<SimConfig>;
@@ -48,6 +52,8 @@ const KEYS = new Set([
   'overloadIntervalTicks',
   'overloadDamageStepPercent',
   'overloadCoreDamageStep',
+  'maxBattleTicks',
+  'timelineSampleTicks',
 ]);
 
 /** Validate parsed simulation configuration (the contents of sim.json). */
@@ -110,8 +116,18 @@ export function loadSimConfig(data: unknown): SimConfigLoadResult {
     'sim',
     errors,
   );
+  const maxBattleTicks = readInt(data, 'maxBattleTicks', 1, 'sim', errors);
+  const timelineSampleTicks = readInt(
+    data,
+    'timelineSampleTicks',
+    1,
+    'sim',
+    errors,
+  );
   if (
     errors.length > 0 ||
+    maxBattleTicks === undefined ||
+    timelineSampleTicks === undefined ||
     maxSourceSpeedPercent === undefined ||
     maxUnitStrengthPercent === undefined ||
     overloadStartTick === undefined ||
@@ -140,6 +156,8 @@ export function loadSimConfig(data: unknown): SimConfigLoadResult {
       overloadIntervalTicks,
       overloadDamageStepPercent,
       overloadCoreDamageStep,
+      maxBattleTicks,
+      timelineSampleTicks,
     },
   };
 }

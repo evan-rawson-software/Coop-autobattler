@@ -173,7 +173,8 @@ Kinds currently defined: `placeholder-duel` (pipeline check only, not a rule),
 same list, and the final state), `prng-child` (the parent state and the first
 `count` outputs of `child(label)`), `map-gen` (see Map generation),
 `team-state-ops` (see Team state and placement), `flow-graph` (see Conduits), `flow-sim` (see Tick order), `arena-sim` (see
-"Golden kind `arena-sim`"), `enemy-paths` (see "Enemy-path preview").
+"Golden kind `arena-sim`"), `enemy-paths` (see "Enemy-path preview"),
+`neutral-zone` and `battle` (see "The neutral zone" and "Battles").
 
 In the reference implementation the registry is `goldenKinds` in
 `packages/core/src/golden-kinds.ts`; a new kind is one added entry. Kinds that
@@ -231,6 +232,9 @@ no node on a feature cell.
 `sideMargin` (at least 1); `coreFrontClearance`; `placementTries`;
 `maxAttempts`. Starting values: 24, 16, 4; 3 and 1; lakes 1 to 2 of 6 to 14
 cells; cliffs 1 to 2 of 4 to 8 cells; 80; 2, 1, 1; 8; 30; 64.
+
+The file also holds the `neutralZone` object used only by battles (see "The
+neutral zone"); board generation does not read it.
 
 ### Random draws
 
@@ -721,7 +725,9 @@ chases an enemy unit; see "One battle tick", step 3a2), `maxSourceSpeedPercent`
 (see "In-battle ramp (economy buildings)"), and the Overload constants
 `overloadStartTick` (2400), `overloadIntervalTicks` (100),
 `overloadDamageStepPercent` (20) and `overloadCoreDamageStep` (5) (see
-"Overload"). Later issues add fields.
+"Overload"), `maxBattleTicks` (12000, the hard cap on a battle, see "Battles")
+and `timelineSampleTicks` (50, the sampling interval of the battle summary
+timeline). Later issues add fields.
 
 ### Items
 
@@ -952,9 +958,10 @@ and `H = 2h + gapRows` tall:
 
 - Side 0's board occupies arena rows `0 .. h - 1` unchanged: arena `(x, y)` =
   board `(x, y)`.
-- Rows `h .. h + gapRows - 1` are the gap: open ground (the future neutral
-  zone). An optional list of **blocked gap cells** may block some of them
-  (it must lie inside the gap rows).
+- Rows `h .. h + gapRows - 1` are the gap: open ground, the neutral zone of a
+  battle (see "The neutral zone"). An optional list of **blocked gap cells**
+  may block some of them (it must lie inside the gap rows); a battle passes
+  the zone's lakes and cliffs this way.
 - Side 1's board is rotated 180 degrees: board cell `(x, y)` is arena cell
   `(W - 1 - x, H - 1 - y)`. `toArena(side, cell)` and `toBoard(side, cell)` are
   the two directions of this map (the rotation is its own inverse; side 0 is
@@ -1145,7 +1152,9 @@ exactly like the original.
    attackers, and from turret shots, is summed per target and applied together
    (so two units can kill each other in the same tick; a target that is killed
    this tick still receives every blow aimed at it). Each attacker's `attackCooldown` becomes
-   `attackCooldownTicks`. A building's health stops at 0. Events
+   `attackCooldownTicks`. A building's health stops at 0 (a Core's health
+   value after all damage of the tick, which may be negative, is also kept for
+   the tiebreak, see "Battles"). Events
    (`unit_attacked`) are recorded in unit-`id` order. **Core decay**: on an
    Overload beat, each _living_ Core (side 0, then side 1) takes `level *
    overloadCoreDamageStep` damage, added to the damage of this step (so it is
@@ -1170,9 +1179,10 @@ exactly like the original.
      simply stop receiving. A destroyed economy building also leaves
      `ramps`, so its contribution leaves the side's bonus total at once. A
      destroyed Core is only recorded: the Core's
-     cells become open and the battle goes on (ending it belongs to a later
-     issue; `stepArena` stays safe to call, and Core decay skips a destroyed
-     Core). Both Cores can fall in the same tick: nothing is decided here.
+     cells become open (`stepArena` itself never ends a battle and stays safe
+     to call, and Core decay skips a destroyed Core; the battle-end rule is
+     checked after the tick by the code in "Battles"). Both Cores can fall in
+     the same tick.
    - After any destruction every cached movement field is dropped.
 7. **Cooldowns.** Each living turret's non-zero `cooldown` and each surviving
    unit's non-zero `moveCooldown` and `attackCooldown` decreases by 1. Then
@@ -1315,8 +1325,11 @@ Overload guarantees that battles end. Constants (`content/sim.json`):
   total is `5 * n * (n + 1) / 2`: 455 after 13 beats (last at 3600), 525 after
   14 (last at 3700), so with the Core health of 500 both Cores are destroyed
   at tick 3700 (level 14, damage 70). Both Cores may fall in the same tick; the
-  simulation records `core_destroyed` for each and decides nothing else (the
-  battle-end rule and the tiebreak belong to a later issue).
+  simulation records `core_destroyed` for each; the battle-end rule and the
+  tiebreak are in "Battles". With a Core health of 500 this bounds every
+  battle: whatever else happens, both Cores are gone at tick 3700 at the
+  latest, so a battle never lasts beyond 3701 ticks with the standard
+  constants.
 
 ### Events (arena log)
 
@@ -1337,6 +1350,8 @@ shot is recorded in step 3, before the step 4 attack events):
 | `overload_started`   | (none)                                                          |
 | `overload_level`     | `level` (the new level)                                         |
 | `overload_core_damage` | `side`, `damage`                                              |
+| `zone_revealed`      | `zone` (the neutral zone); recorded by a battle at tick 0, first in the log |
+| `battle_ended`       | `winner`, `reason`; recorded by a battle as its last event, `tick` is the last tick that ran |
 
 `target` is `{kind: "unit", unit}`, `{kind: "building", side, building}` or
 `{kind: "core", side}`. The four flow events (`produced`, `delivered`, `lost`,
@@ -1420,10 +1435,11 @@ terrain, a wall, a gate and a turret; a sealed base with one weak wall).
 ### Seams for later issues
 
 `unitStats` is the single place unit stats are modified (the `unit_strength`
-bonus at spawn). `stepArena`
-does not assume the gap is open ground (blocked gap cells already work), and
-does not end the battle: W1-8 adds the neutral zone, battle end and the top
-level entry point.
+bonus at spawn). `stepArena` does not assume the gap is open ground (blocked
+gap cells are how the neutral zone enters), and does not end the battle: the
+neutral zone, the battle end and the top-level entry point are in "The neutral
+zone" and "Battles". Points of interest and neutral guards are deferred (CB-8
+to CB-8c): the zone format reserves a `pointsOfInterest` list for them.
 
 ### Decided simplifications
 
@@ -1448,6 +1464,275 @@ level entry point.
   it then falls through to its normal choices (goal building, movement
   field), and may step back towards the enemy next time. Such back-and-forth
   is possible but was not observed in the random-battle tests.
+
+## The neutral zone
+
+Implemented in `packages/core/src/neutral-zone.ts`; parameters in
+`content/mapgen.json` under `neutralZone` (loader `mapgen.ts`); schema
+`schemas/neutral-zone.schema.json`; golden kind `neutral-zone`. A battle is
+fought on the two sides' boards with a small neutral zone between them (CB-8).
+Its lakes and cliffs are different every battle and hidden from players until
+the battle begins (the battle's first event reveals them).
+
+### Format
+
+`generateNeutralZone(battleSeed, width, content, mapgenConfig)` returns plain
+JSON `{ width, depth, features, pointsOfInterest }`:
+
+- `width` is the front width (the boards' width), `depth` the number of rows.
+- Zone-local coordinates: `x` along the front edge (the same `x` as the
+  arena's), `y = 0` is the zone row touching **side 0's** front edge,
+  `y = depth - 1` the row touching side 1's front edge. In the arena the zone
+  row `y` is arena row `h + y` with `h` the board height.
+- `features` lists every feature cell as `{x, y, feature}` (a terrain ID),
+  sorted by `(y, x)`; a cell not listed is open ground. A feature blocks
+  movement exactly when its terrain entry says `blocksMovement` (the same flag
+  the boards use).
+- `pointsOfInterest` is always `[]` for now. It is in the format so that the
+  format does not change when points of interest are added (TA-41a).
+
+### Parameters (`content/mapgen.json`, `neutralZone`)
+
+`depth` (7), `lakes` `{countMinPerPlot, countMaxPerPlot, sizeMin, sizeMax}`
+(0 to 1 per plot, 3 to 8 cells), `cliffs` `{countMinPerPlot, countMaxPerPlot,
+lengthMin, lengthMax}` (0 to 1 per plot, 2 to 5 cells) and `maxAttempts` (64).
+The feature IDs are those of `lakes.feature` and `cliffs.feature` in the same
+file, and `placementTries` (30) is shared with board generation. "Per plot"
+means per `plotWidth` columns of front width: `plots = ceil(width /
+plotWidth)` (a hand-made board narrower than a plot counts as one plot), and
+the zone's counts are `plots * countMinPerPlot` to `plots * countMaxPerPlot`.
+A four-player battle therefore gets up to four lakes and four cliffs.
+
+### Constraints
+
+Every accepted zone satisfies all of:
+
+1. the first row (`y = 0`) and the last row (`y = depth - 1`) contain no
+   features, so no part of either front edge is sealed;
+2. the leftmost and rightmost columns (`x = 0`, `x = width - 1`) contain no
+   features;
+3. every open cell (a cell without a `blocksMovement` feature) is
+   4-connected to every other open cell, so the zone can be crossed from every
+   front-edge cell on both sides.
+
+Features are placed only in the region `x = 1 .. width - 2`, `y = 1 .. depth -
+2`, which makes rules 1 and 2 hold by construction; rule 3 is checked after
+placement. If that region is empty (width or depth below 3) no features are
+placed.
+
+### Random draws
+
+The zone derives **only** from the battle seed and the width (and the content
+and configuration), so a battle is reproducible from `(teamA, teamB, seed)`
+(CB-8a). The two teams never influence it.
+
+- `root = Rng.fromSeed(battleSeed)`; nothing is drawn from `root`.
+- `zoneRng = root.child("neutral-zone")` (string label); nothing is drawn from
+  it.
+- Attempt `a` (counting from 0, up to `neutralZone.maxAttempts`): `A =
+  zoneRng.child(a)` with `a` as an integer label; nothing is drawn from `A`.
+  `lakesRng = A.child("lakes")` and `cliffsRng = A.child("cliffs")`.
+- Lakes first, then cliffs, each from its own stream. `between` is as in map
+  generation (exactly one `nextInt` call).
+  1. `count = between(lakesRng, plots * lakes.countMinPerPlot, plots *
+     lakes.countMaxPerPlot)`. This draw is always made, also when the region is
+     empty.
+  2. For each lake, up to `placementTries` tries: `size = between(lakesRng,
+     sizeMin, sizeMax)`; start cell `x = between(lakesRng, 1, width - 2)`,
+     then `y = between(lakesRng, 1, depth - 2)`; if that cell already holds a
+     feature the try fails. Otherwise the lake grows to `size` cells exactly as
+     in map generation (candidates are the unused region cells 4-adjacent to
+     the lake, collected by scanning the lake's cells in the order they were
+     added and the directions north `(0, -1)`, east, south, west, without
+     duplicates; one is chosen with `lakesRng.nextInt(candidates.length)`); if
+     no candidate remains the try fails. After `placementTries` failed tries
+     the attempt fails.
+  3. `count = between(cliffsRng, plots * cliffs.countMinPerPlot, plots *
+     cliffs.countMaxPerPlot)` (always drawn).
+  4. For each cliff, up to `placementTries` tries, with the draws of a board
+     cliff in this order: `length = between(cliffsRng, lengthMin,
+     lengthMax)`, `bend = nextInt(2)`, `d1 = nextInt(4)`, start `x =
+     between(1, width - 2)`, `y = between(1, depth - 2)`, `firstLen = 1 +
+     nextInt(length - 1)`, `perp = nextInt(2)`. The cliff goes `length` cells
+     from the start in direction `d1`; with `bend = 1` it goes `firstLen` cells
+     in `d1` and the rest in the direction `(d1 + 1) mod 4` (`perp = 0`) or
+     `(d1 + 3) mod 4` (`perp = 1`) from the last of those cells. Directions are
+     indexed north, east, south, west. The try fails if any cell is outside the
+     region or already holds a feature.
+- After placement, constraint 3 is checked on the open cells; if it fails the
+  attempt fails. A failed attempt is simply replaced by attempt `a + 1`. If
+  all attempts fail an error is raised. With the standard content, over 500
+  seeds and all four widths (2000 zones), 1991 zones were accepted at the first
+  attempt, 9 needed a second one and none a third.
+
+### Golden kind `neutral-zone`
+
+Input `{seed, partySize}`; the width is `partySize * plotWidth`. Result
+`{zone, hash, attempts}` with `hash = hashJson(zone)`. Vectors:
+`golden/neutral-zone.json`, one per party size 1 to 4.
+
+### Samples
+
+One plot (seed 7, first attempt; `y = 0` is side 0's edge, `~` lake, `#` cliff):
+
+```
+........................
+...................~....
+...................~~...
+.##.................~...
+....................~...
+....................~...
+........................
+```
+
+Four plots (seed 3, first attempt):
+
+```
+................................................................................................
+................................................................................................
+...............................###..............................................................
+................................##..............................................................
+................................................................................................
+.........................................................................#####..................
+................................................................................................
+```
+
+## Battles
+
+Implemented in `packages/core/src/battle.ts` (golden kind `battle`:
+`battle-kind.ts`). **Side 0 is always the party and side 1 the opponent** (the
+defender, also called the ghost when the opponent is a recorded team). A
+battle is a pure function of `(teamA, teamB, seed)`, the content and the
+configuration (CB-30).
+
+### Assembly
+
+`startBattle({teamA, teamB, seed}, content, {sim, mapgen}, options?)` sets a
+battle up at tick 0, or returns `{ok: false, error}`. The checks run in this
+order and the first failure is reported:
+
+1. `party_size_mismatch`: the boards differ in width. Equal party sizes (1 to
+   4) run; different ones never do. This is checked before anything else.
+2. `board_size_mismatch`: the boards differ in height (not reachable with
+   generated boards).
+3. `core_not_placed` (with the `side`): a side's Core is not placed, side 0
+   checked first.
+4. `invalid_zone`: only with the test-only option below.
+
+Then the neutral zone is generated from `seed` and the width (above), the
+arena is built with `gapRows = zone.depth` and the zone's blocked cells as the
+gap (see "The arena"), and the first event `zone_revealed {zone}` is recorded
+at tick 0.
+
+These follow from the arena rules and are checked by tests: nothing can be
+built in the zone (a board is exactly its own `h` rows); no building has cells
+or conduits in a zone row; no building acts in the zone (turrets only shoot
+units standing in their owner's own rows; production and flow stay on the
+boards); only units fight there. A unit producer on a front row may spawn a
+unit onto the first zone row.
+
+The only test-only switch is `options.zone`: a zone to use instead of the
+generated one (for example an empty or point-symmetric zone, so that a mirror
+match stays exactly symmetric). It must have the boards' width and satisfy the
+zone constraints, otherwise `invalid_zone`.
+
+### Core health and overkill
+
+Core health is clamped at 0 for display. In the tick where damage takes a
+Core to 0 or below, the health value after **all** of that tick's damage (unit
+attacks and Overload decay) is also kept unclamped, so it may be negative
+(`remaining`); for a living Core it equals its health. The summary reports
+`coreOverkill = -remaining` for a destroyed Core (0 if the Core ended exactly
+at 0) and 0 for a living one.
+
+### End conditions (CB-33)
+
+Checked at the end of each tick, after `stepArena`, in this order. The first
+that applies ends the battle.
+
+1. **One Core destroyed**: the other side wins, `reason: "core_destroyed"`.
+2. **Both Cores destroyed in the same tick**: compare each side's `remaining`.
+   The side with the **higher** value (the Core that ended the tick less far
+   below zero, that is, the side that took less overkill) wins, `reason:
+   "tiebreak_overkill"`. If they are equal, side 1 (the defender) wins,
+   `reason: "tiebreak_defender"`.
+3. **Time limit**: `maxBattleTicks` (12000) ticks have been simulated with
+   both Cores alive: the side with the higher Core health as a fraction of its
+   Core's maximum health wins, compared by cross-multiplication in integers
+   (`hp0 * max1` against `hp1 * max0`); if equal, side 1 wins. `reason:
+   "time_limit"`. With Overload this is unreachable (see the bound under
+   "Overload"); it is a safety net, tested with Overload effectively disabled.
+
+Once a battle has ended nothing steps any more: `step()` does nothing and
+`simulateBattle` stops. The result is `{winner, reason, endTick}` with `winner`
+0 or 1 and `endTick` the number of ticks simulated (the last tick that ran has
+number `endTick - 1`; the closing `battle_ended` event carries that tick).
+
+### Entry points
+
+- `startBattle(...)` returns `{ok: true, battle}`; the handle has `step()`
+  (run one tick, record events, check the end), `isOver()`, `result()`
+  (`null` while running), `summary()` (valid at any time), `zone`, `sim` (the
+  plain-JSON `ArenaSim`) and `eventLog`. Playback and tools use this.
+- `simulateBattle(input, content, config, options?)` runs a battle to its end
+  with `startBattle`: `{ok: true, result, summary, eventLog, zone}` or `{ok:
+  false, error}` where `error` is `{code, message, side?}`.
+
+### Event log
+
+The log is the arena event list (see "Events (arena log)") with two events
+added: `zone_revealed {zone}` first (tick 0) and `battle_ended {winner,
+reason}` last (the tick of the last step). It is plain JSON; its hash is the
+vector's `eventLogHash`.
+
+### Summary
+
+`summary = {sides: [party, opponent], timeline}`. Per side:
+
+| Field           | Meaning                                                              |
+| --------------- | -------------------------------------------------------------------- |
+| `unitsSpawned`  | Units spawned over the battle.                                       |
+| `unitsLost`     | Units that died.                                                     |
+| `buildingsLost` | Buildings destroyed (the Core is not counted).                       |
+| `coreHealth`    | Core health at the end, clamped at 0.                                |
+| `coreMaxHealth` | The Core's maximum health.                                           |
+| `coreOverkill`  | See "Core health and overkill".                                      |
+| `rampSteps`     | `ramp_step` events of the side (steps of destroyed buildings count). |
+
+`timeline` is a list of samples `{tick, sides: [s0, s1]}` with `s = {units,
+unitHealth, buildings}`: units alive, the sum of their current health, and
+placed buildings alive (the Core is not counted). The first sample is at tick
+0, then one after every `timelineSampleTicks` (50) simulated ticks, and one at
+`endTick` unless it coincides with a regular sample. The golden vectors leave
+the timeline out.
+
+### Golden kind `battle`
+
+Input `{teamA, teamB, seed}`; each team is a `team-state-ops` script (`map` or
+`seed` and `partySize`, and `ops`). Result for a battle that ran: `{ok: true,
+result, summary (without timeline), zone, stateHash, events}` where
+`stateHash` is the hash of the final `ArenaSim` and `events` the length of the
+event log; the event log is the vector's `eventLogHash`. For a refused battle:
+`{ok: false, error: {code, message}}` (no event log). Vectors:
+`golden/battle.json`: a mirror match (it ends by the defender tiebreak: every
+soldier has died by then and Overload destroys both Cores at tick 3700);
+rush against fortify-and-ramp; a quick one-sided battle; a walled stalemate
+ended by Overload; party sizes 1 and 2 refused.
+
+### Decided simplifications
+
+- The neutral zone is not symmetric, so a mirrored pair of boards does not
+  give an exactly symmetric battle with a generated zone; symmetry holds only
+  for an empty or point-symmetric zone (the test-only option).
+- Units in the zone have no special rules: it is open ground (or lake and
+  cliff) like any board cell.
+- The Core health fraction in the time-limit rule uses the Core's maximum
+  health as built from the content (the same for both sides today).
+
+## Performance budget
+
+See `docs/performance-budget.md` (CB-36): baseline measurements of whole
+battles and the proposed budgets.
 
 ## Resolution order
 

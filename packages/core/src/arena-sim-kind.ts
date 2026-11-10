@@ -105,6 +105,6 @@ export function makeArenaSimKind(
       events: events.length,
       sides: summarizeArena(sim),
     };
-    return { result, eventLog: events };
+    return { result, eventLog: events as unknown as Json[] };
   };
 }

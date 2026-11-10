@@ -15,7 +15,9 @@
     "overloadStartTick",
     "overloadIntervalTicks",
     "overloadDamageStepPercent",
-    "overloadCoreDamageStep"
+    "overloadCoreDamageStep",
+    "maxBattleTicks",
+    "timelineSampleTicks"
   ],
   "additionalProperties": false,
   "properties": {
@@ -74,6 +76,16 @@
       "description": "Core damage per Overload level. On every interval tick both Cores take level * step damage.",
       "type": "integer",
       "minimum": 0
+    },
+    "maxBattleTicks": {
+      "description": "Hard cap on battle length in ticks (CB-33). A battle that reaches it with both Cores alive is decided by relative Core health. Overload makes this unreachable in normal play.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "timelineSampleTicks": {
+      "description": "Ticks between samples of the battle summary timeline.",
+      "type": "integer",
+      "minimum": 1
     }
   }
 }

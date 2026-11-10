@@ -3,7 +3,7 @@ import { toArena } from './arena.js';
 import { openFor } from './arena-paths.js';
 import {
   spawnUnitForTest,
-  startBattle,
+  startArenaBattle,
   stepArena,
   type ArenaContext,
   type ArenaEvent,
@@ -79,7 +79,7 @@ describe('walls', () => {
     const lab = new Lab(tiny());
     lab.core(5, 0);
     const wall = lab.put('bld_wall', 3, 8);
-    const { sim, ctx } = startBattle(
+    const { sim, ctx } = startArenaBattle(
       lab.state,
       coreOnly(),
       GAP,
@@ -110,7 +110,13 @@ describe('gates', () => {
 
   test('open for the owner, blocking for the enemy', () => {
     const { state } = gateBoard();
-    const { ctx } = startBattle(state, coreOnly(), GAP, content, simConfig);
+    const { ctx } = startArenaBattle(
+      state,
+      coreOnly(),
+      GAP,
+      content,
+      simConfig,
+    );
     const k = 8 * W + 6;
     expect(openFor(ctx.arena, 0, k)).toBe(true);
     expect(openFor(ctx.arena, 1, k)).toBe(false);
@@ -120,7 +126,7 @@ describe('gates', () => {
 
   test('the owner walks out through the gate', () => {
     const { state } = gateBoard();
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       state,
       coreOnly(),
       GAP,
@@ -144,7 +150,7 @@ describe('gates', () => {
 
   test('the enemy is held until the gate falls, then walks through the same cell', () => {
     const { state, gate } = gateBoard();
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       state,
       coreOnly(),
       GAP,
@@ -203,7 +209,7 @@ describe('gates', () => {
     lab.put('bld_wall', 1, 4);
     lab.put('bld_wall', 1, 5);
     lab.put('bld_wall', 3, 3);
-    const { sim, ctx } = startBattle(
+    const { sim, ctx } = startArenaBattle(
       lab.state,
       coreOnly(),
       GAP,
@@ -249,7 +255,7 @@ describe('turrets', () => {
 
   test('never fires at a unit that has not crossed the front edge', () => {
     const { state, turret } = turretBoard(true);
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       state,
       coreOnly(),
       GAP,
@@ -287,7 +293,7 @@ describe('turrets', () => {
     const lab = new Lab(tiny(ALL_B([3])));
     lab.core(8, 0);
     turretLane(lab, 3, 15);
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       lab.state,
       GAP,
@@ -313,7 +319,7 @@ describe('turrets', () => {
 
   test('an unpowered turret never fires; restored supply restores fire', () => {
     const none = turretBoard(false);
-    const a = startBattle(none.state, coreOnly(), GAP, content, simConfig);
+    const a = startArenaBattle(none.state, coreOnly(), GAP, content, simConfig);
     park(a.sim, a.ctx, 4, 15);
     for (let t = 0; t < 200; t++) stepArena(a.sim, a.ctx);
     expect(ofType(a.events, 'turret_fired')).toEqual([]);
@@ -325,7 +331,7 @@ describe('turrets', () => {
     // 210 and is delivered at tick 211, charged in the same tick's Production
     // step, and fired in the same tick's Decide step.
     const { state } = turretBoard(true);
-    const b = startBattle(state, coreOnly(), GAP, content, simConfig);
+    const b = startArenaBattle(state, coreOnly(), GAP, content, simConfig);
     got(b.sim.boards[0].sources[0]).countdown = 200;
     const foe = park(b.sim, b.ctx, 4, 15);
     for (let t = 0; t < 300; t++) stepArena(b.sim, b.ctx);
@@ -338,7 +344,7 @@ describe('turrets', () => {
 
   test('an idle charged turret backs up its conduit instead of draining it', () => {
     const { state } = turretBoard(true);
-    const { sim, ctx } = startBattle(
+    const { sim, ctx } = startArenaBattle(
       state,
       coreOnly(),
       GAP,
@@ -358,7 +364,7 @@ describe('turrets', () => {
 
   test('a turret with no target keeps its charge and cooldown ticks down', () => {
     const { state } = turretBoard(true, 3); // tier 3: cost 2, cooldown 6
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       state,
       coreOnly(),
       GAP,
@@ -379,7 +385,7 @@ describe('turrets', () => {
 
   test('targets the nearest unit by Manhattan distance, ties to the lowest ID', () => {
     const { state } = turretBoard(true);
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       state,
       coreOnly(),
       GAP,
@@ -397,7 +403,13 @@ describe('turrets', () => {
 
   test('turrets block movement like any building and can be destroyed', () => {
     const { state, turret } = turretBoard(true);
-    const { ctx } = startBattle(state, coreOnly(), GAP, content, simConfig);
+    const { ctx } = startArenaBattle(
+      state,
+      coreOnly(),
+      GAP,
+      content,
+      simConfig,
+    );
     expect(openFor(ctx.arena, 0, 15 * W + 3)).toBe(false);
     expect(openFor(ctx.arena, 1, 15 * W + 3)).toBe(false);
     expect(turret).toBeGreaterThan(0);
@@ -405,7 +417,7 @@ describe('turrets', () => {
 
   test('a destroyed turret stops firing and leaves the state', () => {
     const { state } = turretBoard(true);
-    const { sim, ctx } = startBattle(
+    const { sim, ctx } = startArenaBattle(
       state,
       coreOnly(),
       GAP,
@@ -450,7 +462,7 @@ describe('funnelling', () => {
   }
 
   function runWave(funnel: boolean): { dead: number; leftHp: number } {
-    const { sim, ctx } = startBattle(
+    const { sim, ctx } = startArenaBattle(
       killZone(funnel),
       coreOnly(),
       GAP,
@@ -494,7 +506,7 @@ describe('aggro', () => {
     // Each unit walks straight along its own column towards the enemy Core
     // (side 1's Core covers arena columns 6..7, side 0's covers 5..6), and
     // the two columns, 7 and 5, are two apart: without aggro they pass.
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(5, 0),
       coreOnly(4, 0),
       GAP,
@@ -524,7 +536,7 @@ describe('aggro', () => {
       [13, true], // distance 4 from (3, 17): ignored
       [14, false], // distance 3: chased
     ] as const) {
-      const { sim, ctx, events } = startBattle(
+      const { sim, ctx, events } = startArenaBattle(
         coreOnly(),
         coreOnly(),
         GAP,
@@ -558,7 +570,7 @@ describe('aggro', () => {
     // A lake cell between the two: the chaser must not step onto it.
     const map = tiny([], [[3, 16]]);
     const a = coreOnly(5, 0, map);
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       a,
       coreOnly(),
       0,
@@ -594,7 +606,7 @@ describe('aggro convergence (Chebyshev reach, larger-axis step)', () => {
 
   /** First tick at which A and B attack each other, or -1. */
   function meet(a: Cell, b: Cell, bMoves: boolean, ticks: number): number {
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       coreOnly(),
       8,
@@ -683,7 +695,7 @@ describe('aggro convergence (Chebyshev reach, larger-axis step)', () => {
   });
 
   test('nearest enemy: Chebyshev first, then Manhattan, then lowest ID', () => {
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       coreOnly(),
       8,
@@ -716,7 +728,7 @@ describe('aggro convergence (Chebyshev reach, larger-axis step)', () => {
     // Lake directly east of the chaser; the enemy is further east and a row
     // up, so the x step is blocked and it steps along y instead.
     const map = tiny([], [[6, 17]]);
-    const { sim, ctx, events } = startBattle(
+    const { sim, ctx, events } = startArenaBattle(
       coreOnly(5, 0, map),
       coreOnly(),
       8,
@@ -840,7 +852,7 @@ describe('enemy-path preview', () => {
     const paths = previewEnemyPaths(lab.state, content, simConfig);
     for (const x of [0, 3, 5, 9, 11]) {
       const p = got(paths.find((q) => q.entry.x === x));
-      const { sim, ctx, events } = startBattle(
+      const { sim, ctx, events } = startArenaBattle(
         lab.state,
         coreOnly(),
         GAP,
