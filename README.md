@@ -22,7 +22,7 @@ refined and then broken down into backlog items for coding agents.
 | 03 | [Combat](docs/specs/03-combat.md) | Item-based combat, the pulse mechanic, determinism |
 | 04 | [Encounters & matchmaking](docs/specs/04-encounters-matchmaking.md) | PvE encounters, ghost PvP, snapshot matching, boss fallback |
 | 05 | [Scaling & economy](docs/specs/05-scaling-economy.md) | Exponential PvE scaling, player power curve, economy |
-| 06 | [Technical architecture](docs/specs/06-technical-architecture.md) | Simulation core, server, persistence, versioning |
+| 06 | [Technical architecture](docs/specs/06-technical-architecture.md) | Web-first architecture, Godot portability, server, persistence, versioning |
 | 07 | [Open questions](docs/specs/07-open-questions.md) | Decisions still to be made, with recommendations |
 
 ## Conventions used in the specs

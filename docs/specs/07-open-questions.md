@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v0.4
+Status: Draft v0.5
 
 Each question lists options and a recommendation. Answering Q1, Q2, and Q6
 unblocks most backlog work.
@@ -80,9 +80,15 @@ strategic.
 
 ## Q6. Platform and stack
 
-Web/TypeScript *(recommended; `06-technical-architecture.md`)* vs a game
-engine. Depends on target platforms (browser, Steam, mobile) and on the art
-ambition.
+Decided: web application first, architected for a later port to Godot (TA-0;
+rules in `06-technical-architecture.md` "Portability to Godot"). Remaining:
+
+- Confirm the web stack (TypeScript, Node.js, plain WebSockets, PostgreSQL).
+- Is offline/solo-without-server play ever wanted? If yes, the simulation
+  would eventually need a port to Godot (TA-17 keeps that possible); if no,
+  it stays server-only.
+- When Godot arrives, does it replace the web client (via Godot's web
+  export) or run alongside it?
 
 ## Q7. Gold funnelling
 
