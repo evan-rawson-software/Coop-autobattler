@@ -1,6 +1,6 @@
 # 00 — Vision & Pillars
 
-Status: Draft v0.7
+Status: Draft v0.8
 
 ## Elevator pitch
 
@@ -38,6 +38,8 @@ forever; the score is how deep you went.
 - **V-11 [DECIDED]** Built in Godot, for release on Steam, using Steam
   features for backend needs (lobbies, multiplayer, async PvP) wherever
   possible.
+- **V-12 [DECIDED]** Development starts with a simple offline web proof of
+  concept for playtesting; multiplayer is built after the port to Godot.
 
 ## Design pillars
 

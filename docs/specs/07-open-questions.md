@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v0.7
+Status: Draft v0.8
 
 Each question lists options and a recommendation. Answering Q1, Q2, and Q6
 unblocks most backlog work.
@@ -80,16 +80,22 @@ strategic.
 
 ## Q6. Platform and stack
 
-Decided: Godot from the start, Steam release, Steam features as the backend,
-no offline mode (TA-0, TA-1, TA-13). Remaining:
+Decided: an offline solo web proof of concept first, then a Godot port, then
+multiplayer on Steam with Steam features as the backend (TA-0, TA-1).
+Remaining:
 
-- **Language:** typed GDScript *(recommended)* or C# (TA-28).
+- **Proof-of-concept stack:** TypeScript + a simple bundler, static site
+  *(proposed, TA-45)*.
+- **Alternative to a separate web prototype:** build the prototype in Godot
+  and use Godot's web export for browser playtests. No port and no throwaway
+  code, but slower iteration while the design is still changing, and harder
+  for coding agents to build and verify. Current plan keeps the separate web
+  prototype; worth a conscious yes/no.
+- **Godot language:** typed GDScript *(recommended)* or C# (TA-28).
 - **Steamworks spike** (TA-30): confirm leaderboards with attached files work
   as the ghost pool, and learn the limits.
 - **Trust:** is the accepted-risk position on forged ghosts and scores
   (TA-21) acceptable for launch?
-- **Other storefronts/platforms** (consoles, non-Steam PC): out of scope; the
-  Platform interface (TA-5) is where they would plug in.
 
 ## Q7. Gold funnelling
 

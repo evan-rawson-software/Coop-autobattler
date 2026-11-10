@@ -9,6 +9,10 @@ you get.
 
 The project is in the **specification phase**. Nothing is implemented yet.
 
+Plan: (1) an offline, single-player **web proof of concept** for early
+playtesting, (2) a port to **Godot**, (3) co-op and online ghost PvP on
+**Steam**.
+
 ## Specifications
 
 High-level specs live in [`docs/specs/`](docs/specs/). They are intended to be
@@ -22,7 +26,7 @@ refined and then broken down into backlog items for coding agents.
 | 03 | [Combat](docs/specs/03-combat.md) | Item-based combat, the pulse mechanic, determinism |
 | 04 | [Encounters & matchmaking](docs/specs/04-encounters-matchmaking.md) | PvE encounters, ghost PvP, snapshot matching, boss fallback |
 | 05 | [Scaling & economy](docs/specs/05-scaling-economy.md) | Exponential PvE scaling, player power curve, economy |
-| 06 | [Technical architecture](docs/specs/06-technical-architecture.md) | Godot, Steam as the backend, host-authoritative co-op, ghost pool storage, trust model |
+| 06 | [Technical architecture](docs/specs/06-technical-architecture.md) | Phases (web proof of concept → Godot → Steam multiplayer), Steam as the backend, trust model |
 | 07 | [Open questions](docs/specs/07-open-questions.md) | Decisions still to be made, with recommendations |
 
 ## Conventions used in the specs
