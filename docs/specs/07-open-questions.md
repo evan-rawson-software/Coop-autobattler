@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v2.2
+Status: Draft v2.3
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -35,7 +35,7 @@ everything else movable. Open:
   (CB-3f to CB-3h). Gold is only for buying buildings at shops (CB-3i).
 - Decided: units walk over conduits; destroying a building destroys its
   attached conduits up to the next building (CB-9a).
-- **Loops.** May a conduit network feed back into itself?
+- Decided: conduit networks cannot loop (CB-9c).
 - Decided: three resources, named Ore, Power, and Flux for now, renameable
   in one configuration file (CB-5a, TA-27a). Open: whether a conduit
   carries a single resource type (proposed, CB-5b), and whether there are

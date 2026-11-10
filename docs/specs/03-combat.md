@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v2.2
+Status: Draft v2.3
 
 ## Direction
 
@@ -175,6 +175,10 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   - **Route buildings can be destroyed** like any other building [DECIDED].
   - Like all battle damage, destroyed conduits and buildings are restored
     for the next battle (CB-11).
+- **CB-9c [DECIDED]** **Conduit networks cannot loop.** Resources flow one
+  way, from sources toward consumers, and can never return to a building
+  they have already passed through. The editor refuses a connection that
+  would close a loop and shows why.
 - **CB-9b** A building's **rotation** sets which sides take resources in and
   send it out, and for defenses which way they face.
 - **CB-10** Time advances in fixed **ticks**. Resources move one cell per
