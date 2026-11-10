@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v3.0
+Status: Draft v3.2
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -50,6 +50,18 @@ everything else movable. Open:
   is an endgame constraint (CB-25).
 - Decided: no long-range buildings; defenses only target enemy units on
   the party's own side (CB-3j).
+
+## Q3. Screens
+
+Decided: top/bottom orientation with the party at the bottom (CB-45).
+Wireframes of the battle, event, shop, and build screens have been shared
+with the project owner outside the repo. Open:
+
+- Is Shop + Build one timed step, or does each tab get its own timer?
+- How much of a teammate's shop is visible: everything, or only what they
+  ping?
+- In a four-player battle, does the camera start on the whole battlefield or
+  on the player's own part of the base?
 
 ## Q4. Details of the loop
 

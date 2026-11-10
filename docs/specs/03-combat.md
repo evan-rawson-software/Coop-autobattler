@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v2.9
+Status: Draft v3.2
 
 ## Direction
 
@@ -383,6 +383,25 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   (CB-8).
 - **CB-44** Any past battle can be replayed from
   `(team, opponent, seed, version)`.
+
+## Screen layout
+
+- **CB-45 [DECIDED]** **Top/bottom orientation.** The party's board is drawn
+  at the bottom of the screen with its front edge along the top; the enemy
+  is above, across the neutral zone. The front edge therefore runs
+  horizontally, so each extra player makes the board wider, which is the
+  direction a 1080p screen has room in.
+- **CB-46 [PROPOSED]** The design target is **1920×1080**. At the current
+  sizes a whole solo battle fits at about 25 pixels per cell and a whole
+  four-player battle at about 20.
+- **CB-47 [PROPOSED]** The board is viewed through a **camera that pans and
+  zooms**, from the first playable version, with presets (fit the whole
+  battle, own base, front line). Interface panels are docked around the
+  view — along the bottom when building, at the sides during battle —
+  rather than laid out around a fixed-size board. Map size can then be
+  increased later as a tuning change, not a redesign.
+- **CB-48 [PROPOSED]** Shop and Build are two tabs of the same step
+  (RS-5f), so players can buy, place, and return to the shop.
 
 ## First playable content budget
 
