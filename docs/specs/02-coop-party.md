@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v3.4
+Status: Draft v3.6
 
 ## Party basics
 
@@ -137,10 +137,12 @@ Status: Draft v3.4
   to date as actions happen, so any of them can re-host. When a run is
   resumed, the most recent copy among the players present is used, so an
   older copy cannot be used to roll the run back (TA-11, TA-12).
-- **CP-23d [PROPOSED]** Number of save slots: a small fixed number (starting
-  proposal: 5) per player. A run in which the player took part occupies one
-  of that player's slots until it ends or is abandoned. Suspended runs on an
-  old game version are closed out at their current depth (TA-9).
+- **CP-23d [DECIDED]** There are **5 save slots** per player. A run in which
+  the player took part occupies one of that player's slots until it ends or
+  is abandoned.
+- **CP-23e [DECIDED]** Saves survive minor updates and keep playing against
+  ghosts from the version they were played on. **A major version release
+  deletes old saves** (TA-8, TA-9).
 
 ## Balance across party sizes
 

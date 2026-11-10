@@ -1,6 +1,6 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v2.5
+Status: Draft v3.6
 
 ## Encounter types
 
@@ -18,7 +18,7 @@ The loop is defined in `01-run-structure.md` RS-1.
   host saves a **snapshot** of the party's team state to the ghost pool
   (stored on Steam; see TA-15 to TA-19). A snapshot
   contains:
-  - game version (content + simulation version; see TA-8)
+  - game version the run is being played on (`major.minor`; see TA-8)
   - party size
   - cycle number
   - full team state: the party's map, Core position, and buildings
@@ -91,15 +91,15 @@ The loop is defined in `01-run-structure.md` RS-1.
   (a) accept it — bosses are a designed fallback; (b) seed the pool for early
   cycles with snapshots from internal playtests or bot-driven runs on the new
   version.
-- **MM-13 [PROPOSED]** **Retention**: bounded by one snapshot per host per
-  bucket (MM-1c). Pools for old versions are simply never read again; whether
-  they need active cleanup is a spike question (TA-30).
+- **MM-13 [DECIDED/PROPOSED detail]** **Retention**: bounded by one snapshot
+  per host per bucket (MM-1c). All ghost data for old versions is deleted on
+  a major version release (TA-8, TA-9).
 - **MM-14 [PROPOSED]** **Thin buckets**: 3- and 4-player buckets and deep
   cycles will be sparse. This is acceptable by design (boss fallback), and
   bucket sizes can be read directly from the entry counts to inform tuning.
-- **MM-15 [OPEN]** Whether a version bump that changes only non-combat things
-  (UI, bug fixes outside the sim) should invalidate the pool. Recommended: no
-  — see TA-8.
+- **MM-15 [DECIDED]** A run only meets ghosts played on the same version as
+  the run itself, including after the game has been updated (TA-8). Patch
+  releases that do not touch combat do not split the pool.
 
 ## Integrity
 

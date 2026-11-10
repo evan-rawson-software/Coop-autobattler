@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v3.5
+Status: Draft v3.6
 
 ## Direction
 
@@ -175,21 +175,50 @@ Everything from here down describes the Godot game.
 - **TA-7 [PROPOSED]** **Presentation** renders state and plays back event
   logs. It contains no rules. Battle playback is driven entirely by the event
   log, for the host and guests alike.
-- **TA-8 [PROPOSED]** Versioning. Distinguish two versions:
-  - **sim version** — changes whenever simulation code or combat-affecting
-    content changes. This is the "game version" used for ghost matching
-    (MM-2) and is checked when joining a lobby. It can be derived
-    automatically (hash of Core + content data) so it cannot be forgotten.
-  - **app version** — the build number; may change without invalidating the
-    ghost pool.
-- **TA-9 [PROPOSED]** On a sim version change: the old ghost pool is simply
-  no longer read (new version, new bucket names); in-progress runs on the old
-  version are closed out at their current depth.
+- **TA-8 [DECIDED/PROPOSED detail]** **Versioning.** Decided:
+  - A run keeps the **version it was played on**. It only ever meets ghosts
+    that were **played on that same version**, even after the game has been
+    updated.
+  - On a **major version release, old saves and all ghost data from old
+    versions are deleted.**
+
+  Proposed detail:
+  - Versions are written `major.minor.patch`.
+    - **Patch** — fixes that do not touch combat rules or content numbers.
+      Does not split the ghost pool.
+    - **Minor** — balance or content changes that old saves and snapshots
+      can still be loaded under. Starts a new ghost pool; runs already in
+      progress keep their original version and their original pool.
+    - **Major** — anything that old saves or snapshots cannot survive
+      (format changes, removed buildings, reworked rules). Wipes saves and
+      old ghost data.
+  - The ghost matching key (MM-2) uses the run's `major.minor`, stored in
+    the save and in every snapshot.
+  - A check in CI compares combat rules and content against the last
+    release, so a change that needs at least a minor bump cannot ship as a
+    patch by mistake.
+- **TA-9 [PROPOSED]** Consequences of TA-8:
+  - **Runs on an older minor version** continue normally. Their pool only
+    gets new snapshots from other runs still on that version, so it thins
+    over time and they will meet the boss fallback more often. The battle
+    itself is simulated by the current game, which contains one set of
+    rules; an old-version run therefore fights same-version *builds* under
+    current *numbers*. Shipping every old rule set inside the game is the
+    alternative and is not proposed (Q9).
+  - **On a major release** the game deletes local and Steam Cloud saves
+    from older major versions at first launch and tells the player. Ghost
+    data for old versions lives in Steam leaderboards and shared files that
+    players' games cannot delete for each other, so removing it is a
+    release step carried out by the developers through Steamworks; how to
+    do that in bulk is part of the spike (TA-30).
+  - Because a wipe ends every run in progress, major releases should be
+    rare and announced in advance. Depth records on leaderboards can be
+    kept, labelled by version.
 
 ## Co-op session details
 
-- **TA-10 [PROPOSED]** All party members must be on the same sim version; the
-  lobby advertises it and mismatched players cannot join.
+- **TA-10 [PROPOSED]** All party members must be running the same game
+  version; the lobby advertises it and mismatched players cannot join.
 - **TA-11 [DECIDED/PROPOSED detail]** **Host loss and re-hosting.** Decided:
   the host can leave and the run can be re-hosted from the save (CP-21c).
   Proposed detail: the host already sends every state change to every
@@ -348,7 +377,8 @@ is deliberate.
      on demand, attach a file, random-rank download, download speed.
   2. Limits: number of leaderboards per app, details payload size, shared
      file size and per-user Cloud quota, rate limits.
-  3. Whether stale buckets from old versions need cleaning up and how.
+  3. How the developers delete all ghost data for old versions in bulk
+     on a major release (TA-9).
   4. Lobbies + relay networking through GodotSteam with Godot's multiplayer
      API, including reconnect.
   5. What can be tested with Valve's public test app ID versus what needs

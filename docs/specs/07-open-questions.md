@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v3.4
+Status: Draft v3.6
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -70,7 +70,7 @@ player must return before the run continues; reconnecting and re-hosting
 from the save are supported; multiple save slots, one run per slot, no
 copies; auto-save after each action (CP-21 to CP-23). Open:
 
-- How many save slots (proposed: 5)?
+- Decided: 5 save slots.
 - If a player never comes back, the run can only be abandoned (proposed).
   Should the party instead be allowed to continue without them at some
   cost?
@@ -122,10 +122,16 @@ Uniform random among eligible snapshots, or weighted toward parties with a
 similar lives/record profile? Recommended: uniform first, measure, then
 refine (MM-4).
 
-## Q9. What happens to runs on a version bump?
+## Q9. Versions
 
-Close out at current depth *(recommended, simplest; TA-9)* vs let them
-continue against bosses only.
+Decided: a run only meets ghosts played on its own version; a major release
+deletes old saves and old ghost data (TA-8). Open:
+
+- When an older-version run fights after a minor update, the battle runs
+  under the current rules and numbers (proposed, TA-9). Is that acceptable,
+  or must old runs also keep their old numbers? The second means shipping
+  old rule sets inside the game.
+- What counts as major versus minor (proposed definitions in TA-8).
 
 ## Q10. Theme and tone
 
