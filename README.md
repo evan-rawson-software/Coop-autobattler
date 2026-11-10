@@ -19,6 +19,18 @@ playtesting, (2) a port to **Godot**, (3) co-op and online ghost PvP on
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the repository layout, the
 commands, and the layer rule.
 
+## Watch a battle
+
+After `pnpm install`, one command runs a battle between two reference boards
+and prints the result, a short timeline and the event log hash:
+
+```
+pnpm sim battle --a rush --b fortify --seed 1
+```
+
+The other commands (`map`, `pve`, `batch`) and the board files are described in
+[`CONTRIBUTING.md`](CONTRIBUTING.md#battle-runner-pnpm-sim).
+
 ## Specifications
 
 High-level specs live in [`docs/specs/`](docs/specs/). They are intended to be

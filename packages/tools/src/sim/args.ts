@@ -1,0 +1,264 @@
+/** Command-line argument parsing for `pnpm sim` (pure; no I/O). */
+
+export class CliError extends Error {
+  constructor(
+    message: string,
+    /** 2 for a usage error, 1 for a failure while running. */
+    readonly exitCode: 1 | 2 = 1,
+  ) {
+    super(message);
+    this.name = 'CliError';
+  }
+}
+
+export type ThreatTypeName = 'easy' | 'medium' | 'hard' | 'boss';
+const TYPES: readonly string[] = ['easy', 'medium', 'hard', 'boss'];
+
+export interface ThreatArgs {
+  /** Archetype ID; the `arch_` prefix is added if missing. */
+  readonly archetype: string;
+  readonly type: ThreatTypeName;
+  readonly round: number;
+  /** Seed of the threat generator; defaults to the battle seed. */
+  readonly threatSeed: number | undefined;
+}
+
+export type Command =
+  | { readonly kind: 'help' }
+  | {
+      readonly kind: 'map';
+      readonly seed: number;
+      readonly party: number;
+      readonly time: boolean;
+    }
+  | {
+      readonly kind: 'battle';
+      readonly a: string;
+      readonly b: string;
+      readonly seed: number;
+      readonly log: string | undefined;
+      readonly ascii: boolean;
+      readonly time: boolean;
+    }
+  | {
+      readonly kind: 'pve';
+      readonly team: string;
+      readonly threat: ThreatArgs;
+      readonly seed: number;
+      readonly log: string | undefined;
+      readonly ascii: boolean;
+      readonly time: boolean;
+    }
+  | {
+      readonly kind: 'batch';
+      readonly a: string;
+      /** A board to fight, or null when `threat` is given. */
+      readonly b: string | null;
+      readonly threat: ThreatArgs | null;
+      readonly count: number;
+      readonly seed: number;
+      readonly time: boolean;
+    };
+
+export const USAGE = `Usage: pnpm sim <command> [options]
+
+Commands:
+  map     --seed N [--party N]
+            Generate a map from a seed and print it.
+  battle  --a BOARD --b BOARD [--seed N] [--log FILE] [--ascii]
+            Fight two boards (A is the party, B the defender).
+  pve     --team BOARD --archetype ID [--type easy|medium|hard|boss]
+          [--round N] [--seed N] [--threat-seed N] [--log FILE] [--ascii]
+            Fight a board against a generated threat.
+  batch   --a BOARD (--b BOARD | --archetype ID [--type T] [--round N])
+          [--count N] [--seed N]
+            Run N battles with seeds seed .. seed+N-1; report win rate and length.
+
+BOARD is a path to a board JSON file, or a reference board name (rush,
+fortify, siege, poor) which means boards/<name>.json.
+
+Options:
+  --seed N     battle seed (default 1); a batch uses N, N+1, ...
+  --time       also print the wall time (the only non-deterministic output)
+  --help       show this text
+
+Example: pnpm sim battle --a rush --b fortify --seed 1
+`;
+
+const FLAGS: Readonly<Record<string, readonly string[]>> = {
+  map: ['seed', 'party', 'time'],
+  battle: ['a', 'b', 'seed', 'log', 'ascii', 'time'],
+  pve: [
+    'team',
+    'archetype',
+    'type',
+    'round',
+    'seed',
+    'threat-seed',
+    'log',
+    'ascii',
+    'time',
+  ],
+  batch: [
+    'a',
+    'b',
+    'archetype',
+    'type',
+    'round',
+    'count',
+    'seed',
+    'threat-seed',
+    'time',
+  ],
+};
+const BOOLEAN_FLAGS: readonly string[] = ['ascii', 'time'];
+
+function usageError(message: string): CliError {
+  return new CliError(`${message}\n\n${USAGE}`, 2);
+}
+
+function parseInteger(
+  name: string,
+  value: string,
+  min: number,
+  max: number,
+): number {
+  if (!/^-?\d+$/.test(value)) {
+    throw usageError(`--${name} must be an integer, got "${value}".`);
+  }
+  const n = Number(value);
+  if (!Number.isSafeInteger(n) || n < min || n > max) {
+    throw usageError(
+      `--${name} must be between ${String(min)} and ${String(max)}, got ${value}.`,
+    );
+  }
+  return n;
+}
+
+type Flags = Map<string, string>;
+
+function collectFlags(command: string, rest: readonly string[]): Flags {
+  const allowed = FLAGS[command] ?? [];
+  const flags: Flags = new Map();
+  for (let i = 0; i < rest.length; i++) {
+    const token = rest[i] as string;
+    if (!token.startsWith('--')) {
+      throw usageError(`Unexpected argument "${token}".`);
+    }
+    const eq = token.indexOf('=');
+    const name = eq === -1 ? token.slice(2) : token.slice(2, eq);
+    if (!allowed.includes(name)) {
+      throw usageError(`Unknown option "--${name}" for "${command}".`);
+    }
+    if (flags.has(name)) throw usageError(`--${name} given twice.`);
+    if (BOOLEAN_FLAGS.includes(name)) {
+      if (eq !== -1) throw usageError(`--${name} takes no value.`);
+      flags.set(name, 'true');
+      continue;
+    }
+    let value: string | undefined;
+    if (eq !== -1) value = token.slice(eq + 1);
+    else {
+      value = rest[i + 1];
+      i += 1;
+    }
+    if (value === undefined || (eq === -1 && value.startsWith('--'))) {
+      throw usageError(`--${name} needs a value.`);
+    }
+    flags.set(name, value);
+  }
+  return flags;
+}
+
+function required(flags: Flags, name: string): string {
+  const v = flags.get(name);
+  if (v === undefined) throw usageError(`--${name} is required.`);
+  return v;
+}
+
+function seedOf(flags: Flags, name = 'seed', fallback = 1): number {
+  const v = flags.get(name);
+  return v === undefined ? fallback : parseInteger(name, v, 0, 0xffffffff);
+}
+
+function threatOf(flags: Flags): ThreatArgs {
+  const type = flags.get('type') ?? 'medium';
+  if (!TYPES.includes(type)) {
+    throw usageError(
+      `--type must be one of ${TYPES.join(', ')}, got "${type}".`,
+    );
+  }
+  const archetype = required(flags, 'archetype');
+  const ts = flags.get('threat-seed');
+  return {
+    archetype: archetype.startsWith('arch_') ? archetype : `arch_${archetype}`,
+    type: type as ThreatTypeName,
+    round: parseInteger('round', flags.get('round') ?? '1', 1, 1000),
+    threatSeed:
+      ts === undefined
+        ? undefined
+        : parseInteger('threat-seed', ts, 0, 0xffffffff),
+  };
+}
+
+/** Parse `process.argv.slice(2)`. Throws `CliError` (exit code 2) on bad input. */
+export function parseArgs(argv: readonly string[]): Command {
+  const [command, ...rest] = argv;
+  if (command === undefined || command === '--help' || command === 'help') {
+    return { kind: 'help' };
+  }
+  if (rest.includes('--help')) return { kind: 'help' };
+  if (!Object.hasOwn(FLAGS, command)) {
+    throw usageError(`Unknown command "${command}".`);
+  }
+  const flags = collectFlags(command, rest);
+  const time = flags.has('time');
+  switch (command) {
+    case 'map':
+      return {
+        kind: 'map',
+        seed: seedOf(flags),
+        party: parseInteger('party', flags.get('party') ?? '1', 1, 4),
+        time,
+      };
+    case 'battle':
+      return {
+        kind: 'battle',
+        a: required(flags, 'a'),
+        b: required(flags, 'b'),
+        seed: seedOf(flags),
+        log: flags.get('log'),
+        ascii: flags.has('ascii'),
+        time,
+      };
+    case 'pve':
+      return {
+        kind: 'pve',
+        team: required(flags, 'team'),
+        threat: threatOf(flags),
+        seed: seedOf(flags),
+        log: flags.get('log'),
+        ascii: flags.has('ascii'),
+        time,
+      };
+    default: {
+      const b = flags.get('b');
+      const hasThreat = flags.has('archetype');
+      if (b !== undefined && hasThreat) {
+        throw usageError('Give either --b or --archetype, not both.');
+      }
+      if (b === undefined && !hasThreat) {
+        throw usageError('Give --b BOARD or --archetype ID to fight.');
+      }
+      return {
+        kind: 'batch',
+        a: required(flags, 'a'),
+        b: b ?? null,
+        threat: hasThreat ? threatOf(flags) : null,
+        count: parseInteger('count', flags.get('count') ?? '300', 1, 100000),
+        seed: seedOf(flags),
+        time,
+      };
+    }
+  }
+}
