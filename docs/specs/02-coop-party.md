@@ -1,14 +1,18 @@
 # 02 — Co-op & Party
 
-Status: Draft v0.4
+Status: Draft v0.7
 
 ## Party basics
 
 - **CP-1 [DECIDED]** A party has 1–4 players.
 - **CP-2 [PROPOSED]** Party size is fixed when the run starts. It is part of
   the matchmaking key (MM-2), so it cannot change mid-run.
-- **CP-3 [PROPOSED]** Parties form through a lobby with an invite code/link.
-  Public matchmaking of strangers into a party is out of scope initially.
+- **CP-3 [PROPOSED]** Parties form through **Steam lobbies**: invite friends
+  or join through the Steam overlay. Public matchmaking of strangers into a
+  party is out of scope initially (Steam lobby search makes it easy to add
+  later).
+- **CP-3a [PROPOSED]** The lobby owner is the **host**; their game is the
+  authority for the run (TA-6).
 
 ## Ownership model: one full board per player
 
@@ -91,13 +95,14 @@ mechanics are the counterweight:
 
 - **CP-20 [PROPOSED]** A disconnected player's board stays in the party and
   keeps fighting as it was. They can rejoin the run at any time while it is
-  live. The run keeps its original party size for matchmaking.
+  live. The run keeps its original party size for matchmaking. If the host
+  disconnects, the run pauses until a remaining player re-hosts (TA-11).
 - **CP-21 [PROPOSED]** While a player is absent their board is frozen: gold
   accrues but nothing is bought or moved. (Alternative: teammates may manage
   the absent player's board.)
 - **CP-22 [PROPOSED]** Runs are resumable: if everyone leaves, the run is
   suspended at the start of the current step and can be continued later by
-  the same party. Suspended runs on an old game version are closed out at
+  the same party from the save in Steam Cloud (TA-12). Suspended runs on an old game version are closed out at
   their current depth (see TA-9).
 
 ## Balance across party sizes

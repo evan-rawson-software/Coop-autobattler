@@ -1,6 +1,6 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v0.4
+Status: Draft v0.7
 
 ## Encounter types
 
@@ -15,20 +15,23 @@ The loop is defined in `01-run-structure.md` RS-1.
 ## Snapshots
 
 - **MM-1 [DECIDED/PROPOSED detail]** At the start of **every PvP battle**, the
-  server saves an immutable **snapshot** of the party's team state. A snapshot
+  host saves a **snapshot** of the party's team state to the ghost pool
+  (stored on Steam; see TA-15 to TA-19). A snapshot
   contains:
   - game version (content + simulation version; see TA-8)
   - party size
   - cycle number
   - full team state: all N boards in lane order (CB-32, CP-6)
-  - party display info (player display names, optional cosmetic info)
-  - metadata: creation time, run ID, the party's lives remaining and
-    PvP record at that point (for optional match-quality filtering)
+  - party members' Steam IDs (display names are looked up from Steam)
+  - metadata: lives remaining and PvP record at that point (for optional
+    match-quality filtering)
 - **MM-1a [PROPOSED]** Snapshots are taken *before* the fight and are saved
   regardless of whether the party then wins or loses. Saving only winners
   would make the pool progressively harder than the real population.
-- **MM-1b [PROPOSED]** Snapshots never contain private data beyond display
-  names, and a player can opt to appear anonymously.
+- **MM-1b [PROPOSED]** Snapshots contain no personal data beyond Steam IDs,
+  and a player can opt to appear anonymously to opponents.
+- **MM-1c [PROPOSED]** Each host has at most one snapshot per
+  `(version, party size, cycle)` bucket; a newer run replaces it (TA-18).
 
 ## Ghost matching
 
@@ -38,22 +41,22 @@ The loop is defined in `01-run-structure.md` RS-1.
   2. **party size**
   3. **progress** — the same cycle number (RS-2)
 - **MM-3 [PROPOSED]** Additional exclusions:
-  - snapshots from the requesting party's own current run
-  - snapshots from any run that includes a member of the requesting party
-    (configurable; may be relaxed when the pool is small)
+  - snapshots from any party that includes a member of the requesting party
+    (which also covers the party's own snapshots)
   - ghosts this party has already fought in this run
 - **MM-4 [PROPOSED]** Selection among eligible snapshots is uniformly random
   initially. Later refinements, in priority order: prefer recent snapshots;
-  prefer snapshots with a similar lives/record profile; cap how often one
-  snapshot can be served so no single party dominates the pool.
+  prefer snapshots with a similar lives/record profile. What is practical
+  depends on what the Steam storage mechanism can query (TA-17).
 - **MM-5 [DECIDED]** If no eligible snapshot exists, a **PvE boss** is
   generated instead, based on the party's progress (see below).
 - **MM-6 [PROPOSED]** The ghost is fought with the standard simulation (CB-34).
   The original ghost party is not notified and is not affected by the result.
   (Optional later: "your ghost won N fights" stat.)
 - **MM-7 [PROPOSED]** Opponent selection and the combat seed are chosen
-  **server-side** when the prep phase ends, after the party's team is locked.
-  The party cannot see or re-roll the opponent before locking in.
+  by the host's game, and the opponent is not revealed until the party's
+  boards are locked. The ghost may be fetched earlier in the cycle to avoid a
+  wait (TA-19).
 
 ## Boss fallback
 
@@ -88,24 +91,25 @@ The loop is defined in `01-run-structure.md` RS-1.
   (a) accept it — bosses are a designed fallback; (b) seed the pool for early
   cycles with snapshots from internal playtests or bot-driven runs on the new
   version.
-- **MM-13 [PROPOSED]** **Retention**: keep at most K snapshots per
-  `(version, party size, cycle)` bucket (e.g. newest 1,000), and delete all
-  snapshots for versions that are no longer live.
+- **MM-13 [PROPOSED]** **Retention**: bounded by one snapshot per host per
+  bucket (MM-1c). Pools for old versions are simply never read again; whether
+  they need active cleanup is a spike question (TA-30).
 - **MM-14 [PROPOSED]** **Thin buckets**: 3- and 4-player buckets and deep
-  cycles will be sparse. This is acceptable by design (boss fallback), but the
-  service should expose per-bucket pool sizes as a metric so tuning decisions
-  are informed.
+  cycles will be sparse. This is acceptable by design (boss fallback), and
+  bucket sizes can be read directly from the entry counts to inform tuning.
 - **MM-15 [OPEN]** Whether a version bump that changes only non-combat things
   (UI, bug fixes outside the sim) should invalidate the pool. Recommended: no
   — see TA-8.
 
 ## Integrity
 
-- **MM-16 [PROPOSED]** Snapshots are created by the server from
-  server-authoritative run state, never uploaded by clients. This prevents
-  forged or impossible teams from entering the pool.
-- **MM-17 [PROPOSED]** A snapshot that fails validation against the current
-  content schema is quarantined and never served.
+- **MM-16 [PROPOSED]** There is no trusted server, so snapshots are uploaded
+  by players' games and could be forged by a modified client. This is an
+  accepted risk with limited damage; see "Trust model" (TA-21 to TA-24).
+- **MM-17 [PROPOSED]** Every downloaded snapshot is validated before use:
+  schema, legal placement, and a plausibility bound on total power for its
+  cycle (TA-22). A snapshot that fails is skipped and another is drawn.
+- **MM-17a [PROPOSED]** Players can report a ghost (TA-23).
 
 ## PvE encounters
 

@@ -1,6 +1,6 @@
 # 03 — Combat
 
-Status: Draft v0.4
+Status: Draft v0.7
 
 ## Direction
 
@@ -139,7 +139,7 @@ links could live inside the Pulse system as content.
   iteration, no platform-dependent behaviour.
 - **CB-31 [PROPOSED]** Combat runs in a **headless simulation** that produces
   an **event log**. Clients render playback from the log; they never decide
-  outcomes. The same simulation runs on the server (authoritative), in tests,
+  outcomes. The same simulation runs in the host's game (authoritative, TA-6), in tests,
   and in balance tools.
 - **CB-32 [PROPOSED]** A team is fully described by a serializable **team
   state**: an ordered list of **board states**, one per player (CP-6). Each

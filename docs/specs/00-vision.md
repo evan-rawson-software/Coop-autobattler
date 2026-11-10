@@ -1,6 +1,6 @@
 # 00 — Vision & Pillars
 
-Status: Draft v0.4
+Status: Draft v0.7
 
 ## Elevator pitch
 
@@ -35,6 +35,9 @@ forever; the score is how deep you went.
   from 1 to 4 players by adding boards.
 - **V-10 [DECIDED]** Combat is item-based in the style of *The Bazaar* and
   *Backpack Battles*, but with its own distinct core mechanic.
+- **V-11 [DECIDED]** Built in Godot, for release on Steam, using Steam
+  features for backend needs (lobbies, multiplayer, async PvP) wherever
+  possible.
 
 ## Design pillars
 
@@ -47,8 +50,8 @@ forever; the score is how deep you went.
    hook.
 3. **Fights are fair because they are identical.** Combat is fully
    deterministic from its inputs. The same two teams and seed always produce
-   the same result, on any machine. This is what makes ghost PvP, replays, and
-   server validation possible.
+   the same result. This is what makes ghost PvP, replays, and testing
+   possible.
 4. **Decisions in the shop, spectacle in the fight.** Players have zero input
    during combat. All skill expression is in drafting, economy, and how items
    are arranged on the board.
@@ -66,7 +69,9 @@ forever; the score is how deep you went.
 ## Non-goals (for now)
 
 - Live, synchronous PvP between two human parties.
-- Offline play. The game always requires the server.
+- Offline play. The game requires Steam.
+- A custom backend. Steam provides lobbies, networking, and ghost storage
+  (`06-technical-architecture.md`).
 - Ranked ladders, seasons, monetization, cosmetics.
 - Mid-run drop-in of new players (party size is fixed for a run; see
   `02-coop-party.md`).

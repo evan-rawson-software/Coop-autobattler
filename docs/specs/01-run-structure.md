@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v0.4
+Status: Draft v0.7
 
 ## Core loop
 
@@ -93,7 +93,7 @@ the party's income so it falls behind the ghosts it meets. See
 
 - **RS-10 [PROPOSED]** Meta-progression unlocks **options, not power**: new
   items, starting loadouts, and cosmetic records. Power unlocks would
-  break ghost fairness, since a snapshot would encode account-level advantages.
+  break ghost fairness, since a snapshot would encode player-level advantages.
 - **RS-11 [OPEN]** Whether there are selectable heroes/classes per player at
   run start. See `07-open-questions.md` Q3.
 

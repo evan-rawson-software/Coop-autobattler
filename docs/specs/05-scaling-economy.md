@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v0.4
+Status: Draft v0.7
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.

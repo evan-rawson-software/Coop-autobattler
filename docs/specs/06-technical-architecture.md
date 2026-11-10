@@ -1,175 +1,252 @@
 # 06 — Technical Architecture
 
-Status: Draft v0.6
+Status: Draft v0.7
 
-- **TA-0 [DECIDED]** The first version is a **web application**. It must be
-  architected so the client can later be **ported to Godot** without
-  redesigning the game. See "Portability to Godot" below; those rules apply
-  from the first commit.
+## Direction
 
-Other technology choices here are recommendations. The component boundaries
-matter more than the specific stack.
+- **TA-0 [DECIDED]** The game is built in **Godot** from the start. (This
+  replaces the earlier web-first plan.)
+- **TA-1 [DECIDED]** The target is a **Steam** release, and the game should
+  use **Steam's own features for backend needs wherever possible**: lobby
+  creation, multiplayer networking, and the asynchronous ghost PvP pool.
+- **TA-2 [PROPOSED]** Consequence: **no custom backend** at launch — no game
+  servers, no database, no account system of our own. Anything Steam cannot
+  provide is either designed around or deferred (see "Trust model").
 
-## Components
+Specific Steamworks behaviours and limits below are from general knowledge of
+the API and **must be confirmed against current Steamworks documentation in a
+spike** (TA-30) before the dependent backlog items are written.
+
+## Overview
 
 ```
-+----------------------+                      +--------------------+     +-----------+
-|  Client (replaceable)|   language-neutral   |    Game server     |     | Database  |
-|  web now, Godot later|  <---------------->  |  run state, shops, | <-> | accounts, |
-|                      |  protocol: intents,  |  matchmaking,      |     | runs,     |
-|  presentation only   |  state, event logs   |  simulation core   |     | snapshots |
-+----------------------+                      +--------------------+     +-----------+
-           |                                            |
-           +------------- shared, engine-neutral -------+
-                  - protocol schemas
-                  - content data + schemas
-                  - golden test vectors
+              Steam
+   +----------------------------+
+   | Lobbies   Relay networking |
+   | Leaderboards + shared files|  <- ghost pool
+   | Cloud   Stats/Achievements |
+   +-------------^--------------+
+                 |  (through the Platform layer)
++----------------+-----------------------------------------------+
+|  Game (Godot)                                                  |
+|                                                                |
+|  Presentation   scenes, UI, battle playback, audio             |
+|  ------------------------------------------------------------  |
+|  Session        host-authoritative run state, intents, sync    |
+|  ------------------------------------------------------------  |
+|  Platform       interface: lobby, transport, ghost store,      |
+|                 cloud saves, leaderboards, identity            |
+|                 implementations: Steam | Local (dev/tests)     |
+|  ------------------------------------------------------------  |
+|  Core           simulation, run rules, generators, content     |
+|                 pure logic, no scenes, runs headless           |
++----------------------------------------------------------------+
 ```
 
-The server owns all rules. A client only shows state, sends intents, and plays
-back event logs. Replacing the client does not touch the rules.
+## Steam feature mapping
 
-## Requirements
+| Need | Steam feature | Notes |
+|------|---------------|-------|
+| Identity | Steam ID / persona name | No accounts of our own. |
+| Forming a party | Steam Lobbies | Friends-only/invite lobbies, lobby metadata (version, party size), join via overlay and invites. |
+| Co-op networking | Steam Networking Sockets over Steam Datagram Relay | Peer-to-peer through Valve's relays; no port forwarding, no servers of ours. |
+| Ghost pool | Steam Leaderboards with attached shared files | See "Ghost pool on Steam". |
+| Depth leaderboards | Steam Leaderboards | One per party size (and per version or season). Friends/global views for free. |
+| Saves, resumable runs | Steam Cloud | Run save and meta-progression. |
+| Presence and invites | Rich Presence, friends list, overlay | "In a run — cycle 7, 3/4 players", join-game button. |
+| Achievements, stats | Steam Stats & Achievements | Later milestone. |
+| Controller / Steam Deck | Steam Input | Later milestone; keep UI controller-friendly from the start. |
+| Playtesting | Steam Playtest, beta branches | Also how ghost pools get seeded before launch (MM-12). |
 
-- **TA-1 [PROPOSED]** **Simulation core** is a standalone, dependency-light
-  library: `simulate(teamA, teamB, seed) -> { result, eventLog }`. No I/O, no
-  rendering, no clock. Used by the server, tests, and the balance harness
-  (SC-6). Clients do **not** run it; they receive the event log (TA-12).
-- **TA-2 [PROPOSED]** Determinism rules for the core: seeded PRNG passed in
-  explicitly; integer or fixed-point math for anything outcome-affecting;
-  stable ordering for all iteration; fixed tick rate. A **golden replay test
-  suite** (stored inputs → expected result hash) guards against accidental
-  behaviour changes.
-- **TA-3 [PROPOSED]** **Server-authoritative runs.** The server owns run state
-  (gold, shops, stashes, boards, lives, cycle, step). Clients send intents (buy,
-  sell, move, give, ready, vote); the server validates and broadcasts state.
-  The server rolls shops, selects opponents, picks seeds, and runs the fight.
-- **TA-4 [PROPOSED]** **Realtime transport** (e.g. WebSocket) for the lobby
-  events, and prep phases. A party's run lives in a "room" that survives individual
-  disconnects (CP-20).
-- **TA-5 [PROPOSED]** **Persistence**:
-  - accounts / identities
-  - runs (resumable state, history, final depth)
-  - snapshots, indexed by `(sim version, party size, cycle)` for MM-2 lookups
-  - leaderboards per party size
-- **TA-6 [PROPOSED]** **Content is data** (CB-35): items, tags,
-  encounter and boss templates, and scaling constants live in versioned data
-  files with schema validation in CI.
-- **TA-7 [DECIDED]** **There is no offline mode.** The game always requires
-  a connection to the server. Solo uses the same path as multiplayer (a party
-  of one on the server).
+- **TA-3 [PROPOSED]** Steam integration uses the **GodotSteam** extension.
 
-## Versioning
+## Layers
 
-- **TA-8 [PROPOSED]** Distinguish two versions:
+- **TA-4 [PROPOSED]** **Core** is pure logic with no dependency on scenes,
+  nodes, rendering, or Steam: the combat simulation
+  (`simulate(teamA, teamB, seed) -> { result, eventLog }`), run rules (shop
+  rolls, prices, combining, rewards), encounter and boss generators, and
+  content loading. It runs under headless Godot for tests and the balance
+  harness (SC-6).
+- **TA-5 [PROPOSED]** **Platform** is an interface with two implementations:
+  - **Steam** — the real thing.
+  - **Local** — loopback/LAN transport, a file-based ghost store, local
+    saves, and a fake identity. Used for development, automated tests, and
+    CI, where Steam is not available. It is a development tool, not a
+    shipped offline mode (TA-13).
+
+  Nothing outside the Platform layer calls Steam directly. This is what lets
+  coding agents and CI build and test every feature without a Steam client.
+- **TA-6 [PROPOSED]** **Session** owns a run in progress and is
+  **host-authoritative**: the lobby owner's game holds the run state, rolls
+  shops, validates intents (buy, sell, place, give, ready, vote), selects
+  opponents, and runs battles. Other players send intents and receive state
+  updates and battle event logs. Solo is a session with one player and no
+  networking.
+- **TA-7 [PROPOSED]** **Presentation** renders state and plays back event
+  logs. It contains no rules. Battle playback is driven entirely by the event
+  log, for the host and guests alike.
+- **TA-8 [PROPOSED]** Versioning. Distinguish two versions:
   - **sim version** — changes whenever simulation code or combat-affecting
     content changes. This is the "game version" used for ghost matching
-    (MM-2). It can be derived automatically (hash of sim core + content data)
-    so it cannot be forgotten.
-  - **app version** — client/server release number; may change without
-    invalidating the snapshot pool.
-- **TA-9 [PROPOSED]** On a sim version change: the old snapshot pool is
-  retired (MM-13); in-progress runs on the old version are closed out at
-  their current depth (simplest), or allowed to finish against bosses only.
+    (MM-2) and is checked when joining a lobby. It can be derived
+    automatically (hash of Core + content data) so it cannot be forgotten.
+  - **app version** — the build number; may change without invalidating the
+    ghost pool.
+- **TA-9 [PROPOSED]** On a sim version change: the old ghost pool is simply
+  no longer read (new version, new bucket names); in-progress runs on the old
+  version are closed out at their current depth.
 
-## Portability to Godot
+## Co-op session details
 
-The goal is that a Godot client is "a second client", not a rewrite of the
-game. Everything below follows from keeping rules on the server and keeping
-every shared artifact engine-neutral.
+- **TA-10 [PROPOSED]** All party members must be on the same sim version; the
+  lobby advertises it and mismatched players cannot join.
+- **TA-11 [PROPOSED]** **Host loss.** The host sends every player a full run
+  save at the start of each step. If the host disconnects, the run pauses;
+  any remaining player can re-host from their copy and the others rejoin.
+  Seamless automatic host migration is a later improvement.
+- **TA-12 [PROPOSED]** **Resuming later.** The run save lives in each
+  member's Steam Cloud. A run can be resumed when the same party re-forms a
+  lobby (membership checked by Steam ID), hosted by anyone holding the save.
+- **TA-13 [DECIDED]** No offline mode. The shipped game requires Steam.
+- **TA-14 [PROPOSED]** Within a party there is no adversary, so the host is
+  trusted by its guests. Guests still never apply rule outcomes themselves;
+  one source of truth keeps everyone in sync.
 
-- **TA-10 [PROPOSED]** **No game rules in the client.** The client never
-  computes prices, shop contents, combine results, legality of a placement,
-  or battle outcomes. It may do cosmetic prediction (e.g. show an item where
-  it was dropped while waiting for confirmation), but the server's answer
-  always wins. Anything rule-like found in client code is a bug.
-- **TA-11 [PROPOSED]** **Language-neutral protocol.** Messages are plain JSON
-  over WebSocket (plus HTTPS for login and non-realtime calls), defined by
-  schemas kept in the repo (e.g. JSON Schema), with a protocol version
-  negotiated at connect. No framework-specific state-sync format and nothing
-  that assumes a JavaScript client. TypeScript types are generated from the
-  schemas, not the other way round; a Godot client can generate or hand-write
-  its own from the same source.
-- **TA-12 [PROPOSED]** **Battles are delivered as event logs.** The server
-  runs the simulation and sends the result plus a self-describing event log
-  (beat by beat: item fired, damage, shield, Core dark, …). Playback is pure
-  presentation. This means the simulation never needs to be ported for a new
-  client; replays are fetched from the server by battle ID.
-- **TA-13 [PROPOSED]** **Rules data and presentation data are separate.**
-  Content files hold rules (shape, tier, tags, effects) and a stable ID per
-  item. Names, descriptions, and asset references live in separate
-  presentation/localization files keyed by ID. Tooltip text is generated
-  from rules data plus templates, so both clients describe items
-  identically.
-- **TA-14 [PROPOSED]** **Engine-neutral assets.** Art and audio are authored
-  and stored in formats any engine imports (PNG/SVG sources, sprite sheets
-  with JSON atlases, OGG/WAV). No look that exists only as CSS or
-  web-specific shaders. Layout is described in logical units (board cells,
-  lanes), not pixels or DOM structure.
-- **TA-15 [PROPOSED]** **Client is layered** so the web version shows the
-  seams a port will cut along:
-  1. *Net layer* — connection, protocol messages, reconnect.
-  2. *Client state* — a plain view-model of the run built from server
-     messages; no rendering imports.
-  3. *Presentation* — rendering, input, animation, audio.
-  Only layer 3 is inherently web-specific. Layers 1–2 are small and are
-  re-implemented in GDScript/C# from the protocol schemas.
-- **TA-16 [PROPOSED]** **Platform-neutral identity.** Authentication uses
-  tokens the client stores and sends explicitly, not browser-only mechanisms
-  such as cookies, so a desktop client can log in the same way. Leave room
-  for platform logins (e.g. Steam) to link to the same account.
-- **TA-17 [PROPOSED]** **The simulation is server-only** and is not ported
-  to Godot (TA-7). It is still written cleanly enough to survive a server
-  rewrite: integer or
-  fixed-point math only, explicit seeded PRNG with a documented algorithm, no
-  reliance on language-specific behaviour (hash-map order, sort stability,
-  float formatting). **Golden test vectors** are stored as language-neutral
-  JSON files (inputs → expected result and event-log hash), so any port can
-  be validated against the reference.
-- **TA-18 [PROPOSED]** **A headless reference client** (a scripted bot that
-  plays a run through the protocol alone) is kept in CI. It proves the
-  protocol is sufficient to play the game without the web client, which is
-  exactly what a Godot client will need, and doubles as the bot for seeding
-  ghost pools (MM-12) and load testing.
+## Ghost pool on Steam
 
-What a Godot port then involves: reimplement the net and client-state layers
-from the schemas, rebuild presentation with the same assets and logical
-layout, and point it at the same server. Server, simulation, content,
-matchmaking, and the snapshot pool are untouched, and web and Godot players
-can share parties and ghost pools.
+The async PvP pool needs: store a snapshot, look up snapshots by
+`(sim version, party size, cycle)`, pick one at random, download it.
 
-## Recommended stack [PROPOSED]
+- **TA-15 [PROPOSED]** **One leaderboard per bucket**, named from the match
+  key, e.g. `ghost_<simversion>_p<partysize>_c<cycle>`, created on demand by
+  the client. The leaderboard is used as an index, not as a ranking.
+- **TA-16 [PROPOSED]** **Upload** (by the host, at the start of each PvP
+  battle): write the snapshot as a file, share it through Steam to obtain a
+  handle, submit a leaderboard entry in the bucket, and attach the handle to
+  the entry. The entry's small "details" payload carries metadata that should
+  be readable without downloading the file: the other party members' Steam
+  account IDs (for exclusion rules and display), lives remaining, and a
+  snapshot format version.
+- **TA-17 [PROPOSED]** **Selection**: read the bucket's entry count, choose a
+  random rank, download a small window of entries around it, drop excluded
+  ones (MM-3), pick one, and download its attached file. Entry scores are
+  random numbers so that rank order is a shuffle. Empty bucket or no eligible
+  entry → boss fallback (MM-5).
+- **TA-18 [PROPOSED]** Steam keeps one entry per user per leaderboard, so
+  each host has **at most one snapshot per bucket** — their most recent run
+  to reach that cycle replaces the previous one. This bounds the pool
+  naturally and stops one prolific player from flooding a bucket.
+- **TA-19 [PROPOSED]** Snapshots are compact (a few kilobytes at most): item
+  IDs, tiers, positions, Core stats, modifiers. Ghost lookup and download
+  happen during the event step so the PvP battle starts without a wait; a
+  timeout falls back to the boss.
+- **TA-20 [PROPOSED]** The ghost store is one of the Platform interfaces
+  (TA-5), so the leaderboard mechanism can be swapped — for a different Steam
+  mechanism or, if ever needed, a small web service — without touching game
+  code.
 
-- **Language:** TypeScript for server, simulation, and the web client, in a
-  monorepo.
-- **Server:** Node.js with plain WebSockets and a thin room layer of our own,
-  to keep the protocol framework-free (TA-11).
-- **Web client:** a small 2D rendering layer (e.g. PixiJS) for boards and
-  battle playback; ordinary web UI for menus and lobby. Kept deliberately
-  thin (TA-15).
-- **Database:** PostgreSQL (snapshots as JSONB with an index on the match key).
-- **Testing:** tests on the sim core, golden vectors, schema validation, the
-  reference client, and the balance harness as a CLI.
+## Trust model
 
-Note: Godot can also export to the web, so a future Godot client could
-replace the web client outright rather than sit alongside it.
+With no server of our own, the host's game is the authority, and anything a
+client can upload can in principle be forged by a modified client. This is
+the main cost of the Steam-only approach, and it is stated here so the choice
+is deliberate.
+
+- **TA-21 [PROPOSED]** **Accepted risk:** forged ghost snapshots and forged
+  depth-leaderboard scores are possible. The damage is limited: a forged
+  ghost costs another party one life in one battle; forged scores affect
+  bragging rights only. There is no economy, ranking reward, or trade to
+  exploit.
+- **TA-22 [PROPOSED]** **Mitigation — validate every downloaded snapshot**
+  before use: schema check, legal item placement, and a **plausibility
+  bound** (total item value and tiers cannot exceed what is achievable by
+  that cycle). Invalid snapshots are skipped and another is drawn.
+- **TA-23 [PROPOSED]** **Mitigation — reporting and cleanup:** players can
+  flag a ghost; flagged entries can be removed by the developers through
+  Steamworks tools.
+- **TA-24 [PROPOSED]** **Escape hatch:** if abuse becomes a real problem
+  after launch, add a small trusted service that re-simulates or validates
+  submissions and writes to leaderboards configured to accept trusted writes
+  only. TA-20 keeps this possible without redesign. Not built unless needed.
+
+## Persistence
+
+- **TA-25 [PROPOSED]** Local save files synchronized by Steam Cloud:
+  - meta-progression (unlocks, records)
+  - the current run save (one per party the player is in)
+  - settings
+- **TA-26 [PROPOSED]** Save files are versioned and carry the sim version.
+
+## Content
+
+- **TA-27 [PROPOSED]** **Content is data** (CB-35): items, tags, encounter
+  and boss templates, and scaling constants live in versioned data files
+  (JSON or Godot resources — prefer a text format that diffs well and can be
+  validated in CI). Rules data is kept separate from names, descriptions, and
+  art references, keyed by a stable item ID.
+
+## Language
+
+- **TA-28 [OPEN]** GDScript or C#. Recommended: **typed GDScript**
+  throughout — simplest path with GodotSteam, one language for coding agents,
+  no .NET export requirements. The simulation is discrete and small (beats,
+  columns, a handful of effects), so performance should be adequate; confirm
+  with the M0 performance budget (CB-36) and revisit only if the balance
+  harness is too slow. See Q6.
+- **TA-29 [PROPOSED]** Core uses integer math and an explicit seeded PRNG so
+  battles are reproducible from `(teams, seed, sim version)` for tests,
+  replays, and bug reports. Golden test vectors (stored inputs → expected
+  result hash) guard against accidental behaviour changes.
+
+## Spikes needed before committing to details
+
+- **TA-30 [PROPOSED]** A short Steamworks spike, using a real app ID, to
+  confirm:
+  1. Leaderboards with attached shared files work as the ghost pool: create
+     on demand, attach a file, random-rank download, download speed.
+  2. Limits: number of leaderboards per app, details payload size, shared
+     file size and per-user Cloud quota, rate limits.
+  3. Whether stale buckets from old versions need cleaning up and how.
+  4. Lobbies + relay networking through GodotSteam with Godot's multiplayer
+     API, including reconnect.
+  5. What can be tested with Valve's public test app ID versus what needs
+     our own (leaderboards and Cloud need our own app).
+
+  Fallback candidates if (1) disappoints: Steam Workshop items as hidden
+  snapshot containers, or the small service in TA-24.
+
+## Testing and CI
+
+- **TA-31 [PROPOSED]** CI runs headless Godot: Core unit tests, golden
+  vectors, content validation, and a **scripted bot** that plays full runs
+  through the Session layer on the Local platform (including multi-player
+  sessions over loopback). The same bot produces snapshots for seeding and
+  drives the balance harness.
+- **TA-32 [PROPOSED]** Steam-specific code is thin and tested manually
+  against the Steam client; everything above the Platform interface is
+  covered by automated tests on the Local implementation.
 
 ## Suggested milestones
 
-0. **Foundations:** monorepo, protocol and content schemas, CI — in place
-   before feature work so the portability rules are enforced from the start.
-1. **M0 — Sim core:** deterministic headless fights between two hard-coded
-   teams of 1–4 boards each (lanes from the start, so co-op is not a
-   retrofit); CLI runner; golden tests.
-2. **M1 — Solo loop, local:** PvE battle (3 difficulties) + shop event + exponential scaling +
-   lives; minimal UI; placeholder content (CB-50).
-3. **M2 — Server authority:** run state on the server; accounts; resumable
-   runs.
-4. **M3 — Ghosts:** snapshot save, matching, boss fallback, the full three-step cycle.
-5. **M4 — Co-op:** lobby, 2–4 players, one board each, giving, votes,
-   disconnect handling.
+0. **Foundations:** Godot project layout, layer boundaries, headless test
+   runner and CI, Platform interface with the Local implementation, content
+   schema.
+1. **M0 — Sim core:** deterministic headless battles between hard-coded
+   teams of 1–4 boards each; CLI runner; golden tests; performance budget.
+2. **M1 — Solo loop:** PvE battle (3 difficulties) + shop event + prep
+   phases + exponential scaling + lives; minimal UI; placeholder content
+   (CB-50).
+3. **M2 — Ghosts (local):** snapshot save, matching, validation, boss
+   fallback, the full three-step cycle, against the file-based ghost store.
+4. **M3 — Co-op (local):** host-authoritative session, 2–4 players over
+   loopback/LAN, giving, votes, disconnect and re-host.
+5. **M4 — Steam:** Steamworks spike (TA-30, can start any time), then
+   lobbies, relay networking, leaderboard ghost store, Cloud saves, rich
+   presence.
 6. **M5 — Balance & content:** balance harness, content expansion,
-   meta-progression, events.
+   meta-progression, more event types, achievements.
 
-M3 before M4 is deliberate: ghost PvP is the riskiest system-level feature and
-can be proven with solo parties first.
+Everything through M3 can be built and tested without Steam. The Steamworks
+spike should run early in parallel because its findings can change TA-15 to
+TA-19.

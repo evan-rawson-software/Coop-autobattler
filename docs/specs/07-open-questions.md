@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v0.6
+Status: Draft v0.7
 
 Each question lists options and a recommendation. Answering Q1, Q2, and Q6
 unblocks most backlog work.
@@ -80,13 +80,16 @@ strategic.
 
 ## Q6. Platform and stack
 
-Decided: web application first, architected for a later port to Godot (TA-0;
-rules in `06-technical-architecture.md` "Portability to Godot"). Remaining:
+Decided: Godot from the start, Steam release, Steam features as the backend,
+no offline mode (TA-0, TA-1, TA-13). Remaining:
 
-- Confirm the web stack (TypeScript, Node.js, plain WebSockets, PostgreSQL).
-- Decided: no offline play (TA-7); the simulation stays server-only.
-- When Godot arrives, does it replace the web client (via Godot's web
-  export) or run alongside it?
+- **Language:** typed GDScript *(recommended)* or C# (TA-28).
+- **Steamworks spike** (TA-30): confirm leaderboards with attached files work
+  as the ghost pool, and learn the limits.
+- **Trust:** is the accepted-risk position on forged ghosts and scores
+  (TA-21) acceptable for launch?
+- **Other storefronts/platforms** (consoles, non-Steam PC): out of scope; the
+  Platform interface (TA-5) is where they would plug in.
 
 ## Q7. Gold funnelling
 
@@ -102,24 +105,24 @@ refine (MM-4).
 
 ## Q9. What happens to runs on a version bump?
 
-Close out at current depth *(recommended, simplest)* vs let them continue
-against bosses only (TA-9).
+Close out at current depth *(recommended, simplest; TA-9)* vs let them
+continue against bosses only.
 
 ## Q10. Theme and tone
 
 Fantasy, sci-fi, something odd? Needed before content authoring, not before
 systems work.
 
-## Q11. Accounts and identity
+## Q11. Identity
 
-Guest play with an optional account, or account required? Affects snapshot
-attribution, resumable runs, and leaderboards. Recommended: guest identity
-(device token) from day one, upgradeable to an account later.
+Decided by the platform choice: Steam identity, no accounts of our own.
 
 ## Q12. Abuse considerations for ghosts
 
-- Offensive display names appearing on ghosts → name filtering or
-  anonymized ghost names by default.
-- Deliberately weak "throw" teams seeding the pool → mitigated by
-  record-aware selection (MM-4) and serving caps.
+- Display names on ghosts are Steam persona names, subject to Steam's own
+  filtering settings; optionally anonymize ghost names by default.
+- Forged snapshots from modified clients → validation and reporting
+  (TA-22, TA-23).
+- Deliberately weak "throw" teams seeding the pool → limited by one snapshot
+  per host per bucket (MM-1c).
 - Parties farming their friends' ghosts → exclusion rule MM-3.
