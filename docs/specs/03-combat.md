@@ -58,9 +58,9 @@ recorded in Q2.
   boards (CP-12).
 - **CB-11 [PROPOSED]** **Upgrading**: combining duplicates upgrades a unit
   (e.g. 3 copies → next star level). Duplicates can be pooled across players
-  via giving (CP-8).
+  via giving (CP-11).
 - **CB-12 [PROPOSED]** **Items** are equipped to units and grant stats or
-  triggered effects. Items are a primary target for party picks (CP-11).
+  triggered effects. Items are a primary target for party picks (CP-14).
 - **CB-13 [PROPOSED]** **Cross-board content**: some effects reach other
   boards, e.g. "units in adjacent lanes gain…", "when a unit on another board
   dies…". Every such effect must define what it does with one board (usually

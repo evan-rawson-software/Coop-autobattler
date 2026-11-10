@@ -26,7 +26,7 @@ Lobby -> [ 1. PvE battle -> 2. Event -> 3. PvP battle ] x N -> Defeat -> Run sum
   receives **no reward**.
 - **RS-3b [PROPOSED]** Harder difficulties face a stronger enemy team and give
   a better reward (see SC-1, EC-7). The choice shows the enemy archetype and
-  the reward for each option, and is made by party vote (CP-12).
+  the reward for each option, and is made by party vote (CP-16).
 - **RS-3c [PROPOSED]** Because a PvE loss is otherwise free, the reward gap
   between difficulties must make the choice a real risk decision: picking
   hard and losing should leave the party clearly behind a party that picked

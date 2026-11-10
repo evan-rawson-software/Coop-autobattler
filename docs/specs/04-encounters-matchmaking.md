@@ -115,7 +115,7 @@ The loop is defined in `01-run-structure.md` RS-1.
   player (CP-7).
 - **MM-19 [DECIDED/PROPOSED detail]** The party is offered easy, medium, and
   hard each cycle (RS-3). Each option shows the enemy archetype and the
-  reward; the party votes (CP-12). The three options may be different
+  reward; the party votes (CP-16). The three options may be different
   templates, not just the same enemy at three strengths.
 - **MM-20 [PROPOSED]** PvE battles are not snapshotted and do not affect the
   ghost pool.

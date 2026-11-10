@@ -39,7 +39,7 @@ boundaries matter more than the specific stack.
   The server rolls shops, selects opponents, picks seeds, and runs the fight.
 - **TA-4 [PROPOSED]** **Realtime transport** (e.g. WebSocket) for the lobby
   events, and prep phases. A party's run lives in a "room" that survives individual
-  disconnects (CP-16).
+  disconnects (CP-20).
 - **TA-5 [PROPOSED]** **Persistence**:
   - accounts / identities
   - runs (resumable state, history, final depth)
