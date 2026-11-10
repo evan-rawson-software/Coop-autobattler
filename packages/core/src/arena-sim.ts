@@ -17,7 +17,6 @@ import {
 import {
   NEIGHBORS,
   TARGETINGS,
-  bestNeighbour,
   breachStep,
   computeBreach,
   computeField,
@@ -698,7 +697,11 @@ function growScratch(ctx: ArenaContext, n: number): void {
   }
 }
 
-/** Index of the nearest enemy unit within `reach` (ties: lowest ID), or -1. */
+/**
+ * Index of the nearest enemy unit within `reach` (Chebyshev distance), or -1.
+ * Nearest is by Chebyshev distance, ties by Manhattan distance, then by
+ * lowest unit ID.
+ */
 function nearestEnemy(
   sim: ArenaSim,
   ctx: ArenaContext,
@@ -709,22 +712,30 @@ function nearestEnemy(
   const heads = ctx.heads[1 - u.side];
   if (heads === undefined) return -1;
   let best = -1;
-  let bestD = reach + 1;
+  let bestC = reach + 1;
+  let bestM = 0;
   let bestId = 0;
-  for (let dy = -reach; dy <= reach; dy++) {
-    const y = u.y + dy;
-    if (y < 0 || y >= height) continue;
-    const span = reach - Math.abs(dy);
-    const x0 = Math.max(0, u.x - span);
-    const x1 = Math.min(width - 1, u.x + span);
+  const y0 = Math.max(0, u.y - reach);
+  const y1 = Math.min(height - 1, u.y + reach);
+  const x0 = Math.max(0, u.x - reach);
+  const x1 = Math.min(width - 1, u.x + reach);
+  for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {
-      const d = Math.abs(dy) + Math.abs(x - u.x);
+      const ax = Math.abs(x - u.x);
+      const ay = Math.abs(y - u.y);
+      const c = Math.max(ax, ay);
+      const m = ax + ay;
       let j = heads[y * width + x] ?? -1;
       while (j !== -1) {
         const e = sim.units[j];
-        if (e !== undefined && (d < bestD || (d === bestD && e.id < bestId))) {
+        if (
+          e !== undefined &&
+          (c < bestC ||
+            (c === bestC && (m < bestM || (m === bestM && e.id < bestId))))
+        ) {
           best = j;
-          bestD = d;
+          bestC = c;
+          bestM = m;
           bestId = e.id;
         }
         j = ctx.next[j] ?? -1;
@@ -788,17 +799,23 @@ function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
     const a = nearestEnemy(sim, ctx, u, aggro);
     const e = a >= 0 ? sim.units[a] : undefined;
     if (e !== undefined) {
-      const cur = Math.abs(e.x - u.x) + Math.abs(e.y - u.y);
-      const k = bestNeighbour(arena, u.side, u.x, u.y, (c) => {
-        if (!openFor(arena, u.side, c)) return -1;
-        const dd =
-          Math.abs(e.x - (c % width)) + Math.abs(e.y - divFloor(c, width));
-        return dd < cur ? dd : -1;
-      });
-      if (k >= 0) {
-        ctx.action[i] = ACT_MOVE;
-        ctx.arg[i] = k;
-        return;
+      // One step along the axis with the larger difference (y when equal),
+      // else along the other axis if it differs.
+      const ex = e.x - u.x;
+      const ey = e.y - u.y;
+      const stepX = (): number =>
+        ex === 0 ? -1 : u.y * width + u.x + (ex > 0 ? 1 : -1);
+      const stepY = (): number =>
+        ey === 0 ? -1 : (u.y + (ey > 0 ? 1 : -1)) * width + u.x;
+      const order =
+        Math.abs(ex) > Math.abs(ey) ? [stepX, stepY] : [stepY, stepX];
+      for (const step of order) {
+        const k = step();
+        if (k >= 0 && openFor(arena, u.side, k)) {
+          ctx.action[i] = ACT_MOVE;
+          ctx.arg[i] = k;
+          return;
+        }
       }
     }
   }

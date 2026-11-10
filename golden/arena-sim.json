@@ -236,26 +236,26 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "cffe3262",
-        "events": 3140,
+        "stateHash": "c2f5b9c4",
+        "events": 2394,
         "sides": [
           {
             "spawned": 44,
-            "alive": 9,
-            "unitsDied": 35,
+            "alive": 7,
+            "unitsDied": 37,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
           {
             "spawned": 44,
-            "alive": 9,
-            "unitsDied": 35,
+            "alive": 7,
+            "unitsDied": 37,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           }
         ]
       },
-      "eventLogHash": "4eddd8f4"
+      "eventLogHash": "a443d318"
     }
   },
   {

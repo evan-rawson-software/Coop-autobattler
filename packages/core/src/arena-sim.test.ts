@@ -304,7 +304,7 @@ describe('movement', () => {
       coreOnly(8, 0),
       GAP,
       content,
-      simConfig,
+      { ...simConfig, aggroRangeCells: 0 },
     );
     // Side 1's Core is at arena x 2..3; from (5, 16) going left and going up
     // are equally good: the lower y wins, so it goes left to (4, 16).

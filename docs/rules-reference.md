@@ -1037,21 +1037,32 @@ exactly like the original.
    `charge` never exceeds `costPerShot`.
 3. **Decide.** Using the state as it is now (a snapshot: no decision sees
    another unit's decision), for each unit in `id` order choose one action. Let
-   `reach = max(1, rangeCells)`; all distances below are Manhattan distances:
-   - **a. Attack a unit.** If any enemy unit is within `reach`, target the
-     nearest; ties by lowest unit `id`.
+   `reach = max(1, rangeCells)`. **Unit-to-unit distance is Chebyshev**,
+   `max(|dx|, |dy|)`, so a melee unit hits an enemy in any of the 8 surrounding
+   cells or its own cell. The **nearest** enemy unit is the one with the
+   smallest Chebyshev distance, ties by smaller Manhattan distance, then by
+   lowest unit `id`. Distances from a unit to a building (rule b) are Manhattan
+   as before, and so is a turret's targeting distance.
+   - **a. Attack a unit.** If any enemy unit is within `reach` (Chebyshev),
+     target the nearest.
    - **a2. Aggro (CB-16).** Otherwise, if `moveCooldown` is 0 and an enemy unit
-     is within `aggroRangeCells` (Manhattan; this only matters when
-     `aggroRangeCells > reach`), let `E` be the nearest such unit (ties by
-     lowest unit `id`). Consider the four neighbours `n` of the unit's cell
-     that the unit may enter (open for its side, see Goals below: in bounds,
-     not terrain, no building that blocks its side) and that are strictly closer
-     to `E`, i.e. `manhattan(n, E) < manhattan(unit, E)` (every such neighbour
-     is exactly one closer). Of these the one with the lowest **tie key** is
-     chosen and the unit moves there (it is an ordinary move, step 5). If there
-     is no such neighbour, or `moveCooldown` is above 0, the unit falls
-     through to b. An aggro move never enters a cell the unit could not enter
-     otherwise, and ignores the movement field entirely.
+     is within `aggroRangeCells` (Chebyshev; this only matters when
+     `aggroRangeCells > reach`), let `E` be the nearest such unit and `(dx, dy)`
+     the offset from the unit to `E`. The unit tries one 4-directional step
+     towards `E` along the axis with the larger `|difference|` (along y when
+     the two are equal). If that cell cannot be entered (blocked for its side:
+     out of bounds, terrain, or a building that blocks its side), it tries one
+     step along the other axis towards `E`, provided that difference is not 0.
+     If neither can be entered there is no aggro move and the unit falls
+     through to b; so it does if `moveCooldown` is above 0. An aggro move is an
+     ordinary move (step 5), never enters a cell the unit could not enter
+     otherwise, ignores the movement field, and needs no tie-break. Why two
+     units moving in the same ticks always meet: a step along the larger axis
+     can only overshoot when that difference is 1, and then the units are
+     already within Chebyshev 1, i.e. in reach. Each simultaneous round lowers
+     the Manhattan offset by 2, so units with Manhattan offset `M` fight by
+     tick `6 * ceil(M / 2)` after their last first move (with move cooldown 6),
+     and a single mover needs at most `M` moves.
    - **b. Attack a building.** Otherwise, if a **goal building** of the unit is
      within `reach` of any of its cells, target it: the nearest such building
      (distance to its nearest cell); ties by Core first, then lowest instance
@@ -1289,12 +1300,11 @@ level entry point.
   impassable even for the breach field); a trapped unit waits.
 - Ranged attacks ignore walls and terrain (no line of sight).
 - A destroyed Core's cells become open ground and nothing else changes.
-- Units do not collide, and two units that step towards each other on
-  neighbouring columns at the same tick can swap places instead of meeting
-  (the tie key makes both choose the sideways step); the front line forms
-  once their timings differ or they are in the same column.
-- Aggro ignores walls: a unit may chase an enemy it cannot reach, taking a
-  step closer, then following the field away again, and so oscillate.
+- Aggro ignores obstacles between the units (no pathfinding): a unit may
+  chase an enemy behind a wall or lake until neither axis step is enterable;
+  it then falls through to its normal choices (goal building, movement
+  field), and may step back towards the enemy next time. Such back-and-forth
+  is possible but was not observed in the random-battle tests.
 
 ## Resolution order
 
@@ -1319,14 +1329,13 @@ broken as follows:
   attacks, moves, deaths); producers in side then building-ID order; buildings
   are destroyed in side then `health`-list order (Core first, then instance
   ID); conduits of a destroyed building are reported in conduit-ID order.
-- **Which enemy unit to hit:** the nearest by Manhattan distance, then the
-  lowest unit `id`. The same rule picks the unit a turret shoots (distance from
-  the nearest turret cell, only units on the owner's board rows) and the unit
-  a unit chases when it aggroes.
+- **Which enemy unit to hit or chase:** the nearest by Chebyshev distance,
+  then by Manhattan distance, then the lowest unit `id`. A turret picks its
+  target by Manhattan distance from its nearest cell (ties: lowest unit `id`),
+  only among units on its owner's board rows.
 - **Which building to hit:** the nearest by Manhattan distance to its nearest
   cell, then the Core before other buildings, then the lowest instance ID.
-- **Which way to step** (equal distance, equal cost, or equally close to a
-  chased enemy) and **where to spawn** (equal distance): the lowest `y`, then
+- **Which way to step** (equal distance or equal cost; an aggro step needs no tie-break) and **where to spawn** (equal distance): the lowest `y`, then
   the lowest `x`, in the board frame of the unit's own side (the tie key). Equal-length shortest paths are therefore
   resolved cell by cell by this rule, never by search order.
 - **Simultaneous attacks:** all damage (unit attacks and turret shots) is

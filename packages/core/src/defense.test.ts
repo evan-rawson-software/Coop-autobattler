@@ -578,6 +578,172 @@ describe('aggro', () => {
   });
 });
 
+describe('aggro convergence (Chebyshev reach, larger-axis step)', () => {
+  const R = simConfig.aggroRangeCells;
+
+  /** All offsets with Chebyshev distance 2..R, both signs. */
+  function offsets(): [number, number][] {
+    const out: [number, number][] = [];
+    for (let dy = -R; dy <= R; dy++)
+      for (let dx = -R; dx <= R; dx++) {
+        const c = Math.max(Math.abs(dx), Math.abs(dy));
+        if (c >= 2 && c <= R) out.push([dx, dy]);
+      }
+    return out;
+  }
+
+  /** First tick at which A and B attack each other, or -1. */
+  function meet(a: Cell, b: Cell, bMoves: boolean, ticks: number): number {
+    const { sim, ctx, events } = startBattle(
+      coreOnly(),
+      coreOnly(),
+      8,
+      content,
+      simConfig,
+    );
+    const ua = spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      ...a,
+    });
+    const ub = spawnUnitForTest(sim, ctx, {
+      side: 1,
+      def: 'unit_soldier',
+      ...b,
+    });
+    ua.moveCooldown = 0;
+    ub.moveCooldown = bMoves ? 0 : 1000;
+    for (let t = 0; t < ticks; t++) {
+      stepArena(sim, ctx);
+      const hit = ofType(events, 'unit_attacked').find(
+        (e) =>
+          e.target.kind === 'unit' &&
+          ((e.unit === ua.id && e.target.unit === ub.id) ||
+            (e.unit === ub.id && e.target.unit === ua.id)),
+      );
+      if (hit !== undefined) return hit.tick;
+    }
+    return -1;
+  }
+
+  test('both units moving: they meet within ceil(M / 2) rounds', () => {
+    // Each round (one move each, 6 ticks apart) lowers the Manhattan offset M
+    // by 2 until the units are within Chebyshev 1, so the last move is in round
+    // ceil(M / 2) at tick 6 * (round - 1) and the attack follows in the next
+    // tick: tick <= 6 * ceil(M / 2).
+    let worst = 0;
+    const cases = offsets();
+    expect(cases.length).toBe(40);
+    for (const [dx, dy] of cases) {
+      const a = { x: 5, y: 19 };
+      const b = { x: 5 + dx, y: 19 + dy };
+      const m = Math.abs(dx) + Math.abs(dy);
+      const bound = 6 * Math.ceil(m / 2);
+      const t = meet(a, b, true, bound + 1);
+      expect(t, `offset ${String(dx)},${String(dy)}`).toBeGreaterThanOrEqual(0);
+      expect(t).toBeLessThanOrEqual(bound);
+      worst = Math.max(worst, t);
+    }
+    expect(worst).toBeGreaterThan(0);
+  });
+
+  test('the former livelock: (5,16) against (6,18) now fight', () => {
+    expect(meet({ x: 5, y: 16 }, { x: 6, y: 18 }, true, 30)).toBeGreaterThan(
+      -1,
+    );
+  });
+
+  test('only one unit able to move: still converges within M moves', () => {
+    for (const [dx, dy] of offsets()) {
+      const m = Math.abs(dx) + Math.abs(dy);
+      const bound = 6 * m;
+      const t = meet(
+        { x: 5, y: 19 },
+        { x: 5 + dx, y: 19 + dy },
+        false,
+        bound + 1,
+      );
+      expect(t, `offset ${String(dx)},${String(dy)}`).toBeGreaterThanOrEqual(0);
+      expect(t).toBeLessThanOrEqual(bound);
+    }
+  });
+
+  test('a melee unit attacks an enemy on a diagonal neighbour', () => {
+    for (const [dx, dy] of [
+      [1, 1],
+      [-1, 1],
+      [1, -1],
+      [-1, -1],
+      [0, 0],
+    ] as const) {
+      expect(meet({ x: 5, y: 19 }, { x: 5 + dx, y: 19 + dy }, false, 2)).toBe(
+        0,
+      );
+    }
+  });
+
+  test('nearest enemy: Chebyshev first, then Manhattan, then lowest ID', () => {
+    const { sim, ctx, events } = startBattle(
+      coreOnly(),
+      coreOnly(),
+      8,
+      content,
+      simConfig,
+    );
+    const me = spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: 5,
+      y: 19,
+    });
+    // (6,20) is diagonal (Chebyshev 1, Manhattan 2); (5,18) is orthogonal
+    // (Chebyshev 1, Manhattan 1): the orthogonal one is nearer.
+    spawnUnitForTest(sim, ctx, { side: 1, def: 'unit_soldier', x: 6, y: 20 });
+    const orth = spawnUnitForTest(sim, ctx, {
+      side: 1,
+      def: 'unit_soldier',
+      x: 5,
+      y: 18,
+    });
+    stepArena(sim, ctx);
+    const first = got(
+      ofType(events, 'unit_attacked').find((e) => e.unit === me.id),
+    );
+    expect(first.target).toEqual({ kind: 'unit', unit: orth.id });
+  });
+
+  test('blocked larger axis: the other axis is tried, else no aggro move', () => {
+    // Lake directly east of the chaser; the enemy is further east and a row
+    // up, so the x step is blocked and it steps along y instead.
+    const map = tiny([], [[6, 17]]);
+    const { sim, ctx, events } = startBattle(
+      coreOnly(5, 0, map),
+      coreOnly(),
+      8,
+      content,
+      simConfig,
+    );
+    const me = spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: 5,
+      y: 17,
+    });
+    me.moveCooldown = 0;
+    const foe = spawnUnitForTest(sim, ctx, {
+      side: 1,
+      def: 'unit_soldier',
+      x: 8,
+      y: 18,
+    });
+    foe.moveCooldown = 1000;
+    stepArena(sim, ctx);
+    expect(
+      ofType(events, 'unit_moved').find((m) => m.unit === me.id),
+    ).toMatchObject({ x: 5, y: 18 });
+  });
+});
+
 // ---------------------------------------------------------------------------
 
 describe('enemy-path preview', () => {
