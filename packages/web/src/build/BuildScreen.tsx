@@ -1,0 +1,448 @@
+/**
+ * The Build screen (W2-6): lay out the factory between battles. It is one tab
+ * of the Shop + Build step. A dev entry (`#build`) starts a solo run, with a
+ * minimal Core placement first. All rules come from `core` and `session`.
+ */
+
+import {
+  hashJson,
+  previewEnemyPaths,
+  type Cell,
+  type EnemyPath,
+} from '@game/core';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useStore } from '../app-state.js';
+import { BoardView, type OverlayContext } from '../board/BoardView.js';
+import { CameraController } from '../board/controller.js';
+import { cellToView } from '../board/layout.js';
+import type { Selection } from '../board/render.js';
+import { content } from '../content.js';
+import { registerDebug } from '../debug-hook.js';
+import { AppShell, Panel } from '../shell/AppShell.js';
+import './build.css';
+import { BuildController } from './build-controller.js';
+import { drawBuildOverlay } from './overlay-draw.js';
+import {
+  DryRunTable,
+  InspectorPanel,
+  OverlaysPanel,
+  PartyPanel,
+  ProblemsPanel,
+  StashPanel,
+  ToolsPanel,
+} from './panels.js';
+import { DEFAULT_SEED, simConfig } from './setup.js';
+import { layoutHash } from './undo.js';
+import {
+  computeFlowView,
+  deriveProblems,
+  type FlowView,
+  type Problem,
+} from './view-model.js';
+
+const camera = new CameraController();
+camera.resetPreset = 'fit';
+camera.refitOnResize = true;
+const ctl = new BuildController();
+let started = false;
+
+const plain = (v: unknown): unknown => JSON.parse(JSON.stringify(v)) as unknown;
+
+function isTyping(t: EventTarget | null): boolean {
+  const el = t as HTMLElement | null;
+  const tag = el?.tagName ?? '';
+  return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
+}
+
+export function BuildScreen() {
+  const model = useStore(ctl.model);
+  const { ui, view } = model;
+  const run = view?.run ?? null;
+  const team = run?.team ?? null;
+  const step = run?.step ?? 'none';
+  const canvasWrap = useRef<HTMLDivElement>(null);
+  const [seedText, setSeedText] = useState(String(DEFAULT_SEED));
+
+  // Start the first run on first load.
+  useEffect(() => {
+    if (!started) {
+      started = true;
+      void ctl.newRun(DEFAULT_SEED);
+    }
+  }, []);
+
+  // Camera focus for the problems list.
+  useEffect(() => {
+    ctl.focusCell = (c: Cell) => {
+      const t = ctl.team();
+      if (t === null) return;
+      const frame = {
+        id: 'own' as const,
+        w: t.map.width,
+        h: t.map.height,
+        ox: 0,
+        oy: 0,
+        turned: false,
+      };
+      const v = cellToView(frame, c.x, c.y);
+      camera.focusAt({ x: v.x + 0.5, y: v.y + 0.5 });
+    };
+  }, []);
+
+  // Keyboard.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (isTyping(e.target) && e.key !== 'Escape') return;
+      if (ctl.key(e)) e.preventDefault();
+    };
+    const onUp = (e: PointerEvent): void => {
+      // A press on the stash that ended off the board cancels the drag.
+      const t = e.target as HTMLElement | null;
+      if (t?.closest('canvas') || t?.closest('.stash-item')) return;
+      ctl.dropOutside();
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, []);
+
+  // Derived overlays: pure functions of the team state.
+  const flow: FlowView | null = useMemo(
+    () =>
+      team !== null && step === 'build'
+        ? computeFlowView(team, content, simConfig, ui.dryTicks)
+        : null,
+    [team, step, ui.dryTicks],
+  );
+  const paths: EnemyPath[] | null = useMemo(() => {
+    if (team === null || team.core === null || step !== 'build') return null;
+    try {
+      return previewEnemyPaths(team, content, simConfig);
+    } catch {
+      return null;
+    }
+  }, [team, step]);
+  const problems: Problem[] = useMemo(
+    () =>
+      team !== null && step === 'build'
+        ? deriveProblems(team, content, flow)
+        : [],
+    [team, step, flow],
+  );
+
+  // Latest data for the overlay drawer and the debug hook.
+  const data = useRef({ ui, team, step, flow, paths });
+  data.current = { ui, team, step, flow, paths };
+
+  const drawOverlay = useRef(
+    (ctx: CanvasRenderingContext2D, o: OverlayContext) => {
+      const d = data.current;
+      if (d.team === null) return;
+      drawBuildOverlay(ctx, o, {
+        ui: d.ui,
+        team: d.team,
+        step: d.step,
+        flow: d.flow,
+        paths: d.paths,
+        legalCore: ctl.legalCorePositions,
+        content,
+      });
+    },
+  );
+
+  useEffect(() => {
+    registerDebug({
+      build: {
+        step: () => ctl.session?.run.step ?? 'none',
+        hash: () => {
+          const t = ctl.team();
+          return t === null ? '' : layoutHash(t);
+        },
+        team: () => {
+          const t = ctl.team();
+          return t === null
+            ? null
+            : plain({
+                core: t.core,
+                buildings: t.buildings,
+                stash: t.stash,
+                conduits: t.conduits,
+                nodes: t.map.nodes,
+                features: t.map.features,
+                width: t.map.width,
+                height: t.map.height,
+                hashAll: hashJson(t),
+              });
+        },
+        status: () => ctl.model.get().ui.status,
+        ui: () => {
+          const u = ctl.model.get().ui;
+          return plain({
+            tool: u.tool,
+            selection: u.selection,
+            held: u.held,
+            overlays: u.overlays,
+            ghost: u.ghost,
+            draftView: u.draftView,
+            attempt: u.attempt,
+            coreGhost: u.coreGhost,
+          });
+        },
+        counts: () => {
+          const v = ctl.model.get().view;
+          return {
+            undo: v?.undoCount ?? 0,
+            redo: v?.redoCount ?? 0,
+            actions: v?.run.actionLog.length ?? 0,
+          };
+        },
+        cellToScreen: (x, y) => {
+          const el = canvasWrap.current?.querySelector('canvas');
+          const t = ctl.team();
+          if (!el || t === null) return null;
+          const r = el.getBoundingClientRect();
+          const frame = {
+            id: 'own' as const,
+            w: t.map.width,
+            h: t.map.height,
+            ox: 0,
+            oy: 0,
+            turned: false,
+          };
+          const v = cellToView(frame, x, y);
+          const cam = camera.camera;
+          const vp = camera.viewport;
+          return {
+            x: r.left + (v.x + 0.5 - cam.cx) * cam.zoom + vp.w / 2,
+            y: r.top + (v.y + 0.5 - cam.cy) * cam.zoom + vp.h / 2,
+          };
+        },
+        problems: () =>
+          data.current.team === null
+            ? []
+            : deriveProblems(data.current.team, content, data.current.flow).map(
+                (p) => ({ id: p.id, kind: p.kind, text: p.text }),
+              ),
+        legalCore: () => [...ctl.legalCorePositions],
+        enemyPathCount: () => data.current.paths?.length ?? 0,
+        dry: () => data.current.flow?.dry ?? null,
+      },
+    });
+  }, []);
+
+  const selection: Selection | null = useMemo(() => {
+    const s = ui.selection;
+    if (s === null || s.kind === 'conduit') return null;
+    return {
+      board: 'own',
+      building: s.kind === 'core' ? 'core' : s.id,
+      x: 0,
+      y: 0,
+    };
+  }, [ui.selection]);
+
+  const cursor =
+    ui.held !== null || ui.moving?.started === true
+      ? 'copy'
+      : ui.tool === 'conduit'
+        ? 'crosshair'
+        : ui.tool === 'erase'
+          ? 'not-allowed'
+          : step === 'core_placement'
+            ? 'crosshair'
+            : undefined;
+
+  const onPick = (p: Problem): void => {
+    if (p.building !== null) ctl.select({ kind: 'building', id: p.building });
+    if (p.focus !== null) ctl.focusCell(p.focus);
+  };
+
+  const devStrip = (
+    <span class="dev-strip">
+      <label>
+        Seed{' '}
+        <input
+          type="number"
+          id="seed-input"
+          min="0"
+          max="4294967295"
+          value={seedText}
+          onInput={(e) => {
+            setSeedText(e.currentTarget.value);
+          }}
+        />
+      </label>
+      <button
+        type="button"
+        id="new-run"
+        onClick={() => {
+          const n = Math.floor(Number(seedText));
+          if (Number.isFinite(n) && n >= 0 && n <= 0xffffffff)
+            void ctl.newRun(n);
+        }}
+      >
+        New run (seed)
+      </button>
+      {run !== null ? (
+        <span class="muted" data-field="run-info">
+          Round {run.round} · Lives {run.lives} ·{' '}
+          {run.perPlayer.filter((p) => p.ready).length} of {run.players.length}{' '}
+          ready
+        </span>
+      ) : null}
+    </span>
+  );
+
+  const tabs = [
+    { id: 'shop', label: 'Shop', disabled: true, hint: 'Coming soon' },
+    { id: 'build', label: 'Build' },
+  ];
+
+  // ---- Other steps: a placeholder ----------------------------------------
+  if (run !== null && step !== 'build' && step !== 'core_placement') {
+    return (
+      <AppShell
+        title={`Round ${String(run.round)} · ${step}`}
+        status={devStrip}
+      >
+        <div class="placeholder" id="step-placeholder">
+          <Panel title="Next step" id="panel-next-step">
+            <p>
+              The run is now in step <strong data-field="step">{step}</strong>{' '}
+              (round {run.round}). There is no screen for it yet.
+            </p>
+            <p class="muted" data-field="status-line">
+              {ui.status.text}
+            </p>
+            <button
+              type="button"
+              id="dev-new-run"
+              onClick={() => void ctl.newRun(model.seed)}
+            >
+              Start a new run (seed {model.seed})
+            </button>
+          </Panel>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const boardArea =
+    team === null ? (
+      <p class="muted pad">Starting a run.</p>
+    ) : (
+      <div class="build-board" ref={canvasWrap}>
+        <div class="build-canvas">
+          <BoardView
+            content={content}
+            own={team}
+            controller={camera}
+            resetKey={`${run?.runId ?? ''}:${step}`}
+            selection={selection}
+            frontLabel="FRONT EDGE · enemy units enter here"
+            cursor={cursor}
+            drawOverlay={drawOverlay.current}
+            overlayKey={ui}
+            animate={ui.overlays.flow}
+            onHover={(hit) => {
+              ctl.hover(hit === null ? null : { x: hit.x, y: hit.y });
+            }}
+            onSelect={(s) => {
+              if (
+                step === 'build' &&
+                ui.tool === 'select' &&
+                s?.building === null
+              ) {
+                ctl.select(null);
+              }
+            }}
+            onBoardPointer={(ev) => ctl.onBoardPointer(ev)}
+          />
+          {ui.overlays.dry && flow !== null ? (
+            <DryRunTable
+              team={team}
+              flow={flow}
+              onClose={() => {
+                ctl.setOverlay('dry', false);
+              }}
+            />
+          ) : null}
+        </div>
+        <div
+          class={`status-line ${ui.status.kind}`}
+          id="status-line"
+          role="status"
+          data-kind={ui.status.kind}
+        >
+          {ui.status.text}
+        </div>
+      </div>
+    );
+
+  if (step === 'core_placement') {
+    return (
+      <AppShell
+        title="Core placement"
+        status={devStrip}
+        tallBottom
+        bottom={
+          <Panel title="Core placement" id="panel-core">
+            <p>
+              Click a green-dotted cell to place the Core (its lowest-left
+              cell). Your starting kit then appears in the stash.{' '}
+              {ctl.legalCorePositions.length} legal positions.
+            </p>
+            <p class="muted">
+              Solo: proposing a position confirms it. In co-op the party votes.
+            </p>
+          </Panel>
+        }
+      >
+        {boardArea}
+      </AppShell>
+    );
+  }
+
+  const bottom =
+    run === null || team === null ? null : (
+      <>
+        <div class="dock-col">
+          <StashPanel team={team} model={model} ctl={ctl} />
+          <ToolsPanel model={model} ctl={ctl} />
+        </div>
+        <div class="dock-col">
+          <InspectorPanel
+            run={run}
+            model={model}
+            dry={flow?.dry ?? null}
+            ctl={ctl}
+          />
+        </div>
+        <div class="dock-col">
+          <OverlaysPanel model={model} ctl={ctl} />
+          <ProblemsPanel problems={problems} onPick={onPick} />
+        </div>
+        <div class="dock-col">
+          <PartyPanel run={run} ctl={ctl} />
+        </div>
+      </>
+    );
+
+  return (
+    <AppShell
+      title={
+        run === null ? 'Build' : `Round ${String(run.round)} · Shop + Build`
+      }
+      tabs={tabs}
+      activeTab="build"
+      status={devStrip}
+      bottom={bottom}
+      tallBottom
+    >
+      {boardArea}
+    </AppShell>
+  );
+}

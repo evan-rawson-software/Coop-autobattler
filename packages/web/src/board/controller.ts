@@ -25,6 +25,14 @@ export class CameraController {
   private base: Point | null = null;
   private resetKey: unknown = Symbol('none');
   private pendingReset = true;
+  /** The preset a new layout key puts the camera at. */
+  resetPreset: CameraPreset = 'center';
+  /**
+   * When true, a resize re-applies the reset preset until the user pans or
+   * zooms (the layout around the view may still be settling at first).
+   */
+  refitOnResize = false;
+  private following = false;
   private readonly listeners = new Set<() => void>();
 
   get camera(): Camera {
@@ -74,6 +82,9 @@ export class CameraController {
   setViewport(vp: Viewport): void {
     if (vp.w === this.vp.w && vp.h === this.vp.h) return;
     this.vp = vp;
+    if (this.refitOnResize && this.following) {
+      this.pendingReset = true;
+    }
     this.settle();
   }
 
@@ -81,7 +92,8 @@ export class CameraController {
     if (!this.ready) return;
     if (this.pendingReset) {
       this.pendingReset = false;
-      this.preset('center');
+      this.preset(this.resetPreset);
+      this.following = true;
       this.emit();
       return;
     }
@@ -90,6 +102,7 @@ export class CameraController {
 
   preset(name: CameraPreset): void {
     if (!this.ready) return;
+    this.following = false;
     let cam: Camera;
     if (name === 'fit') cam = fitCamera(this.vp, this.bounds);
     else if (name === 'base' && this.base)
@@ -98,13 +111,24 @@ export class CameraController {
     this.set(cam);
   }
 
+  /** Centre on a view-space point (keeps the zoom if it is already closer). */
+  focusAt(p: Point): void {
+    if (!this.ready) return;
+    this.following = false;
+    const z = this.cam.zoom;
+    const next = focusCamera(this.vp, this.bounds, p);
+    this.set(z > next.zoom ? { ...next, zoom: z } : next);
+  }
+
   pan(dxPx: number, dyPx: number): void {
     if (!this.ready) return;
+    this.following = false;
     this.set(panBy(this.cam, this.vp, this.bounds, dxPx, dyPx));
   }
 
   zoomAt(at: Point, factor: number): void {
     if (!this.ready) return;
+    this.following = false;
     this.set(zoomAbout(this.cam, this.vp, this.bounds, at, factor));
   }
 

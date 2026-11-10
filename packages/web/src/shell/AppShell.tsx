@@ -10,6 +10,9 @@ import { useContext } from 'preact/hooks';
 export interface TabDef {
   readonly id: string;
   readonly label: string;
+  /** A tab that exists but cannot be opened yet; `hint` says why. */
+  readonly disabled?: boolean;
+  readonly hint?: string;
 }
 
 export interface AppShellProps {
@@ -18,7 +21,9 @@ export interface AppShellProps {
   readonly activeTab?: string;
   readonly onTab?: (id: string) => void;
   /** Right side of the top bar, e.g. round, lives, ready count. */
-  readonly status?: string;
+  readonly status?: ComponentChildren;
+  /** Taller bottom dock for screens with several panel rows. */
+  readonly tallBottom?: boolean;
   readonly left?: ComponentChildren;
   readonly right?: ComponentChildren;
   readonly bottom?: ComponentChildren;
@@ -46,6 +51,8 @@ export function AppShell(props: AppShellProps) {
               key={t.id}
               class={t.id === props.activeTab ? 'tab active' : 'tab'}
               aria-pressed={t.id === props.activeTab}
+              disabled={t.disabled === true}
+              title={t.hint}
               onClick={() => props.onTab?.(t.id)}
             >
               {t.label}
@@ -58,7 +65,11 @@ export function AppShell(props: AppShellProps) {
         <main class="main-view">{props.children}</main>
         {left ? <Dock region="left">{left}</Dock> : null}
         {right ? <Dock region="right">{right}</Dock> : null}
-        {bottom ? <Dock region="bottom">{bottom}</Dock> : null}
+        {bottom ? (
+          <Dock region="bottom" tall={props.tallBottom}>
+            {bottom}
+          </Dock>
+        ) : null}
       </div>
       <footer class="build-id" id="build-id">
         Build {__BUILD_COMMIT__} · {__BUILD_DATE__}
@@ -72,10 +83,14 @@ export type DockRegion = 'left' | 'right' | 'bottom';
 /** A named dock region; screens put `Panel`s in it. */
 export function Dock(props: {
   region: DockRegion;
+  tall?: boolean | undefined;
   children?: ComponentChildren;
 }) {
   return (
-    <aside class={`dock dock-${props.region}`} data-dock={props.region}>
+    <aside
+      class={`dock dock-${props.region}${props.tall === true ? ' tall' : ''}`}
+      data-dock={props.region}
+    >
       {props.children}
     </aside>
   );
