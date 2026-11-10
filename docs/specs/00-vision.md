@@ -1,6 +1,6 @@
 # 00 — Vision & Pillars
 
-Status: Draft v1.0
+Status: Draft v1.1
 
 ## Elevator pitch
 
@@ -38,8 +38,14 @@ forever; the score is how deep you went.
 - **V-9a [DECIDED]** Rewards are a choice between economy — in-battle ramp,
   not gold — and attack or defense for the upcoming battles. Defense, such
   as walls, buys time for the factory to ramp up.
-- **V-10 [DECIDED]** Combat is item-based in the style of *The Bazaar* and
-  *Backpack Battles*, but with its own distinct core mechanic.
+- **V-10 [DECIDED]** The game is its own thing. It began from the
+  item-board style of *The Bazaar* and *Backpack Battles* and has moved to a
+  factory-and-battlefield design: the factory produces units that march on
+  the enemy base, on a map with randomized resources and natural features
+  (lakes, cliffs) that shape both building and enemy movement.
+- **V-10a [DECIDED]** The Core's position is chosen by the team at the start
+  of the run and never moves; every other structure can be moved freely
+  between battles.
 - **V-11 [DECIDED]** Built in Godot, for release on Steam, using Steam
   features for backend needs (lobbies, multiplayer, async PvP) wherever
   possible.
@@ -59,7 +65,7 @@ forever; the score is how deep you went.
    deterministic from its inputs. The same two teams and seed always produce
    the same result. This is what makes ghost PvP, replays, and testing
    possible.
-4. **Decisions in the shop, spectacle in the fight.** Players have zero input
+4. **Decisions in the build, spectacle in the fight.** Players have zero input
    during combat. All skill expression is in drafting, economy, and how items
    are arranged on the board.
 5. **Short sessions, legible cycles.** A cycle is a few minutes; a run fits in
@@ -101,12 +107,17 @@ does not block systems work.
 | Prep phase | A short window before each battle to arrange the team. |
 | PvP battle | The third step of a cycle: a ghost, or a boss if no ghost matches. |
 | Encounter | A single automated fight (PvE or ghost PvP). |
-| Board | The party's single shared grid of items: the factory. |
-| Core | The party's health pool; what the enemy attacks. |
+| Board | The party's single shared map and everything built on it: the factory. |
+| Structure | An item once placed on the board. Shops sell items; the board holds structures. |
+| Unit | A fighter produced by a structure during battle; walks to the enemy base and attacks. |
+| Resource node | A map cell where a source can be built. |
+| Natural feature | Terrain such as a lake or cliff that blocks building and movement. |
+| Front edge | The side of a board that faces the enemy; units cross it. |
+| Core | The party's health and the enemy's final target. Placed once per run; never moves. |
 | Charge | What sources produce and other items consume; an item fires when charge reaches it. |
 | Plot | The area one player adds to the shared board. |
 | Ramp | The factory getting stronger over the course of one battle; what "economy" items provide. |
-| Threat | A PvE opponent: a scripted health pool and attack pattern, not a factory. |
+| Threat | A PvE opponent: scripted waves of units plus a stronghold to attack, not a factory. |
 | Snapshot | A saved, immutable copy of a party's team at the start of an encounter. |
 | Ghost | A snapshot being used as another party's opponent. |
 | Boss | A generated PvE opponent used when no ghost is available. |

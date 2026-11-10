@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v1.0
+Status: Draft v1.1
 
 ## Party basics
 
@@ -19,12 +19,13 @@ Status: Draft v1.0
   factory (see `03-combat.md`). Players coordinate to build the best overall
   factory. (This replaces the earlier one-board-per-player model.)
 - **CP-5 [PROPOSED]** Board area scales with party size: each player adds one
-  **plot** of the same size (starting proposal: 6×4 cells), joined into a
-  single continuous grid with no internal walls. Solo plays on one plot.
+  **plot** of the same size (starting proposal: about 16×12 cells, CB-4),
+  joined side by side into a single continuous map, so the front edge gets
+  wider with each player. Solo plays on one plot.
   Everything therefore scales linearly from 1 to 4 players.
-- **CP-6 [PROPOSED]** The party's **team state** is that one board: its
-  dimensions, items with tiers, positions and orientation, Core stats, and
-  run modifiers. It is what combat consumes and what a snapshot stores
+- **CP-6 [PROPOSED]** The party's **team state** is that one board: its map
+  (terrain, resource nodes, natural features), the Core position, structures
+  with tiers, positions and orientation, and run modifiers. It is what combat consumes and what a snapshot stores
   (CB-32, MM-1).
 - **CP-7 [PROPOSED]** Opponents are scaled to party size: ghosts match on
   party size and so have the same area (MM-2); PvE threats are scaled by the
@@ -34,6 +35,9 @@ Status: Draft v1.0
   and no per-player results.
 - **CP-9 [PROPOSED]** Solo is the same game on one plot, with no special
   rules.
+- **CP-9a [DECIDED/PROPOSED detail]** The team chooses the Core's position
+  together at the start of the run (CB-3e): any player can propose a spot on
+  the map, and the party confirms by vote (CP-16).
 
 ## Who owns what
 
@@ -52,7 +56,8 @@ Status: Draft v1.0
   the owner can sell it. To be revisited after co-op playtests.
 - **CP-14 [PROPOSED]** **Party picks.** Some rewards belong to the party as a
   whole — a choice of one item among several, a board expansion, a Core
-  upgrade — and are decided together (CP-16).
+  upgrade — and are decided together (CP-16). Resource nodes are party
+  property too: who builds the source on a node is something to agree on.
 
 ## Shared stakes
 

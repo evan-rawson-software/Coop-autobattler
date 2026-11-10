@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v1.0
+Status: Draft v1.1
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.
@@ -24,7 +24,8 @@ the specification.
   threat scales linearly with the size of the party's board.
 
 - **SC-2 [PROPOSED]** "Budget" is an abstract power currency spent by the
-  encounter generator on a threat's health, defenses, attack strength over time, and
+  encounter generator on a threat's wave size and composition over time, its stronghold's
+  health and defenses, and
   modifiers. A reference conversion from budget to stats must exist so that
   budget can be compared with player team power.
 - **SC-3 [PROPOSED]** Player power must grow **sub-exponentially** in the long
@@ -70,15 +71,20 @@ the missed reward (RS-3a). The exponential curve still ends every run:
 "Economy" has two unrelated meanings in this game; this section is about the
 first. Gold (next section) is never produced by the factory.
 
-- **SC-8 [PROPOSED]** In-battle ramp (CB-3a) must not let the party outgrow
+- **SC-8 [PROPOSED]** In-battle ramp (CB-3) must not let the party outgrow
   PvE indefinitely. Limits, in order of importance: board space and steep
-  expansion costs (CB-18, CB-19); caps or diminishing returns on each
+  expansion costs (CB-24, CB-25); caps or diminishing returns on each
   economy item's in-battle effect; PvE threats whose early pressure grows
   with depth, leaving less time to ramp. The balance harness must chart
   party power **over battle time** as well as over cycles.
-- **SC-9 [PROPOSED]** The three strategies (CB-13) should each have PvE
+- **SC-9 [PROPOSED]** The three strategies (CB-21) should each have PvE
   archetypes they are good and bad against, so no single routing is correct
   for a whole run.
+- **SC-11 [PROPOSED]** **Terrain fairness.** Map generation is constrained
+  so that every map has a comparable number of resource nodes per plot,
+  comparable buildable area, and at least one defensible approach, while
+  still differing enough to matter. The balance harness should measure how
+  much win rate varies by map seed.
 - **SC-10 [PROPOSED]** Economy items should be clearly worse than attack or
   defense items of the same price in a short battle and clearly better in a
   long one, with the crossover point moving earlier as the run deepens.

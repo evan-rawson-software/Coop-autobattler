@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v1.0
+Status: Draft v1.1
 
 ## Direction
 
@@ -30,8 +30,10 @@ tune them, as cheaply as possible. It is a prototype, not the product.
 - **TA-40 [DECIDED]** Runs in a browser, **offline**, single-player. No
   backend, no accounts, no networking, no Steam.
 - **TA-41 [PROPOSED]** Scope:
-  - the factory simulation (`03-combat.md`): charge routing, the six item
-    kinds, in-battle ramp, walls, PvE threats
+  - the factory and battlefield simulation (`03-combat.md`), cut to the
+    minimum: map generation with nodes, lakes, and cliffs; charge routing;
+    a few structures of each kind; 3–4 unit types with pathfinding;
+    in-battle ramp; PvE waves and strongholds
   - the full run loop: PvE battle with three difficulties → event (shop
     first) → PvP battle; 5 lives; exponential scaling
   - one player, one plot
@@ -316,11 +318,12 @@ is deliberate.
 
 1. **W0 — Foundations:** repo layout, content and format schemas, test
    runner, CI, static-site deploy for playtest builds.
-2. **W1 — Sim core:** deterministic headless battles, boards of 1–4 plots,
-   factory versus factory and factory versus threat;
+2. **W1 — Sim core:** map generation; deterministic headless battles with
+   pathfinding, boards of 1–4 plots, factory versus factory and factory
+   versus threat; performance budget (CB-36);
    command-line runner; golden vectors; rules reference started.
 3. **W2 — Playable loop:** PvE battle (3 difficulties) + shop + prep phases +
-   lives + exponential scaling; factory editing UI with flow preview; battle
+   lives + exponential scaling; Core placement; factory editing UI with flow and enemy-path preview; battle
    playback.
 4. **W3 — PvP step:** local ghost pool, matching, snapshot validation, boss
    fallback; scripted bot; bundled bot ghosts.

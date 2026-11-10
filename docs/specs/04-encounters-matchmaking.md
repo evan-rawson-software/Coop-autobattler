@@ -1,12 +1,12 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v1.0
+Status: Draft v1.1
 
 ## Encounter types
 
 | Type | Opponent | When | Stakes |
 |------|----------|------|--------|
-| PvE battle (easy / medium / hard) | Scripted threat scaled to cycle, difficulty, and party size | Step 1 of each cycle | Reward on win; no reward and no life loss on defeat |
+| PvE battle (easy / medium / hard) | Scripted waves plus a stronghold, scaled to cycle, difficulty, and party size | Step 1 of each cycle | Reward on win; no reward and no life loss on defeat |
 | PvP battle — ghost | Snapshot of another real party's factory | Step 3 of each cycle | Reward on win; lose 1 life on defeat |
 | PvP battle — boss | Generated boss threat | Step 3 of each cycle, when no ghost matches | Same as ghost |
 
@@ -21,7 +21,8 @@ The loop is defined in `01-run-structure.md` RS-1.
   - game version (content + simulation version; see TA-8)
   - party size
   - cycle number
-  - full team state: the party's one board (CB-32, CP-6)
+  - full team state: the party's map, Core position, and structures
+    (CB-32, CP-6)
   - party members' Steam IDs (display names are looked up from Steam)
   - metadata: lives remaining and PvP record at that point (for optional
     match-quality filtering)
@@ -51,7 +52,7 @@ The loop is defined in `01-run-structure.md` RS-1.
 - **MM-5 [DECIDED]** If no eligible snapshot exists, a **PvE boss** is
   generated instead, based on the party's progress (see below).
 - **MM-6 [PROPOSED]** The ghost's factory runs in the standard simulation
-  against the party's (CB-25).
+  against the party's, the two boards joined front to front (CB-8, CB-28).
   The original ghost party is not notified and is not affected by the result.
   (Optional later: "your ghost won N fights" stat.)
 - **MM-7 [PROPOSED]** Opponent selection and the combat seed are chosen
@@ -68,9 +69,9 @@ The loop is defined in `01-run-structure.md` RS-1.
   1. Compute a **power budget** from the cycle number using the PvE scaling
      curve (`05-scaling-economy.md` SC-1).
   2. Pick a **boss template** valid for that depth band: a threat profile
-     (CB-26) with a signature attack pattern.
-  3. Spend the budget on health, defenses, and attack strength over time,
-     multiplied by party size (CP-7).
+     (CB-29): a wave schedule and a stronghold with a signature mechanic.
+  3. Spend the budget on wave size and composition over time and on the
+     stronghold's health and defenses, multiplied by party size (CP-7).
   4. Emit a threat profile (CB-34). Bosses are scripted threats, not
      factories.
 - **MM-10 [PROPOSED]** A boss should be tuned to be roughly as dangerous as
@@ -105,13 +106,15 @@ The loop is defined in `01-run-structure.md` RS-1.
   by players' games and could be forged by a modified client. This is an
   accepted risk with limited damage; see "Trust model" (TA-21 to TA-24).
 - **MM-17 [PROPOSED]** Every downloaded snapshot is validated before use:
-  schema, legal placement, and a plausibility bound on total power for its
-  cycle (TA-22). A snapshot that fails is skipped and another is drawn.
+  schema, legal placement on its own map (sources on nodes, nothing on
+  natural features, a valid Core position), a map that the generator could
+  have produced, and a plausibility bound on total power for its cycle
+  (TA-22). A snapshot that fails is skipped and another is drawn.
 - **MM-17a [PROPOSED]** Players can report a ghost (TA-23).
 
 ## PvE encounters
 
-- **MM-18 [PROPOSED]** PvE enemies are **threat profiles** (CB-26) built
+- **MM-18 [PROPOSED]** PvE enemies are **threat profiles** (CB-29) — waves plus a stronghold — built
   from templates and scaled by the same budget function as bosses, with a
   multiplier per difficulty (easy < medium < hard; see SC-1) and by party
   size (CP-7).

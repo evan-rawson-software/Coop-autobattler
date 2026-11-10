@@ -1,11 +1,14 @@
 # 01 — Run Structure
 
-Status: Draft v1.0
+Status: Draft v1.1
 
 ## Core loop
 
+Before the first cycle, the party's map is generated and revealed and the
+team places its Core, which then stays put for the whole run (CB-3e, CB-7).
+
 ```
-Lobby -> [ 1. PvE battle -> 2. Event -> 3. PvP battle ] x N -> Defeat -> Run summary
+Lobby -> Map + Core placement -> [ 1. PvE battle -> 2. Event -> 3. PvP battle ] x N -> Defeat -> Run summary
 ```
 
 - **RS-1 [DECIDED]** A run is an unbounded sequence of **cycles**. Each cycle

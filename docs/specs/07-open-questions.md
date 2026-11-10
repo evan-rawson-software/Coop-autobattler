@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v1.0
+Status: Draft v1.1
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -13,26 +13,29 @@ together. Remaining details:
 - **Ownership.** Proposed: personal gold, shops, and stashes; shared space;
   anyone can move any item, only the owner can sell (CP-10 to CP-13).
   Alternative: everything pooled.
-- **Plot size and board shape** at 2, 3, and 4 players (CP-5).
 
-## Q2. Factory rules
+## Q2. Factory and battlefield rules
 
-Decided: shared factory; charge flows along routes; economy means in-battle
-ramp; defense buys time (CB-3 to CB-3c). The Pulse and Gearworks were
-rejected earlier. Open:
+Decided (CB-2 to CB-3e): shared factory; economy is in-battle ramp; defense
+buys time; random resource nodes and natural features; structures that
+produce units which march on the enemy base; Core fixed for the run,
+everything else movable. Open:
 
-- **Walls and attacks (CB-17).** Abstract barrier in front of the Core
-  *(default for the proof of concept)*, or a physical space between the two
-  factories that attacks cross and walls obstruct, closer to tower defense?
-- **Direction.** Fixed arrows, rotatable items *(recommended)*, or pass to
-  any adjacent item?
-- **Loops.** Can routes feed back into themselves, and what bounds them?
-- **Resources.** Charge only *(recommended to start)*, or several resources
+- **Do units fight units?** Proposed yes — opposing units engage and a
+  front line forms (CB-16). Alternative: units ignore each other and only
+  defenses kill them.
+- **How the two boards meet.** Proposed: joined front edge to front edge
+  (CB-8). Alternative: a neutral strip of ground between them.
+- **Map and plot size**, and board shape at 2–4 players (CB-4).
+- **Routing direction.** Rotatable structures *(recommended)*, fixed
+  arrows, or pass to any adjacent structure? Are loops allowed?
+- **Resources.** Charge only *(recommended to start)*, or several node types
   with recipes?
-- **Interaction.** Can a side disrupt the enemy factory, or only attack its
-  walls and Core?
-- **Large items.** How a 2×2 item takes charge from several sides.
-- **PvE as scripted threats** rather than factories (CB-26): confirm.
+- **PvE as waves plus a stronghold** rather than a factory (CB-29): confirm.
+- **Does expansion reveal new land** (CB-25), or is the whole map visible
+  and buildable from the start?
+- **Direct-fire structures.** Is all offence through units, or are there
+  also long-range structures (artillery) that hit the enemy base directly?
 
 ## Q3. Player identity
 
