@@ -1,14 +1,14 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v0.7
+Status: Draft v1.0
 
 ## Encounter types
 
 | Type | Opponent | When | Stakes |
 |------|----------|------|--------|
-| PvE battle (easy / medium / hard) | Generated enemy team scaled to cycle and chosen difficulty | Step 1 of each cycle | Reward on win; no reward and no life loss on defeat |
-| PvP battle — ghost | Snapshot of another real party | Step 3 of each cycle | Reward on win; lose 1 life on defeat |
-| PvP battle — boss | Generated boss | Step 3 of each cycle, when no ghost matches | Same as ghost |
+| PvE battle (easy / medium / hard) | Scripted threat scaled to cycle, difficulty, and party size | Step 1 of each cycle | Reward on win; no reward and no life loss on defeat |
+| PvP battle — ghost | Snapshot of another real party's factory | Step 3 of each cycle | Reward on win; lose 1 life on defeat |
+| PvP battle — boss | Generated boss threat | Step 3 of each cycle, when no ghost matches | Same as ghost |
 
 The loop is defined in `01-run-structure.md` RS-1.
 
@@ -21,7 +21,7 @@ The loop is defined in `01-run-structure.md` RS-1.
   - game version (content + simulation version; see TA-8)
   - party size
   - cycle number
-  - full team state: all N boards in lane order (CB-32, CP-6)
+  - full team state: the party's one board (CB-32, CP-6)
   - party members' Steam IDs (display names are looked up from Steam)
   - metadata: lives remaining and PvP record at that point (for optional
     match-quality filtering)
@@ -50,7 +50,8 @@ The loop is defined in `01-run-structure.md` RS-1.
   depends on what the Steam storage mechanism can query (TA-17).
 - **MM-5 [DECIDED]** If no eligible snapshot exists, a **PvE boss** is
   generated instead, based on the party's progress (see below).
-- **MM-6 [PROPOSED]** The ghost is fought with the standard simulation (CB-34).
+- **MM-6 [PROPOSED]** The ghost's factory runs in the standard simulation
+  against the party's (CB-25).
   The original ghost party is not notified and is not affected by the result.
   (Optional later: "your ghost won N fights" stat.)
 - **MM-7 [PROPOSED]** Opponent selection and the combat seed are chosen
@@ -66,15 +67,12 @@ The loop is defined in `01-run-structure.md` RS-1.
   `(game version, party size, cycle number, seed)`:
   1. Compute a **power budget** from the cycle number using the PvE scaling
      curve (`05-scaling-economy.md` SC-1).
-  2. Pick a **boss template** (a themed set of signature items) valid for that
-     depth band.
-  3. Spend the remaining budget on item tiers, Core health, extra items, and modifiers.
-  4. Emit a normal team state (CB-34) with **one board per player in the
-     party** (CP-7). The budget is per board, so difficulty per player is the
-     same at every party size. The boss itself may occupy one lane with
-     support boards in the others, or be a set of N themed boards.
-- **MM-9a [PROPOSED]** A ghost's boards face the party's boards lane for lane
-  in their saved order (CP-10).
+  2. Pick a **boss template** valid for that depth band: a threat profile
+     (CB-26) with a signature attack pattern.
+  3. Spend the budget on health, defenses, and attack strength over time,
+     multiplied by party size (CP-7).
+  4. Emit a threat profile (CB-34). Bosses are scripted threats, not
+     factories.
 - **MM-10 [PROPOSED]** A boss should be tuned to be roughly as dangerous as
   the *median* ghost at that cycle while ghosts exist at that depth, and to
   follow the exponential curve beyond it. In practice the snapshot pool thins
@@ -113,13 +111,13 @@ The loop is defined in `01-run-structure.md` RS-1.
 
 ## PvE encounters
 
-- **MM-18 [PROPOSED]** PvE enemy teams come from **encounter templates**
-  scaled by the same budget function as bosses, with a multiplier per
-  difficulty (easy < medium < hard; see SC-1), generating one enemy board per
-  player (CP-7).
+- **MM-18 [PROPOSED]** PvE enemies are **threat profiles** (CB-26) built
+  from templates and scaled by the same budget function as bosses, with a
+  multiplier per difficulty (easy < medium < hard; see SC-1) and by party
+  size (CP-7).
 - **MM-19 [DECIDED/PROPOSED detail]** The party is offered easy, medium, and
-  hard each cycle (RS-3). Each option shows the enemy archetype and the
-  reward; the party votes (CP-16). The three options may be different
+  hard each cycle (RS-3). Each option shows the enemy archetype (rusher,
+  fortress, escalator, …) and the reward; the party votes (CP-16). The three options may be different
   templates, not just the same enemy at three strengths.
 - **MM-20 [PROPOSED]** PvE battles are not snapshotted and do not affect the
   ghost pool.

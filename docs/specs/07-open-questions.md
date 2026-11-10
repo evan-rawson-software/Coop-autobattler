@@ -1,51 +1,38 @@
 # 07 — Open Questions
 
-Status: Draft v0.9
+Status: Draft v1.0
 
-Each question lists options and a recommendation. The biggest open decision is **Q0**; it changes Q1 and Q2.
+Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
-## Q0. Shared factory board?
+## Q1. Co-op model — decided
 
-Should the party build one large shared factory board instead of one board
-per player? See `08-shared-factory-concept.md` for the concept, its risks,
-and the four decisions it needs. If adopted, Q1 disappears and Q2 is settled
-as Conduits-plus-economy.
+One large shared factory board for the whole party (CP-4, V-9). This replaced
+one-board-per-player and removed the question of how separate boards fight
+together. Remaining details:
 
-## Q1. How do a party's boards fight together? (highest impact)
+- **Ownership.** Proposed: personal gold, shops, and stashes; shared space;
+  anyone can move any item, only the owner can sell (CP-10 to CP-13).
+  Alternative: everything pooled.
+- **Plot size and board shape** at 2, 3, and 4 players (CP-5).
 
-Decided: each player has their own full board (CP-4). Open: what happens in a
-battle with N boards per side.
+## Q2. Factory rules
 
-- **(a) Lanes on one battlefield with crossing** *(recommended; specced in
-  `02-coop-party.md` CP-8)*. Each board faces one enemy board; survivors of a
-  cleared lane reinforce neighbours; last side standing wins. One shared
-  outcome, strong players can carry, lane order matters.
-- **(b) Parallel duels, majority wins.** N independent 1v1 battles; the party
-  wins if it wins more duels (ties need a rule at 2 and 4 players). Simplest
-  to build and watch, but boards never interact in combat.
-- **(c) Parallel duels, pooled health.** N independent 1v1 battles, but damage
-  dealt goes to a shared party health pool. Still simple; a blowout in one
-  lane can offset a loss in another.
-- **(d) One merged battlefield.** All boards are placed on a single large
-  grid with no lanes. Maximum interaction, hardest to read and balance.
+Decided: shared factory; charge flows along routes; economy means in-battle
+ramp; defense buys time (CB-3 to CB-3c). The Pulse and Gearworks were
+rejected earlier. Open:
 
-Related: how much cross-board content there should be (CP-12), and whether a
-teammate may manage a disconnected player's board (CP-21).
-
-## Q2. Core combat mechanic
-
-Decided: item-based combat in the family of *The Bazaar* / *Backpack Battles*,
-but distinct (CB-2, CB-3). The Pulse and Gearworks are rejected (CB-3a).
-
-- **Conduits** is the leading candidate (`03-combat.md`): generators make
-  charge, charge flows along routes between items, outputs fire when it
-  arrives. Awaiting the project owner's reaction to the wireframe.
-- If Conduits is not adopted, more candidates are needed.
-
-Sub-questions if Conduits goes ahead: how direction works (fixed arrows,
-rotation, or any-neighbour); whether loops are allowed; whether the enemy
-circuit can be disrupted or only the Core attacked; how large items take
-charge; board dimensions and growth; whether a dark board can be revived.
+- **Walls and attacks (CB-17).** Abstract barrier in front of the Core
+  *(default for the proof of concept)*, or a physical space between the two
+  factories that attacks cross and walls obstruct, closer to tower defense?
+- **Direction.** Fixed arrows, rotatable items *(recommended)*, or pass to
+  any adjacent item?
+- **Loops.** Can routes feed back into themselves, and what bounds them?
+- **Resources.** Charge only *(recommended to start)*, or several resources
+  with recipes?
+- **Interaction.** Can a side disrupt the enemy factory, or only attack its
+  walls and Core?
+- **Large items.** How a 2×2 item takes charge from several sides.
+- **PvE as scripted threats** rather than factories (CB-26): confirm.
 
 ## Q3. Player identity
 
@@ -99,11 +86,11 @@ Remaining:
 - **Trust:** is the accepted-risk position on forged ghosts and scores
   (TA-21) acceptable for launch?
 
-## Q7. Gold funnelling
+## Q7. Session length
 
-With full per-player income and free giving, a party can pour everything into
-one board. Is that a fun strategy or a degenerate one? Recommended: allow it,
-measure, then cap or tax if needed (EC-4a).
+Factory building and ramping battles may not fit the earlier targets (short
+phases, 30–45 minute runs; RS-12). Decide after the first playtests whether
+to lengthen the targets or constrain the building.
 
 ## Q8. Ghost selection fairness
 

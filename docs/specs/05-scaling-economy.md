@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v0.7
+Status: Draft v1.0
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.
@@ -20,11 +20,11 @@ the specification.
   - `m(type)` — encounter multiplier (easy < medium < hard; boss tuned
     separately, see SC-5)
 
-  The budget is **per board**. An enemy team has one board per player in the
-  party (CP-7), so total enemy power scales linearly with party size.
+  The budget is **per plot**: it is multiplied by party size (CP-7), so PvE
+  threat scales linearly with the size of the party's board.
 
 - **SC-2 [PROPOSED]** "Budget" is an abstract power currency spent by the
-  encounter generator on item count, item tier, Core health, and
+  encounter generator on a threat's health, defenses, attack strength over time, and
   modifiers. A reference conversion from budget to stats must exist so that
   budget can be compared with player team power.
 - **SC-3 [PROPOSED]** Player power must grow **sub-exponentially** in the long
@@ -65,22 +65,40 @@ the missed reward (RS-3a). The exponential curve still ends every run:
   in data: force a boss every Nth cycle, or serve a boss whenever the
   party's cycle exceeds a threshold. Not needed for the first playable.
 
-## Economy
+## In-battle ramp
+
+"Economy" has two unrelated meanings in this game; this section is about the
+first. Gold (next section) is never produced by the factory.
+
+- **SC-8 [PROPOSED]** In-battle ramp (CB-3a) must not let the party outgrow
+  PvE indefinitely. Limits, in order of importance: board space and steep
+  expansion costs (CB-18, CB-19); caps or diminishing returns on each
+  economy item's in-battle effect; PvE threats whose early pressure grows
+  with depth, leaving less time to ramp. The balance harness must chart
+  party power **over battle time** as well as over cycles.
+- **SC-9 [PROPOSED]** The three strategies (CB-13) should each have PvE
+  archetypes they are good and bad against, so no single routing is correct
+  for a whole run.
+- **SC-10 [PROPOSED]** Economy items should be clearly worse than attack or
+  defense items of the same price in a short battle and clearly better in a
+  long one, with the crossover point moving earlier as the run deepens.
+
+## Economy (gold)
 
 - **EC-1 [PROPOSED]** One primary currency: **gold**, earned per cycle (base
   income), from winning PvE encounters, and from selling.
 - **EC-2 [PROPOSED]** Gold is spent on items, shop
   re-rolls, and team/shop upgrades (e.g. raising shop tier to see stronger
-  items, or adding board columns).
+  items), and board expansion.
 - **EC-3 [PROPOSED]** Shop offers are per player and drawn from tiered pools
   whose odds improve with shop tier / cycle. Whether item pools are finite and
   shared within the party (contested draws) or infinite is **[OPEN]** (Q5).
 - **EC-4 [PROPOSED]** **Party-size economy**: every player earns full income
-  for their own board, at every party size. Enemy teams scale by the same
-  factor (one board per player), so no discount curve is needed. Battle
+  at every party size. PvE threats scale by the same
+  factor, so no discount curve is needed. Battle
   rewards are paid per player; party picks (CP-14) are per party.
-- **EC-4a [PROPOSED]** Giving (CP-11) lets a party funnel gold into one
-  board. Cap or tax it only if funnelling proves dominant in testing.
+- **EC-4a [PROPOSED]** Giving (CP-11) lets a party pool gold for one
+  player's purchase. With a shared board this is normal play, not a problem.
 - **EC-5 [PROPOSED]** No interest/banking mechanic in the first playable; add
   only if the economy needs a saving-vs-spending tension.
 - **EC-6 [PROPOSED]** Loss compensation: a small consolation payout after a

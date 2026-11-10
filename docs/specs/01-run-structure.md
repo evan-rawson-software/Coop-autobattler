@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v0.7
+Status: Draft v1.0
 
 ## Core loop
 
@@ -58,8 +58,8 @@ Lobby -> [ 1. PvE battle -> 2. Event -> 3. PvP battle ] x N -> Defeat -> Run sum
 ## Team management
 
 - **RS-6 [PROPOSED]** Acquiring things happens at events and through rewards.
-  **Arranging** boards — placing and moving items, combining
-  duplicates, swapping stash and board, giving to teammates — is available in
+  **Arranging** the factory — placing, moving, and re-routing items,
+  combining duplicates, swapping stash and board, giving to teammates — is available in
   a short **prep phase** before every battle (steps 1 and 3) as well as
   during the event. Without this, a reward from the PvE battle could not be
   used until after the PvP battle.
@@ -99,6 +99,7 @@ the party's income so it falls behind the ghosts it meets. See
 
 ## Session length targets
 
-- **RS-12 [PROPOSED]** Prep phase: up to 30 s. Event: 45–90 s. Battle
+- **RS-12 [PROPOSED]** (To be revisited: factory building and ramping
+  battles may need longer phases than these.) Prep phase: up to 30 s. Event: 45–90 s. Battle
   playback: 20–45 s (hard combat time limit; fast-forward when all players
   agree). A cycle is about 3–5 minutes; a median run is 30–45 minutes.

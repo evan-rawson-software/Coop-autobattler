@@ -1,13 +1,13 @@
 # 00 — Vision & Pillars
 
-Status: Draft v0.9
+Status: Draft v1.0
 
 ## Elevator pitch
 
 A co-op roguelite autobattler for 1–4 players. Between fights, the party
 each player
-drafts items and arranges them to build their own board; the party's boards fight
-together. Fights
+drafts items and adds them to one large shared factory board that the whole
+party builds together. Fights
 resolve automatically. Opponents alternate between hand-authored-style PvE
 encounters and **ghost PvP** — saved snapshots of other real parties at the
 same point in their run. PvE power grows exponentially, so no run lasts
@@ -31,8 +31,13 @@ forever; the score is how deep you went.
   battle.
 - **V-8 [DECIDED]** The party has 5 lives. Losing a PvP battle costs a life.
   Losing a PvE battle costs no life but grants no reward.
-- **V-9 [DECIDED]** Each player has their own full board, so the game scales
-  from 1 to 4 players by adding boards.
+- **V-9 [DECIDED]** The party builds **one large shared board**: an
+  automation factory in the spirit of *Factorio*. Players coordinate to
+  build the best overall factory. (Replaces the earlier one-board-per-player
+  decision.)
+- **V-9a [DECIDED]** Rewards are a choice between economy — in-battle ramp,
+  not gold — and attack or defense for the upcoming battles. Defense, such
+  as walls, buys time for the factory to ramp up.
 - **V-10 [DECIDED]** Combat is item-based in the style of *The Bazaar* and
   *Backpack Battles*, but with its own distinct core mechanic.
 - **V-11 [DECIDED]** Built in Godot, for release on Steam, using Steam
@@ -96,11 +101,12 @@ does not block systems work.
 | Prep phase | A short window before each battle to arrange the team. |
 | PvP battle | The third step of a cycle: a ghost, or a boss if no ghost matches. |
 | Encounter | A single automated fight (PvE or ghost PvP). |
-| Board | One player's grid of items. Each player has one. |
-| Core | A board's health pool; what enemy items attack. |
-| Charge | What generators produce and outputs consume; items fire when it reaches them (candidate mechanic). |
-| Team | All of the party's boards together; what fights in a battle. |
-| Lane | A board's place on the battlefield, opposite one enemy board. |
+| Board | The party's single shared grid of items: the factory. |
+| Core | The party's health pool; what the enemy attacks. |
+| Charge | What sources produce and other items consume; an item fires when charge reaches it. |
+| Plot | The area one player adds to the shared board. |
+| Ramp | The factory getting stronger over the course of one battle; what "economy" items provide. |
+| Threat | A PvE opponent: a scripted health pool and attack pattern, not a factory. |
 | Snapshot | A saved, immutable copy of a party's team at the start of an encounter. |
 | Ghost | A snapshot being used as another party's opponent. |
 | Boss | A generated PvE opponent used when no ghost is available. |

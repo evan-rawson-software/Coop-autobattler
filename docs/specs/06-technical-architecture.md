@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v0.9
+Status: Draft v1.0
 
 ## Direction
 
@@ -30,11 +30,11 @@ tune them, as cheaply as possible. It is a prototype, not the product.
 - **TA-40 [DECIDED]** Runs in a browser, **offline**, single-player. No
   backend, no accounts, no networking, no Steam.
 - **TA-41 [PROPOSED]** Scope:
-  - the combat simulation with the chosen core mechanic (`03-combat.md`;
-    Conduits is the current candidate)
+  - the factory simulation (`03-combat.md`): charge routing, the six item
+    kinds, in-battle ramp, walls, PvE threats
   - the full run loop: PvE battle with three difficulties → event (shop
     first) → PvP battle; 5 lives; exponential scaling
-  - one player, one board
+  - one player, one plot
   - battle playback, a post-battle summary, and a minimal UI
   - placeholder art; a small content set (CB-50)
 - **TA-42 [PROPOSED]** **PvP step without a network:** opponents come from a
@@ -43,11 +43,11 @@ tune them, as cheaply as possible. It is a prototype, not the product.
   the same key as the real game (version, party size, cycle), with the
   generated boss as the fallback. This exercises snapshot, matching, and
   boss-fallback rules for real, minus the online part.
-- **TA-43 [PROPOSED]** **Multi-board combat can be prototyped offline.** The
-  simulation supports 1–4 boards per side from the start, and a debug mode
-  lets one person run a "party" of several boards (their own plus
-  bot-built ones) to try the lane rules (Q1) before any networking exists.
-  Optional; only if Q1 needs evidence.
+- **TA-43 [PROPOSED]** **Larger boards can be tried offline.** The
+  simulation supports boards of 1–4 plots from the start, and a debug mode
+  lets one person build on a multi-plot board to see how the factory plays
+  at co-op sizes before any networking exists. Shared editing itself cannot
+  be tested until co-op is built.
 - **TA-44 [PROPOSED]** Delivered as a **static site** (no server), so a
   playtest build is just a link and works on any device. Progress is stored
   in the browser.
@@ -89,7 +89,8 @@ language-neutral from the start:
 ### Exit criteria for phase 1
 
 - **TA-53 [PROPOSED]** Move to the port when: the loop is fun in solo
-  playtests; the combat mechanic (Q2) and lane rules (Q1) are settled; the
+  playtests; the routing rules and the walls question (Q2) are settled; the three
+  strategies are all viable; the
   scaling curve produces runs of the intended length (SC-4); and the rules
   reference and golden vectors are complete.
 
@@ -315,10 +316,12 @@ is deliberate.
 
 1. **W0 — Foundations:** repo layout, content and format schemas, test
    runner, CI, static-site deploy for playtest builds.
-2. **W1 — Sim core:** deterministic headless battles, 1–4 boards per side;
+2. **W1 — Sim core:** deterministic headless battles, boards of 1–4 plots,
+   factory versus factory and factory versus threat;
    command-line runner; golden vectors; rules reference started.
 3. **W2 — Playable loop:** PvE battle (3 difficulties) + shop + prep phases +
-   lives + exponential scaling; board editing UI; battle playback.
+   lives + exponential scaling; factory editing UI with flow preview; battle
+   playback.
 4. **W3 — PvP step:** local ghost pool, matching, snapshot validation, boss
    fallback; scripted bot; bundled bot ghosts.
 5. **W4 — Tune:** balance harness, content iteration, more event types,
@@ -337,7 +340,8 @@ is deliberate.
 
 9. **S0 — Steamworks spike** (TA-30). Can run any time; do it early.
 10. **S1 — Co-op (local):** host-authoritative session, 2–4 players over
-    loopback/LAN, giving, votes, disconnect and re-host.
+    loopback/LAN, simultaneous editing of the shared board, giving, votes,
+    disconnect and re-host.
 11. **S2 — Steam:** lobbies, relay networking, leaderboard ghost store,
     Cloud saves, rich presence.
 12. **S3 — Release work:** content expansion, meta-progression,

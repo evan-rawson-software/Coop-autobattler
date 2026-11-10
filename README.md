@@ -1,9 +1,8 @@
 # Coop Autobattler (working title)
 
-A co-op roguelite autobattler for 1–4 players. Each player drafts and builds their
-own board between fights, then the party watches its boards fight together in
-automated combat against a mix of PvE
-encounters and asynchronous PvP "ghost" parties. PvE difficulty grows
+A co-op roguelite autobattler for 1–4 players. The party builds one large
+shared factory board between fights, then watches it run in automated combat
+against a mix of PvE encounters and asynchronous PvP "ghost" parties. PvE difficulty grows
 exponentially, so every run eventually ends in defeat — the question is how far
 you get.
 
@@ -22,12 +21,11 @@ refined and then broken down into backlog items for coding agents.
 |---|------|--------|
 | 00 | [Vision & pillars](docs/specs/00-vision.md) | What the game is, who it is for, design pillars, scope |
 | 01 | [Run structure](docs/specs/01-run-structure.md) | Core loop, cycles, steps, lives, run end, meta-progression |
-| 02 | [Co-op & party](docs/specs/02-coop-party.md) | 1–4 player model, one board per player, how boards fight together, disconnects |
-| 03 | [Combat](docs/specs/03-combat.md) | Item-based combat, the Conduits candidate mechanic, determinism |
+| 02 | [Co-op & party](docs/specs/02-coop-party.md) | 1–4 player model, the shared board, ownership, building together, disconnects |
+| 03 | [Combat](docs/specs/03-combat.md) | The shared factory: charge routing, in-battle ramp, walls, opponents, determinism |
 | 04 | [Encounters & matchmaking](docs/specs/04-encounters-matchmaking.md) | PvE encounters, ghost PvP, snapshot matching, boss fallback |
 | 05 | [Scaling & economy](docs/specs/05-scaling-economy.md) | Exponential PvE scaling, player power curve, economy |
 | 06 | [Technical architecture](docs/specs/06-technical-architecture.md) | Phases (web proof of concept → Godot → Steam multiplayer), Steam as the backend, trust model |
-| 08 | [Concept: the shared factory](docs/specs/08-shared-factory-concept.md) | **Under evaluation** — one large shared factory board for the whole party; would supersede parts of 02 and 03 |
 | 07 | [Open questions](docs/specs/07-open-questions.md) | Decisions still to be made, with recommendations |
 
 ## Conventions used in the specs
