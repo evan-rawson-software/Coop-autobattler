@@ -4,7 +4,7 @@ Status: Draft v4.4
 
 ## Core loop
 
-Before the first cycle, the party's map is generated and revealed and the
+Before the first round, the party's map is generated and revealed and the
 team places its Core, which then stays put for the whole run (CB-3e, CB-7).
 
 ```
@@ -13,7 +13,7 @@ Lobby -> Map + Core placement ->
 -> Defeat -> Run summary
 ```
 
-- **RS-1 [DECIDED]** A run is an unbounded sequence of **cycles**. A cycle
+- **RS-1 [DECIDED]** A run is an unbounded sequence of **rounds**. A round
   has two battles — a **PvE battle** and then a **PvP battle** — and
   **after each battle there is an event, and after the event there is
   always a shop**:
@@ -24,8 +24,8 @@ Lobby -> Map + Core placement ->
      matches (see `04-encounters-matchmaking.md`).
   5. **Event**
   6. **Shop**
-- **RS-2 [PROPOSED]** The **cycle number** is the single "progress" value used
-  for PvE scaling and ghost matching. Every party at cycle *c* has had exactly
+- **RS-2 [PROPOSED]** The **round number** is the single "progress" value used
+  for PvE scaling and ghost matching. Every party at round *c* has had exactly
   the same number of battles, events, and shops.
 - **RS-2a [PROPOSED]** A new run opens with a starting set of buildings and a
   first build phase before the first PvE battle, so the party never enters
@@ -81,8 +81,8 @@ Lobby -> Map + Core placement ->
 
 - **RS-5 [DECIDED]** Losing a PvP battle costs **one life**.
 - **RS-5a [PROPOSED]** A boss that replaces a ghost (V-4) is the PvP battle
-  for that cycle and has the same stakes: losing costs one life.
-- **RS-5b [PROPOSED]** There is one PvP battle per cycle.
+  for that round and has the same stakes: losing costs one life.
+- **RS-5b [PROPOSED]** There is one PvP battle per round.
 - **RS-5c [PROPOSED]** Winning a PvP battle grants a reward (EC-7).
 
 ## Building the factory
@@ -118,9 +118,9 @@ the party's income so it falls behind the ghosts it meets. See
 
 ## Score and run summary
 
-- **RS-8 [PROPOSED]** Primary score: **depth** (highest cycle reached).
+- **RS-8 [PROPOSED]** Primary score: **depth** (highest round reached).
   Secondary: PvP win count and win rate against ghosts.
-- **RS-9 [PROPOSED]** The run summary shows depth, the final team, a per-cycle
+- **RS-9 [PROPOSED]** The run summary shows depth, the final team, a per-round
   history, and which ghosts were fought (party display names only).
 
 ## Meta-progression

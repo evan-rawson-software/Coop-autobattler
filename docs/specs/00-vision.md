@@ -93,7 +93,7 @@ forever; the score is how deep you went.
 ## Theme
 
 **[OPEN]** No setting chosen yet. Specs use neutral terms: *building*, *board*,
-*party*, *cycle*, *boss*. Theme should be chosen before content authoring but
+*party*, *round*, *boss*. Theme should be chosen before content authoring but
 does not block systems work.
 
 ## Glossary
@@ -101,11 +101,11 @@ does not block systems work.
 | Term | Meaning |
 |------|---------|
 | Party | The 1–4 players in a run together. |
-| Run | One playthrough, from cycle 1 until the party is eliminated. |
-| Cycle | One pass through the loop: PvE battle, event, shop, PvP battle, event, shop. |
+| Run | One playthrough, from round 1 until the party is eliminated. |
+| Round | One pass through the loop: PvE battle, event, shop, PvP battle, event, shop. (Called a "cycle" in earlier drafts.) |
 | Event | A short non-combat step after every battle, before the shop. |
 | Shop | The guaranteed step after every event: buy buildings, re-roll, and rearrange the factory before the next battle. |
-| PvP battle | The third step of a cycle: a ghost, or a boss if no ghost matches. |
+| PvP battle | The third step of a round: a ghost, or a boss if no ghost matches. |
 | Encounter | A single automated fight (PvE or ghost PvP). |
 | Board | The party's single shared map and everything built on it: the factory. |
 | Building | Anything the party places on the board: sources, unit producers, defenses, economy buildings. Bought in shops or won as rewards. |
@@ -124,4 +124,4 @@ does not block systems work.
 | Snapshot | A saved copy of a party's board, taken at the start of a PvP battle. |
 | Ghost | A snapshot being used as another party's opponent. |
 | Boss | A generated PvE opponent used when no ghost is available. |
-| Depth | The highest cycle a party reached; the primary score. |
+| Depth | The highest round a party reached; the primary score. |

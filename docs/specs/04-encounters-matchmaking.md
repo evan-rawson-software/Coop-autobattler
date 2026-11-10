@@ -6,9 +6,9 @@ Status: Draft v4.4
 
 | Type | Opponent | When | Stakes |
 |------|----------|------|--------|
-| PvE battle (easy / medium / hard) | Scripted waves plus a stronghold, scaled to cycle, difficulty, and party size | First battle of each cycle | Reward on win; no reward and no life loss on defeat |
-| PvP battle — ghost | Snapshot of another real party's factory | Second battle of each cycle | Reward on win; lose 1 life on defeat |
-| PvP battle — boss | Generated boss threat | Second battle of each cycle, when no ghost matches | Same as ghost |
+| PvE battle (easy / medium / hard) | Scripted waves plus a stronghold, scaled to round, difficulty, and party size | First battle of each round | Reward on win; no reward and no life loss on defeat |
+| PvP battle — ghost | Snapshot of another real party's factory | Second battle of each round | Reward on win; lose 1 life on defeat |
+| PvP battle — boss | Generated boss threat | Second battle of each round, when no ghost matches | Same as ghost |
 
 The loop is defined in `01-run-structure.md` RS-1.
 
@@ -20,7 +20,7 @@ The loop is defined in `01-run-structure.md` RS-1.
   contains:
   - the run version (`major.minor`; see TA-8) and a snapshot format version
   - party size
-  - cycle number
+  - round number
   - full team state: the party's map, Core position, buildings, conduits,
     and run modifiers (CB-32, CP-6)
   - the run's ID and seed, and a signature (TA-22a)
@@ -36,7 +36,7 @@ The loop is defined in `01-run-structure.md` RS-1.
 - **MM-1b [PROPOSED]** Snapshots contain no personal data beyond Steam IDs,
   and a player can opt to appear anonymously to opponents.
 - **MM-1c [PROPOSED]** Each host has at most one snapshot per
-  `(version, party size, cycle)` bucket; a newer run replaces it (TA-18).
+  `(version, party size, round)` bucket; a newer run replaces it (TA-18).
 
 ## Ghost matching
 
@@ -44,7 +44,7 @@ The loop is defined in `01-run-structure.md` RS-1.
   three match exactly:
   1. **game version**
   2. **party size**
-  3. **progress** — the same cycle number (RS-2)
+  3. **progress** — the same round number (RS-2)
 - **MM-3 [PROPOSED]** Additional exclusions:
   - snapshots from any party that includes a member of the requesting party
     (which also covers the party's own snapshots)
@@ -62,7 +62,7 @@ The loop is defined in `01-run-structure.md` RS-1.
   (Optional later: "your ghost won N fights" stat.)
 - **MM-7 [PROPOSED]** Opponent selection and the combat seed are chosen
   by the host's game, and the opponent is not revealed until the party's
-  board is locked. The ghost may be fetched earlier in the cycle to avoid a
+  board is locked. The ghost may be fetched earlier in the round to avoid a
   wait (TA-19).
 
 ## Boss fallback
@@ -70,8 +70,8 @@ The loop is defined in `01-run-structure.md` RS-1.
 - **MM-8 [DECIDED]** The generated boss is a function of how far the party has
   progressed.
 - **MM-9 [PROPOSED]** Generation is a pure function of
-  `(game version, party size, cycle number, seed)`:
-  1. Compute a **power budget** from the cycle number using the PvE scaling
+  `(game version, party size, round number, seed)`:
+  1. Compute a **power budget** from the round number using the PvE scaling
      curve (`05-scaling-economy.md` SC-1).
   2. Pick a **boss template** valid for that depth band: a threat profile
      (CB-29): a wave schedule and a stronghold with a signature mechanic.
@@ -80,9 +80,9 @@ The loop is defined in `01-run-structure.md` RS-1.
   4. Emit a threat profile (CB-34). Bosses are scripted threats, not
      factories.
 - **MM-10 [PROPOSED]** A boss should be tuned to be roughly as dangerous as
-  the *median* ghost at that cycle while ghosts exist at that depth, and to
+  the *median* ghost at that round while ghosts exist at that depth, and to
   follow the exponential curve beyond it. In practice the snapshot pool thins
-  out at high cycles, so deep runs naturally transition from ghosts to
+  out at high rounds, so deep runs naturally transition from ghosts to
   ever-harder bosses — this is the mechanism that ends every run (V-5).
 - **MM-11 [PROPOSED]** Players are told whether a PvP battle is a ghost or a
   boss, before or at fight start. Bosses are presented as bosses, never
@@ -93,7 +93,7 @@ The loop is defined in `01-run-structure.md` RS-1.
 - **MM-12 [PROPOSED]** **Cold start**: a new minor or major version starts with an empty
   pool, so early parties fight bosses. Mitigations, in order of preference:
   (a) accept it — bosses are a designed fallback; (b) seed the pool for early
-  cycles with snapshots from internal playtests or bot-driven runs on the new
+  rounds with snapshots from internal playtests or bot-driven runs on the new
   version.
 - **MM-13 [DECIDED]** **Retention**: all ghost data for old versions is
   deleted on a major version release (TA-8, TA-9).
@@ -101,7 +101,7 @@ The loop is defined in `01-run-structure.md` RS-1.
   snapshot per host per bucket (MM-1c), which assumes Steam keeps one entry
   per player per leaderboard (unconfirmed, TA-18).
 - **MM-14 [PROPOSED]** **Thin buckets**: 3- and 4-player buckets and deep
-  cycles will be sparse. This is acceptable by design (boss fallback), and
+  rounds will be sparse. This is acceptable by design (boss fallback), and
   bucket sizes can be read directly from the entry counts to inform tuning.
 - **MM-15 [DECIDED]** A run only meets ghosts played on the same version as
   the run itself, including after the game has been updated (TA-8).
@@ -116,7 +116,7 @@ The loop is defined in `01-run-structure.md` RS-1.
 - **MM-17 [PROPOSED]** Every downloaded snapshot is validated before use: its signature (TA-22a),
   schema, legal placement on its own map (sources on nodes, nothing on
   natural features, a valid Core position), a map that the generator could
-  have produced, and a plausibility bound on total power for its cycle
+  have produced, and a plausibility bound on total power for its round
   (TA-22). The generator and the numbers used for these checks are the
   installed version's; a snapshot from a run that spanned an update is
   given more tolerance on the power bound. A snapshot that fails is skipped and another is drawn.
@@ -129,7 +129,7 @@ The loop is defined in `01-run-structure.md` RS-1.
   multiplier per difficulty (easy < medium < hard; see SC-1) and by party
   size (CP-7).
 - **MM-19 [DECIDED/PROPOSED detail]** The party is offered easy, medium, and
-  hard each cycle (RS-3). Each option shows the enemy archetype (rusher,
+  hard each round (RS-3). Each option shows the enemy archetype (rusher,
   fortress, escalator, …) and the reward; the party votes (CP-16). The three options may be different
   templates, not just the same enemy at three strengths.
 - **MM-20 [PROPOSED]** PvE battles are not snapshotted and do not affect the

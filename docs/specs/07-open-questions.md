@@ -82,7 +82,7 @@ Still open: whether a run should ever be transferable to a different host
 
 ## Q4. Details of the loop
 
-Decided (RS-1): each cycle is PvE battle → event → shop → PvP battle →
+Decided (RS-1): each round is PvE battle → event → shop → PvP battle →
 event → shop. A shop always follows the event. 5 lives; a PvE loss costs no
 life and gives no reward; a PvP loss costs a life. Remaining details:
 

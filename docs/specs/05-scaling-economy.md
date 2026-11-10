@@ -8,15 +8,15 @@ the specification.
 ## PvE scaling
 
 - **SC-1 [DECIDED shape / PROPOSED formula]** PvE power grows exponentially
-  with cycle number:
+  with round number:
 
   ```
   budget(c) = B0 * g^(c - 1) * m(type)
   ```
 
-  - `c` — cycle number
-  - `B0` — base budget at cycle 1
-  - `g` — per-cycle growth factor (starting proposal: 1.3–1.5)
+  - `c` — round number
+  - `B0` — base budget at round 1
+  - `g` — per-round growth factor (starting proposal: 1.3–1.5)
   - `m(type)` — encounter multiplier (easy < medium < hard; boss tuned
     separately, see SC-5)
 
@@ -33,16 +33,16 @@ the specification.
   curves are guaranteed to cross. Any mechanic that could give unbounded
   multiplicative player scaling must be capped or have diminishing returns.
 - **SC-4 [PROPOSED]** Tuning targets (to be validated by simulation):
-  - Early cycles: a competent party can beat hard; easy is close to free.
+  - Early rounds: a competent party can beat hard; easy is close to free.
   - The difficulty a strong party can reliably beat steps down over the run:
-    hard becomes a gamble around cycles 6–8, medium a few cycles later.
+    hard becomes a gamble around rounds 6–8, medium a few rounds later.
   - Even easy is unwinnable, and bosses unbeatable, past a hard horizon
-    (e.g. cycle ~18–20).
+    (e.g. round ~18–20).
 - **SC-5 [PROPOSED]** Bosses that replace a ghost early in a run (pool
   cold-start) must not be harsher than a typical ghost at that depth (MM-10),
   so early boss fallbacks do not punish players for an empty pool.
 - **SC-6 [PROPOSED]** A headless **balance harness** runs many simulated
-  fights of reference teams against generated PvE at each cycle and difficulty to chart win
+  fights of reference teams against generated PvE at each round and difficulty to chart win
   rate by depth. This is the tool that sets `B0` and `g`, and it should exist
   before content volume grows.
 
@@ -55,16 +55,16 @@ the missed reward (RS-3a). The exponential curve still ends every run:
    human builds.
 2. PvE outgrows the party: first hard, then medium, then easy become
    unwinnable. Rewards dry up and the party's power plateaus.
-3. Deep run: fewer parties have reached this cycle, so buckets are sparse and
+3. Deep run: fewer parties have reached this round, so buckets are sparse and
    PvP battles become bosses on the exponential curve (MM-10). A plateaued
-   party loses a life per cycle.
+   party loses a life per round.
 4. Lives reach 0. Depth is recorded.
 
 - **SC-7 [PROPOSED]** Guard against a stable ghost-only endgame: if deep
   buckets ever stay well populated, parties with stalled income would mostly
   meet other stalled parties and runs could drag on. Options if this shows up
-  in data: force a boss every Nth cycle, or serve a boss whenever the
-  party's cycle exceeds a threshold. Not needed for the first playable.
+  in data: force a boss every Nth round, or serve a boss whenever the
+  party's round exceeds a threshold. Not needed for the first playable.
 
 ## In-battle ramp
 
@@ -76,7 +76,7 @@ first. Gold (next section) is never produced by the factory.
   the factory eventually fills (CB-24, CB-25); caps or diminishing returns on each
   economy building's in-battle effect; PvE threats whose early pressure grows
   with depth, leaving less time to ramp. The balance harness must chart
-  party power **over battle time** as well as over cycles.
+  party power **over battle time** as well as over rounds.
 - **SC-9 [PROPOSED]** The three strategies (CB-21) should each have PvE
   archetypes they are good and bad against, so no single routing is correct
   for a whole run.
@@ -95,12 +95,12 @@ first. Gold (next section) is never produced by the factory.
   purchase buildings. It is never a resource for placing buildings or for
   anything during a battle. Only purchased (or won) buildings can be placed;
   conduits are free and unlimited (CB-3g, CB-3i).
-- **EC-1 [PROPOSED]** One currency: **gold**, earned per cycle (base
+- **EC-1 [PROPOSED]** One currency: **gold**, earned per round (base
   income), from winning PvE battles, and from selling buildings back.
 - **EC-2 [DECIDED]** Gold buys two things: **buildings** and **shop
   re-rolls**. It does not buy board expansion (there is none, CB-25).
 - **EC-3 [PROPOSED]** Shop offers are per player and drawn from tiered pools
-  whose odds of higher-tier buildings improve with the cycle number (CB-26a). Whether building pools are finite and
+  whose odds of higher-tier buildings improve with the round number (CB-26a). Whether building pools are finite and
   shared within the party (contested draws) or infinite is **[OPEN]** (Q5).
 - **EC-4 [PROPOSED]** **Party-size economy**: every player earns full income
   at every party size. PvE threats scale by the same
@@ -120,7 +120,11 @@ first. Gold (next section) is never produced by the factory.
   more gold plus a party pick (CP-14); hard: more gold plus a better party
   pick. PvE loss: nothing (RS-3a). PvP win: a party pick and/or a permanent
   run modifier.
-- **EC-9 [PROPOSED]** Base income per cycle is deliberately small relative to
+- **EC-7a [PROPOSED]** A party pick is chosen on the battle summary screen,
+  straight after the win: three buildings are offered, the party votes, and
+  the chosen building goes to the player the party names. After a loss there
+  is no pick and nothing is shown in its place.
+- **EC-9 [PROPOSED]** Base income per round is deliberately small relative to
   PvE rewards, so that PvE results are what drive a party's growth.
 - **EC-8 [PROPOSED]** Run modifiers that affect combat are part of team state
   (CB-32) and therefore travel with snapshots.

@@ -9,7 +9,7 @@ sketches show a solo view with co-op elements marked.
 The specs are the source of truth. Where a wireframe and a spec disagree,
 the spec wins and the wireframe should be corrected.
 
-Order in a run: 5 main menu → 6 Core placement → 4 build → then each cycle:
+Order in a run: 5 main menu → 6 Core placement → 4 build → then each round:
 7 PvE choice → 1 battle → 8 summary → 2 event → 3 shop + 4 build → PvP
 battle (1, 8) → 2 event → 3 shop + 4 build → … → 9 run over.
 
@@ -93,12 +93,12 @@ Where a run starts or resumes. Saved runs are listed without limit. The host of 
 
 ![Main menu screen wireframe](5-main-menu.png)
 
-1. New run starts a lobby (or goes straight in, solo).
+1. New run starts a lobby (or goes straight in, solo). Join enters a run a friend is hosting.
 2. Saved runs. There is no limit, and each run appears once.
 3. A run you host: you can resume it, or abandon it for the whole party.
 4. A save from an older version says so before you resume: some things may have changed.
 5. A run someone else hosts. They hold the save, so you can only join when they open it. Hide removes it from your list without ending it.
-6. Records: the deepest cycle reached, kept per party size. Nothing else carries over between runs.
+6. Records: the deepest round reached, kept per party size. Nothing else carries over between runs.
 
 ## 6. Core placement
 
@@ -131,11 +131,11 @@ Shown when playback ends. It says what happened and why, so the party can decide
 
 ![Battle summary screen wireframe](8-battle-summary.png)
 
-1. The result and what it cost or paid.
+1. The result, and in the corner what it cost or paid: lives lost and gold gained.
 2. Army strength over the battle for both sides, with the moments that mattered marked.
 3. Where the enemy got through.
 4. What each building did.
-5. Lives, gold, and any party pick.
+5. The party pick, shown only after a win: the party chooses one of three buildings together. After a loss this area is empty.
 6. Watch the battle again, or ready up. The party moves on to the event when everyone is ready.
 
 ## 9. Run over
@@ -148,5 +148,5 @@ Every run ends in defeat; this screen says how far it got. An abandoned run ends
 2. Whether it beat the party's previous best for this party size.
 3. Battle records for the run.
 4. The factory as it stood at the end.
-5. What was fought each cycle and how it went.
+5. What was fought each round and how it went.
 6. Start again or go back to the menu. The run leaves the saved list; only its depth is kept.

@@ -90,8 +90,8 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   <header>
     <span class="caption">Wireframes · solo view with co-op elements marked</span>
     <h1>Screens of a run</h1>
-    <p class="lede">Layout sketches for the screens of a run, drawn for a 1080p screen. Screens 1 to 4 are the repeating cycle; 5 to 9 are the screens around it. Your base is at the bottom and the enemy is at the top, so the front edge runs across the screen and a bigger party makes the board wider, not taller. Sizes, numbers, and building names are placeholders.</p>
-    <div class="flowline" aria-label="Order of steps in a cycle">
+    <p class="lede">Layout sketches for the screens of a run, drawn for a 1080p screen. Screens 1 to 4 are the repeating round; 5 to 9 are the screens around it. Your base is at the bottom and the enemy is at the top, so the front edge runs across the screen and a bigger party makes the board wider, not taller. Sizes, numbers, and building names are placeholders.</p>
+    <div class="flowline" aria-label="Order of steps in a round">
       <span>5 Main menu</span><i>→</i><span>6 Core placement</span><i>→</i><span>4 Build</span><i>→</i><span>7 PvE choice</span><i>→</i><span class="on">1 Battle</span><i>→</i><span>8 Summary</span><i>→</i><span class="on">2 Event</span><i>→</i><span class="on">3 Shop</span><i>+</i><span class="on">4 Build</span><i>→</i><span>PvP battle …</span><i>→</i><span>9 Run over</span>
     </div>
     <div class="legend" aria-label="Map legend">
@@ -169,19 +169,19 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     <p>Where a run starts or resumes. Saved runs are listed without limit. The host of a run holds its save; guests see the run as a pointer to the host.</p>
     <div class="sheet"><svg id="s-menu" viewBox="0 0 960 540" role="img" aria-label="Main menu wireframe: menu buttons and records on the left, a list of saved runs on the right."></svg></div>
     <ol class="notes">
-      <li>New run starts a lobby (or goes straight in, solo).</li>
+      <li>New run starts a lobby (or goes straight in, solo). Join enters a run a friend is hosting.</li>
       <li>Saved runs. There is no limit, and each run appears once.</li>
       <li>A run you host: you can resume it, or abandon it for the whole party.</li>
       <li>A save from an older version says so before you resume: some things may have changed.</li>
       <li>A run someone else hosts. They hold the save, so you can only join when they open it. Hide removes it from your list without ending it.</li>
-      <li>Records: the deepest cycle reached, kept per party size. Nothing else carries over between runs.</li>
+      <li>Records: the deepest round reached, kept per party size. Nothing else carries over between runs.</li>
     </ol>
   </section>
 
   <section>
     <h2>6. Core placement</h2>
     <p>The first decision of a run. The whole map is shown, and the party chooses where the Core goes. It cannot be moved afterwards.</p>
-    <div class="sheet"><svg id="s-core" viewBox="0 0 960 540" role="img" aria-label="Core placement wireframe: the empty generated map in the middle with a proposed Core position, map details on the left, instructions and votes on the right, and the starting kit below."></svg></div>
+    <div class="sheet"><svg id="s-core" viewBox="0 0 960 540" role="img" aria-label="Core placement wireframe: the empty generated map with a proposed Core position, instructions and votes on the right, and the starting kit below."></svg></div>
     <ol class="notes">
       <li>The whole map, visible and buildable from the start. It never expands.</li>
       <li>The front edge, where enemy units will enter.</li>
@@ -210,11 +210,11 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     <p>Shown when playback ends. It says what happened and why, so the party can decide what to change.</p>
     <div class="sheet"><svg id="s-summary" viewBox="0 0 960 540" role="img" aria-label="Battle summary wireframe: result strip, a chart over time, a small map showing where defenses were breached, per-building totals, costs and rewards, and ready controls."></svg></div>
     <ol class="notes">
-      <li>The result and what it cost or paid.</li>
+      <li>The result, and in the corner what it cost or paid: lives lost and gold gained.</li>
       <li>Army strength over the battle for both sides, with the moments that mattered marked.</li>
       <li>Where the enemy got through.</li>
       <li>What each building did.</li>
-      <li>Lives, gold, and any party pick.</li>
+      <li>The party pick, shown only after a win: the party chooses one of three buildings together. After a loss this area is empty.</li>
       <li>Watch the battle again, or ready up. The party moves on to the event when everyone is ready.</li>
     </ol>
   </section>
@@ -222,13 +222,13 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   <section>
     <h2>9. Run over</h2>
     <p>Every run ends in defeat; this screen says how far it got. An abandoned run ends here too.</p>
-    <div class="sheet"><svg id="s-runend" viewBox="0 0 960 540" role="img" aria-label="Run over wireframe: depth reached, run statistics, the final factory, a cycle-by-cycle history, and buttons for what to do next."></svg></div>
+    <div class="sheet"><svg id="s-runend" viewBox="0 0 960 540" role="img" aria-label="Run over wireframe: depth reached, run statistics, the final factory, a round-by-round history, and buttons for what to do next."></svg></div>
     <ol class="notes">
       <li>Depth reached, the score of the run.</li>
       <li>Whether it beat the party's previous best for this party size.</li>
       <li>Battle records for the run.</li>
       <li>The factory as it stood at the end.</li>
-      <li>What was fought each cycle and how it went.</li>
+      <li>What was fought each round and how it went.</li>
       <li>Start again or go back to the menu. The run leaves the saved list; only its depth is kept.</li>
     </ol>
   </section>
@@ -317,7 +317,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   // ================= 1. BATTLE =================
   (function () {
     var s = document.getElementById("s-battle"), S = 16, bx = 448, by = 52;
-    topbar(s, "Cycle 4 \u00B7 PvP battle", "vs. ghost of \u201cAna + Bo\u201d", "Battle time 1:24  \u00B7  Lives 4 / 5", 1280, 720);
+    topbar(s, "Round 4 \u00B7 PvP battle", "vs. ghost of \u201cAna + Bo\u201d", "Battle time 1:24  \u00B7  Lives 4 / 5", 1280, 720);
     var zy = by + W * S, zh = 7 * S, my = zy + zh, bw = H * S;
     board(s, bx, by, S, theirs, true);
     R(s, bx, zy, bw, zh, "zone");
@@ -369,7 +369,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   // ================= 2. EVENT =================
   (function () {
     var s = document.getElementById("s-event");
-    topbar(s, "Cycle 4 · Event", "pick one of three", "Lives 4 / 5");
+    topbar(s, "Round 4 · Event", "pick one of three", "Lives 4 / 5");
     R(s, 24, 48, 912, 40, "panel");
     T(s, 38, 73, "PvE battle won  ·  Hard  ·  Rusher", "th"); T(s, 922, 73, "+12 gold each   ·   party pick: Turret (tier 2)", "t", "end");
     var cards = [
@@ -399,7 +399,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   // ================= 3. SHOP =================
   (function () {
     var s = document.getElementById("s-shop");
-    topbar(s, "Cycle 4 · Shop + Build", "", "1 of 3 ready  ·  Lives 4 / 5");
+    topbar(s, "Round 4 · Shop + Build", "", "1 of 3 ready  ·  Lives 4 / 5");
     btn(s, 380, 5, 96, 26, "Shop", true); btn(s, 482, 5, 96, 26, "Build");
     T(s, 24, 62, "YOUR OFFERS", "ts tm");
     var offers = [
@@ -447,7 +447,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   // ================= 4. BUILD =================
   (function () {
     var s = document.getElementById("s-build"), S = 20, bx = 400, by = 70, bw = H * S, bh = W * S;
-    topbar(s, "Cycle 4 \u00B7 Shop + Build", "", "1 of 3 ready  \u00B7  Lives 4 / 5", 1280, 720);
+    topbar(s, "Round 4 \u00B7 Shop + Build", "", "1 of 3 ready  \u00B7  Lives 4 / 5", 1280, 720);
     btn(s, 536, 6, 100, 28, "Shop"); btn(s, 644, 6, 100, 28, "Build", true);
     T(s, bx + bw / 2, by - 8, "FRONT EDGE \u00B7 enemy units enter here", "ts tm", "middle");
     R(s, 16, by, 368, bh, "plot"); T(s, 200, by + bh / 2, "co-op: another player\u2019s plot", "ts tm", "middle"); T(s, 200, by + bh / 2 + 18, "joins the board here", "ts tm", "middle");
@@ -488,17 +488,17 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   // ================= 5. MAIN MENU =================
   (function () {
     var s = document.getElementById("s-menu");
-    topbar(s, "Main menu", "", "Playing as You");
+    topbar(s, "Main menu", "", "");
     T(s, 40, 108, "GAME TITLE", "tb"); T(s, 40, 128, "co-op factory autobattler · 1–4 players", "ts tm");
-    btn(s, 40, 152, 220, 40, "New run", true); btn(s, 40, 202, 220, 40, "Join a friend’s run"); btn(s, 40, 252, 220, 40, "Settings"); btn(s, 40, 302, 220, 40, "Quit");
-    R(s, 40, 372, 220, 144, "panel"); T(s, 52, 392, "RECORDS · deepest cycle", "ts tm");
-    lines(s, 52, 416, ["1 player     cycle 11", "2 players    cycle 9", "3 players    cycle 7", "4 players    —"], "t", 22);
+    btn(s, 40, 152, 220, 40, "New run", true); btn(s, 40, 202, 220, 40, "Join"); btn(s, 40, 252, 220, 40, "Settings"); btn(s, 40, 302, 220, 40, "Quit");
+    R(s, 40, 372, 220, 144, "panel"); T(s, 52, 392, "RECORDS · deepest round", "ts tm");
+    lines(s, 52, 416, ["1 player     round 11", "2 players    round 9", "3 players    round 7", "4 players    —"], "t", 22);
     R(s, 290, 52, 646, 464, "panel"); T(s, 304, 72, "SAVED RUNS · no limit", "ts tm");
     var rows = [
-      ["You + Ana + Bo", "Cycle 6 · Lives 3 / 5 · you are the host", "Last played 2 days ago", 1],
-      ["You (solo)", "Cycle 9 · Lives 1 / 5 · you are the host", "Saved on an older version: some things may have changed", 1],
-      ["Ana + You", "Cycle 3 · Lives 5 / 5 · hosted by Ana", "Ana holds the save. Join when Ana opens the run.", 0],
-      ["You + Bo + Cy + Dee", "Cycle 12 · Lives 2 / 5 · you are the host", "Last played 3 weeks ago", 1]
+      ["You + Ana + Bo", "Round 6 · Lives 3 / 5 · you are the host", "Last played 2 days ago", 1],
+      ["You (solo)", "Round 9 · Lives 1 / 5 · you are the host", "Saved on an older version: some things may have changed", 1],
+      ["Ana + You", "Round 3 · Lives 5 / 5 · hosted by Ana", "Ana holds the save. Join when Ana opens the run.", 0],
+      ["You + Bo + Cy + Dee", "Round 12 · Lives 2 / 5 · you are the host", "Last played 3 weeks ago", 1]
     ];
     rows.forEach(function (r, i) {
       var y = 84 + i * 106;
@@ -511,7 +511,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
 
   // ================= 6. CORE PLACEMENT =================
   (function () {
-    var s = document.getElementById("s-core"), S = 20, bx = 240, by = 68, bw = H * S;
+    var s = document.getElementById("s-core"), S = 20, bx = 100, by = 68, bw = H * S;
     topbar(s, "New run · Place the Core", "", "Lives 5 / 5");
     var empty = { lake: mine.lake, cliff: mine.cliff, nodes: mine.nodes, cond: [], bld: [], walls: [], core: mine.core };
     T(s, bx + bw / 2, by - 8, "FRONT EDGE · enemy units enter here", "ts tm", "middle");
@@ -520,23 +520,21 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     path([[16,20],[10.5,20],[10.5,16.5],[4.5,16.5],[4.5,13],[4,13]]);
     path([[16,2],[12.5,2],[12.5,8.5],[4.5,8.5],[4.5,11],[4,11]]);
     R(s, bx + 11 * S - 3, by + 12 * S - 3, 2 * S + 6, 2 * S + 6, "sel");
-    R(s, 16, 68, 208, 320, "panel"); T(s, 28, 88, "THIS MAP", "ts tm");
-    lines(s, 28, 114, ["Ore nodes      2", "Power nodes    2", "Flux nodes     1", "Lakes          1", "Cliffs         1", "", "Size      24 × 16", "Never expands"], "t", 22);
-    R(s, 736, 68, 208, 320, "panel"); T(s, 748, 88, "THE CORE", "ts tm");
-    lines(s, 748, 112, ["Pick a 2 × 2 spot. It", "cannot be moved for", "the rest of the run.", "", "Deep is safer.", "Forward shortens", "your supply lines."], "t", 19);
-    T(s, 748, 262, "VOTES (co-op)", "ts tm");
-    lines(s, 748, 282, ["You   proposed this spot", "Ana   agrees", "Bo    not yet"], "ts", 17);
-    btn(s, 748, 344, 184, 32, "Confirm", true);
+    R(s, 640, 68, 304, 320, "panel"); T(s, 654, 88, "THE CORE", "ts tm");
+    lines(s, 654, 114, ["Pick a 2 × 2 spot. It cannot be", "moved for the rest of the run.", "", "Deep is safer. Forward shortens", "your supply lines."], "t", 20);
+    T(s, 654, 246, "VOTES (co-op)", "ts tm");
+    lines(s, 654, 268, ["You   proposed this spot", "Ana   agrees", "Bo    not yet"], "ts", 18);
+    btn(s, 654, 340, 276, 34, "Confirm", true);
     R(s, 16, 402, 928, 122, "panel"); T(s, 28, 422, "STARTING KIT · in your stash when the run begins", "ts tm");
     ["Extractor × 2", "Barracks × 1", "Wall × 3", "Turret × 1", "10 gold"].forEach(function (k, i) { R(s, 28 + i * 180, 434, 168, 38, "box"); T(s, 28 + i * 180 + 84, 458, k, "t", "middle"); });
     T(s, 28, 502, "After the Core is confirmed you go to the Build screen, then to the first PvE battle.", "ts tm");
-    mark(s, bx + 450, by + 296, 1); mark(s, bx + bw / 2 + 150, by - 11, 2); mark(s, bx + 284, by + 262, 3); mark(s, bx + 420, by + 100, 4); mark(s, 930, 258, 5); mark(s, 930, 418, 6);
+    mark(s, bx + 450, by + 296, 1); mark(s, bx + bw / 2 + 150, by - 11, 2); mark(s, bx + 284, by + 262, 3); mark(s, bx + 420, by + 100, 4); mark(s, 930, 242, 5); mark(s, 930, 418, 6);
   })();
 
   // ================= 7. PVE CHOICE =================
   (function () {
     var s = document.getElementById("s-pve");
-    topbar(s, "Cycle 5 · PvE battle", "choose a difficulty", "Lives 4 / 5");
+    topbar(s, "Round 5 · PvE battle", "choose a difficulty", "Lives 4 / 5");
     R(s, 24, 48, 912, 40, "panel"); T(s, 38, 73, "Win: take the reward.    Lose: no reward, and no life lost.", "th");
     var cards = [
       ["Easy", "Fortress", ["A heavily defended", "stronghold. Light waves."], "Tests: ramp and siege", "+6 gold each", 1, [], false],
@@ -566,7 +564,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   // ================= 8. BATTLE SUMMARY =================
   (function () {
     var s = document.getElementById("s-summary");
-    topbar(s, "Cycle 4 · PvP battle · Summary", "", "Lives 3 / 5");
+    topbar(s, "Round 4 · PvP battle · Summary", "", "Lives 3 / 5");
     R(s, 24, 48, 912, 44, "panel"); T(s, 38, 77, "Defeat · vs. ghost of “Ana + Bo”", "tb"); T(s, 922, 75, "−1 life   ·   +3 gold each", "t", "end");
     R(s, 24, 104, 440, 250, "panel"); T(s, 36, 124, "ARMY STRENGTH OVER TIME", "ts tm");
     el(s, "line", { x1: 40, y1: 330, x2: 448, y2: 330, class: "rule" });
@@ -579,11 +577,11 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     lines(s, 488, 290, ["Enemy units came through", "the open right flank and", "cut the splitter at 1:05."], "ts", 16);
     R(s, 708, 104, 228, 250, "panel"); T(s, 720, 124, "YOUR BUILDINGS", "ts tm");
     lines(s, 720, 150, ["Barracks    14 soldiers", "Foundry      3 heavies", "Turret      22 kills", "Armory       2 upgrades", "Walls        5 of 11 lost", "Splitter     destroyed 1:05"], "t", 22);
-    R(s, 24, 366, 440, 150, "panel"); T(s, 36, 386, "WHAT IT COST AND PAID", "ts tm");
-    lines(s, 36, 412, ["Lives         4 → 3", "Gold          +3 each", "Party pick    none (PvP lost)"], "t", 22);
-    T(s, 36, 500, "Your factory was saved as a ghost for other parties to fight.", "ts tm");
+    R(s, 24, 366, 440, 150, "plot"); T(s, 36, 386, "PARTY PICK · only after a win", "ts tm");
+    [0, 1, 2].forEach(function (i) { R(s, 36 + i * 140, 396, 128, 80, "plot"); T(s, 100 + i * 140, 440, "building " + (i + 1), "ts tm", "middle"); });
+    T(s, 36, 500, "Not shown here: this battle was lost. A win offers 1 of 3 buildings.", "ts tm");
     R(s, 476, 366, 220, 150, "panel"); T(s, 488, 386, "NEXT", "ts tm");
-    lines(s, 488, 412, ["Event: pick one of three", "Shop + Build", "PvE battle (cycle 5)"], "t", 22);
+    lines(s, 488, 412, ["Event", "Shop + Build", "PvE battle (round 5)"], "t", 22);
     R(s, 708, 366, 228, 150, "panel"); btn(s, 720, 382, 204, 36, "Watch again"); btn(s, 720, 428, 204, 36, "Ready", true); T(s, 720, 494, "1 of 3 ready", "ts tm");
     mark(s, 30, 56, 1); mark(s, 450, 118, 2); mark(s, 682, 118, 3); mark(s, 922, 118, 4); mark(s, 450, 380, 5); mark(s, 922, 478, 6);
   })();
@@ -592,12 +590,12 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   (function () {
     var s = document.getElementById("s-runend");
     topbar(s, "Run over", "", "You + Ana + Bo");
-    R(s, 24, 48, 912, 60, "panel"); T(s, 56, 86, "Reached cycle 9", "tb"); T(s, 904, 84, "New best for 3 players (was cycle 7)", "t", "end");
+    R(s, 24, 48, 912, 60, "panel"); T(s, 56, 86, "Reached round 9", "tb"); T(s, 904, 84, "New best for 3 players (was round 7)", "t", "end");
     R(s, 24, 120, 280, 250, "panel"); T(s, 36, 140, "THIS RUN", "ts tm");
     lines(s, 36, 166, ["PvP battles   5 won · 4 lost", "  vs. ghosts  4 won · 3 lost", "  vs. bosses  1 won · 1 lost", "PvE battles   7 won · 2 lost", "  easy 2 · medium 3 · hard 4", "Lives lost    5", "Version       1.2"], "t", 22);
     R(s, 316, 120, 300, 250, "panel"); T(s, 328, 140, "FINAL FACTORY", "ts tm");
     board(s, 346, 152, 10, mine, false, true); T(s, 346, 334, "23 buildings · 3 at tier 3", "ts tm");
-    R(s, 628, 120, 308, 250, "panel"); T(s, 640, 140, "CYCLE BY CYCLE", "ts tm");
+    R(s, 628, 120, 308, 250, "panel"); T(s, 640, 140, "ROUND BY ROUND", "ts tm");
     T(s, 640, 162, "#   PvE            PvP", "ts tm");
     lines(s, 640, 182, ["1   Hard    won    ghost   won", "2   Hard    won    ghost   won", "3   Medium  won    ghost   lost", "4   Hard    won    ghost   lost", "5   Medium  won    boss    won", "…", "8   Easy    lost   ghost   lost", "9   Easy    lost   boss    lost"], "ts", 20);
     R(s, 24, 382, 912, 134, "panel"); T(s, 36, 402, "WHAT NEXT", "ts tm");

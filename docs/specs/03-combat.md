@@ -164,7 +164,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   - Like the rest of the zone, points and guards are generated from the
     battle seed, hidden until the battle begins, and placed fairly: mirrored
     or equidistant so neither side is favoured.
-  - Guard strength scales with the cycle so points stay worth fighting for
+  - Guard strength scales with the round so points stay worth fighting for
     at any depth.
 - **CB-8a [PROPOSED]** Details of the neutral zone:
   - It is generated from the battle seed, so a battle remains reproducible
