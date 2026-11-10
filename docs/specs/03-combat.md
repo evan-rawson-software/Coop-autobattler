@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v2.6
+Status: Draft v2.7
 
 ## Direction
 
@@ -124,21 +124,27 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   - It can also contain **points of interest** that **give buffs to the
     side that controls them**, and that are **guarded by neutral units**.
 - **CB-8c [PROPOSED]** Points of interest:
-  - **Guards** are neutral units that hold their position and attack any
-    unit of either side that comes within reach.
-  - **Control**: once the guards are dead, a point belongs to whichever
-    side has units on it and the other does not; it can change hands during
-    the battle. The buff applies while the point is held and ends with the
-    battle.
+  - **Aggro** [DECIDED]: units are not sent to points of interest. A unit
+    goes to one only if its path takes it **near enough to "aggro"** — within
+    the point's aggro range — in which case it diverts to fight there.
+    Otherwise it marches past.
+  - **Guards** are neutral units that hold their position at the point and
+    fight any unit of either side that aggros.
+  - **Control**: when a side's units kill the guards (or the other side's
+    units holding the point), that side takes control and its units resume
+    their march. Control lasts until enemy units aggro on the point and
+    retake it, so a point can change hands during the battle. The buff
+    applies while the point is held and ends with the battle.
   - **Buffs** are battle-wide for the controlling side, e.g. sources
     produce faster, units spawn stronger, units heal near the point, a
     trickle of a rare resource.
-  - **Who goes for them**: since players never command units, capturing has
-    to come from the build. Starting proposal: most units ignore points of
-    interest and march on the enemy; certain unit types (scouts, raiders)
-    are drawn to the nearest uncontrolled or enemy-held point first. A party
-    chooses how much to invest in contesting the middle without knowing what
-    will be there. See Q2.
+  - **Consequence for building**: which points a party's units reach
+    depends on where they leave the front edge and how the hidden terrain
+    routes them. A party can spread its unit producers along the front to
+    brush more of the zone, or concentrate them and accept missing points —
+    without ever knowing in advance what is out there. A point also pulls
+    units off the direct route for a while, which can cost a rush its
+    timing.
   - Like the rest of the zone, points and guards are generated from the
     battle seed, hidden until the battle begins, and placed fairly: mirrored
     or equidistant so neither side is favoured.
