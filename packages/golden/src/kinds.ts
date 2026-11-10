@@ -8,9 +8,12 @@ import {
   loadAllContentOrThrow,
   loadMapgenOrThrow,
   loadSimConfigOrThrow,
+  loadThreatsOrThrow,
   makeArenaSimKind,
   makeBattleKind,
   makeNeutralZoneKind,
+  makePveBattleKind,
+  makeThreatGenKind,
   makeEnemyPathsKind,
   makeFlowSimKind,
   makeFlowGraphKind,
@@ -25,6 +28,7 @@ import {
   rawResources,
   rawSim,
   rawTerrain,
+  rawThreats,
   rawUnits,
 } from '@game/content';
 
@@ -37,6 +41,10 @@ const content = loadAllContentOrThrow({
 });
 const mapgen = loadMapgenOrThrow(rawMapgen, { terrain: content.terrain });
 const simConfig = loadSimConfigOrThrow(rawSim);
+const threats = loadThreatsOrThrow(rawThreats, {
+  units: content.units,
+  buildings: content.buildings,
+});
 
 /** Every golden kind: those in `core` plus the content-dependent ones. */
 export const goldenKinds: Readonly<Record<string, SimulationFn>> = {
@@ -49,4 +57,6 @@ export const goldenKinds: Readonly<Record<string, SimulationFn>> = {
   'enemy-paths': makeEnemyPathsKind(content, mapgen, simConfig),
   'neutral-zone': makeNeutralZoneKind(content, mapgen),
   battle: makeBattleKind(content, mapgen, simConfig),
+  'threat-gen': makeThreatGenKind(content, mapgen, threats),
+  'pve-battle': makePveBattleKind(content, mapgen, simConfig, threats),
 };

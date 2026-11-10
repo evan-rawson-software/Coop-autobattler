@@ -57,6 +57,33 @@ dense four-plot battles, 20 s for the tier 3 stress battle) so that a slow CI
 runner does not fail them; a regression that doubles the numbers above shows
 up in these measurements rather than in the tests.
 
+## PvE battles (W1-9)
+
+A PvE battle (`startPveBattle`, see "PvE threats" in the rules reference) is the
+same simulation with a scripted opponent. The threat side has no sources,
+conduits or producers; its cost is its units and its stronghold buildings, both
+bounded by configuration: a wave has at most `maxUnitsPerWavePerPlot` (12)
+units per plot (48 on four plots) and a threat has at most 12 waves, so at most
+576 threat units on a four-plot board, and a stronghold has at most
+`maxWallsPerPlot + maxTurretsPerPlot` (76) buildings per plot (304 on four
+plots). Late-round power comes from `unitStrengthPercent`, not from numbers.
+
+Measured (reference `rush` board for one plot, the dense four-plot board above
+for four plots, every archetype, same method as above; the peak is units alive
+on the threat side at the end of any tick):
+
+| Threat                   | Party size | Wall time  | Ticks     | Peak threat units |
+| ------------------------ | ---------- | ---------- | --------- | ----------------- |
+| Round 15 hard            | 1          | 1-4 ms     | 240-748   | 1-11              |
+| Round 20 boss            | 1          | 1-5 ms     | 208-716   | 1-7               |
+| Round 15 hard            | 4          | 34-104 ms  | 259-910   | 2-52              |
+| Round 20 boss            | 4          | 20-100 ms  | 214-826   | 12-28             |
+
+The peaks are low because late threats end the battle quickly (the party's Core
+falls in a few hundred ticks); the bound above is what matters. Across the
+reference-board sweep (3 boards, 4 archetypes, 4 types, rounds 1 to 20: 960
+battles) the longest battle was 3701 ticks and none reached `maxBattleTicks`.
+
 ## Notes
 
 - Flow events (`produced`, `delivered`, `lost`, `stalled`) are recorded for

@@ -13,6 +13,7 @@ import {
   type ArenaContext,
   type ArenaEvent,
   type ArenaSim,
+  type SideOptions,
 } from './arena-sim.js';
 import {
   generateNeutralZone,
@@ -55,6 +56,14 @@ export interface BattleInput {
   readonly teamB: TeamState;
   /** The battle seed (CB-8a): the zone derives from it and the width only. */
   readonly seed: number;
+  /**
+   * General per-side arena options (waves, free power, strength, Core
+   * health); used by PvE threats, absent for ghost battles.
+   */
+  readonly sideOptions?: readonly [
+    SideOptions | null | undefined,
+    SideOptions | null | undefined,
+  ];
 }
 
 export interface BattleConfig {
@@ -197,6 +206,9 @@ export function startBattle(
 
   const sim = createArenaSim(teamA, teamB, zone.depth, content, config.sim, {
     gapBlocked: zoneBlockedCells(zone, a.height, content),
+    ...(input.sideOptions === undefined
+      ? {}
+      : { sideOptions: input.sideOptions }),
   });
   const eventLog: ArenaEvent[] = [];
   const ctx = createArenaContext(sim, content, config.sim, {

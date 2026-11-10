@@ -1,0 +1,123 @@
+{
+  "$schema": "../schemas/threats.schema.json",
+  "baseBudget": 100,
+  "growthPercent": 135,
+  "typeMultiplierPercent": {
+    "easy": 70,
+    "medium": 100,
+    "hard": 140,
+    "boss": 120
+  },
+  "maxPartySize": 4,
+  "maxUnitsPerWavePerPlot": 12,
+  "maxWallsPerPlot": 60,
+  "maxTurretsPerPlot": 16,
+  "minCoreHealth": 30,
+  "compositionJitterPercent": 20,
+  "unitCost": [
+    { "unit": "unit_soldier", "cost": 10 },
+    { "unit": "unit_raider", "cost": 8 }
+  ],
+  "layouts": {
+    "ring": {
+      "coreRow": 4,
+      "firstRingDistance": 3,
+      "ringSpacing": 3,
+      "gapWidth": 2,
+      "turretMinDistance": 2
+    },
+    "line": {
+      "coreRow": 3,
+      "lineRow": 10,
+      "maxRows": 3,
+      "gapWidth": 2,
+      "gapMargin": 3,
+      "turretMinDistance": 2
+    },
+    "open": { "coreRow": 3, "turretMinDistance": 2 }
+  },
+  "archetypes": [
+    {
+      "id": "arch_rusher",
+      "bossOnly": false,
+      "waveSharePercent": 70,
+      "waves": {
+        "firstTick": 100,
+        "intervalTicks": 120,
+        "count": 6,
+        "growthPercent": 115,
+        "composition": [
+          { "unit": "unit_soldier", "weight": 2 },
+          { "unit": "unit_raider", "weight": 1 }
+        ]
+      },
+      "stronghold": {
+        "coreHealthPerBudget": 600,
+        "wallSharePercent": 0,
+        "turretSharePercent": 0,
+        "layout": "open"
+      }
+    },
+    {
+      "id": "arch_fortress",
+      "bossOnly": false,
+      "waveSharePercent": 20,
+      "waves": {
+        "firstTick": 600,
+        "intervalTicks": 400,
+        "count": 3,
+        "growthPercent": 130,
+        "composition": [{ "unit": "unit_soldier", "weight": 1 }]
+      },
+      "stronghold": {
+        "coreHealthPerBudget": 500,
+        "wallSharePercent": 30,
+        "turretSharePercent": 40,
+        "layout": "ring"
+      }
+    },
+    {
+      "id": "arch_escalator",
+      "bossOnly": false,
+      "waveSharePercent": 75,
+      "waves": {
+        "firstTick": 150,
+        "intervalTicks": 150,
+        "count": 8,
+        "growthPercent": 160,
+        "composition": [
+          { "unit": "unit_soldier", "weight": 3 },
+          { "unit": "unit_raider", "weight": 1 }
+        ]
+      },
+      "stronghold": {
+        "coreHealthPerBudget": 300,
+        "wallSharePercent": 25,
+        "turretSharePercent": 15,
+        "layout": "line"
+      }
+    },
+    {
+      "id": "arch_boss",
+      "bossOnly": true,
+      "waveSharePercent": 55,
+      "waves": {
+        "firstTick": 200,
+        "intervalTicks": 250,
+        "count": 6,
+        "growthPercent": 125,
+        "composition": [
+          { "unit": "unit_soldier", "weight": 3 },
+          { "unit": "unit_raider", "weight": 1 }
+        ],
+        "signature": { "everyNthWave": 3, "unit": "unit_raider" }
+      },
+      "stronghold": {
+        "coreHealthPerBudget": 400,
+        "wallSharePercent": 20,
+        "turretSharePercent": 30,
+        "layout": "ring"
+      }
+    }
+  ]
+}

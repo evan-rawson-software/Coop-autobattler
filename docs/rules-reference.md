@@ -174,7 +174,8 @@ same list, and the final state), `prng-child` (the parent state and the first
 `count` outputs of `child(label)`), `map-gen` (see Map generation),
 `team-state-ops` (see Team state and placement), `flow-graph` (see Conduits), `flow-sim` (see Tick order), `arena-sim` (see
 "Golden kind `arena-sim`"), `enemy-paths` (see "Enemy-path preview"),
-`neutral-zone` and `battle` (see "The neutral zone" and "Battles").
+`neutral-zone` and `battle` (see "The neutral zone" and "Battles"), `threat-gen` and
+`pve-battle` (see "PvE threats").
 
 In the reference implementation the registry is `goldenKinds` in
 `packages/core/src/golden-kinds.ts`; a new kind is one added entry. Kinds that
@@ -997,7 +998,7 @@ of a unit's stats (health, damage, range, cooldowns) go through one function,
 returns the definition with `health = mulPct(health, 100 + P)` and
 `damage = mulPct(damage, 100 + P)` (rounded down); everything else is
 unchanged. A spawn passes the side's current `unit_strength` bonus (see "In-battle
-ramp"), and the unit starts with `hp = health` and `damage` of the result; units
+ramp"; plus the side's `unitStrengthPercent` option, see "Side options"), and the unit starts with `hp = health` and `damage` of the result; units
 already on the field are never changed afterwards.
 
 ### State (plain JSON)
@@ -1019,7 +1020,10 @@ state at tick 0:
 - `ramps`: `{side, building, charge, steps}` for each living economy building
   (in-battle ramp), by side then building ID, all starting at `charge = 0`,
   `steps = 0` (CB-11);
-- `units`; and counters `spawned` and `unitsDied`, each a pair indexed by side.
+- `units`; and counters `spawned` and `unitsDied`, each a pair indexed by side;
+- `sideOptions`: present **only** when a side was given options (PvE battles, see
+  "Side options"); a ghost battle's state has no such field, so its hash is
+  unchanged.
 
 Everything else (the grid, the compiled wiring, cached fields) is derived from
 this state by `createArenaContext(sim, content, simConfig, {events?})`, so a
@@ -1338,7 +1342,7 @@ shot is recorded in step 3, before the step 4 attack events):
 
 | `type`               | Fields (besides `tick`)                                         |
 | -------------------- | --------------------------------------------------------------- |
-| `unit_spawned`       | `unit`, `side`, `def`, `x`, `y`, `building` (the producer's ID) |
+| `unit_spawned`       | `unit`, `side`, `def`, `x`, `y`, `building` (the producer's ID, or 0 for a scheduled wave, see "Side options") |
 | `unit_moved`         | `unit`, `x`, `y` (the new cell)                                 |
 | `unit_attacked`      | `unit`, `target`, `damage`                                      |
 | `turret_fired`       | `side` (the owner), `building` (the turret), `unit`, `damage`   |
@@ -1728,6 +1732,317 @@ ended by Overload; party sizes 1 and 2 refused.
   cliff) like any board cell.
 - The Core health fraction in the time-limit rule uses the Core's maximum
   health as built from the content (the same for both sides today).
+
+## Side options
+
+A small, general mechanism of the arena simulation (`createArenaSim(...,
+options)`, `ArenaOptions.sideOptions`, also `BattleInput.sideOptions`): per side,
+an optional object with any of the fields below. Ghost battles do not use it.
+When any side has options the state carries them in `sideOptions` (a pair
+indexed by side, `{}` for a side without), so a saved state continues
+identically; with none the field is absent.
+
+- **`scheduledWaves`**: a list `{tick, unit, count}`. In the Production step of
+  tick `tick` (after all unit producers of both sides, side 0's waves before
+  side 1's, waves in list order), `count` units of `unit` spawn for that side
+  on its **front row** (side 0: arena row `h - 1`; side 1: arena row `H - h`,
+  the row next to the neutral zone). Wave `j` is the `j`-th entry of the side's
+  list (0-based). Work in the side's own frame, column `c` = board `x` (for
+  side 1 the arena column is `W - 1 - c`). Unit `i` (0-based, `n = count`)
+  wants column `(floor((2i + 1) * W / (2n)) + 7j) mod W`, i.e. the units are
+  spread evenly across the whole width, from a start column that moves by 7
+  columns for each wave index (the constant 7 is part of the rule). If the
+  front-row cell of a wanted column is not **open for the side** (terrain, or
+  a building that blocks the side), the nearest open front-row cell is used
+  instead: try distance `d = 1, 2, ...`, column `want - d` before `want + d`
+  (ties go to the lower own-frame `x`); if the row has no open cell the unit
+  is not spawned. Units spawned this way have `moveCooldown =
+  moveCooldownTicks`, take part in the tick's decisions like any new unit, get
+  the next unit IDs, count as `spawned`, and produce `unit_spawned` with
+  `building = 0`. Wave `count` is the total for the whole board, so a four-plot
+  board simply gets wider waves.
+- **`freePower`**: every turret of the side is fully charged at all times: in
+  the turret charging step, `charge` is set to `costPerShot` without touching
+  the input buffers. No flow is needed (the PvE threat has no sources,
+  conduits or producers). The turrets still obey the normal firing rules,
+  including that they only shoot units standing on their owner's board rows.
+- **`unitStrengthPercent`**: a base strength percent for every unit the side
+  spawns (producers and waves). `unitStats` receives the sum of this and the
+  side's `unit_strength` ramp bonus (which is capped separately by
+  `maxUnitStrengthPercent`; the base is not).
+- **`coreHealth`**: the side's Core starts with this health (and it is the
+  Core's maximum health in the summary and the time-limit rule) instead of the
+  definition's.
+
+Everything else (unit behaviour, aggro, breach logic, Overload, end conditions
+and the defender tiebreak) is unchanged.
+
+## PvE threats
+
+Implemented in `threats.ts` (configuration and the budget), `threat-gen.ts`
+(the generator), `threat-layouts.ts` (stronghold layouts), `pve-battle.ts`
+(battles) and `reference-boards.ts` (test boards); golden kinds `threat-gen`
+and `pve-battle`: `threat-kind.ts`. A PvE enemy or boss is a scripted threat,
+not a factory: a schedule of unit **waves** that arrive at the front edge of its
+side, plus a **stronghold** (a Core, walls and turrets) for the party to attack.
+Its strength grows exponentially with the round (SC-1 to SC-7) so that every
+run eventually ends. All numbers are placeholders in `content/threats.json`
+(schema `schemas/threats.schema.json`, loader `loadThreats(data, {units,
+buildings})`, raw export `rawThreats` from `@game/content`).
+
+### The budget (SC-1)
+
+`baseBudget` (B0, 100), `growthPercent` (g, 135: a factor 1.35 per round) and
+`typeMultiplierPercent` (`easy` 70, `medium` 100, `hard` 140, `boss` 120).
+`budget(round, type, partySize)` is computed in exactly this order:
+
+1. `v = baseBudget`; repeat `min(round, maxRound) - 1` times: `v = floor(v *
+   growthPercent / 100)`.
+2. `v = floor(v * typeMultiplierPercent[type] / 100)`.
+3. `budget = v * partySize`.
+
+`maxRound` is the largest round whose growth-only value `V_r` (the `v` of step
+1) is at most `limit = floor((2^53 - 1) / (1000 * maxTypePercent *
+maxPartySize))`, where `maxTypePercent` is the largest multiplier and
+`maxPartySize` comes from `threats.json` (4). The factor 1000 is headroom so
+that percent arithmetic on any budget (up to 1000 percent) stays in the safe
+range. Later rounds are clamped to `maxRound` (the budget stops growing there,
+far beyond any run that can be survived). `growthPercent` must be above 100 and
+the loader rejects a `baseBudget` above the limit. Medium budgets for one
+player, rounds 1 to 15: 100, 135, 182, 245, 330, 445, 600, 810, 1093, 1475,
+1991, 2687, 3627, 4896, 6609.
+
+### The profile (plain JSON, `schemas/threat-profile.schema.json`)
+
+```
+{ archetype, type, round, partySize, budget, unitStrengthPercent,
+  waves: [{ tick, unit, count }],
+  stronghold: { coreHealth, buildings: [{ def, tier, x, y, rotation }],
+                corePosition: { x, y } } }
+```
+
+It is everything the battle needs; there are no hidden inputs. `waves` are in
+tick order (the units of one wave share a tick, one entry per unit type);
+`stronghold.buildings` are sorted by `(y, x)` and get instance IDs 1, 2, ... in
+that order. Coordinates are the stronghold's own board coordinates (`y = 0` the
+back row, `y = height - 1` the front row facing the party), the board being
+`partySize * plotWidth` by `plotDepth`.
+
+### Archetypes (data templates in `threats.json`)
+
+An archetype has `waveSharePercent` (the rest of the budget goes to the
+stronghold), `waves` `{firstTick, intervalTicks, count, growthPercent,
+composition: [{unit, weight}], signature?}` and `stronghold`
+`{coreHealthPerBudget, wallSharePercent, turretSharePercent, layout}`.
+`bossOnly` archetypes are never offered by `pickArchetypes`. Placeholder values:
+
+| Archetype | Wave share | Waves (first tick, interval, count, growth) | Composition | Stronghold (Core per budget, walls, turrets, layout) |
+| --- | --- | --- | --- | --- |
+| Rusher | 70 | 100, 120, 6, 115 | soldier 2 : raider 1 | 600, 0, 0, `open` |
+| Fortress | 20 | 600, 400, 3, 130 | soldier | 500, 30, 40, `ring` |
+| Escalator | 75 | 150, 150, 8, 160 | soldier 3 : raider 1 | 300, 25, 15, `line` |
+| Boss | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 30, `ring` |
+
+Rusher tests defence (early frequent waves, a small open Core); Fortress tests
+ramp and siege (late light waves, a big walled Core with turrets); Escalator
+tests speed (waves that grow fast, a wall line); Boss mixes all of it, its
+every-Nth-wave signature being all raiders (they target infrastructure). Unit
+prices for spending wave budget are `unitCost` in `threats.json` (soldier 10,
+raider 8). Building prices for the stronghold are the **tier 1** prices of the
+first building of defense type `wall` and of defense type `turret` in the
+building content (tier 1 only for now).
+
+### Generation: `generateThreat({seed, round, type, partySize, archetype}, content, {threats, mapgen})`
+
+A pure function. Randomness: `T = Rng.fromSeed(seed).child("threat")
+.child(round)` (a string label, then an integer label; nothing is drawn from
+the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
+`partySize` is 1 to `min(maxPartySize, mapgen.maxPartySize)`.
+
+1. `B = budget(...)`; `waveBudget = floor(B * waveSharePercent / 100)`;
+   `S = B - waveBudget`.
+2. **Wave sizes.** `s_0 = 100`, `s_(k+1) = floor(s_k * growthPercent / 100)`
+   for `k = 0 .. count - 1`; `sum` is their total. Wave `k` has budget `W_k =
+   floor(waveBudget * s_k / sum)` (computed as quotient and remainder of
+   `waveBudget` by `sum`, so nothing overflows).
+3. **Composition.** For wave `k` (0-based): if the archetype has a `signature`
+   and `(k + 1) mod everyNthWave = 0`, the composition is the signature unit
+   alone (weight 1, no random draw). Otherwise each entry's weight becomes
+   `floor(weight * 100 * (100 + d) / 100)` with `d = wavesRng.nextInt(2J + 1) -
+   J`, `J = compositionJitterPercent` (20): one draw per entry, in wave order
+   then composition order. (If all weights became 0 the template weights are
+   used.)
+4. **Unit counts.** The budget of an entry is `floor(W_k * weight / weightSum)`
+   (same overflow-safe division) and its ideal count `n = floor(that / cost)`.
+   If every entry of a wave has `n = 0`, the entry with the highest weight
+   (first on ties) gets 1: every wave has at least one unit.
+5. **Strength conversion.** `cap = maxUnitsPerWavePerPlot * partySize` (12 per
+   plot). Let `m` be the largest wave (sum of `n` over a wave's entries). If `m
+   <= cap`, `unitStrengthPercent = 0`. Otherwise `unitStrengthPercent =
+   ceil(100 * m / cap) - 100`, and every `n` becomes `floor(n * cap / m)`; a
+   wave left with no unit gets 1 of its first entry. So the largest wave has
+   at most `cap` units, each `(100 + P) / 100` times as strong, and total wave
+   power (units times strength) stays within a few percent of the wave
+   budget (rounding, the one-unit minimum), while the unit count stays small
+   however high the budget grows. The strength is applied to health and damage
+   as in `unitStats`.
+6. Waves are listed per wave tick (`firstTick + k * intervalTicks`), one entry
+   per composition entry with a non-zero count.
+7. **Stronghold.** `idealWalls = min(floor(floor(S * wallSharePercent / 100) /
+   wallPrice), maxWallsPerPlot * partySize)`; `idealTurrets` likewise with the
+   turret price and `maxTurretsPerPlot`. The layout (below) places at most
+   those; `spent` is the price of what was placed. `coreHealth =
+   max(minCoreHealth, floor((S - spent) * coreHealthPerBudget / 100))`: every
+   unspent point of the stronghold budget, including what a full layout or the
+   building caps could not absorb, becomes Core health.
+
+### Layouts (in `threat-layouts.ts`; parameters in `threats.json`)
+
+All in the stronghold's board coordinates. The Core footprint is 2 x 2; the
+Core's `x` is `floor((width - 2) / 2)` (the middle of the board), its `y` the
+layout's `coreRow`. No building uses the front row. "Turrets" are picked by
+`pickTurrets`: candidates are grouped by an ascending key, each group is listed
+by `(y, x)`, and while turrets are still needed the next group is shuffled
+with `holdRng.shuffle` and its cells taken from the front.
+
+- **`open`**: no walls. Turret candidates: all cells at Chebyshev distance
+  (from the Core footprint) at least `turretMinDistance`, key = that distance.
+- **`ring`**: ring `k` (from 1) is the square perimeter at Chebyshev distance
+  `firstRingDistance + (k - 1) * ringSpacing` from the Core footprint, with a
+  gap of `gapWidth` cells in the middle of each of its four sides. Walls fill
+  ring 1 first, then ring 2, ...; cells outside the board or on the front row
+  are skipped; inside a ring the priority is: higher `y`, then nearer the Core's
+  middle column, then lower `x`. Turret candidates as for `open`, minus walls
+  and the gap cells of the rings that hold a wall.
+- **`line`**: a wall line across the whole board on row `lineRow`, up to
+  `maxRows` rows (`lineRow`, `lineRow - 1`, ...), with one gap of `gapWidth`
+  cells per plot. The gap of plot `p` starts at `p * plotWidth + gapMargin +
+  holdRng.nextInt(plotWidth - 2 * gapMargin - gapWidth + 1)`; these draws (one
+  per plot, in order) come first. Walls fill row `lineRow` first, then the next
+  row; inside a row the cells nearest to a gap come first, then lower `x`.
+  Turret candidates: cells below `lineRow` (any `y < lineRow`), not in a gap
+  column, not on a wall, at Chebyshev distance at least `turretMinDistance`
+  from the Core; key = `lineRow - y`.
+
+Because the stronghold has one Core, a `ring` on a wide board is still a
+single ring set around the middle; only the `line` layout is tiled per plot.
+
+Snapshot of a Fortress stronghold (round 8, medium, party size 1; `D` walls and
+turrets, `C` the Core, the front row on top):
+
+```
+........................
+........................
+........................
+........................
+.....DDDDDD..DDDDDD.....
+.....D............D.....
+.....D............D.....
+.....D..DDD..DDD..D.....
+.....D..DDDDDDDD..D.....
+.....D..D......D..D.....
+.........D.CC.D.........
+...........CC.D.........
+.....D..DD....DD..D.....
+.....D..DDD.DDDD..D.....
+.....D..DDD..DDD..D.....
+........................
+```
+
+### The stronghold as a team state
+
+`buildStronghold(profile, content, mapgen)`: a board of `partySize * plotWidth`
+by `plotDepth` with no features and no nodes (`createTeamState`), the Core
+placed with `placeCore` at `corePosition`, then each building with
+`addToStash` (owner = the plot it stands in) and `placeFromStash`. Any rejection
+throws: a threat whose stronghold cannot be built is a generator bug.
+
+### Choosing and summarising
+
+`pickArchetypes(seed, round, threats)`: the candidates are the archetypes that
+are not `bossOnly`, in file order; `rng = Rng.fromSeed(seed).child("archetypes")
+.child(round)`; the list is shuffled once and `easy`, `medium`, `hard` take
+positions 0, 1, 2 (wrapping around if there are fewer than three; with three or
+more they are distinct). `threatSummary(profile, content)` returns `{archetype,
+type, level (easy 1, medium 2, hard and boss 3), totalUnits, firstWaveTick
+(null if no waves), coreHealth, walls, turrets}`.
+
+### PvE battles
+
+`startPveBattle({team, threat, seed}, content, {sim, mapgen})` and
+`simulatePveBattle(...)` extend `startBattle`/`simulateBattle` (they call
+`startBattle`; there is no second tick loop). Side 0 is the party, side 1 the
+threat (so it is the defender in the tiebreak). The stronghold is built as
+above and becomes side 1's team state; side 1 gets the side options
+`scheduledWaves` = `profile.waves`, `freePower` = true, `unitStrengthPercent`
+= `profile.unitStrengthPercent` and `coreHealth` = `stronghold.coreHealth`.
+The neutral zone is generated from the battle seed exactly as for any battle.
+A party whose board width differs from the threat's gives `party_size_mismatch`.
+The result, summary and event log have the shape of a ghost battle; the handle
+and the simulation result also carry the `threat`. Wave spawns are
+`unit_spawned` events with `building = 0`.
+
+Snapshot of a Rusher wave arriving (round 12, medium, against the rush
+reference board, tick 101: the five units of the first wave, spread across the
+width on the threat's front row, which is arena row 23; the threat is on top,
+`cc` is its Core):
+
+```
+........................
+........................
+........................
+...........cc...........
+...........cc...........
+........................
+........................
+........................
+........................
+........................
+........................
+........................
+........................
+........................
+........................
+...1......11.......1..1.
+........................
+..............%%........
+..............%.........
+........................
+```
+
+### Reference boards
+
+`reference-boards.ts` (importable by later tools; not a test module): three
+solo boards as `team-state-ops` scripts on the map of seed 5 (party size 1),
+Core at (11, 5): **rush** (three tier 1 extractors, each feeding a tier 1
+barracks directly; nothing else), **fortify** (seven walls around the Core, three
+tier 2 turrets each powered by its own tier 2 extractor through a conduit, one
+barracks and one armory fed directly) and **poor** (the starting kit placed
+badly: one extractor far from its barracks over a 17-cell conduit, one
+extractor with no conduit, an unpowered turret and three walls in a back
+corner). `referenceBoardScript(name)` gives the script, `buildReferenceBoard`
+builds the state.
+
+### Golden kinds `threat-gen` and `pve-battle`
+
+`threat-gen`: input `{seed, round, type, partySize, archetype}`; result
+`{profile, hash}` (`hash` = hash of the profile). `pve-battle`: input `{team,
+threat, seed}` with `team` a `team-state-ops` script and `threat` a
+`threat-gen` input; result `{ok: true, result, summary (without timeline),
+threatHash, zone, stateHash, events}` or `{ok: false, error: {code, message}}`;
+the event log is the vector's event log. Vectors: `golden/threat-gen.json`
+(every archetype at rounds 1, 5 and 10, a four-plot Escalator, a round beyond
+the budget clamp) and `golden/pve-battle.json` (each reference board against
+each archetype at round 1, and two battles the party loses).
+
+### Decided simplifications
+
+- Tier 1 buildings only, and the first wall and the first turret building in
+  the content, for the stronghold.
+- Strength is one number for all waves of a threat (not per wave).
+- Stronghold turrets are always charged (`freePower`), so there is no way to
+  starve them; the wall and turret caps per plot keep the building count low.
+- A wave unit that finds no open front-row cell is not spawned.
 
 ## Performance budget
 

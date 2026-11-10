@@ -36,7 +36,7 @@ import {
   type SimEvent,
 } from './flow-sim.js';
 import type { EconomyEffectType, Side } from './buildings.js';
-import { divFloor, mulPct } from './int.js';
+import { divFloor, modFloor, mulPct } from './int.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
 import type { Cell } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
@@ -226,6 +226,35 @@ export interface ProducerSim {
   progress: number;
 }
 
+/** One scheduled wave of a side (see `SideOptions.scheduledWaves`). */
+export interface ScheduledWave {
+  /** The tick on which the units spawn (in the Production step). */
+  readonly tick: number;
+  readonly unit: UnitId;
+  readonly count: number;
+}
+
+/**
+ * General per-side options of the arena simulation (PvE threats use them; a
+ * ghost battle has none). Every field is optional.
+ */
+export interface SideOptions {
+  /**
+   * Units that arrive at the front row of the side's board at fixed ticks, in
+   * the Production step, whatever buildings the side has.
+   */
+  readonly scheduledWaves?: readonly ScheduledWave[];
+  /** The side's turrets are always fully charged (no flow needed). */
+  readonly freePower?: boolean;
+  /**
+   * Strength percent applied to every unit the side spawns, added to the
+   * side's `unit_strength` ramp bonus.
+   */
+  readonly unitStrengthPercent?: number;
+  /** The side's Core starts with this health instead of the definition's. */
+  readonly coreHealth?: number;
+}
+
 export interface ArenaSim {
   /** Battle ticks completed; equals each board's tick. */
   tick: number;
@@ -251,11 +280,18 @@ export interface ArenaSim {
   readonly spawned: [number, number];
   /** Units that died, by side. */
   readonly unitsDied: [number, number];
+  /** Present only when a side was given options (PvE); absent otherwise. */
+  readonly sideOptions?: [SideOptions, SideOptions];
 }
 
 export interface ArenaOptions {
   /** Blocked cells inside the gap rows (arena coordinates). */
   readonly gapBlocked?: readonly Cell[];
+  /** Options for side 0 and side 1; `null` or missing means none. */
+  readonly sideOptions?: readonly [
+    SideOptions | null | undefined,
+    SideOptions | null | undefined,
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -478,7 +514,10 @@ export function createArenaSim(
     const def = content.buildings.get(b.def);
     const placed = teams[b.side]?.buildings.find((p) => p.id === b.id);
     const tier = b.kind === 'core' ? 0 : (placed?.tier ?? 1) - 1;
-    const hp = def?.tiers[tier]?.health ?? 0;
+    let hp = def?.tiers[tier]?.health ?? 0;
+    const coreOverride =
+      options.sideOptions?.[b.side === 0 ? 0 : 1]?.coreHealth;
+    if (b.kind === 'core' && coreOverride !== undefined) hp = coreOverride;
     health.push({ side: b.side, building: b.id, hp });
   }
   const producers: ProducerSim[] = [];
@@ -499,11 +538,18 @@ export function createArenaSim(
       ramps.push({ side: b.side, building: b.id, charge: 0, steps: 0 });
     }
   }
+  const given = options.sideOptions;
+  const hasOptions =
+    given !== undefined && (given[0] != null || given[1] != null);
+  const sideOptions: { sideOptions?: [SideOptions, SideOptions] } = hasOptions
+    ? { sideOptions: [given[0] ?? {}, given[1] ?? {}] }
+    : {};
   return {
     tick: 0,
     nextUnitId: 1,
     gapRows,
     gapBlocked,
+    ...sideOptions,
     teams: [teamA, teamB],
     boards: [
       createBoardSim(teamA, content, simConfig),
@@ -662,36 +708,123 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (k < 0) continue; // no free cell: the spawn waits, progress is kept
     p.progress -= info.cost;
     const { width } = ctx.arena.geom;
-    const x = k % width;
-    const y = divFloor(k, width);
-    const stats = unitStats(
+    addUnit(
+      sim,
+      ctx,
       p.side,
       unitDef,
-      rampBonus(sim, ctx, p.side, 'unit_strength'),
-    );
-    const unit: UnitSim = {
-      id: sim.nextUnitId,
-      side: p.side,
-      def: unitDef.id,
-      x,
-      y,
-      hp: stats.health,
-      damage: stats.damage,
-      moveCooldown: stats.moveCooldownTicks,
-      attackCooldown: 0,
-    };
-    sim.nextUnitId += 1;
-    sim.units.push(unit);
-    sim.spawned[p.side === 0 ? 0 : 1] += 1;
-    ctx.events?.push({
+      k % width,
+      divFloor(k, width),
+      p.building,
       tick,
-      type: 'unit_spawned',
-      unit: unit.id,
-      side: p.side,
-      def: unit.def,
-      x,
-      y,
-      building: p.building,
+    );
+  }
+  spawnWaves(sim, ctx, tick);
+}
+
+/** The strength percent a unit of `side` spawned now gets: ramp bonus plus base. */
+function spawnStrength(sim: ArenaSim, ctx: ArenaContext, side: number): number {
+  return (
+    rampBonus(sim, ctx, side, 'unit_strength') +
+    (sim.sideOptions?.[side === 0 ? 0 : 1]?.unitStrengthPercent ?? 0)
+  );
+}
+
+/** Create a unit of `side` on cell `(x, y)` and record `unit_spawned`. */
+function addUnit(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  side: number,
+  unitDef: UnitDef,
+  x: number,
+  y: number,
+  building: number,
+  tick: number,
+): void {
+  const stats = unitStats(side, unitDef, spawnStrength(sim, ctx, side));
+  const unit: UnitSim = {
+    id: sim.nextUnitId,
+    side,
+    def: unitDef.id,
+    x,
+    y,
+    hp: stats.health,
+    damage: stats.damage,
+    moveCooldown: stats.moveCooldownTicks,
+    attackCooldown: 0,
+  };
+  sim.nextUnitId += 1;
+  sim.units.push(unit);
+  sim.spawned[side === 0 ? 0 : 1] += 1;
+  ctx.events?.push({
+    tick,
+    type: 'unit_spawned',
+    unit: unit.id,
+    side,
+    def: unit.def,
+    x,
+    y,
+    building,
+  });
+}
+
+/** Between consecutive scheduled waves of a side the start column moves by this. */
+const WAVE_START_STRIDE = 7;
+
+/**
+ * Scheduled waves (side options), after all unit producers: for side 0 then
+ * side 1, each wave whose tick is the current tick, in list order, spawns its
+ * `count` units on the side's front row. Wave number `j` (its index in the
+ * side's list) with `n` units on a board `W` wide puts unit `i` (0-based) in
+ * the side's own-frame column `(floor((2i + 1) * W / (2n)) + 7j) mod W`, i.e.
+ * evenly across the whole width from a start column that moves with `j`. A
+ * column whose front-row cell is not open for the side (terrain, a building
+ * that blocks it) is replaced by the nearest open front-row cell, ties to the
+ * lower own-frame column; if the row has no open cell the unit is not spawned.
+ * The event has `building = 0`.
+ */
+function spawnWaves(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
+  const options = sim.sideOptions;
+  if (options === undefined) return;
+  const arena = ctx.arena;
+  const { width, height, boardHeight } = arena.geom;
+  for (const side of [0, 1] as const) {
+    const waves = options[side].scheduledWaves;
+    if (waves === undefined) continue;
+    const row = side === 0 ? boardHeight - 1 : height - boardHeight;
+    const cellOf = (col: number): number =>
+      row * width + (side === 0 ? col : width - 1 - col);
+    waves.forEach((w, j) => {
+      if (w.tick !== tick) return;
+      const unitDef = ctx.content.units.get(w.unit);
+      if (unitDef === undefined) throw new Error(`Unknown unit "${w.unit}".`);
+      for (let i = 0; i < w.count; i++) {
+        const want = modFloor(
+          divFloor((2 * i + 1) * width, 2 * w.count) + WAVE_START_STRIDE * j,
+          width,
+        );
+        let col = -1;
+        for (let d = 0; d < width && col < 0; d++) {
+          for (const c of d === 0 ? [want] : [want - d, want + d]) {
+            if (c >= 0 && c < width && openFor(arena, side, cellOf(c))) {
+              col = c;
+              break;
+            }
+          }
+        }
+        if (col < 0) continue;
+        const k = cellOf(col);
+        addUnit(
+          sim,
+          ctx,
+          side,
+          unitDef,
+          k % width,
+          divFloor(k, width),
+          0,
+          tick,
+        );
+      }
     });
   }
 }
@@ -705,6 +838,10 @@ function chargeTurrets(sim: ArenaSim, ctx: ArenaContext): void {
   for (const t of sim.turrets) {
     const info = ctx.turrets.get(bkey(t.side, t.building));
     if (info === undefined || t.charge >= info.costPerShot) continue;
+    if (sim.sideOptions?.[t.side === 0 ? 0 : 1]?.freePower === true) {
+      t.charge = info.costPerShot;
+      continue;
+    }
     const board = sim.boards[t.side === 0 ? 0 : 1];
     const consumer = board.consumers.find((c) => c.building === t.building);
     if (consumer === undefined) continue;
@@ -825,11 +962,7 @@ export function spawnUnitForTest(
       `spawnUnitForTest: (${String(args.x)}, ${String(args.y)}) is not open.`,
     );
   }
-  const stats = unitStats(
-    args.side,
-    def,
-    rampBonus(sim, ctx, args.side, 'unit_strength'),
-  );
+  const stats = unitStats(args.side, def, spawnStrength(sim, ctx, args.side));
   const unit: UnitSim = {
     id: sim.nextUnitId,
     side: args.side,
