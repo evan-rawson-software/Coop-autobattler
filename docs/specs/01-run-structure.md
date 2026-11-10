@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v4.1
+Status: Draft v4.4
 
 ## Core loop
 
@@ -52,7 +52,7 @@ Lobby -> Map + Core placement ->
 - **RS-4a [DECIDED as a starting set; to be refined later]** An event is a
   short non-combat moment that changes the run in some way other than
   buying. Starting types:
-  - **Workshop** — upgrade or modify a building the party owns.
+  - **Workshop** — raise one building the party owns by one tier.
   - **Shrine** — choose one of several run modifiers.
   - **Gamble** — risk gold or a building for a chance at something better.
   - **Salvage** — trade buildings in for something of a different kind.
@@ -106,8 +106,9 @@ Lobby -> Map + Core placement ->
   eventual defeat (V-5). The run ends when lives reach 0.
 - **RS-7c [PROPOSED]** No way to regain lives in the first playable. (A rare,
   expensive event option could be added later.)
-- **RS-7d [PROPOSED]** A party may abandon a run at any time; it is recorded
-  at its current depth.
+- **RS-7d [DECIDED]** Players can leave a run at any time. Only the host can
+  fully abandon a run; an abandoned run is recorded at its current depth
+  (CP-21d).
 
 Note the interaction with V-5: lives are only lost in PvP battles, so the
 exponential wall must reach the party there. It does so in two ways — bosses
@@ -140,8 +141,9 @@ the party's income so it falls behind the ghosts it meets. See
     all have voted.
   - **Battle** — playback ends at a summary; the party moves on when every
     connected player has readied up there.
-  - **Event** — every player votes; the event resolves when all have voted
-    and any follow-up choice has been made.
+  - **Event** — every player votes, **including any player who is
+    disconnected**: the event waits for them (CP-21h). It resolves when all
+    have voted and any follow-up choice has been made.
   - **Shop and build** — every player readies up.
 - **RS-12a [PROPOSED]** Because runs can be long, they must be easy to stop
   and resume (CP-22, CP-23). Battle playback keeps its speed controls.

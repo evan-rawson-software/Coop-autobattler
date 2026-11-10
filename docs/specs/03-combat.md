@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v4.2
+Status: Draft v4.4
 
 ## Direction
 
@@ -308,6 +308,10 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   players change it.
 - **CB-26c [DECIDED for now]** There are **three tiers**. Nothing can raise
   a building above tier 3. The cap may change later.
+- **CB-26d [PROPOSED]** What a tier is: the same building with better
+  numbers (for example health, rate, or output), set per tier in content
+  data. Every building exists at all three tiers and keeps its footprint
+  and inputs at each. Tiers apply to buildings only.
 - **CB-27** Moving and rotating buildings between battles is free; sources
   must stay on nodes, and the Core never moves (CB-3e). The map itself never
   changes during a run.
@@ -351,7 +355,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 ## Structural requirements
 
 - **CB-30 [PROPOSED → effectively required]** Combat is **deterministic**:
-  the outcome is a pure function of `(team, opponent, seed, game version)`.
+  the outcome is a pure function of `(team, opponent, seed, installed
+  version)` (TA-8).
   Integer math, fixed tick order, deterministic pathfinding and
   tie-breaking, no wall-clock time, no unordered iteration.
 - **CB-31** Combat runs in a **headless simulation** that produces an
@@ -387,7 +392,11 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   measurements: start playback while the simulation is still running ahead
   of it; or send each player the battle's inputs and have every game
   simulate it, comparing a hash of the result with the host's and falling
-  back to the host's log on any mismatch.
+  back to the host's log on any mismatch. Neither is part of the design
+  unless adopted: the first would weaken the guarantee that players can
+  finish watching if the host leaves (TA-11), and the second would mean
+  guests run the simulation, which CB-37, TA-7, and TA-14 currently rule
+  out. Adopting either means revising those.
 
 ## Playback and understanding the factory
 
@@ -405,7 +414,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   edge — where they actually arrive depends on the hidden neutral zone
   (CB-8).
 - **CB-44** Any past battle can be replayed from
-  `(team, opponent, seed, version)` on that same version. After a game
+  `(team, opponent, seed)` on the same installed version. After a game
   update, an already-fought battle is shown from its saved result and event
   log, not re-simulated (CP-23a).
 

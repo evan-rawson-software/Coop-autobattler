@@ -1,6 +1,6 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v4.1
+Status: Draft v4.4
 
 ## Encounter types
 
@@ -18,11 +18,11 @@ The loop is defined in `01-run-structure.md` RS-1.
   host saves a **snapshot** of the party's team state to the ghost pool
   (stored on Steam; see TA-15 to TA-19). A snapshot
   contains:
-  - game version the run is being played on (`major.minor`; see TA-8)
+  - the run version (`major.minor`; see TA-8) and a snapshot format version
   - party size
   - cycle number
-  - full team state: the party's map, Core position, buildings, and
-    conduits (CB-32, CP-6)
+  - full team state: the party's map, Core position, buildings, conduits,
+    and run modifiers (CB-32, CP-6)
   - the run's ID and seed, and a signature (TA-22a)
   - party members' Steam IDs (display names are looked up from Steam)
   - metadata: lives remaining and PvP record at that point (for optional
@@ -95,9 +95,11 @@ The loop is defined in `01-run-structure.md` RS-1.
   (a) accept it — bosses are a designed fallback; (b) seed the pool for early
   cycles with snapshots from internal playtests or bot-driven runs on the new
   version.
-- **MM-13 [DECIDED/PROPOSED detail]** **Retention**: bounded by one snapshot
-  per host per bucket (MM-1c). All ghost data for old versions is deleted on
-  a major version release (TA-8, TA-9).
+- **MM-13 [DECIDED]** **Retention**: all ghost data for old versions is
+  deleted on a major version release (TA-8, TA-9).
+- **MM-13a [PROPOSED]** Between major releases the pool is bounded by one
+  snapshot per host per bucket (MM-1c), which assumes Steam keeps one entry
+  per player per leaderboard (unconfirmed, TA-18).
 - **MM-14 [PROPOSED]** **Thin buckets**: 3- and 4-player buckets and deep
   cycles will be sparse. This is acceptable by design (boss fallback), and
   bucket sizes can be read directly from the entry counts to inform tuning.
@@ -111,11 +113,13 @@ The loop is defined in `01-run-structure.md` RS-1.
 - **MM-16 [PROPOSED]** There is no trusted server, so snapshots are uploaded
   by players' games and could be forged by a modified client. This is an
   accepted risk with limited damage; see "Trust model" (TA-21 to TA-24).
-- **MM-17 [PROPOSED]** Every downloaded snapshot is validated before use:
+- **MM-17 [PROPOSED]** Every downloaded snapshot is validated before use: its signature (TA-22a),
   schema, legal placement on its own map (sources on nodes, nothing on
   natural features, a valid Core position), a map that the generator could
   have produced, and a plausibility bound on total power for its cycle
-  (TA-22). A snapshot that fails is skipped and another is drawn.
+  (TA-22). The generator and the numbers used for these checks are the
+  installed version's; a snapshot from a run that spanned an update is
+  given more tolerance on the power bound. A snapshot that fails is skipped and another is drawn.
 - **MM-17a [PROPOSED]** Players can report a ghost (TA-23).
 
 ## PvE encounters

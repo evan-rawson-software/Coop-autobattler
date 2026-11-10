@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v1.7
+Status: Draft v4.4
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.
@@ -100,7 +100,7 @@ first. Gold (next section) is never produced by the factory.
 - **EC-2 [DECIDED]** Gold buys two things: **buildings** and **shop
   re-rolls**. It does not buy board expansion (there is none, CB-25).
 - **EC-3 [PROPOSED]** Shop offers are per player and drawn from tiered pools
-  whose odds improve with shop tier / cycle. Whether building pools are finite and
+  whose odds of higher-tier buildings improve with the cycle number (CB-26a). Whether building pools are finite and
   shared within the party (contested draws) or infinite is **[OPEN]** (Q5).
 - **EC-4 [PROPOSED]** **Party-size economy**: every player earns full income
   at every party size. PvE threats scale by the same

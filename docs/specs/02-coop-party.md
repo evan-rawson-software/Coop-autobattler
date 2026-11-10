@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v4.3
+Status: Draft v4.4
 
 ## Party basics
 
@@ -99,33 +99,43 @@ Status: Draft v4.3
   stop the battle: it continues as long as **at least one player remains**
   in the game.
 - **CP-21a [DECIDED]** **After the battle, the disconnected player must
-  return**; otherwise the run cannot continue. The party cannot move past
-  the shop without them, because every player must ready up (CP-17).
+  return**; otherwise the run cannot continue.
+- **CP-21h [DECIDED]** **The event decision waits for every player's vote,
+  including an absent player's.** A party whose member dropped during a
+  battle therefore waits at the event that follows it.
 - **CP-21b [DECIDED]** **Reconnecting is supported.** A player who drops can
   rejoin the run in progress and carries on from the current state.
 - **CP-21c [DECIDED]** **The host can leave**, and the host can **re-host
   the run from the save** later. Only the host can, because only the host
   holds the save (CP-23c).
-- **CP-21d [DECIDED]** **If a player never returns, the party must decide to
-  save and quit, or to abandon the run.** The run cannot continue without
-  them. Abandoning records the run at its current depth.
+- **CP-21d [DECIDED]** **Players can leave a run at any time. The host can
+  then save the run to resume at a later date. Only the host can fully
+  abandon a run.** If a player never returns, those are the choices: the
+  run stays saved, or the host abandons it.
 - **CP-21f [DECIDED]** **While waiting, the remaining players can shop and
   can move buildings, including the disconnected player's buildings, but
   cannot continue past the shop.**
 - **CP-21g [PROPOSED]** Details of waiting:
+  - CP-21f applies during the shop step: if a player drops there, or has
+    dropped by then, the others can go on shopping and building but cannot
+    ready the party past it. It does not let the party skip an event
+    (CP-21h).
   - The disconnected player's buildings stay on the board and keep working.
     Their gold, stash, and shop offers are untouched and cannot be given to
     or taken from while they are away.
-  - The event step still needs everyone's vote, so it also waits.
-  - Saving and quitting needs no agreement: any player can leave, and the
-    run is already saved by the host (CP-23). If it is the host who is
-    away, the others can do nothing until the host returns, because the
-    host's game runs the session (TA-11). Abandoning ends the run for
-    everyone and is done by the host (CP-23f).
+  - If it is the host who is away, the others can do nothing until the host
+    returns, because the host's game runs the session and holds the save
+    (TA-11, CP-23c).
+  - A guest who leaves for good can remove the run from their own list
+    (CP-23f). That does not abandon it.
   - In battle, speed changes need agreement only from connected players.
-- **CP-21e [PROPOSED]** If every player leaves during a battle, the battle
-  is not replayed on return: its opponent and seed were fixed and saved when
-  it started, so the same result is shown when the party comes back (CP-23a).
+- **CP-21e [PROPOSED]** Battles and reconnecting:
+  - A player who reconnects during a battle joins the playback at the point
+    the others have reached.
+  - If every player leaves during a battle, or the host leaves and later
+    re-hosts, the battle is not fought again. The run resumes at that
+    battle's summary, showing the saved result, and the saved recording can
+    be watched again from there (CP-23a).
 
 ### Saving and resuming
 
@@ -155,10 +165,12 @@ Status: Draft v4.3
 - **CP-23c [DECIDED]** **The host carries the save for the run; the other
   players do not.** The party already trusts the host (TA-14), so there is
   one save, in one place.
-- **CP-23b [PROPOSED]** A saved run can only be resumed when the **host and
-  the same players** are present (checked by Steam ID). It cannot be
-  continued with fewer players, different players, or solo, which also
-  keeps party size fixed for ghost matching (CP-2).
+- **CP-23b [PROPOSED]** A saved run can only be played by the **host and the
+  same players** (checked by Steam ID). It cannot be continued with fewer
+  players, different players, or solo, which also keeps party size fixed
+  for ghost matching (CP-2). The host can open the run's lobby before
+  everyone has arrived; the run then behaves as it does when a player is
+  disconnected (CP-21a, CP-21f, CP-21h) until they join.
 - **CP-23g [PROPOSED]** Consequences of the host carrying the save:
   - The host of a run is fixed for that run. Nobody else can re-host it,
     and the run cannot continue without the host.
@@ -171,10 +183,16 @@ Status: Draft v4.3
   - Handing a run over to a different host is not supported for now.
 - **CP-23d [DECIDED]** **The number of saved runs is not limited.** (This
   replaces the earlier five-slot limit.)
-- **CP-23f [PROPOSED]** The host can delete a saved run, which abandons it
-  for the whole party and records it at its current depth. A guest can
+- **CP-23f [PROPOSED]** The host abandons a run by ending it from the menu or
+  deleting its save; it is then over for the whole party. A guest can
   remove a run from their own list, which only hides it for them; they can
-  still rejoin if the host resumes it.
+  still rejoin if the host resumes it. Each player's own record of depth
+  reached comes from the last state of the run their game saw, since there
+  is no server to tell an offline guest that the host abandoned.
+- **CP-23i [PROPOSED]** A save keeps the recording of only the most recent
+  battle, not of every battle in the run, so saves stay small. If the
+  host's Steam Cloud quota is ever reached, saves remain on the host's
+  machine and the game says they are not being backed up.
 - **CP-23e [DECIDED]** Saves survive minor updates (as defined in TA-8) and keep playing against
   ghosts from the version they were played on. The game does **not** keep
   old rules or numbers: an older save plays under the current ones. **When

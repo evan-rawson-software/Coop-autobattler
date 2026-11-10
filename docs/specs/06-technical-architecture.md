@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v4.3
+Status: Draft v4.4
 
 ## Direction
 
@@ -98,7 +98,7 @@ language-neutral from the start:
 ### Exit criteria for phase 1
 
 - **TA-53 [PROPOSED]** Move to the port when: the loop is fun in solo
-  playtests; the routing rules and the walls question (Q2) are settled; the three
+  playtests; the routing rules (Q2) are settled; the three
   strategies are all viable; the
   scaling curve produces runs of the intended length (SC-4); and the rules
   reference and golden vectors are complete.
@@ -219,9 +219,12 @@ Everything from here down describes the Godot game.
     players' games cannot delete for each other, so removing it is a
     release step carried out by the developers through Steamworks; how to
     do that in bulk is part of the spike (TA-30). Each player's game also
-    deletes the old ghost files that it uploaded itself, at first launch
-    after a major release; that is always possible and frees the space they
-    take in that player's own Steam storage.
+    tries to delete the old ghost files that it uploaded itself, at first
+    launch after a major release. This is expected to work and to free
+    space in that player's own Steam storage, but both points are
+    unconfirmed, and it only happens for players who launch the game again.
+  - A run wiped by a major release is recorded at the depth it had
+    reached, in the same way as an abandoned run.
   - Because a wipe ends every run in progress, major releases should be
     rare and announced in advance. Depth records on leaderboards can be
     kept, labelled by version.
@@ -252,9 +255,12 @@ Everything from here down describes the Godot game.
     every saved action. The host's list of saves holds at most one entry
     per run ID; the game offers no "save as" or copy and refuses to keep
     two entries with the same run ID.
+  - The save also holds the run's **action log**: every accepted action in
+    order (TA-22b).
   - The save holds the full run state, including outcomes already rolled
     but not yet revealed, stored as the outcomes themselves, and the result
-    and event log of any battle already simulated (CP-23a).
+    of every battle already fought, with the event log of the most recent
+    one only (CP-23a, CP-23i).
   - **Only the host's game writes the save** (CP-23c). Guests receive the
     state they need to play and to watch battles, but keep nothing on disk
     beyond a pointer to the run and its host.
@@ -287,7 +293,9 @@ The async PvP pool needs: store a snapshot, look up snapshots by
 - **TA-16 [PROPOSED]** **Upload** (by the host, at the start of each PvP
   battle): write the snapshot as a file, share it through Steam to obtain a
   handle, submit a leaderboard entry in the bucket, and attach the handle to
-  the entry. The entry's small "details" payload carries metadata that should
+  the entry. The run's action log is written and shared as a second file,
+  and its handle is stored inside the snapshot so a verifier can fetch it
+  (MM-1d). The entry's small "details" payload carries metadata that should
   be readable without downloading the file: the other party members' Steam
   account IDs (for exclusion rules and display), lives remaining, and a
   snapshot format version.
@@ -296,7 +304,8 @@ The async PvP pool needs: store a snapshot, look up snapshots by
   ones (MM-3), pick one, and download its attached file. Entry scores are
   random numbers so that rank order is a shuffle. Empty bucket or no eligible
   entry → boss fallback (MM-5).
-- **TA-18 [PROPOSED]** Steam keeps one entry per user per leaderboard, so
+- **TA-18 [PROPOSED]** Assuming Steam keeps one entry per user per
+  leaderboard (unconfirmed; see "What has been checked"),
   each host has **at most one snapshot per bucket** — their most recent run
   to reach that cycle replaces the previous one. This bounds the pool
   naturally and stops one prolific player from flooding a bucket.
@@ -338,16 +347,21 @@ is deliberate.
   is a **deterrent, not a guarantee**: it stops editing with a text or hex
   editor and copying files between accounts, but not someone willing to
   reverse-engineer the game.
-- **TA-22b [PROPOSED]** **Mitigation — verification by replay.** Because run
-  rules are deterministic, a snapshot can carry the run's seed and its log
-  of actions. A receiving game (or, later, a server) can then check that
-  the board is one the run could really have produced: the map matches the
-  seed, every building was actually offered in a shop or reward, and the
-  gold spent does not exceed what the run could have earned. Auto-save
-  already records the actions (TA-12), so the cost is carrying the log in
-  the snapshot and writing the checker. Snapshot and save formats must
-  **reserve room for the seed and action log from the start**, even if the
-  checker comes later.
+- **TA-22b [PROPOSED]** **Mitigation — verification by replay.** A run's
+  rules are deterministic, so from its seed and the log of the party's
+  actions a checker can confirm that a board is one the run could really
+  have produced: the map matches the seed, every building was actually
+  offered in a shop or reward, and the gold spent does not exceed what the
+  run could have earned.
+  - This requires the run to **keep an action log**: every accepted action
+    in order, stored in the save (TA-12) and uploaded with each snapshot as
+    a separate file (TA-16).
+  - **Known limit:** old rules and numbers are not kept (TA-9), so a run
+    that was played across a game update cannot be replayed exactly. Such
+    runs can only be checked for plausibility (TA-22). How the anti-cheat
+    server handles them is to be designed with it (TA-24).
+  - Snapshot and save formats must carry the seed and action log from the
+    start, even though the checker comes later.
 - **TA-23 [PROPOSED]** **Mitigation — reporting and cleanup:** players can
   flag a ghost; flagged entries can be removed by the developers through
   Steamworks tools.
@@ -425,16 +439,18 @@ What this changes:
   party sizes × the number of cycles, per run version — roughly 120 per
   version if runs reach cycle 30. Without cleanup that is around 80 versions
   before the limit; with cleanup on major releases it is not a concern.
-  Buckets for very deep cycles should share one leaderboard ("cycle N and
-  beyond") so a single long run cannot create an unbounded number.
+  Runs end well before cycle numbers get large, because PvE scaling is
+  exponential, so no special handling of very deep cycles is proposed;
+  every cycle keeps its own bucket, as exact-cycle matching requires
+  (MM-2).
 - **Bulk deletion looks feasible** (TA-36): list with
   `GetLeaderboardsForGame`, select by the version in the name, delete with
   `DeleteLeaderboard`. It needs the publisher key, which fits the pipeline
   design in TA-35 (a secret, used from a server, never shipped in the game).
 - **The upload limit fits**: a party uploads one snapshot per PvP battle,
   far below 10 per 10 minutes.
-- **Trusted writes exist**, which is what the anti-cheat server (TA-24)
-  would rely on.
+- **Trusted writes appear to exist** (third-party source only), which is
+  what the anti-cheat server (TA-24) would rely on.
 
 Still unconfirmed:
 
@@ -459,6 +475,8 @@ Still unconfirmed:
      on a major release (TA-9).
   4. Lobbies + relay networking through GodotSteam with Godot's multiplayer
      API, including reconnect.
+  6. Whether a Steam lobby's owner can change when the owner leaves, and
+     how to keep the run's host fixed regardless (CP-23g).
   5. What can be tested with Valve's public test app ID versus what needs
      our own (leaderboards and Cloud need our own app).
 
@@ -486,14 +504,20 @@ Still unconfirmed:
 - **TA-34 [PROPOSED]** How it works:
   - The pipeline reads the version being released and compares it with the
     last released version to classify the update as patch, minor, or major.
-    The CI check from TA-8 has already confirmed the classification is at
-    least as high as the changes require.
+    The CI check from TA-8 can tell a patch from a change that needs at
+    least a minor version. It cannot tell minor from major: whether old
+    saves and snapshots survive a change is a judgement made by a person at
+    release time, against a written checklist.
   - **Patch:** build, test, upload to Steam. No data changes.
   - **Minor:** the same. A new ghost pool starts by itself because bucket
     names include the version; old pools are left for runs still on them.
   - **Major:** the same, followed by deleting all ghost data for older
     versions. Old saves are deleted by each player's game at first launch
     (TA-9), not by the pipeline.
+- **TA-35a [PROPOSED]** Players who have not updated yet can still upload to
+  old-version buckets after the deletion has run. The deletion step is
+  therefore repeatable, and is run again some time after a major release
+  (for example on each later release) to clear anything re-created.
 - **TA-35 [PROPOSED]** Safeguards, because the deletion cannot be undone:
   - The deletion step only ever targets data whose version is older than
     the one being released, selected by the version in the bucket name. It
@@ -501,7 +525,8 @@ Still unconfirmed:
   - It runs only after the new build is live, so a failed release never
     leaves players without both the old data and the new game.
   - It prints what it is about to delete and waits for a person to approve
-    before a major release proceeds. Patch and minor releases need no
+    the deletion. The approval gates the deletion step only; the build is
+    already live by then. Patch and minor releases need no
     approval.
   - It can be run in a dry-run mode that only lists what would be deleted.
   - The Steamworks credentials it needs are stored as pipeline secrets,
@@ -513,8 +538,8 @@ Still unconfirmed:
   charges for this storage, are unconfirmed and part of the spike (TA-30).
 - **TA-37 [OPEN]** If bulk deletion by the developers turns out not to be
   possible, old ghost data cannot be fully deleted as TA-8 requires. What
-  would remain is leaderboard entries that no game version reads; the files
-  themselves are removed by each player's own game (TA-9). Whether that is
+  would remain is leaderboard entries that no game version reads, and the
+  attached files of any player who never launches the game again (TA-9). Whether that is
   acceptable is the owner's call once the spike reports (Q9).
 
 ## Backlog

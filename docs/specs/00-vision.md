@@ -1,13 +1,12 @@
 # 00 — Vision & Pillars
 
-Status: Draft v4.1
+Status: Draft v4.4
 
 ## Elevator pitch
 
-A co-op roguelite autobattler for 1–4 players. Between fights, the party
-each player
-drafts buildings and adds them to one large shared factory board that the whole
-party builds together. Fights
+A co-op roguelite autobattler for 1–4 players. Between fights, each
+player buys buildings and adds them to one large shared factory board that
+the whole party builds together. Fights
 resolve automatically. Opponents alternate between hand-authored-style PvE
 encounters and **ghost PvP** — saved snapshots of other real parties at the
 same point in their run. PvE power grows exponentially, so no run lasts
@@ -122,7 +121,7 @@ does not block systems work.
 | Plot | The area one player adds to the shared board. |
 | Ramp | The factory getting stronger over the course of one battle; what "economy" buildings provide. |
 | Threat | A PvE opponent: scripted waves of units plus a stronghold to attack, not a factory. |
-| Snapshot | A saved, immutable copy of a party's team at the start of an encounter. |
+| Snapshot | A saved copy of a party's board, taken at the start of a PvP battle. |
 | Ghost | A snapshot being used as another party's opponent. |
 | Boss | A generated PvE opponent used when no ghost is available. |
 | Depth | The highest cycle a party reached; the primary score. |

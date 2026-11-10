@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v4.3
+Status: Draft v4.4
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -55,7 +55,7 @@ everything else movable. Open:
 
 Decided: top/bottom orientation with the party at the bottom (CB-45).
 Wireframes of the battle, event, shop, and build screens have been shared
-with the project owner outside the repo. Open:
+with the project owner outside the repo.
 
 - Decided: nothing is timed; every player readies up to move on (CP-17).
 - Decided for now: players do not see each other's shops; revisit after
@@ -64,18 +64,19 @@ with the project owner outside the repo. Open:
 
 ## Q3a. Saving and disconnects
 
-Decided: battles continue while at least one player remains; a disconnected
-player must return before the party can move past the shop, and meanwhile
-the others can shop and move buildings, including the absent player's
-(CP-21 to CP-21f); reconnecting is supported, and the host can leave and re-host from the
-save;
-any number of saved runs, each run saved only once (CP-22a, CP-23d);
-auto-save after each action, storing outcomes so that nothing already
-rolled or fought changes, even across an update (CP-23, CP-23a); if a
-player never returns, the party saves and quits or abandons (CP-21d).
+Decided:
 
-The host carries the save; other players hold none, so only the host can
-re-host and the run needs the host to continue (CP-23c, CP-23g).
+- Battles continue while at least one player remains (CP-21).
+- A disconnected player must return before the run continues; the event
+  waits for every player's vote, including theirs (CP-21a, CP-21h).
+- During the shop, the others can shop and move buildings, including the
+  absent player's, but cannot continue past it (CP-21f).
+- Players can leave at any time; the host can save to resume later; only
+  the host can fully abandon a run (CP-21d).
+- The host carries the save; other players hold none (CP-23c).
+- Any number of saved runs, each saved only once (CP-22a, CP-23d).
+- Auto-save after each action, storing outcomes so nothing already rolled
+  or fought changes, even across an update (CP-23, CP-23a).
 
 Still open: whether a run should ever be transferable to a different host
 (proposed: not for now).

@@ -37,6 +37,9 @@ refined and then broken down into backlog items for coding agents.
 - **[DECIDED for now]** — an owner decision that is expected to be
   revisited after playtesting.
 - **[DECIDED/PROPOSED detail]** — the headline rule is the owner's decision;
-  the detail listed under "Proposed detail" is a suggested default.
+  the rest is a suggested default. Where the requirement has a "Proposed
+  detail" list, that list is the proposed part.
+- Other bracketed variants (for example "[DECIDED shape / PROPOSED
+  formula]") name which part is decided in the tag itself.
 - Requirements carry stable IDs (e.g. `MM-3`) so backlog items can reference
   them.
