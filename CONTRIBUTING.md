@@ -26,6 +26,7 @@ pnpm typecheck      # tsc in every package
 pnpm lint           # eslint, including the layer rule
 pnpm test           # vitest in every package
 pnpm build          # static site into packages/web/dist
+pnpm preview        # serve that build locally (run pnpm build first)
 pnpm format         # prettier --write
 pnpm format:check   # prettier --check
 ```
@@ -45,3 +46,20 @@ This is enforced in two ways: `core` and `session` TypeScript configs do not
 include the DOM lib or Node types, and ESLint (`eslint.config.js`) has
 `no-restricted-imports` and `no-restricted-globals` rules per package.
 Violations fail `pnpm typecheck` or `pnpm lint`.
+
+## Playtest builds
+
+Every change to `main` is built and published as a static site to GitHub Pages
+by `.github/workflows/deploy.yml` (it can also be run by hand from the Actions
+tab via "Run workflow"). Tests run first, so a failing build is never
+published. The site is plain static files with relative asset URLs, so it works
+from a sub-path and on any other static host.
+
+- URL pattern: `https://<owner>.github.io/<repo>/`. For this repository:
+  <https://evan-rawson-software.github.io/Coop-autobattler/>.
+- The page footer shows the build identifier (short commit hash and UTC build
+  time), so a tester can say which build they played. It is injected by Vite
+  in `packages/web/vite.config.ts` (from `GITHUB_SHA`, else `git`, else `dev`).
+- To try the production build locally: `pnpm build`, then `pnpm preview`.
+- One-time setup for the repository owner: Settings -> Pages -> Build and
+  deployment -> Source: "GitHub Actions".

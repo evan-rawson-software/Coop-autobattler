@@ -96,7 +96,7 @@ const restrictedGlobals = (names, what) =>
   }));
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/coverage/**', 'docs/**'] },
+  { ignores: ['**/dist/**', '**/coverage/**', 'docs/**', '.claude/**'] },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {
