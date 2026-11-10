@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v0.8
+Status: Draft v0.9
 
 ## Direction
 
@@ -30,7 +30,8 @@ tune them, as cheaply as possible. It is a prototype, not the product.
 - **TA-40 [DECIDED]** Runs in a browser, **offline**, single-player. No
   backend, no accounts, no networking, no Steam.
 - **TA-41 [PROPOSED]** Scope:
-  - the combat simulation with the Pulse mechanic (`03-combat.md`)
+  - the combat simulation with the chosen core mechanic (`03-combat.md`;
+    Conduits is the current candidate)
   - the full run loop: PvE battle with three difficulties → event (shop
     first) → PvP battle; 5 lives; exponential scaling
   - one player, one board
@@ -50,7 +51,7 @@ tune them, as cheaply as possible. It is a prototype, not the product.
 - **TA-44 [PROPOSED]** Delivered as a **static site** (no server), so a
   playtest build is just a link and works on any device. Progress is stored
   in the browser.
-- **TA-45 [PROPOSED]** Stack: TypeScript, a simple bundler (e.g. Vite), and
+- **TA-45 [DECIDED: TypeScript; rest PROPOSED]** Stack: TypeScript, a simple bundler (e.g. Vite), and
   the lightest rendering that works (DOM/SVG or a canvas). Keep it small;
   most of this code is thrown away at the port.
 - **TA-46 [PROPOSED]** A **balance harness** (command-line, no UI) runs

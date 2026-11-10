@@ -1,6 +1,6 @@
 # 03 — Combat
 
-Status: Draft v0.7
+Status: Draft v0.9
 
 ## Direction
 
@@ -13,123 +13,127 @@ Status: Draft v0.7
   thing**, not a re-skin of either reference. It needs a core mechanic neither
   of them has.
 
+## Status of the core mechanic
+
+- **CB-3a [DECIDED]** Two earlier candidates are **rejected**: the Pulse (a
+  sweep that fires items in column order) and Gearworks (rotating wheels of
+  items).
+- **CB-3b [OPEN]** **Conduits** is the leading candidate — "the best idea so
+  far", not yet confirmed. It is described below so it can be evaluated and
+  prototyped. A wireframe exists (shared with the project owner outside the
+  repo). If it is not adopted, this section is replaced; the structural
+  requirements further down hold either way.
+
 What the references do, so the difference is explicit:
 
-| | The Bazaar | Backpack Battles | This game (proposed) |
+| | The Bazaar | Backpack Battles | Conduits (candidate) |
 |---|---|---|---|
 | Layout | One row; items have widths | 2D bag; items have shapes | 2D board; items have shapes |
-| When an item fires | Its own cooldown timer | Its own cooldown timer (+ stamina) | When the **pulse** sweeps over it |
-| What placement decides | Left/right adjacency | Adjacency in 2D | Adjacency **and timing/order** |
-| Speed effects | Haste/slow per item | Per-item speed, stamina | **Tempo** of the whole board; effects that bend the pulse |
-| Players per side | 1 | 1 | 1–4 boards in lanes |
+| When an item fires | Its own cooldown timer | Its own cooldown timer (+ stamina) | When **charge** reaches it |
+| What placement decides | Left/right adjacency | Adjacency in 2D | The **route** charge takes: what feeds what, in what order, how far |
+| Speed | Haste/slow per item | Per-item speed, stamina | Generator rate and route length |
+| Players per side | 1 | 1 | 1–4 boards; charge can cross between teammates |
 
-## Recommended concept: the Pulse [PROPOSED]
+## Candidate concept: Conduits [PROPOSED]
 
-Each board is a grid with a **pulse** that sweeps across it, column by column,
-and loops. Items fire when the pulse reaches them. There are no per-item
-cooldowns: **where** an item sits decides **when** it fires and what has
-already happened by then. The board is read like a step sequencer.
+Nothing on the board has its own timer except generators. Generators make
+**charge**; charge travels from item to item along the route the player lays
+out; outputs fire when charge reaches them. Building a board is building a
+circuit.
 
 ### Board and items
 
-- **CB-4** A board is a grid (starting proposal: 8 columns × 3 rows).
-- **CB-5** Items have a **shape** (1×1, 2×1, 1×2, 2×2, L, …), a **tier**,
-  **tags** (e.g. Blade, Flame, Ward, Tool), and one or more **effects**.
+- **CB-4** A board is a grid (starting proposal: 6 columns × 4 rows).
+- **CB-5** Items have a **shape**, a **tier**, **tags**, and a **kind**:
+  - **Source** — makes charge on a timer (e.g. Generator: 1 charge every 2 s).
+  - **Route** — moves charge without changing it (Wire; Splitter, which
+    alternates between two outputs).
+  - **Modifier** — changes charge passing through (Flame coil adds Burn;
+    Amplifier increases strength; Capacitor holds charges until it has 3,
+    then releases one triple-strength charge).
+  - **Output** — fires when charge arrives, consuming it (Cannon: damage per
+    charge; Shield emitter: shield per charge).
 - **CB-6** Each board has a **Core** with health. The Core is what enemy
-  items attack. It is not an item and does not occupy grid cells.
+  outputs attack. It is not an item and does not occupy grid cells.
 
-### The pulse
+### Charge
 
-- **CB-7** Time is divided into **beats**. Each beat, the pulse advances one
-  column. After the last column it wraps to the first; one full sweep is a
-  **bar**.
-- **CB-8** An item **fires** when the pulse enters its leftmost column. Wide
-  items therefore fire once per bar like any other item but occupy more of
-  the timeline — size is paid for in board space, not in a longer cooldown.
-- **CB-9** Items in the same column resolve top row to bottom row. Both
-  sides' effects within the same beat are computed, then applied
-  simultaneously.
-- **CB-10** **Tempo** is a board-level stat: how many beats the board plays
-  per unit of time. Haste raises a board's tempo and slow lowers it. Two
-  opposing boards can run at different tempos.
-- **CB-11** A small set of effects **bend the pulse**, and these are the
-  signature of the game:
-  - *Echo* — re-fire the previous column.
-  - *Skip* — jump the pulse forward N columns (reach your finisher sooner,
-    at the cost of what was skipped).
-  - *Split* — spawn a second pulse for one bar.
-  - *Hold* — the pulse stays on this column an extra beat, firing it twice.
-  - *Jam* (enemy-targeted) — the enemy pulse skips its next column, or one
-    enemy item is silenced for a bar.
-- **CB-12** **Crescendo**: each completed bar increases all damage on both
-  sides by a fixed percentage. This is the built-in sudden death — battles
-  cannot stall, and there is no separate timeout rule.
+- **CB-7** Time advances in fixed **ticks**. Charge moves one item per tick
+  (starting proposal: 2 ticks per second).
+- **CB-8** A charge has a **strength** and may carry **properties** added by
+  modifiers (e.g. Burn). An output's effect scales with the strength and
+  applies the properties.
+- **CB-9** Items send charge out of defined sides. How direction works is
+  open (Q2): fixed arrows, rotatable items, or "pass to any adjacent item".
+- **CB-10** Within a tick, items resolve in a fixed order (e.g. row by row,
+  left to right), and both sides' effects are applied simultaneously.
+- **CB-11** Charge that has nowhere to go is lost. An output nothing feeds
+  never fires.
+- **CB-12** **Overload**: as a battle goes on, generators speed up (or all
+  damage increases) on both sides, so battles cannot stall and there is no
+  separate timeout rule.
 
 ### Placement depth
 
-- **CB-13** **Order**: effects that set something up (apply burn, add charge,
-  mark the enemy) want to sit left of the items that cash it in.
-- **CB-14** **Adjacency**: many effects refer to orthogonally adjacent items
-  ("adjacent Blades gain +X", "when the item to my left fires, …").
-- **CB-15** **Column stacking**: items sharing a column fire on the same
-  beat, enabling burst turns and "all items in this column" effects.
-- **CB-16** **Tag counts**: having enough items with a tag on a board unlocks
-  a board bonus.
+- **CB-13** **Route length**: each modifier on a route makes the hit stronger
+  and later; a short circuit fires early and often but weakly.
+- **CB-14** **Sharing**: a splitter lets one source feed several outputs,
+  each less often; several sources can feed one output.
+- **CB-15** **Order on the route**: a capacitor after a flame coil stores
+  burning charges; before it, the coil sees one large charge.
+- **CB-16** **Space**: wires and modifiers use cells that could hold another
+  source or output. Tag counts on a board unlock board bonuses.
 
 ### Effect vocabulary (first playable)
 
-- **CB-17** Keep it small: damage, shield, heal, burn (damage over time),
-  charge (stored bonus consumed by the next eligible item), tempo up/down,
-  and the pulse effects in CB-11. Complexity should come from combinations
-  and placement, not from a long keyword list.
+- **CB-17** Keep it small: damage, shield, heal, burn, charge strength
+  up/down, split, store-and-release, generator rate up/down.
 
 ### Building
 
 - **CB-18** Items are bought in shops and won as rewards. Combining
   duplicates raises an item's tier.
 - **CB-19** Players have a small **stash** for items not on the board.
-- **CB-20** Board size may grow during a run (e.g. unlock extra columns), as
-  a major upgrade. More columns means more room but a longer bar.
+- **CB-20** Board size may grow during a run as a major upgrade.
 
 ### With 1–4 boards
 
-Fits the lane model in `02-coop-party.md` (CP-8) without units:
-
-- **CB-21** Each board attacks the Core of the board in the opposite lane.
-- **CB-22** When a Core reaches 0 health, that board **goes dark**: its pulse
-  stops. Boards that were attacking it retarget to the nearest enemy lane
-  with a live Core. This is the "reinforcement" behaviour.
+- **CB-21** Each board's outputs attack the Core of the board in the opposite
+  lane (CP-8).
+- **CB-22** When a Core reaches 0 health, that board **goes dark**: its
+  sources stop. Boards that were attacking it retarget to the nearest enemy
+  lane with a live Core.
 - **CB-23** A side loses when all of its Cores are dark.
-- **CB-24** **Cross-board effects** (CP-12) have natural hooks here: shield or
-  heal an adjacent lane's Core; "when the pulse on the board to my left
-  completes a bar, …"; a *Relay* that hands charge to the next lane. Every
-  such effect must define what it does with one board, so solo has no dead
-  content.
+- **CB-24** **Links**: a Link item on a board edge passes charge into the
+  adjacent teammate's board. One player can build the power plant and
+  another the weapons. This is the signature co-op mechanic of the concept.
+  In solo, Link items do not appear or have a simpler effect, so there is no
+  dead content.
 
 ### Why this one
 
-- Distinct: timing from position is a mechanic neither reference has, and
-  pulse-bending effects give the game its own vocabulary.
-- Readable: a moving line across each board shows exactly what is about to
-  happen, which matters with up to 8 boards on screen.
-- Deterministic by construction: discrete beats, fixed resolution order.
-- Cheap to build and render compared with units, pathing, and targeting.
+- Distinct: neither reference has charge routing; the board is an engine the
+  player wires up, not a set of independent timers.
+- Co-op falls out of the mechanic (Links) instead of being bolted on.
+- Deterministic by construction: discrete ticks, fixed resolution order.
 
-## Alternative concepts considered
+### Risks to test in the prototype
 
-- **Gearworks.** Each board is a wheel of item slots turning past a striker;
-  an item fires when it reaches the top. In co-op, neighbouring players'
-  wheels mesh like gears, so the items at the contact point interact and one
-  player's speed drives the next. Very strong co-op identity and theme, but
-  only one dimension of placement and a harder UI.
-- **Conduits.** Items do not fire on their own; generator items produce
-  charge that flows through adjacent items along paths the player lays out,
-  and weapon items fire when charge reaches them. A routing/engine-building
-  puzzle. Deep, but harder to read at a glance and slower to build under a
-  timer.
+- **Readability**: can a player see at a glance what a board does,
+  especially an opponent's, and with up to 8 boards in a battle?
+- **Build time**: is wiring a circuit feasible under an event/prep timer, or
+  does it need generous timers and good placement aids?
+- **Loops**: are routes allowed to loop back, and what bounds them?
+- **Interaction**: can a side disrupt the enemy circuit (cut a wire, drain a
+  capacitor), or only attack the Core?
+- **Large items**: how a 2×2 item takes charge from several sides.
 
-Elements can be borrowed: a "conduit" tag family or gear-like cross-lane
-links could live inside the Pulse system as content.
+## Rejected concepts
+
+- **The Pulse** — a sweep crosses the board and fires items in column order.
+  Rejected by the project owner.
+- **Gearworks** — each board is a wheel of items turning past a striker,
+  with teammates' wheels meshing. Rejected by the project owner.
 
 ## Structural requirements (independent of concept)
 
@@ -172,5 +176,5 @@ links could live inside the Pulse system as content.
 
 ## First playable content budget
 
-- **CB-50 [PROPOSED]** ~25 items across 4 tags, 3 pulse-bending effects,
+- **CB-50 [PROPOSED]** ~25 items across the four kinds (source, route, modifier, output),
   1 boss template. Enough to validate the loop; no more.

@@ -1,6 +1,6 @@
 # 00 — Vision & Pillars
 
-Status: Draft v0.8
+Status: Draft v0.9
 
 ## Elevator pitch
 
@@ -98,7 +98,7 @@ does not block systems work.
 | Encounter | A single automated fight (PvE or ghost PvP). |
 | Board | One player's grid of items. Each player has one. |
 | Core | A board's health pool; what enemy items attack. |
-| Pulse | The sweep across a board that fires items in column order (proposed). |
+| Charge | What generators produce and outputs consume; items fire when it reaches them (candidate mechanic). |
 | Team | All of the party's boards together; what fights in a battle. |
 | Lane | A board's place on the battlefield, opposite one enemy board. |
 | Snapshot | A saved, immutable copy of a party's team at the start of an encounter. |

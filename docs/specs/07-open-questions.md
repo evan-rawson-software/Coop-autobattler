@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v0.8
+Status: Draft v0.9
 
 Each question lists options and a recommendation. Answering Q1, Q2, and Q6
 unblocks most backlog work.
@@ -29,20 +29,17 @@ teammate may manage a disconnected player's board (CP-21).
 ## Q2. Core combat mechanic
 
 Decided: item-based combat in the family of *The Bazaar* / *Backpack Battles*,
-but distinct (CB-2, CB-3). Open: which core mechanic makes it distinct.
+but distinct (CB-2, CB-3). The Pulse and Gearworks are rejected (CB-3a).
 
-- **(a) The Pulse** *(recommended; specced in `03-combat.md`)*. A sweep moves
-  across each board and fires items in column order, so placement decides
-  timing; special effects bend the pulse.
-- **(b) Gearworks.** Boards are wheels of items turning past a striker;
-  neighbouring players' wheels mesh.
-- **(c) Conduits.** Charge flows along paths between adjacent items; weapons
-  fire when charge reaches them.
+- **Conduits** is the leading candidate (`03-combat.md`): generators make
+  charge, charge flows along routes between items, outputs fire when it
+  arrives. Awaiting the project owner's reaction to the wireframe.
+- If Conduits is not adopted, more candidates are needed.
 
-Sub-questions for (a): board dimensions; whether the board grows during a
-run; whether a dark board is out for the whole battle or can be revived;
-whether opposing boards interact only through Cores or can also target
-specific enemy items/columns.
+Sub-questions if Conduits goes ahead: how direction works (fixed arrows,
+rotation, or any-neighbour); whether loops are allowed; whether the enemy
+circuit can be disrupted or only the Core attacked; how large items take
+charge; board dimensions and growth; whether a dark board can be revived.
 
 ## Q3. Player identity
 
@@ -84,8 +81,7 @@ Decided: an offline solo web proof of concept first, then a Godot port, then
 multiplayer on Steam with Steam features as the backend (TA-0, TA-1).
 Remaining:
 
-- **Proof-of-concept stack:** TypeScript + a simple bundler, static site
-  *(proposed, TA-45)*.
+- Decided: the proof of concept is written in TypeScript (TA-45).
 - **Alternative to a separate web prototype:** build the prototype in Godot
   and use Godot's web export for browser playtests. No port and no throwaway
   code, but slower iteration while the design is still changing, and harder
