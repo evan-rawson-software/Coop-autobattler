@@ -93,3 +93,5 @@ from a sub-path and on any other static host.
 - To try the production build locally: `pnpm build`, then `pnpm preview`.
 - One-time setup for the repository owner: Settings -> Pages -> Build and
   deployment -> Source: "GitHub Actions".
+
+The Build screen (`#build`, `packages/web/src/build/`) is where the layout is edited. It starts a solo run in memory with a fixed seed (change it in the dev strip), asks for a Core position, then offers the stash, tools, inspector, overlays and problems list. Everything it knows about legality comes from `core` (pure operations called on the current state) and every change is an intent through the run controller; `reasons.ts` is the only place reason codes become text.

@@ -427,6 +427,636 @@ try {
     );
   }
 
+  // =========================================================================
+  // Build screen (#build). The layout below is written for the default dev
+  // seed (7): if the map generator changes, update BUILD_PLAN.
+  // =========================================================================
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto(baseUrl + '#build');
+  await page.reload();
+  await page.waitForFunction(
+    () => window.__debug?.build?.step() === 'core_placement',
+  );
+  await page.waitForSelector('canvas');
+  await settle();
+
+  const B = {
+    step: () => page.evaluate(() => window.__debug.build.step()),
+    status: () => page.evaluate(() => window.__debug.build.status()),
+    team: () => page.evaluate(() => window.__debug.build.team()),
+    hash: () => page.evaluate(() => window.__debug.build.hash()),
+    ui: () => page.evaluate(() => window.__debug.build.ui()),
+    counts: () => page.evaluate(() => window.__debug.build.counts()),
+    problems: () => page.evaluate(() => window.__debug.build.problems()),
+    paths: () => page.evaluate(() => window.__debug.build.enemyPathCount()),
+    dry: () => page.evaluate(() => window.__debug.build.dry()),
+  };
+  const at = (x, y) =>
+    page.evaluate(
+      ([cx, cy]) => window.__debug.build.cellToScreen(cx, cy),
+      [x, y],
+    );
+  const pause = () => page.waitForTimeout(60);
+  const moveTo = async (x, y, steps = 3) => {
+    const p = await at(x, y);
+    await page.mouse.move(p.x, p.y, { steps });
+    await settle();
+  };
+  const clickCell = async (x, y) => {
+    await moveTo(x, y, 2);
+    await page.mouse.down();
+    await page.mouse.up();
+    await pause();
+  };
+  async function dragStash(def, x, y, opts = {}) {
+    const b = await page
+      .locator(`[data-stash-def="${def}"]`)
+      .first()
+      .boundingBox();
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.mouse.down();
+    const p = await at(x, y);
+    await page.mouse.move(p.x, p.y, { steps: 8 });
+    await settle();
+    await pause();
+    if (opts.shot) await shot(opts.shot);
+    if (opts.rotate) {
+      await page.keyboard.press('r');
+      await pause();
+    }
+    if (opts.release !== false) {
+      await page.mouse.up();
+      await pause();
+    }
+  }
+  async function dragBuilding(from, to, opts = {}) {
+    const a = await at(from.x, from.y);
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    const p = await at(to.x, to.y);
+    await page.mouse.move(p.x, p.y, { steps: 8 });
+    await settle();
+    await pause();
+    if (opts.peek) await opts.peek();
+    await page.mouse.up();
+    await pause();
+  }
+  const buildingOf = (team, def) => team.buildings.filter((b) => b.def === def);
+  const BUILD_PLAN = {
+    ex1: { x: 12, y: 9 }, // an Ore node
+    barracks: { x: 12, y: 11 },
+    ex2: { x: 15, y: 9 }, // a Power node
+    turretLeft: { x: 9, y: 11 },
+    turretRight: { x: 16, y: 12 },
+    wall: { x: 5, y: 15 },
+  };
+
+  // --- Core placement
+  check(
+    (await B.step()) === 'core_placement',
+    'build: run starts in core placement',
+  );
+  const legal = await page.evaluate(() => window.__debug.build.legalCore());
+  check(
+    legal.length > 20,
+    `core placement lists legal positions (${legal.length})`,
+  );
+  const t0 = await B.team();
+  const lake = t0.features[0];
+  await moveTo(lake.x, lake.y);
+  await shot('build-0a-core-placement-illegal');
+  const coreGhostBad = (await B.ui()).coreGhost;
+  check(
+    coreGhostBad !== null &&
+      coreGhostBad.ok === false &&
+      coreGhostBad.message.length > 3,
+    `core placement over water shows a reason: "${coreGhostBad?.message}"`,
+  );
+  const corePos = legal.find((c) => c.x === 10 && c.y === 3) ?? legal[0];
+  await moveTo(corePos.x, corePos.y);
+  await shot('build-0-core-placement');
+  await clickCell(corePos.x, corePos.y);
+  await page.waitForFunction(() => window.__debug.build.step() === 'build');
+  await settle();
+  const fresh = await B.team();
+  check(
+    fresh.core !== null &&
+      fresh.core.x === corePos.x &&
+      fresh.core.y === corePos.y,
+    `Core placed at (${corePos.x}, ${corePos.y}) and the run entered build`,
+  );
+  check(
+    fresh.stash.length === 7,
+    `starting kit is in the stash (${fresh.stash.length} buildings)`,
+  );
+  const stashText = await page.locator('#panel-stash').innerText();
+  check(
+    /Extractor/.test(stashText) &&
+      /Barracks/.test(stashText) &&
+      /×\s*3/.test(stashText),
+    'stash panel groups the kit with counts',
+  );
+  check(
+    (await page.locator('.topbar-tabs button').allInnerTexts()).join(',') ===
+      'Shop,Build' &&
+      (await page.locator('.topbar-tabs button').first().isDisabled()),
+    'Shop tab is present and disabled',
+  );
+  const noScroll = await page.evaluate(() => ({
+    sw: document.documentElement.scrollWidth,
+    sh: document.documentElement.scrollHeight,
+  }));
+  check(
+    noScroll.sw <= 1920 && noScroll.sh <= 1080,
+    `build screen fits 1920x1080 without page scroll (${JSON.stringify(noScroll)})`,
+  );
+  const nodeA = fresh.nodes.find(
+    (n) => n.x === BUILD_PLAN.ex1.x && n.y === BUILD_PLAN.ex1.y,
+  );
+  const nodeB = fresh.nodes.find(
+    (n) => n.x === BUILD_PLAN.ex2.x && n.y === BUILD_PLAN.ex2.y,
+  );
+  check(
+    nodeA !== undefined &&
+      nodeB !== undefined &&
+      nodeA.resource !== nodeB.resource,
+    'seed 7 map has the two nodes the smoke plan uses',
+  );
+  await shot('build-1-fresh');
+  const hashes = [await B.hash()];
+  const pushHash = async () => hashes.push(await B.hash());
+
+  // --- Place by drag: legal ghost, illegal with reason, real placement
+  await dragStash('bld_extractor', BUILD_PLAN.ex1.x, BUILD_PLAN.ex1.y, {
+    shot: 'build-2-drag-legal',
+    release: false,
+  });
+  const ghostOk = (await B.ui()).ghost;
+  check(
+    ghostOk !== null && ghostOk.ok === true,
+    'mid-drag ghost over a node is legal',
+  );
+  await page.mouse.up();
+  await pause();
+  let team = await B.team();
+  check(
+    buildingOf(team, 'bld_extractor').length === 1 && team.stash.length === 6,
+    'dragging an extractor onto a node places it (stash 7 -> 6)',
+  );
+  await pushHash();
+
+  // Illegal: an extractor off a node.
+  await dragStash('bld_extractor', 8, 7, {
+    shot: 'build-3-drag-illegal',
+    release: false,
+  });
+  const ghostBad = (await B.ui()).ghost;
+  check(
+    ghostBad !== null &&
+      ghostBad.ok === false &&
+      /Extractors only go on/.test(ghostBad.message),
+    `illegal ghost shows core's reason: "${ghostBad?.message}"`,
+  );
+  await page.mouse.up();
+  await pause();
+  const stBad = await B.status();
+  check(
+    stBad.kind === 'error' && /Extractors only go on/.test(stBad.text),
+    `status line explains the refusal: "${stBad.text}"`,
+  );
+  team = await B.team();
+  check(team.stash.length === 6, 'a refused drop leaves the stash unchanged');
+  // Illegal: on water or a cliff.
+  await dragStash('bld_barracks', lake.x, lake.y);
+  const stLake = await B.status();
+  check(
+    stLake.kind === 'error' && /\(\d+, \d+\)/.test(stLake.text),
+    `terrain refusal names the cell: "${stLake.text}"`,
+  );
+
+  await dragStash('bld_barracks', BUILD_PLAN.barracks.x, BUILD_PLAN.barracks.y);
+  await dragStash('bld_extractor', BUILD_PLAN.ex2.x, BUILD_PLAN.ex2.y);
+  await dragStash(
+    'bld_turret',
+    BUILD_PLAN.turretLeft.x,
+    BUILD_PLAN.turretLeft.y,
+  );
+  team = await B.team();
+  check(
+    team.stash.length === 3 && team.buildings.length === 4,
+    'extractors, barracks and turret are placed',
+  );
+  await pushHash();
+  const bk = buildingOf(team, 'bld_barracks')[0];
+  const ex1 = team.buildings.find(
+    (b) => b.x === BUILD_PLAN.ex1.x && b.y === BUILD_PLAN.ex1.y,
+  );
+  const ex2 = team.buildings.find(
+    (b) => b.x === BUILD_PLAN.ex2.x && b.y === BUILD_PLAN.ex2.y,
+  );
+  const tu = buildingOf(team, 'bld_turret')[0];
+
+  // --- Problems: click one
+  const probs = await B.problems();
+  check(
+    probs.some((p) => p.kind === 'missing_input') &&
+      probs.some((p) => p.kind === 'lost_output'),
+    `problems list reports unconnected buildings (${probs.length} items)`,
+  );
+  await page.click('[data-problem="missing_input"]');
+  await pause();
+  const afterProblem = await B.ui();
+  check(
+    afterProblem.selection?.kind === 'building',
+    'clicking a problem selects the building and focuses the camera',
+  );
+  await page.mouse.move(960, 300);
+  await page.mouse.wheel(0, -500);
+  await settle();
+  const camZoomed = await camera();
+  await page.click('[data-problem="lost_output"]');
+  await settle();
+  const camFocus = await camera();
+  check(
+    camFocus.cx !== camZoomed.cx || camFocus.cy !== camZoomed.cy,
+    `clicking a problem moves the camera (${camZoomed.cx.toFixed(1)},${camZoomed.cy.toFixed(1)} -> ${camFocus.cx.toFixed(1)},${camFocus.cy.toFixed(1)})`,
+  );
+  await page.click('[data-camera="fit"]');
+  await settle();
+
+  // --- Rotate the held building, and a placed one
+  await dragStash('bld_wall', BUILD_PLAN.wall.x, BUILD_PLAN.wall.y, {
+    rotate: true,
+    release: false,
+  });
+  check(
+    (await B.ui()).held.rotation === 90,
+    'R rotates the building being dragged',
+  );
+  await page.mouse.up();
+  await pause();
+  team = await B.team();
+  const wall = buildingOf(team, 'bld_wall')[0];
+  check(
+    wall && wall.rotation === 90,
+    'the wall was dropped with the chosen rotation',
+  );
+  await pushHash();
+  await clickCell(BUILD_PLAN.wall.x, BUILD_PLAN.wall.y);
+  await page.keyboard.press('r');
+  await pause();
+  team = await B.team();
+  check(
+    buildingOf(team, 'bld_wall')[0].rotation === 180,
+    'R rotates the selected building in place',
+  );
+  await pushHash();
+  check(
+    (await B.status()).text === 'Rotated.',
+    'status line confirms the rotation',
+  );
+
+  // --- Enemy paths overlay follows walls
+  await page.click('[data-overlay="paths"]');
+  await settle();
+  const pathsWith = await B.paths();
+  await shot('build-5-enemy-paths');
+  await page.click('[data-tool="select"]');
+  await clickCell(BUILD_PLAN.wall.x, BUILD_PLAN.wall.y);
+  await page.click('#panel-inspector [data-action="to-stash"]');
+  await pause();
+  const pathsWithout = await B.paths();
+  check(
+    pathsWith > 0 && pathsWithout === pathsWith + 1,
+    `enemy-path overlay updates when a front-row wall is removed (${pathsWith} -> ${pathsWithout} entries)`,
+  );
+  await pushHash();
+  await page.click('#panel-tools [data-action="undo"]');
+  await pause();
+  check(
+    (await B.paths()) === pathsWith,
+    'undoing the return puts the wall (and its path change) back',
+  );
+  await page.click('#panel-tools [data-action="redo"]');
+  await pause();
+  await page.click('#panel-tools [data-action="undo"]');
+  await pause();
+  await page.click('[data-overlay="paths"]');
+
+  // --- Conduit: auto-route extractor 1 -> barracks
+  await page.click('[data-tool="conduit"]');
+  await clickCell(ex1.x, ex1.y);
+  check(
+    /Extractor's north side/.test((await B.status()).text),
+    'conduit tool: clicking a building shows its free output side',
+  );
+  await moveTo(bk.x, bk.y);
+  await shot('build-8-conduit-preview');
+  check(
+    (await B.ui()).draftView?.ok === true,
+    'live path preview is validated by core (ok) before clicking',
+  );
+  await clickCell(bk.x, bk.y);
+  team = await B.team();
+  check(
+    team.conduits.length === 1,
+    `auto-route connected the extractor to the barracks (${team.conduits[0]?.cells.length} cells)`,
+  );
+  await pushHash();
+  const c1 = team.conduits[0];
+
+  // --- Illegal crossing: extractor 2 -> turret across conduit 1
+  const out2 = { x: ex2.x, y: ex2.y + 1 };
+  await clickCell(out2.x, out2.y);
+  let cx = out2.x;
+  while (cx > BUILD_PLAN.turretLeft.x) {
+    cx -= 1;
+    await clickCell(cx, out2.y);
+  }
+  check(
+    c1.cells.some(
+      (c) => c.y === out2.y && c.x < out2.x && c.x > BUILD_PLAN.turretLeft.x,
+    ),
+    'the manual path really passes through conduit 1',
+  );
+  await clickCell(tu.x, tu.y);
+  const stCross = await B.status();
+  check(
+    stCross.kind === 'error' &&
+      /cross/i.test(stCross.text) &&
+      /\(\d+, \d+\)/.test(stCross.text),
+    `crossing attempt shows crosses_conduit's message with the cell: "${stCross.text}"`,
+  );
+  await shot('build-8b-conduit-crossing');
+  check(
+    (await B.team()).conduits.length === 1,
+    'the crossing conduit was not added',
+  );
+  await page.keyboard.press('Escape');
+  await pause();
+
+  // --- Moving: the turret to the right side, then a manual path
+  await page.click('[data-tool="select"]');
+  await dragBuilding(BUILD_PLAN.turretLeft, BUILD_PLAN.turretRight);
+  team = await B.team();
+  const tu2 = buildingOf(team, 'bld_turret')[0];
+  check(
+    tu2.x === BUILD_PLAN.turretRight.x && tu2.y === BUILD_PLAN.turretRight.y,
+    'dragging a placed building moves it',
+  );
+  await pushHash();
+  await page.click('[data-tool="conduit"]');
+  await clickCell(out2.x, out2.y);
+  await clickCell(out2.x, out2.y + 1);
+  await clickCell(tu2.x, tu2.y - 1);
+  await clickCell(tu2.x, tu2.y);
+  team = await B.team();
+  check(
+    team.conduits.length === 2,
+    `manual path connected extractor 2 to the turret (${team.conduits[1]?.cells.length} cells)`,
+  );
+  await pushHash();
+
+  // --- Moving a connected building warns, detaches, and undo restores it
+  await page.click('[data-tool="select"]');
+  const hashBeforeMove = await B.hash();
+  let warned = '';
+  await dragBuilding(
+    { x: bk.x, y: bk.y },
+    { x: bk.x + 1, y: bk.y },
+    {
+      peek: async () => {
+        warned =
+          (await B.status()).text + ' ' + ((await B.ui()).ghost?.warn ?? '');
+      },
+    },
+  );
+  team = await B.team();
+  check(
+    /detach/i.test(warned),
+    `moving a connected building warns about detaching: "${warned.trim()}"`,
+  );
+  check(
+    team.conduits.length === 1 &&
+      buildingOf(team, 'bld_barracks')[0].x === bk.x + 1,
+    'the move detached the barracks conduit',
+  );
+  await pushHash();
+  await page.click('#panel-tools [data-action="undo"]');
+  await pause();
+  check(
+    (await B.hash()) === hashBeforeMove &&
+      (await B.team()).conduits.length === 2,
+    'undo of a move restores the position and the detached conduit (hash equal)',
+  );
+  await page.click('#panel-tools [data-action="redo"]');
+  await pause();
+  check((await B.team()).conduits.length === 1, 'redo re-applies the move');
+  await page.click('#panel-tools [data-action="undo"]');
+  await pause();
+
+  // --- Erase: a conduit goes, undo brings it back
+  const hashFull = await B.hash();
+  await page.click('[data-tool="erase"]');
+  await clickCell(
+    (await B.team()).conduits[1].cells[0].x,
+    (await B.team()).conduits[1].cells[0].y,
+  );
+  check(
+    (await B.team()).conduits.length === 1,
+    'erase tool removes the clicked conduit',
+  );
+  await page.click('#panel-tools [data-action="undo"]');
+  await pause();
+  check(
+    (await B.hash()) === hashFull,
+    'undo of an erase restores the exact layout',
+  );
+  await page.click('[data-tool="select"]');
+
+  // --- Undo/redo through everything: hashes match at every step
+  const actionsBefore = (await B.counts()).actions;
+  const chain = [];
+  while ((await B.counts()).undo > 0) {
+    chain.push(await B.hash());
+    await page.click('#panel-tools [data-action="undo"]');
+    await pause();
+  }
+  const emptyHash = await B.hash();
+  const afterUndoAll = await B.team();
+  check(
+    afterUndoAll.buildings.length === 0 &&
+      afterUndoAll.stash.length === 7 &&
+      afterUndoAll.conduits.length === 0,
+    `undo to the start returns every building to the stash (${chain.length} steps)`,
+  );
+  check(emptyHash === hashes[0], 'the first layout hash is restored exactly');
+  const redoChain = [];
+  while ((await B.counts()).redo > 0) {
+    await page.click('#panel-tools [data-action="redo"]');
+    await pause();
+    redoChain.push(await B.hash());
+  }
+  // The stack also held the earlier erase (undone, so redoable) as its last
+  // redo; chain[0] is the complete factory, one redo short of that.
+  check(
+    redoChain.length === chain.length + 1 &&
+      redoChain.every((h, i) => i === 0 || h !== redoChain[i - 1]) &&
+      redoChain[chain.length - 1] === chain[0],
+    `redo replays all ${chain.length} changes through the same layouts as before (hash equal at every step)`,
+  );
+  for (let i = 0; i < chain.length; i++) {
+    // Undo went full -> ... -> empty; redo goes empty -> ... -> full.
+    if (redoChain[chain.length - 1 - i] !== chain[i]) {
+      check(
+        false,
+        `redo step ${chain.length - 1 - i} matches the layout undo left`,
+      );
+    }
+  }
+  // Put the factory back (undo the replayed erase).
+  await page.click('#panel-tools [data-action="undo"]');
+  await pause();
+  check(
+    (await B.counts()).actions > actionsBefore,
+    'undo and redo are dispatched as intents (the action log grew)',
+  );
+  team = await B.team();
+  check(team.conduits.length === 2, 'the factory is complete again after redo');
+
+  // --- Click-to-pick, then click-to-place (touch and keyboard friendly)
+  await page.click('[data-stash-def="bld_wall"]');
+  await pause();
+  check(
+    (await B.ui()).held?.mode === 'sticky',
+    'clicking a stash entry picks it up (click-to-place mode)',
+  );
+  await page.keyboard.press('Escape');
+  await pause();
+  check((await B.ui()).held === null, 'Escape puts a picked-up building down');
+  await page.click('[data-stash-def="bld_wall"]');
+  await pause();
+  await clickCell(7, 15);
+  check(
+    buildingOf(await B.team(), 'bld_wall').length === 2,
+    'click-to-place puts the held building on the clicked cell',
+  );
+  await page.click('#panel-tools [data-action="undo"]');
+  await pause();
+  check(
+    buildingOf(await B.team(), 'bld_wall').length === 1,
+    'undo takes that placement back',
+  );
+
+  // --- Flow overlay and dry run
+  await page.click('[data-overlay="flow"]');
+  await page.click('[data-overlay="dry"]');
+  await page.waitForSelector('#dry-table');
+  await settle();
+  const ov = (await B.ui()).overlays;
+  check(
+    ov.flow && ov.dry,
+    'resource flow and dry run overlays toggle on, independently of enemy paths',
+  );
+  const dry = await B.dry();
+  check(
+    dry && dry.sources.length === 2 && dry.sources.every((s) => s.produced > 0),
+    `dry run: both extractors produce (${dry?.sources.map((s) => s.produced).join(', ')})`,
+  );
+  check(
+    dry.consumers.every((c) => c.delivered > 0),
+    `dry run: both consumers are supplied (${dry.consumers.map((c) => c.delivered).join(', ')})`,
+  );
+  const tableText = await page.locator('#dry-table').innerText();
+  check(
+    tableText.includes(String(dry.sources[0].produced)) &&
+      tableText.includes(String(dry.consumers[0].delivered)),
+    'dry-run table shows the numbers from dryRunFlow',
+  );
+  await page.waitForTimeout(300);
+  await shot('build-4-factory-flow');
+  await page.click('[data-overlay="dry"]');
+  check(
+    (await page.locator('[data-field="no-problems"]').count()) === 0 ||
+      (await B.problems()).length === 0,
+    'problems list is consistent with the factory',
+  );
+
+  // --- Inspector on the barracks
+  await clickCell(bk.x, bk.y);
+  await settle();
+  const insp = await page.locator('#panel-inspector').innerText();
+  check(
+    /Barracks/.test(insp) &&
+      /Needs/.test(insp) &&
+      /Receiving/.test(insp) &&
+      /units \/ min/.test(insp),
+    'inspector shows needs, receiving and the unit estimate for the barracks',
+  );
+  const recv = await page.locator('[data-field="receiving"]').innerText();
+  const recvNum = Number((/([\d.]+) \/ sec/.exec(recv) ?? [])[1]);
+  const row = dry.consumers.find((c) => c.building === bk.id);
+  check(
+    Math.abs(recvNum - (row.ratePer1000 * 10) / 1000) < 0.06,
+    `inspector "receiving" (${recvNum}/s) agrees with dryRunFlow (${row.ratePer1000} per 1000 ticks)`,
+  );
+  await shot('build-6-inspector-barracks');
+  await clickCell(BUILD_PLAN.ex1.x, BUILD_PLAN.ex1.y);
+  const exInsp = await page.locator('#panel-inspector').innerText();
+  check(/Mines/.test(exInsp), 'inspector shows what an extractor mines');
+  const core = (await B.team()).core;
+  await clickCell(core.x, core.y);
+  check(
+    /cannot be moved/.test(await page.locator('#panel-inspector').innerText()),
+    'inspector says the Core cannot be moved',
+  );
+  const conduitCell = (await B.team()).conduits[1].cells[0];
+  await clickCell(conduitCell.x, conduitCell.y);
+  check(
+    /Carries/.test(await page.locator('#panel-inspector').innerText()),
+    'clicking a conduit inspects it (resource, length, erase)',
+  );
+  await page.keyboard.press('Escape');
+
+  // --- 1280x720
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await settle();
+  await page.click('[data-camera="fit"]');
+  await settle();
+  await page.waitForTimeout(150);
+  const s720 = await page.evaluate(() => ({
+    sw: document.documentElement.scrollWidth,
+    sh: document.documentElement.scrollHeight,
+  }));
+  check(
+    s720.sw <= 1280 && s720.sh <= 720,
+    `build screen has no page scroll at 1280x720 (${JSON.stringify(s720)})`,
+  );
+  const cam720 = await camera();
+  check(
+    cam720.zoom >= 16,
+    `board stays usable at 1280x720 (${cam720.zoom.toFixed(1)} px/cell)`,
+  );
+  await shot('build-7-1280x720');
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await settle();
+
+  // --- Ready
+  await page.click('#ready-button');
+  await page.waitForFunction(
+    () => window.__debug.build.step() === 'pve_choice',
+  );
+  check(
+    /pve_choice/.test(await page.locator('#step-placeholder').innerText()),
+    'Ready moves the run on; a placeholder names the new step',
+  );
+  await shot('build-9-next-step');
+  await page.click('#dev-new-run');
+  await page.waitForFunction(
+    () => window.__debug.build.step() === 'core_placement',
+  );
+  check(true, 'the dev button starts a new run');
+
   check(
     consoleErrors.length === 0,
     `no console errors or warnings${consoleErrors.length ? ': ' + consoleErrors.join(' | ') : ''}`,

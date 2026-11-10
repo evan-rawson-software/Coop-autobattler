@@ -20,6 +20,24 @@ export interface DebugHook {
   setDense?: (dense: boolean) => void;
   /** Number of buildings and conduit cells in the own board. */
   counts?: () => { buildings: number; conduits: number; conduitCells: number };
+  build?: BuildDebug;
+}
+
+/** Read-only view of the Build screen for the smoke script. */
+export interface BuildDebug {
+  step: () => string;
+  /** Hash of the layout (see build/undo.ts `layoutHash`). */
+  hash: () => string;
+  team: () => unknown;
+  status: () => { text: string; kind: string };
+  ui: () => unknown;
+  counts: () => { undo: number; redo: number; actions: number };
+  /** Client pixel position of the centre of a board cell. */
+  cellToScreen: (x: number, y: number) => { x: number; y: number } | null;
+  problems: () => readonly { id: string; kind: string; text: string }[];
+  legalCore: () => readonly { x: number; y: number }[];
+  enemyPathCount: () => number;
+  dry: () => unknown;
 }
 
 declare global {

@@ -8,19 +8,45 @@ import type { TeamState } from '@game/core';
 import { useEffect, useMemo, useRef } from 'preact/hooks';
 import type { WebContent } from '../content.js';
 import { registerDebug } from '../debug-hook.js';
-import { screenToWorld } from './camera.js';
+import { screenToWorld, type Camera, type Viewport } from './camera.js';
 import type { CameraController } from './controller.js';
 import {
   gestureReduce,
   initialGesture,
   type GestureEffect,
 } from './gestures.js';
-import { render, type Selection } from './render.js';
-import { buildScene, hitTest, ownCoreCentre, type Hit } from './scene.js';
+import { render, type Selection, type Theme } from './render.js';
+import {
+  buildScene,
+  hitTest,
+  ownCoreCentre,
+  type Hit,
+  type Scene,
+} from './scene.js';
 import { readTheme } from './theme.js';
 import { CameraControls } from './CameraControls.js';
 
 export type { Selection } from './render.js';
+
+/** What an overlay drawer is given, drawn over the board each frame. */
+export interface OverlayContext {
+  readonly scene: Scene;
+  readonly camera: Camera;
+  readonly viewport: Viewport;
+  readonly theme: Theme;
+  /** Milliseconds, for animation. */
+  readonly time: number;
+}
+
+/** A pointer event for screens that edit the board (build, core placement). */
+export interface BoardPointerEvent {
+  readonly type: 'down' | 'move' | 'up';
+  /** The cell under the pointer, or null off the board. */
+  readonly hit: Hit | null;
+  readonly shiftKey: boolean;
+  /** True for an `up` whose press began outside the canvas (a DOM drag). */
+  readonly external: boolean;
+}
 
 export interface BoardViewProps {
   readonly content: WebContent;
@@ -37,6 +63,21 @@ export interface BoardViewProps {
   readonly onSelect?: (selection: Selection | null) => void;
   readonly neutralLabel?: string;
   readonly frontLabel?: string;
+  /** Drawn over the board after the scene, every frame it is redrawn. */
+  readonly drawOverlay?: (
+    ctx: CanvasRenderingContext2D,
+    o: OverlayContext,
+  ) => void;
+  /** Changing this redraws (the overlay's inputs changed). */
+  readonly overlayKey?: unknown;
+  /** Redraw every frame (animated overlays). */
+  readonly animate?: boolean;
+  /**
+   * Pointer events for editing. Returning true from `down` captures the
+   * pointer: the camera does not pan and move/up are delivered here.
+   */
+  readonly onBoardPointer?: (ev: BoardPointerEvent) => boolean;
+  readonly cursor?: string | undefined;
 }
 
 function sameHit(a: Hit | null, b: Hit | null): boolean {
@@ -72,6 +113,7 @@ export function BoardView(props: BoardViewProps) {
     theme: null as ReturnType<typeof readTheme> | null,
     dirty: false,
     frame: 0,
+    captured: null as number | null,
     draws: 0,
     drawMs: 0,
     drawMax: 0,
@@ -106,10 +148,18 @@ export function BoardView(props: BoardViewProps) {
         neutralLabel: s.props.neutralLabel ?? 'Neutral zone',
         frontLabel: s.props.frontLabel ?? 'Front edge',
       });
+      s.props.drawOverlay?.(ctx, {
+        scene: s.scene,
+        camera: controller.camera,
+        viewport: vp,
+        theme: s.theme,
+        time: performance.now(),
+      });
       const dt = performance.now() - t0;
       s.draws += 1;
       s.drawMs += dt;
       s.drawMax = Math.max(s.drawMax, dt);
+      if (s.props.animate) requestDraw.current();
     });
   };
 
@@ -123,10 +173,10 @@ export function BoardView(props: BoardViewProps) {
     requestDraw.current();
   }, [scene, resetKey, controller]);
 
-  // Redraw on selection change.
+  // Redraw on selection change, or when an overlay's inputs change.
   useEffect(() => {
     requestDraw.current();
-  }, [selection, scene]);
+  }, [selection, scene, props.overlayKey, props.animate]);
 
   // Canvas size, device pixel ratio, theme changes.
   useEffect(() => {
@@ -271,22 +321,61 @@ export function BoardView(props: BoardViewProps) {
         ref={canvas}
         class="board-canvas"
         data-testid="board-canvas"
+        style={
+          props.cursor === undefined ? undefined : { cursor: props.cursor }
+        }
         onPointerDown={(e) => {
           if (e.pointerType === 'mouse' && e.button !== 0) return;
           (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
           const p = localPoint(e);
+          const hit = hitAt(p);
+          // Touch has no hover: keep the hovered cell current.
+          if (e.pointerType !== 'mouse') setHover(hit);
+          const taken = live.current.props.onBoardPointer?.({
+            type: 'down',
+            hit,
+            shiftKey: e.shiftKey,
+            external: false,
+          });
+          if (taken === true) {
+            live.current.captured = e.pointerId;
+            return;
+          }
           feed({ type: 'down', id: e.pointerId, x: p.x, y: p.y });
         }}
         onPointerMove={(e) => {
           const p = localPoint(e);
+          const hit = hitAt(p);
+          if (live.current.captured === e.pointerId) {
+            if (e.pointerType !== 'mouse') setHover(hit);
+            live.current.props.onBoardPointer?.({
+              type: 'move',
+              hit,
+              shiftKey: e.shiftKey,
+              external: false,
+            });
+            if (e.pointerType === 'mouse') setHover(hit);
+            return;
+          }
           feed({ type: 'move', id: e.pointerId, x: p.x, y: p.y });
-          if (e.pointerType === 'mouse') setHover(hitAt(p));
+          if (e.pointerType === 'mouse') setHover(hit);
         }}
         onPointerUp={(e) => {
           const p = localPoint(e);
-          feed({ type: 'up', id: e.pointerId, x: p.x, y: p.y });
+          const captured = live.current.captured === e.pointerId;
+          if (captured) live.current.captured = null;
+          live.current.props.onBoardPointer?.({
+            type: 'up',
+            hit: hitAt(p),
+            shiftKey: e.shiftKey,
+            external: !captured && live.current.gesture.origin === null,
+          });
+          if (!captured) feed({ type: 'up', id: e.pointerId, x: p.x, y: p.y });
         }}
         onPointerCancel={(e) => {
+          if (live.current.captured === e.pointerId) {
+            live.current.captured = null;
+          }
           feed({ type: 'cancel', id: e.pointerId });
         }}
         onPointerLeave={(e) => {
