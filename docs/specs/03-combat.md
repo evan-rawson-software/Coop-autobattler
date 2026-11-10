@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v2.7
+Status: Draft v2.8
 
 ## Direction
 
@@ -130,7 +130,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
     Otherwise it marches past.
   - **Guards** are neutral units that hold their position at the point and
     fight any unit of either side that aggros.
-  - **Control**: when a side's units kill the guards (or the other side's
+  - **Control** [DECIDED: capture and move on]: when a side's units kill the guards (or the other side's
     units holding the point), that side takes control and its units resume
     their march. Control lasts until enemy units aggro on the point and
     retake it, so a point can change hands during the battle. The buff

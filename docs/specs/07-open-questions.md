@@ -27,9 +27,9 @@ everything else movable. Open:
   between the boards each battle and hidden until the battle begins (CB-8).
 - Decided: the neutral zone can hold points of interest that buff whoever
   controls them, guarded by neutral units (CB-8). Units go to a point only if they
-  path near enough to aggro (CB-8c). Open: aggro range, whether captured
-  points need units to stay behind to hold them (proposed: no), and what
-  the buffs are.
+  path near enough to aggro (CB-8c). Units capture a point and move on;
+  nobody stays behind to hold it. Open: aggro range and what the buffs
+  are.
 - **Map and plot size**, and board shape at 2–4 players (CB-4).
 - Decided: buildings can be rotated. Conduits are free and unlimited, take
   space, cannot cross without a route building, and cannot be targeted
