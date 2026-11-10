@@ -117,7 +117,7 @@ does not block systems work.
 | Neutral zone | A small strip generated between the two boards for each battle, with its own lakes and cliffs, hidden until the battle begins. |
 | Point of interest | A spot in the neutral zone, guarded by neutral units, that buffs the side controlling it. |
 | Core | The party's health and the enemy's final target. Placed once per run; never moves. |
-| Resource | What sources extract from nodes and other buildings consume. There are about three kinds. |
+| Resource | What sources extract from nodes and other buildings consume. Three base kinds (Ore, Power, Flux for now), each with a refined form made by a refinery and needed by rarer, stronger buildings. |
 | Plot | The area one player adds to the shared board. |
 | Ramp | The factory getting stronger over the course of one battle; what "economy" buildings provide. |
 | Threat | A PvE opponent: scripted waves of units plus a stronghold to attack, not a factory. |

@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v2.5
+Status: Draft v2.6
 
 ## Direction
 
@@ -73,14 +73,31 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 
   **Most buildings take a single resource type. Some rarer buildings
   require inputs of more than one type** [DECIDED] (e.g. a heavy-unit
-  foundry needing Ore and Power). There are no intermediate products to
-  start with: resources go straight from sources to the buildings that
-  consume them. Refining chains are a possible later layer.
+  foundry needing Ore and Power). **Some rarer buildings require refined resources, and are stronger than
+  buildings that run on base resources** [DECIDED] (CB-5d).
 - **CB-5b [DECIDED]** **A conduit carries one resource type**, set by what
   feeds it. Mergers join conduits of the same type only. A multi-input
   building therefore needs a separate conduit for each resource to reach
   it, which — with no crossing (CB-3g) — is where layout skill is tested
   hardest, and part of what makes those rarer buildings a commitment.
+- **CB-5d [DECIDED/PROPOSED detail]** **Refined resources.** Decided:
+  refined resources exist, and the rarer, stronger buildings need them.
+  Proposed detail:
+  - A **refinery** is a building (bought like any other) that takes a base
+    resource in and puts a refined resource out, at a loss (e.g. 3 in, 1
+    out) and after a delay.
+  - Each base resource has one refined form — working names **Alloy** (from
+    Ore), **Surge** (from Power), **Essence** (from Flux) — defined in the
+    same configuration file as the base resources and renameable there
+    (TA-27a).
+  - Refining is **one step deep**: refined resources are not refined
+    further. This keeps factories legible while still creating real chains.
+  - A refined resource is its own conduit type (CB-5b), so a refined
+    building needs source → conduit → refinery → conduit → building, all
+    without crossing anything else. Refined buildings are stronger partly
+    because they are slower to come online in a battle and harder to fit.
+  - A destroyed refinery cuts everything downstream of it (CB-9a), making
+    refineries prime targets for raiders.
 - **CB-5c** Where the rare nodes are, and how far they sit from good
   defensive ground and from the Core, is the main way maps differ in
   character.
@@ -151,6 +168,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 |------|------|----------|
 | **Source** | Built on a resource node; produces that node's resource on a timer | Extractor |
 | **Route** | Splits, joins, or crosses conduits | Splitter (one in, several out); Merger (several in, one out); Crossover (two conduits pass at 90°) |
+| **Refinery** | Turns a base resource into its refined form | Smelter (Ore → Alloy) |
 | **Modifier** | Changes the flow passing through | Booster (more per tick); Buffer (stores, then releases a burst) |
 | **Unit producer** | Consumes resources → spawns units | Barracks (cheap swarm); Foundry (slow, heavy unit); Siege works (anti-building) |
 | **Defense** | Blocks or kills enemy units | Wall; Gate; Turret (needs Power to fire); Repair station |
@@ -283,8 +301,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 ## Risks to test in the prototype
 
 1. **Scope.** This is now a factory builder, a tower defense, and a unit
-   autobattler in one. The proof of concept must cut hard: three resources
-   with no refining chains, a
+   autobattler in one. The proof of concept must cut hard: three resources,
+   one level of refining, a
    handful of buildings and unit types, small maps (TA-41).
 2. **Ramp versus the exponential wall** (SC-8). In-battle economy can be
    exponential; space, caps, and rising PvE pressure must contain it.
@@ -346,6 +364,6 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 
 ## First playable content budget
 
-- **CB-50** Three resources; ~15 buildings across the kinds; 3–4 unit types;
+- **CB-50** Three base resources and at least one refined resource; ~15 buildings across the kinds; 3–4 unit types;
   lakes and cliffs; 3 PvE archetypes; 1 boss. Enough to validate the loop;
   no more.

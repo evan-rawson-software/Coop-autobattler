@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v2.5
+Status: Draft v2.6
 
 ## Direction
 
@@ -272,12 +272,12 @@ is deliberate.
   art references, keyed by a stable building ID.
 
 - **TA-27a [DECIDED]** **Resource names are configuration, not code.** The
-  three resources are defined in a single configuration file that gives each
+  resources — base and refined — are defined in a single configuration file that gives each
   a stable internal ID and a display name (and, later, icon and colour).
   Renaming a resource means editing that one file. Code, content data,
   tests, and save files refer to resources only by ID or through the
   configuration, never by a hard-coded display name. Internal IDs are
-  neutral (e.g. `res_a`, `res_b`, `res_c`) so that a rename never leaves
+  neutral (e.g. `res_a`, `res_b`, `res_c`, and `res_a_refined`) so that a rename never leaves
   misleading identifiers behind. This applies in the web proof of concept
   as well as in Godot, and the file is one of the things that carries over
   (TA-48).
