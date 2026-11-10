@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v1.4
+Status: Draft v1.5
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -30,8 +30,8 @@ everything else movable. Open:
 - Decided: buildings can be rotated. Conduits are free and unlimited, take
   space, cannot cross without a route building, and cannot be targeted
   (CB-3f to CB-3h). Gold is only for buying buildings at shops (CB-3i).
-- **Units and conduits.** Proposed: units walk over conduits freely, so
-  conduits never act as walls (CB-9a). Confirm.
+- Decided: units walk over conduits; destroying a building destroys its
+  attached conduits up to the next building (CB-9a).
 - **Loops.** May a conduit network feed back into itself?
 - **Resources.** Charge only *(recommended to start)*, or several node types
   with recipes?

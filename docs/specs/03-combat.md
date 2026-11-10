@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v1.4
+Status: Draft v1.5
 
 ## Direction
 
@@ -96,12 +96,17 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   - Two conduits **cannot share or cross a cell**. To cross, split, or join
     them the party needs a route building (see table), which must be owned
     like any other building.
-  - Conduits **cannot be targeted or damaged**, and they **do not block
-    movement**: units of both sides walk over them. A conduit therefore
-    never works as a wall. (Proposed consequence of CB-3h.)
-  - A network can still be cut by destroying a **building** on it — a
-    source, splitter, merger, or crossover — which makes those junctions
-    worth protecting.
+  - Conduits **cannot be targeted** by enemies, and **units walk over
+    them** [DECIDED]. A conduit never works as a wall.
+  - **When a building connected to a conduit is destroyed, the conduit is
+    destroyed with it, up to the next building along it** [DECIDED]. Each
+    stretch of conduit therefore lives and dies with the buildings at its
+    ends: enemies cut a network by killing buildings, never by attacking
+    conduit directly. Junctions (splitters, mergers, crossovers) take every
+    stretch attached to them when they fall, which makes them worth
+    protecting.
+  - Like all battle damage, destroyed conduits and buildings are restored
+    for the next battle (CB-11).
 - **CB-9b** A building's **rotation** sets which sides take charge in and
   send it out, and for defenses which way they face.
 - **CB-10** Time advances in fixed **ticks**. Charge moves one cell per
