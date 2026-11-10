@@ -25,7 +25,7 @@ Status: Draft v1.9
   enemy base, attack its infrastructure, and eventually kill its Core.
 - **CB-3f [DECIDED]** The things players place are called **buildings**.
   Buildings can be **rotated**.
-- **CB-3g [DECIDED]** **Conduits** — the connections that carry charge
+- **CB-3g [DECIDED]** **Conduits** — the connections that carry resources
   between buildings — are **free and unlimited**. They **take up space**
   and **cannot cross each other**, except through a building made for it
   (a splitter, a merger, or a building that lets two conduits pass at 90
