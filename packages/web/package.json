@@ -7,12 +7,14 @@
     "dev": "vite",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --passWithNoTests",
-    "build": "vite build"
+    "build": "vite build",
+    "build:debug": "vite build --mode debug --outDir dist-debug --emptyOutDir"
   },
   "dependencies": {
     "@game/content": "workspace:*",
     "@game/core": "workspace:*",
-    "@game/session": "workspace:*"
+    "@game/session": "workspace:*",
+    "preact": "11.2.0"
   },
   "devDependencies": {
     "typescript": "6.0.3",

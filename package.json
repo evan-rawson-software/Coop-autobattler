@@ -16,7 +16,8 @@
     "validate:content": "pnpm --filter @game/tools run validate:content",
     "golden:update": "pnpm --filter @game/golden run update",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "smoke": "pnpm --filter @game/web run build:debug && node packages/web/scripts/smoke.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

@@ -136,7 +136,16 @@ const determinismSyntax = [
 ];
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/coverage/**', 'docs/**', '.claude/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/dist-debug/**',
+      '**/smoke-output/**',
+      '**/coverage/**',
+      'docs/**',
+      '.claude/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {
@@ -169,6 +178,16 @@ export default tseslint.config(
         ...restrictedGlobals(domGlobalNames, 'Browser/DOM'),
         ...restrictedGlobals(nodeGlobalNames, 'Node'),
       ],
+    },
+  },
+  {
+    // The browser smoke script: plain Node ESM that also contains functions
+    // run inside the page.
+    files: ['packages/web/scripts/**/*.mjs'],
+    ...tseslint.configs.disableTypeChecked,
+    languageOptions: {
+      parserOptions: { projectService: false },
+      globals: { ...globals.node, ...globals.browser },
     },
   },
   {
