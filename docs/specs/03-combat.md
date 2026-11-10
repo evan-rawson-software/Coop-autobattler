@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v3.2
+Status: Draft v3.3
 
 ## Direction
 
@@ -331,9 +331,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 3. **Balance of the three strategies**, and of terrain luck: some maps will
    be much easier to defend than others. Generation needs fairness
    constraints, and ghosts carry their terrain with them.
-4. **Build time.** Laying out a factory around terrain is slow and
-   thoughtful. Session targets (RS-12) will need to grow, or per-cycle
-   changes must stay small.
+4. **Run length.** Laying out a factory around terrain is slow and
+   thoughtful, and nothing is timed (RS-12), so runs may be long. Resuming
+   a run later has to work well.
 5. **Readability** of a four-player battlefield (two 96 × 16 boards, many
    units).
 6. **Simulation cost.** Pathfinding and many units are far heavier than

@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v2.5
+Status: Draft v3.3
 
 ## Party basics
 
@@ -69,9 +69,14 @@ Status: Draft v2.5
 
 ## Building together
 
-- **CP-17 [PROPOSED]** Events and shops are simultaneous and real-time
-  for all players, with a shared timer. They end early when all players
-  ready up. Timers must be generous enough for factory building (RS-12).
+- **CP-17 [DECIDED]** **There are no timers.** Events, shops, and building
+  are never timed; players are not rushed and play at their own pace.
+  **Every player must ready up before the party moves on to the next
+  step.**
+- **CP-17a [PROPOSED]** All players act at the same time within a step
+  (everyone shops and builds simultaneously), and any player can un-ready
+  until the last player readies. Event votes work the same way: the event
+  resolves once everyone has voted.
 - **CP-18 [PROPOSED]** **Simultaneous editing.** All players edit the same
   board at once and see each other's changes live, with each player's cursor
   and held building visible. If two players act on the same cell or building, the
@@ -81,7 +86,8 @@ Status: Draft v2.5
   shops (read-only); pings and markers on board cells and shop buildings
   ("put a generator here", "buy this"); a shared view of what the factory
   will do (CB-43).
-- **CP-20 [PROPOSED]** Solo play removes the timer (or makes it generous).
+- **CP-20 [PROPOSED]** Solo follows the same rule with one player: the step
+  ends when they say so.
 
 ## Disconnects and leavers
 
@@ -91,6 +97,10 @@ Status: Draft v2.5
   host disconnects, the run pauses until a remaining player re-hosts (TA-11).
 - **CP-22 [PROPOSED]** While a player is absent, their gold and shop are
   frozen; teammates can still move their buildings (CP-13).
+- **CP-22a [PROPOSED]** A disconnected player is not waited for: only
+  connected players need to ready up, so one dropped connection cannot stall
+  the party. A connected but idle player does hold the party; that is
+  accepted among friends, and the others can see who has not readied.
 - **CP-23 [PROPOSED]** Runs are resumable: if everyone leaves, the run is
   suspended at the start of the current step and can be continued later by
   the same party from the save in Steam Cloud (TA-12). Suspended runs on an

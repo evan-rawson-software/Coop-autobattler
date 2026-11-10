@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v3.0
+Status: Draft v3.3
 
 ## Core loop
 
@@ -128,11 +128,10 @@ the party's income so it falls behind the ghosts it meets. See
   buildings, starting loadouts, and cosmetic records. Power unlocks would
   break ghost fairness, since a snapshot would encode player-level advantages.
 
-## Session length targets
+## Pace
 
-- **RS-12 [PROPOSED]** Placeholder targets, to be set by playtests: event
-  under a minute; shop and build phase a few minutes (longer early in a
-  run while the factory takes shape, shorter once it is established);
-  battle playback 1–3 minutes with fast-forward when all players agree.
-  Factory building makes runs longer than a typical autobattler; an hour or
-  more is plausible, which makes resumable runs (CP-23) important.
+- **RS-12 [DECIDED]** No step is timed. A step ends when every player has
+  readied up (CP-17). There are no session-length targets to hit; a run
+  takes as long as the party wants to spend thinking.
+- **RS-12a [PROPOSED]** Because runs can be long, they must be easy to stop
+  and resume (CP-23). Battle playback keeps its speed controls.

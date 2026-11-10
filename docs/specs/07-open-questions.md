@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v3.2
+Status: Draft v3.3
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -57,7 +57,7 @@ Decided: top/bottom orientation with the party at the bottom (CB-45).
 Wireframes of the battle, event, shop, and build screens have been shared
 with the project owner outside the repo. Open:
 
-- Is Shop + Build one timed step, or does each tab get its own timer?
+- Decided: nothing is timed; every player readies up to move on (CP-17).
 - How much of a teammate's shop is visible: everything, or only what they
   ping?
 - In a four-player battle, does the camera start on the whole battlefield or
@@ -103,12 +103,6 @@ Remaining:
   as the ghost pool, and learn the limits.
 - **Trust:** is the accepted-risk position on forged ghosts and scores
   (TA-21) acceptable for launch?
-
-## Q7. Session length
-
-Factory building and ramping battles may not fit the earlier targets (short
-phases, 30–45 minute runs; RS-12). Decide after the first playtests whether
-to lengthen the targets or constrain the building.
 
 ## Q8. Ghost selection fairness
 
