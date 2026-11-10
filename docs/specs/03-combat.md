@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v4.1
+Status: Draft v4.2
 
 ## Direction
 
@@ -373,8 +373,21 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   profiles, strongholds) is **data-driven**: versioned data files validated
   against schemas.
 - **CB-36** Performance budget, set in the first simulation milestone:
-  maximum units alive per side, maximum battle length in ticks, and a
-  battles-per-second target for the balance harness at four-plot size.
+  maximum units alive per side, maximum battle length in ticks, a
+  battles-per-second target for the balance harness at four-plot size, and
+  the **time to simulate one full battle before playback starts** (target:
+  not noticeable for a solo battle, and about a second at most for a
+  four-player battle on modest hardware).
+- **CB-37** **What players watch is the recorded battle, not a second run of
+  it.** Playback draws the event log and applies no rules, so what is shown
+  cannot diverge from the result. Movement between logged events may be
+  smoothed for display only.
+- **CB-38** If the pre-playback wait or the size of the event log sent to
+  other players proves too large, two fallbacks exist, to be chosen on
+  measurements: start playback while the simulation is still running ahead
+  of it; or send each player the battle's inputs and have every game
+  simulate it, comparing a hash of the result with the host's and falling
+  back to the host's log on any mismatch.
 
 ## Playback and understanding the factory
 
