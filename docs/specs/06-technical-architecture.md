@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v3.4
+Status: Draft v3.5
 
 ## Direction
 
@@ -272,6 +272,23 @@ is deliberate.
   before use: schema check, legal building placement, and a **plausibility
   bound** (total building value and tiers cannot exceed what is achievable by
   that cycle). Invalid snapshots are skipped and another is drawn.
+- **TA-22a [PROPOSED]** **Mitigation — sign and encrypt saves and
+  snapshots.** Save files and ghost snapshots are encrypted and carry a
+  signature bound to the run ID and the owner's Steam ID; a file that fails
+  the check is rejected. The key necessarily ships inside the game, so this
+  is a **deterrent, not a guarantee**: it stops editing with a text or hex
+  editor and copying files between accounts, but not someone willing to
+  reverse-engineer the game.
+- **TA-22b [PROPOSED]** **Mitigation — verification by replay.** Because run
+  rules are deterministic, a snapshot can carry the run's seed and its log
+  of actions. A receiving game (or, later, a server) can then check that
+  the board is one the run could really have produced: the map matches the
+  seed, every building was actually offered in a shop or reward, and the
+  gold spent does not exceed what the run could have earned. Auto-save
+  already records the actions (TA-12), so the cost is carrying the log in
+  the snapshot and writing the checker. Snapshot and save formats must
+  **reserve room for the seed and action log from the start**, even if the
+  checker comes later.
 - **TA-23 [PROPOSED]** **Mitigation — reporting and cleanup:** players can
   flag a ghost; flagged entries can be removed by the developers through
   Steamworks tools.
