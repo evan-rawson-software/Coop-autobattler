@@ -189,6 +189,7 @@ export {
   createFlowContext,
   dryRunFlow,
   flowTotals,
+  rebuildFlow,
   stepFlow,
   takeFromBuffer,
 } from './flow-sim.js';
@@ -205,8 +206,52 @@ export type {
   FlowContext,
   FlowPlan,
   FlowTotals,
+  RetiredTotals,
   RouteSim,
   SimEvent,
   SourceSim,
 } from './flow-sim.js';
 export { makeFlowSimKind } from './flow-sim-kind.js';
+export {
+  createArena,
+  removeFromArena,
+  toArena,
+  toBoard,
+  cellIndex,
+} from './arena.js';
+export type {
+  Arena,
+  ArenaBuilding,
+  ArenaContent,
+  ArenaGeometry,
+} from './arena.js';
+export {
+  computeBreach,
+  computeField,
+  goalBuildings,
+  blocksUnit,
+  TARGETINGS,
+} from './arena-paths.js';
+export type { Field } from './arena-paths.js';
+export {
+  arenaOf,
+  createArenaContext,
+  createArenaSim,
+  runArena,
+  spawnUnitForTest,
+  startBattle,
+  stepArena,
+  unitStats,
+} from './arena-sim.js';
+export type {
+  ArenaContext,
+  ArenaEvent,
+  ArenaOptions,
+  ArenaSim,
+  HealthSim,
+  ProducerSim,
+  UnitSim,
+  UnitTarget,
+} from './arena-sim.js';
+export { renderArenaAscii } from './arena-render.js';
+export { makeArenaSimKind, summarizeArena } from './arena-sim-kind.js';

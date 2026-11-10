@@ -172,7 +172,8 @@ Kinds currently defined: `placeholder-duel` (pipeline check only, not a rule),
 `nextInt(bound)`, then `shuffle` of `0..shuffleLength-1`, then `pick` of the
 same list, and the final state), `prng-child` (the parent state and the first
 `count` outputs of `child(label)`), `map-gen` (see Map generation),
-`team-state-ops` (see Team state and placement), `flow-graph` (see Conduits), `flow-sim` (see Tick order).
+`team-state-ops` (see Team state and placement), `flow-graph` (see Conduits), `flow-sim` (see Tick order), `arena-sim` (see
+"Golden kind `arena-sim`").
 
 In the reference implementation the registry is `goldenKinds` in
 `packages/core/src/golden-kinds.ts`; a new kind is one added entry. Kinds that
@@ -702,15 +703,17 @@ an upstream source is connected last, and a loop are covered by vectors in
 ## Tick order
 
 Implemented in `packages/core/src/flow-sim.ts` (golden kind `flow-sim`:
-`flow-sim-kind.ts`). This is the part of the battle simulation that exists so
-far: the resource flow of **one board on its own** (CB-10, CB-11). Units,
-defenses, economy effects and the second board are added by later issues; the
-sub-heading "Later" at the end of this section is a placeholder for them.
+`flow-sim-kind.ts`). This is the resource flow of **one board on its own**
+(CB-10, CB-11). It is step 1 of the two-board battle tick described under "One
+battle tick" below, which adds units, production, combat and destruction.
+Turret fire and economy effects are added by later issues.
 
 ### Constants (`content/sim.json`)
 
-`ticksPerSecond` (10, fixed battle time per second) and `inputBufferUnits` (4,
-the capacity of each consumer input buffer). Later issues add fields.
+`ticksPerSecond` (10, fixed battle time per second), `inputBufferUnits` (4,
+the capacity of each consumer input buffer), `breachBaseCost` (10) and
+`breachHealthPerCost` (10), the last two used by the breach field (see "Goals
+and movement fields"). Later issues add fields.
 
 ### Items
 
@@ -899,11 +902,287 @@ end). The event log of the run is the vector's event log (`eventLogHash`).
 Vectors: `golden/flow-sim.json` (a long conduit, a splitter, a merger, a
 crossover with two resources, a dead end, and a full-buffer backpressure case).
 
-### Later: units, defenses, economy, two-board battles
+### Mid-battle removal
 
-To be written by the issues that add them (units, defenses, economy effects,
-two-board battles): where their steps fall in the tick order above, and how
-the two boards interleave.
+`rebuildFlow(sim, newState, content, simConfig)` (`flow-sim.ts`) supports the
+destruction of buildings (CB-9a). `newState` is the team state with the
+destroyed building and every conduit attached to it removed. The flow plan is
+recompiled from `newState`; everything that survives keeps its state (sources
+by building ID; conduits by conduit ID; routes by node key; consumers by
+building ID and input side; `tick` is kept). What is removed is accounted so
+that conservation still holds:
+
+- Items in removed conduit slots, a removed route's holding cell, and a removed
+  consumer's input buffers are **lost**.
+- The counters of removed parts move to `retired`: a removed source's
+  `produced` and `lost`; a removed route's `lost`; a removed consumer's
+  `consumed`; plus the lost items above. `BoardSim.retired`
+  (`{produced, lost, consumed}`) exists only after the first removal that
+  moved a non-zero amount (so a state that never lost a building has the same
+  shape and hash as before) and `flowTotals` adds it in.
+
+## The arena
+
+Implemented in `packages/core/src/arena.ts` (geometry) and `arena-sim.ts`
+(state and tick), `arena-paths.ts` (fields). Units live in an **arena**: one
+grid holding both sides. Each side's `BoardSim` keeps running in its own
+board-local coordinates; only units, building health and the grid are in arena
+terms.
+
+Both boards must have the same `width` `W` and `height` `h` (otherwise
+`createArena` throws). With `gapRows` rows between them, the arena is `W` wide
+and `H = 2h + gapRows` tall:
+
+- Side 0's board occupies arena rows `0 .. h - 1` unchanged: arena `(x, y)` =
+  board `(x, y)`.
+- Rows `h .. h + gapRows - 1` are the gap: open ground (the future neutral
+  zone). An optional list of **blocked gap cells** may block some of them
+  (it must lie inside the gap rows).
+- Side 1's board is rotated 180 degrees: board cell `(x, y)` is arena cell
+  `(W - 1 - x, H - 1 - y)`. `toArena(side, cell)` and `toBoard(side, cell)` are
+  the two directions of this map (the rotation is its own inverse; side 0 is
+  the identity). Side 1's front row (`y = h - 1`) is arena row `h + gapRows`.
+
+Per arena cell the arena records:
+
+- **blocked**: the cell holds a terrain feature with `blocksMovement` on either
+  board (mapped through the transform), or is a blocked gap cell;
+- **the building covering it**, if any: a placed building (side and instance
+  ID) or a side's Core. A building is stored with its arena cells.
+
+**Conduits are not in the arena at all.** They never block movement and can
+never be targeted (CB-3h, CB-9a). A destroyed building (or Core) stops
+covering its cells at once and they are open ground again.
+
+**Health** (CB-11) is battle state: every placed building starts at its tier's
+`health`; each Core at the Core definition's tier-1 `health`. Health is an
+integer; it never goes below 0. A building at 0 is destroyed (step 6 below).
+
+### Units
+
+A unit is `{id, side, def, x, y, hp, moveCooldown, attackCooldown}` in arena
+coordinates. `id` is a positive integer taken from one counter shared by both
+sides, in spawn order (the counter starts at 1, is never reused); the unit list
+is kept sorted by `id`. `hp` starts at the unit definition's `health`.
+`moveCooldown` and `attackCooldown` count down in ticks. **Any number of units
+may share a cell**: there is no unit-unit collision (a decided simplification).
+
+All reads of a unit's stats (health, damage, range, cooldowns) go through one
+function, `unitStats(side, def)`, which returns the definition unchanged; W1-7
+changes it to apply per-side modifiers.
+
+### State (plain JSON)
+
+`createArenaSim(teamA, teamB, gapRows, content, simConfig, options?)` gives the
+state at tick 0:
+
+- `tick`, `nextUnitId`, `gapRows`, `gapBlocked` (blocked gap cells sorted by
+  `(y, x)`);
+- `teams`: each side's team state **with destroyed buildings and their
+  conduits removed**; `boards`: each side's `BoardSim`;
+- `health`: one entry `{side, building, hp}` per Core and placed building, in
+  order of side, then building ID with the Core (`building = 0`) first; a
+  destroyed building stays in the list with `hp = 0`;
+- `producers`: `{side, building, progress}` for each living unit producer, by
+  side then building ID;
+- `units`; and counters `spawned` and `unitsDied`, each a pair indexed by side.
+
+Everything else (the grid, the compiled wiring, cached fields) is derived from
+this state by `createArenaContext(sim, content, simConfig, {events?})`, so a
+state can be saved, restored and continued; a restored battle continues
+exactly like the original.
+
+## One battle tick
+
+`stepArena(sim, ctx)` changes the state in place, in exactly this order. Let
+`T` be `sim.tick` at the start; every event of the step has `tick = T`.
+
+1. **Flow.** `stepFlow` for side 0's board, then side 1's. The two boards do
+   not interact. Their events are appended side 0 first, each tagged `side`
+   (see Events).
+2. **Production.** For each living unit producer, side 0 first and each side in
+   instance-ID order:
+   1. Move every item in its input buffers into its `progress` counter
+      (`takeFromBuffer` on each input with a non-zero count; all resources
+      count alike).
+   2. At most once per tick: if `progress >= costPerUnit` (the building's tier)
+      and a spawn cell exists, subtract `costPerUnit` and spawn one unit of the
+      producer's `unit` type. The **spawn cell** is chosen among the cells
+      4-adjacent to the producer's footprint that are open (not blocked and not
+      covered by any building) by the smallest key (class, distance, tie key):
+      class 0 if the cell has a finite distance in the unit's movement field
+      (below) and then that distance; else class 1 with its distance in the
+      breach field; else class 2. Ties by the **tie key** (below). If there is
+      no such cell, the spawn waits and `progress` is kept (and keeps growing).
+   3. A new unit has `moveCooldown = moveCooldownTicks` and
+      `attackCooldown = 0` and gets the next ID. It is placed immediately and
+      takes part in this tick's decisions. (`inputBufferUnits` is smaller than
+      some `costPerUnit` values, so the progress counter is what makes those
+      producers work; with the drain in 2.1 the buffer is empty after every
+      production step.)
+3. **Decide.** Using the state as it is now (a snapshot: no decision sees
+   another unit's decision), for each unit in `id` order choose one action. Let
+   `reach = max(1, rangeCells)`; all distances below are Manhattan distances:
+   - **a. Attack a unit.** If any enemy unit is within `reach`, target the
+     nearest; ties by lowest unit `id`.
+   - **b. Attack a building.** Otherwise, if a **goal building** of the unit is
+     within `reach` of any of its cells, target it: the nearest such building
+     (distance to its nearest cell); ties by Core first, then lowest instance
+     ID. See Goals below for what counts as a goal building.
+   - **c. Move.** Otherwise, if `moveCooldown` is 0 and the unit is not
+     already next to its goal, move one step along its field (below).
+   - **d. Wait.**
+
+   A unit that chose (a) or (b) but whose `attackCooldown` is above 0 holds
+   position: it does not move this tick and does not attack. A unit that
+   would move but has `moveCooldown > 0` waits.
+4. **Resolve attacks simultaneously.** Every unit that chose (a) or (b) and has
+   `attackCooldown = 0` deals its `damage` to its target. Damage from all
+   attackers is summed per target and applied together (so two units can kill
+   each other in the same tick; a target that is killed this tick still
+   receives every blow aimed at it). Each attacker's `attackCooldown` becomes
+   `attackCooldownTicks`. A building's health stops at 0. Events
+   (`unit_attacked`) are recorded in unit-`id` order.
+5. **Resolve moves.** Every unit that chose (c) moves to its chosen cell, in
+   unit-`id` order (`unit_moved`), and its `moveCooldown` becomes
+   `moveCooldownTicks`. Units that were killed in step 4 still complete their
+   move (decisions were simultaneous).
+6. **Deaths and destruction.**
+   - Units with `hp <= 0` are removed in `id` order (`unit_died`).
+   - Then, side 0 then side 1, in the order of the `health` list (Core first,
+     then instance ID ascending), every still-present building with health 0 is
+     destroyed: `building_destroyed` (or `core_destroyed` for a Core); it is
+     removed from the arena; for a building (not a Core), every conduit
+     attached to it, "up to the next building" (CB-9a), is removed, each
+     recorded as `conduit_destroyed` in conduit-ID order; it is dropped from its
+     side's team state, producer list and flow plan (see Mid-battle removal),
+     so items in its conduits or held by it are lost and buildings downstream
+     simply stop receiving. A destroyed Core is only recorded: the Core's
+     cells become open and the battle goes on (ending it belongs to a later
+     issue).
+   - After any destruction every cached movement field is dropped.
+7. **Cooldowns.** Each surviving unit's non-zero `moveCooldown` and
+   `attackCooldown` decreases by 1. Then `tick` increases by 1. (Because the
+   decrease also applies to the tick of the action, a unit with
+   `moveCooldownTicks = 6` that moved in tick `t` moves again in tick
+   `t + 6`; a new unit spawned in tick `t` first moves in tick `t + 6`.)
+
+### Goals and movement fields
+
+A unit's **targeting** comes from its definition: `core`, `infrastructure`
+(enemy sources and route buildings) or `defenses` (enemy buildings of kind
+`defense`: walls, gates, turrets).
+
+- The **goal set** of (side, targeting) is: for `core`, the enemy Core; for
+  `infrastructure` and `defenses`, the enemy's living buildings of those kinds,
+  or, if none remain, the enemy Core. A destroyed Core is not a goal; with no
+  goals the unit waits.
+- Which buildings block which side's units is one predicate (`blocksUnit`).
+  Currently every building blocks both sides; W1-6 will change it for gates.
+  A cell is **open for a side** if it is not blocked and not covered by a
+  building that blocks that side.
+- The **movement field** of (side, targeting) is a breadth-first distance map
+  over open cells: distance 0 for every open cell 4-adjacent to a cell of a goal
+  building, then +1 per 4-directional step. Unreached cells have no distance.
+  A unit with a finite distance `d > 0` moves to the 4-neighbour with distance
+  `d - 1` (the smallest), ties by the tie key. With `d = 0` it is next to a goal
+  building and does not move.
+- The unit's **goal building** (rule b) is a goal-set building within `reach`
+  (for melee, the adjacent one). A ranged unit therefore stops and fires as soon
+  as a goal building is within its range, even before reaching distance 0
+  (walls and terrain do not block shots; line of sight is not modelled).
+- **Tie key.** Wherever two cells tie (equal distance, equal cost), the
+  preferred one has the lowest `y`, then the lowest `x`, **in the board frame of
+  the unit's own side**: for side 0 this is the arena `y`, `x`; for side 1 it is
+  the same comparison on the rotated cell `(W - 1 - x, H - 1 - y)`. This is what
+  keeps a mirrored battle exactly symmetric.
+- **No sealed bases (CB-20).** If the unit's cell has no distance in its
+  movement field (every route to the goals is blocked), it uses the **breach
+  field** of its side. This is a least-cost map (Dijkstra, integer costs)
+  towards the enemy Core. Passable cells are open cells and cells covered by an
+  enemy building other than the Core; terrain, the unit's own side's blocking
+  buildings and the Core's own cells are impassable. Entering an open cell
+  costs 1; entering a cell covered by an enemy building costs
+  `breachBaseCost + ceil(health / breachHealthPerCost)` using that building's
+  health when the field is computed (`content/sim.json`: 10 and 10). The
+  distance of a cell is the cheapest total cost of the cells entered on the way
+  from it to a passable cell 4-adjacent to the Core (distance 0). A unit in
+  breach mode takes the neighbour that minimises (cost of entering it +
+  its distance), ties by tie key. If that cell is open, it walks there (if
+  `moveCooldown` is 0); if it is covered by an enemy building, that building is
+  its goal building and it attacks it (rule b, even if the building is not in
+  its goal set); at distance 0 its goal building is the Core. With no breach
+  distance either, the unit waits. When a breach opens a real path the normal
+  field takes over (fields are dropped after every destruction).
+- Fields are computed lazily, cached per (side, targeting) and per side for the
+  breach field, and dropped whenever a building is destroyed. They never
+  depend on unit positions. (The breach field is not refreshed when health
+  merely falls.)
+
+### Events (arena log)
+
+Arena events, in order of the steps above, use arena coordinates:
+
+| `type`               | Fields (besides `tick`)                                         |
+| -------------------- | --------------------------------------------------------------- |
+| `unit_spawned`       | `unit`, `side`, `def`, `x`, `y`, `building` (the producer's ID) |
+| `unit_moved`         | `unit`, `x`, `y` (the new cell)                                 |
+| `unit_attacked`      | `unit`, `target`, `damage`                                      |
+| `unit_died`          | `unit`                                                          |
+| `building_destroyed` | `side`, `building`                                              |
+| `conduit_destroyed`  | `side`, `conduit`                                               |
+| `core_destroyed`     | `side`                                                          |
+
+`target` is `{kind: "unit", unit}`, `{kind: "building", side, building}` or
+`{kind: "core", side}`. The four flow events (`produced`, `delivered`, `lost`,
+`stalled`) of each board keep their fields and gain `side`, the board's side
+(0 or 1). The `delivered` event already has a `side` (the input side of the
+building), so in the arena log that field is called `input` and `side` is the
+board's. Schema: `schemas/sim-event.schema.json`.
+
+### Golden kind `arena-sim`
+
+Input: `{ teamA, teamB, gapRows, ticks }` where each team is a `team-state-ops`
+script (`seed`, `partySize`, `ops`) and the two boards must have the same size;
+optionally `units`, a list of `{side, def, x, y}` (arena coordinates, open
+cells) placed at tick 0 in list order. A battle starts and runs for `ticks`
+ticks. Result: `{ tick, stateHash, events, sides }` with `stateHash` the hash of
+the final `ArenaSim`, `events` the number of events, and `sides` a list of two
+summaries `{spawned, alive, unitsDied, buildingsDestroyed, coreHealth}`
+(`buildingsDestroyed` does not count the Core; `coreHealth` is 0 when it was
+destroyed). The event log is the vector's event log (`eventLogHash`). Vectors:
+`golden/arena-sim.json` (a mirror match, a rush against an almost empty base, a
+sealed base that is breached at its weakest wall, and raiders cutting a
+splitter).
+
+### ASCII rendering
+
+`renderArenaAscii(sim, content)` prints arena rows from `y = H - 1` (side 1, on
+top) down to `y = 0`. Units are `0` or `1` for their side, `*` when both sides
+share a cell; buildings are `S R U D E C` (source, route, unit producer,
+defense, economy, Core) in upper case for side 0 and lower case for side 1;
+terrain is `~` lake, `#` cliff, `?` other, `%` a blocked gap cell; `.` is open.
+The last line is a legend.
+
+### Seams for later issues
+
+Walls, gates and turrets are ordinary buildings here: they block movement and
+have health, nothing more. `blocksUnit` is the single predicate that W1-6
+changes. `unitStats` is the single place W1-7 modifies unit stats. `stepArena`
+does not assume the gap is open ground (blocked gap cells already work), and
+does not end the battle: W1-8 adds the neutral zone, battle end and the top
+level entry point.
+
+### Decided simplifications
+
+- Units do not collide: any number share a cell (no queues, no blocking by
+  other units).
+- A producer whose neighbours are all covered keeps accumulating `progress`
+  until a cell opens (there is no backpressure from a blocked spawn).
+- Units can be trapped by buildings of their own side (own buildings are
+  impassable even for the breach field); a trapped unit waits.
+- Ranged attacks ignore walls and terrain (no line of sight).
+- A destroyed Core's cells become open ground and nothing else changes.
 
 ## Resolution order
 
@@ -919,7 +1198,29 @@ of it is fixed by the tick order above and uses no random numbers:
   (conduits, then routes, then sources), and within a step the earlier one in
   the orders above.
 
-### Later: combat
+### Units, combat and destruction
 
-To be written by the issue that implements combat resolution (damage,
-targeting and tie-breaking).
+All of it is fixed by "One battle tick" and uses no random numbers. Every tie is
+broken as follows:
+
+- **Same step, many things:** units act in ascending unit `id` (decisions,
+  attacks, moves, deaths); producers in side then building-ID order; buildings
+  are destroyed in side then `health`-list order (Core first, then instance
+  ID); conduits of a destroyed building are reported in conduit-ID order.
+- **Which enemy unit to hit:** the nearest by Manhattan distance, then the
+  lowest unit `id`.
+- **Which building to hit:** the nearest by Manhattan distance to its nearest
+  cell, then the Core before other buildings, then the lowest instance ID.
+- **Which way to step** (equal distance, equal cost) and **where to spawn**
+  (equal distance): the lowest `y`, then the lowest `x`, in the board frame of
+  the unit's own side (the tie key). Equal-length shortest paths are therefore
+  resolved cell by cell by this rule, never by search order.
+- **Simultaneous attacks:** all damage is computed from the same snapshot and
+  applied together; nobody's death during the tick changes another unit's
+  action in that tick.
+- **Spawn order and IDs:** side 0's producers spawn before side 1's within a
+  tick, so at equal times side 0's units have the lower IDs. Because the
+  relative order of IDs inside a side is the same on both sides, a mirrored
+  battle (same team, 180-degree rotated) stays exactly symmetric.
+- **Breach routes:** least total cost; equal-cost neighbours by tie key. The
+  cost of a building depends on its health when the breach field was computed.

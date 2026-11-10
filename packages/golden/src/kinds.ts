@@ -8,6 +8,7 @@ import {
   loadAllContentOrThrow,
   loadMapgenOrThrow,
   loadSimConfigOrThrow,
+  makeArenaSimKind,
   makeFlowSimKind,
   makeFlowGraphKind,
   makeMapGenKind,
@@ -41,4 +42,5 @@ export const goldenKinds: Readonly<Record<string, SimulationFn>> = {
   'team-state-ops': makeTeamStateOpsKind(content, mapgen),
   'flow-graph': makeFlowGraphKind(content, mapgen),
   'flow-sim': makeFlowSimKind(content, mapgen, simConfig),
+  'arena-sim': makeArenaSimKind(content, mapgen, simConfig),
 };

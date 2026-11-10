@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "sim-event.schema.json",
   "title": "Simulation event",
-  "description": "One entry of a battle event log. Plain JSON: integers and strings only. Later issues add event types by adding branches to oneOf. Movement along conduits is deliberately not logged.",
+  "description": "One entry of a battle event log. Plain JSON: integers and strings only. Later issues add event types by adding branches to oneOf. Movement along conduits is deliberately not logged. The flow events (produced, delivered, lost, stalled) appear in two forms: in a single-board flow log without `side`, and in an arena log (two boards) with `side`, the board's side (0 or 1); there, delivered names the input side `input` because `side` is the board. Unit and building events use arena coordinates.",
   "oneOf": [
     {
       "title": "produced",
@@ -11,10 +11,24 @@
       "required": ["tick", "type", "building", "resource"],
       "additionalProperties": false,
       "properties": {
-        "tick": { "type": "integer", "minimum": 0 },
-        "type": { "const": "produced" },
-        "building": { "type": "integer", "minimum": 1 },
-        "resource": { "type": "string" }
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "produced"
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "resource": {
+          "type": "string"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        }
       }
     },
     {
@@ -24,11 +38,23 @@
       "required": ["tick", "type", "building", "side", "resource"],
       "additionalProperties": false,
       "properties": {
-        "tick": { "type": "integer", "minimum": 0 },
-        "type": { "const": "delivered" },
-        "building": { "type": "integer", "minimum": 1 },
-        "side": { "enum": ["north", "east", "south", "west"] },
-        "resource": { "type": "string" }
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "delivered"
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "side": {
+          "enum": ["north", "east", "south", "west"]
+        },
+        "resource": {
+          "type": "string"
+        }
       }
     },
     {
@@ -38,10 +64,24 @@
       "required": ["tick", "type", "building", "resource"],
       "additionalProperties": false,
       "properties": {
-        "tick": { "type": "integer", "minimum": 0 },
-        "type": { "const": "lost" },
-        "building": { "type": "integer", "minimum": 1 },
-        "resource": { "type": "string" }
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "lost"
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "resource": {
+          "type": "string"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        }
       }
     },
     {
@@ -51,9 +91,280 @@
       "required": ["tick", "type", "building"],
       "additionalProperties": false,
       "properties": {
-        "tick": { "type": "integer", "minimum": 0 },
-        "type": { "const": "stalled" },
-        "building": { "type": "integer", "minimum": 1 }
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "stalled"
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        }
+      }
+    },
+    {
+      "title": "delivered (arena log)",
+      "description": "A consumer input buffer accepted one item, on the board of `side`; `input` is the input side of the building.",
+      "type": "object",
+      "required": ["tick", "type", "side", "building", "input", "resource"],
+      "additionalProperties": false,
+      "properties": {
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "delivered"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "input": {
+          "enum": ["north", "east", "south", "west"]
+        },
+        "resource": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "title": "unit_spawned",
+      "description": "A unit producer made a unit (arena coordinates).",
+      "type": "object",
+      "required": ["tick", "type", "unit", "side", "def", "x", "y", "building"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "unit_spawned"
+        },
+        "unit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "def": {
+          "type": "string"
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    {
+      "title": "unit_moved",
+      "description": "A unit moved to an adjacent cell (arena coordinates).",
+      "type": "object",
+      "required": ["tick", "type", "unit", "x", "y"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "unit_moved"
+        },
+        "unit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    {
+      "title": "unit_attacked",
+      "description": "A unit attacked a unit, a building, or a Core, dealing `damage` (applied simultaneously with all other attacks of the tick).",
+      "type": "object",
+      "required": ["tick", "type", "unit", "target", "damage"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "unit_attacked"
+        },
+        "unit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "damage": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["kind", "unit"],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "unit"
+                },
+                "unit": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": ["kind", "side", "building"],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "building"
+                },
+                "side": {
+                  "type": "integer",
+                  "enum": [0, 1]
+                },
+                "building": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": ["kind", "side"],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "core"
+                },
+                "side": {
+                  "type": "integer",
+                  "enum": [0, 1]
+                }
+              }
+            }
+          ]
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    {
+      "title": "unit_died",
+      "description": "A unit's health reached 0 or less and it was removed.",
+      "type": "object",
+      "required": ["tick", "type", "unit"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "unit_died"
+        },
+        "unit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    {
+      "title": "building_destroyed",
+      "description": "A building's health reached 0; it and its attached conduits are removed.",
+      "type": "object",
+      "required": ["tick", "type", "side", "building"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "building_destroyed"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    {
+      "title": "conduit_destroyed",
+      "description": "A conduit was removed because a building attached to it was destroyed.",
+      "type": "object",
+      "required": ["tick", "type", "side", "conduit"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "conduit_destroyed"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "conduit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    {
+      "title": "core_destroyed",
+      "description": "A side's Core was destroyed (ending the battle is not the simulation's job yet).",
+      "type": "object",
+      "required": ["tick", "type", "side"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "core_destroyed"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     }
   ]

@@ -95,6 +95,17 @@ export interface ConsumerSim {
   readonly inputs: ConsumerInputSim[];
 }
 
+/**
+ * Counters of things removed mid-battle (a destroyed building): what they had
+ * produced, lost and consumed, plus the items they or their conduits held,
+ * which count as lost. Keeps the conservation law true after a removal.
+ */
+export interface RetiredTotals {
+  produced: number;
+  lost: number;
+  consumed: number;
+}
+
 export interface BoardSim {
   /** Ticks completed so far. */
   tick: number;
@@ -108,6 +119,8 @@ export interface BoardSim {
   readonly routes: RouteSim[];
   /** By building ID. */
   readonly consumers: ConsumerSim[];
+  /** Present only after a mid-battle removal (see `rebuildFlow`). */
+  retired?: RetiredTotals;
 }
 
 // ---------------------------------------------------------------------------
@@ -382,9 +395,95 @@ export function createFlowContext(
     : { ...base, events: options.events };
 }
 
+/**
+ * Rebuild the flow simulation after buildings and their conduits were removed
+ * from the team state (a mid-battle destruction, CB-9a). `newState` is the
+ * team state with those buildings and every conduit attached to them gone.
+ * Everything that survives keeps its state (matched by building ID, conduit
+ * ID, route key and input side). Items in removed conduits, held by removed
+ * routes or in removed consumers' buffers are lost; the counters of removed
+ * parts move to `retired`, so conservation still holds. Returns the new
+ * state and the new wiring; the old state is not changed.
+ */
+export function rebuildFlow(
+  old: BoardSim,
+  newState: TeamState,
+  content: TeamContent,
+  simConfig: SimConfig,
+): { sim: BoardSim; plan: FlowPlan } {
+  const fresh = compile(newState, content, simConfig);
+  const sim = fresh.sim;
+  const retired: RetiredTotals = {
+    produced: old.retired?.produced ?? 0,
+    lost: old.retired?.lost ?? 0,
+    consumed: old.retired?.consumed ?? 0,
+  };
+  sim.tick = old.tick;
+
+  const sourceAt = new Map(sim.sources.map((s) => [s.building, s]));
+  for (const o of old.sources) {
+    const s = sourceAt.get(o.building);
+    if (s === undefined) {
+      retired.produced += o.produced;
+      retired.lost += o.lost;
+    } else {
+      s.countdown = o.countdown;
+      s.stalled = o.stalled;
+      s.pointer = o.pointer;
+      s.produced = o.produced;
+      s.lost = o.lost;
+      s.stalledTicks = o.stalledTicks;
+    }
+  }
+  const conduitAt = new Map(sim.conduits.map((c) => [c.id, c]));
+  for (const o of old.conduits) {
+    const c = conduitAt.get(o.id);
+    if (c === undefined) {
+      for (const slot of o.slots) if (slot !== null) retired.lost += 1;
+    } else {
+      o.slots.forEach((slot, i) => {
+        c.slots[i] = slot;
+      });
+    }
+  }
+  const routeAt = new Map(sim.routes.map((r) => [r.key, r]));
+  for (const o of old.routes) {
+    const r = routeAt.get(o.key);
+    if (r === undefined) {
+      retired.lost += o.lost + (o.held === null ? 0 : 1);
+    } else {
+      r.held = o.held;
+      r.pointer = o.pointer;
+      r.lost = o.lost;
+    }
+  }
+  const consumerAt = new Map(sim.consumers.map((c) => [c.building, c]));
+  for (const o of old.consumers) {
+    const c = consumerAt.get(o.building);
+    if (c === undefined) {
+      for (const i of o.inputs) {
+        retired.consumed += i.consumed;
+        retired.lost += i.count;
+      }
+    } else {
+      for (const i of o.inputs) {
+        const n = c.inputs.find((x) => x.side === i.side);
+        if (n === undefined) continue;
+        n.count = i.count;
+        n.delivered = i.delivered;
+        n.consumed = i.consumed;
+      }
+    }
+  }
+  if (retired.produced > 0 || retired.lost > 0 || retired.consumed > 0) {
+    sim.retired = retired;
+  }
+  return { sim, plan: fresh.plan };
+}
+
 /** A deep copy of a state (plain JSON round trip without the text). */
 export function cloneBoardSim(sim: BoardSim): BoardSim {
-  return {
+  const copy: BoardSim = {
     tick: sim.tick,
     bufferCapacity: sim.bufferCapacity,
     sources: sim.sources.map((s) => ({ ...s })),
@@ -395,6 +494,8 @@ export function cloneBoardSim(sim: BoardSim): BoardSim {
       inputs: c.inputs.map((i) => ({ ...i })),
     })),
   };
+  if (sim.retired !== undefined) copy.retired = { ...sim.retired };
+  return copy;
 }
 
 // ---------------------------------------------------------------------------
@@ -662,8 +763,8 @@ export interface FlowTotals {
  * consumed + lost` at the end of every tick.
  */
 export function flowTotals(sim: BoardSim): FlowTotals {
-  let produced = 0;
-  let lost = 0;
+  let produced = sim.retired?.produced ?? 0;
+  let lost = sim.retired?.lost ?? 0;
   for (const s of sim.sources) {
     produced += s.produced;
     lost += s.lost;
@@ -678,7 +779,7 @@ export function flowTotals(sim: BoardSim): FlowTotals {
     if (r.held !== null) held += 1;
   }
   let inBuffers = 0;
-  let consumed = 0;
+  let consumed = sim.retired?.consumed ?? 0;
   for (const c of sim.consumers) {
     for (const i of c.inputs) {
       inBuffers += i.count;

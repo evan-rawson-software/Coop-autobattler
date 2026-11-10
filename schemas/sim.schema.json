@@ -2,9 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "sim.schema.json",
   "title": "Simulation configuration",
-  "description": "Battle clock and resource-flow constants (W1-4). Later issues add fields.",
+  "description": "Battle clock, resource-flow and unit-movement constants (W1-4, W1-5). Later issues add fields.",
   "type": "object",
-  "required": ["ticksPerSecond", "inputBufferUnits"],
+  "required": [
+    "ticksPerSecond",
+    "inputBufferUnits",
+    "breachBaseCost",
+    "breachHealthPerCost"
+  ],
   "additionalProperties": false,
   "properties": {
     "$schema": { "type": "string" },
@@ -15,6 +20,16 @@
     },
     "inputBufferUnits": {
       "description": "Capacity, in units, of each consumer input buffer.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "breachBaseCost": {
+      "description": "Path cost of stepping through a cell covered by an enemy building when a base is sealed (CB-20), before the health term. An open cell costs 1.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "breachHealthPerCost": {
+      "description": "Health that adds 1 to the cost of stepping through a building (rounded up): cost = breachBaseCost + ceil(health / breachHealthPerCost).",
       "type": "integer",
       "minimum": 1
     }

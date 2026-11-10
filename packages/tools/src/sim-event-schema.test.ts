@@ -7,6 +7,7 @@ import {
   loadAllContentOrThrow,
   loadMapgenOrThrow,
   loadSimConfigOrThrow,
+  makeArenaSimKind,
   makeFlowSimKind,
 } from '@game/core';
 import {
@@ -66,6 +67,43 @@ describe('sim-event.schema.json', () => {
     ]);
   });
 
+  test('every event of every arena-sim vector validates', () => {
+    const seen = new Set<string>();
+    const content = loadAllContentOrThrow({
+      resources: rawResources,
+      terrain: rawTerrain,
+      units: rawUnits,
+      buildings: rawBuildings,
+      presentation: rawPresentationEn,
+    });
+    const kind = makeArenaSimKind(
+      content,
+      loadMapgenOrThrow(rawMapgen, { terrain: content.terrain }),
+      loadSimConfigOrThrow(rawSim),
+    );
+    const arenaVectors = JSON.parse(
+      readFileSync(path.join(repoRoot, 'golden', 'arena-sim.json'), 'utf8'),
+    ) as { id: string; input: never }[];
+    for (const v of arenaVectors) {
+      for (const e of kind(v.input).eventLog ?? []) {
+        expect(validate(e), JSON.stringify(e)).toBe(true);
+        seen.add((e as { type: string }).type);
+      }
+    }
+    expect([...seen].sort()).toEqual([
+      'building_destroyed',
+      'conduit_destroyed',
+      'core_destroyed',
+      'delivered',
+      'lost',
+      'produced',
+      'unit_attacked',
+      'unit_died',
+      'unit_moved',
+      'unit_spawned',
+    ]);
+  });
+
   test('malformed events are rejected', () => {
     expect(validate({ tick: 1, type: 'produced', building: 2 })).toBe(false);
     expect(validate({ tick: -1, type: 'stalled', building: 2 })).toBe(false);
@@ -79,6 +117,19 @@ describe('sim-event.schema.json', () => {
       }),
     ).toBe(false);
     expect(validate({ tick: 1, type: 'moved', building: 2 })).toBe(false);
+    expect(validate({ tick: 1, type: 'unit_moved', unit: 1, x: 2 })).toBe(
+      false,
+    );
+    expect(
+      validate({
+        tick: 1,
+        type: 'unit_attacked',
+        unit: 1,
+        damage: 3,
+        target: { kind: 'conduit', conduit: 4 },
+      }),
+    ).toBe(false);
+    expect(validate({ tick: 1, type: 'core_destroyed', side: 2 })).toBe(false);
     expect(validate({ tick: 1, type: 'stalled', building: 2, extra: 1 })).toBe(
       false,
     );

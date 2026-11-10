@@ -13,11 +13,21 @@ export interface SimConfig {
   readonly ticksPerSecond: number;
   /** Capacity, in units, of each consumer input buffer. */
   readonly inputBufferUnits: number;
+  /** Cost of stepping through an enemy building when a base is sealed. */
+  readonly breachBaseCost: number;
+  /** Building health that adds 1 to that cost (rounded up). */
+  readonly breachHealthPerCost: number;
 }
 
 export type SimConfigLoadResult = LoadResult<SimConfig>;
 
-const KEYS = new Set(['$schema', 'ticksPerSecond', 'inputBufferUnits']);
+const KEYS = new Set([
+  '$schema',
+  'ticksPerSecond',
+  'inputBufferUnits',
+  'breachBaseCost',
+  'breachHealthPerCost',
+]);
 
 /** Validate parsed simulation configuration (the contents of sim.json). */
 export function loadSimConfig(data: unknown): SimConfigLoadResult {
@@ -28,14 +38,32 @@ export function loadSimConfig(data: unknown): SimConfigLoadResult {
   rejectUnknownKeys(data, KEYS, 'sim', errors);
   const ticksPerSecond = readInt(data, 'ticksPerSecond', 1, 'sim', errors);
   const inputBufferUnits = readInt(data, 'inputBufferUnits', 1, 'sim', errors);
+  const breachBaseCost = readInt(data, 'breachBaseCost', 0, 'sim', errors);
+  const breachHealthPerCost = readInt(
+    data,
+    'breachHealthPerCost',
+    1,
+    'sim',
+    errors,
+  );
   if (
     errors.length > 0 ||
     ticksPerSecond === undefined ||
-    inputBufferUnits === undefined
+    inputBufferUnits === undefined ||
+    breachBaseCost === undefined ||
+    breachHealthPerCost === undefined
   ) {
     return { ok: false, errors };
   }
-  return { ok: true, config: { ticksPerSecond, inputBufferUnits } };
+  return {
+    ok: true,
+    config: {
+      ticksPerSecond,
+      inputBufferUnits,
+      breachBaseCost,
+      breachHealthPerCost,
+    },
+  };
 }
 
 /** Like loadSimConfig, but throws one Error listing every problem. */
