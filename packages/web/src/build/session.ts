@@ -15,6 +15,7 @@ import {
   type RunState,
 } from '@game/session';
 import { createStore, type Store } from '../app-state.js';
+import { appliedNotice } from '../event/view-model.js';
 import { content } from '../content.js';
 import { economy } from './setup.js';
 import {
@@ -49,6 +50,12 @@ export interface SessionView {
   readonly run: RunState;
   readonly undoCount: number;
   readonly redoCount: number;
+  /**
+   * What the last step did for this player that the next screen should say
+   * (the Workshop: "Upgraded Barracks to tier 2 for 16 gold"); cleared when
+   * dismissed or when the player presses Ready.
+   */
+  readonly notice: string | null;
 }
 
 let runCounter = 0;
@@ -58,6 +65,7 @@ export class BuildSession {
   readonly store: Store<SessionView>;
   private stepAnchor: string;
   private lockedDetail: string | null = null;
+  private notice: string | null = null;
 
   private lastStamp = 0;
 
@@ -128,6 +136,7 @@ export class BuildSession {
       run: this.controller.state,
       undoCount: this.stack.undoCount,
       redoCount: this.stack.redoCount,
+      notice: this.notice,
     };
   }
 
@@ -156,6 +165,15 @@ export class BuildSession {
     }
     const r = await this.controller.dispatch(ME, intent, this.stamp());
     if (r.ok) {
+      if (intent.type === 'ready') this.notice = null;
+      for (const e of r.effects) {
+        if (e.type === 'custom' && e.name === 'event_resolved') {
+          const applied = (e.data as { applied?: unknown }).applied;
+          if (Array.isArray(applied)) {
+            this.notice = appliedNotice(applied, ME, content) ?? this.notice;
+          }
+        }
+      }
       if (
         !LAYOUT_INTENTS.has(intent.type) ||
         this.anchor() !== this.stepAnchor
@@ -166,6 +184,12 @@ export class BuildSession {
     }
     this.publish();
     return r;
+  }
+
+  /** Hide the notice. */
+  dismissNotice(): void {
+    this.notice = null;
+    this.publish();
   }
 
   private async applyAll(

@@ -74,6 +74,8 @@ export function LeftPanels(props: {
   readonly content: WebContent;
   readonly foeName: string;
   readonly overloadTick: number | null;
+  /** PvE: which Core Overload destroys first; null against a ghost. */
+  readonly overloadNote?: string | null;
   readonly tps: number;
 }) {
   const { pb, mine, theirs, content } = props;
@@ -167,6 +169,12 @@ export function LeftPanels(props: {
         {markers.length > 0 ? (
           <p class="muted small">O: Overload begins</p>
         ) : null}
+        {props.overloadNote === undefined ||
+        props.overloadNote === null ? null : (
+          <p class="muted small" data-field="overload-note">
+            {props.overloadNote}
+          </p>
+        )}
       </Panel>
     </>
   );
@@ -482,6 +490,11 @@ export function BattleSummaryView(props: SummaryProps) {
             {foe.coreHealth} / {foe.coreMaxHealth}
           </strong>
           .
+        </p>
+        <p class="result-detail muted" data-field="tiebreak-counters">
+          Damage to buildings: yours {own.buildingDamageDealt}, theirs{' '}
+          {foe.buildingDamageDealt}. Units killed: yours {own.unitsKilled},
+          theirs {foe.unitsKilled}.
         </p>
       </section>
 

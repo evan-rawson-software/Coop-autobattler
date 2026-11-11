@@ -8,6 +8,8 @@
  */
 import { findModifier, type EventsConfig } from '@game/core';
 import {
+  SKIP_CHOICE,
+  eventFollowUp,
   openVote,
   type Json,
   type RunDeps,
@@ -204,26 +206,61 @@ export interface FollowOption {
   readonly lines: readonly string[];
   /** False when the option has a price this player cannot pay. */
   readonly affordable: boolean;
+  /** Why it cannot be chosen ("Not enough gold: costs 16, you have 9"). */
+  readonly disabledReason: string | null;
   /** True for an option that does nothing (skip). */
   readonly skip: boolean;
+  /** A building to raise: where it is, its tiers and what it costs. */
+  readonly building: BuildingOption | null;
+}
+
+export interface BuildingOption {
+  readonly id: number;
+  readonly name: string;
+  readonly placed: boolean;
+  /** "On the board at column 4, row 7" or "In your stash". */
+  readonly where: string;
+  readonly tier: number;
+  readonly newTier: number;
+  readonly price: number;
 }
 
 export interface FollowUpView {
   readonly eventTitle: string;
   readonly prompt: string;
   readonly options: readonly FollowOption[];
+  /** This player's current choice (an option id), or null. */
   readonly voted: string | null;
+  /** True if each player chooses for themselves (Workshop). */
+  readonly perPlayer: boolean;
+  /** Per player: has chosen (never what). */
+  readonly chosen: readonly { readonly name: string; readonly done: boolean }[];
+  /** Shown once this player has chosen and others have not; else null. */
+  readonly waiting: string | null;
 }
 
 const PROMPTS: Readonly<Record<string, string>> = {
-  workshop_building: 'Choose a building to raise',
+  workshop_building: 'Choose one of your buildings to raise, or skip',
   shrine_modifier: 'Choose a run modifier',
 };
 
+function str(v: Json | undefined): string | null {
+  return typeof v === 'string' ? v : null;
+}
+
+/** "Upgrade price: 16 gold, you have 9" style reason, or null when payable. */
+function goldReason(price: number, gold: number): string | null {
+  return price <= gold
+    ? null
+    : `Not enough gold: it costs ${String(price)}, you have ${String(gold)}.`;
+}
+
 /**
- * The follow-up choice of the picked event, built from `pending.followUp`
- * alone so another event type's options show up without a change here: an
- * option with a building and a tier is a building to raise, one that names a
+ * The follow-up choice of the picked event for `player`. The Workshop options
+ * come from the session selector `eventFollowUp(state, player, deps)`, which
+ * gives the player's OWN buildings with the price and affordability from
+ * current content and gold; `Skip` is always offered. Other options (a
+ * Shrine's modifiers, anything unknown) are listed as stored: one that names a
  * modifier lists its effects, anything else shows its id.
  */
 export function followUpView(
@@ -231,53 +268,51 @@ export function followUpView(
   config: EventsConfig,
   content: WebContent,
   player: number,
+  deps: Pick<RunDeps, 'content'>,
 ): FollowUpView | null {
+  const f = eventFollowUp(run, player, deps);
+  if (f === null) return null;
   const p = pendingRecord(run);
-  const follow = p['followUp'];
-  if (!isRecord(follow) || !Array.isArray(follow['options'])) return null;
   const offer = isRecord(p['offer']) ? p['offer'] : {};
-  const tiers = num(offer['tiers'], 1);
-  const prompt = typeof follow['prompt'] === 'string' ? follow['prompt'] : '';
-  const votes: readonly Json[] = Array.isArray(follow['votes'])
-    ? (follow['votes'] as Json[])
-    : [];
-  const mine = votes[player];
   const gold = run.perPlayer[player]?.gold ?? 0;
   const options: FollowOption[] = [];
-  for (const raw of follow['options'] as Json[]) {
+  for (const raw of f.options) {
     if (!isRecord(raw) || typeof raw['id'] !== 'string') continue;
     const id = raw['id'];
-    // An option made for another player is not shown to this one.
-    if (typeof raw['player'] === 'number' && raw['player'] !== player) continue;
-    const price = typeof raw['price'] === 'number' ? raw['price'] : null;
-    const priceLines = price === null ? [] : [`Costs ${String(price)} gold.`];
-    const affordable = price === null || price <= gold;
-    if (raw['skip'] === true || id === 'skip') {
+    const def = str(raw['def']);
+    const tier = typeof raw['tier'] === 'number' ? raw['tier'] : null;
+    if (def !== null && tier !== null) {
+      const newTier =
+        typeof raw['newTier'] === 'number' ? raw['newTier'] : tier + 1;
+      const price = typeof raw['price'] === 'number' ? raw['price'] : 0;
+      const placedB = run.team.buildings.find((b) => b.id === raw['building']);
+      const where =
+        placedB === undefined
+          ? 'In your stash'
+          : `On the board at column ${String(placedB.x)}, row ${String(placedB.y)}`;
+      const name = buildingName(content, def);
+      // The session's own affordability is from the owner's gold now.
+      const reason = goldReason(price, gold);
       options.push({
         id,
-        title: 'Skip',
-        lines: ['Change nothing.'],
-        affordable: true,
-        skip: true,
-      });
-    } else if (
-      typeof raw['def'] === 'string' &&
-      typeof raw['tier'] === 'number'
-    ) {
-      const to =
-        typeof raw['newTier'] === 'number'
-          ? raw['newTier']
-          : Math.min(3, raw['tier'] + tiers);
-      options.push({
-        id,
-        title: `${buildingName(content, raw['def'])} · tier ${String(raw['tier'])}`,
+        title: name,
         lines: [
-          `Becomes tier ${String(to)}.`,
-          raw['placed'] === true ? 'On the board.' : 'In the stash.',
-          ...priceLines,
+          where,
+          `Tier ${String(tier)} → tier ${String(newTier)}`,
+          `Costs ${String(price)} gold`,
         ],
-        affordable,
+        affordable: reason === null && raw['affordable'] !== false,
+        disabledReason: reason,
         skip: false,
+        building: {
+          id: typeof raw['building'] === 'number' ? raw['building'] : -1,
+          name,
+          placed: placedB !== undefined,
+          where,
+          tier,
+          newTier,
+          price,
+        },
       });
     } else if (findModifier(config, id) !== undefined) {
       const m = modifierLine(config, id);
@@ -286,25 +321,86 @@ export function followUpView(
         title: m.name,
         lines: [...m.effects, ...(m.stacks ? ['Stacks if taken again.'] : [])],
         affordable: true,
+        disabledReason: null,
         skip: false,
+        building: null,
       });
     } else {
       options.push({
         id,
         title: id,
-        lines: priceLines,
-        affordable,
+        lines: [],
+        affordable: true,
+        disabledReason: null,
         skip: false,
+        building: null,
       });
     }
   }
+  if (f.perPlayer) {
+    options.push({
+      id: SKIP_CHOICE,
+      title: 'Skip',
+      lines: ['Change nothing.'],
+      affordable: true,
+      disabledReason: null,
+      skip: true,
+      building: null,
+    });
+  }
+  const chosen = f.chosen.map((done, i) => ({
+    name: run.players[i]?.name ?? `Player ${String(i + 1)}`,
+    done,
+  }));
+  const others = f.waitingFor.filter((i) => i !== player);
+  const waiting =
+    f.mine !== null && others.length > 0 && run.players.length > 1
+      ? `Waiting for other players: ${others
+          .map((i) => chosen[i]?.name ?? `Player ${String(i + 1)}`)
+          .join(', ')}. You can still change your choice.`
+      : null;
   return {
     eventTitle:
       typeof offer['type'] === 'string'
         ? eventText(offer['type']).name
         : 'Event',
-    prompt: PROMPTS[prompt] ?? 'Make a choice',
+    prompt: PROMPTS[f.prompt] ?? 'Make a choice',
     options,
-    voted: typeof mine === 'string' ? mine : null,
+    voted: f.mine,
+    perPlayer: f.perPlayer,
+    chosen,
+    waiting,
   };
+}
+
+// ---------------------------------------------------------------------------
+// What the follow-up did
+
+/**
+ * The notice for `player` from an `event_resolved` effect's `applied` list:
+ * the upgrade and its price, a skip, or a pick that was dropped and why.
+ * Null when the effect says nothing about this player.
+ */
+export function appliedNotice(
+  applied: readonly Json[],
+  player: number,
+  content: WebContent,
+): string | null {
+  for (const a of applied) {
+    if (!isRecord(a) || a['player'] !== player) continue;
+    if (a['result'] === 'upgrade') {
+      const def = str(a['def']) ?? '';
+      const tier = typeof a['newTier'] === 'number' ? a['newTier'] : 0;
+      const price = typeof a['price'] === 'number' ? a['price'] : 0;
+      return `Upgraded ${buildingName(content, def)} to tier ${String(tier)} for ${String(price)} gold.`;
+    }
+    if (a['dropped'] === true) {
+      const why = str(a['reason']);
+      return why === 'not_enough_gold'
+        ? 'Your upgrade could not be paid for and was skipped.'
+        : 'Your upgrade could not be applied and was skipped.';
+    }
+    return 'You skipped the Workshop.';
+  }
+  return null;
 }

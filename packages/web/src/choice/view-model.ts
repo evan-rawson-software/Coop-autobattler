@@ -14,6 +14,7 @@ import {
 import { clock } from '../battle/derive.js';
 import { archetypeText } from '../run/temporary-text.js';
 import { count } from '../plural.js';
+import { overloadLine, partyCoreMax } from './overload.js';
 
 export interface PveCard {
   readonly id: string;
@@ -28,6 +29,8 @@ export interface PveCard {
   /** Plain facts about the threat: units, defenses, Core, first wave. */
   readonly facts: readonly string[];
   readonly rewardText: string;
+  /** Which Core Overload destroys first against this stronghold, and when. */
+  readonly overload: string;
   /** True when this is the player's current vote. */
   readonly voted: boolean;
 }
@@ -37,8 +40,6 @@ export interface PveChoiceView {
   readonly cards: readonly PveCard[];
   /** "Win: take the reward. Lose: no reward, and no life lost." */
   readonly stakes: string;
-  /** "Destroy the stronghold before Overload begins at 40:00" style line. */
-  readonly deadline: string;
   readonly overloadAt: string;
 }
 
@@ -70,7 +71,7 @@ export function overloadClock(sim: SimConfig): string {
 
 export function pveChoiceView(
   run: RunState,
-  deps: Pick<RunDeps, 'rules' | 'rewards'>,
+  deps: Pick<RunDeps, 'rules' | 'rewards' | 'content'>,
   sim: SimConfig,
   player: number,
 ): PveChoiceView | null {
@@ -79,6 +80,7 @@ export function pveChoiceView(
   const vote = openVote(run);
   const mine = vote?.choices[player] ?? null;
   const overloadAt = overloadClock(sim);
+  const partyMax = partyCoreMax(run.team, deps.content.buildings);
   const cards = info.options.map((o): PveCard => {
     const text = archetypeText(o.archetype);
     return {
@@ -91,6 +93,7 @@ export function pveChoiceView(
       levelText: LEVEL_WORDS[o.summary.level] ?? String(o.summary.level),
       facts: threatFacts(o, sim),
       rewardText: `+${String(o.reward.gold)} gold${run.players.length > 1 ? ' each' : ''}`,
+      overload: overloadLine(sim, partyMax, o.summary.coreHealth),
       voted: mine === o.id,
     };
   });
@@ -98,7 +101,6 @@ export function pveChoiceView(
     round: info.round,
     cards,
     stakes: 'Win: take the reward. Lose: no reward, and no life lost.',
-    deadline: `Destroy the stronghold before Overload begins (at ${overloadAt}).`,
     overloadAt,
   };
 }

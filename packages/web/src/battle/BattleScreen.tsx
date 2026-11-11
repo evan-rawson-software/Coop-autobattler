@@ -50,6 +50,7 @@ import {
   parseSampleHash,
   type SampleSelection,
 } from './samples.js';
+import { overloadLine } from '../choice/overload.js';
 import { createReadyGate } from './ready-gate.js';
 import { battleConfig } from './setup.js';
 import type { BattleDescription, BattleViewProps } from './types.js';
@@ -424,6 +425,10 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
 
   const mine = sideStats(pb, content, 0, tps);
   const theirs = sideStats(pb, content, 1, tps);
+  const overloadNote =
+    foeKind === 'ghost'
+      ? null
+      : overloadLine(battleConfig.sim, record.coreMax[0], record.coreMax[1]);
   const overloadTick = moments.find((m) => m.kind === 'overload')?.tick ?? null;
 
   return (
@@ -438,6 +443,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           content={content}
           foeName={opponent.name}
           overloadTick={overloadTick}
+          overloadNote={overloadNote}
           tps={tps}
         />
       }

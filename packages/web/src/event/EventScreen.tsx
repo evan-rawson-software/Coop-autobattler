@@ -126,13 +126,13 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
 }
 
 export function EventResolveScreen(props: { run: RunHandle }) {
-  const { session } = props.run;
+  const { session, deps } = props.run;
   const run = useStore(session.store).run;
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const v = useMemo(
-    () => followUpView(run, gameConfigs.events, content, ME),
-    [run],
+    () => followUpView(run, gameConfigs.events, content, ME, deps),
+    [run, deps],
   );
 
   const choose = (id: string): void => {
@@ -144,6 +144,9 @@ export function EventResolveScreen(props: { run: RunHandle }) {
       if (!r.ok) setError(reasonMessage(r.reason, r.detail));
     });
   };
+  const options = v?.options ?? [];
+  const cards = options.filter((o) => !o.skip);
+  const skip = options.find((o) => o.skip);
 
   return (
     <AppShell
@@ -153,36 +156,86 @@ export function EventResolveScreen(props: { run: RunHandle }) {
       <div class="choice-screen" id="event-resolve">
         <div class="choice-banner panel">
           <strong data-field="prompt">{v?.prompt ?? 'Make a choice'}</strong>
+          {v?.perPlayer === true ? (
+            <span class="muted">
+              {' '}
+              Only your own buildings are listed. The price is charged when
+              everyone has chosen.
+            </span>
+          ) : null}
         </div>
-        <ul class="event-cards follow" data-count={v?.options.length ?? 0}>
-          {(v?.options ?? []).map((o) => (
+        <ul class="event-cards follow" data-count={cards.length}>
+          {cards.map((o) => (
             <li
               key={o.id}
               class={v?.voted === o.id ? 'event-card selected' : 'event-card'}
               data-option={o.id}
+              data-placed={o.building?.placed === true ? 'true' : 'false'}
+              data-affordable={o.affordable ? 'true' : 'false'}
             >
               <h2 data-field="title">{o.title}</h2>
+              {o.building === null ? null : (
+                <p class="workshop-where" data-field="where">
+                  {o.building.where}
+                </p>
+              )}
               <div class="event-lines" data-field="does">
-                {o.lines.map((l) => (
+                {(o.building === null ? o.lines : o.lines.slice(1)).map((l) => (
                   <p key={l}>{l}</p>
                 ))}
               </div>
+              {o.disabledReason === null ? null : (
+                <p class="error" data-field="disabled-reason">
+                  {o.disabledReason}
+                </p>
+              )}
               <button
                 type="button"
                 class="primary"
                 data-action="choose-option"
                 data-option={o.id}
                 disabled={busy || !o.affordable}
-                title={o.affordable ? undefined : 'Not enough gold'}
+                title={o.disabledReason ?? undefined}
                 onClick={() => {
                   choose(o.id);
                 }}
               >
-                {o.skip ? 'Skip' : 'Choose'}
+                {v?.voted === o.id ? 'Chosen' : 'Choose'}
               </button>
             </li>
           ))}
         </ul>
+        {skip === undefined ? null : (
+          <p class="follow-skip">
+            <button
+              type="button"
+              data-action="choose-option"
+              data-option={skip.id}
+              class={v?.voted === skip.id ? 'selected' : undefined}
+              disabled={busy}
+              onClick={() => {
+                choose(skip.id);
+              }}
+            >
+              {v?.voted === skip.id ? 'Skipping (chosen)' : 'Skip'}
+            </button>
+            <span class="muted"> Change nothing and keep your gold.</span>
+          </p>
+        )}
+        {v?.waiting == null ? null : (
+          <p class="muted" role="status" data-field="waiting">
+            {v.waiting}
+          </p>
+        )}
+        {v === null || v.chosen.length < 2 ? null : (
+          <ul class="follow-chosen" data-field="chosen">
+            {v.chosen.map((c) => (
+              <li key={c.name}>
+                {c.name}: {c.done ? 'has chosen' : 'choosing…'}
+              </li>
+            ))}
+          </ul>
+        )}
         {error === null ? null : (
           <p class="error" role="alert">
             {error}

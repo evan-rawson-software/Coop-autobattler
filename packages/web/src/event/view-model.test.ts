@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest';
-import type { Json, RunState } from '@game/session';
+import {
+  SKIP_CHOICE,
+  applyIntent,
+  type Json,
+  type RunState,
+} from '@game/session';
 import { gameConfigs } from '../build/setup.js';
 import { content } from '../content.js';
 import {
@@ -9,7 +14,12 @@ import {
   reachStep,
   send,
 } from '../run/test-run.js';
-import { battleHeader, eventCards, followUpView } from './view-model.js';
+import {
+  appliedNotice,
+  battleHeader,
+  eventCards,
+  followUpView,
+} from './view-model.js';
 
 const config = gameConfigs.events;
 
@@ -194,51 +204,155 @@ describe('follow-ups', () => {
     return null;
   }
 
-  test('a Workshop asks which building, from the options it stored', () => {
+  test('a Workshop asks which of my buildings, with where, tiers, price and Skip', () => {
     const s = pickEvent('workshop');
     expect(s).not.toBeNull();
-    const v = followUpView(s as RunState, config, content, 0);
+    const run = s as RunState;
+    const v = followUpView(run, config, content, 0, realDeps());
     expect(v?.eventTitle).toBe('Workshop');
-    expect(v?.prompt).toBe('Choose a building to raise');
-    expect(v?.options.length).toBeGreaterThan(0);
-    expect(v?.options[0]?.title).toMatch(/· tier \d$/);
-    expect(v?.options[0]?.lines[0]).toMatch(/^Becomes tier \d\.$/);
+    expect(v?.perPlayer).toBe(true);
+    expect(v?.prompt).toMatch(/Choose one of your buildings/);
+    const cards = (v?.options ?? []).filter((o) => !o.skip);
+    expect(cards.length).toBeGreaterThan(0);
+    for (const o of cards) {
+      expect(o.building?.where).toMatch(
+        /^(On the board at column \d+, row \d+|In your stash)$/,
+      );
+      expect(o.building?.newTier).toBe((o.building?.tier ?? 0) + 1);
+      expect(o.lines).toContain(`Costs ${String(o.building?.price)} gold`);
+    }
+    // The last option is always Skip, with the session's id.
+    expect(v?.options.at(-1)).toMatchObject({
+      id: SKIP_CHOICE,
+      title: 'Skip',
+      skip: true,
+    });
   });
 
-  test('a per-player Workshop follow-up shows own options, prices, new tiers and Skip', () => {
+  test('the price is the session price from current content, not a stored number', () => {
     const s = pickEvent('workshop') as RunState;
-    const def = s.team.buildings[0]?.def ?? 'wall';
-    const gold = s.perPlayer[0]?.gold ?? 0;
-    const odd: RunState = {
+    const pending = s.pending as unknown as {
+      followUp: { options: Record<string, Json>[] };
+    };
+    const stale: RunState = {
       ...s,
       pending: {
-        offer: { id: 'evt_w', type: 'workshop', tiers: 1 },
+        ...(s.pending as object),
         followUp: {
-          prompt: 'workshop_building',
-          options: [
-            { id: 'mine', def, tier: 1, newTier: 2, price: 1, player: 0 },
-            { id: 'dear', def, tier: 1, newTier: 3, price: gold + 50 },
-            { id: 'theirs', def, tier: 1, newTier: 2, price: 1, player: 1 },
-            { id: 'skip', skip: true },
-          ],
-          votes: [null],
+          ...pending.followUp,
+          options: pending.followUp.options.map((o) => ({ ...o, price: 9999 })),
         },
-      },
+      } as unknown as Json,
     };
-    const v = followUpView(odd, config, content, 0);
-    expect(v?.options.map((o) => o.id)).toEqual(['mine', 'dear', 'skip']);
-    expect(v?.options[0]?.lines).toContain('Becomes tier 2.');
-    expect(v?.options[0]?.lines).toContain('Costs 1 gold.');
-    expect(v?.options[0]?.affordable).toBe(true);
-    expect(v?.options[1]?.lines).toContain('Becomes tier 3.');
-    expect(v?.options[1]?.affordable).toBe(false);
-    expect(v?.options[2]).toMatchObject({ title: 'Skip', skip: true });
+    const shown = followUpView(stale, config, content, 0, realDeps());
+    const fresh = followUpView(s, config, content, 0, realDeps());
+    expect(shown?.options.map((o) => o.building?.price)).toEqual(
+      fresh?.options.map((o) => o.building?.price),
+    );
+    expect(shown?.options[0]?.building?.price).not.toBe(9999);
+  });
+
+  test('an option the player cannot pay is disabled with the reason', () => {
+    const s = pickEvent('workshop') as RunState;
+    const poor: RunState = {
+      ...s,
+      perPlayer: s.perPlayer.map((p) => ({ ...p, gold: 0 })),
+    };
+    const v = followUpView(poor, config, content, 0, realDeps());
+    const first = (v?.options ?? []).find((o) => !o.skip);
+    expect(first?.affordable).toBe(false);
+    expect(first?.disabledReason).toMatch(
+      /^Not enough gold: it costs \d+, you have 0\./,
+    );
+    expect(v?.options.at(-1)?.affordable).toBe(true);
+  });
+
+  test('identical buildings are told apart by their board position', () => {
+    const s = pickEvent('workshop') as RunState;
+    const v = followUpView(s, config, content, 0, realDeps());
+    const placed = (v?.options ?? []).filter((o) => o.building?.placed);
+    const wheres = placed.map((o) => o.building?.where);
+    expect(new Set(wheres).size).toBe(wheres.length);
+  });
+
+  test('with a party, a chosen player sees who is still choosing, not what', () => {
+    const s = pickEvent('workshop') as RunState;
+    const two: RunState = {
+      ...s,
+      players: [...s.players, { index: 1, name: 'Ana' }],
+      perPlayer: [...s.perPlayer, { ...(s.perPlayer[0] as object) } as never],
+      pending: {
+        ...(s.pending as object),
+        followUp: {
+          ...((s.pending as { followUp: object }).followUp as object),
+          votes: [SKIP_CHOICE, null],
+        },
+      } as unknown as Json,
+    };
+    const v = followUpView(two, config, content, 0, realDeps());
+    expect(v?.voted).toBe(SKIP_CHOICE);
+    expect(v?.waiting).toMatch(/Waiting for other players: Ana/);
+    expect(v?.waiting).not.toMatch(/skip/i);
+    expect(v?.chosen).toEqual([
+      { name: 'You', done: true },
+      { name: 'Ana', done: false },
+    ]);
+  });
+
+  test('a solo Workshop pick buys the upgrade and the notice says so', () => {
+    const s = pickEvent('workshop') as RunState;
+    const v = followUpView(s, config, content, 0, realDeps());
+    const pick = (v?.options ?? []).find((o) => !o.skip && o.affordable);
+    if (pick?.building === null || pick === undefined) return;
+    const r = applyIntent(
+      s,
+      0,
+      { type: 'event_choose', choice: pick.id },
+      realDeps(),
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const eff = r.effects.find(
+      (e) => e.type === 'custom' && e.name === 'event_resolved',
+    );
+    const applied = (eff as unknown as { data: { applied: Json[] } }).data
+      .applied;
+    expect(appliedNotice(applied, 0, content)).toBe(
+      `Upgraded ${pick.building.name} to tier ${String(pick.building.newTier)} for ${String(pick.building.price)} gold.`,
+    );
+    expect(applied[0]).toMatchObject({
+      result: 'upgrade',
+      price: pick.building.price,
+    });
+  });
+
+  test('appliedNotice words a skip and a dropped pick', () => {
+    expect(appliedNotice([{ player: 0, result: 'skip' }], 0, content)).toBe(
+      'You skipped the Workshop.',
+    );
+    expect(
+      appliedNotice(
+        [
+          {
+            player: 0,
+            result: 'skip',
+            dropped: true,
+            reason: 'not_enough_gold',
+          },
+        ],
+        0,
+        content,
+      ),
+    ).toBe('Your upgrade could not be paid for and was skipped.');
+    expect(
+      appliedNotice([{ player: 1, result: 'skip' }], 0, content),
+    ).toBeNull();
   });
 
   test('a Shrine asks which modifier and spells out the effects', () => {
     const s = pickEvent('shrine');
     expect(s).not.toBeNull();
-    const v = followUpView(s as RunState, config, content, 0);
+    const v = followUpView(s as RunState, config, content, 0, realDeps());
     expect(v?.prompt).toBe('Choose a run modifier');
     expect(v?.options.length).toBeGreaterThan(0);
     for (const o of v?.options ?? []) {
@@ -260,7 +374,7 @@ describe('follow-ups', () => {
         },
       },
     };
-    const v = followUpView(odd, config, content, 0);
+    const v = followUpView(odd, config, content, 0, realDeps());
     expect(v?.prompt).toBe('Make a choice');
     expect(v?.options).toEqual([
       {
@@ -268,12 +382,14 @@ describe('follow-ups', () => {
         title: 'all_in',
         lines: [],
         affordable: true,
+        disabledReason: null,
         skip: false,
+        building: null,
       },
     ]);
   });
 
   test('no follow-up outside event_resolve', () => {
-    expect(followUpView(newRun(), config, content, 0)).toBeNull();
+    expect(followUpView(newRun(), config, content, 0, realDeps())).toBeNull();
   });
 });

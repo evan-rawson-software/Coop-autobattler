@@ -49,9 +49,6 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
           <p>
             <strong>{v.stakes}</strong>
           </p>
-          <p class="deadline" data-field="deadline">
-            {v.deadline}
-          </p>
         </div>
         <ul class="pve-cards">
           {v.cards.map((c) => (
@@ -89,6 +86,9 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
                   <li key={f}>{f}</li>
                 ))}
               </ul>
+              <p class="deadline" data-field="overload">
+                {c.overload}
+              </p>
               <div class="pve-reward">
                 <span class="label">Reward if you win</span>
                 <strong data-field="reward">{c.rewardText}</strong>
