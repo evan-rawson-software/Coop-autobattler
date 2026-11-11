@@ -20,7 +20,12 @@ import {
   type SimEvent,
 } from './flow-sim.js';
 import { hashJson } from './hash.js';
-import { isOverloadBeat, overloadDeadline, overloadLevel } from './ramp.js';
+import {
+  isOverloadBeat,
+  overloadDeadline,
+  overloadLevel,
+  overloadOutcome,
+} from './ramp.js';
 import {
   coreOnlyTeam,
   crossoverTeam,
@@ -140,6 +145,29 @@ describe('overloadDeadline (#43)', () => {
     // The largest Core health stays exact.
     const big = overloadDeadline(cfg, 1_000_000_000_000);
     expect(big.decayDestroysLevel).toBe(632456);
+  });
+});
+
+describe('overloadOutcome (#75)', () => {
+  const cfg = {
+    ...simConfig,
+    overloadStartTick: 1800,
+    overloadIntervalTicks: 100,
+    overloadCoreDamageStep: 5,
+  };
+  test('the smaller Core falls first, equal ticks fall together', () => {
+    expect(overloadOutcome(cfg, 500, 315)).toEqual({ first: 'b', tick: 2800 });
+    expect(overloadOutcome(cfg, 42, 500)).toEqual({ first: 'a', tick: 2100 });
+    expect(overloadOutcome(cfg, 500, 456)).toEqual({
+      first: 'both',
+      tick: 3100,
+    });
+    expect(overloadOutcome(cfg, 500, 455)).toEqual({ first: 'b', tick: 3000 });
+  });
+  test('no decay: nothing falls', () => {
+    expect(
+      overloadOutcome({ ...cfg, overloadCoreDamageStep: 0 }, 500, 315),
+    ).toEqual({ first: null, tick: null });
   });
 });
 

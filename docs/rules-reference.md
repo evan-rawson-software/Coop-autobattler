@@ -1084,9 +1084,10 @@ from that consumer input with `takeFromBuffer` (if it holds one), which paces a
 slow consumer in `"hold"` mode. The script builds the board, then the flow
 simulation runs for `ticks` ticks from the cold start. Result:
 `{ tick, stateHash, flow, sources, routes, consumers }`: `stateHash` is the
-hash of the final state, `flow` the conservation totals, and the lists give
-per-building counters (and, for consumers and routes, what they hold at the
-end). The event log of the run is the vector's event log (`eventLogHash`).
+hash of the final state, `flow` the conservation totals, `sources` a list of
+`{building, resource, produced, lost, stalledTicks}`, `routes` a list of
+`{building, key, lost, held}` and `consumers` a list with one entry per
+consumer input `{building, side, resource, count, delivered, consumed}`. The event log of the run is the vector's event log (`eventLogHash`).
 Vectors: `golden/flow-sim.json` (a long conduit, a splitter, a merger, a
 crossover with two resources, a dead end, a full-buffer backpressure case, and a
 merger with a direct input and a conduit input behind a slow consumer, a
@@ -1539,16 +1540,28 @@ Overload guarantees that battles end. Constants (`content/sim.json`):
   (13 beats take 455, 14 take 525), so with the standard constants it falls
   at tick 3100 (start 1800), that is 3 minutes 10 seconds, and the battle
   ends at `endTick` 3101 at the latest.
-- **PvE: the deadline is intended (CB-12, CB-29, #43).** In a PvE battle side
-  1's Core is the stronghold's, whose health scales with the budget
-  (`coreHealthPerBudget` times the budget, at least `minCoreHealth`) and is
-  usually much larger than the party's 500, so the decay kills the party's
-  Core at `overloadDeadline(simConfig, partyCoreMaxHealth).decayDestroysTick`
-  unless the stronghold has fallen before: the party must destroy the
-  stronghold by then. When the party's Core falls first the battle ends with
-  `reason: "core_destroyed"` and the threat as the winner. No rule is
-  special-cased for PvE: this is the ordinary Core decay acting on a small
-  Core, and it is by design.
+- **PvE: the deadline is intended (CB-12, CB-29, #43; open question #75).**
+  In a PvE battle side 1's Core is the stronghold's, whose health is
+  `coreHealthPerBudget` times the budget, at least `minCoreHealth`. The decay
+  applies equally to both Cores, a flat amount per beat (5, 10, 15, ...), so
+  with no other damage the Core with less maximum health falls first, at
+  `overloadDeadline(simConfig, coreMaxHealth).decayDestroysTick` for that
+  Core; the battle ends with `reason: "core_destroyed"`. The party's Core has
+  500 health and falls at tick 3100 (14 beats take 525). A stronghold's Core
+  is often smaller than that: over the 96 sampled shipped threats its health
+  has a median of 315, a minimum of 42 and is under 500 in 62 of them. A
+  Core of 315 falls at tick 2800 (11 beats take 330, 10 take 275) and one of
+  42 at tick 2100 (4 beats take 50, 3 take 30), so against those the decay
+  kills the stronghold's Core first and the party wins by surviving. Only
+  strongholds with more than 500 Core health (mainly the Fortress, in late
+  rounds) outlast the party's Core, and then the party must destroy the
+  stronghold before tick 3100 or the threat wins. Damage from units or
+  turrets moves either deadline earlier. No rule is special-cased for PvE.
+  Whether the decay should instead favour one side in PvE is an open design
+  question tracked in issue #75; this section only states what the rules do
+  today. Screens should compute the deadline for both Cores (`overloadDeadline`,
+  or `overloadOutcome(simConfig, partyCoreMax, strongholdCoreMax)` for the
+  comparison) and show which falls first.
 
 ### Events (arena log)
 
@@ -1592,9 +1605,11 @@ after which the state is saved as JSON and restored (the context rebuilt from
 the state alone) before the run continues; the result must not depend on it. A battle starts and runs for `ticks`
 ticks. Result: `{ tick, stateHash, events, sides }` with `stateHash` the hash of
 the final `ArenaSim`, `events` the number of events, and `sides` a list of two
-summaries `{spawned, alive, unitsDied, buildingsDestroyed, coreHealth}`
-(`buildingsDestroyed` does not count the Core; `coreHealth` is 0 when it was
-destroyed). The event log is the vector's event log (`eventLogHash`). Vectors:
+summaries `{spawned, alive, unitsDied, buildingDamageDealt,
+buildingsDestroyed, coreHealth}` (`buildingDamageDealt` is the health the
+side's units and turrets took from the enemy's buildings, the Core included,
+Overload decay not; `buildingsDestroyed` does not count the Core;
+`coreHealth` is 0 when it was destroyed). The event log is the vector's event log (`eventLogHash`). Vectors:
 `golden/arena-sim.json` (a mirror match, a rush against an almost empty base, a
 sealed base that is breached at its weakest wall, a ringed Core battle saved and restored four times, raiders cutting a splitter,
 three turrets killing a wave that crosses the front edge, the same turrets

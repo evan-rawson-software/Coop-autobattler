@@ -60,9 +60,14 @@ export interface OverloadDeadline {
  * `overloadStartTick + (n - 1) * overloadIntervalTicks`; the answer is the
  * first beat where that total reaches `coreMaxHealth`. This is a deadline for
  * a Core that is not damaged otherwise: damage from units or turrets makes it
- * earlier. In PvE (CB-29) the party must destroy the stronghold before this
- * tick of its own (smaller) Core; see docs/rules-reference.md, "Overload".
- * Exact integers (`RangeError` if a product would leave the safe range).
+ * earlier. The decay applies equally to both Cores, so a screen must compute
+ * the deadline for BOTH Cores (or call `overloadOutcome`) and show which one
+ * falls first: the Core with less health. In PvE (CB-29) the stronghold's
+ * Core is often smaller than the party's 500 (then it falls first and the
+ * party wins by surviving) and sometimes larger (then the party must break
+ * it before its own deadline); see docs/rules-reference.md, "Overload", and
+ * issue #75. Exact integers (`RangeError` if a product would leave the safe
+ * range).
  */
 export function overloadDeadline(
   config: SimConfig,
@@ -100,4 +105,29 @@ export function overloadDeadline(
     ),
     decayDestroysLevel: lo,
   };
+}
+
+/** Which Core the Overload decay alone destroys first (`overloadOutcome`). */
+export interface OverloadOutcome {
+  /** `'a'`/`'b'`: that Core falls first; `'both'`: on the same tick; `null`: the decay never kills. */
+  readonly first: 'a' | 'b' | 'both' | null;
+  /** The tick of the first fall (`null` with `first`). */
+  readonly tick: number | null;
+}
+
+/**
+ * Which of two Cores (maximum health `coreMaxA`, `coreMaxB`) the Overload decay
+ * alone destroys first, and on which tick; equal ticks give `'both'`. Other
+ * damage is ignored (it only makes a fall earlier).
+ */
+export function overloadOutcome(
+  config: SimConfig,
+  coreMaxA: number,
+  coreMaxB: number,
+): OverloadOutcome {
+  const a = overloadDeadline(config, coreMaxA).decayDestroysTick;
+  const b = overloadDeadline(config, coreMaxB).decayDestroysTick;
+  if (a === null || b === null) return { first: null, tick: null };
+  if (a === b) return { first: 'both', tick: a };
+  return a < b ? { first: 'a', tick: a } : { first: 'b', tick: b };
 }

@@ -397,7 +397,10 @@ describe('sweep of reference boards against every threat', () => {
     // tick 2400; since Overload starts at tick 1800 the slow fortify win in
     // hard round 2 is cut short: it ends at tick 2401, 1.36 times the rush
     // board's 1765, because the stronghold's Core (240 health) falls to the
-    // decay after only 126 damage from the party.)
+    // decay after only 126 damage from the party. The decay hits both Cores
+    // equally and the Core with less health falls first: shipped strongholds
+    // are usually below the party's 500, so this is the common case, and
+    // whether it should be so is open, issue #75.)
     for (const type of ['easy', 'medium', 'hard'] as const) {
       for (const round of [1, 2, 3]) {
         const rush = get('rush', 'arch_fortress', type, round);

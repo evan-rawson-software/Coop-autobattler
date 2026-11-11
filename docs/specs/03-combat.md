@@ -234,16 +234,20 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   destroyed in a battle are back for the next one.
 - **CB-12** **Overload**: late in a battle, both sides' units and damage
   escalate, so that two fortified sides cannot stall forever.
-  - **[DECIDED] In PvE the Overload decay is an intended deadline** (CB-29,
-    #43). Overload also takes a flat amount from both Cores at every beat, and
-    the party's Core is usually much smaller than a stronghold's, so the party has to
-    destroy the stronghold before the decay alone destroys its own Core: a
-    Core of 500 health dies from the decay alone at tick 3100 (Overload
-    starts at tick 1800, 3 minutes, and takes 5, 10, 15, ... health at every
-    100th tick; 14 beats take 525), as `overloadDeadline` computes (see the
-    rules reference, "Overload"). This is a
-    design choice, not a side effect: a party that cannot break the
-    stronghold in time loses. Screens can show the deadline with that helper.
+  - **[DECIDED] In PvE the Overload decay is a deadline** (CB-29, #43; open
+    design question: #75). Overload takes the same flat amount from both
+    Cores at every beat (5, 10, 15, ... health, from tick 1800, 3 minutes, at
+    every 100th tick), so the Core with less health falls first. The party's
+    Core of 500 health dies from the decay alone at tick 3100 (14 beats take
+    525), as `overloadDeadline` computes (see the rules reference,
+    "Overload"). A stronghold's Core is often smaller (over the 96 sampled
+    shipped threats: median 315, minimum 42, under 500 in 62), so there the
+    decay destroys the stronghold's Core first (315 at tick 2800, 42 at tick
+    2100) and the party wins by surviving; only strongholds with more than
+    500 Core health (mainly the Fortress, late rounds) outlast the party,
+    which then has to break them before tick 3100. Whether this should change
+    is tracked in #75. Screens should compute the deadline for both Cores and
+    show which falls first.
 
 ## Units
 

@@ -309,7 +309,9 @@ export {
   isOverloadBeat,
   overloadDeadline,
   overloadLevel,
+  overloadOutcome,
   type OverloadDeadline,
+  type OverloadOutcome,
 } from './ramp.js';
 
 // The neutral zone and whole battles (W1-8).
