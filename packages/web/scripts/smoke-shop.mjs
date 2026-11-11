@@ -683,4 +683,103 @@ export async function runShopSmoke({
     (await page.locator('#not-saved-note').count()) === 0,
     'a saved run shows no unsaved note',
   );
+
+  // --- Two players (?players=2): the Ready lock with the partner not ready
+  await page.goto(`${baseUrl}?next=pvp&players=2#shop`);
+  await page.waitForSelector('#shop-screen');
+  await page.waitForFunction(() => window.__debug?.shop?.state);
+  await page.waitForFunction(() => window.__debug?.partner !== undefined);
+  check(
+    (await S.state()).runId === 'shop-sample-pvp-2p',
+    'two players: the ?players=2 route starts its own sample run',
+  );
+  await goBuildTab();
+  const undoBtn = page.locator('[data-action="undo"]');
+  const redoBtn = page.locator('[data-action="redo"]');
+  // Make a real edit first, so Undo is enabled and a lock has something to hold back.
+  const twoTeam = await B.team();
+  let twoPlaced = null;
+  for (let y = 6; y < twoTeam.height - 2 && twoPlaced === null; y++) {
+    for (let x = 1; x < twoTeam.width - 2 && twoPlaced === null; x++) {
+      const before = (await B.team()).buildings.length;
+      const b = await page
+        .locator('[data-stash-def="bld_wall"]')
+        .first()
+        .boundingBox();
+      await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+      await page.mouse.down();
+      const p = await at(x, y);
+      await page.mouse.move(p.x, p.y, { steps: 8 });
+      await settle();
+      await page.mouse.up();
+      await frames(page, 6);
+      if ((await B.team()).buildings.length > before) twoPlaced = { x, y };
+      else await page.keyboard.press('Escape');
+    }
+  }
+  check(twoPlaced !== null, 'two players: a wall was twoPlaced before Ready');
+  const twoPlacedCount = (await B.team()).buildings.length;
+  check(
+    !(await undoBtn.isDisabled()),
+    'two players: Undo is enabled after an edit (so the Ready check below can fail)',
+  );
+  await page.click('#ready-button');
+  await page.waitForSelector('[data-field="ready-locked"]');
+  check(
+    (await page.locator('#ready-button').innerText()) === 'Unready' &&
+      (await B.step()) === 'shop',
+    'two players: Ready locks this player and the run stays in the shop',
+  );
+  check(
+    (await undoBtn.isDisabled()) && (await redoBtn.isDisabled()),
+    'two players: Undo and Redo are disabled while Ready (with an edit on the stack)',
+  );
+  await page.keyboard.press('Control+z');
+  await page.waitForFunction(
+    (t) => window.__debug.build.status().text === t,
+    'Ready — press Unready to make changes.',
+  );
+  check(
+    (await B.team()).buildings.length === twoPlacedCount &&
+      (await B.counts()).undo === 1,
+    'two players: Ctrl+Z while Ready changes nothing and keeps the history',
+  );
+  const hookTool = () => page.evaluate(() => window.__debug.build.ui().tool);
+  await page.keyboard.press('c');
+  await page.waitForFunction(
+    (t) => window.__debug.build.status().text === t,
+    'Ready — press Unready to make changes.',
+  );
+  check(
+    (await hookTool()) === 'select',
+    'two players: the conduit hotkey does not switch to a disabled tool while Ready',
+  );
+  await shot('shop-9-two-player-ready');
+  // Unready reopens the edit: Undo is enabled again and still undoes the wall.
+  await page.click('#ready-button');
+  await page.waitForFunction(
+    () => document.querySelector('[data-field="ready-locked"]') === null,
+  );
+  check(
+    !(await undoBtn.isDisabled()),
+    'two players: after Unready, Undo is enabled again',
+  );
+  await undoBtn.click();
+  await page.waitForFunction(
+    (n) => window.__debug.build.team().buildings.length < n,
+    twoPlacedCount,
+  );
+  check(
+    (await B.team()).buildings.length === twoPlacedCount - 1,
+    'two players: after Unready, Undo takes the wall back',
+  );
+  await page.click('#ready-button');
+  await page.waitForSelector('[data-field="ready-locked"]');
+  // The partner readies too: everyone is ready and the run moves on.
+  await page.evaluate(() => window.__debug.partner.ready());
+  await page.waitForFunction(() => window.__debug.build.step() !== 'shop');
+  check(
+    (await B.step()) !== 'shop',
+    `two players: when the partner is Ready the run continues (now "${await B.step()}")`,
+  );
 }

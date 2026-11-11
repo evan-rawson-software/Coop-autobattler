@@ -188,7 +188,7 @@ export function ToolsPanel(props: {
         <button
           type="button"
           data-action="undo"
-          disabled={(view?.undoCount ?? 0) === 0}
+          disabled={locked || (view?.undoCount ?? 0) === 0}
           title="Undo (Ctrl+Z). Layout changes only."
           onClick={() => void ctl.undo()}
         >
@@ -200,7 +200,7 @@ export function ToolsPanel(props: {
         <button
           type="button"
           data-action="redo"
-          disabled={(view?.redoCount ?? 0) === 0}
+          disabled={locked || (view?.redoCount ?? 0) === 0}
           title="Redo (Ctrl+Shift+Z)"
           onClick={() => void ctl.redo()}
         >
