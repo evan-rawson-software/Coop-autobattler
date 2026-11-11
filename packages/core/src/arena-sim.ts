@@ -51,6 +51,7 @@ import {
   MAX_HIT,
   MAX_TICK_DAMAGE,
 } from './limits.js';
+import { maxHealthOf } from './max-health.js';
 import { modifierPercent } from './modifiers.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
 import type { Cell } from './map.js';
@@ -431,50 +432,6 @@ export function arenaOf(sim: ArenaSim, content: ArenaContent): Arena {
     if (r !== undefined && r >= 0) removeFromArena(arena, r);
   }
   return arena;
-}
-
-/**
- * A building's maximum health, the single definition used for both the health
- * it starts the battle with and the breach cost of covering it. It is the
- * tier's health (the Core is tier 1), or `coreHealthOverride` for the Core
- * when the side options give one, raised by the team's modifiers: for the Core
- * `core_health_percent`, for any other building `building_health_percent`
- * matching its defense type or kind. Rounded down. Throws a RangeError when
- * the result exceeds MAX_HEALTH or an override is out of range, so a bad
- * combination fails at battle setup, never mid-battle.
- */
-function maxHealthOf(
-  team: TeamState | undefined,
-  b: ArenaBuilding,
-  content: ArenaContent,
-  coreHealthOverride?: number,
-): number {
-  const def = content.buildings.get(b.def);
-  const placed = team?.buildings.find((p) => p.id === b.id);
-  const tier = b.kind === 'core' ? 0 : (placed?.tier ?? 1) - 1;
-  let hp = def?.tiers[tier]?.health ?? 0;
-  if (b.kind === 'core' && coreHealthOverride !== undefined) {
-    // Checked: the time-limit rule multiplies two Core healths.
-    assertWithin(coreHealthOverride, 1, MAX_HEALTH, 'Side option coreHealth');
-    hp = coreHealthOverride;
-  }
-  if (team !== undefined) {
-    const pct =
-      b.kind === 'core'
-        ? modifierPercent(team, 'core_health_percent')
-        : modifierPercent(
-            team,
-            'building_health_percent',
-            b.defenseType ?? b.kind,
-          );
-    if (pct > 0) hp = mulPct(hp, 100 + pct);
-  }
-  if (hp > MAX_HEALTH) {
-    throw new RangeError(
-      `Building ${b.def} (id ${String(b.id)}): maximum health ${String(hp)} with modifiers exceeds the maximum ${String(MAX_HEALTH)}.`,
-    );
-  }
-  return hp;
 }
 
 /** Adds one hit to the damage a target takes this tick (saturating, exact). */

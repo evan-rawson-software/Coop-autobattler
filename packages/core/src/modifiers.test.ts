@@ -240,3 +240,50 @@ describe('rewards in the economy file', () => {
     expect(r.ok).toBe(false);
   });
 });
+
+describe('modifier percent sums are checked', () => {
+  const huge = (kind: 'core_health_percent' | 'building_health_percent') =>
+    ({
+      id: 'mod_test_huge',
+      effects: [
+        kind === 'core_health_percent'
+          ? { kind, percent: Number.MAX_SAFE_INTEGER }
+          : { kind, target: 'all', percent: Number.MAX_SAFE_INTEGER },
+      ],
+    }) as const satisfies TeamModifier;
+
+  test('a sum past the safe bound is a RangeError naming the kind and the bound', () => {
+    const team = withModifier(
+      withModifier({}, huge('core_health_percent')),
+      huge('core_health_percent'),
+    );
+    expect(() => modifierPercent(team, 'core_health_percent')).toThrow(
+      RangeError,
+    );
+    expect(() => modifierPercent(team, 'core_health_percent')).toThrow(
+      /core_health_percent.*9007199254740991/,
+    );
+    // Other kinds are unaffected.
+    expect(modifierPercent(team, 'unit_strength_percent')).toBe(0);
+  });
+
+  test('an extreme stack fails at battle setup naming the kind, not a generic message', () => {
+    const base = buildReferenceBoard('fortify', content, mapgen);
+    const coreStack = withModifier(base, huge('core_health_percent'));
+    expect(() =>
+      createArenaSim(coreStack, base, 4, content, simConfig),
+    ).toThrow(/core_health_percent/);
+    const wallStack = withModifier(base, huge('building_health_percent'));
+    expect(() =>
+      createArenaSim(wallStack, base, 4, content, simConfig),
+    ).toThrow(/building_health_percent/);
+    // A product that stays safe but passes MAX_HEALTH exceeds the maximum health.
+    const big = withModifier(base, {
+      id: 'mod_test_big',
+      effects: [{ kind: 'core_health_percent', percent: 1_000_000_000_000 }],
+    });
+    expect(() => createArenaSim(big, base, 4, content, simConfig)).toThrow(
+      RangeError,
+    );
+  });
+});

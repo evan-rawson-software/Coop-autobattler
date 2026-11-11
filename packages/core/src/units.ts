@@ -1,5 +1,6 @@
 /** Unit rules (CB-13..CB-15). All numbers are integers; times are in ticks. */
 
+import { addInt, divFloor, mulInt } from './int.js';
 import { MAX_DAMAGE, MAX_HEALTH } from './limits.js';
 import {
   isRecord,
@@ -37,7 +38,7 @@ export function maxStrengthPercent(def: UnitDef): number {
   const room = (value: number, max: number): number =>
     value === 0
       ? Number.MAX_SAFE_INTEGER
-      : Math.floor((100 * max + 99) / value) - 100;
+      : divFloor(addInt(mulInt(100, max), 99), value) - 100;
   return Math.min(room(def.health, MAX_HEALTH), room(def.damage, MAX_DAMAGE));
 }
 

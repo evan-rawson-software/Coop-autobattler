@@ -33,8 +33,10 @@
  *   `MAX_TICK_DAMAGE = 2^52`: each hit is at most `MAX_HIT = 2^51` (so a
  *   partial sum plus a hit is below 2^53 and exact) and a sum that reaches the
  *   cap stays there. Health is at most 1e12, so a target that takes the cap
- *   is long dead; only the Core overkill tiebreak can tell sums apart, and
- *   two sums at the cap are equal.
+ *   is long dead. Only the Core overkill tiebreak can tell it apart, and it
+ *   compares `hp - damage`, not the damages: when both Cores' sums saturate,
+ *   the damages are equal, so the Core with the higher pre-tick health has
+ *   the less negative `hp - damage`, less overkill, and wins.
  */
 
 /** Largest health a building tier or unit may declare, and the largest a

@@ -114,17 +114,49 @@ generator that is only used to derive children.
   negative operands. `mulDiv(a, b, c) = floor(a * b / c)`, `c != 0`.
 - `a * b` must fit the safe range, |a * b| <= 2^53 - 1; otherwise the
   reference implementation throws. Ported code should treat such inputs as
-  an error too (never wrap or saturate silently).
-- `addInt(a, b)` is `a + b` and throws if the sum leaves the safe range.
-  Sums that are accumulated over many terms (the per-tick damage per target,
-  see "Resolve attacks simultaneously") use it term by term: they are exact up
-  to 2^53 - 1 and an error beyond, never truncated to 32 bits. A 64-bit port
-  gets the same results for every input that does not throw.
+  an error too (never wrap, and never saturate except in the one place below).
+- `addInt(a, b)` is `a + b` and throws if the sum leaves the safe range. Every
+  sum outside the damage rule uses it (or `mulInt`/`mulPct`), so it is exact
+  or an error, never truncated to 32 bits.
 - `mulInt(a, b)` is `a * b` and throws if the product leaves the safe range.
+- `addSaturating(a, b, cap) = min(cap, a + b)` for `0 <= a <= cap` and
+  `0 <= b <= (2^53 - 1) - cap`, so `a + b` is exact before the cap is applied;
+  it throws for any operand outside that range. It is the **only** saturating
+  operation, and it is used for exactly one quantity: the damage one target
+  takes in one tick. The rule, in full: every single hit is an integer from 0
+  to `MAX_HIT = 2^51` (a unit hit after Overload scaling, or an Overload Core
+  decay; both are checked at battle setup, which fails otherwise; a turret
+  shot is at most `MAX_DAMAGE = 1e12`, below `MAX_HIT`). The damage a target
+  takes in a tick starts at 0 and each hit is added with
+  `addSaturating(sum, hit, MAX_TICK_DAMAGE)`, `MAX_TICK_DAMAGE = 2^52`. As all
+  terms are non-negative, the result is `min(2^52, exact sum of the hits)`,
+  whatever the order. Health is at most `MAX_HEALTH = 1e12`, far below 2^52,
+  so a target whose sum saturated dies exactly as it would with the exact sum.
+  The only difference is the Core's overkill (`hp - damage`, see "Core health
+  and overkill"): it is computed from the saturated sum, so a Core's overkill
+  never exceeds `2^52 - hp`. A 64-bit port gets the same results for every
+  input that does not throw.
 - All helpers throw on non-integer or out-of-range input.
 - Basis points: 10000 = 100%. `mulBps(v, bps) = mulDiv(v, bps, 10000)`.
   `mulPct(v, p) = mulDiv(v, p, 100)`. Both floor.
 - `modFloor(n, d)` has the sign of `d`; `divFloor(n, d) = (n - modFloor(n, d)) / d`.
+- `compareFractions(a, b, c, d)` compares `a / b` with `c / d` (`a, c >= 0`,
+  `b, d > 0`, all safe integers) and returns -1, 0 or 1 without forming any
+  product (so it is exact for every safe input; it throws otherwise). Set
+  `flip = false` and repeat: let `qa = floor(a / b)`, `qc = floor(c / d)`.
+  1. if `qa != qc`: let `r = -1` if `qa < qc`, else `1`; return `r` if `flip`
+     is false, `-r` if `flip` is true;
+  2. let `ra = a - qa * b`, `rc = c - qc * d` (the remainders, `qa == qc`);
+  3. if `ra == 0` and `rc == 0`: return 0;
+  4. if `ra == 0` (the first fraction is the smaller): return -1 if `flip` is
+     false, 1 if true;
+  5. if `rc == 0` (the second is the smaller): return 1 if `flip` is false,
+     -1 if true;
+  6. otherwise `ra / b < rc / d` holds exactly when `b / ra > d / rc`, so
+     continue with `(a, b, c, d) = (b, ra, d, rc)` and `flip = not flip`.
+  Each round is a step of Euclid's algorithm on both fractions, so it ends
+  after at most about 80 rounds; `qa * b` is at most `a`, so it never leaves
+  the safe range.
 - `clamp(v, lo, hi)` requires `lo <= hi`. `minInt`/`maxInt` take two integers.
 - Never use floating point for anything that can change a result. The lint
   rules for `packages/core` also forbid clocks, timers, `Math.random`,
@@ -198,7 +230,7 @@ board has 3744 cells, `MAX_ARENA_CELLS` allows more than twice that):
 | Overload hit, `floor(damage * (100 + level * overloadDamageStepPercent) / 100)` | at most `MAX_HIT = 2^51 = 2.25e15` | `createArenaSim` computes it for the largest `level` (at `maxBattleTicks`) and for every unit type at the side's largest strength, and fails at setup if it passes `MAX_HIT`; shipped: level 97, 2040 percent, so at most 2.04e13 for a unit of 1e12 damage |
 | Overload Core decay, `level * overloadCoreDamageStep` | at most `MAX_HIT` | checked at setup the same way; shipped: 485 |
 | Damage to one target in one tick (units, turrets, decay) | saturates at `MAX_TICK_DAMAGE = 2^52` | each term is at most `MAX_HIT` (a turret at most `MAX_DAMAGE`); `partial sum + hit <= 2^52 + 2^51 < 2^53`, so the sum is exact, and a sum that reaches the cap stays there |
-| Core overkill, `coreRemaining = hp - damage` | magnitude at most `2^52` | a saturated sum means the target is long dead (health is at most `H`); two sums at the cap compare equal |
+| Core overkill, `coreRemaining = hp - damage` | magnitude at most `2^52` | a saturated sum means the target is long dead (health is at most `H`); the tiebreak compares `hp - damage`, not the damages, so when both sums saturate the side with the higher pre-tick Core health has less overkill and wins (equal health: side 1) |
 | Unit strength percent `P` (base option + modifiers + ramp bonus) | the largest value accepted is `maxStrengthPercent(unit)`, 2 499 999 999 902 for the shipped soldier | `unitStats` throws a `RangeError` for any `P` that would push a unit past `MAX_HEALTH` or `MAX_DAMAGE`; `addInt` for the sum of percents |
 
 Distances and each building's maximum health are held in 64-bit float arrays
@@ -214,11 +246,14 @@ battle either starts or fails with a `RangeError` at setup, never in the
 middle:
 
 - **Maximum health** of a building is computed in one place (`maxHealthOf` in
-  `arena-sim.ts`) and used for both the health it starts with and its breach
-  cost: the tier's health (the Core is tier 1), or the `coreHealth` side
+  `max-health.ts`) and used for the health it starts with, its breach cost in
+  the simulation, and its breach cost in the enemy-path preview: the tier's health (the Core is tier 1), or the `coreHealth` side
   option for the Core, then raised by the team's `core_health_percent` (Core)
   or matching `building_health_percent` effects (any other building), as
-  `floor(value * (100 + sum) / 100)`. The result must not exceed `MAX_HEALTH`;
+  `floor(value * (100 + sum) / 100)`. The percent sum is accumulated with
+  `addInt`; a sum beyond 2^53 - 1, or one for which `value * (100 + sum)`
+  would leave the safe range, is a `RangeError` naming the modifier kind. The
+  result must not exceed `MAX_HEALTH`;
   the `coreHealth` option must be an integer from 1 to `MAX_HEALTH`.
 - **Turret damage** (`floor(tier damage * (100 + sum) / 100)` with the team's
   `turret_damage_percent`) must not exceed `MAX_DAMAGE`.
@@ -1284,9 +1319,10 @@ exactly like the original.
    escalated by Overload, `mulPct(damage, 100 + level * overloadDamageStepPercent)`
    (see "Overload"), to its target; the `unit_attacked` event carries that
    escalated value. Damage from all
-   attackers, and from turret shots, is summed per target (exactly, as 64-bit
-   integers; a sum above 2^53 - 1 is an error, see "Integer math conventions")
-   and applied together
+   attackers, and from turret shots, is summed per target with the saturating
+   rule of "Integer math conventions" (`addSaturating(sum, hit,
+   MAX_TICK_DAMAGE)`: each hit is at most `MAX_HIT = 2^51`, a sum below the
+   cap `2^52` is exact, and a larger one is `2^52`) and applied together
    (so two units can kill each other in the same tick; a target that is killed
    this tick still receives every blow aimed at it). Each attacker's `attackCooldown` becomes
    `attackCooldownTicks`. A building's health stops at 0 (a Core's health
@@ -1379,8 +1415,9 @@ A unit's **targeting** comes from its definition: `core`, `infrastructure`
   costs 1; entering a cell covered by an enemy building costs
   `breachBaseCost + ceil(maxHealth / breachHealthPerCost)` (at most 1.000001e12: see
   "Content bounds" for why every distance stays exact), where `maxHealth` is
-  that building's **maximum** health (its tier's health from the content, the
-  health it starts the battle with), never its current health (`content/sim.json`:
+  that building's **maximum** health (the tier's health from the content, or
+  the `coreHealth` option, raised by the team's health modifiers, see "Content
+  bounds": the health it starts the battle with), never its current health (`content/sim.json`:
   10 and 10). The
   distance of a cell is the cheapest total cost of the cells entered on the way
   from it to a passable cell 4-adjacent to the Core (distance 0). A unit in
@@ -1572,7 +1609,7 @@ blocks it), an entry `{entry: {x, y}, cells, breach}`:
   ends at the last open cell before it and `breach` is `{building, cell}`, the
   instance ID of the building the unit would attack and the cell of it entered.
   If the walk reaches a cell with breach distance 0, `cells` ends there and
-  `breach` is `null`. The cost of a building uses its tier's full health.
+  `breach` is `null`. The cost of a building uses its maximum health, computed exactly as in the simulation (tier health raised by the team's `building_health_percent` modifiers, see "Content bounds").
 - An entry that has neither a field nor a breach distance (cut off by terrain)
   has `cells` = just the entry cell and `breach` = `null`.
 
@@ -1796,7 +1833,12 @@ Core to 0 or below, the health value after **all** of that tick's damage (unit
 attacks and Overload decay) is also kept unclamped, so it may be negative
 (`remaining`); for a living Core it equals its health. The summary reports
 `coreOverkill = -remaining` for a destroyed Core (0 if the Core ended exactly
-at 0) and 0 for a living one.
+at 0) and 0 for a living one. The damage of the tick is the per-target sum
+with the saturation rule of "Integer math conventions": `remaining = hp -
+min(2^52, exact sum)`, with `hp` the Core's health before that tick's damage.
+So a Core's overkill is at most `2^52 - hp`, and two Cores whose sums both
+saturated differ only by their `hp`: the one with the higher pre-tick health
+has the higher `remaining`.
 
 ### End conditions (CB-33)
 
@@ -1807,7 +1849,9 @@ that applies ends the battle.
 2. **Both Cores destroyed in the same tick**: compare each side's `remaining`.
    The side with the **higher** value (the Core that ended the tick less far
    below zero, that is, the side that took less overkill) wins, `reason:
-   "tiebreak_overkill"`. If they are equal, side 1 (the defender) wins,
+   "tiebreak_overkill"`. (The comparison is of `hp - damage`, not of the
+   damages: when both damage sums saturated at `2^52`, the side with the higher
+   pre-tick Core health wins.) If they are equal, side 1 (the defender) wins,
    `reason: "tiebreak_defender"`.
 3. **Time limit**: `maxBattleTicks` (12000) ticks have been simulated with
    both Cores alive: the side with the higher Core health as a fraction of its
@@ -2297,7 +2341,7 @@ broken as follows:
   relative order of IDs inside a side is the same on both sides, a mirrored
   battle (same team, 180-degree rotated) stays exactly symmetric.
 - **Breach routes:** least total cost; equal-cost neighbours by tie key. The
-  cost of a building uses its maximum (tier) health, not its current health.
+  cost of a building uses its maximum health (tier health raised by the team's health modifiers), not its current health.
 
 ## Shops and gold
 
