@@ -662,6 +662,29 @@ function shapeInner(
     }
   }
 
+  // Each conduit takes one output side of a placed building, and a side
+  // carries at most one conduit end (`side_in_use`), so a legal board holds at
+  // most `buildings * (most output sides of any building)` conduits (the Core
+  // is not a conduit end). Anything above that cannot be legal; reject it
+  // before the per-conduit checks run over the padding.
+  const rawTeam = raw['team'];
+  if (isRecord(rawTeam)) {
+    const bs = rawTeam['buildings'];
+    const cs = rawTeam['conduits'];
+    if (Array.isArray(bs) && Array.isArray(cs)) {
+      let maxOutputs = 0;
+      for (const d of content.buildings.list()) {
+        maxOutputs = Math.max(maxOutputs, d.outputs.length);
+      }
+      if (cs.length > bs.length * maxOutputs) {
+        errors.push(
+          `team: more conduits (${String(cs.length)}) than the buildings' output sides can hold (${String(bs.length * maxOutputs)}).`,
+        );
+        return undefined;
+      }
+    }
+  }
+
   const team = validateTeamState(raw['team'], content, mapgen);
   if (!team.ok) {
     for (const e of team.errors.slice(0, GHOST_MAX_ERRORS)) {

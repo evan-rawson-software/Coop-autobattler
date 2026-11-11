@@ -14,6 +14,7 @@ import {
   placeFromStash,
   queryMap,
   validateGhostSnapshot,
+  validateTeamState,
   type Cell,
   type GhostSnapshot,
   type TeamState,
@@ -339,6 +340,65 @@ describe('fast rejection of hostile values', () => {
     if (!r.ok) {
       expect(r.errors.length).toBeLessThanOrEqual(11);
       expect(r.errors[r.errors.length - 1]).toContain('more');
+    }
+  });
+});
+
+describe('conduit padding (quadratic check)', () => {
+  /** A snapshot of `round` whose team holds `count` junk conduits. */
+  function padded(count: number, round: number): GhostSnapshot {
+    const snap = JSON.parse(JSON.stringify(base4())) as GhostSnapshot & {
+      team: { conduits: unknown[]; buildings: { id: number }[] };
+    };
+    const id = snap.team.buildings[0]?.id ?? 1;
+    for (let i = 0; i < count; i++) {
+      snap.team.conduits.push({
+        id: 1000 + i,
+        from: { building: id, side: 'north' },
+        to: { building: id, side: 'south' },
+        cells: [],
+      });
+    }
+    return {
+      ...snap,
+      round,
+      pvpRecord: { wins: round - 1, losses: 0 },
+      lives: RULES.startingLives,
+    };
+  }
+
+  test('a conduit-padded junk snapshot at party 4 / round 1000 is rejected quickly', () => {
+    const limit = ghostMaxSerializedSize(4, 1000, ctx);
+    const probe = canonicalJson(padded(100, 1000)).length;
+    const base = canonicalJson(padded(0, 1000)).length;
+    const per = (probe - base) / 100;
+    const count = Math.floor(((limit - base) / per) * 0.98);
+    const snap = padded(count, 1000);
+    expect(canonicalJson(snap).length).toBeLessThanOrEqual(limit);
+    const t = perf.now();
+    const r = validateGhostSnapshot(snap, ctx);
+    const ms = perf.now() - t;
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(' ')).toContain('more conduits');
+    expect(ms).toBeLessThan(1500);
+  });
+
+  test('the per-conduit checks are linear even past the count bound', () => {
+    const snap = padded(20_000, 4);
+    const t = perf.now();
+    const r = validateTeamState(snap.team, content, mapgen);
+    const ms = perf.now() - t;
+    expect(r.ok).toBe(false);
+    expect(ms).toBeLessThan(1500);
+  });
+
+  test('the largest legal boards still pass', () => {
+    for (const round of [10, 23]) {
+      const r = validateGhostSnapshot(
+        JSON.parse(JSON.stringify(maximalBoard(round))),
+        ctx,
+      );
+      expect(r.ok, r.ok ? '' : r.errors.join('\n')).toBe(true);
     }
   });
 });
