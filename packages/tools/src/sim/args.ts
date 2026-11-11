@@ -72,6 +72,14 @@ export type Command =
       /** Also play every run again and compare (fails on any difference). */
       readonly verify: boolean;
       readonly time: boolean;
+    }
+  | {
+      readonly kind: 'ghosts';
+      /** Where to write the file; null: the bundled file in the repository. */
+      readonly out: string | null;
+      /** Do not write: fail if the file on disk differs from a new one. */
+      readonly check: boolean;
+      readonly time: boolean;
     };
 
 export const USAGE = `Usage: pnpm sim <command> [options]
@@ -93,6 +101,11 @@ Commands:
             with seeds seed .. seed+count-1; report depth reached, win rate by
             round, where each run ended and the number of rejected intents
             (exit code 1 if any, or with --verify if a replay differs).
+  ghosts  [--out FILE] [--check]
+            Play bot runs with ghosts on and write their PvP snapshots to the
+            bundled ghost file (default packages/web/src/run/bundled-ghosts.json).
+            Same output every time. With --check, write nothing and exit 1 if
+            the file on disk is not what a new run would write.
 
 BOARD is a path to a board JSON file, or a reference board name (rush,
 fortify, siege, poor) which means boards/<name>.json.
@@ -132,6 +145,7 @@ const FLAGS: Readonly<Record<string, readonly string[]>> = {
     'time',
   ],
   bot: ['strategy', 'count', 'seed', 'party', 'max-rounds', 'verify', 'time'],
+  ghosts: ['out', 'check', 'time'],
 };
 /** The largest seed (an unsigned 32-bit integer, as core requires). */
 const MAX_SEED = 0xffffffff;
@@ -140,7 +154,7 @@ const MAX_SEED = 0xffffffff;
  * `maxThreatRound` for the loaded content, checked when the command runs.
  */
 const MAX_ROUND_PARSE = 1000;
-const BOOLEAN_FLAGS: readonly string[] = ['ascii', 'time', 'verify'];
+const BOOLEAN_FLAGS: readonly string[] = ['ascii', 'time', 'verify', 'check'];
 
 function usageError(message: string): CliError {
   return new CliError(`${message}\n\n${USAGE}`, 2);
@@ -303,6 +317,13 @@ export function parseArgs(argv: readonly string[]): Command {
         time,
       };
     }
+    case 'ghosts':
+      return {
+        kind: 'ghosts',
+        out: flags.get('out') ?? null,
+        check: flags.has('check'),
+        time,
+      };
     default: {
       const b = flags.get('b');
       const hasThreat = flags.has('archetype');

@@ -21,6 +21,7 @@
     "smoke": "pnpm --filter @game/web run build:debug && node packages/web/scripts/smoke.mjs",
     "sim": "tsx packages/tools/src/sim/cli.ts",
     "art:build": "pnpm --filter @game/art run generate",
+    "ghosts:update": "tsx packages/tools/src/sim/cli.ts ghosts",
     "boards:export": "tsx packages/tools/src/sim/export-boards.ts"
   },
   "devDependencies": {

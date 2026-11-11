@@ -129,6 +129,14 @@ export {
   type VersionClass,
 } from './version.js';
 export {
+  BUNDLED_GHOST_FORMAT,
+  BUNDLED_OWNER_PREFIX,
+  bundledGhostsOf,
+  createBundledGhostStore,
+  layerGhostStores,
+  type BundledGhostFile,
+} from './bundled-ghosts.js';
+export {
   createMemoryGhostStore,
   evictionKeys,
   ghostStoreKey,
