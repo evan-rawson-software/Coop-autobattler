@@ -10,6 +10,7 @@ import { spawnUnitForTest, startArenaBattle, stepArena } from './arena-sim.js';
 import type { World } from './geometry.js';
 import { CELL_UNITS } from './limits.js';
 import type { GameMap } from './map.js';
+import { hashJson } from './hash.js';
 import { Rng } from './rng.js';
 import type { SimConfig } from './sim-config.js';
 import type { TeamState } from './team-state.js';
@@ -275,8 +276,8 @@ const MIXES: readonly (readonly string[])[] = [
   ['unit_dart', 'unit_soldier', 'unit_raider', 'unit_mite'],
 ];
 
-/** One dense random battle; returns the first violations found, or none. */
-function runOne(seed: number, passes: number, ticks: number): string[] {
+/** A dense random battle, ready to step. */
+function denseBattle(seed: number, passes: number) {
   const rng = Rng.fromSeed(seed);
   const config: SimConfig = { ...simConfig, separationPasses: passes };
   const { sim, ctx } = startArenaBattle(
@@ -300,16 +301,29 @@ function runOne(seed: number, passes: number, ticks: number): string[] {
         side: rng.nextInt(2),
         def: mix[rng.nextInt(mix.length)] ?? 'unit_mite',
         px: snap ? rng.nextInt(12) * CU + CU / 2 : rng.nextInt(12 * CU),
-        py: Math.max(
-          0,
-          Math.min(height * CU - 1, yc + rng.nextInt(7 * CU) - 3 * CU),
-        ),
+        py: snap
+          ? Math.max(
+              0,
+              Math.min(height - 1, Math.floor(yc / CU) + rng.nextInt(7) - 3),
+            ) *
+              CU +
+            CU / 2
+          : Math.max(
+              0,
+              Math.min(height * CU - 1, yc + rng.nextInt(7 * CU) - 3 * CU),
+            ),
       });
       placed += 1;
     } catch {
       // not open or taken
     }
   }
+  return { sim, ctx };
+}
+
+/** One dense random battle; returns the first violations found, or none. */
+function runOne(seed: number, passes: number, ticks: number): string[] {
+  const { sim, ctx } = denseBattle(seed, passes);
   for (let t = 0; t < ticks; t++) {
     stepArena(sim, ctx);
     const v = circleViolations(sim, ctx);
@@ -322,6 +336,23 @@ function runOne(seed: number, passes: number, ticks: number): string[] {
   }
   return [];
 }
+
+describe('relaxation passes after the first', () => {
+  test('looking only at movers that can see a change gives the same result as looking at all', () => {
+    for (let seed = 1; seed <= 150; seed++) {
+      for (const passes of [2, 4]) {
+        const a = denseBattle(seed, passes);
+        const b = denseBattle(seed, passes);
+        b.ctx.motion.everyMover = true;
+        for (let t = 0; t < 25; t++) {
+          stepArena(a.sim, a.ctx);
+          stepArena(b.sim, b.ctx);
+          expect(hashJson(a.sim)).toBe(hashJson(b.sim));
+        }
+      }
+    }
+  }, 300_000);
+});
 
 describe('the invariant for extreme units in dense layouts', () => {
   test('circleViolations sees units of test-only content', () => {

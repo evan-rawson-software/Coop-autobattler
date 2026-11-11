@@ -438,6 +438,113 @@ describe('save and restore at any tick', () => {
     }
   }, 120_000);
 
+  test('held producers restore at any tick; the spawn cell cache is rebuilt identically, also after a destruction', () => {
+    // A barracks whose only exit is blocked by two frozen posts holds its
+    // finished unit for the whole run; at tick 300 a wall is destroyed, which
+    // opens another exit cell and drops the cached candidate cells.
+    const lab = new Lab({
+      ...tiny(),
+      nodes: [{ x: 2, y: 2, resource: 'res_a' }],
+    });
+    lab.core(8, 0);
+    const src = lab.put('bld_extractor', 2, 2, 0, 1);
+    const bar = lab.put('bld_barracks', 2, 5, 0, 1);
+    lab.link(src, 'north', bar, 'south', [
+      [2, 3],
+      [2, 4],
+    ]);
+    for (const [x, y] of [
+      [1, 5],
+      [1, 6],
+      [4, 5],
+      [4, 6],
+      [2, 7],
+      [3, 7],
+      [3, 4],
+    ] as const) {
+      lab.put('bld_wall', x, y);
+    }
+    const make = () => {
+      const b = startArenaBattle(
+        lab.state,
+        coreOnly(),
+        4,
+        postContent,
+        simConfig,
+      );
+      const pins = new Map<number, [number, number]>();
+      for (const [side, px, py] of [
+        [0, mid(2), mid(4)],
+        [1, mid(2), mid(4) - 60],
+      ] as const) {
+        const u = spawnUnitForTest(b.sim, b.ctx, {
+          side,
+          def: 'unit_post',
+          px,
+          py,
+          allowOverlap: true,
+        });
+        pins.set(u.id, [px, py]);
+      }
+      return { ...b, pins };
+    };
+    const advance = (
+      sim: ArenaSim,
+      ctx: ReturnType<typeof createArenaContext>,
+      pins: Map<number, [number, number]>,
+      tick: number,
+    ): void => {
+      if (tick === 300) {
+        const wall = got(
+          ctx.arena.buildings.find((x) => x.def === 'bld_wall' && x.side === 0),
+        );
+        const h = got(
+          sim.health.find((x) => x.side === 0 && x.building === wall.id),
+        );
+        h.hp = 0; // destroyed in step 6 of this tick
+      }
+      stepArena(sim, ctx);
+      for (const u of sim.units) {
+        const at = pins.get(u.id);
+        if (at !== undefined) [u.px, u.py] = at;
+      }
+    };
+    const ref = make();
+    for (let t = 0; t < 340; t++) {
+      advance(ref.sim, ref.ctx, ref.pins, t);
+      if (t === 299) {
+        // Held: the finished unit waits, nothing was spawned yet.
+        const p = got(ref.sim.producers.find((x) => x.building === bar));
+        expect(p.progress).toBeGreaterThanOrEqual(6);
+        expect(ref.sim.units).toHaveLength(2);
+      }
+    }
+    // The destroyed wall opened another exit: the unit came out.
+    expect(ref.sim.units.length).toBeGreaterThan(2);
+    for (const at of [3, 150, 299, 300, 301, 330]) {
+      const b = make();
+      let { sim, ctx } = b;
+      for (let t = 0; t < 340; t++) {
+        if (t === at) {
+          sim = JSON.parse(JSON.stringify(sim)) as ArenaSim;
+          ctx = createArenaContext(sim, postContent, simConfig);
+        }
+        advance(sim, ctx, b.pins, t);
+      }
+      expect(hashJson(sim)).toBe(hashJson(ref.sim));
+      // The cache holds the same candidate cells (destroyed buildings are not
+      // in a restored arena, so compare what is cached, not the indices).
+      const cached = (c: typeof ctx) =>
+        c.spawnCells.filter((x) => x !== undefined).map((x) => [...x]);
+      // (Rebuilt on demand, so only when the producer still had to place its
+      // unit after the restore.)
+      if (at <= 301) {
+        expect(cached(ctx)).toEqual(cached(ref.ctx));
+        expect(cached(ctx).length).toBeGreaterThan(0);
+      }
+    }
+  }, 60_000);
+
   test('two runs of the same battle are identical', () => {
     const a = randomTeam(4, 2);
     const b = randomTeam(9, 2);

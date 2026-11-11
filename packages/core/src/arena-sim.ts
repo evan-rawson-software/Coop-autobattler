@@ -433,6 +433,8 @@ export interface ArenaContext {
   /** Lazily computed, dropped whenever a building is destroyed. */
   fields: (Field | undefined)[];
   breach: (Float64Array | undefined)[];
+  /** Per building `ref`: its cached `spawnCells`, dropped with the fields. */
+  spawnCells: (Int32Array | undefined)[];
   // Scratch buffers reused across ticks (rebuilt from the state every tick).
   /** Per side, per cell: the first unit index whose centre is in the cell. */
   heads: Int32Array[];
@@ -455,6 +457,8 @@ export interface ArenaContext {
   readonly sideCount: [number, number];
   /** Scratch list of nearby units (x, y, radius triples) for spawn checks. */
   near: Int32Array;
+  /** The part of `near` that can overlap one spawn cell. */
+  nearCell: Int32Array;
   action: Uint8Array;
   arg: Int32Array;
   /**
@@ -616,6 +620,9 @@ export function createArenaContext(
     maxBody: Math.max(1, ...content.units.list().map((d) => d.radius)),
     fields: new Array<Field | undefined>(2).fill(undefined),
     breach: [undefined, undefined] as (Float64Array | undefined)[],
+    spawnCells: new Array<Int32Array | undefined>(arena.buildings.length).fill(
+      undefined,
+    ),
     heads: [new Int32Array(cells), new Int32Array(cells)],
     next: new Int32Array(0),
     crad: new Int32Array(0),
@@ -630,6 +637,7 @@ export function createArenaContext(
     bySide: [new Int32Array(0), new Int32Array(0)],
     sideCount: [0, 0] as [number, number],
     near: new Int32Array(192),
+    nearCell: new Int32Array(192),
     action: new Uint8Array(0),
     arg: new Int32Array(0),
     unitDamage: new Float64Array(0),
@@ -975,35 +983,30 @@ const SPAWN_OFFSETS: readonly (readonly [number, number])[] = [
 ];
 
 /**
- * The first free position inside arena cell `(cx, cy)` for a unit of `side`
- * and type `def`: the cell's centre plus the offsets of `SPAWN_OFFSETS` times
- * `m = 120 - collisionRadius` (negated for side 1, the rotated frame), or null.
- * A position is free when the circle fits and overlaps no living unit.
+ * Gather into `ctx.near` (x, y, radius triples) the living units whose centre
+ * is in arena cells `x0 .. x1` x `y0 .. y1` widened by what a unit of
+ * collision radius `r` can reach: every unit that could overlap a circle of
+ * that radius centred anywhere inside the window. Returns how many.
  */
-function freeInCell(
+function gatherNear(
   sim: ArenaSim,
   ctx: ArenaContext,
-  side: number,
-  def: UnitDef,
-  cx: number,
-  cy: number,
-): { x: number; y: number } | null {
-  const r = def.collisionRadius;
+  r: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+): number {
   const { width, height } = ctx.arena.geom;
-  // Gather the units that could overlap any position inside this cell once.
   const win = Math.max(1, divCeil(r + ctx.maxRadius, S));
   let count = 0;
+  const yLo = Math.max(0, y0 - win);
+  const yHi = Math.min(height - 1, y1 + win);
+  const xLo = Math.max(0, x0 - win);
+  const xHi = Math.min(width - 1, x1 + win);
   for (const heads of ctx.heads) {
-    for (
-      let y = Math.max(0, cy - win);
-      y <= Math.min(height - 1, cy + win);
-      y++
-    ) {
-      for (
-        let x = Math.max(0, cx - win);
-        x <= Math.min(width - 1, cx + win);
-        x++
-      ) {
+    for (let y = yLo; y <= yHi; y++) {
+      for (let x = xLo; x <= xHi; x++) {
         let j = heads[y * width + x] ?? -1;
         while (j !== -1) {
           const e = sim.units[j];
@@ -1023,18 +1026,59 @@ function freeInCell(
       }
     }
   }
+  return count;
+}
+
+/**
+ * The first free position inside arena cell `(cx, cy)` for a unit of `side`
+ * and type `def`: the cell's centre plus the offsets of `SPAWN_OFFSETS` times
+ * `m = 120 - collisionRadius` (negated for side 1, the rotated frame), or null.
+ * A position is free when the circle fits and overlaps no living unit. The
+ * `count` units of `ctx.near` (see `gatherNear`) must include every unit that
+ * could overlap such a position; extra units do no harm.
+ */
+function firstFreeIn(
+  ctx: ArenaContext,
+  side: number,
+  def: UnitDef,
+  count: number,
+  cx: number,
+  cy: number,
+): { x: number; y: number } | null {
+  const r = def.collisionRadius;
   const m = S / 2 - r;
   const sign = side === 0 ? 1 : -1;
+  // Keep the gathered units that can overlap a position of this cell: a
+  // position is at most `max(m, 0)` from the cell's centre.
+  const mx = cx * S + S / 2;
+  const my = cy * S + S / 2;
+  const lim = r + ctx.maxRadius + (m > 0 ? m : 0);
+  if (ctx.nearCell.length < ctx.near.length) {
+    ctx.nearCell = new Int32Array(ctx.near.length);
+  }
+  const near = ctx.nearCell;
+  let kept = 0;
+  for (let q = 0; q < count; q++) {
+    const ux = ctx.near[3 * q] ?? 0;
+    const uy = ctx.near[3 * q + 1] ?? 0;
+    if (ux - mx >= lim || mx - ux >= lim || uy - my >= lim || my - uy >= lim) {
+      continue;
+    }
+    near[3 * kept] = ux;
+    near[3 * kept + 1] = uy;
+    near[3 * kept + 2] = ctx.near[3 * q + 2] ?? 0;
+    kept += 1;
+  }
   for (const [ox, oy] of SPAWN_OFFSETS) {
     if (m <= 0 && (ox !== 0 || oy !== 0)) continue;
-    const x = cx * S + S / 2 + sign * ox * m;
-    const y = cy * S + S / 2 + sign * oy * m;
+    const x = mx + sign * ox * m;
+    const y = my + sign * oy * m;
     if (!fits(ctx.world, side, r, x, y)) continue;
     let free = true;
-    for (let q = 0; q < count && free; q++) {
-      const dx = (ctx.near[3 * q] ?? 0) - x;
-      const dy = (ctx.near[3 * q + 1] ?? 0) - y;
-      const rr = r + (ctx.near[3 * q + 2] ?? 0);
+    for (let q = 0; q < kept && free; q++) {
+      const dx = (near[3 * q] ?? 0) - x;
+      const dy = (near[3 * q + 1] ?? 0) - y;
+      const rr = r + (near[3 * q + 2] ?? 0);
       if (dx * dx + dy * dy < rr * rr) free = false;
     }
     if (free) return { x, y };
@@ -1042,19 +1086,34 @@ function freeInCell(
   return null;
 }
 
-/**
- * The spawn position of a unit leaving `producer`: the cells 4-adjacent to
- * the producer's footprint that are open for the side, in the order of the key
- * (class, distance, tie key); in each the first free position. Null when no
- * position is free (the unit is held).
- */
-function spawnPosition(
+/** `firstFreeIn` for one cell, gathering the units around it first. */
+function freeInCell(
   sim: ArenaSim,
   ctx: ArenaContext,
   side: number,
-  producer: ArenaBuilding,
-  unitDef: UnitDef,
+  def: UnitDef,
+  cx: number,
+  cy: number,
 ): { x: number; y: number } | null {
+  const count = gatherNear(sim, ctx, def.collisionRadius, cx, cy, cx, cy);
+  return firstFreeIn(ctx, side, def, count, cx, cy);
+}
+
+/**
+ * The cells a unit leaving `producer` may appear in, in the order tried: the
+ * cells 4-adjacent to the producer's footprint that are open for the side, in
+ * the order of the key (class, distance, tie key), without repeats. A pure
+ * function of which buildings exist, so it is cached per building until the
+ * next destruction (like the movement fields) and rebuilt on demand.
+ */
+function spawnCells(
+  ctx: ArenaContext,
+  side: number,
+  ref: number,
+  producer: ArenaBuilding,
+): Int32Array {
+  const cached = ctx.spawnCells[ref];
+  if (cached !== undefined) return cached;
   const arena = ctx.arena;
   const { width, height } = arena.geom;
   const field = fieldFor(ctx, side);
@@ -1082,17 +1141,55 @@ function spawnPosition(
   cands.sort(
     (a, b) => a.cls - b.cls || a.d - b.d || a.tie - b.tie || a.k - b.k,
   );
+  const out: number[] = [];
   let last = -1;
   for (const c of cands) {
     if (c.k === last) continue;
     last = c.k;
-    const pos = freeInCell(
-      sim,
+    out.push(c.k);
+  }
+  const cells = Int32Array.from(out);
+  ctx.spawnCells[ref] = cells;
+  return cells;
+}
+
+/**
+ * The spawn position of a unit leaving `producer`: the first free position in
+ * the first of its `spawnCells` that has one. The units near any of the cells
+ * are gathered once. Null when no position is free (the unit is held).
+ */
+function spawnPosition(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  side: number,
+  ref: number,
+  producer: ArenaBuilding,
+  unitDef: UnitDef,
+): { x: number; y: number } | null {
+  const cells = spawnCells(ctx, side, ref, producer);
+  if (cells.length === 0) return null;
+  const width = ctx.arena.geom.width;
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -1;
+  let y1 = -1;
+  for (const k of cells) {
+    const x = k % width;
+    const y = divFloor(k, width);
+    if (x < x0) x0 = x;
+    if (x > x1) x1 = x;
+    if (y < y0) y0 = y;
+    if (y > y1) y1 = y;
+  }
+  const count = gatherNear(sim, ctx, unitDef.collisionRadius, x0, y0, x1, y1);
+  for (const k of cells) {
+    const pos = firstFreeIn(
       ctx,
       side,
       unitDef,
-      c.k % width,
-      divFloor(c.k, width),
+      count,
+      k % width,
+      divFloor(k, width),
     );
     if (pos !== null) return pos;
   }
@@ -1123,7 +1220,7 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (unitDef === undefined) throw new Error(`Unknown unit "${info.unit}".`);
     const producer = ctx.arena.buildings[info.ref];
     if (producer === undefined) continue;
-    const pos = spawnPosition(sim, ctx, p.side, producer, unitDef);
+    const pos = spawnPosition(sim, ctx, p.side, info.ref, producer, unitDef);
     if (pos === null) continue; // held: no free position at the exit
     p.progress -= info.cost;
     addUnit(sim, ctx, p.side, unitDef, pos.x, pos.y, p.building, tick);
@@ -1984,6 +2081,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   if (destroyed) {
     ctx.fields.fill(undefined);
     ctx.breach.fill(undefined);
+    ctx.spawnCells.fill(undefined);
     for (const s of ctx.steps) s.fill(-2);
     fillSolid(arena, ctx.world.solid);
   }
