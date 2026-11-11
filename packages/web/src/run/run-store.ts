@@ -198,6 +198,7 @@ export async function showRun(
     services.deps,
     services.saves,
     INSTALLED_VERSION,
+    { ghostStore: services.ghosts },
   );
   if (stale()) {
     if (opened.ok) {
@@ -206,6 +207,9 @@ export async function showRun(
     return;
   }
   if (opened.ok) {
+    // A save made between entering the shop and fixing the PvP opponent.
+    await opened.controller.prepare(Date.now());
+    if (stale()) return;
     runStore.set({
       status: 'ready',
       run: activate(opened.controller, services, opened.versionNotice),
@@ -284,6 +288,7 @@ export async function createNewRun(seed?: number): Promise<NewRunResult> {
     services.saves,
     Date.now(),
     INSTALLED_VERSION,
+    { ghostStore: services.ghosts },
   );
   if (!r.ok) {
     return {

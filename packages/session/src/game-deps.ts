@@ -57,7 +57,7 @@ export interface GameOverrides {
    * selection effects and the ready gate before a PvP battle. Without it PvP
    * always fights the generated boss.
    */
-  readonly ghosts?: Pick<GhostRules, 'ownerId'>;
+  readonly ghosts?: Pick<GhostRules, 'ownerId' | 'ownerLabel'>;
 }
 
 /**
@@ -116,6 +116,9 @@ export function createGameDeps(
       : {
           ghosts: {
             ownerId: overrides.ghosts.ownerId,
+            ...(overrides.ghosts.ownerLabel === undefined
+              ? {}
+              : { ownerLabel: overrides.ghosts.ownerLabel }),
             economy: configs.economy,
             events: configs.events,
           },

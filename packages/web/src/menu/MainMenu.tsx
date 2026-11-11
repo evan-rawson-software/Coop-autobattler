@@ -88,6 +88,7 @@ export function MainMenuScreen() {
   const [notice, setNotice] = useState<string | null>(null);
   const [asking, setAsking] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [ghostNote, setGhostNote] = useState<string | null>(null);
   const hash = useStore(hashStore);
   const seed = seedFromHash(hash);
   const alive = useRef(true);
@@ -134,6 +135,21 @@ export function MainMenuScreen() {
       unregisterDebug('menu');
     };
   }, [data]);
+
+  const clearGhosts = (): void => {
+    void getServices()
+      .then((sv) => sv.ghosts.clear())
+      .then(
+        () => {
+          setGhostNote('The ghost pool is empty.');
+        },
+        (e: unknown) => {
+          setGhostNote(
+            `The ghost pool could not be cleared (${e instanceof Error ? e.message : String(e)}).`,
+          );
+        },
+      );
+  };
 
   const newRun = (): void => {
     if (starting) return;
@@ -208,6 +224,20 @@ export function MainMenuScreen() {
                 </li>
               ))}
             </ul>
+            <p>
+              <button
+                type="button"
+                data-action="clear-ghosts"
+                onClick={clearGhosts}
+              >
+                Clear ghost pool
+              </button>
+            </p>
+            {ghostNote === null ? null : (
+              <p class="muted fine" role="status" data-field="ghost-note">
+                {ghostNote}
+              </p>
+            )}
             <p class="muted fine">
               Add <code>?seed=5</code> after <code>#/</code> to start the next
               run with that seed.

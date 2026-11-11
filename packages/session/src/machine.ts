@@ -300,7 +300,10 @@ function enter(
         // Taken before the fight, win or lose; the controller stores it.
         fx.push({
           type: 'ghost_snapshot',
-          snapshot: snapshotOf(s, ghostOwnerFor(s, deps.ghosts.ownerId)),
+          snapshot: snapshotOf(
+            s,
+            ghostOwnerFor(s, deps.ghosts.ownerId, deps.ghosts.ownerLabel),
+          ),
         });
       }
       const d = drawStream(s, streamLabels.battle('pvp', s.round));

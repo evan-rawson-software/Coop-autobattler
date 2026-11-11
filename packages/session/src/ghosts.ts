@@ -60,8 +60,15 @@ export function partyLabel(state: Pick<RunState, 'players'>): string {
 export function ghostOwnerFor(
   state: Pick<RunState, 'players'>,
   ownerId: string,
+  ownerLabel?: string,
 ): GhostOwner {
-  return { id: ownerId, label: partyLabel(state) };
+  return {
+    id: ownerId,
+    label:
+      ownerLabel === undefined
+        ? partyLabel(state)
+        : partyLabel({ players: [{ index: 0, name: ownerLabel }] }),
+  };
 }
 
 /** The bucket a run is in now: its version, party size and round. */

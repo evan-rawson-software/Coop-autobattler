@@ -483,6 +483,11 @@ export interface IntentHandler {
 export interface GhostRules {
   /** The stable identifier written into every snapshot of this install. */
   readonly ownerId: string;
+  /**
+   * What opponents see instead of the player names (a front end that does not
+   * want to show them). Absent: the names of the party.
+   */
+  readonly ownerLabel?: string;
   /** For the value bound and the modifier checks of `validateGhostSnapshot`. */
   readonly economy: EconomyConfig;
   readonly events: EventsConfig;

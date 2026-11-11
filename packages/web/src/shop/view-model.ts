@@ -13,6 +13,7 @@ import {
 } from '@game/core';
 import {
   nextBattleInfo,
+  pvpOpponentInfo,
   readShop,
   type NextBattleInfo,
   type PveOptionView,
@@ -295,10 +296,24 @@ export function nextBattleView(
     title: 'PvP',
     options: [],
     pvp: {
-      opponent: 'Opponent unknown until the battle starts.',
+      opponent: opponentText(run),
       winGold: info.stakes.winGold,
       lossGold: info.stakes.lossGold,
       lifeCost: info.stakes.lifeCost,
     },
   };
+}
+
+/**
+ * Who the PvP battle is against (MM-11): known once the party is in the shop
+ * before it; the opponent is fixed there, before the battle is revealed.
+ */
+export function opponentText(
+  run: Pick<RunState, 'pvpOpponent' | 'round'>,
+): string {
+  const o = pvpOpponentInfo(run);
+  if (o === null) return 'Opponent unknown until the battle starts.';
+  return o.kind === 'ghost'
+    ? `Opponent: a ghost of ${o.label}`
+    : 'Opponent: the boss (no ghost available)';
 }
