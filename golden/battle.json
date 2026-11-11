@@ -299,7 +299,7 @@
           "pointsOfInterest": []
         },
         "stateHash": "5c6ca7fc",
-        "events": 4791
+        "events": 4793
       }
     }
   },
@@ -1365,31 +1365,31 @@
         "result": {
           "winner": 1,
           "reason": "core_destroyed",
-          "endTick": 1538
+          "endTick": 690
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 228,
-              "unitsLost": 224,
+              "unitsSpawned": 102,
+              "unitsLost": 97,
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
-              "coreOverkill": 7,
+              "coreOverkill": 18,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
-              "unitsKilled": 48
+              "unitsKilled": 16
             },
             {
-              "unitsSpawned": 146,
-              "unitsLost": 48,
+              "unitsSpawned": 60,
+              "unitsLost": 16,
               "buildingsLost": 0,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
               "rampSteps": 30,
               "buildingDamageDealt": 500,
-              "unitsKilled": 224
+              "unitsKilled": 97
             }
           ]
         },
@@ -1410,8 +1410,8 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "7048dfb2",
-        "events": 6062
+        "stateHash": "88031462",
+        "events": 2931
       }
     }
   },
@@ -1703,12 +1703,12 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 643
+          "endTick": 372
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 60,
+              "unitsSpawned": 36,
               "unitsLost": 0,
               "buildingsLost": 0,
               "coreHealth": 500,
@@ -1724,7 +1724,7 @@
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
-              "coreOverkill": 4,
+              "coreOverkill": 10,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0
@@ -1763,8 +1763,8 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "6a3f42f0",
-        "events": 655
+        "stateHash": "81eb1454",
+        "events": 416
       }
     }
   },
@@ -3786,7 +3786,7 @@
   {
     "id": "battle.wave-queue",
     "kind": "battle",
-    "description": "A scheduled wave of 80 soldiers (side 1) is larger than the front row holds: the units that find no room wait in the entering queue in order and come in as the row clears; none is dropped. The party Core is strong enough that the battle outlasts the queue.",
+    "description": "A scheduled wave of 1200 soldiers (side 1) is larger than the front row holds: the units that find no room wait in the entering queue in order and come in as the row clears; none is dropped. The party Core is strong enough that the battle outlasts the queue.",
     "input": {
       "teamA": {
         "map": {
@@ -3832,7 +3832,7 @@
             {
               "tick": 0,
               "unit": "unit_soldier",
-              "count": 80
+              "count": 1200
             }
           ],
           "coreHealth": 200000
@@ -3844,8 +3844,8 @@
         "ok": true,
         "result": {
           "winner": 1,
-          "reason": "time_limit",
-          "endTick": 12000
+          "reason": "core_destroyed",
+          "endTick": 1031
         },
         "summary": {
           "sides": [
@@ -3853,22 +3853,22 @@
               "unitsSpawned": 0,
               "unitsLost": 0,
               "buildingsLost": 0,
-              "coreHealth": 34219,
+              "coreHealth": 0,
               "coreMaxHealth": 200000,
-              "coreOverkill": 0,
+              "coreOverkill": 58,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0
             },
             {
-              "unitsSpawned": 80,
+              "unitsSpawned": 1200,
               "unitsLost": 0,
               "buildingsLost": 0,
-              "coreHealth": 173735,
+              "coreHealth": 200000,
               "coreMaxHealth": 200000,
               "coreOverkill": 0,
               "rampSteps": 0,
-              "buildingDamageDealt": 139516,
+              "buildingDamageDealt": 200000,
               "unitsKilled": 0
             }
           ]
@@ -3905,10 +3905,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "cb284068",
-        "events": 2765
+        "stateHash": "a83fa133",
+        "events": 34546
       },
-      "eventLogHash": "ca953062"
+      "eventLogHash": "5d45ccea"
     }
   }
 ]
