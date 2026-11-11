@@ -108,7 +108,7 @@ describe('round by round', () => {
         round: 2,
         pve: 'Easy · Fortress',
         pveResult: 'lost',
-        pvp: 'the boss (Boss)',
+        pvp: 'the boss',
         pvpResult: 'lost',
       },
       { round: 3, pve: '—', pveResult: '—', pvp: '—', pvpResult: '—' },

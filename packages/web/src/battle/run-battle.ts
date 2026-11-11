@@ -17,6 +17,7 @@ import {
   type RunDeps,
   type RunState,
 } from '@game/session';
+import type { StorageLike } from '../run/local-storage-store.js';
 import { archetypeText, bossName } from '../run/temporary-text.js';
 import type { BattleDescription, OpponentInfo } from './types.js';
 
@@ -186,20 +187,57 @@ export function tickKey(run: RunState): string {
   return `${TICK_PREFIX}${run.runId}:${String(run.actionCounter)}`;
 }
 
-export function readTick(key: string): number {
+function tickStorage(given?: StorageLike): StorageLike | null {
+  if (given !== undefined) return given;
   try {
-    const n = Number(window.localStorage.getItem(key));
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+export function readTick(key: string, storage?: StorageLike): number {
+  try {
+    const n = Number(tickStorage(storage)?.getItem(key) ?? 0);
     return Number.isInteger(n) && n > 0 ? n : 0;
   } catch {
     return 0;
   }
 }
 
-export function writeTick(key: string, tick: number): void {
+export function writeTick(
+  key: string,
+  tick: number,
+  storage?: StorageLike,
+): void {
   try {
-    if (tick > 0) window.localStorage.setItem(key, String(tick));
-    else window.localStorage.removeItem(key);
+    const s = tickStorage(storage);
+    if (s === null) return;
+    if (tick > 0) s.setItem(key, String(tick));
+    else s.removeItem(key);
   } catch {
     // Playback position is a convenience; losing it only restarts the replay.
+  }
+}
+
+/** Forget the playback position of one battle (the player moved past it). */
+export function clearTick(key: string, storage?: StorageLike): void {
+  writeTick(key, 0, storage);
+}
+
+/** Forget every playback position of a run (it is over or removed). */
+export function clearRunTicks(runId: string, storage?: StorageLike): void {
+  try {
+    const s = tickStorage(storage);
+    if (s === null) return;
+    const prefix = `${TICK_PREFIX}${runId}:`;
+    const doomed: string[] = [];
+    for (let i = 0; i < s.length; i += 1) {
+      const k = s.key(i);
+      if (k !== null && k.startsWith(prefix)) doomed.push(k);
+    }
+    for (const k of doomed) s.removeItem(k);
+  } catch {
+    // Nothing to clean when storage is unavailable.
   }
 }

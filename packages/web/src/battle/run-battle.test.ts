@@ -4,7 +4,16 @@ import { describe, expect, test } from 'vitest';
 import { content } from '../content.js';
 import { reachStep, realDeps } from '../run/test-run.js';
 import { replayMatches, simulateRecord } from './playback.js';
-import { describeRunBattle, rewardLine } from './run-battle.js';
+import { createMemoryStorage } from '../run/local-storage-store.js';
+import {
+  clearRunTicks,
+  clearTick,
+  describeRunBattle,
+  readTick,
+  rewardLine,
+  tickKey,
+  writeTick,
+} from './run-battle.js';
 import { battleConfig } from './setup.js';
 
 function detailOf(run: RunState): BattleDetail {
@@ -145,5 +154,26 @@ describe('reward lines', () => {
     expect(rewardLine('pvp', false, deps, null)).toBe(
       `−1 life · +${String(deps.rewards?.pvpLoss)} gold consolation`,
     );
+  });
+});
+
+describe('playback positions', () => {
+  test("a battle's key goes when the player moves past it; a run's keys when it ends", () => {
+    const storage = createMemoryStorage();
+    const run = reachStep('pve_summary');
+    const other = { ...run, actionCounter: run.actionCounter + 7 };
+    const stranger = { ...run, runId: 'someone-else' };
+    for (const r of [run, other, stranger]) writeTick(tickKey(r), 40, storage);
+    expect(readTick(tickKey(run), storage)).toBe(40);
+
+    clearTick(tickKey(run), storage);
+    expect(readTick(tickKey(run), storage)).toBe(0);
+    expect(readTick(tickKey(other), storage)).toBe(40);
+
+    clearRunTicks(run.runId, storage);
+    expect(readTick(tickKey(other), storage)).toBe(0);
+    // Another run's position is not touched.
+    expect(readTick(tickKey(stranger), storage)).toBe(40);
+    expect(storage.length).toBe(1);
   });
 });

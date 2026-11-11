@@ -11,6 +11,8 @@ import type { RunHandle } from '../run/handle.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import { BattleView } from './BattleScreen.js';
 import {
+  clearRunTicks,
+  clearTick,
   describeRunBattle,
   readTick,
   tickKey,
@@ -32,7 +34,11 @@ export function RunBattleScreen(props: { run: RunHandle }) {
   const ready = (): void => {
     setError(null);
     void session.dispatch({ type: 'ready' }).then((r) => {
-      if (!r.ok && r.reason !== 'already_ready') {
+      if (r.ok) {
+        // Past this battle: its playback position is not needed any more.
+        clearTick(key);
+        if (r.state.step === 'run_over') clearRunTicks(run.runId);
+      } else if (r.reason !== 'already_ready') {
         setError(reasonMessage(r.reason, r.detail));
       }
     });

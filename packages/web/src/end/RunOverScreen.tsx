@@ -9,6 +9,7 @@ import { navigate } from '../app-state.js';
 import { BoardView } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
 import { content } from '../content.js';
+import { clearRunTicks } from '../battle/run-battle.js';
 import { registerDebug, unregisterDebug } from '../debug-hook.js';
 import { createNewRun, randomSeed } from '../run/run-store.js';
 import { runHash, seedFromHash } from '../run/router.js';
@@ -43,6 +44,12 @@ export function RunOverScreen(props: {
   const [history, setHistory] = useState<readonly HistoryEntry[] | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // A finished run needs no battle playback positions (a reload of Run over,
+  // or a crash before the ready handler cleaned up, still ends here).
+  useEffect(() => {
+    clearRunTicks(state.runId);
+  }, [state.runId]);
 
   useEffect(() => {
     let cancelled = false;

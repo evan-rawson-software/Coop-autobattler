@@ -18,6 +18,7 @@ import {
   type RunController,
   type RunState,
 } from '@game/session';
+import { clearRunTicks } from '../battle/run-battle.js';
 import { createStore, type Store } from '../app-state.js';
 import { BuildSession } from '../build/session.js';
 import type { RunHandle } from './handle.js';
@@ -352,6 +353,7 @@ export async function abandonSavedRun(runId: string): Promise<AbandonResult> {
           : `The run could not be abandoned (${r.reason}).`,
     };
   }
+  clearRunTicks(runId);
   // Normally written already (the save store keeps it before removing the
   // save); this covers a finish that was left incomplete.
   await keepFinished(services, r.state);
@@ -381,6 +383,7 @@ export async function discardSavedRun(runId: string): Promise<AbandonResult> {
   if (opened.reason === 'load_failed') {
     return { ok: false, message: RETRY_MESSAGE };
   }
+  clearRunTicks(runId);
   try {
     // Straight from the store: no history entry, so no record of the run.
     await services.saves.remove(runId);
