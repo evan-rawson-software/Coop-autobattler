@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'vitest';
 import {
-  GHOST_VALUE_MARGIN_PERCENT,
   canonicalJson,
   ghostBucketKey,
   ghostKey,
@@ -183,8 +182,9 @@ describe('taking snapshots', () => {
     expect(snap.gameVersion).toBe('0.1');
     expect(snap.partySize).toBe(1);
     expect(snap.mapSeed).toBe(7);
-    expect(snap.runSeed).toBeUndefined();
-    expect(snap.actionLog).toBeUndefined();
+    // The reserved fields are never written.
+    expect('runSeed' in snap).toBe(false);
+    expect('actionLog' in snap).toBe(false);
   });
 });
 
@@ -391,9 +391,9 @@ describe('matching and selection', () => {
     const log = b.controller.state.actionLog.find(
       (l) => (l.intent as { type: string }).type === SELECT_GHOST,
     );
-    const cands = (log?.intent as unknown as { candidates: unknown[] })
-      .candidates;
-    expect(cands.length).toBe(MAX_GHOST_CANDIDATES);
+    // The log keeps the compact record of the draw, not the candidates.
+    const logged = log?.intent as unknown as { n: number };
+    expect(logged.n).toBe(MAX_GHOST_CANDIDATES);
     // A direct oversized intent is refused.
     const s0 = clone(b.controller.state);
     const r = applyIntent(
@@ -628,24 +628,19 @@ describe('validation', () => {
     const e = gameConfigs.economy;
     const table = [1, 2, 3, 5, 8, 12].map((round) => {
       const b = ghostValueBound(round, 1, content, e, gameConfigs.events);
-      return [round, b.goldPerPlayer, b.kitPerPlayer, b.raw, b.limit];
+      return [round, b.goldPerPlayer, b.kitPerPlayer, b.limit];
     });
     // startingGold 10, income 3 per shop, PvE hard 8, PvP win 6, Windfall 4.
     // round 1: 10 + 3*1 + 8*1 + 6*0 + 4*1 = 25 gold.
     expect(table[0]?.[1]).toBe(25);
     // round 2: 10 + 3*3 + 8*2 + 6*1 + 4*3 = 53.
     expect(table[1]?.[1]).toBe(53);
-    expect(table[1]?.[4]).toBe(
-      Math.floor(
-        ((table[1]?.[3] as number) * (100 + GHOST_VALUE_MARGIN_PERCENT)) / 100,
-      ),
-    );
-    // A party of two has twice the bound before the margin.
+    // No margin: the limit is players * (gold + kit) = 53 + 67.
+    expect(table[1]?.[3]).toBe(53 + 67);
+    // A party of two has twice the bound.
     const two = ghostValueBound(3, 2, content, e, gameConfigs.events);
     const one = ghostValueBound(3, 1, content, e, gameConfigs.events);
-    expect(two.raw).toBe(2 * one.raw);
-    // Print the table for the docs (round, gold, kit, raw, limit).
-    expect(table.every((r) => (r[4] as number) >= (r[3] as number))).toBe(true);
+    expect(two.limit).toBe(2 * one.limit);
   });
 });
 

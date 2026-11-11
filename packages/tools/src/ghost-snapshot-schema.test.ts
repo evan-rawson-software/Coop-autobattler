@@ -77,11 +77,9 @@ describe('ghost-snapshot.schema.json', () => {
     expect(canonicalJson(again)).toBe(canonicalJson(snapshot));
   });
 
-  test('the reserved fields are optional but typed', () => {
-    expect(bad((o) => (o['runSeed'] = 5))).toBe(true);
-    expect(bad((o) => (o['actionLog'] = []))).toBe(true);
-    expect(bad((o) => (o['runSeed'] = -1))).toBe(false);
-    expect(bad((o) => (o['actionLog'] = 'x'))).toBe(false);
+  test('the reserved fields are not accepted (TA-22b)', () => {
+    expect(bad((o) => (o['runSeed'] = 5))).toBe(false);
+    expect(bad((o) => (o['actionLog'] = []))).toBe(false);
   });
 
   test('missing, unknown and malformed fields are rejected', () => {

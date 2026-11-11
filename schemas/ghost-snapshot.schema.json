@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "ghost-snapshot.schema.json",
   "title": "Ghost snapshot",
-  "description": "A party's whole team state at the start of a PvP battle (W3-1, MM-1..MM-17), kept in a local ghost pool for other runs to fight. It carries what is needed to match it (game version, party size, round) and to judge it (map seed, lives, PvP record). The schema covers the shape; whole-team-state legality, the map equalling generateMap(mapSeed, partySize), the consistency of the numbers with the round, the building-value bound and the modifier checks are done by validateGhostSnapshot in core. The pool is untrusted input: every snapshot is validated before use.",
+  "description": "A party's whole team state at the start of a PvP battle (W3-1, MM-1..MM-17), kept in a local ghost pool for other runs to fight. It carries what is needed to match it (game version, party size, round) and to judge it (map seed, lives, PvP record). The schema covers the shape; whole-team-state legality, the map equalling generateMap(mapSeed, partySize), the consistency of the numbers with the round, the building-value bound and the modifier checks are done by validateGhostSnapshot in core. The pool is untrusted input: every snapshot is validated before use. The fields runSeed and actionLog are reserved for TA-22b (the run's seed and action log) and are NOT accepted yet: a snapshot that carries either is rejected, so an unbounded value cannot ride along into a run state or save. validateGhostSnapshot also bounds the serialized size (4096 + 12288 per player characters), the nesting depth (16), every string (128 characters) and requires all numbers to be safe integers.",
   "type": "object",
   "required": [
     "formatVersion",
@@ -79,16 +79,6 @@
         "wins": { "type": "integer", "minimum": 0 },
         "losses": { "type": "integer", "minimum": 0 }
       }
-    },
-    "runSeed": {
-      "description": "Reserved (TA-22b): the run's seed. Not written yet.",
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 4294967295
-    },
-    "actionLog": {
-      "description": "Reserved (TA-22b): the run's action log. Not written yet.",
-      "type": "array"
     }
   }
 }

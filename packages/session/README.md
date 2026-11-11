@@ -225,11 +225,16 @@ What `session` adds:
   (carries `snapshotOf`; the controller stores it after the save), and
   `ghost_selection_needed` when the shop of the PvE leg is entered.
 - **`select_ghost` intent** (`{ candidates: GhostSnapshot[] }`, at most 16; shop
-  of the PvE leg; once per round, else `already_selected`). It re-validates the
-  candidates, draws once from `ghost:r<r>` over the eligible, valid ones in
-  `(owner id, run id)` order and stores the result in `state.pvpOpponent`. The
-  candidates are in the action log, so `replayRun` needs no store. `ready` in
-  that shop is refused with `ghost_selection_pending` until it was applied.
+  of the PvE leg; host only, else `not_host`; once per round, else
+  `already_selected`). It re-validates the candidates, draws once from
+  `ghost:r<r>` over the eligible, valid ones in `(owner id, run id)` order and
+  stores the result in `state.pvpOpponent`. The action log gets a compact
+  record instead of the candidates: `{ type, n, index, chosen, hash,
+  chosenHash }` (a handler returns it as `HandlerResult.logged`). `replayRun`
+  re-draws, checks `nextInt(n) === index` and uses `chosen` after a structural
+  check only, with no store and no economy bounds; a mismatch fails the replay
+  (`replay_mismatch`). The compact form is accepted only by `replayRun`. `ready`
+  in that shop is refused with `ghost_selection_pending` until it was applied.
 - **`RunState.pvpOpponent`** (`{ round, kind: 'ghost' | 'boss', label, ghost }`,
   non-null only in the shop of the PvE leg after the selection) and
   **`ghostsFought`** (keys of ghosts met, in order). `validateRunState` checks
@@ -247,9 +252,17 @@ What `session` adds:
   carried `ghost_selection_needed` it lists the bucket (a failing read means no
   candidates), presents the eligible valid candidates (`presentCandidates`) and
   dispatches `select_ghost` as the host; its result's effects are appended to
-  the original's. `controller.prepare(now)` (also run first by every
+  the original's. Before every save the controller runs `validateRunState` on
+  the next state; if it fails nothing is saved, revealed or advanced and the
+  result is `{ ok: false, reason: 'invalid_state', detail }` (about 0.5 ms for
+  a late-run state). `controller.prepare(now)` (also run first by every
   `dispatch`) finishes a selection owed by a save made in between.
 - **`pvpOpponentInfo(state)`** for screens: `{ kind, label }` once fixed.
+- **Local pool limits**: one owner per install and one snapshot per owner per
+  bucket mean a local bucket holds at most one of the player's own ghosts, so
+  the draw is then among one, and the player can influence ghost versus boss
+  (clearing the pool, planting a weak run). Acceptable for the prototype;
+  tracked in issue #79 with the Steam requirements.
 
 ## Saving (W2-4)
 

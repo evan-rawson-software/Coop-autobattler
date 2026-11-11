@@ -768,6 +768,22 @@ export function applyIntent(
   intent: Intent,
   deps: RunDeps,
 ): IntentResult {
+  return applyIntentAs(state, player, intent, deps, false);
+}
+
+/**
+ * `applyIntent`, live (`replay` false) or as a logged action being replayed.
+ * The log stores the intent as received, except where a handler returns a
+ * `logged` form (see `HandlerResult`): that form is stored instead, and only
+ * a replay accepts it back.
+ */
+function applyIntentAs(
+  state: RunState,
+  player: number,
+  intent: Intent,
+  deps: RunDeps,
+  replay: boolean,
+): IntentResult {
   if (!isInt(player) || player < 0 || player >= state.players.length) {
     return fail('not_a_player');
   }
@@ -777,6 +793,7 @@ export function applyIntent(
   const type = intent.type;
   const fx: Effect[] = [];
   let result: Next;
+  let logged: Json | undefined;
   if (isBuiltinType(type)) {
     result = applyBuiltin(state, player, intent as BuiltinIntent, deps, fx);
   } else {
@@ -786,13 +803,18 @@ export function applyIntent(
     if (handler === undefined) return fail('unknown_intent', type);
     if (!handler.steps.includes(state.step)) return fail('wrong_step');
     if (isLocked(state, player, type)) return fail('locked_ready');
+    if (handler.hostOnly === true && player !== state.host) {
+      return fail('not_host');
+    }
     const r = handler.handle({
       state,
       player,
       intent: intent as ExtensionIntent,
       deps,
+      ...(replay ? { replay: true } : {}),
     });
     if (!r.ok) return fail(r.reason, r.detail);
+    logged = r.logged;
     fx.push(...(r.effects ?? []));
     result = {
       ok: true,
@@ -804,7 +826,11 @@ export function applyIntent(
   }
   if (!result.ok) return result;
   const n = state.actionCounter + 1;
-  const entry: LoggedAction = { n, player, intent: intent as unknown as Json };
+  const entry: LoggedAction = {
+    n,
+    player,
+    intent: logged ?? (intent as unknown as Json),
+  };
   return {
     ok: true,
     state: {
@@ -843,6 +869,9 @@ export type ReplayResult =
 /**
  * Create a run and apply the logged actions in order. Used by tests and
  * later by save verification. Fails at the first action that is rejected.
+ * Logged actions are applied in replay mode: a handler's normalised form
+ * (for `select_ghost`, the compact record of the draw) is accepted here and
+ * nowhere else. Needs no store.
  */
 export function replayRun(
   args: CreateRunArgs,
@@ -853,7 +882,13 @@ export function replayRun(
   if (!created.ok) return created;
   let state = created.state;
   for (const entry of actionLog) {
-    const r = applyIntent(state, entry.player, entry.intent as Intent, deps);
+    const r = applyIntentAs(
+      state,
+      entry.player,
+      entry.intent as Intent,
+      deps,
+      true,
+    );
     if (!r.ok) {
       return r.detail === undefined
         ? { ok: false, reason: r.reason, at: entry.n }

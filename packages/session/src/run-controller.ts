@@ -25,6 +25,7 @@ import {
   type HistoryReason,
   type SaveStore,
 } from './save.js';
+import { validateRunState } from './validate.js';
 import type {
   CreateRunArgs,
   Effect,
@@ -48,8 +49,14 @@ export type DispatchResult =
     }
   | {
       readonly ok: false;
-      /** A rule rejection from `applyIntent`, or `save_failed`. */
-      readonly reason: RejectReason | 'save_failed';
+      /**
+       * A rule rejection from `applyIntent`, `save_failed`, or
+       * `invalid_state`: the rules produced a state that does not pass
+       * `validateRunState`. Nothing was saved, revealed or advanced; `detail`
+       * has the first problems. It is a bug (or a poisoned input the rules
+       * let through), never something the player can fix.
+       */
+      readonly reason: RejectReason | 'save_failed' | 'invalid_state';
       readonly detail?: string;
     };
 
@@ -121,6 +128,16 @@ function makeController(
       return r.detail === undefined
         ? { ok: false, reason: r.reason }
         : { ok: false, reason: r.reason, detail: r.detail };
+    }
+    // Nothing is written that would not open again: the next state must pass
+    // the same validation `openRun` applies.
+    const valid = validateRunState(r.state, deps);
+    if (!valid.ok) {
+      return {
+        ok: false,
+        reason: 'invalid_state',
+        detail: valid.errors.slice(0, 3).join(' '),
+      };
     }
     // A signature (a later phase) would cover the old state, so a rewritten
     // record carries none; signing happens on write in that phase.

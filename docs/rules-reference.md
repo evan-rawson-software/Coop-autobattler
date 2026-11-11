@@ -2833,8 +2833,10 @@ Ghosts are switched on by giving the run's deps `ghosts` (`createGameDeps(...,
 buildings, stash, conduits, modifiers), `owner` (`{id, label}`; the id is a
 stable install identifier, the label is shown to opponents), `runId`, `lives`
 (lives left when taken), `pvpRecord` (`{wins, losses}`: the PvP battles of the
-rounds before this one) and the reserved optional `runSeed` and `actionLog`
-(TA-22b; never written yet). `mapSeed` is the run's seed: the party's map is
+rounds before this one). `runSeed` and `actionLog` are reserved for TA-22b and
+NOT accepted yet: `snapshotOf` never writes them and a snapshot carrying either
+is rejected (an unbounded value there would be copied into the run state and
+its save). `mapSeed` is the run's seed: the party's map is
 `generateMap(mapSeed, partySize)`, so a verifier regenerates it and compares
 (this also covers the map-integrity question of issue #51 for ghosts). A
 snapshot is plain JSON and round-trips through `JSON.stringify` unchanged.
@@ -2881,8 +2883,9 @@ shop until it has been applied (`ghost_selection_pending`). The handler:
 
 Skipping an invalid snapshot and drawing another is therefore done by
 filtering before the single draw, which is the deterministic form of that
-rule. The payload is part of the action log, so `replayRun` repeats the draw
-with no store; the PvP battle uses the stored snapshot's team as side 1 (the
+rule. The action log does not keep the payload (16 candidates were 94% of a
+save): the machine logs a compact record instead, see "The logged form" below,
+so `replayRun` repeats the draw with no store; the PvP battle uses the stored snapshot's team as side 1 (the
 existing `startBattle` with the party as side 0), stores it in the battle
 detail like any ghost, and clears `pvpOpponent` afterwards (the ghost's key
 joins `ghostsFought`). A reload before the battle reads the same
@@ -2891,13 +2894,53 @@ before the selection, `RunController.prepare` finishes it when the run is
 opened. Players are told before the battle: "Opponent: a ghost of <label>" or
 "Opponent: the boss (no ghost available)" (MM-11).
 
+Only the host may send `select_ghost` (`not_host` otherwise; it is not in
+`allowedIntents` of other players), so a non-host cannot force the boss with an
+empty list.
+
+#### The logged form
+
+`applyIntent` receives `{ type: 'select_ghost', candidates }` but the action log
+gets a normalised, compact entry (the handler returns it as `logged`; the
+machine stores it instead of the intent; `replayRun` hands it back to the
+handler in replay mode, where it is the only form accepted, and live it is
+refused with `invalid_intent`):
+
+    { type: 'select_ghost',
+      n,            // valid candidates after filtering (0: the boss)
+      index,        // the drawn index, nextInt(n) on ghost:r<round>; null if n = 0
+      chosen,       // the snapshot as validated live; null for the boss
+      hash,         // hashJson of the canonical candidate list (audit / signing)
+      chosenHash }  // hashJson(chosen); null for the boss
+
+`replayRun` takes the stream `ghost:r<round>` as the live path did, checks that
+`nextInt(n) === index`, checks `chosen` for structure only
+(`checkGhostSnapshotShape`: no economy numbers, no rules), checks
+`hashJson(chosen) === chosenHash`, that it belongs to the run's bucket, is not
+the run's own and has not been fought, and uses it. It does NOT run the value,
+tier or modifier bounds again: those are today's numbers, and replaying a run
+must not depend on them or on the pool. A wrong index, a changed or swapped
+snapshot, a malformed entry or the old `candidates` form fails the replay with
+`replay_mismatch` at that action; it never falls back to another opponent.
+`hash` commits the run to the pool it saw but cannot be recomputed in a replay
+(no list); `chosenHash` is what binds `chosen` in the log. A log is not
+signed, so someone who edits both `chosen` and `chosenHash` consistently can
+still pick another valid-looking opponent: that is the signing phase (TA-22a).
+Measured: a 10-round solo run beside 16 owners went from 264,717 bytes to about
+36 KB (11.6 KB without ghosts).
+
 ### Validation (`validateGhostSnapshot`)
 
 Every candidate, and a ghost inside a loaded run state, must pass all of:
 
-1. **Shape**: no unknown fields, `formatVersion` 1, `gameVersion` as
+1. **Shape and size**: no unknown fields at any level (`runSeed` and
+   `actionLog` are reserved and rejected), `formatVersion` 1, `gameVersion` as
    `major.minor`, sizes and ids within their limits (labels printable, at most
-   40 characters).
+   40 characters). Checked first, on the raw value, stopping at the first
+   violation: plain JSON only, every number a safe integer, nesting at most 16
+   levels, every string and key at most 128 characters, and a canonical JSON
+   length of at most `4096 + 12288 * partySize` characters (measured: 1.7 to
+   2.8 KB for one player and 6.4 to 9.7 KB for four, from round 1 to 13).
 2. **Whole team state** (`validateTeamState`): legal placement on its own map
    (extractors on nodes, nothing on natural features, a legal Core position,
    known buildings, tiers 1 to 3, conduits), plus the Core must be placed and
@@ -2907,7 +2950,21 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
    `losses * pvpLossLifeCost = startingLives - lives`.
 5. **Value bound**: the sum of the shop prices (at the building's tier) of
    every building, placed or stashed, is at most the bound below.
-6. **Modifiers**: each is known to `events.json`, has exactly its defined
+6. **Tier bound**: for every owner, the number of tiers above the highest tier
+   the shop could have sold is at most the number of Workshop raises possible.
+   Exactly, with `shopTier(r)` the highest tier with a non-zero weight in any
+   `economy.tierOdds` row with `fromRound <= r` (and at least the tier of every
+   starting-kit entry, and 1), and `raises(r) = 2r - 1` if `events.json` has an
+   event of type `workshop` (the event steps before this round's PvP battle:
+   two per earlier round plus this round's PvE event; each Workshop raises one
+   building per player by one tier), else 0: for each owner,
+   `sum over its buildings (placed and stashed) of max(0, tier - shopTier(r))
+   <= raises(r)`. With the current content `shopTier` is 1 for rounds 1-2, 2
+   for rounds 3-4 and 3 from round 5, and `raises` is 1, 3, 5, ... So a round-1
+   ghost may hold one tier-2 building but not a tier-3 one, even if its value
+   fits the bound; from round 2 a tier 3 is reachable by two raises
+   (`ghostTierBound`).
+7. **Modifiers**: each is known to `events.json`, has exactly its defined
    effects, a non-stackable one is held once, and there are at most `2 * round
    - 1` of them (one per event step that can have happened by then).
 
@@ -2915,30 +2972,45 @@ The value bound, for `n` players at the start of the PvP battle of round `r`:
 
     per player = startingGold
                + baseIncomePerShop * (2r - 1)     shops entered so far
-               + pveWin.hard * r                  best PvE win of each round up to r
-               + pvpWin * (r - 1)                 PvP wins of the rounds before
+               + best pveWin * r                  best PvE win of each round up to r
+               + best PvP gold * (r - 1)          PvP win or loss gold of the rounds before
                + maxEventGold * (2r - 1)          every event a Windfall
                + kit                              price of the starting kit
-    limit = floor(n * per player * (100 + 25) / 100)
+    limit = n * (per player gold + kit)
 
-Spending, selling at a loss, consolation gold and lost battles only lower the
-real figure; the 25% margin (`GHOST_VALUE_MARGIN_PERCENT`) covers Workshop
-upgrades, which turn gold into slightly more value. With the current content
+There is no margin. Every gold source is counted at its best case; buying turns
+gold into building value one for one; selling returns less than was paid; and a
+Workshop upgrade adds less value (`price(t+1) - price(t)`) than it costs
+(`floor(price(t+1) * workshopPricePercent / 100)`), which a test checks for
+every building and tier of the shipped content, so no chain of upgrades can
+manufacture value. (An earlier version added 25% for "Workshop upgrades that
+turn gold into slightly more value"; that was wrong and the margin was
+removed. A fuzz of seeded runs that buy, re-roll and upgrade shows no false
+rejection and a highest value-to-limit ratio of at most 1.) With the current content
 (starting gold 10, income 3, hard win 8, PvP win 6, Windfall 4, kit worth 67):
 
-| Party | Round | Gold per player | Raw bound | Limit |
-| ----- | ----- | --------------- | --------- | ----- |
-| 1     | 1     | 25              | 92        | 115   |
-| 1     | 2     | 53              | 120       | 150   |
-| 1     | 3     | 81              | 148       | 185   |
-| 1     | 5     | 137             | 204       | 255   |
-| 1     | 8     | 221             | 288       | 360   |
-| 1     | 12    | 333             | 400       | 500   |
-| 2     | 3     | 81              | 296       | 370   |
+| Party | Round | Gold per player | Limit |
+| ----- | ----- | --------------- | ----- |
+| 1     | 1     | 25              | 92    |
+| 1     | 2     | 53              | 120   |
+| 1     | 3     | 81              | 148   |
+| 1     | 5     | 137             | 204   |
+| 1     | 8     | 221             | 288   |
+| 1     | 12    | 333             | 400   |
+| 2     | 3     | 81              | 296   |
 
 The bound is the installed version's, which is also the ghost's version
 (MM-15), so no tolerance for runs that spanned an update is needed yet (MM-17).
 The signature check (TA-22a) is not implemented.
+
+### Local pool limits
+
+One owner id per install and one snapshot per owner per bucket mean that a local
+bucket holds at most one of the player's own ghosts from other runs, so the
+draw is then among one; and the player can influence ghost versus boss (clear
+the pool, or plant a weak run to be met later). That is acceptable for the
+prototype: the local pool is a stand-in, and the requirements of the shared
+Steam pool (identities, anti-tamper, abuse) are tracked in issue #79.
 
 ### Fallback
 

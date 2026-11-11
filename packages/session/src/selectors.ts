@@ -187,6 +187,7 @@ export function allowedIntents(
   if (deps !== undefined && state.step !== 'run_over') {
     for (const [type, handler] of Object.entries(deps.handlers)) {
       if (me.ready && lockedWhileReady(state.step, type)) continue;
+      if (handler.hostOnly === true && player !== state.host) continue;
       if (handler.steps.includes(state.step)) out.push(type);
     }
   }

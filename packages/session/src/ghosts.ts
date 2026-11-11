@@ -9,11 +9,17 @@
  *    after the save succeeded.
  *  - Selecting: entering the shop of the PvE leg emits `ghost_selection_needed`;
  *    the controller reads the pool and applies the intent `select_ghost` with
- *    the candidates as its payload. The payload is part of the action log, so
- *    `replayRun` re-derives the same selection with no store at all.
+ *    the candidates as its payload. The action log does NOT keep the
+ *    candidates (they were 94% of a save): it keeps the compact record of the
+ *    draw (`LoggedSelection`: how many valid candidates there were, the drawn
+ *    index, the chosen snapshot, hashes), which `replayRun` checks and uses
+ *    with no store and without re-judging the snapshot by today's economy.
  */
 import {
+  checkGhostSnapshotShape,
   compareGhosts,
+  ghostBucketKey,
+  ghostBucketOf,
   ghostKey,
   hashJson,
   validateGhostSnapshot,
@@ -23,6 +29,7 @@ import {
   type GhostOwner,
   type GhostSnapshot,
   type GhostValidationContext,
+  type Json,
 } from '@game/core';
 import { drawStream, streamLabels } from './streams.js';
 import type {
@@ -215,7 +222,36 @@ export interface GhostSelection {
   readonly choice: PvpOpponentChoice;
   /** How many candidates were eligible and valid. */
   readonly candidates: number;
+  /** The drawn index into the canonical candidates; null for the boss. */
+  readonly index: number | null;
+  /** The compact action-log form of this selection. */
+  readonly logged: LoggedSelection;
 }
+
+/**
+ * What the action log keeps of a `select_ghost`: enough to replay and audit
+ * the draw without the candidates.
+ *
+ *  - `n`: the number of valid candidates after filtering (0: the boss).
+ *  - `index`: the drawn index, `nextInt(n)` on the stream `ghost:r<round>`;
+ *    null when `n` is 0.
+ *  - `chosen`: the snapshot drawn, as validated live; null for the boss.
+ *  - `hash`: `hashJson` of the canonical candidate list (valid candidates in
+ *    canonical order). Replay has no list to compare it with; it commits the
+ *    run to the pool it saw, for audit and for signing (TA-22a).
+ *  - `chosenHash`: `hashJson(chosen)`, null for the boss; replay checks it, so
+ *    `chosen` cannot be edited without noticing.
+ */
+export interface LoggedSelection {
+  readonly type: typeof SELECT_GHOST;
+  readonly n: number;
+  readonly index: number | null;
+  readonly chosen: GhostSnapshot | null;
+  readonly hash: string;
+  readonly chosenHash: string | null;
+}
+
+const LOGGED_KEYS = ['type', 'n', 'index', 'chosen', 'hash', 'chosenHash'];
 
 /**
  * Fix the PvP opponent. The candidates are validated and filtered again
@@ -250,22 +286,43 @@ export function selectGhost(
           label: picked.owner.label,
           ghost: picked,
         };
+  const index =
+    picked === undefined ? null : candidates.findIndex((c) => c === picked);
   return {
     state: { ...d.state, pvpOpponent: choice },
     choice,
     candidates: candidates.length,
+    index,
+    logged: {
+      type: SELECT_GHOST,
+      n: candidates.length,
+      index,
+      chosen: picked ?? null,
+      hash: hashJson(candidates),
+      chosenHash: picked === undefined ? null : hashJson(picked),
+    },
   };
 }
 
-/** The `select_ghost` handler (shop of the PvE leg, once per round). */
+/**
+ * The `select_ghost` handler (shop of the PvE leg, once per round, host only).
+ *
+ * Live, the intent is `{ type, candidates }`; the action log gets the compact
+ * `LoggedSelection` instead (the one normalisation step, shared by the live
+ * path and replay: the machine stores `logged`, replay hands it back with
+ * `replay: true`). A compact intent sent live is refused, so nobody can name
+ * their opponent without the validated pool path.
+ */
 export const selectGhostHandler: IntentHandler = {
   steps: ['shop'],
+  hostOnly: true,
   handle(ctx: HandlerContext): HandlerResult {
     const { state, intent, deps } = ctx;
     const vctx = ghostContext(deps);
     if (vctx === null) return { ok: false, reason: 'unknown_intent' };
     if (state.leg !== 'pve') return { ok: false, reason: 'wrong_step' };
     if (hasSelection(state)) return { ok: false, reason: 'already_selected' };
+    if (ctx.replay === true) return replaySelection(ctx, vctx);
     const list = intent['candidates'];
     if (!Array.isArray(list) || list.length > MAX_GHOST_CANDIDATES) {
       return {
@@ -275,16 +332,122 @@ export const selectGhostHandler: IntentHandler = {
       };
     }
     const sel = selectGhost(state, list as readonly unknown[], vctx);
-    const fx: Effect = {
-      type: 'ghost_selected',
-      round: state.round,
-      kind: sel.choice.kind,
-      label: sel.choice.label,
-      candidates: sel.candidates,
+    return {
+      ok: true,
+      state: sel.state,
+      effects: [selectedEffect(state, sel.choice, sel.candidates)],
+      logged: sel.logged as unknown as Json,
     };
-    return { ok: true, state: sel.state, effects: [fx] };
   },
 };
+
+function selectedEffect(
+  state: RunState,
+  choice: PvpOpponentChoice,
+  candidates: number,
+): Effect {
+  return {
+    type: 'ghost_selected',
+    round: state.round,
+    kind: choice.kind,
+    label: choice.label,
+    candidates,
+  };
+}
+
+function mismatch(detail: string): HandlerResult {
+  return { ok: false, reason: 'replay_mismatch', detail };
+}
+
+/**
+ * Re-apply a logged selection. The draw is repeated on the same stream and
+ * must give the logged index; the logged snapshot is used as it is, checked
+ * for structure (`checkGhostSnapshotShape`: no economy numbers, no rules) and
+ * for fit to this run (same bucket, not this run's own, not fought before),
+ * never re-judged by today's value or tier bounds. Any mismatch fails the
+ * replay; it never falls back to another opponent.
+ */
+function replaySelection(
+  ctx: HandlerContext,
+  vctx: GhostValidationContext,
+): HandlerResult {
+  const { state, intent } = ctx;
+  const keys = Object.keys(intent).sort();
+  if (keys.join() !== [...LOGGED_KEYS].sort().join()) {
+    return mismatch('not a logged selection (fields differ)');
+  }
+  const n = intent['n'];
+  const index = intent['index'];
+  const chosen = intent['chosen'];
+  const hash = intent['hash'];
+  const chosenHash = intent['chosenHash'];
+  if (
+    typeof n !== 'number' ||
+    !Number.isInteger(n) ||
+    n < 0 ||
+    n > MAX_GHOST_CANDIDATES ||
+    typeof hash !== 'string'
+  ) {
+    return mismatch('n or hash is malformed');
+  }
+  const d = drawStream(state, streamLabels.ghost(state.round));
+  if (n === 0) {
+    if (index !== null || chosen !== null || chosenHash !== null) {
+      return mismatch('a boss selection must have no index and no snapshot');
+    }
+    const choice: PvpOpponentChoice = {
+      round: state.round,
+      kind: 'boss',
+      label: BOSS_LABEL,
+      ghost: null,
+    };
+    return {
+      ok: true,
+      state: { ...d.state, pvpOpponent: choice },
+      effects: [selectedEffect(state, choice, 0)],
+      logged: intent as unknown as Json,
+    };
+  }
+  if (typeof index !== 'number' || !Number.isInteger(index) || index < 0) {
+    return mismatch('index is malformed');
+  }
+  const drawn = d.stream.nextInt(n);
+  if (drawn !== index) {
+    return mismatch(
+      `the draw gives index ${String(drawn)} of ${String(n)}, the log says ${String(index)}`,
+    );
+  }
+  const shape = checkGhostSnapshotShape(chosen, vctx.content, vctx.mapgen);
+  if (!shape.ok) {
+    return mismatch(
+      `the logged snapshot is malformed: ${shape.errors[0] ?? ''}`,
+    );
+  }
+  const g = shape.snapshot;
+  if (chosenHash === null || hashJson(chosen) !== chosenHash) {
+    return mismatch('the logged snapshot does not match its hash');
+  }
+  if (
+    ghostBucketKey(ghostBucketOf(g)) !== ghostBucketKey(ghostBucketFor(state))
+  ) {
+    return mismatch('the logged snapshot is from another bucket');
+  }
+  if (g.runId === state.runId || state.ghostsFought.includes(ghostKey(g))) {
+    return mismatch('the logged snapshot is not eligible for this run');
+  }
+  const choice: PvpOpponentChoice = {
+    round: state.round,
+    kind: 'ghost',
+    label: g.owner.label,
+    ghost: g,
+  };
+  return {
+    ok: true,
+    state: { ...d.state, pvpOpponent: choice },
+    effects: [selectedEffect(state, choice, n)],
+    logged: intent as unknown as Json,
+  };
+}
 
 /** For a screen: who the party will meet, once that is fixed. */
 export function pvpOpponentInfo(

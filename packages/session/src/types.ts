@@ -449,6 +449,12 @@ export interface HandlerContext {
   readonly player: number;
   readonly intent: ExtensionIntent;
   readonly deps: RunDeps;
+  /**
+   * True only while `replayRun` re-applies a logged action. A handler that
+   * logs a normalised form of its intent (`HandlerResult.logged`) must accept
+   * exactly that form here and only here; live it must reject it.
+   */
+  readonly replay?: boolean;
 }
 
 export type HandlerResult =
@@ -458,6 +464,12 @@ export type HandlerResult =
       readonly effects?: readonly Effect[];
       /** True when the handler completed the current step. */
       readonly advance?: boolean;
+      /**
+       * What the machine writes to the action log instead of the intent as
+       * received (a normalisation that keeps the log small). `replayRun`
+       * feeds exactly this back to the handler with `replay: true`.
+       */
+      readonly logged?: Json;
     }
   | {
       readonly ok: false;
@@ -473,6 +485,8 @@ export type HandlerResult =
 export interface IntentHandler {
   /** The steps in which this intent is legal; elsewhere it is `wrong_step`. */
   readonly steps: readonly Step[];
+  /** True if only the host may send it (`not_host` for anyone else). */
+  readonly hostOnly?: boolean;
   handle(ctx: HandlerContext): HandlerResult;
 }
 
