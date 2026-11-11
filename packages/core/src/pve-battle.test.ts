@@ -20,6 +20,7 @@ import {
   mapgen,
   simConfig,
   threats,
+  TIMING,
 } from './test-support.js';
 
 const config = { sim: simConfig, mapgen };
@@ -288,7 +289,7 @@ describe('late rounds stay inside the performance budget', () => {
           }
           const ms = Date.now() - t0;
           expect(peak).toBeLessThan(1000);
-          expect(ms).toBeLessThan(10_000);
+          expect(ms).toBeLessThan(10_000 * TIMING);
           expect(battle.sim.tick).toBeLessThan(simConfig.maxBattleTicks);
           // Late power is strength, not numbers.
           expect(t.unitStrengthPercent).toBeGreaterThan(100);

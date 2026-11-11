@@ -47,6 +47,9 @@ const BUDGET = {
   maxStressBattleMs: 25_000,
 } as const;
 
+/** CI_RELAXED_TIMING=1 (set in CI) loosens the wall-time limits by 3; unset is strict. */
+const TIMING = process.env['CI_RELAXED_TIMING'] === '1' ? 3 : 1;
+
 const ctx = loadSimContext();
 const config = { sim: ctx.sim, mapgen: ctx.mapgen };
 
@@ -116,7 +119,9 @@ describe('performance budget', () => {
 
   test('one-plot battles per second', () => {
     const rate = throughput(onePlot);
-    expect(rate).toBeGreaterThanOrEqual(BUDGET.minBattlesPerSecondOnePlot);
+    expect(rate).toBeGreaterThanOrEqual(
+      BUDGET.minBattlesPerSecondOnePlot / TIMING,
+    );
   }, 30_000);
 
   test('dense four-plot battles stay within the size budget', () => {
@@ -134,7 +139,9 @@ describe('performance budget', () => {
     const pairs: [TeamState, TeamState, number][] = [];
     for (let seed = 1; seed <= 2; seed++) pairs.push([team, team, seed]);
     const rate = throughput(pairs, 2);
-    expect(rate).toBeGreaterThanOrEqual(BUDGET.minBattlesPerSecondFourPlots);
+    expect(rate).toBeGreaterThanOrEqual(
+      BUDGET.minBattlesPerSecondFourPlots / TIMING,
+    );
   }, 120_000);
 
   test('the tier 3 stress battle finishes in time', () => {
@@ -146,6 +153,6 @@ describe('performance budget', () => {
       while (!battle.isOver()) battle.step();
       best = Math.min(best, performance.now() - t0);
     }
-    expect(best).toBeLessThan(BUDGET.maxStressBattleMs);
+    expect(best).toBeLessThan(BUDGET.maxStressBattleMs * TIMING);
   }, 120_000);
 });

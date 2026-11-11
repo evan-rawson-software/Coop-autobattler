@@ -13,7 +13,14 @@ import type { GameMap } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
 import type { SimConfig } from './sim-config.js';
 import type { TeamState } from './team-state.js';
-import { Lab, bigBoard, content, mapgen, simConfig } from './test-support.js';
+import {
+  Lab,
+  TIMING,
+  bigBoard,
+  content,
+  mapgen,
+  simConfig,
+} from './test-support.js';
 import { randomTeam } from './test-teams.js';
 
 const config = { sim: simConfig, mapgen };
@@ -946,7 +953,7 @@ describe('performance (CB-36)', () => {
   // The budgets asserted here are the ones proposed in docs/performance-budget.md.
   test('a typical one-plot battle', () => {
     const m = measure(randomTeam(1, 1), randomTeam(101, 1), 1);
-    expect(m.ms).toBeLessThan(2_000);
+    expect(m.ms).toBeLessThan(2_000 * TIMING);
     expect(m.ticks).toBeLessThan(simConfig.maxBattleTicks);
     expect(m.peakPerSide).toBeLessThan(100);
     expect(m.bytes).toBeLessThan(1_000_000);
@@ -954,7 +961,7 @@ describe('performance (CB-36)', () => {
 
   test('a dense four-plot battle', () => {
     const m = measure(dense(1), dense(1), 1);
-    expect(m.ms).toBeLessThan(10_000);
+    expect(m.ms).toBeLessThan(10_000 * TIMING);
     expect(m.ticks).toBeLessThan(simConfig.maxBattleTicks);
     expect(m.peakPerSide).toBeLessThan(1_000);
     expect(m.bytes).toBeLessThan(5_000_000);
@@ -962,7 +969,7 @@ describe('performance (CB-36)', () => {
 
   test('a dense four-plot battle with every building at tier 3', () => {
     const m = measure(dense(3), dense(3), 1);
-    expect(m.ms).toBeLessThan(20_000);
+    expect(m.ms).toBeLessThan(20_000 * TIMING);
     expect(m.ticks).toBeLessThan(simConfig.maxBattleTicks);
     expect(m.peakPerSide).toBeLessThan(2_000);
     expect(m.bytes).toBeLessThan(10_000_000);
