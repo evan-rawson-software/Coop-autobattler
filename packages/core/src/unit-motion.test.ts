@@ -84,6 +84,49 @@ describe('acceptance within a run of equal priority', () => {
   });
 });
 
+describe('a mover with no push keeps its tentative position', () => {
+  // The rules reference: a mover whose summed push is (0, 0) skips
+  // `pushOutSolid` in the relaxation pass; applying it again to its own output
+  // would move it (it is not idempotent). Expected positions are literal
+  // numbers found by searching worlds for a case where the two differ.
+  test('a lone mover next to solid ground is not pushed out a second time', () => {
+    const none = new Uint8Array(4 * 5);
+    // Solid ground of side 1 (4 x 5 cells, row by row).
+    const solid1 = Uint8Array.from([
+      0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0,
+    ]);
+    const world: World = { width: 4, height: 5, solid: [none, solid1] };
+    // Units 2 and 3 (side 0, far away) overlap and swap places, so the
+    // relaxation runs; unit 1 (side 1) has no neighbour and so no push.
+    const units: MotionUnit[] = [
+      { id: 1, side: 1, px: 269, py: 658 },
+      { id: 2, side: 0, px: 100, py: 100 },
+      { id: 3, side: 0, px: 100, py: 190 },
+    ];
+    const targets = [
+      [643, 745],
+      [100, 190],
+      [100, 100],
+    ] as const;
+    const s = new MotionScratch();
+    s.ensure(3);
+    targets.forEach(([x, y], i) => {
+      s.want[i] = 1;
+      s.tx[i] = x;
+      s.ty[i] = y;
+      s.speed[i] = 240;
+      s.rad[i] = 60;
+    });
+    s.resolve(units, world, 3, 60);
+    // Unit 1's tentative position is not open for it, so it stays; had
+    // `pushOutSolid` been applied to it again in the relaxation, it would end
+    // at (540, 780).
+    expect([units[0]?.px, units[0]?.py]).toEqual([269, 658]);
+    expect([units[1]?.px, units[1]?.py]).toEqual([100, 100]);
+    expect([units[2]?.px, units[2]?.py]).toEqual([100, 190]);
+  });
+});
+
 describe('coinciding centres are separated symmetrically', () => {
   const rot = (v: number): number => 12 * CU - v;
 
