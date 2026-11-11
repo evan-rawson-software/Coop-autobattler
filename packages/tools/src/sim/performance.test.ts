@@ -1,9 +1,10 @@
 /**
  * The performance budget of docs/performance-budget.md, enforced. The
- * enforced limits are about 5 to 19 times looser than the measured speed on
- * a developer machine (see the table in the document), so a slow or noisy CI
- * runner passes and a real
- * regression (the simulation getting several times slower, or units, ticks or
+ * enforced limits are 3.5 to 7 times looser than the speed measured with the
+ * repository's suites running in parallel (`pnpm test`), and 6.6 to 7.5 times
+ * looser than on an idle developer machine (see the table in the document),
+ * so a slow or noisy CI runner passes and a real regression (the simulation
+ * getting several times slower, or units, ticks or
  * log size growing past the budget) fails. Deterministic quantities (units,
  * ticks, log size) are checked exactly against the budget.
  *
@@ -34,7 +35,7 @@ const BUDGET = {
   targetBattlesPerSecondFourPlots: 5,
   /** Enforced floors: fail below these. */
   minBattlesPerSecondOnePlot: 25,
-  minBattlesPerSecondFourPlots: 3,
+  minBattlesPerSecondFourPlots: 2,
   /** Enforced ceiling for the dense tier 3 stress battle, in ms. */
   maxStressBattleMs: 1500,
 } as const;

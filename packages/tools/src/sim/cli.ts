@@ -14,6 +14,7 @@ import {
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
+import { ALL_REFERENCE_BOARDS } from '@game/core';
 import { CliError, USAGE, parseArgs } from './args.js';
 import { parseBoardText, type Board } from './boards.js';
 import {
@@ -30,12 +31,38 @@ export const repoRoot = path.resolve(
   '../../../..',
 );
 
-/** `rush` means `boards/rush.json` in the repository; anything else is a path. */
-export function boardPath(ref: string): string {
-  if (/^[a-z][a-z0-9_-]*$/.test(ref)) {
-    return path.join(repoRoot, 'boards', `${ref}.json`);
-  }
-  return path.resolve(ref);
+/**
+ * The directory the user ran the command from. `pnpm` runs scripts from the
+ * workspace root and records the original directory in `INIT_CWD`.
+ */
+export function userCwd(env: NodeJS.ProcessEnv = process.env): string {
+  const init = env['INIT_CWD'];
+  return init !== undefined && init !== '' ? init : process.cwd();
+}
+
+/** Resolve a user-given path against the directory the command was run from. */
+export function resolveUserPath(p: string, cwd: string = userCwd()): string {
+  return path.resolve(cwd, p);
+}
+
+/** A bare lowercase word such as `rush` (no extension, no separators). */
+const BARE_WORD = /^[a-z][a-z0-9_-]*$/;
+
+/** The reference board file of a bare word, if it is a known board name. */
+function referenceFile(ref: string): string | null {
+  if (!BARE_WORD.test(ref)) return null;
+  const file = path.join(repoRoot, 'boards', `${ref}.json`);
+  const known: readonly string[] = ALL_REFERENCE_BOARDS;
+  return known.includes(ref) || existsSync(file) ? file : null;
+}
+
+/**
+ * `rush` means `boards/rush.json` in the repository when it is a known
+ * reference board name (or that file exists); anything else is a path,
+ * relative to the directory the command was run from.
+ */
+export function boardPath(ref: string, cwd: string = userCwd()): string {
+  return referenceFile(ref) ?? resolveUserPath(ref, cwd);
 }
 
 function fsReason(e: unknown): string {
@@ -44,7 +71,7 @@ function fsReason(e: unknown): string {
 
 /** Fail early, before any battle runs, if the `--log` file cannot be written. */
 function checkLogWritable(file: string): void {
-  const dir = path.dirname(path.resolve(file));
+  const dir = path.dirname(file);
   try {
     accessSync(dir, constants.W_OK);
     if (existsSync(file)) accessSync(file, constants.W_OK);
@@ -58,11 +85,19 @@ function checkLogWritable(file: string): void {
   }
 }
 
-export function loadBoard(ref: string, ctx: SimContext): Board {
-  const file = boardPath(ref);
+export function loadBoard(
+  ref: string,
+  ctx: SimContext,
+  note: (text: string) => void = () => undefined,
+  cwd: string = userCwd(),
+): Board {
+  const file = boardPath(ref, cwd);
   if (!existsSync(file)) {
+    const asName = BARE_WORD.test(ref)
+      ? `as a reference board name it is not one of ${ALL_REFERENCE_BOARDS.join(', ')} and ${path.join(repoRoot, 'boards', `${ref}.json`)} does not exist; `
+      : '';
     throw new CliError(
-      `Board "${ref}" not found (looked for ${file}). Use a reference board name (rush, fortify, siege, poor) or a path to a board JSON file.`,
+      `Board "${ref}" not found: ${asName}as a path, ${file} does not exist. Use a reference board name (${ALL_REFERENCE_BOARDS.join(', ')}) or a path to a board JSON file.`,
     );
   }
   let text: string;
@@ -71,8 +106,8 @@ export function loadBoard(ref: string, ctx: SimContext): Board {
   } catch (e) {
     throw new CliError(`Cannot read board "${ref}" (${file}): ${fsReason(e)}.`);
   }
-  const board = parseBoardText(text, ref, ctx);
-  return /^[a-z][a-z0-9_-]*$/.test(ref) ? { ...board, label: ref } : board;
+  const board = parseBoardText(text, ref, ctx, note);
+  return referenceFile(ref) !== null ? { ...board, label: ref } : board;
 }
 
 export interface Io {
@@ -88,7 +123,12 @@ export function main(argv: readonly string[], io: Io): number {
       io.out(USAGE);
       return 0;
     }
-    if ('log' in cmd && cmd.log !== undefined) checkLogWritable(cmd.log);
+    const logFile =
+      'log' in cmd && cmd.log !== undefined
+        ? resolveUserPath(cmd.log)
+        : undefined;
+    if (logFile !== undefined) checkLogWritable(logFile);
+    const load = (ref: string): Board => loadBoard(ref, ctx, io.err);
     const ctx = loadSimContext();
     const t0 = performance.now();
     let output: CommandOutput;
@@ -98,15 +138,15 @@ export function main(argv: readonly string[], io: Io): number {
         break;
       case 'battle':
         output = battleCommand(ctx, {
-          a: loadBoard(cmd.a, ctx),
-          b: loadBoard(cmd.b, ctx),
+          a: load(cmd.a),
+          b: load(cmd.b),
           seed: cmd.seed,
           ascii: cmd.ascii,
         });
         break;
       case 'pve':
         output = pveCommand(ctx, {
-          team: loadBoard(cmd.team, ctx),
+          team: load(cmd.team),
           threat: cmd.threat,
           seed: cmd.seed,
           ascii: cmd.ascii,
@@ -114,8 +154,8 @@ export function main(argv: readonly string[], io: Io): number {
         break;
       case 'batch':
         output = batchCommand(ctx, {
-          a: loadBoard(cmd.a, ctx),
-          b: cmd.b === null ? null : loadBoard(cmd.b, ctx),
+          a: load(cmd.a),
+          b: cmd.b === null ? null : load(cmd.b),
           threat: cmd.threat,
           count: cmd.count,
           seed: cmd.seed,
@@ -124,15 +164,15 @@ export function main(argv: readonly string[], io: Io): number {
     }
     const ms = performance.now() - t0;
     io.out(output.text);
-    if ('log' in cmd && cmd.log !== undefined && output.log !== undefined) {
+    if (logFile !== undefined && output.log !== undefined) {
       try {
-        writeFileSync(cmd.log, `${JSON.stringify(output.log)}\n`);
+        writeFileSync(logFile, `${JSON.stringify(output.log)}\n`);
       } catch (e) {
         throw new CliError(
-          `Cannot write the event log to ${cmd.log}: ${fsReason(e)}.`,
+          `Cannot write the event log to ${logFile}: ${fsReason(e)}.`,
         );
       }
-      io.out(`Event log written to ${cmd.log}`);
+      io.out(`Event log written to ${logFile}`);
     }
     if (cmd.time) io.out(`Time: ${ms.toFixed(0)} ms`);
     return 0;

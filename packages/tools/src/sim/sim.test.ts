@@ -1,4 +1,11 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Ajv2020 } from 'ajv/dist/2020.js';
@@ -20,7 +27,14 @@ import {
   parseBoardText,
   type Board,
 } from './boards.js';
-import { boardPath, loadBoard, main, repoRoot } from './cli.js';
+import {
+  boardPath,
+  loadBoard,
+  main,
+  repoRoot,
+  resolveUserPath,
+  userCwd,
+} from './cli.js';
 import {
   batchCommand,
   battleCommand,
@@ -154,18 +168,65 @@ describe('cli errors', () => {
 describe('board loading', () => {
   test('names and paths', () => {
     expect(boardPath('rush')).toBe(path.join(repoRoot, 'boards', 'rush.json'));
-    expect(boardPath('./x/y.json')).toBe(path.resolve('./x/y.json'));
+    expect(boardPath('./x/y.json', tmp)).toBe(path.join(tmp, 'x', 'y.json'));
     expect(board('rush').label).toBe('rush');
+  });
+
+  test('relative paths resolve against INIT_CWD, else the cwd', () => {
+    expect(userCwd({ INIT_CWD: '/some/dir' })).toBe('/some/dir');
+    expect(userCwd({})).toBe(process.cwd());
+    expect(userCwd({ INIT_CWD: '' })).toBe(process.cwd());
+    expect(resolveUserPath('sub.json', '/some/dir')).toBe('/some/dir/sub.json');
+    expect(resolveUserPath('/abs/x.json', '/some/dir')).toBe('/abs/x.json');
+  });
+
+  test('a bare word is a board name only if it is known', () => {
+    for (const n of ALL_REFERENCE_BOARDS) {
+      expect(boardPath(n, tmp)).toBe(
+        path.join(repoRoot, 'boards', `${n}.json`),
+      );
+    }
+    expect(boardPath('myboard', tmp)).toBe(path.join(tmp, 'myboard'));
+    writeFileSync(
+      path.join(tmp, 'myboard'),
+      readFileSync(path.join(repoRoot, 'boards', 'rush.json'), 'utf8'),
+    );
+    expect(loadBoard('myboard', ctx, () => undefined, tmp).label).toBe('rush');
+    let msg = '';
+    try {
+      loadBoard('nosuchboard', ctx, () => undefined, tmp);
+    } catch (e) {
+      msg = e instanceof Error ? e.message : '';
+    }
+    expect(msg).toMatch(/reference board name/);
+    expect(msg).toContain(`as a path, ${path.join(tmp, 'nosuchboard')}`);
   });
 
   test('a bare team state is accepted', () => {
     const bare = JSON.stringify(
       buildAnyReferenceBoard('rush', ctx.content, ctx.mapgen),
     );
-    expect(parseBoardText(bare, 'bare', ctx).team.core).toEqual({
+    const notes: string[] = [];
+    expect(
+      parseBoardText(bare, 'bare', ctx, (t) => notes.push(t)).team.core,
+    ).toEqual({
       x: 11,
       y: 5,
     });
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toMatch(/bare.*cannot be verified/);
+  });
+
+  test('a bare team state notes on stderr, not stdout', () => {
+    const file = path.join(tmp, 'bare.json');
+    writeFileSync(
+      file,
+      JSON.stringify(buildAnyReferenceBoard('rush', ctx.content, ctx.mapgen)),
+    );
+    const r = run(['battle', '--a', file, '--b', 'poor']);
+    expect(r.code).toBe(0);
+    expect(r.err).toMatch(/cannot be verified/);
+    expect(r.out).not.toMatch(/cannot be verified/);
   });
 
   test('mapSeed and partySize are checked against the team map', () => {
@@ -186,12 +247,38 @@ describe('board loading', () => {
       /partySize/,
     );
     const base = JSON.parse(file({})) as {
+      mapSeed?: number;
+      partySize?: number;
       team: { map: { features: unknown[] } };
     };
     base.team.map.features = [];
     expect(() => parseBoardText(JSON.stringify(base), 'f.json', ctx)).toThrow(
       CliError,
     );
+    // The wrapper form requires both fields, whatever else is wrong.
+    const noSeed = JSON.parse(file({})) as Record<string, unknown>;
+    delete noSeed['mapSeed'];
+    expect(() => parseBoardText(JSON.stringify(noSeed), 'f.json', ctx)).toThrow(
+      /"mapSeed" is required/,
+    );
+    const noSeedEmpty = JSON.parse(JSON.stringify(base)) as typeof base;
+    delete noSeedEmpty.mapSeed;
+    expect(() =>
+      parseBoardText(JSON.stringify(noSeedEmpty), 'f.json', ctx),
+    ).toThrow(CliError);
+    const noSize = JSON.parse(file({})) as Record<string, unknown>;
+    delete noSize['partySize'];
+    expect(() => parseBoardText(JSON.stringify(noSize), 'f.json', ctx)).toThrow(
+      /"partySize" is required/,
+    );
+    const wrongSize = JSON.parse(file({ partySize: 3 })) as Record<
+      string,
+      unknown
+    >;
+    delete wrongSize['mapSeed'];
+    expect(() =>
+      parseBoardText(JSON.stringify(wrongSize), 'f.json', ctx),
+    ).toThrow(/partySize/);
   });
 
   test('bad files give clear errors', () => {
@@ -339,6 +426,30 @@ describe('main', () => {
     expect(log[0]?.type).toBe('zone_revealed');
     expect(log[log.length - 1]?.type).toBe('battle_ended');
     expect(r.out).toContain(`hash ${hashJson(log as unknown as Json)}`);
+  });
+
+  test('--log resolves a relative path against INIT_CWD', () => {
+    const dir = path.join(tmp, 'sub');
+    mkdirSync(dir, { recursive: true });
+    const saved = process.env['INIT_CWD'];
+    process.env['INIT_CWD'] = dir;
+    try {
+      const r = run([
+        'battle',
+        '--a',
+        'rush',
+        '--b',
+        'poor',
+        '--log',
+        'rel.json',
+      ]);
+      expect(r.code).toBe(0);
+      expect(existsSync(path.join(dir, 'rel.json'))).toBe(true);
+      expect(r.out).toContain(`written to ${path.join(dir, 'rel.json')}`);
+    } finally {
+      if (saved === undefined) delete process.env['INIT_CWD'];
+      else process.env['INIT_CWD'] = saved;
+    }
   });
 
   test('map, pve and batch run', () => {

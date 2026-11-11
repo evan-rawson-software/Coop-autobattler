@@ -48,9 +48,9 @@ tick on average with up to 1,220 units on the field.
 | Units alive per side                    | 1,000                  | 610 (dense tier 3)    | `performance.test.ts`, exact                 |
 | Battle length                           | 4,000 ticks            | 3,701                 | `performance.test.ts`, exact                 |
 | Hard cap on battle length               | `maxBattleTicks` 12,000 | never reached        | the end conditions                           |
-| One plot: battles per second (target)   | at least 100           | 110-215               | fails below 25 (about 6.6x margin)           |
-| Four plots, dense: battles per second   | at least 5             | 9-16 (tier 1)         | fails below 3 (about 5x)                     |
-| Four plots, dense tier 3, one battle    | at most 1 s            | 0.21 s                | fails above 1.5 s (about 7x)                |
+| One plot: battles per second (target)   | at least 100           | 110-215               | fails below 25 (6.6x idle, 3.5x loaded)      |
+| Four plots, dense: battles per second   | at least 5             | 9-16 (tier 1)         | fails below 2 (7.5x idle, 4.5x loaded)       |
+| Four plots, dense tier 3, one battle    | at most 1 s            | 0.21 s                | fails above 1.5 s (7x idle, 7x loaded)       |
 | Event log, one plot                     | 1 MB                   | 0.89 MB               | `performance.test.ts`, exact                 |
 | Event log, four plots                   | 5 MB                   | 3.24 MB               | `performance.test.ts`, exact                 |
 
@@ -73,11 +73,16 @@ test`; about 5 s, each test has a 30 s timeout):
   for the unit peak, length and log size (untimed, deterministic).
 
 The enforced limits are below the measured speed, so a slow or noisy CI
-runner passes and a regression of several times fails. The actual margins,
-against typical measurements on the machine this was written on: one plot at
-least 25 battles per second against about 165 (6.6x); dense tier 1 at least 3
-per second against about 15 (5x); the tier 3 stress battle under 1.5 s
-against about 0.21 s (7x). The limits on
+runner passes and a regression of several times fails. CI runs `pnpm -r run
+test`, so the package suites run in parallel and the benchmark competes for
+CPU; the margins are given idle (the benchmark alone) and loaded (three runs
+of `pnpm test` from the repository root, 4 cores): one plot at least 25
+battles per second against about 165 idle (6.6x) and 87 to 183 loaded (3.5x at
+worst); dense tier 1 at least 2 per second against about 15 idle (7.5x) and
+8.9 to 12.2 loaded (4.5x at worst; a slower 2-vCPU machine measured 3.5 to
+5.9 under load, 1.7x); the tier 3 stress battle under 1.5 s against about
+0.21 s idle and 0.18 to 0.21 s loaded (7x). The dense floor was lowered from 3
+to 2 for that reason. The limits on
 units, ticks and log bytes are deterministic and are checked at the budget
 itself: change a board or a content file in a way that grows them and the test
 fails until the budget (or the change) is reconsidered. The core tests

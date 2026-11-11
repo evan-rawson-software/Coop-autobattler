@@ -53,7 +53,9 @@ typecheck, lint, format:check, test, and build.
 `packages/tools/src/sim/` is a command-line runner over the core simulation.
 Output is deterministic for the same input; wall time is printed only with
 `--time`. A `BOARD` is a path to a board JSON file or a reference board name
-(`rush`, `fortify`, `siege`, `poor`), which means `boards/<name>.json`. Bad
+(`rush`, `fortify`, `siege`, `poor`), which means `boards/<name>.json`; a bare word that is not one of those names is
+treated as a path. Relative paths (boards and `--log`) resolve against the
+directory you ran `pnpm sim` from. Bad
 input prints an error and exits non-zero (2 for usage errors, 1 otherwise).
 
 ```
@@ -79,8 +81,10 @@ pnpm sim --help
   distribution. The seeds must stay within 0 to 4294967295, and `--type`,
   `--round` and `--threat-seed` need `--archetype`.
 
-Board files hold a team state plus a name, description and map seed (see the
-rules reference, "Reference boards"). The four reference boards are built by
+Board files hold a team state plus a name, description, map seed and party size
+(see the rules reference, "Reference boards"); `mapSeed` and `partySize` are
+required and the team's map is checked against them. A bare team state without
+that wrapper is accepted, with a note on stderr that its map cannot be verified. The four reference boards are built by
 scripts in `packages/core/src/reference-boards*.ts`; after changing one, run
 `pnpm boards:export` and commit the result (a test fails while they differ).
 Every board file must pass the whole-state validator. The performance budget

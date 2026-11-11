@@ -3,7 +3,9 @@
  *
  * Format: `{ "name": string, "description": string, "mapSeed": number,
  * "partySize": number, "team": <team state, schemas/team-state.schema.json> }`.
- * A bare team state (an object with a `map`) is accepted too.
+ * `mapSeed` and `partySize` are required and checked against the team's map.
+ * A bare team state (an object with a `map`) is accepted too, with a note
+ * that its map cannot be verified.
  */
 import {
   generateMap,
@@ -66,6 +68,7 @@ export function parseBoardText(
   text: string,
   where: string,
   ctx: SimContext,
+  note: (text: string) => void = () => undefined,
 ): Board {
   let data: unknown;
   try {
@@ -86,16 +89,24 @@ export function parseBoardText(
       `${where}: not a valid team state:\n${result.errors.map((e) => `  - ${e}`).join('\n')}`,
     );
   }
-  if ('mapSeed' in rec) {
-    const seed = rec['mapSeed'];
-    if (typeof seed !== 'number' || !Number.isInteger(seed) || seed < 0) {
-      throw new CliError(`${where}: "mapSeed" must be a non-negative integer.`);
-    }
+  if ('team' in rec) {
     const size = result.state.map.partySize;
-    if ('partySize' in rec && rec['partySize'] !== size) {
+    if (!('partySize' in rec)) {
+      throw new CliError(`${where}: "partySize" is required.`);
+    }
+    if (rec['partySize'] !== size) {
       throw new CliError(
         `${where}: "partySize" is ${JSON.stringify(rec['partySize'])} but the team's map has party size ${String(size)}.`,
       );
+    }
+    if (!('mapSeed' in rec)) {
+      throw new CliError(
+        `${where}: "mapSeed" is required (the map is checked against it).`,
+      );
+    }
+    const seed = rec['mapSeed'];
+    if (typeof seed !== 'number' || !Number.isInteger(seed) || seed < 0) {
+      throw new CliError(`${where}: "mapSeed" must be a non-negative integer.`);
     }
     let expected;
     try {
@@ -110,6 +121,8 @@ export function parseBoardText(
         `${where}: the team's map is not the map generated for "mapSeed" ${String(seed)} and party size ${String(size)}.`,
       );
     }
+  } else {
+    note(`Note: ${where} is a bare team state; its map cannot be verified.`);
   }
   const name = typeof rec['name'] === 'string' ? rec['name'] : where;
   return { label: name, team: result.state };
