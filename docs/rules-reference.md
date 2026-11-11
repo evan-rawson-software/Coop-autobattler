@@ -3177,8 +3177,8 @@ A snapshot is eligible for a run only if its `gameVersion` equals the run's
 equals the run's round (MM-2), it is not from the run itself (`runId`), and
 that ghost (its owner and run, `ghostKey`) has not been fought in this run
 already (`state.ghostsFought`, MM-3). Own-device snapshots of other runs are
-eligible: a local pool has one owner id, so excluding the owner would make the
-pool useless.
+eligible (the last five per bucket are kept, see "Local pool limits"): a local
+pool has one owner id, so excluding the owner would make the pool useless.
 
 ### Selection
 
@@ -3186,8 +3186,8 @@ The opponent is fixed in the shop of the PvE leg, the step before the PvP
 battle, by the intent `select_ghost` (extension handler, shop only, once per
 round). Entering that shop emits `ghost_selection_needed`; the run controller
 reads the pool and sends `select_ghost` as the host with the candidates as
-payload (at most 16: the eligible, valid ones; with more, the 16 with the
-smallest `hashJson([runId, round, key])`). The party cannot `ready` in that
+payload (at most 16 valid ones, found with bounded work, see "Bounded work per
+selection" below). The party cannot `ready` in that
 shop until it has been applied (`ghost_selection_pending`). The handler:
 
 1. validates and filters the payload again (nothing in it is trusted), drops
@@ -3374,14 +3374,52 @@ The bound is the installed version's, which is also the ghost's version
 (MM-15), so no tolerance for runs that spanned an update is needed yet (MM-17).
 The signature check (TA-22a) is not implemented.
 
+### Bounded work per selection
+
+`presentCandidates` does not validate every row of a bucket. It first drops, by
+cheap checks on the raw row (bucket, not the run's own, not in
+`ghostsFought`, one row per `ghostKey`), and puts the rest in a fixed order:
+by `hashJson([runId, round, key])`, ties by key. It then validates rows in that
+order until 16 are valid or `MAX_GHOST_ROWS_VALIDATED` (48) rows have been
+tried, and returns what it found in `(owner id, run id)` order. The same
+listing gives the same result in any listing order, and the subset differs
+between runs and rounds. A bucket with more than 48 unusable rows can
+therefore end in the boss; that is accepted.
+
+Replay is not affected: the action log keeps only the compact record of the
+draw (`n` of at most 16, `index`, `chosen`, `hash`, `chosenHash`), and replay
+and restore never read the pool or repeat the walk. A run restored after the
+selection keeps `pvpOpponent` from its save, so changes to the pool between
+saving and restoring (new snapshots, evictions, a cleared pool) cannot change
+the opponent. A run restored before the selection simply selects again from
+the pool as it is then, as before. The run-state format is unchanged.
+
+The stores bound the reading as well (`GhostStore`):
+
+- A snapshot larger than the size bound for its party size and round
+  (`ghostMaxSerializedSize`, the bound validation uses) is refused at write
+  time.
+- `list` returns at most 64 rows (`GHOST_LIST_LIMIT`), in `(owner id, run id)`
+  order, and does not read a row not marked as within the bound: IndexedDB
+  filters on an index that only holds such rows, and localStorage reads a small
+  per-snapshot meta key (bucket, owner, run, sequence number, size) before any
+  value.
+
 ### Local pool limits
 
-One owner id per install and one snapshot per owner per bucket mean that a local
-bucket holds at most one of the player's own ghosts from other runs, so the
-draw is then among one; and the player can influence ghost versus boss (clear
-the pool, or plant a weak run to be met later). That is acceptable for the
-prototype: the local pool is a stand-in, and the requirements of the shared
-Steam pool (identities, anti-tamper, abuse) are tracked in issue #79.
+The local pool keeps the player's own past runs: one owner id per install, and
+up to `GHOST_KEEP_PER_OWNER_BUCKET` (5) snapshots per owner per bucket
+(version, party size, round), so the draw in a bucket is a real draw among the
+last five runs that reached that round. When a sixth is saved the oldest is
+dropped. "Oldest" is the store's own save sequence number (a counter kept in
+the store; re-saving the same run counts as newest), never the clock. The run's
+own snapshots and ghosts already fought stay excluded at selection. The
+player can still influence ghost versus boss (plant a weak run; clear the
+pool), which is acceptable for the prototype. "Clear ghost pool" stays under
+Developer on the main menu and is not on the run screens. The requirements of
+the shared Steam pool (identities, anti-tamper, abuse) are tracked in
+issue #79. The ghost database moved to version 2 for this change; the upgrade
+empties the local pool, which refills as runs are played.
 
 ### Fallback
 

@@ -281,6 +281,7 @@ describe('item 1: reserved fields and structural hardening', () => {
     const g = src as GhostSnapshot;
     const bucket = { gameVersion: '0.1', partySize: 1, round: 1 };
     const big = new Array<number>(50_000).fill(7);
+    await rig.ghosts.clear();
     rig.ghosts.injectRaw(bucket, 'aaa-log', {
       ...g,
       owner: { id: 'aaa-log', label: 'Log' },
@@ -304,7 +305,7 @@ describe('item 1: reserved fields and structural hardening', () => {
     expect(s1.pvpOpponent?.kind).toBe('boss');
     // With a good one beside them the good one is drawn and the run's own save
     // reopens and validates.
-    rig.ghosts.injectRaw(bucket, 'dev-a', g);
+    rig.ghosts.injectRaw(bucket, 'dev-a', g, g.runId);
     const b = await begin(rig, ghostDeps('dev-b'), { runId: 'run-b', seed: 9 });
     const s2 = await playUntil(b, (s) => s.step === 'shop' && s.leg === 'pve');
     expect(s2.pvpOpponent?.ghost?.owner.id).toBe('dev-a');

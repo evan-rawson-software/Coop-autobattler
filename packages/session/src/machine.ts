@@ -407,7 +407,20 @@ function applyRewards(
 ): RunState {
   const battle = readBattle(s);
   if (battle === null) return s;
-  return applyPatch(s, deps.hooks.rewards(s, { ...battle, kind }));
+  const paid = applyPatch(s, deps.hooks.rewards(s, { ...battle, kind }));
+  const rec = paid.thisRound.pve;
+  const before = s.perPlayer[0];
+  const after = paid.perPlayer[0];
+  if (kind !== 'pve' || rec === null || !before || !after) return paid;
+  // What the party was actually paid (each player gets the same amount), so
+  // a screen need not read the rewards table again (issue #76).
+  return {
+    ...paid,
+    thisRound: {
+      ...paid.thisRound,
+      pve: { ...rec, goldPaid: after.gold - before.gold },
+    },
+  };
 }
 
 /** The step has met its condition: apply what it owes and move on. */

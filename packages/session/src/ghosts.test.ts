@@ -97,7 +97,7 @@ async function seedPool(rig: Rig, second = false): Promise<void> {
 }
 
 describe('taking snapshots', () => {
-  test('one is taken at the start of every PvP battle, win or lose, and a newer one of the owner replaces it', async () => {
+  test('one is taken at the start of every PvP battle, win or lose, and earlier runs of the owner stay beside the new one', async () => {
     const rig = newRig();
     const a = await begin(rig, ghostDeps('dev-a'), { runId: 'run-a' });
     await playRounds(a, 2);
@@ -113,15 +113,14 @@ describe('taking snapshots', () => {
       1,
     );
     expect(r2[0]?.lives).toBe(5 - (r2[0]?.pvpRecord.losses ?? 0));
-    // A second run of the same owner replaces the snapshot in the bucket.
+    // A second run of the same owner adds a snapshot to the bucket.
     const again = await begin(rig, ghostDeps('dev-a'), {
       runId: 'run-a2',
       seed: 11,
     });
     await playRounds(again, 1);
     const after = await listBucket(rig, '0.1', 1, 1);
-    expect(after).toHaveLength(1);
-    expect(after[0]?.runId).toBe('run-a2');
+    expect(after.map((g) => g.runId)).toEqual(['run-a', 'run-a2']);
   });
 
   test('the snapshot is derived from the state alone and is what the effect carries', () => {

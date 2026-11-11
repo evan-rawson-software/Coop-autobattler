@@ -18,31 +18,65 @@ import {
   type GhostSnapshot,
 } from '@game/core';
 
+/**
+ * The most snapshots kept per owner per bucket (version, party size, round).
+ * A player's own past runs stay in the local pool, but only the last few per
+ * round, so one old run cannot dominate the draw.
+ */
+export const GHOST_KEEP_PER_OWNER_BUCKET = 5;
+
+/**
+ * The largest snapshot (characters of JSON) a store accepts when it was given
+ * no tighter bound. A store with the rules at hand passes
+ * `ghostMaxSerializedSize` for the snapshot's party size and round instead.
+ */
+export const GHOST_STORE_DEFAULT_MAX_SIZE = 4_000_000;
+
+/** The most rows a store's `list` returns (the contract allows 64 or more). */
+export const GHOST_LIST_LIMIT = 64;
+
 export interface GhostStore {
   /**
-   * Store a snapshot. At most one snapshot is kept per owner per bucket
-   * (version, party size, round): a snapshot of the same owner in the same
-   * bucket is replaced, whichever run it came from. The stored value is a
+   * Store a snapshot under (bucket, owner, run). A snapshot of the same run
+   * in the same bucket replaces the earlier one. After the write, at most
+   * `GHOST_KEEP_PER_OWNER_BUCKET` snapshots of the owner remain in the
+   * bucket: the oldest by the store's own save sequence number (a counter the
+   * store keeps, never the clock) are dropped. A snapshot larger than the
+   * store's size bound is rejected and changes nothing. The stored value is a
    * copy. Resolves when the write is complete; rejects without changing
    * anything otherwise.
    */
   save(snapshot: GhostSnapshot): Promise<void>;
   /**
-   * Every stored value of the bucket, in the canonical order (owner id, then
+   * The stored values of the bucket, in the canonical order (owner id, then
    * run id). Values are returned as stored, unvalidated. An implementation
-   * may cap the number returned only if the cap is at least 64; the run
-   * controller presents at most 16 of them anyway.
+   * may cap the number returned only if the cap is at least 64 (it reads in
+   * that order, so a long bucket is cut deterministically), and it does not
+   * return, and where it can does not read, a row marked oversized.
    */
   list(bucket: GhostBucket): Promise<readonly unknown[]>;
-  /** The value stored for an owner in a bucket, or null. */
-  get(bucket: GhostBucket, ownerId: string): Promise<unknown>;
+  /** The value stored for a run of an owner in a bucket, or null. */
+  get(bucket: GhostBucket, ownerId: string, runId: string): Promise<unknown>;
   /** Remove every snapshot of every bucket. Resolves for an empty store. */
   clear(): Promise<void>;
 }
 
 /** The key under which a snapshot is stored: its bucket and its owner. */
-export function ghostStoreKey(bucket: GhostBucket, ownerId: string): string {
-  return JSON.stringify([ghostBucketKey(bucket), ownerId]);
+export function ghostStoreKey(
+  bucket: GhostBucket,
+  ownerId: string,
+  runId: string,
+): string {
+  return JSON.stringify([ghostBucketKey(bucket), ownerId, runId]);
+}
+
+/** Keys to drop so that `keep` remain: the oldest sequence numbers first. */
+export function evictionKeys(
+  entries: readonly { readonly key: string; readonly seq: number }[],
+  keep: number,
+): string[] {
+  const sorted = [...entries].sort((a, b) => a.seq - b.seq);
+  return sorted.slice(0, Math.max(0, sorted.length - keep)).map((e) => e.key);
 }
 
 /** Canonical order for raw stored values; unreadable ones sort last. */
@@ -71,7 +105,12 @@ export interface MemoryGhostStore extends GhostStore {
   /** The next `save` rejects and changes nothing. */
   failNextSave(message?: string): void;
   /** Plant any value in a bucket under an owner id (to test damaged data). */
-  injectRaw(bucket: GhostBucket, ownerId: string, value: unknown): void;
+  injectRaw(
+    bucket: GhostBucket,
+    ownerId: string,
+    value: unknown,
+    runId?: string,
+  ): void;
   /** The number of stored values. */
   size(): number;
 }
@@ -81,9 +120,44 @@ function copy<T>(v: T): T {
 }
 
 /** In-memory `GhostStore`: for tests and the reference for the others. */
-export function createMemoryGhostStore(): MemoryGhostStore {
-  const items = new Map<string, { bucket: string; value: unknown }>();
+export function createMemoryGhostStore(
+  options: {
+    readonly maxSize?: (partySize: number, round: number) => number;
+  } = {},
+): MemoryGhostStore {
+  interface Item {
+    readonly bucket: string;
+    readonly owner: string;
+    readonly seq: number;
+    readonly value: unknown;
+  }
+  const items = new Map<string, Item>();
+  let counter = 0;
   let fault: string | null = null;
+  const maxSize =
+    options.maxSize ?? ((): number => GHOST_STORE_DEFAULT_MAX_SIZE);
+  const put = (
+    bucket: GhostBucket,
+    ownerId: string,
+    runId: string,
+    value: unknown,
+  ): void => {
+    const bk = ghostBucketKey(bucket);
+    counter += 1;
+    items.set(ghostStoreKey(bucket, ownerId, runId), {
+      bucket: bk,
+      owner: ownerId,
+      seq: counter,
+      value,
+    });
+    const own: { key: string; seq: number }[] = [];
+    for (const [key, i] of items) {
+      if (i.bucket === bk && i.owner === ownerId) own.push({ key, seq: i.seq });
+    }
+    for (const key of evictionKeys(own, GHOST_KEEP_PER_OWNER_BUCKET)) {
+      items.delete(key);
+    }
+  };
   return {
     save(snapshot) {
       if (fault !== null) {
@@ -92,35 +166,37 @@ export function createMemoryGhostStore(): MemoryGhostStore {
         return Promise.reject(new Error(message));
       }
       const staged = copy(snapshot);
-      items.set(ghostStoreKey(ghostBucketOf(snapshot), snapshot.owner.id), {
-        bucket: ghostBucketKey(ghostBucketOf(snapshot)),
-        value: staged,
-      });
+      if (
+        JSON.stringify(staged).length >
+        maxSize(snapshot.partySize, snapshot.round)
+      ) {
+        return Promise.reject(new Error('the ghost snapshot is too large'));
+      }
+      put(ghostBucketOf(snapshot), snapshot.owner.id, snapshot.runId, staged);
       return Promise.resolve();
     },
     list(bucket) {
       const key = ghostBucketKey(bucket);
       const out = [...items.values()]
         .filter((i) => i.bucket === key)
-        .map((i) => copy(i.value));
-      return Promise.resolve(out.sort(compareStored));
+        .map((i) => copy(i.value))
+        .sort(compareStored);
+      return Promise.resolve(out.slice(0, GHOST_LIST_LIMIT));
     },
-    get(bucket, ownerId) {
-      const found = items.get(ghostStoreKey(bucket, ownerId));
+    get(bucket, ownerId, runId) {
+      const found = items.get(ghostStoreKey(bucket, ownerId, runId));
       return Promise.resolve(found === undefined ? null : copy(found.value));
     },
     clear() {
       items.clear();
+      counter = 0;
       return Promise.resolve();
     },
     failNextSave(message = 'the ghost could not be written') {
       fault = message;
     },
-    injectRaw(bucket, ownerId, value) {
-      items.set(ghostStoreKey(bucket, ownerId), {
-        bucket: ghostBucketKey(bucket),
-        value: copy(value),
-      });
+    injectRaw(bucket, ownerId, value, runId = 'injected') {
+      put(bucket, ownerId, runId, copy(value));
     },
     size() {
       return items.size;

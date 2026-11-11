@@ -184,7 +184,10 @@ export function MainMenuScreen() {
     });
   };
 
-  const wiped = data?.services.init.wiped ?? [];
+  const wiped = [
+    ...(data?.services.init.wiped ?? []),
+    ...(data?.services.init.wipedUnreadable ?? []),
+  ];
 
   return (
     <AppShell title="Main menu">

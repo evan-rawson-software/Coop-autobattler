@@ -14,6 +14,7 @@ import {
   playUntil,
   type Game,
 } from './ghost-test-support.js';
+import { GHOST_KEEP_PER_OWNER_BUCKET } from './ghost-store.js';
 import { ghostContext } from './ghosts.js';
 import { replayRun } from './machine.js';
 import type { RunState } from './types.js';
@@ -79,7 +80,7 @@ describe('ghost pool fuzz', () => {
         if (r.ok) expect(r.state).toEqual(live);
         expect(end.actionLog.length).toBeLessThanOrEqual(live.actionLog.length);
       }
-      // One snapshot per owner per bucket, whatever was played.
+      // At most the cap per owner per bucket, whatever was played.
       const seen = new Set<string>();
       for (const round of [1, 2, 3]) {
         for (const partySize of [1, 2]) {
@@ -89,7 +90,11 @@ describe('ghost pool fuzz', () => {
             round,
           })) as { owner: { id: string } }[];
           const ids = list.map((g) => g.owner.id);
-          expect(new Set(ids).size).toBe(ids.length);
+          for (const id of new Set(ids)) {
+            expect(ids.filter((x) => x === id).length).toBeLessThanOrEqual(
+              GHOST_KEEP_PER_OWNER_BUCKET,
+            );
+          }
           for (const id of ids) seen.add(id);
         }
       }
