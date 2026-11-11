@@ -1,0 +1,177 @@
+import { describe, expect, test } from 'vitest';
+import { loadEconomyOrThrow } from '@game/core';
+import economyJson from '../../../content/economy.json';
+import { createEconomyDeps } from './economy.js';
+import { fixedBattle } from './defaults.js';
+import { applyIntent, createRun } from './machine.js';
+import { initSaves, openRun } from './run-controller.js';
+import { buildSaveRecord, classifySave, type SaveRecord } from './save.js';
+import { createMemorySaveStore } from './save-store-memory.js';
+import { content, mapgenConfig, runArgs } from './test-support.js';
+
+const deps = createEconomyDeps(
+  content,
+  mapgenConfig,
+  loadEconomyOrThrow(economyJson, { buildings: content.buildings }),
+  { battle: fixedBattle(true) },
+);
+
+const INSTALLED = '1.4.0';
+const KEY = 'k';
+
+const VERSIONS = {
+  same: '1.4',
+  newer: '1.5',
+  older_minor: '1.3',
+  older_major: '0.9',
+} as const;
+type VersionKind = keyof typeof VERSIONS;
+
+const DAMAGES = ['none', 'shape', 'key', 'format', 'state'] as const;
+type Damage = (typeof DAMAGES)[number];
+
+function makeRecord(
+  version: VersionKind,
+  damage: Damage,
+  ended: boolean,
+): SaveRecord {
+  const args = { ...runArgs(), runId: KEY, runVersion: VERSIONS[version] };
+  const created = createRun(args, deps);
+  if (!created.ok) throw new Error(created.detail);
+  let state = created.state;
+  if (ended) {
+    const r = applyIntent(state, 0, { type: 'abandon' }, deps);
+    if (!r.ok) throw new Error(r.reason);
+    state = r.state;
+  }
+  const rec = buildSaveRecord(args, state, INSTALLED, 10);
+  switch (damage) {
+    case 'none':
+      return rec;
+    case 'shape':
+      return { ...rec, hostName: 5 } as unknown as SaveRecord;
+    case 'key':
+      // Stored under KEY but claims another run (state and args agree).
+      return buildSaveRecord(
+        { ...args, runId: 'other' },
+        { ...state, runId: 'other' },
+        INSTALLED,
+        10,
+      );
+    case 'format':
+      return {
+        ...rec,
+        state: { ...state, formatVersion: 1 },
+      } as unknown as SaveRecord;
+    case 'state':
+      // Well-formed record, but the state breaks a rule (too many lives).
+      return {
+        ...rec,
+        state: { ...state, lives: 99 },
+        summary: { ...rec.summary, lives: 99 },
+      };
+  }
+}
+
+function freshStore(rec: SaveRecord) {
+  const store = createMemorySaveStore();
+  store.injectRaw(KEY, rec);
+  return store;
+}
+
+/** What `openRun` must say, from the documented order of checks. */
+function expectedOpen(version: VersionKind, damage: Damage) {
+  if (damage === 'shape' || damage === 'key') return 'corrupt';
+  if (version === 'newer' || version === 'older_major') return version;
+  if (damage === 'format') return 'unsupported_format';
+  if (damage === 'state') return 'corrupt';
+  return 'ok';
+}
+
+describe('initSaves classifies like openRun (issue #68)', () => {
+  for (const version of Object.keys(VERSIONS) as VersionKind[]) {
+    for (const damage of DAMAGES) {
+      for (const ended of [false, true]) {
+        const name = `${version} / ${damage} / ${ended ? 'ended' : 'running'}`;
+        test(name, async () => {
+          const rec = makeRecord(version, damage, ended);
+          const open = await openRun(KEY, deps, freshStore(rec), INSTALLED);
+          const said = open.ok ? 'ok' : open.reason;
+          expect(said).toBe(expectedOpen(version, damage));
+          expect(classifySave(rec, KEY, INSTALLED, deps).kind).toBe(
+            said === 'ok' ? 'open' : said,
+          );
+
+          const store = freshStore(rec);
+          const res = await initSaves(store, INSTALLED, 99, deps);
+          const history = await store.listHistory();
+          const kept = (await store.get(KEY)) !== null;
+          expect(res.failed).toEqual([]);
+          const lists = {
+            wiped: res.wiped.map((w) => w.runId),
+            finished: res.finished,
+            newer: res.newer.map((n) => n.runId),
+            unsupported: res.unsupported.map((u) => u.runId),
+            corrupt: res.corrupt.map((c) => c.runId),
+          };
+          const only = (key: keyof typeof lists | null) => {
+            for (const k of Object.keys(lists) as (keyof typeof lists)[]) {
+              expect(lists[k]).toEqual(k === key ? [KEY] : []);
+            }
+          };
+
+          if (said === 'ok') {
+            // Readable: finished if it ended, else left as it is, unreported.
+            if (ended) {
+              only('finished');
+              expect(kept).toBe(false);
+              expect(history.map((h) => h.reason)).toEqual(['abandoned']);
+            } else {
+              only(null);
+              expect(kept).toBe(true);
+              expect(history).toEqual([]);
+            }
+          } else if (said === 'older_major' && damage === 'none') {
+            // Readable old major: wiped, or finished with its own outcome.
+            if (ended) {
+              only('finished');
+              expect(history.map((h) => h.reason)).toEqual(['abandoned']);
+            } else {
+              only('wiped');
+              expect(history.map((h) => h.reason)).toEqual(['version_wiped']);
+            }
+            expect(kept).toBe(false);
+          } else {
+            // Anything it cannot fully read is left alone, never finished or
+            // wiped, and reported.
+            const bucket =
+              said === 'newer'
+                ? 'newer'
+                : said === 'unsupported_format' || damage === 'format'
+                  ? 'unsupported'
+                  : 'corrupt';
+            only(bucket);
+            expect(kept).toBe(true);
+            expect(history).toEqual([]);
+            expect(await store.get(KEY)).toEqual(rec);
+          }
+        });
+      }
+    }
+  }
+
+  test('a second initSaves after a full pass changes nothing', async () => {
+    const store = freshStore(makeRecord('older_major', 'none', false));
+    await initSaves(store, INSTALLED, 1, deps);
+    const again = await initSaves(store, INSTALLED, 2, deps);
+    expect(again).toEqual({
+      wiped: [],
+      finished: [],
+      newer: [],
+      unsupported: [],
+      corrupt: [],
+      failed: [],
+    });
+    expect(await store.listHistory()).toHaveLength(1);
+  });
+});

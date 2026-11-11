@@ -118,7 +118,7 @@ the round number, `leg` is `pve` or `pvp`.
 | `event_offers:r<r>:<leg>`  | `eventOffers` hook                      |
 | `event_resolve:r<r>:<leg>` | `resolveEvent` hook                     |
 | `shop:r<r>:<leg>`       | `onShopEnter` hook                         |
-| `vote:<topic>:r<r>:<leg>` | the random pick of a split party vote (only drawn when the votes differ) |
+| `vote:<topic>:r<r>:<leg>` | the random pick of a party vote: drawn for every vote resolution with two or more players, but the pick is used only when the votes differ |
 
 Handlers that need randomness should call `drawStream` with their own label,
 for example `reroll:r<r>:p<player>:<action number>`.
@@ -225,21 +225,27 @@ only affects the next roll and the next battle. Only the most recent battle's
 
 **Versions**: `classify(runVersion, installed)` is `same`, `older_minor`,
 `older_major` or `newer`. `openRun` sets `versionNotice` for `older_minor`;
-`older_major` and `newer` saves cannot be opened. `initSaves(store, installed,
-now)` deletes older-major saves (history reason `version_wiped`, with the
-round reached), finishes saves whose state has an `outcome`, and reports
-`newer` and corrupt ones without touching them. A corrupt save is never
+`older_major` and `newer` saves cannot be opened. A corrupt save is never
 deleted by `openRun`. A save that is well formed but whose run state has an
 unsupported `formatVersion` is not corrupt: `list()` flags its entry with
 `unsupportedFormat: true` (absent otherwise) and `openRun` refuses it with the
-reason `unsupported_format`, leaving it in the store. `openRun` checks, in
-order: the record's shape, that its `runId` matches the key (`corrupt`
-otherwise), the game version from the record's own `runVersion` (`newer`, then
-`older_major`, both reported even if the state would not validate), the state
-format (`unsupported_format`), and only then validates the state (`corrupt`).
-`initSaves` lists unsupported-format saves in `unsupported` and leaves them
-in place: they are never finished into history or wiped, whatever their
-outcome or version, because their state cannot be read.
+reason `unsupported_format`, leaving it in the store.
+
+**One classification (issue #68).** `openRun` and `initSaves` both call
+`classifySave(raw, key, installed, deps)`, which checks, in order: the record's
+shape; that its `runId` matches the key (`corrupt` otherwise); the game version
+from the record's own `runVersion` (`newer`, then `older_major`, both reported
+even if the state would not validate); the state format (`unsupported_format`);
+and only then `validateRunState` (`corrupt`). `initSaves(store, installed,
+now, deps)` acts only on what that has fully read: a save whose run has an
+`outcome` is recorded in history and removed (`finished`), and an older-major
+save is deleted with the history reason `version_wiped` and the round reached
+(`wiped`), but only when its state validated. Everything else is left in the
+store and reported: `newer`, `unsupported` (unknown state format, whatever the
+outcome or game version) and `corrupt` (including a key mismatch, and an
+older-major save whose state does not validate, which `openRun` calls
+`older_major` because the version is classified first). Nothing unreadable is
+ever finished into history or wiped.
 
 **One save per run, no copies**: a record is keyed by `runId`. `put` with an
 existing `runId` replaces it, `startRun` rejects (`run_exists`) an ID that is

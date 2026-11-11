@@ -420,7 +420,7 @@ describe('the run controller', () => {
     await playUntil(k, (st) => st.step === 'build');
     await start(s, deps, { ...runArgs(), runId: 'future', runVersion: '2.0' });
     s.injectRaw('broken', { nope: true });
-    const res = await initSaves(s, '1.4.0', 5000);
+    const res = await initSaves(s, '1.4.0', 5000, deps);
     expect(res.wiped).toEqual([
       { runId: 'old', runVersion: '0.1', round: 1, hostName: 'Ann' },
     ]);
@@ -444,7 +444,7 @@ describe('the run controller', () => {
       },
     ]);
     // Running again changes nothing.
-    const again = await initSaves(s, '1.4.0', 6000);
+    const again = await initSaves(s, '1.4.0', 6000, deps);
     expect(again.wiped).toEqual([]);
     expect((await s.listHistory()).length).toBe(1);
   });
@@ -594,7 +594,7 @@ describe('the run controller', () => {
     });
     // Installed 1.4.0 makes all three older majors: the readable one is
     // wiped, the unreadable ones are not.
-    const res = await initSaves(store, '1.4.0', 9000);
+    const res = await initSaves(store, '1.4.0', 9000, deps);
     expect(
       [...res.unsupported].sort((a, b) => (a.runId < b.runId ? -1 : 1)),
     ).toEqual([
@@ -608,7 +608,7 @@ describe('the run controller', () => {
     expect((await store.listHistory()).map((h) => h.runId)).toEqual(['ok']);
     // A normal start-up reports none.
     expect(
-      (await initSaves(createMemorySaveStore(), '1.4.0', 1)).unsupported,
+      (await initSaves(createMemorySaveStore(), '1.4.0', 1, deps)).unsupported,
     ).toEqual([]);
   });
 
@@ -647,6 +647,7 @@ describe('the run controller', () => {
   });
 
   test('7b: an interruption between history and removal is finished at start-up', async () => {
+    const deps = depsFor();
     const store = createMemorySaveStore();
     const c = await start(store);
     store.failNextRemove();
@@ -654,7 +655,7 @@ describe('the run controller', () => {
     expect(r).toMatchObject({ ok: true, warning: 'finish_incomplete' });
     expect(await store.listHistory()).toHaveLength(1);
     expect(store.size()).toBe(1);
-    const res = await initSaves(store, INSTALLED, tick());
+    const res = await initSaves(store, INSTALLED, tick(), deps);
     expect(res.finished).toEqual(['run-1']);
     expect(await store.listHistory()).toHaveLength(1);
     expect(store.size()).toBe(0);
