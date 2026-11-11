@@ -87,7 +87,9 @@ export function variedBoards(
 
 /** A deterministic 32-bit mix (no clock, no random numbers). */
 function mix(a: number, b: number, c: number): number {
-  let h = Math.imul(a + 0x9e3779b9, 0x85ebca6b) ^ Math.imul(b + 0x7f4a7c15, 0xc2b2ae35);
+  let h =
+    Math.imul(a + 0x9e3779b9, 0x85ebca6b) ^
+    Math.imul(b + 0x7f4a7c15, 0xc2b2ae35);
   h = Math.imul(h ^ (h >>> 15), 0x27d4eb2f) ^ c;
   h = Math.imul(h ^ (h >>> 13), 0x165667b1);
   return (h ^ (h >>> 16)) >>> 0;
@@ -127,11 +129,22 @@ export function denseVariant(
   const fail = (what: string, reason: string): never => {
     throw new Error(`dense variant: ${what}: ${reason}`);
   };
-  const put = (def: string, tier: number, x: number, y: number, rot = 0): number => {
+  const put = (
+    def: string,
+    tier: number,
+    x: number,
+    y: number,
+    rot = 0,
+  ): number => {
     const t = def === 'bld_splitter' ? 1 : tier;
     const s = addToStash(state, ctx.content, { def, tier: t, owner: 0 });
     if (!s.ok) return fail(def, s.reason);
-    const p = placeFromStash(s.state, ctx.content, { id: s.id, x, y, rotation: rot });
+    const p = placeFromStash(s.state, ctx.content, {
+      id: s.id,
+      x,
+      y,
+      rotation: rot,
+    });
     if (!p.ok) return fail(def, p.reason);
     state = p.state;
     return s.id;
@@ -161,7 +174,10 @@ export function denseVariant(
       const sp = put('bld_splitter', 1, x0, y0 + 3);
       const a = put('bld_barracks', tier, x0, y0 + 4);
       const b = put('bld_barracks', tier, x0 + 2, y0 + 2, 90);
-      link(src, 'north', sp, 'south', [[x0, y0 + 1], [x0, y0 + 2]]);
+      link(src, 'north', sp, 'south', [
+        [x0, y0 + 1],
+        [x0, y0 + 2],
+      ]);
       link(sp, 'north', a, 'south');
       link(sp, 'east', b, 'west', [[x0 + 1, y0 + 3]]);
     }

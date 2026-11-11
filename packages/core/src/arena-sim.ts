@@ -1868,8 +1868,7 @@ function moveAlong(
       let sigma = bestCross > 0 ? 1 : bestCross < 0 ? -1 : 0;
       if (sigma === 0) {
         // On the line: towards positive x (then y) of the unit's own frame.
-        sigma =
-          hy !== 0 ? (-hy * frame > 0 ? 1 : -1) : hx * frame > 0 ? 1 : -1;
+        sigma = hy !== 0 ? (-hy * frame > 0 ? 1 : -1) : hx * frame > 0 ? 1 : -1;
       }
       vx = hx - sigma * hy;
       vy = hy + sigma * hx;

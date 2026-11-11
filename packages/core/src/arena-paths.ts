@@ -159,7 +159,11 @@ export function fieldStep(
     if (diagonal && !diagonalOpen(arena, side, x, y, dx, dy)) continue;
     const score = v + (diagonal ? DIAGONAL_COST : STEP_COST);
     const tie = tieKey(arena, side, nx, ny);
-    if (best < 0 || score < bestScore || (score === bestScore && tie < bestTie)) {
+    if (
+      best < 0 ||
+      score < bestScore ||
+      (score === bestScore && tie < bestTie)
+    ) {
       best = k;
       bestScore = score;
       bestTie = tie;

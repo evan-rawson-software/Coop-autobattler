@@ -992,9 +992,9 @@ describe('enemy-path preview', () => {
     expect(text(at(3).approach)).toBe('4,16 5,16 6,16');
     // The on-board cells are the entry and the walk from (7, 15) on: the
     // detour across row 16 is one diagonal up, two steps along, one down.
-    expect(text(at(3).cells).startsWith('3,15 7,15 8,15 9,15 10,15 10,14')).toBe(
-      true,
-    );
+    expect(
+      text(at(3).cells).startsWith('3,15 7,15 8,15 9,15 10,15 10,14'),
+    ).toBe(true);
     expect(text(at(7).approach)).toBe('');
     for (const p of paths) {
       for (const c of p.cells) {
@@ -1077,7 +1077,9 @@ describe('enemy-path preview', () => {
       expect(walked[0]).toEqual(p.cells[0]);
       const len = Math.min(walked.length, p.cells.length + 4);
       for (const c of walked.slice(0, len)) {
-        expect(p.cells.some((r) => near(r, c)) || p.approach.some((r) => near(r, c))).toBe(true);
+        expect(
+          p.cells.some((r) => near(r, c)) || p.approach.some((r) => near(r, c)),
+        ).toBe(true);
       }
       for (const r of p.cells.slice(0, Math.max(0, walked.length - 4))) {
         expect(walked.some((c) => near(r, c))).toBe(true);

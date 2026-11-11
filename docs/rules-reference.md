@@ -1403,8 +1403,17 @@ exactly like the original.
    in tick `T` first affects spawns from tick `T + 1`, and source resets from
    tick `T + 1` (the flow step of tick `T` ran before).
 3. **Decide.** Using the state as it is now (a snapshot: no decision sees
-   another unit's decision), for each unit in `id` order choose one action.
-   Distances between units are **centre to centre, Euclidean, compared as
+   another unit's decision), every unit chooses one action. The choice is made
+   in **three passes** over the units, each in `id` order; a pass reads the
+   snapshot and the results of the EARLIER passes only, never a result of its
+   own pass, so the outcome does not depend on the order of the unit list:
+   pass 1 is rule a; pass 2 is rules a2 and b for the units that did not
+   choose a; pass 3 is the movement (rule c, and the walk towards an aggro
+   target) of the units that did not choose an attack. A unit **holds** iff
+   pass 1 or 2 made it attack (a unit, or rule b); the set of holders is fixed
+   after pass 2 (a unit that attacks a breach building in pass 3 does not
+   count as a holder for the steering of the others, though it holds its own
+   place). Distances between units are **centre to centre, Euclidean, compared as
    squared integers** (no square roots). Let `R` be the unit's `radius`, `reach`
    its definition's reach, `(px, py)` its centre and `c` its cell. Two units are
    **in contact** when `d^2 <= (reach + R + Re)^2` (`d^2` the squared centre
@@ -1419,8 +1428,10 @@ exactly like the original.
      py + trunc(dy * k / n))` (division rounded toward zero) for `k = 0 .. n` lies in a cell (of the unit's side frame) that is not solid
      for the unit's side (a cell-level line of sight; the line is not tested
      against the circles). The nearest candidate `E` is the aggro target, and
-     the unit **moves** (action c below) towards `E`'s centre `(ex, ey)`, ignoring
-     the movement field. If there is no candidate the unit falls through to b.
+     the unit **moves** towards `E`'s centre `(ex, ey)`, ignoring the movement
+     field: in pass 3 with the heading `H = (ex - px, ey - py)` and the
+     steering of "Steering" (a unit on `E`'s centre moves to it directly). If
+     there is no candidate the unit falls through to b.
      Why two units that move in the same ticks always meet: both close the
      distance each tick (up to their speed) and attack once in contact; blocked
      by other units they wait, never walk away.
@@ -1428,20 +1439,27 @@ exactly like the original.
      Core, if alive) is within reach, that is, `buildingDist2(px, py, building)
      <= (reach + R)^2` (the gap between the circle and the nearest point of the
      building's cells is at most `reach`), target it.
-   - **c. Move.** Otherwise the unit chooses a **target point** `(tx, ty)` as
-     follows (field details in "Goals and movement fields"); the move itself is
-     resolved in step 5. Let `d` be the unit's cell's distance in the movement
-     field (-1: none).
-     - `d > 0`: the next cell `k` of `fieldStep` from `c`; the target is the
-       centre of `k`.
-     - `d = 0` (the cell is next to the Core): the target is the centre of the
-       Core cell nearest to the unit (smallest `boxDist2`, ties by the order of
-       the Core's cells; ties go to the first cell in the unit's own frame, i.e. side
-       1 reads the list from the end). The unit presses against the Core until rule b fires.
+   - **c. Move.** Otherwise the unit chooses a **heading** or a **target
+     point** as follows (field details in "Goals and movement fields"); the
+     move itself is resolved in step 5. Let `d` be the unit's cell's distance
+     in the movement field (-1: none). A heading `H` becomes the target point
+     `p + V` with `V` the result of the steering of "Steering" (so the unit
+     walks in a direction, not at a place).
+     - `d > 0`: the next cell `k` of `fieldStep` from `c`; the heading is
+       `H = 240 * (k - c)` componentwise, that is, `(240 * (kx - cx), 240 *
+       (ky - cy))` with the cell coordinates in arena terms (one of the eight
+       directions, scaled to a cell). The unit does not aim at the centre of `k`.
+     - `d = 0` (the cell shares an edge with the Core): the heading is the
+       vector from the unit to the centre of the Core cell nearest to the
+       unit (smallest `boxDist2`, ties by the order of the Core's cells; ties
+       go to the first cell in the unit's own frame, i.e. side 1 reads the
+       list from the end): `H = (240 bx + 120 - px, 240 by + 120 - py)`; if
+       that is `(0, 0)` the unit does not move. The unit presses against the
+       Core until rule b fires.
      - `d = -1` (sealed): follow the breach field. `bd = breach(c)`; if `bd < 0`
-       the unit waits. If `bd = 0` the target is the nearest Core cell's centre
-       as above. Otherwise `k = breachStep(c)`: if `k` is open for the side the
-       target is `k`'s centre; if `k` is covered by an enemy building `B`, then
+       the unit waits. If `bd = 0` the heading is as for `d = 0`. Otherwise `k
+       = breachStep(c)`: if `k` is open for the side the target POINT is `k`'s
+       centre (no steering); if `k` is covered by an enemy building `B`, then
        `B` is its **goal building**: when `buildingDist2(px, py, B) <= (reach +
        R)^2` the unit attacks `B` (like rule b, even though `B` is not the
        Core), otherwise the target is `k`'s centre (solid ground stops the
@@ -1536,9 +1554,11 @@ exactly like the original.
       (collision radii). Each pair is handled once, with these steps:
       1. **Weights** `(wi, wj)`, how the push is split (a unit takes
          `w / (wi + wj)` of it). Units of **different sides**: a fighter has
-         weight 0 and any other unit weight 1 (so nobody pushes an enemy
-         fighter, two enemy fighters do not push each other, and any other
-         enemy pair shares equally). Units of the **same side** (allies): the
+         weight 0 and any other unit weight 1, except that two fighters of
+         different sides both have weight 1 (so an enemy mover or idle unit
+         gives way to a fighter completely, two enemy fighters share the push
+         equally and a pair that was pressed together separates, issue #103,
+         and any other enemy pair shares equally). Units of the **same side** (allies): the
          weight of the unit against the other is
          `ALLY_WEIGHT[class of the unit][class of the other]` with rows and
          columns in the order idle, mover, fighter:
@@ -1647,24 +1667,44 @@ building is the Core within reach or blocks the way (the breach rule below).
   When a gate is destroyed it is removed like any building and is open ground
   for everyone. Walls and turrets block both sides.
 - The **movement field** of a side (one per side: there is a single goal, the
-  enemy Core) is a breadth-first distance map over open cells (cells, not
-  positions: the fields do not know about radii or other units): distance 0 for
-  every open cell 4-adjacent to a cell of the Core, then +1 per 4-directional
-  step. Unreached cells have no distance. A unit whose cell has a finite
-  distance `d > 0` heads for the centre of the 4-neighbour with distance
-  `d - 1` (the smallest), ties by the tie key; with `d = 0` it is next to the
-  Core and presses towards the nearest Core cell (step 3c). **Approximation:**
-  the field treats every one-cell gap as passable. That is right for every
-  part-1 unit (all collision radii are below half a cell); a unit whose
-  collision diameter exceeds one cell is routed through gaps it cannot enter
-  and waits at them (the circle rules, not the field, stop it).
+  enemy Core) is a least-cost map over open cells (cells, not positions: the
+  fields do not know about radii or other units, and they do not depend on
+  where the crowds are; routing around crowds is deferred, issue #86).
+  There are **eight directions**: a straight step (north, east, south, west)
+  costs `STEP_COST = 10` and a diagonal step costs `DIAGONAL_COST = 14`. A
+  diagonal step from `(x, y)` by `(dx, dy)` is allowed only if BOTH cells it
+  passes, `(x + dx, y)` and `(x, y + dy)`, are open for the side (**no cutting
+  corners** through solid cells), besides the target cell itself being open.
+  Distance 0 for every open cell that shares an EDGE with a cell of the Core
+  (the 4-neighbours of the Core cells, on every free side; a cell that only
+  touches a Core corner is not a goal, so a base whose edge cells are walled
+  is sealed even when a corner cell is open); the distance of any other open
+  cell is the least total step cost to a distance 0 cell (Dijkstra; the values
+  are exact and do not depend on the order cells are processed in). Unreached
+  cells have no distance. A unit whose cell has a finite distance `d > 0`
+  takes the step `fieldStep`: among the open neighbours `n` (8 directions, a
+  diagonal only if allowed as above) with `dist(n) < d`, the one with the
+  smallest `dist(n) + cost` (10 for a straight, 14 for a diagonal step), ties
+  by the tie key; its heading is the direction to that cell (see rule c); with
+  `d = 0` it is next to the Core and presses towards the nearest Core cell
+  (rule c, `d = 0`). **Approximation:** the field treats every one-cell gap as
+  passable. That is right for every part-1 unit (all collision radii are below
+  half a cell); a unit whose collision diameter exceeds one cell is routed
+  through gaps it cannot enter and waits at them (the circle rules, not the
+  field, stop it).
 - The unit's **goal building** (rule b) is the Core, when the gap from the
   unit's circle to the Core's nearest cell is at most `reach`.
-- **Tie key.** Wherever two cells tie (equal distance, equal cost), the
-  preferred one has the lowest `y`, then the lowest `x`, **in the board frame of
-  the unit's own side**: for side 0 this is the arena `y`, `x`; for side 1 it is
-  the same comparison on the rotated cell `(W - 1 - x, H - 1 - y)`. This is what
-  keeps a mirrored battle exactly symmetric.
+- **Tie key.** Wherever two cells tie (equal score in `fieldStep`, equal
+  cost in `breachStep`, equal distance among spawn cells), the preferred one
+  is the most **forward** one, then the lowest `x`, **in the board frame of
+  the unit's own side**. With `(ox, oy)` the cell in that frame (side 0: `(x,
+  y)`; side 1: `(W - 1 - x, H - 1 - y)`, with `W`, `H` the arena width and
+  height in cells) the key is `(H - 1 - oy) * W + ox` and the SMALLER key is
+  preferred: a larger own-frame `y` (towards the enemy) first, then a smaller
+  own-frame `x`. (Before issue #82 part 2 the key was `oy * W + ox`, which
+  sent units sideways before forward and let a wide wave slide along its row
+  to the Core's column and advance in single file.) Using the own frame is
+  what keeps a mirrored battle exactly symmetric.
 - **No sealed bases (CB-20).** If the unit's cell has no distance in its
   movement field (every route to the Core is blocked) and the Core is not
   within `reach` (rule b is evaluated first, whether or not the cell has a
@@ -1700,6 +1740,82 @@ building is the Core within reach or blocks the way (the breach rule below).
   restored at any tick (the context is rebuilt from the state alone) continues
   exactly like the original. (An implementation must not use current health
   here: it would make results depend on when a field was first computed.)
+
+### Steering
+
+How a heading `H = (hx, hy)` (an integer vector, not `(0, 0)`; its length is
+the distance of the aim point) becomes the target point `p + V` of a mover
+`p = (px, py)` in pass 3 of step 3 (rule c, and the walk towards an aggro
+target). The vector `V` is `H` itself unless an ally is in the way, in which
+case the unit steps around it. Step 5 then moves the unit towards `p + V` as
+for any target (a step of at most its speed `s` along `V`, so only the
+direction of `V` matters when `|V| >= s`; the heading of the field step has
+length 240 or 339, above every speed).
+
+Let `rc = Ri + Rj` be the sum of the two collision radii, `r = (rx, ry) =
+(Qx - px, Qy - py)` the vector from the unit `i` to another unit `j` at
+`Q`, `d = rx^2 + ry^2`, `dot = rx * hx + ry * hy`, `cross = rx * hy - ry *
+hx` and `L2 = hx^2 + hy^2`. A unit `j` of the SAME side (`j != i`) is a
+**blocker** iff
+
+- `d < lim`, with `lim = 4 * rc^2` if `j` holds (it attacks, pass 1 or 2) and
+  `lim = rc^2` if it does not (its collision circle already overlaps ours: it
+  stands in the way and the push pass is pressing the two together), and
+- it is ahead and in the lane: `dot > 0`, `dot < L2` and `cross^2 <= rc^2 *
+  L2` (the line from `p` along `H` passes within `rc` of `j`'s centre, the
+  distance of `j` from the line being `|cross| / sqrt(L2)`).
+
+The candidates are exactly the units of the side that satisfy the two
+conditions; an implementation may find them with any search that covers all
+units with `d < 4 * rc^2`. Such units lie within `4 * maxRadius` of `p`
+(`maxRadius`: the largest collision radius among the unit types), and the
+reference visits the cells that contain the square of that half-width around
+the unit. (A window of fixed cell size around the unit's own cell would make
+the candidate set depend on how the grid is aligned, and so break half-turn
+symmetry.) The **chosen blocker** is the one with the smallest `d`; ties: the larger `cross`;
+then the lower unit `id`. If there is none, `V = H`.
+
+Otherwise let `sigma` be `+1` if `cross > 0` and `-1` if `cross < 0` (the
+unit goes to the side AWAY from the blocker), and for `cross = 0` (the
+blocker exactly on the line) with `f = +1` for side 0 and `-1` for side 1:
+if `hy != 0`, `sigma = +1` if `-hy * f > 0` else `-1`; if `hy = 0`, `sigma =
++1` if `hx * f > 0` else `-1` (towards the positive `x` of the unit's own
+frame, then the positive `y`). Then
+
+    V = (hx - sigma * hy, hy + sigma * hx)
+
+that is, `H` turned by 45 degrees towards the chosen side and made `sqrt(2)`
+longer (`V = H + sigma * perp(H)`, `perp(hx, hy) = (-hy, hx)`). There is no
+state: the next tick evaluates the rule again from the new positions, so a
+unit that has stepped aside far enough (the lane no longer touches the
+blocker) goes straight again. A rotation of the whole picture by half a turn
+maps `H`, `r` and `V` to their negatives, leaves `cross` unchanged, and the
+rule for `cross = 0` uses the unit's own frame, so a mirrored battle stays
+exactly symmetric. Walls correct any drift: a unit that is pushed into solid
+ground is pushed out by the settling of step 5.
+
+Why this and not "retarget to a free enemy": the rule is local, needs no
+memory (a restored battle behaves the same) and does not change who a unit
+fights, only the way it takes to reach that enemy, so followers reach a
+target the first unit is already fighting instead of queueing behind it.
+
+**Measured effect (issue #82, part 2).** Exact mirror matches are not a
+realistic case, so the quality of the pathing is measured on varied, unequal
+boards (`packages/tools/src/sim/varied.ts`; `pnpm exec tsx
+packages/tools/src/sim/varied-report.ts --dense --matched --party 1,2,4
+--seeds 1,2,3 --rounds 4,8,12` prints the table; `varied.test.ts` pins a
+small set): factories the scripted bot builds with four strategies, three
+seeds and three rounds, dense factories of mixed tier and gaps, and evenly
+matched full factories whose Cores sit in different places; 432 battles in
+all, before the change in brackets. Battles ended by a destroyed Core: 96.3
+percent [96.3] (bot boards 95.4 [96.3], dense 100 [100], matched 98.1 [92.6];
+the 128 reference-board battles of the benchmark: 79 [62.5] percent, the
+tiebreak-by-kills ones fell from 16 to 1). Mean battle length 722 [712] ticks
+(matched factories 1300 [1080]: they fight longer instead of stalling).
+**Front width**, sampled every 10 ticks over the units that have left their
+own board: 47.8 [38.4] such units stand in 17.3 [5.4] distinct columns, 0.36
+[0.14] columns per unit (a conga line is about 0.1); at first contact the
+leading band (8 cells deep) of a side spans 11.4 [7.0] columns.
 
 ### In-battle ramp (economy buildings)
 
@@ -1929,8 +2045,10 @@ blocks it), an entry `{entry: {x, y}, cells, approach, breach}`:
   are left out of `cells`, whose consecutive on-board cells are then not
   adjacent. The Build screen can ignore `approach`. If the entry has a distance in the movement field of an enemy
   unit heading for the Core (side 1, field `core`), the unit takes `fieldStep` (the
-  neighbour with a smaller field distance, ties by tie key) until the distance
-  is 0; the last cell is the one beside the Core and `breach` is `null`.
+  neighbour, 8 directions, with the smallest distance plus step cost, ties by
+  tie key, forward first) until the distance is 0; the last cell is the one
+  beside the Core and `breach` is `null`. Consecutive cells therefore share an
+  edge or a corner (a diagonal step).
 - Otherwise (sealed) it follows the breach field: while the breach distance of
   the current cell is above 0, take `breachStep` (minimise entering cost plus
   distance, ties by tie key). If that cell is open the unit walks into it
@@ -1945,12 +2063,15 @@ blocks it), an entry `{entry: {x, y}, cells, approach, breach}`:
 The order of entries is by ascending `x`; the output depends only on the team
 state and content (no random numbers). Identical tails are not merged.
 
-**Approximation (issue #59).** The preview, like the movement fields, works on
+**Approximation (issues #59 and #82).** The preview, like the movement fields, works on
 cells: it answers "which cells could a unit of ordinary size walk", not "where
 would a circle of radius R go". Every one-cell gap is passable, which is exact
 for every unit of part 1 (collision radii below half a cell); the walked path
-is the sequence of field cells, while a real unit cuts corners and slides, so
-the preview is the route, not the trajectory. A unit whose collision diameter is
+is the sequence of field cells, while a real unit steers by the direction of
+each step and keeps its offset inside the cell (see "Steering"), so it may cut
+across a neighbouring cell and slides along walls. The preview is the route,
+not the trajectory: the cells a lone soldier visits are within one cell of
+the previewed route (a test checks this against the simulation). A unit whose collision diameter is
 larger than a gap does not fit through it in the simulation even though the
 preview shows a path.
 
@@ -2327,9 +2448,10 @@ result, summary (without timeline), zone, stateHash, events}` where
 `stateHash` is the hash of the final `ArenaSim` and `events` the length of the
 event log; the event log is the vector's `eventLogHash`. For a refused battle:
 `{ok: false, error: {code, message}}` (no event log). Vectors:
-`golden/battle.json`: a mirror match (it ends by the attacker rung: every
-soldier has died by then, kills and building damage are equal, and Overload
-destroys both Cores at tick 3100);
+`golden/battle.json`: a mirror match (it ends by the attacker rung: both
+Cores fall in the same tick, 684, with equal overkill, kills and building
+damage; before issue #82 part 2 the armies stalled and Overload destroyed both
+Cores at tick 3100);
 rush against fortify-and-ramp; a quick one-sided battle; a walled stalemate
 ended by Overload (attacker rung); one vector for each rung of the ladder after
 equal overkill, `battle.tiebreak-building-damage` (a soldier wave hits a turret

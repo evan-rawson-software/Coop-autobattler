@@ -55,10 +55,18 @@ const plain = boards.filter((b) => !isMatched(b));
 const matched = boards.filter(isMatched);
 const pairs = [
   ...variedPairs(plain, list(args, '--opponents', [3])[0] ?? 3).map(
-    ([i, j]) => [boards.indexOf(plain[i] as VariedBoard), boards.indexOf(plain[j] as VariedBoard)] as const,
+    ([i, j]) =>
+      [
+        boards.indexOf(plain[i] as VariedBoard),
+        boards.indexOf(plain[j] as VariedBoard),
+      ] as const,
   ),
   ...matchedPairs(matched).map(
-    ([i, j]) => [boards.indexOf(matched[i] as VariedBoard), boards.indexOf(matched[j] as VariedBoard)] as const,
+    ([i, j]) =>
+      [
+        boards.indexOf(matched[i] as VariedBoard),
+        boards.indexOf(matched[j] as VariedBoard),
+      ] as const,
   ),
 ];
 const t0 = Date.now();

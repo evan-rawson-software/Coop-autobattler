@@ -61,6 +61,35 @@ The cost of a tick is now in the neighbour search of the single push pass
 (each unit looks at the nine cells around it on a uniform grid, each pair once)
 and in the decisions, not in the retries of the old acceptance step.
 
+**Wide-front pathing (issue #82, part 2).** The field has eight directions,
+units steer by the direction of the step and step around an ally that holds
+its place, and ties go forward (see "Goals and movement fields" and
+"Steering" in the rules reference). Armies now advance on a wide front, meet
+earlier and fight longer instead of stalling in file, so battles last longer
+and carry more events. Measured back to back on the same sandbox (single runs,
+`pnpm exec tsx packages/tools/src/sim/bench-report.ts`, machine otherwise idle):
+
+| Battle                                       | Soft collision (#82 part 1) | Wide fronts (#82 part 2) |
+| -------------------------------------------- | --------------------------- | ------------------------ |
+| One plot, 128 reference battles: speed       | 129 battles/s               | 149 battles/s            |
+| One plot: longest log (JSON)                 | 445 KB                      | 440 KB                   |
+| One plot: longest battle / peak units        | 3101 ticks / 20             | 3101 ticks / 20          |
+| One plot: ended by a Core kill               | 80 of 128                   | 101 of 128               |
+| Dense four plots, tier 1: wall time          | 0.60 s                      | 0.96 s                   |
+| Dense tier 1: ticks / peak / log             | 1116 / 217 / 1.33 MB        | 1528 / 192 / 2.03 MB     |
+| Dense four plots, tier 3: wall time          | 0.99 s                      | 1.9 s                    |
+| Dense tier 3: ticks / peak / log             | 1575 / 568 / 5.09 MB        | 2514 / 615 / 8.20 MB     |
+| Dense tier 1: battles per second             | 4.5                         | 2.9                      |
+| Wall time per tick (dense tier 1 / tier 3)   | 0.54 / 0.63 ms              | 0.63 / 0.76 ms           |
+
+The cost per tick rose by 15 to 20 percent (three decision passes, the 8-way
+field and the search for a blocker in the unit's neighbourhood; the push pass
+is unchanged) and the dense battles last 37 to 60 percent longer (the mirror
+of an army against itself is no longer decided by both Cores falling in the
+same tick while the armies are still stalled). One-plot battles got faster
+because more of them end by a Core kill early. The dense tier 1 rate target of
+5 battles a second is no longer met (2.9); the enforced floor of 1.5 is.
+
 Rows below are the earlier (stacking) baseline, kept for reference:
 
 | Battle                                   | Wall time | Ticks | Peak units per side | Events | Event log (JSON) |
@@ -86,20 +115,21 @@ tick on average with up to 1,220 units on the field.
 
 | Quantity                                | Budget                 | Measured (worst case) | Enforced by                                  |
 | --------------------------------------- | ---------------------- | --------------------- | -------------------------------------------- |
-| Units alive per side                    | 1,000                  | 568 (dense tier 3)    | `performance.test.ts`, exact                 |
+| Units alive per side                    | 1,000                  | 615 (dense tier 3)    | `performance.test.ts`, exact                 |
 | Battle length                           | 4,000 ticks            | 3,101                 | `performance.test.ts`, exact                 |
 | Hard cap on battle length               | `maxBattleTicks` 12,000 | never reached        | the end conditions                           |
-| One plot: battles per second (target)   | at least 100           | 123-138 (was 87-96)   | fails below 40 (about 3x)                    |
-| Four plots, dense: battles per second   | at least 5             | 5.0-5.6 (tier 1)    | fails below 1.5 (about 3x)                   |
-| Four plots, dense tier 3, one battle    | at most 1 s (**not met**) | 1.0-1.1 s          | fails above 4 s (about 3x)                   |
+| One plot: battles per second (target)   | at least 100           | 129-149               | fails below 40 (about 3x)                    |
+| Four plots, dense: battles per second   | at least 5 (**not met**) | 2.9 (tier 1)        | fails below 1.5 (about 2x)                   |
+| Four plots, dense tier 3, one battle    | at most 1 s (**not met**) | 1.9 s              | fails above 4 s (about 2x)                   |
 | Event log, one plot                     | 1 MB                   | 0.44 MB               | `performance.test.ts`, exact                 |
-| Event log, four plots                   | 8 MB (was 5 MB)        | 5.1 MB                | `performance.test.ts`, exact                 |
+| Event log, four plots                   | 12 MB (was 8 MB, 5 MB) | 8.2 MB                | `performance.test.ts`, exact                 |
 
 Where the budget is written once more: the `BUDGET` constant at the top of
 `packages/tools/src/sim/performance.test.ts`. Keep the two in sync. The four
 plot log budget was raised from 5 MB to 8 MB because battles that used to stall
 for 3,101 ticks now end in under 2,000 with units fighting all the way (more
-events per tick, fewer ticks).
+events per tick, fewer ticks), and from 8 MB to 12 MB by the wide-front
+pathing (the dense tier 3 battle now runs 2,514 ticks and logs 8.2 MB).
 
 **Benchmark.** `packages/tools/src/sim/performance.test.ts` (run by `pnpm
 test`; about 1 minute since the dense battles take seconds, each test has a 30 to 120 s timeout):
@@ -120,11 +150,11 @@ test`; about 1 minute since the dense battles take seconds, each test has a 30 t
   s now) and, with tier 1, for the unit peak, length and log size (untimed,
   deterministic).
 
-The enforced limits are about 3 times looser than the speed measured on the
+The enforced limits are 2 to 3 times looser than the speed measured on the
 sandbox this was written on (4 cores shared with other work, so the figures
 move by 10 to 30 percent from run to run): one plot at least 40 battles per
-second against 123 to 138 measured; dense tier 1 at least 1.5 per second
-against 5.0 to 5.6; the tier 3 stress battle under 4 s against 1.0 to 1.1 s.
+second against 129 to 149 measured; dense tier 1 at least 1.5 per second
+against 2.9; the tier 3 stress battle under 4 s against 1.9 s.
 A slow or noisy CI runner passes and a regression of several times fails. CI
 runs `pnpm -r run test`, so the package suites run in parallel and the
 benchmark competes for CPU; if a runner turns out slower than that, widen the

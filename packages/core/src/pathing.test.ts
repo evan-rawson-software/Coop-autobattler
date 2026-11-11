@@ -57,7 +57,13 @@ describe('the movement field (8 directions)', () => {
   // Side 1's Core covers arena (5..6, 34..35); the face cells for side 0 are
   // (5, 33), (6, 33), (4, 34), (4, 35), (7, 34), (7, 35).
   function field(team1: TeamState = coreOnly()) {
-    const { ctx } = startArenaBattle(coreOnly(), team1, GAP, content, simConfig);
+    const { ctx } = startArenaBattle(
+      coreOnly(),
+      team1,
+      GAP,
+      content,
+      simConfig,
+    );
     return { arena: ctx.arena, f: computeField(ctx.arena, 0) };
   }
   const at = (x: number, y: number): number => y * W + x;
@@ -223,7 +229,8 @@ describe('sliding past an ally that holds its place', () => {
       events.filter((e) => e.type === 'unit_attacked').map((e) => e.unit),
     );
     // At least four of the five soldiers hit the target.
-    for (const s of soldiers.slice(0, 4)) expect(attackers.has(s.id)).toBe(true);
+    for (const s of soldiers.slice(0, 4))
+      expect(attackers.has(s.id)).toBe(true);
     expect(groundViolations(sim, ctx)).toEqual([]);
   });
 
