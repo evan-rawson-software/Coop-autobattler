@@ -345,8 +345,9 @@ function enter(
       return enter(s, 'pvp_summary', deps, fx);
     }
     case 'run_over':
-      // Nothing is coming any more: no pending data, no upcoming options.
-      return { ...s, pending: null, upcomingPve: null };
+      // Nothing is coming any more: no pending data, no upcoming options, no
+      // opponent (abandoning in the shop after the selection left one).
+      return { ...s, pending: null, upcomingPve: null, pvpOpponent: null };
     default:
       // core_placement, pve_summary, pvp_summary, event_resolve: the caller
       // sets `pending` (and `votes` for core_placement) itself.

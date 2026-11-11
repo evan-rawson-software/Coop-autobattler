@@ -410,6 +410,31 @@ describe('item 2: the controller validates the next state before every save', ()
   });
 });
 
+describe('item 2b: found by the validation before save', () => {
+  test('abandoning in the shop after the opponent was selected leaves a valid state', () => {
+    const deps = botDeps('x');
+    const run = botRun(
+      deps,
+      argsFor('ab', 5),
+      3,
+      (s) => s.step === 'shop' && s.leg === 'pve',
+    );
+    const sel = applyIntent(
+      run.state,
+      0,
+      { type: SELECT_GHOST, candidates: [] },
+      deps,
+    );
+    if (!sel.ok) throw new Error('select');
+    const ab = applyIntent(sel.state, 0, { type: 'abandon' }, deps);
+    expect(ab.ok).toBe(true);
+    if (!ab.ok) return;
+    expect(ab.state.pvpOpponent).toBeNull();
+    const v = validateRunState(clone(ab.state), deps);
+    expect(v.ok ? [] : v.errors).toEqual([]);
+  });
+});
+
 describe('item 3: tier plausibility', () => {
   const econ = gameConfigs.economy;
   const events = gameConfigs.events;
