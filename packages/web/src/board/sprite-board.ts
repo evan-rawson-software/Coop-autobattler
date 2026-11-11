@@ -183,13 +183,23 @@ function rampOf(set: SpriteSet, resource: string | null): Ramp | undefined {
   return resource === null ? undefined : set.atlas.tint.resources[resource];
 }
 
-function isTurret(b: SceneBuilding): boolean {
+function isTurret(b: Pick<SceneBuilding, 'def'>): boolean {
   return b.def.kind === 'defense' && b.def.defenseType === 'turret';
 }
 
-/** Sprites for walls, gates, turrets and the Core keep their light direction. */
-function keepsUpright(b: SceneBuilding): boolean {
-  return b.def.kind === 'defense' || b.def.kind === 'core';
+/**
+ * Quarter turns (clockwise, as core `rotateSide`) the sprite of a building is
+ * drawn with: its placed rotation plus half a turn on the turned enemy board.
+ * Walls, gates and the Core keep their light direction (0); a turret's base
+ * turns with the building because its input port is part of the art.
+ */
+export function buildingSpriteRot(
+  b: Pick<SceneBuilding, 'def' | 'instance'>,
+  turned: boolean,
+): 0 | 1 | 2 | 3 {
+  const upright = b.def.kind === 'defense' || b.def.kind === 'core';
+  if (upright && !isTurret(b)) return 0;
+  return ((b.instance.rotation / 90 + (turned ? 2 : 0)) % 4) as 0 | 1 | 2 | 3;
 }
 
 function drawBuildings(
@@ -210,7 +220,15 @@ function drawBuildings(
     const sp = findSprite(b.def.id);
     const fits = sp !== undefined && sp.w === pw && sp.h === ph;
     if (isTurret(b) && findSprite('bld_turret_base') && b.rect.w === 1) {
-      drawSprite(lc, 'bld_turret_base', px, py, 1);
+      const baseRot = buildingSpriteRot(b, f.turned);
+      drawSprite(
+        lc,
+        'bld_turret_base',
+        px,
+        py,
+        1,
+        baseRot ? { rot: baseRot } : {},
+      );
       const head = set.atlas.sprites['bld_turret_head'];
       const src = head ? frameCanvas(set, 'bld_turret_head', 0) : null;
       if (head && src) {
@@ -221,9 +239,7 @@ function drawBuildings(
         lc.restore();
       }
     } else if (fits) {
-      const rot = keepsUpright(b)
-        ? 0
-        : (((b.instance.rotation / 90 + turned) % 4) as 0 | 1 | 2 | 3);
+      const rot = buildingSpriteRot(b, f.turned);
       drawSprite(lc, b.def.id, px, py, 1, rot ? { rot } : {});
     } else {
       // No sprite for this building: the flat block.

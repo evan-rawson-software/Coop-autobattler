@@ -6,7 +6,10 @@ import {
   SIDE_W,
   conduitPiece,
 } from '../sprites/conduit-piece.js';
-import { conduitCells } from './sprite-board.js';
+import { rotateSide, type Rotation, type Side } from '@game/core';
+import atlasJson from '../../../../assets/sprites/atlas.json';
+import { loadWebContent } from '../content.js';
+import { buildingSpriteRot, conduitCells } from './sprite-board.js';
 import type { BoardScene } from './scene.js';
 
 const pt = (x: number, y: number) => ({ x: x + 0.5, y: y + 0.5 });
@@ -52,4 +55,37 @@ describe('conduit cells of a scene', () => {
   test('a direct connection has no conduit cells', () => {
     expect(conduitCells(boardWith([pt(0, 0), pt(1, 0)], []))).toEqual([]);
   });
+});
+
+describe('building sprite rotation follows the ports', () => {
+  const content = loadWebContent();
+  const sides: Side[] = ['north', 'east', 'south', 'west'];
+  const rotations: Rotation[] = [0, 90, 180, 270];
+
+  for (const def of content.buildings.list()) {
+    // The art draws the ports where the def has them at rotation 0; walls,
+    // gates and the Core have none. A turret's base sprite carries its port.
+    const ports = [...def.inputs.map((i) => i.side), ...def.outputs];
+    if (ports.length === 0) continue;
+    const hasArt =
+      def.id in atlasJson.sprites ||
+      (def.kind === 'defense' && 'bld_turret_base' in atlasJson.sprites);
+    if (!hasArt) continue;
+    test(`${def.id}: drawn rotation puts ports where the def does`, () => {
+      for (const rotation of rotations)
+        for (const turned of [false, true]) {
+          const rot = buildingSpriteRot(
+            { def, instance: { rotation } as never },
+            turned,
+          );
+          const want = (turned ? 2 : 0) + rotation / 90;
+          for (const side of ports) {
+            const drawn = sides[(sides.indexOf(side) + rot) % 4];
+            const expected = sides[(sides.indexOf(side) + want) % 4];
+            expect(drawn).toBe(expected);
+            if (!turned) expect(drawn).toBe(rotateSide(side, rotation));
+          }
+        }
+    });
+  }
 });
