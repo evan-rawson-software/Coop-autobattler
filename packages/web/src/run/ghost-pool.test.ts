@@ -115,8 +115,10 @@ describe('ghost pool bounds', () => {
       runId: run,
       pad: 'x'.repeat(pad),
     }) as unknown as GhostSnapshot;
-  const small = (owner: string, run: string): GhostSnapshot =>
-    ({ ...snap(owner), runId: run }) as unknown as GhostSnapshot;
+  const small = (owner: string, run: string): GhostSnapshot => ({
+    ...snap(owner),
+    runId: run,
+  });
   const maxSize = (): number => 2000;
   const bucketKey = ghostBucketKey(B);
 
@@ -233,9 +235,11 @@ describe('ghost pool bounds', () => {
       () => Promise.resolve(createLocalStorageGhostStore(ls)),
     ]) {
       const first = await make();
-      for (let i = 1; i <= 3; i++) await first.save(small('ann', `r${i}`));
+      for (let i = 1; i <= 3; i++)
+        await first.save(small('ann', `r${String(i)}`));
       const second = await make();
-      for (let i = 4; i <= 6; i++) await second.save(small('ann', `r${i}`));
+      for (let i = 4; i <= 6; i++)
+        await second.save(small('ann', `r${String(i)}`));
       const ids = ((await second.list(B)) as GhostSnapshot[]).map(
         (g) => g.runId,
       );
