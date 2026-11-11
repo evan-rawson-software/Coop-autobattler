@@ -18,6 +18,7 @@ import {
   type TeamState,
 } from '@game/core';
 import type { WebContent } from '../content.js';
+import { count } from '../plural.js';
 
 // ---------------------------------------------------------------------------
 // Names
@@ -346,7 +347,7 @@ export function deriveProblems(
     out.push({
       id: 'free_nodes',
       kind: 'free_nodes',
-      text: `${buildingName(content, sourceInStash.def)} in stash: ${String(freeNodes.length)} free node${freeNodes.length === 1 ? '' : 's'} (${kinds.join(', ')}).`,
+      text: `${buildingName(content, sourceInStash.def)} in stash: ${count(freeNodes.length, 'free node')} (${kinds.join(', ')}).`,
       focus: first === undefined ? null : { x: first.x, y: first.y },
       building: null,
     });
@@ -356,7 +357,7 @@ export function deriveProblems(
     out.push({
       id: 'stash',
       kind: 'stash',
-      text: `${String(n)} building${n === 1 ? '' : 's'} in the stash could be placed.`,
+      text: `${count(n, 'building')} in the stash could be placed.`,
       focus: null,
       building: null,
     });

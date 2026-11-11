@@ -6,6 +6,7 @@
 
 import { createContext, type ComponentChildren } from 'preact';
 import { useContext } from 'preact/hooks';
+import { StorageNotes } from '../run/StorageNotes.js';
 
 export interface TabDef {
   readonly id: string;
@@ -34,14 +35,21 @@ export interface AppShellProps {
 /** Set by the app root: a screen switcher, or nothing with a single screen. */
 export const SwitcherContext = createContext<ComponentChildren>(null);
 
+/**
+ * Set by the run screen: the run's bar (round, lives, gold, step, Menu). It
+ * replaces the screen switcher and sits at the right of every top bar.
+ */
+export const RunBarContext = createContext<ComponentChildren>(null);
+
 export function AppShell(props: AppShellProps) {
   const { tabs = [], left, right, bottom } = props;
   const switcher = useContext(SwitcherContext);
+  const runBar = useContext(RunBarContext);
   return (
     <div class="app">
-      <header class="topbar">
+      <header class={runBar ? 'topbar has-run-bar' : 'topbar'}>
         <div class="topbar-left">
-          {switcher}
+          {runBar ? null : switcher}
           <h1 class="topbar-title">{props.title}</h1>
         </div>
         <nav class="topbar-tabs" aria-label="Sections">
@@ -59,8 +67,12 @@ export function AppShell(props: AppShellProps) {
             </button>
           ))}
         </nav>
-        <div class="topbar-status">{props.status}</div>
+        <div class="topbar-status">
+          {props.status}
+          {runBar}
+        </div>
       </header>
+      <StorageNotes />
       <div class="main">
         <main class="main-view">{props.children}</main>
         {left ? <Dock region="left">{left}</Dock> : null}

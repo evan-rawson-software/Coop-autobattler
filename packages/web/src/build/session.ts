@@ -15,6 +15,7 @@ import {
   type RunState,
 } from '@game/session';
 import { createStore, type Store } from '../app-state.js';
+import { appliedNotice } from '../event/view-model.js';
 import { content } from '../content.js';
 import { economy } from './setup.js';
 import {
@@ -49,9 +50,14 @@ export interface SessionView {
   readonly run: RunState;
   readonly undoCount: number;
   readonly redoCount: number;
+  /**
+   * What the last step did for this player that the next screen should say
+   * (the Workshop: "Upgraded Barracks to tier 2 for 16 gold"); cleared when
+   * dismissed or when the player presses Ready.
+   */
+  readonly notice: string | null;
 }
 
-let clock = Date.now();
 let runCounter = 0;
 
 export class BuildSession {
@@ -59,8 +65,24 @@ export class BuildSession {
   readonly store: Store<SessionView>;
   private stepAnchor: string;
   private lockedDetail: string | null = null;
+  private notice: string | null = null;
 
-  private constructor(readonly controller: RunController) {
+  private lastStamp = 0;
+
+  /**
+   * The time stamped on the next saved action: the current time, but always
+   * later than the last one of this session, so two actions in the same
+   * millisecond still order.
+   */
+  private stamp(): number {
+    this.lastStamp = Math.max(this.clockNow(), this.lastStamp + 1);
+    return this.lastStamp;
+  }
+
+  private constructor(
+    readonly controller: RunController,
+    private readonly clockNow: () => number,
+  ) {
     this.stepAnchor = this.anchor();
     this.store = createStore<SessionView>(this.view());
   }
@@ -69,12 +91,18 @@ export class BuildSession {
    * Wrap an existing controller (the Shop route: one run shared by the Shop
    * and Build tabs, saved in a browser store).
    */
-  static fromController(controller: RunController): BuildSession {
-    return new BuildSession(controller);
+  static fromController(
+    controller: RunController,
+    now: () => number = Date.now,
+  ): BuildSession {
+    return new BuildSession(controller, now);
   }
 
   /** Start a solo run with a fixed seed. */
-  static async start(seed: number): Promise<BuildSession> {
+  static async start(
+    seed: number,
+    now: () => number = Date.now,
+  ): Promise<BuildSession> {
     runCounter += 1;
     const deps = createEconomyDeps(content, content.mapgen, economy);
     const r = await startRun(
@@ -87,11 +115,11 @@ export class BuildSession {
       },
       deps,
       createMemorySaveStore(),
-      ++clock,
+      now(),
       '0.1.0',
     );
     if (!r.ok) throw new Error(`Could not start a run: ${r.reason}`);
-    return new BuildSession(r.controller);
+    return new BuildSession(r.controller, now);
   }
 
   get run(): RunState {
@@ -108,6 +136,7 @@ export class BuildSession {
       run: this.controller.state,
       undoCount: this.stack.undoCount,
       redoCount: this.stack.redoCount,
+      notice: this.notice,
     };
   }
 
@@ -134,8 +163,17 @@ export class BuildSession {
     if (this.lockedDetail !== null) {
       return { ok: false, reason: 'save_failed', detail: this.lockedDetail };
     }
-    const r = await this.controller.dispatch(ME, intent, ++clock);
+    const r = await this.controller.dispatch(ME, intent, this.stamp());
     if (r.ok) {
+      if (intent.type === 'ready') this.notice = null;
+      for (const e of r.effects) {
+        if (e.type === 'custom' && e.name === 'event_resolved') {
+          const applied = (e.data as { applied?: unknown }).applied;
+          if (Array.isArray(applied)) {
+            this.notice = appliedNotice(applied, ME, content) ?? this.notice;
+          }
+        }
+      }
       if (
         !LAYOUT_INTENTS.has(intent.type) ||
         this.anchor() !== this.stepAnchor
@@ -146,6 +184,12 @@ export class BuildSession {
     }
     this.publish();
     return r;
+  }
+
+  /** Hide the notice. */
+  dismissNotice(): void {
+    this.notice = null;
+    this.publish();
   }
 
   private async applyAll(

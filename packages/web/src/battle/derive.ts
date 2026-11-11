@@ -376,6 +376,8 @@ export interface BuildingRow {
   readonly lost: number;
   /** Tick of the first destruction, or null. */
   readonly firstLostTick: number | null;
+  /** Why a unit producer trained nothing, when the log shows it; else null. */
+  readonly note: string | null;
 }
 
 interface Tally {
@@ -385,6 +387,24 @@ interface Tally {
   damage: number;
   upgrades: number;
   lostTick: number | null;
+}
+
+/** Why a unit producer that trained nothing did so, when it can be told. */
+function idleNote(
+  isProducer: boolean,
+  t: Tally,
+  team: BattleRecord['initialTeams'][number],
+  id: number,
+): string | null {
+  if (!isProducer || t.trained > 0 || t.lostTick !== null) return null;
+  const wired = team.conduits.some(
+    (c) => c.from.building === id || c.to.building === id,
+  );
+  if (!wired) return 'produced no units: no conduit was connected to it';
+  if (t.delivered === 0) {
+    return 'produced no units: it never received its input resource';
+  }
+  return null;
 }
 
 /**
@@ -461,6 +481,12 @@ export function buildingRows(
       upgrades: t.upgrades,
       lost: t.lostTick === null ? 0 : 1,
       firstLostTick: t.lostTick,
+      note: idleNote(
+        def.kind === 'unit_producer',
+        t,
+        record.initialTeams[side],
+        placed.id,
+      ),
     };
     if (isWallLike(def)) {
       const prev = grouped.get(def.id);

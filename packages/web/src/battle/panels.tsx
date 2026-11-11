@@ -74,6 +74,8 @@ export function LeftPanels(props: {
   readonly content: WebContent;
   readonly foeName: string;
   readonly overloadTick: number | null;
+  /** PvE: which Core Overload destroys first; null against a ghost. */
+  readonly overloadNote?: string | null;
   readonly tps: number;
 }) {
   const { pb, mine, theirs, content } = props;
@@ -167,6 +169,12 @@ export function LeftPanels(props: {
         {markers.length > 0 ? (
           <p class="muted small">O: Overload begins</p>
         ) : null}
+        {props.overloadNote === undefined ||
+        props.overloadNote === null ? null : (
+          <p class="muted small" data-field="overload-note">
+            {props.overloadNote}
+          </p>
+        )}
       </Panel>
     </>
   );
@@ -355,6 +363,8 @@ export interface SummaryProps {
   readonly title: string;
   readonly moments: readonly Moment[];
   readonly rewardText: string;
+  /** The stored outcome, when the run state has one. */
+  readonly won?: boolean | undefined;
   readonly tps: number;
   readonly ready: boolean;
   readonly onWatchAgain: () => void;
@@ -364,7 +374,7 @@ export interface SummaryProps {
 export function BattleSummaryView(props: SummaryProps) {
   const { pb, content, opponent, moments } = props;
   const rec = pb.record;
-  const won = rec.result.winner === 0;
+  const won = props.won ?? rec.result.winner === 0;
   const own = rec.summary.sides[0];
   const foe = rec.summary.sides[1];
   const rows = useMemo(() => buildingRows(rec, content, 0), [rec, content]);
@@ -481,6 +491,11 @@ export function BattleSummaryView(props: SummaryProps) {
           </strong>
           .
         </p>
+        <p class="muted" data-field="tiebreak-counters">
+          Damage to buildings: yours {own.buildingDamageDealt}, theirs{' '}
+          {foe.buildingDamageDealt}. Units killed: yours {own.unitsKilled},
+          theirs {foe.unitsKilled}.
+        </p>
       </section>
 
       <Panel title="Army strength over time" id="panel-summary-chart">
@@ -551,6 +566,12 @@ export function BattleSummaryView(props: SummaryProps) {
                 <th scope="row">
                   {r.name}
                   {r.count > 1 ? ` ×${String(r.count)}` : ''}
+                  {r.note === null ? null : (
+                    <span class="muted fine" data-field="idle-note">
+                      {' '}
+                      · {r.note}
+                    </span>
+                  )}
                 </th>
                 {cols.produced ? <td>{r.produced || '–'}</td> : null}
                 {cols.delivered ? <td>{r.delivered || '–'}</td> : null}
@@ -574,12 +595,7 @@ export function BattleSummaryView(props: SummaryProps) {
 
       <Panel title="Next" id="panel-ready" class="ready-panel">
         <div class="btn-col">
-          <button
-            type="button"
-            id="watch-again"
-            disabled={props.ready}
-            onClick={props.onWatchAgain}
-          >
+          <button type="button" id="watch-again" onClick={props.onWatchAgain}>
             Watch again
           </button>
           <button

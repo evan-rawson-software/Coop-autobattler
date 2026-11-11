@@ -12,7 +12,6 @@ import {
   REFERENCE_BOARDS,
   buildReferenceBoard,
   generateThreat,
-  type BattleResult,
   type ReferenceBoardName,
   type ThreatType,
 } from '@game/core';
@@ -126,7 +125,7 @@ export interface Sample {
   readonly opponent: OpponentInfo;
   readonly title: string;
   /** The reward / cost line of the summary for this kind of battle. */
-  readonly reward: (result: BattleResult) => string;
+  readonly reward: (won: boolean) => string;
 }
 
 /** Build the battle a selection names. Deterministic in the selection. */
@@ -155,7 +154,7 @@ export function buildSample(sel: SampleSelection): Sample {
         label: boss ? 'Boss' : archetypeLabel(a),
       },
       title: `Round ${String(round)} · PvE battle`,
-      reward: (r) => sampleReward('pve', r),
+      reward: (w) => sampleReward('pve', w),
     };
   }
   if (kind === STRESS_ID) {
@@ -179,7 +178,7 @@ export function buildSample(sel: SampleSelection): Sample {
       },
       opponent: { name: 'stress test', kind: 'ghost' },
       title: 'Sample · stress test',
-      reward: (r) => sampleReward('versus', r),
+      reward: (w) => sampleReward('versus', w),
     };
   }
   const ghostBoard = isBoard(a ?? null) ? (a as ReferenceBoardName) : 'rush';
@@ -194,7 +193,7 @@ export function buildSample(sel: SampleSelection): Sample {
       kind: 'ghost',
     },
     title: 'Sample · PvP battle',
-    reward: (r) => sampleReward('versus', r),
+    reward: (w) => sampleReward('versus', w),
   };
 }
 
@@ -205,8 +204,8 @@ export function buildSample(sel: SampleSelection): Sample {
  */
 export function sampleReward(
   kind: BattleDescription['kind'],
-  result: BattleResult,
+  won: boolean,
 ): string {
-  if (result.winner === 0) return '+3 gold';
+  if (won) return '+3 gold';
   return kind === 'pve' ? 'No reward' : '-1 life · +1 gold';
 }

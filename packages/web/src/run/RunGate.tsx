@@ -7,6 +7,7 @@ import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import { useStore } from '../app-state.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
+import type { RunHandle } from './handle.js';
 import {
   optionsFromUrl,
   reloadShopRun,
@@ -18,7 +19,7 @@ import {
 export const NOT_SAVED_TEXT = 'Not saved — progress is lost on reload';
 
 /** A persistent note when the run is only kept in memory. */
-export function NotSavedNote(props: { run: ShopRun }) {
+export function NotSavedNote(props: { run: Pick<RunHandle, 'storage'> }) {
   if (props.run.storage !== 'memory') return null;
   return (
     <span class="not-saved" id="not-saved-note" role="note">

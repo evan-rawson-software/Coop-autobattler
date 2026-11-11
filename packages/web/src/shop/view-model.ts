@@ -23,6 +23,8 @@ import type { WebContent } from '../content.js';
 import { isEditStep } from '../build/session.js';
 import { buildingName } from '../build/view-model.js';
 import { effectText, KIND_LABELS, needsText } from './effect-text.js';
+import { count } from '../plural.js';
+import { gateFor, type Gate, type LockDeps } from '../build/lock.js';
 
 export interface OfferCard {
   readonly slot: number;
@@ -68,6 +70,12 @@ export interface ShopView {
   readonly ready: boolean;
   readonly readyCount: number;
   readonly playerCount: number;
+  /** Lock and sealed-producer state (see `build/lock.ts`). */
+  readonly gate: Gate | null;
+  /** Why the Ready button is disabled (a sealed producer); null otherwise. */
+  readonly readyBlock: string | null;
+  /** Why selling is refused (Ready); null when it is open. */
+  readonly sellBlock: string | null;
 }
 
 export type ShopContext = {
@@ -116,8 +124,19 @@ export function buildShopView(
   run: RunState,
   player: number,
   ctx: ShopContext,
+  deps?: LockDeps,
 ): ShopView {
   const me = run.perPlayer[player];
+  const gate =
+    deps === undefined ? null : gateFor(run, player, deps, ctx.content);
+  const lock = (intent: string): string | null =>
+    gate === null
+      ? me?.ready === true
+        ? 'Ready — press Unready to make changes.'
+        : null
+      : gate.ready || !gate.allowed.has(intent)
+        ? gate.editBlock
+        : null;
   const open = run.step === 'shop';
   const gold = me?.gold ?? 0;
   const data = me === undefined ? null : readShop(me);
@@ -126,9 +145,11 @@ export function buildShopView(
     const def = ctx.content.buildings.get(o.def);
     const reason = !open
       ? CLOSED
-      : gold < o.price
-        ? shortOf(gold, o.price)
-        : null;
+      : lock('buy') !== null
+        ? lock('buy')
+        : gold < o.price
+          ? shortOf(gold, o.price)
+          : null;
     return {
       slot,
       offer: {
@@ -151,11 +172,13 @@ export function buildShopView(
   const cost = ctx.economy.rerollCost;
   const rerollReason = !open
     ? CLOSED
-    : data === null
-      ? 'There are no offers to re-roll.'
-      : gold < cost
-        ? shortOf(gold, cost)
-        : null;
+    : lock('reroll') !== null
+      ? lock('reroll')
+      : data === null
+        ? 'There are no offers to re-roll.'
+        : gold < cost
+          ? shortOf(gold, cost)
+          : null;
   const mine = (b: { owner: number }): boolean => b.owner === player;
   return {
     open,
@@ -168,6 +191,9 @@ export function buildShopView(
     ready: me?.ready === true,
     readyCount: run.perPlayer.filter((p) => p.ready).length,
     playerCount: run.players.length,
+    gate,
+    readyBlock: gate?.readyBlock ?? null,
+    sellBlock: open ? lock('sell') : CLOSED,
   };
 }
 
@@ -235,9 +261,9 @@ export function archetypeName(id: string): string {
 
 export function threatLine(o: PveOptionView): string {
   const s = o.summary;
-  const parts = [`${String(s.totalUnits)} units`];
-  if (s.walls > 0) parts.push(`${String(s.walls)} walls`);
-  if (s.turrets > 0) parts.push(`${String(s.turrets)} turrets`);
+  const parts = [count(s.totalUnits, 'unit')];
+  if (s.walls > 0) parts.push(count(s.walls, 'wall'));
+  if (s.turrets > 0) parts.push(count(s.turrets, 'turret'));
   parts.push(`Core ${String(s.coreHealth)} health`);
   return parts.join(' · ');
 }

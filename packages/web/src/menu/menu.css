@@ -1,0 +1,136 @@
+/* Main menu. Plain CSS on the shared custom properties. */
+
+.menu {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(260px, 26rem) minmax(0, 1fr);
+  gap: 1.5rem;
+  padding: 1.5rem;
+  overflow: auto;
+}
+
+.menu-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.game-title {
+  margin: 0;
+  font-size: 1.9rem;
+  letter-spacing: 0.02em;
+}
+
+.menu .primary.big {
+  padding: 0.9rem 1rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.records {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.records li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.15rem 0;
+}
+
+.menu-right {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-right .saved {
+  flex: 1 1 auto;
+}
+
+.run-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.run-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface-2);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+}
+
+.run-row.damaged {
+  border-color: var(--bad);
+}
+
+.run-info h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1.05rem;
+}
+
+.run-info p {
+  margin: 0.1rem 0;
+}
+
+.run-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex: none;
+  align-items: center;
+}
+
+.run-actions.confirm {
+  flex-wrap: wrap;
+  max-width: 22rem;
+}
+
+.run-actions.confirm p {
+  margin: 0 0 0.3rem;
+  flex: 1 1 100%;
+}
+
+.run-actions button {
+  min-width: 6rem;
+  padding: 0.45rem 0.9rem;
+}
+
+.error-text {
+  color: var(--bad);
+}
+
+.menu-note {
+  margin: 0 0 0.6rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--surface-2);
+  border-left: 4px solid var(--accent);
+}
+
+.developer {
+  margin-top: 0.5rem;
+  color: var(--ink-muted);
+}
+
+.developer summary {
+  cursor: pointer;
+}
+
+.developer ul {
+  margin: 0.4rem 0;
+}
+
+@media (max-width: 1100px) {
+  .menu {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

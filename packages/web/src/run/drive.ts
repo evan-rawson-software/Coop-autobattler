@@ -8,7 +8,13 @@
  * rules.
  */
 import { listLegalCorePositions } from '@game/core';
-import type { DispatchResult, Intent, Json, RunState } from '@game/session';
+import {
+  SKIP_CHOICE,
+  type DispatchResult,
+  type Intent,
+  type Json,
+  type RunState,
+} from '@game/session';
 import { content } from '../content.js';
 
 /** Which battle the shop leads into. */
@@ -59,7 +65,7 @@ export function nextIntent(state: RunState): Intent | null {
       // A per-player follow-up (Workshop, issue #50): skip.
       const id = isRecord(fu)
         ? fu['perPlayer'] === true
-          ? 'skip'
+          ? SKIP_CHOICE
           : firstId(fu['options'])
         : null;
       return id === null ? null : { type: 'event_choose', choice: id };
