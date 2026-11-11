@@ -133,13 +133,10 @@ definition's `type` selects an `EventHandler` (`available`, `instantiate`,
 `eventHandlers: { ...defaultEventHandlers, mine }`; the machine is unchanged.
 `createGameDeps` throws when a definition names a type without a handler,
 when a follow-up handler has no `choose`, or when no definition has an
-always-available handler. Offers are 1 to 3, not always 3: with the Workshop
-unavailable and three or fewer eligible modifiers a second Shrine is
-impossible and the step offers two events on purpose (a design question,
-issue #48). The first pass draws one weighted pick per event offered; the
-second pass (repeatable events) draws one pick per extra offer and only while
-a different instance can exist (`maxInstances`), so the draws never depend on
-how many retries an instance needed. Offers are `{ id, event, type, ...data }` in `pending.options` (vote with
+always-available handler. Offers are 1 to 3, never two of one type: up to
+`offerCount` distinct event definitions are drawn by weight without
+replacement from the available ones (one weighted pick per offer made), so
+fewer types available means fewer offers (issue #48). Offers are `{ id, event, type, ...data }` in `pending.options` (vote with
 `{ type: 'vote', choice: <offer id> }`). A pick with a follow-up (Workshop:
 which building; Shrine: which modifier) enters `event_resolve` with `pending =
 { offer, followUp: { prompt, options, votes } }`; every player sends `{ type:

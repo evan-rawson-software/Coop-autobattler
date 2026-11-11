@@ -39,11 +39,6 @@ export interface EventDef {
   readonly type: string;
   /** Relative weight in the offer draw (at least 1). */
   readonly weight: number;
-  /**
-   * May appear more than once among one set of offers, when the instances
-   * differ (a Shrine with different modifier choices).
-   */
-  readonly repeatable: boolean;
   readonly params: EventParams;
 }
 
@@ -97,7 +92,7 @@ export function loadEvents(data: unknown): EventsLoadResult {
       }
       rejectUnknownKeys(
         e,
-        new Set(['id', 'type', 'weight', 'repeatable', 'params']),
+        new Set(['id', 'type', 'weight', 'params']),
         at,
         errors,
       );
@@ -114,7 +109,6 @@ export function loadEvents(data: unknown): EventsLoadResult {
         errors.push(`${at}: "type" must match ${String(TYPE_ID)}.`);
       }
       const weight = readInt(e, 'weight', 1, at, errors);
-      const repeatable = readBool(e, 'repeatable', at, errors);
       const params: Record<string, number | string> = {};
       const rawParams = e['params'];
       if (rawParams !== undefined) {
@@ -139,10 +133,9 @@ export function loadEvents(data: unknown): EventsLoadResult {
       if (
         typeof id === 'string' &&
         typeof type === 'string' &&
-        weight !== undefined &&
-        repeatable !== undefined
+        weight !== undefined
       ) {
-        events.push({ id, type, weight, repeatable, params });
+        events.push({ id, type, weight, params });
       }
     });
   }

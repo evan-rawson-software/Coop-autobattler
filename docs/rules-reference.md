@@ -2252,7 +2252,9 @@ it is omitted (never an empty list) when there are none, so states without
 modifiers hash as before. A modifier's effects are copied into the team state
 when it is taken. Effects (percent is an integer 1 to 1000; the simulation
 uses `floor(value * (100 + sum) / 100)`, summing all effects of a kind and
-target held by the side):
+target held by the side). Stackable modifiers have **no cap** (issue #49):
+bonuses of the same kind (and target) are summed, then applied once, never
+compounded, so each extra stack is worth relatively less than the one before:
 
 | Kind | Applied |
 | --- | --- |
@@ -2269,37 +2271,31 @@ none. An extractor-speed kind is not implemented.
 ### Events (RS-4)
 
 `content/events.json` lists event definitions `{ id, type, weight,
-repeatable, params }` and modifier definitions `{ id, stackable, effects }`,
+params }` and modifier definitions `{ id, stackable, effects }`,
 and `offerCount` (3). The `type` names a handler in the session package; the
 handler decides availability, extra offer data, what happens on pick, and how a
 follow-up choice is applied. Adding a type is data plus one handler.
 
-Offers (stream `event_offers:r<r>:<leg>`): the definitions whose handler says
-`available` are drawn by weight without replacement until `offerCount` offers
-exist (`pickWeightedIndex` over the remaining weights, one draw each: first
-pass, `min(offerCount, available)` draws). If there are fewer available
-definitions than offers, `repeatable` definitions are drawn again (second
-pass), as long as the new instance's data differs (compared as canonical
-JSON). The second pass only runs while some repeatable definition has room for
-another different instance (the handler's optional `maxInstances`; a Shrine
-has one instance per subset of its eligible modifiers), and then makes exactly
-one weighted draw per extra offer; the instance data comes from child streams
-`<event id>:<index>` (and `<event id>:<index>#<k>` for the k-th retry), which
-do not advance the stream, so the draws made never depend on how many retries
-were needed. An offer is `{ id, event, type, ...data }`; `id` is the event id,
-and `<event id>#2` for a second instance. Offers are stored in
-`pending.options` before they are shown.
+Offers (stream `event_offers:r<r>:<leg>`): **never two offers of the same
+type** (issue #48). The definitions whose handler says `available` (Workshop:
+some owned building below tier 3; Shrine: at least one modifier can be taken;
+Windfall: always) are drawn by weight without replacement until `offerCount`
+offers exist or none are left. The draw sequence is exactly one
+`pickWeightedIndex` over the remaining definitions' weights (in file order,
+the picked one removed) per offer made, so `min(offerCount, available)` draws
+and none wasted. The instance data (such as a Shrine's modifiers) comes from
+the child stream `<event id>:<index>` of the offer stream, which does not
+advance it. An offer is `{ id, event, type, ...data }` with `id` the event id.
+Offers are stored in `pending.options` before they are shown.
 
-**Fewer than three offers is allowed, on purpose.** With the Workshop
-unavailable (every building at tier 3) and three or fewer eligible modifiers,
-a second, different Shrine cannot exist, so the step offers two events (the
-Shrine and the Windfall); with only the Windfall available it offers one. The
-step always has at least one offer, because wiring requires an event
-definition whose handler is `alwaysAvailable` (the Windfall); `createGameDeps`
-throws otherwise. The machine, the vote, `validateRunState` (1 or more offers
-in `event_choice`) and the schema accept any number of offers from 1 to
-`offerCount`. Whether the step should instead pad the offers is open: see
-issue #48.
+**Fewer than three offers is allowed, on purpose.** The party is offered up to
+three events, one per type, so with fewer types available it is offered two or
+one: with the Workshop unavailable (every building at tier 3) and a Shrine
+that cannot be offered, or the like. The step always has at least one offer,
+because wiring requires an event definition whose handler is `alwaysAvailable`
+(the Windfall); `createGameDeps` throws otherwise. The machine, the vote,
+`validateRunState` (1 or more offers in `event_choice`) and the schema accept
+any number of offers from 1 to `offerCount`. More event types will come later.
 
 - **Workshop** (`params.tiers`, default 1): available when some owned building
   (placed or in the stash) is below tier 3. Follow-up options, in instance ID

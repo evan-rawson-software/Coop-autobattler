@@ -398,11 +398,10 @@ describe('the event step', () => {
         Json
       >[];
       expect(offers.some((o) => o['type'] === 'workshop')).toBe(false);
-      expect(offers).toHaveLength(3);
-      expect(new Set(offers.map((o) => o['id'])).size).toBe(3);
-      expect(
-        new Set(offers.map((o) => canonicalJson({ ...o, id: 0 }))).size,
-      ).toBe(3);
+      expect(offers.map((o) => o['type']).sort()).toEqual([
+        'shrine',
+        'windfall',
+      ]);
     }
     // One building below tier 3 is the only candidate.
     const one: RunState = {
@@ -539,7 +538,6 @@ describe('the event step', () => {
           id: 'evt_tribute',
           type: 'tribute',
           weight: 50,
-          repeatable: false,
           params: { gold: 9 },
         },
       ],
@@ -576,9 +574,7 @@ describe('the event step', () => {
   test('an event type without a handler is rejected when the deps are built', () => {
     const events = loadEventsOrThrow({
       offerCount: 3,
-      events: [
-        { id: 'evt_odd', type: 'unheard_of', weight: 1, repeatable: false },
-      ],
+      events: [{ id: 'evt_odd', type: 'unheard_of', weight: 1 }],
       modifiers: [],
     });
     expect(() => createGameDeps(content, { ...gameConfigs, events })).toThrow(
@@ -964,7 +960,7 @@ describe('the run-state format version', () => {
   });
 });
 
-describe('fewer than three event offers, on purpose (issue #48)', () => {
+describe('event offers: one per type, up to three (issue #48)', () => {
   const deps = fixedDeps(true, true);
   const hooks = eventHooks(content, gameConfigs.events);
   const atEvent = until(start(deps), deps, (x) => x.step === 'event_choice');
@@ -1010,7 +1006,7 @@ describe('fewer than three event offers, on purpose (issue #48)', () => {
     }
   });
 
-  test('exactly the draws of the first pass happen; the impossible second Shrine draws nothing', () => {
+  test('exactly one weighted draw per offer happens, none wasted', () => {
     const state = holding(tier3(atEvent), [
       'mod_stout_walls',
       'mod_sharp_turrets',
@@ -1027,16 +1023,67 @@ describe('fewer than three event offers, on purpose (issue #48)', () => {
     }
   });
 
-  test('with a fourth eligible modifier a second, different Shrine is offered', () => {
-    const state = holding(tier3(atEvent), ['mod_stout_walls']);
-    for (let seed = 1; seed <= 100; seed++) {
-      const offers = offersFor(state, seed);
-      expect(offers).toHaveLength(3);
-      const shrines = offers.filter((o) => o['type'] === 'shrine');
-      expect(shrines).toHaveLength(2);
-      expect(shrines[0]?.['modifiers']).not.toEqual(shrines[1]?.['modifiers']);
-      expect(shrines[1]?.['id']).toBe('evt_shrine#2');
+  test('three types available: three offers, never two of one type', () => {
+    // Even with a fourth eligible modifier, there is no second Shrine.
+    for (const state of [
+      atEvent,
+      holding(atEvent, ['mod_stout_walls']),
+      holding(atEvent, ['mod_stout_walls', 'mod_sharp_turrets']),
+    ]) {
+      for (let seed = 1; seed <= 100; seed++) {
+        const offers = offersFor(state, seed);
+        expect(offers.map((o) => o['type']).sort()).toEqual([
+          'shrine',
+          'windfall',
+          'workshop',
+        ]);
+        expect(offers.map((o) => o['id'])).toEqual(
+          offers.map((o) => o['event']),
+        );
+      }
     }
+  });
+
+  test('two types available (no modifier can be taken): two offers', () => {
+    const noMods = eventHooks(
+      content,
+      loadEventsOrThrow({
+        offerCount: 3,
+        events: gameConfigs.events.events.map((e) => ({ ...e })),
+        modifiers: [],
+      }),
+    );
+    for (let seed = 1; seed <= 100; seed++) {
+      const offers = noMods.eventOffers(atEvent, Rng.fromSeed(seed)) as Record<
+        string,
+        Json
+      >[];
+      expect(offers.map((o) => o['type']).sort()).toEqual([
+        'windfall',
+        'workshop',
+      ]);
+    }
+  });
+
+  test('a run with two offers replays to the same state', () => {
+    const events = loadEventsOrThrow({
+      offerCount: 3,
+      events: gameConfigs.events.events.map((e) => ({ ...e })),
+      modifiers: [],
+    });
+    const d = makeGameDeps(
+      { battle: scripted(true, true) },
+      { ...gameConfigs, events },
+    );
+    let s = until(start(d, ['Ann', 'Bo']), d, (x) => x.step === 'event_choice');
+    expect(offersOf(s)).toHaveLength(2);
+    s = voteAll(s, 'evt_windfall', d);
+    s = until(s, d, (x) => x.step === 'event_choice');
+    s = voteAll(s, 'evt_workshop', d);
+    s = step(s, d);
+    const replayed = replayRun(runArgs(['Ann', 'Bo']), s.actionLog, d);
+    expect(replayed.ok).toBe(true);
+    if (replayed.ok) expect(replayed.state).toEqual(s);
   });
 
   test('a Shrine with fewer than three eligible modifiers offers what is left; with none it is not offered', () => {
@@ -1080,7 +1127,6 @@ describe('fewer than three event offers, on purpose (issue #48)', () => {
           id: 'evt_windfall',
           type: 'windfall',
           weight: 1,
-          repeatable: false,
           params: { gold: 4 },
         },
       ],
@@ -1112,7 +1158,6 @@ describe('fewer than three event offers, on purpose (issue #48)', () => {
           id: 'evt_workshop',
           type: 'workshop',
           weight: 1,
-          repeatable: false,
           params: {},
         },
       ],
@@ -1150,14 +1195,12 @@ describe('event follow-ups', () => {
         id: 'evt_windfall',
         type: 'windfall',
         weight: 1,
-        repeatable: false,
         params: { gold: 4 },
       },
       {
         id: 'evt_oracle',
         type: 'oracle',
         weight: 50,
-        repeatable: false,
         params: {},
       },
     ],
