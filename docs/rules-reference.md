@@ -114,11 +114,49 @@ generator that is only used to derive children.
   negative operands. `mulDiv(a, b, c) = floor(a * b / c)`, `c != 0`.
 - `a * b` must fit the safe range, |a * b| <= 2^53 - 1; otherwise the
   reference implementation throws. Ported code should treat such inputs as
-  an error too (never wrap or saturate silently).
+  an error too (never wrap, and never saturate except in the one place below).
+- `addInt(a, b)` is `a + b` and throws if the sum leaves the safe range. Every
+  sum outside the damage rule uses it (or `mulInt`/`mulPct`), so it is exact
+  or an error, never truncated to 32 bits.
+- `mulInt(a, b)` is `a * b` and throws if the product leaves the safe range.
+- `addSaturating(a, b, cap) = min(cap, a + b)` for `0 <= a <= cap` and
+  `0 <= b <= (2^53 - 1) - cap`, so `a + b` is exact before the cap is applied;
+  it throws for any operand outside that range. It is the **only** saturating
+  operation, and it is used for exactly one quantity: the damage one target
+  takes in one tick. The rule, in full: every single hit is an integer from 0
+  to `MAX_HIT = 2^51` (a unit hit after Overload scaling, or an Overload Core
+  decay; both are checked at battle setup, which fails otherwise; a turret
+  shot is at most `MAX_DAMAGE = 1e12`, below `MAX_HIT`). The damage a target
+  takes in a tick starts at 0 and each hit is added with
+  `addSaturating(sum, hit, MAX_TICK_DAMAGE)`, `MAX_TICK_DAMAGE = 2^52`. As all
+  terms are non-negative, the result is `min(2^52, exact sum of the hits)`,
+  whatever the order. Health is at most `MAX_HEALTH = 1e12`, far below 2^52,
+  so a target whose sum saturated dies exactly as it would with the exact sum.
+  The only difference is the Core's overkill (`hp - damage`, see "Core health
+  and overkill"): it is computed from the saturated sum, so a Core's overkill
+  never exceeds `2^52 - hp`. A 64-bit port gets the same results for every
+  input that does not throw.
 - All helpers throw on non-integer or out-of-range input.
 - Basis points: 10000 = 100%. `mulBps(v, bps) = mulDiv(v, bps, 10000)`.
   `mulPct(v, p) = mulDiv(v, p, 100)`. Both floor.
 - `modFloor(n, d)` has the sign of `d`; `divFloor(n, d) = (n - modFloor(n, d)) / d`.
+- `compareFractions(a, b, c, d)` compares `a / b` with `c / d` (`a, c >= 0`,
+  `b, d > 0`, all safe integers) and returns -1, 0 or 1 without forming any
+  product (so it is exact for every safe input; it throws otherwise). Set
+  `flip = false` and repeat: let `qa = floor(a / b)`, `qc = floor(c / d)`.
+  1. if `qa != qc`: let `r = -1` if `qa < qc`, else `1`; return `r` if `flip`
+     is false, `-r` if `flip` is true;
+  2. let `ra = a - qa * b`, `rc = c - qc * d` (the remainders, `qa == qc`);
+  3. if `ra == 0` and `rc == 0`: return 0;
+  4. if `ra == 0` (the first fraction is the smaller): return -1 if `flip` is
+     false, 1 if true;
+  5. if `rc == 0` (the second is the smaller): return 1 if `flip` is false,
+     -1 if true;
+  6. otherwise `ra / b < rc / d` holds exactly when `b / ra > d / rc`, so
+     continue with `(a, b, c, d) = (b, ra, d, rc)` and `flip = not flip`.
+  Each round is a step of Euclid's algorithm on both fractions, so it ends
+  after at most about 80 rounds; `qa * b` is at most `a`, so it never leaves
+  the safe range.
 - `clamp(v, lo, hi)` requires `lo <= hi`. `minInt`/`maxInt` take two integers.
 - Never use floating point for anything that can change a result. The lint
   rules for `packages/core` also forbid clocks, timers, `Math.random`,
@@ -153,6 +191,94 @@ the empty byte string hashes to `811c9dc5`; `null` to `77074ba4`;
 
 The hash of a simulation's event log is `eventLogHash`: the hash of the
 canonical JSON of the array of event objects.
+
+## Content bounds
+
+Health, damage and the breach constants are capped so that every sum and
+product that affects an outcome stays an exact integer (|x| <= 2^53 - 1) on
+the largest supported board. The core exports the constants (`limits.ts`);
+the loaders and the JSON schemas enforce the same numbers. The caps are huge
+on purpose: PvE threats (below) are not limited by them in rounds 1 to
+`maxThreatRound`.
+
+| Constant               | Value               | Applies to                                                                |
+| ---------------------- | ------------------- | ------------------------------------------------------------------------- |
+| `MAX_HEALTH`           | 1 000 000 000 000   | `health` of every building tier (Core included) and unit; run-time health |
+| `MAX_DAMAGE`           | 1 000 000 000 000   | `damage` of a unit and of a turret tier; run-time scaled unit damage      |
+| `MAX_BREACH_BASE_COST` | 1 000 000           | `breachBaseCost` and `breachHealthPerCost` in `sim.json`                  |
+| `MAX_ARENA_CELLS`      | 8 192               | arena cells (`width * height`) for which a breach field is computed       |
+| `MAX_TICK_DAMAGE`      | 2^52                | most damage one target takes in one tick (the sum saturates here)         |
+| `MAX_HIT`              | 2^51                | most one hit may deal after Overload scaling                              |
+
+A loader reports a value above its cap like any other bad field (for example
+`"health" must be at most 1000000000000 (got 3000000000000)`), and the schemas
+carry the same `maximum`. The caps apply to the numbers as declared; they are
+not tier-by-tier relative.
+
+Every place where health, damage or strength is multiplied or summed, with
+its worst case at the caps (`H = MAX_HEALTH = MAX_DAMAGE = 1e12`; the shipped
+board has 3744 cells, `MAX_ARENA_CELLS` allows more than twice that):
+
+| Quantity | Worst case | Why it is exact |
+| --- | --- | --- |
+| Breach cost of one cell, `breachBaseCost + ceil(health / breachHealthPerCost)` | `1e6 + 1e12 = 1.000001e12` | one addition, checked with `addInt` |
+| Breach distance, the sum of cell costs along a least-cost route | `8192 * 1.000001e12 < 8.2e15` | a route enters each cell at most once; below `2^53 - 1 = 9.007e15`; `addInt` throws otherwise |
+| Breach heap order | none | the heap compares `(distance, cell)` pairs, distance first and then cell index; no packed key and no product |
+| Time-limit rule, `hp0 / max0` against `hp1 / max1` | none | compared exactly by the Euclid-style `compareFractions` (no product of healths), for any safe integers |
+| Scaled unit health or damage, `floor(v * (100 + P) / 100)` | `v * (100 + P) <= 100 * H + 99 < 1.1e14` | the result is checked against the cap; `mulPct` throws if the product is unsafe |
+| Modifier on health or turret damage, `floor(v * (100 + S) / 100)` | `v <= H`, so `S` up to 8907 is safe | `mulPct` throws beyond that; the result is checked against the cap |
+| Overload hit, `floor(damage * (100 + level * overloadDamageStepPercent) / 100)` | at most `MAX_HIT = 2^51 = 2.25e15` | `createArenaSim` computes it for the largest `level` (at `maxBattleTicks`) and for every unit type at the side's largest strength, and fails at setup if it passes `MAX_HIT`; shipped: level 97, 2040 percent, so at most 2.04e13 for a unit of 1e12 damage |
+| Overload Core decay, `level * overloadCoreDamageStep` | at most `MAX_HIT` | checked at setup the same way; shipped: 485 |
+| Damage to one target in one tick (units, turrets, decay) | saturates at `MAX_TICK_DAMAGE = 2^52` | each term is at most `MAX_HIT` (a turret at most `MAX_DAMAGE`); `partial sum + hit <= 2^52 + 2^51 < 2^53`, so the sum is exact, and a sum that reaches the cap stays there |
+| Core overkill, `coreRemaining = hp - damage` | magnitude at most `2^52` | a saturated sum means the target is long dead (health is at most `H`); the tiebreak compares `hp - damage`, not the damages, so when both sums saturate the side with the higher pre-tick Core health has less overkill and wins (equal health: side 1) |
+| Unit strength percent `P` (base option + modifiers + ramp bonus) | the largest value accepted is `maxStrengthPercent(unit)`, 2 499 999 999 902 for the shipped soldier | `unitStats` throws a `RangeError` for any `P` that would push a unit past `MAX_HEALTH` or `MAX_DAMAGE`; `addInt` for the sum of percents |
+
+Distances and each building's maximum health are held in 64-bit float arrays
+that only ever contain integers (never 32-bit integers, which would wrap at
+2^31), and every sum outside the damage rule uses `addInt`/`mulInt`/`mulPct`,
+so a value outside the safe range is an error (`RangeError`), never a wrapped
+or rounded number. A board with more than `MAX_ARENA_CELLS` cells is an error
+when its breach field is computed.
+
+Values that are scaled at run time are held to the same bound and checked,
+never wrapped. Every check is made by `createArenaSim` before tick 0, so a
+battle either starts or fails with a `RangeError` at setup, never in the
+middle:
+
+- **Maximum health** of a building is computed in one place (`maxHealthOf` in
+  `max-health.ts`) and used for the health it starts with, its breach cost in
+  the simulation, and its breach cost in the enemy-path preview: the tier's health (the Core is tier 1), or the `coreHealth` side
+  option for the Core, then raised by the team's `core_health_percent` (Core)
+  or matching `building_health_percent` effects (any other building), as
+  `floor(value * (100 + sum) / 100)`. The percent sum is accumulated with
+  `addInt`; a sum beyond 2^53 - 1, or one for which `value * (100 + sum)`
+  would leave the safe range, is a `RangeError` naming the modifier kind. The
+  result must not exceed `MAX_HEALTH`;
+  the `coreHealth` option must be an integer from 1 to `MAX_HEALTH`.
+- **Turret damage** (`floor(tier damage * (100 + sum) / 100)` with the team's
+  `turret_damage_percent`) must not exceed `MAX_DAMAGE`.
+- A unit's scaled health and damage (`mulPct(base, 100 + P)`, see "Units")
+  must not exceed `MAX_HEALTH` and `MAX_DAMAGE`; otherwise `unitStats` throws a
+  `RangeError` naming the unit. For each side, `createArenaSim` checks every
+  unit type up front with `P` = the side's `unitStrengthPercent` option, plus
+  its `unit_strength_percent` modifiers, plus the largest ramp bonus the side
+  can reach: `maxUnitStrengthPercent` if it has a `unit_strength` economy
+  building, otherwise 0. `maxStrengthPercent(unit)` (in `units.ts`) is the
+  largest `P` a unit allows: the largest `P` with `floor(health * (100 + P) /
+  100) <= MAX_HEALTH` and `floor(damage * (100 + P) / 100) <= MAX_DAMAGE`
+  (a unit with 0 damage does not limit on damage).
+- The Overload hit and Core decay at the last possible tick must not exceed
+  `MAX_HIT` (see the table).
+- **Generated threats stay far below these bounds.** With the shipped content,
+  for every archetype, threat type and party size 1 to 4, in every round 1 to
+  `maxThreatRound` (63), the generated Core health is below `MAX_HEALTH` and
+  `unitStrengthPercent` is below the largest `P` every unit allows, so
+  nothing is cut off. The largest values, at round 63, are a Core health of
+  266 885 486 545 (2.67e11, 3.7 times below `MAX_HEALTH`) and a
+  `unitStrengthPercent` of 4 271 604 748 (585 times below 2 499 999 999 902).
+  `generateThreat` still clamps (see "PvE threats", step 8) as a safety net
+  for other content, and a test asserts that the clamp is never reached by the
+  shipped content in rounds 1 to 63.
 
 ## Golden vectors
 
@@ -776,14 +902,31 @@ chooses the consumer mode, `hold` or `drain`, and may carry an event list that
 the step appends to. Let `T` be `tick` at the start of the step; every event of
 the step has `tick = T`. In this order:
 
-**0. Merger arbitration.** For each merger whose holding cell is empty: let `n`
-be its number of input sides (the order of `FlowNode.inputs`, clockwise from
-north, including sides with no conduit). Look at input indices `pointer,
-pointer + 1, ...` (mod `n`) and pick the first whose conduit exists, has
-`L >= 1` and whose **last slot holds an item** (as the tick began, before
-anything moves). That input is the merger's _winner_ for this tick; if there is
-none, the merger has no winner. This is decided before any item moves, so it
-does not depend on the order in which conduits are processed.
+**0. Merger arbitration.** For **every** merger (whether its holding cell is
+empty or full): let `n` be its number of input sides (the order of
+`FlowNode.inputs`, clockwise from north, including sides with no conduit).
+Look at input indices `pointer, pointer + 1, ...` (mod `n`) and pick the first
+that is _ready_, using the state as the tick began (before anything moves).
+Input `i` is ready when its conduit exists and
+
+- it has `L >= 1` and its **last slot holds an item**; or
+- it is a direct connection (`L = 0`) from a **route building** (a splitter,
+  merger or crossover channel) whose **holding cell holds an item**; or
+- it is a direct connection from a **source** whose `countdown` is at most 1
+  (it produces this tick if it can place the item).
+
+That input is the merger's _winner_ for this tick; if no input is ready the
+merger has no winner. When several inputs are ready on the same tick, including
+two direct sources that both produce this tick, the winner is whichever is
+first from the merger's round-robin `pointer` (the one that comes first in the
+order `pointer, pointer + 1, ...`), not the one with the lower building ID. This is decided before any item moves, so it does not
+depend on the order in which anything is processed. A winner is only a
+reservation: if the winner does not (or cannot) deliver, the cell stays empty
+for the rest of the tick and the pointer does not move. A direct upstream
+splitter counts as ready whenever it holds an item, even if this tick it
+prefers another of its outputs; the reservation is then unused for one tick
+(the splitter's own pointer has moved on by the next tick, so the two
+outputs still alternate).
 
 **1. Deliver and advance, downstream first.** Process the conduits with
 `L >= 1` in this order: reverse of the position of the conduit's `from` node in
@@ -869,18 +1012,27 @@ An item offered to a building's input side (by step 1a, or by a push):
   and `{tick: T, type: "delivered", building, side, resource}` is recorded.
   Otherwise refused, and the conduit backs up.
 - _Route building or crossover channel_: accepted if its holding cell is empty;
-  the item goes into the cell. Offers from a conduit in step 1a to a **merger**
-  are additionally accepted only from the merger's winner of step 0. An offer
-  to a merger by a direct connection (step 2 or 3) is accepted when the cell is
-  empty, whichever input it comes through. Whenever a merger accepts an item
-  through input index `i`, its `pointer` becomes `(i + 1) mod n`. A splitter
-  or crossover channel has one input, so there is nothing to arbitrate (their
-  pointers do not change on input).
+  the item goes into the cell. An offer to a **merger** is additionally
+  accepted only if the merger has no winner in step 0 or the offer comes
+  through the winner's input; this holds whether the offer is made by a conduit
+  in step 1a or by a direct connection (step 2 or 3). Whenever a merger accepts
+  an item through input index `i`, its `pointer` becomes `(i + 1) mod n`. A
+  splitter or crossover channel has one input, so there is nothing to
+  arbitrate (their pointers do not change on input).
 - Anything else (cannot happen in a valid state): refused.
 
-Because step 1 comes before steps 2 and 3, a conduit delivery into a merger's
-empty cell beats a direct connection arriving in the same tick, and a source
-stalls rather than push into a cell that is already full.
+Because step 1 comes before steps 2 and 3, a merger's cell is only free for a
+conduit in step 1 and for a direct connection in step 2 or 3; step 0 is what
+keeps every kind of input in the rotation. Without it a conduit delivery would
+always refill the cell before a directly connected route could push (the route
+pushes before the merger empties it), and a ready direct source would refill
+the cell in step 3 right after the merger emptied it in step 2, so the direct
+input would starve (or monopolise) behind a slow consumer. A source still
+stalls rather than push into a cell that is full or reserved for another
+input. A splitter's outputs and a crossover's channels need no such rule:
+their only shared resource is a consumer buffer or conduit slot fed by one
+input, and a splitter already rotates over the outputs that accept; the
+direct-connection case matters only where several inputs meet, at a merger.
 
 ### Consumer seam
 
@@ -920,14 +1072,22 @@ last `w` ticks (so the cold start does not distort it; 0 when `w` is 0).
 ### Golden kind `flow-sim`
 
 Input: a `team-state-ops` script (`seed`, `partySize`, `ops`) plus `ticks` and
-`consumers` (`"hold"` or `"drain"`). The script builds the board, then the flow
+`consumers` (`"hold"` or `"drain"`), and optionally `take`, `{building, side,
+every}` (`building` an integer, `side` one of `north`, `east`, `south`, `west`,
+`every` an integer from 1; anything else is rejected): before every tick `T` with `T mod every = every - 1` one unit is taken
+from that consumer input with `takeFromBuffer` (if it holds one), which paces a
+slow consumer in `"hold"` mode. The script builds the board, then the flow
 simulation runs for `ticks` ticks from the cold start. Result:
 `{ tick, stateHash, flow, sources, routes, consumers }`: `stateHash` is the
 hash of the final state, `flow` the conservation totals, and the lists give
 per-building counters (and, for consumers and routes, what they hold at the
 end). The event log of the run is the vector's event log (`eventLogHash`).
 Vectors: `golden/flow-sim.json` (a long conduit, a splitter, a merger, a
-crossover with two resources, a dead end, and a full-buffer backpressure case).
+crossover with two resources, a dead end, a full-buffer backpressure case, and a
+merger with a direct input and a conduit input behind a slow consumer, a
+merger fed directly by two sources behind a slow consumer, and a merger fed
+directly by one source and by a conduit behind a slow consumer: the last two
+pin the "direct source is ready when its `countdown` is at most 1" rule).
 
 ### Mid-battle removal
 
@@ -1000,9 +1160,12 @@ of a unit's stats (health, damage, range, cooldowns) go through one function,
 `unitStats(side, def, strengthPercent)`. With `strengthPercent = P` above 0 it
 returns the definition with `health = mulPct(health, 100 + P)` and
 `damage = mulPct(damage, 100 + P)` (rounded down); everything else is
-unchanged. A spawn passes the side's current `unit_strength` bonus (see "In-battle
-ramp"; plus the side's `unitStrengthPercent` option, see "Side options"), and the unit starts with `hp = health` and `damage` of the result; units
-already on the field are never changed afterwards.
+unchanged. A scaled `health` above `MAX_HEALTH` or `damage` above `MAX_DAMAGE`
+is an error (`RangeError`), see "Content bounds". A spawn passes the side's
+current `unit_strength` bonus (see "In-battle ramp"; plus the side's
+`unitStrengthPercent` option, see "Side options"), and the unit starts with
+`hp = health` and `damage` of the result; units already on the field are never
+changed afterwards.
 
 ### State (plain JSON)
 
@@ -1156,7 +1319,10 @@ exactly like the original.
    escalated by Overload, `mulPct(damage, 100 + level * overloadDamageStepPercent)`
    (see "Overload"), to its target; the `unit_attacked` event carries that
    escalated value. Damage from all
-   attackers, and from turret shots, is summed per target and applied together
+   attackers, and from turret shots, is summed per target with the saturating
+   rule of "Integer math conventions" (`addSaturating(sum, hit,
+   MAX_TICK_DAMAGE)`: each hit is at most `MAX_HIT = 2^51`, a sum below the
+   cap `2^52` is exact, and a larger one is `2^52`) and applied together
    (so two units can kill each other in the same tick; a target that is killed
    this tick still receives every blow aimed at it). Each attacker's `attackCooldown` becomes
    `attackCooldownTicks`. A building's health stops at 0 (a Core's health
@@ -1247,8 +1413,12 @@ A unit's **targeting** comes from its definition: `core`, `infrastructure`
   enemy building other than the Core; terrain, the unit's own side's blocking
   buildings and the Core's own cells are impassable. Entering an open cell
   costs 1; entering a cell covered by an enemy building costs
-  `breachBaseCost + ceil(health / breachHealthPerCost)` using that building's
-  health when the field is computed (`content/sim.json`: 10 and 10). The
+  `breachBaseCost + ceil(maxHealth / breachHealthPerCost)` (at most 1.000001e12: see
+  "Content bounds" for why every distance stays exact), where `maxHealth` is
+  that building's **maximum** health (the tier's health from the content, or
+  the `coreHealth` option, raised by the team's health modifiers, see "Content
+  bounds": the health it starts the battle with), never its current health (`content/sim.json`:
+  10 and 10). The
   distance of a cell is the cheapest total cost of the cells entered on the way
   from it to a passable cell 4-adjacent to the Core (distance 0). A unit in
   breach mode takes the neighbour that minimises (cost of entering it +
@@ -1260,8 +1430,13 @@ A unit's **targeting** comes from its definition: `core`, `infrastructure`
   field takes over (fields are dropped after every destruction).
 - Fields are computed lazily, cached per (side, targeting) and per side for the
   breach field, and dropped whenever a building is destroyed. They never
-  depend on unit positions. (The breach field is not refreshed when health
-  merely falls.)
+  depend on unit positions. The breach field and the breach step (the choice
+  of the next cell) use maximum health only, so a damaged building is no
+  cheaper to breach than a healthy one, and both depend only on which
+  buildings are alive: the cache is invisible. Because of this a saved state
+  restored at any tick (the context is rebuilt from the state alone) continues
+  exactly like the original. (An implementation must not use current health
+  here: it would make results depend on when a field was first computed.)
 
 ### In-battle ramp (economy buildings)
 
@@ -1372,20 +1547,28 @@ board's. Schema: `schemas/sim-event.schema.json`.
 Input: `{ teamA, teamB, gapRows, ticks }` where each team is a `team-state-ops`
 script (`seed`, `partySize`, `ops`) and the two boards must have the same size;
 optionally `units`, a list of `{side, def, x, y}` (arena coordinates, open
-cells) placed at tick 0 in list order. A battle starts and runs for `ticks`
+cells) placed at tick 0 in list order, `buildingHealth`, a list of `{side,
+building, hp}` that sets the current health of those buildings (`building` 0 is
+the Core; `hp` from 1 to the building's maximum) before the battle starts, and
+`restoreAt`, a list of tick counts
+after which the state is saved as JSON and restored (the context rebuilt from
+the state alone) before the run continues; the result must not depend on it. A battle starts and runs for `ticks`
 ticks. Result: `{ tick, stateHash, events, sides }` with `stateHash` the hash of
 the final `ArenaSim`, `events` the number of events, and `sides` a list of two
 summaries `{spawned, alive, unitsDied, buildingsDestroyed, coreHealth}`
 (`buildingsDestroyed` does not count the Core; `coreHealth` is 0 when it was
 destroyed). The event log is the vector's event log (`eventLogHash`). Vectors:
 `golden/arena-sim.json` (a mirror match, a rush against an almost empty base, a
-sealed base that is breached at its weakest wall, raiders cutting a splitter,
+sealed base that is breached at its weakest wall, a ringed Core battle saved and restored four times, raiders cutting a splitter,
 three turrets killing a wave that crosses the front edge, the same turrets
 unpowered, a gate that lets its owner out while holding the enemy, a funnel
 of a lake band and walls leaving one approach above eight turrets, an
 overclocker speeding up a source, an armory making later units stronger, an
 economy building reaching its cap, an overclocker destroyed mid-battle by a
-breach, and two walled Cores ending by Overload at tick 3700).
+breach, two walled Cores ending by Overload at tick 3700, and a soldier on a
+corner cell between a healthy and a damaged wall of equal maximum health that
+attacks the healthy one because the breach step prices buildings by maximum
+health).
 
 The team scripts of this kind and of `team-state-ops` may give an explicit
 `map` (in the map format) instead of `seed` and `partySize`; the vectors that
@@ -1426,7 +1609,7 @@ blocks it), an entry `{entry: {x, y}, cells, breach}`:
   ends at the last open cell before it and `breach` is `{building, cell}`, the
   instance ID of the building the unit would attack and the cell of it entered.
   If the walk reaches a cell with breach distance 0, `cells` ends there and
-  `breach` is `null`. The cost of a building uses its tier's full health.
+  `breach` is `null`. The cost of a building uses its maximum health, computed exactly as in the simulation (tier health raised by the team's `building_health_percent` modifiers, see "Content bounds").
 - An entry that has neither a field nor a breach distance (cut off by terrain)
   has `cells` = just the entry cell and `breach` = `null`.
 
@@ -1650,7 +1833,12 @@ Core to 0 or below, the health value after **all** of that tick's damage (unit
 attacks and Overload decay) is also kept unclamped, so it may be negative
 (`remaining`); for a living Core it equals its health. The summary reports
 `coreOverkill = -remaining` for a destroyed Core (0 if the Core ended exactly
-at 0) and 0 for a living one.
+at 0) and 0 for a living one. The damage of the tick is the per-target sum
+with the saturation rule of "Integer math conventions": `remaining = hp -
+min(2^52, exact sum)`, with `hp` the Core's health before that tick's damage.
+So a Core's overkill is at most `2^52 - hp`, and two Cores whose sums both
+saturated differ only by their `hp`: the one with the higher pre-tick health
+has the higher `remaining`.
 
 ### End conditions (CB-33)
 
@@ -1661,12 +1849,16 @@ that applies ends the battle.
 2. **Both Cores destroyed in the same tick**: compare each side's `remaining`.
    The side with the **higher** value (the Core that ended the tick less far
    below zero, that is, the side that took less overkill) wins, `reason:
-   "tiebreak_overkill"`. If they are equal, side 1 (the defender) wins,
+   "tiebreak_overkill"`. (The comparison is of `hp - damage`, not of the
+   damages: when both damage sums saturated at `2^52`, the side with the higher
+   pre-tick Core health wins.) If they are equal, side 1 (the defender) wins,
    `reason: "tiebreak_defender"`.
 3. **Time limit**: `maxBattleTicks` (12000) ticks have been simulated with
    both Cores alive: the side with the higher Core health as a fraction of its
-   Core's maximum health wins, compared by cross-multiplication in integers
-   (`hp0 * max1` against `hp1 * max0`); if equal, side 1 wins. `reason:
+   Core's maximum health wins, compared exactly in integers without forming a product (the fractions
+   `hp0 / max0` and `hp1 / max1` are compared by Euclid's algorithm: integer
+   parts first, then the reciprocals of the remainders, see `compareFractions`
+   in `int.ts`); if equal, side 1 wins. `reason:
    "time_limit"`. With Overload this is unreachable (see the bound under
    "Overload"); it is a safety net, tested with Overload effectively disabled.
 
@@ -1772,10 +1964,15 @@ identically; with none the field is absent.
 - **`unitStrengthPercent`**: a base strength percent for every unit the side
   spawns (producers and waves). `unitStats` receives the sum of this and the
   side's `unit_strength` ramp bonus (which is capped separately by
-  `maxUnitStrengthPercent`; the base is not).
+  `maxUnitStrengthPercent`; the base is not) and its `unit_strength_percent`
+  modifiers.
 - **`coreHealth`**: the side's Core starts with this health (and it is the
   Core's maximum health in the summary and the time-limit rule) instead of the
-  definition's.
+  definition's (before the team's `core_health_percent`). It must be an integer
+  from 1 to `MAX_HEALTH`, and `unitStrengthPercent` must keep every unit type
+  within the stat bounds even with the modifiers and the largest ramp bonus the
+  side can reach added; otherwise the battle does not start (a `RangeError`
+  from `createArenaSim`), see "Content bounds".
 
 Everything else (unit behaviour, aggro, breach logic, Overload, end conditions
 and the defender tiebreak) is unchanged.
@@ -1898,6 +2095,12 @@ the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
    max(minCoreHealth, floor((S - spent) * coreHealthPerBudget / 100))`: every
    unspent point of the stronghold budget, including what a full layout or the
    building caps could not absorb, becomes Core health.
+8. **Content bounds.** After steps 1 to 7: `coreHealth = min(MAX_HEALTH,
+   coreHealth)` and `unitStrengthPercent = min(unitStrengthPercent, L)`, where
+   `L` is the smallest `maxStrengthPercent` over all unit types (see "Content
+   bounds"). The unit counts are not changed; the excess strength or health
+   budget is lost. This is only a safety net: with the shipped content neither
+   clamp is reached in rounds 1 to `maxThreatRound` (see "Content bounds").
 
 ### Layouts (in `threat-layouts.ts`; parameters in `threats.json`)
 
@@ -2097,8 +2300,10 @@ of it is fixed by the tick order above and uses no random numbers:
 - Conduits resolve downstream first, ties by conduit ID; routes in topological
   order of the flow graph (ties by building ID, then channel); sources by
   building ID.
-- A merger arbitrates between inputs with its round-robin pointer (step 0);
-  splitters and sources with several outputs alternate with theirs.
+- A merger arbitrates between all its ready inputs, conduit and direct alike,
+  with its round-robin pointer (step 0), so when two direct sources are ready
+  on the same tick the pointer decides, not the building ID; splitters and
+  sources with several outputs alternate with theirs.
 - When two things want the same space in one tick, the earlier step wins
   (conduits, then routes, then sources), and within a step the earlier one in
   the orders above.
@@ -2136,7 +2341,7 @@ broken as follows:
   relative order of IDs inside a side is the same on both sides, a mirrored
   battle (same team, 180-degree rotated) stays exactly symmetric.
 - **Breach routes:** least total cost; equal-cost neighbours by tie key. The
-  cost of a building depends on its health when the breach field was computed.
+  cost of a building uses its maximum health (tier health raised by the team's health modifiers), not its current health.
 
 ## Shops and gold
 
@@ -2258,8 +2463,8 @@ compounded, so each extra stack is worth relatively less than the one before:
 
 | Kind | Applied |
 | --- | --- |
-| `building_health_percent` (`target`: `all`, `wall`, `gate`, `turret`, `source`, `route`, `unit_producer`, `economy`) | to the starting health of matching placed buildings (not the Core; a defense matches its defense type, others their kind; `all` matches every building); at tick 0 in `createArenaSim` |
-| `core_health_percent` | to the starting Core health (after a side-option Core override) |
+| `building_health_percent` (`target`: `all`, `wall`, `gate`, `turret`, `source`, `route`, `unit_producer`, `economy`) | to the maximum (and so the starting) health of matching placed buildings (not the Core; a defense matches its defense type, others their kind; `all` matches every building); at tick 0 in `createArenaSim` |
+| `core_health_percent` | to the maximum (and so the starting) Core health (after a side-option Core override) |
 | `unit_strength_percent` | added to the unit strength percent at each spawn (health and damage, see the unit stats seam in "The arena") |
 | `turret_damage_percent` | to the damage of each of the side's turrets, when the arena context is built |
 

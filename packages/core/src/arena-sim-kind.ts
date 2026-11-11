@@ -4,7 +4,13 @@
  * Both boards are built, a battle starts at tick 0 and runs for `ticks` ticks.
  * An optional `units` list `[{ side, def, x, y }]` (arena coordinates) puts
  * units on the field at tick 0, in list order (scenario setup, like
- * `spawnUnitForTest`). Result: `{ tick, stateHash, events, sides }` where `stateHash` is the hash
+ * `spawnUnitForTest`). An optional `buildingHealth` list
+ * `[{ side, building, hp }]` sets the current health of those buildings at
+ * tick 0 (building 0 is the Core; `hp` from 1 to the building's maximum), so
+ * a scenario can start with damaged buildings. An optional `restoreAt` list of ticks makes the run
+ * save and restore the state (JSON round trip, then `createArenaContext`) after
+ * that many ticks; a restored battle must continue exactly like the original,
+ * so the result is the same with or without it. Result: `{ tick, stateHash, events, sides }` where `stateHash` is the hash
  * of the final `ArenaSim`, `events` the number of events, and `sides` a
  * summary per side (`spawned`, `alive`, `unitsDied`, `buildingsDestroyed`,
  * `coreHealth`). The event log is the vector's event log.
@@ -73,9 +79,35 @@ export function makeArenaSimKind(
     }
     const teamA = runTeamStateOps(a, content, mapgen).state;
     const teamB = runTeamStateOps(b, content, mapgen).state;
-    const sim = createArenaSim(teamA, teamB, gapRows, content, simConfig);
+    let sim = createArenaSim(teamA, teamB, gapRows, content, simConfig);
+    const damaged = field(input, 'buildingHealth');
+    if (damaged !== undefined) {
+      if (!Array.isArray(damaged)) {
+        throw new TypeError('arena-sim: buildingHealth must be an array');
+      }
+      for (const raw of damaged as Json[]) {
+        if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+          throw new TypeError(
+            'arena-sim: each buildingHealth must be an object',
+          );
+        }
+        const e = raw as Record<string, Json>;
+        const side = nonNegative(e['side'], 'buildingHealth.side');
+        const building = nonNegative(e['building'], 'buildingHealth.building');
+        const hp = nonNegative(e['hp'], 'buildingHealth.hp');
+        const h = sim.health.find(
+          (x) => x.side === side && x.building === building,
+        );
+        if (h === undefined || hp < 1 || hp > h.hp) {
+          throw new TypeError(
+            'arena-sim: buildingHealth names a missing building or an hp outside 1..maximum',
+          );
+        }
+        h.hp = hp;
+      }
+    }
     const events: ArenaEvent[] = [];
-    const ctx = createArenaContext(sim, content, simConfig, { events });
+    let ctx = createArenaContext(sim, content, simConfig, { events });
     const units = field(input, 'units');
     if (units !== undefined) {
       if (!Array.isArray(units)) {
@@ -98,7 +130,23 @@ export function makeArenaSimKind(
         });
       }
     }
-    for (let t = 0; t < ticks; t++) stepArena(sim, ctx);
+    const restoreRaw = field(input, 'restoreAt');
+    const restoreAt = new Set<number>();
+    if (restoreRaw !== undefined) {
+      if (!Array.isArray(restoreRaw)) {
+        throw new TypeError('arena-sim: restoreAt must be an array');
+      }
+      for (const r of restoreRaw as Json[]) {
+        restoreAt.add(nonNegative(r, 'restoreAt entry'));
+      }
+    }
+    for (let t = 0; t < ticks; t++) {
+      if (restoreAt.has(t)) {
+        sim = JSON.parse(JSON.stringify(sim)) as ArenaSim;
+        ctx = createArenaContext(sim, content, simConfig, { events });
+      }
+      stepArena(sim, ctx);
+    }
     const result: Json = {
       tick: sim.tick,
       stateHash: hashJson(sim),

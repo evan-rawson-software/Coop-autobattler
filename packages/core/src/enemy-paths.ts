@@ -16,6 +16,7 @@ import {
   openFor,
 } from './arena-paths.js';
 import { divFloor } from './int.js';
+import { maxHealthOf } from './max-health.js';
 import type { Cell } from './map.js';
 import type { SimConfig } from './sim-config.js';
 import { createTeamState, type TeamState } from './team-state.js';
@@ -61,15 +62,14 @@ export function previewEnemyPaths(
   const field = computeField(arena, side, 'core');
   const hpOf = (ref: number): number => {
     const b = arena.buildings[ref];
-    const placed = team.buildings.find((p) => p.id === b?.id);
-    if (b === undefined || placed === undefined) return 0;
-    return (
-      content.buildings.get(placed.def)?.tiers[placed.tier - 1]?.health ?? 0
-    );
+    if (b === undefined) return 0;
+    // The same maximum health the simulation prices a breach by, with the
+    // team's health modifiers (a building not placed by the team has none).
+    return maxHealthOf(team, b, content);
   };
   const base = simConfig.breachBaseCost;
   const per = simConfig.breachHealthPerCost;
-  let breach: Int32Array | undefined;
+  let breach: Float64Array | undefined;
   const cellOf = (k: number): Cell => ({ x: k % width, y: divFloor(k, width) });
 
   const out: EnemyPath[] = [];

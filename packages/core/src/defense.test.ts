@@ -11,6 +11,7 @@ import {
 } from './arena-sim.js';
 import { previewEnemyPaths } from './enemy-paths.js';
 import type { Cell, GameMap } from './map.js';
+import { withModifier, type TeamModifier } from './modifiers.js';
 import type { TeamState } from './team-state.js';
 import { Lab, content, got, simConfig } from './test-support.js';
 
@@ -874,6 +875,55 @@ describe('enemy-path preview', () => {
       ];
       expect(walked.slice(0, p.cells.length)).toEqual(p.cells);
     }
+  });
+
+  test('a wall-health modifier changes the previewed breach point, as in the simulation', () => {
+    const lab = new Lab(tiny());
+    lab.core(5, 0);
+    lab.put('bld_wall', 4, 0, 0, 3);
+    lab.put('bld_wall', 4, 1, 0, 3);
+    lab.put('bld_wall', 7, 0, 0, 3);
+    lab.put('bld_wall', 7, 1, 0, 3);
+    // Unmodified, the tier 1 wall (100) is cheaper than the tier 2 gate (130).
+    const wall = lab.put('bld_wall', 5, 2, 0, 1);
+    const gate = lab.put('bld_gate', 6, 2, 0, 2);
+    const stout: TeamModifier = {
+      id: 'mod_test_stout',
+      effects: [
+        { kind: 'building_health_percent', target: 'wall', percent: 100 },
+      ],
+    };
+    const plain = lab.state;
+    const modified = withModifier(plain, stout);
+
+    const previewed = (team: TeamState): number | undefined =>
+      previewEnemyPaths(team, content, simConfig)[0]?.breach?.building;
+    const simulated = (team: TeamState): number | undefined => {
+      const { sim, ctx, events } = startArenaBattle(
+        team,
+        coreOnly(),
+        GAP,
+        content,
+        simConfig,
+      );
+      const u = spawnUnitForTest(sim, ctx, {
+        side: 1,
+        def: 'unit_soldier',
+        ...toArena(GEOM, 0, { x: 0, y: 15 }),
+      });
+      u.moveCooldown = 0;
+      for (let t = 0; t < 200; t++) stepArena(sim, ctx);
+      const hit = ofType(events, 'unit_attacked').find(
+        (e) => e.unit === u.id && e.target.kind === 'building',
+      );
+      return hit?.target.kind === 'building' ? hit.target.building : undefined;
+    };
+
+    expect(previewed(plain)).toBe(wall);
+    expect(simulated(plain)).toBe(wall);
+    // Walls at 200 now cost more than the gate at 130: both switch to the gate.
+    expect(previewed(modified)).toBe(gate);
+    expect(simulated(modified)).toBe(gate);
   });
 
   test('requires a placed Core', () => {
