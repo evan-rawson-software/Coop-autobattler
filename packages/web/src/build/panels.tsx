@@ -595,7 +595,8 @@ export function PartyPanel(props: { run: RunState; ctl: BuildController }) {
         <span data-field="ready-state">ready: {ready ? 'yes' : 'no'}</span>
       </div>
       <p class="muted party-next">
-        Next: PvE · {readyCount} of {run.players.length} ready
+        Next: {run.step === 'shop' && run.leg === 'pve' ? 'PvP' : 'PvE'} ·{' '}
+        {readyCount} of {run.players.length} ready
       </p>
       <button
         type="button"

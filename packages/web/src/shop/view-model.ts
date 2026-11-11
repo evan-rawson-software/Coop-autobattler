@@ -1,0 +1,267 @@
+/**
+ * Pure view models for the Shop tab: offer cards, gold and re-roll, the
+ * stash with sale values, and the next-battle panel. They read the run state
+ * and decide nothing: the rules answer in `core` and `session`, and these
+ * only say why a button is disabled. Only the viewing player's own shop is
+ * read, so a teammate's offers can never show up here.
+ */
+import {
+  sellValue,
+  type EconomyConfig,
+  type SimConfig,
+  type TeamState,
+} from '@game/core';
+import {
+  nextBattleInfo,
+  readShop,
+  type NextBattleInfo,
+  type PveOptionView,
+  type RunDeps,
+  type RunState,
+} from '@game/session';
+import type { WebContent } from '../content.js';
+import { buildingName } from '../build/view-model.js';
+import { effectText, KIND_LABELS, needsText } from './effect-text.js';
+
+export interface OfferCard {
+  readonly slot: number;
+  /** Null for a slot that was bought: shown empty until the next re-roll. */
+  readonly offer: {
+    readonly def: string;
+    readonly name: string;
+    readonly kind: string;
+    readonly kindLabel: string;
+    readonly tier: number;
+    readonly needs: string;
+    readonly effect: string;
+    readonly price: number;
+  } | null;
+  readonly canBuy: boolean;
+  /** Why Buy is disabled; null when it is enabled or the slot is empty. */
+  readonly reason: string | null;
+}
+
+export interface StashRow {
+  readonly def: string;
+  readonly name: string;
+  readonly tier: number;
+  /** Stash entry IDs, lowest first. */
+  readonly ids: readonly number[];
+  /** Gold returned for selling one of them. */
+  readonly refund: number;
+}
+
+export interface ShopView {
+  /** True while the run is in the shop step. */
+  readonly open: boolean;
+  readonly gold: number;
+  readonly offers: readonly OfferCard[];
+  readonly reroll: {
+    readonly cost: number;
+    readonly can: boolean;
+    readonly reason: string | null;
+  };
+  readonly stash: readonly StashRow[];
+  readonly stashCount: number;
+  readonly placedCount: number;
+  readonly ready: boolean;
+  readonly readyCount: number;
+  readonly playerCount: number;
+}
+
+export type ShopContext = {
+  readonly content: WebContent;
+  readonly economy: EconomyConfig;
+  readonly sim: SimConfig;
+};
+
+const CLOSED = 'The shop is closed.';
+
+export function shortOf(gold: number, price: number): string {
+  const missing = price - gold;
+  return `Not enough gold: ${String(missing)} more needed.`;
+}
+
+/** Stash grouped by building and tier, in content order. */
+export function stashRows(team: TeamState, ctx: ShopContext): StashRow[] {
+  const order = new Map(
+    ctx.content.buildings.list().map((d, i) => [d.id, i] as const),
+  );
+  const groups = new Map<
+    string,
+    { def: string; tier: number; ids: number[] }
+  >();
+  for (const s of team.stash) {
+    const k = `${s.def}:${String(s.tier)}`;
+    const g = groups.get(k) ?? { def: s.def, tier: s.tier, ids: [] };
+    g.ids.push(s.id);
+    groups.set(k, g);
+  }
+  return [...groups.values()]
+    .sort(
+      (a, b) =>
+        (order.get(a.def) ?? 0) - (order.get(b.def) ?? 0) || a.tier - b.tier,
+    )
+    .map((g) => ({
+      def: g.def,
+      name: buildingName(ctx.content, g.def),
+      tier: g.tier,
+      ids: g.ids.sort((a, b) => a - b),
+      refund: sellValue(ctx.content, ctx.economy, g.def, g.tier),
+    }));
+}
+
+export function buildShopView(
+  run: RunState,
+  player: number,
+  ctx: ShopContext,
+): ShopView {
+  const me = run.perPlayer[player];
+  const open = run.step === 'shop';
+  const gold = me?.gold ?? 0;
+  const data = me === undefined ? null : readShop(me);
+  const cards: OfferCard[] = (data?.offers ?? []).map((o, slot) => {
+    if (o === null) return { slot, offer: null, canBuy: false, reason: null };
+    const def = ctx.content.buildings.get(o.def);
+    const reason = !open
+      ? CLOSED
+      : gold < o.price
+        ? shortOf(gold, o.price)
+        : null;
+    return {
+      slot,
+      offer: {
+        def: o.def,
+        name: buildingName(ctx.content, o.def),
+        kind: def?.kind ?? 'core',
+        kindLabel: KIND_LABELS[def?.kind ?? 'core'],
+        tier: o.tier,
+        needs: def === undefined ? '' : needsText(def, ctx.content.resources),
+        effect:
+          def === undefined
+            ? ''
+            : effectText(ctx.content, ctx.sim, def, o.tier),
+        price: o.price,
+      },
+      canBuy: reason === null,
+      reason,
+    };
+  });
+  const cost = ctx.economy.rerollCost;
+  const rerollReason = !open
+    ? CLOSED
+    : data === null
+      ? 'There are no offers to re-roll.'
+      : gold < cost
+        ? shortOf(gold, cost)
+        : null;
+  const mine = (b: { owner: number }): boolean => b.owner === player;
+  return {
+    open,
+    gold,
+    offers: cards,
+    reroll: { cost, can: rerollReason === null, reason: rerollReason },
+    stash: stashRows({ ...run.team, stash: run.team.stash.filter(mine) }, ctx),
+    stashCount: run.team.stash.filter(mine).length,
+    placedCount: run.team.buildings.filter(mine).length,
+    ready: me?.ready === true,
+    readyCount: run.perPlayer.filter((p) => p.ready).length,
+    playerCount: run.players.length,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Sale confirmation
+
+export interface SaleQuote {
+  readonly id: number;
+  readonly name: string;
+  readonly tier: number;
+  readonly refund: number;
+  readonly text: string;
+}
+
+/** What selling the first entry of a stash row returns, for the confirm box. */
+export function saleQuote(row: StashRow): SaleQuote {
+  const id = row.ids[0] as number;
+  return {
+    id,
+    name: row.name,
+    tier: row.tier,
+    refund: row.refund,
+    text: `Sell ${row.name} (tier ${String(row.tier)}) for ${String(row.refund)} gold? This cannot be undone.`,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Next battle
+
+export interface NextBattleView {
+  readonly kind: 'pve' | 'pvp';
+  readonly round: number;
+  readonly title: string;
+  readonly options: readonly {
+    readonly id: string;
+    readonly difficulty: string;
+    readonly archetype: string;
+    readonly threat: string;
+    readonly rewardGold: number;
+  }[];
+  /** PvP only. */
+  readonly pvp: {
+    readonly opponent: string;
+    readonly winGold: number | null;
+    readonly lossGold: number | null;
+    readonly lifeCost: number;
+  } | null;
+}
+
+/** "arch_rusher" to "Rusher": archetypes have no display names in content yet. */
+export function archetypeName(id: string): string {
+  const s = id.replace(/^arch_/, '').replace(/_/g, ' ');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+export function threatLine(o: PveOptionView): string {
+  const s = o.summary;
+  const parts = [`${String(s.totalUnits)} units`];
+  if (s.walls > 0) parts.push(`${String(s.walls)} walls`);
+  if (s.turrets > 0) parts.push(`${String(s.turrets)} turrets`);
+  parts.push(`Core ${String(s.coreHealth)} health`);
+  return parts.join(' · ');
+}
+
+export function nextBattleView(
+  run: RunState,
+  deps: Pick<RunDeps, 'rules' | 'rewards'>,
+): NextBattleView | null {
+  const info: NextBattleInfo | null = nextBattleInfo(run, deps);
+  if (info === null) return null;
+  if (info.kind === 'pve') {
+    return {
+      kind: 'pve',
+      round: info.round,
+      title: 'PvE',
+      options: info.options.map((o) => ({
+        id: o.id,
+        difficulty: o.difficulty,
+        archetype: archetypeName(o.archetype),
+        threat: threatLine(o),
+        rewardGold: o.reward.gold,
+      })),
+      pvp: null,
+    };
+  }
+  return {
+    kind: 'pvp',
+    round: info.round,
+    title: 'PvP',
+    options: [],
+    pvp: {
+      opponent: 'Opponent unknown until the battle starts.',
+      winGold: info.stakes.winGold,
+      lossGold: info.stakes.lossGold,
+      lifeCost: info.stakes.lifeCost,
+    },
+  };
+}

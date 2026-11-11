@@ -12,6 +12,7 @@ import { createServer } from 'node:http';
 import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { runShopSmoke } from './smoke-shop.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -1056,6 +1057,9 @@ try {
     () => window.__debug.build.step() === 'core_placement',
   );
   check(true, 'the dev button starts a new run');
+
+  // Shop + Build step (W2-7)
+  await runShopSmoke({ page, baseUrl, check, shot, settle, webDir });
 
   check(
     consoleErrors.length === 0,

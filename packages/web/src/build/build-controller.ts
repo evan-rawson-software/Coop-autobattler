@@ -34,7 +34,7 @@ import {
   type Verdict,
 } from './ops.js';
 import { parseCell, reasonMessage } from './reasons.js';
-import { BuildSession, type SessionView } from './session.js';
+import { BuildSession, isEditStep, type SessionView } from './session.js';
 import {
   chooseInput,
   freeOutputSides,
@@ -188,16 +188,29 @@ export class BuildController {
 
   // ---- Run lifecycle ------------------------------------------------------
 
+  /** True when the session belongs to the shared Shop + Build run. */
+  shared = false;
+
   async newRun(seed: number): Promise<void> {
     this.unsub?.();
     this.seed = seed;
+    this.shared = false;
     this.ui = {
       ...INITIAL_UI,
       status: { text: 'Starting a run.', kind: 'info' },
     };
     this.session = null;
     this.emit();
-    const s = await BuildSession.start(seed);
+    this.attach(await BuildSession.start(seed));
+  }
+
+  /**
+   * Work on an existing session (the shared Shop + Build run). The UI state
+   * (tool, selection) starts fresh; the run itself is untouched.
+   */
+  attach(s: BuildSession, shared = false): void {
+    this.unsub?.();
+    this.shared = shared;
     this.session = s;
     this.legalCore =
       s.run.step === 'core_placement'
@@ -275,7 +288,7 @@ export class BuildController {
     let draftView: DraftView | null = null;
     if (team !== null && this.step() === 'core_placement') {
       coreGhost = this.computeCoreGhost(team, ui.hover);
-    } else if (team !== null && this.step() === 'build') {
+    } else if (team !== null && isEditStep(this.step())) {
       ghost = this.computeGhost(team, ui);
       draftView = this.computeDraftView(team, ui);
     }
@@ -529,7 +542,7 @@ export class BuildController {
 
   /** Pointer pressed on a stash entry: start a drag. */
   beginDrag(id: number): void {
-    if (this.step() !== 'build') return;
+    if (!isEditStep(this.step())) return;
     this.set({
       held: { id, rotation: 0, mode: 'drag' },
       moving: null,
@@ -767,7 +780,7 @@ export class BuildController {
   onBoardPointer(ev: BoardPointerEvent): boolean {
     const cell = ev.hit === null ? null : { x: ev.hit.x, y: ev.hit.y };
     if (this.step() === 'core_placement') return this.corePointer(ev, cell);
-    if (this.step() !== 'build') return false;
+    if (!isEditStep(this.step())) return false;
     switch (ev.type) {
       case 'down':
         return this.down(ev, cell);
@@ -1122,7 +1135,7 @@ export class BuildController {
       return true;
     }
     if (e.ctrlKey || e.metaKey) return false;
-    if (this.step() !== 'build') return false;
+    if (!isEditStep(this.step())) return false;
     switch (k) {
       case 'r':
         void this.rotate();

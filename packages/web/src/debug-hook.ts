@@ -21,6 +21,7 @@ export interface DebugHook {
   /** Number of buildings and conduit cells in the own board. */
   counts?: () => { buildings: number; conduits: number; conduitCells: number };
   build?: BuildDebug;
+  shop?: ShopDebug;
 }
 
 /** Read-only view of the Build screen for the smoke script. */
@@ -38,6 +39,12 @@ export interface BuildDebug {
   legalCore: () => readonly { x: number; y: number }[];
   enemyPathCount: () => number;
   dry: () => unknown;
+}
+
+/** Read-only view of the Shop tab for the smoke script. */
+export interface ShopDebug {
+  /** Plain data: step, gold, offers, stash, ready flag, action count, undo depth. */
+  state: () => unknown;
 }
 
 declare global {

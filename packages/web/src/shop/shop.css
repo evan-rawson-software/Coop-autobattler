@@ -1,0 +1,351 @@
+/* Shop tab. Plain CSS on the shared custom properties. */
+
+.shop {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(260px, 22vw, 360px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 8px;
+}
+
+.shop-offers {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.shop-offers .panel-title {
+  flex: none;
+}
+
+.offers {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+.offer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  padding: 0.5rem;
+  background: var(--surface-2);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+}
+
+.offer.unaffordable {
+  border-color: var(--border);
+}
+
+.offer.sold {
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  border-color: var(--border);
+  background: transparent;
+}
+
+.offer-empty {
+  margin: 0;
+  text-align: center;
+  color: var(--ink-muted);
+}
+
+.offer-art {
+  height: clamp(36px, 7vh, 80px);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.offer-name {
+  margin: 0.15rem 0 0;
+  font-size: 1.05rem;
+}
+
+.offer-kind,
+.offer-needs,
+.offer-effect {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.offer-needs {
+  color: var(--ink);
+}
+
+.offer-effect {
+  color: var(--ink);
+  flex: 1 1 auto;
+}
+
+.offer-buy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.buy-btn {
+  width: 100%;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  padding: 0.4rem 0.5rem;
+}
+
+.buy-btn:disabled,
+#reroll:disabled,
+button:disabled {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink-muted);
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+.why {
+  display: block;
+  min-height: 1.1em;
+  font-size: 0.78rem;
+  color: var(--bad, #c62828);
+}
+
+.shop-side {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.shop-side > .panel:last-child {
+  flex: 1 1 auto;
+}
+
+.gold-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.gold {
+  font-size: 2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+#reroll {
+  width: 100%;
+}
+
+.shop-stash {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.stash-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-2);
+  cursor: grab;
+}
+
+.stash-row.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.stash-label {
+  min-width: 0;
+}
+
+.stash-tier {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.sell-target {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border: 2px dashed var(--border);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.sell-target.active {
+  border-style: solid;
+  border-color: var(--warn, #b26a00);
+  text-align: left;
+}
+
+.sell-target p {
+  margin: 0;
+}
+
+.sell-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+button.danger {
+  background: var(--warn, #b26a00);
+  border-color: var(--warn, #b26a00);
+  color: #fff;
+  font-weight: 600;
+}
+
+.fine {
+  font-size: 0.78rem;
+  margin: 0.5rem 0 0;
+}
+
+.shop-bottom {
+  grid-column: 1;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 8px;
+  min-height: 0;
+}
+
+.shop-bottom.solo {
+  grid-template-columns: 1.4fr 1fr;
+}
+
+.next-title {
+  margin: 0 0 0.3rem;
+  font-size: 1.15rem;
+}
+
+.pve-options {
+  list-style: none;
+  margin: 0 0 0.4rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.pve-option {
+  display: grid;
+  grid-template-columns: minmax(8rem, auto) 1fr auto;
+  gap: 0.2rem 0.75rem;
+  align-items: baseline;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-2);
+  font-size: 0.88rem;
+}
+
+.pve-name strong {
+  text-transform: capitalize;
+}
+
+.pve-threat {
+  color: var(--ink-muted);
+}
+
+.pve-reward {
+  font-weight: 600;
+}
+
+.stakes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.ready-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.ready-btn {
+  min-width: 9rem;
+  padding: 0.5rem 1rem;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.ready-btn.on {
+  background: var(--surface-2);
+  border-color: var(--ok, #1f8a4c);
+  color: var(--ink);
+}
+
+#panel-factory .panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1 1 auto;
+}
+
+.mini-board {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 80px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.mini-board .camera-controls {
+  display: none;
+}
+
+#go-build {
+  flex: none;
+}
+
+#shop-status {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  margin: 0 -8px -8px;
+}
+
+.placeholder {
+  padding: 1rem;
+  max-width: 40rem;
+}
+
+@media (max-width: 1500px) {
+  .offer-effect,
+  .offer-needs,
+  .offer-kind {
+    font-size: 0.8rem;
+  }
+  .offer-name {
+    font-size: 0.98rem;
+  }
+  .shop-bottom {
+    grid-template-columns: 1fr 1.6fr 1fr;
+  }
+}
