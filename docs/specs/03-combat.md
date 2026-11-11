@@ -113,8 +113,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
     building needs source → conduit → refinery → conduit → building, all
     without crossing anything else. Refined buildings are stronger partly
     because they are slower to come online in a battle and harder to fit.
-  - A destroyed refinery cuts everything downstream of it (CB-9a), making
-    refineries prime targets for raiders.
+  - A destroyed refinery cuts everything downstream of it (CB-9a), which is
+    what makes a breach through a factory costly.
 - **CB-5c** Where the rare nodes are, and how far they sit from good
   defensive ground and from the Core, is the main way maps differ in
   character.
@@ -258,18 +258,36 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-13** Unit producers spawn units when they have received enough
   resources. More input means more or stronger units, so unit output follows
   the factory's ramp.
-- **CB-14** **Movement.** Units walk over open ground: around natural
-  features, around buildings, across the front edge into the enemy board.
-  Pathfinding is grid-based and deterministic (CB-30).
-- **CB-15** **Targeting.** By default a unit heads for the enemy Core by the
-  shortest open path and attacks whatever blocks it. Unit types vary this:
-  raiders go for sources and route buildings, siege units for walls and
-  turrets, and so on. Killing infrastructure matters — destroying a source
-  or a junction cripples the enemy's ramp for the rest of the battle.
-  Conduits themselves are never targets (CB-3h).
+- **CB-14** **Movement.** Units are **circles** with a position finer than a
+  cell and a radius that depends on their type (stronger units can be
+  larger). Two units, friend or foe, never overlap, and a unit never overlaps
+  terrain, a building or the Core, so a unit cannot pass a gap narrower than
+  its diameter. Units walk over open ground: around natural features,
+  around buildings, across the front edge into the enemy board, and over
+  conduits. Routing is grid-based and deterministic (CB-30): the shortest
+  path of cells towards the Core says where a unit heads; the circles then
+  decide how far it gets (it slides along walls and other units and waits
+  when it is boxed in). The exact rules are in the rules reference ("Unit
+  geometry" and the battle tick).
+- **CB-15** **Targeting.** Every unit heads for the enemy Core by the
+  shortest open path and attacks what blocks it. No unit type prefers
+  buildings: killing infrastructure matters (destroying a source or a junction
+  cripples the enemy's ramp for the rest of the battle), but only because it
+  stands in the way of a breach, never because a unit chose it. Conduits
+  themselves are never targets (CB-3h). (Issue #66 removed the earlier
+  per-type preferences.)
 - **CB-16 [DECIDED]** **Units fight units.** Opposing units that meet engage
   each other, so a front line forms between the bases and moves with the
-  balance of production.
+  balance of production. A melee unit attacks when the gap between its circle
+  and its target (a unit's circle, or the nearest point of a building) is
+  within its reach; a unit with an enemy unit in sight within three cells
+  walks towards it instead of along its route. Because units occupy space,
+  only so many can reach a target at once: bodies form the front line.
+- **CB-16a** **Production and room.** A unit appears next to the building that
+  made it, at the nearest free spot. When there is none the finished unit is
+  held, production stops drawing resources and the factory backs up like any
+  other full consumer. Scheduled PvE waves that do not fit enter on later
+  ticks.
 - **CB-17** A side loses when its Core is destroyed.
 
 ## Defense and terrain

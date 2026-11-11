@@ -209,6 +209,10 @@ on purpose: PvE threats (below) are not limited by them in rounds 1 to
 | `MAX_ARENA_CELLS`      | 8 192               | arena cells (`width * height`) for which a breach field is computed       |
 | `MAX_TICK_DAMAGE`      | 2^52                | most damage one target takes in one tick (the sum saturates here)         |
 | `MAX_HIT`              | 2^51                | most one hit may deal after Overload scaling                              |
+| `CELL_UNITS`           | 240                 | sub-cell units per cell (positions, radii, reach)                         |
+| `MAX_UNIT_RADIUS`      | 480                 | `radius` and `collisionRadius` of a unit (two cells)                      |
+| `MAX_UNIT_REACH`       | 1 920               | `reach` of a unit (eight cells)                                           |
+| `MAX_SEPARATION_PASSES`| 16                  | `separationPasses` in `sim.json`                                          |
 
 A loader reports a value above its cap like any other bad field (for example
 `"health" must be at most 1000000000000 (got 3000000000000)`), and the schemas
@@ -234,6 +238,22 @@ board has 3744 cells, `MAX_ARENA_CELLS` allows more than twice that):
 | Building damage dealt by one side (`buildingDamageDealt`), the sum over ticks and buildings of `min(attack damage, health before the tick)` | `8192 * 1e12 = 8.192e15 < 9.007e15` | each building yields at most its maximum health over the battle (every credit also lowers its health by at least that much), `H` at most; at most `MAX_ARENA_CELLS` buildings; summed with `addInt`, which therefore never throws, so no saturation is needed |
 | Units killed by one side | at most the units ever spawned | counted as the other side's `unitsDied`, one per dead unit |
 | Unit strength percent `P` (base option + modifiers + ramp bonus) | the largest value accepted is `maxStrengthPercent(unit)`, 2 499 999 999 902 for the shipped soldier | `unitStats` throws a `RangeError` for any `P` that would push a unit past `MAX_HEALTH` or `MAX_DAMAGE`; `addInt` for the sum of percents |
+
+**Geometry (issue #59).** The arena has at most `MAX_ARENA_CELLS = 8192`
+cells, so every coordinate is at most `8192 * 240 = 1 966 080` (below 2^21).
+`aggroRangeCells` is at most `MAX_ARENA_CELLS`, `moveCooldownTicks` from 1 to
+240, `radius` and `collisionRadius` from 1 to 480, `reach` from 0 to 1920.
+
+| Quantity | Worst case | Why it is exact |
+| --- | --- | --- |
+| Squared centre distance `dx^2 + dy^2` | `2 * 1 966 080^2 < 7.8e12` | far below 2^53; the loader bound on coordinates makes it exact |
+| Contact test `(reach + R + Re)^2` | `(1920 + 480 + 480)^2 = 8.3e6` | |
+| Aggro test `(aggroRangeCells * 240)^2` | `1 966 080^2 < 3.9e12` | |
+| Step `dx * s` (speed `s <= 240`) | `1 966 080 * 240 < 4.8e8` | |
+| Push `dx * o` (`o <= 960`) | `1 966 080 * 960 < 1.9e9` | only overlapping pairs reach it, so `|dx| <= 960` in practice |
+| `awayDiv(ox * R, d)` | `1 966 080 * 480 < 9.5e8` | |
+| Sum of pushes on one unit in a pass | at most the number of overlapping neighbours times 960 | a unit overlaps at most a few dozen circles |
+| `isqrtFloor` / `isqrtCeil` argument | below `7.8e12` | exact: a float estimate corrected in both directions until `r^2 <= n < (r+1)^2` |
 
 Distances and each building's maximum health are held in 64-bit float arrays
 that only ever contain integers (never 32-bit integers, which would wrap at
@@ -854,8 +874,9 @@ battle tick"; the only thing they add to this single-board flow is the optional
 `ticksPerSecond` (10, fixed battle time per second), `inputBufferUnits` (4,
 the capacity of each consumer input buffer), `breachBaseCost` (10) and
 `breachHealthPerCost` (10), the last two used by the breach field (see "Goals
-and movement fields"), `aggroRangeCells` (3, the range within which a unit
-chases an enemy unit; see "One battle tick", step 3a2), `maxSourceSpeedPercent`
+and movement fields"), `aggroRangeCells` (3, the centre-to-centre range, in cells, within which a unit
+chases an enemy unit; see "One battle tick", step 3a2), `separationPasses` (4,
+the number of relaxation passes of step 5; 0 to 16), `maxSourceSpeedPercent`
 (300) and `maxUnitStrengthPercent` (300), the global caps of the in-battle ramp
 (see "In-battle ramp (economy buildings)"), and the Overload constants
 `overloadStartTick` (1800, three minutes at 10 ticks a second), `overloadIntervalTicks` (100),
@@ -1154,12 +1175,14 @@ integer; it never goes below 0. A building at 0 is destroyed (step 6 below).
 
 ### Units
 
-A unit is `{id, side, def, x, y, hp, moveCooldown, attackCooldown}` in arena
-coordinates. `id` is a positive integer taken from one counter shared by both
+A unit is `{id, side, def, px, py, hp, damage, attackCooldown}`. `(px, py)` is
+the **centre of the unit's circle** in arena **sub-cell units** (see "Unit
+geometry"). `id` is a positive integer taken from one counter shared by both
 sides, in spawn order (the counter starts at 1, is never reused); the unit list
 is kept sorted by `id`. `hp` starts at the unit definition's `health`.
-`moveCooldown` and `attackCooldown` count down in ticks. **Any number of units
-may share a cell**: there is no unit-unit collision (a decided simplification).
+`attackCooldown` counts down in ticks. **Units are circles that never
+overlap** (friend or foe): see "Unit geometry" and step 5 of the tick. There is
+no `moveCooldown`: movement is continuous, at the unit's `speed`.
 
 A unit also stores `damage`, its attack damage **fixed at spawn**. All reads
 of a unit's stats (health, damage, range, cooldowns) go through one function,
@@ -1172,6 +1195,80 @@ current `unit_strength` bonus (see "In-battle ramp"; plus the side's
 `unitStrengthPercent` option, see "Side options"), and the unit starts with
 `hp = health` and `damage` of the result; units already on the field are never
 changed afterwards.
+
+### Unit geometry (issue #59)
+
+Everything below is integer arithmetic; the largest values are in "Content
+bounds". Implemented in `geometry.ts` (helpers) and `unit-motion.ts`
+(placement and movement).
+
+**Scale.** One cell is `CELL_UNITS = 240` sub-cell units. Arena cell `(cx, cy)`
+is the closed square `[240 cx, 240 cx + 240] x [240 cy, 240 cy + 240]`, and the
+arena is the rectangle `[0, 240 W] x [0, 240 H]`. A unit's cell is
+`(floor(px / 240), floor(py / 240))`, clamped into the arena (a centre exactly
+on the far boundary belongs to the last cell). 240 was chosen so that the
+placeholder radii (0.30 and 0.25 cell) and the speeds derived from the move
+cooldowns below are exact integers.
+
+**Unit definition fields** (`content/units.json`, all integers in sub-cell
+units unless noted):
+
+| Field | Meaning |
+| --- | --- |
+| `radius` | Radius of the unit's body: used for reach, aggro, turret range and drawing. 1 to 480. |
+| `collisionRadius` | Radius of the circle that may not overlap anything. 1 to 480. Equal to `radius` for every part-1 unit. |
+| `reach` | Most the gap between the unit's circle and its target may be for it to attack (0 to 1920). |
+| `moveCooldownTicks` | Ticks the unit needs to walk one cell. `speed = floor(240 / moveCooldownTicks)` sub-cell units per tick (1 to 240; at least 1 results). Soldier 6 -> 40, raider 4 -> 60: the same crossing time per cell as the earlier one-cell-per-cooldown rule. |
+| `flying` | Boolean, `false` for every unit in part 1 (reserved: a `true` is rejected by the loader). |
+| `attackType` | `"melee"`, the only value in part 1 (reserved for ranged attacks). |
+
+Placeholder content: soldier `radius = collisionRadius = 72` (0.30 cell),
+`reach = 60`; raider `radius = collisionRadius = 60` (0.25 cell), `reach = 60`.
+
+**Helpers.**
+- `isqrtFloor(n)`: the largest integer `r` with `r * r <= n` (`n >= 0`);
+  `isqrtCeil(n)`: the smallest `r` with `r * r >= n`. Both exact for every safe
+  integer (a port may use any exact method; the reference corrects a floating
+  estimate in both directions).
+- `awayDiv(a, b)` for `b > 0`: `ceil(a / b)` if `a >= 0`, `floor(a / b)` if
+  `a < 0` (rounds away from zero); `truncDiv(a, b)` rounds toward zero.
+- `boxDist2(X, Y, cell)`: the squared distance from point `(X, Y)` to the
+  closed square of `cell`: `dx = max(240 cx - X, 0, X - 240 (cx + 1))`, `dy`
+  likewise, `dx^2 + dy^2`. `buildingDist2(X, Y, building)` is the minimum over
+  the building's cells.
+- Circles `a` and `b` **overlap** iff `dist^2 < (Ra + Rb)^2` (centre distance
+  squared, collision radii). Touching (equal) is allowed.
+
+**Solid cells.** For a side, a cell is **solid** iff it is not open for that
+side (`openFor`: terrain, a blocked gap cell, a building that blocks the side;
+an own gate is not solid for its owner). Everything outside the arena rectangle
+is solid. A circle of radius `R` at `(X, Y)` **fits** for a side iff
+`R <= X <= 240 W - R`, `R <= Y <= 240 H - R` and for every solid cell whose
+square intersects the box `[X - R, X + R] x [Y - R, Y + R]` (cells
+`floor((X - R) / 240) .. floor((X + R) / 240)` in x, likewise y)
+`boxDist2(X, Y, cell) >= R^2`. A unit therefore cannot pass a gap narrower than
+its collision diameter, and no unit's circle ever intersects blocked ground.
+Conduits are not in the arena: units pass over them.
+
+**Invariant (holds at the end of every tick and at tick 0).** Every unit's
+collision circle fits for its side, and no two units' collision circles
+overlap. `stepArena` guarantees it by construction (the validation fixpoint of
+step 5).
+
+**Push-out of solid ground** `pushOutSolid(side, R, (X, Y))`: visit the cells of
+the window above in row-major order (`y` then `x`, ascending) and, for each
+solid one with `boxDist2 < R^2`, replace `(X, Y)` as follows (using the new
+value for the next cell). Let `q` be the point of the square nearest to
+`(X, Y)` (each coordinate clamped to the square) and `(ox, oy) = (X - qx, Y - qy)`.
+If `(ox, oy) != (0, 0)`: `d = isqrtFloor(ox^2 + oy^2)` and the new position is
+`q + (awayDiv(ox * R, d), awayDiv(oy * R, d))` (at least `R` from the square,
+`d >= 1` always holds here). If the centre is inside or on the edge of the square
+(`(ox, oy) = (0, 0)`): leave through the nearest face, with `L = X - 240 cx`,
+`Rr = 240 (cx + 1) - X`, `D = Y - 240 cy`, `U = 240 (cy + 1) - Y`; take the
+smallest, ties in the order `L, Rr, D, U`, and move to the face minus (`L`, `D`)
+or plus (`Rr`, `U`) `R` along that axis. Finally clamp `X` to `[R, 240 W - R]` and
+`Y` to `[R, 240 H - R]`. One call is one sweep: it can leave the result in
+another solid cell; the validation in step 5 deals with that.
 
 ### State (plain JSON)
 
@@ -1192,7 +1289,8 @@ state at tick 0:
 - `ramps`: `{side, building, charge, steps}` for each living economy building
   (in-battle ramp), by side then building ID, all starting at `charge = 0`,
   `steps = 0` (CB-11);
-- `units`; and counters `spawned`, `unitsDied` and `buildingDamageDealt`, each a
+- `units`; `entering`: the scheduled-wave units that have not found room yet,
+  `{side, unit, col}` in queue order (see "Side options"); and counters `spawned`, `unitsDied` and `buildingDamageDealt`, each a
   pair indexed by side (`buildingDamageDealt[s]` is the damage the units of side
   `s` have applied to the enemy's buildings, see step 4 and "Tiebreak
   counters");
@@ -1222,27 +1320,43 @@ exactly like the original.
    (see Events).
 2. **Production.** For each living unit producer, side 0 first and each side in
    instance-ID order:
-   1. Move every item in its input buffers into its `progress` counter
+   1. **Only if `progress < costPerUnit`** (no finished unit is waiting): move
+      every item in its input buffers into its `progress` counter
       (`takeFromBuffer` on each input with a non-zero count; all resources
-      count alike).
+      count alike). A producer that holds a finished unit (step 2 below could
+      not place it) takes nothing, so its buffers fill and its conduits back up
+      (the source stalls), exactly like a fully charged turret.
    2. At most once per tick: if `progress >= costPerUnit` (the building's tier)
-      and a spawn cell exists, subtract `costPerUnit` and spawn one unit of the
-      producer's `unit` type. The **spawn cell** is chosen among the cells
-      4-adjacent to the producer's footprint that are open for the producer's
-      side (not blocked and not covered by a building that blocks that side;
-      an own gate counts as open) by the smallest key (class, distance, tie key):
-      class 0 if the cell has a finite distance in the unit's movement field
-      (below) and then that distance; else class 1 with its distance in the
-      breach field; else class 2. Ties by the **tie key** (below). If there is
-      no such cell, the spawn waits and `progress` is kept (and keeps growing).
-   3. A new unit has `moveCooldown = moveCooldownTicks` and
-      `attackCooldown = 0` and gets the next ID. It is placed immediately and
-      takes part in this tick's decisions. (`inputBufferUnits` is smaller than
-      some `costPerUnit` values, so the progress counter is what makes those
-      producers work; with the drain in 2.1 the buffer is empty after every
-      production step.)
+      and the unit finds a **spawn position**, subtract `costPerUnit` and spawn
+      one unit of the producer's `unit` type there. The **spawn cells** are the
+      cells 4-adjacent to the producer's footprint that are open for the
+      producer's side (not blocked and not covered by a building that blocks
+      that side; an own gate counts as open), ordered by the key (class,
+      distance, tie key): class 0 if the cell has a finite distance in the
+      unit's movement field (below) and then that distance; else class 1 with
+      its distance in the breach field; else class 2; ties by the **tie key**
+      (below). For each spawn cell in that order, and for each **offset** in the
+      order below, the candidate position is the cell's centre
+      `(240 cx + 120, 240 cy + 120)` plus the offset; the **first candidate at
+      which the unit's collision circle fits for its side (see "Unit geometry")
+      and overlaps no living unit is the spawn position**. With
+      `m = 120 - collisionRadius` (no offsets other than `(0, 0)` if `m <= 0`),
+      the offsets in the side's own frame are `(0, 0)`, `(0, m)`, `(-m, 0)`,
+      `(m, 0)`, `(0, -m)`, `(-m, m)`, `(m, m)`, `(-m, -m)`, `(m, -m)` (own
+      frame `+y` points at the enemy; for side 1 both components are negated,
+      the arena rotation). If no cell has a free position the unit is **held**:
+      nothing is spawned and `progress` stays at or above `costPerUnit`, so
+      step 2.1 takes nothing on later ticks until the unit can be placed. Only
+      the cells next to the producer are tried, so a jam at the exit holds the
+      unit rather than letting it appear farther away.
+   3. A new unit has `attackCooldown = 0` and gets the next ID. It is placed
+      immediately and takes part in this tick's decisions. (`inputBufferUnits`
+      is smaller than some `costPerUnit` values, so the progress counter is
+      what makes those producers work; the drain in 2.1 can take more than the
+      remaining cost, and the surplus stays in `progress`.)
 
-   Then, **turret charging**, after all unit producers: for each living turret,
+   After all unit producers, the **scheduled waves** enter (see "Side options").
+   Then, **turret charging**: for each living turret,
    side 0 first and each side in instance-ID order, if `charge < costPerShot`
    (the turret's tier), go through its inputs clockwise from north and, for
    each, take `min(input buffer count, costPerShot - charge)` items out of the
@@ -1266,53 +1380,66 @@ exactly like the original.
    in tick `T` first affects spawns from tick `T + 1`, and source resets from
    tick `T + 1` (the flow step of tick `T` ran before).
 3. **Decide.** Using the state as it is now (a snapshot: no decision sees
-   another unit's decision), for each unit in `id` order choose one action. Let
-   `reach = max(1, rangeCells)`. **Unit-to-unit distance is Chebyshev**,
-   `max(|dx|, |dy|)`, so a melee unit hits an enemy in any of the 8 surrounding
-   cells or its own cell. The **nearest** enemy unit is the one with the
-   smallest Chebyshev distance, ties by smaller Manhattan distance, then by
-   lowest unit `id`. Distances from a unit to a building (rule b) are Manhattan
-   as before, and so is a turret's targeting distance.
-   - **a. Attack a unit.** If any enemy unit is within `reach` (Chebyshev),
-     target the nearest.
-   - **a2. Aggro (CB-16).** Otherwise, if `moveCooldown` is 0 and an enemy unit
-     is within `aggroRangeCells` (Chebyshev; this only matters when
-     `aggroRangeCells > reach`), let `E` be the nearest such unit and `(dx, dy)`
-     the offset from the unit to `E`. The unit tries one 4-directional step
-     towards `E` along the axis with the larger `|difference|` (along y when
-     the two are equal). If that cell cannot be entered (blocked for its side:
-     out of bounds, terrain, or a building that blocks its side), it tries one
-     step along the other axis towards `E`, provided that difference is not 0.
-     If neither can be entered there is no aggro move and the unit falls
-     through to b; so it does if `moveCooldown` is above 0. An aggro move is an
-     ordinary move (step 5), never enters a cell the unit could not enter
-     otherwise, ignores the movement field, and needs no tie-break. Why two
-     units moving in the same ticks always meet: a step along the larger axis
-     can only overshoot when that difference is 1, and then the units are
-     already within Chebyshev 1, i.e. in reach. Each simultaneous round lowers
-     the Manhattan offset by 2, so units with Manhattan offset `M` fight by
-     tick `6 * ceil(M / 2)` after their last first move (with move cooldown 6),
-     and a single mover needs at most `M` moves.
-   - **b. Attack a building.** Otherwise, if a **goal building** of the unit is
-     within `reach` of any of its cells, target it: the nearest such building
-     (distance to its nearest cell); ties by Core first, then lowest instance
-     ID. See Goals below for what counts as a goal building.
-   - **c. Move.** Otherwise, if `moveCooldown` is 0 and the unit is not
-     already next to its goal, move one step along its field (below).
-   - **d. Wait.**
+   another unit's decision), for each unit in `id` order choose one action.
+   Distances between units are **centre to centre, Euclidean, compared as
+   squared integers** (no square roots). Let `R` be the unit's `radius`, `reach`
+   its definition's reach, `(px, py)` its centre and `c` its cell. Two units are
+   **in contact** when `d^2 <= (reach + R + Re)^2` (`d^2` the squared centre
+   distance, `Re` the other unit's `radius`): the gap between the two circles
+   is at most `reach`. The **nearest** enemy unit in a set is the one with the
+   smallest `d^2`, ties by lowest unit `id`.
+   - **a. Attack a unit.** If any enemy unit is in contact, target the nearest.
+   - **a2. Aggro (CB-16).** Otherwise, the candidates are the enemy units with
+     `d^2 <= (aggroRangeCells * 240)^2` (centre to centre) that are **visible**:
+     with `n = max(1, ceil(max(|dx|, |dy|) / 120))` and `(dx, dy)` the vector
+     to the enemy's centre, every sample point `(px + floor(dx * k / n),
+     py + floor(dy * k / n))` for `k = 0 .. n` lies in a cell that is not solid
+     for the unit's side (a cell-level line of sight; the line is not tested
+     against the circles). The nearest candidate `E` is the aggro target, and
+     the unit **moves** (action c below) towards `E`'s centre `(ex, ey)`, ignoring
+     the movement field. If there is no candidate the unit falls through to b.
+     Why two units that move in the same ticks always meet: both close the
+     distance each tick (up to their speed) and attack once in contact; blocked
+     by other units they wait, never walk away.
+   - **b. Attack a building.** Otherwise, if the **goal building** (the enemy
+     Core, if alive) is within reach, that is, `buildingDist2(px, py, building)
+     <= (reach + R)^2` (the gap between the circle and the nearest point of the
+     building's cells is at most `reach`), target it.
+   - **c. Move.** Otherwise the unit chooses a **target point** `(tx, ty)` as
+     follows (field details in "Goals and movement fields"); the move itself is
+     resolved in step 5. Let `d` be the unit's cell's distance in the movement
+     field (-1: none).
+     - `d > 0`: the next cell `k` of `fieldStep` from `c`; the target is the
+       centre of `k`.
+     - `d = 0` (the cell is next to the Core): the target is the centre of the
+       Core cell nearest to the unit (smallest `boxDist2`, ties by the order of
+       the Core's cells). The unit presses against the Core until rule b fires.
+     - `d = -1` (sealed): follow the breach field. `bd = breach(c)`; if `bd < 0`
+       the unit waits. If `bd = 0` the target is the nearest Core cell's centre
+       as above. Otherwise `k = breachStep(c)`: if `k` is open for the side the
+       target is `k`'s centre; if `k` is covered by an enemy building `B`, then
+       `B` is its **goal building**: when `buildingDist2(px, py, B) <= (reach +
+       R)^2` the unit attacks `B` (like rule b, even though `B` is not the
+       Core), otherwise the target is `k`'s centre (solid ground stops the
+       unit at the building's face, where it is in reach).
+   - **d. Wait.** No action (nothing to move towards).
 
-   A unit that chose (a) or (b) but whose `attackCooldown` is above 0 holds
-   position: it does not move this tick and does not attack. A unit that
-   would move but has `moveCooldown > 0` waits.
+   A unit that chose (a) or (b) holds position: it does not move this tick
+   (even when its `attackCooldown` is above 0, in which case it also does not
+   attack). A unit that chose to move but cannot get anywhere (blocked by other
+   units or solid ground) simply ends the tick where step 5 leaves it.
 
    **Turret fire.** After every unit has decided (same snapshot), each living
    turret, side 0 first and each side in instance-ID order, with `cooldown = 0`
-   and `charge = costPerShot`, looks for a target: an enemy unit that stands
-   inside the arena rows of the **turret owner's own board** (side 0: rows
-   `0 .. h - 1`; side 1: rows `H - h .. H - 1`; the gap and the enemy board
-   never qualify) and whose Manhattan distance to the turret is at most its
-   tier's `rangeCells`. The distance to a multi-cell turret is the minimum over
-   its cells. The target is the nearest such unit; ties by lowest unit `id`. A
+   and `charge = costPerShot`, looks for a target: an enemy unit whose **cell
+   row** (`floor(py / 240)`) is inside the arena rows of the **turret owner's
+   own board** (side 0: rows `0 .. h - 1`; side 1: rows `H - h .. H - 1`; the
+   gap and the enemy board never qualify) and that is **in range**:
+   `buildingDist2(px, py, turret) <= (rangeCells * 240 + R)^2` with `R` the
+   unit's `radius` and `rangeCells` the turret tier's range, that is, the gap
+   from the unit's circle to the nearest point of the turret's cells is at
+   most `rangeCells` cells. The target is the in-range unit with the smallest
+   `buildingDist2`; ties by lowest unit `id`. A
    unit that is dying this tick or has already been chosen by another turret is
    still a valid target (no turret sees another's choice). If there is a
    target the turret fires: `charge` becomes 0, `cooldown` becomes
@@ -1349,10 +1476,54 @@ exactly like the original.
    applied together with the unit attacks) and recorded as
    `overload_core_damage {side, damage}` after the `unit_attacked` events. A
    Core that is already destroyed takes nothing and records nothing.
-5. **Resolve moves.** Every unit that chose (c) moves to its chosen cell, in
-   unit-`id` order (`unit_moved`), and its `moveCooldown` becomes
-   `moveCooldownTicks`. Units that were killed in step 4 still complete their
-   move (decisions were simultaneous).
+5. **Move and separate.** Every unit keeps its decision from step 3; the units
+   that were killed in step 4 still move (decisions were simultaneous). Let
+   `P` be `separationPasses` (`sim.json`, 4). The pass works on arrays indexed
+   by position in the unit list (ascending `id`) and has no other input than
+   the state and the decisions, so it cannot depend on earlier ticks:
+   1. **Desire.** A unit that chose to move has a target `(tx, ty)`, a speed
+      `s = floor(240 / moveCooldownTicks)` and `(dx, dy) = (tx - px, ty - py)`.
+      If `dx^2 + dy^2 <= s^2` the step is `v = (dx, dy)`; otherwise, with
+      `L = isqrtCeil(dx^2 + dy^2)`, `v = (truncDiv(dx * s, L), truncDiv(dy * s,
+      L))` (length at most `s`). A unit with `v = (0, 0)`, and every unit that
+      did not choose to move, is **anchored** for this tick; the others are
+      **movers**. The tentative position `T` of a unit is `p + v` (anchored:
+      `p`). Every mover's `T` is then passed through `pushOutSolid` once.
+   2. **Relaxation**, up to `P` passes. Each pass builds a uniform grid of the
+      current tentative positions (one bucket per cell) and finds every pair
+      `i < j` (by list position) whose collision circles overlap, looking in
+      the cells within `ceil((Ri + Rj) / 240)` of the first unit's cell (the
+      reference checks all cells of the window; any exact search gives the same
+      result). If no pair overlaps the passes stop. Otherwise for each
+      overlapping pair let `(dx, dy) = Tj - Ti`, `R = Ri + Rj` (collision
+      radii), and the **push** on `j` be:
+      - if `dx^2 + dy^2 > 0`: `d = isqrtFloor(dx^2 + dy^2)`, `o = R - d`
+        (`>= 1`), `w = 2 d` if both units are movers and `w = d` if only one
+        is, and the push is `(awayDiv(dx * o, w), awayDiv(dy * o, w))`; `i`
+        receives the negated push;
+      - if the centres coincide: the axis `a = (1, 0)` when `(idi + idj)` is
+        even, `(0, 1)` when odd, and the push on `j` is `a * ceil(R / 2)` if
+        both are movers, `a * R` if only one is; `i` receives the negation
+        (the lower unit `id` is always moved in the negative direction).
+      A pair of two anchored units cannot overlap and is skipped. Pushes on
+      anchored units are not applied. All pushes of the pass are summed per
+      mover (a pass sees the positions of the start of the pass, so the order
+      of pairs does not matter), then added to the mover's `T`, which is passed
+      through `pushOutSolid` once.
+   3. **Validation (the safety net).** Let `F` be the tentative positions
+      after the passes. Mark a unit **reverted** if its `F` does not fit for
+      its side or its circle at `F` overlaps another unit's circle at `F`
+      (both units of such a pair are marked). Then repeat until nothing
+      changes: for every reverted unit `u`, every not yet reverted unit `w`
+      whose circle at `F` overlaps `u`'s circle at its previous position is
+      reverted too. Reverted units end the tick at their previous position
+      `p`; the others at `F`. Because every position at the start of the tick
+      satisfied the invariant, the result does too: reverted units are at
+      valid, mutually non-overlapping old positions, a non-reverted unit was
+      checked against every reverted unit's old position and every other
+      non-reverted unit's `F`. The search order is irrelevant: the set of
+      reverted units is the least fixed point.
+   The new `px, py` are stored. There is no event for movement (see Events).
 6. **Deaths and destruction.**
    - Units with `hp <= 0` are removed in `id` order (`unit_died`).
    - Then, side 0 then side 1, in the order of the `health` list (Core first,
@@ -1373,24 +1544,22 @@ exactly like the original.
      the same tick.
    - After any destruction every cached movement field is dropped.
 7. **Cooldowns.** Each living turret's non-zero `cooldown` and each surviving
-   unit's non-zero `moveCooldown` and `attackCooldown` decreases by 1. Then
+   unit's non-zero `attackCooldown` decreases by 1. Then
    `tick` increases by 1. (Because the
-   decrease also applies to the tick of the action, a unit with
-   `moveCooldownTicks = 6` that moved in tick `t` moves again in tick
-   `t + 6`; a new unit spawned in tick `t` first moves in tick `t + 6`. In the
-   same way a turret that fires in tick `t` with `cooldownTicks = 8` may fire
-   again in tick `t + 8`.)
+   decrease also applies to the tick of the action, a turret that fires in tick
+   `t` with `cooldownTicks = 8` may fire again in tick `t + 8`, and a unit with
+   `attackCooldownTicks = 10` that attacked in tick `t` attacks again in tick
+   `t + 10`.)
 
 ### Goals and movement fields
 
-A unit's **targeting** comes from its definition: `core`, `infrastructure`
-(enemy sources and route buildings) or `defenses` (enemy buildings of kind
-`defense`: walls, gates, turrets).
+**Every unit heads for the enemy Core** (issue #66: there is no target
+preference; a unit never goes for sources, routes or defenses). It fights the
+enemy units it meets (rules a and a2) and attacks a building only when that
+building is the Core within reach or blocks the way (the breach rule below).
 
-- The **goal set** of (side, targeting) is: for `core`, the enemy Core; for
-  `infrastructure` and `defenses`, the enemy's living buildings of those kinds,
-  or, if none remain, the enemy Core. A destroyed Core is not a goal; with no
-  goals the unit waits.
+- The **goal set** of a side is the enemy Core. A destroyed Core is not a goal;
+  with no goal the unit waits. The goal building is the Core.
 - Which buildings block which side's units is one predicate (`blocksUnit`): a
   living building blocks the units of both sides, **except** that a gate
   (`defenseType` `gate`) does not block the units of its own side. A cell is
@@ -1398,33 +1567,37 @@ A unit's **targeting** comes from its definition: `core`, `infrastructure`
   not covered by a building that blocks that side. Everything that asks "may
   this unit be here" uses it: the movement fields, the breach field (open
   cells cost 1, so an owner's gate costs 1 to the owner and is a costly
-  enemy building to the enemy), spawn cells, aggro steps, and
-  `spawnUnitForTest`. So a gate is open ground for its owner (units walk
+  enemy building to the enemy), spawn cells, the solid cells of "Unit geometry"
+  and the aggro line of sight, and `spawnUnitForTest`. So a gate is open ground for its owner (units walk
   through it and stand on it; a producer may spawn a unit onto it) and a
   blocking building for the enemy, which can attack and breach it like a wall.
-  A gate is a building of kind `defense`, so it is in the goal set of
-  `defenses` and is attacked as a goal or breach building like any other.
+  A gate is a building of kind `defense`; it is never a goal, and an enemy
+  unit attacks it only as a breach building (below), like a wall.
   When a gate is destroyed it is removed like any building and is open ground
   for everyone. Walls and turrets block both sides.
-- The **movement field** of (side, targeting) is a breadth-first distance map
-  over open cells: distance 0 for every open cell 4-adjacent to a cell of a goal
-  building, then +1 per 4-directional step. Unreached cells have no distance.
-  A unit with a finite distance `d > 0` moves to the 4-neighbour with distance
-  `d - 1` (the smallest), ties by the tie key. With `d = 0` it is next to a goal
-  building and does not move.
-- The unit's **goal building** (rule b) is a goal-set building within `reach`
-  (for melee, the adjacent one). A ranged unit therefore stops and fires as soon
-  as a goal building is within its range, even before reaching distance 0
-  (walls and terrain do not block shots; line of sight is not modelled).
+- The **movement field** of a side (one per side: there is a single goal, the
+  enemy Core) is a breadth-first distance map over open cells (cells, not
+  positions: the fields do not know about radii or other units): distance 0 for
+  every open cell 4-adjacent to a cell of the Core, then +1 per 4-directional
+  step. Unreached cells have no distance. A unit whose cell has a finite
+  distance `d > 0` heads for the centre of the 4-neighbour with distance
+  `d - 1` (the smallest), ties by the tie key; with `d = 0` it is next to the
+  Core and presses towards the nearest Core cell (step 3c). **Approximation:**
+  the field treats every one-cell gap as passable. That is right for every
+  part-1 unit (all collision radii are below half a cell); a unit whose
+  collision diameter exceeds one cell is routed through gaps it cannot enter
+  and waits at them (the circle rules, not the field, stop it).
+- The unit's **goal building** (rule b) is the Core, when the gap from the
+  unit's circle to the Core's nearest cell is at most `reach`.
 - **Tie key.** Wherever two cells tie (equal distance, equal cost), the
   preferred one has the lowest `y`, then the lowest `x`, **in the board frame of
   the unit's own side**: for side 0 this is the arena `y`, `x`; for side 1 it is
   the same comparison on the rotated cell `(W - 1 - x, H - 1 - y)`. This is what
   keeps a mirrored battle exactly symmetric.
 - **No sealed bases (CB-20).** If the unit's cell has no distance in its
-  movement field (every route to the goals is blocked) and no goal building is
+  movement field (every route to the Core is blocked) and the Core is not
   within `reach` (rule b is evaluated first, whether or not the cell has a
-  distance: a unit in a sealed pocket attacks a goal building in its reach),
+  distance: a unit in a sealed pocket attacks the Core if it is in its reach),
   it uses the **breach field** of its side. This is a least-cost map (Dijkstra, integer costs)
   towards the enemy Core. Passable cells are open cells and cells covered by an
   enemy building other than the Core; terrain, the unit's own side's blocking
@@ -1439,14 +1612,16 @@ A unit's **targeting** comes from its definition: `core`, `infrastructure`
   distance of a cell is the cheapest total cost of the cells entered on the way
   from it to a passable cell 4-adjacent to the Core (distance 0). A unit in
   breach mode takes the neighbour that minimises (cost of entering it +
-  its distance), ties by tie key. If that cell is open, it walks there (if
-  `moveCooldown` is 0); if it is covered by an enemy building, that building is
-  its goal building and it attacks it (rule b, even if the building is not in
-  its goal set); at distance 0 its goal building is the Core. With no breach
+  its distance), ties by tie key. If that cell is open, it heads for its
+  centre; if it is covered by an enemy building, that building is
+  its goal building and it attacks it as soon as it is within `reach`, heading
+  for the building's cell until then (step 3c); at distance 0 its goal building
+  is the Core. With no breach
   distance either, the unit waits. When a breach opens a real path the normal
   field takes over (fields are dropped after every destruction).
-- Fields are computed lazily, cached per (side, targeting) and per side for the
-  breach field, and dropped whenever a building is destroyed. They never
+- Fields are computed lazily, cached per side and per side for the
+  breach field, and dropped whenever a building is destroyed (the per-side
+  solid-cell grids of "Unit geometry" are rebuilt at the same moment). They never
   depend on unit positions. The breach field and the breach step (the choice
   of the next cell) use maximum health only, so a damaged building is no
   cheaper to breach than a healthy one, and both depend only on which
@@ -1586,8 +1761,7 @@ shot is recorded in step 3, before the step 4 attack events):
 
 | `type`               | Fields (besides `tick`)                                         |
 | -------------------- | --------------------------------------------------------------- |
-| `unit_spawned`       | `unit`, `side`, `def`, `x`, `y`, `building` (the producer's ID, or 0 for a scheduled wave, see "Side options") |
-| `unit_moved`         | `unit`, `x`, `y` (the new cell)                                 |
+| `unit_spawned`       | `unit`, `side`, `def`, `px`, `py` (the centre, sub-cell units), `building` (the producer's ID, or 0 for a scheduled wave, see "Side options") |
 | `unit_attacked`      | `unit`, `target`, `damage`                                      |
 | `turret_fired`       | `side` (the owner), `building` (the turret), `unit`, `damage`   |
 | `unit_died`          | `unit`                                                          |
@@ -1608,12 +1782,22 @@ shot is recorded in step 3, before the step 4 attack events):
 building), so in the arena log that field is called `input` and `side` is the
 board's. Schema: `schemas/sim-event.schema.json`.
 
+**There is no movement event.** Units move every tick, and one event per unit
+per tick would take the one-plot log of a long battle from under 1 MB to several
+MB (the budget is 1 MB). The log therefore holds only the spawn position
+(`unit_spawned`); a consumer that wants positions at tick `t` re-steps the
+deterministic simulation (the web playback already does: it reads `px, py` from
+the state of a second battle instance, which also gives sub-tick smoothing from
+two consecutive states). The per-tick positions are covered by the golden
+`stateHash` and the invariant tests. (`unit_moved` of the cell-based model was
+removed.)
+
 ### Golden kind `arena-sim`
 
 Input: `{ teamA, teamB, gapRows, ticks }` where each team is a `team-state-ops`
 script (`seed`, `partySize`, `ops`) and the two boards must have the same size;
-optionally `units`, a list of `{side, def, x, y}` (arena coordinates, open
-cells) placed at tick 0 in list order, `buildingHealth`, a list of `{side,
+optionally `units`, a list of `{side, def, x, y}` (arena cell; the unit is placed at the
+cell's centre) or `{side, def, px, py}` (an exact position in sub-cell units) placed at tick 0 in list order (a position where the unit does not fit, or that overlaps a unit placed earlier, is an error), `buildingHealth`, a list of `{side,
 building, hp}` that sets the current health of those buildings (`building` 0 is
 the Core; `hp` from 1 to the building's maximum) before the battle starts, and
 `restoreAt`, a list of tick counts
@@ -1645,8 +1829,8 @@ need a hand-placed resource node do.
 ### ASCII rendering
 
 `renderArenaAscii(sim, content)` prints arena rows from `y = H - 1` (side 1, on
-top) down to `y = 0`. Units are `0` or `1` for their side, `*` when both sides
-share a cell; buildings are `S R U D E C` (source, route, unit producer,
+top) down to `y = 0`. Units are `0` or `1` for their side (drawn in the cell that holds their centre), `*` when both sides
+have a centre in the same cell; buildings are `S R U D E C` (source, route, unit producer,
 defense, economy, Core) in upper case for side 0 and lower case for side 1;
 terrain is `~` lake, `#` cliff, `?` other, `%` a blocked gap cell; `.` is open.
 The last line is a legend.
@@ -1688,6 +1872,15 @@ blocks it), an entry `{entry: {x, y}, cells, approach, breach}`:
 The order of entries is by ascending `x`; the output depends only on the team
 state and content (no random numbers). Identical tails are not merged.
 
+**Approximation (issue #59).** The preview, like the movement fields, works on
+cells: it answers "which cells could a unit of ordinary size walk", not "where
+would a circle of radius R go". Every one-cell gap is passable, which is exact
+for every unit of part 1 (collision radii below half a cell); the walked path
+is the sequence of field cells, while a real unit cuts corners and slides, so
+the preview is the route, not the trajectory. A unit whose collision diameter is
+larger than a gap does not fit through it in the simulation even though the
+preview shows a path.
+
 Golden kind `enemy-paths`: input is a team script (`team-state-ops` format,
 with `map` or `seed`/`partySize`) that places the Core; result
 `{paths: [{entry: [x, y], cells: [[x, y], ...], breach: null | {building,
@@ -1705,27 +1898,31 @@ to CB-8c): the zone format reserves a `pointsOfInterest` list for them.
 
 ### Decided simplifications
 
-- Units do not collide: any number share a cell (no queues, no blocking by
-  other units).
-- A producer whose neighbours are all covered keeps accumulating `progress`
-  until a cell opens (there is no backpressure from a blocked spawn).
+- Units are rigid circles that never overlap; there is no mass, momentum or
+  facing. A crowd is resolved by the bounded relaxation of step 5 and the
+  validation fixpoint, which can leave a blocked unit standing still for a tick
+  (it never teleports or passes through another unit).
+- The movement fields are cell based and ignore radii and other units; a unit
+  whose collision diameter exceeds one cell is not routed around gaps it cannot
+  pass (see "Goals and movement fields"), and a cell with no free standing room
+  near the Core simply queues.
+- A producer whose exit cells have no free position **holds** the finished unit
+  and stops drawing from its input buffers (backpressure, see step 2).
 - Units can be trapped by buildings of their own side (own buildings are
   impassable even for the breach field); a trapped unit waits.
 - Ranged attacks ignore walls and terrain (no line of sight).
 - A destroyed Core's cells become open ground and nothing else changes
   (Overload Core decay skips it).
-- Economy buildings are not goals of any targeting (`infrastructure` means
-  sources and route buildings only); they are attacked only when a unit
-  breaches through them (CB-20). They block movement for both sides like any
-  building.
+- Economy buildings, like every building other than the Core, are not goals;
+  they are attacked only when a unit breaches through them (CB-20). They block
+  movement for both sides like any building.
 - The bonus is read at the start of the tick for source resets and at the
   moment of the spawn for units (see "In-battle ramp"); a step taken in a tick
   takes effect from the next tick.
-- Aggro ignores obstacles between the units (no pathfinding): a unit may
-  chase an enemy behind a wall or lake until neither axis step is enterable;
-  it then falls through to its normal choices (goal building, movement
-  field), and may step back towards the enemy next time. Such back-and-forth
-  is possible but was not observed in the random-battle tests.
+- Aggro has only a cell-level line-of-sight test (step 3, a2): an enemy that
+  is visible but not reachable by walking straight (a unit round a corner of a
+  pocket) can still pull a unit towards it until it is in contact or blocked.
+  The unit then waits against the obstacle; it does not path-find around it.
 
 ## The neutral zone
 
@@ -2075,23 +2272,36 @@ identically; with none the field is absent.
 
 - **`scheduledWaves`**: a list `{tick, unit, count}`. In the Production step of
   tick `tick` (after all unit producers of both sides, side 0's waves before
-  side 1's, waves in list order), `count` units of `unit` spawn for that side
-  on its **front row** (side 0: arena row `h - 1`; side 1: arena row `H - h`,
-  the row next to the neutral zone). Wave `j` is the `j`-th entry of the side's
-  list (0-based). Work in the side's own frame, column `c` = board `x` (for
-  side 1 the arena column is `W - 1 - c`). Unit `i` (0-based, `n = count`)
-  wants column `(floor((2i + 1) * W / (2n)) + 7j) mod W`, i.e. the units are
-  spread evenly across the whole width, from a start column that moves by 7
-  columns for each wave index (the constant 7 is part of the rule). If the
-  front-row cell of a wanted column is not **open for the side** (terrain, or
-  a building that blocks the side), the nearest open front-row cell is used
-  instead: try distance `d = 1, 2, ...`, column `want - d` before `want + d`
-  (ties go to the lower own-frame `x`); if the row has no open cell the unit
-  is not spawned. Units spawned this way have `moveCooldown =
-  moveCooldownTicks`, take part in the tick's decisions like any new unit, get
-  the next unit IDs, count as `spawned`, and produce `unit_spawned` with
-  `building = 0`. Wave `count` is the total for the whole board, so a four-plot
-  board simply gets wider waves.
+  side 1's, waves in list order), the wave's `count` units are appended to the
+  state's `entering` queue as `{side, unit, col}` (unit `i` after unit `i - 1`).
+  Wave `j` is the `j`-th entry of the side's list (0-based). Work in the side's
+  own frame, column `c` = board `x` (for side 1 the arena column is
+  `W - 1 - c`). Unit `i` (0-based, `n = count`) wants column
+  `col = (floor((2i + 1) * W / (2n)) + 7j) mod W`, i.e. the units are spread
+  evenly across the whole width, from a start column that moves by 7 columns
+  for each wave index (the constant 7 is part of the rule). **Entering.**
+  Every tick, in the same Production step after the producers and the queueing
+  just described, the queue is walked once in order (side 0's entries and side
+  1's entries are in the order they were appended: side 0's wave first). For
+  each entry the unit tries to enter on the side's **front row** (side 0:
+  arena row `h - 1`; side 1: arena row `H - h`, the row next to the neutral
+  zone): the candidate columns are `col`, then `col - 1`, `col + 1`, `col - 2`,
+  `col + 2`, ... (distance `d = 0, 1, ...`, the lower own-frame column first;
+  columns outside `0 .. W - 1` are skipped), and in each column whose front-row
+  cell is **open for the side** (not blocked terrain, not covered by a building
+  that blocks the side) the same **offsets** as for producers (step 2.2) are
+  tried from the cell centre; the first position where the unit's collision
+  circle fits and overlaps no living unit (the units that entered earlier in this
+  walk included) is its spawn position. An entry that finds none stays in the
+  queue, **in its place**, and tries again next tick; the entries behind it are
+  still tried this tick (no head-of-line blocking), so the relative order of
+  waiting entries never changes. No entry is ever dropped: if the front row has
+  no open cell the entry waits (a destroyed building may open one). An entry
+  that enters is removed, becomes a unit with the next unit ID (at that tick,
+  with the strength of that tick), counts as `spawned` and produces
+  `unit_spawned` with `building = 0`. Wave `count` is the total for the whole
+  board, so a four-plot board simply gets wider waves. The queue is part of the
+  state (`entering`), so a restored battle continues identically.
 - **`freePower`**: every turret of the side is fully charged at all times: in
   the turret charging step, `charge` is set to `costPerShot` without touching
   the input buffers. No flow is needed (the PvE threat has no sources,
@@ -2182,7 +2392,7 @@ composition: [{unit, weight}], signature?}` and `stronghold`
 Rusher tests defence (early frequent waves, a small open Core); Fortress tests
 ramp and siege (late light waves, a big walled Core with turrets); Escalator
 tests speed (waves that grow fast, a wall line); Boss mixes all of it, its
-every-Nth-wave signature being all raiders (they target infrastructure). Unit
+every-Nth-wave signature being all raiders (a fast swarm of small, weak units; since issue #66 raiders no longer prefer any building, they are ordinary units with different numbers: health 25, damage 8, radius 0.25 cell, move cooldown 4). Unit
 prices for spending wave budget are `unitCost` in `threats.json` (soldier 10,
 raider 8). Building prices for the stronghold are the **tier 1** prices of the
 first building of defense type `wall` and of defense type `turret` in the
@@ -2453,15 +2663,21 @@ broken as follows:
   attacks, moves, deaths); producers in side then building-ID order; buildings
   are destroyed in side then `health`-list order (Core first, then instance
   ID); conduits of a destroyed building are reported in conduit-ID order.
-- **Which enemy unit to hit or chase:** the nearest by Chebyshev distance,
-  then by Manhattan distance, then the lowest unit `id`. A turret picks its
-  target by Manhattan distance from its nearest cell (ties: lowest unit `id`),
-  only among units on its owner's board rows.
-- **Which building to hit:** the nearest by Manhattan distance to its nearest
-  cell, then the Core before other buildings, then the lowest instance ID.
-- **Which way to step** (equal distance or equal cost; an aggro step needs no tie-break) and **where to spawn** (equal distance): the lowest `y`, then
-  the lowest `x`, in the board frame of the unit's own side (the tie key). Equal-length shortest paths are therefore
+- **Which enemy unit to hit or chase:** the nearest by squared centre distance,
+  then the lowest unit `id`. A turret picks its target by the squared distance
+  from the unit's centre to its nearest cell (ties: lowest unit `id`), only
+  among units on its owner's board rows.
+- **Which building to hit:** the Core when it is within reach; in breach mode
+  the building covering the next breach cell.
+- **Which way to step** (equal distance or equal cost) and **where to spawn**
+  (equal distance): the lowest `y`, then the lowest `x`, in the board frame of
+  the unit's own side (the tie key). Equal-length shortest paths are therefore
   resolved cell by cell by this rule, never by search order.
+- **Who yields when units collide:** anchored units never move in a relaxation
+  pass; two movers share the push equally; coinciding centres separate along
+  an axis chosen by the parity of the id sum, the lower id towards negative;
+  the validation of step 5 reverts, symmetrically, every unit that would end
+  in an overlap (a least fixed point, independent of the order of search).
 - **Simultaneous attacks:** all damage (unit attacks and turret shots) is
   computed from the same snapshot and applied together; nobody's death during
   the tick changes another unit's or turret's action in that tick.
@@ -2677,6 +2893,14 @@ units could not reach the front row:
 - Unplaced buildings (the stash) never count; a building that is not a unit
   producer is never listed. The search is one breadth-first pass from the front
   row (about a millisecond on a full four-plot board).
+
+**Fit approximation (issue #59).** The rule above is cell based: a one-cell gap is
+walkable. A unit "fits" a one-cell gap iff `2 * collisionRadius <= 240`, which
+holds for every unit of part 1 (soldier 144, raider 120), so for them the cell
+rule is exact; for a hypothetical unit wider than a cell the check would say
+"not sealed" for a pocket whose only exit is too narrow for it. The check uses
+no unit radii at all (it does not know which unit a producer makes at this
+stage of the code), and that is the stated approximation.
 
 The summary steps are not checked. `sealedProducers(state, deps)` in the session
 package gives the same list for a screen.
