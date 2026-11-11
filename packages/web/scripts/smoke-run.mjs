@@ -328,7 +328,7 @@ export async function runRunSmoke({
     cardTexts.every(
       (t) =>
         /Easy|Medium|Hard/.test(t) &&
-        /Threat/.test(t) &&
+        /Threat/i.test(t) &&
         /\+\d+ gold/.test(t) &&
         /Core \d+ health/.test(t),
     ),
@@ -662,10 +662,10 @@ export async function runRunSmoke({
   await waitStep('build');
   await page.click('#menu-button');
   await page.waitForSelector('#main-menu');
-  await page.waitForFunction(() => window.__debug.menu.runIds().length === 2);
+  await page.waitForFunction(() => window.__debug?.menu?.runIds().length === 2);
   await page.reload();
   await page.waitForSelector('#main-menu');
-  await page.waitForFunction(() => window.__debug.menu.runIds().length === 2);
+  await page.waitForFunction(() => window.__debug?.menu?.runIds().length === 2);
   const ids = await page.evaluate(() => window.__debug.menu.runIds());
   check(
     ids.length === 2 &&
@@ -707,7 +707,7 @@ export async function runRunSmoke({
   );
   await page.reload();
   await page.waitForSelector('#main-menu');
-  await page.waitForFunction(() => window.__debug.menu.runIds().length === 4);
+  await page.waitForFunction(() => window.__debug?.menu?.runIds().length === 4);
   const oldRow = await page.locator('[data-run="old-version-run"]').innerText();
   check(
     /older version: some things may have changed/i.test(oldRow),
@@ -731,7 +731,7 @@ export async function runRunSmoke({
   );
   await page.click('#menu-button');
   await page.waitForSelector('#main-menu');
-  await page.waitForFunction(() => window.__debug.menu.runIds().length === 4);
+  await page.waitForFunction(() => window.__debug?.menu?.runIds().length === 4);
   // Abandon the old-version copy; discard the damaged one.
   await page.click('[data-run="old-version-run"] [data-action="abandon"]');
   await page.click(
@@ -740,7 +740,7 @@ export async function runRunSmoke({
   await page.waitForSelector('#run-over');
   await page.click('#over-menu');
   await page.waitForSelector('#main-menu');
-  await page.waitForFunction(() => window.__debug.menu.runIds().length === 3);
+  await page.waitForFunction(() => window.__debug?.menu?.runIds().length === 3);
   const damaged = await page.locator('[data-run="broken"]').innerText();
   check(
     /damaged/i.test(damaged),
@@ -748,7 +748,7 @@ export async function runRunSmoke({
   );
   await page.click('[data-run="broken"] [data-action="discard"]');
   await page.click('[data-run="broken"] [data-action="discard-confirm"]');
-  await page.waitForFunction(() => window.__debug.menu.runIds().length === 2);
+  await page.waitForFunction(() => window.__debug?.menu?.runIds().length === 2);
   check(true, 'main menu: the damaged run was discarded on purpose');
 
   // Two tabs on one run: the other tab's move stops this one.
@@ -830,7 +830,7 @@ export async function runRunSmoke({
   await page.waitForSelector('#run-over');
   await page.click('#over-menu');
   await page.waitForSelector('#main-menu');
-  await page.waitForFunction(() => window.__debug.menu.runIds().length === 1);
+  await page.waitForFunction(() => window.__debug?.menu?.runIds().length === 1);
   check(
     (await page.locator(`[data-run="${runB}"]`).count()) === 0 &&
       (await page.locator(`[data-run="${runA}"]`).count()) === 1,
@@ -907,7 +907,7 @@ export async function runRunSmoke({
   );
   await page.click('#menu-button');
   await page.waitForSelector('#main-menu');
-  await page.waitForFunction(() => window.__debug.menu.runIds().length === 1);
+  await page.waitForFunction(() => window.__debug?.menu?.runIds().length === 1);
   const rec2 = await page.locator('#records').innerText();
   check(
     new RegExp(`1 player\\s+round ${reached}`).test(rec2),

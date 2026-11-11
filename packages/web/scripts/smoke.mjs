@@ -91,7 +91,7 @@ const settle = () =>
 const canvasBox = async () => await page.locator('canvas').boundingBox();
 
 try {
-  await page.goto(baseUrl);
+  await page.goto(baseUrl + '#debug');
   await page.waitForSelector('canvas');
   await page.waitForFunction(
     () => window.__debug?.camera && window.__debug.viewport().w > 0,

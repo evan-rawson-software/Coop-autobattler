@@ -114,8 +114,8 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
           </p>
         )}
         <p class="muted choice-foot">
-          No time limit. In a party, everyone votes: most votes wins, and the
-          host settles a tie.
+          No time limit. In a party, everyone votes: most votes wins, and a tie
+          is settled by a random pick among the votes.
         </p>
       </div>
     </AppShell>
