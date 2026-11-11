@@ -1,11 +1,10 @@
 /**
  * The performance budget of docs/performance-budget.md, enforced. The
- * enforced limits are 3.5 to 7 times looser than the speed measured with the
- * repository's suites running in parallel (`pnpm test`), and 6.6 to 7.5 times
- * looser than on an idle developer machine (see the table in the document),
+ * enforced limits are about 3 times looser than the speed measured on a
+ * developer machine with other work running (see the table in the document),
  * so a slow or noisy CI runner passes and a real regression (the simulation
- * getting several times slower, or units, ticks or
- * log size growing past the budget) fails. Deterministic quantities (units,
+ * getting several times slower, or units, ticks or log size growing past the
+ * budget) fails. Deterministic quantities (units,
  * ticks, log size) are checked exactly against the budget.
  *
  * Wall time uses `performance.now()` (allowed here, not in core). Each timing
@@ -37,11 +36,15 @@ const BUDGET = {
    */
   targetBattlesPerSecondOnePlot: 100,
   targetBattlesPerSecondFourPlots: 5,
-  /** Enforced floors: fail below these. */
-  minBattlesPerSecondOnePlot: 25,
+  /**
+   * Enforced floors: fail below these. Measured: 100 to 117 one-plot battles
+   * a second, 0.3 dense tier 1 battles a second, 7 to 8.5 s for the tier 3
+   * stress battle: about 3 times headroom each.
+   */
+  minBattlesPerSecondOnePlot: 35,
   minBattlesPerSecondFourPlots: 0.1,
   /** Enforced ceiling for the dense tier 3 stress battle, in ms. */
-  maxStressBattleMs: 30_000,
+  maxStressBattleMs: 25_000,
 } as const;
 
 const ctx = loadSimContext();
