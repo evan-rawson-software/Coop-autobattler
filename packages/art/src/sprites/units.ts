@@ -56,8 +56,17 @@ function mirror(g: Grid): string[] {
 
 /** Side A: a gold fan-plume standing in front of the head (5 wide, 4 tall). */
 const PLUME: Grid = ['.yyy.', 'yOOOy', '.OOO.', '..o..'];
-/** Side B: a bone horn for the left side: out from the head, tip forward. */
-const HORN: Grid = ['6....', '56...', '.55..', '..555', '...55'];
+/**
+ * Side B: bone horns, a horseshoe that rises from behind the head and
+ * curves out and forward, 10 px wide. The head is drawn over its base.
+ */
+const HORNS: Grid = [
+  '6........6',
+  '56......65',
+  '55......55',
+  '.55....55.',
+  '..555555..',
+];
 
 /**
  * The side cue for a head whose top-left is (hx, hy) and width hw, drawn
@@ -68,8 +77,7 @@ function sideCue(p: Pix, side: Side, hx: number, hy: number, hw: number): void {
   if (side === 'a') {
     p.stamp(PLUME, hx + Math.floor((hw - 5) / 2), hy - 3);
   } else if (side === 'b') {
-    p.stamp(HORN, hx - 4, hy);
-    p.stamp(mirror(HORN), hx + hw - 1, hy);
+    p.stamp(HORNS, hx + Math.floor((hw - 10) / 2), hy - 3);
   }
 }
 
@@ -158,8 +166,8 @@ function raider(L: Layers, c: Ctx): void {
     dagger(L.front, 2, 9 + dy, 0, 5);
     dagger(L.front, 12, 9 + dy, 14, 5);
   } else {
-    dagger(L.front, 1, 10 + dy, 1, 5 + dy);
-    dagger(L.front, 13, 10 + dy, 13, 5 + dy);
+    dagger(L.front, 1, 10 + dy, 3, 5 + dy);
+    dagger(L.front, 12, 10 + dy, 10, 5 + dy);
   }
   L.body.stamp(RAIDER_VEST, 3, 6 + dy);
   // Dark bandolier across the vest.
@@ -190,36 +198,35 @@ function archer(L: Layers, c: Ctx): void {
   const dy = lean + bob;
   const s = c.step;
   // Boots peeking out under the cloak tail.
-  L.back.rect(4, 12 + s, 2, 2, '1');
-  L.back.rect(10, 12 - s, 2, 2, '1');
+  L.back.rect(4, 13 + s, 2, 2, '1');
+  L.back.rect(10, 13 - s, 2, 2, '1');
   // Quiver on the back, feathers peeking out beside the shoulder.
-  L.back.stamp(['6.5', 'ooo', 'oOo', 'ooo'], 13, 7 + bob);
-  // Bow in front, arcing across the line of fire; string and arrow.
-  const by = 0;
+  L.back.stamp(['6.5', 'ooo', 'oOo', 'ooo'], 13, 8 + bob);
+  // Bow in front of the head, arcing across the line of fire; string, arrow.
   const pull = c.atk === 1 ? 3 : 0;
-  for (let x = 1; x <= 14; x++) {
-    const k0 = Math.round(((2 * x - 15) * (2 * x - 15)) / 56);
+  for (let x = 3; x <= 12; x++) {
+    const k0 = Math.round(((2 * x - 15) * (2 * x - 15)) / 40);
     // The limbs spring forward after the shot.
     const k = c.atk === 2 ? Math.max(0, k0 - 1) : k0;
-    L.back.set(x, by + k, k <= 1 ? 'O' : 'o');
+    L.back.set(x, k, k <= 1 ? 'O' : 'o');
   }
   if (c.atk === 1) {
     // String drawn back to the cheek.
-    L.back.line(1, by + 3, 7, by + 3 + pull, '4');
-    L.back.line(14, by + 3, 8, by + 3 + pull, '4');
+    L.back.line(3, 2, 7, 2 + pull, '4');
+    L.back.line(12, 2, 8, 2 + pull, '4');
   } else {
-    L.back.hline(2, by + (c.atk === 2 ? 2 : 3), 12, c.atk === 2 ? 'y' : '4');
+    L.back.hline(4, c.atk === 2 ? 1 : 2, 8, c.atk === 2 ? 'y' : '4');
   }
   if (c.atk === 2) {
     // The shot has left: only the arrow's tail is still in sight.
     L.back.set(7, 0, '6');
   } else {
-    L.back.vline(7, by + 1, 3 + pull + 2, '5');
-    L.back.set(7, by + 1, '6');
+    L.back.vline(7, 1, 4 + pull + 2, '5');
+    L.back.set(7, 1, '6');
   }
-  L.body.stamp(ARCHER_CLOAK, 2, 6 + dy);
-  sideCue(L.front, c.side, 5, 5 + dy, 6);
-  L.front.stamp(ARCHER_HOOD, 5, 5 + dy);
+  L.body.stamp(ARCHER_CLOAK, 2, 7 + dy);
+  sideCue(L.front, c.side, 5, 6 + dy, 6);
+  L.front.stamp(ARCHER_HOOD, 5, 6 + dy);
 }
 
 // ---- Drone -------------------------------------------------------------
@@ -287,7 +294,7 @@ function dronePost(p: Pix, c: Ctx): void {
           p.setRgba(
             cx + x,
             ry + y,
-            d2 > 3 ? [225, 238, 246, 130] : [205, 225, 240, 60],
+            d2 > 3 ? [225, 238, 246, 105] : [205, 225, 240, 38],
           );
       }
     const blade: [number, number][] =

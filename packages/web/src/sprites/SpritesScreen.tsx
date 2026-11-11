@@ -375,11 +375,11 @@ function Preview(props: { sheets: Sheets }) {
       </p>
       <Section
         title="Mock board patch"
-        note="12x8 cells at 5x, 3x and 1x: ground, neutral zone, lake and cliff autotiles, nodes, buildings, conduits with items (tinted per resource), units of both sides, a flyer with shadow, effects."
+        note="12x8 cells at 5x, 2x and 1x: ground, neutral zone, lake and cliff autotiles, nodes, buildings, conduits with items (tinted per resource), units of both sides, a flyer with shadow, effects."
       >
         <div class="board-row">
           <MockBoard sheets={sheets} scale={5} />
-          <MockBoard sheets={sheets} scale={3} />
+          <MockBoard sheets={sheets} scale={2} />
           <MockBoard sheets={sheets} scale={1} />
         </div>
       </Section>

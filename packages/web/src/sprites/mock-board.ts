@@ -88,10 +88,13 @@ export function cellHash(x: number, y: number, salt = 0): number {
   return (h ^ (h >>> 16)) >>> 0;
 }
 
+// Variant choice per cell: the crack variant of neutral ground is rare.
+const GROUND_PICK = [1, 2, 3, 4, 5, 6, 1, 2];
+const NEUTRAL_PICK = [1, 2, 3, 1, 2, 3, 1, 4];
 export const pickGround = (x: number, y: number): string =>
-  `ground_${String((cellHash(x, y) % 6) + 1)}`;
+  `ground_${String(GROUND_PICK[cellHash(x, y) % 8])}`;
 export const pickNeutral = (x: number, y: number): string =>
-  `neutral_${String((cellHash(x, y, 7) % 4) + 1)}`;
+  `neutral_${String(NEUTRAL_PICK[cellHash(x, y, 7) % 8])}`;
 
 /** The ground sprite for a cell: a random variant, neutral rows on top. */
 export function groundAt(x: number, y: number): string {
@@ -188,14 +191,17 @@ export function drawMockBoard(
       scale,
     );
   };
-  unit('unit_soldier', 'a', 52, 70, '.walk');
-  unit('unit_soldier', 'a', 66, 60, '.walk');
-  unit('unit_raider', 'a', 84, 58, '.walk');
-  unit('unit_archer', 'a', 40, 62, '.walk');
-  unit('unit_soldier', 'b', 62, 22, '.walk');
-  unit('unit_raider', 'b', 100, 28, '.walk');
-  unit('unit_soldier', 'b', 70, 36, '.attack');
-  unit('unit_soldier', 'a', 70, 47, '.attack');
+  unit('unit_soldier', 'a', 52, 76, '.walk');
+  unit('unit_soldier', 'a', 72, 66, '.walk');
+  unit('unit_raider', 'a', 92, 60, '.walk');
+  unit('unit_archer', 'a', 36, 62, '.walk');
+  unit('unit_soldier', 'b', 56, 22, '.walk');
+  unit('unit_raider', 'b', 104, 26, '.walk');
+  unit('unit_archer', 'b', 22, 22, '.walk');
+  unit('unit_soldier', 'b', 82, 38, '.attack');
+  unit('unit_soldier', 'a', 82, 54, '.attack');
+  unit('unit_raider', 'a', 120, 62, '');
+  unit('unit_raider', 'b', 120, 38, '');
   // A flyer with its shadow.
   const bob = Math.sin(t / 300) * 1.5;
   drawFrame(

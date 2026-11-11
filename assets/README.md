@@ -65,8 +65,8 @@ page of the web build (`pnpm --filter @game/web dev`, then open `#sprites`).
   "gutter": 1,                      // empty pixels between sprites on free-form sheets
   "filter": "nearest",
   "sheets": {
-    "tiles": { "file": "tiles.png", "w": 320, "h": 176, "grid": 16 },   // "grid": every sprite is on this grid, no gutter
-    "units": { "file": "units.png", "w": 320, "h": 236 }, ...
+    "tiles": { "file": "tiles.png", "w": 320, "h": 128, "grid": 16 },   // "grid": every sprite is on this grid, no gutter
+    "units": { "file": "units.png", "w": 320, "h": 68 }, ...
   },
   "autotile": { "blob47": { "bits": { "N": 1, "NE": 2, ... }, "masks": [0, 1, ...] } },
   "palette": [{ "key": "K", "name": "ink", "hex": "#0a0d11" }, ...],

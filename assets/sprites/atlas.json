@@ -510,7 +510,7 @@
         8
       ],
       "category": "terrain",
-      "note": "Neutral-zone ground; tiles seamlessly. Pick a variant at random per cell."
+      "note": "Neutral-zone ground with a short crack; tiles seamlessly. Give it a low probability (about 1 in 8)."
     },
     "node_res_a": {
       "sheet": "tiles",

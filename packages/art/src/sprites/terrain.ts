@@ -383,7 +383,10 @@ export function terrainSprites(): SpriteDef[] {
       sheet: 'tiles',
       category: 'terrain',
       frames: neutralTile(101 + i * 9, i),
-      note: 'Neutral-zone ground; tiles seamlessly. Pick a variant at random per cell.',
+      note:
+        i === 3
+          ? 'Neutral-zone ground with a short crack; tiles seamlessly. Give it a low probability (about 1 in 8).'
+          : 'Neutral-zone ground; tiles seamlessly. Pick a variant at random per cell.',
     });
   loadResources().forEach((r, i) => {
     add({
