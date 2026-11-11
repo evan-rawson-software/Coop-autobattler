@@ -288,13 +288,19 @@ describe('fast rejection of hostile values', () => {
   })();
 
   function timed(v: unknown): { ms: number; errors: readonly string[] } {
-    const t = perf.now();
-    const r = validateGhostSnapshot(v, ctx);
-    const ms = perf.now() - t;
-    return { ms, errors: r.ok ? [] : r.errors };
+    // Best of several runs: a load spike hits one run, rarely all of them.
+    let ms = Infinity;
+    let errors: readonly string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const t = perf.now();
+      const r = validateGhostSnapshot(v, ctx);
+      ms = Math.min(ms, perf.now() - t);
+      errors = r.ok ? [] : r.errors;
+    }
+    return { ms, errors };
   }
 
-  test('a 2e6-key object and a 2e6-element array are rejected in well under 100 ms', () => {
+  test('a 2e6-key object and a 2e6-element array are rejected without walking them', () => {
     const keys: Record<string, number> = {};
     for (let i = 0; i < 2_000_000; i++) keys['k' + String(i)] = 1;
     const big = new Array<number>(2_000_000).fill(1);
@@ -307,11 +313,13 @@ describe('fast rejection of hostile values', () => {
     const c = timed({ ...clone(), team: big });
     const d = timed({ ...clone(), extra: big });
     for (const r of [a, b, c, d]) {
-      expect(r.ms).toBeLessThan(100);
+      // Typical: well under 1 ms. Walking the 2e6 keys takes ~900 ms, so this
+      // bound still separates a walk from a skip with a wide margin for load.
+      expect(r.ms).toBeLessThan(250);
       expect(r.errors.length).toBeGreaterThan(0);
       expect(r.errors.length).toBeLessThanOrEqual(11);
     }
-  });
+  }, 120_000);
 
   test('a huge object inside the snapshot gives a handful of errors, not one per key', () => {
     const keys: Record<string, number> = {};

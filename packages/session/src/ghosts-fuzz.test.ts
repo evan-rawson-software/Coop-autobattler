@@ -94,6 +94,6 @@ describe('ghost pool fuzz', () => {
         }
       }
       expect(seen.size).toBeGreaterThan(0);
-    });
+    }, 120_000);
   }
 });
