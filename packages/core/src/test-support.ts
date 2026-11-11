@@ -304,12 +304,18 @@ export function bigBoard(): TeamState {
  * collision circle does not fit for its side (blocked ground, a building that
  * blocks it, outside the arena), or two units whose collision circles
  * overlap (radii from the battle's own content, test-only units included).
+ * Throws on a unit of an unknown type.
  * Empty when the state is good.
  */
 export function circleViolations(sim: ArenaSim, ctx: ArenaContext): string[] {
   const out: string[] = [];
-  const radius = (u: UnitSim): number =>
-    ctx.content.units.get(u.def)?.collisionRadius ?? 0;
+  const radius = (u: UnitSim): number => {
+    const def = ctx.content.units.get(u.def);
+    if (def === undefined) {
+      throw new Error(`circleViolations: unknown unit type "${u.def}".`);
+    }
+    return def.collisionRadius;
+  };
   const units = sim.units;
   for (let i = 0; i < units.length; i++) {
     const u = got(units[i]);
