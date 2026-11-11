@@ -21,6 +21,7 @@ import {
   hitTest,
   ownCoreCentre,
   type Hit,
+  type NeutralView,
   type Scene,
 } from './scene.js';
 import { readTheme } from './theme.js';
@@ -55,6 +56,8 @@ export interface BoardViewProps {
   readonly enemy?: TeamState | null;
   /** Height in cells of the empty strip between the boards. */
   readonly neutralHeight?: number;
+  /** Terrain of the neutral strip (battle screen); hidden until revealed. */
+  readonly neutral?: NeutralView | null;
   readonly controller: CameraController;
   /** Changing this puts the camera back at Center (new map, new screen). */
   readonly resetKey?: unknown;
@@ -91,6 +94,7 @@ export function BoardView(props: BoardViewProps) {
     own,
     enemy = null,
     neutralHeight = 0,
+    neutral = null,
     controller,
     resetKey,
     selection = null,
@@ -99,8 +103,8 @@ export function BoardView(props: BoardViewProps) {
   const canvas = useRef<HTMLCanvasElement>(null);
 
   const scene = useMemo(
-    () => buildScene(own, enemy, neutralHeight, content),
-    [own, enemy, neutralHeight, content],
+    () => buildScene(own, enemy, neutralHeight, content, neutral),
+    [own, enemy, neutralHeight, content, neutral],
   );
 
   // Mutable view state, read by the draw loop without re-rendering.
@@ -257,6 +261,7 @@ export function BoardView(props: BoardViewProps) {
           maxMs: s.drawMax,
         };
       },
+      neutralFeatureCount: () => live.current.scene.neutralFeatures.length,
       resetDrawStats: () => {
         const s = live.current;
         s.draws = 0;
