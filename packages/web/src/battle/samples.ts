@@ -11,11 +11,13 @@
 import {
   REFERENCE_BOARDS,
   buildReferenceBoard,
+  generateMap,
   generateThreat,
   type ReferenceBoardName,
   type ThreatType,
 } from '@game/core';
 import { content } from '../content.js';
+import { buildSampleTeam } from '../sample-team.js';
 import { threatsConfig } from './setup.js';
 import type { BattleDescription, OpponentInfo } from './types.js';
 
@@ -158,20 +160,28 @@ export function buildSample(sel: SampleSelection): Sample {
     };
   }
   if (kind === STRESS_ID) {
-    // Both sides get a steady stream of units and sturdy Cores, so a few
-    // hundred units meet in the middle for a long while.
+    // Both sides get the same four-plot (96 cells wide) board, a steady
+    // stream of units and sturdy Cores. Units are circles that cannot
+    // overlap, so the front line is as wide as the board: on one plot about a
+    // hundred units meet in the middle, on four plots a few hundred (about 430
+    // alive at ticks 250 to 600, 540 at the most).
+    const wide = buildSampleTeam(
+      generateMap(sel.seed, 4, content, content.mapgen),
+      content,
+      sel.seed,
+    );
     const waves = Array.from({ length: 12 }, (_, i) => ({
       tick: 20 + i * 40,
       unit: stressUnit(),
-      count: 40,
+      count: 160,
     }));
     const options = { scheduledWaves: waves, coreHealth: 5000 };
     return {
       battle: {
         kind: 'versus',
         input: {
-          teamA: team,
-          teamB: team,
+          teamA: wide,
+          teamB: wide,
           seed: sel.seed,
           sideOptions: [options, options],
         },

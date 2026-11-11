@@ -53,7 +53,7 @@
     },
     "unit_raider": {
       "name": "Raider",
-      "description": "Hunts enemy sources and routing buildings."
+      "description": "Small, fast and fragile: marches on the enemy Core like a soldier."
     }
   },
   "terrain": {

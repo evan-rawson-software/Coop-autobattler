@@ -172,3 +172,41 @@ export function maxInt(a: number, b: number): number {
   assertInt(b, 'b');
   return a > b ? a : b;
 }
+
+/**
+ * The largest integer `r` with `r * r <= n`, exact for every safe integer
+ * `n >= 0` (a floating square root is only an estimate: it is corrected in
+ * both directions until `r^2 <= n < (r + 1)^2` holds).
+ */
+export function isqrtFloor(n: number): number {
+  assertInt(n, 'n');
+  if (n < 0) throw new RangeError('isqrtFloor: n must not be negative');
+  let r = Math.floor(Math.sqrt(n));
+  while (r * r > n) r -= 1;
+  while ((r + 1) * (r + 1) <= n) r += 1;
+  return r;
+}
+
+/** The smallest integer `r` with `r * r >= n` (`n >= 0`), exact. */
+export function isqrtCeil(n: number): number {
+  const r = isqrtFloor(n);
+  return r * r === n ? r : r + 1;
+}
+
+/** ceil(n / d) for `d > 0`, exact for safe integers. */
+export function divCeil(n: number, d: number): number {
+  if (d <= 0) throw new RangeError('divCeil: d must be positive');
+  return -divFloor(-n, d);
+}
+
+/** n / d rounded toward zero, for `d > 0`. */
+export function truncDiv(n: number, d: number): number {
+  if (d <= 0) throw new RangeError('truncDiv: d must be positive');
+  return n >= 0 ? divFloor(n, d) : -divFloor(-n, d);
+}
+
+/** n / d rounded away from zero, for `d > 0`. */
+export function awayDiv(n: number, d: number): number {
+  if (d <= 0) throw new RangeError('awayDiv: d must be positive');
+  return n >= 0 ? -divFloor(-n, d) : divFloor(n, d);
+}

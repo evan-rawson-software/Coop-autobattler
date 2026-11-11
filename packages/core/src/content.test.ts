@@ -137,11 +137,23 @@ describe('loadTerrain', () => {
 });
 
 describe('loadUnits', () => {
-  test('rejects bad numbers and targeting', () => {
+  test('rejects bad numbers, the removed fields and unsupported flying', () => {
     const base = clone((unitsJson as { units: object[] }).units[0]);
     const result = loadUnits({
       units: [
-        { ...base, health: 0, damage: 1.5, targeting: 'everything' },
+        {
+          ...base,
+          health: 0,
+          damage: 1.5,
+          targeting: 'everything',
+          rangeCells: 0,
+          radius: 0,
+          collisionRadius: 481,
+          reach: 1921,
+          moveCooldownTicks: 241,
+          flying: true,
+          attackType: 'ranged',
+        },
         { ...base, id: 'soldier' },
         base,
         base,
@@ -151,7 +163,14 @@ describe('loadUnits', () => {
     const text = result.errors.join('\n');
     expect(text).toMatch(/"health" must be an integer >= 1/);
     expect(text).toMatch(/"damage" must be an integer >= 0/);
-    expect(text).toMatch(/unknown targeting "everything"/);
+    expect(text).toMatch(/unknown field "targeting"|"targeting"/);
+    expect(text).toMatch(/"rangeCells"/);
+    expect(text).toMatch(/"radius" must be an integer >= 1/);
+    expect(text).toMatch(/"collisionRadius" must be at most 480/);
+    expect(text).toMatch(/"reach" must be at most 1920/);
+    expect(text).toMatch(/"moveCooldownTicks" must be at most 240/);
+    expect(text).toMatch(/"flying" units are not supported yet/);
+    expect(text).toMatch(/unknown attackType "ranged"/);
     expect(text).toMatch(/id must match/);
     expect(text).toMatch(/duplicate id/);
   });

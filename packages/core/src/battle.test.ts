@@ -1,4 +1,4 @@
-import { MAX_HEALTH, MAX_TICK_DAMAGE } from './limits.js';
+import { CELL_UNITS, MAX_HEALTH, MAX_TICK_DAMAGE } from './limits.js';
 import { describe, expect, test } from 'vitest';
 import { toArena } from './arena.js';
 import {
@@ -331,8 +331,8 @@ describe('mirror matches (symmetry)', () => {
     return units
       .filter((u) => u.side === side)
       .map((u) => {
-        const x = side === 0 ? u.x : 11 - u.x;
-        const y = side === 0 ? u.y : A - 1 - u.y;
+        const x = side === 0 ? u.px : 12 * CELL_UNITS - u.px;
+        const y = side === 0 ? u.py : A * CELL_UNITS - u.py;
         return `${u.def} ${String(x)},${String(y)} hp${String(u.hp)}`;
       })
       .sort();
@@ -419,24 +419,30 @@ describe('mirror matches (symmetry)', () => {
 describe('buildings never act in or reach into the zone', () => {
   const H = 16;
 
-  /** Replays the log, checking each turret shot's target position. */
-  function checkTurretShots(
-    events: readonly ArenaEvent[],
-    depth: number,
-  ): number {
-    const at = new Map<number, { x: number; y: number }>();
-    const total = 2 * H + depth;
+  /**
+   * Steps a battle, checking each turret shot's target: the unit stood, at
+   * the start of the tick (the snapshot the turrets decide on), in the arena
+   * rows of the turret owner's board.
+   */
+  function checkTurretShots(a: TeamState, b: TeamState, seed: number): number {
+    const s = startBattle({ teamA: a, teamB: b, seed }, content, config);
+    if (!s.ok) throw new Error('refused');
+    const { battle } = s;
+    const total = 2 * H + battle.zone.depth;
     let shots = 0;
-    for (const e of events) {
-      if (e.type === 'unit_spawned') at.set(e.unit, { x: e.x, y: e.y });
-      else if (e.type === 'unit_moved') at.set(e.unit, { x: e.x, y: e.y });
-      else if (e.type === 'unit_died') at.delete(e.unit);
-      else if (e.type === 'turret_fired') {
-        const p = at.get(e.unit);
-        expect(p).toBeDefined();
+    while (!battle.isOver()) {
+      const rows = new Map(
+        battle.sim.units.map((u) => [u.id, Math.floor(u.py / CELL_UNITS)]),
+      );
+      const start = battle.eventLog.length;
+      battle.step();
+      for (const e of battle.eventLog.slice(start)) {
+        if (e.type !== 'turret_fired') continue;
+        const row = rows.get(e.unit);
+        expect(row).toBeDefined();
         const lo = e.side === 0 ? 0 : total - H;
-        expect(p?.y).toBeGreaterThanOrEqual(lo);
-        expect(p?.y).toBeLessThanOrEqual(lo + H - 1);
+        expect(row).toBeGreaterThanOrEqual(lo);
+        expect(row).toBeLessThanOrEqual(lo + H - 1);
         shots++;
       }
     }
@@ -447,8 +453,11 @@ describe('buildings never act in or reach into the zone', () => {
     let shots = 0;
     for (let seed = 1; seed <= 12; seed++) {
       const ps = 1 + (seed % 3);
-      const r = run(randomTeam(seed, ps), randomTeam(seed + 50, ps), seed);
-      shots += checkTurretShots(r.eventLog, r.zone.depth);
+      shots += checkTurretShots(
+        randomTeam(seed, ps),
+        randomTeam(seed + 50, ps),
+        seed,
+      );
     }
     expect(shots).toBeGreaterThan(0);
   });
@@ -585,6 +594,7 @@ describe('end conditions', () => {
             def: 'unit_soldier',
             x: at.x,
             y: at.y,
+            allowOverlap: true,
           });
           u.damage = 90_000_000_000_000;
           u.attackCooldown = 0;
@@ -652,6 +662,7 @@ describe('end conditions', () => {
         def: 'unit_soldier',
         x: at.x,
         y: at.y,
+        allowOverlap: true,
       });
       u.attackCooldown = 0;
     }

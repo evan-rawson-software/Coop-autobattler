@@ -23,9 +23,14 @@ export type {
   TerrainFeatureId,
   TerrainLoadResult,
 } from './terrain.js';
-export { loadUnits, loadUnitsOrThrow, maxStrengthPercent } from './units.js';
+export {
+  loadUnits,
+  loadUnitsOrThrow,
+  maxStrengthPercent,
+  unitSpeed,
+} from './units.js';
 export type {
-  Targeting,
+  AttackType,
   UnitConfig,
   UnitDef,
   UnitId,
@@ -243,7 +248,6 @@ export {
   goalBuildings,
   blocksUnit,
   openFor,
-  TARGETINGS,
 } from './arena-paths.js';
 export type { Field } from './arena-paths.js';
 export {
@@ -261,12 +265,28 @@ export type {
   ArenaEvent,
   ArenaOptions,
   ArenaSim,
+  EnteringSim,
   HealthSim,
   ProducerSim,
   TurretSim,
   UnitSim,
   UnitTarget,
 } from './arena-sim.js';
+export {
+  boxDist2,
+  buildingDist2,
+  buildSolid,
+  cellCoord,
+  fits,
+  pushOutSolid,
+} from './geometry.js';
+export type { World } from './geometry.js';
+export {
+  CELL_UNITS,
+  MAX_SEPARATION_PASSES,
+  MAX_UNIT_RADIUS,
+  MAX_UNIT_REACH,
+} from './limits.js';
 export { renderArenaAscii } from './arena-render.js';
 export { previewEnemyPaths } from './enemy-paths.js';
 export type { EnemyPath } from './enemy-paths.js';

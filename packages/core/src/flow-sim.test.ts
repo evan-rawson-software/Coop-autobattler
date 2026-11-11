@@ -77,6 +77,7 @@ describe('simulation config', () => {
       breachBaseCost: 10,
       breachHealthPerCost: 10,
       aggroRangeCells: 3,
+      separationPasses: 4,
       maxSourceSpeedPercent: 300,
       maxUnitStrengthPercent: 300,
       overloadStartTick: 1800,

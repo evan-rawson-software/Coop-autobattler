@@ -79,3 +79,15 @@ export const MAX_TICK_DAMAGE = 2 ** 52;
 
 /** Largest single hit after Overload scaling. */
 export const MAX_HIT = MAX_TICK_DAMAGE / 2;
+
+/** Sub-cell units per arena cell: positions, radii and reach are in these. */
+export const CELL_UNITS = 240;
+
+/** Largest `radius` and `collisionRadius` of a unit (two cells). */
+export const MAX_UNIT_RADIUS = 2 * CELL_UNITS;
+
+/** Largest `reach` of a unit (eight cells). */
+export const MAX_UNIT_REACH = 8 * CELL_UNITS;
+
+/** Largest `separationPasses` in `sim.json`. */
+export const MAX_SEPARATION_PASSES = 16;

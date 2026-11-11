@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { openFor } from './arena-paths.js';
 import { stepArena, type ArenaEvent } from './arena-sim.js';
 import { hashJson } from './hash.js';
+import { CELL_UNITS } from './limits.js';
 import { simulatePveBattle, startPveBattle } from './pve-battle.js';
 import {
   REFERENCE_BOARDS,
@@ -179,9 +180,18 @@ describe('waves along the whole front', () => {
       if (!s.ok) throw new Error('refused');
       const { battle } = s;
       const lastWave = Math.max(...t.waves.map((w) => w.tick));
-      // `stepArena` never ends a battle, so every wave is spawned whatever
-      // happens to the Cores.
-      while (battle.sim.tick <= lastWave) stepArena(battle.sim, battle.ctx);
+      // A party Core that does not fall keeps the wave units busy.
+      got(battle.sim.health.find((h) => h.side === 0 && h.building === 0)).hp =
+        10 ** 12;
+      // `stepArena` never ends a battle, so every wave is queued whatever
+      // happens to the Cores; units that find no room enter a little later.
+      while (
+        battle.sim.tick <= lastWave ||
+        (battle.sim.entering.length > 0 && battle.sim.tick < lastWave + 600)
+      ) {
+        stepArena(battle.sim, battle.ctx);
+      }
+      expect(battle.sim.entering).toHaveLength(0);
       const spawns = battle.eventLog.filter(
         (e): e is Extract<ArenaEvent, { type: 'unit_spawned' }> =>
           e.type === 'unit_spawned' && e.side === 1 && e.building === 0,
@@ -191,21 +201,23 @@ describe('waves along the whole front', () => {
       const byTick = new Map<number, number[]>();
       for (const e of spawns) {
         // Own-frame column and the front row of side 1.
-        expect(e.y).toBe(geom.height - geom.boardHeight);
-        const k = e.y * geom.width + e.x;
+        const cx = Math.floor(e.px / CELL_UNITS);
+        const cy = Math.floor(e.py / CELL_UNITS);
+        expect(cy).toBe(geom.height - geom.boardHeight);
+        const k = cy * geom.width + cx;
         expect(battle.ctx.arena.blocked[k]).toBe(0);
         expect(openFor(battle.ctx.arena, 1, k)).toBe(true);
-        const col = geom.width - 1 - e.x;
+        const col = geom.width - 1 - cx;
         byTick.set(e.tick, [...(byTick.get(e.tick) ?? []), col]);
       }
-      for (const [tick, cols] of byTick) {
-        const wave = t.waves.filter((w) => w.tick === tick);
-        const total = wave.reduce((a, w) => a + w.count, 0);
-        const plots = new Set(
-          cols.map((c) => Math.floor(c / mapgen.plotWidth)),
-        );
-        if (total >= 4) expect([...plots].sort()).toEqual([0, 1, 2, 3]);
+      // Units that find their place taken (the middle of the row is often
+      // still crowded by the previous wave) enter a little later; over the
+      // battle every plot sees units come in.
+      const every = new Set<number>();
+      for (const cols of byTick.values()) {
+        for (const c of cols) every.add(Math.floor(c / mapgen.plotWidth));
       }
+      expect([...every].sort()).toEqual([0, 1, 2, 3]);
     }
   }, 120_000);
 
@@ -225,7 +237,9 @@ describe('waves along the whole front', () => {
           .filter((w) => w.tick === got(t.waves[0]).tick && w !== t.waves[0])
           .reduce((a, w) => a + w.count, 0),
     );
-    expect(new Set(units.map((u) => u.y)).size).toBe(1);
+    expect(new Set(units.map((u) => Math.floor(u.py / CELL_UNITS))).size).toBe(
+      1,
+    );
   });
 });
 
@@ -325,8 +339,8 @@ function sweep(): Row[] {
 
 /** The last round at which a board wins any threat in the sweep (pinned). */
 const LAST_WIN: Record<ReferenceBoardName, number> = {
-  rush: 9,
-  fortify: 10,
+  rush: 8,
+  fortify: 8,
   poor: 7,
 };
 
@@ -388,27 +402,36 @@ describe('sweep of reference boards against every threat', () => {
       );
     // The undefended rush board loses to a Rusher that the fortify board beats.
     for (const type of ['medium', 'hard'] as const) {
-      expect(get('rush', 'arch_rusher', type, 5).won).toBe(false);
-      expect(get('fortify', 'arch_rusher', type, 5).won).toBe(true);
+      expect(get('rush', 'arch_rusher', type, 6).won).toBe(false);
+      expect(get('fortify', 'arch_rusher', type, 6).won).toBe(true);
     }
-    // The fortify board takes clearly longer against the Fortress in the
-    // early rounds, where both win: twice as long in round 1, at least 1.3
-    // times as long in rounds 2 and 3. (It was 1.5 times with Overload at
-    // tick 2400; since Overload starts at tick 1800 the slow fortify win in
-    // hard round 2 is cut short: it ends at tick 2401, 1.36 times the rush
-    // board's 1765, because the stronghold's Core (240 health) falls to the
-    // decay after only 126 damage from the party. The decay hits both Cores
-    // equally and the Core with less health falls first: shipped strongholds
-    // are often below the party's 500, so outlasting a smaller Core is a
-    // legitimate, intended way to win; decided in #75.)
+    // The fortify board takes longer against the Fortress in the early
+    // rounds, where both win: 2.6 times as long in easy round 1 and never
+    // shorter. (The factors are smaller than they were with stacking units,
+    // because the units now queue at the Core and the fortify board's turrets
+    // are in range for as long as the rush board's units are, and because the
+    // decay of Overload ends the slow wins early: several of them end at tick
+    // 2401 or 2701. The decay hits both Cores equally and the Core with less
+    // health falls first: shipped strongholds are often below the party's 500,
+    // so outlasting a smaller Core is a legitimate, intended way to win;
+    // decided in #75.)
+    let ratioSum = 0;
+    let cases = 0;
     for (const type of ['easy', 'medium', 'hard'] as const) {
       for (const round of [1, 2, 3]) {
         const rush = get('rush', 'arch_fortress', type, round);
         const fort = get('fortify', 'arch_fortress', type, round);
         expect(rush.won && fort.won).toBe(true);
-        const factor = round === 1 ? 2 : 1.3;
-        expect(fort.endTick).toBeGreaterThanOrEqual(factor * rush.endTick);
+        expect(fort.endTick).toBeGreaterThanOrEqual(rush.endTick);
+        ratioSum += fort.endTick / rush.endTick;
+        cases += 1;
       }
     }
+    expect(
+      get('fortify', 'arch_fortress', 'easy', 1).endTick,
+    ).toBeGreaterThanOrEqual(
+      2 * get('rush', 'arch_fortress', 'easy', 1).endTick,
+    );
+    expect(ratioSum / cases).toBeGreaterThan(1.4);
   }, 300_000);
 });

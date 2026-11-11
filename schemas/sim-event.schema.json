@@ -140,9 +140,18 @@
     },
     {
       "title": "unit_spawned",
-      "description": "A unit producer made a unit (arena coordinates).",
+      "description": "A unit appeared (a producer made it, or a scheduled-wave unit found room): its centre in arena sub-cell units (240 per cell). There is no movement event: positions come from re-stepping the simulation.",
       "type": "object",
-      "required": ["tick", "type", "unit", "side", "def", "x", "y", "building"],
+      "required": [
+        "tick",
+        "type",
+        "unit",
+        "side",
+        "def",
+        "px",
+        "py",
+        "building"
+      ],
       "additionalProperties": false,
       "properties": {
         "type": {
@@ -159,14 +168,6 @@
         "def": {
           "type": "string"
         },
-        "x": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "y": {
-          "type": "integer",
-          "minimum": 0
-        },
         "building": {
           "type": "integer",
           "minimum": 0
@@ -174,32 +175,13 @@
         "tick": {
           "type": "integer",
           "minimum": 0
-        }
-      }
-    },
-    {
-      "title": "unit_moved",
-      "description": "A unit moved to an adjacent cell (arena coordinates).",
-      "type": "object",
-      "required": ["tick", "type", "unit", "x", "y"],
-      "additionalProperties": false,
-      "properties": {
-        "type": {
-          "const": "unit_moved"
         },
-        "unit": {
+        "px": {
           "type": "integer",
-          "minimum": 1
+          "minimum": 0,
+          "description": "Centre, arena sub-cell units (CELL_UNITS = 240 per cell)."
         },
-        "x": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "y": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "tick": {
+        "py": {
           "type": "integer",
           "minimum": 0
         }
@@ -406,12 +388,28 @@
       "required": ["tick", "type", "side", "building", "effect", "steps"],
       "additionalProperties": false,
       "properties": {
-        "type": { "const": "ramp_step" },
-        "side": { "type": "integer", "enum": [0, 1] },
-        "building": { "type": "integer", "minimum": 1 },
-        "effect": { "enum": ["source_speed", "unit_strength"] },
-        "steps": { "type": "integer", "minimum": 1 },
-        "tick": { "type": "integer", "minimum": 0 }
+        "type": {
+          "const": "ramp_step"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "effect": {
+          "enum": ["source_speed", "unit_strength"]
+        },
+        "steps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
     {
@@ -421,8 +419,13 @@
       "required": ["tick", "type"],
       "additionalProperties": false,
       "properties": {
-        "type": { "const": "overload_started" },
-        "tick": { "type": "integer", "minimum": 0 }
+        "type": {
+          "const": "overload_started"
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
     {
@@ -432,9 +435,17 @@
       "required": ["tick", "type", "level"],
       "additionalProperties": false,
       "properties": {
-        "type": { "const": "overload_level" },
-        "level": { "type": "integer", "minimum": 1 },
-        "tick": { "type": "integer", "minimum": 0 }
+        "type": {
+          "const": "overload_level"
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
     {
@@ -444,10 +455,21 @@
       "required": ["tick", "type", "side", "damage"],
       "additionalProperties": false,
       "properties": {
-        "type": { "const": "overload_core_damage" },
-        "side": { "type": "integer", "enum": [0, 1] },
-        "damage": { "type": "integer", "minimum": 1 },
-        "tick": { "type": "integer", "minimum": 0 }
+        "type": {
+          "const": "overload_core_damage"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "damage": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
     {
@@ -457,14 +479,22 @@
       "required": ["tick", "type", "zone"],
       "additionalProperties": false,
       "properties": {
-        "type": { "const": "zone_revealed" },
+        "type": {
+          "const": "zone_revealed"
+        },
         "zone": {
           "type": "object",
           "required": ["width", "depth", "features", "pointsOfInterest"],
           "additionalProperties": false,
           "properties": {
-            "width": { "type": "integer", "minimum": 1 },
-            "depth": { "type": "integer", "minimum": 0 },
+            "width": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "depth": {
+              "type": "integer",
+              "minimum": 0
+            },
             "features": {
               "type": "array",
               "items": {
@@ -472,16 +502,30 @@
                 "required": ["x", "y", "feature"],
                 "additionalProperties": false,
                 "properties": {
-                  "x": { "type": "integer", "minimum": 0 },
-                  "y": { "type": "integer", "minimum": 0 },
-                  "feature": { "type": "string", "pattern": "^ter_[a-z0-9_]+$" }
+                  "x": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "y": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "feature": {
+                    "type": "string",
+                    "pattern": "^ter_[a-z0-9_]+$"
+                  }
                 }
               }
             },
-            "pointsOfInterest": { "type": "array" }
+            "pointsOfInterest": {
+              "type": "array"
+            }
           }
         },
-        "tick": { "type": "integer", "minimum": 0 }
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
     {
@@ -491,8 +535,13 @@
       "required": ["tick", "type", "winner", "reason"],
       "additionalProperties": false,
       "properties": {
-        "type": { "const": "battle_ended" },
-        "winner": { "type": "integer", "enum": [0, 1] },
+        "type": {
+          "const": "battle_ended"
+        },
+        "winner": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
         "reason": {
           "enum": [
             "core_destroyed",
@@ -503,7 +552,10 @@
             "time_limit"
           ]
         },
-        "tick": { "type": "integer", "minimum": 0 }
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     }
   ]

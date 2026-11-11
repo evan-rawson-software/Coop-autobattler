@@ -310,7 +310,7 @@ describe('playback engine', () => {
     expect(hashJson(pb.sim)).toBe(hash);
   }, 120_000);
 
-  test('unit positions are eased between cells and never allocate per call', () => {
+  test('unit positions are eased between ticks and never allocate per call', () => {
     const pb = fresh();
     pb.start();
     pb.seekTo(250);
@@ -319,8 +319,9 @@ describe('playback engine', () => {
     expect(u).toBeDefined();
     if (u === undefined) return;
     pb.displayPos(u, out);
-    expect(Math.abs(out.x - u.x)).toBeLessThanOrEqual(1);
-    expect(Math.abs(out.y - u.y)).toBeLessThanOrEqual(1);
+    // In cells: the unit's real position, to within one tick of walking.
+    expect(Math.abs(out.x - u.px / 240)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(out.y - u.py / 240)).toBeLessThanOrEqual(0.5);
   });
 });
 
@@ -414,7 +415,7 @@ describe('sample selection hash', () => {
       const r = simulateRecord(s.battle, content, battleConfig);
       expect(r.ok).toBe(true);
     }
-  });
+  }, 60_000);
 });
 
 describe('live chart axes', () => {
