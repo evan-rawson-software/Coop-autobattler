@@ -13,12 +13,14 @@
 import {
   createGameDeps,
   createMemorySaveStore,
+  ghostContext,
   initSaves,
   type GhostStore,
   type InitSavesResult,
   type RunDeps,
   type SaveStore,
 } from '@game/session';
+import { ghostMaxSerializedSize } from '@game/core';
 import { createStore, type Store } from '../app-state.js';
 import { gameConfigs } from '../build/setup.js';
 import { content } from '../content.js';
@@ -242,7 +244,16 @@ export async function createServices(
       fallbackNote: fallbackText(storage, fallback ?? 'unavailable'),
     });
   }
-  const ghostPool = await openGhostStore(env);
+  const sizeCtx = ghostContext(runDeps);
+  const ghostPool = await openGhostStore({
+    ...env,
+    ...(sizeCtx === null
+      ? {}
+      : {
+          maxSize: (partySize: number, round: number) =>
+            ghostMaxSerializedSize(partySize, round, sizeCtx),
+        }),
+  });
   const init = await initSaves(saves, INSTALLED_VERSION, env.now(), runDeps);
   return {
     saves,

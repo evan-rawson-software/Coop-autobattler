@@ -260,11 +260,15 @@ What `session` adds:
   a late-run state). `controller.prepare(now)` (also run first by every
   `dispatch`) finishes a selection owed by a save made in between.
 - **`pvpOpponentInfo(state)`** for screens: `{ kind, label }` once fixed.
-- **Local pool limits**: one owner per install and one snapshot per owner per
-  bucket mean a local bucket holds at most one of the player's own ghosts, so
-  the draw is then among one, and the player can influence ghost versus boss
-  (clearing the pool, planting a weak run). Acceptable for the prototype;
-  tracked in issue #79 with the Steam requirements.
+- **Local pool limits**: one owner per install; the store keeps the last
+  `GHOST_KEEP_PER_OWNER_BUCKET` (5) snapshots of an owner per bucket, dropping
+  the oldest by its own save sequence number (never the clock), so a solo
+  player's draw is among their last five runs at that round. `presentCandidates`
+  validates at most `MAX_GHOST_ROWS_VALIDATED` rows per selection, walking them
+  in a fixed hash order; `list` returns at most `GHOST_LIST_LIMIT` (64) rows and
+  stores refuse oversized snapshots at write time. The logged selection is
+  unchanged, so replay and restore do not depend on the pool. See
+  `docs/rules-reference.md`, "Local pool limits" (issues #79, #84).
 
 ## Saving (W2-4)
 

@@ -70,6 +70,9 @@ decides these [PROPOSED] details: the opponent is selected on entering the shop
 before the PvP battle (MM-7, MM-11); MM-3's member exclusion is "the same run"
 only, because a local pool has a single owner; ghosts already fought are
 excluded by owner and run, so one ghost is met at most once per run (MM-3);
+the local pool keeps the player's last five runs per owner and bucket, and a
+selection validates a bounded number of rows (`docs/rules-reference.md`,
+"Local pool limits");
 invalid snapshots are filtered out before one uniform draw (MM-4, MM-17); the
 power bound is the building-value formula in `docs/rules-reference.md`,
 "Ghosts"; signatures (MM-17, TA-22a) and the run seed and action log (MM-1d)

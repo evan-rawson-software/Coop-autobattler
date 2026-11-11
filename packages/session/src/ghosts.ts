@@ -188,25 +188,76 @@ export function eligibleGhosts(
 }
 
 /**
- * What the run controller presents: the eligible, valid candidates of a pool
- * listing, at most `MAX_GHOST_CANDIDATES`. When there are more, the ones kept
- * are those with the smallest `hashJson([runId, round, key])`: an arbitrary
- * but fixed subset that differs between runs and rounds. The machine validates
- * again and draws among whatever it is given.
+ * The most rows `presentCandidates` validates in one selection, however many
+ * the pool listing holds. Validation is the costly step; the walk stops at
+ * this many rows or at `MAX_GHOST_CANDIDATES` valid ones, whichever is first.
+ */
+export const MAX_GHOST_ROWS_VALIDATED = 48;
+
+/**
+ * What the run controller presents: valid, eligible candidates of a pool
+ * listing, at most `MAX_GHOST_CANDIDATES`, found with bounded work. The
+ * eligible rows (cheap checks only: bucket, not this run, not fought, one per
+ * `ghostKey`) are put in a fixed order, by `hashJson([runId, round, key])`
+ * (ties by key), which differs between runs and rounds but is the same for
+ * the same listing. They are then validated in that order until
+ * `MAX_GHOST_CANDIDATES` are valid or `MAX_GHOST_ROWS_VALIDATED` rows have
+ * been tried. The result is in the canonical order. The machine validates
+ * again and draws among whatever it is given, and logs only that draw
+ * (`LoggedSelection`), so replay and restore never repeat this walk.
  */
 export function presentCandidates(
   raw: readonly unknown[],
   state: RunState,
   ctx: GhostValidationContext,
 ): GhostSnapshot[] {
-  const all = eligibleGhosts(raw, state, ctx);
-  if (all.length <= MAX_GHOST_CANDIDATES) return all;
-  return all
-    .map((g) => ({ g, h: hashJson([state.runId, state.round, ghostKey(g)]) }))
-    .sort((a, b) => (a.h < b.h ? -1 : a.h > b.h ? 1 : 0))
-    .slice(0, MAX_GHOST_CANDIDATES)
-    .map((x) => x.g)
-    .sort(compareGhosts);
+  const fought = new Set(state.ghostsFought);
+  const seen = new Set<string>();
+  const rows: { item: unknown; key: string; h: string }[] = [];
+  for (const item of raw) {
+    try {
+      if (!cheapEligible(item, state)) continue;
+      const r = rec(item);
+      const owner = rec(r?.['owner']);
+      const id = owner?.['id'];
+      const runId = r?.['runId'];
+      if (typeof id !== 'string' || typeof runId !== 'string') continue;
+      const key = ghostKey({ owner: { id, label: '' }, runId });
+      if (fought.has(key) || seen.has(key)) continue;
+      seen.add(key);
+      rows.push({
+        item,
+        key,
+        h: hashJson([state.runId, state.round, key]),
+      });
+    } catch {
+      // A value that throws when read is not a candidate.
+    }
+  }
+  rows.sort((a, b) =>
+    a.h !== b.h
+      ? a.h < b.h
+        ? -1
+        : 1
+      : a.key < b.key
+        ? -1
+        : a.key > b.key
+          ? 1
+          : 0,
+  );
+  const out: GhostSnapshot[] = [];
+  let tried = 0;
+  for (const row of rows) {
+    if (
+      out.length >= MAX_GHOST_CANDIDATES ||
+      tried >= MAX_GHOST_ROWS_VALIDATED
+    ) {
+      break;
+    }
+    tried++;
+    out.push(...eligibleGhosts([row.item], state, ctx));
+  }
+  return out.sort(compareGhosts);
 }
 
 /** True once the opponent of this round's PvP battle has been fixed. */

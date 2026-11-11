@@ -1,4 +1,4 @@
-import { IDBFactory } from 'fake-indexeddb';
+import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { describe, expect, test } from 'vitest';
 import { hashJson } from '@game/core';
 import {
@@ -26,6 +26,8 @@ import {
   showRun,
 } from './run-store.js';
 import { INSTALLED_VERSION, RUN_VERSION } from './version.js';
+
+Object.assign(globalThis, { IDBKeyRange });
 
 function env(idb: IDBFactory): ServiceEnv {
   return {

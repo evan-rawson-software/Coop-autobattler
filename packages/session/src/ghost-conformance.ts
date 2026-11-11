@@ -11,7 +11,7 @@
  */
 import { describe, expect, test } from 'vitest';
 import type { GhostBucket, GhostSnapshot } from '@game/core';
-import type { GhostStore } from './ghost-store.js';
+import { GHOST_KEEP_PER_OWNER_BUCKET, type GhostStore } from './ghost-store.js';
 
 function fake(
   owner: string,
@@ -44,7 +44,7 @@ export function runGhostStoreConformance(
     test('an empty store lists nothing, gets null and clears', async () => {
       const s = await makeStore();
       expect(await s.list(B)).toEqual([]);
-      expect(await s.get(B, 'ann')).toBeNull();
+      expect(await s.get(B, 'ann', 'run-a')).toBeNull();
       await s.clear();
       expect(await s.list(B)).toEqual([]);
     });
@@ -54,8 +54,9 @@ export function runGhostStoreConformance(
       const g = fake('ann', 'run-a', B);
       await s.save(g);
       expect(await s.list(B)).toEqual([g]);
-      expect(await s.get(B, 'ann')).toEqual(g);
-      expect(await s.get(B, 'bob')).toBeNull();
+      expect(await s.get(B, 'ann', 'run-a')).toEqual(g);
+      expect(await s.get(B, 'bob', 'run-a')).toBeNull();
+      expect(await s.get(B, 'ann', 'run-x')).toBeNull();
     });
 
     test('stored values are copies', async () => {
@@ -66,17 +67,68 @@ export function runGhostStoreConformance(
       const [got] = await s.list(B);
       expect((got as { lives: number }).lives).toBe(5);
       (got as { lives: number }).lives = 2;
-      expect(((await s.get(B, 'ann')) as { lives: number }).lives).toBe(5);
+      expect(
+        ((await s.get(B, 'ann', 'run-a')) as { lives: number }).lives,
+      ).toBe(5);
     });
 
-    test('one snapshot per owner per bucket: a newer one replaces it', async () => {
+    test('the same run in the same bucket is replaced, not added', async () => {
       const s = await makeStore();
       await s.save(fake('ann', 'run-a', B));
-      await s.save(fake('ann', 'run-b', B, { lives: 3 }));
+      await s.save(fake('ann', 'run-a', B, { lives: 3 }));
       const list = (await s.list(B)) as GhostSnapshot[];
       expect(list).toHaveLength(1);
-      expect(list[0]?.runId).toBe('run-b');
       expect(list[0]?.lives).toBe(3);
+    });
+
+    test('the last GHOST_KEEP_PER_OWNER_BUCKET snapshots of an owner are kept, oldest dropped', async () => {
+      const s = await makeStore();
+      const k = GHOST_KEEP_PER_OWNER_BUCKET;
+      for (let i = 1; i <= k + 1; i++) {
+        await s.save(fake('ann', `run-${String(i)}`, B));
+      }
+      await s.save(fake('bob', 'run-b', B));
+      const ids = ((await s.list(B)) as GhostSnapshot[]).map(
+        (g) => `${g.owner.id}/${g.runId}`,
+      );
+      // run-1 (the oldest save) is gone; the other owner is untouched.
+      expect(ids).toEqual([
+        'ann/run-2',
+        'ann/run-3',
+        'ann/run-4',
+        'ann/run-5',
+        'ann/run-6',
+        'bob/run-b',
+      ]);
+      expect(await s.get(B, 'ann', 'run-1')).toBeNull();
+    });
+
+    test('oldest means saved longest ago, not the smallest run id; a re-save is newest', async () => {
+      const s = await makeStore();
+      const k = GHOST_KEEP_PER_OWNER_BUCKET;
+      // Run ids in descending order: the first saved has the largest id.
+      for (let i = k; i >= 1; i--) {
+        await s.save(fake('ann', `run-${String(i)}`, B));
+      }
+      // Re-saving the oldest (run-5) makes it the newest.
+      await s.save(fake('ann', `run-${String(k)}`, B, { lives: 2 }));
+      await s.save(fake('ann', 'run-new', B));
+      const ids = ((await s.list(B)) as GhostSnapshot[]).map((g) => g.runId);
+      expect(ids).toHaveLength(k);
+      expect(ids).toContain('run-5');
+      expect(ids).toContain('run-new');
+      expect(ids).not.toContain('run-4');
+    });
+
+    test('the cap is per bucket: other buckets keep their snapshots', async () => {
+      const s = await makeStore();
+      const other: GhostBucket = { ...B, round: 3 };
+      await s.save(fake('ann', 'o-1', other));
+      for (let i = 1; i <= GHOST_KEEP_PER_OWNER_BUCKET + 1; i++) {
+        await s.save(fake('ann', `run-${String(i)}`, B));
+      }
+      expect(await s.list(other)).toHaveLength(1);
+      expect(await s.list(B)).toHaveLength(GHOST_KEEP_PER_OWNER_BUCKET);
     });
 
     test('other owners coexist, listed by owner id then run id', async () => {
@@ -109,6 +161,7 @@ export function runGhostStoreConformance(
       }
       // Replacing in one bucket leaves the others.
       await s.save(fake('ann', 'run-new', B));
+      expect(await s.list(B)).toHaveLength(2);
       for (const o of others) expect(await s.list(o)).toHaveLength(1);
     });
 
@@ -119,7 +172,7 @@ export function runGhostStoreConformance(
       await s.clear();
       expect(await s.list(B)).toEqual([]);
       expect(await s.list({ ...B, round: 5 })).toEqual([]);
-      expect(await s.get(B, 'ann')).toBeNull();
+      expect(await s.get(B, 'ann', 'run-a')).toBeNull();
       await s.save(fake('ann', 'run-c', B));
       expect(await s.list(B)).toHaveLength(1);
     });
@@ -130,7 +183,7 @@ export function runGhostStoreConformance(
       await s.save(fake('a', 'r2', B));
       await s.save(fake('"a"', 'r3', B));
       expect(await s.list(B)).toHaveLength(3);
-      expect(((await s.get(B, 'a|b')) as GhostSnapshot).runId).toBe('r1');
+      expect(((await s.get(B, 'a|b', 'r1')) as GhostSnapshot).runId).toBe('r1');
     });
   });
 }
