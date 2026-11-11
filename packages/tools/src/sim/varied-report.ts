@@ -50,6 +50,8 @@ const t0 = Date.now();
 const rows = pairs.map(([i, j], n) =>
   runVaried(ctx, boards[i] as VariedBoard, boards[j] as VariedBoard, 1 + n),
 );
+const dump = text(args, '--dump');
+if (dump !== undefined) writeFileSync(dump, JSON.stringify(rows));
 const byParty = new Map<number, typeof rows>();
 pairs.forEach(([i], n) => {
   const p = (boards[i] as VariedBoard).party;

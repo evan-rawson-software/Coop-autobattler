@@ -293,9 +293,12 @@ export class MotionScratch {
       wi = ALLY_WEIGHT[ci]?.[cj] ?? 1;
       wj = ALLY_WEIGHT[cj]?.[ci] ?? 1;
     } else {
-      // Nobody pushes a fighter of the other side; the others share.
-      wi = ci === CLASS_FIGHTER ? 0 : 1;
-      wj = cj === CLASS_FIGHTER ? 0 : 1;
+      // An enemy mover does not push a fighter (it gives way); two enemy
+      // fighters share the push, so a pair that was pressed together
+      // separates (issue #103); the others share.
+      const both = ci === CLASS_FIGHTER && cj === CLASS_FIGHTER;
+      wi = ci === CLASS_FIGHTER && !both ? 0 : 1;
+      wj = cj === CLASS_FIGHTER && !both ? 0 : 1;
     }
     const w = wi + wj;
     if (w === 0) return false;

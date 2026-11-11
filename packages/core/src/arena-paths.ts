@@ -18,6 +18,25 @@ export const NEIGHBORS: readonly (readonly [number, number])[] = [
 ];
 
 /**
+ * The eight moves of the movement field. Order does not matter: the field is
+ * a minimum and ties are broken by `tieKey`.
+ */
+export const NEIGHBORS8: readonly (readonly [number, number])[] = [
+  [0, 1],
+  [1, 0],
+  [0, -1],
+  [-1, 0],
+  [1, 1],
+  [1, -1],
+  [-1, 1],
+  [-1, -1],
+];
+
+/** Cost of an orthogonal and of a diagonal step of the movement field. */
+export const STEP_COST = 10;
+export const DIAGONAL_COST = 14;
+
+/**
  * The single predicate that says which buildings block which side's units: a
  * living building blocks every unit, except that a gate lets the units of its
  * own side through (W1-6). Movement fields, the breach field, spawn cells and
@@ -39,9 +58,11 @@ export function openFor(arena: Arena, side: number, cell: number): boolean {
 
 /**
  * Tie-break key for a cell, in the acting side's own board frame: smaller is
- * preferred ("lowest y, then lowest x" of that frame). For side 0 this is the
- * arena `y * width + x`; for side 1 it is the same on the rotated cell, which
- * keeps a mirrored battle exactly symmetric.
+ * preferred: the highest own-frame `y` first (forward, towards the enemy), then
+ * the lowest own-frame `x`. With `(ox, oy)` the cell in the side's own frame
+ * (side 0: `(x, y)`; side 1: `(W - 1 - x, H - 1 - y)`) the key is
+ * `(H - 1 - oy) * W + ox`. Using the own frame keeps a mirrored battle
+ * exactly symmetric.
  */
 export function tieKey(
   arena: Arena,
@@ -51,8 +72,27 @@ export function tieKey(
 ): number {
   const { width, height } = arena.geom;
   return side === 0
-    ? y * width + x
-    : (height - 1 - y) * width + (width - 1 - x);
+    ? (height - 1 - y) * width + x
+    : y * width + (width - 1 - x);
+}
+
+/**
+ * Whether a diagonal step from `(x, y)` by `(dx, dy)` is allowed for `side`:
+ * both orthogonal cells it passes must be open (no cutting corners).
+ */
+function diagonalOpen(
+  arena: Arena,
+  side: number,
+  x: number,
+  y: number,
+  dx: number,
+  dy: number,
+): boolean {
+  const { width } = arena.geom;
+  return (
+    openFor(arena, side, y * width + x + dx) &&
+    openFor(arena, side, (y + dy) * width + x)
+  );
 }
 
 /**
@@ -90,8 +130,10 @@ export function bestNeighbour(
 
 /**
  * One step along a movement field from cell index `here` (which must have a
- * distance `d > 0`): the neighbour with distance below `d`, smallest first,
- * ties by tie key. -1 when there is none.
+ * distance `d > 0`): among the open neighbours (8 directions, a diagonal only
+ * if both orthogonal cells are open) with a distance below `d`, the one with
+ * the smallest `dist + step cost` (10 orthogonal, 14 diagonal); ties by tie
+ * key (forward first). -1 when there is none.
  */
 export function fieldStep(
   arena: Arena,
@@ -99,18 +141,31 @@ export function fieldStep(
   field: Field,
   here: number,
 ): number {
-  const { width } = arena.geom;
+  const { width, height } = arena.geom;
+  const x = here % width;
+  const y = divFloor(here, width);
   const d = field.dist[here] ?? -1;
-  return bestNeighbour(
-    arena,
-    side,
-    here % width,
-    divFloor(here, width),
-    (c) => {
-      const v = field.dist[c] ?? -1;
-      return v >= 0 && v < d ? v : -1;
-    },
-  );
+  let best = -1;
+  let bestScore = 0;
+  let bestTie = 0;
+  for (const [dx, dy] of NEIGHBORS8) {
+    const nx = x + dx;
+    const ny = y + dy;
+    if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+    const k = ny * width + nx;
+    const v = field.dist[k] ?? -1;
+    if (v < 0 || v >= d) continue;
+    const diagonal = dx !== 0 && dy !== 0;
+    if (diagonal && !diagonalOpen(arena, side, x, y, dx, dy)) continue;
+    const score = v + (diagonal ? DIAGONAL_COST : STEP_COST);
+    const tie = tieKey(arena, side, nx, ny);
+    if (best < 0 || score < bestScore || (score === bestScore && tie < bestTie)) {
+      best = k;
+      bestScore = score;
+      bestTie = tie;
+    }
+  }
+  return best;
 }
 
 /**
@@ -154,47 +209,94 @@ export function goalBuildings(arena: Arena, side: number): ArenaBuilding[] {
 }
 
 export interface Field {
-  /** Steps to the nearest goal-adjacent cell; -1 when unreachable. */
+  /**
+   * Cost to the nearest goal-adjacent cell (10 per orthogonal and 14 per
+   * diagonal step); -1 when unreachable.
+   */
   readonly dist: Int32Array;
   /** Per building `ref`: 1 when it is in the goal set. */
   readonly isGoal: Uint8Array;
 }
 
-/** Breadth-first movement field of a side towards the enemy Core. */
+/**
+ * Movement field of a side towards the enemy Core: a least-cost map over open
+ * cells with 8 directions (orthogonal step 10, diagonal 14, a diagonal only if
+ * both orthogonal cells are open). Distance 0 for every open cell that
+ * touches a Core cell (8 neighbours), so every free side of the Core is a
+ * goal. The values are exact whatever order the cells are processed in.
+ */
 export function computeField(arena: Arena, side: number): Field {
   const { width, height } = arena.geom;
   const n = width * height;
+  assertWithin(n, 1, MAX_ARENA_CELLS, 'Field: arena cell count');
   const dist = new Int32Array(n).fill(-1);
   const isGoal = new Uint8Array(arena.buildings.length);
-  const queue = new Int32Array(n);
-  let tail = 0;
+  // Binary min-heap of packed keys `distance * 8192 + cell` (a distance is at
+  // most 14 * 8192 and a cell index below 8192: the key stays below 2^30).
+  const heap: number[] = [];
+  const push = (key: number): void => {
+    let i = heap.length;
+    heap.push(key);
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if ((heap[p] ?? 0) <= key) break;
+      heap[i] = heap[p] ?? 0;
+      i = p;
+    }
+    heap[i] = key;
+  };
+  const pop = (): number => {
+    const top = heap[0] ?? 0;
+    const last = heap.pop() ?? 0;
+    if (heap.length > 0) {
+      let i = 0;
+      for (;;) {
+        let c = 2 * i + 1;
+        if (c >= heap.length) break;
+        if (c + 1 < heap.length && (heap[c + 1] ?? 0) < (heap[c] ?? 0)) c += 1;
+        if ((heap[c] ?? 0) >= last) break;
+        heap[i] = heap[c] ?? 0;
+        i = c;
+      }
+      heap[i] = last;
+    }
+    return top;
+  };
   for (const g of goalBuildings(arena, side)) {
     isGoal[g.ref] = 1;
     for (const c of g.cells) {
-      for (const [dx, dy] of NEIGHBORS) {
+      for (const [dx, dy] of NEIGHBORS8) {
         const x = c.x + dx;
         const y = c.y + dy;
         if (x < 0 || y < 0 || x >= width || y >= height) continue;
         const k = y * width + x;
         if (dist[k] !== -1 || !openFor(arena, side, k)) continue;
         dist[k] = 0;
-        queue[tail++] = k;
+        push(k);
       }
     }
   }
-  for (let head = 0; head < tail; head++) {
-    const k = queue[head] ?? 0;
+  while (heap.length > 0) {
+    const key = pop();
+    const k = key % 8192;
+    const d = (key - k) / 8192;
+    if (d !== dist[k]) continue; // stale entry
     const x = k % width;
     const y = divFloor(k, width);
-    const d = (dist[k] ?? 0) + 1;
-    for (const [dx, dy] of NEIGHBORS) {
+    for (const [dx, dy] of NEIGHBORS8) {
       const nx = x + dx;
       const ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
       const nk = ny * width + nx;
-      if (dist[nk] !== -1 || !openFor(arena, side, nk)) continue;
-      dist[nk] = d;
-      queue[tail++] = nk;
+      if (!openFor(arena, side, nk)) continue;
+      const diagonal = dx !== 0 && dy !== 0;
+      if (diagonal && !diagonalOpen(arena, side, x, y, dx, dy)) continue;
+      const nd = d + (diagonal ? DIAGONAL_COST : STEP_COST);
+      const cur = dist[nk] ?? -1;
+      if (cur === -1 || nd < cur) {
+        dist[nk] = nd;
+        push(nd * 8192 + nk);
+      }
     }
   }
   return { dist, isGoal };
