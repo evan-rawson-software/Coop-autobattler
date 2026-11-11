@@ -180,17 +180,6 @@ describe('the push of one overlapping pair (percent 75, cap 40, radii 47 + 47)',
     expect(out).toEqual([[...A], [...B]]);
   });
 
-  test('two ally fighters push each other like any equal pair', () => {
-    const out = step([
-      { id: 1, side: 0, at: A, kind: 'fighter' },
-      { id: 2, side: 0, at: B, kind: 'fighter' },
-    ]);
-    expect(out).toEqual([
-      [987, 1000],
-      [1073, 1000],
-    ]);
-  });
-
   test('the total is capped: a deep overlap moves a pair apart by the cap, not more', () => {
     // 10 apart: overlap 84, 75 percent = 63, capped to 40: 20 each.
     const out = step([
@@ -251,30 +240,24 @@ describe('the push of one overlapping pair (percent 75, cap 40, radii 47 + 47)',
   });
 });
 
-describe('coinciding centres are separated along an axis chosen by the ids', () => {
+describe('coinciding centres are separated along both axes, the sign chosen by ids and sides', () => {
   const P: readonly [number, number] = [700, 700];
 
-  test('allies: odd id sum: y axis, the lower id towards negative (side 0)', () => {
-    const out = step([
-      { id: 1, side: 0, at: P, kind: 'idle' },
-      { id: 2, side: 0, at: P, kind: 'idle' },
-    ]);
-    // total min(40, ceil(0.75 * 94)) = 40, each 3/6: 20.
-    expect(out).toEqual([
-      [700, 680],
-      [700, 720],
-    ]);
-  });
-
-  test('allies: even id sum: x axis', () => {
-    const out = step([
-      { id: 1, side: 0, at: P, kind: 'idle' },
-      { id: 3, side: 0, at: P, kind: 'idle' },
-    ]);
-    expect(out).toEqual([
-      [680, 700],
-      [720, 700],
-    ]);
+  test('allies: the lower id towards negative, the higher towards positive (side 0), on both axes', () => {
+    for (const ids of [
+      [1, 2],
+      [1, 3],
+    ] as const) {
+      const out = step([
+        { id: ids[0], side: 0, at: P, kind: 'idle' },
+        { id: ids[1], side: 0, at: P, kind: 'idle' },
+      ]);
+      // total min(40, ceil(0.75 * 94)) = 40, each 1/2: 20.
+      expect(out).toEqual([
+        [680, 680],
+        [720, 720],
+      ]);
+    }
   });
 
   test('allies of side 1 take the sign in their own frame: the other way round', () => {
@@ -283,8 +266,8 @@ describe('coinciding centres are separated along an axis chosen by the ids', () 
       { id: 2, side: 1, at: P, kind: 'idle' },
     ]);
     expect(out).toEqual([
-      [700, 720],
-      [700, 680],
+      [720, 720],
+      [680, 680],
     ]);
   });
 
@@ -299,10 +282,10 @@ describe('coinciding centres are separated along an axis chosen by the ids', () 
         { id: ids[0], side: 0, at: P, kind: 'idle' },
         { id: ids[1], side: 1, at: P, kind: 'idle' },
       ]);
-      const axis = (ids[0] + ids[1]) % 2 === 0 ? 0 : 1;
-      expect(out[0]?.[axis]).toBe(700 + 20);
-      expect(out[1]?.[axis]).toBe(700 - 20);
-      expect(out[0]?.[1 - axis]).toBe(700);
+      expect(out).toEqual([
+        [720, 720],
+        [680, 680],
+      ]);
     }
   });
 
@@ -312,8 +295,106 @@ describe('coinciding centres are separated along an axis chosen by the ids', () 
       { id: 2, side: 1, at: P, kind: 'idle' },
     ]);
     expect(out[0]).toEqual([700, 700]);
-    // Side 1, y axis (odd sum): towards negative.
-    expect(out[1]).toEqual([700, 700 - 40]);
+    expect(out[1]).toEqual([700 - 40, 700 - 40]);
+  });
+
+  test('two allied fighters each take the whole total from each other', () => {
+    const out = step([
+      { id: 1, side: 0, at: [1000, 1000], kind: 'fighter' },
+      { id: 2, side: 0, at: [1060, 1000], kind: 'fighter' },
+    ]);
+    // Total 26 each, away from the other.
+    expect(out).toEqual([
+      [974, 1000],
+      [1086, 1000],
+    ]);
+  });
+});
+
+describe('a pile against a wall comes apart', () => {
+  /** A wall column at cell x = 6 in a 12 x 12 world. */
+  const grid = new Uint8Array(12 * 12);
+  for (let y = 0; y < 12; y++) grid[y * 12 + 6] = 1;
+  const world: World = { width: 12, height: 12, solid: [grid, grid] };
+  const face = 6 * CU;
+  type P2 = readonly [number, number];
+
+  /** Run `ticks` steps with positions carried over. */
+  function run(specs: readonly Spec[], ticks: number): [number, number][][] {
+    let cur = specs;
+    const history: [number, number][][] = [];
+    for (let t = 0; t < ticks; t++) {
+      const out = step(cur, world);
+      history.push(out);
+      cur = cur.map((u, i) => ({ ...u, at: out[i] ?? u.at }));
+    }
+    return history;
+  }
+
+  const dist = (a: P2 | undefined, b: P2 | undefined): number =>
+    Math.hypot((a?.[0] ?? 0) - (b?.[0] ?? 0), (a?.[1] ?? 0) - (b?.[1] ?? 0));
+
+  test('a coincident pair against the wall, with a crowd walking into it, separates within 3 ticks', () => {
+    // Ids 1 and 3 (even sum: the old rule pushed along x, into the wall).
+    const at: P2 = [face - 47, 1000];
+    const specs: Spec[] = [
+      { id: 1, side: 0, at, kind: 'idle' },
+      { id: 3, side: 0, at, kind: 'idle' },
+      ...[5, 7, 9].map((id, k): Spec => ({
+        id,
+        side: 0,
+        at: [face - 47 - 70, 1000 + (k - 1) * 20],
+        kind: 'mover',
+        to: [face, 1000],
+      })),
+    ];
+    const h = run(specs, 12);
+    const apart = h.findIndex((o) => dist(o[0], o[1]) >= 47);
+    expect(apart).toBeGreaterThanOrEqual(0);
+    expect(apart).toBeLessThanOrEqual(2);
+  });
+
+  test('allied fighters at the wall, with movers behind them, are not crushed together for more than a few ticks', () => {
+    const specs: Spec[] = [
+      { id: 1, side: 0, at: [face - 47, 1000], kind: 'fighter' },
+      { id: 3, side: 0, at: [face - 47, 1020], kind: 'fighter' },
+      ...[5, 7, 9, 11, 13, 15, 17, 19].map((id, k): Spec => ({
+        id,
+        side: 0,
+        at: [face - 47 - 50 - 40 * (k % 2), 980 + 25 * k],
+        kind: 'mover',
+        to: [face, 1010],
+      })),
+    ];
+    const h = run(specs, 60);
+    // Overlap deeper than half the radius sum (94): centres closer than 47.
+    const deep = h.filter((o) => dist(o[0], o[1]) < 47).length;
+    expect(deep).toBeLessThanOrEqual(4);
+  });
+
+  test('the mirror image of a coincident group gives the mirrored result', () => {
+    const rot = (v: number): number => 12 * CU - v;
+    const open = openWorld(12);
+    // Ids 1 <-> 2 and 3 <-> 4 are twins on opposite sides.
+    const a = step(
+      [
+        { id: 1, side: 0, at: [900, 700], kind: 'idle' },
+        { id: 3, side: 0, at: [900, 700], kind: 'idle' },
+        { id: 2, side: 1, at: [900, 700], kind: 'idle' },
+      ],
+      open,
+    );
+    const b = step(
+      [
+        { id: 2, side: 1, at: [rot(900), rot(700)], kind: 'idle' },
+        { id: 4, side: 1, at: [rot(900), rot(700)], kind: 'idle' },
+        { id: 1, side: 0, at: [rot(900), rot(700)], kind: 'idle' },
+      ],
+      open,
+    );
+    for (let i = 0; i < 3; i++) {
+      expect(b[i]).toEqual([rot(a[i]?.[0] ?? 0), rot(a[i]?.[1] ?? 0)]);
+    }
   });
 });
 
@@ -855,25 +936,26 @@ describe('overlap is bounded', () => {
     return { depth, percent, deepMax, deepMean: deepSum / (t1 - t0 + 1) };
   }
 
-  test('open ground: after 40 ticks no two soldiers overlap by more than 35 percent of the sum of their radii', () => {
-    // Measured over seeds 1 to 8: at most 23 percent (22 units of 94).
+  test('open ground: after 40 ticks no two soldiers overlap by more than 25 percent of the sum of their radii', () => {
+    // Measured over seeds 1 to 8: at most 20 percent (19 units of 94).
     let worst = 0;
     for (let seed = 1; seed <= 8; seed++) {
       worst = Math.max(worst, crowd(coreOnly(), seed, 2, 8, 40, 120).percent);
     }
-    expect(worst).toBeLessThanOrEqual(35);
+    expect(worst).toBeLessThanOrEqual(25);
   });
 
   test('a crush at a choke (one or two cells wide): few deep overlaps, but centres can coincide for a tick', () => {
     // Measured over seeds 1 to 8 for the whole run to tick 300 (which also
-    // includes the pile in front of the Core), of 60 soldiers: at most 26
-    // pairs overlap by more than half the radius sum at once, 1.3 on
+    // includes the pile in front of the Core), of 60 soldiers: at most 34
+    // pairs overlap by more than half the radius sum at once, 1.2 on
     // average, and the deepest overlap reaches the full radius sum for a tick
     // now and then (centres coincide, the push of a coincident pair separates
     // them in the next tick). A crowd that keeps walking into a choke
     // compresses until the push cap balances it.
     let deepMax = 0;
     let deepMean = 0;
+    let worstPct = 0;
     let runs = 0;
     for (let seed = 1; seed <= 8; seed++) {
       for (const gaps of [[5], [5, 6]]) {
@@ -881,11 +963,14 @@ describe('overlap is bounded', () => {
         deepMax = Math.max(deepMax, r.deepMax);
         deepMean += r.deepMean;
         runs += 1;
-        expect(r.percent).toBeLessThanOrEqual(100);
+        worstPct = Math.max(worstPct, r.percent);
       }
     }
-    expect(deepMax).toBeLessThanOrEqual(35);
-    expect(deepMean / runs).toBeLessThanOrEqual(2);
+    expect(deepMax).toBeLessThanOrEqual(40);
+    expect(deepMean / runs).toBeLessThanOrEqual(1.5);
+    // Centres do coincide now and then (how long pairs stay stacked is pinned
+    // on whole battles in stacking.test.ts).
+    expect(worstPct).toBe(100);
   });
 
   test('overlap is temporary: a crowd whose target is gone is clear of overlap within 20 ticks', () => {

@@ -173,7 +173,7 @@ export function buildSample(sel: SampleSelection): Sample {
     const waves = Array.from({ length: 12 }, (_, i) => ({
       tick: 20 + i * 40,
       unit: stressUnit(),
-      count: 160,
+      count: 40,
     }));
     const options = { scheduledWaves: waves, coreHealth: 5000 };
     return {

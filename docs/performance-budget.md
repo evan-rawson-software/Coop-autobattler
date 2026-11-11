@@ -38,23 +38,23 @@ packages/tools/src/sim/bench-report.ts`):
 
 | Battle                                       | Hard collision (#59) | Soft collision (#82) |
 | -------------------------------------------- | -------------------- | -------------------- |
-| One plot, 128 reference battles: speed       | 87 to 96 battles/s   | 120 to 138 battles/s |
+| One plot, 128 reference battles: speed       | 87 to 96 battles/s   | 123 to 138 battles/s |
 | One plot: longest log (JSON)                 | 438 KB               | 442 KB               |
 | One plot: longest battle                     | 3101 ticks           | 3101 ticks           |
 | One plot: peak units per side                | 32                   | 20                   |
-| Dense four plots, tier 1: wall time          | 3.5 to 4.8 s         | 0.47 to 1.1 s        |
-| Dense tier 1: ticks / peak / log             | 3101 / 699 / 2.73 MB | 1446 / 210 / 1.86 MB |
-| Dense four plots, tier 3: wall time          | 8.1 to 9.3 s         | 1.0 to 2.0 s         |
-| Dense tier 3: ticks / peak / log             | 3101 / 976 / 2.39 MB | 1742 / 564 / 5.70 MB |
-| Dense tier 1: battles per second             | 0.3                  | 3.6 to 4.1           |
+| Dense four plots, tier 1: wall time          | 3.5 to 4.8 s         | 0.47 to 1.0 s        |
+| Dense tier 1: ticks / peak / log             | 3101 / 699 / 2.73 MB | 1116 / 217 / 1.33 MB |
+| Dense four plots, tier 3: wall time          | 8.1 to 9.3 s         | 1.0 to 1.1 s         |
+| Dense tier 3: ticks / peak / log             | 3101 / 976 / 2.39 MB | 1575 / 568 / 5.09 MB |
+| Dense tier 1: battles per second             | 0.3                  | 5.0 to 5.6           |
 
 The dense stress battle (96 barracks in corridors two cells wide, mirrored
 against itself) used to run until Overload kills both Cores at tick 3100; now
-the units get through and both Cores fall to them at tick 1446 (tier 1) and
-1742 (tier 3), before Overload starts at tick 1800. Because the log records
-every fight, the tier 3 log is larger than before (5.7 MB against 2.4 MB: more
+the units get through and both Cores fall to them at tick 1116 (tier 1) and
+1575 (tier 3), before Overload starts at tick 1800. Because the log records
+every fight, the tier 3 log is larger than before (5.1 MB against 2.4 MB: more
 fighting, shorter battle). Against a weaker opponent (tier 1 against tier 3)
-the stress battle ends with a Core kill at tick 406 instead of at the end of
+the stress battle ends with a Core kill at tick 376 instead of at the end of
 the Overload decay.
 
 The cost of a tick is now in the neighbour search of the single push pass
@@ -86,14 +86,14 @@ tick on average with up to 1,220 units on the field.
 
 | Quantity                                | Budget                 | Measured (worst case) | Enforced by                                  |
 | --------------------------------------- | ---------------------- | --------------------- | -------------------------------------------- |
-| Units alive per side                    | 1,000                  | 564 (dense tier 3)    | `performance.test.ts`, exact                 |
+| Units alive per side                    | 1,000                  | 568 (dense tier 3)    | `performance.test.ts`, exact                 |
 | Battle length                           | 4,000 ticks            | 3,101                 | `performance.test.ts`, exact                 |
 | Hard cap on battle length               | `maxBattleTicks` 12,000 | never reached        | the end conditions                           |
-| One plot: battles per second (target)   | at least 100           | 120-138 (was 87-96)   | fails below 40 (about 3x)                    |
-| Four plots, dense: battles per second   | at least 5 (**not met**) | 3.6-4.1 (tier 1)    | fails below 0.8 (about 4x)                   |
-| Four plots, dense tier 3, one battle    | at most 1 s (**not met**) | 1.0-2.0 s          | fails above 6 s (about 3x)                   |
+| One plot: battles per second (target)   | at least 100           | 123-138 (was 87-96)   | fails below 40 (about 3x)                    |
+| Four plots, dense: battles per second   | at least 5             | 5.0-5.6 (tier 1)    | fails below 1.5 (about 3x)                   |
+| Four plots, dense tier 3, one battle    | at most 1 s (**not met**) | 1.0-1.1 s          | fails above 4 s (about 3x)                   |
 | Event log, one plot                     | 1 MB                   | 0.44 MB               | `performance.test.ts`, exact                 |
-| Event log, four plots                   | 8 MB (was 5 MB)        | 5.7 MB                | `performance.test.ts`, exact                 |
+| Event log, four plots                   | 8 MB (was 5 MB)        | 5.1 MB                | `performance.test.ts`, exact                 |
 
 Where the budget is written once more: the `BUDGET` constant at the top of
 `packages/tools/src/sim/performance.test.ts`. Keep the two in sync. The four
@@ -114,17 +114,17 @@ test`; about 1 minute since the dense battles take seconds, each test has a 30 t
   slower while the engine warms up).
 - _Four plots_: the dense board below mirrored against itself, tier 1, four
   seeds, best of two rounds: 9 to 16 battles per second (60 to 110 ms each)
-  before the circle model, 0.3 with hard circles and 3.6 to 4.1 with soft
+  before the circle model, 0.3 with hard circles and 5.0 to 5.6 with soft
   collision (the test uses two seeds). The tier 3 version runs twice for its
-  time (about 210 ms before the circle model, 8 s with hard circles, 1.0 to 2.0
+  time (about 210 ms before the circle model, 8 s with hard circles, 1.0 to 1.1
   s now) and, with tier 1, for the unit peak, length and log size (untimed,
   deterministic).
 
 The enforced limits are about 3 times looser than the speed measured on the
 sandbox this was written on (4 cores shared with other work, so the figures
 move by 10 to 30 percent from run to run): one plot at least 40 battles per
-second against 120 to 138 measured; dense tier 1 at least 0.8 per second
-against 3.6 to 4.1; the tier 3 stress battle under 6 s against 1.0 to 2.0 s.
+second against 123 to 138 measured; dense tier 1 at least 1.5 per second
+against 5.0 to 5.6; the tier 3 stress battle under 4 s against 1.0 to 1.1 s.
 A slow or noisy CI runner passes and a regression of several times fails. CI
 runs `pnpm -r run test`, so the package suites run in parallel and the
 benchmark competes for CPU; if a runner turns out slower than that, widen the

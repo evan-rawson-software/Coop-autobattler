@@ -144,7 +144,7 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 472
+          "endTick": 467
         },
         "summary": {
           "sides": [
@@ -165,7 +165,7 @@
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 180,
-              "coreOverkill": 6,
+              "coreOverkill": 0,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 2
@@ -205,10 +205,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "31dcced2",
-        "events": 229
+        "stateHash": "901641a8",
+        "events": 228
       },
-      "eventLogHash": "f213f972"
+      "eventLogHash": "31b5d72f"
     }
   },
   {
@@ -629,10 +629,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "2e98cbe7",
+        "stateHash": "03745c59",
         "events": 141
       },
-      "eventLogHash": "577a07c1"
+      "eventLogHash": "31d41dd7"
     }
   },
   {
@@ -780,7 +780,7 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 392
+          "endTick": 384
         },
         "summary": {
           "sides": [
@@ -841,10 +841,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "21bd4fbf",
+        "stateHash": "5af0f971",
         "events": 165
       },
-      "eventLogHash": "cd722aef"
+      "eventLogHash": "c1250c80"
     }
   },
   {
@@ -1335,7 +1335,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "03d049f5",
+        "stateHash": "b5d24b67",
         "events": 368
       },
       "eventLogHash": "d9b7dae8"
@@ -2817,10 +2817,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "5e70e995",
+        "stateHash": "7ddeb274",
         "events": 260
       },
-      "eventLogHash": "674d3b60"
+      "eventLogHash": "7cbbe86c"
     }
   },
   {
@@ -3026,7 +3026,7 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 1226
+          "endTick": 1222
         },
         "summary": {
           "sides": [
@@ -3087,10 +3087,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "a89a9503",
+        "stateHash": "40315c2c",
         "events": 388
       },
-      "eventLogHash": "45d62351"
+      "eventLogHash": "6f877ca1"
     }
   },
   {
@@ -4542,7 +4542,7 @@
         "result": {
           "winner": 1,
           "reason": "core_destroyed",
-          "endTick": 416
+          "endTick": 413
         },
         "summary": {
           "sides": [
@@ -4552,7 +4552,7 @@
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
-              "coreOverkill": 2,
+              "coreOverkill": 0,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 1
@@ -4598,10 +4598,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "d2bf16d0",
-        "events": 312
+        "stateHash": "a9934a75",
+        "events": 309
       },
-      "eventLogHash": "17180d4e"
+      "eventLogHash": "0b75858d"
     }
   }
 ]

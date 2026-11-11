@@ -49,9 +49,8 @@ const ALLY_WEIGHT = [
  * arena rotated by half a turn (both axes negated). Two units of different
  * sides: towards positive in the frame of `u`'s own side, whatever the ids
  * (so side 0 goes up the axis, side 1 down it, and the two always separate).
- * The separation axis itself (x when the sum of the two ids is even, y when
- * odd) is the same for both. Decided by the ids and the sides only, so a
- * mirrored battle stays symmetric.
+ * The push is applied along both axes with this sign. Decided by the ids and
+ * the sides only, so a mirrored battle stays symmetric.
  */
 function coincidentSign(u: MotionUnit, other: MotionUnit): number {
   const frame = u.side === 0 ? 1 : -1;
@@ -300,6 +299,12 @@ export class MotionScratch {
     }
     const w = wi + wj;
     if (w === 0) return false;
+    // Two allied fighters each take the whole total (not half), so a pair
+    // pressed against a target is not crushed together by movers behind it.
+    const div =
+      ui.side === uj.side && ci === CLASS_FIGHTER && cj === CLASS_FIGHTER
+        ? 1
+        : w;
     // The pair's total push: `percent` of the overlap, rounded up, at most
     // `pushCap`.
     const d = d2 > 0 ? isqrtFloorSmall(d2) : 0;
@@ -310,22 +315,21 @@ export class MotionScratch {
       // Each unit takes `w_self / w` of the total, away from the other.
       const qi = total * wi;
       const qj = total * wj;
-      const den = d * w;
+      const den = d * div;
       this.ax[i] = (this.ax[i] ?? 0) + awayDivSmall(dx * qi, den);
       this.ay[i] = (this.ay[i] ?? 0) + awayDivSmall(dy * qi, den);
       this.ax[j] = (this.ax[j] ?? 0) + awayDivSmall(-dx * qj, den);
       this.ay[j] = (this.ay[j] ?? 0) + awayDivSmall(-dy * qj, den);
     } else {
       // Coinciding centres: along the separation axis, see `coincidentSign`.
-      const si = coincidentSign(ui, uj) * awayDivSmall(total * wi, w);
-      const sj = coincidentSign(uj, ui) * awayDivSmall(total * wj, w);
-      if ((ui.id + uj.id) % 2 === 0) {
-        this.ax[i] = (this.ax[i] ?? 0) + si;
-        this.ax[j] = (this.ax[j] ?? 0) + sj;
-      } else {
-        this.ay[i] = (this.ay[i] ?? 0) + si;
-        this.ay[j] = (this.ay[j] ?? 0) + sj;
-      }
+      // The push goes along BOTH axes with the same sign (a wall in the way
+      // of one axis cannot hold the pair together).
+      const si = coincidentSign(ui, uj) * awayDivSmall(total * wi, div);
+      const sj = coincidentSign(uj, ui) * awayDivSmall(total * wj, div);
+      this.ax[i] = (this.ax[i] ?? 0) + si;
+      this.ay[i] = (this.ay[i] ?? 0) + si;
+      this.ax[j] = (this.ax[j] ?? 0) + sj;
+      this.ay[j] = (this.ay[j] ?? 0) + sj;
     }
     return true;
   }

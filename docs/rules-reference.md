@@ -1448,7 +1448,9 @@ exactly like the original.
        unit at the building's face, where it is in reach).
    - **d. Wait.** No action (nothing to move towards).
 
-   A unit that chose (a) or (b) holds position: it does not move this tick
+   A unit that **attacks** this tick (it chose (a), (b), or, on a sealed
+   board, attacks the building covering the next breach cell under (c)) holds
+   position: it does not move this tick
    (even when its `attackCooldown` is above 0, in which case it also does not
    attack). A unit that chose to move but cannot get anywhere (blocked by other
    units or solid ground) simply ends the tick where step 5 leaves it.
@@ -1514,8 +1516,11 @@ exactly like the original.
    **settling** of a circle of the unit's collision radius `R` and side at
    `(X, Y)` with the fallback position `F` (defined below), and `ceilDiv(a, b)
    = floor((a + b - 1) / b)` for `a >= 0`, `b > 0`.
-   1. **Classes.** A unit that chose (a) or (b) of step 3 is a **fighter**. A
-      unit that chose to move (c) and has a non-zero step `v` (below) is a
+   1. **Classes.** A unit is a **fighter** iff its action in step 3 is an
+      attack: it attacks a unit (a), the Core or goal building (b), or, on a
+      sealed board, the building covering the next breach cell (the attack
+      of rule c: "the unit attacks B (like rule b ...)"). A unit that chose to
+      move (c) without attacking and has a non-zero step `v` (below) is a
       **mover**. Every other unit (it chose d, or to move with `v = (0, 0)`)
       is **idle** (waiting).
    2. **Desire.** A unit that chose to move has a target `(tx, ty)`, a speed
@@ -1547,27 +1552,32 @@ exactly like the original.
          So a waiting ally gives way completely to a moving or fighting ally
          (it is no wall); a mover and a fighter split the push 2 : 1, the
          fighter taking the reduced share; two units of one class share
-         equally. If `wi + wj = 0` the pair is skipped.
+         equally. If `wi + wj = 0` the pair is skipped. **Exception:** two
+         allied fighters (weights 1 and 1) each take the **whole** total
+         instead of half, that is, the divisor `wi + wj` below is replaced by
+         1 for such a pair (so fighters at a target are not crushed together
+         by allied movers behind them). Call the divisor `W` (`W = wi + wj`,
+         or 1 in that case).
       2. **Amount.** `d = isqrtFloor(d^2)` (0 when the centres coincide),
          `o = R - d` (at least 1) and `total = min(C, ceilDiv(o * P, 100))`.
          If `total = 0` the pair is skipped.
       3. **Push.** With `d >= 1`, unit `i` is pushed by `(awayDiv(dx * total *
-         wi, d * (wi + wj)), awayDiv(dy * total * wi, d * (wi + wj)))` (away
-         from `j`) and unit `j` by `(awayDiv(-dx * total * wj, d * (wi +
-         wj)), awayDiv(-dy * total * wj, d * (wi + wj)))` (away from `i`).
+         wi, d * W), awayDiv(dy * total * wi, d * W))` (away from `j`) and
+         unit `j` by `(awayDiv(-dx * total * wj, d * W), awayDiv(-dy * total *
+         wj, d * W))` (away from `i`).
          (`awayDiv` rounds away from zero, so a unit that takes a non-zero
          share of a non-zero push moves at least 1 on each axis along which
          the centres differ.)
-      4. **Coinciding centres** (`d = 0`): the **separation axis** is `x` when
-         the sum of the two unit `id`s is even and `y` when odd. Unit `u` is
-         pushed along it by `sign(u) * awayDiv(total * w_u, wi + wj)`
-         (`w_u` its weight). `sign(u)` is `+1` or `-1` **in arena
+      4. **Coinciding centres** (`d = 0`): unit `u` is pushed along **both**
+         axes by the same amount, `sign(u) * awayDiv(total * w_u, W)` added to
+         its `x` and to its `y` (so a wall in the way of one axis cannot hold
+         a coincident pair together). `sign(u)` is `+1` or `-1` **in arena
          coordinates**: for two units of one side, `f` if `u` has the higher
          `id` and `-f` if the lower, where `f = +1` for side 0 and `-1` for
          side 1 (the frame of side 1 is the arena rotated by half a turn,
          both axes negated); for two units of different sides, `f` whatever
-         the ids (side 0 goes up the axis, side 1 down it). Only the ids and
-         the sides decide, so a mirrored battle stays symmetric.
+         the ids (side 0 goes up, side 1 down). Only the ids and the sides
+         decide, so a mirrored battle stays symmetric.
       All pushes are **summed per unit** (`push_u`, integers) from the
       tentative positions; no pair sees the pushes of another pair.
    4. **Apply and push out of solid ground.** The new position of a unit is
@@ -1968,10 +1978,14 @@ to CB-8c): the zone format reserves a `pointsOfInterest` list for them.
   that stops is clear of overlap within about 10 ticks), and the hard
   guarantee is only the ground one (never inside solid ground or outside the
   arena). Measured with the placeholder content (`unit-motion.test.ts`): in
-  open ground a crowd of 60 soldiers has no pair overlapping by more than 23
+  open ground a crowd of 60 soldiers has no pair overlapping by more than 20
   percent of the sum of the radii after 40 ticks; in a crush at a one or
-  two-cell choke fewer than 1.5 of 60 soldiers overlap by more than half on
-  average (at most 26 at once) and centres can coincide for a tick. A unit
+  two-cell choke about 1.2 of 60 soldiers overlap by more than half on
+  average (at most 34 at once) and centres can coincide for a moment. Over
+  whole reference battles (`stacking.test.ts`) no pair stays deeper than half
+  for more than 3 ticks, and 0.19 percent of unit-ticks are that deep; in the
+  dense four-plot battle (tier 1) the longest run is 10 ticks and 3.4 percent
+  of unit-ticks are deeper than half. A unit
   walks in a straight line to the centre of the next cell (see "Goals and
   movement fields"), so a crowd converges on cell centres; changing that is
   outside the collision rules.
@@ -2754,10 +2768,10 @@ broken as follows:
   resolved cell by cell by this rule, never by search order.
 - **Who yields when units collide:** by the weights of step 5.3.1: nobody
   pushes an enemy fighter; a waiting ally gives way completely to a moving or
-  fighting ally; a mover and a fighting ally split the push 2 : 1; anything
-  else shares equally. Coinciding centres separate along an axis chosen by
-  the parity of the id sum, towards negative for the lower id of one side and
-  by side for units of different sides.
+  fighting ally; a mover and a fighting ally split the push 2 : 1; two
+  allied fighters each take the whole push; anything else shares equally.
+  Coinciding centres separate along both axes, towards negative for the lower
+  id of one side and by side for units of different sides.
 - **Simultaneous attacks:** all damage (unit attacks and turret shots) is
   computed from the same snapshot and applied together; nobody's death during
   the tick changes another unit's or turret's action in that tick.

@@ -299,7 +299,7 @@
           "pointsOfInterest": []
         },
         "stateHash": "5c6ca7fc",
-        "events": 4793
+        "events": 4803
       }
     }
   },
@@ -1365,17 +1365,17 @@
         "result": {
           "winner": 1,
           "reason": "core_destroyed",
-          "endTick": 690
+          "endTick": 686
         },
         "summary": {
           "sides": [
             {
               "unitsSpawned": 102,
-              "unitsLost": 97,
+              "unitsLost": 92,
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
-              "coreOverkill": 18,
+              "coreOverkill": 17,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 16
@@ -1389,7 +1389,7 @@
               "coreOverkill": 0,
               "rampSteps": 30,
               "buildingDamageDealt": 500,
-              "unitsKilled": 97
+              "unitsKilled": 92
             }
           ]
         },
@@ -1410,8 +1410,8 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "88031462",
-        "events": 2931
+        "stateHash": "95313748",
+        "events": 2908
       }
     }
   },
@@ -1703,12 +1703,12 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 372
+          "endTick": 349
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 36,
+              "unitsSpawned": 32,
               "unitsLost": 0,
               "buildingsLost": 0,
               "coreHealth": 500,
@@ -1724,7 +1724,7 @@
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
-              "coreOverkill": 10,
+              "coreOverkill": 4,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0
@@ -1763,8 +1763,8 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "81eb1454",
-        "events": 416
+        "stateHash": "8e2c98ed",
+        "events": 391
       }
     }
   },
@@ -3845,7 +3845,7 @@
         "result": {
           "winner": 1,
           "reason": "core_destroyed",
-          "endTick": 1031
+          "endTick": 1032
         },
         "summary": {
           "sides": [
@@ -3855,7 +3855,7 @@
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 200000,
-              "coreOverkill": 58,
+              "coreOverkill": 64,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0
@@ -3905,10 +3905,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "a83fa133",
-        "events": 34546
+        "stateHash": "ad897fc2",
+        "events": 34547
       },
-      "eventLogHash": "5d45ccea"
+      "eventLogHash": "6f73b52e"
     }
   }
 ]

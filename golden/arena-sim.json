@@ -236,8 +236,8 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "9e861dba",
-        "events": 1424,
+        "stateHash": "9ac1cd9d",
+        "events": 1420,
         "sides": [
           {
             "spawned": 44,
@@ -257,7 +257,7 @@
           }
         ]
       },
-      "eventLogHash": "46933c70"
+      "eventLogHash": "5af92178"
     }
   },
   {
@@ -408,7 +408,7 @@
     "expected": {
       "result": {
         "tick": 1800,
-        "stateHash": "cd20a4bf",
+        "stateHash": "0e24504d",
         "events": 891,
         "sides": [
           {
@@ -429,7 +429,7 @@
           }
         ]
       },
-      "eventLogHash": "43584bd2"
+      "eventLogHash": "9d53c9f0"
     }
   },
   {
@@ -671,7 +671,7 @@
     "expected": {
       "result": {
         "tick": 2200,
-        "stateHash": "a8b46c90",
+        "stateHash": "5961aa1d",
         "events": 1099,
         "sides": [
           {
@@ -692,7 +692,7 @@
           }
         ]
       },
-      "eventLogHash": "5ca67144"
+      "eventLogHash": "d1b78d29"
     }
   },
   {
@@ -847,7 +847,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "31d88f9a",
+        "stateHash": "a3680925",
         "events": 70,
         "sides": [
           {
@@ -1043,7 +1043,7 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "8cb92a3a",
+        "stateHash": "a828da73",
         "events": 257,
         "sides": [
           {
@@ -1064,7 +1064,7 @@
           }
         ]
       },
-      "eventLogHash": "25d7ea56"
+      "eventLogHash": "f207d9a7"
     }
   },
   {
@@ -1525,8 +1525,8 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "267017d8",
-        "events": 72,
+        "stateHash": "e9e1d6a2",
+        "events": 73,
         "sides": [
           {
             "spawned": 0,
@@ -1534,19 +1534,19 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 68
+            "coreHealth": 62
           },
           {
             "spawned": 3,
             "alive": 3,
             "unitsDied": 0,
-            "buildingDamageDealt": 432,
+            "buildingDamageDealt": 438,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           }
         ]
       },
-      "eventLogHash": "f6a64779"
+      "eventLogHash": "34bd9886"
     }
   },
   {
@@ -2626,8 +2626,8 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "c42c18e9",
-        "events": 464,
+        "stateHash": "ef7aaf12",
+        "events": 465,
         "sides": [
           {
             "spawned": 0,
@@ -2635,19 +2635,19 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 188
+            "coreHealth": 182
           },
           {
             "spawned": 12,
             "alive": 2,
             "unitsDied": 10,
-            "buildingDamageDealt": 312,
+            "buildingDamageDealt": 318,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           }
         ]
       },
-      "eventLogHash": "65d612d3"
+      "eventLogHash": "4d7d09f9"
     }
   },
   {
@@ -2782,14 +2782,14 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "1f7cc9a1",
-        "events": 202,
+        "stateHash": "bbeab286",
+        "events": 215,
         "sides": [
           {
             "spawned": 6,
             "alive": 6,
             "unitsDied": 0,
-            "buildingDamageDealt": 354,
+            "buildingDamageDealt": 432,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -2799,11 +2799,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 146
+            "coreHealth": 68
           }
         ]
       },
-      "eventLogHash": "8b2763f3"
+      "eventLogHash": "10986a27"
     }
   },
   {
@@ -2938,14 +2938,14 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "315833a2",
-        "events": 139,
+        "stateHash": "26027b2f",
+        "events": 140,
         "sides": [
           {
             "spawned": 4,
             "alive": 4,
             "unitsDied": 0,
-            "buildingDamageDealt": 186,
+            "buildingDamageDealt": 192,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -2955,11 +2955,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 314
+            "coreHealth": 308
           }
         ]
       },
-      "eventLogHash": "f9db01db"
+      "eventLogHash": "9c6e4e5b"
     }
   },
   {
@@ -3407,7 +3407,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "3ea8fa6a",
+        "stateHash": "90e2c0e6",
         "events": 630,
         "sides": [
           {
@@ -3428,7 +3428,7 @@
           }
         ]
       },
-      "eventLogHash": "df570efe"
+      "eventLogHash": "5cbbe200"
     }
   },
   {
@@ -4066,7 +4066,7 @@
     "expected": {
       "result": {
         "tick": 60,
-        "stateHash": "e1cedf23",
+        "stateHash": "be80d7fa",
         "events": 22,
         "sides": [
           {
@@ -4087,10 +4087,10 @@
           }
         ],
         "positions": [
-          [1, 2663, 4922],
-          [2, 2851, 4959],
-          [3, 2740, 4985],
-          [4, 2776, 4898],
+          [1, 2641, 4953],
+          [2, 2876, 4977],
+          [3, 2729, 4993],
+          [4, 2796, 4919],
           [5, 2760, 5100]
         ]
       },
@@ -4516,8 +4516,8 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "5304d85c",
-        "events": 86,
+        "stateHash": "81738ba7",
+        "events": 87,
         "sides": [
           {
             "spawned": 12,
@@ -4537,21 +4537,21 @@
           }
         ],
         "positions": [
-          [1, 2883, 8473],
-          [2, 2820, 8544],
-          [3, 3192, 8606],
-          [4, 3006, 8611],
-          [5, 2638, 8600],
-          [6, 2901, 8604],
-          [7, 3237, 8690],
-          [8, 3146, 8493],
-          [9, 2729, 8576],
-          [10, 3098, 8589],
-          [11, 3052, 8506],
-          [12, 2959, 8529]
+          [1, 2966, 8510],
+          [2, 3128, 8593],
+          [3, 2772, 8511],
+          [4, 2920, 8593],
+          [5, 2671, 8514],
+          [6, 2726, 8593],
+          [7, 3210, 8544],
+          [8, 3074, 8516],
+          [9, 3191, 8665],
+          [10, 2824, 8593],
+          [11, 2869, 8508],
+          [12, 3015, 8593]
         ]
       },
-      "eventLogHash": "aaf52348"
+      "eventLogHash": "ae172e29"
     }
   },
   {
@@ -4772,7 +4772,7 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "c4086653",
+        "stateHash": "d7a7a4ee",
         "events": 246,
         "sides": [
           {
@@ -4793,15 +4793,15 @@
           }
         ],
         "positions": [
-          [1, 648, 1128],
-          [3, 590, 857],
-          [4, 740, 869],
-          [5, 446, 916],
-          [6, 673, 935],
-          [7, 569, 940]
+          [1, 598, 1128],
+          [3, 569, 855],
+          [4, 737, 869],
+          [5, 491, 915],
+          [6, 678, 938],
+          [7, 607, 927]
         ]
       },
-      "eventLogHash": "e29df8e2"
+      "eventLogHash": "ced4326f"
     }
   },
   {
@@ -5459,7 +5459,7 @@
     "expected": {
       "result": {
         "tick": 1,
-        "stateHash": "77b1972f",
+        "stateHash": "1f1e68fb",
         "events": 9,
         "sides": [
           {
@@ -5480,24 +5480,24 @@
           }
         ],
         "positions": [
-          [1, 800, 4140],
+          [1, 840, 4140],
           [2, 800, 4100],
           [3, 2200, 4100],
-          [4, 2200, 4140],
-          [5, 3640, 4100],
+          [4, 2240, 4140],
+          [5, 3640, 4140],
           [6, 5000, 5000],
           [7, 3600, 4100],
           [8, 5000, 4100],
-          [9, 800, 4960],
-          [10, 5040, 4100],
-          [11, 3560, 5000],
-          [12, 4960, 5000],
+          [9, 760, 4960],
+          [10, 5040, 4140],
+          [11, 3560, 4960],
+          [12, 4960, 4960],
           [13, 2200, 5000],
           [14, 800, 5000],
           [15, 3600, 5000],
-          [16, 2200, 4960],
-          [17, 2740, 4530],
-          [18, 2700, 4610],
+          [16, 2160, 4960],
+          [17, 2720, 4570],
+          [18, 2760, 4610],
           [19, 2700, 4550],
           [20, 884, 4184],
           [21, 2284, 4184],

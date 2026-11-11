@@ -31,20 +31,20 @@ const BUDGET = {
   maxLogBytesFourPlots: 8_000_000,
   /**
    * Targets on a developer machine (documented, not enforced). With soft
-   * collision (issue #82) the one-plot target is met; the dense four-plot
-   * targets are not quite (see docs/performance-budget.md).
+   * collision (issue #82) the one-plot and dense four-plot rate targets are
+   * met; the 1 s stress battle is borderline (see docs/performance-budget.md).
    */
   targetBattlesPerSecondOnePlot: 100,
   targetBattlesPerSecondFourPlots: 5,
   /**
    * Enforced floors: fail below these. Measured: 120 to 140 one-plot battles
-   * a second, 2.2 to 4.1 dense tier 1 battles a second, 1.0 to 2.0 s for the
+   * a second, 5.0 to 5.6 dense tier 1 battles a second, 1.0 to 1.1 s for the
    * tier 3 stress battle: about 3 times headroom each.
    */
   minBattlesPerSecondOnePlot: 40,
-  minBattlesPerSecondFourPlots: 0.8,
+  minBattlesPerSecondFourPlots: 1.5,
   /** Enforced ceiling for the dense tier 3 stress battle, in ms. */
-  maxStressBattleMs: 6_000,
+  maxStressBattleMs: 4_000,
 } as const;
 
 /** CI_RELAXED_TIMING=1 (set in CI) loosens the wall-time limits by 3; unset is strict. */
