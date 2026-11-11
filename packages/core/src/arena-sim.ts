@@ -36,7 +36,22 @@ import {
   type SimEvent,
 } from './flow-sim.js';
 import type { EconomyEffectType, Side } from './buildings.js';
-import { divFloor, modFloor, mulPct } from './int.js';
+import {
+  addInt,
+  addSaturating,
+  divFloor,
+  modFloor,
+  mulInt,
+  mulPct,
+} from './int.js';
+import {
+  assertWithin,
+  MAX_DAMAGE,
+  MAX_HEALTH,
+  MAX_HIT,
+  MAX_TICK_DAMAGE,
+} from './limits.js';
+import { maxHealthOf } from './max-health.js';
 import { modifierPercent } from './modifiers.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
 import type { Cell } from './map.js';
@@ -312,10 +327,21 @@ export function unitStats(
   strengthPercent = 0,
 ): UnitDef {
   if (strengthPercent === 0) return def;
+  // Scaled stats are held to the content bound (limits.ts): a strength so
+  // large that a unit would exceed it is an error, not a wrapped number.
+  const scaled = (value: number, what: string, max: number): number => {
+    const v = mulPct(value, addInt(100, strengthPercent));
+    if (v > max) {
+      throw new RangeError(
+        `Unit ${def.id}: ${what} ${String(v)} (strength ${String(strengthPercent)} percent) exceeds the maximum ${String(max)}.`,
+      );
+    }
+    return v;
+  };
   return {
     ...def,
-    health: mulPct(def.health, 100 + strengthPercent),
-    damage: mulPct(def.damage, 100 + strengthPercent),
+    health: scaled(def.health, 'scaled health', MAX_HEALTH),
+    damage: scaled(def.damage, 'scaled damage', MAX_DAMAGE),
   };
 }
 
@@ -363,16 +389,28 @@ export interface ArenaContext {
   readonly turrets: Map<number, TurretInfo>;
   readonly ramps: Map<number, RampInfo>;
   readonly flowEvents: SimEvent[][];
+  /**
+   * `ref` -> the building's maximum health (its tier's health). The breach
+   * field is built from this, never from current health (CB-20), so the
+   * cached field is a pure function of which buildings exist.
+   */
+  readonly maxHealth: Float64Array;
   /** Lazily computed, dropped whenever a building is destroyed. */
   fields: (Field | undefined)[];
-  breach: (Int32Array | undefined)[];
+  breach: (Float64Array | undefined)[];
   // Scratch buffers reused across ticks.
   heads: Int32Array[];
   next: Int32Array;
   action: Uint8Array;
   arg: Int32Array;
-  unitDamage: Int32Array;
-  buildingDamage: Int32Array;
+  /**
+   * Damage accumulated this tick. Float64Array holding integers, summed with
+   * `addDamage` (saturating at MAX_TICK_DAMAGE, each hit at most MAX_HIT, so
+   * every sum is exact; never a wrap-around, which an Int32Array would do
+   * past 2^31).
+   */
+  unitDamage: Float64Array;
+  buildingDamage: Float64Array;
 }
 
 const bkey = (side: number, id: number): number => id * 2 + side;
@@ -396,6 +434,25 @@ export function arenaOf(sim: ArenaSim, content: ArenaContent): Arena {
   return arena;
 }
 
+/** Adds one hit to the damage a target takes this tick (saturating, exact). */
+function addDamage(sum: number, hit: number): number {
+  return addSaturating(sum, hit, MAX_TICK_DAMAGE);
+}
+
+/** A turret tier's damage with the team's `turret_damage_percent`, checked. */
+function turretDamageOf(team: TeamState, damage: number): number {
+  const v = mulPct(
+    damage,
+    100 + modifierPercent(team, 'turret_damage_percent'),
+  );
+  if (v > MAX_DAMAGE) {
+    throw new RangeError(
+      `Turret damage ${String(v)} with modifiers exceeds the maximum ${String(MAX_DAMAGE)}.`,
+    );
+  }
+  return v;
+}
+
 /** Derive the context for a state (new or restored). */
 export function createArenaContext(
   sim: ArenaSim,
@@ -411,6 +468,18 @@ export function createArenaContext(
     const i = healthAt.get(bkey(b.side, b.id));
     if (i === undefined) throw new Error('Arena: building without health.');
     healthIndex[b.ref] = i;
+  }
+  // Float64Array of integers, never Int32Array: a tier health of 2^31 or more
+  // would wrap. Content health is at most MAX_HEALTH (limits.ts).
+  const maxHealth = new Float64Array(arena.buildings.length);
+  for (const b of arena.buildings) {
+    const side = b.side === 0 ? 0 : 1;
+    maxHealth[b.ref] = maxHealthOf(
+      sim.teams[side],
+      b,
+      content,
+      b.kind === 'core' ? sim.sideOptions?.[side].coreHealth : undefined,
+    );
   }
   const producers = new Map<number, ProducerInfo>();
   const turrets = new Map<number, TurretInfo>();
@@ -442,10 +511,7 @@ export function createArenaContext(
         if (tier === undefined) continue;
         turrets.set(bkey(side, p.id), {
           ref,
-          damage: mulPct(
-            tier.damage,
-            100 + modifierPercent(team, 'turret_damage_percent'),
-          ),
+          damage: turretDamageOf(team, tier.damage),
           rangeCells: tier.rangeCells,
           cooldownTicks: tier.cooldownTicks,
           costPerShot: tier.costPerShot,
@@ -471,19 +537,20 @@ export function createArenaContext(
     arena,
     flows,
     healthIndex,
+    maxHealth,
     coreRemaining,
     producers,
     turrets,
     ramps,
     flowEvents,
     fields: new Array<Field | undefined>(2 * TARGETINGS.length).fill(undefined),
-    breach: [undefined, undefined] as (Int32Array | undefined)[],
+    breach: [undefined, undefined] as (Float64Array | undefined)[],
     heads: [new Int32Array(cells), new Int32Array(cells)],
     next: new Int32Array(0),
     action: new Uint8Array(0),
     arg: new Int32Array(0),
-    unitDamage: new Int32Array(0),
-    buildingDamage: new Int32Array(arena.buildings.length),
+    unitDamage: new Float64Array(0),
+    buildingDamage: new Float64Array(arena.buildings.length),
   };
   return options.events === undefined
     ? base
@@ -513,28 +580,63 @@ export function createArenaSim(
     .sort((p, q) => p.y - q.y || p.x - q.x);
   const arena = createArena(teamA, teamB, gapRows, content, gapBlocked);
   const health: HealthSim[] = [];
-  const teams = [teamA, teamB];
+  const teams: [TeamState, TeamState] = [teamA, teamB];
   for (const b of arena.buildings) {
-    const def = content.buildings.get(b.def);
-    const placed = teams[b.side]?.buildings.find((p) => p.id === b.id);
-    const tier = b.kind === 'core' ? 0 : (placed?.tier ?? 1) - 1;
-    let hp = def?.tiers[tier]?.health ?? 0;
-    const coreOverride =
-      options.sideOptions?.[b.side === 0 ? 0 : 1]?.coreHealth;
-    if (b.kind === 'core' && coreOverride !== undefined) hp = coreOverride;
-    const team = teams[b.side === 0 ? 0 : 1];
-    if (team !== undefined) {
-      const pct =
-        b.kind === 'core'
-          ? modifierPercent(team, 'core_health_percent')
-          : modifierPercent(
-              team,
-              'building_health_percent',
-              b.defenseType ?? b.kind,
-            );
-      if (pct > 0) hp = mulPct(hp, 100 + pct);
-    }
+    const side = b.side === 0 ? 0 : 1;
+    // The one place a building's maximum health is computed (checked against
+    // the content bound); a building starts the battle at full health.
+    const hp = maxHealthOf(
+      teams[side],
+      b,
+      content,
+      b.kind === 'core' ? options.sideOptions?.[side]?.coreHealth : undefined,
+    );
     health.push({ side: b.side, building: b.id, hp });
+  }
+  // Fail at the start, not mid-battle: with the side's base strength, its
+  // strength modifiers and the largest ramp bonus it can reach (none without
+  // a unit_strength economy building), every unit type must stay within the
+  // stat bounds.
+  const maxLevel = overloadLevel(simConfig.maxBattleTicks, simConfig);
+  for (const side of [0, 1] as const) {
+    const base = options.sideOptions?.[side]?.unitStrengthPercent ?? 0;
+    assertWithin(base, 0, Number.MAX_SAFE_INTEGER, 'unitStrengthPercent');
+    const team = teams[side];
+    const hasRamp = team.buildings.some((p) => {
+      const def = content.buildings.get(p.def);
+      return def?.kind === 'economy' && def.effect.type === 'unit_strength';
+    });
+    const strength = addInt(
+      addInt(base, modifierPercent(team, 'unit_strength_percent')),
+      hasRamp ? simConfig.maxUnitStrengthPercent : 0,
+    );
+    for (const def of content.units.list()) {
+      const stats = unitStats(0, def, strength);
+      // Overload at the last possible tick scales every hit; one hit must
+      // stay within MAX_HIT so the per-tick damage sums are exact.
+      const hit = mulPct(
+        stats.damage,
+        addInt(100, mulInt(maxLevel, simConfig.overloadDamageStepPercent)),
+      );
+      assertWithin(hit, 0, MAX_HIT, `Unit ${def.id}: Overload hit`);
+    }
+  }
+  assertWithin(
+    mulInt(maxLevel, simConfig.overloadCoreDamageStep),
+    0,
+    MAX_HIT,
+    'Overload Core damage',
+  );
+  // Turret damage with modifiers: createArenaContext derives it by the same
+  // checked function; run it now so the error comes at setup.
+  for (const team of teams) {
+    for (const p of team.buildings) {
+      const def = content.buildings.get(p.def);
+      if (def?.kind === 'defense' && def.defenseType === 'turret') {
+        const tier = def.tiers[p.tier - 1];
+        if (tier !== undefined) turretDamageOf(team, tier.damage);
+      }
+    }
   }
   const producers: ProducerSim[] = [];
   for (const b of arena.buildings) {
@@ -584,10 +686,6 @@ export function createArenaSim(
 // ---------------------------------------------------------------------------
 // Fields
 
-function hpOf(sim: ArenaSim, ctx: ArenaContext, ref: number): number {
-  return sim.health[ctx.healthIndex[ref] ?? 0]?.hp ?? 0;
-}
-
 function fieldFor(
   ctx: ArenaContext,
   side: number,
@@ -602,13 +700,13 @@ function fieldFor(
   return f;
 }
 
-function breachFor(sim: ArenaSim, ctx: ArenaContext, side: number): Int32Array {
+function breachFor(ctx: ArenaContext, side: number): Float64Array {
   let f = ctx.breach[side];
   if (f === undefined) {
     f = computeBreach(
       ctx.arena,
       side,
-      (ref) => hpOf(sim, ctx, ref),
+      (ref) => ctx.maxHealth[ref] ?? 0,
       ctx.simConfig.breachBaseCost,
       ctx.simConfig.breachHealthPerCost,
     );
@@ -654,7 +752,6 @@ function defOf(ctx: ArenaContext, unit: UnitSim): UnitDef {
 // Spawning
 
 function spawnCell(
-  sim: ArenaSim,
   ctx: ArenaContext,
   side: number,
   producer: ArenaBuilding,
@@ -678,7 +775,7 @@ function spawnCell(
       let d = field.dist[k] ?? -1;
       if (d < 0) {
         cls = 1;
-        d = breachFor(sim, ctx, side)[k] ?? -1;
+        d = breachFor(ctx, side)[k] ?? -1;
         if (d < 0) {
           cls = 2;
           d = 0;
@@ -720,7 +817,7 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (unitDef === undefined) throw new Error(`Unknown unit "${info.unit}".`);
     const producer = ctx.arena.buildings[info.ref];
     if (producer === undefined) continue;
-    const k = spawnCell(sim, ctx, p.side, producer, unitDef);
+    const k = spawnCell(ctx, p.side, producer, unitDef);
     if (k < 0) continue; // no free cell: the spawn waits, progress is kept
     p.progress -= info.cost;
     const { width } = ctx.arena.geom;
@@ -943,7 +1040,7 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (target === undefined) continue;
     t.charge = 0;
     t.cooldown = info.cooldownTicks;
-    ctx.unitDamage[best] = (ctx.unitDamage[best] ?? 0) + info.damage;
+    ctx.unitDamage[best] = addDamage(ctx.unitDamage[best] ?? 0, info.damage);
     ctx.events?.push({
       tick,
       type: 'turret_fired',
@@ -1011,7 +1108,7 @@ function growScratch(ctx: ArenaContext, n: number): void {
     ctx.next = new Int32Array(size);
     ctx.action = new Uint8Array(size);
     ctx.arg = new Int32Array(size);
-    ctx.unitDamage = new Int32Array(size);
+    ctx.unitDamage = new Float64Array(size);
   }
 }
 
@@ -1161,7 +1258,7 @@ function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
   }
 
   // No route in the normal field: breach (CB-20).
-  const bd = breachFor(sim, ctx, u.side);
+  const bd = breachFor(ctx, u.side);
   const here0 = bd[here] ?? -1;
   if (here0 < 0) return; // wait
   if (here0 === 0) {
@@ -1179,7 +1276,7 @@ function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
     u.side,
     bd,
     here,
-    (r) => hpOf(sim, ctx, r),
+    (r) => ctx.maxHealth[r] ?? 0,
     base,
     per,
   );
@@ -1350,12 +1447,12 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     if (act === ACT_UNIT) {
       const t = units[arg];
       if (t === undefined) continue;
-      ctx.unitDamage[arg] = (ctx.unitDamage[arg] ?? 0) + damage;
+      ctx.unitDamage[arg] = addDamage(ctx.unitDamage[arg] ?? 0, damage);
       target = { kind: 'unit', unit: t.id };
     } else {
       const b = arena.buildings[arg];
       if (b === undefined) continue;
-      ctx.buildingDamage[arg] = (ctx.buildingDamage[arg] ?? 0) + damage;
+      ctx.buildingDamage[arg] = addDamage(ctx.buildingDamage[arg] ?? 0, damage);
       target =
         b.kind === 'core'
           ? { kind: 'core', side: b.side }
@@ -1376,7 +1473,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     for (const side of [0, 1]) {
       const ref = arena.coreRef[side] ?? -1;
       if (ref < 0 || arena.buildings[ref]?.alive !== true) continue;
-      ctx.buildingDamage[ref] = (ctx.buildingDamage[ref] ?? 0) + decay;
+      ctx.buildingDamage[ref] = addDamage(ctx.buildingDamage[ref] ?? 0, decay);
       events?.push({ tick, type: 'overload_core_damage', side, damage: decay });
     }
   }

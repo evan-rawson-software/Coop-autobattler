@@ -8,6 +8,7 @@
  */
 
 import { sortedKeys } from './hash.js';
+import { addInt } from './int.js';
 import { isRecord } from './load-util.js';
 
 /**
@@ -171,7 +172,11 @@ export interface HasModifiers {
   readonly modifiers?: readonly TeamModifier[];
 }
 
-/** Sum of the percents of effects of `kind` (and `target`, if given). */
+/**
+ * Sum of the percents of effects of `kind` (and `target`, if given), checked:
+ * a sum beyond the safe-integer bound (2^53 - 1) throws a RangeError naming
+ * the kind and the bound.
+ */
 export function modifierPercent(
   team: HasModifiers,
   kind: ModifierEffectKind,
@@ -189,7 +194,13 @@ export function modifierPercent(
       ) {
         continue;
       }
-      total += e.percent;
+      try {
+        total = addInt(total, e.percent);
+      } catch {
+        throw new RangeError(
+          `Modifier ${kind}: the percent sum must be an integer within the safe bound ${String(Number.MAX_SAFE_INTEGER)} (adding ${String(e.percent)} to ${String(total)}).`,
+        );
+      }
     }
   }
   return total;

@@ -49,7 +49,11 @@
       "required": ["coreHealth", "buildings", "corePosition"],
       "additionalProperties": false,
       "properties": {
-        "coreHealth": { "type": "integer", "minimum": 1 },
+        "coreHealth": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000000
+        },
         "corePosition": {
           "type": "object",
           "required": ["x", "y"],

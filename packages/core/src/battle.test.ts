@@ -1,5 +1,11 @@
+import { MAX_HEALTH, MAX_TICK_DAMAGE } from './limits.js';
 import { describe, expect, test } from 'vitest';
-import type { ArenaEvent, UnitSim } from './arena-sim.js';
+import { toArena } from './arena.js';
+import {
+  spawnUnitForTest,
+  type ArenaEvent,
+  type UnitSim,
+} from './arena-sim.js';
 import { simulateBattle, startBattle, type BattleResult } from './battle.js';
 import { hashJson, type Json } from './hash.js';
 import type { GameMap } from './map.js';
@@ -555,6 +561,40 @@ describe('end conditions', () => {
     }
   });
 
+  test('both damage sums saturate: the higher pre-tick Core health has less overkill and wins', () => {
+    // Sixty soldiers a side deal 60 * 9e13 > 2^52 to the enemy Core in one tick,
+    // so both sums are MAX_TICK_DAMAGE (equal). The tiebreak compares
+    // `hp - damage`, so the side with the higher pre-tick health wins.
+    for (const [hp0, hp1, winner, reason] of [
+      [1000, 900, 0, 'tiebreak_overkill'],
+      [900, 1000, 1, 'tiebreak_overkill'],
+      [1000, 1000, 1, 'tiebreak_defender'],
+    ] as const) {
+      const battle = started(coreOnly(), coreOnly());
+      setCore(battle, 0, hp0);
+      setCore(battle, 1, hp1);
+      const geom = battle.ctx.arena.geom;
+      for (const side of [0, 1]) {
+        const at = toArena(geom, 1 - side, { x: 5, y: 2 });
+        for (let k = 0; k < 60; k++) {
+          const u = spawnUnitForTest(battle.sim, battle.ctx, {
+            side,
+            def: 'unit_soldier',
+            x: at.x,
+            y: at.y,
+          });
+          u.damage = 90_000_000_000_000;
+          u.attackCooldown = 0;
+        }
+      }
+      battle.step();
+      expect(battle.result()).toEqual({ winner, reason, endTick: 1 });
+      const s = battle.summary();
+      expect(s.sides[0].coreOverkill).toBe(MAX_TICK_DAMAGE - hp0);
+      expect(s.sides[1].coreOverkill).toBe(MAX_TICK_DAMAGE - hp1);
+    }
+  });
+
   test('equal remaining health goes to side 1', () => {
     const battle = started(coreOnly(), coreOnly());
     setCore(battle, 0, 27);
@@ -590,7 +630,7 @@ describe('end conditions', () => {
     expect(r).toEqual({ winner: 1, reason: 'time_limit', endTick: 300 });
   });
 
-  test('the Core health fraction is compared by cross-multiplication', () => {
+  test('the Core health fraction is compared exactly', () => {
     // Different maxima cannot arise from the content, so check the integer
     // comparison directly through a state with unequal Core maxima: patch the
     // recorded maximum via a content variant is not possible; instead assert
@@ -604,6 +644,48 @@ describe('end conditions', () => {
     setCore(battle, 0, 125);
     setCore(battle, 1, 125);
     expect(finish(battle).winner).toBe(1);
+  });
+
+  test('the time limit compares fractions exactly with maxima near the cap', () => {
+    const noOverload: SimConfig = {
+      ...simConfig,
+      overloadStartTick: 1_000_000,
+      maxBattleTicks: 20,
+    };
+    const cfg = { sim: noOverload, mapgen };
+    const M = MAX_HEALTH;
+    // [max0, hp0, max1, hp1, winner]. The cross products are near 1e24, past
+    // 2^53, so only an exact comparison gets these right.
+    for (const [max0, hp0, max1, hp1, winner] of [
+      [M, M - 1, M - 1, M - 2, 0], // (M-1)/M > (M-2)/(M-1)
+      [M - 1, M - 2, M, M - 1, 1],
+      [M, M - 1, M - 1, M - 1, 1], // 1 - 1/M < 1
+      [M, M, M - 1, M - 1, 1], // equal fractions: side 1
+      [M, 500_000_000_000, M - 2, 499_999_999_998, 0],
+      [999_999_999_989, 499_999_999_994, M, 500_000_000_000, 1],
+      [M, 123_456_789_012, 999_999_999_999, 123_456_789_011, 0],
+    ] as const) {
+      const s = startBattle(
+        {
+          teamA: coreOnly(),
+          teamB: coreOnly(),
+          seed: 1,
+          sideOptions: [{ coreHealth: max0 }, { coreHealth: max1 }],
+        },
+        content,
+        cfg,
+        { zone: emptyZone(12) },
+      );
+      if (!s.ok) throw new Error('refused');
+      setCore(s.battle, 0, hp0);
+      setCore(s.battle, 1, hp1);
+      const r = finish(s.battle);
+      expect(r.reason).toBe('time_limit');
+      expect(
+        r.winner,
+        `${String(hp0)}/${String(max0)} vs ${String(hp1)}/${String(max1)}`,
+      ).toBe(winner);
+    }
   });
 
   test('with the real constants no battle reaches the time limit', () => {

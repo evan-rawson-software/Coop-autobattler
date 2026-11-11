@@ -40,11 +40,18 @@ export function readInt(
   min: number,
   label: string,
   errors: string[],
+  max?: number,
 ): number | undefined {
   const value = record[key];
   if (typeof value !== 'number' || !Number.isInteger(value) || value < min) {
     errors.push(
       `${label}: "${key}" must be an integer >= ${String(min)} (got ${show(value)}).`,
+    );
+    return undefined;
+  }
+  if (max !== undefined && value > max) {
+    errors.push(
+      `${label}: "${key}" must be at most ${String(max)} (got ${show(value)}).`,
     );
     return undefined;
   }
