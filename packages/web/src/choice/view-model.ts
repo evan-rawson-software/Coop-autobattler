@@ -1,0 +1,103 @@
+/**
+ * View model of the PvE difficulty choice (wireframe 7): three cards, each
+ * with the archetype and what it does in plain words, the threat level and
+ * facts, and the reward. Pure; reads the stored options of the run.
+ */
+import type { SimConfig } from '@game/core';
+import {
+  nextBattleInfo,
+  openVote,
+  type PveOptionView,
+  type RunDeps,
+  type RunState,
+} from '@game/session';
+import { clock } from '../battle/derive.js';
+import { archetypeText } from '../run/temporary-text.js';
+
+export interface PveCard {
+  readonly id: string;
+  /** "Easy", "Medium", "Hard". */
+  readonly difficulty: string;
+  readonly archetype: string;
+  readonly description: string;
+  readonly tests: string;
+  /** 1 to 3 red pips. */
+  readonly level: number;
+  readonly levelText: string;
+  /** Plain facts about the threat: units, defenses, Core, first wave. */
+  readonly facts: readonly string[];
+  readonly rewardText: string;
+  /** True when this is the player's current vote. */
+  readonly voted: boolean;
+}
+
+export interface PveChoiceView {
+  readonly round: number;
+  readonly cards: readonly PveCard[];
+  /** "Win: take the reward. Lose: no reward, and no life lost." */
+  readonly stakes: string;
+  /** "Destroy the stronghold before Overload begins at 40:00" style line. */
+  readonly deadline: string;
+  readonly overloadAt: string;
+}
+
+const LEVEL_WORDS = ['', 'Low', 'Medium', 'High'];
+
+function capital(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** The threat facts of an option, in the order a player cares about. */
+export function threatFacts(o: PveOptionView, sim: SimConfig): string[] {
+  const s = o.summary;
+  const facts = [`${String(s.totalUnits)} enemy units`];
+  if (s.walls > 0) facts.push(`${String(s.walls)} walls`);
+  if (s.turrets > 0) facts.push(`${String(s.turrets)} turrets`);
+  facts.push(`Core ${String(s.coreHealth)} health`);
+  facts.push(
+    s.firstWaveTick === null
+      ? 'no waves'
+      : `first wave at ${clock(s.firstWaveTick, sim.ticksPerSecond)}`,
+  );
+  return facts;
+}
+
+/** The Overload start as `m:ss` from the sim config (a deadline for PvE). */
+export function overloadClock(sim: SimConfig): string {
+  return clock(sim.overloadStartTick, sim.ticksPerSecond);
+}
+
+export function pveChoiceView(
+  run: RunState,
+  deps: Pick<RunDeps, 'rules' | 'rewards'>,
+  sim: SimConfig,
+  player: number,
+): PveChoiceView | null {
+  const info = nextBattleInfo(run, deps);
+  if (info === null || info.kind !== 'pve') return null;
+  const vote = openVote(run);
+  const mine = vote?.choices[player] ?? null;
+  const overloadAt = overloadClock(sim);
+  const cards = info.options.map((o): PveCard => {
+    const text = archetypeText(o.archetype);
+    return {
+      id: o.id,
+      difficulty: capital(o.difficulty),
+      archetype: text.name,
+      description: text.description,
+      tests: text.tests,
+      level: o.summary.level,
+      levelText: LEVEL_WORDS[o.summary.level] ?? String(o.summary.level),
+      facts: threatFacts(o, sim),
+      rewardText: `+${String(o.reward.gold)} gold${run.players.length > 1 ? ' each' : ''}`,
+      voted: mine === o.id,
+    };
+  });
+  return {
+    round: info.round,
+    cards,
+    stakes: 'Win: take the reward. Lose: no reward, and no life lost.',
+    deadline: `Destroy the stronghold before Overload begins (at ${overloadAt}).`,
+    overloadAt,
+  };
+}

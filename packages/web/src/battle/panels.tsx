@@ -569,12 +569,7 @@ export function BattleSummaryView(props: SummaryProps) {
 
       <Panel title="Next" id="panel-ready" class="ready-panel">
         <div class="btn-col">
-          <button
-            type="button"
-            id="watch-again"
-            disabled={props.ready}
-            onClick={props.onWatchAgain}
-          >
+          <button type="button" id="watch-again" onClick={props.onWatchAgain}>
             Watch again
           </button>
           <button

@@ -16,11 +16,8 @@ import { ME, type SessionView } from '../build/session.js';
 import { content } from '../content.js';
 import { registerDebug, unregisterDebug } from '../debug-hook.js';
 import { NotSavedNote, RestartButton, RunGate } from '../run/RunGate.js';
-import {
-  ensureShopRun,
-  optionsFromUrl,
-  type ShopRun,
-} from '../run/shop-run.js';
+import type { RunHandle } from '../run/handle.js';
+import { ensureShopRun, optionsFromUrl } from '../run/shop-run.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import './shop.css';
 import { performAction } from './actions.js';
@@ -210,7 +207,7 @@ function NextBattle(props: { view: NextBattleView | null }) {
   );
 }
 
-function ShopTab(props: { run: ShopRun }) {
+export function ShopTab(props: { run: RunHandle }) {
   const { session, deps } = props.run;
   const view: SessionView = useStore(session.store);
   const run = view.run;

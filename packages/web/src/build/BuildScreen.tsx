@@ -19,9 +19,9 @@ import type { Selection } from '../board/render.js';
 import { content } from '../content.js';
 import { registerDebug } from '../debug-hook.js';
 import { NotSavedNote, RestartButton } from '../run/RunGate.js';
-import { type ShopRun } from '../run/shop-run.js';
+import type { RunHandle } from '../run/handle.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
-import { onStepTab, stepTabs } from '../shop/tabs.js';
+import { BUILD_TAB_SCREEN, onStepTab, stepTabs } from '../shop/tabs.js';
 import { readyLabel } from '../shop/view-model.js';
 import './build.css';
 import { BuildController } from './build-controller.js';
@@ -68,7 +68,7 @@ export function BuildScreen() {
   return <BuildView shared={undefined} />;
 }
 
-export function BuildView(props: { shared: ShopRun | undefined }) {
+export function BuildView(props: { shared: RunHandle | undefined }) {
   const shared = props.shared;
   const model = useStore(ctl.model);
   const { ui, view } = model;
@@ -324,8 +324,11 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
     </span>
   );
 
+  // The first Build (before the first battle) has no shop to go with it.
   const tabs = shared
-    ? stepTabs()
+    ? step === 'build'
+      ? [{ id: BUILD_TAB_SCREEN, label: 'Build' }]
+      : stepTabs()
     : [
         { id: 'shop', label: 'Shop', disabled: true, hint: 'Coming soon' },
         { id: 'build', label: 'Build' },
@@ -470,7 +473,9 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
   return (
     <AppShell
       title={
-        run === null ? 'Build' : `Round ${String(run.round)} · Shop + Build`
+        run === null
+          ? 'Build'
+          : `Round ${String(run.round)} · ${step === 'build' ? 'Build' : 'Shop + Build'}`
       }
       tabs={tabs}
       activeTab={shared ? 'shop-build' : 'build'}

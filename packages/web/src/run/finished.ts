@@ -44,7 +44,10 @@ export function createMemoryFinishedRuns(): FinishedRuns {
   return {
     async put(record) {
       await Promise.resolve();
-      map.set(record.runId, JSON.parse(JSON.stringify(record)));
+      map.set(
+        record.runId,
+        JSON.parse(JSON.stringify(record)) as FinishedRecord,
+      );
       while (map.size > FINISHED_KEEP) {
         const first = map.keys().next();
         if (first.done === true) break;
@@ -54,7 +57,9 @@ export function createMemoryFinishedRuns(): FinishedRuns {
     async get(runId) {
       await Promise.resolve();
       const v = map.get(runId);
-      return v === undefined ? null : JSON.parse(JSON.stringify(v));
+      return v === undefined
+        ? null
+        : (JSON.parse(JSON.stringify(v)) as FinishedRecord);
     },
   };
 }

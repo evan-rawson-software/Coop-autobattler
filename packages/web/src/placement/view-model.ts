@@ -1,0 +1,159 @@
+/**
+ * View model of the Core placement screen: whether the Core may stand on a
+ * cell and why not in plain words, the enemy routes to a candidate position,
+ * and the starting kit. Pure: the rules answer in `core`
+ * (`validateCorePosition`, `previewEnemyPaths`); this only words them.
+ */
+import {
+  coreFootprint,
+  listLegalCorePositions,
+  placeCore,
+  previewEnemyPaths,
+  validateCorePosition,
+  type Cell,
+  type CorePositionProblem,
+  type EconomyConfig,
+  type EnemyPath,
+  type SimConfig,
+  type TeamState,
+} from '@game/core';
+import type { WebContent } from '../content.js';
+import { buildingName } from '../build/view-model.js';
+
+export interface Verdict {
+  readonly ok: boolean;
+  readonly problem: CorePositionProblem | null;
+  /** Plain words for the problem; null when the position is legal. */
+  readonly text: string | null;
+  /** The cells the Core would cover. */
+  readonly cells: readonly Cell[];
+}
+
+export function problemText(
+  problem: CorePositionProblem,
+  size: { width: number; height: number },
+): string {
+  const dims = `${String(size.width)} × ${String(size.height)}`;
+  switch (problem) {
+    case 'out_of_bounds':
+      return `The Core is ${dims} and would hang over the edge of the board.`;
+    case 'blocked':
+      return 'Water and cliffs cannot be built on, so the Core cannot sit on them.';
+    case 'on_node':
+      return 'A resource node is under part of the Core. Nodes are kept for extractors.';
+    case 'too_far_forward':
+      return 'Too close to the front edge, where enemy units arrive.';
+  }
+}
+
+/** Two or three words for a label on the board. */
+export function shortProblem(problem: CorePositionProblem): string {
+  switch (problem) {
+    case 'out_of_bounds':
+      return 'Off the board';
+    case 'blocked':
+      return 'Water or cliff';
+    case 'on_node':
+      return 'Resource node';
+    case 'too_far_forward':
+      return 'Too close to the front';
+  }
+}
+
+/** The cells the Core covers with its lowest-x, lowest-y cell at `pos`. */
+export function coreCells(content: WebContent, pos: Cell): Cell[] {
+  const fp = coreFootprint(content.buildings);
+  const cells: Cell[] = [];
+  for (let dy = 0; dy < fp.height; dy++) {
+    for (let dx = 0; dx < fp.width; dx++) {
+      cells.push({ x: pos.x + dx, y: pos.y + dy });
+    }
+  }
+  return cells;
+}
+
+/** Whether the Core may stand at `pos`, and if not, why. */
+export function verdictAt(
+  team: TeamState,
+  content: WebContent,
+  pos: Cell,
+): Verdict {
+  const fp = coreFootprint(content.buildings);
+  const r = validateCorePosition(team.map, content, content.mapgen, pos);
+  return {
+    ok: r.ok,
+    problem: r.ok ? null : r.reason,
+    text: r.ok ? null : problemText(r.reason, fp),
+    cells: coreCells(content, pos),
+  };
+}
+
+/** Every legal position, as a lookup by `y * width + x`. */
+export function legalSet(team: TeamState, content: WebContent): Set<number> {
+  const w = team.map.width;
+  return new Set(
+    listLegalCorePositions(team.map, content, content.mapgen).map(
+      (c) => c.y * w + c.x,
+    ),
+  );
+}
+
+/**
+ * Drop the cells of paths that lie outside the board. Core can return cells
+ * beyond the front row (a known bug, issue #32); the screen draws only the
+ * board.
+ */
+export function clipPaths(
+  paths: readonly EnemyPath[],
+  width: number,
+  height: number,
+): EnemyPath[] {
+  const inside = (c: Cell): boolean =>
+    c.x >= 0 && c.y >= 0 && c.x < width && c.y < height;
+  return paths
+    .filter((p) => inside(p.entry))
+    .map((p) => ({
+      ...p,
+      cells: p.cells.filter(inside),
+      breach: p.breach !== null && inside(p.breach.cell) ? p.breach : null,
+    }));
+}
+
+/**
+ * The routes enemy units would take to a Core placed at `pos`, or null if the
+ * position is not legal. The preview runs on a copy of the board with the Core
+ * put there; the run itself is untouched.
+ */
+export function routesFor(
+  team: TeamState,
+  content: WebContent,
+  sim: SimConfig,
+  pos: Cell,
+): EnemyPath[] | null {
+  const placed = placeCore(team, content, content.mapgen, pos);
+  if (!placed.ok) return null;
+  try {
+    return clipPaths(
+      previewEnemyPaths(placed.state, content, sim),
+      team.map.width,
+      team.map.height,
+    );
+  } catch {
+    return null;
+  }
+}
+
+export interface KitRow {
+  readonly key: string;
+  readonly text: string;
+}
+
+/** The starting kit: "Extractor × 2", ..., "10 gold". Names from content. */
+export function kitRows(economy: EconomyConfig, content: WebContent): KitRow[] {
+  const rows: KitRow[] = economy.startingKit.map((k) => ({
+    key: `${k.def}:${String(k.tier)}`,
+    text: `${buildingName(content, k.def)}${k.tier > 1 ? ` (tier ${String(k.tier)})` : ''} × ${String(k.count)}`,
+  }));
+  rows.push({ key: 'gold', text: `${String(economy.startingGold)} gold` });
+  return rows;
+}

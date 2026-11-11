@@ -22,10 +22,7 @@ export type RunScreenId =
 export type ShopTab = 'shop' | 'shop_build';
 
 /** The screen for a step. In the shop step `tab` picks Shop or Build. */
-export function screenForStep(
-  step: Step,
-  tab: ShopTab = 'shop',
-): RunScreenId {
+export function screenForStep(step: Step, tab: ShopTab = 'shop'): RunScreenId {
   switch (step) {
     case 'core_placement':
       return 'core';

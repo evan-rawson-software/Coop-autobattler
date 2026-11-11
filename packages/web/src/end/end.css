@@ -1,0 +1,118 @@
+/* Run over. Plain CSS on the shared custom properties. */
+
+.run-over {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 0.9rem 1.25rem;
+}
+
+.over-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 1.1rem;
+  flex: none;
+}
+
+.over-head h2 {
+  margin: 0;
+  font-size: 1.9rem;
+}
+
+.over-head p {
+  margin: 0.2rem 0 0;
+}
+
+.best {
+  font-size: 1.05rem;
+}
+
+.best.new {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.over-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 1.2fr);
+  gap: 0.8rem;
+  flex: 1 1 auto;
+  min-height: 14rem;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0;
+}
+
+.stats dt {
+  color: var(--ink-muted);
+}
+
+.stats dt.sub {
+  padding-left: 1rem;
+}
+
+.stats dd {
+  margin: 0;
+}
+
+.final-board {
+  position: relative;
+  height: 15rem;
+  background: var(--board-bg);
+  border: 1px solid var(--border);
+}
+
+.rounds {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rounds th,
+.rounds td {
+  padding: 0.2rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.rounds td.won {
+  color: var(--ok);
+}
+
+.rounds td.lost {
+  color: var(--bad);
+}
+
+.over-next {
+  flex: none;
+  padding: 0.7rem 1.1rem;
+}
+
+.over-buttons {
+  display: flex;
+  gap: 0.7rem;
+  margin-bottom: 0.5rem;
+}
+
+.over-buttons button {
+  min-width: 9rem;
+  padding: 0.55rem 1rem;
+}
+
+.over-next p {
+  margin: 0.2rem 0;
+}
+
+@media (max-width: 1100px) {
+  .over-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

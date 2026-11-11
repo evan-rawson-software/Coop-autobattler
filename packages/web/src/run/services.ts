@@ -77,19 +77,20 @@ export function gameDeps(): RunDeps {
 }
 
 export function browserEnv(): ServiceEnv {
-  let idb: IDBFactory | null = null;
-  try {
-    idb = typeof indexedDB === 'undefined' ? null : indexedDB;
-  } catch {
-    idb = null;
-  }
+  const idb = (): IDBFactory | null => {
+    try {
+      return typeof indexedDB === 'undefined' ? null : indexedDB;
+    } catch {
+      return null;
+    }
+  };
   return {
-    indexedDB: idb,
+    indexedDB: idb(),
     localStorage: browserStorage(),
     broadcast:
       typeof BroadcastChannel === 'undefined'
         ? null
-        : (name) => new BroadcastChannel(name) as unknown as BroadcastLike,
+        : (name) => new BroadcastChannel(name),
     window: typeof window === 'undefined' ? null : window,
     now: () => Date.now(),
     tabId: `${String(Date.now())}-${Math.random().toString(36).slice(2, 8)}`,

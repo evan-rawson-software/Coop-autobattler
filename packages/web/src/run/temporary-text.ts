@@ -36,8 +36,7 @@ export const ARCHETYPE_TEXT: Readonly<Record<string, ArchetypeText>> = {
   },
   arch_escalator: {
     name: 'Escalator',
-    description:
-      'Waves that grow quickly, behind a line of walls and turrets.',
+    description: 'Waves that grow quickly, behind a line of walls and turrets.',
     tests: 'speed',
   },
   arch_boss: {

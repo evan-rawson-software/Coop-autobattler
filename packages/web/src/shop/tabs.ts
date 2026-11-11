@@ -1,9 +1,15 @@
 /** The two tabs of the Shop + Build step, shared by both screens. */
-import { screenStore } from '../app-state.js';
+import { createStore, screenStore } from '../app-state.js';
 import type { TabDef } from '../shell/AppShell.js';
 
 export const SHOP_SCREEN = 'shop';
 export const BUILD_TAB_SCREEN = 'shop-build';
+
+/**
+ * The tab shown in the real run (the run screen holds both tabs of the shop
+ * step). On the sample routes each tab is a screen of its own instead.
+ */
+export const stepTabStore = createStore<string>(SHOP_SCREEN);
 
 export function stepTabs(): TabDef[] {
   return [
@@ -13,5 +19,6 @@ export function stepTabs(): TabDef[] {
 }
 
 export function onStepTab(id: string): void {
-  screenStore.set(id);
+  if (screenStore.get() === 'run') stepTabStore.set(id);
+  else screenStore.set(id);
 }

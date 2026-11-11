@@ -37,7 +37,6 @@ import {
   type StorageLike,
 } from './local-storage-store.js';
 
-
 export interface ShopRun {
   readonly session: BuildSession;
   readonly deps: RunDeps;

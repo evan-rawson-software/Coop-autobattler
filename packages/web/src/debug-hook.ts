@@ -23,8 +23,33 @@ export interface DebugHook {
   build?: BuildDebug;
   shop?: ShopDebug;
   battle?: BattleDebug;
+  run?: RunDebug;
+  placement?: PlacementDebug;
+  menu?: MenuDebug;
   /** Terrain cells of the neutral strip that are currently drawn. */
   neutralFeatureCount?: () => number;
+}
+
+/** Read-only view of the run behind the run screens, for the smoke script. */
+export interface RunDebug {
+  /** The screen the router chose (`core`, `pve_choice`, ...). */
+  screen: () => string;
+  /** Plain data: run id, step, round, lives, gold, action count, state hash. */
+  state: () => unknown;
+}
+
+/** Read-only view of the Core placement screen for the smoke script. */
+export interface PlacementDebug {
+  legal: () => readonly { x: number; y: number }[];
+  cellToScreen: (x: number, y: number) => { x: number; y: number } | null;
+  selected: () => { x: number; y: number } | null;
+  pathCount: () => number;
+}
+
+/** Read-only view of the main menu for the smoke script. */
+export interface MenuDebug {
+  storage: () => string;
+  runIds: () => readonly string[];
 }
 
 /** Read-only view of the Battle screen for the smoke script. */

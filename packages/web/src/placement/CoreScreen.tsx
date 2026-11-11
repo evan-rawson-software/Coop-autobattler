@@ -1,0 +1,249 @@
+/**
+ * The Core placement screen (wireframe 6): the whole map, the positions where
+ * the Core fits, the reason it does not fit elsewhere, the routes enemy units
+ * would take to the chosen position, and Confirm. After Confirm the Core
+ * cannot be moved: the machine leaves `core_placement` and no later step
+ * accepts a Core move.
+ *
+ * Solo: confirming sends `propose_core`, which the party's single vote
+ * settles at once. The legal positions and the reasons come from `core`.
+ */
+import type { Cell } from '@game/core';
+import { coreFootprint } from '@game/core';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useStore } from '../app-state.js';
+import { BoardView, type OverlayContext } from '../board/BoardView.js';
+import { CameraController } from '../board/controller.js';
+import { cellToView } from '../board/layout.js';
+import { economy, simConfig } from '../build/setup.js';
+import { reasonMessage } from '../build/reasons.js';
+import { content } from '../content.js';
+import { registerDebug, unregisterDebug } from '../debug-hook.js';
+import type { RunHandle } from '../run/handle.js';
+import { AppShell, Panel } from '../shell/AppShell.js';
+import { drawCoreOverlay, type Candidate } from './overlay.js';
+import { kitRows, legalSet, routesFor, verdictAt } from './view-model.js';
+
+const camera = new CameraController();
+camera.resetPreset = 'fit';
+camera.refitOnResize = true;
+
+export function CoreScreen(props: { run: RunHandle }) {
+  const { session } = props.run;
+  const view = useStore(session.store);
+  const team = view.run.team;
+  const [hover, setHover] = useState<Cell | null>(null);
+  const [selected, setSelected] = useState<Cell | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+  const selectedRef = useRef<Cell | null>(null);
+  selectedRef.current = selected;
+  const fp = useMemo(() => coreFootprint(content.buildings), []);
+
+  const legal = useMemo(() => legalSet(team, content), [team]);
+  const hoverCand: Candidate | null = useMemo(
+    () =>
+      hover === null
+        ? null
+        : { pos: hover, verdict: verdictAt(team, content, hover) },
+    [team, hover],
+  );
+  const selectedCand: Candidate | null = useMemo(
+    () =>
+      selected === null
+        ? null
+        : { pos: selected, verdict: verdictAt(team, content, selected) },
+    [team, selected],
+  );
+  // Routes follow the pointer while it is over a legal position, else the choice.
+  const previewPos =
+    hoverCand?.verdict.ok === true ? hoverCand.pos : (selected ?? null);
+  const paths = useMemo(
+    () =>
+      previewPos === null
+        ? null
+        : routesFor(team, content, simConfig, previewPos),
+    [team, previewPos],
+  );
+
+  const data = useRef({ legal, hoverCand, selectedCand, paths, team });
+  data.current = { legal, hoverCand, selectedCand, paths, team };
+  const drawOverlay = useRef(
+    (ctx: CanvasRenderingContext2D, o: OverlayContext) => {
+      const d = data.current;
+      drawCoreOverlay(ctx, o, {
+        team: d.team,
+        legal: d.legal,
+        hover: d.hoverCand,
+        selected: d.selectedCand,
+        paths: d.paths,
+      });
+    },
+  );
+
+  useEffect(() => {
+    registerDebug({
+      placement: {
+        legal: () =>
+          [...data.current.legal].map((k) => ({
+            x: k % data.current.team.map.width,
+            y: Math.floor(k / data.current.team.map.width),
+          })),
+        cellToScreen: (x, y) => {
+          const el = wrap.current?.querySelector('canvas');
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          const frame = {
+            id: 'own' as const,
+            w: data.current.team.map.width,
+            h: data.current.team.map.height,
+            ox: 0,
+            oy: 0,
+            turned: false,
+          };
+          const v = cellToView(frame, x, y);
+          const cam = camera.camera;
+          const vp = camera.viewport;
+          return {
+            x: r.left + (v.x + 0.5 - cam.cx) * cam.zoom + vp.w / 2,
+            y: r.top + (v.y + 0.5 - cam.cy) * cam.zoom + vp.h / 2,
+          };
+        },
+        selected: () => selectedRef.current,
+        pathCount: () => data.current.paths?.length ?? 0,
+      },
+    });
+    return () => {
+      unregisterDebug('placement');
+    };
+  }, []);
+  const onSelect = (cell: Cell): void => {
+    const v = verdictAt(team, content, cell);
+    if (v.ok) {
+      setSelected(cell);
+      setProblem(null);
+    } else {
+      setProblem(v.text);
+    }
+  };
+
+  const confirm = (): void => {
+    if (selected === null || busy) return;
+    setBusy(true);
+    void session
+      .dispatch({ type: 'propose_core', x: selected.x, y: selected.y })
+      .then((r) => {
+        setBusy(false);
+        if (!r.ok) setProblem(reasonMessage(r.reason, r.detail));
+      });
+  };
+
+  const shownText =
+    hoverCand !== null
+      ? hoverCand.verdict.ok
+        ? 'The Core fits here. Click to choose this spot.'
+        : hoverCand.verdict.text
+      : null;
+  const kit = kitRows(economy, content);
+  const routeCount = paths?.length ?? 0;
+
+  return (
+    <AppShell
+      title="New run · Place the Core"
+      right={
+        <Panel title="The Core" id="panel-core">
+          <p>
+            Pick a {fp.width} × {fp.height} spot for your Core. It cannot be
+            moved for the rest of the run.
+          </p>
+          <p class="muted">
+            Deep is safer. Forward shortens your supply lines.
+          </p>
+          <ul class="legend-list" aria-label="Map key">
+            <li>
+              <span class="swatch ok" aria-hidden="true" /> Green: the Core fits
+              there
+            </li>
+            <li>
+              <span class="swatch bad" aria-hidden="true" /> Red: it does not
+              fit (point at a cell to see why)
+            </li>
+            <li>
+              <span class="swatch path" aria-hidden="true" /> Dashed: where
+              enemy units walk to reach the Core
+            </li>
+          </ul>
+          <p
+            class={
+              hoverCand !== null && !hoverCand.verdict.ok
+                ? 'core-hint bad'
+                : 'core-hint'
+            }
+            id="core-hint"
+            data-field="core-hint"
+            role="status"
+          >
+            {problem ??
+              shownText ??
+              (selected === null
+                ? 'Point at the map to try a position.'
+                : `Chosen: column ${String(selected.x)}, row ${String(selected.y)}.`)}
+          </p>
+          {previewPos === null ? null : (
+            <p class="muted" data-field="route-count">
+              {routeCount === 0
+                ? 'No enemy route reaches this position.'
+                : `${String(routeCount)} enemy ${routeCount === 1 ? 'route' : 'routes'} shown for this position.`}
+            </p>
+          )}
+          <button
+            type="button"
+            id="core-confirm"
+            class="primary"
+            disabled={selected === null || busy}
+            onClick={confirm}
+          >
+            Confirm Core position
+          </button>
+        </Panel>
+      }
+      bottom={
+        <Panel title="Starting kit · in your stash when the run begins">
+          <ul class="kit-list" id="starting-kit">
+            {kit.map((k) => (
+              <li key={k.key}>{k.text}</li>
+            ))}
+          </ul>
+          <p class="muted">
+            After the Core is confirmed you go to the Build screen, then to the
+            first PvE battle.
+          </p>
+        </Panel>
+      }
+    >
+      <div class="core-board" ref={wrap}>
+        <BoardView
+          content={content}
+          own={team}
+          controller={camera}
+          resetKey={`${view.run.runId}:core`}
+          frontLabel="FRONT EDGE · enemy units enter here"
+          cursor="crosshair"
+          drawOverlay={drawOverlay.current}
+          overlayKey={`${String(hover?.x)},${String(hover?.y)}|${String(selected?.x)},${String(selected?.y)}|${String(paths?.length)}`}
+          onHover={(hit) => {
+            setHover(
+              hit === null || hit.board !== 'own'
+                ? null
+                : { x: hit.x, y: hit.y },
+            );
+          }}
+          onSelect={(s) => {
+            if (s !== null && s.board === 'own') onSelect({ x: s.x, y: s.y });
+          }}
+        />
+      </div>
+    </AppShell>
+  );
+}

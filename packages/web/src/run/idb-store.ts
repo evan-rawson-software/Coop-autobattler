@@ -166,7 +166,9 @@ export async function openIndexedDbStores(
           const vs = values.result as unknown[];
           done(
             ks
-              .map((k, i) => summarizeStored(String(k), vs[i]))
+              .map((k, i) =>
+                summarizeStored(typeof k === 'string' ? k : '', vs[i]),
+              )
               .sort(compareListItems),
           );
         };
@@ -187,40 +189,45 @@ export async function openIndexedDbStores(
       if (typeof runId !== 'string' || runId === '') {
         throw new Error('put: record has no runId');
       }
-      let stale = false;
+      const flags = { stale: false };
       try {
-        await transact<void>(db, [SAVES], 'readwrite', (tx, _done, abort) => {
-          const os = tx.objectStore(SAVES);
-          const read = os.get(runId);
-          read.onsuccess = () => {
-            if (options.rejectStale === true) {
-              const have = (
-                read.result as { actionCounter?: unknown } | undefined
-              )?.actionCounter;
-              const next = (record as { actionCounter?: unknown })
-                .actionCounter;
-              if (
-                typeof have === 'number' &&
-                typeof next === 'number' &&
-                have >= next
-              ) {
-                stale = true;
-                abort(new StaleSaveError());
-                return;
+        await transact<undefined>(
+          db,
+          [SAVES],
+          'readwrite',
+          (tx, _done, abort) => {
+            const os = tx.objectStore(SAVES);
+            const read = os.get(runId);
+            read.onsuccess = () => {
+              if (options.rejectStale === true) {
+                const have = (
+                  read.result as { actionCounter?: unknown } | undefined
+                )?.actionCounter;
+                const next = (record as { actionCounter?: unknown })
+                  .actionCounter;
+                if (
+                  typeof have === 'number' &&
+                  typeof next === 'number' &&
+                  have >= next
+                ) {
+                  flags.stale = true;
+                  abort(new StaleSaveError());
+                  return;
+                }
               }
-            }
-            os.put(record, runId);
-          };
-        });
+              os.put(record, runId);
+            };
+          },
+        );
       } catch (e) {
-        if (stale) options.onStale?.(runId);
+        if (flags.stale) options.onStale?.(runId);
         throw e;
       }
       options.onWritten?.(runId);
     },
 
     async remove(runId: string): Promise<void> {
-      await transact<void>(db, [SAVES], 'readwrite', (tx) => {
+      await transact<undefined>(db, [SAVES], 'readwrite', (tx) => {
         tx.objectStore(SAVES).delete(runId);
       });
       options.onWritten?.(runId);
@@ -229,7 +236,7 @@ export async function openIndexedDbStores(
     listHistory,
 
     appendHistory(entry: HistoryEntry): Promise<void> {
-      return transact<void>(db, [HISTORY], 'readwrite', (tx) => {
+      return transact<undefined>(db, [HISTORY], 'readwrite', (tx) => {
         const os = tx.objectStore(HISTORY);
         const found = os.index('runId').getKey(entry.runId);
         found.onsuccess = () => {
@@ -245,7 +252,7 @@ export async function openIndexedDbStores(
 
   const finished: FinishedRuns = {
     put(record: FinishedRecord): Promise<void> {
-      return transact<void>(db, [FINISHED], 'readwrite', (tx) => {
+      return transact<undefined>(db, [FINISHED], 'readwrite', (tx) => {
         const os = tx.objectStore(FINISHED);
         os.put(record, record.runId);
         // Keep the newest few: drop the oldest by `finishedAt` beyond the cap.
