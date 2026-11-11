@@ -1690,7 +1690,7 @@ stepPercent` (the building's tier value). The side's **bonus** `P` is the raw
 total capped: `P = min(raw, cap)` with `cap = maxSourceSpeedPercent` for
 `source_speed` and `maxUnitStrengthPercent` for `unit_strength` (both 300 at
 the moment). The total is recomputed whenever it is read. A building leaves
-the sum the moment it is destroyed (raiding ramp buildings matters, CB-15);
+the sum the moment it is destroyed (destroying ramp buildings weakens the enemy's ramp for the rest of the battle);
 what it already did stays: running source countdowns and units already
 spawned keep their values. Each building is also limited by its own
 `maxSteps`, so the ramp has two limits: per building and per side and effect.
@@ -1900,7 +1900,7 @@ blocks it), an entry `{entry: {x, y}, cells, approach, breach}`:
   pass a wall in the front row) are listed in `approach`, in walk order, and
   are left out of `cells`, whose consecutive on-board cells are then not
   adjacent. The Build screen can ignore `approach`. If the entry has a distance in the movement field of an enemy
-  Core-targeting unit (side 1, `core`), the unit takes `fieldStep` (the
+  unit heading for the Core (side 1, field `core`), the unit takes `fieldStep` (the
   neighbour with a smaller field distance, ties by tie key) until the distance
   is 0; the last cell is the one beside the Core and `breach` is `null`.
 - Otherwise (sealed) it follows the breach field: while the breach distance of

@@ -272,9 +272,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   geometry" and the battle tick).
 - **CB-15** **Targeting.** Every unit heads for the enemy Core by the
   shortest open path and attacks what blocks it. No unit type prefers
-  buildings: killing infrastructure matters (destroying a source or a junction
-  cripples the enemy's ramp for the rest of the battle), but only because it
-  stands in the way of a breach, never because a unit chose it. Conduits
+  buildings: destroying a source or a junction cripples the enemy's ramp for
+  the rest of the battle, but a building other than the Core is only attacked when it
+  blocks the way (a breach), never because a unit chose it. Conduits
   themselves are never targets (CB-3h). (Issue #66 removed the earlier
   per-type preferences.)
 - **CB-16 [DECIDED]** **Units fight units.** Opposing units that meet engage

@@ -1,6 +1,6 @@
 /**
- * Enemy-path preview (W1-6, CB-43): the route an enemy Core-targeting unit
- * would take from each front-row entry cell to a board's Core. It runs the
+ * Enemy-path preview (W1-6, CB-43): the route an enemy unit (they all head for the
+ * Core) would take from each front-row entry cell to a board's Core. It runs the
  * same field and breach code as the battle simulation (`computeField`,
  * `computeBreach`, `fieldStep`, `breachStep`); there is no second pathfinder.
  * See docs/rules-reference.md, "Enemy-path preview".
