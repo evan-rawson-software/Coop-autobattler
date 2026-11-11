@@ -8,6 +8,7 @@ import { initSaves, openRun } from './run-controller.js';
 import { buildSaveRecord, classifySave, type SaveRecord } from './save.js';
 import { createMemorySaveStore } from './save-store-memory.js';
 import { content, mapgenConfig, runArgs } from './test-support.js';
+import type { SaveStore } from './save.js';
 
 const deps = createEconomyDeps(
   content,
@@ -173,5 +174,86 @@ describe('initSaves classifies like openRun (issue #68)', () => {
       failed: [],
     });
     expect(await store.listHistory()).toHaveLength(1);
+  });
+});
+
+/** A store whose chosen method rejects (a fake for a failing disk). */
+function failing(
+  inner: ReturnType<typeof createMemorySaveStore>,
+  method: 'appendHistory' | 'remove',
+  fail: { on: boolean },
+): SaveStore {
+  return {
+    list: () => inner.list(),
+    get: (id) => inner.get(id),
+    put: (r) => inner.put(r),
+    remove: (id) =>
+      fail.on && method === 'remove'
+        ? Promise.reject(new Error('disk'))
+        : inner.remove(id),
+    listHistory: () => inner.listHistory(),
+    appendHistory: (e) =>
+      fail.on && method === 'appendHistory'
+        ? Promise.reject(new Error('disk'))
+        : inner.appendHistory(e),
+    bestDepthByPartySize: () => inner.bestDepthByPartySize(),
+  };
+}
+
+describe('initSaves when the store fails', () => {
+  for (const method of ['appendHistory', 'remove'] as const) {
+    test(`${method} rejects: the save is kept, reported failed, retried next start without duplicate history`, async () => {
+      const inner = freshStore(makeRecord('same', 'none', true));
+      const fail = { on: true };
+      const store = failing(inner, method, fail);
+      const first = await initSaves(store, INSTALLED, 5, deps);
+      expect(first.failed).toEqual([KEY]);
+      expect(first.finished).toEqual([]);
+      expect(await inner.get(KEY)).not.toBeNull();
+      expect(await inner.listHistory()).toHaveLength(
+        method === 'remove' ? 1 : 0,
+      );
+      fail.on = false;
+      const second = await initSaves(store, INSTALLED, 6, deps);
+      expect(second.failed).toEqual([]);
+      expect(second.finished).toEqual([KEY]);
+      expect(await inner.get(KEY)).toBeNull();
+      expect(await inner.listHistory()).toHaveLength(1);
+    });
+  }
+});
+
+describe('a run-state format 2 save in a Workshop (format 3 change)', () => {
+  test('openRun and initSaves both say unsupported_format and keep it', async () => {
+    const rec = makeRecord('same', 'none', false);
+    const old = {
+      ...rec,
+      summary: { ...rec.summary, step: 'event_resolve' },
+      state: {
+        ...rec.state,
+        formatVersion: 2,
+        step: 'event_resolve',
+        pending: {
+          offer: {
+            id: 'evt_workshop',
+            event: 'evt_workshop',
+            type: 'workshop',
+          },
+          followUp: {
+            prompt: 'workshop_building',
+            options: [{ id: 'b1', owner: 0, price: 5 }],
+            votes: [null],
+          },
+        },
+      },
+    } as unknown as SaveRecord;
+    const store = freshStore(old);
+    const open = await openRun(KEY, deps, store, INSTALLED);
+    expect(open).toMatchObject({ ok: false, reason: 'unsupported_format' });
+    const res = await initSaves(store, INSTALLED, 9, deps);
+    expect(res.unsupported.map((u) => u.runId)).toEqual([KEY]);
+    expect(res.failed).toEqual([]);
+    expect(await store.get(KEY)).toEqual(old);
+    expect(await store.listHistory()).toEqual([]);
   });
 });

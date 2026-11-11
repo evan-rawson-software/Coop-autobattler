@@ -2602,7 +2602,12 @@ any number of offers from 1 to `offerCount`. More event types will come later.
     option id or `"skip"`) or null; it is the only record of who has chosen.
     A player who cannot afford any of their options starts with `"skip"`
     already chosen (they have nothing else to choose); if nobody can, there
-    are no options and the step goes straight to the shop.
+    are no options and the step goes straight to the shop. Stored option data
+    is never trusted: `validateRunState` and `event_choose` recompute each
+    option's price (and check its `tier`, `def`, `player`) from the current
+    team, and a tampered option is rejected (`invalid_choice`). A save made
+    under run-state format 2 (the old party-wide Workshop) is
+    `unsupported_format`; the format version is now 3.
   - *Choosing.* Each player sends `{ type: "event_choose", choice }` with one of
     their own option ids or `"skip"`. `skip` is always allowed, also when an
     upgrade is affordable. Another player's option is rejected with

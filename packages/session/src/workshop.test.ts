@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { Rng, tierPrice, workshopOptions, workshopPrice } from '@game/core';
 import { fixedBattle } from './defaults.js';
-import { eventHooks } from './events.js';
+import { defaultEventHandlers, eventHooks } from './events.js';
 import { applyIntent, createRun, replayRun } from './machine.js';
 import { allowedIntents, eventFollowUp } from './selectors.js';
 import {
@@ -441,4 +441,88 @@ describe('Workshop in a played run (replay)', () => {
       expect(done).toBe(2);
     });
   }
+});
+
+describe('Workshop: tampered option data is not trusted', () => {
+  const players = ['Ann', 'Bo'];
+  function tamper(s: RunState, player: number, patch: Record<string, Json>) {
+    const pending = s.pending as Record<string, Json>;
+    const fu = pending['followUp'] as Record<string, Json>;
+    let done = false;
+    const options = (fu['options'] as Opt[]).map((o) => {
+      if (!done && o['player'] === player) {
+        done = true;
+        return { ...o, ...patch };
+      }
+      return o;
+    });
+    return {
+      ...s,
+      pending: { ...pending, followUp: { ...fu, options } },
+    } as RunState;
+  }
+
+  const cases: [string, (o: Opt) => Record<string, Json>][] = [
+    ['price 0', () => ({ price: 0 })],
+    ['price too high', (o) => ({ price: (o['price'] as number) + 1 })],
+    ['tier', (o) => ({ tier: (o['tier'] as number) + 1 })],
+    ['def', () => ({ def: 'nothing' })],
+    ['owner', () => ({ player: 1 })],
+  ];
+  for (const [name, patch] of cases) {
+    test(`${name}: rejected by validateRunState and by event_choose`, () => {
+      const s = workshopStep(players, [100, 100]);
+      const o = mineOf(s, 0)[0] as Opt;
+      const bad = tamper(s, 0, patch(o));
+      expect(validateRunState(JSON.parse(JSON.stringify(bad)), deps).ok).toBe(
+        false,
+      );
+      const r = applyIntent(
+        bad,
+        0,
+        { type: 'event_choose', choice: o['id'] as string },
+        deps,
+      );
+      expect(r.ok).toBe(false);
+    });
+  }
+
+  test('a tampered price already stored as a vote is caught when the last choice applies', () => {
+    const s = workshopStep(players, [100, 100]);
+    const a = mineOf(s, 0)[0] as Opt;
+    const b = mineOf(s, 1)[0] as Opt;
+    const t = tamper(s, 0, { price: 0 });
+    const pending = t.pending as Record<string, Json>;
+    const fu = pending['followUp'] as Record<string, Json>;
+    // Player 0's vote for the tampered option is already stored.
+    const voted = {
+      ...t,
+      pending: { ...pending, followUp: { ...fu, votes: [a['id'], null] } },
+    } as RunState;
+    const r = applyIntent(
+      voted,
+      1,
+      { type: 'event_choose', choice: b['id'] as string },
+      deps,
+    );
+    expect(r.ok).toBe(false);
+  });
+
+  test('a Workshop follow-up without perPlayer: true fails validation', () => {
+    const s = workshopStep(players, [100, 100]);
+    const pending = s.pending as Record<string, Json>;
+    const fu = { ...(pending['followUp'] as Record<string, Json>) };
+    delete fu['perPlayer'];
+    const bad = { ...s, pending: { ...pending, followUp: fu } };
+    const r = validateRunState(JSON.parse(JSON.stringify(bad)), deps);
+    expect(r.ok).toBe(false);
+  });
+
+  test('checkParams needs an integer percent', () => {
+    const handler = defaultEventHandlers['workshop'];
+    const def = (p: number) =>
+      ({ params: { workshopPricePercent: p } }) as never;
+    expect(handler?.checkParams?.(def(80))).toBeNull();
+    expect(handler?.checkParams?.(def(80.5))).toMatch(/integer/);
+  });
 });

@@ -37,6 +37,10 @@ import {
   type EventsConfig,
 } from '@game/core';
 import { tally, voteResolvedEffect } from './machine.js';
+import {
+  DEFAULT_WORKSHOP_PERCENT,
+  workshopOptionProblem,
+} from './workshop-option.js';
 import { streamLabels } from './streams.js';
 import type {
   Effect,
@@ -190,7 +194,7 @@ function workshopPercent(def: EventDef): number {
 
 function offerPercent(offer: EventOffer): number {
   const v = offer['workshopPricePercent'];
-  return typeof v === 'number' ? v : 80;
+  return typeof v === 'number' ? v : DEFAULT_WORKSHOP_PERCENT;
 }
 
 /** True if some player owns a raisable building they can pay for. */
@@ -211,7 +215,7 @@ export const workshopHandler: EventHandler = {
   canAskFollowUp: true,
   checkParams(def) {
     const p = def.params['workshopPricePercent'];
-    return typeof p === 'number' && p >= 1 && p <= 100
+    return typeof p === 'number' && Number.isInteger(p) && p >= 1 && p <= 100
       ? null
       : '"workshopPricePercent" must be an integer from 1 to 100';
   },
@@ -262,14 +266,25 @@ export const workshopHandler: EventHandler = {
       },
     };
   },
-  checkChoice({ state }, _offer, player, option) {
+  checkChoice({ state, content }, offer, player, option) {
+    // The stored price, tier, def and owner are not trusted: they are checked
+    // against the actual building and the recomputed Workshop price.
     if (!isRecord(option) || option['player'] !== player) return 'not_owner';
-    const price = option['price'];
+    if (
+      workshopOptionProblem(
+        state.team,
+        content,
+        offerPercent(offer),
+        player,
+        option,
+      ) !== null
+    ) {
+      return 'invalid_choice';
+    }
     const gold = state.perPlayer[player]?.gold ?? 0;
-    if (typeof price !== 'number') return 'invalid_choice';
-    return gold >= price ? null : 'not_enough_gold';
+    return gold >= (option['price'] as number) ? null : 'not_enough_gold';
   },
-  chooseEach({ state }, _offer, picks) {
+  chooseEach({ state, content }, offer, picks) {
     let team = state.team;
     let perPlayer = state.perPlayer;
     for (let player = 0; player < picks.length; player++) {
@@ -278,21 +293,24 @@ export const workshopHandler: EventHandler = {
       if (!isRecord(pick) || pick['player'] !== player) {
         return { ok: false, reason: 'not_owner' };
       }
-      const id = pick['building'];
-      const price = pick['price'];
       const me = perPlayer[player];
+      if (me === undefined) return { ok: false, reason: 'invalid_choice' };
+      // Checked against the team as it is now (earlier players' raises are
+      // already applied), with the price recomputed from it.
       if (
-        typeof id !== 'number' ||
-        typeof price !== 'number' ||
-        me === undefined
+        workshopOptionProblem(
+          team,
+          content,
+          offerPercent(offer),
+          player,
+          pick,
+        ) !== null
       ) {
         return { ok: false, reason: 'invalid_choice' };
       }
+      const id = pick['building'] as number;
+      const price = pick['price'] as number;
       if (me.gold < price) return { ok: false, reason: 'not_enough_gold' };
-      const owned = [...team.buildings, ...team.stash].find((b) => b.id === id);
-      if (owned === undefined || owned.owner !== player) {
-        return { ok: false, reason: 'not_owner' };
-      }
       const r = raiseTier(team, { id });
       if (!r.ok) return { ok: false, reason: 'cannot_raise' };
       team = r.state;

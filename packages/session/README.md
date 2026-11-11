@@ -13,8 +13,9 @@ const r = applyIntent(state, playerIndex, { type: 'ready' }, deps);
 Every change is one intent from one player. An accepted intent bumps
 `actionCounter` and is appended to `actionLog`; a rejected one changes
 nothing. `replayRun(args, actionLog, deps)` rebuilds a state from the seed.
-`RunState.formatVersion` is `RUN_STATE_FORMAT_VERSION` (2: `upcomingPve` and the
-new battle detail); `validateRunState` rejects any other version with an
+`RunState.formatVersion` is `RUN_STATE_FORMAT_VERSION` (3: the per-player
+Workshop, on top of 2's `upcomingPve` and new battle detail; a version-2
+save is `unsupported_format`); `validateRunState` rejects any other version with an
 "unsupported format version" error before anything else. The save record's
 own `saveFormatVersion` is separate and still 1.
 `validateRunState(data, deps)` checks untrusted data (also see
@@ -230,6 +231,11 @@ deleted by `openRun`. A save that is well formed but whose run state has an
 unsupported `formatVersion` is not corrupt: `list()` flags its entry with
 `unsupportedFormat: true` (absent otherwise) and `openRun` refuses it with the
 reason `unsupported_format`, leaving it in the store.
+
+**Statuses by entry point.** An older-major save whose state does not validate
+is `older_major` from `openRun` (the version is classified first) and
+`corrupt` (or `unsupported`, when its state names an unknown `formatVersion`)
+from `initSaves`; neither entry point deletes it.
 
 **One classification (issue #68).** `openRun` and `initSaves` both call
 `classifySave(raw, key, installed, deps)`, which checks, in order: the record's

@@ -40,9 +40,11 @@ export type Step = (typeof STEPS)[number];
 
 /**
  * The format of `RunState`. Version 2 added the required `upcomingPve` and
- * changed the battle detail; version 1 states are not readable.
+ * changed the battle detail; version 3 made the Workshop per-player and
+ * dependent on gold (a version-2 save mid-Workshop could not be finished);
+ * older states are not readable.
  */
-export const RUN_STATE_FORMAT_VERSION = 2;
+export const RUN_STATE_FORMAT_VERSION = 3;
 
 /**
  * Steps a saved state can never be in. `pve_battle` and `pvp_battle` are
@@ -149,7 +151,7 @@ export interface RunState {
   readonly runId: string;
   readonly runVersion: string;
   /** `RUN_STATE_FORMAT_VERSION`; a state of another version is rejected. */
-  readonly formatVersion: 2;
+  readonly formatVersion: 3;
   readonly seed: number;
   /** The saved state of the run's `Rng`. */
   readonly rng: readonly [number, number, number, number];
