@@ -95,6 +95,26 @@ language-neutral from the start:
 - Not carried over: UI and rendering code, the bundler setup, browser
   storage.
 
+### Simulation off the main thread (web)
+
+- **TA-55 [DECIDED]** The web client runs the up-front battle simulation in a
+  module Web Worker (`packages/web/src/sim-worker/`), because a dense battle
+  blocks the page for 0.4 s or more. The page talks to it through a typed
+  request/response protocol keyed by request id. Superseded requests are
+  cancelled (the worker is terminated, since a running simulation cannot be
+  interrupted, and restarted on the next request), a response for a cancelled
+  id is dropped, and errors reject the promise. The worker runs exactly the
+  same function as the main thread, so results are byte-identical (tests
+  compare the event-log hash). Where Workers are missing or fail to start, the
+  same code runs on the main thread behind the same interface. The run state
+  and saves are unaffected: the simulation is a pure function of the saved
+  state, so a reload during simulation simply simulates again.
+- **Godot port.** The simulation is a pure function of its input, so the port
+  can run it on a worker thread (`WorkerThreadPool` or a `Thread`) and show the
+  same "preparing" state, handing the finished event log back as one value; no
+  shared mutable state is needed. Measure before adding it: the native
+  simulation is much faster than the TypeScript one.
+
 ### Exit criteria for phase 1
 
 - **TA-53 [PROPOSED]** Move to the port when: the loop is fun in solo
