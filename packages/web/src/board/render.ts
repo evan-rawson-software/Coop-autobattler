@@ -4,7 +4,14 @@
  */
 
 import type { Camera, Viewport } from './camera.js';
+import { findSprite } from '../sprites/atlas.js';
 import { cellToView } from './layout.js';
+import {
+  SPRITE_MIN_ZOOM,
+  boardSpritesReady,
+  drawBoardLayer,
+  drawStripLayer,
+} from './sprite-board.js';
 import type { BoardScene, Scene, ViewRect } from './scene.js';
 import type { Hit } from './scene.js';
 
@@ -80,6 +87,9 @@ export function contrastInk(bg: string): string {
 const FONT = '600 {s}px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
 const font = (size: number): string => FONT.replace('{s}', size.toFixed(1));
 
+/** How many frames were drawn in each style (read by the debug hook). */
+export const renderStats = { spriteFrames: 0, flatFrames: 0 };
+
 export function render(ctx: CanvasRenderingContext2D, a: RenderArgs): void {
   const { camera: cam, viewport: vp, theme } = a;
   const z = cam.zoom;
@@ -93,7 +103,14 @@ export function render(ctx: CanvasRenderingContext2D, a: RenderArgs): void {
     sy(r.y + r.h) >= 0 &&
     sy(r.y) <= vp.h;
 
+  // Sprites from the atlas at readable zoom; the flat shapes while the images
+  // are loading, if they fail to load, and when a cell is too small for art.
+  const sprite = z >= SPRITE_MIN_ZOOM && boardSpritesReady();
+  if (sprite) renderStats.spriteFrames += 1;
+  else renderStats.flatFrames += 1;
+
   ctx.clearRect(0, 0, vp.w, vp.h);
+  ctx.imageSmoothingEnabled = false;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'butt';
   ctx.textAlign = 'center';
@@ -104,8 +121,12 @@ export function render(ctx: CanvasRenderingContext2D, a: RenderArgs): void {
   // Neutral strip: empty, outlined.
   if (layout.neutral) {
     const n = layout.neutral;
-    ctx.fillStyle = theme.neutralFill;
-    ctx.fillRect(sx(n.x0), sy(n.y0), (n.x1 - n.x0) * z, (n.y1 - n.y0) * z);
+    const drewStrip =
+      sprite && drawStripLayer(ctx, a.scene, theme, ox, oy, z, vp.w, vp.h);
+    if (!drewStrip) {
+      ctx.fillStyle = theme.neutralFill;
+      ctx.fillRect(sx(n.x0), sy(n.y0), (n.x1 - n.x0) * z, (n.y1 - n.y0) * z);
+    }
     ctx.setLineDash([6, 4]);
     ctx.strokeStyle = theme.neutralLine;
     ctx.lineWidth = 1.5;
@@ -117,6 +138,12 @@ export function render(ctx: CanvasRenderingContext2D, a: RenderArgs): void {
       ctx.beginPath();
       ctx.rect(sx(n.x0), sy(n.y0), (n.x1 - n.x0) * z, (n.y1 - n.y0) * z);
       ctx.clip();
+      if (drewStrip) {
+        // Hidden terrain: the ground sprites are veiled, not shown.
+        ctx.globalAlpha = 0.7;
+        ctx.fillStyle = theme.neutralFill;
+        ctx.fillRect(sx(n.x0), sy(n.y0), (n.x1 - n.x0) * z, (n.y1 - n.y0) * z);
+      }
       ctx.beginPath();
       const h = (n.y1 - n.y0) * z;
       for (let k = -h; k < (n.x1 - n.x0) * z; k += 14) {
@@ -129,8 +156,10 @@ export function render(ctx: CanvasRenderingContext2D, a: RenderArgs): void {
       ctx.stroke();
       ctx.restore();
     }
-    for (const f of a.scene.neutralFeatures) {
-      drawFeature(ctx, f, theme, z, sx, sy, visible);
+    if (!drewStrip) {
+      for (const f of a.scene.neutralFeatures) {
+        drawFeature(ctx, f, theme, z, sx, sy, visible);
+      }
     }
     if (z >= 6) {
       ctx.fillStyle = theme.inkMuted;
@@ -144,7 +173,7 @@ export function render(ctx: CanvasRenderingContext2D, a: RenderArgs): void {
   }
 
   for (const board of a.scene.boards) {
-    drawBoard(ctx, board, a, sx, sy, visible);
+    drawBoard(ctx, board, a, sx, sy, visible, sprite);
   }
 
   // Hover and selection outlines.
@@ -230,17 +259,27 @@ function drawBoard(
   sx: (v: number) => number,
   sy: (v: number) => number,
   visible: (r: ViewRect) => boolean,
+  spriteMode: boolean,
 ): void {
-  const { theme, camera } = a;
+  const { theme, camera, viewport: vp } = a;
   const z = camera.zoom;
   const f = board.frame;
 
-  // Ground.
-  ctx.fillStyle = theme.boardBg;
-  ctx.fillRect(sx(f.ox), sy(f.oy), f.w * z, f.h * z);
+  // The static layer: ground, terrain, nodes, conduits, buildings, Core.
+  const sprite =
+    spriteMode &&
+    drawBoardLayer(ctx, board, theme, sx(f.ox), sy(f.oy), z, vp.w, vp.h);
 
-  // Grid, as one path.
+  // Ground.
+  if (!sprite) {
+    ctx.fillStyle = theme.boardBg;
+    ctx.fillRect(sx(f.ox), sy(f.oy), f.w * z, f.h * z);
+  }
+
+  // Grid, as one path (fainter over sprites).
   if (z >= 5) {
+    ctx.save();
+    if (sprite) ctx.globalAlpha = 0.28;
     ctx.beginPath();
     for (let i = 0; i <= f.w; i++) {
       const x = Math.round(sx(f.ox + i)) + 0.5;
@@ -252,14 +291,17 @@ function drawBoard(
       ctx.moveTo(sx(f.ox), y);
       ctx.lineTo(sx(f.ox + f.w), y);
     }
-    ctx.strokeStyle = theme.gridLine;
+    ctx.strokeStyle = sprite ? theme.outline : theme.gridLine;
     ctx.lineWidth = 1;
     ctx.stroke();
+    ctx.restore();
   }
 
   // Terrain.
-  for (const t of board.features) {
-    drawFeature(ctx, t, theme, z, sx, sy, visible);
+  if (!sprite) {
+    for (const t of board.features) {
+      drawFeature(ctx, t, theme, z, sx, sy, visible);
+    }
   }
 
   // Front edge marker.
@@ -282,6 +324,7 @@ function drawBoard(
   for (const n of board.nodes) {
     const r = { x: n.x - 0.5, y: n.y - 0.5, w: 1, h: 1 };
     if (!visible(r)) continue;
+    if (sprite && findSprite(`node_${n.resource}`)) continue;
     const cx = sx(n.x);
     const cy = sy(n.y);
     const d = z * 0.42;
@@ -305,7 +348,7 @@ function drawBoard(
 
   // Conduits (under buildings' notches, over the ground).
   const lw = Math.max(2, Math.min(6, z * 0.16));
-  for (const c of board.conduits) {
+  for (const c of sprite ? [] : board.conduits) {
     if (c.points.length < 2) continue;
     ctx.beginPath();
     c.points.forEach((p, i) => {
@@ -330,7 +373,9 @@ function drawBoard(
     const y = sy(b.rect.y) + inset;
     const w = b.rect.w * z - 2 * inset;
     const h = b.rect.h * z - 2 * inset;
-    if (b.solid) {
+    if (sprite) {
+      // The sprite is in the static layer.
+    } else if (b.solid) {
       ctx.fillStyle = theme.wall;
       ctx.fillRect(sx(b.rect.x), sy(b.rect.y), b.rect.w * z, b.rect.h * z);
     } else {
@@ -338,10 +383,12 @@ function drawBoard(
       ctx.fillRect(x, y, w, h);
     }
     // Owner tint: a coloured frame.
-    ctx.strokeStyle = owner(b.instance.owner);
-    ctx.lineWidth = Math.max(2, z * 0.09);
-    ctx.strokeRect(x, y, w, h);
-    if (!b.solid && z >= 14) {
+    if (!sprite) {
+      ctx.strokeStyle = owner(b.instance.owner);
+      ctx.lineWidth = Math.max(2, z * 0.09);
+      ctx.strokeRect(x, y, w, h);
+    }
+    if (!sprite && !b.solid && z >= 14) {
       ctx.fillStyle = theme.ink;
       ctx.font = font(Math.min(22, Math.max(9, z * 0.42)));
       ctx.fillText(b.label, x + w / 2, y + h / 2 + 0.5);
@@ -390,7 +437,7 @@ function drawBoard(
   }
 
   // Core.
-  if (board.core && visible(board.core.rect)) {
+  if (!sprite && board.core && visible(board.core.rect)) {
     const r = board.core.rect;
     const x = sx(r.x) + 1;
     const y = sy(r.y) + 1;

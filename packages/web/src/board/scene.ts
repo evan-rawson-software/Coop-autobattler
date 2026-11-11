@@ -15,6 +15,7 @@ import {
   type TeamState,
 } from '@game/core';
 import type { WebContent } from '../content.js';
+import { mapSalt } from '../sprites/variants.js';
 import {
   boxToView,
   cellToView,
@@ -67,6 +68,8 @@ export interface SceneConduit {
   readonly color: string | null;
   /** Position in the resource list, for the dash pattern; -1 if undetermined. */
   readonly pattern: number;
+  /** The resource id it carries, or null while undetermined. */
+  readonly resource: string | null;
 }
 
 export interface SceneNode {
@@ -74,6 +77,8 @@ export interface SceneNode {
   readonly y: number;
   readonly color: string;
   readonly letter: string;
+  /** The resource id, for picking the sprite. */
+  readonly resource: string;
 }
 
 export interface SceneFeature {
@@ -81,6 +86,8 @@ export interface SceneFeature {
   readonly y: number;
   /** Index in the terrain feature list, for picking a fill. */
   readonly style: number;
+  /** The terrain feature id (`ter_lake`, ...), for picking a sprite. */
+  readonly feature: string;
 }
 
 export interface BoardScene {
@@ -92,6 +99,8 @@ export interface BoardScene {
   readonly buildings: readonly SceneBuilding[];
   readonly core: { rect: ViewRect; label: string } | null;
   readonly conduits: readonly SceneConduit[];
+  /** Per-map salt for picking sprite variants (deterministic). */
+  readonly salt: number;
 }
 
 /** The neutral strip's terrain, as the battle screen shows it. */
@@ -163,7 +172,12 @@ function buildBoard(
 
   const features = state.map.features.map((f) => {
     const v = cellToView(frame, f.x, f.y);
-    return { x: v.x, y: v.y, style: terrainIndex.get(f.feature) ?? 0 };
+    return {
+      x: v.x,
+      y: v.y,
+      style: terrainIndex.get(f.feature) ?? 0,
+      feature: f.feature,
+    };
   });
   const nodes = state.map.nodes.map((n) => {
     const v = cellToView(frame, n.x, n.y);
@@ -173,6 +187,7 @@ function buildBoard(
       y: v.y + 0.5,
       color: def?.color ?? FALLBACK_RESOURCE_COLOR,
       letter: firstLetter(def?.name ?? '?'),
+      resource: n.resource,
     };
   });
 
@@ -295,10 +310,23 @@ function buildBoard(
       cells: c.cells.map(centre),
       color: res === null ? null : resourceColor(content, res),
       pattern: res === null ? -1 : (resourceOrder.get(res) ?? 0),
+      resource: res,
     };
   });
 
-  return { frame, state, occ, features, nodes, buildings, core, conduits };
+  const m = state.map;
+  const salt = mapSalt(m.width, m.height, m.partySize, m.plotWidth);
+  return {
+    frame,
+    state,
+    occ,
+    features,
+    nodes,
+    buildings,
+    core,
+    conduits,
+    salt,
+  };
 }
 
 export function buildScene(
@@ -324,6 +352,7 @@ export function buildScene(
           x: f.x,
           y: strip.y1 - 1 - f.y,
           style: terrainIndex.get(f.feature) ?? 0,
+          feature: f.feature,
         }));
   return {
     layout,

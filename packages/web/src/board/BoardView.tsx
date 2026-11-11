@@ -15,7 +15,15 @@ import {
   initialGesture,
   type GestureEffect,
 } from './gestures.js';
-import { render, type Selection, type Theme } from './render.js';
+import { render, renderStats, type Selection, type Theme } from './render.js';
+import { layerStats } from './sprite-board.js';
+import {
+  loadSprites,
+  onSpritesChange,
+  spriteStats,
+  spritesState,
+  tintCacheSize,
+} from '../sprites/atlas.js';
 import {
   buildScene,
   hitTest,
@@ -168,6 +176,26 @@ export function BoardView(props: BoardViewProps) {
       if (s.props.animate) requestDraw.current();
     });
   };
+
+  // The sprites load once, on demand; the board draws flat shapes until they
+  // arrive (or for good if they fail) and redraws when the state changes.
+  useEffect(() => {
+    void loadSprites();
+    const unsub = onSpritesChange(() => {
+      requestDraw.current();
+    });
+    registerDebug({
+      sprites: () => ({
+        state: spritesState(),
+        drawn: spriteStats.drawn,
+        spriteFrames: renderStats.spriteFrames,
+        flatFrames: renderStats.flatFrames,
+        layerBuilds: layerStats.builds,
+        tintCache: tintCacheSize(),
+      }),
+    });
+    return unsub;
+  }, []);
 
   // Layout and camera reset.
   useEffect(() => {
