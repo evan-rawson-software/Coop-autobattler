@@ -38,6 +38,7 @@ const DEV_LINKS: readonly { readonly hash: string; readonly label: string }[] =
     { hash: '#build', label: 'Build sandbox' },
     { hash: '#battle', label: 'Sample battles' },
     { hash: '#shop', label: 'Sample shop' },
+    { hash: '#sprites', label: 'Sprite sheets' },
   ];
 
 async function load(): Promise<MenuData> {
