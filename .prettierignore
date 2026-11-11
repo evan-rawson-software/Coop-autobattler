@@ -8,3 +8,4 @@ node_modules/
 golden/
 dist-debug/
 smoke-output/
+boards/

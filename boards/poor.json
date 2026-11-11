@@ -1,0 +1,302 @@
+{
+  "name": "poor",
+  "description": "The starting kit placed badly: a far-away barracks, an unconnected extractor, an unpowered turret, walls in a corner.",
+  "mapSeed": 5,
+  "partySize": 1,
+  "team": {
+    "map": {
+      "width": 24,
+      "height": 16,
+      "partySize": 1,
+      "plotWidth": 24,
+      "features": [
+        {
+          "x": 4,
+          "y": 2,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 5,
+          "y": 2,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 6,
+          "y": 2,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 11,
+          "y": 2,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 12,
+          "y": 2,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 13,
+          "y": 2,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 14,
+          "y": 2,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 4,
+          "y": 3,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 6,
+          "y": 3,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 7,
+          "y": 3,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 6,
+          "y": 4,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 13,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 14,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 15,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 16,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 17,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 18,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 19,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 20,
+          "y": 4,
+          "feature": "ter_cliff"
+        }
+      ],
+      "nodes": [
+        {
+          "x": 10,
+          "y": 1,
+          "resource": "res_a"
+        },
+        {
+          "x": 19,
+          "y": 1,
+          "resource": "res_c"
+        },
+        {
+          "x": 1,
+          "y": 2,
+          "resource": "res_b"
+        },
+        {
+          "x": 21,
+          "y": 4,
+          "resource": "res_a"
+        },
+        {
+          "x": 19,
+          "y": 5,
+          "resource": "res_b"
+        },
+        {
+          "x": 23,
+          "y": 6,
+          "resource": "res_b"
+        },
+        {
+          "x": 8,
+          "y": 8,
+          "resource": "res_a"
+        }
+      ]
+    },
+    "core": {
+      "x": 11,
+      "y": 5
+    },
+    "buildings": [
+      {
+        "id": 1,
+        "def": "bld_extractor",
+        "tier": 1,
+        "x": 10,
+        "y": 1,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 2,
+        "def": "bld_barracks",
+        "tier": 1,
+        "x": 2,
+        "y": 12,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 4,
+        "def": "bld_extractor",
+        "tier": 1,
+        "x": 21,
+        "y": 4,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 5,
+        "def": "bld_wall",
+        "tier": 1,
+        "x": 0,
+        "y": 0,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 6,
+        "def": "bld_wall",
+        "tier": 1,
+        "x": 1,
+        "y": 0,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 7,
+        "def": "bld_wall",
+        "tier": 1,
+        "x": 2,
+        "y": 0,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 8,
+        "def": "bld_turret",
+        "tier": 1,
+        "x": 22,
+        "y": 0,
+        "rotation": 0,
+        "owner": 0
+      }
+    ],
+    "stash": [],
+    "nextId": 9,
+    "conduits": [
+      {
+        "id": 3,
+        "from": {
+          "building": 1,
+          "side": "north"
+        },
+        "to": {
+          "building": 2,
+          "side": "south"
+        },
+        "cells": [
+          {
+            "x": 10,
+            "y": 2
+          },
+          {
+            "x": 10,
+            "y": 3
+          },
+          {
+            "x": 10,
+            "y": 4
+          },
+          {
+            "x": 10,
+            "y": 5
+          },
+          {
+            "x": 10,
+            "y": 6
+          },
+          {
+            "x": 10,
+            "y": 7
+          },
+          {
+            "x": 10,
+            "y": 8
+          },
+          {
+            "x": 10,
+            "y": 9
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 11
+          },
+          {
+            "x": 9,
+            "y": 11
+          },
+          {
+            "x": 8,
+            "y": 11
+          },
+          {
+            "x": 7,
+            "y": 11
+          },
+          {
+            "x": 6,
+            "y": 11
+          },
+          {
+            "x": 5,
+            "y": 11
+          },
+          {
+            "x": 4,
+            "y": 11
+          },
+          {
+            "x": 3,
+            "y": 11
+          }
+        ]
+      }
+    ]
+  }
+}

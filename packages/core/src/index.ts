@@ -427,3 +427,11 @@ export type {
 export { raiseTier } from './team-state.js';
 export type { RaiseTierReason } from './team-state.js';
 export type { RewardsConfig } from './economy.js';
+
+// Reference boards, including the siege board (W1-10).
+export {
+  ALL_REFERENCE_BOARDS,
+  anyReferenceBoardScript,
+  buildAnyReferenceBoard,
+} from './reference-boards-siege.js';
+export type { AnyReferenceBoardName } from './reference-boards-siege.js';
