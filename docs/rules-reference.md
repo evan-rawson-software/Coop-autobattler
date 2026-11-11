@@ -1514,13 +1514,18 @@ exactly like the original.
         whole push, away from the other;
       - two movers with **equal priority**: they share it, each
         `awayDiv(dx * o, 2 d)` and `awayDiv(dy * o, 2 d)` away from the other
-        (so no side or id decides: a mirrored battle stays symmetric);
-      - coinciding centres (`d = 0`): the axis `a` is `(1, 0)` when the sum of
-        the two unit `id`s is even and `(0, 1)` when odd. Two movers of equal
-        priority are each pushed `ceil(R / 2)` along `a`, the lower id towards
-        negative; otherwise the unit that takes the whole push is pushed `R`
-        along `a`, towards positive if its id is the higher of the two,
-        negative if lower.
+        (so no side decides: a mirrored battle stays symmetric);
+      - coinciding centres (`d = 0`): the **separation axis** is `x` when the
+        sum of the two unit `id`s is even and `y` when odd. Each unit that is
+        pushed (one for the whole `R`, or each of two movers of equal
+        priority `ceil(R / 2)`) is pushed along that axis **in the frame of
+        its own side** (the arena rotated by half a turn for side 1, both axes
+        negated): towards the positive direction of its frame if its `id` is
+        the higher of the two, towards the negative one if lower. In arena
+        coordinates that is `+` / `-` for a side 0 unit (higher / lower id)
+        and `-` / `+` for a side 1 unit. Only the two ids and the pushed
+        unit's own side decide, so a mirrored battle (the same ids and the
+        same order of ids for the mirrored pair) stays symmetric.
       All pushes of the pass are summed per mover from the positions at the
       start of the pass (so the order of pairs does not matter) and added to
       the mover's `T`, which is then passed through `pushOutSolid` once. The
@@ -1535,12 +1540,25 @@ exactly like the original.
       ends at `T` iff `T` fits for its side and its circle at `T` overlaps no
       anchored unit, no mover already accepted at its `T`, and no other mover
       at its `p` (the movers of its own run and the ones decided later count
-      at `p`); of a run of equal priority, accepted movers whose `T`s overlap
-      each other are all sent back to `p` (nobody in the run sees another's
-      `T`, which keeps mirrored battles symmetric). Everything else stays at
-      `p`. Because every position at the start of the tick satisfied the
-      invariant, so does the result: a unit at `T` was checked against every
-      unit that could be where it ends, and a unit at `p` is where it was.
+      at `p`); of a run of equal priority, every accepted mover whose `T` overlaps the
+      `T` of another mover of the run (accepted or not) is sent back to `p`
+      (nobody in the run sees another's `T`, which keeps mirrored battles
+      symmetric). Everything else stays at
+      `p`. **Why the invariant holds** (every position at the start of the
+      tick satisfied it): a unit at `p` fits and a mover is accepted at `T`
+      only if `T` fits, which depends on nobody else; two units that both end
+      at `p` do not overlap; of any other pair at least one, `a`, ends at its
+      `T`. If `a` is clear, its `T` overlaps no other unit's `T` and no
+      other mover's `p`, so the other is fine wherever it ends. If `a` is
+      dirty and the other unit `b` is decided before it, `a` was checked
+      against `b`'s final place; if `b` is decided after `a` (a later run),
+      `a` was checked against `p_b` and `b`, if it ends at its `T`, is checked
+      against `a`'s final `T`. If both are in one run, each was checked
+      against the other's `p` (never against a tentative `T`, which the
+      overlap rule above can still revoke) and the revoking rule removes
+      every remaining `T` / `T` overlap; a mover sent back to `p` meets only
+      units that were checked against that `p`. The result does not depend
+      on the order of the unit list within a run.
       The nearest-first order is what keeps a crowd moving: the unit that is
       closest to where it wants to go gets the room first, and a jam clears
       from the front instead of freezing as a whole.

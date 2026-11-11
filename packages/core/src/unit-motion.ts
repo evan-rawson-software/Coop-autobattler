@@ -22,6 +22,21 @@ import {
 } from './geometry.js';
 import { isqrtCeil } from './int.js';
 
+/**
+ * The direction (+1 or -1, in arena coordinates) in which unit `u` is pushed
+ * along the separation axis when its centre coincides with that of `other`:
+ * towards positive in the frame of `u`'s own side if `u` has the higher id,
+ * negative if the lower, and the frame of side 1 is the arena rotated by half
+ * a turn (both axes negated). The separation axis itself (x when the sum of
+ * the two ids is even, y when odd) is the same in both frames. Decided by the
+ * ids and the pushed unit's own frame only, so a mirrored battle stays
+ * symmetric.
+ */
+function coincidentSign(u: MotionUnit, other: MotionUnit): number {
+  const frame = u.side === 0 ? 1 : -1;
+  return u.id > other.id ? frame : -frame;
+}
+
 /** The positions of the units of a battle, as the motion step sees them. */
 export interface MotionUnit {
   readonly id: number;
@@ -189,42 +204,50 @@ export class MotionScratch {
             let j = this.heads[y * gw + x] ?? -1;
             while (j !== -1) {
               const mj = mover[j] === 1;
+              const uj = units[j];
               // A pair of movers is handled once, from its lower index.
-              if (j !== i && (!mj || j > i)) {
+              if (uj !== undefined && j !== i && (!mj || j > i)) {
                 const dx = (cx[j] ?? 0) - xi;
                 const dy = (cy[j] ?? 0) - yi;
                 const d2 = dx * dx + dy * dy;
                 const r = (rad[i] ?? 0) + (rad[j] ?? 0);
                 if (d2 < r * r) {
                   any = true;
-                  const uj = units[j];
-                  const parity = uj !== undefined && (ui.id + uj.id) % 2 === 0;
+                  const parity = (ui.id + uj.id) % 2 === 0;
                   if (mj && (prio[i] ?? 0) === (prio[j] ?? 0)) {
                     // Two movers equally far from their targets share the
-                    // push (no side or id decides, which keeps a mirrored
-                    // battle symmetric).
-                    let hx: number;
-                    let hy: number;
+                    // push (their sides do not decide, which keeps a
+                    // mirrored battle symmetric).
                     if (d2 > 0) {
                       const d = isqrtFloorSmall(d2);
                       const o = r - d;
-                      hx = awayDivSmall(dx * o, 2 * d);
-                      hy = awayDivSmall(dy * o, 2 * d);
+                      const hx = awayDivSmall(dx * o, 2 * d);
+                      const hy = awayDivSmall(dy * o, 2 * d);
+                      ax[j] = (ax[j] ?? 0) + hx;
+                      ay[j] = (ay[j] ?? 0) + hy;
+                      ax[i] = (ax[i] ?? 0) - hx;
+                      ay[i] = (ay[i] ?? 0) - hy;
                     } else {
+                      // Coinciding centres: each is pushed half the sum
+                      // along the axis, in its own frame (`coincidentSign`).
                       const half = Math.ceil(r / 2);
-                      hx = parity ? half : 0;
-                      hy = parity ? 0 : half;
+                      const si = coincidentSign(ui, uj) * half;
+                      const sj = coincidentSign(uj, ui) * half;
+                      if (parity) {
+                        ax[i] = (ax[i] ?? 0) + si;
+                        ax[j] = (ax[j] ?? 0) + sj;
+                      } else {
+                        ay[i] = (ay[i] ?? 0) + si;
+                        ay[j] = (ay[j] ?? 0) + sj;
+                      }
                     }
-                    ax[j] = (ax[j] ?? 0) + hx;
-                    ay[j] = (ay[j] ?? 0) + hy;
-                    ax[i] = (ax[i] ?? 0) - hx;
-                    ay[i] = (ay[i] ?? 0) - hy;
                   } else {
                     // The loser takes the whole push: the only mover, or of
                     // two movers the one farther from its target.
                     const iLoses = !mj || (prio[i] ?? 0) > (prio[j] ?? 0);
                     let px: number;
                     let py: number;
+                    const loser = iLoses ? i : j;
                     if (d2 > 0) {
                       const d = isqrtFloorSmall(d2);
                       const o = r - d;
@@ -234,14 +257,13 @@ export class MotionScratch {
                       px = awayDivSmall(sx * o, d);
                       py = awayDivSmall(sy * o, d);
                     } else {
-                      // Coinciding centres: along an axis chosen by the
-                      // parity of the id sum, towards negative for the lower
-                      // id.
-                      const sign = iLoses ? -1 : 1;
+                      // Coinciding centres: see `coincidentSign`.
+                      const sign = iLoses
+                        ? coincidentSign(ui, uj)
+                        : coincidentSign(uj, ui);
                       px = parity ? sign * r : 0;
                       py = parity ? 0 : sign * r;
                     }
-                    const loser = iLoses ? i : j;
                     ax[loser] = (ax[loser] ?? 0) + px;
                     ay[loser] = (ay[loser] ?? 0) + py;
                   }
@@ -275,11 +297,34 @@ export class MotionScratch {
     }
 
     // 3. Acceptance: a mover ends at its relaxed position `F` or stays at its
-    // previous position `p`. Movers whose `F` overlaps nothing that could be
-    // there (any unit's `F`, any other mover's `p`) are accepted at once; the
-    // others ("dirty") are decided nearest to the target first, a run of
-    // equal priority together, against the positions already committed: an
-    // accepted mover is at its `F`, every other unit at its `p`.
+    // previous position `p`; an anchored unit stays at `p` (= `F`). Movers
+    // whose `F` overlaps nothing that could be there (any unit's `F`, any other
+    // mover's `p`) are accepted at once ("clear"); the others ("dirty") are
+    // decided nearest to the target first, a run of equal priority together.
+    //
+    // Why no two circles overlap and none touches blocked ground afterwards,
+    // for every input and whatever the array order (given that every `p` fits
+    // and no two `p`s overlap at the start of the tick):
+    // 1. Ground: a unit at `p` fits; a mover is accepted at `F` only if `F`
+    //    fits, which depends on nobody else.
+    // 2. Pairs. Take two units a and b. If both end at `p`, they do not
+    //    overlap (assumption). Otherwise at least one is a mover that ends at
+    //    `F`, say a.
+    //    - If a was accepted at once ("clear"): its `F` overlaps no other
+    //      unit's `F` and no other mover's `p` (an anchored unit's `F` is its
+    //      `p`), so b is fine wherever it ends.
+    //    - If a is dirty and b is decided earlier (or is clear or anchored),
+    //      a's check covered b's final place (`F_b` if accepted, else `p_b`).
+    //      If b is decided in a later run, a was checked against `p_b` (b
+    //      was still a mover at `p`), and b, if it ends at `F_b`, is checked
+    //      against a's final `F_a`: the pair is covered either way.
+    //    - If a and b are in the same run, each was checked against the
+    //      other's `p` (never against a tentative `F`, which the clash pass
+    //      may still revoke), so (F_a, p_b), (p_a, F_b) and (p_a, p_b) are
+    //      fine; the clash pass sends both back to `p` whenever the two `F`s
+    //      (accepted or not) overlap, so (F_a, F_b) cannot remain.
+    // 3. A revoked acceptance puts the mover at `p`, and everyone who could
+    //    meet it there (a later run, its own run) checked against that `p`.
     this.buildGrid(n);
     this.buildPrevGrid(n);
     const order = this.order;
@@ -379,15 +424,17 @@ export class MotionScratch {
 
   /**
    * Whether mover `i` may end at its F given the committed positions: every
-   * anchored unit and every accepted mover at its F, every other mover (those
-   * of the group being decided included) at its previous position.
+   * anchored unit and every mover accepted by an earlier run (or at once) at
+   * its F, every other mover at its previous position. The members of the run
+   * being decided count at their previous position whatever was tentatively
+   * decided for them, because the clash pass can still send them back there.
    */
   private fitsCommitted(
     i: number,
     units: readonly MotionUnit[],
     world: World,
   ): boolean {
-    const { cx, cy, ox, oy, rad, mover, accepted } = this;
+    const { cx, cy, ox, oy, rad, mover, accepted, inGroup } = this;
     const u = units[i];
     if (u === undefined) return false;
     const xi = cx[i] ?? 0;
@@ -405,7 +452,10 @@ export class MotionScratch {
         // Units that are at their F: anchored ones and accepted movers.
         let j = this.heads[y * gw + x] ?? -1;
         while (j !== -1) {
-          if (j !== i && (mover[j] !== 1 || accepted[j] === 1)) {
+          if (
+            j !== i &&
+            (mover[j] !== 1 || (accepted[j] === 1 && inGroup[j] !== 1))
+          ) {
             const dx = (cx[j] ?? 0) - xi;
             const dy = (cy[j] ?? 0) - yi;
             const r = (rad[i] ?? 0) + (rad[j] ?? 0);
@@ -416,7 +466,7 @@ export class MotionScratch {
         // Movers that are (still) at their previous position.
         j = this.headsP[y * gw + x] ?? -1;
         while (j !== -1) {
-          if (j !== i && accepted[j] !== 1) {
+          if (j !== i && (accepted[j] !== 1 || inGroup[j] === 1)) {
             const dx = (ox[j] ?? 0) - xi;
             const dy = (oy[j] ?? 0) - yi;
             const r = (rad[i] ?? 0) + (rad[j] ?? 0);
