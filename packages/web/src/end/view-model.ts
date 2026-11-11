@@ -6,6 +6,7 @@
 import type { TeamState } from '@game/core';
 import type { HistoryEntry, RoundRecord, RunState } from '@game/session';
 import { opponentName } from '../event/view-model.js';
+import { bossName } from '../run/temporary-text.js';
 
 export interface BestView {
   readonly isNewBest: boolean;
@@ -74,7 +75,7 @@ export function roundRows(history: readonly RoundRecord[]): RoundRow[] {
         pvp === null
           ? '—'
           : pvp.opponent.kind === 'boss'
-            ? `the boss (${opponentName('boss', pvp.opponent.label)})`
+            ? bossName(opponentName('boss', pvp.opponent.label))
             : opponentName(pvp.opponent.kind, pvp.opponent.label),
       pvpResult: pvp === null ? '—' : pvp.won ? 'won' : 'lost',
     };

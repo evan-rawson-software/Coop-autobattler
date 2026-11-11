@@ -9,7 +9,6 @@
  * description handed to `BattleView` is built from the same stored detail the
  * session's resolver replays from.
  */
-import type { BattleResult } from '@game/core';
 import {
   readPveOption,
   replayLastBattle,
@@ -18,15 +17,21 @@ import {
   type RunDeps,
   type RunState,
 } from '@game/session';
-import { archetypeText } from '../run/temporary-text.js';
+import { archetypeText, bossName } from '../run/temporary-text.js';
 import type { BattleDescription, OpponentInfo } from './types.js';
 
 export interface RunBattle {
+  /** What to play back; the screen simulates it and checks the hash below. */
   readonly battle: BattleDescription;
+  /** Whether the party won, as stored in the run state (never re-derived). */
+  readonly won: boolean;
+  /** The event-log hash stored when the battle was resolved. */
+  readonly storedEventLogHash: string;
   readonly opponent: OpponentInfo;
   readonly title: string;
   readonly kind: 'pve' | 'pvp';
-  readonly reward: (result: BattleResult) => string;
+  /** The reward line, from the stored outcome. */
+  readonly reward: (won: boolean) => string;
 }
 
 export type RunBattleResult =
@@ -135,8 +140,11 @@ export function describeRunBattle(
   if (oppKind === 'ghost') {
     opponent = { name: label, kind: 'ghost' };
   } else if (oppKind === 'boss') {
-    const arch = archetypeText(label).name;
-    opponent = { name: `the boss (${arch})`, kind: 'boss', label: 'Boss' };
+    opponent = {
+      name: bossName(archetypeText(label).name),
+      kind: 'boss',
+      label: 'Boss',
+    };
   } else {
     const arch = archetypeText(label).name;
     const difficulty = isRecord(pending['option'])
@@ -152,14 +160,18 @@ export function describeRunBattle(
     };
   }
 
+  const won = stored['won'] === true;
   return {
     ok: true,
     value: {
       battle,
+      won,
+      storedEventLogHash: replay.storedEventLogHash,
       opponent,
       kind,
       title: `Round ${round} · ${kind === 'pve' ? 'PvE' : 'PvP'} battle`,
-      reward: (result) => rewardLine(kind, result.winner === 0, deps, pveGold),
+      // `won` passed in is the stored outcome (see BattleViewProps.stored).
+      reward: (w) => rewardLine(kind, w, deps, pveGold),
     },
   };
 }

@@ -17,6 +17,7 @@ import type { WebContent } from '../content.js';
 import { buildingName } from '../build/view-model.js';
 import {
   archetypeText,
+  bossName,
   effectLine,
   eventText,
   modifierName,
@@ -90,7 +91,7 @@ export function battleHeader(
   if (rec === null) return null;
   const who =
     rec.opponent.kind === 'boss'
-      ? `the boss (${opponentName('boss', rec.opponent.label)})`
+      ? bossName(opponentName('boss', rec.opponent.label))
       : opponentName(rec.opponent.kind, rec.opponent.label);
   const cost = deps.rules.pvpLossLifeCost;
   const loss = rewards === undefined ? null : rewards.pvpLoss;

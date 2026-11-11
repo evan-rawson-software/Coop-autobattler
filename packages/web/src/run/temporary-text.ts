@@ -128,3 +128,10 @@ export function effectLine(effect: ModifierEffect): string {
       return `Turrets: +${String(effect.percent)}% damage`;
   }
 }
+
+/** "the boss", or "the boss (Fortress)" when the archetype adds a name. */
+export function bossName(archetype: string): string {
+  return archetype === 'Boss' || archetype === ''
+    ? 'the boss'
+    : `the boss (${archetype})`;
+}

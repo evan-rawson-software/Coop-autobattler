@@ -63,6 +63,7 @@ export function RunBattleScreen(props: { run: RunHandle }) {
       opponent={b.opponent}
       title={b.title}
       reward={b.reward}
+      stored={{ won: b.won, eventLogHash: b.storedEventLogHash }}
       initialTick={initialTick}
       onTick={(t) => {
         writeTick(key, t);

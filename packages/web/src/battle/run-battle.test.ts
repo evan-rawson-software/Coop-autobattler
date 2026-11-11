@@ -3,7 +3,7 @@ import type { BattleDetail, RunState } from '@game/session';
 import { describe, expect, test } from 'vitest';
 import { content } from '../content.js';
 import { reachStep, realDeps } from '../run/test-run.js';
-import { simulateRecord } from './playback.js';
+import { replayMatches, simulateRecord } from './playback.js';
 import { describeRunBattle, rewardLine } from './run-battle.js';
 import { battleConfig } from './setup.js';
 
@@ -50,6 +50,65 @@ describe('the battle of a run', () => {
         detailOf(run).summary.eventLogHash,
       );
     }
+  });
+
+  test('the outcome, opponent and reward come from the run state', () => {
+    const run = reachStep('pve_summary');
+    const pending = run.pending as unknown as {
+      battle: { won: boolean; detail: BattleDetail };
+    };
+    // Flip the stored outcome: the screen follows the state, not a re-sim.
+    const flipped = {
+      ...run,
+      pending: {
+        ...pending,
+        battle: { ...pending.battle, won: !pending.battle.won },
+      },
+    } as unknown as RunState;
+    const r = describeRunBattle(flipped, realDeps());
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.won).toBe(!pending.battle.won);
+    expect(r.value.reward(true)).toMatch(/gold/);
+    expect(r.value.reward(false)).toBe('No reward, and no life lost');
+  });
+
+  test('a stored hash that the replay does not reach is a mismatch', () => {
+    const run = reachStep('pvp_summary');
+    const ok = describeRunBattle(run, realDeps());
+    expect(ok.ok).toBe(true);
+    if (!ok.ok) return;
+    const made = simulateRecord(ok.value.battle, content, battleConfig);
+    expect(made.ok).toBe(true);
+    if (!made.ok) return;
+    expect(replayMatches(made.record, ok.value.storedEventLogHash)).toBe(true);
+
+    const pending = run.pending as unknown as {
+      battle: { detail: BattleDetail };
+    };
+    const tampered = {
+      ...run,
+      pending: {
+        ...pending,
+        battle: {
+          ...pending.battle,
+          detail: {
+            ...pending.battle.detail,
+            summary: {
+              ...pending.battle.detail.summary,
+              eventLogHash: 'tampered',
+            },
+          },
+        },
+      },
+    } as unknown as RunState;
+    const bad = describeRunBattle(tampered, realDeps());
+    expect(bad.ok).toBe(true);
+    if (!bad.ok) return;
+    expect(bad.value.storedEventLogHash).toBe('tampered');
+    expect(replayMatches(made.record, bad.value.storedEventLogHash)).toBe(
+      false,
+    );
   });
 
   test('a step with no battle says so instead of throwing', () => {

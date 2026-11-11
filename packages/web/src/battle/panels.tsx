@@ -350,6 +350,8 @@ export interface SummaryProps {
   readonly title: string;
   readonly moments: readonly Moment[];
   readonly rewardText: string;
+  /** The stored outcome, when the run state has one. */
+  readonly won?: boolean | undefined;
   readonly tps: number;
   readonly ready: boolean;
   readonly onWatchAgain: () => void;
@@ -359,7 +361,7 @@ export interface SummaryProps {
 export function BattleSummaryView(props: SummaryProps) {
   const { pb, content, opponent, moments } = props;
   const rec = pb.record;
-  const won = rec.result.winner === 0;
+  const won = props.won ?? rec.result.winner === 0;
   const own = rec.summary.sides[0];
   const foe = rec.summary.sides[1];
   const rows = useMemo(() => buildingRows(rec, content, 0), [rec, content]);
