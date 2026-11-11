@@ -121,7 +121,16 @@ export class CameraController {
     if (name === 'fit') cam = fitCamera(this.vp, this.bounds);
     else if (name === 'base' && this.base)
       cam = focusCamera(this.vp, this.bounds, this.base);
-    else cam = centerCamera(this.vp, this.bounds);
+    else {
+      cam = centerCamera(this.vp, this.bounds);
+      // Centre returns to the start view: the start zoom, when one is set.
+      if (name === 'center' && this.startZoom !== null)
+        cam = clampCamera(
+          { ...cam, zoom: this.startZoom },
+          this.vp,
+          this.bounds,
+        );
+    }
     this.set(cam);
   }
 

@@ -135,8 +135,8 @@ export function main(argv: readonly string[], io: Io): number {
         ? resolveUserPath(cmd.log)
         : undefined;
     if (logFile !== undefined) checkLogWritable(logFile);
-    const load = (ref: string): Board => loadBoard(ref, ctx, io.err);
     const ctx = loadSimContext();
+    const load = (ref: string): Board => loadBoard(ref, ctx, io.err);
     const t0 = performance.now();
     let output: CommandOutput;
     let failed = false;

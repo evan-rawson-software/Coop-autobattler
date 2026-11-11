@@ -199,3 +199,68 @@ describe('building draw calls carry the rotation', () => {
       });
     }
 });
+
+describe('tier pips', () => {
+  const content = loadWebContent();
+  const theme = { owners: ['#f00'], kinds: {} } as unknown as Theme;
+  const ctx = { imageSmoothingEnabled: true, drawImage: () => undefined };
+  const rects: { x: number; y: number; w: number }[] = [];
+  const recordingCtx = new Proxy(
+    {},
+    {
+      get: (_t, key) =>
+        key === 'fillRect'
+          ? (x: number, y: number, w: number) => {
+              rects.push({ x, y, w });
+            }
+          : () => undefined,
+      set: () => true,
+    },
+  );
+
+  beforeEach(() => {
+    vi.stubGlobal('document', {
+      createElement: () => ({ getContext: () => recordingCtx }),
+    });
+    drawn.length = 0;
+    rects.length = 0;
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  for (const tier of [1, 2, 3]) {
+    test(`tier ${String(tier)} draws ${String(tier === 1 ? 0 : tier)} small pips in the top-left corner`, () => {
+      const wall = content.buildings
+        .list()
+        .find((d) => d.kind === 'defense' && d.defenseType === 'wall');
+      const board = {
+        frame: { ox: 0, oy: 0, w: 1, h: 1, turned: false },
+        features: [],
+        nodes: [],
+        conduits: [],
+        core: null,
+        salt: 0,
+        buildings: [
+          {
+            def: wall,
+            instance: { rotation: 0, tier, owner: 0 },
+            rect: { x: 0, y: 0, w: 1, h: 1 },
+            label: '',
+            solid: false,
+            notches: [],
+          },
+        ],
+      } as unknown as BoardScene;
+      drawBoardLayer(ctx as never, board, theme, 0, 0, 16, 16, 16);
+      // Single-pixel gold pips inside the corner 6x6 of the 16x16 cell, clear
+      // of the mid-edge ports and notches.
+      const pips = rects.filter((r) => r.w === 1);
+      expect(pips.length).toBe(tier === 1 ? 0 : tier);
+      for (const p of pips) {
+        expect(p.x).toBeLessThan(6);
+        expect(p.y).toBeLessThan(6);
+      }
+    });
+  }
+});

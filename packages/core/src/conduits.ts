@@ -345,7 +345,7 @@ function nodeKey(
   return String(end.building);
 }
 
-interface NodeRef {
+export interface NodeRef {
   readonly key: string;
   readonly building: number;
   readonly channel: Side | null;
@@ -363,7 +363,7 @@ function compareNodes(a: NodeRef, b: NodeRef): number {
  * first. `nodes` must hold every node named by an edge. Returns the keys in
  * order; shorter than `nodes` exactly when there is a cycle.
  */
-function topoOrder(
+export function topoOrder(
   nodes: readonly NodeRef[],
   edges: readonly { from: string; to: string }[],
 ): string[] {

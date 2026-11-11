@@ -56,7 +56,8 @@ Output is deterministic for the same input; wall time is printed only with
 `--time`. A `BOARD` is a path to a board JSON file or a reference board name
 (`rush`, `fortify`, `siege`, `poor`), which means `boards/<name>.json`; a bare word that is not one of those names is
 treated as a path. Relative paths (boards and `--log`) resolve against the
-directory you ran `pnpm sim` from. Bad
+directory you ran `pnpm sim` from. `pnpm sim` works from the repo root or a
+non-package directory; from inside a workspace package use `pnpm -w sim`. Bad
 input prints an error and exits non-zero (2 for usage errors, 1 otherwise).
 
 ```

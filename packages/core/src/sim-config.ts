@@ -3,7 +3,7 @@
 import {
   MAX_ARENA_CELLS,
   MAX_BREACH_BASE_COST,
-  MAX_SEPARATION_PASSES,
+  MAX_SEPARATION_CAP,
 } from './limits.js';
 import {
   isRecord,
@@ -24,8 +24,10 @@ export interface SimConfig {
   readonly breachHealthPerCost: number;
   /** Centre-to-centre range, in cells, within which a unit chases an enemy unit (CB-16). */
   readonly aggroRangeCells: number;
-  /** Relaxation passes of the unit separation step (issue #59). */
-  readonly separationPasses: number;
+  /** Percent of an overlap that a pair of units resolves per tick (issue #82), rounded up. */
+  readonly separationPercent: number;
+  /** Most a pair of overlapping units is moved apart in one tick, sub-cell units (issue #82). */
+  readonly separationCap: number;
   /** Global cap on the summed `source_speed` bonus of one side, percent (SC-8). */
   readonly maxSourceSpeedPercent: number;
   /** Global cap on the summed `unit_strength` bonus of one side, percent (SC-8). */
@@ -53,7 +55,8 @@ const KEYS = new Set([
   'breachBaseCost',
   'breachHealthPerCost',
   'aggroRangeCells',
-  'separationPasses',
+  'separationPercent',
+  'separationCap',
   'maxSourceSpeedPercent',
   'maxUnitStrengthPercent',
   'overloadStartTick',
@@ -97,13 +100,21 @@ export function loadSimConfig(data: unknown): SimConfigLoadResult {
     errors,
     MAX_ARENA_CELLS,
   );
-  const separationPasses = readInt(
+  const separationPercent = readInt(
     data,
-    'separationPasses',
+    'separationPercent',
     0,
     'sim',
     errors,
-    MAX_SEPARATION_PASSES,
+    100,
+  );
+  const separationCap = readInt(
+    data,
+    'separationCap',
+    0,
+    'sim',
+    errors,
+    MAX_SEPARATION_CAP,
   );
   const maxSourceSpeedPercent = readInt(
     data,
@@ -166,7 +177,8 @@ export function loadSimConfig(data: unknown): SimConfigLoadResult {
     overloadDamageStepPercent === undefined ||
     overloadCoreDamageStep === undefined ||
     aggroRangeCells === undefined ||
-    separationPasses === undefined ||
+    separationPercent === undefined ||
+    separationCap === undefined ||
     ticksPerSecond === undefined ||
     inputBufferUnits === undefined ||
     breachBaseCost === undefined ||
@@ -182,7 +194,8 @@ export function loadSimConfig(data: unknown): SimConfigLoadResult {
       breachBaseCost,
       breachHealthPerCost,
       aggroRangeCells,
-      separationPasses,
+      separationPercent,
+      separationCap,
       maxSourceSpeedPercent,
       maxUnitStrengthPercent,
       overloadStartTick,

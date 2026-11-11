@@ -1159,20 +1159,24 @@ try {
       const v = goldenPve.find((x) => x.id === id);
       if (v === undefined) throw new Error(`golden vector ${id} is missing`);
       const sides = v.expected.result.summary.sides;
+      // The vector id names its reference board ("pve-battle.<board>-vs-...").
+      const board = /^pve-battle\.(.+?)-vs-/.exec(id)?.[1];
+      if (board === undefined) throw new Error(`no board in golden id ${id}`);
       return {
+        board,
         winner: v.expected.result.result.winner,
         endTick: v.expected.result.result.endTick,
         own: `${sides[0].coreHealth} / ${sides[0].coreMaxHealth}`,
         foe: `${sides[1].coreHealth} / ${sides[1].coreMaxHealth}`,
-        hash: (r, t, s) =>
-          `#battle?p=${r}&o=pve:${v.input.threat.archetype}:${v.input.threat.round}:${v.input.threat.type}&s=${s}&ts=${t}`,
+        hash: (t, s) =>
+          `#battle?p=${board}&o=pve:${v.input.threat.archetype}:${v.input.threat.round}:${v.input.threat.type}&s=${s}&ts=${t}`,
         battleSeed: v.input.seed,
         threatSeed: v.input.threat.seed,
       };
     };
     const winGold = golden('pve-battle.rush-vs-rusher-r1');
     const lossGold = golden('pve-battle.rush-vs-rusher-r8-loses');
-    const QUICK = winGold.hash('rush', winGold.threatSeed, winGold.battleSeed);
+    const QUICK = winGold.hash(winGold.threatSeed, winGold.battleSeed);
     const coreText = () =>
       page.evaluate(() => [
         document
@@ -1366,7 +1370,7 @@ try {
     await shot('battle-5-ready');
 
     // A lost golden PvE battle: Defeat, no life lost, no reward.
-    await open(lossGold.hash('rush', lossGold.threatSeed, lossGold.battleSeed));
+    await open(lossGold.hash(lossGold.threatSeed, lossGold.battleSeed));
     await waitPhase('playing');
     await page.click('#skip');
     await waitPhase('summary');
@@ -1508,7 +1512,14 @@ try {
     {
       const errorsBefore = consoleErrors.length;
       const hashStress = await (async () => {
-        await page.click('#skip');
+        // The battle may already be over (soft collision lets the units
+        // through, so the stress battle ends sooner).
+        if (
+          (await page.evaluate(() => window.__debug.battle.phase())) !==
+          'summary'
+        ) {
+          await page.click('#skip');
+        }
         await waitPhase('summary');
         return bd('stateHash');
       })();

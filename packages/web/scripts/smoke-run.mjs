@@ -1101,6 +1101,7 @@ export async function runRunSmoke({
   await page.waitForSelector('#new-run-button');
   await page.click('#new-run-button');
   await page.waitForSelector('#core-confirm');
+  await page.waitForFunction(() => window.__debug?.run?.state);
   const runB = (await R.state()).runId;
   check(runB !== runA, `a second run was started (${runB})`);
   // Place its Core, then back to the menu.

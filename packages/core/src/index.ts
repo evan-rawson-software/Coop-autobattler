@@ -283,7 +283,7 @@ export {
 export type { World } from './geometry.js';
 export {
   CELL_UNITS,
-  MAX_SEPARATION_PASSES,
+  MAX_SEPARATION_CAP,
   MAX_UNIT_RADIUS,
   MAX_UNIT_REACH,
 } from './limits.js';

@@ -12,6 +12,9 @@ import {
   conduitResource,
   type ConduitReason,
   type FlowGraph,
+  checkConduitList,
+  topoOrder,
+  type NodeRef,
 } from './conduits.js';
 import { loadAllContentOrThrow } from './content.js';
 import { generateMap } from './generate-map.js';
@@ -1614,4 +1617,205 @@ describe('property: random operations', () => {
       }
     },
   );
+});
+
+describe('analysis order on looped and half-built networks', () => {
+  /** Adds a conduit without any rule check, as a stored (possibly invalid) list would hold it. */
+  function raw(
+    l: Lab,
+    from: number,
+    fromSide: Side,
+    to: number,
+    toSide: Side,
+    cells: Pairs = [],
+  ): number {
+    const id = l.state.nextId;
+    l.state = {
+      ...l.state,
+      nextId: id + 1,
+      conduits: [
+        ...l.state.conduits,
+        {
+          id,
+          from: { building: from, side: fromSide },
+          to: { building: to, side: toSide },
+          cells: cellsOf(cells),
+        },
+      ],
+    };
+    return id;
+  }
+  const errorsOf = (l: Lab): string[] => {
+    const errors: string[] = [];
+    checkConduitList(l.state, content, errors);
+    return errors;
+  };
+
+  const ref = (key: string): NodeRef => {
+    const dot = key.indexOf('.');
+    return dot < 0
+      ? { key, building: Number(key), channel: null }
+      : {
+          key,
+          building: Number(key.slice(0, dot)),
+          channel: key.slice(dot + 1) as Side,
+        };
+  };
+  const order = (keys: string[], edges: [string, string][]): string[] =>
+    topoOrder(
+      keys.map(ref),
+      edges.map(([from, to]) => ({ from, to })),
+    );
+
+  test('topoOrder: smallest ready node first, a cycle and what it blocks are left out', () => {
+    // 2 <-> 5 is a cycle; 9 feeds into it; 1 and 3 -> 4 are ready and lower.
+    expect(
+      order(
+        ['9', '5', '2', '4', '3', '1'],
+        [
+          ['2', '5'],
+          ['5', '2'],
+          ['9', '5'],
+          ['3', '4'],
+        ],
+      ),
+    ).toEqual(['1', '3', '4', '9']);
+  });
+
+  test('topoOrder: ties between ready nodes follow building ID, then channel order', () => {
+    expect(
+      order(
+        ['12.west', '12.south', '12.north', '12.east', '7', '30'],
+        [
+          ['30', '12.west'],
+          ['7', '12.east'],
+        ],
+      ),
+    ).toEqual(['7', '12.north', '12.east', '12.south', '30', '12.west']);
+  });
+
+  test('topoOrder: a node freed late still goes in rank order among the ready ones', () => {
+    expect(
+      order(
+        ['1', '2', '3', '4', '5'],
+        [
+          ['5', '1'],
+          ['4', '2'],
+        ],
+      ),
+    ).toEqual(['3', '4', '2', '5', '1']);
+  });
+
+  /** Extractor (res_a, north) and (res_b, east), mergers at (5,6) and (8,6). */
+  function mergerLab(): { l: Lab; ea: number; eb: number; m: number[] } {
+    const l = new Lab();
+    const ea = l.put('bld_extractor', 2, 2);
+    const eb = l.put('bld_extractor', 11, 3, 90);
+    const m1 = l.put('bld_merger', 5, 6);
+    const m2 = l.put('bld_merger', 8, 6);
+    return { l, ea, eb, m: [m1, m2] };
+  }
+
+  test('a loop with a ready chain beside it reports only would_loop', () => {
+    const l = new Lab();
+    const sa = l.put('bld_extractor', 2, 2);
+    const q = l.put('bld_splitter', 2, 3);
+    const b = l.put('bld_barracks', 2, 4);
+    const m = l.put('bld_merger', 5, 6);
+    const p1 = l.put('bld_splitter', 5, 7);
+    const p2 = l.put('bld_splitter', 8, 7, 90);
+    l.link(sa, 'north', q, 'south');
+    l.link(q, 'north', b, 'south');
+    l.link(m, 'north', p1, 'south');
+    l.link(p1, 'east', p2, 'west', [
+      [6, 7],
+      [7, 7],
+    ]);
+    expect(errorsOf(l)).toEqual([]);
+    raw(l, p2, 'south', m, 'east', [
+      [8, 6],
+      [7, 6],
+      [6, 6],
+    ]);
+    expect(errorsOf(l)).toEqual([
+      'conduits: would_loop (the network has a loop).',
+    ]);
+    expect(() => buildFlowGraph(l.state, content)).toThrow(
+      'The conduit network contains a loop.',
+    );
+  });
+
+  test('a half-built network: a conduit to an unknown building is listed first, the loop still reported', () => {
+    const l = new Lab();
+    const m = l.put('bld_merger', 5, 6);
+    const p1 = l.put('bld_splitter', 5, 7);
+    const p2 = l.put('bld_splitter', 8, 7, 90);
+    l.link(m, 'north', p1, 'south');
+    l.link(p1, 'east', p2, 'west', [
+      [6, 7],
+      [7, 7],
+    ]);
+    raw(l, 999, 'north', m, 'west');
+    raw(l, p2, 'south', m, 'east', [
+      [8, 6],
+      [7, 6],
+      [6, 6],
+    ]);
+    expect(errorsOf(l)).toEqual([
+      'conduits[2] (id 6): unknown_building (999).',
+      'conduits: would_loop (the network has a loop).',
+    ]);
+  });
+
+  test('two conduits into one merger side: the first in list order is the one that counts', () => {
+    const run = (flip: boolean, third: boolean): string[] => {
+      const { l, ea, eb, m } = mergerLab();
+      const mm = got(m[0]);
+      const ca = (): void => void raw(l, ea, 'north', mm, 'south');
+      const cb = (): void => void raw(l, eb, 'east', mm, 'south');
+      if (flip) {
+        cb();
+        ca();
+      } else {
+        ca();
+        cb();
+      }
+      if (third) raw(l, eb, 'east', mm, 'west');
+      return errorsOf(l);
+    };
+    expect(run(false, false)).toEqual([
+      'conduits[0] (id 5): side_in_use (input).',
+      'conduits[1] (id 6): side_in_use (input).',
+    ]);
+    expect(run(true, false)).toEqual([
+      'conduits[0] (id 5): side_in_use (input).',
+      'conduits[1] (id 6): side_in_use (input).',
+    ]);
+    expect(run(false, true)).toEqual([
+      'conduits[0] (id 5): side_in_use (input).',
+      'conduits[1] (id 6): side_in_use (output).',
+      'conduits[2] (id 7): side_in_use (output).',
+      'conduits: resource_mismatch (merger 3 is fed both res_a and res_b).',
+    ]);
+    expect(run(true, true)).toEqual([
+      'conduits[0] (id 5): side_in_use (output).',
+      'conduits[1] (id 6): side_in_use (input).',
+      'conduits[2] (id 7): side_in_use (output).',
+    ]);
+  });
+
+  test('several mismatched mergers: the lowest building ID is the one reported', () => {
+    const { l, ea, eb, m } = mergerLab();
+    for (const mm of m) {
+      raw(l, ea, 'north', mm, 'south');
+      raw(l, eb, 'east', mm, 'west');
+    }
+    expect(errorsOf(l)).toEqual([
+      'conduits[0] (id 5): side_in_use (output).',
+      'conduits[1] (id 6): side_in_use (output).',
+      'conduits[2] (id 7): side_in_use (output).',
+      'conduits[3] (id 8): side_in_use (output).',
+      'conduits: resource_mismatch (merger 3 is fed both res_a and res_b).',
+    ]);
+  });
 });
