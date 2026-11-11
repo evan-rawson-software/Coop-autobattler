@@ -25,6 +25,7 @@ import { BuildSession } from '../build/session.js';
 import { gameConfigs } from '../build/setup.js';
 import { content } from '../content.js';
 import { driveToShop, type NextBattle } from './drive.js';
+import { INSTALLED_VERSION, RUN_VERSION } from './version.js';
 import {
   browserStorage,
   createLocalStorageSaveStore,
@@ -36,9 +37,6 @@ import {
   type StorageLike,
 } from './local-storage-store.js';
 
-/** The version recorded in saves written by this prototype. */
-const RUN_VERSION = '0.1';
-const INSTALLED_VERSION = '0.1.0';
 
 export interface ShopRun {
   readonly session: BuildSession;
