@@ -29,25 +29,147 @@ export const GHOST_MAX_LABEL_LENGTH = 40;
 /**
  * Hardening limits for untrusted snapshots (the pool is external data).
  *
- * A snapshot's size is the length of its canonical JSON text. Real ones were
- * measured with a buying bot at 13 rounds: about 1.7 KB at round 1 and 2.8 KB
- * at round 13 for a party of one, 6.4 KB and 9.7 KB for a party of four (the
- * map is most of it; every building adds about 30 to 70 bytes). The limit is
- * `GHOST_MAX_BYTES_BASE + GHOST_MAX_BYTES_PER_PLAYER * partySize`, which is
- * about 5 to 6 times the measured figure at every party size, so a long run
- * with many placed buildings fits and a payload that is mostly padding does
- * not.
+ * A snapshot's size is the length of its canonical JSON text. The limit is not
+ * a flat number: it is derived from what a legitimate snapshot of that party
+ * size and round can contain, see `ghostMaxSerializedSize`.
  */
-export const GHOST_MAX_BYTES_BASE = 4096;
-export const GHOST_MAX_BYTES_PER_PLAYER = 12288;
+/** Fixed allowance on top of the derived limit (ids, labels, counters, field names). */
+export const GHOST_MAX_BYTES_MARGIN = 4096;
+/** Highest round accepted in a snapshot (bounds the limit computed from it). */
+export const GHOST_MAX_ROUND = 1000;
 /** Deepest nesting of a snapshot (the real one is under 8 levels). */
 export const GHOST_MAX_DEPTH = 16;
 /** Longest string anywhere in a snapshot (ids, labels, terrain and building names). */
 export const GHOST_MAX_STRING_LENGTH = 128;
+/** Most errors reported for one snapshot (the rest are counted, not listed). */
+export const GHOST_MAX_ERRORS = 10;
+/** Largest building instance id the size bound assumes (digits of its text). */
+const SIZE_ID_SAMPLE = 9_999_999;
+/** Modifier entry size assumed when the events configuration is not known. */
+const SIZE_MODIFIER_FALLBACK = 512;
 
-/** The largest accepted serialized size of a snapshot of a party of `partySize`. */
-export function ghostMaxSerializedSize(partySize: number): number {
-  return GHOST_MAX_BYTES_BASE + GHOST_MAX_BYTES_PER_PLAYER * partySize;
+/** What the size limit needs; `economy` and `events` give the tighter form. */
+export interface GhostSizeContext {
+  readonly content: Content;
+  readonly mapgen: MapgenConfig;
+  readonly economy?: EconomyConfig;
+  readonly events?: EventsConfig;
+}
+
+function longest(ids: readonly string[]): string {
+  let best = '';
+  for (const id of ids) if (id.length > best.length) best = id;
+  return best;
+}
+
+/** Length of the canonical JSON of a sample, plus a separator. */
+function entryLength(sample: unknown): number {
+  return canonicalJson(sample).length + 1;
+}
+
+/**
+ * The largest accepted serialized size (characters of canonical JSON) of a
+ * snapshot of a party of `partySize` at `round`, derived from what a
+ * legitimate one can hold. With `cells = partySize * plotWidth * plotDepth`
+ * and `N = floor(ghostValueBound(...).limit / cheapestPrice)` (the most
+ * buildings the value bound allows; `cells` when `economy` is not given):
+ *
+ *   map         cells * longest feature/node entry          (every cell a feature or node)
+ *   board       min(cells, N) * (placed building entry      (a building or conduit cell per cell)
+ *                  + 2 * conduit entry without cells)       (a conduit has two distinct side ends)
+ *               + conduit cells: cells * cell entry         (cells not holding a building)
+ *   stash       N * stash entry
+ *   modifiers   (2 * round - 1) * longest modifier entry
+ *   margin      GHOST_MAX_BYTES_MARGIN
+ *
+ * Every entry is measured on a worst-case sample (longest content ids,
+ * highest coordinates, instance id up to 7 digits). Compute it from the
+ * party size and round read safely first, so the structural walk is bounded
+ * before anything else reads the value.
+ */
+export function ghostMaxSerializedSize(
+  partySize: number,
+  round: number,
+  ctx: GhostSizeContext,
+): number {
+  const { content, mapgen } = ctx;
+  const width = partySize * mapgen.plotWidth;
+  const cells = width * mapgen.plotDepth;
+  const digits = (n: number): number => String(n).length;
+  const coord = {
+    x: 10 ** digits(Math.max(0, width - 1)) - 1,
+    y: 10 ** digits(Math.max(0, mapgen.plotDepth - 1)) - 1,
+  };
+  const featureId = longest(content.terrain.list().map((t) => t.id));
+  const resourceId = longest(content.resources.list().map((r) => r.id));
+  const mapEntry = Math.max(
+    entryLength({ ...coord, feature: featureId }),
+    entryLength({ ...coord, resource: resourceId }),
+  );
+  const defId = longest(content.buildings.list().map((b) => b.id));
+  const building = entryLength({
+    def: defId,
+    id: SIZE_ID_SAMPLE,
+    owner: partySize,
+    rotation: 3,
+    tier: 3,
+    ...coord,
+  });
+  const stashEntry = entryLength({
+    def: defId,
+    id: SIZE_ID_SAMPLE,
+    owner: partySize,
+    tier: 3,
+  });
+  const end = { building: SIZE_ID_SAMPLE, side: 'north' };
+  const conduit = entryLength({
+    cells: [],
+    from: end,
+    id: SIZE_ID_SAMPLE,
+    to: end,
+  });
+  const cellEntry = entryLength(coord);
+
+  let items = cells;
+  if (ctx.economy !== undefined && ctx.events !== undefined) {
+    let cheapest = Number.POSITIVE_INFINITY;
+    for (const b of content.buildings.list()) {
+      const t = b.tiers[0];
+      if ('price' in t) {
+        const price = (t as { readonly price: number }).price;
+        if (price > 0 && price < cheapest) cheapest = price;
+      }
+    }
+    if (Number.isFinite(cheapest)) {
+      const limit = ghostValueBound(
+        round,
+        partySize,
+        content,
+        ctx.economy,
+        ctx.events,
+      ).limit;
+      items = Math.floor(limit / cheapest);
+    }
+  }
+  let modifier = SIZE_MODIFIER_FALLBACK;
+  if (ctx.events !== undefined) {
+    modifier = 0;
+    for (const m of ctx.events.modifiers) {
+      modifier = Math.max(
+        modifier,
+        entryLength({ effects: m.effects, id: m.id }),
+      );
+    }
+  }
+  const placed = Math.min(cells, items);
+  return (
+    cells * mapEntry +
+    placed * (building + 2 * conduit) +
+    cells * cellEntry +
+    items * stashEntry +
+    (2 * round - 1) * modifier +
+    GHOST_MAX_BYTES_MARGIN
+  );
 }
 
 export interface GhostOwner {
@@ -304,11 +426,17 @@ function textProblem(v: unknown, max: number): string | null {
  * no `undefined`, floats, NaN, Infinity, class instances), nesting at most
  * `GHOST_MAX_DEPTH`, every string at most `GHOST_MAX_STRING_LENGTH`, and a
  * serialized length (counted as the canonical JSON text would be) at most
- * `maxSize`. Stops at the first violation, so a huge or deep value costs
- * little. Returns the problem, or null.
+ * `maxSize`. The budget is charged incrementally and the walk stops at the
+ * first violation: an array or object whose element count alone cannot fit in
+ * the remaining budget (at least two characters per element, four per key) is
+ * rejected before its elements are visited, and keys are never sorted. (Only
+ * listing the keys of an object costs time in proportion to their number; the
+ * caller reads the cheap fields first, so a hostile object normally fails
+ * before this walk starts.) Returns the problem, or null.
  */
 function structureProblem(root: unknown, maxSize: number): string | null {
   let size = 0;
+  const tooBig = `larger than the ${String(maxSize)} characters allowed`;
   const visit = (v: unknown, depth: number): string | null => {
     if (depth > GHOST_MAX_DEPTH) {
       return `nested deeper than ${String(GHOST_MAX_DEPTH)} levels`;
@@ -325,28 +453,32 @@ function structureProblem(root: unknown, maxSize: number): string | null {
       size += v.length + 2;
     } else if (Array.isArray(v)) {
       size += 2;
+      if (size + 2 * v.length - 1 > maxSize) return tooBig;
       for (const item of v as unknown[]) {
         const p = visit(item, depth + 1);
         if (p !== null) return p;
         size += 1;
-        if (size > maxSize) break;
+        if (size > maxSize) return tooBig;
       }
+      if (v.length > 0) size -= 1; // no comma after the last element
     } else if (isRecord(v)) {
       size += 2;
-      for (const k of sortedKeys(v)) {
+      // eslint-disable-next-line no-restricted-properties -- order does not matter, no key is read twice
+      const keys = Object.keys(v);
+      if (size + 4 * keys.length - 1 > maxSize) return tooBig;
+      for (const k of keys) {
         if (k.length > GHOST_MAX_STRING_LENGTH) return 'a key is too long';
         size += k.length + 3;
         const p = visit(v[k], depth + 1);
         if (p !== null) return p;
         size += 1;
-        if (size > maxSize) break;
+        if (size > maxSize) return tooBig;
       }
+      if (keys.length > 0) size -= 1;
     } else {
       return 'only plain JSON values are allowed';
     }
-    return size > maxSize
-      ? `larger than the ${String(maxSize)} characters allowed`
-      : null;
+    return size > maxSize ? tooBig : null;
   };
   return visit(root, 0);
 }
@@ -361,10 +493,11 @@ export function checkGhostSnapshotShape(
   content: Content,
   mapgen: MapgenConfig,
   rules?: GhostValidationContext['rules'],
+  bounds?: Pick<GhostSizeContext, 'economy' | 'events'>,
 ): GhostValidationResult {
   const errors: string[] = [];
   try {
-    const s = shapeInner(raw, content, mapgen, rules, errors);
+    const s = shapeInner(raw, content, mapgen, rules, bounds, errors);
     if (errors.length === 0 && s !== undefined)
       return { ok: true, snapshot: s };
   } catch (e) {
@@ -373,7 +506,16 @@ export function checkGhostSnapshotShape(
     );
   }
   if (errors.length === 0) errors.push('snapshot: invalid.');
-  return { ok: false, errors };
+  return { ok: false, errors: capErrors(errors) };
+}
+
+/** The first `GHOST_MAX_ERRORS` errors, then one line counting the rest. */
+function capErrors(errors: readonly string[]): readonly string[] {
+  if (errors.length <= GHOST_MAX_ERRORS) return errors;
+  return [
+    ...errors.slice(0, GHOST_MAX_ERRORS),
+    `and ${String(errors.length - GHOST_MAX_ERRORS)} more.`,
+  ];
 }
 
 function shapeInner(
@@ -381,32 +523,58 @@ function shapeInner(
   content: Content,
   mapgen: MapgenConfig,
   rules: GhostValidationContext['rules'] | undefined,
+  bounds: Pick<GhostSizeContext, 'economy' | 'events'> | undefined,
   errors: string[],
 ): GhostSnapshot | undefined {
   if (!isRecord(raw)) {
     errors.push('snapshot: must be an object.');
     return undefined;
   }
-  for (const k of sortedKeys(raw)) {
-    if (RESERVED.includes(k)) {
+  // Cheap and bounded first: reserved fields by lookup, then the two fields
+  // the size limit is computed from. Nothing here lists the keys of `raw`.
+  for (const k of RESERVED) {
+    if (Object.prototype.hasOwnProperty.call(raw, k)) {
       errors.push(`snapshot: "${k}" is reserved and not accepted yet.`);
-    } else if (!KEYS.has(k)) {
-      errors.push(`snapshot: unknown field "${k}".`);
     }
   }
-  // Before anything reads into the value: its size, depth and numbers.
   const declared = raw['partySize'];
+  const declaredRound = raw['round'];
+  const sizeOk =
+    isInt(declared) && declared >= 1 && declared <= mapgen.maxPartySize;
+  const roundOk =
+    isInt(declaredRound) &&
+    declaredRound >= 1 &&
+    declaredRound <= GHOST_MAX_ROUND;
+  if (!sizeOk || !roundOk) {
+    if (!sizeOk) {
+      errors.push(
+        `partySize: must be an integer from 1 to ${String(mapgen.maxPartySize)}.`,
+      );
+    }
+    if (!roundOk) {
+      errors.push(
+        `round: must be an integer from 1 to ${String(GHOST_MAX_ROUND)}.`,
+      );
+    }
+    return undefined;
+  }
+  // Before anything reads into the value: its size, depth and numbers.
   const sizeProblem = structureProblem(
     raw,
-    ghostMaxSerializedSize(
-      isInt(declared) && declared >= 1 && declared <= mapgen.maxPartySize
-        ? declared
-        : mapgen.maxPartySize,
-    ),
+    ghostMaxSerializedSize(declared, declaredRound, {
+      content,
+      mapgen,
+      ...bounds,
+    }),
   );
   if (sizeProblem !== null) {
     errors.push(`snapshot: ${sizeProblem}.`);
     return undefined;
+  }
+  for (const k of sortedKeys(raw)) {
+    if (!KEYS.has(k) && !RESERVED.includes(k)) {
+      errors.push(`snapshot: unknown field "${k}".`);
+    }
   }
   if (raw['formatVersion'] !== GHOST_SNAPSHOT_FORMAT_VERSION) {
     errors.push(
@@ -428,8 +596,6 @@ function shapeInner(
     );
   }
   const round = raw['round'];
-  if (!isInt(round) || round < 1)
-    errors.push('round: must be an integer >= 1.');
   const mapSeed = raw['mapSeed'];
   if (!isU32(mapSeed)) errors.push('mapSeed: must be a u32 integer.');
   const runId = raw['runId'];
@@ -498,7 +664,9 @@ function shapeInner(
 
   const team = validateTeamState(raw['team'], content, mapgen);
   if (!team.ok) {
-    for (const e of team.errors) errors.push(`team: ${e}`);
+    for (const e of team.errors.slice(0, GHOST_MAX_ERRORS)) {
+      errors.push(`team: ${e}`);
+    }
     return undefined;
   }
   const t = team.state;
@@ -541,6 +709,7 @@ export function validateGhostSnapshot(
     ctx.content,
     ctx.mapgen,
     ctx.rules,
+    ctx,
   );
   if (!shape.ok) return shape;
   const errors: string[] = [];
@@ -551,7 +720,7 @@ export function validateGhostSnapshot(
       `snapshot: could not be checked (${e instanceof Error ? e.message : 'unknown error'}).`,
     );
   }
-  return errors.length === 0 ? shape : { ok: false, errors };
+  return errors.length === 0 ? shape : { ok: false, errors: capErrors(errors) };
 }
 
 function plausibility(

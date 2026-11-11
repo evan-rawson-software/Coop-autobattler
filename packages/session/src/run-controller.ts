@@ -46,6 +46,12 @@ export type DispatchResult =
        * removing the save failed. `initSaves` finishes the job at next start.
        */
       readonly warning?: 'finish_incomplete';
+      /**
+       * Set when this dispatch left the PvP opponent still to be chosen and
+       * the automatic selection failed (`save_failed` or `invalid_state`):
+       * the cause, which the next dispatch or `prepare` retries.
+       */
+      readonly selectionFailure?: SelectionFailure;
     }
   | {
       readonly ok: false;
@@ -58,7 +64,21 @@ export type DispatchResult =
        */
       readonly reason: RejectReason | 'save_failed' | 'invalid_state';
       readonly detail?: string;
+      /**
+       * When the rejection is `ghost_selection_pending`, why the automatic
+       * selection did not happen (if it was tried and failed).
+       */
+      readonly selectionFailure?: SelectionFailure;
     };
+
+/** Reasons only the run controller adds to a rule rejection. */
+export const CONTROLLER_REASONS = ['save_failed', 'invalid_state'] as const;
+
+/** Why the automatic ghost selection did not complete. */
+export interface SelectionFailure {
+  readonly reason: RejectReason | 'save_failed' | 'invalid_state';
+  readonly detail?: string;
+}
 
 /** Optional parts of a controller. */
 export interface ControllerOptions {
@@ -90,8 +110,12 @@ export interface RunController {
    * Make sure the PvP opponent is fixed if the run is in the shop before a
    * PvP battle and ghosts are on (e.g. after reopening a save made between
    * entering the shop and selecting). `dispatch` does this itself first.
+   * Resolves with the failure when the selection was tried and did not
+   * complete (it is retried by the next call), else null.
    */
-  prepare(now: number): Promise<void>;
+  prepare(now: number): Promise<SelectionFailure | null>;
+  /** The failure of the last selection attempt, or null (none, or it succeeded). */
+  readonly selectionFailure: SelectionFailure | null;
 }
 
 /** Record a finished run in history, then remove its save, in that order. */
@@ -115,6 +139,7 @@ function makeController(
 ): RunController {
   let current = initial;
   let tail: Promise<unknown> = Promise.resolve();
+  let selectionFailure: SelectionFailure | null = null;
   const ghostStore = options.ghostStore;
 
   /** Apply, save, then do the side effects the machine asked for. */
@@ -191,6 +216,8 @@ function makeController(
           effects: [...r.effects, ...sel.effects],
           ...(r.warning === undefined ? {} : { warning: r.warning }),
         };
+      } else if (selectionFailure !== null) {
+        result = { ...result, selectionFailure };
       }
     }
     return result;
@@ -209,11 +236,20 @@ function makeController(
       }
     }
     const candidates = presentCandidates(raw, current, vctx);
-    return commit(
+    const r = await run(
       current.host,
       { type: SELECT_GHOST, candidates: candidates as unknown as Json },
       now,
     );
+    if (r.ok) {
+      selectionFailure = null;
+      return r;
+    }
+    selectionFailure = {
+      reason: r.reason,
+      ...(r.detail === undefined ? {} : { detail: r.detail }),
+    };
+    return r;
   }
 
   async function commit(
@@ -225,8 +261,15 @@ function makeController(
     return r.ok ? afterSave(r, now) : r;
   }
 
-  async function ensureSelection(now: number): Promise<void> {
-    if (selectionPending(current, deps)) await selectGhostNow(now);
+  async function ensureSelection(
+    now: number,
+  ): Promise<SelectionFailure | null> {
+    if (!selectionPending(current, deps)) {
+      selectionFailure = null;
+      return null;
+    }
+    await selectGhostNow(now);
+    return selectionFailure;
   }
 
   return {
@@ -234,10 +277,22 @@ function makeController(
     get state(): RunState {
       return current;
     },
+    get selectionFailure(): SelectionFailure | null {
+      return selectionFailure;
+    },
     dispatch(player, intent, now) {
       const result = tail.then(async () => {
-        await ensureSelection(now);
-        return commit(player, intent, now);
+        const failed = await ensureSelection(now);
+        const r = await commit(player, intent, now);
+        // A rule rejection that is only the missing selection says why.
+        if (
+          !r.ok &&
+          r.reason === 'ghost_selection_pending' &&
+          failed !== null
+        ) {
+          return { ...r, selectionFailure: failed };
+        }
+        return r;
       });
       tail = result.catch(() => undefined);
       return result;

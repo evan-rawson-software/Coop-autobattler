@@ -2894,6 +2894,15 @@ before the selection, `RunController.prepare` finishes it when the run is
 opened. Players are told before the battle: "Opponent: a ghost of <label>" or
 "Opponent: the boss (no ghost available)" (MM-11).
 
+If the automatic selection fails (`save_failed`, or `invalid_state` from the
+validation before the save), nothing is chosen and the failure is reported, not
+swallowed: the dispatch that entered the shop returns `selectionFailure`
+(`{ reason, detail? }`, additive), a `ready` refused with
+`ghost_selection_pending` carries the same cause, `prepare` resolves with it,
+and `controller.selectionFailure` holds the last one. The next `dispatch` or
+`prepare` retries the selection. `select_ghost` is in `allowedIntents` of the
+host only while a selection is owed.
+
 Only the host may send `select_ghost` (`not_host` otherwise; it is not in
 `allowedIntents` of other players), so a non-host cannot force the boss with an
 empty list.
@@ -2939,8 +2948,35 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
    40 characters). Checked first, on the raw value, stopping at the first
    violation: plain JSON only, every number a safe integer, nesting at most 16
    levels, every string and key at most 128 characters, and a canonical JSON
-   length of at most `4096 + 12288 * partySize` characters (measured: 1.7 to
-   2.8 KB for one player and 6.4 to 9.7 KB for four, from round 1 to 13).
+   length of at most `ghostMaxSerializedSize(partySize, round)`, below. Only
+   `partySize` (1 to `maxPartySize`) and `round` (1 to 1000) are read before
+   this walk, and a value where either is not an integer in range is rejected
+   without being walked. The walk counts characters incrementally and gives up
+   as soon as the budget is exceeded (an array or object whose element count
+   alone cannot fit is rejected before its elements are visited; nothing is
+   sorted), and at most 10 errors are reported (then "and N more").
+
+   **Size limit.** Derived from what a legitimate snapshot can contain, with
+   `cells = partySize * plotWidth * plotDepth`, `V = ghostValueBound(round,
+   partySize).limit` and `N = floor(V / cheapest tier-1 price)` (`cells` when
+   the economy numbers are not at hand, as in `checkGhostSnapshotShape`
+   without bounds):
+
+       limit = cells * mapEntry                          (every cell a feature or node)
+             + min(cells, N) * (buildingEntry            (every cell a building ...
+                                + 2 * conduitEntry)      ... with two conduit ends per side pair
+             + cells * conduitCellEntry                  (or a conduit cell)
+             + N * stashEntry                            (the whole value bound in the stash)
+             + (2 * round - 1) * modifierEntry           (one modifier per event step)
+             + 4096                                      (margin: ids, labels, counters)
+
+   Each entry is the canonical length of a worst-case sample (longest content
+   id, highest coordinates, instance id of 7 digits) plus a comma. With the
+   shipped content: party 1 gives 33,287 (round 1), 58,064 (round 10) and
+   99,359 (round 25) characters; party 4 gives 120,542, 213,926 and 369,566.
+   (The earlier flat `4096 + 12288 * partySize` dropped a legitimate late
+   four-player board of about 63 KB at round 23; the limit now always exceeds
+   what the board and the value bound allow.)
 2. **Whole team state** (`validateTeamState`): legal placement on its own map
    (extractors on nodes, nothing on natural features, a legal Core position,
    known buildings, tiers 1 to 3, conduits), plus the Core must be placed and

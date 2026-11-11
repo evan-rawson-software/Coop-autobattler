@@ -161,13 +161,13 @@ describe('item 1: reserved fields and structural hardening', () => {
       bad.team.stash.push({ id: 100 + i, def: 'bld_wall', tier: 1, owner: 0 });
     }
     expect(canonicalJson(bad).length).toBeGreaterThan(
-      ghostMaxSerializedSize(1),
+      ghostMaxSerializedSize(1, 3, ctx),
     );
     const r = validateGhostSnapshot(bad, ctx);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errors.join(' ')).toContain('larger than');
-    expect(ghostMaxSerializedSize(4)).toBeGreaterThan(
-      ghostMaxSerializedSize(1),
+    expect(ghostMaxSerializedSize(4, 3, ctx)).toBeGreaterThan(
+      ghostMaxSerializedSize(1, 3, ctx),
     );
     // The limit has margin over real snapshots of every party size.
     for (const size of [1, 2, 3, 4]) {
@@ -180,7 +180,7 @@ describe('item 1: reserved fields and structural hardening', () => {
       const last = run.snapshots[run.snapshots.length - 1] as GhostSnapshot;
       const bytes = canonicalJson(last).length;
       expect(bytes * 4, `party ${String(size)}`).toBeLessThan(
-        ghostMaxSerializedSize(size),
+        ghostMaxSerializedSize(size, 13, ctx),
       );
     }
   });

@@ -89,6 +89,8 @@ export {
   type OpenRunResult,
   type RemoveRunResult,
   type RunController,
+  CONTROLLER_REASONS,
+  type SelectionFailure,
   type StartRunResult,
 } from './run-controller.js';
 export {
@@ -141,6 +143,7 @@ export {
   ghostContext,
   ghostOwnerFor,
   hasSelection,
+  GHOST_REASONS,
   partyLabel,
   presentCandidates,
   pvpOpponentInfo,

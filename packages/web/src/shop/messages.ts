@@ -1,5 +1,5 @@
 /** Wording for the Shop tab's rejections and confirmations. UI text only. */
-import { reasonMessage } from '../build/reasons.js';
+import { reasonMessage, type SelectionCause } from '../build/reasons.js';
 import { STALE_MESSAGE } from '../run/local-storage-store.js';
 
 const SHOP_REASONS: Readonly<Record<string, string>> = {
@@ -9,9 +9,13 @@ const SHOP_REASONS: Readonly<Record<string, string>> = {
   not_owner: 'That building belongs to another player.',
 };
 
-export function shopReason(reason: string, detail?: string): string {
+export function shopReason(
+  reason: string,
+  detail?: string,
+  cause?: SelectionCause,
+): string {
   if (reason === 'save_failed' && detail === STALE_MESSAGE) {
     return `${STALE_MESSAGE} Nothing was changed. Reload to see the saved run.`;
   }
-  return SHOP_REASONS[reason] ?? reasonMessage(reason, detail);
+  return SHOP_REASONS[reason] ?? reasonMessage(reason, detail, cause);
 }

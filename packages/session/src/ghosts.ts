@@ -51,6 +51,13 @@ export const BOSS_LABEL = 'the boss';
 /** The intent type that fixes the PvP opponent. */
 export const SELECT_GHOST = 'select_ghost';
 
+/** Reasons the ghost selection can reject with (besides the built-in ones). */
+export const GHOST_REASONS = [
+  'ghost_selection_pending',
+  'already_selected',
+  'replay_mismatch',
+] as const;
+
 /** A display label for a party: the player names, cleaned and shortened. */
 export function partyLabel(state: Pick<RunState, 'players'>): string {
   const joined = state.players
@@ -164,13 +171,17 @@ export function eligibleGhosts(
   const seen = new Set<string>();
   const out: GhostSnapshot[] = [];
   for (const item of raw) {
-    if (!cheapEligible(item, state)) continue;
-    const v = validateGhostSnapshot(item, ctx);
-    if (!v.ok) continue;
-    const key = ghostKey(v.snapshot);
-    if (fought.has(key) || seen.has(key)) continue;
-    seen.add(key);
-    out.push(v.snapshot);
+    try {
+      if (!cheapEligible(item, state)) continue;
+      const v = validateGhostSnapshot(item, ctx);
+      if (!v.ok) continue;
+      const key = ghostKey(v.snapshot);
+      if (fought.has(key) || seen.has(key)) continue;
+      seen.add(key);
+      out.push(v.snapshot);
+    } catch {
+      // A value that throws when read (a getter, a proxy) is not a candidate.
+    }
   }
   return out.sort(compareGhosts);
 }
