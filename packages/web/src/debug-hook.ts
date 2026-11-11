@@ -156,7 +156,7 @@ export const DEBUG_HOOK: boolean =
   import.meta.env.DEV || import.meta.env.MODE === 'debug';
 
 export function registerDebug(patch: DebugHook): void {
-  if (!DEBUG_HOOK) return;
+  if (!DEBUG_HOOK || typeof window === 'undefined') return;
   window.__debug = { ...window.__debug, ...patch };
 }
 
