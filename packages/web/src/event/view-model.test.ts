@@ -54,18 +54,25 @@ describe('the battle header', () => {
 
   test('the PvE payout is the recorded gold, or the rewards table for an older save', () => {
     const run = reachStep('event_choice');
-    const pve = run.thisRound.pve;
-    if (pve === null || !pve.won) return;
-    const recorded = {
+    const rec = run.thisRound.pve;
+    expect(rec).not.toBeNull();
+    if (rec === null) return;
+    // A won battle, whatever the fixture run did.
+    const won = { ...rec, won: true };
+    const withRec = (pve: typeof rec) => ({
       ...run,
-      thisRound: { ...run.thisRound, pve: { ...pve, goldPaid: 77 } },
-    };
-    expect(battleHeader(recorded, realDeps())?.payout).toBe('+77 gold');
+      thisRound: { ...run.thisRound, pve },
+    });
+    expect(
+      battleHeader(withRec({ ...won, goldPaid: 77 }), realDeps())?.payout,
+    ).toBe('+77 gold');
     const old = JSON.parse(
-      JSON.stringify({ ...pve, goldPaid: undefined }),
-    ) as typeof pve;
-    const legacy = { ...run, thisRound: { ...run.thisRound, pve: old } };
-    expect(battleHeader(legacy, realDeps())?.payout).toMatch(/^\+\d+ gold$/);
+      JSON.stringify({ ...won, goldPaid: undefined }),
+    ) as typeof rec;
+    expect(old.goldPaid).toBeUndefined();
+    expect(battleHeader(withRec(old), realDeps())?.payout).toBe(
+      `+${String(realDeps().rewards?.pveWin[old.difficulty as 'medium'])} gold`,
+    );
   });
 
   test('after a PvP battle: the boss, and the life a loss costs', () => {
