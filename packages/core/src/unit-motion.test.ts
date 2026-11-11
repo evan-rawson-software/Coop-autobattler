@@ -386,7 +386,7 @@ describe('relaxation passes after the first', () => {
       for (const passes of [2, 4]) {
         const a = denseBattle(seed, passes);
         const b = denseBattle(seed, passes);
-        b.ctx.motion.everyMover = true;
+        b.ctx.motion = new MotionScratch(true);
         for (let t = 0; t < 25; t++) {
           stepArena(a.sim, a.ctx);
           stepArena(b.sim, b.ctx);
@@ -422,6 +422,24 @@ describe('the invariant for extreme units in dense layouts', () => {
     expect(circleViolations(sim, ctx)).toEqual([]);
     a.px += 100; // the mite (20) and the ogre (170) now overlap
     expect(circleViolations(sim, ctx)).toHaveLength(1);
+  });
+
+  test('circleViolations throws on a unit of an unknown type', () => {
+    const { sim, ctx } = startArenaBattle(
+      corridorBoard(Rng.fromSeed(1)),
+      corridorBoard(Rng.fromSeed(2)),
+      3,
+      extremeContent,
+      simConfig,
+    );
+    const a = spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_mite',
+      px: 600,
+      py: 4200,
+    });
+    (a as { def: string }).def = 'unit_typo';
+    expect(() => circleViolations(sim, ctx)).toThrow(/unknown unit type/);
   });
 
   test('no overlap, nothing inside blocked ground, over thousands of seeded runs', () => {

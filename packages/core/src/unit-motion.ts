@@ -95,11 +95,14 @@ export class MotionScratch {
   private gw = 1;
   private gh = 1;
   readonly tmp = new Int32Array(2);
+
   /**
-   * Test hook: look at every mover in every relaxation pass (the plain
-   * algorithm). The result must be the same either way.
+   * @param everyMover Test-only: look at every mover in every relaxation
+   * pass (the plain algorithm) instead of only the ones that can see a
+   * change. The result must be the same either way; production code never
+   * sets it.
    */
-  everyMover = false;
+  constructor(private readonly everyMover = false) {}
 
   /** Make room for `n` units (contents of the input arrays are kept). */
   ensure(n: number): void {
