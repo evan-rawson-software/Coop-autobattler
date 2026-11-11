@@ -80,6 +80,12 @@ export interface BattleDebug {
   storedEventLogHash: () => string | null;
   unitsAlive: () => number;
   simMs: () => number;
+  /** How the latest simulation ran (worker or main thread) and its timing. */
+  simInfo: () => {
+    usesWorker: boolean;
+    ranOnMainThread: boolean;
+    roundTripMs: number;
+  };
   ready: () => boolean;
   /** Per side, what the visual simulation's board holds. */
   scene: () => DebugScene;

@@ -39,7 +39,6 @@ import { BattleSummaryView, LeftPanels, RightPanels } from './panels.js';
 import {
   Playback,
   replayMatches,
-  simulateRecord,
   type BattleRecord,
   type PlaybackSpeed,
 } from './playback.js';
@@ -51,6 +50,7 @@ import {
   type SampleSelection,
 } from './samples.js';
 import { overloadLine } from '../choice/overload.js';
+import { simClient, type RecordOutcome } from '../sim-worker/client.js';
 import { createReadyGate } from './ready-gate.js';
 import { battleConfig } from './setup.js';
 import type { BattleDescription, BattleViewProps } from './types.js';
@@ -82,11 +82,11 @@ const MISMATCH = Symbol('replay mismatch');
  */
 function prepare(
   battle: BattleDescription,
+  made: RecordOutcome,
   initialTick: number,
   storedHash: string | undefined,
 ): Prep | string | typeof MISMATCH {
-  const made = simulateRecord(battle, content, battleConfig);
-  if (!made.ok) return made.error.message;
+  if (!made.ok) return made.message;
   const record = made.record;
   if (storedHash !== undefined && !replayMatches(record, storedHash)) {
     return MISMATCH;
@@ -142,18 +142,22 @@ export function BattleView(props: BattleViewProps) {
   const latestStored = useRef(props.stored);
   latestStored.current = props.stored;
 
-  // Simulate after the first paint, so the page shows "preparing" first.
+  // The simulation runs in a worker (or, without one, on the main thread
+  // after a macrotask), so the page paints "preparing" first and stays
+  // responsive. A new battle cancels the old request, and a result that
+  // arrives for a request that was cancelled is never shown.
   useEffect(() => {
     setPrep(null);
     let cancelled = false;
-    let timer = 0;
-    const raf = requestAnimationFrame(() => {
-      timer = window.setTimeout(() => {
+    const handle = simClient.simulate(props.battle);
+    handle.promise.then(
+      (made) => {
         if (cancelled) return;
         try {
           setPrep(
             prepare(
               props.battle,
+              made,
               initialTick.current,
               latestStored.current?.eventLogHash,
             ),
@@ -161,12 +165,17 @@ export function BattleView(props: BattleViewProps) {
         } catch (e) {
           setPrep(e instanceof Error ? e.message : String(e));
         }
-      }, 0);
-    });
+      },
+      (e: unknown) => {
+        if (cancelled) return;
+        setPrep(e instanceof Error ? e.message : String(e));
+      },
+    );
     return () => {
       cancelled = true;
-      cancelAnimationFrame(raf);
-      window.clearTimeout(timer);
+      handle.cancel();
+      // Swallowed: a cancelled request rejects on purpose.
+      handle.promise.catch(() => undefined);
     };
     // A new battle (a new description) is simulated afresh; nothing else is.
   }, [props.battle]);
@@ -282,6 +291,11 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           latest.current.props.stored?.eventLogHash ?? null,
         unitsAlive: () => pb.sim.units.length,
         simMs: () => record.simMs,
+        simInfo: () => ({
+          usesWorker: simClient.usesWorker,
+          ranOnMainThread: simClient.lastRanOnMainThread,
+          roundTripMs: simClient.lastRoundTripMs,
+        }),
         ready: () => latest.current.ready,
         scene: () => sceneSummary(pb.sim.teams, content),
         geometry: () => ({ width: geo.width, height: geo.height }),
