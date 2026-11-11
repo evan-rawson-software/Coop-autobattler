@@ -959,12 +959,15 @@ export async function runRunSmoke({
   await page.click('#shop-ready');
   await waitStep('pvp_summary');
 
-  // PvP battle against the generated boss.
+  // PvP battle against a bundled ghost (a fresh install has no local ones).
   await page.waitForFunction(() => window.__debug?.battle?.phase, null, {
     timeout: slow(20000),
   });
   const vs = await page.locator('[data-field="vs"]').innerText();
-  check(/boss/i.test(vs), `PvP battle: the opponent is the boss ("${vs}")`);
+  check(
+    /Bundled \w+ bot/.test(vs),
+    `PvP battle: the opponent is a bundled ghost ("${vs}")`,
+  );
   await page.click('#skip');
   await page.waitForFunction(() => window.__debug.battle.phase() === 'summary');
   const pvpReward = await page.locator('[data-field="reward"]').innerText();
@@ -986,7 +989,7 @@ export async function runRunSmoke({
   );
   const header2 = await page.locator('#battle-result').innerText();
   check(
-    /^PvP battle (won|lost) · vs\. the boss/.test(header2),
+    /^PvP battle (won|lost) · vs\. Bundled \w+ bot/.test(header2),
     `event (after PvP): the header shows the PvP result ("${header2.replace(/\s+/g, ' ')}")`,
   );
 
@@ -1113,19 +1116,20 @@ export async function runRunSmoke({
   await page.mouse.click(pB.x, pB.y);
   await page.click('#core-confirm');
   await waitStep('build');
-  // The first run left its round-1 snapshot in the local ghost pool (W3-1):
-  // this run meets it in the shop before its own round-1 PvP battle.
+  // The first run left its round-1 snapshot in the local ghost pool (W3-1),
+  // beside the bundled ones (W3-2): this run meets one of them in the shop
+  // before its own round-1 PvP battle.
   await advanceUntil((s) => s.step === 'shop' && s.leg === 'pve');
   const ghostState = await R.state();
   check(
     ghostState.pvpOpponent?.kind === 'ghost' &&
       ghostState.pvpOpponent.round === ghostState.round &&
-      /^Runner /.test(ghostState.pvpOpponent.label),
+      /^(Runner |Bundled )/.test(ghostState.pvpOpponent.label),
     `second run: the PvP opponent is a ghost of round ${ghostState.round} (${JSON.stringify(ghostState.pvpOpponent)})`,
   );
   await page.waitForSelector('#shop-screen');
   check(
-    /Opponent: a ghost of Runner/.test(
+    /Opponent: a ghost of (Runner|Bundled)/.test(
       await page.locator('#shop-screen').innerText(),
     ),
     'shop: "Opponent: a ghost of ..." is shown before the PvP battle',

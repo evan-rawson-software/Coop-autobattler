@@ -203,10 +203,11 @@ export function buildingSpriteRot(
 }
 
 /**
- * Tier pips for tier 2 and 3 (tier 1 has none): a small cluster of gold dots
- * in the top-left of the building, inside the trim bracket: two across the
- * top and the third below the first, so it sits on the left edge towards the
- * middle. Placement and size are a pending design decision (#85).
+ * Tier pips for tier 2 and 3 (tier 1 has none): a tiny cluster of gold dots
+ * in the top-left corner, inside the trim bracket and clear of the ports and
+ * notches (which sit mid-edge): two across the top and the third below the
+ * first. Each pip is one gold pixel with a one-pixel dark outline, so the
+ * whole cluster covers about 5x5 of a 16x16 cell (#85).
  */
 function drawTierPips(
   lc: CanvasRenderingContext2D,
@@ -215,16 +216,16 @@ function drawTierPips(
   tier: number,
 ): void {
   const spots: readonly (readonly [number, number])[] = [
-    [4, 4],
-    [7, 4],
-    [4, 7],
+    [2, 2],
+    [4, 2],
+    [2, 4],
   ];
   const n = tier >= 3 ? 3 : 2;
   const pips = spots.slice(0, n);
   lc.fillStyle = '#1a1410';
-  for (const [x, y] of pips) lc.fillRect(px + x - 1, py + y - 1, 4, 4);
+  for (const [x, y] of pips) lc.fillRect(px + x - 1, py + y - 1, 3, 3);
   lc.fillStyle = '#f0c040';
-  for (const [x, y] of pips) lc.fillRect(px + x, py + y, 2, 2);
+  for (const [x, y] of pips) lc.fillRect(px + x, py + y, 1, 1);
 }
 
 function drawBuildings(

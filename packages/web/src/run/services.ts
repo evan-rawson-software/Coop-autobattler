@@ -15,6 +15,7 @@ import {
   createMemorySaveStore,
   ghostContext,
   initSaves,
+  layerGhostStores,
   type GhostStore,
   type InitSavesResult,
   type RunDeps,
@@ -43,7 +44,8 @@ import {
   DEFAULT_PREFIX,
   type StorageLike,
 } from './local-storage-store.js';
-import { INSTALLED_VERSION } from './version.js';
+import { loadBundledGhostStore } from './bundled-ghosts.js';
+import { INSTALLED_VERSION, RUN_VERSION } from './version.js';
 
 /**
  * What the player must be told about storage, shown on every screen: kept
@@ -81,7 +83,11 @@ export interface GameServices {
   readonly finished: FinishedRuns;
   readonly storage: StorageKind;
   readonly deps: RunDeps;
-  /** The local ghost pool (W3-1); runs write their snapshots to it and read it. */
+  /**
+   * The ghost pool: the local one (W3-1; runs write their snapshots to it)
+   * layered with the bundled ghosts as a read-only source (W3-2). `clear`
+   * clears the local pool only.
+   */
   readonly ghosts: GhostStore;
   readonly ghostStorage: GhostStorageKind;
   /** Why the preferred storage (IndexedDB) is not in use, or null. */
@@ -261,7 +267,9 @@ export async function createServices(
     storage,
     fallback: storage === 'indexeddb' ? null : (fallback ?? 'unavailable'),
     deps: runDeps,
-    ghosts: ghostPool.store,
+    ghosts: layerGhostStores(ghostPool.store, () =>
+      loadBundledGhostStore(RUN_VERSION),
+    ),
     ghostStorage: ghostPool.kind,
     init,
     watch(runId, onChange) {

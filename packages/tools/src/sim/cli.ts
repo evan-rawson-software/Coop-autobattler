@@ -25,6 +25,12 @@ import {
   type CommandOutput,
 } from './commands.js';
 import { botCommand } from './bot-command.js';
+import {
+  BUNDLED_GHOST_PATH,
+  buildBundledGhostFile,
+  bundledGhostText,
+  bundledSummary,
+} from './bundled-ghosts.js';
 import { loadSimContext, type SimContext } from './context.js';
 
 export const repoRoot = path.resolve(
@@ -129,8 +135,8 @@ export function main(argv: readonly string[], io: Io): number {
         ? resolveUserPath(cmd.log)
         : undefined;
     if (logFile !== undefined) checkLogWritable(logFile);
-    const load = (ref: string): Board => loadBoard(ref, ctx, io.err);
     const ctx = loadSimContext();
+    const load = (ref: string): Board => loadBoard(ref, ctx, io.err);
     const t0 = performance.now();
     let output: CommandOutput;
     let failed = false;
@@ -158,6 +164,32 @@ export function main(argv: readonly string[], io: Io): number {
         const r = botCommand(ctx, cmd);
         output = r;
         failed = r.failed;
+        break;
+      }
+      case 'ghosts': {
+        const file = buildBundledGhostFile(ctx);
+        const text = bundledGhostText(file);
+        const target =
+          cmd.out === null
+            ? path.join(repoRoot, BUNDLED_GHOST_PATH)
+            : resolveUserPath(cmd.out);
+        const summary = `${String(file.ghosts.length)} ghosts, ${String(text.length)} bytes\n${bundledSummary(file)}`;
+        if (cmd.check) {
+          const old = existsSync(target) ? readFileSync(target, 'utf8') : null;
+          failed = old !== text;
+          output = {
+            text: failed
+              ? `The bundled ghost file ${target} is out of date. Run \`pnpm sim ghosts\` and commit it.`
+              : `The bundled ghost file is current (${summary})`,
+          };
+        } else {
+          try {
+            writeFileSync(target, text);
+          } catch (e) {
+            throw new CliError(`Cannot write ${target}: ${fsReason(e)}.`);
+          }
+          output = { text: `Wrote ${target}: ${summary}` };
+        }
         break;
       }
       case 'batch':

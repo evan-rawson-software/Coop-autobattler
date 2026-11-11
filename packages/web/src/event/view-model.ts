@@ -71,10 +71,13 @@ export function battleHeader(
   if (run.leg === 'pve') {
     const rec = run.thisRound.pve;
     if (rec === null) return null;
+    // What was actually paid, when the round recorded it; older saves lack
+    // the field and fall back to the current rewards table.
     const gold =
-      rewards === undefined
+      rec.goldPaid ??
+      (rewards === undefined
         ? null
-        : (rewards.pveWin as Readonly<Record<string, number>>)[rec.difficulty];
+        : (rewards.pveWin as Readonly<Record<string, number>>)[rec.difficulty]);
     return {
       kind: 'pve',
       won: rec.won,

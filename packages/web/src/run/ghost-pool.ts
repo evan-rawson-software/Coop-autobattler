@@ -20,6 +20,8 @@
  * `{ bucket, value }` and `<prefix>ghostmeta:<store key>` holds the small
  * `{ bucket, owner, runId, seq, size }`; the counter is `<prefix>ghost-seq`.
  * `list` reads the small meta keys and only then the values it will return.
+ * Rows of the older shape `ghost:<[bucket, owner]>` (no meta key) are removed
+ * when the store is made.
  * A stored value that is not valid JSON is returned as the raw string; the
  * caller validates everything it reads.
  */
@@ -288,6 +290,37 @@ export function createLocalStorageGhostStore(
     }
     return out;
   };
+  /**
+   * Before the run id joined the key, a row was `ghost:<[bucket, owner]>` with
+   * no meta key. Such rows are never listed or reached, but they use quota
+   * that the saves share, so they are removed once, when the store is made.
+   * Only a key whose rest is a JSON array of exactly two strings and that has
+   * no meta key counts; anything else under `ghost:` is left alone.
+   */
+  function removeOldShapeGhostRows(): void {
+    try {
+      for (const k of keysWith(head)) {
+        const rest = k.slice(head.length);
+        if (ls.getItem(metaHead + rest) !== null) continue;
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(rest);
+        } catch {
+          continue;
+        }
+        if (
+          Array.isArray(parsed) &&
+          parsed.length === 2 &&
+          parsed.every((x) => typeof x === 'string')
+        ) {
+          ls.removeItem(k);
+        }
+      }
+    } catch {
+      // a clean-up that fails is not an error: the rows only cost quota
+    }
+  }
+  removeOldShapeGhostRows();
   return {
     save(snapshot) {
       const bucket = ghostBucketOf(snapshot);

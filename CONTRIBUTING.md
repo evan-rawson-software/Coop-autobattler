@@ -56,7 +56,8 @@ Output is deterministic for the same input; wall time is printed only with
 `--time`. A `BOARD` is a path to a board JSON file or a reference board name
 (`rush`, `fortify`, `siege`, `poor`), which means `boards/<name>.json`; a bare word that is not one of those names is
 treated as a path. Relative paths (boards and `--log`) resolve against the
-directory you ran `pnpm sim` from. Bad
+directory you ran `pnpm sim` from. `pnpm sim` works from the repo root or a
+non-package directory; from inside a workspace package use `pnpm -w sim`. Bad
 input prints an error and exits non-zero (2 for usage errors, 1 otherwise).
 
 ```
@@ -65,6 +66,8 @@ pnpm sim battle --a rush --b fortify --seed 1 [--log events.json] [--ascii]
 pnpm sim pve --team boards/rush.json --archetype rusher --type medium --round 3 --seed 1
 pnpm sim batch --a rush --b fortify --count 300 --seed 1 [--time]
 pnpm sim batch --a siege --archetype fortress --round 5 --count 100
+pnpm sim bot --strategy all --count 3 --party 2 --verify
+pnpm sim ghosts [--check]          # same as: pnpm ghosts:update
 pnpm sim --help
 ```
 
@@ -122,6 +125,12 @@ typecheck, lint, format check, test, build, content validation, smoke, then
 pushing. CI sets `CI_RELAXED_TIMING=1`, which multiplies wall-time limits
 (smoke frame intervals, battles per second, ms bounds in tests) by 3; unset,
 the strict limits apply.
+
+The web build ships bundled ghosts (`packages/web/src/run/bundled-ghosts.json`),
+made by the bot. `pnpm ghosts:update` regenerates the file (deterministic);
+a test in `packages/tools` fails when the committed file differs, so after any
+change to the sim, the bot, the content or the ghost rules run
+`pnpm ghosts:update` and commit the result (it often does not change).
 
 ## Layer rule
 
