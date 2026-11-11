@@ -59,6 +59,33 @@ export function boardSpritesReady(): boolean {
   );
 }
 
+const occupiedCache = new WeakMap<BoardScene, Uint8Array>();
+
+/**
+ * Which cells of a board (view-local, row by row) a building, the Core or a
+ * lake or cliff covers. The grid is not drawn over them, so it never cuts a
+ * sprite in two.
+ */
+export function occupiedCells(board: BoardScene): Uint8Array {
+  const hit = occupiedCache.get(board);
+  if (hit) return hit;
+  const f = board.frame;
+  const occ = new Uint8Array(f.w * f.h);
+  const mark = (r: { x: number; y: number; w: number; h: number }): void => {
+    for (let j = 0; j < r.h; j++)
+      for (let i = 0; i < r.w; i++) {
+        const cx = Math.round(r.x - f.ox) + i;
+        const cy = Math.round(r.y - f.oy) + j;
+        if (cx >= 0 && cy >= 0 && cx < f.w && cy < f.h) occ[cy * f.w + cx] = 1;
+      }
+  };
+  for (const b of board.buildings) mark(b.rect);
+  if (board.core) mark(board.core.rect);
+  for (const t of board.features) mark({ x: t.x, y: t.y, w: 1, h: 1 });
+  occupiedCache.set(board, occ);
+  return occ;
+}
+
 function makeCanvas(cw: number, ch: number): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = Math.max(1, cw * T);

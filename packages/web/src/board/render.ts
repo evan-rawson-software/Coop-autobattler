@@ -11,6 +11,7 @@ import {
   boardSpritesReady,
   drawBoardLayer,
   drawStripLayer,
+  occupiedCells,
 } from './sprite-board.js';
 import type { BoardScene, Scene, ViewRect } from './scene.js';
 import type { Hit } from './scene.js';
@@ -281,15 +282,48 @@ function drawBoard(
     ctx.save();
     if (sprite) ctx.globalAlpha = 0.28;
     ctx.beginPath();
-    for (let i = 0; i <= f.w; i++) {
-      const x = Math.round(sx(f.ox + i)) + 0.5;
-      ctx.moveTo(x, sy(f.oy));
-      ctx.lineTo(x, sy(f.oy + f.h));
-    }
-    for (let j = 0; j <= f.h; j++) {
-      const y = Math.round(sy(f.oy + j)) + 0.5;
-      ctx.moveTo(sx(f.ox), y);
-      ctx.lineTo(sx(f.ox + f.w), y);
+    if (sprite) {
+      // Only between free cells: the grid never crosses a building sprite.
+      const occ = occupiedCells(board);
+      const free = (i: number, j: number): boolean =>
+        i < 0 || j < 0 || i >= f.w || j >= f.h || occ[j * f.w + i] === 0;
+      for (let i = 0; i <= f.w; i++) {
+        const x = Math.round(sx(f.ox + i)) + 0.5;
+        let start = -1;
+        for (let j = 0; j <= f.h; j++) {
+          const ok = j < f.h && free(i - 1, j) && free(i, j);
+          if (ok && start < 0) start = j;
+          if (!ok && start >= 0) {
+            ctx.moveTo(x, sy(f.oy + start));
+            ctx.lineTo(x, sy(f.oy + j));
+            start = -1;
+          }
+        }
+      }
+      for (let j = 0; j <= f.h; j++) {
+        const y = Math.round(sy(f.oy + j)) + 0.5;
+        let start = -1;
+        for (let i = 0; i <= f.w; i++) {
+          const ok = i < f.w && free(i, j - 1) && free(i, j);
+          if (ok && start < 0) start = i;
+          if (!ok && start >= 0) {
+            ctx.moveTo(sx(f.ox + start), y);
+            ctx.lineTo(sx(f.ox + i), y);
+            start = -1;
+          }
+        }
+      }
+    } else {
+      for (let i = 0; i <= f.w; i++) {
+        const x = Math.round(sx(f.ox + i)) + 0.5;
+        ctx.moveTo(x, sy(f.oy));
+        ctx.lineTo(x, sy(f.oy + f.h));
+      }
+      for (let j = 0; j <= f.h; j++) {
+        const y = Math.round(sy(f.oy + j)) + 0.5;
+        ctx.moveTo(sx(f.ox), y);
+        ctx.lineTo(sx(f.ox + f.w), y);
+      }
     }
     ctx.strokeStyle = sprite ? theme.outline : theme.gridLine;
     ctx.lineWidth = 1;

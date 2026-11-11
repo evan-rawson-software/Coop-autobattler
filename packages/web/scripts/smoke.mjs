@@ -251,6 +251,7 @@ try {
   const selAfterDrag = await page.evaluate(() => window.__debug.selection());
   check(selAfterDrag === null, 'a drag is not a click (nothing selected)');
   await shot('4-zoomed-in');
+  await shotDark('art2-zoomed-in');
 
   // --- Hover and selection of a building
   await page.click('[data-camera="center"]');
@@ -993,6 +994,7 @@ try {
   );
   await page.waitForTimeout(300);
   await shot('build-4-factory-flow');
+  await shotDark('art2-build-conduits');
   await page.click('[data-overlay="dry"]');
   check(
     (await page.locator('[data-field="no-problems"]').count()) === 0 ||
