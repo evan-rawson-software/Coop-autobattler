@@ -1077,7 +1077,45 @@ try {
         { timeout: 30000 },
       );
     };
-    const QUICK = '#battle?p=rush&o=pve:arch_rusher:1:medium&s=1';
+    // The golden PvE battles are reproducible through the route: the board is
+    // the reference board of the same name, `s` is the battle seed and `ts`
+    // the threat seed. The expected values below are read from the golden
+    // file, not from anything the page computes.
+    const goldenPve = JSON.parse(
+      readFileSync(
+        path.resolve(webDir, '../../golden/pve-battle.json'),
+        'utf8',
+      ),
+    );
+    const golden = (id) => {
+      const v = goldenPve.find((x) => x.id === id);
+      if (v === undefined) throw new Error(`golden vector ${id} is missing`);
+      const sides = v.expected.result.summary.sides;
+      return {
+        winner: v.expected.result.result.winner,
+        endTick: v.expected.result.result.endTick,
+        own: `${sides[0].coreHealth} / ${sides[0].coreMaxHealth}`,
+        foe: `${sides[1].coreHealth} / ${sides[1].coreMaxHealth}`,
+        hash: (r, t, s) =>
+          `#battle?p=${r}&o=pve:${v.input.threat.archetype}:${v.input.threat.round}:${v.input.threat.type}&s=${s}&ts=${t}`,
+        battleSeed: v.input.seed,
+        threatSeed: v.input.threat.seed,
+      };
+    };
+    const winGold = golden('pve-battle.rush-vs-rusher-r1');
+    const lossGold = golden('pve-battle.rush-vs-rusher-r8-loses');
+    const QUICK = winGold.hash('rush', winGold.threatSeed, winGold.battleSeed);
+    const coreText = () =>
+      page.evaluate(() => [
+        document
+          .querySelector('[data-field="final-core-own"]')
+          ?.textContent?.replace(/\s+/g, ' ')
+          .trim(),
+        document
+          .querySelector('[data-field="final-core-foe"]')
+          ?.textContent?.replace(/\s+/g, ' ')
+          .trim(),
+      ]);
 
     await open(QUICK);
     await waitPhase('playing');
@@ -1090,6 +1128,28 @@ try {
       `battle: neutral zone is hidden before the battle starts (${JSON.stringify(hiddenBefore)})`,
     );
     await shot('battle-0-before-start');
+    {
+      // The camera starts at the centre of the map (the neutral zone), at a
+      // readable zoom; "Fit battle" is a preset.
+      const cam = await camera();
+      const vp = await viewport();
+      const mid = await page.evaluate(() => {
+        const r = document.querySelector('canvas').getBoundingClientRect();
+        return { h: r.height };
+      });
+      console.log(
+        `battle camera at start: cx ${cam.cx.toFixed(2)} cy ${cam.cy.toFixed(2)} zoom ${cam.zoom.toFixed(1)} viewport ${vp.w}x${vp.h} (${mid.h})`,
+      );
+      check(
+        cam.zoom >= 30 && cam.zoom <= 34 && Math.abs(cam.cx - 12) < 1.5,
+        `battle: the camera starts centred at a readable zoom (zoom ${cam.zoom.toFixed(1)}, centre ${cam.cx.toFixed(1)}, ${cam.cy.toFixed(1)})`,
+      );
+      const rows = await page.evaluate(() => window.__debug.battle.geometry());
+      check(
+        Math.abs(cam.cy - rows.height / 2) < 1.5,
+        `battle: the camera starts on the neutral zone (cy ${cam.cy.toFixed(1)} of ${rows.height} rows)`,
+      );
+    }
     const noScrollBattle = await page.evaluate(() => ({
       fits:
         document.documentElement.scrollWidth <= window.innerWidth &&
@@ -1111,7 +1171,6 @@ try {
       `battle: neutral zone features appear once playback begins (${revealedFeatures})`,
     );
     const result0 = await bd('result');
-    const core0 = await bd('coreHealth');
 
     // Speed, pause.
     await page.click('#speed-4');
@@ -1166,14 +1225,16 @@ try {
       bannerText.includes(result0.winner === 0 ? 'Victory' : 'Defeat'),
       `battle: the summary banner shows the result of the simulation ("${bannerText.split('\n')[0]}")`,
     );
-    const finalCores = await page.evaluate(() => [
-      document.querySelector('[data-field="final-core-own"]')?.textContent,
-      document.querySelector('[data-field="final-core-foe"]')?.textContent,
-    ]);
+    const finalCores = await coreText();
     check(
-      finalCores[0].startsWith(String(core0[0])) &&
-        finalCores[1].startsWith(String(core0[1])),
-      `battle: the summary shows the final Core health (${finalCores.join(' / ')})`,
+      finalCores[0] === winGold.own && finalCores[1] === winGold.foe,
+      `battle: the summary's final Core health matches the golden vector (${finalCores.join(' / ')}; golden ${winGold.own} / ${winGold.foe})`,
+    );
+    check(
+      result0.winner === winGold.winner &&
+        result0.endTick === winGold.endTick &&
+        (await bd('tick')) === winGold.endTick,
+      `battle: the result and end tick match the golden vector (${JSON.stringify(result0)})`,
     );
     const reward = await page.locator('[data-field="reward"]').innerText();
     check(
@@ -1226,7 +1287,36 @@ try {
     );
     await shot('battle-5-ready');
 
-    // PvE: the stronghold takes the place of an enemy factory.
+    // A lost golden PvE battle: Defeat, no life lost, no reward.
+    await open(lossGold.hash('rush', lossGold.threatSeed, lossGold.battleSeed));
+    await waitPhase('playing');
+    await page.click('#skip');
+    await waitPhase('summary');
+    {
+      const cores = await coreText();
+      const word = await page.locator('[data-field="result-word"]').innerText();
+      const rew = await page.locator('[data-field="reward"]').innerText();
+      check(
+        cores[0] === lossGold.own &&
+          cores[1] === lossGold.foe &&
+          word === 'Defeat' &&
+          lossGold.winner === 1,
+        `battle: a lost golden PvE battle ends as the golden vector says (${word}, ${cores.join(' / ')}; golden ${lossGold.own} / ${lossGold.foe})`,
+      );
+      check(
+        rew === 'No reward',
+        `battle: a lost PvE battle shows no cost and no reward ("${rew}")`,
+      );
+      const reasonText = await page
+        .locator('#result-banner .result-detail')
+        .innerText();
+      check(
+        /destroyed/.test(reasonText) && !/more health left/.test(reasonText),
+        `battle: the summary explains the result ("${reasonText.slice(0, 70)}...")`,
+      );
+    }
+
+    // PvE: the enemy side is a stronghold, not a factory with conduits.
     await open('#battle?p=fortify&o=pve:arch_fortress:3:medium&s=2');
     await waitPhase('playing');
     await page.waitForFunction(
@@ -1238,15 +1328,60 @@ try {
     );
     await page.click('#speed-4');
     await page.waitForFunction(() => window.__debug.battle.tick() > 250);
-    const enemyTitle = await page
-      .locator('#panel-enemy .panel-title')
-      .innerText();
-    const kindChip = await page.locator('[data-field="opp-kind"]').innerText();
-    check(
-      /stronghold/i.test(enemyTitle) && kindChip.length > 0,
-      `battle: PvE shows the stronghold ("${enemyTitle}", "${kindChip}")`,
-    );
+    {
+      const pveScene = await page.evaluate(() => window.__debug.battle.scene());
+      const enemyKinds = Object.keys(pveScene[1].kinds).filter(
+        (k) => !k.startsWith('core:'),
+      );
+      check(
+        enemyKinds.length > 0 &&
+          pveScene[1].buildings > 0 &&
+          pveScene[1].conduits === 0 &&
+          pveScene[0].conduits > 0,
+        `battle: PvE enemy side holds stronghold buildings and no conduits (${JSON.stringify(pveScene[1])}; own conduits ${pveScene[0].conduits})`,
+      );
+    }
     await shot('battle-4-pve-stronghold');
+
+    // A ghost board, by contrast, is a factory with conduits (so the check
+    // above can fail), and Watch again works on it after Skip.
+    await open('#battle?p=rush&o=ghost:rush&s=1');
+    await waitPhase('playing');
+    {
+      const ghostScene = await page.evaluate(() =>
+        window.__debug.battle.scene(),
+      );
+      check(
+        ghostScene[1].conduits > 0,
+        `battle: a ghost enemy side does have conduits (${ghostScene[1].conduits}), unlike a stronghold`,
+      );
+      const errorsBefore = consoleErrors.length;
+      for (let i = 0; i < 2; i++) {
+        await page.click('#skip');
+        await waitPhase('summary');
+        await page.click('#watch-again');
+        await waitPhase('playing');
+      }
+      await page.click('#skip');
+      await waitPhase('summary');
+      check(
+        consoleErrors.length === errorsBefore,
+        `battle: skipping and watching again on a ghost battle raises no page errors (${consoleErrors.slice(errorsBefore).join(' | ')})`,
+      );
+      // Summary chart markers of moments at the same tick are merged.
+      const labels = (
+        await page
+          .locator('[data-testid="chart-strength-summary"]')
+          .getAttribute('data-marker-labels')
+      )
+        .split(',')
+        .filter((l) => l.length > 0);
+      check(
+        new Set(labels).size === labels.length && labels.length > 0,
+        `battle: summary chart markers are distinct (${labels.join(', ')})`,
+      );
+      await shot('battle-7-ghost-summary');
+    }
 
     // Performance at 4x with hundreds of units.
     await open('#battle?p=rush&o=stress&s=1');
@@ -1261,24 +1396,98 @@ try {
     await page.click('#speed-4');
     await page.waitForFunction(() => window.__debug.battle.tick() > 250);
     await page.evaluate(() => window.__debug.resetDrawStats());
+    await page.evaluate(() => window.__debug.battle.frameTimes(true));
     let peak = 0;
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 40; i++) {
       await page.waitForTimeout(200);
       peak = Math.max(peak, await bd('unitsAlive'));
     }
     const draw = await page.evaluate(() => window.__debug.drawStats());
+    const frames = (
+      await page.evaluate(() => window.__debug.battle.frameTimes(true))
+    )
+      .slice()
+      .sort((a, b) => a - b);
+    const pct = (q) =>
+      frames[Math.min(frames.length - 1, Math.floor(frames.length * q))] ?? 0;
+    const p50 = pct(0.5);
+    const p95 = pct(0.95);
+    const frameMax = frames[frames.length - 1] ?? 0;
     console.log(
-      `battle perf: 4x, peak ${peak} units alive, ${draw.count} frames drawn, mean ${draw.meanMs.toFixed(2)} ms, max ${draw.maxMs.toFixed(1)} ms, simulate-up-front ${(await bd('simMs')).toFixed(0)} ms`,
+      `battle perf: 4x, peak ${peak} units alive, ${frames.length} animation frames, interval p50 ${p50.toFixed(1)} ms, p95 ${p95.toFixed(1)} ms, max ${frameMax.toFixed(1)} ms; canvas draw mean ${draw.meanMs.toFixed(2)} ms max ${draw.maxMs.toFixed(1)} ms; simulate-up-front ${(await bd('simMs')).toFixed(0)} ms`,
     );
     check(
       peak >= 200,
       `battle: the stress battle has hundreds of units (peak ${peak})`,
     );
     check(
-      draw.count > 40 && draw.meanMs < 12,
-      `battle: smooth at 4x with ${peak} units (mean draw ${draw.meanMs.toFixed(2)} ms over ${draw.count} frames)`,
+      frames.length > 100 && p95 < 34,
+      `battle: smooth at 4x with ${peak} units (frame interval p95 ${p95.toFixed(1)} ms over ${frames.length} frames; limit 34 ms)`,
     );
+    // Skip, watch again, play: no page errors (more than 64 units spawned).
+    {
+      const errorsBefore = consoleErrors.length;
+      const hashStress = await (async () => {
+        await page.click('#skip');
+        await waitPhase('summary');
+        return bd('stateHash');
+      })();
+      await page.click('#watch-again');
+      await waitPhase('playing');
+      await page.waitForFunction(
+        () => window.__debug.battle.revealed(),
+        undefined,
+        {
+          timeout: 10000,
+        },
+      );
+      await page.click('#speed-4');
+      await page.waitForFunction(() => window.__debug.battle.tick() > 100);
+      await page.click('#skip');
+      await waitPhase('summary');
+      check(
+        consoleErrors.length === errorsBefore &&
+          (await bd('stateHash')) === hashStress,
+        `battle: stress battle skipped, watched again and skipped again ends in the same state without page errors (${consoleErrors.slice(errorsBefore).join(' | ')})`,
+      );
+    }
     await shot('battle-6-stress');
+
+    // Editing the hash by hand: the route follows it, the tick included.
+    await open('#battle?p=rush&o=pve:arch_rusher:1:medium&s=1');
+    await waitPhase('playing');
+    await page.evaluate(() => {
+      window.location.hash =
+        '#battle?p=rush&o=pve:arch_rusher:1:medium&s=1&t=120';
+    });
+    await page.waitForFunction(
+      () => (window.__debug?.battle?.tick?.() ?? 0) >= 120,
+    );
+    check(
+      (await bd('tick')) >= 120 && (await bd('revealed')),
+      `battle: editing only t= in the hash resumes there (tick ${await bd('tick')})`,
+    );
+    await page.evaluate(() => {
+      window.location.hash = '#battle?p=fortify&o=ghost:poor&s=77';
+    });
+    await page.waitForFunction(
+      () => document.querySelector('#pick-seed')?.value === '77',
+    );
+    check(
+      (await page.locator('#pick-board').inputValue()) === 'fortify' &&
+        (await page.locator('#pick-opponent').inputValue()) === 'ghost:poor',
+      'battle: the seed input and the pickers follow a hand-edited hash',
+    );
+
+    // Leaving the screen removes its debug hooks.
+    await page.evaluate(() => {
+      window.location.hash = '#build';
+    });
+    await page.waitForFunction(() => window.__debug?.build !== undefined);
+    check(
+      await page.evaluate(() => window.__debug.battle === undefined),
+      'battle: the debug hooks are removed when the screen unmounts',
+    );
   }
 
   check(

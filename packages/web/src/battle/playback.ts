@@ -262,9 +262,20 @@ export class Playback {
 
   private rewind(): void {
     this.battle = this.fresh();
-    this.seen = new Uint8Array(0);
+    this.resetTracks();
     this.updateTracks();
     this.acc = 0;
+  }
+
+  /** Forget every unit track (all seven arrays, so their lengths agree). */
+  private resetTracks(): void {
+    this.seen = new Uint8Array(0);
+    this.cx = new Float32Array(0);
+    this.cy = new Float32Array(0);
+    this.px = new Float32Array(0);
+    this.py = new Float32Array(0);
+    this.moveTick = new Int32Array(0);
+    this.smooth = new Uint8Array(0);
   }
 
   private stepTicks(n: number): void {
@@ -283,13 +294,19 @@ export class Playback {
   }
 
   private grow(size: number): void {
-    const cap = Math.max(size, this.seen.length * 2, 64);
+    const cap = Math.max(
+      size,
+      this.seen.length * 2,
+      this.cx.length * 2,
+      this.moveTick.length * 2,
+      64,
+    );
     const g = <T extends Float32Array | Int32Array | Uint8Array>(
       a: T,
       make: (n: number) => T,
     ): T => {
       const next = make(cap);
-      next.set(a);
+      next.set(a.length <= cap ? a : a.subarray(0, cap));
       return next;
     };
     this.seen = g(this.seen, (n) => new Uint8Array(n));

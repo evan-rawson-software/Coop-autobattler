@@ -3,7 +3,9 @@
  * ones. A selection (the party's board, the opponent, the seed and the tick)
  * lives in the URL hash so a reload resumes the same battle.
  *
- * Hash form: `#battle?p=<board>&o=<opponent>&s=<seed>&t=<tick>`.
+ * Hash form: `#battle?p=<board>&o=<opponent>&s=<seed>&t=<tick>`, with an
+ * optional `ts=<seed>` for the generated threat when it differs from the
+ * battle seed (the golden PvE battles use two seeds).
  */
 
 import {
@@ -23,6 +25,8 @@ export interface SampleSelection {
   /** An `OpponentOption` ID. */
   readonly opponent: string;
   readonly seed: number;
+  /** Seed of the generated PvE threat; the battle seed when absent. */
+  readonly threatSeed?: number | undefined;
   /** Tick to resume at; 0 starts from the beginning. */
   readonly tick: number;
 }
@@ -42,7 +46,7 @@ export function archetypeLabel(id: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-const PVE_ROUNDS: readonly number[] = [1, 3];
+const PVE_ROUNDS: readonly number[] = [1, 3, 8];
 
 /** Every opponent the picker offers: ghosts of the reference boards, then threats. */
 export function opponentOptions(): readonly OpponentOption[] {
@@ -61,6 +65,13 @@ export function opponentOptions(): readonly OpponentOption[] {
   }
   out.push({ id: STRESS_ID, label: 'Stress test: hundreds of units' });
   return out;
+}
+
+/** The unit the stress test's waves are made of: the first one of the content. */
+function stressUnit(): string {
+  const first = content.units.list()[0];
+  if (first === undefined) throw new Error('The content has no units.');
+  return first.id;
 }
 
 /** Two copies of the party's board, with scripted waves of units. */
@@ -89,10 +100,12 @@ export function parseSampleHash(hash: string): SampleSelection {
       ? n
       : fallback;
   };
+  const threatSeed = params.has('ts') ? num('ts', -1) : -1;
   return {
     player: isBoard(p) ? p : DEFAULT_SELECTION.player,
     opponent: known && o !== null ? o : DEFAULT_SELECTION.opponent,
     seed: num('s', DEFAULT_SELECTION.seed),
+    ...(threatSeed >= 0 ? { threatSeed } : {}),
     tick: num('t', 0),
   };
 }
@@ -103,6 +116,7 @@ export function formatSampleHash(sel: SampleSelection): string {
     o: sel.opponent,
     s: String(sel.seed),
   });
+  if (sel.threatSeed !== undefined) params.set('ts', String(sel.threatSeed));
   if (sel.tick > 0) params.set('t', String(sel.tick));
   return `#battle?${params.toString()}`;
 }
@@ -111,6 +125,8 @@ export interface Sample {
   readonly battle: BattleDescription;
   readonly opponent: OpponentInfo;
   readonly title: string;
+  /** The reward / cost line of the summary for this kind of battle. */
+  readonly reward: (result: BattleResult) => string;
 }
 
 /** Build the battle a selection names. Deterministic in the selection. */
@@ -121,7 +137,7 @@ export function buildSample(sel: SampleSelection): Sample {
     const round = Number(b);
     const threat = generateThreat(
       {
-        seed: sel.seed,
+        seed: sel.threatSeed ?? sel.seed,
         round,
         type: c as ThreatType,
         partySize: team.map.partySize,
@@ -139,6 +155,7 @@ export function buildSample(sel: SampleSelection): Sample {
         label: boss ? 'Boss' : archetypeLabel(a),
       },
       title: `Round ${String(round)} · PvE battle`,
+      reward: (r) => sampleReward('pve', r),
     };
   }
   if (kind === STRESS_ID) {
@@ -146,7 +163,7 @@ export function buildSample(sel: SampleSelection): Sample {
     // hundred units meet in the middle for a long while.
     const waves = Array.from({ length: 12 }, (_, i) => ({
       tick: 20 + i * 40,
-      unit: 'unit_soldier',
+      unit: stressUnit(),
       count: 40,
     }));
     const options = { scheduledWaves: waves, coreHealth: 5000 };
@@ -162,6 +179,7 @@ export function buildSample(sel: SampleSelection): Sample {
       },
       opponent: { name: 'stress test', kind: 'ghost' },
       title: 'Sample · stress test',
+      reward: (r) => sampleReward('versus', r),
     };
   }
   const ghostBoard = isBoard(a ?? null) ? (a as ReferenceBoardName) : 'rush';
@@ -176,10 +194,19 @@ export function buildSample(sel: SampleSelection): Sample {
       kind: 'ghost',
     },
     title: 'Sample · PvP battle',
+    reward: (r) => sampleReward('versus', r),
   };
 }
 
-/** Placeholder reward text for the sample route (gold only, per wireframe 8). */
-export function sampleReward(result: BattleResult): string {
-  return result.winner === 0 ? '+3 gold' : '-1 life · +1 gold';
+/**
+ * Placeholder reward text for the sample route, by what was fought: a won
+ * battle pays gold; a lost PvE battle costs nothing and pays nothing; a lost
+ * PvP battle costs a life and pays consolation gold (wireframe 8).
+ */
+export function sampleReward(
+  kind: BattleDescription['kind'],
+  result: BattleResult,
+): string {
+  if (result.winner === 0) return '+3 gold';
+  return kind === 'pve' ? 'No reward' : '-1 life · +1 gold';
 }

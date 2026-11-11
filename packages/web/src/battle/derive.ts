@@ -4,7 +4,12 @@
  * the visual simulation state. Nothing here decides an outcome.
  */
 
-import { occupancy, type BuildingDef, type PlacedBuilding } from '@game/core';
+import {
+  occupancy,
+  type BattleSummary,
+  type BuildingDef,
+  type PlacedBuilding,
+} from '@game/core';
 import type { WebContent } from '../content.js';
 import type { Playback, BattleRecord } from './playback.js';
 
@@ -79,6 +84,9 @@ export const isWallLike = (def: BuildingDef): boolean =>
   def.kind === 'defense' &&
   (def.defenseType === 'wall' || def.defenseType === 'gate');
 
+export const isTurret = (def: BuildingDef): boolean =>
+  def.kind === 'defense' && def.defenseType === 'turret';
+
 export function buildingName(content: WebContent, def: BuildingDef): string {
   return content.presentation.get(def.id)?.name ?? def.id;
 }
@@ -90,6 +98,7 @@ export type MomentKind =
   | 'zone'
   | 'overload'
   | 'breach'
+  | 'turret'
   | 'junction'
   | 'production'
   | 'core_half'
@@ -196,6 +205,14 @@ export function deriveMoments(
           kind: 'breach',
           side,
           text: `${who} first ${name} destroyed: a breach`,
+          focus,
+        });
+      } else if (isTurret(ref.def)) {
+        out.push({
+          tick: e.tick + 1,
+          kind: 'turret',
+          side,
+          text: `${who} ${name} destroyed`,
           focus,
         });
       } else if (ref.def.kind === 'route') {
@@ -487,6 +504,157 @@ export function destroyedOf(
     }
   }
   return { buildings, conduits, core };
+}
+
+// ---------------------------------------------------------------------------
+// Army strength chart
+
+export interface ChartData {
+  readonly own: readonly { x: number; y: number }[];
+  readonly foe: readonly { x: number; y: number }[];
+  /** Largest value among the samples up to the limit (at least 1). */
+  readonly yMax: number;
+}
+
+/**
+ * The army-strength series (unit health summed per side) of the samples up
+ * to and including `upTo`. `yMax` covers only those samples, so a chart of
+ * the battle so far never shows what comes later.
+ */
+export function strengthSeries(
+  timeline: BattleSummary['timeline'],
+  upTo: number,
+): ChartData {
+  const own: { x: number; y: number }[] = [];
+  const foe: { x: number; y: number }[] = [];
+  let yMax = 1;
+  for (const s of timeline) {
+    if (s.tick > upTo) continue;
+    yMax = Math.max(yMax, s.sides[0].unitHealth, s.sides[1].unitHealth);
+    own.push({ x: s.tick, y: s.sides[0].unitHealth });
+    foe.push({ x: s.tick, y: s.sides[1].unitHealth });
+  }
+  return { own, foe, yMax };
+}
+
+/** Shortest time span the live chart shows, in seconds. */
+export const LIVE_AXIS_MIN_SECONDS = 60;
+/** The live chart's time axis grows in steps of this many seconds. */
+export const LIVE_AXIS_STEP_SECONDS = 30;
+
+/**
+ * The end of the live chart's time axis at `tick`: a minimum window, then
+ * growing with the playback position in whole steps. It does not depend on
+ * when the battle ends.
+ */
+export function liveAxisMaxTick(tick: number, ticksPerSecond: number): number {
+  const step = LIVE_AXIS_STEP_SECONDS * ticksPerSecond;
+  const min = LIVE_AXIS_MIN_SECONDS * ticksPerSecond;
+  return Math.max(min, Math.ceil(Math.max(0, tick) / step) * step);
+}
+
+/**
+ * Chart markers for moments at the given ticks (in order), numbered from 1
+ * like the list below the chart. Moments at the same tick share one marker
+ * labelled with the range, e.g. "2–3".
+ */
+export function mergeMarkers(
+  ticks: readonly number[],
+): readonly { x: number; label: string }[] {
+  const out: { x: number; label: string }[] = [];
+  let i = 0;
+  while (i < ticks.length) {
+    let j = i;
+    while (j + 1 < ticks.length && ticks[j + 1] === ticks[i]) j += 1;
+    out.push({
+      x: ticks[i] ?? 0,
+      label: j === i ? String(i + 1) : `${String(i + 1)}–${String(j + 1)}`,
+    });
+    i = j + 1;
+  }
+  return out;
+}
+
+/** One line of "Where you were breached". */
+export interface BreachEntry {
+  readonly tick: number;
+  readonly text: string;
+}
+
+/**
+ * Everything of `side` that opened it up, in time order: all destroyed
+ * walls, gates and turrets (grouped by kind, with the time span), plus the
+ * destroyed junctions, producers and the Core from `moments`.
+ */
+export function breachEntries(
+  record: BattleRecord,
+  content: WebContent,
+  moments: readonly Moment[],
+  side: Side,
+  ticksPerSecond: number,
+): readonly BreachEntry[] {
+  const refs = buildingIndex(record, content)[side];
+  const groups = new Map<string, { name: string; ticks: number[] }>();
+  for (const e of record.eventLog) {
+    if (e.type !== 'building_destroyed' || e.side !== side) continue;
+    const ref = refs.get(e.building);
+    if (ref === undefined || !(isWallLike(ref.def) || isTurret(ref.def))) {
+      continue;
+    }
+    let g = groups.get(ref.def.id);
+    if (g === undefined) {
+      g = { name: buildingName(content, ref.def).toLowerCase(), ticks: [] };
+      groups.set(ref.def.id, g);
+    }
+    g.ticks.push(e.tick + 1);
+  }
+  const out: BreachEntry[] = [];
+  for (const g of groups.values()) {
+    const first = g.ticks[0] ?? 0;
+    const last = g.ticks[g.ticks.length - 1] ?? first;
+    const at =
+      clock(first, ticksPerSecond) +
+      (clock(last, ticksPerSecond) === clock(first, ticksPerSecond)
+        ? ''
+        : `–${clock(last, ticksPerSecond)}`);
+    const n = g.ticks.length;
+    out.push({
+      tick: first,
+      text: `${String(n)} ${g.name}${n > 1 ? 's' : ''} at ${at}`,
+    });
+  }
+  for (const m of moments) {
+    if (
+      m.side === side &&
+      (m.kind === 'junction' ||
+        m.kind === 'production' ||
+        m.kind === 'core_destroyed')
+    ) {
+      out.push({
+        tick: m.tick,
+        text: `${m.text} at ${clock(m.tick, ticksPerSecond)}`,
+      });
+    }
+  }
+  return out.sort((a, b) => a.tick - b.tick);
+}
+
+/**
+ * The content's name for the walls of a board, plural ("Walls"): the wall
+ * building's presentation name, or its ID if it has none.
+ */
+export function wallsWord(content: WebContent): string {
+  const def = content.buildings
+    .list()
+    .find((d) => d.kind === 'defense' && d.defenseType === 'wall');
+  const name = def === undefined ? 'wall' : buildingName(content, def);
+  return /s$/i.test(name) ? name : `${name}s`;
+}
+
+/** The content's name for the Core. */
+export function coreNameOf(content: WebContent): string {
+  const def = content.buildings.list().find((d) => d.kind === 'core');
+  return (def && content.presentation.get(def.id)?.name) ?? 'Core';
 }
 
 /** `m:ss` for a tick count. */

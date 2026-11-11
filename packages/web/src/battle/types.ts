@@ -23,7 +23,13 @@ export interface OpponentInfo {
 }
 
 export interface BattleViewProps {
+  /**
+   * What to play. The battle is simulated again whenever this object is
+   * replaced by another one, so callers keep the same object while it is the
+   * same battle (memoise it).
+   */
   readonly battle: BattleDescription;
+  /** Who is fought. May change at any time; the screen follows it. */
   readonly opponent: OpponentInfo;
   /** Top bar title, e.g. "Round 4 · PvP battle". */
   readonly title: string;
@@ -33,7 +39,8 @@ export interface BattleViewProps {
   readonly onReady: () => void;
   /**
    * Resume at this tick (the battle is re-simulated to it). Playback starts
-   * revealed when above 0.
+   * revealed when above 0. Read once per battle, when `battle` is simulated:
+   * changing it later does not move a battle that is already playing.
    */
   readonly initialTick?: number;
   /** Called about twice a second while playing, and when playback stops. */

@@ -43,7 +43,25 @@ export interface BattleDebug {
   unitsAlive: () => number;
   simMs: () => number;
   ready: () => boolean;
+  /** Per side, what the visual simulation's board holds. */
+  scene: () => DebugScene;
+  /**
+   * Animation frame intervals in milliseconds while playing, oldest first;
+   * `true` clears the record.
+   */
+  frameTimes: (reset?: boolean) => readonly number[];
+  setSpeed: (speed: 1 | 2 | 4) => void;
+  /** Arena size in cells (both boards and the neutral strip). */
+  geometry: () => { width: number; height: number };
 }
+
+export interface DebugSceneSide {
+  readonly buildings: number;
+  readonly conduits: number;
+  /** Building count by `kind:id`. */
+  readonly kinds: Readonly<Record<string, number>>;
+}
+export type DebugScene = readonly [DebugSceneSide, DebugSceneSide];
 
 /** Read-only view of the Build screen for the smoke script. */
 export interface BuildDebug {
@@ -74,4 +92,12 @@ export const DEBUG_HOOK: boolean =
 export function registerDebug(patch: DebugHook): void {
   if (!DEBUG_HOOK) return;
   window.__debug = { ...window.__debug, ...patch };
+}
+
+/** Remove the hooks added under `key` (a screen unmounting). */
+export function unregisterDebug(key: keyof DebugHook): void {
+  if (!DEBUG_HOOK || window.__debug === undefined) return;
+  window.__debug = Object.fromEntries(
+    Object.entries(window.__debug).filter(([k]) => k !== key),
+  );
 }

@@ -8,9 +8,15 @@ import { Panel } from '../shell/AppShell.js';
 import type { WebContent } from '../content.js';
 import { ChartLegend, LineChart, type ChartMarker } from './charts.js';
 import {
+  breachEntries,
   buildingRows,
   clock,
+  coreNameOf,
   destroyedOf,
+  liveAxisMaxTick,
+  mergeMarkers,
+  strengthSeries,
+  wallsWord,
   type Moment,
   type Side,
   type SideStats,
@@ -61,26 +67,6 @@ export function CoreBar(props: {
 // ---------------------------------------------------------------------------
 // Left dock
 
-export interface ChartData {
-  readonly own: readonly { x: number; y: number }[];
-  readonly foe: readonly { x: number; y: number }[];
-  readonly yMax: number;
-}
-
-/** The army-strength series up to `tick` (unit health summed per side). */
-export function strengthSeries(pb: Playback, upTo: number): ChartData {
-  const own: { x: number; y: number }[] = [];
-  const foe: { x: number; y: number }[] = [];
-  let yMax = 1;
-  for (const s of pb.record.summary.timeline) {
-    yMax = Math.max(yMax, s.sides[0].unitHealth, s.sides[1].unitHealth);
-    if (s.tick > upTo) continue;
-    own.push({ x: s.tick, y: s.sides[0].unitHealth });
-    foe.push({ x: s.tick, y: s.sides[1].unitHealth });
-  }
-  return { own, foe, yMax };
-}
-
 export function LeftPanels(props: {
   readonly pb: Playback;
   readonly mine: SideStats;
@@ -93,11 +79,17 @@ export function LeftPanels(props: {
   const { pb, mine, theirs, content } = props;
   const resName = (id: string): string => content.resources.get(id)?.name ?? id;
   const tick = pb.tick;
-  const chart = strengthSeries(pb, tick);
+  const coreName = coreNameOf(content);
+  const walls = wallsWord(content);
+  // Only what has happened so far: the axes grow with the playback position.
+  const chart = strengthSeries(pb.record.summary.timeline, tick);
+  const nowOwn = sumHealth(pb, 0);
+  const nowFoe = sumHealth(pb, 1);
   const live = {
-    own: [...chart.own, { x: tick, y: sumHealth(pb, 0) }],
-    foe: [...chart.foe, { x: tick, y: sumHealth(pb, 1) }],
+    own: [...chart.own, { x: tick, y: nowOwn }],
+    foe: [...chart.foe, { x: tick, y: nowFoe }],
   };
+  const liveYMax = Math.max(chart.yMax, nowOwn, nowFoe);
   const markers: ChartMarker[] =
     props.overloadTick !== null && props.overloadTick <= tick
       ? [{ x: props.overloadTick, label: 'O' }]
@@ -105,11 +97,16 @@ export function LeftPanels(props: {
   return (
     <>
       <Panel title="Your side" id="panel-your-side">
-        <CoreBar label="Core" hp={mine.coreHp} max={mine.coreMax} side={0} />
+        <CoreBar
+          label={coreName}
+          hp={mine.coreHp}
+          max={mine.coreMax}
+          side={0}
+        />
         <p class="stat-line" data-field="walls-own">
           {mine.wallsTotal === 0
-            ? 'No walls'
-            : `Walls: ${String(mine.wallsStanding)} / ${String(mine.wallsTotal)} standing`}
+            ? `No ${walls.toLowerCase()}`
+            : `${walls}: ${String(mine.wallsStanding)} / ${String(mine.wallsTotal)} standing`}
         </p>
       </Panel>
       <Panel title="Production (per sec)" id="panel-production">
@@ -157,8 +154,8 @@ export function LeftPanels(props: {
             { side: 0, points: live.own },
             { side: 1, points: live.foe },
           ]}
-          xMax={pb.endTick}
-          yMax={chart.yMax}
+          xMax={liveAxisMaxTick(tick, props.tps)}
+          yMax={liveYMax}
           now={tick}
           markers={markers}
           height={130}
@@ -186,6 +183,7 @@ function sumHealth(pb: Playback, side: number): number {
 
 export function RightPanels(props: {
   readonly pb: Playback;
+  readonly content: WebContent;
   readonly opponent: OpponentInfo;
   readonly foeWord: string;
   readonly theirs: SideStats;
@@ -199,7 +197,9 @@ export function RightPanels(props: {
   readonly controller: CameraController;
   readonly onEnemyBase: () => void;
 }) {
-  const { pb, opponent, theirs } = props;
+  const { pb, opponent, theirs, content } = props;
+  const coreName = coreNameOf(content);
+  const walls = wallsWord(content);
   const shown = props.moments
     .filter((m) => m.tick <= pb.tick && (m.kind !== 'zone' || props.revealed))
     .reverse();
@@ -215,15 +215,15 @@ export function RightPanels(props: {
           </span>
         </p>
         <CoreBar
-          label="Core"
+          label={coreName}
           hp={theirs.coreHp}
           max={theirs.coreMax}
           side={1}
         />
         <p class="stat-line" data-field="walls-foe">
           {theirs.wallsTotal === 0
-            ? 'No walls'
-            : `Walls: ${String(theirs.wallsStanding)} / ${String(theirs.wallsTotal)} standing`}
+            ? `No ${walls.toLowerCase()}`
+            : `${walls}: ${String(theirs.wallsStanding)} / ${String(theirs.wallsTotal)} standing`}
         </p>
       </Panel>
       <Panel title="Battle log" id="panel-log" class="grow">
@@ -323,13 +323,25 @@ export function RightPanels(props: {
 // ---------------------------------------------------------------------------
 // Summary
 
-const REASON_TEXT: Readonly<Record<BattleReason, string>> = {
-  core_destroyed: 'A Core was destroyed.',
-  tiebreak_overkill:
-    'Both Cores fell together; the side with less overkill damage wins.',
-  tiebreak_defender: 'Both Cores fell together; the defender wins a tie.',
-  time_limit: 'Time ran out; the Core with more health left wins.',
-};
+/**
+ * Why the battle ended, worded after the rules of the core battle's end
+ * check: a destroyed Core ends it; Cores destroyed in the same tick are
+ * decided by the smaller overkill, then for the defender (the opponent); at
+ * the time limit the larger share of maximum health left wins, and a tie goes
+ * to the defender too.
+ */
+export function reasonText(reason: BattleReason, coreName: string): string {
+  switch (reason) {
+    case 'core_destroyed':
+      return `One side's ${coreName} was destroyed; the other side wins.`;
+    case 'tiebreak_overkill':
+      return `Both ${coreName}s were destroyed in the same tick; the side whose ${coreName} took less overkill damage wins.`;
+    case 'tiebreak_defender':
+      return `Both ${coreName}s were destroyed in the same tick with equal overkill damage; the defender (the opponent) wins.`;
+    case 'time_limit':
+      return `Time ran out; the side whose ${coreName} has the larger share of its maximum health left wins. A tie goes to the defender (the opponent).`;
+  }
+}
 
 export interface SummaryProps {
   readonly pb: Playback;
@@ -356,18 +368,14 @@ export function BattleSummaryView(props: SummaryProps) {
     (m) =>
       m.kind !== 'zone' && m.kind !== 'core_half' && m.kind !== 'core_quarter',
   );
-  const markers: ChartMarker[] = marked.map((m, i) => ({
-    x: m.tick,
-    label: String(i + 1),
-  }));
-  const chart = strengthSeries(pb, Number.POSITIVE_INFINITY);
-  const breachMoments = moments.filter(
-    (m) =>
-      m.side === 0 &&
-      (m.kind === 'breach' ||
-        m.kind === 'junction' ||
-        m.kind === 'production' ||
-        m.kind === 'core_destroyed'),
+  const markers: readonly ChartMarker[] = mergeMarkers(
+    marked.map((m) => m.tick),
+  );
+  const chart = strengthSeries(rec.summary.timeline, Number.POSITIVE_INFINITY);
+  const coreName = coreNameOf(content);
+  const breaches = useMemo(
+    () => breachEntries(rec, content, moments, 0, props.tps),
+    [rec, content, moments, props.tps],
   );
   const camera = useMemo(() => {
     const c = new CameraController();
@@ -457,8 +465,8 @@ export function BattleSummaryView(props: SummaryProps) {
           {props.rewardText}
         </p>
         <p class="result-detail">
-          {REASON_TEXT[rec.result.reason]} Battle time{' '}
-          {clock(rec.result.endTick, props.tps)}. Your Core{' '}
+          {reasonText(rec.result.reason, coreName)} Battle time{' '}
+          {clock(rec.result.endTick, props.tps)}. Your {coreName}{' '}
           <strong data-field="final-core-own">
             {own.coreHealth} / {own.coreMaxHealth}
           </strong>
@@ -506,16 +514,14 @@ export function BattleSummaryView(props: SummaryProps) {
             overlayKey={destroyed}
           />
         </div>
-        {breachMoments.length === 0 ? (
+        {breaches.length === 0 ? (
           <p class="muted" data-field="no-breach">
             Nothing of yours was destroyed.
           </p>
         ) : (
           <ul class="plain breach-list" data-field="breach-list">
-            {breachMoments.map((m, i) => (
-              <li key={`${String(m.tick)}-${String(i)}`}>
-                {clock(m.tick, props.tps)} {m.text}
-              </li>
+            {breaches.map((b, i) => (
+              <li key={`${String(b.tick)}-${String(i)}`}>{b.text}</li>
             ))}
           </ul>
         )}

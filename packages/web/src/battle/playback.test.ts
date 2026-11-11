@@ -10,15 +10,26 @@ import battleVectors from '../../../../golden/battle.json';
 import pveVectors from '../../../../golden/pve-battle.json';
 import { content } from '../content.js';
 import {
+  breachEntries,
   buildingRows,
   deriveMoments,
   destroyedOf,
   geometryOf,
+  liveAxisMaxTick,
+  mergeMarkers,
   sideStats,
+  strengthSeries,
 } from './derive.js';
+import { reasonText } from './panels.js';
 import { Playback, simulateRecord, type BattleRecord } from './playback.js';
 import { battleConfig, threatsConfig } from './setup.js';
-import { buildSample, formatSampleHash, parseSampleHash } from './samples.js';
+import {
+  buildSample,
+  formatSampleHash,
+  opponentOptions,
+  parseSampleHash,
+  sampleReward,
+} from './samples.js';
 import type { BattleDescription } from './types.js';
 
 interface Vector {
@@ -263,6 +274,33 @@ describe('playback engine', () => {
     expect(hashJson(pb.sim)).toBe(hash);
   });
 
+  test('skip, watch again and play through with more than 64 units spawned', () => {
+    const stress = buildSample({
+      player: 'rush',
+      opponent: 'stress',
+      seed: 1,
+      tick: 0,
+    }).battle;
+    const rec = record(stress);
+    expect(rec.summary.sides[0].unitsSpawned).toBeGreaterThan(64);
+    const pb = new Playback(stress, content, battleConfig, rec);
+    pb.skip();
+    const hash = hashJson(pb.sim);
+    // Used to throw "offset is out of bounds" in the track arrays.
+    pb.restart();
+    expect(pb.tick).toBe(0);
+    pb.start();
+    pb.setSpeed(4);
+    let guard = 0;
+    while (!pb.finished && guard++ < 100_000) pb.advance(16);
+    expect(pb.finished).toBe(true);
+    expect(hashJson(pb.sim)).toBe(hash);
+    // And once more, skipping this time.
+    pb.restart();
+    pb.skip();
+    expect(hashJson(pb.sim)).toBe(hash);
+  }, 120_000);
+
   test('unit positions are eased between cells and never allocate per call', () => {
     const pb = fresh();
     pb.start();
@@ -367,5 +405,184 @@ describe('sample selection hash', () => {
       const r = simulateRecord(s.battle, content, battleConfig);
       expect(r.ok).toBe(true);
     }
+  });
+});
+
+describe('live chart axes', () => {
+  test('the time axis has a minimum window, then grows in steps with the tick', () => {
+    const tps = 10;
+    expect(liveAxisMaxTick(0, tps)).toBe(600);
+    expect(liveAxisMaxTick(599, tps)).toBe(600);
+    expect(liveAxisMaxTick(600, tps)).toBe(600);
+    expect(liveAxisMaxTick(601, tps)).toBe(900);
+    expect(liveAxisMaxTick(1234, tps)).toBe(1500);
+    // Never below the current position.
+    for (let t = 0; t < 4000; t += 37) {
+      expect(liveAxisMaxTick(t, tps)).toBeGreaterThanOrEqual(t);
+    }
+  });
+
+  test('the y axis and the points cover only the samples seen so far', () => {
+    const side = (h: number) => ({ units: 1, unitHealth: h, buildings: 1 });
+    const timeline = [
+      { tick: 0, sides: [side(10), side(20)] },
+      { tick: 50, sides: [side(30), side(5)] },
+      { tick: 100, sides: [side(999), side(7)] },
+    ] as unknown as Parameters<typeof strengthSeries>[0];
+    const early = strengthSeries(timeline, 60);
+    expect(early.yMax).toBe(30);
+    expect(early.own.map((p) => p.x)).toEqual([0, 50]);
+    expect(strengthSeries(timeline, 0).yMax).toBe(20);
+    const all = strengthSeries(timeline, Number.POSITIVE_INFINITY);
+    expect(all.yMax).toBe(999);
+    expect(all.foe.length).toBe(3);
+  });
+});
+
+describe('result reasons', () => {
+  test('every reason is worded after the rules of the core battle', () => {
+    expect(reasonText('time_limit', 'Core')).toMatch(/share of its maximum/);
+    expect(reasonText('time_limit', 'Core')).toMatch(
+      /tie goes to the defender/i,
+    );
+    expect(reasonText('tiebreak_overkill', 'Core')).toMatch(/less overkill/);
+    expect(reasonText('tiebreak_overkill', 'Core')).toMatch(/same tick/);
+    expect(reasonText('tiebreak_defender', 'Core')).toMatch(/equal overkill/);
+    expect(reasonText('core_destroyed', 'Heart')).toMatch(/Heart/);
+  });
+});
+
+describe('sample rewards', () => {
+  const win = { winner: 0, reason: 'core_destroyed', endTick: 1 } as const;
+  const loss = { winner: 1, reason: 'core_destroyed', endTick: 1 } as const;
+  test('a lost PvE battle costs and pays nothing; a lost PvP battle costs a life', () => {
+    expect(sampleReward('pve', loss)).toBe('No reward');
+    expect(sampleReward('pve', loss)).not.toMatch(/life/);
+    expect(sampleReward('versus', loss)).toMatch(/-1 life/);
+    expect(sampleReward('versus', loss)).toMatch(/gold/);
+    expect(sampleReward('pve', win)).toMatch(/gold/);
+    expect(sampleReward('versus', win)).toMatch(/gold/);
+  });
+  test('each sample carries the reward of its kind', () => {
+    const base = { player: 'rush', seed: 1, tick: 0 } as const;
+    const pve = buildSample({ ...base, opponent: 'pve:arch_rusher:1:medium' });
+    const pvp = buildSample({ ...base, opponent: 'ghost:fortify' });
+    expect(pve.reward(loss)).toBe('No reward');
+    expect(pvp.reward(loss)).toMatch(/life/);
+  });
+});
+
+describe('breaches and markers from synthetic event logs', () => {
+  const fort = buildSample({
+    player: 'fortify',
+    opponent: 'ghost:rush',
+    seed: 1,
+    tick: 0,
+  }).battle;
+  const base = record(fort);
+  const labels = {
+    side: ['Your', 'Enemy'] as const,
+    coreName: 'Core',
+    zoneRevealed: 'zone',
+    overload: 'overload',
+  };
+  const idsOf = (defType: string): number[] =>
+    base.initialTeams[0].buildings
+      .filter((b) => {
+        const d = content.buildings.get(b.def);
+        return d?.kind === 'defense' && d.defenseType === defType;
+      })
+      .map((b) => b.id);
+  const synth = (
+    events: { tick: number; building: number }[],
+  ): BattleRecord => ({
+    ...base,
+    eventLog: events.map((e) => ({
+      tick: e.tick,
+      type: 'building_destroyed' as const,
+      side: 0,
+      building: e.building,
+    })),
+  });
+
+  test('a destroyed turret is a moment and a breach entry', () => {
+    const turrets = idsOf('turret');
+    expect(turrets.length).toBeGreaterThan(0);
+    const rec = synth([{ tick: 99, building: turrets[0] ?? 0 }]);
+    const moments = deriveMoments(rec, content, labels);
+    const m = moments.find((x) => x.kind === 'turret');
+    expect(m?.tick).toBe(100);
+    expect(m?.side).toBe(0);
+    expect(m?.focus).not.toBeNull();
+    const entries = breachEntries(rec, content, moments, 0, 10);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.text).toMatch(/^1 turret at 0:10$/i);
+  });
+
+  test('all walls and gates are listed, grouped with their time span', () => {
+    const walls = idsOf('wall');
+    expect(walls.length).toBeGreaterThanOrEqual(3);
+    const rec = synth([
+      { tick: 99, building: walls[0] ?? 0 },
+      { tick: 199, building: walls[1] ?? 0 },
+      { tick: 299, building: walls[2] ?? 0 },
+    ]);
+    const moments = deriveMoments(rec, content, labels);
+    // Only the first wall is a log moment ...
+    expect(moments.filter((x) => x.kind === 'breach')).toHaveLength(1);
+    // ... but the list has all three.
+    const entries = breachEntries(rec, content, moments, 0, 10);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.text).toMatch(/^3 walls at 0:10–0:30$/i);
+  });
+
+  test('walls, turrets and the Core come out in time order', () => {
+    const walls = idsOf('wall');
+    const turrets = idsOf('turret');
+    const rec = {
+      ...synth([
+        { tick: 299, building: turrets[0] ?? 0 },
+        { tick: 99, building: walls[0] ?? 0 },
+      ]),
+    };
+    const entries = breachEntries(
+      rec,
+      content,
+      deriveMoments(rec, content, labels),
+      0,
+      10,
+    );
+    expect(entries.map((e) => e.tick)).toEqual([100, 300]);
+    expect(entries[0]?.text).toMatch(/wall/i);
+    expect(entries[1]?.text).toMatch(/turret/i);
+  });
+
+  test('markers at the same tick are merged into one labelled with the range', () => {
+    expect(mergeMarkers([10, 20, 20, 30])).toEqual([
+      { x: 10, label: '1' },
+      { x: 20, label: '2–3' },
+      { x: 30, label: '4' },
+    ]);
+    expect(mergeMarkers([5, 5, 5]).map((m) => m.label)).toEqual(['1–3']);
+    expect(mergeMarkers([])).toEqual([]);
+  });
+});
+
+describe('golden reproduction through the sample route', () => {
+  test('the hash can carry a threat seed that reproduces a golden PvE battle', () => {
+    const sel = parseSampleHash(
+      '#battle?p=rush&o=pve:arch_rusher:1:medium&s=8&ts=101',
+    );
+    expect(sel.threatSeed).toBe(101);
+    expect(parseSampleHash(formatSampleHash(sel))).toEqual(sel);
+    expect(opponentOptions().some((o) => o.id === sel.opponent)).toBe(true);
+    const rec = record(buildSample(sel).battle);
+    const gold = (pveVectors as unknown as Vector[]).find(
+      (v) => v.id === 'pve-battle.rush-vs-rusher-r1',
+    );
+    expect(rec.result).toEqual(gold?.expected.result.result);
+    expect(rec.summary.sides[1].coreHealth).toBe(
+      gold?.expected.result.summary?.sides[1]?.coreHealth,
+    );
   });
 });

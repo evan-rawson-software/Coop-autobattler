@@ -19,7 +19,7 @@ export interface ChartSeries {
 
 export interface ChartMarker {
   readonly x: number;
-  /** Shown in the circle at the top of the marker line (1-2 characters). */
+  /** Shown in the circle at the top of the marker line (a number or a range such as "2–3"). */
   readonly label: string;
 }
 
@@ -101,13 +101,17 @@ export function LineChart(props: LineChartProps) {
       ctx.lineTo(x, padT + gh);
       ctx.stroke();
       ctx.setLineDash([]);
+      // A pill that grows with its label ("2–3" is wider than "2").
+      const halfW = Math.max(7.5, ctx.measureText(m.label).width / 2 + 4);
+      // Kept inside the canvas near the ends; the line stays at the moment.
+      const cxPill = Math.min(Math.max(x, halfW), w - halfW);
       ctx.beginPath();
-      ctx.arc(x, 8, 7.5, 0, Math.PI * 2);
+      ctx.roundRect(cxPill - halfW, 0.5, halfW * 2, 15, 7.5);
       ctx.fillStyle = theme.ink;
       ctx.fill();
       ctx.fillStyle = theme.boardBg;
       ctx.textAlign = 'center';
-      ctx.fillText(m.label, x, 12);
+      ctx.fillText(m.label, cxPill, 12);
     }
 
     // Series: colour and dash.
@@ -166,6 +170,7 @@ export function LineChart(props: LineChartProps) {
         role="img"
         aria-label={props.ariaLabel}
         data-testid={props.testId}
+        data-marker-labels={(props.markers ?? []).map((m) => m.label).join(',')}
       />
     </div>
   );

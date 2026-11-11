@@ -28,6 +28,11 @@ export class CameraController {
   /** The preset a new layout key puts the camera at. */
   resetPreset: CameraPreset = 'center';
   /**
+   * When set, a reset also zooms to this many pixels per cell (within the
+   * zoom limits), even where the whole board would fit at a smaller zoom.
+   */
+  startZoom: number | null = null;
+  /**
    * When true, a resize re-applies the reset preset until the user pans or
    * zooms (the layout around the view may still be settling at first).
    */
@@ -93,6 +98,15 @@ export class CameraController {
     if (this.pendingReset) {
       this.pendingReset = false;
       this.preset(this.resetPreset);
+      if (this.startZoom !== null) {
+        this.set(
+          clampCamera(
+            { ...this.cam, zoom: this.startZoom },
+            this.vp,
+            this.bounds,
+          ),
+        );
+      }
       this.following = true;
       this.emit();
       return;

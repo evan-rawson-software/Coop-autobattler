@@ -5,27 +5,36 @@
  * is the `#battle` route with a picker of sample battles.
  */
 
-import { hashJson } from '@game/core';
+import { hashJson, type TeamState } from '@game/core';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
+import { DEFAULT_ZOOM } from '../board/camera.js';
 import { CameraController } from '../board/controller.js';
 import {
   buildScene,
   enemyCoreCentre,
   type NeutralView,
+  type Scene,
 } from '../board/scene.js';
-import { content } from '../content.js';
-import { registerDebug } from '../debug-hook.js';
+import { content, type WebContent } from '../content.js';
+import {
+  DEBUG_HOOK,
+  type DebugScene,
+  type DebugSceneSide,
+  registerDebug,
+  unregisterDebug,
+} from '../debug-hook.js';
 import { AppShell } from '../shell/AppShell.js';
 import './battle.css';
 import {
+  coreNameOf,
   deriveMoments,
   geometryOf,
   clock,
   sideStats,
   type Moment,
 } from './derive.js';
-import { drawBattleOverlay, makeDrawIndex, type DrawIndex } from './draw.js';
+import { drawBattleOverlay, makeDrawIndex } from './draw.js';
 import { BattleSummaryView, LeftPanels, RightPanels } from './panels.js';
 import {
   Playback,
@@ -38,11 +47,10 @@ import {
   formatSampleHash,
   opponentOptions,
   parseSampleHash,
-  sampleReward,
   type SampleSelection,
 } from './samples.js';
 import { battleConfig } from './setup.js';
-import type { BattleViewProps } from './types.js';
+import type { BattleDescription, BattleViewProps } from './types.js';
 import { REFERENCE_BOARDS } from '@game/core';
 
 /** How long the zone stays hidden before playback begins, in milliseconds. */
@@ -50,53 +58,76 @@ export const INTRO_MS = 1200;
 
 type Phase = 'playing' | 'summary';
 
+/** Animation frame intervals while playing, for the smoke script's perf check. */
+const frameTimes: number[] = [];
+
 interface Prep {
   readonly record: BattleRecord;
   readonly pb: Playback;
-  readonly moments: readonly Moment[];
-  readonly index: DrawIndex;
   readonly geo: ReturnType<typeof geometryOf>;
+  /** The scene at tick 0, for what the draw index and the camera need. */
+  readonly init: Scene;
   readonly enemyCentre: { x: number; y: number } | null;
 }
 
-function prepare(props: BattleViewProps): Prep | string {
-  const made = simulateRecord(props.battle, content, battleConfig);
+/**
+ * Simulate a battle and set up its playback. Depends on the battle (and the
+ * tick to resume at) alone; everything that depends on who the opponent is
+ * is derived in `BattleStage`, so a changed opponent needs no re-simulation.
+ */
+function prepare(
+  battle: BattleDescription,
+  initialTick: number,
+): Prep | string {
+  const made = simulateRecord(battle, content, battleConfig);
   if (!made.ok) return made.error.message;
   const record = made.record;
-  const pb = new Playback(props.battle, content, battleConfig, record);
-  if ((props.initialTick ?? 0) > 0) pb.seekTo(props.initialTick ?? 0);
-  const coreDef = content.buildings.list().find((d) => d.kind === 'core');
-  const coreName =
-    (coreDef && content.presentation.get(coreDef.id)?.name) ?? 'Core';
-  const foeWord = props.opponent.kind === 'ghost' ? 'Enemy' : 'Stronghold';
-  const moments = deriveMoments(record, content, {
-    side: ['Your', foeWord],
-    coreName,
-    zoneRevealed: 'Neutral zone revealed',
-    overload: 'Overload begins',
-  });
+  const pb = new Playback(battle, content, battleConfig, record);
+  if (initialTick > 0) pb.seekTo(initialTick);
   const init = buildScene(
     record.initialTeams[0],
     record.initialTeams[1],
     record.zone.depth,
     content,
   );
-  const index = makeDrawIndex(init, {
-    own: 'YOUR BOARD',
-    enemy: props.opponent.kind === 'ghost' ? 'ENEMY BOARD' : 'STRONGHOLD',
-  });
   return {
     record,
     pb,
-    moments,
-    index,
     geo: geometryOf(record),
+    init,
     enemyCentre: enemyCoreCentre(init),
   };
 }
 
+/**
+ * What the debug hook reports of the visual state: per side, the building
+ * kinds and the conduits' count (to check which board a scene shows).
+ */
+function sceneSummary(
+  teams: readonly [TeamState, TeamState],
+  c: WebContent,
+): DebugScene {
+  const side = (t: TeamState): DebugSceneSide => {
+    const kinds: Record<string, number> = {};
+    for (const b of t.buildings) {
+      const def = c.buildings.get(b.def);
+      const key = def === undefined ? b.def : `${def.kind}:${def.id}`;
+      kinds[key] = (kinds[key] ?? 0) + 1;
+    }
+    return {
+      buildings: t.buildings.length,
+      conduits: t.conduits.length,
+      kinds,
+    };
+  };
+  return [side(teams[0]), side(teams[1])];
+}
+
 export function BattleView(props: BattleViewProps) {
   const [prep, setPrep] = useState<Prep | string | null>(null);
+  // `initialTick` is read once per battle, when the simulation is set up.
+  const initialTick = useRef(props.initialTick ?? 0);
+  initialTick.current = props.initialTick ?? 0;
 
   // Simulate after the first paint, so the page shows "preparing" first.
   useEffect(() => {
@@ -107,7 +138,7 @@ export function BattleView(props: BattleViewProps) {
       timer = window.setTimeout(() => {
         if (cancelled) return;
         try {
-          setPrep(prepare(props));
+          setPrep(prepare(props.battle, initialTick.current));
         } catch (e) {
           setPrep(e instanceof Error ? e.message : String(e));
         }
@@ -118,7 +149,7 @@ export function BattleView(props: BattleViewProps) {
       cancelAnimationFrame(raf);
       window.clearTimeout(timer);
     };
-    // The battle is fixed for the life of one view; callers re-key to change it.
+    // A new battle (a new description) is simulated afresh; nothing else is.
   }, [props.battle]);
 
   if (prep === null || typeof prep === 'string') {
@@ -135,7 +166,27 @@ export function BattleView(props: BattleViewProps) {
 
 function BattleStage(props: BattleViewProps & { prep: Prep }) {
   const { prep, opponent } = props;
-  const { pb, record, moments, index, geo } = prep;
+  const { pb, record, geo, init } = prep;
+  const foeKind = opponent.kind;
+  const foeWord = foeKind === 'ghost' ? 'Enemy' : 'Stronghold';
+  const moments = useMemo(
+    () =>
+      deriveMoments(record, content, {
+        side: ['Your', foeWord],
+        coreName: coreNameOf(content),
+        zoneRevealed: 'Neutral zone revealed',
+        overload: 'Overload begins',
+      }),
+    [record, foeWord],
+  );
+  const index = useMemo(
+    () =>
+      makeDrawIndex(init, {
+        own: 'YOUR BOARD',
+        enemy: foeKind === 'ghost' ? 'ENEMY BOARD' : 'STRONGHOLD',
+      }),
+    [init, foeKind],
+  );
   const tps = battleConfig.sim.ticksPerSecond;
   const [phase, setPhase] = useState<Phase>(
     pb.finished ? 'summary' : 'playing',
@@ -143,8 +194,10 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
   const [, setFrame] = useState(0);
   const [ready, setReady] = useState(false);
   const camera = useMemo(() => {
+    // Starts at the centre of the map (the neutral zone); "Fit battle" is a
+    // preset. A resize re-centres until the user pans or zooms.
     const c = new CameraController();
-    c.resetPreset = 'fit';
+    c.startZoom = DEFAULT_ZOOM;
     c.refitOnResize = true;
     return c;
   }, []);
@@ -154,7 +207,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
     setFrame((n) => n + 1);
   };
 
-  // Debug hook for the smoke script.
+  // Debug hook for the smoke script (removed again on unmount).
   useEffect(() => {
     registerDebug({
       battle: {
@@ -177,9 +230,23 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
         unitsAlive: () => pb.sim.units.length,
         simMs: () => record.simMs,
         ready: () => latest.current.ready,
+        scene: () => sceneSummary(pb.sim.teams, content),
+        geometry: () => ({ width: geo.width, height: geo.height }),
+        frameTimes: (reset) => {
+          const out = frameTimes.slice();
+          if (reset) frameTimes.length = 0;
+          return out;
+        },
+        setSpeed: (s) => {
+          pb.setSpeed(s);
+          force();
+        },
       },
     });
-  }, [pb, record]);
+    return () => {
+      unregisterDebug('battle');
+    };
+  }, [pb, record, geo]);
 
   // The intro: the zone stays hidden for a moment, then the battle begins.
   useEffect(() => {
@@ -203,6 +270,10 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
     const frame = (t: number): void => {
       const dt = t - last;
       last = t;
+      if (DEBUG_HOOK && pb.started) {
+        frameTimes.push(dt);
+        if (frameTimes.length > 4000) frameTimes.shift();
+      }
       pb.advance(dt);
       if (pb.finished) {
         latest.current.props.onTick?.(pb.tick);
@@ -226,6 +297,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
   }, [phase, pb]);
 
   const drawData = useRef({ pb, geo, index, content });
+  drawData.current = { pb, geo, index, content };
   const drawOverlay = useRef(
     (ctx: CanvasRenderingContext2D, o: OverlayContext) => {
       drawBattleOverlay(ctx, o, drawData.current);
@@ -265,7 +337,6 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
     if (m.focus !== null) camera.focusAt(m.focus);
   };
 
-  const foeWord = opponent.kind === 'ghost' ? 'Enemy' : 'Stronghold';
   const timeText = clock(pb.tick, tps);
   const status = (
     <span class="battle-status">
@@ -316,6 +387,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
       right={
         <RightPanels
           pb={pb}
+          content={content}
           opponent={opponent}
           foeWord={foeWord}
           theirs={theirs}
@@ -372,29 +444,24 @@ export function BattleSampleScreen() {
   // The tick changes while playing; the battle does not.
   const sample = useMemo(
     () => buildSample({ ...sel, tick: 0 }),
-    [sel.player, sel.opponent, sel.seed, nonce],
+    [sel.player, sel.opponent, sel.seed, sel.threatSeed, nonce],
   );
   const options = useMemo(() => opponentOptions(), []);
   const [seedText, setSeedText] = useState(String(sel.seed));
   const initialTick = useRef(sel.tick);
 
-  // Follow the hash when it is changed by hand.
+  // The route state follows the hash when it is edited by hand (the screen's
+  // own updates use `replaceState`, which does not fire `hashchange`). Any
+  // change, the tick included, starts the battle over from what the hash says.
   useEffect(() => {
     const onHash = (): void => {
       if (!window.location.hash.startsWith('#battle')) return;
       const next = readSelection();
-      setSel((cur) => {
-        if (
-          next.player === cur.player &&
-          next.opponent === cur.opponent &&
-          next.seed === cur.seed
-        ) {
-          return cur;
-        }
-        setNonce((n) => n + 1);
-        return next;
-      });
       initialTick.current = next.tick;
+      setSel(next);
+      setSeedText(String(next.seed));
+      setReadyCount(0);
+      setNonce((n) => n + 1);
     };
     window.addEventListener('hashchange', onHash);
     return () => {
@@ -407,7 +474,8 @@ export function BattleSampleScreen() {
   };
 
   const change = (patch: Partial<SampleSelection>): void => {
-    const next = { ...sel, ...patch, tick: 0 };
+    // Picking something else drops a hand-typed threat seed.
+    const next = { ...sel, ...patch, threatSeed: undefined, tick: 0 };
     initialTick.current = 0;
     setNonce((n) => n + 1);
     setSel(next);
@@ -480,11 +548,11 @@ export function BattleSampleScreen() {
 
   return (
     <BattleView
-      key={`${sel.player}|${sel.opponent}|${String(sel.seed)}|${String(nonce)}`}
+      key={`${sel.player}|${sel.opponent}|${String(sel.seed)}|${String(sel.threatSeed)}|${String(nonce)}`}
       battle={sample.battle}
       opponent={sample.opponent}
       title={sample.title}
-      reward={sampleReward}
+      reward={sample.reward}
       initialTick={initialTick.current}
       onTick={(t) => {
         write({ ...sel, tick: t });
