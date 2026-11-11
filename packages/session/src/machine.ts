@@ -477,10 +477,8 @@ function resolveVotes(s: RunState, deps: RunDeps, fx: Effect[]): Next {
     all.push(c);
   }
   if (votes.topic === 'core') {
-    const first = all[0] as Json;
-    const key = canonicalJson(first);
-    if (!all.every((c) => canonicalJson(c) === key))
-      return { ok: true, state: s };
+    // Every player has voted: most votes wins, a tie goes to the host (CP-16).
+    const first = tally(all, s.host);
     const pos = first as { x: number; y: number };
     const placed = placeCore(s.team, deps.content, deps.mapgenConfig, pos);
     if (!placed.ok) return fail(placed.reason, placed.detail);

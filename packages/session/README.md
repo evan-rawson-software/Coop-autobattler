@@ -30,7 +30,7 @@ last player has voted; the most votes wins, a tie goes to the host's vote.
 
 | Step             | Intents allowed (besides `abandon` by the host)   | How it ends                                                                                               |
 | ---------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `core_placement` | `propose_core`, `vote` (for a proposal)           | All players voted for the same legal position (a proposal counts as its proposer's vote): Core placed, `startingKit` hook, then `build`. |
+| `core_placement` | `propose_core`, `vote` (for a proposal)           | Every player has voted for a legal position (a proposal counts as its proposer's vote); most votes wins, a tie goes to the host: Core placed, `startingKit` hook, then `build`. |
 | `build`          | board edits, `ready`, `unready`, extension intents | All players ready: `pve_choice`.                                                                          |
 | `pve_choice`     | `vote` (an option id from `pending.options`)      | All voted: winner chosen, then `pve_battle`. The options were stored earlier in `upcomingPve` (see "Game deps"). |
 | `pve_battle`     | none (never saved)                                | Resolved at once through `deps.battle`; goes to `pve_summary`.                                            |

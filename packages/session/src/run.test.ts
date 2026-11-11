@@ -535,7 +535,7 @@ describe('three players', () => {
     });
   });
 
-  test('the Core needs all three to agree on a legal position', () => {
+  test('the Core resolves once all three have voted: most votes wins, on a legal position only', () => {
     let s = newRun(baseDeps, names);
     const pos = corePosition(s);
     const off = { x: -1, y: -1 };
@@ -552,15 +552,58 @@ describe('three players', () => {
     expect(
       applyIntent(s, 2, { type: 'vote', choice: { x: 99, y: 99 } }, baseDeps),
     ).toMatchObject({ ok: false, reason: 'invalid_choice' });
-    // Player 2 proposes another spot: no agreement yet.
+    // Player 2 proposes another spot; as the last vote it resolves 2-1.
     const other = require2(s, pos);
+    expect(openVote(s)?.options).toHaveLength(1);
     s = ok(s, 2, { type: 'propose_core', ...other }).state;
-    expect(s.step).toBe('core_placement');
-    expect(openVote(s)?.options).toHaveLength(2);
-    // Player 2 joins the others.
-    s = ok(s, 2, { type: 'vote', choice: pos }).state;
     expect(s.step).toBe('build');
     expect(s.team.core).toEqual(pos);
+  });
+
+  test('a vote can change until the last player has voted', () => {
+    let s = newRun(baseDeps, names);
+    const pos = corePosition(s);
+    const other = require2(s, pos);
+    s = ok(s, 0, { type: 'propose_core', ...pos }).state;
+    s = ok(s, 1, { type: 'propose_core', ...other }).state;
+    // Player 0 changes to the other spot; still waiting for player 2.
+    s = ok(s, 0, { type: 'vote', choice: other }).state;
+    expect(s.step).toBe('core_placement');
+    s = ok(s, 2, { type: 'vote', choice: pos }).state;
+    expect(s.step).toBe('build');
+    expect(s.team.core).toEqual(other);
+    expect(validateRunState(JSON.parse(JSON.stringify(s)), baseDeps).ok).toBe(
+      true,
+    );
+  });
+
+  test('a 1-1 split of two players goes to the host, and replays', () => {
+    let s = newRun(baseDeps, ['Ann', 'Bo']);
+    const pos = corePosition(s);
+    const other = (() => {
+      for (let dx = -3; dx <= 3; dx++) {
+        for (let dy = -3; dy <= 3; dy++) {
+          if (dx === 0 && dy === 0) continue;
+          const p = { x: pos.x + dx, y: pos.y + dy };
+          if (applyIntent(s, 1, { type: 'propose_core', ...p }, baseDeps).ok) {
+            return p;
+          }
+        }
+      }
+      throw new Error('no second legal position nearby');
+    })();
+    s = ok(s, 1, { type: 'propose_core', ...other }).state;
+    expect(s.step).toBe('core_placement');
+    s = ok(s, 0, { type: 'propose_core', ...pos }).state;
+    expect(s.step).toBe('build');
+    expect(s.host).toBe(0);
+    expect(s.team.core).toEqual(pos);
+    const replayed = replayRun(runArgs(['Ann', 'Bo']), s.actionLog, baseDeps);
+    expect(replayed.ok).toBe(true);
+    if (replayed.ok) expect(replayed.state).toEqual(s);
+    expect(validateRunState(JSON.parse(JSON.stringify(s)), baseDeps).ok).toBe(
+      true,
+    );
   });
 
   function require2(s: RunState, not: { x: number; y: number }) {
