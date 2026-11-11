@@ -106,7 +106,6 @@ describe('sim-event.schema.json', () => {
       'turret_fired',
       'unit_attacked',
       'unit_died',
-      'unit_moved',
       'unit_spawned',
     ]);
   });
