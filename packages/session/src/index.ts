@@ -12,6 +12,7 @@ export {
   eventFollowUp,
   nextBattleInfo,
   openVote,
+  sealedProducers,
   whoIsReady,
   type FollowUpView,
   type NextBattleInfo,

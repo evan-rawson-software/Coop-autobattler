@@ -1,4 +1,5 @@
 /** Read-only helpers for the presentation layer. */
+import { sealedProducers as sealedIn } from '@game/core';
 import {
   pveOptionView,
   readPveOption,
@@ -14,6 +15,18 @@ export function whoIsReady(state: RunState): number[] {
     if (p.ready) out.push(i);
   });
   return out;
+}
+
+/**
+ * The ids of the placed unit producers whose units could not reach the front
+ * row of the board (issue #37, 3a); `ready` is refused with `sealed_producer`
+ * while there are any. Empty when nothing is sealed in.
+ */
+export function sealedProducers(
+  state: RunState,
+  deps: Pick<RunDeps, 'content'>,
+): number[] {
+  return sealedIn(state.team, deps.content);
 }
 
 export interface OpenVoteView {

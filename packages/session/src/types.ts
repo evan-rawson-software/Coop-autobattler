@@ -252,6 +252,7 @@ export type BuiltinReason =
   | 'already_ready'
   | 'not_ready'
   | 'locked_ready'
+  | 'sealed_producer'
   | 'invalid_intent'
   | 'invalid_choice'
   | 'unknown_intent'

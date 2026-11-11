@@ -61,6 +61,14 @@ unready. `applyIntent` enforces it for built-in and extension intents alike
 last player readies the step advances, so a solo player's Ready never leaves
 a locked state.
 
+**Sealed producers (issue #37, 3a).** In `build` and `shop`, `ready` is
+rejected with `sealed_producer` (`detail`: the ids, such as `"12,15"`) while a
+placed unit producer is fully enclosed: no walkable route from its spawn cells
+to the board's front row (gates are walkable; see "Sealed unit producers" in
+`docs/rules-reference.md`). The check covers the whole shared board and is
+the pure function `sealedProducers` in `core`; the selector
+`sealedProducers(state, deps)` returns the same ids for a screen.
+
 Any intent not in a step's row is rejected with `wrong_step`. `abandon` (host
 only, else `not_host`) ends the run from any step except `run_over`. The
 legal built-in intents per step are in `src/step-table.ts`.

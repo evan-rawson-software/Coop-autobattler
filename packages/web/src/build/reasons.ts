@@ -47,6 +47,7 @@ export const REASON_MESSAGES: Readonly<Record<KnownReason, string>> = {
   already_ready: 'Already ready.',
   not_ready: 'Not ready yet.',
   locked_ready: 'You are Ready. Unready to change anything.',
+  sealed_producer: 'A unit producer is walled in. Open a way out first.',
   invalid_intent: 'That action is not valid.',
   invalid_choice: 'That choice is not valid.',
   unknown_intent: 'Unknown action.',

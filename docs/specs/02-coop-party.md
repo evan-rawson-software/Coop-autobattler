@@ -81,7 +81,9 @@ Status: Draft v4.5
   `locked_ready`) until they Unready. A player can Unready for as long as at
   least one other player is not ready; the moment the last player readies the
   step ends, so with one player Ready advances at once. Other players keep
-  editing while someone is Ready.
+  editing while someone is Ready. A player cannot ready up while a placed
+  unit producer is sealed in (its units could not reach the front row of the
+  board; a gate counts as a way out), reason `sealed_producer`.
 - **CP-17b [DECIDED]** **A vote counts as soon as it is cast and can be
   changed until the last player has voted.** There is no separate confirm
   step. The choice resolves once everyone has voted.

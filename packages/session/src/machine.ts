@@ -14,6 +14,7 @@ import {
   placeCore,
   placeFromStash,
   returnToStash,
+  sealedProducers,
   type Json,
 } from '@game/core';
 import { STEP_INTENTS, lockedWhileReady } from './step-table.js';
@@ -618,6 +619,11 @@ function applyBuiltin(
 
     case 'ready': {
       if (s.perPlayer[player]?.ready === true) return fail('already_ready');
+      // A sealed-in unit producer cannot be left behind (issue #37, 3a).
+      if (s.step === 'build' || s.step === 'shop') {
+        const sealed = sealedProducers(s.team, content);
+        if (sealed.length > 0) return fail('sealed_producer', sealed.join(','));
+      }
       const next = setReady(s, player, true);
       fx.push({ type: 'ready_changed', player, ready: true });
       return {

@@ -288,6 +288,9 @@ export type {
   ShopResult,
 } from './shop.js';
 
+// Sealed unit producers (issue #37).
+export { sealedProducers } from './sealed-producers.js';
+
 // Workshop event rules (issue #50).
 export { workshopOptions, workshopPrice } from './workshop.js';
 export type { WorkshopOption } from './workshop.js';

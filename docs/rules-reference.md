@@ -2311,6 +2311,35 @@ The step check comes first (a `vote` in `build` is still `wrong_step`), and
 moment the last player readies, an unready is always possible while the flag
 is set. The summary steps have nothing to edit and are not locked.
 
+### Sealed unit producers (issue #37, part 3a)
+
+`ready` in `build` or `shop` is rejected with `sealed_producer`, with the
+building ids in `detail` (ascending, comma separated, such as `"12,15"`), while
+`sealedProducers(team, content)` (core, `sealed-producers.ts`) is not empty.
+The check is on the whole shared board, whoever sent `ready`. A placed unit
+producer (a building whose kind is `unit_producer`) is **sealed** when its
+units could not reach the front row:
+
+- The board is read as the arena reads side 0 (`createArena` and `openFor`
+  from the arena code, unchanged). A cell is **walkable** if it is not terrain
+  that blocks movement (lake, cliff) and not covered by a building or the
+  Core, except that a **gate is walkable** (it lets its own side through,
+  `blocksUnit`). Conduits are not obstacles. Movement is 4-directional.
+- The **front row** is the board's last row, `y = height - 1`, next to the
+  neutral zone. The zone itself is not consulted.
+- A producer is **not sealed** if one of its footprint cells is on the front
+  row (it can spawn onto the first zone row), or if at least one **spawn cell**
+  (a cell 4-adjacent to its footprint, inside the board) is walkable and a chain
+  of 4-adjacent walkable cells joins it to a walkable cell of the front row.
+  Otherwise it is sealed. This is the spawn rule of the arena ("where to
+  spawn") without its preference ordering: only whether a route exists.
+- Unplaced buildings (the stash) never count; a building that is not a unit
+  producer is never listed. The search is one breadth-first pass from the front
+  row (about a millisecond on a full four-plot board).
+
+The summary steps are not checked. `sealedProducers(state, deps)` in the session
+package gives the same list for a screen.
+
 ### Events (RS-4)
 
 `content/events.json` lists event definitions `{ id, type, weight,
