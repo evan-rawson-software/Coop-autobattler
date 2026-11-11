@@ -62,7 +62,11 @@ Status: Draft v4.5
 - **CP-15 [PROPOSED]** Lives are a single shared pool (RS-7a). The party wins
   and loses battles together.
 - **CP-16 [PROPOSED]** Party-wide choices (PvE difficulty, which event to
-  take, where the Core goes) use a vote; a tie is settled by the host (CP-3a).
+  take, where the Core goes) use a vote. The vote resolves once every player
+  has voted. If all chose the same option it wins; otherwise one player's
+  vote is picked at random, each player's vote being one equally likely
+  ticket (an option with 3 of 4 votes wins 75% of the time). The host has no
+  tie-break.
 
 ## Building together
 

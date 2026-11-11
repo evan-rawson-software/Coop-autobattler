@@ -37,6 +37,7 @@ import {
   type RunState,
   type StatePatch,
   type Step,
+  type VoteTopic,
 } from './types.js';
 
 // ---------------------------------------------------------------------------
@@ -415,26 +416,54 @@ function completeStep(s: RunState, deps: RunDeps, fx: Effect[]): RunState {
 // ---------------------------------------------------------------------------
 // Votes
 
-export function tally(choices: readonly Json[], host: number): Json {
-  const counts = new Map<string, { choice: Json; count: number }>();
-  for (const choice of choices) {
-    const key = canonicalJson(choice);
-    const entry = counts.get(key);
-    if (entry === undefined) counts.set(key, { choice, count: 1 });
-    else entry.count += 1;
+export interface TallyResult {
+  /** The state with the generator advanced if a random pick was drawn. */
+  readonly state: RunState;
+  readonly winner: Json;
+  /** The player whose vote was picked at random; null if unanimous. */
+  readonly picked: number | null;
+}
+
+/**
+ * The one rule for every party decision. `choices` has one entry per player,
+ * in player order (each is one ticket). If all chose the same, that wins and
+ * nothing is drawn. Otherwise ONE ticket is picked at random: a single
+ * `nextInt(players)` from the dedicated stream `label` (so an option with 3 of
+ * 4 votes wins with probability 3/4). Drawing only on a split keeps solo runs
+ * and unanimous votes from consuming randomness; the draw is still
+ * deterministic because the votes are part of the action log. It happens once,
+ * when the last vote arrives, and its outcome is stored in the new state.
+ */
+export function tally(
+  state: RunState,
+  choices: readonly Json[],
+  label: string,
+): TallyResult {
+  const first = choices[0] as Json;
+  const key = canonicalJson(first);
+  if (choices.every((c) => canonicalJson(c) === key)) {
+    return { state, winner: first, picked: null };
   }
-  let max = 0;
-  for (const e of counts.values()) max = Math.max(max, e.count);
-  const tied = [...counts.entries()].filter(([, e]) => e.count === max);
-  const hostChoice = choices[host];
-  if (tied.length > 1 && hostChoice !== undefined) {
-    const hostEntry = tied.find(([k]) => k === canonicalJson(hostChoice));
-    if (hostEntry !== undefined) return hostEntry[1].choice;
-  }
-  // Unreachable with at most four players (the host is always in a top tie),
-  // but defined: the first tied choice in player order.
-  const first = tied[0];
-  return first === undefined ? null : first[1].choice;
+  const d = drawStream(state, label);
+  const picked = d.stream.nextInt(choices.length);
+  return { state: d.state, winner: choices[picked] as Json, picked };
+}
+
+/** The `vote_resolved` effect for a tally. */
+export function voteResolvedEffect(
+  topic: VoteTopic,
+  choices: readonly Json[],
+  t: TallyResult,
+): Effect {
+  return {
+    type: 'vote_resolved',
+    topic,
+    choice: t.winner,
+    tickets: choices,
+    ...(t.picked === null
+      ? {}
+      : { picked: { player: t.picked, random: true as const } }),
+  };
 }
 
 function normalizeChoice(s: RunState, choice: Json): Json | null {
@@ -477,27 +506,30 @@ function resolveVotes(s: RunState, deps: RunDeps, fx: Effect[]): Next {
     all.push(c);
   }
   if (votes.topic === 'core') {
-    // Every player has voted: most votes wins, a tie goes to the host (CP-16).
-    const first = tally(all, s.host);
+    // Every player has voted (CP-16): unanimous, or one vote picked at random.
+    const t = tally(s, all, streamLabels.vote('core', s.round, s.leg));
+    const first = t.winner;
     const pos = first as { x: number; y: number };
     const placed = placeCore(s.team, deps.content, deps.mapgenConfig, pos);
     if (!placed.ok) return fail(placed.reason, placed.detail);
-    fx.push({ type: 'vote_resolved', topic: 'core', choice: first });
+    fx.push(voteResolvedEffect('core', all, t));
     fx.push({ type: 'core_placed', x: pos.x, y: pos.y });
     return {
       ok: true,
       state: enter(
-        { ...s, team: placed.state, pending: null },
+        { ...t.state, team: placed.state, pending: null },
         'build',
         deps,
         fx,
       ),
     };
   }
-  const winner = tally(all, s.host);
+  const t = tally(s, all, streamLabels.vote(votes.topic, s.round, s.leg));
+  s = t.state;
+  const winner = t.winner;
   const option =
     pendingList(s, 'options').find((o) => idOf(o) === winner) ?? null;
-  fx.push({ type: 'vote_resolved', topic: votes.topic, choice: winner });
+  fx.push(voteResolvedEffect(votes.topic, all, t));
   if (votes.topic === 'pve') {
     return {
       ok: true,

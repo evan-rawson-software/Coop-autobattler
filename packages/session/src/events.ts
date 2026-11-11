@@ -17,7 +17,7 @@
  * and never change on reload. A follow-up lives in `pending.followUp`:
  *   { prompt, options: [{ id, ... }], votes: (string | null)[] }
  * The party votes with `{ type: 'event_choose', choice: <option id> }`; the
- * most votes wins, a tie goes to the host's vote (as for every other vote).
+ * unanimous, or one player's vote picked at random (as for every other vote).
  * Events never add a building to a stash.
  */
 import {
@@ -32,7 +32,8 @@ import {
   type EventsConfig,
   type TeamState,
 } from '@game/core';
-import { tally } from './machine.js';
+import { tally, voteResolvedEffect } from './machine.js';
+import { streamLabels } from './streams.js';
 import type {
   Effect,
   HandlerResult,
@@ -468,7 +469,12 @@ export function eventChooseHandlers(
       if (votes.some((v) => v === null)) {
         return { ok: true, state: withVote, effects };
       }
-      const winner = tally(votes, state.host);
+      const t = tally(
+        withVote,
+        votes,
+        streamLabels.vote('event_follow_up', state.round, state.leg),
+      );
+      const winner = t.winner;
       const chosen = options.find((o) => idOfOption(o) === winner) as Json;
       const handler = handlerFor(handlers, offer.type);
       if (handler?.choose === undefined) {
@@ -480,11 +486,7 @@ export function eventChooseHandlers(
       }
       const r = handler.choose({ state, content, config }, offer, chosen);
       if (!r.ok) return { ok: false, reason: r.reason };
-      effects.push({
-        type: 'vote_resolved',
-        topic: 'event',
-        choice: winner,
-      });
+      effects.push(voteResolvedEffect('event', votes, t));
       effects.push({
         type: 'custom',
         name: 'event_resolved',
@@ -493,9 +495,9 @@ export function eventChooseHandlers(
       return {
         ok: true,
         state: {
-          ...withVote,
-          team: r.patch.team ?? withVote.team,
-          perPlayer: r.patch.perPlayer ?? withVote.perPlayer,
+          ...t.state,
+          team: r.patch.team ?? t.state.team,
+          perPlayer: r.patch.perPlayer ?? t.state.perPlayer,
         },
         effects,
         advance: true,

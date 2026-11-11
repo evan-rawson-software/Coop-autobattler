@@ -26,17 +26,27 @@ own `saveFormatVersion` is separate and still 1.
 A round is: PvE battle, event, shop, PvP battle, event, shop. The run starts
 with `core_placement` and a first `build`. Ready flags and votes reset when a
 step is entered. Voting: a vote counts at once and can be changed until the
-last player has voted; the most votes wins, a tie goes to the host's vote.
+last player has voted. Then, if every player chose the same option, that
+option wins and nothing is drawn; otherwise ONE player's vote is picked at
+random, each player's vote being one equally likely ticket (so an option with
+3 of 4 votes wins with probability 3/4; there is no host tie-break). The pick
+is one `nextInt(players)` from the stream `vote:<topic>:r<r>:<leg>` (topic
+`core`, `pve`, `event` or `event_follow_up`), drawn once when the last vote
+arrives and stored in the new state (the chosen option is in `pending`/`team`),
+so a reload or a replay gives the same result and nothing can re-roll it. Only
+a split draws, so unanimous votes and one-player runs consume no randomness.
+The `vote_resolved` effect carries `tickets` (every vote, in player order) and,
+when a pick was made, `picked: { player, random: true }`.
 
 | Step             | Intents allowed (besides `abandon` by the host)   | How it ends                                                                                               |
 | ---------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `core_placement` | `propose_core`, `vote` (for a proposal)           | Every player has voted for a legal position (a proposal counts as its proposer's vote); most votes wins, a tie goes to the host: Core placed, `startingKit` hook, then `build`. |
+| `core_placement` | `propose_core`, `vote` (for a proposal)           | Every player has voted for a legal position (a proposal counts as its proposer's vote); unanimous or one vote picked at random: Core placed, `startingKit` hook, then `build`. |
 | `build`          | board edits, `ready`, `unready`, extension intents | All players ready: `pve_choice`.                                                                          |
 | `pve_choice`     | `vote` (an option id from `pending.options`)      | All voted: winner chosen, then `pve_battle`. The options were stored earlier in `upcomingPve` (see "Game deps"). |
 | `pve_battle`     | none (never saved)                                | Resolved at once through `deps.battle`; goes to `pve_summary`.                                            |
 | `pve_summary`    | `ready`, `unready`                                | All ready: `rewards` hook, then `event_choice`. A PvE loss costs no life.                                 |
 | `event_choice`   | `vote` (one of the 1 to 3 offers)                 | All voted: `resolveEvent` hook; `event_resolve` if it returns a follow-up with options, else `shop`.     |
-| `event_resolve`  | `event_choose` (extension intent)                 | All players chose (most votes, ties to the host): the handler applies it and advances to `shop`.          |
+| `event_resolve`  | `event_choose` (extension intent)                 | All players chose (unanimous or one vote picked at random): the handler applies it and advances to `shop`.          |
 | `shop`           | board edits, `ready`, `unready`, extension intents | All ready: after the PvE leg `pvp_battle`; after the PvP leg the round counter goes up and `pve_choice`. |
 | `pvp_battle`     | none (never saved)                                | Resolved at once; goes to `pvp_summary`.                                                                  |
 | `pvp_summary`    | `ready`, `unready`                                | All ready: `rewards` hook; a loss costs `pvpLossLifeCost` lives; 0 lives gives `run_over`, else `event_choice`. |
@@ -91,6 +101,7 @@ the round number, `leg` is `pve` or `pvp`.
 | `event_offers:r<r>:<leg>`  | `eventOffers` hook                      |
 | `event_resolve:r<r>:<leg>` | `resolveEvent` hook                     |
 | `shop:r<r>:<leg>`       | `onShopEnter` hook                         |
+| `vote:<topic>:r<r>:<leg>` | the random pick of a split party vote (only drawn when the votes differ) |
 
 Handlers that need randomness should call `drawStream` with their own label,
 for example `reroll:r<r>:p<player>:<action number>`.
@@ -141,8 +152,8 @@ fewer types available means fewer offers (issue #48). Offers are `{ id, event, t
 which building; Shrine: which modifier) enters `event_resolve` with `pending =
 { offer, followUp: { prompt, options, votes } }`; every player sends `{ type:
 'event_choose', choice: <option id> }`. This is a party vote like the others:
-changeable until the last player has voted, most votes wins, a tie goes to the
-host. The Shrine's modifier is added to `team.modifiers` (applied by the
+changeable until the last player has voted, then unanimous or one vote picked
+at random. The Shrine's modifier is added to `team.modifiers` (applied by the
 simulation, see `docs/rules-reference.md`); Workshop raises one owned building
 by one tier (never above 3). Events never add a building.
 

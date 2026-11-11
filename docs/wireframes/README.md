@@ -57,7 +57,7 @@ After every battle the party picks one of three events. It opens with the battle
 1. Result of the battle just fought and what it paid.
 2. Three offered events. Each says exactly what it does before you choose.
 3. Votes from each player. The highlighted card is your own vote; you can change it until the last player has voted.
-4. Who has voted and how ties are settled. There is no time limit; the event resolves once everyone has voted.
+4. Who has voted and how a split vote is settled (one vote is picked at random). There is no time limit; the event resolves once everyone has voted.
 
 ## 3. Shop
 

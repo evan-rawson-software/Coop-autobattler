@@ -479,7 +479,7 @@ describe('the event step', () => {
     });
   });
 
-  test('the follow-up is a party vote: partial votes wait, a tie goes to the host', () => {
+  test('the follow-up is a party vote: partial votes wait, a split picks one vote at random', () => {
     const s = atEvent(deps, ['Ann', 'Bo']);
     let cur = voteAll(s, 'evt_workshop', deps);
     const fu = pending(cur)['followUp'] as Record<string, Json>;
@@ -495,10 +495,15 @@ describe('the event step', () => {
       deps,
     );
     expect(bad.ok).toBe(false);
-    cur = ok(cur, 0, { type: 'event_choose', choice: a }, deps).state;
+    const last = ok(cur, 0, { type: 'event_choose', choice: a }, deps);
+    cur = last.state;
     expect(cur.step).toBe('shop');
-    // Host (player 0) chose a; the tie went to the host.
-    const id = options[0]?.['building'] as number;
+    // Player 0 chose a, player 1 chose b: one of the two votes was picked.
+    const resolved = last.effects.find((e) => e.type === 'vote_resolved');
+    expect(resolved).toMatchObject({ topic: 'event', tickets: [a, b] });
+    const winner = resolved?.type === 'vote_resolved' ? resolved.choice : null;
+    expect([a, b]).toContain(winner);
+    const id = options[winner === a ? 0 : 1]?.['building'] as number;
     const was = [...s.team.buildings, ...s.team.stash].find((x) => x.id === id);
     const now = [...cur.team.buildings, ...cur.team.stash].find(
       (x) => x.id === id,

@@ -2268,6 +2268,29 @@ the party's from the run, and a ghost from `findPvpOpponent` brings its own,
 which apply to side 1. Generated threats (PvE options and the PvP boss) have
 none. An extractor-speed kind is not implemented.
 
+### Party votes (CP-16)
+
+Every party decision (Core placement, PvE difficulty, event choice, event
+follow-up choice) is one vote per player, changeable until the last player has
+voted. It resolves when the last vote arrives:
+
+1. If every player chose the same option, that option wins. Nothing is drawn.
+2. Otherwise one player's vote is picked at random: `pick = nextInt(n)` on the
+   child stream `vote:<topic>:r<round>:<leg>` (topic `core`, `pve`, `event` or
+   `event_follow_up`), where `n` is the number of players and tickets are
+   ordered by player index; the winner is that player's vote. Each vote is one
+   equally likely ticket, so an option with 3 of 4 votes wins with probability
+   3/4. The host has no tie-break.
+
+The stream is derived with the run's `drawStream` (which advances the run
+generator by one output) exactly once, at the moment of the last vote, and only
+for a split vote. Unanimous votes and one-player runs therefore consume no
+randomness (a solo run is unchanged by this rule). The result is applied in the
+same action and stored in the state, so a reload cannot change it and a replay
+of the action log reproduces it. The `vote_resolved` effect lists `tickets`
+(every vote in player order) and, for a random pick, `picked: { player, random:
+true }`.
+
 ### Events (RS-4)
 
 `content/events.json` lists event definitions `{ id, type, weight,
@@ -2310,15 +2333,14 @@ any number of offers from 1 to `offerCount`. More event types will come later.
 - **Windfall** (`params.gold`): no follow-up; every player gets that much gold
   at once.
 
-After the party votes for an offer (the usual vote: most votes, host breaks a
-tie), a handler with no follow-up applies at once and the step goes to the
+After the party votes for an offer (the usual party vote, see "Party votes" below), a handler with no follow-up applies at once and the step goes to the
 shop; so does a follow-up that lists no options (nobody could answer it). A
 handler that can return a follow-up declares `canAskFollowUp` and must have a
 `choose` function (checked when the deps are built). Otherwise the step becomes `event_resolve` with `pending = { offer,
 followUp: { prompt, options, votes } }`, and each player sends `{ type:
 "event_choose", choice: <option id> }`. Votes count at once and can be
-changed; when all players have voted the winner (most votes, ties to the
-host) is applied and the step goes to the shop.
+changed; when all players have voted the winner (see "Party votes") is
+applied and the step goes to the shop.
 
 ### Battles and playback
 

@@ -45,6 +45,24 @@ function autoStep(s: RunState, deps: RunDeps, fx: Effect[] = []): RunState {
   }
 }
 
+/**
+ * The choice a `vote_resolved` effect reports: it must be the ticket of the
+ * `picked` player (or the shared choice if unanimous) among `tickets`.
+ */
+function pickedBy<T>(fx: readonly Effect[], tickets: readonly T[]): T {
+  const e = fx.find((x) => x.type === 'vote_resolved');
+  if (e?.type !== 'vote_resolved') throw new Error('no vote_resolved');
+  expect(e.tickets).toEqual(tickets);
+  const picked = e.picked;
+  if (picked === undefined) {
+    expect(new Set(tickets.map((t) => JSON.stringify(t))).size).toBe(1);
+    return tickets[0] as T;
+  }
+  expect(picked.random).toBe(true);
+  expect(e.choice).toEqual(tickets[picked.player]);
+  return tickets[picked.player] as T;
+}
+
 const stepsOf = (fx: readonly Effect[]): Step[] =>
   fx.flatMap((e) => (e.type === 'step_changed' ? [e.to] : []));
 
@@ -501,23 +519,26 @@ describe('three players', () => {
     return autoStep(placeCoreAll(newRun(baseDeps, names)), baseDeps);
   }
 
-  test('a 2-1 vote resolves to the majority', () => {
+  test('a 2-1 vote resolves to one of the three votes, picked at random', () => {
     let s = atPveChoice();
     s = ok(s, 0, { type: 'vote', choice: 'hard' }).state;
     s = ok(s, 1, { type: 'vote', choice: 'easy' }).state;
     expect(s.step).toBe('pve_choice');
-    s = ok(s, 2, { type: 'vote', choice: 'easy' }).state;
-    expect(s.step).toBe('pve_summary');
-    expect(s.history).toEqual([]);
-    expect(s.thisRound.pve?.difficulty).toBe('easy');
+    const r = ok(s, 2, { type: 'vote', choice: 'easy' });
+    expect(r.state.step).toBe('pve_summary');
+    expect(pickedBy(r.effects, ['hard', 'easy', 'easy'])).toBe(
+      r.state.thisRound.pve?.difficulty,
+    );
   });
 
-  test('a 1-1-1 tie goes to the host', () => {
+  test('a 1-1-1 split resolves to one of the three votes, picked at random', () => {
     let s = atPveChoice();
     s = ok(s, 2, { type: 'vote', choice: 'medium' }).state;
     s = ok(s, 1, { type: 'vote', choice: 'easy' }).state;
-    s = ok(s, 0, { type: 'vote', choice: 'hard' }).state;
-    expect(s.thisRound.pve?.difficulty).toBe('hard');
+    const r = ok(s, 0, { type: 'vote', choice: 'hard' });
+    expect(pickedBy(r.effects, ['hard', 'easy', 'medium'])).toBe(
+      r.state.thisRound.pve?.difficulty,
+    );
   });
 
   test('a changed vote is honoured and the choice waits for the last vote', () => {
@@ -528,8 +549,19 @@ describe('three players', () => {
     s = ok(s, 1, { type: 'vote', choice: 'medium' }).state;
     expect(s.step).toBe('pve_choice');
     expect(openVote(s)?.waitingFor).toEqual([2]);
-    s = ok(s, 2, { type: 'vote', choice: 'medium' }).state;
-    expect(s.thisRound.pve?.difficulty).toBe('medium');
+    // Player 0 follows; the choice still waits for player 2.
+    s = ok(s, 0, { type: 'vote', choice: 'medium' }).state;
+    expect(s.step).toBe('pve_choice');
+    // The last vote makes it unanimous: nothing is drawn.
+    const r = ok(s, 2, { type: 'vote', choice: 'medium' });
+    expect(r.state.thisRound.pve?.difficulty).toBe('medium');
+    expect(r.effects.find((e) => e.type === 'vote_resolved')).toMatchObject({
+      choice: 'medium',
+      tickets: ['medium', 'medium', 'medium'],
+    });
+    expect(
+      r.effects.find((e) => e.type === 'vote_resolved'),
+    ).not.toHaveProperty('picked');
   });
 
   test('an unknown option is an invalid choice', () => {
@@ -542,7 +574,7 @@ describe('three players', () => {
     });
   });
 
-  test('the Core resolves once all three have voted: most votes wins, on a legal position only', () => {
+  test('the Core resolves once all three have voted: one vote picked at random, legal positions only', () => {
     let s = newRun(baseDeps, names);
     const pos = corePosition(s);
     const off = { x: -1, y: -1 };
@@ -562,9 +594,9 @@ describe('three players', () => {
     // Player 2 proposes another spot; as the last vote it resolves 2-1.
     const other = require2(s, pos);
     expect(openVote(s)?.options).toHaveLength(1);
-    s = ok(s, 2, { type: 'propose_core', ...other }).state;
-    expect(s.step).toBe('build');
-    expect(s.team.core).toEqual(pos);
+    const r = ok(s, 2, { type: 'propose_core', ...other });
+    expect(r.state.step).toBe('build');
+    expect(pickedBy(r.effects, [pos, pos, other])).toEqual(r.state.team.core);
   });
 
   test('a vote can change until the last player has voted', () => {
@@ -576,15 +608,19 @@ describe('three players', () => {
     // Player 0 changes to the other spot; still waiting for player 2.
     s = ok(s, 0, { type: 'vote', choice: other }).state;
     expect(s.step).toBe('core_placement');
-    s = ok(s, 2, { type: 'vote', choice: pos }).state;
-    expect(s.step).toBe('build');
-    expect(s.team.core).toEqual(other);
-    expect(validateRunState(JSON.parse(JSON.stringify(s)), baseDeps).ok).toBe(
-      true,
-    );
+    const r = ok(s, 2, { type: 'vote', choice: other });
+    // Unanimous: no random pick.
+    expect(r.state.step).toBe('build');
+    expect(r.state.team.core).toEqual(other);
+    expect(
+      r.effects.find((e) => e.type === 'vote_resolved'),
+    ).not.toHaveProperty('picked');
+    expect(
+      validateRunState(JSON.parse(JSON.stringify(r.state)), baseDeps).ok,
+    ).toBe(true);
   });
 
-  test('a 1-1 split of two players goes to the host, and replays', () => {
+  test('a 1-1 split of two players picks one of the two votes, and replays', () => {
     let s = newRun(baseDeps, ['Ann', 'Bo']);
     const pos = corePosition(s);
     const other = (() => {
@@ -601,10 +637,10 @@ describe('three players', () => {
     })();
     s = ok(s, 1, { type: 'propose_core', ...other }).state;
     expect(s.step).toBe('core_placement');
-    s = ok(s, 0, { type: 'propose_core', ...pos }).state;
+    const r = ok(s, 0, { type: 'propose_core', ...pos });
+    s = r.state;
     expect(s.step).toBe('build');
-    expect(s.host).toBe(0);
-    expect(s.team.core).toEqual(pos);
+    expect(pickedBy(r.effects, [pos, other])).toEqual(s.team.core);
     const replayed = replayRun(runArgs(['Ann', 'Bo']), s.actionLog, baseDeps);
     expect(replayed.ok).toBe(true);
     if (replayed.ok) expect(replayed.state).toEqual(s);

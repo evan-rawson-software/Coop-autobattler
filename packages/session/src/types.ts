@@ -275,6 +275,13 @@ export type Effect =
       readonly type: 'vote_resolved';
       readonly topic: VoteTopic;
       readonly choice: Json;
+      /** Every player's vote, in player order (one ticket each). */
+      readonly tickets?: readonly Json[];
+      /**
+       * Present when the votes were not unanimous: the player whose vote was
+       * picked at random (each ticket equally likely).
+       */
+      readonly picked?: { readonly player: number; readonly random: true };
     }
   | {
       readonly type: 'ready_changed';
