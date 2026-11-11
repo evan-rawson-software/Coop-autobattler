@@ -1458,7 +1458,14 @@ try {
     {
       const errorsBefore = consoleErrors.length;
       const hashStress = await (async () => {
-        await page.click('#skip');
+        // The battle may already be over (soft collision lets the units
+        // through, so the stress battle ends sooner).
+        if (
+          (await page.evaluate(() => window.__debug.battle.phase())) !==
+          'summary'
+        ) {
+          await page.click('#skip');
+        }
         await waitPhase('summary');
         return bd('stateHash');
       })();
