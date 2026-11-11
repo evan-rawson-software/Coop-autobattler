@@ -38,6 +38,7 @@ export class CancelledError extends Error {
 export interface WorkerLike {
   onmessage: ((ev: { data: SimResponse }) => void) | null;
   onerror: ((ev: unknown) => void) | null;
+  onmessageerror: ((ev: unknown) => void) | null;
   postMessage(msg: SimRequest): void;
   terminate(): void;
 }
@@ -132,6 +133,12 @@ export class SimClient {
       this.lastRanOnMainThread = false;
       this.settle(job, ev.data);
     };
+    // A response that cannot be deserialised is as good as a broken worker.
+    w.onmessageerror = () => {
+      if (this.worker !== w) return;
+      this.fallBack();
+      for (const job of [...this.jobs.values()]) this.dispatch(job);
+    };
     w.onerror = () => {
       // The script failed to load or crashed: use the main thread from now on.
       if (this.worker !== w) return;
@@ -143,6 +150,11 @@ export class SimClient {
   }
 
   private fallBack(): void {
+    if (!this.sync) {
+      console.info(
+        'Simulation worker unavailable; simulating on the main thread.',
+      );
+    }
     this.sync = true;
     this.worker?.terminate();
     this.worker = null;

@@ -21,6 +21,7 @@ const other = buildSample({ ...DEFAULT_SELECTION, seed: 2 }).battle;
 class FakeWorker implements WorkerLike {
   onmessage: ((ev: { data: SimResponse }) => void) | null = null;
   onerror: ((ev: unknown) => void) | null = null;
+  onmessageerror: ((ev: unknown) => void) | null = null;
   terminated = false;
   static all: FakeWorker[] = [];
   constructor() {
@@ -98,6 +99,19 @@ describe('the simulation worker client', () => {
     expect(client.usesWorker).toBe(false);
     expect((await client.simulate(other).promise).ok).toBe(true);
     expect(client.workersStarted).toBe(1);
+  });
+
+  test('a malformed response (messageerror) falls back instead of hanging', async () => {
+    class Garbled extends FakeWorker {
+      override postMessage(): void {
+        setTimeout(() => this.onmessageerror?.({}), 0);
+      }
+    }
+    const client = new SimClient(() => new Garbled());
+    const out = await client.simulate(desc).promise;
+    expect(out.ok).toBe(true);
+    expect(client.lastRanOnMainThread).toBe(true);
+    expect(client.usesWorker).toBe(false);
   });
 
   test('a cancelled request rejects, and its late result is ignored', async () => {

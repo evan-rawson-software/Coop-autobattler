@@ -1240,7 +1240,7 @@ try {
     }));
     check(noScrollBattle.fits, 'battle: screen fits 1920x1080 without scroll');
     await page.waitForFunction(
-      () => window.__debug.battle.revealed(),
+      () => window.__debug?.battle?.revealed(),
       undefined,
       {
         timeout: slow(10000),
@@ -1261,7 +1261,7 @@ try {
       (await bd('speed')) === 4,
       'battle: the 4x button sets the speed to 4',
     );
-    await page.waitForFunction(() => window.__debug.battle.tick() > 80);
+    await page.waitForFunction(() => window.__debug?.battle?.tick() > 80);
     await page.click('#pause');
     const pausedAt = await bd('tick');
     await waitFrames(page, 24);
@@ -1271,10 +1271,10 @@ try {
     );
     await page.click('#pause');
     await page.waitForFunction(
-      (t) => window.__debug.battle.tick() > t + 20,
+      (t) => window.__debug?.battle?.tick() > t + 20,
       pausedAt,
     );
-    await page.waitForFunction(() => window.__debug.battle.tick() > 230);
+    await page.waitForFunction(() => window.__debug?.battle?.tick() > 230);
     await shot('battle-1-playing');
     await shotDark('art2-battle-mid-fight');
     {
@@ -1413,14 +1413,14 @@ try {
     await open('#battle?p=fortify&o=pve:arch_fortress:3:medium&s=2');
     await waitPhase('playing');
     await page.waitForFunction(
-      () => window.__debug.battle.revealed(),
+      () => window.__debug?.battle?.revealed(),
       undefined,
       {
         timeout: slow(10000),
       },
     );
     await page.click('#speed-4');
-    await page.waitForFunction(() => window.__debug.battle.tick() > 250);
+    await page.waitForFunction(() => window.__debug?.battle?.tick() > 250);
     {
       const pveScene = await page.evaluate(() => window.__debug.battle.scene());
       const enemyKinds = Object.keys(pveScene[1].kinds).filter(
@@ -1480,14 +1480,14 @@ try {
     await open('#battle?p=rush&o=stress&s=1');
     await waitPhase('playing');
     await page.waitForFunction(
-      () => window.__debug.battle.revealed(),
+      () => window.__debug?.battle?.revealed(),
       undefined,
       {
         timeout: slow(10000),
       },
     );
     await page.click('#speed-4');
-    await page.waitForFunction(() => window.__debug.battle.tick() > 250);
+    await page.waitForFunction(() => window.__debug?.battle?.tick() > 250);
     await page.evaluate(() => window.__debug.resetDrawStats());
     await page.evaluate(() => window.__debug.battle.frameTimes(true));
     let peak = 0;
@@ -1537,14 +1537,14 @@ try {
       await page.click('#watch-again');
       await waitPhase('playing');
       await page.waitForFunction(
-        () => window.__debug.battle.revealed(),
+        () => window.__debug?.battle?.revealed(),
         undefined,
         {
           timeout: slow(10000),
         },
       );
       await page.click('#speed-4');
-      await page.waitForFunction(() => window.__debug.battle.tick() > 100);
+      await page.waitForFunction(() => window.__debug?.battle?.tick() > 100);
       await page.click('#skip');
       await waitPhase('summary');
       check(
