@@ -26,6 +26,19 @@ export interface TierOddsRow {
   readonly weights: readonly [number, number, number];
 }
 
+/** Gold paid to each player after a battle (W2-3, EC-6, EC-7). */
+export interface RewardsConfig {
+  /** A PvE win pays by difficulty; a PvE loss pays nothing. */
+  readonly pveWin: {
+    readonly easy: number;
+    readonly medium: number;
+    readonly hard: number;
+  };
+  readonly pvpWin: number;
+  /** The consolation after a PvP loss. */
+  readonly pvpLoss: number;
+}
+
 export interface EconomyConfig {
   readonly startingGold: number;
   readonly startingKit: readonly KitEntry[];
@@ -33,6 +46,7 @@ export interface EconomyConfig {
   readonly shopOfferCount: number;
   readonly rerollCost: number;
   readonly sellRefundPercent: number;
+  readonly rewards: RewardsConfig;
   readonly offerWeights: readonly OfferWeight[];
   readonly tierOdds: readonly TierOddsRow[];
 }
@@ -51,6 +65,7 @@ const KEYS = new Set([
   'shopOfferCount',
   'rerollCost',
   'sellRefundPercent',
+  'rewards',
   'offerWeights',
   'tierOdds',
 ]);
@@ -94,6 +109,54 @@ function checkDef(
   return def;
 }
 
+function readRewards(
+  raw: unknown,
+  errors: string[],
+): RewardsConfig | undefined {
+  if (!isRecord(raw)) {
+    errors.push('economy: "rewards" must be an object.');
+    return undefined;
+  }
+  rejectUnknownKeys(
+    raw,
+    new Set(['pveWin', 'pvpWin', 'pvpLoss']),
+    'rewards',
+    errors,
+  );
+  const pvpWin = readInt(raw, 'pvpWin', 0, 'rewards', errors);
+  const pvpLoss = readInt(raw, 'pvpLoss', 0, 'rewards', errors);
+  const pve = raw['pveWin'];
+  if (!isRecord(pve)) {
+    errors.push('rewards: "pveWin" must be an object.');
+    return undefined;
+  }
+  rejectUnknownKeys(
+    pve,
+    new Set(['easy', 'medium', 'hard']),
+    'rewards.pveWin',
+    errors,
+  );
+  const easy = readInt(pve, 'easy', 0, 'rewards.pveWin', errors);
+  const medium = readInt(pve, 'medium', 0, 'rewards.pveWin', errors);
+  const hard = readInt(pve, 'hard', 0, 'rewards.pveWin', errors);
+  if (
+    easy === undefined ||
+    medium === undefined ||
+    hard === undefined ||
+    pvpWin === undefined ||
+    pvpLoss === undefined
+  ) {
+    return undefined;
+  }
+  if (!(easy < medium && medium < hard)) {
+    errors.push(
+      'rewards.pveWin: must increase strictly from easy to medium to hard.',
+    );
+    return undefined;
+  }
+  return { pveWin: { easy, medium, hard }, pvpWin, pvpLoss };
+}
+
 /** Validate parsed economy data (the contents of economy.json). */
 export function loadEconomy(
   data: unknown,
@@ -124,6 +187,8 @@ export function loadEconomy(
   if (sellRefundPercent !== undefined && sellRefundPercent > 100) {
     errors.push('economy: "sellRefundPercent" must be at most 100.');
   }
+
+  const rewards = readRewards(data['rewards'], errors);
 
   const startingKit: KitEntry[] = [];
   list(data, 'startingKit', errors).forEach((e, i) => {
@@ -216,7 +281,8 @@ export function loadEconomy(
     baseIncomePerShop === undefined ||
     shopOfferCount === undefined ||
     rerollCost === undefined ||
-    sellRefundPercent === undefined
+    sellRefundPercent === undefined ||
+    rewards === undefined
   ) {
     return { ok: false, errors };
   }
@@ -229,6 +295,7 @@ export function loadEconomy(
       shopOfferCount,
       rerollCost,
       sellRefundPercent,
+      rewards,
       offerWeights,
       tierOdds,
     },

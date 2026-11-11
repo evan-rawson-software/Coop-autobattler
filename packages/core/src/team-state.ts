@@ -31,6 +31,7 @@ import {
 import type { MapgenConfig } from './mapgen.js';
 import type { ResourceId } from './resources.js';
 import { checkConduitList, parseConduits } from './conduits.js';
+import { parseTeamModifiers, type TeamModifier } from './modifiers.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -84,6 +85,12 @@ export interface TeamState {
   readonly nextId: number;
   /** Conduits, sorted by `id`. */
   readonly conduits: readonly Conduit[];
+  /**
+   * Run modifiers taken so far, in the order taken (W2-3, EC-8). The
+   * simulation reads them. Omitted (not an empty list) when there are none, so
+   * states without modifiers keep their hashes.
+   */
+  readonly modifiers?: readonly TeamModifier[];
 }
 
 /** What the team-state code needs from the loaded content. */
@@ -534,6 +541,45 @@ export function returnToStash(
   return { ok: true, state: detachConduits(next, item.id) };
 }
 
+export type RaiseTierReason = 'unknown_building' | 'invalid_tier';
+
+/**
+ * Raise one owned building (placed or in the stash) by one tier, never above
+ * 3 (the Workshop event, W2-3); a building already at tier 3 gives
+ * `invalid_tier`. Position, rotation, owner and conduits stay as
+ * they are. This never adds a building.
+ */
+export function raiseTier(
+  state: TeamState,
+  args: { id: number },
+): OpResult<RaiseTierReason> {
+  const placed = state.buildings.find((b) => b.id === args.id);
+  if (placed !== undefined) {
+    if (placed.tier >= 3) return { ok: false, reason: 'invalid_tier' };
+    return {
+      ok: true,
+      state: {
+        ...state,
+        buildings: state.buildings.map((b) =>
+          b.id === args.id ? { ...b, tier: b.tier + 1 } : b,
+        ),
+      },
+    };
+  }
+  const stashed = state.stash.find((b) => b.id === args.id);
+  if (stashed === undefined) return { ok: false, reason: 'unknown_building' };
+  if (stashed.tier >= 3) return { ok: false, reason: 'invalid_tier' };
+  return {
+    ok: true,
+    state: {
+      ...state,
+      stash: state.stash.map((b) =>
+        b.id === args.id ? { ...b, tier: b.tier + 1 } : b,
+      ),
+    },
+  };
+}
+
 /** Delete a stash entry (used later for selling). */
 export function removeFromStash(
   state: TeamState,
@@ -620,6 +666,7 @@ const STATE_KEYS = new Set([
   'stash',
   'nextId',
   'conduits',
+  'modifiers',
 ]);
 const PLACED_KEYS = new Set([
   'id',
@@ -906,6 +953,10 @@ function validateInner(
       }
     }
   }
+  let modifiers: readonly TeamModifier[] | undefined;
+  if ('modifiers' in data && data['modifiers'] !== undefined) {
+    modifiers = parseTeamModifiers(data['modifiers'], errors);
+  }
   const partial: TeamState = {
     map,
     core: errors.some((e) => e.startsWith('core:')) ? null : core,
@@ -924,6 +975,7 @@ function validateInner(
     stash,
     nextId,
     conduits,
+    ...(modifiers === undefined ? {} : { modifiers }),
   };
 }
 
