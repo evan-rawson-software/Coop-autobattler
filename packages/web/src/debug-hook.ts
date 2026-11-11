@@ -26,6 +26,7 @@ export interface DebugHook {
   partner?: PartnerDebug;
   battle?: BattleDebug;
   run?: RunDebug;
+  ghostPool?: GhostPoolDebug;
   placement?: PlacementDebug;
   menu?: MenuDebug;
   /** The sprite atlas: load state and how much was drawn from it. */
@@ -47,6 +48,15 @@ export interface RunDebug {
   screen: () => string;
   /** Plain data: run id, step, round, lives, gold, action count, state hash. */
   state: () => unknown;
+}
+
+/** Read-only view of this browser's own ghost pool (not the bundled ghosts). */
+export interface GhostPoolDebug {
+  /** Owner and run id of every snapshot stored for a party size and round. */
+  local: (
+    partySize: number,
+    round: number,
+  ) => Promise<readonly { ownerId: string; runId: string }[]>;
 }
 
 /** Read-only view of the Core placement screen for the smoke script. */
