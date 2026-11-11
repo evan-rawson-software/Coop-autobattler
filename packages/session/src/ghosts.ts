@@ -428,7 +428,15 @@ function replaySelection(
       `the draw gives index ${String(drawn)} of ${String(n)}, the log says ${String(index)}`,
     );
   }
-  const shape = checkGhostSnapshotShape(chosen, vctx.content, vctx.mapgen);
+  const shape = checkGhostSnapshotShape(
+    chosen,
+    vctx.content,
+    vctx.mapgen,
+    undefined,
+    // The same size bounds as at selection, so replay accepts exactly what
+    // selection accepted (the no-economy bound is tighter at late rounds).
+    vctx,
+  );
   if (!shape.ok) {
     return mismatch(
       `the logged snapshot is malformed: ${shape.errors[0] ?? ''}`,

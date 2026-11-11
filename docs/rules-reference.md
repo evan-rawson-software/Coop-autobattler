@@ -2924,7 +2924,9 @@ refused with `invalid_intent`):
 
 `replayRun` takes the stream `ghost:r<round>` as the live path did, checks that
 `nextInt(n) === index`, checks `chosen` for structure only
-(`checkGhostSnapshotShape`: no economy numbers, no rules), checks
+(`checkGhostSnapshotShape`: no rules, but with the same size bounds, economy
+and events, as selection, so replay accepts exactly what selection accepted;
+the no-economy size bound is not looser at late rounds), checks
 `hashJson(chosen) === chosenHash`, that it belongs to the run's bucket, is not
 the run's own and has not been fought, and uses it. It does NOT run the value,
 tier or modifier bounds again: those are today's numbers, and replaying a run

@@ -11,6 +11,7 @@ import {
   createTeamState,
   ghostMaxSerializedSize,
   ghostValueBound,
+  hashJson,
   placeFromStash,
   queryMap,
   validateGhostSnapshot,
@@ -21,8 +22,8 @@ import {
 } from '@game/core';
 import { fixedBattle } from './defaults.js';
 import { botRun } from './ghost-test-support.js';
-import { ghostContext } from './ghosts.js';
-import { makeGameDeps } from './test-support.js';
+import { ghostContext, selectGhostHandler } from './ghosts.js';
+import { makeGameDeps, newRun } from './test-support.js';
 
 const perf = (globalThis as unknown as { performance: { now(): number } })
   .performance;
@@ -223,10 +224,15 @@ describe('size limit derived from board capacity', () => {
       expect(size(n, 25)).toBeGreaterThan(size(n, 10));
     }
     expect(size(4, 1)).toBeGreaterThan(size(1, 1));
-    // Without economy numbers the stash allowance is by cells: looser.
+    // Without economy numbers the stash allowance is by cells: looser early,
+    // but NOT looser at late rounds, where the value bound allows more
+    // buildings than the board has cells (so replay must use the same bounds).
     expect(ghostMaxSerializedSize(4, 10, { content, mapgen })).toBeGreaterThan(
       size(4, 10),
     );
+    expect(
+      ghostMaxSerializedSize(4, 200, { content, mapgen }),
+    ).toBeLessThan(size(4, 200));
   });
 
   test('a maximal legitimate four-player board at round 23 passes', () => {
@@ -400,5 +406,81 @@ describe('conduit padding (quadratic check)', () => {
       );
       expect(r.ok, r.ok ? '' : r.errors.join('\n')).toBe(true);
     }
+  });
+});
+
+describe('replay accepts what selection accepted', () => {
+  const round = 200;
+  const state = {
+    ...newRun(deps, ['A', 'B', 'C', 'D']),
+    round,
+    step: 'shop',
+    leg: 'pve',
+  } as unknown as Parameters<typeof selectGhostHandler.handle>[0]['state'];
+
+  function replay(chosen: unknown) {
+    return selectGhostHandler.handle({
+      state,
+      player: state.host,
+      deps,
+      replay: true,
+      intent: {
+        type: 'select_ghost',
+        n: 1,
+        index: 0,
+        chosen,
+        hash: 'h',
+        chosenHash: hashJson(chosen as never),
+      } as never,
+    });
+  }
+
+  function atRound200(extraStash: number): GhostSnapshot {
+    const snap = JSON.parse(JSON.stringify(base4())) as GhostSnapshot & {
+      round: number;
+      pvpRecord: { wins: number; losses: number };
+      team: { stash: unknown[]; nextId: number };
+    };
+    snap.round = round;
+    snap.pvpRecord = { wins: round - 1, losses: 0 };
+    snap.team.nextId = 2_000_000;
+    for (let i = 0; i < extraStash; i++) {
+      snap.team.stash.push({
+        id: 1_000_000 + i,
+        def: 'bld_wall',
+        tier: 1,
+        owner: 0,
+      });
+    }
+    return snap;
+  }
+
+  test('a snapshot selection accepted at round 200 is accepted on replay', () => {
+    const snap = atRound200(0);
+    const live = validateGhostSnapshot(JSON.parse(JSON.stringify(snap)), ctx);
+    expect(live.ok, live.ok ? '' : live.errors.join('\n')).toBe(true);
+    const r = replay(JSON.parse(JSON.stringify(snap)));
+    expect(r.ok ? '' : (r.detail ?? r.reason)).toBe('');
+  });
+
+  test('replay uses the selection size bound, which is not the looser no-economy one at late rounds', () => {
+    const loose = ghostMaxSerializedSize(4, round, { content, mapgen });
+    const full = ghostMaxSerializedSize(4, round, ctx);
+    expect(full).toBeGreaterThan(loose);
+    // Padded into the gap between the two bounds (the value bound would
+    // refuse such a board live; replay checks structure only, so what it
+    // must show is that the size limit is the selection one).
+    const per =
+      (canonicalJson(atRound200(1000)).length -
+        canonicalJson(atRound200(0)).length) /
+      1000;
+    const snap = atRound200(
+      Math.ceil((loose + 1000 - canonicalJson(atRound200(0)).length) / per),
+    );
+    const size = canonicalJson(snap).length;
+    expect(size).toBeGreaterThan(loose);
+    expect(size).toBeLessThan(full);
+    const r = replay(JSON.parse(JSON.stringify(snap)));
+    expect(r.ok ? '' : (r.detail ?? r.reason)).not.toContain('larger than');
   });
 });
