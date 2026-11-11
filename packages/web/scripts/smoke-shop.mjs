@@ -619,7 +619,7 @@ export async function runShopSmoke({
   );
   await reloadAndExpectBlocked();
   check(
-    /format/i.test(
+    /format this version of the game cannot read/i.test(
       await page.locator('#run-unopenable [data-field="reason"]').innerText(),
     ) && (await saved()) === oldText,
     'an old-format save: the reason is shown and the save is not deleted',

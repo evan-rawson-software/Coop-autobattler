@@ -120,13 +120,13 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
 
   <section>
     <h2>2. Event choice</h2>
-    <p>After every battle the party picks one of three events. It opens with the battle result so the reward is seen before the next decision.</p>
+    <p>After every battle the party picks one of up to three events. It opens with the battle result so the reward is seen before the next decision.</p>
     <div class="sheet"><svg id="s-event" viewBox="0 0 960 540" role="img" aria-label="Event choice screen wireframe: a result strip above three event cards with vote markers."></svg></div>
     <ol class="notes">
       <li>Result of the battle just fought and what it paid.</li>
-      <li>Three offered events. Each says exactly what it does before you choose.</li>
+      <li>Up to three offered events (never two of the same type). Each says exactly what it does before you choose.</li>
       <li>Votes from each player. The highlighted card is your own vote; you can change it until the last player has voted.</li>
-      <li>Who has voted and how ties are settled. There is no time limit; the event resolves once everyone has voted.</li>
+      <li>Who has voted and how a split vote is settled (one vote is picked at random). There is no time limit; the event resolves once everyone has voted.</li>
     </ol>
   </section>
 
@@ -370,7 +370,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   // ================= 2. EVENT =================
   (function () {
     var s = document.getElementById("s-event");
-    topbar(s, "Round 4 · Event", "pick one of three", "Lives 4 / 5");
+    topbar(s, "Round 4 · Event", "pick one event", "Lives 4 / 5");
     R(s, 24, 48, 912, 40, "panel");
     T(s, 38, 73, "PvE battle won  ·  Hard  ·  Rusher", "th"); T(s, 922, 73, "+12 gold each", "t", "end");
     var cards = [
@@ -392,7 +392,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       if (!c[3].length) T(s, x + 16, y + 299, "none yet", "ts tm");
     });
     R(s, 24, 456, 912, 60, "panel");
-    T(s, 38, 482, "2 of 3 voted · waiting for Ana", "th"); T(s, 38, 502, "No time limit. Change your vote until everyone has voted. Most votes wins; a tie is settled by the host.", "ts tm");
+    T(s, 38, 482, "2 of 3 voted · waiting for Ana", "th"); T(s, 38, 502, "No time limit. Change your vote until everyone has voted. Unanimous wins; otherwise one vote is picked at random.", "ts tm");
     mark(s, 30, 54, 1); mark(s, 320, 120, 2); mark(s, 306, 390, 3); mark(s, 30, 462, 4);
   })();
 
@@ -557,7 +557,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       if (!c[6].length) T(s, x + 16, y + 309, "none yet", "ts tm");
     });
     R(s, 24, 456, 912, 60, "panel");
-    T(s, 38, 482, "2 of 3 voted · waiting for Ana", "th"); T(s, 38, 502, "No time limit. Change your vote until everyone has voted. Most votes wins; a tie is settled by the host.", "ts tm");
+    T(s, 38, 482, "2 of 3 voted · waiting for Ana", "th"); T(s, 38, 502, "No time limit. Change your vote until everyone has voted. Unanimous wins; otherwise one vote is picked at random.", "ts tm");
     mark(s, 30, 54, 1); mark(s, 180, 112, 2); mark(s, 306, 104 + 162, 3); mark(s, 306, 104 + 212, 4); mark(s, 306, 104 + 280, 5);
   })();
 

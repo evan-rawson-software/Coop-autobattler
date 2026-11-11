@@ -17,12 +17,12 @@
  * and never change on reload. A follow-up lives in `pending.followUp`:
  *   { prompt, options: [{ id, ... }], votes: (string | null)[] }
  * The party votes with `{ type: 'event_choose', choice: <option id> }`; the
- * most votes wins, a tie goes to the host's vote (as for every other vote).
- * Events never add a building to a stash.
+ * winner is the unanimous choice or, if the votes are split, one player's vote
+ * picked at random (as for every other vote). Events never add a building to
+ * a stash.
  */
 import {
   Rng,
-  canonicalJson,
   findModifier,
   heldModifierIds,
   pickWeightedIndex,
@@ -33,7 +33,8 @@ import {
   type EventsConfig,
   type TeamState,
 } from '@game/core';
-import { tally } from './machine.js';
+import { tally, voteResolvedEffect } from './machine.js';
+import { streamLabels } from './streams.js';
 import type {
   Effect,
   HandlerResult,
@@ -88,12 +89,6 @@ export interface EventHandler {
    * always has at least one offer.
    */
   readonly alwaysAvailable?: boolean;
-  /**
-   * An upper bound on how many different instances of this event can be
-   * offered together now (default: unlimited). Used by the second offer
-   * pass to skip a repeat that cannot differ, without drawing for it.
-   */
-  maxInstances?(ctx: EventContext, def: EventDef): number;
   /**
    * True if `resolve` may return a follow-up. Wiring then requires `choose`.
    * (`resolve` returning a follow-up without this flag is an error.)
@@ -241,17 +236,6 @@ function eligibleModifiers(ctx: EventContext): string[] {
     .map((m) => m.id);
 }
 
-/** C(n, k), capped so it cannot overflow (the callers only compare to small numbers). */
-function choose(n: number, k: number): number {
-  const cap = 1_000_000;
-  let r = 1;
-  for (let i = 1; i <= k; i++) {
-    r = (r * (n - k + i)) / i;
-    if (r > cap) return cap;
-  }
-  return Math.round(r);
-}
-
 export const shrineHandler: EventHandler = {
   type: 'shrine',
   canAskFollowUp: true,
@@ -262,12 +246,6 @@ export const shrineHandler: EventHandler = {
       : '"choices" must be a positive integer';
   },
   available: (ctx) => eligibleModifiers(ctx).length > 0,
-  // A Shrine offers min(choices, eligible) modifiers, so the number of
-  // different offers is the number of such subsets.
-  maxInstances(ctx, def) {
-    const e = eligibleModifiers(ctx).length;
-    return choose(e, Math.min(intParam(def, 'choices', 3), e));
-  },
   instantiate(ctx, def, rng) {
     const eligible = eligibleModifiers(ctx);
     const n = Math.min(intParam(def, 'choices', 3), eligible.length);
@@ -389,77 +367,30 @@ export function eventHooks(
       const available = config.events.filter(
         (d) => handlerFor(handlers, d.type)?.available(ctx, d) === true,
       );
+      // Weighted draws from the pool of available definitions: one
+      // `pickWeightedIndex` draw per offer made, none wasted. After a pick,
+      // every definition of the same type leaves the pool, so a type is never
+      // offered twice even when the content holds several definitions of it
+      // (issue #48); fewer than `offerCount` offers is deliberate when fewer
+      // types are available. The instance data comes from a child stream of `rng`
+      // (`<event id>:<offers so far>`), which does not advance `rng`.
       const offers: EventOffer[] = [];
-      const seen = new Set<string>();
-      /**
-       * Try to add an offer of `def`. The instance data comes from child
-       * streams of `rng` (they do not advance it): attempt 0 is
-       * `<id>:<offers so far>` and later attempts add `#<k>`, so how many
-       * attempts a draw needs never changes what `rng` yields afterwards.
-       */
-      const add = (def: EventDef, attempts: number): boolean => {
-        const handler = handlerFor(handlers, def.type) as EventHandler;
-        for (let k = 0; k < attempts; k++) {
-          const label = `${def.id}:${String(offers.length)}`;
-          const data = handler.instantiate(
-            ctx,
-            def,
-            rng.child(k === 0 ? label : `${label}#${String(k)}`),
-          );
-          const key = canonicalJson({ event: def.id, data });
-          if (seen.has(key)) continue;
-          seen.add(key);
-          const same = offers.filter((o) => o.event === def.id).length;
-          offers.push({
-            id: same === 0 ? def.id : `${def.id}#${String(same + 1)}`,
-            event: def.id,
-            type: def.type,
-            ...data,
-          });
-          return true;
-        }
-        return false;
-      };
-      // First pass: distinct event definitions, weighted, without
-      // replacement. One `pickWeightedIndex` draw per definition picked
-      // (min(offerCount, available) draws); each is added on its first attempt.
-      const pool = [...available];
+      let pool = [...available];
       while (offers.length < config.offerCount && pool.length > 0) {
         const i = pickWeightedIndex(
           rng,
           pool.map((d) => d.weight),
         );
-        const [def] = pool.splice(i, 1);
-        if (def !== undefined) add(def, 1);
-      }
-      // Second pass: repeatable events, only while some repeatable
-      // definition still has room for an instance that differs from the
-      // ones offered (`maxInstances`, known without drawing). Each round of
-      // this loop makes exactly one weighted draw, whatever happens after
-      // it; fewer than `offerCount` offers is deliberate when no room is
-      // left (issue #48).
-      const repeatable = available.filter((d) => d.repeatable);
-      for (;;) {
-        if (offers.length >= config.offerCount) break;
-        const open = repeatable.filter((d) => {
-          const cap =
-            handlerFor(handlers, d.type)?.maxInstances?.(ctx, d) ??
-            Number.POSITIVE_INFINITY;
-          return cap > offers.filter((o) => o.event === d.id).length;
-        });
-        if (open.length === 0) break;
-        const def =
-          open[
-            pickWeightedIndex(
-              rng,
-              open.map((d) => d.weight),
-            )
-          ];
+        const def = pool[i];
         if (def === undefined) break;
-        if (!add(def, 32)) {
-          // Cannot find a different instance: this definition is done.
-          repeatable.splice(repeatable.indexOf(def), 1);
-        }
+        pool = pool.filter((d) => d.type !== def.type);
+        const handler = handlerFor(handlers, def.type) as EventHandler;
+        const data = handler.instantiate(
+          ctx,
+          def,
+          rng.child(`${def.id}:${String(offers.length)}`),
+        );
+        offers.push({ id: def.id, event: def.id, type: def.type, ...data });
       }
       if (offers.length === 0) {
         throw new Error('eventOffers: no event could be offered.');
@@ -500,10 +431,11 @@ function idOfOption(o: Json): string | null {
 /**
  * The `event_choose` intent: `{ type: 'event_choose', choice: <option id> }`,
  * legal in `event_resolve`. Each player's vote counts at once and can be
- * changed until the last player has voted; then the winner (most votes, ties
- * to the host) is applied by the offer's handler and the step ends. With one
- * player the first choice decides. Rejections: `invalid_intent`,
- * `invalid_choice`, and whatever the handler reports.
+ * changed until the last player has voted; then the winner (the unanimous
+ * choice, or one player's vote picked at random) is applied by the offer's
+ * handler and the step ends. With one player the first choice decides.
+ * Rejections: `invalid_intent`, `invalid_choice`, and whatever the handler
+ * reports.
  */
 export function eventChooseHandlers(
   content: Content,
@@ -541,7 +473,12 @@ export function eventChooseHandlers(
       if (votes.some((v) => v === null)) {
         return { ok: true, state: withVote, effects };
       }
-      const winner = tally(votes, state.host);
+      const t = tally(
+        withVote,
+        votes,
+        streamLabels.vote('event_follow_up', state.round, state.leg),
+      );
+      const winner = t.winner;
       const chosen = options.find((o) => idOfOption(o) === winner) as Json;
       const handler = handlerFor(handlers, offer.type);
       if (handler?.choose === undefined) {
@@ -553,11 +490,7 @@ export function eventChooseHandlers(
       }
       const r = handler.choose({ state, content, config }, offer, chosen);
       if (!r.ok) return { ok: false, reason: r.reason };
-      effects.push({
-        type: 'vote_resolved',
-        topic: 'event',
-        choice: winner,
-      });
+      effects.push(voteResolvedEffect('event', votes, t));
       effects.push({
         type: 'custom',
         name: 'event_resolved',
@@ -566,9 +499,9 @@ export function eventChooseHandlers(
       return {
         ok: true,
         state: {
-          ...withVote,
-          team: r.patch.team ?? withVote.team,
-          perPlayer: r.patch.perPlayer ?? withVote.perPlayer,
+          ...t.state,
+          team: r.patch.team ?? t.state.team,
+          perPlayer: r.patch.perPlayer ?? t.state.perPlayer,
         },
         effects,
         advance: true,

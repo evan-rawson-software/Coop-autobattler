@@ -50,14 +50,14 @@ Nobody gives orders here. The party watches its factory start cold, ramp up, and
 
 ## 2. Event choice
 
-After every battle the party picks one of three events. It opens with the battle result so the reward is seen before the next decision.
+After every battle the party picks one of up to three events. It opens with the battle result so the reward is seen before the next decision.
 
 ![Event choice screen wireframe](2-event-choice.png)
 
 1. Result of the battle just fought and what it paid.
-2. Three offered events. Each says exactly what it does before you choose.
+2. Up to three offered events (never two of the same type). Each says exactly what it does before you choose.
 3. Votes from each player. The highlighted card is your own vote; you can change it until the last player has voted.
-4. Who has voted and how ties are settled. There is no time limit; the event resolves once everyone has voted.
+4. Who has voted and how a split vote is settled (one vote is picked at random). There is no time limit; the event resolves once everyone has voted.
 
 ## 3. Shop
 

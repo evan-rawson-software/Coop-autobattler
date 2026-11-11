@@ -7,7 +7,12 @@
  */
 import { parseVersion } from './version.js';
 import { validateRunState } from './validate.js';
-import type { CreateRunArgs, RunDeps, RunState } from './types.js';
+import {
+  RUN_STATE_FORMAT_VERSION,
+  type CreateRunArgs,
+  type RunDeps,
+  type RunState,
+} from './types.js';
 
 export const SAVE_FORMAT_VERSION = 1;
 
@@ -54,6 +59,12 @@ export interface SaveListEntry {
   readonly playerNames: readonly string[];
   readonly summary: SaveSummary;
   readonly updatedAt: number;
+  /**
+   * Present and true when the record is well formed but its run state has a
+   * `formatVersion` this game cannot read: it is listed but `openRun`
+   * refuses it with `unsupported_format`. Absent otherwise.
+   */
+  readonly unsupportedFormat?: true;
 }
 
 /** An entry of `SaveStore.list()` for a stored value that does not parse. */
@@ -391,6 +402,18 @@ export function parseSaveRecord(
   return shape;
 }
 
+/**
+ * True if the record's run state names a `formatVersion` other than
+ * `RUN_STATE_FORMAT_VERSION`. (A state with no `formatVersion` at all is not
+ * "unsupported": it is damaged and fails validation as corrupt.)
+ */
+export function hasUnsupportedFormat(record: SaveRecord): boolean {
+  const st = record.state as unknown as Record<string, unknown>;
+  return (
+    'formatVersion' in st && st['formatVersion'] !== RUN_STATE_FORMAT_VERSION
+  );
+}
+
 /** The list entry for a stored value; shared by store implementations. */
 export function summarizeStored(runId: string, raw: unknown): SaveListItem {
   const shape = checkSaveShape(raw);
@@ -414,6 +437,7 @@ export function summarizeStored(runId: string, raw: unknown): SaveListItem {
     playerNames: r.playerNames,
     summary: r.summary,
     updatedAt: r.updatedAt,
+    ...(hasUnsupportedFormat(r) ? { unsupportedFormat: true as const } : {}),
   };
 }
 

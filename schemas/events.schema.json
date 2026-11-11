@@ -18,16 +18,12 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["id", "type", "weight", "repeatable"],
+        "required": ["id", "type", "weight"],
         "additionalProperties": false,
         "properties": {
           "id": { "type": "string", "pattern": "^evt_[a-z0-9_]+$" },
           "type": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
           "weight": { "type": "integer", "minimum": 1 },
-          "repeatable": {
-            "description": "May appear twice among one set of offers when the two instances differ.",
-            "type": "boolean"
-          },
           "params": {
             "description": "Numbers and strings read by the event type's handler.",
             "type": "object",

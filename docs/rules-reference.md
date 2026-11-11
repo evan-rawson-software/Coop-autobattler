@@ -2252,7 +2252,9 @@ it is omitted (never an empty list) when there are none, so states without
 modifiers hash as before. A modifier's effects are copied into the team state
 when it is taken. Effects (percent is an integer 1 to 1000; the simulation
 uses `floor(value * (100 + sum) / 100)`, summing all effects of a kind and
-target held by the side):
+target held by the side). Stackable modifiers have **no cap** (issue #49):
+bonuses of the same kind (and target) are summed, then applied once, never
+compounded, so each extra stack is worth relatively less than the one before:
 
 | Kind | Applied |
 | --- | --- |
@@ -2266,40 +2268,67 @@ the party's from the run, and a ghost from `findPvpOpponent` brings its own,
 which apply to side 1. Generated threats (PvE options and the PvP boss) have
 none. An extractor-speed kind is not implemented.
 
+### Party votes (CP-16)
+
+Every party decision (Core placement, PvE difficulty, event choice, event
+follow-up choice) is one vote per player, changeable until the last player has
+voted. It resolves when the last vote arrives:
+
+1. If every player chose the same option, that option wins. The random pick of
+   step 2 is not made (the stream is derived but unused).
+2. Otherwise one player's vote is picked at random: `pick = nextInt(n)` on the
+   child stream `vote:<topic>:r<round>:<leg>` (topic `core`, `pve`, `event` or
+   `event_follow_up`), where `n` is the number of players and tickets are
+   ordered by player index; the winner is that player's vote. Each vote is one
+   equally likely ticket, so an option with 3 of 4 votes wins with probability
+   3/4. The host has no tie-break.
+
+The stream is derived with the run's `drawStream` (which advances the run
+generator by one output) exactly once, at the moment of the last vote, for
+every vote in a party of two or more players, whether it was unanimous or not.
+This keeps the later rolls independent of how the party voted: if only a split
+vote advanced the generator, one dissenting voter could choose between two
+different futures for every later roll. A one-player run draws nothing (a solo
+run is unchanged by this rule). The result is applied in the
+same action and stored in the state, so a reload cannot change it and a replay
+of the action log reproduces it. The `vote_resolved` effect lists `tickets`
+(every vote in player order) and, for a random pick, `picked: { player, random:
+true }`.
+
 ### Events (RS-4)
 
 `content/events.json` lists event definitions `{ id, type, weight,
-repeatable, params }` and modifier definitions `{ id, stackable, effects }`,
+params }` and modifier definitions `{ id, stackable, effects }`,
 and `offerCount` (3). The `type` names a handler in the session package; the
 handler decides availability, extra offer data, what happens on pick, and how a
 follow-up choice is applied. Adding a type is data plus one handler.
 
-Offers (stream `event_offers:r<r>:<leg>`): the definitions whose handler says
-`available` are drawn by weight without replacement until `offerCount` offers
-exist (`pickWeightedIndex` over the remaining weights, one draw each: first
-pass, `min(offerCount, available)` draws). If there are fewer available
-definitions than offers, `repeatable` definitions are drawn again (second
-pass), as long as the new instance's data differs (compared as canonical
-JSON). The second pass only runs while some repeatable definition has room for
-another different instance (the handler's optional `maxInstances`; a Shrine
-has one instance per subset of its eligible modifiers), and then makes exactly
-one weighted draw per extra offer; the instance data comes from child streams
-`<event id>:<index>` (and `<event id>:<index>#<k>` for the k-th retry), which
-do not advance the stream, so the draws made never depend on how many retries
-were needed. An offer is `{ id, event, type, ...data }`; `id` is the event id,
-and `<event id>#2` for a second instance. Offers are stored in
-`pending.options` before they are shown.
+Offers (stream `event_offers:r<r>:<leg>`): **never two offers of the same
+type** (issue #48). The content may hold several definitions of one type (for
+example a small and a big Windfall); they compete for a single place. The
+definitions whose handler says `available` (Workshop: some owned building
+below tier 3; Shrine: at least one modifier can be taken; Windfall: always)
+form the pool, in file order. The draw sequence is: one `pickWeightedIndex`
+over the weights of the pool; the picked definition is offered, and it and
+every other definition of the same type are removed from the pool; repeat
+until `offerCount` offers exist or the pool is empty. There is exactly one
+draw per offer made, so the number of draws is the number of offers (at most
+the number of available types) and none is wasted. A type with several
+definitions is therefore chosen with the probability of its first draw, which
+is the sum of its definitions' weights, and the definition within it is
+weighted by its own weight. The instance data (such as a Shrine's modifiers) comes from
+the child stream `<event id>:<index>` of the offer stream, which does not
+advance it. An offer is `{ id, event, type, ...data }` with `id` the event id.
+Offers are stored in `pending.options` before they are shown.
 
-**Fewer than three offers is allowed, on purpose.** With the Workshop
-unavailable (every building at tier 3) and three or fewer eligible modifiers,
-a second, different Shrine cannot exist, so the step offers two events (the
-Shrine and the Windfall); with only the Windfall available it offers one. The
-step always has at least one offer, because wiring requires an event
-definition whose handler is `alwaysAvailable` (the Windfall); `createGameDeps`
-throws otherwise. The machine, the vote, `validateRunState` (1 or more offers
-in `event_choice`) and the schema accept any number of offers from 1 to
-`offerCount`. Whether the step should instead pad the offers is open: see
-issue #48.
+**Fewer than three offers is allowed, on purpose.** The party is offered up to
+three events, one per type, so with fewer types available it is offered two or
+one: with the Workshop unavailable (every building at tier 3) and a Shrine
+that cannot be offered, or the like. The step always has at least one offer,
+because wiring requires an event definition whose handler is `alwaysAvailable`
+(the Windfall); `createGameDeps` throws otherwise. The machine, the vote,
+`validateRunState` (1 or more offers in `event_choice`) and the schema accept
+any number of offers from 1 to `offerCount`. More event types will come later.
 
 - **Workshop** (`params.tiers`, default 1): available when some owned building
   (placed or in the stash) is below tier 3. Follow-up options, in instance ID
@@ -2314,15 +2343,16 @@ issue #48.
 - **Windfall** (`params.gold`): no follow-up; every player gets that much gold
   at once.
 
-After the party votes for an offer (the usual vote: most votes, host breaks a
-tie), a handler with no follow-up applies at once and the step goes to the
+After the party votes for an offer (the usual party vote, see "Party votes"
+above), a handler with no follow-up applies at once and the step goes to the
 shop; so does a follow-up that lists no options (nobody could answer it). A
 handler that can return a follow-up declares `canAskFollowUp` and must have a
-`choose` function (checked when the deps are built). Otherwise the step becomes `event_resolve` with `pending = { offer,
-followUp: { prompt, options, votes } }`, and each player sends `{ type:
+`choose` function (checked when the deps are built). Otherwise the step
+becomes `event_resolve` with `pending = { offer, followUp: { prompt, options,
+votes } }`, and each player sends `{ type:
 "event_choose", choice: <option id> }`. Votes count at once and can be
-changed; when all players have voted the winner (most votes, ties to the
-host) is applied and the step goes to the shop.
+changed; when all players have voted the winner (see "Party votes") is
+applied and the step goes to the shop.
 
 ### Battles and playback
 

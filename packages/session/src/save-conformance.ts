@@ -155,6 +155,27 @@ export function runSaveStoreConformance(
       });
     });
 
+    test('list flags a record whose run state has an unsupported format, and still returns it from get', async () => {
+      const s = await makeStore();
+      const good = fakeRecord('good', 10);
+      const odd = fakeRecord('odd', 20);
+      const unsupported: SaveRecord = {
+        ...odd,
+        state: { ...odd.state, formatVersion: 1 } as unknown as RunState,
+      };
+      await s.put(good);
+      await s.put(unsupported);
+      const list = await s.list();
+      expect(list.map((x) => x.runId)).toEqual(['odd', 'good']);
+      expect(list[0]).toMatchObject({
+        corrupt: false,
+        unsupportedFormat: true,
+      });
+      expect(list[1]).toMatchObject({ corrupt: false });
+      expect(list[1]).not.toHaveProperty('unsupportedFormat');
+      expect(await s.get('odd')).toEqual(unsupported);
+    });
+
     test('remove deletes only that record', async () => {
       const s = await makeStore();
       await s.put(fakeRecord('a', 10));
