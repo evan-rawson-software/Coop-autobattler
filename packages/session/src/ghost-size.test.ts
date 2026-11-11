@@ -398,6 +398,89 @@ describe('conduit padding (quadratic check)', () => {
     expect(ms).toBeLessThan(1500);
   });
 
+  /** `count` junk buildings of `def` at (0, 0), linked in pairs south to north. */
+  function crowded(count: number, round: number, def: string): GhostSnapshot {
+    const snap = JSON.parse(JSON.stringify(base4())) as GhostSnapshot & {
+      team: { conduits: unknown[]; buildings: unknown[]; nextId: number };
+    };
+    const buildings: unknown[] = [];
+    const conduits: unknown[] = [];
+    for (let i = 0; i < count; i++) {
+      buildings.push({
+        id: i + 1,
+        def,
+        tier: 1,
+        owner: 0,
+        x: 0,
+        y: 0,
+        rotation: 0,
+      });
+    }
+    for (let i = 0; i + 1 < count; i += 2) {
+      conduits.push({
+        id: count + 1 + i,
+        from: { building: i + 1, side: 'north' },
+        to: { building: i + 2, side: 'south' },
+        cells: [],
+      });
+    }
+    return {
+      ...snap,
+      round,
+      pvpRecord: { wins: round - 1, losses: 0 },
+      lives: RULES.startingLives,
+      team: {
+        ...snap.team,
+        buildings,
+        conduits,
+        stash: [],
+        nextId: 10 * count + 10,
+      },
+    } as unknown as GhostSnapshot;
+  }
+
+  test('building-padded junk at party 4 / round 1000 is rejected quickly', () => {
+    const cells = 4 * mapgen.plotWidth * mapgen.plotDepth;
+    const limit = ghostMaxSerializedSize(4, 1000, ctx);
+    for (const def of ['bld_merger', 'bld_splitter']) {
+      const probe = canonicalJson(crowded(10_000, 1000, def)).length;
+      const empty = canonicalJson(crowded(0, 1000, def)).length;
+      const per = (probe - empty) / 10_000;
+      const count = Math.floor(((limit - empty) / per) * 0.9);
+      expect(count).toBeGreaterThan(cells);
+      const snap = crowded(count, 1000, def);
+      expect(canonicalJson(snap).length).toBeLessThanOrEqual(limit);
+      const t = perf.now();
+      const r = validateGhostSnapshot(snap, ctx);
+      const ms = perf.now() - t;
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.errors.join(' ')).toContain('more buildings');
+      expect(ms).toBeLessThan(1500);
+    }
+  });
+
+  test('the network analysis is linear even past the building bound', () => {
+    // Past the ghost bound the team check alone must stay fast (it was
+    // quadratic in the number of buildings: about 4 s at 18,000).
+    for (const def of ['bld_merger', 'bld_splitter']) {
+      const snap = crowded(20_000, 4, def);
+      const t = perf.now();
+      const r = validateTeamState(snap.team, content, mapgen);
+      const ms = perf.now() - t;
+      expect(r.ok).toBe(false);
+      expect(ms).toBeLessThan(1500);
+    }
+  });
+
+  test('a legal board never has more buildings than cells', () => {
+    for (const round of [10, 23]) {
+      const m = maximalBoard(round);
+      expect(m.team.buildings.length).toBeLessThanOrEqual(
+        4 * mapgen.plotWidth * mapgen.plotDepth,
+      );
+    }
+  });
+
   test('the largest legal boards still pass', () => {
     for (const round of [10, 23]) {
       const r = validateGhostSnapshot(

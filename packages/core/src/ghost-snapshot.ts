@@ -702,15 +702,28 @@ function shapeInner(
     }
   }
 
-  // Each conduit takes one output side of a placed building, and a side
-  // carries at most one conduit end (`side_in_use`), so a legal board holds at
-  // most `buildings * (most output sides of any building)` conduits (the Core
-  // is not a conduit end). Anything above that cannot be legal; reject it
-  // before the per-conduit checks run over the padding.
+  // Two bounds that no legal board can exceed, checked before the per-building
+  // and per-conduit work runs over padding (the network analysis is linear,
+  // but junk is still cheaper to refuse up front):
+  // - buildings: placed buildings cannot overlap, so there are at most as many
+  //   as cells on the board (`partySize * plotWidth * plotDepth`);
+  // - conduits: each takes one output side of a placed building and a side
+  //   carries at most one conduit end (`side_in_use`), so there are at most
+  //   `buildings * (most output sides of any building in the content)` (the
+  //   Core is not a conduit end).
   const rawTeam = raw['team'];
   if (isRecord(rawTeam)) {
     const bs = rawTeam['buildings'];
     const cs = rawTeam['conduits'];
+    if (Array.isArray(bs)) {
+      const cells = size * mapgen.plotWidth * mapgen.plotDepth;
+      if (bs.length > cells) {
+        errors.push(
+          `team: more buildings (${String(bs.length)}) than the board has cells (${String(cells)}).`,
+        );
+        return undefined;
+      }
+    }
     if (Array.isArray(bs) && Array.isArray(cs)) {
       let maxOutputs = 0;
       for (const d of content.buildings.list()) {

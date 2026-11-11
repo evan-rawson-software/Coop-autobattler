@@ -2981,12 +2981,19 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
    (The earlier flat `4096 + 12288 * partySize` dropped a legitimate late
    four-player board of about 63 KB at round 23; the limit now always exceeds
    what the board and the value bound allow.)
+   **Building count.** A snapshot with more buildings than the board has cells
+   (`partySize * plotWidth * plotDepth`) is rejected before the team is
+   checked: placed buildings cannot overlap, so a legal board never exceeds it.
    **Conduit count.** Before the per-conduit checks run, a snapshot with more
    conduits than `buildings * (most output sides of any building definition)`
    is rejected: each conduit takes one output side of a placed building and a
    side carries one conduit end (`side_in_use`; the Core is not a conduit
    end), so a legal board never exceeds it. The per-conduit checks themselves
-   are linear in the number of conduits (side and cell use are counted once).
+   are linear in the number of conduits (side and cell use are counted once), and
+   so is the network analysis (the topological sort uses a heap of ready nodes
+   and the merger check an index of the first conduit into each side; results
+   and error order are unchanged). The bound uses the content maximum (3
+   output sides for the shipped splitter; the loader allows up to 4).
 2. **Whole team state** (`validateTeamState`): legal placement on its own map
    (extractors on nodes, nothing on natural features, a legal Core position,
    known buildings, tiers 1 to 3, conduits), plus the Core must be placed and

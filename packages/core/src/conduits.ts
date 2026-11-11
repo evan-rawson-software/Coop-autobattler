@@ -378,17 +378,53 @@ function topoOrder(
     indeg.set(e.to, (indeg.get(e.to) ?? 0) + 1);
     out.get(e.from)?.push(e.to);
   }
-  const done = new Set<string>();
+  // Ready nodes sit in a binary min-heap of ranks (positions in `sorted`), so
+  // the smallest ready node by `compareNodes` still goes first, in O(E log V).
+  // A node's indegree only falls, so a node that is ready stays ready.
+  const rank = new Map<string, number>();
+  sorted.forEach((n, i) => rank.set(n.key, i));
+  const heap: number[] = [];
+  const push = (r: number): void => {
+    let i = heap.length;
+    heap.push(r);
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if ((heap[p] ?? 0) <= r) break;
+      heap[i] = heap[p] ?? 0;
+      i = p;
+    }
+    heap[i] = r;
+  };
+  const pop = (): number => {
+    const top = heap[0] ?? 0;
+    const last = heap.pop() ?? 0;
+    if (heap.length > 0) {
+      let i = 0;
+      for (;;) {
+        let c = 2 * i + 1;
+        if (c >= heap.length) break;
+        if (c + 1 < heap.length && (heap[c + 1] ?? 0) < (heap[c] ?? 0)) c++;
+        if ((heap[c] ?? 0) >= last) break;
+        heap[i] = heap[c] ?? 0;
+        i = c;
+      }
+      heap[i] = last;
+    }
+    return top;
+  };
+  sorted.forEach((n, i) => {
+    if ((indeg.get(n.key) ?? 0) === 0) push(i);
+  });
   const order: string[] = [];
-  for (;;) {
-    const next = sorted.find(
-      (n) => !done.has(n.key) && (indeg.get(n.key) ?? 0) === 0,
-    );
+  while (heap.length > 0) {
+    const next = sorted[pop()];
     if (next === undefined) break;
-    done.add(next.key);
     order.push(next.key);
     for (const t of out.get(next.key) ?? []) {
-      indeg.set(t, (indeg.get(t) ?? 0) - 1);
+      const d = (indeg.get(t) ?? 0) - 1;
+      indeg.set(t, d);
+      const r = rank.get(t);
+      if (d === 0 && r !== undefined) push(r);
     }
   }
   return order;
@@ -488,13 +524,17 @@ function findMismatch(
       return `conduit ${String(c.id)} carries ${got} into building ${String(e.b.id)}, which takes ${need}`;
     }
   }
+  // The first conduit (in list order) into each building side.
+  const firstInto = new Map<string, Conduit>();
+  for (const x of list) {
+    const k = `${String(x.to.building)}:${x.to.side}`;
+    if (!firstInto.has(k)) firstInto.set(k, x);
+  }
   for (const e of view.byId.values()) {
     if (e.def.kind !== 'route' || e.def.routeType !== 'merger') continue;
     let first: ResourceId | null = null;
     for (const side of SIDE_ORDER) {
-      const c = list.find(
-        (x) => x.to.building === e.b.id && x.to.side === side,
-      );
+      const c = firstInto.get(`${String(e.b.id)}:${side}`);
       const v = c === undefined ? null : (res.get(c.id) ?? null);
       if (v === null) continue;
       if (first === null) first = v;

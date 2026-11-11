@@ -74,7 +74,9 @@ function collect(
   if (typeof v === 'string') out.strings.push(path);
   else if (typeof v === 'number') out.numbers.push(path);
   else if (Array.isArray(v)) {
-    v.forEach((x, i) => collect(x, [...path, i], out));
+    v.forEach((x, i) => {
+      collect(x, [...path, i], out);
+    });
   } else if (typeof v === 'object' && v !== null) {
     for (const k of Object.keys(v)) {
       out.keys.push([...path, k]);
@@ -139,15 +141,15 @@ describe('the validator accepts only what canonical JSON can write', () => {
   });
 
   test('the four reviewed cases are rejected', () => {
-    const cases: ((s: any) => void)[] = [
-      (s) => (s.owner.label = 'Ann\ud800x'),
-      (s) => (s.runId = 'r\udc00'),
-      (s) => (s.pvpRecord.losses = -0),
-      (s) => (s.team.core.x = -0),
+    const cases: [Path, unknown][] = [
+      [['owner', 'label'], 'Ann\ud800x'],
+      [['runId'], 'r\udc00'],
+      [['pvpRecord', 'losses'], -0],
+      [['team', 'core', 'x'], -0],
     ];
-    for (const f of cases) {
+    for (const [path, value] of cases) {
       const s = clone(snap);
-      f(s);
+      setAt(s, path, value);
       expect(hashes(s)).toBe(false);
       expect(validateGhostSnapshot(s, ctx).ok).toBe(false);
     }
