@@ -61,9 +61,9 @@ describe('the battle header', () => {
       thisRound: { ...run.thisRound, pve: { ...pve, goldPaid: 77 } },
     };
     expect(battleHeader(recorded, realDeps())?.payout).toBe('+77 gold');
-    const old: typeof pve = JSON.parse(
+    const old = JSON.parse(
       JSON.stringify({ ...pve, goldPaid: undefined }),
-    );
+    ) as typeof pve;
     const legacy = { ...run, thisRound: { ...run.thisRound, pve: old } };
     expect(battleHeader(legacy, realDeps())?.payout).toMatch(/^\+\d+ gold$/);
   });
