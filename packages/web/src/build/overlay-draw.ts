@@ -9,6 +9,7 @@ import type { OverlayContext } from '../board/BoardView.js';
 import { cellToView } from '../board/layout.js';
 import type { WebContent } from '../content.js';
 import type { Ui } from './build-controller.js';
+import { isEditStep } from './session.js';
 import { sideMarkers, type SideMarker } from './sides.js';
 import type { FlowView } from './view-model.js';
 
@@ -160,7 +161,7 @@ export function drawBuildOverlay(
     if (d.ui.coreGhost !== null) ghostCells(d.ui.coreGhost);
     return;
   }
-  if (d.step !== 'build') return;
+  if (!isEditStep(d.step)) return;
 
   // ---- Enemy paths ---------------------------------------------------------
   if (d.ui.overlays.paths && d.paths !== null) {

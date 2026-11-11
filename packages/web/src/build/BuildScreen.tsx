@@ -18,7 +18,11 @@ import { cellToView } from '../board/layout.js';
 import type { Selection } from '../board/render.js';
 import { content } from '../content.js';
 import { registerDebug } from '../debug-hook.js';
+import { NotSavedNote, RestartButton } from '../run/RunGate.js';
+import { type ShopRun } from '../run/shop-run.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
+import { onStepTab, stepTabs } from '../shop/tabs.js';
+import { readyLabel } from '../shop/view-model.js';
 import './build.css';
 import { BuildController } from './build-controller.js';
 import { drawBuildOverlay } from './overlay-draw.js';
@@ -31,6 +35,7 @@ import {
   StashPanel,
   ToolsPanel,
 } from './panels.js';
+import { isEditStep } from './session.js';
 import { DEFAULT_SEED, simConfig } from './setup.js';
 import { layoutHash } from './undo.js';
 import {
@@ -54,7 +59,17 @@ function isTyping(t: EventTarget | null): boolean {
   return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
 }
 
+/**
+ * The Build screen. On its own (`#build`) it starts a dev run. Given a
+ * `shared` run (the Build tab of the Shop step) it works on that run, so the
+ * Shop and Build tabs see the same stash, gold, offers and board.
+ */
 export function BuildScreen() {
+  return <BuildView shared={undefined} />;
+}
+
+export function BuildView(props: { shared: ShopRun | undefined }) {
+  const shared = props.shared;
   const model = useStore(ctl.model);
   const { ui, view } = model;
   const run = view?.run ?? null;
@@ -63,13 +78,16 @@ export function BuildScreen() {
   const canvasWrap = useRef<HTMLDivElement>(null);
   const [seedText, setSeedText] = useState(String(DEFAULT_SEED));
 
-  // Start the first run on first load.
+  // Start the first run on first load, or attach to the shared run.
   useEffect(() => {
-    if (!started) {
+    if (shared !== undefined) {
       started = true;
-      void ctl.newRun(DEFAULT_SEED);
+      if (ctl.session !== shared.session) ctl.attach(shared.session, true);
+    } else if (!started || ctl.shared) {
+      started = true;
+      void ctl.enterDev(DEFAULT_SEED);
     }
-  }, []);
+  }, [shared?.session]);
 
   // Camera focus for the problems list.
   useEffect(() => {
@@ -112,13 +130,13 @@ export function BuildScreen() {
   // Derived overlays: pure functions of the team state.
   const flow: FlowView | null = useMemo(
     () =>
-      team !== null && step === 'build'
+      team !== null && isEditStep(step)
         ? computeFlowView(team, content, simConfig, ui.dryTicks)
         : null,
     [team, step, ui.dryTicks],
   );
   const paths: EnemyPath[] | null = useMemo(() => {
-    if (team === null || team.core === null || step !== 'build') return null;
+    if (team === null || team.core === null || !isEditStep(step)) return null;
     try {
       return previewEnemyPaths(team, content, simConfig);
     } catch {
@@ -127,7 +145,7 @@ export function BuildScreen() {
   }, [team, step]);
   const problems: Problem[] = useMemo(
     () =>
-      team !== null && step === 'build'
+      team !== null && isEditStep(step)
         ? deriveProblems(team, content, flow)
         : [],
     [team, step, flow],
@@ -260,7 +278,18 @@ export function BuildScreen() {
     if (p.focus !== null) ctl.focusCell(p.focus);
   };
 
-  const devStrip = (
+  const readyText = run === null ? null : readyLabel(run);
+  const devStrip = shared ? (
+    run === null ? null : (
+      <>
+        <span class="muted" data-field="run-info">
+          Round {run.round} · Lives {run.lives}
+          {readyText === null ? '' : ` · ${readyText}`}
+        </span>
+        <NotSavedNote run={shared} />
+      </>
+    )
+  ) : (
     <span class="dev-strip">
       <label>
         Seed{' '}
@@ -288,21 +317,22 @@ export function BuildScreen() {
       </button>
       {run !== null ? (
         <span class="muted" data-field="run-info">
-          Round {run.round} · Lives {run.lives} ·{' '}
-          {run.perPlayer.filter((p) => p.ready).length} of {run.players.length}{' '}
-          ready
+          Round {run.round} · Lives {run.lives}
+          {readyText === null ? '' : ` · ${readyText}`}
         </span>
       ) : null}
     </span>
   );
 
-  const tabs = [
-    { id: 'shop', label: 'Shop', disabled: true, hint: 'Coming soon' },
-    { id: 'build', label: 'Build' },
-  ];
+  const tabs = shared
+    ? stepTabs()
+    : [
+        { id: 'shop', label: 'Shop', disabled: true, hint: 'Coming soon' },
+        { id: 'build', label: 'Build' },
+      ];
 
   // ---- Other steps: a placeholder ----------------------------------------
-  if (run !== null && step !== 'build' && step !== 'core_placement') {
+  if (run !== null && !isEditStep(step) && step !== 'core_placement') {
     return (
       <AppShell
         title={`Round ${String(run.round)} · ${step}`}
@@ -317,13 +347,19 @@ export function BuildScreen() {
             <p class="muted" data-field="status-line">
               {ui.status.text}
             </p>
-            <button
-              type="button"
-              id="dev-new-run"
-              onClick={() => void ctl.newRun(model.seed)}
-            >
-              Start a new run (seed {model.seed})
-            </button>
+            {shared !== undefined ? (
+              <RestartButton />
+            ) : (
+              <button
+                type="button"
+                id="dev-new-run"
+                onClick={() => {
+                  void ctl.newRun(model.seed);
+                }}
+              >
+                {`Start a new run (seed ${String(model.seed)})`}
+              </button>
+            )}
           </Panel>
         </div>
       </AppShell>
@@ -352,7 +388,7 @@ export function BuildScreen() {
             }}
             onSelect={(s) => {
               if (
-                step === 'build' &&
+                isEditStep(step) &&
                 ui.tool === 'select' &&
                 s?.building === null
               ) {
@@ -437,7 +473,8 @@ export function BuildScreen() {
         run === null ? 'Build' : `Round ${String(run.round)} · Shop + Build`
       }
       tabs={tabs}
-      activeTab="build"
+      activeTab={shared ? 'shop-build' : 'build'}
+      {...(shared ? { onTab: onStepTab } : {})}
       status={devStrip}
       bottom={bottom}
       tallBottom
