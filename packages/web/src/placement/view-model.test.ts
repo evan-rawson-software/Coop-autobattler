@@ -112,11 +112,13 @@ describe('routes to a position', () => {
           { x: 2, y: height + 3 },
           { x: 2, y: height - 2 },
         ],
+        approach: [],
         breach: { building: 4, cell: { x: 2, y: height + 1 } },
       },
       {
         entry: { x: 0, y: height },
         cells: [{ x: 0, y: height }],
+        approach: [],
         breach: null,
       },
     ];

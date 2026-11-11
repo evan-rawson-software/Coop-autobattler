@@ -120,9 +120,9 @@ export function legalSet(team: TeamState, content: WebContent): Set<number> {
 }
 
 /**
- * Drop the cells of paths that lie outside the board. Core can return cells
- * beyond the front row (a known bug, issue #32); the screen draws only the
- * board.
+ * Drop the cells of paths that lie outside the board. `cells` are on the
+ * board already (the off-board detour is in `approach`); this is a guard so the
+ * screen draws only the board.
  */
 export function clipPaths(
   paths: readonly EnemyPath[],
@@ -136,6 +136,7 @@ export function clipPaths(
     .map((p) => ({
       ...p,
       cells: p.cells.filter(inside),
+      approach: p.approach,
       breach: p.breach !== null && inside(p.breach.cell) ? p.breach : null,
     }));
 }

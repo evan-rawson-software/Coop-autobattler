@@ -227,7 +227,7 @@ export async function createServices(
       fallbackNote: fallbackText(storage, fallback ?? 'unavailable'),
     });
   }
-  const init = await initSaves(saves, INSTALLED_VERSION, env.now());
+  const init = await initSaves(saves, INSTALLED_VERSION, env.now(), runDeps);
   return {
     saves,
     finished,

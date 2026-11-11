@@ -7,6 +7,7 @@
 import type { Cell, EnemyPath, TeamState } from '@game/core';
 import type { OverlayContext } from '../board/BoardView.js';
 import { cellToView } from '../board/layout.js';
+import { pathSegments, pathStubs } from '../build/path-segments.js';
 import { shortProblem, type Verdict } from './view-model.js';
 
 export interface Candidate {
@@ -99,27 +100,38 @@ export function drawCoreOverlay(
     ctx.save();
     ctx.lineJoin = 'round';
     ctx.strokeStyle = col.path;
-    const trace = (cells: readonly Cell[]): void => {
+    // One sub-path per run of adjacent on-board cells, so no line crosses a
+    // wall or leaves the board; an off-board detour is a short stub at the
+    // front edge (the same drawing as the Build overlay).
+    const trace = (p: EnemyPath): void => {
       ctx.beginPath();
-      cells.forEach((c, i) => {
-        const q = centre(c);
-        if (i === 0) ctx.moveTo(q.x, q.y);
-        else ctx.lineTo(q.x, q.y);
-      });
+      for (const run of pathSegments(p.cells)) {
+        run.forEach((c, i) => {
+          const q = centre(c);
+          if (i === 0) ctx.moveTo(q.x, q.y);
+          else ctx.lineTo(q.x, q.y);
+        });
+      }
+      for (const stub of pathStubs(p.cells, p.approach)) {
+        const a = centre(stub.cell);
+        const b = centre({ x: stub.cell.x, y: stub.cell.y + 1 });
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo((a.x + b.x) / 2, (a.y + b.y) / 2);
+      }
       ctx.stroke();
     };
     ctx.setLineDash([lw * 1.6, lw * 1.2]);
     ctx.lineWidth = Math.max(2, lw * 0.5);
     ctx.globalAlpha = 0.22;
     d.paths.forEach((p, i) => {
-      if (i !== shortest) trace(p.cells);
+      if (i !== shortest) trace(p);
     });
     const best = d.paths[shortest];
     if (best !== undefined) {
       ctx.setLineDash([]);
       ctx.lineWidth = Math.max(3, lw * 0.9);
       ctx.globalAlpha = 0.9;
-      trace(best.cells);
+      trace(best);
     }
     ctx.restore();
     ctx.fillStyle = col.path;

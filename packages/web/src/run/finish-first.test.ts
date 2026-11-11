@@ -88,7 +88,7 @@ describe('the finished record is durable before the save is removed', () => {
     expect(await t.finished.get('r')).toBeNull();
     // Next start, storage works again.
     t.fail.finished = false;
-    const init = await initSaves(t.saves, INSTALLED_VERSION, 9);
+    const init = await initSaves(t.saves, INSTALLED_VERSION, 9, gameDeps());
     expect(init.finished).toEqual(['r']);
     expect((await t.finished.get('r'))?.state.runId).toBe('r');
     expect(await t.saves.get('r')).toBeNull();
@@ -102,7 +102,7 @@ describe('the finished record is durable before the save is removed', () => {
     expect(await t.finished.get('r')).not.toBeNull();
     expect(await t.saves.get('r')).not.toBeNull();
     t.fail.remove = false;
-    const init = await initSaves(t.saves, INSTALLED_VERSION, 9);
+    const init = await initSaves(t.saves, INSTALLED_VERSION, 9, gameDeps());
     expect(init.finished).toEqual(['r']);
     expect(await t.saves.get('r')).toBeNull();
     expect(await t.finished.get('r')).not.toBeNull();
