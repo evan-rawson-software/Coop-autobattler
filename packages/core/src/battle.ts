@@ -21,6 +21,7 @@ import {
   zoneBlockedCells,
   type NeutralZone,
 } from './neutral-zone.js';
+import { compareFractions } from './int.js';
 import type { MapgenConfig } from './mapgen.js';
 import type { SimConfig } from './sim-config.js';
 import type { TeamState } from './team-state.js';
@@ -262,10 +263,14 @@ export function startBattle(
     if (dead0) return { winner: 1, reason: 'core_destroyed' };
     if (dead1) return { winner: 0, reason: 'core_destroyed' };
     if (sim.tick >= config.sim.maxBattleTicks) {
-      // Health as a fraction of the maximum, compared by cross-multiplication.
-      const left = coreHp(0) * coreMax[1];
-      const right = coreHp(1) * coreMax[0];
-      return { winner: left > right ? 0 : 1, reason: 'time_limit' };
+      // Health as a fraction of the maximum, compared exactly (no product).
+      const cmp = compareFractions(
+        coreHp(0),
+        coreMax[0],
+        coreHp(1),
+        coreMax[1],
+      );
+      return { winner: cmp > 0 ? 0 : 1, reason: 'time_limit' };
     }
     return null;
   };

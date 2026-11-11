@@ -1,5 +1,6 @@
 /** Simulation constants (W1-4): loaded from content/sim.json. */
 
+import { MAX_BREACH_BASE_COST } from './limits.js';
 import {
   isRecord,
   readInt,
@@ -65,13 +66,21 @@ export function loadSimConfig(data: unknown): SimConfigLoadResult {
   rejectUnknownKeys(data, KEYS, 'sim', errors);
   const ticksPerSecond = readInt(data, 'ticksPerSecond', 1, 'sim', errors);
   const inputBufferUnits = readInt(data, 'inputBufferUnits', 1, 'sim', errors);
-  const breachBaseCost = readInt(data, 'breachBaseCost', 0, 'sim', errors);
+  const breachBaseCost = readInt(
+    data,
+    'breachBaseCost',
+    0,
+    'sim',
+    errors,
+    MAX_BREACH_BASE_COST,
+  );
   const breachHealthPerCost = readInt(
     data,
     'breachHealthPerCost',
     1,
     'sim',
     errors,
+    MAX_BREACH_BASE_COST,
   );
   const aggroRangeCells = readInt(data, 'aggroRangeCells', 0, 'sim', errors);
   const maxSourceSpeedPercent = readInt(

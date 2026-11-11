@@ -1,5 +1,7 @@
 /** Unit rules (CB-13..CB-15). All numbers are integers; times are in ticks. */
 
+import { addInt, divFloor, mulInt } from './int.js';
+import { MAX_DAMAGE, MAX_HEALTH } from './limits.js';
 import {
   isRecord,
   readId,
@@ -23,6 +25,21 @@ export interface UnitDef {
   /** Ticks per cell moved. */
   readonly moveCooldownTicks: number;
   readonly targeting: Targeting;
+}
+
+/**
+ * The largest strength percent `P` for which `unitStats` keeps this unit
+ * within the stat bounds: the largest `P` with `floor(health * (100 + P) /
+ * 100) <= MAX_HEALTH` and the same for damage and `MAX_DAMAGE`. Exact:
+ * `floor(v * (100 + P) / 100) <= M` holds iff `v * (100 + P) <= 100 * M + 99`.
+ * A unit with 0 damage does not limit damage.
+ */
+export function maxStrengthPercent(def: UnitDef): number {
+  const room = (value: number, max: number): number =>
+    value === 0
+      ? Number.MAX_SAFE_INTEGER
+      : divFloor(addInt(mulInt(100, max), 99), value) - 100;
+  return Math.min(room(def.health, MAX_HEALTH), room(def.damage, MAX_DAMAGE));
 }
 
 export interface UnitConfig {
@@ -67,8 +84,8 @@ export function loadUnits(data: unknown): UnitLoadResult {
       if (seen.has(id)) errors.push(`${label}: duplicate id "${id}".`);
       seen.add(id);
     }
-    const health = readInt(entry, 'health', 1, label, errors);
-    const damage = readInt(entry, 'damage', 0, label, errors);
+    const health = readInt(entry, 'health', 1, label, errors, MAX_HEALTH);
+    const damage = readInt(entry, 'damage', 0, label, errors, MAX_DAMAGE);
     const attackCooldownTicks = readInt(
       entry,
       'attackCooldownTicks',

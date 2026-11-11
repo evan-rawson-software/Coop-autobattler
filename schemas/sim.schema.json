@@ -35,12 +35,14 @@
     "breachBaseCost": {
       "description": "Path cost of stepping through a cell covered by an enemy building when a base is sealed (CB-20), before the health term. An open cell costs 1.",
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "maximum": 1000000
     },
     "breachHealthPerCost": {
       "description": "Health that adds 1 to the cost of stepping through a building (rounded up): cost = breachBaseCost + ceil(health / breachHealthPerCost).",
       "type": "integer",
-      "minimum": 1
+      "minimum": 1,
+      "maximum": 1000000
     },
     "aggroRangeCells": {
       "description": "Manhattan range within which a unit that has no enemy in reach chases the nearest enemy unit (CB-16). 0 turns chasing off.",

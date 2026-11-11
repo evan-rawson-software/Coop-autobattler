@@ -6,7 +6,7 @@ import {
   type Arena,
   type ArenaContent,
 } from './arena.js';
-import { openFor } from './arena-paths.js';
+import { computeBreach, openFor } from './arena-paths.js';
 import { renderArenaAscii } from './arena-render.js';
 import {
   createArenaContext,
@@ -20,9 +20,11 @@ import {
   type ArenaSim,
 } from './arena-sim.js';
 import { cloneBoardSim, flowTotals } from './flow-sim.js';
+import { withModifier, type TeamModifier } from './modifiers.js';
 import { hashJson } from './hash.js';
 import { Rng } from './rng.js';
-import { loadUnitsOrThrow } from './units.js';
+import { MAX_HEALTH, MAX_TICK_DAMAGE } from './limits.js';
+import { loadUnitsOrThrow, maxStrengthPercent } from './units.js';
 import type { Cell, GameMap } from './map.js';
 import type { TeamState } from './team-state.js';
 import {
@@ -790,6 +792,362 @@ describe('breaching sealed bases (CB-20)', () => {
   });
 });
 
+describe('breach step prices a building by its maximum health (CB-20)', () => {
+  test('a damaged neighbour is not preferred over an equal healthy one', () => {
+    // Core at board (5, 0) ringed by six tier 3 walls; the soldier stands on
+    // the corner cell (7, 2) beside walls A (6, 2) and B (7, 1). Both have
+    // the same maximum health, so the tie key decides (A). B has 20 of 240
+    // health; a step priced by current health would go for B instead.
+    const lab = new Lab(tiny());
+    lab.core(5, 0);
+    const ids = new Map<string, number>();
+    for (const [x, y] of [
+      [4, 0],
+      [4, 1],
+      [5, 2],
+      [6, 2],
+      [7, 1],
+      [7, 0],
+    ] as const) {
+      ids.set(`${String(x)},${String(y)}`, lab.put('bld_wall', x, y, 0, 3));
+    }
+    const a = got(ids.get('6,2'));
+    const b = got(ids.get('7,1'));
+    const { sim, ctx, events } = startArenaBattle(
+      coreOnly(),
+      lab.state,
+      GAP,
+      content,
+      simConfig,
+    );
+    got(sim.health.find((h) => h.side === 1 && h.building === b)).hp = 20;
+    const at = arenaCell(1, 7, 2);
+    spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: at.x,
+      y: at.y,
+    });
+    runArena(sim, ctx, 60);
+    const targets = ofType(events, 'unit_attacked').map((e) => e.target);
+    expect(targets.length).toBeGreaterThan(0);
+    for (const t of targets) {
+      expect(t).toEqual({ kind: 'building', side: 1, building: a });
+    }
+    expect(healthOf(sim, 1, b)).toBe(20);
+    expect(healthOf(sim, 1, a)).toBeLessThan(240);
+  });
+});
+
+describe('breach field is a pure function of the saved state (CB-20)', () => {
+  /** Side 1's Core ringed by eight tier 1 walls (every Core edge cell). */
+  function ringed(): TeamState {
+    const lab = new Lab(tiny());
+    lab.core(5, 3);
+    for (const [x, y] of [
+      [5, 2],
+      [6, 2],
+      [5, 5],
+      [6, 5],
+      [4, 3],
+      [4, 4],
+      [7, 3],
+      [7, 4],
+    ] as const) {
+      lab.put('bld_wall', x, y, 0, 1);
+    }
+    return lab.state;
+  }
+
+  function start(): ReturnType<typeof startArenaBattle> {
+    const b = startArenaBattle(coreOnly(), ringed(), GAP, content, simConfig);
+    spawnUnitForTest(b.sim, b.ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: 8,
+      y: 20,
+    });
+    spawnUnitForTest(b.sim, b.ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: 3,
+      y: 24,
+    });
+    return b;
+  }
+
+  function restore(sim: ArenaSim): { sim: ArenaSim; ctx: ArenaContext } {
+    const copy = JSON.parse(JSON.stringify(sim)) as ArenaSim;
+    return { sim: copy, ctx: createArenaContext(copy, content, simConfig) };
+  }
+
+  function wallHealth(sim: ArenaSim): number[] {
+    return sim.health
+      .filter((h) => h.side === 1 && h.building > 0)
+      .map((h) => h.hp);
+  }
+
+  const TOTAL = 400;
+
+  test('restoring at any tick continues exactly like a straight run', () => {
+    // Reference run: every tick's hash, and when a wall first takes damage
+    // and first falls.
+    const ref = start();
+    const hashes: string[] = [hashJson(ref.sim)];
+    let damaged = -1;
+    let fallen = -1;
+    const full = wallHealth(ref.sim);
+    for (let t = 0; t < TOTAL; t++) {
+      stepArena(ref.sim, ref.ctx);
+      hashes.push(hashJson(ref.sim));
+      const hp = wallHealth(ref.sim);
+      if (damaged < 0 && hp.some((v, i) => v < (full[i] ?? 0))) damaged = t + 1;
+      if (fallen < 0 && hp.some((v) => v <= 0)) fallen = t + 1;
+    }
+    expect(damaged).toBeGreaterThan(0);
+    expect(fallen).toBeGreaterThan(damaged);
+    const ticks = new Set([
+      0,
+      1,
+      2,
+      10,
+      50,
+      95,
+      damaged - 1,
+      damaged,
+      damaged + 1,
+      fallen - 1,
+      fallen,
+      fallen + 1,
+    ]);
+    for (const at of [...ticks].sort((a, b) => a - b)) {
+      const a = start();
+      runArena(a.sim, a.ctx, at);
+      const r = restore(a.sim);
+      for (let t = at; t < TOTAL; t++) {
+        stepArena(r.sim, r.ctx);
+        expect(
+          hashJson(r.sim),
+          `restored at ${String(at)}, tick ${String(t + 1)}`,
+        ).toBe(hashes[t + 1]);
+      }
+    }
+  });
+
+  test('a wall is damaged but still standing for a while (the scenario exercises the rule)', () => {
+    const a = start();
+    runArena(a.sim, a.ctx, TOTAL);
+    expect(wallHealth(a.sim).some((v) => v > 0 && v < 100)).toBe(true);
+  });
+});
+
+describe('maximum health includes run modifiers (breach cost and start agree)', () => {
+  const stoutWalls: TeamModifier = {
+    id: 'mod_test_walls',
+    effects: [
+      { kind: 'building_health_percent', target: 'wall', percent: 150 },
+    ],
+  };
+  const hardCore: TeamModifier = {
+    id: 'mod_test_core',
+    effects: [{ kind: 'core_health_percent', percent: 50 }],
+  };
+  const drilled: TeamModifier = {
+    id: 'mod_test_drill',
+    effects: [{ kind: 'unit_strength_percent', percent: 25 }],
+  };
+
+  function ringedTeam(): TeamState {
+    const lab = new Lab(tiny());
+    lab.core(5, 3);
+    for (const [x, y] of [
+      [5, 2],
+      [6, 2],
+      [5, 5],
+      [6, 5],
+      [4, 3],
+      [4, 4],
+      [7, 3],
+      [7, 4],
+    ] as const) {
+      lab.put('bld_wall', x, y, 0, 1);
+    }
+    return lab.state;
+  }
+
+  function modified(): { a: TeamState; b: TeamState } {
+    return {
+      a: withModifier(withModifier(coreOnly(), hardCore), drilled),
+      b: withModifier(withModifier(ringedTeam(), stoutWalls), hardCore),
+    };
+  }
+
+  function begin(a: TeamState, b: TeamState) {
+    const r = startArenaBattle(a, b, GAP, content, simConfig, {
+      sideOptions: [{}, { coreHealth: 500 }],
+    });
+    spawnUnitForTest(r.sim, r.ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: 8,
+      y: 20,
+    });
+    spawnUnitForTest(r.sim, r.ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: 3,
+      y: 24,
+    });
+    return r;
+  }
+
+  test('starting health and breach cost use the same modified maximum', () => {
+    const plain = begin(coreOnly(), ringedTeam());
+    const { a, b } = modified();
+    const mod = begin(a, b);
+    let walls = 0;
+    for (const bld of mod.ctx.arena.buildings) {
+      const h = mod.sim.health.find(
+        (x) => x.side === bld.side && x.building === bld.id,
+      );
+      // At tick 0 a building is at full health, which is its maximum.
+      expect(h?.hp).toBe(mod.ctx.maxHealth[bld.ref]);
+      if (bld.side === 1 && bld.kind === 'core') {
+        // Override 500, then +50 percent.
+        expect(h?.hp).toBe(750);
+      }
+      if (bld.side === 1 && bld.defenseType === 'wall') {
+        walls += 1;
+        const base = plain.ctx.maxHealth[bld.ref] ?? 0;
+        expect(base).toBeGreaterThan(0);
+        expect(h?.hp).toBe(Math.floor((base * 250) / 100));
+      }
+    }
+    expect(walls).toBe(8);
+    // The breach field the units steer by is built from that maximum.
+    const per = simConfig.breachHealthPerCost;
+    const baseCost = simConfig.breachBaseCost;
+    const expected = computeBreach(
+      mod.ctx.arena,
+      0,
+      (ref) => mod.sim.health[mod.ctx.healthIndex[ref] ?? 0]?.hp ?? 0,
+      baseCost,
+      per,
+    );
+    const plainField = computeBreach(
+      plain.ctx.arena,
+      0,
+      (ref) => plain.ctx.maxHealth[ref] ?? 0,
+      baseCost,
+      per,
+    );
+    const actual = computeBreach(
+      mod.ctx.arena,
+      0,
+      (ref) => mod.ctx.maxHealth[ref] ?? 0,
+      baseCost,
+      per,
+    );
+    expect(Array.from(actual)).toEqual(Array.from(expected));
+    expect(Math.max(...actual)).toBeGreaterThan(Math.max(...plainField));
+    stepArena(mod.sim, mod.ctx);
+    const field = got(mod.ctx.breach[0]);
+    expect(Array.from(field)).toEqual(Array.from(expected));
+  });
+
+  test('restoring at any tick continues exactly, modifiers on both sides', () => {
+    const run = () => {
+      const { a, b } = modified();
+      return begin(a, b);
+    };
+    const total = 300;
+    const ref = run();
+    const hashes: string[] = [hashJson(ref.sim)];
+    for (let t = 0; t < total; t++) {
+      stepArena(ref.sim, ref.ctx);
+      hashes.push(hashJson(ref.sim));
+    }
+    for (const at of [0, 1, 2, 10, 50, 95, 150, 299]) {
+      const x = run();
+      runArena(x.sim, x.ctx, at);
+      const copy = JSON.parse(JSON.stringify(x.sim)) as ArenaSim;
+      const ctx = createArenaContext(copy, content, simConfig);
+      for (let t = at; t < total; t++) {
+        stepArena(copy, ctx);
+        expect(
+          hashJson(copy),
+          `restored at ${String(at)}, tick ${String(t + 1)}`,
+        ).toBe(hashes[t + 1]);
+      }
+    }
+  });
+
+  test('modified values past the content bounds fail at setup with a RangeError', () => {
+    const core = withModifier(coreOnly(), {
+      id: 'mod_test_big',
+      effects: [{ kind: 'core_health_percent', percent: 100 }],
+    });
+    const half = MAX_HEALTH / 2;
+    expect(() =>
+      createArenaSim(core, coreOnly(), GAP, content, simConfig, {
+        sideOptions: [{ coreHealth: half + 1000 }, {}],
+      }),
+    ).toThrow(/maximum health 1000000002000 with modifiers exceeds/);
+    // Fine without the modifier, and at exactly the cap with it.
+    expect(() =>
+      createArenaSim(coreOnly(), coreOnly(), GAP, content, simConfig, {
+        sideOptions: [{ coreHealth: half + 1000 }, {}],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      createArenaSim(core, coreOnly(), GAP, content, simConfig, {
+        sideOptions: [{ coreHealth: half }, {}],
+      }),
+    ).not.toThrow();
+    // Unit strength: base option plus modifier must keep every unit in bounds.
+    const limit = content.units
+      .list()
+      .reduce((m, d) => Math.min(m, maxStrengthPercent(d)), Infinity);
+    const edge = withModifier(coreOnly(), {
+      id: 'mod_test_str',
+      effects: [{ kind: 'unit_strength_percent', percent: 2 }],
+    });
+    expect(() =>
+      createArenaSim(edge, coreOnly(), GAP, content, simConfig, {
+        sideOptions: [{ unitStrengthPercent: limit - 2 }, {}],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      createArenaSim(edge, coreOnly(), GAP, content, simConfig, {
+        sideOptions: [{ unitStrengthPercent: limit - 1 }, {}],
+      }),
+    ).toThrow(RangeError);
+  });
+
+  test('a wall-health modifier changes the breach cost by the modified maximum', () => {
+    const per = simConfig.breachHealthPerCost;
+    const field = (team: TeamState): number => {
+      const r = startArenaBattle(coreOnly(), team, GAP, content, simConfig);
+      const f = computeBreach(
+        r.ctx.arena,
+        0,
+        (ref) => r.ctx.maxHealth[ref] ?? 0,
+        simConfig.breachBaseCost,
+        per,
+      );
+      return Math.max(...f);
+    };
+    const plain = field(ringedTeam());
+    const stout = field(withModifier(ringedTeam(), stoutWalls));
+    const wall = (hp: number): number =>
+      simConfig.breachBaseCost + Math.ceil(hp / per);
+    const base = got(content.buildings.get('bld_wall')).tiers[0].health;
+    expect(stout - plain).toBe(
+      wall(Math.floor((base * 250) / 100)) - wall(base),
+    );
+  });
+});
+
 describe('destruction', () => {
   function network() {
     const lab = new Lab(
@@ -1183,6 +1541,82 @@ describe('rendering', () => {
       ].join('\n'),
     );
     expect(text.split('\n').pop()).toContain('legend');
+  });
+});
+
+describe('damage sums beyond 32 bits (int.ts contract)', () => {
+  /** A side 1 Core with the given health, and `n` side 0 soldiers beside it. */
+  function pile(n: number, damage: number, coreHp: number) {
+    const b = startArenaBattle(coreOnly(), coreOnly(), GAP, content, simConfig);
+    const at = arenaCell(1, 5, 2);
+    for (let k = 0; k < n; k++) {
+      const u = spawnUnitForTest(b.sim, b.ctx, {
+        side: 0,
+        def: 'unit_soldier',
+        x: at.x,
+        y: at.y,
+      });
+      u.damage = damage;
+      u.attackCooldown = 0;
+    }
+    got(b.sim.health.find((h) => h.side === 1 && h.building === 0)).hp = coreHp;
+    return b;
+  }
+
+  test('twelve hits of 2e8 on a building sum to 2.4e9 exactly (no wrap)', () => {
+    const { sim, ctx } = pile(12, 200_000_000, 1_000_000_000_000);
+    stepArena(sim, ctx);
+    expect(healthOf(sim, 1, 0)).toBe(1_000_000_000_000 - 12 * 200_000_000);
+    expect(ctx.coreRemaining[1]).toBe(1_000_000_000_000 - 12 * 200_000_000);
+  });
+
+  test('twelve hits of 2e8 on a unit sum to 2.4e9 exactly (no wrap)', () => {
+    const b = startArenaBattle(coreOnly(), coreOnly(), GAP, content, simConfig);
+    const victim = spawnUnitForTest(b.sim, b.ctx, {
+      side: 1,
+      def: 'unit_soldier',
+      x: 4,
+      y: 18,
+    });
+    victim.hp = 1_000_000_000_000;
+    for (let k = 0; k < 12; k++) {
+      const u = spawnUnitForTest(b.sim, b.ctx, {
+        side: 0,
+        def: 'unit_soldier',
+        x: 4,
+        y: 18,
+      });
+      u.damage = 200_000_000;
+    }
+    stepArena(b.sim, b.ctx);
+    expect(victim.hp).toBe(1_000_000_000_000 - 12 * 200_000_000);
+  });
+
+  test('a per-tick sum past the safe-integer limit saturates, never wraps', () => {
+    // 101 hits of 9e13 sum to 9.09e15 > 2^53 - 1 unsaturated; the sum stops
+    // at MAX_TICK_DAMAGE, and the Core's overkill is that cap exactly.
+    const { sim, ctx } = pile(101, 90_000_000_000_000, 2 ** 52);
+    stepArena(sim, ctx);
+    expect(healthOf(sim, 1, 0)).toBe(0);
+    expect(ctx.coreRemaining[1]).toBe(2 ** 52 - MAX_TICK_DAMAGE);
+    const more = pile(120, 90_000_000_000_000, 5);
+    stepArena(more.sim, more.ctx);
+    expect(more.ctx.coreRemaining[1]).toBe(5 - MAX_TICK_DAMAGE);
+  });
+
+  test('Overload that would push a hit past MAX_HIT fails at setup', () => {
+    const a = { state: coreOnly() };
+    const wild = { ...simConfig, overloadDamageStepPercent: 2 ** 46 };
+    expect(() => createArenaSim(a.state, a.state, GAP, content, wild)).toThrow(
+      RangeError,
+    );
+    const wildCore = { ...simConfig, overloadCoreDamageStep: 2 ** 45 };
+    expect(() =>
+      createArenaSim(a.state, a.state, GAP, content, wildCore),
+    ).toThrow(/Overload Core damage/);
+    expect(() =>
+      createArenaSim(a.state, a.state, GAP, content, simConfig),
+    ).not.toThrow();
   });
 });
 
