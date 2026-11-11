@@ -144,6 +144,15 @@ export function BattleView(props: BattleViewProps) {
   initialTick.current = props.initialTick ?? 0;
   const latestStored = useRef(props.stored);
   latestStored.current = props.stored;
+  // The mismatch panel's Ready goes through the same gate as the summary's.
+  const [mismatchReady, setMismatchReady] = useState(false);
+  const latestProps = useRef(props);
+  latestProps.current = props;
+  const mismatchGate = useRef<(() => void) | null>(null);
+  mismatchGate.current ??= createReadyGate(
+    () => latestProps.current.onReady(),
+    setMismatchReady,
+  );
 
   // The simulation runs in a worker (or, without one, on the main thread
   // after a macrotask), so the page paints "preparing" first and stays
@@ -203,11 +212,13 @@ export function BattleView(props: BattleViewProps) {
           <button
             type="button"
             class="primary"
+            id="battle-ready"
+            disabled={mismatchReady}
             onClick={() => {
-              void props.onReady();
+              mismatchGate.current?.();
             }}
           >
-            Ready
+            {mismatchReady ? 'Ready ✓' : 'Ready'}
           </button>
         </div>
       </AppShell>

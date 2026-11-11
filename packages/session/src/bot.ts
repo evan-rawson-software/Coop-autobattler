@@ -19,6 +19,7 @@ import { readShop } from './economy.js';
 import { SKIP_CHOICE } from './events.js';
 import { SELECT_GHOST } from './ghosts.js';
 import { eventFollowUp, openVote } from './selectors.js';
+import type { GhostSnapshot } from '@game/core';
 import type {
   CreateRunArgs,
   Intent,
@@ -195,6 +196,11 @@ export interface BotRunResult {
   readonly accepted: number;
   /** Every intent the run refused; a correct bot has none. */
   readonly rejected: readonly Rejection[];
+  /**
+   * With `deps.ghosts` on: the snapshot taken before each PvP battle, in
+   * round order (what the run controller would write to the pool).
+   */
+  readonly snapshots: readonly GhostSnapshot[];
   readonly strategy: BotStrategyName;
 }
 
@@ -206,6 +212,7 @@ class Driver {
   state: RunState;
   accepted = 0;
   readonly rejected: Rejection[] = [];
+  readonly snapshots: GhostSnapshot[] = [];
   constructor(
     start: RunState,
     readonly deps: RunDeps,
@@ -218,6 +225,9 @@ class Driver {
     if (r.ok) {
       this.state = r.state;
       this.accepted++;
+      for (const fx of r.effects) {
+        if (fx.type === 'ghost_snapshot') this.snapshots.push(fx.snapshot);
+      }
       return true;
     }
     this.rejected.push({
@@ -504,6 +514,7 @@ export function playBotRun(
     state: d.state,
     accepted: d.accepted,
     rejected: d.rejected,
+    snapshots: d.snapshots,
     strategy: options.strategy,
   };
 }
