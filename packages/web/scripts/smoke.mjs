@@ -13,6 +13,7 @@ import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runShopSmoke } from './smoke-shop.mjs';
+import { runRunSmoke } from './smoke-run.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -1496,6 +1497,18 @@ try {
 
   // Shop + Build step (W2-7)
   await runShopSmoke({ page, baseUrl, check, shot, settle, webDir });
+
+  // Run flow: menu, Core placement, choices, run end (W2-9)
+  await runRunSmoke({
+    page,
+    baseUrl,
+    check,
+    shot,
+    settle,
+    webDir,
+    context,
+    consoleErrors,
+  });
 
   check(
     consoleErrors.length === 0,
