@@ -111,6 +111,27 @@ export function render(ctx: CanvasRenderingContext2D, a: RenderArgs): void {
     ctx.lineWidth = 1.5;
     ctx.strokeRect(sx(n.x0), sy(n.y0), (n.x1 - n.x0) * z, (n.y1 - n.y0) * z);
     ctx.setLineDash([]);
+    if (a.scene.neutralHidden) {
+      // Not yet revealed: a hatched strip with no terrain in it.
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(sx(n.x0), sy(n.y0), (n.x1 - n.x0) * z, (n.y1 - n.y0) * z);
+      ctx.clip();
+      ctx.beginPath();
+      const h = (n.y1 - n.y0) * z;
+      for (let k = -h; k < (n.x1 - n.x0) * z; k += 14) {
+        ctx.moveTo(sx(n.x0) + k, sy(n.y1));
+        ctx.lineTo(sx(n.x0) + k + h, sy(n.y0));
+      }
+      ctx.strokeStyle = theme.neutralLine;
+      ctx.globalAlpha = 0.25;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    }
+    for (const f of a.scene.neutralFeatures) {
+      drawFeature(ctx, f, theme, z, sx, sy, visible);
+    }
     if (z >= 6) {
       ctx.fillStyle = theme.inkMuted;
       ctx.font = font(Math.min(14, Math.max(10, z * 0.5)));
@@ -168,6 +189,40 @@ export function render(ctx: CanvasRenderingContext2D, a: RenderArgs): void {
   }
 }
 
+function drawFeature(
+  ctx: CanvasRenderingContext2D,
+  t: { x: number; y: number; style: number },
+  theme: Theme,
+  z: number,
+  sx: (v: number) => number,
+  sy: (v: number) => number,
+  visible: (r: ViewRect) => boolean,
+): void {
+  const r = { x: t.x, y: t.y, w: 1, h: 1 };
+  if (!visible(r)) return;
+  const fill =
+    theme.features[t.style % theme.features.length] ?? theme.gridLine;
+  ctx.fillStyle = fill;
+  ctx.fillRect(sx(t.x), sy(t.y), z + 0.5, z + 0.5);
+  if (t.style % 2 === 1 && z >= 8) {
+    // Second cue besides colour: hatching.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(sx(t.x), sy(t.y), z, z);
+    ctx.clip();
+    ctx.beginPath();
+    for (let k = -z; k < z; k += 6) {
+      ctx.moveTo(sx(t.x) + k, sy(t.y) + z);
+      ctx.lineTo(sx(t.x) + k + z, sy(t.y));
+    }
+    ctx.strokeStyle = theme.outline;
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function drawBoard(
   ctx: CanvasRenderingContext2D,
   board: BoardScene,
@@ -204,29 +259,7 @@ function drawBoard(
 
   // Terrain.
   for (const t of board.features) {
-    const r = { x: t.x, y: t.y, w: 1, h: 1 };
-    if (!visible(r)) continue;
-    const fill =
-      theme.features[t.style % theme.features.length] ?? theme.gridLine;
-    ctx.fillStyle = fill;
-    ctx.fillRect(sx(t.x), sy(t.y), z + 0.5, z + 0.5);
-    if (t.style % 2 === 1 && z >= 8) {
-      // Second cue besides colour: hatching.
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(sx(t.x), sy(t.y), z, z);
-      ctx.clip();
-      ctx.beginPath();
-      for (let k = -z; k < z; k += 6) {
-        ctx.moveTo(sx(t.x) + k, sy(t.y) + z);
-        ctx.lineTo(sx(t.x) + k + z, sy(t.y));
-      }
-      ctx.strokeStyle = theme.outline;
-      ctx.globalAlpha = 0.35;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.restore();
-    }
+    drawFeature(ctx, t, theme, z, sx, sy, visible);
   }
 
   // Front edge marker.

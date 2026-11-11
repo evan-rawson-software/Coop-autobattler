@@ -1,6 +1,7 @@
 /** The registry of screens. Real screens are added here by later issues. */
 
 import type { ComponentType } from 'preact';
+import { BattleSampleScreen } from '../battle/BattleScreen.js';
 import { BuildScreen } from '../build/BuildScreen.js';
 import { ShopBuildScreen } from '../build/ShopBuildScreen.js';
 import { DebugScreen } from '../screens/DebugScreen.js';
@@ -18,4 +19,5 @@ export const screens: readonly ScreenDef[] = [
   { id: 'build', name: 'Build', component: BuildScreen },
   { id: 'shop', name: 'Shop', component: ShopScreen },
   { id: 'shop-build', name: 'Shop · Build tab', component: ShopBuildScreen },
+  { id: 'battle', name: 'Battle', component: BattleSampleScreen },
 ];
