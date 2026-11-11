@@ -54,6 +54,33 @@ async function load(): Promise<MenuData> {
   };
 }
 
+/** The confirmation of "Remove save": what it deletes, said plainly. */
+function RemoveConfirm(props: { onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <div class="run-actions confirm" role="alertdialog">
+      <p data-field="remove-warning">
+        Remove this save? It is deleted for good, with no summary and no record
+        of the run. This cannot be undone.
+      </p>
+      <button
+        type="button"
+        class="danger"
+        data-action="discard-confirm"
+        onClick={props.onConfirm}
+      >
+        Remove save
+      </button>
+      <button
+        type="button"
+        data-action="abandon-cancel"
+        onClick={props.onCancel}
+      >
+        Keep it
+      </button>
+    </div>
+  );
+}
+
 export function MainMenuScreen() {
   const [data, setData] = useState<MenuData | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
@@ -134,7 +161,7 @@ export function MainMenuScreen() {
   const discard = (runId: string): void => {
     setAsking(null);
     void discardSavedRun(runId).then((r) => {
-      setNotice(r.ok ? 'The saved run was discarded.' : r.message);
+      setNotice(r.ok ? 'The save was removed.' : r.message);
       refresh();
     });
   };
@@ -244,31 +271,42 @@ export function MainMenuScreen() {
                       )}
                     </div>
                     {asking === row.runId ? (
-                      <div class="run-actions confirm" role="alertdialog">
-                        <p>
-                          Abandon this run? It ends now and shows its summary.
-                          This cannot be undone.
-                        </p>
-                        <button
-                          type="button"
-                          class="danger"
-                          data-action="abandon-confirm"
-                          onClick={() => {
-                            abandon(row.runId);
+                      row.blocked === null ? (
+                        <div class="run-actions confirm" role="alertdialog">
+                          <p>
+                            Abandon this run? It ends now and shows its summary.
+                            This cannot be undone.
+                          </p>
+                          <button
+                            type="button"
+                            class="danger"
+                            data-action="abandon-confirm"
+                            onClick={() => {
+                              abandon(row.runId);
+                            }}
+                          >
+                            Abandon it
+                          </button>
+                          <button
+                            type="button"
+                            data-action="abandon-cancel"
+                            onClick={() => {
+                              setAsking(null);
+                            }}
+                          >
+                            Keep it
+                          </button>
+                        </div>
+                      ) : (
+                        <RemoveConfirm
+                          onConfirm={() => {
+                            discard(row.runId);
                           }}
-                        >
-                          Abandon it
-                        </button>
-                        <button
-                          type="button"
-                          data-action="abandon-cancel"
-                          onClick={() => {
+                          onCancel={() => {
                             setAsking(null);
                           }}
-                        >
-                          Keep it
-                        </button>
-                      </div>
+                        />
+                      )
                     ) : (
                       <div class="run-actions">
                         <button
@@ -282,15 +320,27 @@ export function MainMenuScreen() {
                         >
                           Resume
                         </button>
-                        <button
-                          type="button"
-                          data-action="abandon"
-                          onClick={() => {
-                            setAsking(row.runId);
-                          }}
-                        >
-                          Abandon
-                        </button>
+                        {row.blocked === null ? (
+                          <button
+                            type="button"
+                            data-action="abandon"
+                            onClick={() => {
+                              setAsking(row.runId);
+                            }}
+                          >
+                            Abandon
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            data-action="discard"
+                            onClick={() => {
+                              setAsking(row.runId);
+                            }}
+                          >
+                            Remove save
+                          </button>
+                        )}
                       </div>
                     )}
                   </li>
@@ -306,28 +356,14 @@ export function MainMenuScreen() {
                       <p class="muted">Last written {row.playedAgo}</p>
                     </div>
                     {asking === row.runId ? (
-                      <div class="run-actions confirm" role="alertdialog">
-                        <p>Discard it for good? This cannot be undone.</p>
-                        <button
-                          type="button"
-                          class="danger"
-                          data-action="discard-confirm"
-                          onClick={() => {
-                            discard(row.runId);
-                          }}
-                        >
-                          Discard it
-                        </button>
-                        <button
-                          type="button"
-                          data-action="abandon-cancel"
-                          onClick={() => {
-                            setAsking(null);
-                          }}
-                        >
-                          Keep it
-                        </button>
-                      </div>
+                      <RemoveConfirm
+                        onConfirm={() => {
+                          discard(row.runId);
+                        }}
+                        onCancel={() => {
+                          setAsking(null);
+                        }}
+                      />
                     ) : (
                       <div class="run-actions">
                         <button
@@ -337,7 +373,7 @@ export function MainMenuScreen() {
                             setAsking(row.runId);
                           }}
                         >
-                          Discard
+                          Remove save
                         </button>
                       </div>
                     )}

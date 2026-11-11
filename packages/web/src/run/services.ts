@@ -11,7 +11,6 @@
  * `localStorage`) a `storage` event.
  */
 import {
-  checkSaveShape,
   createGameDeps,
   createMemorySaveStore,
   initSaves,
@@ -26,6 +25,7 @@ import {
   createMemoryFinishedRuns,
   type FinishedRuns,
 } from './finished.js';
+import { finishFirst } from './finish-first.js';
 import { openIndexedDbStores } from './idb-store.js';
 import {
   browserStorage,
@@ -168,23 +168,10 @@ export async function createServices(
     storage = 'memory';
   }
 
-  // A save whose run already ended is about to be moved to history by
-  // `initSaves`; keep its final state first so the Run over screen can open it.
-  try {
-    for (const item of await saves.list()) {
-      if (item.corrupt || item.summary.outcome === null) continue;
-      const shape = checkSaveShape(await saves.get(item.runId));
-      if (shape.ok) {
-        await finished.put({
-          runId: item.runId,
-          state: shape.record.state,
-          finishedAt: env.now(),
-        });
-      }
-    }
-  } catch {
-    // Best effort: the run is recorded in history either way.
-  }
+  // A save whose run already ended is moved to history by `initSaves`; the
+  // wrapper keeps its final state first, so the Run over screen can open it.
+  // Removing a finished run's save always goes through it.
+  saves = finishFirst(saves, finished, env.now);
   const init = await initSaves(saves, INSTALLED_VERSION, env.now());
   return {
     saves,

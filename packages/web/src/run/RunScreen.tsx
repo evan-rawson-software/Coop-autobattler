@@ -216,7 +216,7 @@ function ReadyRun(props: { run: ActiveRun }) {
   );
 }
 
-function BlockedRun(props: { runId: string; message: string }) {
+function BlockedRun(props: { runId: string; message: string; reason: string }) {
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
@@ -225,11 +225,18 @@ function BlockedRun(props: { runId: string; message: string }) {
         <p data-field="reason">{props.message}</p>
         <p class="muted">
           It has not been deleted. Closing this tab or fixing the cause may let
-          it open. Discarding it removes it for good.
+          it open.
+          {props.reason === 'load_failed'
+            ? ''
+            : ' Removing the save deletes it for good, with no summary and no record.'}
         </p>
         {error === null ? null : <p class="error">{error}</p>}
         {asking ? (
           <>
+            <p data-field="remove-warning">
+              Remove this save? It is deleted for good, with no summary and no
+              record of the run.
+            </p>
             <button
               type="button"
               class="danger"
@@ -241,7 +248,7 @@ function BlockedRun(props: { runId: string; message: string }) {
                 });
               }}
             >
-              Discard it for good
+              Remove save
             </button>
             <button
               type="button"
@@ -254,16 +261,29 @@ function BlockedRun(props: { runId: string; message: string }) {
           </>
         ) : (
           <>
-            <button
-              type="button"
-              class="danger"
-              id="run-discard"
-              onClick={() => {
-                setAsking(true);
-              }}
-            >
-              Discard this run
-            </button>
+            {props.reason === 'load_failed' ? (
+              <button
+                type="button"
+                class="primary"
+                id="run-retry"
+                onClick={() => {
+                  void reloadRun(props.runId);
+                }}
+              >
+                Try again
+              </button>
+            ) : (
+              <button
+                type="button"
+                class="danger"
+                id="run-discard"
+                onClick={() => {
+                  setAsking(true);
+                }}
+              >
+                Remove save
+              </button>
+            )}
             <MenuButton />
           </>
         )}
@@ -348,7 +368,9 @@ export function RunScreen() {
         </Blocked>
       );
     case 'blocked':
-      return <BlockedRun runId={runId} message={st.message} />;
+      return (
+        <BlockedRun runId={runId} message={st.message} reason={st.reason} />
+      );
     case 'error':
       return (
         <Blocked title="Could not open the run">

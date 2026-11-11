@@ -1,13 +1,19 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, test } from 'vitest';
 import { hashJson } from '@game/core';
-import { openRun, startRun, type RunState } from '@game/session';
+import {
+  buildSaveRecord,
+  openRun,
+  startRun,
+  type RunState,
+} from '@game/session';
 import { reachStep } from './test-run.js';
 import { gameDeps, createServices, type ServiceEnv } from './services.js';
 import {
   abandonSavedRun,
   closeRun,
   createNewRun,
+  RETRY_MESSAGE,
   discardSavedRun,
   runStore,
   showRun,
@@ -202,6 +208,89 @@ describe('the run store', () => {
     const r = await discardSavedRun('broken');
     expect(r.ok).toBe(true);
     expect(await services.saves.get('broken')).toBeNull();
+    closeRun();
+  });
+});
+
+describe('abandoning and removing saves, by kind of row', () => {
+  async function seed(
+    runId: string,
+    change: (s: RunState) => Record<string, unknown>,
+    version = '0.1',
+  ): Promise<void> {
+    const { getServices } = await import('./services.js');
+    const services = await getServices();
+    const base = reachStep('build', 3);
+    const state = { ...base, runId, ...change(base) } as unknown as RunState;
+    const record = buildSaveRecord(
+      {
+        runId,
+        runVersion: version,
+        seed: 3,
+        players: ['You'],
+        host: 0,
+      },
+      state,
+      INSTALLED_VERSION,
+      5,
+    );
+    await services.saves.put(record);
+  }
+
+  async function stored(runId: string): Promise<boolean> {
+    const { getServices } = await import('./services.js');
+    return (await (await getServices()).saves.get(runId)) !== null;
+  }
+
+  test('a readable run is abandoned (not removed) and gets its summary', async () => {
+    await seed('readable', () => ({}));
+    const refused = await discardSavedRun('readable');
+    expect(refused.ok).toBe(false);
+    expect(await stored('readable')).toBe(true);
+    const r = await abandonSavedRun('readable');
+    expect(r.ok && r.state?.outcome?.reason).toBe('abandoned');
+    expect(await stored('readable')).toBe(false);
+    closeRun();
+  });
+
+  test.each([
+    ['an unsupported format', 'unsupported', { formatVersion: 1 }, '0.1'],
+    ['a newer version', 'newer', { runVersion: '9.0' }, '9.0'],
+    ['a damaged save', 'damaged', { actionCounter: 'x' }, '0.1'],
+  ])(
+    '%s cannot be abandoned, and "Remove save" deletes it with no record',
+    async (_name, runId, change, version) => {
+      const { getServices } = await import('./services.js');
+      const services = await getServices();
+      await seed(runId, () => change, version);
+      const historyBefore = (await services.saves.listHistory()).length;
+      const abandoned = await abandonSavedRun(runId);
+      expect(abandoned.ok).toBe(false);
+      expect(await stored(runId)).toBe(true);
+      const removed = await discardSavedRun(runId);
+      expect(removed).toEqual({ ok: true, state: null });
+      expect(await stored(runId)).toBe(false);
+      expect((await services.saves.listHistory()).length).toBe(historyBefore);
+      closeRun();
+    },
+  );
+
+  test('a storage read failure removes nothing and says to retry', async () => {
+    const { getServices } = await import('./services.js');
+    const services = await getServices();
+    await seed('flaky', () => ({}));
+    const realGet = services.saves.get.bind(services.saves);
+    services.saves.get = (id: string) =>
+      id === 'flaky' ? Promise.reject(new Error('busy')) : realGet(id);
+    try {
+      const a = await abandonSavedRun('flaky');
+      expect(a).toEqual({ ok: false, message: RETRY_MESSAGE });
+      const d = await discardSavedRun('flaky');
+      expect(d).toEqual({ ok: false, message: RETRY_MESSAGE });
+    } finally {
+      services.saves.get = realGet;
+    }
+    expect(await stored('flaky')).toBe(true);
     closeRun();
   });
 });

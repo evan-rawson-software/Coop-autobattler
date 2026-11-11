@@ -13,7 +13,6 @@
  */
 import {
   openRun,
-  removeRun,
   startRun,
   type HistoryEntry,
   type RunController,
@@ -117,17 +116,6 @@ function activate(
   };
   const stopWatching = services.watch(runId, markConflict);
   session = BuildSession.fromController(controller);
-  let kept = false;
-  const unsubscribe = session.store.subscribe((view) => {
-    if (view.run.step === 'run_over' && !kept) {
-      kept = true;
-      void keepFinished(services, view.run);
-    }
-  });
-  if (controller.state.step === 'run_over') {
-    kept = true;
-    void keepFinished(services, controller.state);
-  }
   return {
     session,
     deps: services.deps,
@@ -137,7 +125,6 @@ function activate(
     versionNotice,
     dispose: () => {
       stopWatching();
-      unsubscribe();
     },
   };
 }
@@ -319,11 +306,16 @@ export type AbandonResult =
   | { readonly ok: true; readonly state: RunState | null }
   | { readonly ok: false; readonly message: string };
 
+/** What to tell the player when storage could not be read (nothing is removed). */
+export const RETRY_MESSAGE =
+  'The browser could not read the saved run just now, so nothing was changed. Try again in a moment.';
+
 /**
  * Abandon a saved run from the menu: the host's `abandon` intent, so the run
  * ends on the same Run over screen as any other (`state` is its final state).
- * A save that cannot be opened is removed instead (`state` null) and recorded
- * as abandoned when it is readable enough.
+ * Only a run that can be opened is abandoned. A save that cannot be opened is
+ * never removed here (use `discardSavedRun`, the "Remove save" action), and
+ * nothing is removed when storage merely failed to read it (`load_failed`).
  */
 export async function abandonSavedRun(runId: string): Promise<AbandonResult> {
   const services = await getServices();
@@ -334,39 +326,66 @@ export async function abandonSavedRun(runId: string): Promise<AbandonResult> {
     services.saves,
     INSTALLED_VERSION,
   );
-  if (opened.ok) {
-    const r = await opened.controller.dispatch(
-      opened.controller.state.host,
-      { type: 'abandon' },
-      Date.now(),
-    );
-    if (!r.ok) {
-      return {
-        ok: false,
-        message:
-          r.reason === 'save_failed'
-            ? 'The run could not be saved, so it was not abandoned.'
-            : `The run could not be abandoned (${r.reason}).`,
-      };
+  if (!opened.ok) {
+    if (opened.reason === 'load_failed') {
+      return { ok: false, message: RETRY_MESSAGE };
     }
-    await keepFinished(services, r.state);
-    return { ok: true, state: r.state };
+    if (opened.reason === 'not_found') {
+      return { ok: false, message: 'That run is already gone.' };
+    }
+    return {
+      ok: false,
+      message: `${describeUnopenable(opened.reason, opened.errors ?? [])} It cannot be abandoned; use Remove save to delete it.`,
+    };
   }
-  return discardSavedRun(runId);
+  const r = await opened.controller.dispatch(
+    opened.controller.state.host,
+    { type: 'abandon' },
+    Date.now(),
+  );
+  if (!r.ok) {
+    return {
+      ok: false,
+      message:
+        r.reason === 'save_failed'
+          ? 'The run could not be saved, so it was not abandoned.'
+          : `The run could not be abandoned (${r.reason}).`,
+    };
+  }
+  // Normally written already (the save store keeps it before removing the
+  // save); this covers a finish that was left incomplete.
+  await keepFinished(services, r.state);
+  return { ok: true, state: r.state };
 }
 
-/** Remove a saved run without opening it (damaged or from another version). */
+/**
+ * Remove a save that cannot be opened (damaged, another format or version),
+ * with no summary and no record. Refuses a save that can be opened (that is
+ * Abandon's job) and removes nothing when storage failed to read it.
+ */
 export async function discardSavedRun(runId: string): Promise<AbandonResult> {
   const services = await getServices();
   closeRun();
-  const r = await removeRun(services.saves, runId, Date.now());
-  return r.ok
-    ? { ok: true, state: null }
-    : {
-        ok: false,
-        message:
-          r.reason === 'not_found'
-            ? 'That run is already gone.'
-            : 'The saved run could not be removed.',
-      };
+  const opened = await openRun(
+    runId,
+    services.deps,
+    services.saves,
+    INSTALLED_VERSION,
+  );
+  if (opened.ok) {
+    return {
+      ok: false,
+      message: 'This run can be opened, so it is abandoned, not removed.',
+    };
+  }
+  if (opened.reason === 'load_failed') {
+    return { ok: false, message: RETRY_MESSAGE };
+  }
+  try {
+    // Straight from the store: no history entry, so no record of the run.
+    await services.saves.remove(runId);
+    return { ok: true, state: null };
+  } catch {
+    return { ok: false, message: 'The saved run could not be removed.' };
+  }
 }
