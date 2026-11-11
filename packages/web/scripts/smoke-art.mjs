@@ -6,12 +6,13 @@
 // once normally, and once with the atlas request (then a sheet) blocked.
 
 import path from 'node:path';
+import { frames, slow } from './smoke-timing.mjs';
 
 export const spritesInfo = (page) =>
   page.evaluate(() => window.__debug?.sprites?.() ?? null);
 
 /** Wait until the sprite state leaves `idle` and `loading`. */
-export const waitSprites = (page, timeout = 15000) =>
+export const waitSprites = (page, timeout = slow(15000)) =>
   page.waitForFunction(
     () => {
       const s = window.__debug?.sprites?.();
@@ -46,7 +47,7 @@ export async function runArtSmoke({
   await page.waitForSelector('canvas[data-testid="board-canvas"]');
   await waitSprites(page);
   await settle();
-  await page.waitForTimeout(150);
+  await frames(page, 9);
   const ok = await spritesInfo(page);
   check(
     ok !== null && ok.state === 'ready',
@@ -102,7 +103,12 @@ export async function runArtSmoke({
     await p.waitForFunction(
       () => window.__debug?.camera && window.__debug.viewport().w > 0,
     );
-    await p.waitForTimeout(300);
+    // Frames are drawn once the viewport is sized; wait for the first one.
+    await p.waitForFunction(() => {
+      const s = window.__debug?.sprites?.();
+      return s !== undefined && s.spriteFrames + s.flatFrames > 0;
+    });
+    await frames(p, 18);
     const info = await spritesInfo(p);
     const inked = await inkedPixels(p);
     check(
