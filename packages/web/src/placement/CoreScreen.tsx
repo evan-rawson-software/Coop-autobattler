@@ -171,26 +171,11 @@ export function CoreScreen(props: { run: RunHandle }) {
               fit (point at a cell to see why)
             </li>
             <li>
-              <span class="swatch path" aria-hidden="true" /> Dashed: where
-              enemy units walk to reach the Core
+              <span class="swatch path" aria-hidden="true" /> Solid line: the
+              shortest route; faint dashes: other routes. Where enemy units walk
+              to reach the Core
             </li>
           </ul>
-          <p
-            class={
-              hoverCand !== null && !hoverCand.verdict.ok
-                ? 'core-hint bad'
-                : 'core-hint'
-            }
-            id="core-hint"
-            data-field="core-hint"
-            role="status"
-          >
-            {problem ??
-              shownText ??
-              (selected === null
-                ? 'Point at the map to try a position.'
-                : `Chosen: column ${String(selected.x)}, row ${String(selected.y)}.`)}
-          </p>
           {previewPos === null ? null : (
             <p class="muted" data-field="route-count">
               {routeCount === 0
@@ -224,6 +209,23 @@ export function CoreScreen(props: { run: RunHandle }) {
       }
     >
       <div class="core-board" ref={wrap}>
+        <p
+          class={
+            hoverCand !== null && !hoverCand.verdict.ok
+              ? 'core-hint bad'
+              : 'core-hint'
+          }
+          id="core-hint"
+          data-field="core-hint"
+          role="status"
+        >
+          {problem ??
+            shownText ??
+            (selected === null
+              ? 'Point at the map to try a position.'
+              : `Chosen: column ${String(selected.x)}, row ${String(selected.y)}.`)}
+        </p>
+
         <BoardView
           content={content}
           own={team}

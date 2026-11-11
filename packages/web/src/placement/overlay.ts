@@ -88,32 +88,52 @@ export function drawCoreOverlay(
   const shown = d.hover?.verdict.ok === true ? d.hover : d.selected;
   if (d.paths !== null && shown !== null && shown.verdict.ok) {
     const lw = Math.max(2.5, Math.min(7, z * 0.16));
+    // The shortest route is the one that matters: strong and solid. The
+    // others are faint and dashed.
+    let shortest = 0;
+    d.paths.forEach((p, i) => {
+      if (p.cells.length < (d.paths?.[shortest]?.cells.length ?? Infinity)) {
+        shortest = i;
+      }
+    });
     ctx.save();
-    ctx.setLineDash([lw * 1.6, lw * 1.2]);
-    ctx.lineWidth = Math.max(2, lw * 0.6);
-    ctx.strokeStyle = col.path;
-    ctx.globalAlpha = 0.6;
     ctx.lineJoin = 'round';
-    for (const p of d.paths) {
+    ctx.strokeStyle = col.path;
+    const trace = (cells: readonly Cell[]): void => {
       ctx.beginPath();
-      p.cells.forEach((c, i) => {
+      cells.forEach((c, i) => {
         const q = centre(c);
         if (i === 0) ctx.moveTo(q.x, q.y);
         else ctx.lineTo(q.x, q.y);
       });
       ctx.stroke();
+    };
+    ctx.setLineDash([lw * 1.6, lw * 1.2]);
+    ctx.lineWidth = Math.max(2, lw * 0.5);
+    ctx.globalAlpha = 0.22;
+    d.paths.forEach((p, i) => {
+      if (i !== shortest) trace(p.cells);
+    });
+    const best = d.paths[shortest];
+    if (best !== undefined) {
+      ctx.setLineDash([]);
+      ctx.lineWidth = Math.max(3, lw * 0.9);
+      ctx.globalAlpha = 0.9;
+      trace(best.cells);
     }
     ctx.restore();
     ctx.fillStyle = col.path;
-    for (const p of d.paths) {
+    d.paths.forEach((p, i) => {
       const e = centre(p.entry);
+      ctx.globalAlpha = i === shortest ? 1 : 0.3;
       ctx.beginPath();
       ctx.moveTo(e.x - z * 0.22, e.y - z * 0.3);
       ctx.lineTo(e.x + z * 0.22, e.y - z * 0.3);
       ctx.lineTo(e.x, e.y - z * 0.02);
       ctx.closePath();
       ctx.fill();
-    }
+    });
+    ctx.globalAlpha = 1;
   }
 
   const ring = (cells: readonly Cell[], color: string, w: number): void => {

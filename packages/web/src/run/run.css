@@ -114,10 +114,20 @@
   border: 2px dashed var(--path-line);
 }
 
+/* One fixed line over the board, so the reason a cell is refused is always
+   in the same place and never scrolls out of view. */
 .core-hint {
-  margin: 0.5rem 0;
+  position: absolute;
+  left: 50%;
+  bottom: 0.75rem;
+  transform: translateX(-50%);
+  z-index: 5;
+  box-sizing: border-box;
+  width: min(36rem, calc(100% - 1.5rem));
+  margin: 0;
   padding: 0.45rem 0.6rem;
-  min-height: 3.6em;
+  min-height: 2.6em;
+  pointer-events: none;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 4px;
