@@ -1,0 +1,44 @@
+{
+  "$schema": "../schemas/mapgen.schema.json",
+  "plotWidth": 24,
+  "plotDepth": 16,
+  "maxPartySize": 4,
+  "nodesPerPlot": { "common": 3, "rare": 1 },
+  "lakes": {
+    "feature": "ter_lake",
+    "countMin": 1,
+    "countMax": 2,
+    "sizeMin": 6,
+    "sizeMax": 14
+  },
+  "cliffs": {
+    "feature": "ter_cliff",
+    "countMin": 1,
+    "countMax": 2,
+    "lengthMin": 4,
+    "lengthMax": 8
+  },
+  "minBuildablePercent": 80,
+  "backMargin": 2,
+  "frontMargin": 1,
+  "sideMargin": 1,
+  "coreFrontClearance": 8,
+  "placementTries": 30,
+  "maxAttempts": 64,
+  "neutralZone": {
+    "depth": 7,
+    "lakes": {
+      "countMinPerPlot": 0,
+      "countMaxPerPlot": 1,
+      "sizeMin": 3,
+      "sizeMax": 8
+    },
+    "cliffs": {
+      "countMinPerPlot": 0,
+      "countMaxPerPlot": 1,
+      "lengthMin": 2,
+      "lengthMax": 5
+    },
+    "maxAttempts": 64
+  }
+}

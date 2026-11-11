@@ -1,0 +1,331 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "buildings.schema.json",
+  "title": "Building rules",
+  "description": "Rules for every building (CB-9, CB-26c, CB-26d). All numbers are integers; times are in ticks. Sides describe rotation 0. A building has three tiers (the same building with better numbers); the core has exactly one set of numbers and is not bought. No display text: names live in the presentation file. Cross-file references (resource IDs, unit IDs) and layout rules are checked by the core loader.",
+  "type": "object",
+  "required": ["buildings"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "buildings": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/building" }
+    }
+  },
+  "$defs": {
+    "side": { "enum": ["north", "east", "south", "west"] },
+    "positive": { "type": "integer", "minimum": 1 },
+    "nonNegative": { "type": "integer", "minimum": 0 },
+    "input": {
+      "description": "A side that accepts a resource. 'resource' is required on buildings that consume a specific resource and absent on route buildings, which carry whatever they are fed (CB-5b).",
+      "type": "object",
+      "required": ["side"],
+      "additionalProperties": false,
+      "properties": {
+        "side": { "$ref": "#/$defs/side" },
+        "resource": { "type": "string", "pattern": "^res_[a-z0-9_]+$" }
+      }
+    },
+    "tierBase": {
+      "type": "object",
+      "required": ["health", "price"],
+      "additionalProperties": false,
+      "properties": {
+        "health": { "$ref": "#/$defs/positive" },
+        "price": { "$ref": "#/$defs/nonNegative" }
+      }
+    },
+    "tierSource": {
+      "type": "object",
+      "required": ["health", "price", "intervalTicks"],
+      "additionalProperties": false,
+      "properties": {
+        "health": { "$ref": "#/$defs/positive" },
+        "price": { "$ref": "#/$defs/nonNegative" },
+        "intervalTicks": { "$ref": "#/$defs/positive" }
+      }
+    },
+    "tierUnitProducer": {
+      "type": "object",
+      "required": ["health", "price", "costPerUnit"],
+      "additionalProperties": false,
+      "properties": {
+        "health": { "$ref": "#/$defs/positive" },
+        "price": { "$ref": "#/$defs/nonNegative" },
+        "costPerUnit": { "$ref": "#/$defs/positive" }
+      }
+    },
+    "tierTurret": {
+      "type": "object",
+      "required": [
+        "health",
+        "price",
+        "damage",
+        "rangeCells",
+        "cooldownTicks",
+        "costPerShot"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "health": { "$ref": "#/$defs/positive" },
+        "price": { "$ref": "#/$defs/nonNegative" },
+        "damage": { "$ref": "#/$defs/positive" },
+        "rangeCells": { "$ref": "#/$defs/positive" },
+        "cooldownTicks": { "$ref": "#/$defs/positive" },
+        "costPerShot": { "$ref": "#/$defs/positive" }
+      }
+    },
+    "tierEconomy": {
+      "type": "object",
+      "required": ["health", "price", "costPerStep", "stepPercent", "maxSteps"],
+      "additionalProperties": false,
+      "properties": {
+        "health": { "$ref": "#/$defs/positive" },
+        "price": { "$ref": "#/$defs/nonNegative" },
+        "costPerStep": { "$ref": "#/$defs/positive" },
+        "stepPercent": { "$ref": "#/$defs/positive" },
+        "maxSteps": {
+          "description": "The cap on upgrade steps (SC-8): every in-battle economy effect is capped.",
+          "$ref": "#/$defs/positive"
+        }
+      }
+    },
+    "tierCore": {
+      "description": "The core is not bought, so it has no price.",
+      "type": "object",
+      "required": ["health"],
+      "additionalProperties": false,
+      "properties": {
+        "health": { "$ref": "#/$defs/positive" }
+      }
+    },
+    "building": {
+      "type": "object",
+      "required": ["id", "kind", "footprint", "tiers", "inputs", "outputs"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^bld_[a-z0-9_]+$" },
+        "kind": {
+          "description": "CB-9. 'refinery' is deliberately absent until refining is built.",
+          "enum": [
+            "source",
+            "route",
+            "unit_producer",
+            "defense",
+            "economy",
+            "core"
+          ]
+        },
+        "footprint": {
+          "description": "Width and height in cells at rotation 0.",
+          "type": "object",
+          "required": ["width", "height"],
+          "additionalProperties": false,
+          "properties": {
+            "width": { "$ref": "#/$defs/positive" },
+            "height": { "$ref": "#/$defs/positive" }
+          }
+        },
+        "tiers": { "type": "array" },
+        "inputs": {
+          "description": "Sides that accept a resource at rotation 0. More than one is allowed (CB-5a).",
+          "type": "array",
+          "items": { "$ref": "#/$defs/input" }
+        },
+        "outputs": {
+          "description": "Sides that emit at rotation 0.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/side" }
+        },
+        "routeType": { "enum": ["splitter", "merger", "crossover"] },
+        "unit": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" },
+        "defenseType": { "enum": ["wall", "gate", "turret"] },
+        "effect": {
+          "type": "object",
+          "required": ["type"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "enum": ["source_speed", "unit_strength"] }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": { "kind": { "const": "source" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "tiers": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": { "$ref": "#/$defs/tierSource" }
+              },
+              "routeType": false,
+              "unit": false,
+              "defenseType": false,
+              "effect": false
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": { "kind": { "const": "route" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "type": "object",
+            "required": ["routeType"],
+            "properties": {
+              "routeType": true,
+              "tiers": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": { "$ref": "#/$defs/tierBase" }
+              },
+              "unit": false,
+              "defenseType": false,
+              "effect": false
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": { "kind": { "const": "unit_producer" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "type": "object",
+            "required": ["unit"],
+            "properties": {
+              "unit": true,
+              "tiers": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": { "$ref": "#/$defs/tierUnitProducer" }
+              },
+              "routeType": false,
+              "defenseType": false,
+              "effect": false
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": { "kind": { "const": "defense" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "type": "object",
+            "required": ["defenseType"],
+            "properties": {
+              "defenseType": true,
+              "routeType": false,
+              "unit": false,
+              "effect": false
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "kind": { "const": "defense" },
+              "defenseType": { "const": "turret" }
+            },
+            "required": ["kind", "defenseType"]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "tiers": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": { "$ref": "#/$defs/tierTurret" }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "kind": { "const": "defense" },
+              "defenseType": { "enum": ["wall", "gate"] }
+            },
+            "required": ["kind", "defenseType"]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "tiers": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": { "$ref": "#/$defs/tierBase" }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": { "kind": { "const": "economy" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "type": "object",
+            "required": ["effect"],
+            "properties": {
+              "effect": true,
+              "tiers": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": { "$ref": "#/$defs/tierEconomy" }
+              },
+              "routeType": false,
+              "unit": false,
+              "defenseType": false
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": { "kind": { "const": "core" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "tiers": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 1,
+                "items": { "$ref": "#/$defs/tierCore" }
+              },
+              "routeType": false,
+              "unit": false,
+              "defenseType": false,
+              "effect": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

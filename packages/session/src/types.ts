@@ -1,0 +1,385 @@
+/**
+ * Run state, intents, effects and the injected dependencies (W2-1).
+ *
+ * Everything in `RunState` is plain JSON so a run can be saved, replayed and
+ * checked. See packages/session/README.md for the step machine.
+ */
+import type {
+  AnyReason,
+  Cell,
+  ConduitReason,
+  Content,
+  Json,
+  MapgenConfig,
+  Rng,
+  TeamState,
+} from '@game/core';
+
+export type { Json };
+
+// ---------------------------------------------------------------------------
+// Steps
+
+export const STEPS = [
+  'core_placement',
+  'build',
+  'pve_choice',
+  'pve_battle',
+  'pve_summary',
+  'event_choice',
+  'event_resolve',
+  'shop',
+  'pvp_battle',
+  'pvp_summary',
+  'run_over',
+] as const;
+
+export type Step = (typeof STEPS)[number];
+
+/**
+ * Steps a saved state can never be in. `pve_battle` and `pvp_battle` are
+ * entered and left inside one intent (the battle is resolved before anything
+ * is revealed), so they never appear in a state that `applyIntent` returns.
+ */
+export const TRANSIENT_STEPS: readonly Step[] = ['pve_battle', 'pvp_battle'];
+
+/** Which battle the current stretch of the round leads up to or follows. */
+export type Leg = 'pve' | 'pvp';
+
+// ---------------------------------------------------------------------------
+// Rules and run state
+
+/** Plain data: the numbers the step machine itself needs. */
+export interface RunRules {
+  /** Lives at the start of a run (RS-7). */
+  readonly startingLives: number;
+  /** Lives a PvP loss costs (RS-5). A PvE loss never costs a life (RS-3a). */
+  readonly pvpLossLifeCost: number;
+}
+
+export const MAX_PLAYERS = 4;
+
+export interface PlayerInfo {
+  readonly index: number;
+  readonly name: string;
+}
+
+export interface PlayerRunState {
+  readonly gold: number;
+  readonly ready: boolean;
+  /** This player's shop offers. Opaque; owned by W2-2. */
+  readonly shop: Json;
+}
+
+export type VoteTopic = 'core' | 'pve' | 'event';
+
+/**
+ * The open votes of the current step. `choices[i]` is player i's current
+ * choice or null. For `core` a choice is a `{x, y}` position; for `pve` and
+ * `event` it is the string `id` of one of the options in `pending.options`.
+ */
+export interface OpenVote {
+  readonly topic: VoteTopic;
+  readonly choices: readonly (Json | null)[];
+}
+
+export type OpponentKind = 'pve' | 'ghost' | 'boss';
+
+export interface Opponent {
+  readonly kind: OpponentKind;
+  readonly label: string;
+}
+
+export interface BattleResult {
+  readonly won: boolean;
+  readonly opponent: Opponent;
+  /** Whatever the battle implementation wants kept (seed, event log, ...). */
+  readonly detail: Json;
+}
+
+export interface PveRecord {
+  readonly difficulty: string;
+  readonly won: boolean;
+  readonly opponent: Opponent;
+}
+
+export interface PvpRecord {
+  readonly won: boolean;
+  readonly opponent: Opponent;
+}
+
+/** What was fought in a round. Null for a battle that was never fought. */
+export interface RoundRecord {
+  readonly round: number;
+  readonly pve: PveRecord | null;
+  readonly pvp: PvpRecord | null;
+}
+
+export interface LoggedAction {
+  readonly n: number;
+  readonly player: number;
+  readonly intent: Json;
+}
+
+export interface RunOutcome {
+  readonly reason: 'defeated' | 'abandoned';
+  readonly round: number;
+}
+
+export interface RunState {
+  readonly runId: string;
+  readonly runVersion: string;
+  readonly formatVersion: 1;
+  readonly seed: number;
+  /** The saved state of the run's `Rng`. */
+  readonly rng: readonly [number, number, number, number];
+  /** Accepted intents so far; equals `actionLog.length`. */
+  readonly actionCounter: number;
+  readonly players: readonly PlayerInfo[];
+  readonly host: number;
+  readonly round: number;
+  readonly step: Step;
+  readonly leg: Leg;
+  readonly lives: number;
+  readonly team: TeamState;
+  /** Parallel to `players`. */
+  readonly perPlayer: readonly PlayerRunState[];
+  readonly votes: OpenVote | null;
+  /** Step-specific data, opaque to everything but the step's owner. */
+  readonly pending: Json;
+  /** One entry per finished round (and the unfinished one at run end). */
+  readonly history: readonly RoundRecord[];
+  /** The battles fought so far in the current round. */
+  readonly thisRound: {
+    readonly pve: PveRecord | null;
+    readonly pvp: PvpRecord | null;
+  };
+  readonly actionLog: readonly LoggedAction[];
+  readonly outcome: RunOutcome | null;
+}
+
+// ---------------------------------------------------------------------------
+// Intents
+
+export type BoardIntent =
+  | {
+      readonly type: 'place_building';
+      readonly id: number;
+      readonly x: number;
+      readonly y: number;
+      readonly rotation: number;
+    }
+  | {
+      readonly type: 'move_building';
+      readonly id: number;
+      readonly x: number;
+      readonly y: number;
+      readonly rotation: number;
+    }
+  | { readonly type: 'return_building'; readonly id: number }
+  | {
+      readonly type: 'add_conduit';
+      readonly from: { readonly building: number; readonly side: string };
+      readonly to: { readonly building: number; readonly side: string };
+      readonly cells: readonly Cell[];
+    }
+  | { readonly type: 'erase_conduit'; readonly id: number };
+
+export type BuiltinIntent =
+  | { readonly type: 'propose_core'; readonly x: number; readonly y: number }
+  | { readonly type: 'vote'; readonly choice: Json }
+  | { readonly type: 'ready' }
+  | { readonly type: 'unready' }
+  | { readonly type: 'abandon' }
+  | BoardIntent;
+
+export type BuiltinIntentType = BuiltinIntent['type'];
+
+/** An intent owned by a later issue; handled through `deps.handlers`. */
+export interface ExtensionIntent {
+  readonly type: string;
+  readonly [key: string]: Json | undefined;
+}
+
+export type Intent = BuiltinIntent | ExtensionIntent;
+
+export const BUILTIN_INTENT_TYPES: readonly BuiltinIntentType[] = [
+  'propose_core',
+  'vote',
+  'ready',
+  'unready',
+  'abandon',
+  'place_building',
+  'move_building',
+  'return_building',
+  'add_conduit',
+  'erase_conduit',
+];
+
+// ---------------------------------------------------------------------------
+// Results and effects
+
+export type BuiltinReason =
+  | 'wrong_step'
+  | 'not_a_player'
+  | 'not_host'
+  | 'already_ready'
+  | 'not_ready'
+  | 'invalid_intent'
+  | 'invalid_choice'
+  | 'unknown_intent'
+  | AnyReason
+  | ConduitReason
+  | 'unknown_conduit'
+  | 'unknown_building';
+
+/** Built-in reasons, plus whatever an extension handler reports. */
+export type RejectReason = BuiltinReason | (string & Record<never, never>);
+
+export type Effect =
+  | {
+      readonly type: 'step_changed';
+      readonly from: Step;
+      readonly to: Step;
+      readonly round: number;
+    }
+  | { readonly type: 'core_placed'; readonly x: number; readonly y: number }
+  | { readonly type: 'vote_changed'; readonly player: number }
+  | {
+      readonly type: 'vote_resolved';
+      readonly topic: VoteTopic;
+      readonly choice: Json;
+    }
+  | {
+      readonly type: 'ready_changed';
+      readonly player: number;
+      readonly ready: boolean;
+    }
+  | {
+      readonly type: 'battle_resolved';
+      readonly kind: 'pve' | 'pvp';
+      readonly won: boolean;
+      readonly opponent: Opponent;
+    }
+  | { readonly type: 'life_lost'; readonly lives: number }
+  | { readonly type: 'round_started'; readonly round: number }
+  | {
+      readonly type: 'run_over';
+      readonly reason: 'defeated' | 'abandoned';
+      readonly round: number;
+    }
+  | {
+      readonly type: 'custom';
+      readonly name: string;
+      readonly data: Json;
+    };
+
+export type IntentResult =
+  | {
+      readonly ok: true;
+      readonly state: RunState;
+      readonly effects: readonly Effect[];
+    }
+  | {
+      readonly ok: false;
+      readonly reason: RejectReason;
+      readonly detail?: string;
+    };
+
+// ---------------------------------------------------------------------------
+// Dependencies
+
+/** Changes a hook may make to the run. Everything else is the machine's. */
+export interface StatePatch {
+  readonly team?: TeamState;
+  readonly perPlayer?: readonly PlayerRunState[];
+}
+
+export interface BattleInput {
+  readonly kind: 'pve' | 'pvp';
+  readonly state: RunState;
+  readonly rng: Rng;
+  /** For PvE, the option the party voted for; null for PvP. */
+  readonly option: Json | null;
+}
+
+export interface BattleResolver {
+  resolve(input: BattleInput): BattleResult;
+}
+
+export interface RunHooks {
+  /** W2-2: add the starting buildings and gold (entering `build`). */
+  startingKit(state: RunState, rng: Rng): StatePatch;
+  /** W2-3: the options for the coming PvE battle; each has a string `id`. */
+  pveOptions(state: RunState, rng: Rng): readonly Json[];
+  /** W2-3: three event offers; each has a string `id`. */
+  eventOffers(state: RunState, rng: Rng): readonly Json[];
+  /**
+   * W2-3: apply the chosen event offer. `followUp` non-null means the event
+   * needs a further choice: the step becomes `event_resolve` with
+   * `pending = {offer, followUp}` until an extension handler advances it.
+   */
+  resolveEvent(
+    state: RunState,
+    offer: Json,
+    rng: Rng,
+  ): { readonly patch: StatePatch; readonly followUp: Json | null };
+  /** W2-2: roll offers and pay base income (entering `shop`). */
+  onShopEnter(state: RunState, rng: Rng): StatePatch;
+  /** W2-3: gold for wins, consolation gold (leaving a battle summary). */
+  rewards(
+    state: RunState,
+    battle: BattleResult & { readonly kind: 'pve' | 'pvp' },
+  ): StatePatch;
+}
+
+export interface HandlerContext {
+  readonly state: RunState;
+  readonly player: number;
+  readonly intent: ExtensionIntent;
+  readonly deps: RunDeps;
+}
+
+export type HandlerResult =
+  | {
+      readonly ok: true;
+      readonly state: RunState;
+      readonly effects?: readonly Effect[];
+      /** True when the handler completed the current step. */
+      readonly advance?: boolean;
+    }
+  | {
+      readonly ok: false;
+      readonly reason: string;
+      readonly detail?: string;
+    };
+
+/**
+ * A handler for one extension intent type. It returns the new state; the
+ * machine then does the action-log bookkeeping. Use `drawStream` for
+ * randomness.
+ */
+export interface IntentHandler {
+  /** The steps in which this intent is legal; elsewhere it is `wrong_step`. */
+  readonly steps: readonly Step[];
+  handle(ctx: HandlerContext): HandlerResult;
+}
+
+export interface RunDeps {
+  readonly content: Content;
+  readonly mapgenConfig: MapgenConfig;
+  readonly rules: RunRules;
+  readonly battle: BattleResolver;
+  readonly hooks: RunHooks;
+  /** Extension intents, keyed by intent type. */
+  readonly handlers: Readonly<Record<string, IntentHandler>>;
+}
+
+export interface CreateRunArgs {
+  readonly runId: string;
+  readonly runVersion: string;
+  readonly seed: number;
+  /** Player names, 1 to 4; the index in this array is the player index. */
+  readonly players: readonly string[];
+  readonly host: number;
+}

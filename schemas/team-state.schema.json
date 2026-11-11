@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "team-state.schema.json",
+  "title": "Team state",
+  "description": "The party's whole state for combat (W1-2, W1-3): the map, the Core position, every building and every conduit. Arrays are sorted by ascending id. The Core is not an entry in buildings or stash. Instance IDs of buildings and conduits are drawn from one counter (nextId). Placement and conduit legality are checked by the validator, not by this schema.",
+  "type": "object",
+  "required": ["map", "core", "buildings", "stash", "nextId", "conduits"],
+  "additionalProperties": false,
+  "properties": {
+    "map": { "$ref": "map.schema.json" },
+    "core": {
+      "description": "The Core's lowest-x, lowest-y cell, or null before it is placed.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["x", "y"],
+          "additionalProperties": false,
+          "properties": {
+            "x": { "type": "integer", "minimum": 0 },
+            "y": { "type": "integer", "minimum": 0 }
+          }
+        }
+      ]
+    },
+    "buildings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "def", "tier", "x", "y", "rotation", "owner"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "def": { "type": "string", "pattern": "^bld_[a-z0-9_]+$" },
+          "tier": { "type": "integer", "minimum": 1, "maximum": 3 },
+          "x": { "type": "integer", "minimum": 0 },
+          "y": { "type": "integer", "minimum": 0 },
+          "rotation": { "enum": [0, 90, 180, 270] },
+          "owner": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "stash": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "def", "tier", "owner"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "def": { "type": "string", "pattern": "^bld_[a-z0-9_]+$" },
+          "tier": { "type": "integer", "minimum": 1, "maximum": 3 },
+          "owner": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "nextId": { "type": "integer", "minimum": 1 },
+    "conduits": {
+      "description": "Conduits, sorted by ascending id. Each runs from a side of one placed building to a side of another; cells is the ordered path from the cell just outside the from side to the cell just outside the to side, empty for a direct connection.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "from", "to", "cells"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "from": { "$ref": "#/$defs/conduitEnd" },
+          "to": { "$ref": "#/$defs/conduitEnd" },
+          "cells": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["x", "y"],
+              "additionalProperties": false,
+              "properties": {
+                "x": { "type": "integer", "minimum": 0 },
+                "y": { "type": "integer", "minimum": 0 }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "conduitEnd": {
+      "type": "object",
+      "required": ["building", "side"],
+      "additionalProperties": false,
+      "properties": {
+        "building": {
+          "description": "Instance ID of a placed building.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "side": { "enum": ["north", "east", "south", "west"] }
+      }
+    }
+  }
+}

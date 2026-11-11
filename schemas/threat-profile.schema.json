@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "threat-profile.schema.json",
+  "title": "Threat profile",
+  "description": "Everything a PvE battle needs to know about its scripted opponent (W1-9): the waves and the stronghold. Plain JSON, integers and strings only. See docs/rules-reference.md, \"PvE threats\".",
+  "type": "object",
+  "required": [
+    "archetype",
+    "type",
+    "round",
+    "partySize",
+    "budget",
+    "unitStrengthPercent",
+    "waves",
+    "stronghold"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "archetype": { "type": "string", "pattern": "^arch_[a-z0-9_]+$" },
+    "type": { "enum": ["easy", "medium", "hard", "boss"] },
+    "round": { "type": "integer", "minimum": 1 },
+    "partySize": { "type": "integer", "minimum": 1 },
+    "budget": {
+      "description": "The total budget the threat was generated from (SC-1).",
+      "type": "integer",
+      "minimum": 0
+    },
+    "unitStrengthPercent": {
+      "description": "Percent added to the health and damage of every wave unit.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "waves": {
+      "description": "Scheduled waves, in tick order; units of one wave share a tick.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tick", "unit", "count"],
+        "additionalProperties": false,
+        "properties": {
+          "tick": { "type": "integer", "minimum": 0 },
+          "unit": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" },
+          "count": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "stronghold": {
+      "type": "object",
+      "required": ["coreHealth", "buildings", "corePosition"],
+      "additionalProperties": false,
+      "properties": {
+        "coreHealth": { "type": "integer", "minimum": 1 },
+        "corePosition": {
+          "type": "object",
+          "required": ["x", "y"],
+          "additionalProperties": false,
+          "properties": {
+            "x": { "type": "integer", "minimum": 0 },
+            "y": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "buildings": {
+          "description": "Buildings sorted by (y, x); they get instance IDs 1, 2, ... in this order.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["def", "tier", "x", "y", "rotation"],
+            "additionalProperties": false,
+            "properties": {
+              "def": { "type": "string", "pattern": "^bld_[a-z0-9_]+$" },
+              "tier": { "type": "integer", "minimum": 1, "maximum": 3 },
+              "x": { "type": "integer", "minimum": 0 },
+              "y": { "type": "integer", "minimum": 0 },
+              "rotation": { "enum": [0, 90, 180, 270] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

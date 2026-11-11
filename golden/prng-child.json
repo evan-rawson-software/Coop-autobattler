@@ -1,0 +1,50 @@
+[
+  {
+    "id": "prng-child.map",
+    "kind": "prng-child",
+    "description": "Child stream by string label.",
+    "input": {
+      "seed": 99,
+      "label": "map",
+      "count": 5
+    },
+    "expected": {
+      "result": {
+        "parentState": [349753557, 2385026473, 2250837844, 4013813320],
+        "values": [489384857, 820460746, 1321254937, 3137657417, 3697230155]
+      }
+    }
+  },
+  {
+    "id": "prng-child.int",
+    "kind": "prng-child",
+    "description": "Child stream by integer label.",
+    "input": {
+      "seed": 99,
+      "label": 3,
+      "count": 5
+    },
+    "expected": {
+      "result": {
+        "parentState": [349753557, 2385026473, 2250837844, 4013813320],
+        "values": [3870599964, 3676758816, 4121910915, 871782889, 3418068798]
+      }
+    }
+  },
+  {
+    "id": "prng-child.unicode",
+    "kind": "prng-child",
+    "description": "Child stream, non-ASCII label.",
+    "input": {
+      "seed": 5,
+      "label": "battle-é",
+      "count": 5
+    },
+    "expected": {
+      "result": {
+        "parentState": [3533496745, 3726933447, 759973383, 2964277084],
+        "values": [4292910936, 865359641, 910285157, 3314832387, 665497784]
+      }
+    }
+  }
+]

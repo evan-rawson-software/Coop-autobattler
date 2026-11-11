@@ -1,0 +1,24 @@
+{
+  "name": "@game/web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "build": "vite build",
+    "build:debug": "vite build --mode debug --outDir dist-debug --emptyOutDir"
+  },
+  "dependencies": {
+    "@game/content": "workspace:*",
+    "@game/core": "workspace:*",
+    "@game/session": "workspace:*",
+    "preact": "11.2.0"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vite": "8.3.7",
+    "vitest": "5.1.0"
+  }
+}

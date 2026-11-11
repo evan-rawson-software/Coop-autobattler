@@ -1,0 +1,348 @@
+/* Build screen. Plain CSS on the shared custom properties. */
+
+:root {
+  --ok: #1f8a4c;
+  --bad: #c62828;
+  --warn: #b26a00;
+  --path-line: #c0392b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --ok: #4cc77d;
+    --bad: #ff6b6b;
+    --warn: #f0a020;
+    --path-line: #ff7b6b;
+  }
+}
+
+.dock-bottom.tall {
+  display: grid;
+  grid-template-columns: 1.15fr 1.45fr 1.5fr 0.8fr;
+  height: clamp(240px, 27vh, 290px);
+}
+
+.dock-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.dock-col > .panel {
+  flex: 1 1 auto;
+}
+
+.dock-col > .panel:first-child:not(:only-child) {
+  flex: 1 1 0;
+}
+
+.dock-col > .panel.fixed {
+  flex: 0 0 auto;
+}
+
+.dev-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.dev-strip input {
+  width: 7rem;
+}
+
+.muted {
+  color: var(--ink-muted);
+}
+
+.pad {
+  padding: 1rem;
+}
+
+.build-board {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.build-canvas {
+  position: relative;
+  min-height: 0;
+}
+
+.status-line {
+  padding: 0.3rem 0.7rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: 0.88rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 1.9rem;
+}
+
+.status-line.error {
+  border-top-color: var(--bad);
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.status-line.ok {
+  border-top-color: var(--ok);
+}
+
+.stash-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.stash-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.5rem;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+
+.stash-item.active,
+.tool.active,
+.toggle.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.stash-item .swatch {
+  width: 14px;
+  height: 14px;
+}
+
+.stash-tier {
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+}
+
+.stash-item.active .stash-tier {
+  color: inherit;
+}
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.tool-grid button {
+  padding: 0.18rem 0.3rem;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.insp-name {
+  margin: 0 0 0.2rem;
+  font-size: 1.05rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.7rem;
+}
+
+.insp-meta {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+.insp-desc {
+  margin: 0 0 0.3rem;
+  font-size: 0.82rem;
+}
+
+dl.props {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.8rem;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+dl.props dt {
+  color: var(--ink-muted);
+}
+
+dl.props dd {
+  margin: 0;
+}
+
+.insp-buttons {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.notice {
+  margin: 0.4rem 0 0;
+  font-weight: 600;
+}
+
+button.link {
+  background: none;
+  border: none;
+  padding: 0 0.3rem 0 0;
+  text-decoration: underline;
+  color: var(--accent);
+}
+
+.overlay-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.overlay-row button {
+  font-size: 0.82rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.inline-field {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+.inline-field input {
+  width: 5rem;
+}
+
+ul.problems {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+button.problem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.12rem 0;
+  font-size: 0.82rem;
+}
+
+button.problem:hover {
+  background: var(--surface-2);
+}
+
+.problem-mark {
+  display: inline-block;
+  width: 1.2em;
+  color: var(--warn);
+}
+
+.ok-text {
+  margin: 0;
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.party-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.1rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.party-row [data-field='ready-state'] {
+  grid-column: 1 / -1;
+}
+
+.party-next {
+  margin: 0.4rem 0;
+  font-size: 0.8rem;
+}
+
+.ready-btn {
+  width: 100%;
+  padding: 0.5rem;
+  font-weight: 700;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.ready-btn.on {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+.dry-table {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  max-height: calc(100% - 60px);
+  overflow: auto;
+  padding: 0.5rem 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.2);
+}
+
+.dry-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.3rem;
+}
+
+.dry-table table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 0.4rem;
+}
+
+.dry-table th,
+.dry-table td {
+  text-align: left;
+  padding: 0.1rem 0.6rem 0.1rem 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.dry-table th {
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.dry-table tr.bad td {
+  color: var(--bad);
+}
+
+.placeholder {
+  padding: 1rem;
+  max-width: 40rem;
+}
+
+.dock-bottom.tall > .panel:only-child {
+  grid-column: 1 / -1;
+}

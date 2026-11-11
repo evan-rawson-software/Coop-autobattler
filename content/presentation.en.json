@@ -1,0 +1,69 @@
+{
+  "$schema": "../schemas/presentation.schema.json",
+  "buildings": {
+    "bld_extractor": {
+      "name": "Extractor",
+      "description": "Built on a resource node. Produces whatever the node yields."
+    },
+    "bld_splitter": {
+      "name": "Splitter",
+      "description": "Sends one incoming flow out several sides."
+    },
+    "bld_merger": {
+      "name": "Merger",
+      "description": "Joins several flows of the same kind into one."
+    },
+    "bld_crossover": {
+      "name": "Crossover",
+      "description": "Lets two flows pass each other at right angles."
+    },
+    "bld_barracks": {
+      "name": "Barracks",
+      "description": "Consumes {res_a} to train soldiers."
+    },
+    "bld_wall": {
+      "name": "Wall",
+      "description": "Blocks enemy movement."
+    },
+    "bld_gate": {
+      "name": "Gate",
+      "description": "Blocks enemies but lets your own units through."
+    },
+    "bld_turret": {
+      "name": "Turret",
+      "description": "Needs {res_b} to fire at enemy units on your side."
+    },
+    "bld_overclocker": {
+      "name": "Overclocker",
+      "description": "Consumes {res_c} to make sources faster for the rest of the battle."
+    },
+    "bld_armory": {
+      "name": "Armory",
+      "description": "Consumes {res_a} to make units spawned later in the battle stronger."
+    },
+    "bld_core": {
+      "name": "Core",
+      "description": "Your party's health. If it falls, the battle is lost."
+    }
+  },
+  "units": {
+    "unit_soldier": {
+      "name": "Soldier",
+      "description": "Marches on the enemy Core and attacks whatever blocks the way."
+    },
+    "unit_raider": {
+      "name": "Raider",
+      "description": "Hunts enemy sources and routing buildings."
+    }
+  },
+  "terrain": {
+    "ter_lake": {
+      "name": "Lake",
+      "description": "Impassable water. Nothing can be built on it."
+    },
+    "ter_cliff": {
+      "name": "Cliff",
+      "description": "An impassable ridge. Nothing can be built on it."
+    }
+  }
+}

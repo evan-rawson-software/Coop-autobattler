@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "map.schema.json",
+  "title": "Game map",
+  "description": "A generated board (W1-1). Coordinates: x along the front edge, y = depth (0 = back row, height - 1 = front row). Lists are sorted by (y, x).",
+  "type": "object",
+  "required": [
+    "width",
+    "height",
+    "partySize",
+    "plotWidth",
+    "features",
+    "nodes"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "width": { "type": "integer", "minimum": 1 },
+    "height": { "type": "integer", "minimum": 1 },
+    "partySize": { "type": "integer", "minimum": 1 },
+    "plotWidth": { "type": "integer", "minimum": 1 },
+    "features": {
+      "type": "array",
+      "description": "Cells blocked by a natural feature.",
+      "items": {
+        "type": "object",
+        "required": ["x", "y", "feature"],
+        "additionalProperties": false,
+        "properties": {
+          "x": { "type": "integer", "minimum": 0 },
+          "y": { "type": "integer", "minimum": 0 },
+          "feature": { "type": "string", "pattern": "^ter_[a-z0-9_]+$" }
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["x", "y", "resource"],
+        "additionalProperties": false,
+        "properties": {
+          "x": { "type": "integer", "minimum": 0 },
+          "y": { "type": "integer", "minimum": 0 },
+          "resource": { "type": "string", "pattern": "^res_[a-z0-9_]+$" }
+        }
+      }
+    }
+  }
+}

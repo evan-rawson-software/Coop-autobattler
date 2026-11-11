@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "terrain.schema.json",
+  "title": "Terrain rules",
+  "description": "Rules for natural features (CB-6). Rules only; names live in the presentation file.",
+  "type": "object",
+  "required": ["features"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "features": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/feature" }
+    }
+  },
+  "$defs": {
+    "feature": {
+      "type": "object",
+      "required": ["id", "blocksBuilding", "blocksMovement"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^ter_[a-z0-9_]+$" },
+        "blocksBuilding": { "type": "boolean" },
+        "blocksMovement": { "type": "boolean" }
+      }
+    }
+  }
+}

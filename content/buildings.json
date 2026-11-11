@@ -1,0 +1,199 @@
+{
+  "$schema": "../schemas/buildings.schema.json",
+  "buildings": [
+    {
+      "id": "bld_extractor",
+      "kind": "source",
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [],
+      "outputs": ["north"],
+      "tiers": [
+        { "health": 30, "price": 10, "intervalTicks": 20 },
+        { "health": 45, "price": 25, "intervalTicks": 14 },
+        { "health": 60, "price": 50, "intervalTicks": 10 }
+      ]
+    },
+    {
+      "id": "bld_splitter",
+      "kind": "route",
+      "routeType": "splitter",
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [{ "side": "south" }],
+      "outputs": ["north", "east", "west"],
+      "tiers": [
+        { "health": 20, "price": 5 },
+        { "health": 30, "price": 12 },
+        { "health": 40, "price": 25 }
+      ]
+    },
+    {
+      "id": "bld_merger",
+      "kind": "route",
+      "routeType": "merger",
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [{ "side": "east" }, { "side": "south" }, { "side": "west" }],
+      "outputs": ["north"],
+      "tiers": [
+        { "health": 20, "price": 5 },
+        { "health": 30, "price": 12 },
+        { "health": 40, "price": 25 }
+      ]
+    },
+    {
+      "id": "bld_crossover",
+      "kind": "route",
+      "routeType": "crossover",
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [{ "side": "south" }, { "side": "west" }],
+      "outputs": ["north", "east"],
+      "tiers": [
+        { "health": 20, "price": 8 },
+        { "health": 30, "price": 18 },
+        { "health": 40, "price": 35 }
+      ]
+    },
+    {
+      "id": "bld_barracks",
+      "kind": "unit_producer",
+      "unit": "unit_soldier",
+      "footprint": { "width": 2, "height": 2 },
+      "inputs": [{ "resource": "res_a", "side": "south" }],
+      "outputs": [],
+      "tiers": [
+        { "health": 60, "price": 20, "costPerUnit": 6 },
+        { "health": 90, "price": 45, "costPerUnit": 5 },
+        { "health": 120, "price": 80, "costPerUnit": 4 }
+      ]
+    },
+    {
+      "id": "bld_wall",
+      "kind": "defense",
+      "defenseType": "wall",
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [],
+      "outputs": [],
+      "tiers": [
+        { "health": 100, "price": 4 },
+        { "health": 160, "price": 9 },
+        { "health": 240, "price": 18 }
+      ]
+    },
+    {
+      "id": "bld_gate",
+      "kind": "defense",
+      "defenseType": "gate",
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [],
+      "outputs": [],
+      "tiers": [
+        { "health": 80, "price": 8 },
+        { "health": 130, "price": 16 },
+        { "health": 200, "price": 30 }
+      ]
+    },
+    {
+      "id": "bld_turret",
+      "kind": "defense",
+      "defenseType": "turret",
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [{ "resource": "res_b", "side": "south" }],
+      "outputs": [],
+      "tiers": [
+        {
+          "health": 50,
+          "price": 15,
+          "damage": 5,
+          "rangeCells": 4,
+          "cooldownTicks": 8,
+          "costPerShot": 1
+        },
+        {
+          "health": 75,
+          "price": 35,
+          "damage": 8,
+          "rangeCells": 5,
+          "cooldownTicks": 7,
+          "costPerShot": 1
+        },
+        {
+          "health": 100,
+          "price": 65,
+          "damage": 12,
+          "rangeCells": 6,
+          "cooldownTicks": 6,
+          "costPerShot": 2
+        }
+      ]
+    },
+    {
+      "id": "bld_overclocker",
+      "kind": "economy",
+      "effect": { "type": "source_speed" },
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [{ "resource": "res_c", "side": "south" }],
+      "outputs": [],
+      "tiers": [
+        {
+          "health": 40,
+          "price": 30,
+          "costPerStep": 4,
+          "stepPercent": 5,
+          "maxSteps": 6
+        },
+        {
+          "health": 60,
+          "price": 60,
+          "costPerStep": 4,
+          "stepPercent": 6,
+          "maxSteps": 8
+        },
+        {
+          "health": 80,
+          "price": 100,
+          "costPerStep": 3,
+          "stepPercent": 8,
+          "maxSteps": 10
+        }
+      ]
+    },
+    {
+      "id": "bld_armory",
+      "kind": "economy",
+      "effect": { "type": "unit_strength" },
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [{ "resource": "res_a", "side": "south" }],
+      "outputs": [],
+      "tiers": [
+        {
+          "health": 40,
+          "price": 30,
+          "costPerStep": 6,
+          "stepPercent": 4,
+          "maxSteps": 6
+        },
+        {
+          "health": 60,
+          "price": 60,
+          "costPerStep": 6,
+          "stepPercent": 5,
+          "maxSteps": 8
+        },
+        {
+          "health": 80,
+          "price": 100,
+          "costPerStep": 5,
+          "stepPercent": 6,
+          "maxSteps": 10
+        }
+      ]
+    },
+    {
+      "id": "bld_core",
+      "kind": "core",
+      "footprint": { "width": 2, "height": 2 },
+      "inputs": [],
+      "outputs": [],
+      "tiers": [{ "health": 500 }]
+    }
+  ]
+}

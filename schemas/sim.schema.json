@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sim.schema.json",
+  "title": "Simulation configuration",
+  "description": "Battle clock, resource-flow and unit-movement constants (W1-4, W1-5). In-battle ramp caps and Overload (W1-7). Later issues add fields.",
+  "type": "object",
+  "required": [
+    "ticksPerSecond",
+    "inputBufferUnits",
+    "breachBaseCost",
+    "breachHealthPerCost",
+    "aggroRangeCells",
+    "maxSourceSpeedPercent",
+    "maxUnitStrengthPercent",
+    "overloadStartTick",
+    "overloadIntervalTicks",
+    "overloadDamageStepPercent",
+    "overloadCoreDamageStep",
+    "maxBattleTicks",
+    "timelineSampleTicks"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "ticksPerSecond": {
+      "description": "Fixed ticks per second of battle time (CB-10).",
+      "type": "integer",
+      "minimum": 1
+    },
+    "inputBufferUnits": {
+      "description": "Capacity, in units, of each consumer input buffer.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "breachBaseCost": {
+      "description": "Path cost of stepping through a cell covered by an enemy building when a base is sealed (CB-20), before the health term. An open cell costs 1.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "breachHealthPerCost": {
+      "description": "Health that adds 1 to the cost of stepping through a building (rounded up): cost = breachBaseCost + ceil(health / breachHealthPerCost).",
+      "type": "integer",
+      "minimum": 1
+    },
+    "aggroRangeCells": {
+      "description": "Manhattan range within which a unit that has no enemy in reach chases the nearest enemy unit (CB-16). 0 turns chasing off.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "maxSourceSpeedPercent": {
+      "description": "Global cap, in percent, on the summed source_speed bonus of one side (SC-8). The source interval is floor(interval * 100 / (100 + bonus)), at least 1.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "maxUnitStrengthPercent": {
+      "description": "Global cap, in percent, on the summed unit_strength bonus of one side (SC-8). A unit spawned under bonus P gets health and damage mulPct(base, 100 + P).",
+      "type": "integer",
+      "minimum": 0
+    },
+    "overloadStartTick": {
+      "description": "First battle tick of Overload level 1 (CB-12).",
+      "type": "integer",
+      "minimum": 0
+    },
+    "overloadIntervalTicks": {
+      "description": "Ticks between Overload levels; level = 1 + floor((tick - overloadStartTick) / overloadIntervalTicks) once the start tick is reached.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "overloadDamageStepPercent": {
+      "description": "Extra unit attack damage per Overload level, in percent: damage = mulPct(damage, 100 + level * step). Turrets are not affected.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "overloadCoreDamageStep": {
+      "description": "Core damage per Overload level. On every interval tick both Cores take level * step damage.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "maxBattleTicks": {
+      "description": "Hard cap on battle length in ticks (CB-33). A battle that reaches it with both Cores alive is decided by relative Core health. Overload makes this unreachable in normal play.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "timelineSampleTicks": {
+      "description": "Ticks between samples of the battle summary timeline.",
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

@@ -1,0 +1,251 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "threats.schema.json",
+  "title": "PvE threat configuration",
+  "description": "Budget curve, unit prices, layout parameters and archetype templates for scripted PvE threats (W1-9, SC-1 to SC-7). All numbers are placeholders to tune.",
+  "type": "object",
+  "required": [
+    "baseBudget",
+    "growthPercent",
+    "typeMultiplierPercent",
+    "maxPartySize",
+    "maxUnitsPerWavePerPlot",
+    "maxWallsPerPlot",
+    "maxTurretsPerPlot",
+    "minCoreHealth",
+    "compositionJitterPercent",
+    "unitCost",
+    "layouts",
+    "archetypes"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "baseBudget": {
+      "description": "B0: the budget of round 1 for a medium threat and one player.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "growthPercent": {
+      "description": "g as a percent: 135 means the budget grows by a factor 1.35 per round (floor after each step).",
+      "type": "integer",
+      "minimum": 101,
+      "maximum": 1000
+    },
+    "typeMultiplierPercent": {
+      "type": "object",
+      "required": ["easy", "medium", "hard", "boss"],
+      "additionalProperties": false,
+      "properties": {
+        "easy": { "type": "integer", "minimum": 1 },
+        "medium": { "type": "integer", "minimum": 1 },
+        "hard": { "type": "integer", "minimum": 1 },
+        "boss": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "maxPartySize": {
+      "description": "The largest party size the budget arithmetic is guaranteed safe for.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "maxUnitsPerWavePerPlot": {
+      "description": "Cap on the units of one wave per plot; leftover wave budget becomes unitStrengthPercent.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "maxWallsPerPlot": {
+      "description": "Cap on the walls of a stronghold per plot; budget above it becomes Core health.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "maxTurretsPerPlot": {
+      "description": "Cap on the turrets of a stronghold per plot; budget above it becomes Core health.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "minCoreHealth": {
+      "description": "Floor for a stronghold Core's health.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "compositionJitterPercent": {
+      "description": "Each composition weight of a wave is scaled by a random percent in -J..+J.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 99
+    },
+    "unitCost": {
+      "description": "Budget price of one unit when spending wave budget.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["unit", "cost"],
+        "additionalProperties": false,
+        "properties": {
+          "unit": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" },
+          "cost": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "layouts": {
+      "type": "object",
+      "required": ["ring", "line", "open"],
+      "additionalProperties": false,
+      "properties": {
+        "ring": {
+          "type": "object",
+          "required": [
+            "coreRow",
+            "firstRingDistance",
+            "ringSpacing",
+            "gapWidth",
+            "turretMinDistance"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "coreRow": { "type": "integer", "minimum": 0 },
+            "firstRingDistance": { "type": "integer", "minimum": 1 },
+            "ringSpacing": { "type": "integer", "minimum": 1 },
+            "gapWidth": { "type": "integer", "minimum": 1 },
+            "turretMinDistance": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "line": {
+          "type": "object",
+          "required": [
+            "coreRow",
+            "lineRow",
+            "maxRows",
+            "gapWidth",
+            "gapMargin",
+            "turretMinDistance"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "coreRow": { "type": "integer", "minimum": 0 },
+            "lineRow": { "type": "integer", "minimum": 1 },
+            "maxRows": { "type": "integer", "minimum": 1 },
+            "gapWidth": { "type": "integer", "minimum": 1 },
+            "gapMargin": { "type": "integer", "minimum": 0 },
+            "turretMinDistance": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "open": {
+          "type": "object",
+          "required": ["coreRow", "turretMinDistance"],
+          "additionalProperties": false,
+          "properties": {
+            "coreRow": { "type": "integer", "minimum": 0 },
+            "turretMinDistance": { "type": "integer", "minimum": 1 }
+          }
+        }
+      }
+    },
+    "archetypes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "bossOnly",
+          "waveSharePercent",
+          "waves",
+          "stronghold"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^arch_[a-z0-9_]+$" },
+          "bossOnly": {
+            "description": "True: never offered by pickArchetypes (used as a boss).",
+            "type": "boolean"
+          },
+          "waveSharePercent": {
+            "description": "Percent of the budget spent on waves; the rest goes to the stronghold.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "waves": {
+            "type": "object",
+            "required": [
+              "firstTick",
+              "intervalTicks",
+              "count",
+              "growthPercent",
+              "composition"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "firstTick": { "type": "integer", "minimum": 0 },
+              "intervalTicks": { "type": "integer", "minimum": 1 },
+              "count": { "type": "integer", "minimum": 1, "maximum": 12 },
+              "growthPercent": {
+                "description": "Size of a wave as a percent of the previous one.",
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 300
+              },
+              "composition": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["unit", "weight"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "unit": {
+                      "type": "string",
+                      "pattern": "^unit_[a-z0-9_]+$"
+                    },
+                    "weight": { "type": "integer", "minimum": 1 }
+                  }
+                }
+              },
+              "signature": {
+                "description": "Every Nth wave (counting from 1) consists only of this unit.",
+                "type": "object",
+                "required": ["everyNthWave", "unit"],
+                "additionalProperties": false,
+                "properties": {
+                  "everyNthWave": { "type": "integer", "minimum": 1 },
+                  "unit": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" }
+                }
+              }
+            }
+          },
+          "stronghold": {
+            "type": "object",
+            "required": [
+              "coreHealthPerBudget",
+              "wallSharePercent",
+              "turretSharePercent",
+              "layout"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "coreHealthPerBudget": {
+                "description": "Core health per 100 budget not spent on walls and turrets (a percent).",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              },
+              "wallSharePercent": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "turretSharePercent": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "layout": { "enum": ["ring", "line", "open"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

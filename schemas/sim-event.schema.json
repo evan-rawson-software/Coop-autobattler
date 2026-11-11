@@ -1,0 +1,508 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sim-event.schema.json",
+  "title": "Simulation event",
+  "description": "One entry of a battle event log. Plain JSON: integers and strings only. Later issues add event types by adding branches to oneOf. Movement along conduits is deliberately not logged. The flow events (produced, delivered, lost, stalled) appear in two forms: in a single-board flow log without `side`, and in an arena log (two boards) with `side`, the board's side (0 or 1); there, delivered names the input side `input` because `side` is the board. Unit and building events use arena coordinates.",
+  "oneOf": [
+    {
+      "title": "produced",
+      "description": "A source emitted one item (into a conduit, onward, or into a dead end).",
+      "type": "object",
+      "required": ["tick", "type", "building", "resource"],
+      "additionalProperties": false,
+      "properties": {
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "produced"
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "resource": {
+          "type": "string"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        }
+      }
+    },
+    {
+      "title": "delivered",
+      "description": "A consumer input buffer accepted one item.",
+      "type": "object",
+      "required": ["tick", "type", "building", "side", "resource"],
+      "additionalProperties": false,
+      "properties": {
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "delivered"
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "side": {
+          "enum": ["north", "east", "south", "west"]
+        },
+        "resource": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "title": "lost",
+      "description": "An item reached a dead end at this building and was discarded.",
+      "type": "object",
+      "required": ["tick", "type", "building", "resource"],
+      "additionalProperties": false,
+      "properties": {
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "lost"
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "resource": {
+          "type": "string"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        }
+      }
+    },
+    {
+      "title": "stalled",
+      "description": "A source could not place its item; recorded only on the tick it first stalls.",
+      "type": "object",
+      "required": ["tick", "type", "building"],
+      "additionalProperties": false,
+      "properties": {
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "stalled"
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        }
+      }
+    },
+    {
+      "title": "delivered (arena log)",
+      "description": "A consumer input buffer accepted one item, on the board of `side`; `input` is the input side of the building.",
+      "type": "object",
+      "required": ["tick", "type", "side", "building", "input", "resource"],
+      "additionalProperties": false,
+      "properties": {
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "delivered"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "input": {
+          "enum": ["north", "east", "south", "west"]
+        },
+        "resource": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "title": "unit_spawned",
+      "description": "A unit producer made a unit (arena coordinates).",
+      "type": "object",
+      "required": ["tick", "type", "unit", "side", "def", "x", "y", "building"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "unit_spawned"
+        },
+        "unit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "def": {
+          "type": "string"
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    {
+      "title": "unit_moved",
+      "description": "A unit moved to an adjacent cell (arena coordinates).",
+      "type": "object",
+      "required": ["tick", "type", "unit", "x", "y"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "unit_moved"
+        },
+        "unit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    {
+      "title": "unit_attacked",
+      "description": "A unit attacked a unit, a building, or a Core, dealing `damage` (applied simultaneously with all other attacks of the tick).",
+      "type": "object",
+      "required": ["tick", "type", "unit", "target", "damage"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "unit_attacked"
+        },
+        "unit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "damage": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["kind", "unit"],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "unit"
+                },
+                "unit": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": ["kind", "side", "building"],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "building"
+                },
+                "side": {
+                  "type": "integer",
+                  "enum": [0, 1]
+                },
+                "building": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": ["kind", "side"],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "core"
+                },
+                "side": {
+                  "type": "integer",
+                  "enum": [0, 1]
+                }
+              }
+            }
+          ]
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    {
+      "title": "turret_fired",
+      "description": "A turret fired at an enemy unit standing on the turret owner's own side of the front edge, adding `damage` to that unit's pending damage (resolved simultaneously with unit attacks). `side` is the turret owner's side, `building` the turret's instance ID, `unit` the target.",
+      "type": "object",
+      "required": ["tick", "type", "side", "building", "unit", "damage"],
+      "additionalProperties": false,
+      "properties": {
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "turret_fired"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "unit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "damage": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    {
+      "title": "unit_died",
+      "description": "A unit's health reached 0 or less and it was removed.",
+      "type": "object",
+      "required": ["tick", "type", "unit"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "unit_died"
+        },
+        "unit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    {
+      "title": "building_destroyed",
+      "description": "A building's health reached 0; it and its attached conduits are removed.",
+      "type": "object",
+      "required": ["tick", "type", "side", "building"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "building_destroyed"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "building": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    {
+      "title": "conduit_destroyed",
+      "description": "A conduit was removed because a building attached to it was destroyed.",
+      "type": "object",
+      "required": ["tick", "type", "side", "conduit"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "conduit_destroyed"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "conduit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    {
+      "title": "core_destroyed",
+      "description": "A side's Core was destroyed (ending the battle is not the simulation's job yet).",
+      "type": "object",
+      "required": ["tick", "type", "side"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "core_destroyed"
+        },
+        "side": {
+          "type": "integer",
+          "enum": [0, 1]
+        },
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    {
+      "title": "ramp_step",
+      "description": "An economy building completed one upgrade step (in-battle ramp).",
+      "type": "object",
+      "required": ["tick", "type", "side", "building", "effect", "steps"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "ramp_step" },
+        "side": { "type": "integer", "enum": [0, 1] },
+        "building": { "type": "integer", "minimum": 1 },
+        "effect": { "enum": ["source_speed", "unit_strength"] },
+        "steps": { "type": "integer", "minimum": 1 },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "title": "overload_started",
+      "description": "Overload level 1 began (CB-12).",
+      "type": "object",
+      "required": ["tick", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "overload_started" },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "title": "overload_level",
+      "description": "The Overload level rose to `level` (also emitted for level 1).",
+      "type": "object",
+      "required": ["tick", "type", "level"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "overload_level" },
+        "level": { "type": "integer", "minimum": 1 },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "title": "overload_core_damage",
+      "description": "Overload Core decay hit a side's living Core.",
+      "type": "object",
+      "required": ["tick", "type", "side", "damage"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "overload_core_damage" },
+        "side": { "type": "integer", "enum": [0, 1] },
+        "damage": { "type": "integer", "minimum": 1 },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "title": "zone_revealed",
+      "description": "The neutral zone between the boards, revealed at tick 0 of a battle (W1-8). The zone has the format of neutral-zone.schema.json; its coordinates are zone-local (y = 0 touches side 0's front edge).",
+      "type": "object",
+      "required": ["tick", "type", "zone"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "zone_revealed" },
+        "zone": {
+          "type": "object",
+          "required": ["width", "depth", "features", "pointsOfInterest"],
+          "additionalProperties": false,
+          "properties": {
+            "width": { "type": "integer", "minimum": 1 },
+            "depth": { "type": "integer", "minimum": 0 },
+            "features": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["x", "y", "feature"],
+                "additionalProperties": false,
+                "properties": {
+                  "x": { "type": "integer", "minimum": 0 },
+                  "y": { "type": "integer", "minimum": 0 },
+                  "feature": { "type": "string", "pattern": "^ter_[a-z0-9_]+$" }
+                }
+              }
+            },
+            "pointsOfInterest": { "type": "array" }
+          }
+        },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "title": "battle_ended",
+      "description": "The last event of a battle: the winner (0 = the party, 1 = the opponent) and why. Its tick is the last tick that ran.",
+      "type": "object",
+      "required": ["tick", "type", "winner", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "battle_ended" },
+        "winner": { "type": "integer", "enum": [0, 1] },
+        "reason": {
+          "enum": [
+            "core_destroyed",
+            "tiebreak_overkill",
+            "tiebreak_defender",
+            "time_limit"
+          ]
+        },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
+    }
+  ]
+}

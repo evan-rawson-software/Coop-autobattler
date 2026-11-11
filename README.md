@@ -7,11 +7,17 @@ against a mix of PvE encounters and asynchronous PvP "ghost" parties. PvE diffic
 exponentially, so every run eventually ends in defeat — the question is how far
 you get.
 
-The project is in the **specification phase**. Nothing is implemented yet.
+The project is in the **specification phase**. Only the repository scaffolding
+for the web proof of concept exists; no game logic is implemented yet.
 
 Plan: (1) an offline, single-player **web proof of concept** for early
 playtesting, (2) a port to **Godot**, (3) co-op and online ghost PvP on
 **Steam**.
+
+## Development
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the repository layout, the
+commands, and the layer rule.
 
 ## Specifications
 

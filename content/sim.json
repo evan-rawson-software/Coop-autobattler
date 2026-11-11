@@ -1,0 +1,16 @@
+{
+  "$schema": "../schemas/sim.schema.json",
+  "ticksPerSecond": 10,
+  "inputBufferUnits": 4,
+  "breachBaseCost": 10,
+  "breachHealthPerCost": 10,
+  "aggroRangeCells": 3,
+  "maxSourceSpeedPercent": 300,
+  "maxUnitStrengthPercent": 300,
+  "overloadStartTick": 2400,
+  "overloadIntervalTicks": 100,
+  "overloadDamageStepPercent": 20,
+  "overloadCoreDamageStep": 5,
+  "maxBattleTicks": 12000,
+  "timelineSampleTicks": 50
+}

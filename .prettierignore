@@ -1,0 +1,10 @@
+docs/
+README.md
+pnpm-lock.yaml
+dist/
+coverage/
+node_modules/
+.claude/
+golden/
+dist-debug/
+smoke-output/
