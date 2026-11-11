@@ -1204,13 +1204,16 @@ bounds". Implemented in `geometry.ts` (helpers) and `unit-motion.ts`
 
 **Scale.** One cell is `CELL_UNITS = 240` sub-cell units. Arena cell `(cx, cy)`
 is the closed square `[240 cx, 240 cx + 240] x [240 cy, 240 cy + 240]`, and the
-arena is the rectangle `[0, 240 W] x [0, 240 H]`. The **cell of a unit** (for
-its decisions, and for the turret row test, below) is taken **in the frame of
-its side**: for side 0 it is `(floor(px / 240), floor(py / 240))`; for side 1
-the position is rotated first, the cell is `(W - 1 - floor((240 W - px) / 240),
-H - 1 - floor((240 H - py) / 240))`. A centre exactly on a cell boundary
-therefore belongs to the lower cell of its own side's frame, so that a mirrored
-battle stays exactly symmetric. Both are clamped into the arena. 240 was chosen so that the
+arena is the rectangle `[0, 240 W] x [0, 240 H]`. The **cell of a unit** is taken
+**in the frame of a side**: for side 0 it is `(floor(px / 240), floor(py /
+240))`; for side 1 the position is rotated first, the cell is `(W - 1 -
+floor((240 W - px) / 240), H - 1 - floor((240 H - py) / 240))`. A centre
+exactly on a cell boundary therefore belongs, in the frame of side 0, to the
+cell with the higher coordinate (`py = 240 k` is row `k`) and, in the frame of
+side 1, to the cell with the lower arena coordinate (`py = 240 k` is row
+`k - 1`), so that a mirrored battle stays exactly symmetric. The frame used is
+that of the unit's own side for the unit's decisions, and that of the
+**turret's owner** for the turret row test (see "Turret fire"). Both are clamped into the arena. 240 was chosen so that the
 placeholder radii (0.30 and 0.25 cell) and the speeds derived from the move
 cooldowns below are exact integers.
 
@@ -1439,9 +1442,10 @@ exactly like the original.
    **Turret fire.** After every unit has decided (same snapshot), each living
    turret, side 0 first and each side in instance-ID order, with `cooldown = 0`
    and `charge = costPerShot`, looks for a target: an enemy unit whose **cell
-   row** (`floor(py / 240)`) is inside the arena rows of the **turret owner's
-   own board** (side 0: rows `0 .. h - 1`; side 1: rows `H - h .. H - 1`; the
-   gap and the enemy board never qualify) and that is **in range**:
+   row**, taken **in the frame of the turret's owner** (side 0: `floor(py /
+   240)`; side 1: `H - 1 - floor((240 H - py) / 240)`, "Unit geometry"), is
+   inside the arena rows of the **turret owner's own board** (side 0: rows `0 .. h - 1`; side 1: rows `H - h .. H - 1`; the
+   gap and the enemy board never qualify; so a unit with `py = 240 h` exactly is in the gap row for a side 0 turret, and one with `py = 240 (H - h)` exactly is in the gap row for a side 1 turret, whatever its own side) and that is **in range**:
    `buildingDist2(px, py, turret) <= (rangeCells * 240 + R)^2` with `R` the
    unit's `radius` and `rangeCells` the turret tier's range, that is, the gap
    from the unit's circle to the nearest point of the turret's cells is at

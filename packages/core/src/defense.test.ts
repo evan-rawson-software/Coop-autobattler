@@ -322,6 +322,47 @@ describe('turrets', () => {
     expect(u.hp).toBeLessThan(1000);
   });
 
+  test('the row of a unit on a cell boundary is taken in the frame of the turret owner', () => {
+    // The front edge of each board is a cell boundary: arena y = 16 * 240 for
+    // side 0's board (rows 0..15), y = 20 * 240 for side 1's (rows 20..35).
+    // In the owner's frame a centre exactly on it belongs to the gap row next
+    // to the board, so a turret does not fire; one unit lower it does. The
+    // unit's own frame would give the opposite answer (a side 1 unit at
+    // y = 3840 would count as row 15), which is not the rule.
+    const fireAt = (turretSide: 0 | 1, py: number): number => {
+      const lab = new Lab(tiny(ALL_B([3])));
+      lab.core(8, 0);
+      turretLane(lab, 3, 15);
+      const a = turretSide === 0 ? lab.state : coreOnly();
+      const b = turretSide === 0 ? coreOnly() : lab.state;
+      const { sim, ctx, events } = startArenaBattle(
+        a,
+        b,
+        GAP,
+        postContent,
+        simConfig,
+      );
+      // The foe belongs to the other side; park it in the gap while the
+      // turret charges, then step it onto the tested position.
+      const foe = spawnUnitForTest(sim, ctx, {
+        side: 1 - turretSide,
+        def: 'unit_post',
+        x: turretSide === 0 ? 5 : 6,
+        y: 17,
+      });
+      for (let t = 0; t < 100; t++) stepArena(sim, ctx);
+      expect(ofType(events, 'turret_fired')).toEqual([]);
+      foe.px = mid(turretSide === 0 ? 5 : 6);
+      foe.py = py;
+      stepArena(sim, ctx);
+      return ofType(events, 'turret_fired').length;
+    };
+    expect(fireAt(0, 16 * 240)).toBe(0);
+    expect(fireAt(0, 16 * 240 - 1)).toBe(1);
+    expect(fireAt(1, 20 * 240)).toBe(0);
+    expect(fireAt(1, 20 * 240 + 1)).toBe(1);
+  });
+
   test('an unpowered turret never fires; restored supply restores fire', () => {
     const none = turretBoard(false);
     const a = startArenaBattle(
