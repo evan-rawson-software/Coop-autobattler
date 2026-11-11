@@ -763,7 +763,7 @@ export async function runRunSmoke({
   await page.waitForSelector('#run-conflict', { timeout: 8000 });
   check(
     /changed in another tab/i.test(
-      await page.locator('#run-conflict').innerText(),
+      await page.locator('.run-blocked').first().innerText(),
     ),
     'a run changed in another tab shows "This run changed in another tab" here',
   );
@@ -838,7 +838,7 @@ export async function runRunSmoke({
   );
   const records = await page.locator('#records').innerText();
   check(
-    /1 player\s+round 1/.test(records),
+    /1 player\s+round 2/.test(records),
     `records: the abandoned run's depth is kept ("${records.replace(/\s+/g, ' ')}")`,
   );
 
@@ -894,7 +894,17 @@ export async function runRunSmoke({
   check(sc2.ok, `Run over: no horizontal scroll at 1366x768 (${sc2.sw})`);
   await page.setViewportSize({ width: 1920, height: 1080 });
   await settle();
-  await reloadSame('Run over after defeat');
+  {
+    // A finished run has no live state: compare what the screen shows.
+    const before = await page.locator('#run-over').innerText();
+    await page.reload();
+    await page.waitForSelector('#run-over');
+    await settle();
+    check(
+      (await page.locator('#run-over').innerText()) === before,
+      'reload at Run over after defeat: same screen and same summary',
+    );
+  }
   void roundsBefore;
 
   // New run from the run-over screen goes to Core placement.
