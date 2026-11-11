@@ -90,8 +90,13 @@ describe('a save that cannot be opened is kept', () => {
     ],
     [
       'a newer game version',
-      (r) => ({ ...r, runVersion: '9.0' }),
-      /newer version|damaged|format/,
+      (r) => ({
+        ...r,
+        runVersion: '9.0',
+        createArgs: { ...(r['createArgs'] as object), runVersion: '9.0' },
+        state: { ...(r['state'] as object), runVersion: '9.0' },
+      }),
+      /newer version of the game/,
     ],
   ];
 
@@ -113,7 +118,14 @@ describe('a save that cannot be opened is kept', () => {
   });
 
   test('every reason has plain wording', () => {
-    for (const r of ['corrupt', 'newer', 'older_major', 'load_failed', 'x']) {
+    for (const r of [
+      'corrupt',
+      'unsupported_format',
+      'newer',
+      'older_major',
+      'load_failed',
+      'x',
+    ]) {
       expect(describeUnopenable(r)).toMatch(/\.$/);
     }
   });
