@@ -1532,8 +1532,16 @@ exactly like the original.
         same order of ids for the mirrored pair) stays symmetric.
       All pushes of the pass are summed per mover from the positions at the
       start of the pass (so the order of pairs does not matter) and added to
-      the mover's `T`, which is then passed through `pushOutSolid` once. The
-      passes stop early when a pass finds no overlapping pair.
+      the mover's `T`. A mover whose summed push is `(0, 0)` (it has no
+      overlapping neighbour in this pass) **keeps its `T` unchanged and skips
+      `pushOutSolid`**; every mover with a nonzero summed push has the push
+      added and the result passed through `pushOutSolid` once. This is a
+      rule, not an optimisation: `pushOutSolid` is not idempotent, so applying
+      it to a mover that was not pushed can move it. The passes stop early
+      when a pass finds no overlapping pair. Examining, in the later passes,
+      only the movers whose 3x3 neighbourhood changed in the previous pass is
+      an optimisation with identical results (an unexamined mover has a zero
+      push and so keeps its `T`), not a rule.
    3. **Acceptance (the safety net).** A mover ends the tick either at its
       relaxed `T` or at its previous position `p`; an anchored unit stays at
       `p`. A mover is **clear** when its `T` fits for its side and its circle
