@@ -27,6 +27,14 @@
           "params": {
             "description": "Numbers and strings read by the event type's handler.",
             "type": "object",
+            "properties": {
+              "workshopPricePercent": {
+                "description": "Workshop only: the percentage of the shop price (at the tier being raised to) a player pays to raise one of their buildings by one tier. Rounded down.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              }
+            },
             "additionalProperties": {
               "oneOf": [{ "type": "integer" }, { "type": "string" }]
             }

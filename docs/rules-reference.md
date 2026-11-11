@@ -2636,6 +2636,51 @@ of the action log reproduces it. The `vote_resolved` effect lists `tickets`
 (every vote in player order) and, for a random pick, `picked: { player, random:
 true }`.
 
+### Ready (CP-17, CP-17a)
+
+`ready` and `unready` are legal in `build`, `shop`, `pve_summary` and
+`pvp_summary`. A step ends when every player is ready (a solo player's `ready`
+ends it at once); the ready flags are cleared on entering the next step.
+**Ready locks editing (issue #58):** in `build` and `shop`, while a player is
+ready, every intent of theirs other than `unready` (and `abandon` by the host)
+is rejected with `locked_ready`: `buy`, `sell`, `reroll`, the board edits
+(`place_building`, `move_building`, `return_building`, `add_conduit`,
+`erase_conduit`) and any extension intent a handler allows in those steps.
+The step check comes first (a `vote` in `build` is still `wrong_step`), and
+`ready` while ready is still `already_ready`. Other players are not affected.
+`allowedIntents` leaves the locked intents out. Because the step ends the
+moment the last player readies, an unready is always possible while the flag
+is set. The summary steps have nothing to edit and are not locked.
+
+### Sealed unit producers (issue #37, part 3a)
+
+`ready` in `build` or `shop` is rejected with `sealed_producer`, with the
+building ids in `detail` (ascending, comma separated, such as `"12,15"`), while
+`sealedProducers(team, content)` (core, `sealed-producers.ts`) is not empty.
+The check is on the whole shared board, whoever sent `ready`. A placed unit
+producer (a building whose kind is `unit_producer`) is **sealed** when its
+units could not reach the front row:
+
+- The board is read as the arena reads side 0 (`createArena` and `openFor`
+  from the arena code, unchanged). A cell is **walkable** if it is not terrain
+  that blocks movement (lake, cliff) and not covered by a building or the
+  Core, except that a **gate is walkable** (it lets its own side through,
+  `blocksUnit`). Conduits are not obstacles. Movement is 4-directional.
+- The **front row** is the board's last row, `y = height - 1`, next to the
+  neutral zone. The zone itself is not consulted.
+- A producer is **not sealed** if one of its footprint cells is on the front
+  row (it can spawn onto the first zone row), or if at least one **spawn cell**
+  (a cell 4-adjacent to its footprint, inside the board) is walkable and a chain
+  of 4-adjacent walkable cells joins it to a walkable cell of the front row.
+  Otherwise it is sealed. This is the spawn rule of the arena ("where to
+  spawn") without its preference ordering: only whether a route exists.
+- Unplaced buildings (the stash) never count; a building that is not a unit
+  producer is never listed. The search is one breadth-first pass from the front
+  row (about a millisecond on a full four-plot board).
+
+The summary steps are not checked. `sealedProducers(state, deps)` in the session
+package gives the same list for a screen.
+
 ### Events (RS-4)
 
 `content/events.json` lists event definitions `{ id, type, weight,
@@ -2671,11 +2716,66 @@ because wiring requires an event definition whose handler is `alwaysAvailable`
 `validateRunState` (1 or more offers in `event_choice`) and the schema accept
 any number of offers from 1 to `offerCount`. More event types will come later.
 
-- **Workshop** (`params.tiers`, default 1): available when some owned building
-  (placed or in the stash) is below tier 3. Follow-up options, in instance ID
-  order: `{ id: "b<instance id>", building, def, tier, owner, placed }` for
-  every owned building below tier 3. The chosen building is raised by `tiers`
-  tiers, stopping at 3 (`raiseTier`).
+- **Workshop** (`params.workshopPricePercent`, 80; an integer from 1 to 100,
+  checked by the schema and at wiring): every player may raise ONE building
+  they own by one tier, paying from their own gold. Issue #50 replaced the
+  earlier party-wide free upgrade.
+  - *Available* when, at the moment the offers are generated, at least one
+    player owns a building (placed or in the stash) below tier 3 whose
+    upgrade price their gold covers. The offer stores `workshopPricePercent`.
+  - *Price* of raising a building of definition `d` from tier `t` to `t + 1`:
+    `floor(tierPrice(d, t + 1) * workshopPricePercent / 100)`. `tierPrice` is
+    the shop price of that tier (the function the shop rolls offers with), the
+    division is integer division rounding down, so with 80% a tier price of 9
+    gives 7. A building at tier 3 is never an option; events never add a
+    building.
+  - *Follow-up.* After the party votes for the Workshop (the usual party vote)
+    the step is `event_resolve` with `pending.followUp = { prompt:
+    "workshop_building", perPlayer: true, options, votes }`. `options` lists,
+    for every player, the buildings they own below tier 3, in player then
+    instance order: `{ id: "b<instance id>", player, building, def, tier,
+    newTier, price, placed, affordable }`. `votes[i]` is player i's choice (an
+    option id or `"skip"`) or null; it is the only record of who has chosen.
+    A player who cannot afford any of their options starts with `"skip"`
+    already chosen (they have nothing else to choose); if nobody can, there
+    are no options and the step goes straight to the shop. Stored option data
+    is never trusted: `validateRunState` checks only the STRUCTURE of each
+    option (id format, `player` in range, the building exists and belongs to
+    that player, `def` and `tier` match the building's current tier,
+    `newTier = tier + 1 <= 3`, `placed` matches, `price` a non-negative
+    safe integer, `affordable` a boolean) and compares nothing with content
+    prices or gold, so a run saved under an older minor version stays
+    openable under changed prices. A tampered structure is rejected
+    (`invalid_choice` in `event_choose`). A save made under run-state format 2
+    (the old party-wide Workshop) is
+    `unsupported_format`; the format version is now 3.
+  - *Choosing.* Each player sends `{ type: "event_choose", choice }` with one of
+    their own option ids or `"skip"`. `skip` is always allowed, also when an
+    upgrade is affordable. Another player's option is rejected with
+    `not_owner`, an unknown id with `invalid_choice`, and an option the
+    player's gold does not cover with `not_enough_gold`. Affordability is
+    checked when a player submits a choice, against current content
+    (`workshopPrice(content, def, tier + 1, percent)` with the offer's stored
+    percent) and the player's gold at that moment; the stored `price` and
+    `affordable` are display data and are ignored, so a player who could pay
+    the stored price but not the current one gets `not_enough_gold` and can
+    still skip. The price is computed again from current content and charged
+    when the last player has chosen; a stored choice that can no longer be
+    paid then (or whose building is no longer eligible) is applied as a skip
+    for that player: no charge, no upgrade, and nobody's submission is
+    rejected for it. `votes` pre-filled with `skip` (a player with nothing
+    affordable when the offer was made) can be changed like any other choice. A choice is stored at once and may be changed until
+    the last player has chosen; nothing is applied before that. There is no
+    party vote on the building and no random draw.
+  - *Applying.* When every player has chosen, the choices are applied in
+    player order (price taken from the player's gold, `raiseTier` on the
+    building) and the run goes to the shop. With one player the first choice
+    applies at once. The `event_resolved` custom effect carries `choices`
+    (the votes in player order) instead of `choice`, and `applied`: one entry
+    per player in player order, `{ player, result: 'skip' }`, `{ player,
+    result: 'upgrade', building, def, newTier, price }` (the price charged), or
+    `{ player, result: 'skip', dropped: true, reason }` when a chosen upgrade
+    was dropped (`not_enough_gold`, `invalid_choice`, `cannot_raise`).
 - **Shrine** (`params.choices`, default 3): available when a modifier can be
   taken. The offer lists up to `choices` modifier IDs, a random subset of the
   modifiers not already held (stackable ones are always eligible), in file
@@ -2688,12 +2788,14 @@ After the party votes for an offer (the usual party vote, see "Party votes"
 above), a handler with no follow-up applies at once and the step goes to the
 shop; so does a follow-up that lists no options (nobody could answer it). A
 handler that can return a follow-up declares `canAskFollowUp` and must have a
-`choose` function (checked when the deps are built). Otherwise the step
+`choose` function (a party vote) or a `chooseEach` function (a per-player
+follow-up, the Workshop), checked when the deps are built. Otherwise the step
 becomes `event_resolve` with `pending = { offer, followUp: { prompt, options,
 votes } }`, and each player sends `{ type:
 "event_choose", choice: <option id> }`. Votes count at once and can be
 changed; when all players have voted the winner (see "Party votes") is
-applied and the step goes to the shop.
+applied and the step goes to the shop. A follow-up with `perPlayer: true` (the
+Workshop) is not a vote: see the Workshop above.
 
 ### Battles and playback
 

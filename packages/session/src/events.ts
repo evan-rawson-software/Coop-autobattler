@@ -18,8 +18,11 @@
  *   { prompt, options: [{ id, ... }], votes: (string | null)[] }
  * The party votes with `{ type: 'event_choose', choice: <option id> }`; the
  * winner is the unanimous choice or, if the votes are split, one player's vote
- * picked at random (as for every other vote). Events never add a building to
- * a stash.
+ * picked at random (as for every other vote). A follow-up with `perPlayer:
+ * true` (the Workshop) is not a party vote: every option carries the `player`
+ * who may take it, each player chooses for themselves (or `skip`), and the
+ * choices are applied together, in player order, once the last player has
+ * chosen. Events never add a building to a stash.
  */
 import {
   Rng,
@@ -28,12 +31,17 @@ import {
   pickWeightedIndex,
   raiseTier,
   withModifier,
+  workshopOptions,
   type Content,
   type EventDef,
   type EventsConfig,
-  type TeamState,
 } from '@game/core';
 import { tally, voteResolvedEffect } from './machine.js';
+import {
+  DEFAULT_WORKSHOP_PERCENT,
+  currentWorkshopPrice,
+  workshopOptionProblem,
+} from './workshop-option.js';
 import { streamLabels } from './streams.js';
 import type {
   Effect,
@@ -71,10 +79,31 @@ export interface FollowUpSpec {
   readonly prompt: string;
   /** Each has a string `id`. */
   readonly options: readonly Json[];
+  /**
+   * True if every player chooses for themselves instead of the party voting
+   * (the Workshop). Each option then has a numeric `player`, the only player
+   * who may take it, and the id `skip` is always allowed. The handler needs
+   * `chooseEach` (and may use `checkChoice`).
+   */
+  readonly perPlayer?: true;
+  /**
+   * Per-player follow-ups only: choices that are already made when the step
+   * opens, one entry per player (an option id, or null for not yet chosen).
+   * Used for a player who has nothing to choose but `skip`.
+   */
+  readonly initialVotes?: readonly (string | null)[];
 }
 
 export type ChooseResult =
-  | { readonly ok: true; readonly patch: StatePatch }
+  | {
+      readonly ok: true;
+      readonly patch: StatePatch;
+      /**
+       * Per-player follow-ups: what was actually applied for each player, in
+       * player order. Recorded in the `event_resolved` effect as `applied`.
+       */
+      readonly applied?: readonly Json[];
+    }
   | { readonly ok: false; readonly reason: string };
 
 export interface EventHandler {
@@ -90,7 +119,8 @@ export interface EventHandler {
    */
   readonly alwaysAvailable?: boolean;
   /**
-   * True if `resolve` may return a follow-up. Wiring then requires `choose`.
+   * True if `resolve` may return a follow-up. Wiring then requires `choose`
+   * (or `chooseEach` for a per-player follow-up).
    * (`resolve` returning a follow-up without this flag is an error.)
    */
   readonly canAskFollowUp?: boolean;
@@ -107,6 +137,27 @@ export interface EventHandler {
   ): { readonly patch: StatePatch; readonly followUp: FollowUpSpec | null };
   /** Apply the follow-up option the party chose. */
   choose?(ctx: EventContext, offer: EventOffer, option: Json): ChooseResult;
+  /**
+   * Per-player follow-ups: a reason `player` may not take `option` now, or
+   * null. Called on every submission, before the choice is stored.
+   */
+  checkChoice?(
+    ctx: EventContext,
+    offer: EventOffer,
+    player: number,
+    option: Json,
+  ): string | null;
+  /**
+   * Per-player follow-ups: apply every player's choice, in player order.
+   * `picks[i]` is player i's chosen option, or null for `skip`. A stored
+   * pick that no longer holds is applied as a skip, never rejected: only the
+   * submitting player's own choice can cause a rejection (`checkChoice`).
+   */
+  chooseEach?(
+    ctx: EventContext,
+    offer: EventOffer,
+    picks: readonly (Json | null)[],
+  ): ChooseResult;
 }
 
 export type EventHandlers = Readonly<Record<string, EventHandler>>;
@@ -143,85 +194,171 @@ function toOffer(v: Json): EventOffer | null {
 }
 
 // ---------------------------------------------------------------------------
-// Workshop: raise one owned building by one tier
+// Workshop: every player may raise one building they own by one tier (#50)
 
-interface Raisable {
-  readonly id: number;
-  readonly def: string;
-  readonly tier: number;
-  readonly owner: number;
-  readonly placed: boolean;
+/** The id of the choice that takes no upgrade. */
+export const SKIP_CHOICE = 'skip';
+
+function workshopPercent(def: EventDef): number {
+  return intParam(def, 'workshopPricePercent', 80);
 }
 
-function raisable(team: TeamState): Raisable[] {
-  const out: Raisable[] = [];
-  for (const b of team.buildings) {
-    if (b.tier < 3) {
-      out.push({
-        id: b.id,
-        def: b.def,
-        tier: b.tier,
-        owner: b.owner,
-        placed: true,
-      });
-    }
-  }
-  for (const b of team.stash) {
-    if (b.tier < 3) {
-      out.push({
-        id: b.id,
-        def: b.def,
-        tier: b.tier,
-        owner: b.owner,
-        placed: false,
-      });
-    }
-  }
-  return out.sort((a, b) => a.id - b.id);
+function offerPercent(offer: EventOffer): number {
+  const v = offer['workshopPricePercent'];
+  return typeof v === 'number' ? v : DEFAULT_WORKSHOP_PERCENT;
+}
+
+/** True if some player owns a raisable building they can pay for. */
+function anyAffordable(ctx: EventContext, percent: number): boolean {
+  return ctx.state.players.some((_p, i) =>
+    workshopOptions(
+      ctx.state.team,
+      i,
+      ctx.state.perPlayer[i]?.gold ?? 0,
+      ctx.content,
+      percent,
+    ).some((o) => o.affordable),
+  );
 }
 
 export const workshopHandler: EventHandler = {
   type: 'workshop',
   canAskFollowUp: true,
   checkParams(def) {
-    const t = def.params['tiers'];
-    return t === undefined || (typeof t === 'number' && t >= 1 && t <= 2)
+    const p = def.params['workshopPricePercent'];
+    return typeof p === 'number' && Number.isInteger(p) && p >= 1 && p <= 100
       ? null
-      : '"tiers" must be 1 or 2';
+      : '"workshopPricePercent" must be an integer from 1 to 100';
   },
-  available: ({ state }) => raisable(state.team).length > 0,
-  instantiate: (_ctx, def) => ({ tiers: intParam(def, 'tiers', 1) }),
-  resolve({ state }) {
+  available: (ctx, def) => anyAffordable(ctx, workshopPercent(def)),
+  instantiate: (_ctx, def) => ({
+    workshopPricePercent: workshopPercent(def),
+  }),
+  resolve(ctx, offer) {
+    const { state, content } = ctx;
+    const percent = offerPercent(offer);
+    const options: Json[] = [];
+    const initialVotes: (string | null)[] = [];
+    let any = false;
+    for (let player = 0; player < state.players.length; player++) {
+      const mine = workshopOptions(
+        state.team,
+        player,
+        state.perPlayer[player]?.gold ?? 0,
+        content,
+        percent,
+      );
+      const canAct = mine.some((o) => o.affordable);
+      any = any || canAct;
+      // A player with nothing they can pay for has only `skip`: already chosen.
+      initialVotes.push(canAct ? null : SKIP_CHOICE);
+      for (const o of mine) {
+        options.push({
+          id: `b${String(o.building)}`,
+          player,
+          building: o.building,
+          def: o.def,
+          tier: o.tier,
+          newTier: o.newTier,
+          price: o.price,
+          placed: o.placed,
+          affordable: o.affordable,
+        });
+      }
+    }
     return {
       patch: {},
+      // Nobody can act: no options, so the step is skipped.
       followUp: {
         prompt: 'workshop_building',
-        options: raisable(state.team).map((b): Json => ({
-          id: `b${String(b.id)}`,
-          building: b.id,
-          def: b.def,
-          tier: b.tier,
-          owner: b.owner,
-          placed: b.placed,
-        })),
+        options: any ? options : [],
+        perPlayer: true,
+        initialVotes,
       },
     };
   },
-  choose({ state }, offer, option) {
-    const id = isRecord(option) ? option['building'] : undefined;
-    if (typeof id !== 'number') return { ok: false, reason: 'invalid_choice' };
-    const tiers = typeof offer['tiers'] === 'number' ? offer['tiers'] : 1;
-    let team = state.team;
-    let raised = 0;
-    for (let i = 0; i < tiers; i++) {
-      const r = raiseTier(team, { id });
-      if (!r.ok) break;
-      team = r.state;
-      raised += 1;
+  checkChoice({ state, content }, offer, player, option) {
+    // The structure is checked against the actual building; the stored price
+    // and `affordable` are ignored. The price charged is computed now from
+    // current content, against the player's gold at this moment.
+    if (!isRecord(option) || option['player'] !== player) return 'not_owner';
+    if (workshopOptionProblem(state.team, player, option) !== null) {
+      return 'invalid_choice';
     }
-    return raised === 0
-      ? { ok: false, reason: 'cannot_raise' }
-      : { ok: true, patch: { team } };
+    const price = currentWorkshopPrice(
+      content,
+      offerPercent(offer),
+      option['def'] as string,
+      option['tier'] as number,
+    );
+    if (price === null) return 'invalid_choice';
+    const gold = state.perPlayer[player]?.gold ?? 0;
+    return gold >= price ? null : 'not_enough_gold';
+  },
+  chooseEach({ state, content }, offer, picks) {
+    // Every stored pick is re-checked against current content and the
+    // player's current gold. One that no longer holds (cannot be paid, the
+    // building is no longer eligible) is applied as a skip: no charge, no
+    // upgrade. Nobody's submission is rejected for another player's pick.
+    let team = state.team;
+    let perPlayer = state.perPlayer;
+    const applied: Json[] = [];
+    for (let player = 0; player < picks.length; player++) {
+      const pick = picks[player];
+      if (pick === null || pick === undefined) {
+        applied.push({ player, result: 'skip' });
+        continue;
+      }
+      const dropped = (reason: string): Json => ({
+        player,
+        result: 'skip',
+        dropped: true,
+        reason,
+      });
+      const me = perPlayer[player];
+      if (
+        me === undefined ||
+        !isRecord(pick) ||
+        pick['player'] !== player ||
+        workshopOptionProblem(team, player, pick) !== null
+      ) {
+        applied.push(dropped('invalid_choice'));
+        continue;
+      }
+      const id = pick['building'] as number;
+      const price = currentWorkshopPrice(
+        content,
+        offerPercent(offer),
+        pick['def'] as string,
+        pick['tier'] as number,
+      );
+      if (price === null) {
+        applied.push(dropped('invalid_choice'));
+        continue;
+      }
+      if (me.gold < price) {
+        applied.push(dropped('not_enough_gold'));
+        continue;
+      }
+      const r = raiseTier(team, { id });
+      if (!r.ok) {
+        applied.push(dropped('cannot_raise'));
+        continue;
+      }
+      team = r.state;
+      perPlayer = perPlayer.map((p, i) =>
+        i === player ? { ...p, gold: p.gold - price } : p,
+      );
+      applied.push({
+        player,
+        result: 'upgrade',
+        building: id,
+        def: pick['def'] as string,
+        newTier: pick['newTier'] as number,
+        price,
+      });
+    }
+    return { ok: true, patch: { team, perPlayer }, applied };
   },
 };
 
@@ -338,7 +475,11 @@ export function checkEventHandlers(
     }
     const p = h.checkParams?.(def) ?? null;
     if (p !== null) problems.push(`event "${def.id}": ${p}.`);
-    if (h.canAskFollowUp === true && h.choose === undefined) {
+    if (
+      h.canAskFollowUp === true &&
+      h.choose === undefined &&
+      h.chooseEach === undefined
+    ) {
       problems.push(
         `event "${def.id}": handler "${def.type}" can ask for a follow-up but has no "choose".`,
       );
@@ -407,10 +548,30 @@ export function eventHooks(
       }
       const r = handler.resolve({ state, content, config }, offer);
       if (r.followUp === null) return { patch: r.patch, followUp: null };
-      if (handler.canAskFollowUp !== true || handler.choose === undefined) {
+      if (
+        handler.canAskFollowUp !== true ||
+        (handler.choose === undefined && handler.chooseEach === undefined)
+      ) {
         throw new Error(
           `resolveEvent: handler "${offer.type}" returned a follow-up but does not declare canAskFollowUp with a choose function.`,
         );
+      }
+      if (r.followUp.perPlayer === true) {
+        if (handler.chooseEach === undefined) {
+          throw new Error(
+            `resolveEvent: handler "${offer.type}" asked a per-player follow-up but has no chooseEach function.`,
+          );
+        }
+        const initial = r.followUp.initialVotes;
+        return {
+          patch: r.patch,
+          followUp: {
+            prompt: r.followUp.prompt,
+            perPlayer: true,
+            options: r.followUp.options,
+            votes: state.players.map((_p, i) => initial?.[i] ?? null),
+          },
+        };
       }
       return {
         patch: r.patch,
@@ -429,13 +590,84 @@ function idOfOption(o: Json): string | null {
 }
 
 /**
+ * A choice in a per-player follow-up (the Workshop). `skip` is always legal;
+ * any other id must be an option of this player (`not_owner` for another
+ * player's) that the handler accepts (`not_enough_gold`). The choice is
+ * stored at once and can be changed until the last player has chosen; then
+ * every choice is applied in player order, each re-checked against current
+ * content and that player's gold now (one that can no longer be paid is
+ * applied as a skip and flagged in the effect's `applied`). Only the
+ * submitting player's own choice is checked at submission. No vote is drawn.
+ */
+function choosePerPlayer(
+  ctx: EventContext,
+  handler: EventHandler | undefined,
+  offer: EventOffer,
+  player: number,
+  choice: string,
+): HandlerResult {
+  const state = ctx.state;
+  const pending = isRecord(state.pending) ? state.pending : {};
+  const fu = pending['followUp'] as Record<string, Json>;
+  const options = fu['options'] as readonly Json[];
+  if (handler?.chooseEach === undefined) {
+    return { ok: false, reason: 'invalid_intent', detail: 'no chooseEach' };
+  }
+  if (choice !== SKIP_CHOICE) {
+    const option = options.find((o) => idOfOption(o) === choice);
+    if (option === undefined) return { ok: false, reason: 'invalid_choice' };
+    const problem = handler.checkChoice?.(ctx, offer, player, option) ?? null;
+    if (problem !== null) return { ok: false, reason: problem };
+  }
+  const votes = (fu['votes'] as readonly (Json | null)[]).map((v, i) =>
+    i === player ? choice : v,
+  );
+  const withVote: RunState = {
+    ...state,
+    pending: { ...pending, followUp: { ...fu, votes } },
+  };
+  const effects: Effect[] = [{ type: 'vote_changed', player }];
+  if (votes.some((v) => v === null)) {
+    return { ok: true, state: withVote, effects };
+  }
+  const picks = votes.map((v): Json | null =>
+    v === SKIP_CHOICE
+      ? null
+      : (options.find((o) => idOfOption(o) === v) ?? null),
+  );
+  const r = handler.chooseEach(ctx, offer, picks);
+  if (!r.ok) return { ok: false, reason: r.reason };
+  effects.push({
+    type: 'custom',
+    name: 'event_resolved',
+    data: {
+      offer: offer.id,
+      type: offer.type,
+      choices: votes,
+      applied: r.applied ?? [],
+    },
+  });
+  return {
+    ok: true,
+    state: {
+      ...state,
+      team: r.patch.team ?? state.team,
+      perPlayer: r.patch.perPlayer ?? state.perPlayer,
+    },
+    effects,
+    advance: true,
+  };
+}
+
+/**
  * The `event_choose` intent: `{ type: 'event_choose', choice: <option id> }`,
  * legal in `event_resolve`. Each player's vote counts at once and can be
  * changed until the last player has voted; then the winner (the unanimous
  * choice, or one player's vote picked at random) is applied by the offer's
  * handler and the step ends. With one player the first choice decides.
  * Rejections: `invalid_intent`, `invalid_choice`, and whatever the handler
- * reports.
+ * reports. In a per-player follow-up (the Workshop) the choice is the player's
+ * own: an option id or `skip` (see `choosePerPlayer`).
  */
 export function eventChooseHandlers(
   content: Content,
@@ -460,6 +692,15 @@ export function eventChooseHandlers(
         };
       }
       const options = fu['options'] as readonly Json[];
+      if (fu['perPlayer'] === true) {
+        return choosePerPlayer(
+          { state, content, config },
+          handlerFor(handlers, offer.type),
+          offer,
+          player,
+          choice,
+        );
+      }
       const option = options.find((o) => idOfOption(o) === choice);
       if (option === undefined) return { ok: false, reason: 'invalid_choice' };
       const votes = (fu['votes'] as readonly (Json | null)[]).map((v, i) =>
