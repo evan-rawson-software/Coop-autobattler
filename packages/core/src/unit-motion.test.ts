@@ -223,6 +223,28 @@ describe('coinciding centres are separated symmetrically', () => {
     const c = coincide('anchored', [0, 0], [2, 1], false);
     expect(c[0]?.py).toBe(700 + 120);
   });
+
+  test('equal-priority movers on one spot with an odd combined radius each take ceil(R / 2)', () => {
+    // Radii 35 and 40 (R = 75) walk from the same start to the same target,
+    // so they coincide with equal priority. Ids 1 and 2 (odd sum: axis y),
+    // both side 0: the lower id goes to -ceil(75 / 2) = -38, the higher to +38.
+    const units = [
+      { id: 1, side: 0, px: 560, py: 700 },
+      { id: 2, side: 0, px: 560, py: 700 },
+    ];
+    const s = new MotionScratch();
+    s.ensure(2);
+    for (let i = 0; i < 2; i++) {
+      s.want[i] = 1;
+      s.tx[i] = 700;
+      s.ty[i] = 700;
+      s.speed[i] = 140;
+      s.rad[i] = i === 0 ? 35 : 40;
+    }
+    s.resolve(units, openWorld(12), 1, 40);
+    expect([units[0]?.px, units[0]?.py]).toEqual([700, 700 - 38]);
+    expect([units[1]?.px, units[1]?.py]).toEqual([700, 700 + 38]);
+  });
 });
 
 // ---------------------------------------------------------------------------

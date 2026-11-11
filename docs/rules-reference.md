@@ -1532,9 +1532,10 @@ exactly like the original.
         same order of ids for the mirrored pair) stays symmetric.
       All pushes of the pass are summed per mover from the positions at the
       start of the pass (so the order of pairs does not matter) and added to
-      the mover's `T`. A mover whose summed push is `(0, 0)` (it has no
-      overlapping neighbour in this pass) **keeps its `T` unchanged and skips
-      `pushOutSolid`**; every mover with a nonzero summed push has the push
+      the mover's `T`. A mover whose summed push this pass is `(0, 0)`, for
+      whatever reason (including being the un-pushed winner of an
+      unequal-priority pair, or pushes cancelling), **keeps its `T` unchanged
+      and skips `pushOutSolid`**; every mover with a nonzero summed push has the push
       added and the result passed through `pushOutSolid` once. This is a
       rule, not an optimisation: `pushOutSolid` is not idempotent, so applying
       it to a mover that was not pushed can move it. The passes stop early
