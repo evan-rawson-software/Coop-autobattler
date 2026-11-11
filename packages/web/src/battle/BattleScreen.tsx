@@ -269,6 +269,9 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           record.summary.sides[1].coreHealth,
         ],
         stateHash: () => hashJson(pb.sim),
+        eventLogHash: () => hashJson(record.eventLog),
+        storedEventLogHash: () =>
+          latest.current.props.stored?.eventLogHash ?? null,
         unitsAlive: () => pb.sim.units.length,
         simMs: () => record.simMs,
         ready: () => latest.current.ready,

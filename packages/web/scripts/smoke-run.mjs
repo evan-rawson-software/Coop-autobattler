@@ -134,7 +134,13 @@ export async function runRunSmoke({
         const p = await at(c.x, c.y);
         await page.mouse.move(p.x, p.y, { steps: 6 });
         await page.mouse.up();
-        await page.waitForTimeout(60);
+        await page
+          .waitForFunction(
+            (n) => window.__debug.build.team().buildings.length > n,
+            before,
+            { timeout: 400 },
+          )
+          .catch(() => undefined);
         if ((await B.team()).buildings.length > before) {
           placed = true;
           break;
@@ -361,23 +367,71 @@ export async function runRunSmoke({
   await page.click('[data-action="choose"][data-difficulty="easy"]');
   await waitStep('pve_summary');
 
-  // Battle: reload while playing resumes it.
+  // Battle: reload while playing resumes it. Wait until a position past a
+  // few seconds of playback has really been stored, pause so it cannot move,
+  // reload, and read the tick the moment the battle is mounted again: playing
+  // from zero cannot have got there yet.
+  const storedTick = () =>
+    page.evaluate(() => {
+      let best = 0;
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const k = window.localStorage.key(i);
+        if (k !== null && k.startsWith('coop:tick:')) {
+          best = Math.max(best, Number(window.localStorage.getItem(k)) || 0);
+        }
+      }
+      return best;
+    });
+  const tps = 10;
   await page.waitForFunction(
     () => (window.__debug?.battle?.tick?.() ?? 0) > 6,
     null,
     { timeout: 20000 },
   );
-  await page.waitForTimeout(1300);
+  await page.waitForFunction(
+    (n) => {
+      let best = 0;
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const k = window.localStorage.key(i);
+        if (k !== null && k.startsWith('coop:tick:')) {
+          best = Math.max(best, Number(window.localStorage.getItem(k)) || 0);
+        }
+      }
+      return best >= n;
+    },
+    tps * 6,
+    { timeout: 40000 },
+  );
+  await page.click('#pause');
+  await page.waitForFunction(() => window.__debug.battle.paused());
   const tickBefore = await page.evaluate(() => window.__debug.battle.tick());
+  // Pausing stores the position; wait for the stored value to match it.
+  await page.waitForFunction(
+    (t) => {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const k = window.localStorage.key(i);
+        if (
+          k !== null &&
+          k.startsWith('coop:tick:') &&
+          Number(window.localStorage.getItem(k)) === t
+        ) {
+          return true;
+        }
+      }
+      return false;
+    },
+    tickBefore,
+    { timeout: 10000 },
+  );
+  const stored = await storedTick();
   await page.reload();
-  await page.waitForFunction(() => window.__debug?.battle?.phase);
-  await page.waitForFunction(() => window.__debug.battle.revealed(), null, {
-    timeout: 20000,
-  });
+  await page.waitForFunction(() => window.__debug?.battle?.tick);
   const tickAfter = await page.evaluate(() => window.__debug.battle.tick());
   check(
-    (await R.state()).step === 'pve_summary' && tickAfter > 0,
-    `battle: a reload mid-battle resumes the same battle (tick ${tickBefore} -> ${tickAfter})`,
+    (await R.state()).step === 'pve_summary' &&
+      stored >= tps * 6 &&
+      tickAfter >= stored,
+    `battle: a reload mid-battle resumes at the stored position (stored ${stored}, resumed at ${tickAfter}, before ${tickBefore})`,
   );
   const topbar = await page.locator('.topbar').innerText();
   check(
@@ -386,6 +440,14 @@ export async function runRunSmoke({
   );
   await page.click('#skip');
   await page.waitForFunction(() => window.__debug.battle.phase() === 'summary');
+  check(
+    await page.evaluate(
+      () =>
+        window.__debug.battle.storedEventLogHash() ===
+        window.__debug.battle.eventLogHash(),
+    ),
+    'battle: the replayed battle hashes to the result the run stored',
+  );
   const reward = await page.locator('[data-field="reward"]').innerText();
   check(
     /gold|No reward/.test(reward),

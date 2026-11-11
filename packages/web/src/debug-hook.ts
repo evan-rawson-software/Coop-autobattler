@@ -66,6 +66,9 @@ export interface BattleDebug {
   coreHealth: () => readonly [number, number];
   /** Hash of the visual simulation's current state. */
   stateHash: () => string;
+  /** Hash of the simulated event log, and the hash the run state stored. */
+  eventLogHash: () => string;
+  storedEventLogHash: () => string | null;
   unitsAlive: () => number;
   simMs: () => number;
   ready: () => boolean;

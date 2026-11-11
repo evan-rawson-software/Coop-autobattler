@@ -207,7 +207,7 @@ describe('follow-ups', () => {
 
   test('a per-player Workshop follow-up shows own options, prices, new tiers and Skip', () => {
     const s = pickEvent('workshop') as RunState;
-    const def = (s.team.buildings[0]?.def ?? 'wall') as string;
+    const def = s.team.buildings[0]?.def ?? 'wall';
     const gold = s.perPlayer[0]?.gold ?? 0;
     const odd: RunState = {
       ...s,
