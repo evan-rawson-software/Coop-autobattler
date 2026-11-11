@@ -22,6 +22,7 @@ import {
   eventText,
   modifierName,
 } from '../run/temporary-text.js';
+import { count, plural } from '../plural.js';
 
 function isRecord(v: unknown): v is Record<string, Json> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -33,10 +34,6 @@ function pendingRecord(run: RunState): Record<string, Json> {
 
 function capital(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function plural(n: number, one: string, many: string): string {
-  return n === 1 ? one : many;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,6 +124,7 @@ export interface EventCard {
   readonly lines: readonly string[];
   /** For a Shrine: the modifiers on offer with their effects. */
   readonly modifiers: readonly ModifierLine[];
+  readonly icon: string;
   readonly flavour: string;
   readonly voted: boolean;
 }
@@ -163,8 +161,7 @@ export function eventCards(
     if (type === 'workshop') {
       const tiers = num(raw['tiers'], 1);
       lines = [
-        `Raise one building you own by ${String(tiers)} ${plural(tiers, 'tier', 'tiers')} (never above tier 3).`,
-        'You pick which building next.',
+        `Raise a building by ${count(tiers, 'tier')} (never above tier 3).`,
       ];
     } else if (type === 'shrine') {
       const ids = Array.isArray(raw['modifiers'])
@@ -172,7 +169,7 @@ export function eventCards(
         : [];
       modifiers = ids.map((id) => modifierLine(config, id));
       lines = [
-        `Choose 1 of ${String(ids.length)} run ${plural(ids.length, 'modifier', 'modifiers')}. It lasts until the run ends.`,
+        `Choose 1 of ${String(ids.length)} run ${plural(ids.length, 'modifier')}. It lasts until the run ends.`,
       ];
     } else if (type === 'windfall') {
       const gold = num(raw['gold'], 0);
@@ -189,6 +186,7 @@ export function eventCards(
       title: text.name,
       lines,
       modifiers,
+      icon: text.icon,
       flavour: text.flavour,
       voted: mine === raw['id'],
     });
@@ -204,6 +202,10 @@ export interface FollowOption {
   readonly title: string;
   /** Plain words for what choosing it does. */
   readonly lines: readonly string[];
+  /** False when the option has a price this player cannot pay. */
+  readonly affordable: boolean;
+  /** True for an option that does nothing (skip). */
+  readonly skip: boolean;
 }
 
 export interface FollowUpView {
@@ -240,19 +242,42 @@ export function followUpView(
     ? (follow['votes'] as Json[])
     : [];
   const mine = votes[player];
+  const gold = run.perPlayer[player]?.gold ?? 0;
   const options: FollowOption[] = [];
   for (const raw of follow['options'] as Json[]) {
     if (!isRecord(raw) || typeof raw['id'] !== 'string') continue;
     const id = raw['id'];
-    if (typeof raw['def'] === 'string' && typeof raw['tier'] === 'number') {
-      const to = Math.min(3, raw['tier'] + tiers);
+    // An option made for another player is not shown to this one.
+    if (typeof raw['player'] === 'number' && raw['player'] !== player) continue;
+    const price = typeof raw['price'] === 'number' ? raw['price'] : null;
+    const priceLines = price === null ? [] : [`Costs ${String(price)} gold.`];
+    const affordable = price === null || price <= gold;
+    if (raw['skip'] === true || id === 'skip') {
+      options.push({
+        id,
+        title: 'Skip',
+        lines: ['Change nothing.'],
+        affordable: true,
+        skip: true,
+      });
+    } else if (
+      typeof raw['def'] === 'string' &&
+      typeof raw['tier'] === 'number'
+    ) {
+      const to =
+        typeof raw['newTier'] === 'number'
+          ? raw['newTier']
+          : Math.min(3, raw['tier'] + tiers);
       options.push({
         id,
         title: `${buildingName(content, raw['def'])} · tier ${String(raw['tier'])}`,
         lines: [
           `Becomes tier ${String(to)}.`,
           raw['placed'] === true ? 'On the board.' : 'In the stash.',
+          ...priceLines,
         ],
+        affordable,
+        skip: false,
       });
     } else if (findModifier(config, id) !== undefined) {
       const m = modifierLine(config, id);
@@ -260,9 +285,17 @@ export function followUpView(
         id,
         title: m.name,
         lines: [...m.effects, ...(m.stacks ? ['Stacks if taken again.'] : [])],
+        affordable: true,
+        skip: false,
       });
     } else {
-      options.push({ id, title: id, lines: [] });
+      options.push({
+        id,
+        title: id,
+        lines: priceLines,
+        affordable,
+        skip: false,
+      });
     }
   }
   return {

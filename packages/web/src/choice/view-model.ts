@@ -13,6 +13,7 @@ import {
 } from '@game/session';
 import { clock } from '../battle/derive.js';
 import { archetypeText } from '../run/temporary-text.js';
+import { count } from '../plural.js';
 
 export interface PveCard {
   readonly id: string;
@@ -50,9 +51,9 @@ function capital(s: string): string {
 /** The threat facts of an option, in the order a player cares about. */
 export function threatFacts(o: PveOptionView, sim: SimConfig): string[] {
   const s = o.summary;
-  const facts = [`${String(s.totalUnits)} enemy units`];
-  if (s.walls > 0) facts.push(`${String(s.walls)} walls`);
-  if (s.turrets > 0) facts.push(`${String(s.turrets)} turrets`);
+  const facts = [count(s.totalUnits, 'enemy unit')];
+  if (s.walls > 0) facts.push(count(s.walls, 'wall'));
+  if (s.turrets > 0) facts.push(count(s.turrets, 'turret'));
   facts.push(`Core ${String(s.coreHealth)} health`);
   facts.push(
     s.firstWaveTick === null

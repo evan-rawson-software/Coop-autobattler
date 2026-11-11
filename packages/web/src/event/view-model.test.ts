@@ -49,7 +49,8 @@ describe('the battle header', () => {
     );
     const h = battleHeader(run, realDeps());
     expect(h?.kind).toBe('pvp');
-    expect(h?.text).toMatch(/vs\. the boss \(\w+\)/);
+    expect(h?.text).toMatch(/vs\. the boss( \(\w+\))?$/);
+    expect(h?.text).not.toMatch(/the boss \(Boss\)/);
     if (!h?.won) {
       expect(h?.payout).toMatch(/^−1 life · \+\d+ gold consolation$/);
     } else {
@@ -91,6 +92,27 @@ describe('event cards', () => {
     );
     expect(c?.title).toBe('Workshop');
     expect(c?.lines.join(' ')).toMatch(/by 2 tiers/);
+  });
+
+  test('cards do not repeat themselves and each event has its own icon', () => {
+    const cards = eventCards(
+      withOffers(run, [
+        { id: 'a', type: 'workshop', tiers: 1 },
+        { id: 'b', type: 'shrine', modifiers: ['mod_stout_walls'] },
+        { id: 'c', type: 'windfall', gold: 3 },
+      ]),
+      config,
+      0,
+    );
+    expect(new Set(cards.map((c) => c.icon)).size).toBe(3);
+    const shrine = cards.find((c) => c.type === 'shrine');
+    const text = [...(shrine?.lines ?? []), shrine?.flavour ?? ''].join(' ');
+    expect(text.match(/lasts until the run ends/g)).toHaveLength(1);
+    const workshop = cards.find((c) => c.type === 'workshop');
+    expect(workshop?.lines.join(' ')).toMatch(/by 1 tier \(/);
+    expect(
+      `${workshop?.lines.join(' ') ?? ''} ${workshop?.flavour ?? ''}`,
+    ).not.toMatch(/party|You pick/);
   });
 
   test('a Shrine lists the modifiers on offer with their effects', () => {
@@ -183,6 +205,36 @@ describe('follow-ups', () => {
     expect(v?.options[0]?.lines[0]).toMatch(/^Becomes tier \d\.$/);
   });
 
+  test('a per-player Workshop follow-up shows own options, prices, new tiers and Skip', () => {
+    const s = pickEvent('workshop') as RunState;
+    const def = (s.team.buildings[0]?.def ?? 'wall') as string;
+    const gold = s.perPlayer[0]?.gold ?? 0;
+    const odd: RunState = {
+      ...s,
+      pending: {
+        offer: { id: 'evt_w', type: 'workshop', tiers: 1 },
+        followUp: {
+          prompt: 'workshop_building',
+          options: [
+            { id: 'mine', def, tier: 1, newTier: 2, price: 1, player: 0 },
+            { id: 'dear', def, tier: 1, newTier: 3, price: gold + 50 },
+            { id: 'theirs', def, tier: 1, newTier: 2, price: 1, player: 1 },
+            { id: 'skip', skip: true },
+          ],
+          votes: [null],
+        },
+      },
+    };
+    const v = followUpView(odd, config, content, 0);
+    expect(v?.options.map((o) => o.id)).toEqual(['mine', 'dear', 'skip']);
+    expect(v?.options[0]?.lines).toContain('Becomes tier 2.');
+    expect(v?.options[0]?.lines).toContain('Costs 1 gold.');
+    expect(v?.options[0]?.affordable).toBe(true);
+    expect(v?.options[1]?.lines).toContain('Becomes tier 3.');
+    expect(v?.options[1]?.affordable).toBe(false);
+    expect(v?.options[2]).toMatchObject({ title: 'Skip', skip: true });
+  });
+
   test('a Shrine asks which modifier and spells out the effects', () => {
     const s = pickEvent('shrine');
     expect(s).not.toBeNull();
@@ -210,7 +262,15 @@ describe('follow-ups', () => {
     };
     const v = followUpView(odd, config, content, 0);
     expect(v?.prompt).toBe('Make a choice');
-    expect(v?.options).toEqual([{ id: 'all_in', title: 'all_in', lines: [] }]);
+    expect(v?.options).toEqual([
+      {
+        id: 'all_in',
+        title: 'all_in',
+        lines: [],
+        affordable: true,
+        skip: false,
+      },
+    ]);
   });
 
   test('no follow-up outside event_resolve', () => {

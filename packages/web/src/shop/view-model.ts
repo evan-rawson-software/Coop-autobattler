@@ -23,6 +23,7 @@ import type { WebContent } from '../content.js';
 import { isEditStep } from '../build/session.js';
 import { buildingName } from '../build/view-model.js';
 import { effectText, KIND_LABELS, needsText } from './effect-text.js';
+import { count } from '../plural.js';
 
 export interface OfferCard {
   readonly slot: number;
@@ -235,9 +236,9 @@ export function archetypeName(id: string): string {
 
 export function threatLine(o: PveOptionView): string {
   const s = o.summary;
-  const parts = [`${String(s.totalUnits)} units`];
-  if (s.walls > 0) parts.push(`${String(s.walls)} walls`);
-  if (s.turrets > 0) parts.push(`${String(s.turrets)} turrets`);
+  const parts = [count(s.totalUnits, 'unit')];
+  if (s.walls > 0) parts.push(count(s.walls, 'wall'));
+  if (s.turrets > 0) parts.push(count(s.turrets, 'turret'));
   parts.push(`Core ${String(s.coreHealth)} health`);
   return parts.join(' · ');
 }

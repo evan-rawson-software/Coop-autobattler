@@ -5,6 +5,7 @@
 import { classify, type SaveListItem } from '@game/session';
 import { stepLabel } from '../run/router.js';
 import { INSTALLED_VERSION } from '../run/version.js';
+import { count } from '../plural.js';
 
 export interface SavedRunRow {
   readonly kind: 'run';
@@ -33,20 +34,16 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
-function plural(n: number, one: string): string {
-  return `${String(n)} ${one}${n === 1 ? '' : 's'}`;
-}
-
 /** "just now", "5 minutes ago", "2 days ago". */
 export function agoText(updatedAt: number, now: number): string {
   if (updatedAt <= 0) return 'at an unknown time';
   const d = Math.max(0, now - updatedAt);
   if (d < MINUTE) return 'just now';
-  if (d < HOUR) return `${plural(Math.floor(d / MINUTE), 'minute')} ago`;
-  if (d < DAY) return `${plural(Math.floor(d / HOUR), 'hour')} ago`;
-  if (d < 14 * DAY) return `${plural(Math.floor(d / DAY), 'day')} ago`;
-  if (d < 60 * DAY) return `${plural(Math.floor(d / (7 * DAY)), 'week')} ago`;
-  return `${plural(Math.floor(d / (30 * DAY)), 'month')} ago`;
+  if (d < HOUR) return `${count(Math.floor(d / MINUTE), 'minute')} ago`;
+  if (d < DAY) return `${count(Math.floor(d / HOUR), 'hour')} ago`;
+  if (d < 14 * DAY) return `${count(Math.floor(d / DAY), 'day')} ago`;
+  if (d < 60 * DAY) return `${count(Math.floor(d / (7 * DAY)), 'week')} ago`;
+  return `${count(Math.floor(d / (30 * DAY)), 'month')} ago`;
 }
 
 export const OLDER_VERSION_NOTE =
@@ -107,7 +104,7 @@ export function recordRows(
   best: Readonly<Record<number, number>>,
 ): RecordRow[] {
   return [1, 2, 3, 4].map((n) => ({
-    label: n === 1 ? '1 player' : `${String(n)} players`,
+    label: count(n, 'player'),
     value: best[n] === undefined ? '—' : `round ${String(best[n])}`,
   }));
 }

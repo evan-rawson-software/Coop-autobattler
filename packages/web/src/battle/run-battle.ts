@@ -20,6 +20,7 @@ import {
 import type { StorageLike } from '../run/local-storage-store.js';
 import { archetypeText, bossName } from '../run/temporary-text.js';
 import type { BattleDescription, OpponentInfo } from './types.js';
+import { count } from '../plural.js';
 
 export interface RunBattle {
   /** What to play back; the screen simulates it and checks the hash below. */
@@ -77,7 +78,7 @@ export function rewardLine(
       ? 'Reward paid when you continue'
       : `+${String(rewards.pvpWin)} gold when you continue`;
   }
-  return `−${String(cost)} ${cost === 1 ? 'life' : 'lives'}${rewards === undefined ? '' : ` · +${String(rewards.pvpLoss)} gold consolation`}`;
+  return `−${count(cost, 'life', 'lives')}${rewards === undefined ? '' : ` · +${String(rewards.pvpLoss)} gold consolation`}`;
 }
 
 export function describeRunBattle(

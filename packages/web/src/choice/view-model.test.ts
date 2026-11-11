@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { reachStep, realDeps, send } from '../run/test-run.js';
 import { simConfig } from '../build/setup.js';
-import { overloadClock, pveChoiceView } from './view-model.js';
+import { overloadClock, pveChoiceView, threatFacts } from './view-model.js';
 
 describe('PvE choice cards', () => {
   const run = reachStep('pve_choice');
@@ -52,5 +52,32 @@ describe('PvE choice cards', () => {
     expect(
       pveChoiceView(reachStep('shop'), realDeps(), simConfig, 0),
     ).toBeNull();
+  });
+});
+
+describe('threat facts use the right plural', () => {
+  test('1 wall, 1 turret and 1 enemy unit are singular', () => {
+    const o = {
+      summary: {
+        totalUnits: 1,
+        walls: 1,
+        turrets: 1,
+        coreHealth: 90,
+        firstWaveTick: null,
+      },
+    } as unknown as Parameters<typeof threatFacts>[0];
+    const facts = threatFacts(o, simConfig);
+    expect(facts).toContain('1 enemy unit');
+    expect(facts).toContain('1 wall');
+    expect(facts).toContain('1 turret');
+    const many = threatFacts(
+      {
+        summary: { ...o.summary, totalUnits: 4, walls: 2, turrets: 3 },
+      } as never,
+      simConfig,
+    );
+    expect(many).toEqual(
+      expect.arrayContaining(['4 enemy units', '2 walls', '3 turrets']),
+    );
   });
 });

@@ -66,29 +66,42 @@ export function archetypeText(id: string): ArchetypeText {
   );
 }
 
-/** Display name and one-line flavour of an event type. */
+/**
+ * Display name, icon and one-line flavour of an event type. What an event does
+ * is written from the offer's data (`event/view-model.ts`), so the flavour
+ * never repeats it.
+ */
 export const EVENT_TEXT: Readonly<
-  Record<string, { readonly name: string; readonly flavour: string }>
+  Record<
+    string,
+    {
+      readonly name: string;
+      readonly icon: string;
+      readonly flavour: string;
+    }
+  >
 > = {
-  workshop: {
-    name: 'Workshop',
-    flavour: 'The party chooses which building.',
-  },
-  shrine: {
-    name: 'Shrine',
-    flavour: 'It lasts until the run ends.',
-  },
+  workshop: { name: 'Workshop', icon: '⚙', flavour: '' },
+  shrine: { name: 'Shrine', icon: '✦', flavour: '' },
   windfall: {
     name: 'Windfall',
+    icon: '$',
     flavour: 'No choice to make.',
   },
 };
 
 export function eventText(type: string): {
   readonly name: string;
+  readonly icon: string;
   readonly flavour: string;
 } {
-  return EVENT_TEXT[type] ?? { name: titleCase(type), flavour: '' };
+  return (
+    EVENT_TEXT[type] ?? {
+      name: titleCase(type),
+      icon: titleCase(type).charAt(0),
+      flavour: '',
+    }
+  );
 }
 
 /** Display names of run modifiers, by id. */

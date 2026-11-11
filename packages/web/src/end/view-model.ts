@@ -7,6 +7,7 @@ import type { TeamState } from '@game/core';
 import type { HistoryEntry, RoundRecord, RunState } from '@game/session';
 import { opponentName } from '../event/view-model.js';
 import { bossName } from '../run/temporary-text.js';
+import { count } from '../plural.js';
 
 export interface BestView {
   readonly isNewBest: boolean;
@@ -25,7 +26,7 @@ export function bestView(
 ): BestView {
   const size = state.players.length;
   const depth = state.outcome?.round ?? state.round;
-  const label = size === 1 ? '1 player' : `${String(size)} players`;
+  const label = count(size, 'player');
   let before = 0;
   for (const h of history) {
     if (h.runId !== state.runId && h.partySize === size && h.round > before) {

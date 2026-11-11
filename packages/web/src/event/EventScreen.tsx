@@ -83,7 +83,7 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
             >
               <header class="event-card-head">
                 <span class="event-icon" aria-hidden="true">
-                  {c.title.charAt(0)}
+                  {c.icon}
                 </span>
                 <h2 data-field="title">{c.title}</h2>
               </header>
@@ -172,12 +172,13 @@ export function EventResolveScreen(props: { run: RunHandle }) {
                 class="primary"
                 data-action="choose-option"
                 data-option={o.id}
-                disabled={busy}
+                disabled={busy || !o.affordable}
+                title={o.affordable ? undefined : 'Not enough gold'}
                 onClick={() => {
                   choose(o.id);
                 }}
               >
-                Choose
+                {o.skip ? 'Skip' : 'Choose'}
               </button>
             </li>
           ))}

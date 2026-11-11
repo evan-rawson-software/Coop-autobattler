@@ -23,6 +23,7 @@ import {
   type MenuRow,
   type RecordRow,
 } from './view-model.js';
+import { count, plural } from '../plural.js';
 
 interface MenuData {
   readonly services: GameServices;
@@ -224,9 +225,7 @@ export function MainMenuScreen() {
             ) : null}
             {wiped.length === 0 ? null : (
               <p class="menu-note" role="status" data-field="wiped">
-                {wiped.length === 1
-                  ? '1 saved run from an older version of the game was removed.'
-                  : `${String(wiped.length)} saved runs from an older version of the game were removed.`}
+                {`${count(wiped.length, 'saved run')} from an older version of the game ${plural(wiped.length, 'was', 'were')} removed.`}
               </p>
             )}
             {notice === null ? null : (

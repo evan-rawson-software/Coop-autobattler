@@ -23,6 +23,7 @@ import type { RunHandle } from '../run/handle.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import { drawCoreOverlay, type Candidate } from './overlay.js';
 import { kitRows, legalSet, routesFor, verdictAt } from './view-model.js';
+import { count } from '../plural.js';
 
 const camera = new CameraController();
 camera.resetPreset = 'fit';
@@ -194,7 +195,7 @@ export function CoreScreen(props: { run: RunHandle }) {
             <p class="muted" data-field="route-count">
               {routeCount === 0
                 ? 'No enemy route reaches this position.'
-                : `${String(routeCount)} enemy ${routeCount === 1 ? 'route' : 'routes'} shown for this position.`}
+                : `${count(routeCount, 'enemy route')} shown for this position.`}
             </p>
           )}
           <button
