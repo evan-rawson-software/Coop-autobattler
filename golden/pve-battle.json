@@ -144,31 +144,31 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 425
+          "endTick": 602
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 9,
-              "unitsLost": 0,
+              "unitsSpawned": 15,
+              "unitsLost": 2,
               "buildingsLost": 0,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
               "rampSteps": 0,
               "buildingDamageDealt": 180,
-              "unitsKilled": 3
+              "unitsKilled": 4
             },
             {
-              "unitsSpawned": 3,
-              "unitsLost": 3,
+              "unitsSpawned": 5,
+              "unitsLost": 4,
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 180,
-              "coreOverkill": 6,
+              "coreOverkill": 0,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
-              "unitsKilled": 0
+              "unitsKilled": 2
             }
           ]
         },
@@ -205,10 +205,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "0b19ef62",
-        "events": 431
+        "stateHash": "ea4c2542",
+        "events": 290
       },
-      "eventLogHash": "51d0f63d"
+      "eventLogHash": "c7358c7a"
     }
   },
   {
@@ -356,31 +356,31 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 359
+          "endTick": 774
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 6,
-              "unitsLost": 0,
+              "unitsSpawned": 18,
+              "unitsLost": 13,
               "buildingsLost": 0,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
               "rampSteps": 0,
               "buildingDamageDealt": 130,
-              "unitsKilled": 0
+              "unitsKilled": 1
             },
             {
-              "unitsSpawned": 0,
-              "unitsLost": 0,
+              "unitsSpawned": 1,
+              "unitsLost": 1,
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 130,
               "coreOverkill": 2,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
-              "unitsKilled": 0
+              "unitsKilled": 13
             }
           ]
         },
@@ -417,10 +417,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "ba850945",
-        "events": 292
+        "stateHash": "26b0728a",
+        "events": 401
       },
-      "eventLogHash": "a569c11c"
+      "eventLogHash": "d786e72a"
     }
   },
   {
@@ -568,31 +568,31 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 347
+          "endTick": 380
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 6,
-              "unitsLost": 0,
+              "unitsSpawned": 9,
+              "unitsLost": 1,
               "buildingsLost": 0,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
               "rampSteps": 0,
               "buildingDamageDealt": 63,
-              "unitsKilled": 1
+              "unitsKilled": 2
             },
             {
               "unitsSpawned": 2,
-              "unitsLost": 1,
+              "unitsLost": 2,
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 63,
-              "coreOverkill": 9,
+              "coreOverkill": 3,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
-              "unitsKilled": 0
+              "unitsKilled": 1
             }
           ]
         },
@@ -629,10 +629,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "49c35975",
-        "events": 289
+        "stateHash": "a77878d1",
+        "events": 168
       },
-      "eventLogHash": "30343bd2"
+      "eventLogHash": "5a2be192"
     }
   },
   {
@@ -780,7 +780,7 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 381
+          "endTick": 429
         },
         "summary": {
           "sides": [
@@ -841,10 +841,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "24f3c494",
-        "events": 329
+        "stateHash": "d4a35167",
+        "events": 177
       },
-      "eventLogHash": "a7635593"
+      "eventLogHash": "ee2b07db"
     }
   },
   {
@@ -1274,13 +1274,13 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 1041
+          "endTick": 904
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 8,
-              "unitsLost": 4,
+              "unitsSpawned": 7,
+              "unitsLost": 2,
               "buildingsLost": 0,
               "coreHealth": 500,
               "coreMaxHealth": 500,
@@ -1298,7 +1298,7 @@
               "coreOverkill": 0,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
-              "unitsKilled": 4
+              "unitsKilled": 2
             }
           ]
         },
@@ -1335,10 +1335,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "c99ecaee",
-        "events": 669
+        "stateHash": "b4838784",
+        "events": 377
       },
-      "eventLogHash": "35663056"
+      "eventLogHash": "ae24cd50"
     }
   },
   {
@@ -1768,31 +1768,31 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 945
+          "endTick": 1891
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 7,
-              "unitsLost": 5,
+              "unitsSpawned": 15,
+              "unitsLost": 13,
               "buildingsLost": 0,
-              "coreHealth": 500,
+              "coreHealth": 495,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
               "rampSteps": 6,
-              "buildingDamageDealt": 130,
-              "unitsKilled": 1
+              "buildingDamageDealt": 125,
+              "unitsKilled": 3
             },
             {
-              "unitsSpawned": 1,
-              "unitsLost": 1,
+              "unitsSpawned": 3,
+              "unitsLost": 3,
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 130,
               "coreOverkill": 5,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
-              "unitsKilled": 5
+              "unitsKilled": 13
             }
           ]
         },
@@ -1829,10 +1829,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "79a26d38",
-        "events": 557
+        "stateHash": "64edaac9",
+        "events": 546
       },
-      "eventLogHash": "bcd038b1"
+      "eventLogHash": "955e4aa0"
     }
   },
   {
@@ -2262,7 +2262,7 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 728
+          "endTick": 731
         },
         "summary": {
           "sides": [
@@ -2323,10 +2323,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "a6d9ccd9",
-        "events": 452
+        "stateHash": "d6014319",
+        "events": 297
       },
-      "eventLogHash": "c11ccef1"
+      "eventLogHash": "907b2083"
     }
   },
   {
@@ -2756,7 +2756,7 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 651
+          "endTick": 681
         },
         "summary": {
           "sides": [
@@ -2817,10 +2817,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "6cfa1e5d",
-        "events": 395
+        "stateHash": "7ae3d7e2",
+        "events": 268
       },
-      "eventLogHash": "22aeb930"
+      "eventLogHash": "55d3d9d7"
     }
   },
   {
@@ -3026,7 +3026,7 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 1220
+          "endTick": 1310
         },
         "summary": {
           "sides": [
@@ -3087,10 +3087,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "027b19af",
-        "events": 594
+        "stateHash": "89c28fbd",
+        "events": 404
       },
-      "eventLogHash": "b1e04e6e"
+      "eventLogHash": "62849393"
     }
   },
   {
@@ -3296,31 +3296,31 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 1024
+          "endTick": 2101
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 8,
-              "unitsLost": 6,
+              "unitsSpawned": 17,
+              "unitsLost": 16,
               "buildingsLost": 0,
-              "coreHealth": 500,
+              "coreHealth": 450,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
               "rampSteps": 0,
-              "buildingDamageDealt": 130,
-              "unitsKilled": 1
+              "buildingDamageDealt": 84,
+              "unitsKilled": 3
             },
             {
-              "unitsSpawned": 2,
-              "unitsLost": 1,
+              "unitsSpawned": 3,
+              "unitsLost": 3,
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 130,
-              "coreOverkill": 2,
+              "coreOverkill": 4,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
-              "unitsKilled": 6
+              "unitsKilled": 16
             }
           ]
         },
@@ -3357,10 +3357,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "1c54a99e",
-        "events": 487
+        "stateHash": "faa62d65",
+        "events": 633
       },
-      "eventLogHash": "ae97cf82"
+      "eventLogHash": "e88f88e8"
     }
   },
   {
@@ -3566,31 +3566,31 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 880
+          "endTick": 640
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 7,
-              "unitsLost": 5,
+              "unitsSpawned": 5,
+              "unitsLost": 3,
               "buildingsLost": 0,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
               "rampSteps": 0,
               "buildingDamageDealt": 63,
-              "unitsKilled": 5
+              "unitsKilled": 3
             },
             {
-              "unitsSpawned": 5,
-              "unitsLost": 5,
+              "unitsSpawned": 4,
+              "unitsLost": 3,
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 63,
               "coreOverkill": 3,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
-              "unitsKilled": 5
+              "unitsKilled": 3
             }
           ]
         },
@@ -3627,10 +3627,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "bd33ac4c",
-        "events": 417
+        "stateHash": "7902991f",
+        "events": 198
       },
-      "eventLogHash": "aba4b678"
+      "eventLogHash": "e439e056"
     }
   },
   {
@@ -3857,7 +3857,7 @@
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 148,
-              "coreOverkill": 8,
+              "coreOverkill": 2,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 2
@@ -3897,10 +3897,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "56636e37",
-        "events": 291
+        "stateHash": "1667086c",
+        "events": 194
       },
-      "eventLogHash": "52e57a89"
+      "eventLogHash": "40343140"
     }
   },
   {
@@ -4330,26 +4330,26 @@
         "result": {
           "winner": 1,
           "reason": "core_destroyed",
-          "endTick": 328
+          "endTick": 440
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 2,
+              "unitsSpawned": 3,
               "unitsLost": 0,
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 4,
-              "rampSteps": 2,
-              "buildingDamageDealt": 0,
-              "unitsKilled": 0
+              "rampSteps": 3,
+              "buildingDamageDealt": 24,
+              "unitsKilled": 1
             },
             {
               "unitsSpawned": 2,
-              "unitsLost": 0,
+              "unitsLost": 1,
               "buildingsLost": 0,
-              "coreHealth": 1722,
+              "coreHealth": 1698,
               "coreMaxHealth": 1722,
               "coreOverkill": 0,
               "rampSteps": 0,
@@ -4391,10 +4391,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "76b59e37",
-        "events": 285
+        "stateHash": "2fc07173",
+        "events": 342
       },
-      "eventLogHash": "fa7940d5"
+      "eventLogHash": "a179f1ac"
     }
   },
   {
@@ -4542,31 +4542,31 @@
         "result": {
           "winner": 1,
           "reason": "core_destroyed",
-          "endTick": 424
+          "endTick": 685
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 5,
-              "unitsLost": 5,
-              "buildingsLost": 3,
+              "unitsSpawned": 15,
+              "unitsLost": 15,
+              "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
-              "coreOverkill": 14,
+              "coreOverkill": 0,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
-              "unitsKilled": 1
+              "unitsKilled": 3
             },
             {
-              "unitsSpawned": 16,
-              "unitsLost": 1,
+              "unitsSpawned": 32,
+              "unitsLost": 3,
               "buildingsLost": 0,
               "coreHealth": 1458,
               "coreMaxHealth": 1458,
               "coreOverkill": 0,
               "rampSteps": 0,
-              "buildingDamageDealt": 590,
-              "unitsKilled": 5
+              "buildingDamageDealt": 500,
+              "unitsKilled": 15
             }
           ]
         },
@@ -4598,10 +4598,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "4ed35fce",
-        "events": 660
+        "stateHash": "ed076920",
+        "events": 495
       },
-      "eventLogHash": "a4a51eb9"
+      "eventLogHash": "54b1c376"
     }
   }
 ]

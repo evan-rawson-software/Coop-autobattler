@@ -2,9 +2,10 @@
  * Golden-vector kind `arena-sim`. Input: `{ teamA, teamB, gapRows, ticks }`
  * where each team is a `team-state-ops` script (`seed`, `partySize`, `ops`).
  * Both boards are built, a battle starts at tick 0 and runs for `ticks` ticks.
- * An optional `units` list `[{ side, def, x, y }]` (arena coordinates) puts
- * units on the field at tick 0, in list order (scenario setup, like
- * `spawnUnitForTest`). An optional `buildingHealth` list
+ * An optional `units` list `[{ side, def, x, y }]` (arena cell: the unit
+ * stands at its centre) or `[{ side, def, px, py }]` (exact position, sub-cell
+ * units) puts units on the field at tick 0, in list order (scenario setup,
+ * like `spawnUnitForTest`; a position that does not fit is an error). An optional `buildingHealth` list
  * `[{ side, building, hp }]` sets the current health of those buildings at
  * tick 0 (building 0 is the Core; `hp` from 1 to the building's maximum), so
  * a scenario can start with damaged buildings. An optional `restoreAt` list of ticks makes the run
@@ -14,6 +15,12 @@
  * of the final `ArenaSim`, `events` the number of events, and `sides` a
  * summary per side (`spawned`, `alive`, `unitsDied`, `buildingDamageDealt`,
  * `buildingsDestroyed`, `coreHealth`). The event log is the vector's event log.
+ *
+ * Two optional inputs help scenarios that the shipped unit types cannot
+ * show: `extraUnits`, a list of unit definitions in the format of
+ * `content/units.json` that are added to the content for this run (a unit too
+ * wide for a gap, a target dummy), and `report: "positions"`, which adds
+ * `positions` to the result: `[[id, px, py], ...]` of the living units.
  */
 import type { ArenaContent } from './arena.js';
 import {
@@ -29,6 +36,7 @@ import type { SimulationFn } from './golden-kinds.js';
 import type { MapgenConfig } from './mapgen.js';
 import type { SimConfig } from './sim-config.js';
 import { runTeamStateOps } from './team-state-ops.js';
+import { loadUnitsOrThrow } from './units.js';
 
 function field(input: Json, key: string): Json | undefined {
   if (input === null || typeof input !== 'object' || Array.isArray(input)) {
@@ -66,11 +74,21 @@ export function summarizeArena(sim: ArenaSim): Json {
 }
 
 export function makeArenaSimKind(
-  content: ArenaContent,
+  shipped: ArenaContent,
   mapgen: MapgenConfig,
   simConfig: SimConfig,
 ): SimulationFn {
   return (input: Json) => {
+    const extra = field(input, 'extraUnits');
+    const content: ArenaContent =
+      extra === undefined
+        ? shipped
+        : {
+            ...shipped,
+            units: loadUnitsOrThrow({
+              units: [...shipped.units.list(), ...(extra as Json[])],
+            }),
+          };
     const gapRows = nonNegative(field(input, 'gapRows'), 'gapRows');
     const ticks = nonNegative(field(input, 'ticks'), 'ticks');
     const a = field(input, 'teamA');
@@ -123,12 +141,22 @@ export function makeArenaSimKind(
         if (typeof def !== 'string') {
           throw new TypeError('arena-sim: unit.def must be a string');
         }
-        spawnUnitForTest(sim, ctx, {
-          side: nonNegative(u['side'], 'unit.side'),
-          def,
-          x: nonNegative(u['x'], 'unit.x'),
-          y: nonNegative(u['y'], 'unit.y'),
-        });
+        const side = nonNegative(u['side'], 'unit.side');
+        if (u['px'] !== undefined || u['py'] !== undefined) {
+          spawnUnitForTest(sim, ctx, {
+            side,
+            def,
+            px: nonNegative(u['px'], 'unit.px'),
+            py: nonNegative(u['py'], 'unit.py'),
+          });
+        } else {
+          spawnUnitForTest(sim, ctx, {
+            side,
+            def,
+            x: nonNegative(u['x'], 'unit.x'),
+            y: nonNegative(u['y'], 'unit.y'),
+          });
+        }
       }
     }
     const restoreRaw = field(input, 'restoreAt');
@@ -148,12 +176,15 @@ export function makeArenaSimKind(
       }
       stepArena(sim, ctx);
     }
-    const result: Json = {
+    const result: Record<string, Json> = {
       tick: sim.tick,
       stateHash: hashJson(sim),
       events: events.length,
       sides: summarizeArena(sim),
     };
+    if (field(input, 'report') === 'positions') {
+      result['positions'] = sim.units.map((u) => [u.id, u.px, u.py]);
+    }
     return { result, eventLog: events as unknown as Json[] };
   };
 }

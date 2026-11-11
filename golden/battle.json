@@ -298,8 +298,8 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "18ac4847",
-        "events": 8529
+        "stateHash": "5c6ca7fc",
+        "events": 4791
       }
     }
   },
@@ -1365,31 +1365,31 @@
         "result": {
           "winner": 1,
           "reason": "core_destroyed",
-          "endTick": 970
+          "endTick": 1538
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 144,
-              "unitsLost": 139,
+              "unitsSpawned": 228,
+              "unitsLost": 224,
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 7,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
-              "unitsKilled": 34
+              "unitsKilled": 48
             },
             {
-              "unitsSpawned": 88,
-              "unitsLost": 34,
+              "unitsSpawned": 146,
+              "unitsLost": 48,
               "buildingsLost": 0,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
               "rampSteps": 30,
               "buildingDamageDealt": 500,
-              "unitsKilled": 139
+              "unitsKilled": 224
             }
           ]
         },
@@ -1410,8 +1410,8 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "9581a8e5",
-        "events": 8754
+        "stateHash": "7048dfb2",
+        "events": 6062
       }
     }
   },
@@ -1703,12 +1703,12 @@
         "result": {
           "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 345
+          "endTick": 643
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 32,
+              "unitsSpawned": 60,
               "unitsLost": 0,
               "buildingsLost": 0,
               "coreHealth": 500,
@@ -1724,7 +1724,7 @@
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
-              "coreOverkill": 10,
+              "coreOverkill": 4,
               "rampSteps": 0,
               "buildingDamageDealt": 0,
               "unitsKilled": 0
@@ -1763,8 +1763,8 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "5ac0816e",
-        "events": 1116
+        "stateHash": "6a3f42f0",
+        "events": 655
       }
     }
   },
@@ -2187,7 +2187,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "e8a04cee",
+        "stateHash": "a97227f2",
         "events": 47
       }
     }
@@ -2367,7 +2367,7 @@
               "coreMaxHealth": 500,
               "coreOverkill": 25,
               "rampSteps": 0,
-              "buildingDamageDealt": 18,
+              "buildingDamageDealt": 12,
               "unitsKilled": 0
             }
           ]
@@ -2404,10 +2404,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "98ae9f68",
-        "events": 81
+        "stateHash": "e85fb724",
+        "events": 59
       },
-      "eventLogHash": "4ba7ac30"
+      "eventLogHash": "4dc7c7ea"
     }
   },
   {
@@ -2596,10 +2596,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "7df0e6bb",
-        "events": 112
+        "stateHash": "83559d57",
+        "events": 71
       },
-      "eventLogHash": "664e8e03"
+      "eventLogHash": "9a2d366d"
     }
   },
   {
@@ -2709,7 +2709,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "54fc8bc5",
+        "stateHash": "fdfe9019",
         "events": 47
       },
       "eventLogHash": "2bd6670f"
@@ -2718,7 +2718,7 @@
   {
     "id": "battle.time-limit-fraction-side0",
     "kind": "battle",
-    "description": "Both Cores have 30000 health and survive Overload decay to the 12000-tick limit. Side 1 loses a few more Core health points (a soldier of side 0 reaches its Core before a tier 2 turret kills it) than side 0 loses to a soldier of side 1 that only hits a walled turret: side 0 wins on the Core health fraction (time_limit) although side 1 has dealt more building damage.",
+    "description": "Both Cores have 30000 health and survive Overload decay to the 12000-tick limit. Side 1 loses a few more Core health points (a soldier of side 0 reaches its Core before a tier 2 turret kills it (the turret stands at x = 15, a little farther from the Core than before the units became circles, so that the soldier gets its two blows in)) than side 0 loses to a soldier of side 1 that only hits a walled turret: side 0 wins on the Core health fraction (time_limit) although side 1 has dealt more building damage.",
     "input": {
       "teamA": {
         "map": {
@@ -2852,7 +2852,7 @@
           {
             "op": "placeFromStash",
             "id": 1,
-            "x": 13,
+            "x": 15,
             "y": 2,
             "rotation": 0
           }
@@ -2902,18 +2902,18 @@
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
               "rampSteps": 0,
-              "buildingDamageDealt": 12,
+              "buildingDamageDealt": 6,
               "unitsKilled": 1
             },
             {
               "unitsSpawned": 1,
               "unitsLost": 1,
               "buildingsLost": 0,
-              "coreHealth": 3723,
+              "coreHealth": 3729,
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
               "rampSteps": 0,
-              "buildingDamageDealt": 18,
+              "buildingDamageDealt": 12,
               "unitsKilled": 1
             }
           ]
@@ -2950,10 +2950,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "b0bf7b7b",
-        "events": 373
+        "stateHash": "cae9d8e4",
+        "events": 329
       },
-      "eventLogHash": "8a3aee41"
+      "eventLogHash": "4b71c521"
     }
   },
   {
@@ -2985,7 +2985,7 @@
           {
             "op": "placeFromStash",
             "id": 1,
-            "x": 13,
+            "x": 15,
             "y": 2,
             "rotation": 0
           }
@@ -3139,11 +3139,11 @@
               "unitsSpawned": 1,
               "unitsLost": 1,
               "buildingsLost": 0,
-              "coreHealth": 3723,
+              "coreHealth": 3729,
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
               "rampSteps": 0,
-              "buildingDamageDealt": 18,
+              "buildingDamageDealt": 12,
               "unitsKilled": 1
             },
             {
@@ -3154,7 +3154,7 @@
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
               "rampSteps": 0,
-              "buildingDamageDealt": 12,
+              "buildingDamageDealt": 6,
               "unitsKilled": 1
             }
           ]
@@ -3191,10 +3191,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "f28aa18d",
-        "events": 373
+        "stateHash": "c5bc2516",
+        "events": 329
       },
-      "eventLogHash": "cb785b84"
+      "eventLogHash": "36d31764"
     }
   },
   {
@@ -3374,7 +3374,7 @@
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
               "rampSteps": 0,
-              "buildingDamageDealt": 18,
+              "buildingDamageDealt": 12,
               "unitsKilled": 0
             }
           ]
@@ -3411,10 +3411,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "606dc2c2",
-        "events": 343
+        "stateHash": "5313abba",
+        "events": 321
       },
-      "eventLogHash": "0f197c0e"
+      "eventLogHash": "37b65d90"
     }
   },
   {
@@ -3605,10 +3605,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "10e60e01",
-        "events": 374
+        "stateHash": "789c1555",
+        "events": 333
       },
-      "eventLogHash": "b39e5f0b"
+      "eventLogHash": "b5be84fd"
     }
   },
   {
@@ -3726,7 +3726,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "39361b58",
+        "stateHash": "caa8ac1c",
         "events": 309
       },
       "eventLogHash": "aad2525d"
@@ -3781,6 +3781,134 @@
           "message": "Both sides must have the same party size: the boards are 24 and 48 cells wide."
         }
       }
+    }
+  },
+  {
+    "id": "battle.wave-queue",
+    "kind": "battle",
+    "description": "A scheduled wave of 80 soldiers (side 1) is larger than the front row holds: the units that find no room wait in the entering queue in order and come in as the row clears; none is dropped. The party Core is strong enough that the battle outlasts the queue.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "seed": 1,
+      "sideOptions": [
+        {
+          "coreHealth": 200000
+        },
+        {
+          "scheduledWaves": [
+            {
+              "tick": 0,
+              "unit": "unit_soldier",
+              "count": 80
+            }
+          ],
+          "coreHealth": 200000
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 1,
+          "reason": "time_limit",
+          "endTick": 12000
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "coreHealth": 34219,
+              "coreMaxHealth": 200000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            },
+            {
+              "unitsSpawned": 80,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "coreHealth": 173735,
+              "coreMaxHealth": 200000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 139516,
+              "unitsKilled": 0
+            }
+          ]
+        },
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "b8a2b968",
+        "events": 2765
+      },
+      "eventLogHash": "a1803882"
     }
   }
 ]

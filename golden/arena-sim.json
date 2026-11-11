@@ -236,8 +236,8 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "3e26527e",
-        "events": 2394,
+        "stateHash": "bd09535e",
+        "events": 1418,
         "sides": [
           {
             "spawned": 44,
@@ -257,7 +257,7 @@
           }
         ]
       },
-      "eventLogHash": "a443d318"
+      "eventLogHash": "839a8e4d"
     }
   },
   {
@@ -408,12 +408,12 @@
     "expected": {
       "result": {
         "tick": 1800,
-        "stateHash": "59b72084",
-        "events": 1265,
+        "stateHash": "e4395b67",
+        "events": 539,
         "sides": [
           {
-            "spawned": 88,
-            "alive": 88,
+            "spawned": 46,
+            "alive": 46,
             "unitsDied": 0,
             "buildingDamageDealt": 500,
             "buildingsDestroyed": 0,
@@ -429,7 +429,7 @@
           }
         ]
       },
-      "eventLogHash": "494d1bd0"
+      "eventLogHash": "8fe4d5fc"
     }
   },
   {
@@ -671,12 +671,12 @@
     "expected": {
       "result": {
         "tick": 2200,
-        "stateHash": "2006eff1",
-        "events": 1536,
+        "stateHash": "974aab6a",
+        "events": 782,
         "sides": [
           {
-            "spawned": 108,
-            "alive": 108,
+            "spawned": 70,
+            "alive": 70,
             "unitsDied": 0,
             "buildingDamageDealt": 600,
             "buildingsDestroyed": 0,
@@ -692,7 +692,7 @@
           }
         ]
       },
-      "eventLogHash": "c8d97772"
+      "eventLogHash": "a96b831a"
     }
   },
   {
@@ -847,14 +847,14 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "f41c67a1",
-        "events": 91,
+        "stateHash": "d90b9859",
+        "events": 51,
         "sides": [
           {
             "spawned": 2,
             "alive": 2,
             "unitsDied": 0,
-            "buildingDamageDealt": 412,
+            "buildingDamageDealt": 298,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -864,17 +864,17 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 1,
-            "coreHealth": 272
+            "coreHealth": 386
           }
         ]
       },
-      "eventLogHash": "ca2d2a60"
+      "eventLogHash": "3737c0ba"
     }
   },
   {
-    "id": "arena-sim.raiders-cut-splitter",
+    "id": "arena-sim.raiders-ignore-infrastructure",
     "kind": "arena-sim",
-    "description": "Three raiders (placed at tick 0) hunt the infrastructure of a base: its extractor and splitter fall, the splitter's conduits go with it and the barracks downstream starve.",
+    "description": "Three raiders (placed at tick 0) walk past the extractor and the splitter of a base to its Core (issue #66: no unit prefers buildings): nothing is destroyed, the barracks downstream keeps producing, and the two sides fight at the Core.",
     "input": {
       "teamA": {
         "seed": 1,
@@ -1043,28 +1043,28 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "78c06bf9",
-        "events": 133,
+        "stateHash": "8d338a2e",
+        "events": 208,
         "sides": [
           {
             "spawned": 3,
             "alive": 3,
             "unitsDied": 0,
-            "buildingDamageDealt": 565,
+            "buildingDamageDealt": 500,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": 278
           },
           {
-            "spawned": 0,
-            "alive": 0,
+            "spawned": 8,
+            "alive": 8,
             "unitsDied": 0,
-            "buildingDamageDealt": 0,
-            "buildingsDestroyed": 2,
+            "buildingDamageDealt": 222,
+            "buildingsDestroyed": 0,
             "coreHealth": 0
           }
         ]
       },
-      "eventLogHash": "68d7411e"
+      "eventLogHash": "c7710911"
     }
   },
   {
@@ -1397,8 +1397,8 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "37f0870c",
-        "events": 166,
+        "stateHash": "7ef905cb",
+        "events": 123,
         "sides": [
           {
             "spawned": 0,
@@ -1418,7 +1418,7 @@
           }
         ]
       },
-      "eventLogHash": "61239bb7"
+      "eventLogHash": "f1ddbf6a"
     }
   },
   {
@@ -1525,8 +1525,8 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "86de049b",
-        "events": 154,
+        "stateHash": "46339f34",
+        "events": 50,
         "sides": [
           {
             "spawned": 0,
@@ -1534,19 +1534,19 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 56
+            "coreHealth": 200
           },
           {
             "spawned": 3,
             "alive": 3,
             "unitsDied": 0,
-            "buildingDamageDealt": 444,
+            "buildingDamageDealt": 300,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           }
         ]
       },
-      "eventLogHash": "ba3bda18"
+      "eventLogHash": "b3d7a82f"
     }
   },
   {
@@ -1764,14 +1764,14 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "0ddf52cf",
-        "events": 80,
+        "stateHash": "9d9c7e30",
+        "events": 39,
         "sides": [
           {
             "spawned": 1,
             "alive": 1,
             "unitsDied": 0,
-            "buildingDamageDealt": 150,
+            "buildingDamageDealt": 144,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -1781,11 +1781,11 @@
             "unitsDied": 1,
             "buildingDamageDealt": 6,
             "buildingsDestroyed": 0,
-            "coreHealth": 350
+            "coreHealth": 356
           }
         ]
       },
-      "eventLogHash": "b8b35441"
+      "eventLogHash": "f50fc66f"
     }
   },
   {
@@ -2626,8 +2626,8 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "3f0e0f6f",
-        "events": 653,
+        "stateHash": "c0f299e0",
+        "events": 458,
         "sides": [
           {
             "spawned": 0,
@@ -2635,19 +2635,19 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 32
+            "coreHealth": 356
           },
           {
             "spawned": 12,
-            "alive": 3,
-            "unitsDied": 9,
-            "buildingDamageDealt": 468,
+            "alive": 1,
+            "unitsDied": 11,
+            "buildingDamageDealt": 144,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           }
         ]
       },
-      "eventLogHash": "b8529f20"
+      "eventLogHash": "81cf481d"
     }
   },
   {
@@ -2782,14 +2782,14 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "157b790c",
-        "events": 349,
+        "stateHash": "693384f3",
+        "events": 175,
         "sides": [
           {
             "spawned": 6,
             "alive": 6,
             "unitsDied": 0,
-            "buildingDamageDealt": 426,
+            "buildingDamageDealt": 192,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -2799,11 +2799,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 74
+            "coreHealth": 308
           }
         ]
       },
-      "eventLogHash": "5991cdba"
+      "eventLogHash": "8e8917e2"
     }
   },
   {
@@ -2938,14 +2938,14 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "20145c5f",
-        "events": 222,
+        "stateHash": "e6d86212",
+        "events": 130,
         "sides": [
           {
             "spawned": 4,
             "alive": 4,
             "unitsDied": 0,
-            "buildingDamageDealt": 192,
+            "buildingDamageDealt": 132,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -2955,11 +2955,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 308
+            "coreHealth": 368
           }
         ]
       },
-      "eventLogHash": "10faf9d3"
+      "eventLogHash": "0433fcce"
     }
   },
   {
@@ -3051,7 +3051,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "62c09544",
+        "stateHash": "6f9e3bc8",
         "events": 63,
         "sides": [
           {
@@ -3407,12 +3407,12 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "fd9d8244",
-        "events": 1013,
+        "stateHash": "0c40592e",
+        "events": 594,
         "sides": [
           {
-            "spawned": 44,
-            "alive": 44,
+            "spawned": 36,
+            "alive": 36,
             "unitsDied": 0,
             "buildingDamageDealt": 540,
             "buildingsDestroyed": 0,
@@ -3428,7 +3428,7 @@
           }
         ]
       },
-      "eventLogHash": "2c5f818d"
+      "eventLogHash": "72438da1"
     }
   },
   {
@@ -3788,7 +3788,7 @@
     "expected": {
       "result": {
         "tick": 3800,
-        "stateHash": "ca6c1841",
+        "stateHash": "a8e27075",
         "events": 51,
         "sides": [
           {
@@ -3950,7 +3950,7 @@
     "expected": {
       "result": {
         "tick": 60,
-        "stateHash": "67058efc",
+        "stateHash": "6c0f4f49",
         "events": 6,
         "sides": [
           {
@@ -3972,6 +3972,1233 @@
         ]
       },
       "eventLogHash": "9175cdb0"
+    }
+  },
+  {
+    "id": "arena-sim.separation-converging-soldiers",
+    "kind": "arena-sim",
+    "description": "Four soldiers of side 0 walk towards one stationary enemy (a unit_post): two start the same distance from it on either side (equal priority: they share every push), two at different distances (the one farther from its target gives way). Units never overlap; the state hash pins every position.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "gapRows": 6,
+      "ticks": 60,
+      "extraUnits": [
+        {
+          "id": "unit_post",
+          "health": 1000,
+          "damage": 0,
+          "attackCooldownTicks": 1000,
+          "moveCooldownTicks": 240,
+          "radius": 72,
+          "collisionRadius": 72,
+          "reach": 60,
+          "flying": false,
+          "attackType": "melee"
+        }
+      ],
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "px": 2650,
+          "py": 4680
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "px": 2870,
+          "py": 4680
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "px": 2720,
+          "py": 4220
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "px": 2820,
+          "py": 4060
+        },
+        {
+          "side": 1,
+          "def": "unit_post",
+          "px": 2760,
+          "py": 5100
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 60,
+        "stateHash": "680c6f1c",
+        "events": 15,
+        "sides": [
+          {
+            "spawned": 4,
+            "alive": 4,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": 500
+          },
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": 500
+          }
+        ],
+        "positions": [
+          [1, 2688, 4945],
+          [2, 2832, 4945],
+          [3, 2760, 4809],
+          [4, 2941, 5041],
+          [5, 2760, 5100]
+        ]
+      },
+      "eventLogHash": "80f58090"
+    }
+  },
+  {
+    "id": "arena-sim.choke-point",
+    "kind": "arena-sim",
+    "description": "Twelve soldiers of side 0 cross a wall line with a single one-cell gap (board row 8 of side 1). They queue, squeeze through one at a time and slide along the wall; the invariant (no overlaps, nothing inside a wall) holds on every tick, and the positions after 300 ticks are pinned.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 1,
+            "x": 0,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 2,
+            "x": 1,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 3,
+            "x": 2,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 4,
+            "x": 3,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 5,
+            "x": 4,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 6,
+            "x": 5,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 7,
+            "x": 6,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 8,
+            "x": 7,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 9,
+            "x": 8,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 10,
+            "x": 9,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 11,
+            "x": 10,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 12,
+            "x": 12,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 13,
+            "x": 13,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 14,
+            "x": 14,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 15,
+            "x": 15,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 16,
+            "x": 16,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 17,
+            "x": 17,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 18,
+            "x": 18,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 19,
+            "x": 19,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 20,
+            "x": 20,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 21,
+            "x": 21,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 22,
+            "x": 22,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 23,
+            "x": 23,
+            "y": 8,
+            "rotation": 0
+          }
+        ]
+      },
+      "gapRows": 6,
+      "ticks": 300,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 1,
+          "y": 21
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 3,
+          "y": 21
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 5,
+          "y": 21
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 7,
+          "y": 21
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 9,
+          "y": 21
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 11,
+          "y": 21
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 13,
+          "y": 21
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 15,
+          "y": 21
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 17,
+          "y": 21
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 19,
+          "y": 21
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 21,
+          "y": 21
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 23,
+          "y": 21
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 300,
+        "stateHash": "698a4f82",
+        "events": 42,
+        "sides": [
+          {
+            "spawned": 12,
+            "alive": 12,
+            "unitsDied": 0,
+            "buildingDamageDealt": 252,
+            "buildingsDestroyed": 0,
+            "coreHealth": 500
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": 248
+          }
+        ],
+        "positions": [
+          [1, 2997, 7319],
+          [2, 2997, 7631],
+          [3, 2997, 7943],
+          [4, 2961, 8263],
+          [5, 2839, 8528],
+          [6, 2997, 8528],
+          [7, 3042, 8390],
+          [8, 2890, 8392],
+          [9, 3003, 8111],
+          [10, 3003, 7799],
+          [11, 3003, 7487],
+          [12, 3003, 7175]
+        ]
+      },
+      "eventLogHash": "741f12be"
+    }
+  },
+  {
+    "id": "arena-sim.producer-held-at-blocked-exit",
+    "kind": "arena-sim",
+    "description": "A tier 1 barracks is walled in except for one cell, and a unit_post of its own side stands on that cell (held in place because an enemy unit_post in contact with it keeps both busy attacking): the finished unit cannot be placed, so the barracks holds it, stops drawing from its input buffer (the conduit backs up and the extractor stalls) and nothing is spawned in 700 ticks.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": [
+            {
+              "x": 2,
+              "y": 2,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 8,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 1,
+            "x": 2,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 2,
+            "x": 2,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 4
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 4,
+            "x": 1,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 5,
+            "x": 1,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 6,
+            "x": 4,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 7,
+            "x": 4,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 8,
+            "x": 2,
+            "y": 7,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 9,
+            "x": 3,
+            "y": 7,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 10,
+            "x": 3,
+            "y": 4,
+            "rotation": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 8,
+            "y": 0
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 700,
+      "extraUnits": [
+        {
+          "id": "unit_post",
+          "health": 1000,
+          "damage": 0,
+          "attackCooldownTicks": 1000,
+          "moveCooldownTicks": 240,
+          "radius": 72,
+          "collisionRadius": 72,
+          "reach": 60,
+          "flying": false,
+          "attackType": "melee"
+        }
+      ],
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_post",
+          "x": 2,
+          "y": 4
+        },
+        {
+          "side": 1,
+          "def": "unit_post",
+          "px": 600,
+          "py": 876
+        }
+      ],
+      "report": "positions"
+    },
+    "expected": {
+      "result": {
+        "tick": 700,
+        "stateHash": "17d4dde2",
+        "events": 25,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": 500
+          },
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": 500
+          }
+        ],
+        "positions": [
+          [1, 600, 1080],
+          [2, 600, 876]
+        ]
+      },
+      "eventLogHash": "c1f2babb"
+    }
+  },
+  {
+    "id": "arena-sim.wide-unit-blocked-by-gap",
+    "kind": "arena-sim",
+    "description": "An ogre (collision radius 160, diameter 320 > one cell) and a soldier of side 0 head for a wall line with a one-cell gap: the soldier, nearer to the gap, passes and goes on to the Core; the ogre waits in front of the gap (the circle rules, not the cell field, stop it). Positions after 500 ticks are pinned.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 1,
+            "x": 0,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 2,
+            "x": 1,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 3,
+            "x": 2,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 4,
+            "x": 3,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 5,
+            "x": 4,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 6,
+            "x": 5,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 7,
+            "x": 6,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 8,
+            "x": 7,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 9,
+            "x": 8,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 10,
+            "x": 9,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 11,
+            "x": 10,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 12,
+            "x": 12,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 13,
+            "x": 13,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 14,
+            "x": 14,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 15,
+            "x": 15,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 16,
+            "x": 16,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 17,
+            "x": 17,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 18,
+            "x": 18,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 19,
+            "x": 19,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 20,
+            "x": 20,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 21,
+            "x": 21,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 22,
+            "x": 22,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 23,
+            "x": 23,
+            "y": 8,
+            "rotation": 0
+          }
+        ]
+      },
+      "gapRows": 6,
+      "ticks": 500,
+      "extraUnits": [
+        {
+          "id": "unit_ogre",
+          "health": 200,
+          "damage": 10,
+          "attackCooldownTicks": 10,
+          "moveCooldownTicks": 8,
+          "radius": 160,
+          "collisionRadius": 160,
+          "reach": 60,
+          "flying": false,
+          "attackType": "melee"
+        }
+      ],
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_ogre",
+          "x": 14,
+          "y": 20
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 12,
+          "y": 20
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 500,
+        "stateHash": "c7d38667",
+        "events": 41,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 246,
+            "buildingsDestroyed": 0,
+            "coreHealth": 500
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": 254
+          }
+        ],
+        "positions": [
+          [1, 3000, 6852],
+          [2, 3000, 8520]
+        ]
+      },
+      "eventLogHash": "c4cc71f0"
     }
   }
 ]
