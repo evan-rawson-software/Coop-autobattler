@@ -77,6 +77,7 @@ describe('reference board files', () => {
         const data = JSON.parse(readFileSync(file, 'utf8')) as {
           team: unknown;
           mapSeed: number;
+          partySize: number;
         };
         const result = validateTeamState(data.team, ctx.content, ctx.mapgen);
         expect(result).toMatchObject({ ok: true });
@@ -84,11 +85,70 @@ describe('reference board files', () => {
         expect(validateSchema(data.team)).toBe(true);
         expect(built.core).not.toBeNull();
         expect(built.map).toEqual(
-          generateMap(data.mapSeed, 1, ctx.content, ctx.mapgen),
+          generateMap(data.mapSeed, data.partySize, ctx.content, ctx.mapgen),
         );
       });
     });
   }
+});
+
+describe('cli errors', () => {
+  const bad: [string[], number, RegExp][] = [
+    [['battle', '--a', os.tmpdir(), '--b', 'poor'], 1, /Cannot read board/],
+    [['battle', '--a=', '--b', 'poor'], 2, /non-empty/],
+    [
+      [
+        'battle',
+        '--a',
+        'rush',
+        '--b',
+        'poor',
+        '--log',
+        '/nonexistent/dir/x.json',
+      ],
+      1,
+      /Cannot write the event log/,
+    ],
+    [
+      [
+        'batch',
+        '--a',
+        'rush',
+        '--b',
+        'poor',
+        '--seed',
+        '4294967295',
+        '--count',
+        '3',
+      ],
+      2,
+      /must stay within/,
+    ],
+    [
+      ['pve', '--team', 'rush', '--archetype', 'rusher', '--round', '999'],
+      2,
+      /highest supported round/,
+    ],
+    [
+      ['batch', '--a', 'rush', '--archetype', 'rusher', '--round', '999'],
+      2,
+      /highest supported round/,
+    ],
+  ];
+  for (const [argv, code, pattern] of bad) {
+    test(argv.join(' '), () => {
+      const r = run(argv);
+      expect(r.code).toBe(code);
+      expect(r.err).toMatch(pattern);
+      expect(r.out).toBe('');
+    });
+  }
+
+  test('the log path is checked before the battle runs', () => {
+    const r = run(['battle', '--a', 'rush', '--b', 'poor', '--log', tmp]);
+    expect(r.code).toBe(1);
+    expect(r.out).toBe('');
+  });
 });
 
 describe('board loading', () => {
@@ -106,6 +166,32 @@ describe('board loading', () => {
       x: 11,
       y: 5,
     });
+  });
+
+  test('mapSeed and partySize are checked against the team map', () => {
+    const file = (over: Record<string, unknown>): string => {
+      const base = JSON.parse(
+        readFileSync(path.join(repoRoot, 'boards', 'rush.json'), 'utf8'),
+      ) as Record<string, unknown>;
+      return JSON.stringify({ ...base, ...over });
+    };
+    expect(() => parseBoardText(file({}), 'ok', ctx)).not.toThrow();
+    expect(() => parseBoardText(file({ mapSeed: 99 }), 'f.json', ctx)).toThrow(
+      /not the map generated for "mapSeed" 99/,
+    );
+    expect(() => parseBoardText(file({ mapSeed: 'x' }), 'f.json', ctx)).toThrow(
+      /mapSeed/,
+    );
+    expect(() => parseBoardText(file({ partySize: 3 }), 'f.json', ctx)).toThrow(
+      /partySize/,
+    );
+    const base = JSON.parse(file({})) as {
+      team: { map: { features: unknown[] } };
+    };
+    base.team.map.features = [];
+    expect(() => parseBoardText(JSON.stringify(base), 'f.json', ctx)).toThrow(
+      CliError,
+    );
   });
 
   test('bad files give clear errors', () => {

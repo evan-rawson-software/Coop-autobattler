@@ -1,7 +1,8 @@
 /**
  * The performance budget of docs/performance-budget.md, enforced. The
- * enforced limits are 4 to 6 times looser than the measured speed on a
- * developer machine, so a slow or noisy CI runner passes and a real
+ * enforced limits are about 5 to 19 times looser than the measured speed on
+ * a developer machine (see the table in the document), so a slow or noisy CI
+ * runner passes and a real
  * regression (the simulation getting several times slower, or units, ticks or
  * log size growing past the budget) fails. Deterministic quantities (units,
  * ticks, log size) are checked exactly against the budget.
@@ -33,9 +34,9 @@ const BUDGET = {
   targetBattlesPerSecondFourPlots: 5,
   /** Enforced floors: fail below these. */
   minBattlesPerSecondOnePlot: 25,
-  minBattlesPerSecondFourPlots: 1.25,
+  minBattlesPerSecondFourPlots: 3,
   /** Enforced ceiling for the dense tier 3 stress battle, in ms. */
-  maxStressBattleMs: 4000,
+  maxStressBattleMs: 1500,
 } as const;
 
 const ctx = loadSimContext();
@@ -94,7 +95,7 @@ describe('performance budget', () => {
 
   test('one-plot battles stay within the size budget', () => {
     let maxBytes = 0;
-    for (const [a, b, seed] of onePlot.filter((_, i) => i % 5 === 0)) {
+    for (const [a, b, seed] of onePlot) {
       const m = shape(a, b, seed);
       expect(m.ticks).toBeLessThanOrEqual(BUDGET.maxTicks);
       expect(m.ticks).toBeLessThan(ctx.sim.maxBattleTicks);

@@ -48,9 +48,9 @@ tick on average with up to 1,220 units on the field.
 | Units alive per side                    | 1,000                  | 610 (dense tier 3)    | `performance.test.ts`, exact                 |
 | Battle length                           | 4,000 ticks            | 3,701                 | `performance.test.ts`, exact                 |
 | Hard cap on battle length               | `maxBattleTicks` 12,000 | never reached        | the end conditions                           |
-| One plot: battles per second (target)   | at least 100           | 110-215               | fails below 25 (4x margin)                   |
-| Four plots, dense: battles per second   | at least 5             | 9-16 (tier 1)         | fails below 1.25 (6x margin)                 |
-| Four plots, dense tier 3, one battle    | at most 1 s            | 0.16 s                | fails above 4 s                              |
+| One plot: battles per second (target)   | at least 100           | 110-215               | fails below 25 (about 6.6x margin)           |
+| Four plots, dense: battles per second   | at least 5             | 9-16 (tier 1)         | fails below 3 (about 5x)                     |
+| Four plots, dense tier 3, one battle    | at most 1 s            | 0.21 s                | fails above 1.5 s (about 7x)                |
 | Event log, one plot                     | 1 MB                   | 0.89 MB               | `performance.test.ts`, exact                 |
 | Event log, four plots                   | 5 MB                   | 3.24 MB               | `performance.test.ts`, exact                 |
 
@@ -69,11 +69,15 @@ test`; about 5 s, each test has a 30 s timeout):
   while the engine warms up).
 - _Four plots_: the dense board below mirrored against itself, tier 1, four
   seeds, best of three rounds: 9 to 16 battles per second (60 to 110 ms each).
-  The tier 3 version runs once for its time (150 to 160 ms) and, with tier 1,
+  The tier 3 version runs once for its time (about 210 ms) and, with tier 1,
   for the unit peak, length and log size (untimed, deterministic).
 
-The enforced floors are 4 to 6 times below the measured speed, so a slow or
-noisy CI runner passes and a regression of several times fails. The limits on
+The enforced limits are below the measured speed, so a slow or noisy CI
+runner passes and a regression of several times fails. The actual margins,
+against typical measurements on the machine this was written on: one plot at
+least 25 battles per second against about 165 (6.6x); dense tier 1 at least 3
+per second against about 15 (5x); the tier 3 stress battle under 1.5 s
+against about 0.21 s (7x). The limits on
 units, ticks and log bytes are deterministic and are checked at the budget
 itself: change a board or a content file in a way that grows them and the test
 fails until the budget (or the change) is reconsidered. The core tests

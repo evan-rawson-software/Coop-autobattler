@@ -111,6 +111,13 @@ const FLAGS: Readonly<Record<string, readonly string[]>> = {
     'time',
   ],
 };
+/** The largest seed (an unsigned 32-bit integer, as core requires). */
+const MAX_SEED = 0xffffffff;
+/**
+ * Sanity bound for `--round` at parse time; the real limit is core's
+ * `maxThreatRound` for the loaded content, checked when the command runs.
+ */
+const MAX_ROUND_PARSE = 1000;
 const BOOLEAN_FLAGS: readonly string[] = ['ascii', 'time'];
 
 function usageError(message: string): CliError {
@@ -165,6 +172,7 @@ function collectFlags(command: string, rest: readonly string[]): Flags {
     if (value === undefined || (eq === -1 && value.startsWith('--'))) {
       throw usageError(`--${name} needs a value.`);
     }
+    if (value === '') throw usageError(`--${name} needs a non-empty value.`);
     flags.set(name, value);
   }
   return flags;
@@ -178,7 +186,7 @@ function required(flags: Flags, name: string): string {
 
 function seedOf(flags: Flags, name = 'seed', fallback = 1): number {
   const v = flags.get(name);
-  return v === undefined ? fallback : parseInteger(name, v, 0, 0xffffffff);
+  return v === undefined ? fallback : parseInteger(name, v, 0, MAX_SEED);
 }
 
 function threatOf(flags: Flags): ThreatArgs {
@@ -193,11 +201,11 @@ function threatOf(flags: Flags): ThreatArgs {
   return {
     archetype: archetype.startsWith('arch_') ? archetype : `arch_${archetype}`,
     type: type as ThreatTypeName,
-    round: parseInteger('round', flags.get('round') ?? '1', 1, 1000),
+    round: parseInteger('round', flags.get('round') ?? '1', 1, MAX_ROUND_PARSE),
     threatSeed:
       ts === undefined
         ? undefined
-        : parseInteger('threat-seed', ts, 0, 0xffffffff),
+        : parseInteger('threat-seed', ts, 0, MAX_SEED),
   };
 }
 
@@ -250,13 +258,34 @@ export function parseArgs(argv: readonly string[]): Command {
       if (b === undefined && !hasThreat) {
         throw usageError('Give --b BOARD or --archetype ID to fight.');
       }
+      if (!hasThreat) {
+        for (const name of ['type', 'round', 'threat-seed']) {
+          if (flags.has(name)) {
+            throw usageError(
+              `--${name} only applies to a threat fight; give --archetype ID (it is ignored with --b).`,
+            );
+          }
+        }
+      }
+      const count = parseInteger(
+        'count',
+        flags.get('count') ?? '300',
+        1,
+        100000,
+      );
+      const seed = seedOf(flags);
+      if (seed + count - 1 > MAX_SEED) {
+        throw usageError(
+          `A batch uses seeds seed .. seed+count-1, which must stay within ${String(MAX_SEED)}; got --seed ${String(seed)} --count ${String(count)} (last seed ${String(seed + count - 1)}).`,
+        );
+      }
       return {
         kind: 'batch',
         a: required(flags, 'a'),
         b: b ?? null,
         threat: hasThreat ? threatOf(flags) : null,
-        count: parseInteger('count', flags.get('count') ?? '300', 1, 100000),
-        seed: seedOf(flags),
+        count,
+        seed,
         time,
       };
     }

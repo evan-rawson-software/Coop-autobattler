@@ -3,7 +3,14 @@
  * calls the pure commands in `commands.ts`, prints their text and optionally
  * writes the event log. Node I/O is allowed here (not in core).
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  accessSync,
+  constants,
+  existsSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
@@ -31,6 +38,26 @@ export function boardPath(ref: string): string {
   return path.resolve(ref);
 }
 
+function fsReason(e: unknown): string {
+  return e instanceof Error ? e.message : 'unknown error';
+}
+
+/** Fail early, before any battle runs, if the `--log` file cannot be written. */
+function checkLogWritable(file: string): void {
+  const dir = path.dirname(path.resolve(file));
+  try {
+    accessSync(dir, constants.W_OK);
+    if (existsSync(file)) accessSync(file, constants.W_OK);
+    if (statSync(file, { throwIfNoEntry: false })?.isDirectory() === true) {
+      throw new Error(`${file} is a directory`);
+    }
+  } catch (e) {
+    throw new CliError(
+      `Cannot write the event log to ${file}: ${fsReason(e)}.`,
+    );
+  }
+}
+
 export function loadBoard(ref: string, ctx: SimContext): Board {
   const file = boardPath(ref);
   if (!existsSync(file)) {
@@ -38,7 +65,13 @@ export function loadBoard(ref: string, ctx: SimContext): Board {
       `Board "${ref}" not found (looked for ${file}). Use a reference board name (rush, fortify, siege, poor) or a path to a board JSON file.`,
     );
   }
-  const board = parseBoardText(readFileSync(file, 'utf8'), ref, ctx);
+  let text: string;
+  try {
+    text = readFileSync(file, 'utf8');
+  } catch (e) {
+    throw new CliError(`Cannot read board "${ref}" (${file}): ${fsReason(e)}.`);
+  }
+  const board = parseBoardText(text, ref, ctx);
   return /^[a-z][a-z0-9_-]*$/.test(ref) ? { ...board, label: ref } : board;
 }
 
@@ -55,6 +88,7 @@ export function main(argv: readonly string[], io: Io): number {
       io.out(USAGE);
       return 0;
     }
+    if ('log' in cmd && cmd.log !== undefined) checkLogWritable(cmd.log);
     const ctx = loadSimContext();
     const t0 = performance.now();
     let output: CommandOutput;
@@ -91,7 +125,13 @@ export function main(argv: readonly string[], io: Io): number {
     const ms = performance.now() - t0;
     io.out(output.text);
     if ('log' in cmd && cmd.log !== undefined && output.log !== undefined) {
-      writeFileSync(cmd.log, `${JSON.stringify(output.log)}\n`);
+      try {
+        writeFileSync(cmd.log, `${JSON.stringify(output.log)}\n`);
+      } catch (e) {
+        throw new CliError(
+          `Cannot write the event log to ${cmd.log}: ${fsReason(e)}.`,
+        );
+      }
       io.out(`Event log written to ${cmd.log}`);
     }
     if (cmd.time) io.out(`Time: ${ms.toFixed(0)} ms`);

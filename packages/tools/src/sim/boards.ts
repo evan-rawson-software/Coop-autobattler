@@ -6,6 +6,8 @@
  * A bare team state (an object with a `map`) is accepted too.
  */
 import {
+  generateMap,
+  hashJson,
   validateTeamState,
   type AnyReferenceBoardName,
   type TeamState,
@@ -83,6 +85,31 @@ export function parseBoardText(
     throw new CliError(
       `${where}: not a valid team state:\n${result.errors.map((e) => `  - ${e}`).join('\n')}`,
     );
+  }
+  if ('mapSeed' in rec) {
+    const seed = rec['mapSeed'];
+    if (typeof seed !== 'number' || !Number.isInteger(seed) || seed < 0) {
+      throw new CliError(`${where}: "mapSeed" must be a non-negative integer.`);
+    }
+    const size = result.state.map.partySize;
+    if ('partySize' in rec && rec['partySize'] !== size) {
+      throw new CliError(
+        `${where}: "partySize" is ${JSON.stringify(rec['partySize'])} but the team's map has party size ${String(size)}.`,
+      );
+    }
+    let expected;
+    try {
+      expected = generateMap(seed, size, ctx.content, ctx.mapgen);
+    } catch (e) {
+      throw new CliError(
+        `${where}: cannot generate a map for "mapSeed" ${String(seed)} (${e instanceof Error ? e.message : 'error'}).`,
+      );
+    }
+    if (hashJson(expected) !== hashJson(result.state.map)) {
+      throw new CliError(
+        `${where}: the team's map is not the map generated for "mapSeed" ${String(seed)} and party size ${String(size)}.`,
+      );
+    }
   }
   const name = typeof rec['name'] === 'string' ? rec['name'] : where;
   return { label: name, team: result.state };

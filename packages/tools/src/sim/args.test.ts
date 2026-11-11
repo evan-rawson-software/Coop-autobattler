@@ -111,6 +111,22 @@ describe('parseArgs', () => {
     ).toMatch(/not both/);
   });
 
+  test('a batch may end exactly at the largest seed', () => {
+    expect(
+      parseArgs([
+        'batch',
+        '--a',
+        'x',
+        '--b',
+        'y',
+        '--seed',
+        '4294967295',
+        '--count',
+        '1',
+      ]),
+    ).toMatchObject({ seed: 4294967295, count: 1 });
+  });
+
   test('bad input is a usage error with exit code 2', () => {
     const cases: [string[], RegExp][] = [
       [['frobnicate'], /Unknown command/],
@@ -133,6 +149,28 @@ describe('parseArgs', () => {
       [['map', '--seed', '1', '--party', '9'], /between 1 and 4/],
       [['pve', '--team', 'x', '--archetype', 'a', '--type', 'huge'], /--type/],
       [['batch', '--a', 'x', '--b', 'y', '--count', '0'], /between/],
+      [
+        [
+          'batch',
+          '--a',
+          'x',
+          '--b',
+          'y',
+          '--seed',
+          '4294967295',
+          '--count',
+          '3',
+        ],
+        /must stay within 4294967295/,
+      ],
+      [['battle', '--a=', '--b', 'y'], /non-empty/],
+      [['battle', '--a', 'x', '--b', 'y', '--log', ''], /non-empty/],
+      [
+        ['batch', '--a', 'x', '--b', 'y', '--threat-seed', '3'],
+        /only applies to a threat fight/,
+      ],
+      [['batch', '--a', 'x', '--b', 'y', '--type', 'easy'], /--type only/],
+      [['batch', '--a', 'x', '--b', 'y', '--round', '2'], /--round only/],
     ];
     for (const [argv, pattern] of cases) {
       const e = usageError(argv);

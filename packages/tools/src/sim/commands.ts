@@ -7,6 +7,7 @@ import {
   generateThreat,
   hashJson,
   listLegalCorePositions,
+  maxThreatRound,
   renderArenaAscii,
   renderMapAscii,
   startBattle,
@@ -194,6 +195,13 @@ export function makeThreat(
   if (!known.includes(t.archetype)) {
     throw new CliError(
       `Unknown archetype "${t.archetype}". Known: ${known.join(', ')}.`,
+    );
+  }
+  const maxRound = maxThreatRound(ctx.threats);
+  if (t.round > maxRound) {
+    throw new CliError(
+      `--round ${String(t.round)} is above the highest supported round (${String(maxRound)}); later rounds would have the same budget.`,
+      2,
     );
   }
   try {

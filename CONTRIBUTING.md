@@ -71,11 +71,13 @@ pnpm sim --help
   timeline sample, and the event log hash. `--log FILE` writes the full event
   log as JSON; `--ascii` also prints the final arena.
 - `pve` fights a board against a generated threat (`--archetype` with or without
-  the `arch_` prefix; `--type` easy, medium, hard or boss; `--round`). The
+  the `arch_` prefix; `--type` easy, medium, hard or boss; `--round`, at most the highest round with its own budget, 63 with the
+  current content). The
   threat is generated with the battle seed unless `--threat-seed` is given.
 - `batch` runs `--count` battles with seeds `seed .. seed + count - 1` against a
   board (`--b`) or a threat (`--archetype`) and reports win rate and the length
-  distribution.
+  distribution. The seeds must stay within 0 to 4294967295, and `--type`,
+  `--round` and `--threat-seed` need `--archetype`.
 
 Board files hold a team state plus a name, description and map seed (see the
 rules reference, "Reference boards"). The four reference boards are built by
