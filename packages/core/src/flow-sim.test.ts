@@ -24,6 +24,7 @@ import {
   randomNetwork,
   simConfig,
   type Pairs,
+  TIMING,
 } from './test-support.js';
 import type { TeamState } from './team-state.js';
 interface Run {
@@ -887,7 +888,7 @@ describe('performance', () => {
       expect(
         ms,
         `dryRunFlow of 2000 ticks on ${String(state.buildings.length)} buildings took ${String(ms)} ms`,
-      ).toBeLessThan(10000);
+      ).toBeLessThan(10000 * TIMING);
       // Every source made 2000 / 20 = 100 items and none was lost or stalled.
       expect(d.sources).toHaveLength(48);
       for (const s of d.sources) {

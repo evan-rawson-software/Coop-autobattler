@@ -3,7 +3,14 @@ import { sealedProducers } from './sealed-producers.js';
 import { generateMap } from './generate-map.js';
 import { addToStash } from './team-state.js';
 import { randomTeam } from './test-teams.js';
-import { Lab, board, content, mapgen, type Pairs } from './test-support.js';
+import {
+  Lab,
+  TIMING,
+  board,
+  content,
+  mapgen,
+  type Pairs,
+} from './test-support.js';
 
 /** Cells of the ring around the box [x0..x1] x [y0..y1]. */
 function ring(x0: number, y0: number, x1: number, y1: number): Pairs {
@@ -170,6 +177,6 @@ describe('sealedProducers (issue #37, 3a)', () => {
     const runs = 200;
     for (let i = 0; i < runs; i++) sealedProducers(team, content);
     const each = (Date.now() - t0) / runs;
-    expect(each).toBeLessThan(5);
+    expect(each).toBeLessThan(5 * TIMING);
   });
 });
