@@ -31,6 +31,7 @@ import {
   buildingDist2,
   cellCoord,
   fillSolid,
+  ownCellCoord,
   fits,
   type World,
 } from './geometry.js';
@@ -1310,7 +1311,7 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     for (let i = 0; i < units.length; i++) {
       const u = units[i];
       if (u === undefined || u.side === t.side) continue;
-      const row = cellCoord(u.py, geom.height);
+      const row = ownCellCoord(t.side, u.py, geom.height);
       if (row < rowLo || row > rowHi) continue;
       const d = buildingDist2(u.px, u.py, turret);
       const reach = info.rangeCells * S + (ctx.brad[i] ?? 0);
@@ -1340,7 +1341,7 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
  * arena cell `(x, y)` or at the exact position `(px, py)` (sub-cell units).
  * Throws if its circle does not fit for its side (blocked ground or a
  * building that blocks the side; a gate of its own side does not) or overlaps
- * a living unit. Emits no event.
+ * a living unit (unless `allowOverlap`). Emits no event.
  */
 export function spawnUnitForTest(
   sim: ArenaSim,
@@ -1352,6 +1353,8 @@ export function spawnUnitForTest(
     y?: number;
     px?: number;
     py?: number;
+    /** Skip the overlap check (tests of damage sums that stack units). */
+    allowOverlap?: boolean;
   },
 ): UnitSim {
   const def = ctx.content.units.get(args.def);
@@ -1368,7 +1371,7 @@ export function spawnUnitForTest(
       `spawnUnitForTest: (${String(px)}, ${String(py)}) is not open.`,
     );
   }
-  for (const e of sim.units) {
+  for (const e of args.allowOverlap === true ? [] : sim.units) {
     const other = ctx.content.units.get(e.def);
     const rr = def.collisionRadius + (other?.collisionRadius ?? 0);
     const dx = e.px - px;
@@ -1501,9 +1504,13 @@ function lineClear(
   const dy = y1 - y0;
   const n = Math.max(1, divCeil(Math.max(Math.abs(dx), Math.abs(dy)), S / 2));
   for (let k = 0; k <= n; k++) {
-    const x = x0 + Math.floor((dx * k) / n);
-    const y = y0 + Math.floor((dy * k) / n);
-    if (solid[cellCoord(y, height) * width + cellCoord(x, width)] === 1) {
+    const x = x0 + Math.trunc((dx * k) / n);
+    const y = y0 + Math.trunc((dy * k) / n);
+    if (
+      solid[
+        ownCellCoord(side, y, height) * width + ownCellCoord(side, x, width)
+      ] === 1
+    ) {
       return false;
     }
   }
@@ -1599,7 +1606,12 @@ function moveToCore(ctx: ArenaContext, i: number, u: UnitSim): void {
   let bx = 0;
   let by = 0;
   let bestD = Number.MAX_SAFE_INTEGER;
-  for (const c of b.cells) {
+  // Ties go to the first cell in the unit's own frame: side 1 reads the
+  // arena-ordered list from the end.
+  const n = b.cells.length;
+  for (let q = 0; q < n; q++) {
+    const c = b.cells[u.side === 0 ? q : n - 1 - q];
+    if (c === undefined) continue;
     const d = boxDist2(u.px, u.py, c.x, c.y);
     if (d < bestD) {
       bestD = d;
@@ -1651,7 +1663,8 @@ function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
 
   // c. Move.
   const cell =
-    cellCoord(u.py, height) * width + cellCoord(u.px, width);
+    ownCellCoord(u.side, u.py, height) * width +
+    ownCellCoord(u.side, u.px, width);
   const field = fieldFor(ctx, u.side);
   const d = field.dist[cell] ?? -1;
   if (d > 0) {

@@ -525,6 +525,9 @@ describe('crossover: ramp versus the same resources elsewhere (criterion 1)', ()
     for (let t = 0; t < Math.max(...ticks); t++) {
       stepArena(sim, ctx);
       if (ticks.includes(t + 1)) counts[t + 1] = sim.spawned[0];
+      // Units are circles that queue up and eventually hold the producers;
+      // this test is about production rates, so the units are removed.
+      sim.units.length = 0;
     }
     return { counts, events };
   };
@@ -646,17 +649,18 @@ describe('unit_strength (armory)', () => {
       simConfig,
     );
     got(sim.ramps[0]).steps = 5; // +20 percent
+    // 204 apart (circle radius 72 each, reach 60): in contact.
     const strong = spawnUnitForTest(sim, ctx, {
       side: 0,
       def: 'unit_soldier',
-      x: 5,
-      y: 18,
+      px: 5 * 240 + 120,
+      py: 18 * 240 + 120,
     });
     const foe = spawnUnitForTest(sim, ctx, {
       side: 1,
       def: 'unit_soldier',
-      x: 5,
-      y: 19,
+      px: 5 * 240 + 120,
+      py: 18 * 240 + 120 + 204,
     });
     got(sim.ramps[0]).steps = 0; // bonus gone: the strong unit stays strong
     stepArena(sim, ctx);
@@ -818,14 +822,14 @@ describe('Overload damage (criterion 6)', () => {
     const a0 = spawnUnitForTest(b.sim, b.ctx, {
       side: 0,
       def: 'unit_soldier',
-      x: 2,
-      y: 17,
+      px: 2 * 240 + 120,
+      py: 17 * 240 + 120,
     });
     const a1 = spawnUnitForTest(b.sim, b.ctx, {
       side: 1,
       def: 'unit_soldier',
-      x: 2,
-      y: 18,
+      px: 2 * 240 + 120,
+      py: 17 * 240 + 120 + 204,
     });
     stepArena(b.sim, b.ctx);
     return { ...b, a0, a1 };
@@ -858,14 +862,14 @@ describe('Overload damage (criterion 6)', () => {
     spawnUnitForTest(before.sim, before.ctx, {
       side: 0,
       def: 'unit_soldier',
-      x: 2,
-      y: 17,
+      px: 2 * 240 + 120,
+      py: 17 * 240 + 120,
     });
     spawnUnitForTest(before.sim, before.ctx, {
       side: 1,
       def: 'unit_soldier',
-      x: 2,
-      y: 18,
+      px: 2 * 240 + 120,
+      py: 17 * 240 + 120 + 204,
     });
     stepArena(before.sim, before.ctx);
     expect(ofType(before.events, 'unit_attacked').map((e) => e.damage)).toEqual(

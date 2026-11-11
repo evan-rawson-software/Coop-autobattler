@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { toArena } from './arena.js';
+import { toArena, type ArenaContent } from './arena.js';
 import { openFor } from './arena-paths.js';
 import {
   spawnUnitForTest,
@@ -13,7 +13,18 @@ import { previewEnemyPaths } from './enemy-paths.js';
 import type { Cell, GameMap } from './map.js';
 import { withModifier, type TeamModifier } from './modifiers.js';
 import type { TeamState } from './team-state.js';
-import { Lab, content, got, simConfig } from './test-support.js';
+import {
+  Lab,
+  cellOfUnit,
+  circleViolations,
+  content,
+  got,
+  mid,
+  postContent,
+  simConfig,
+  walk,
+} from './test-support.js';
+import { loadUnitsOrThrow } from './units.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -140,10 +151,9 @@ describe('gates', () => {
       x: 6,
       y: 5,
     });
-    for (let t = 0; t < 200; t++) stepArena(sim, ctx);
-    const path = ofType(events, 'unit_moved')
-      .filter((m) => m.unit === friend.id)
-      .map((m) => `${String(m.x)},${String(m.y)}`);
+    const path = walk(sim, ctx, friend, 200).map(
+      (c) => `${String(c.x)},${String(c.y)}`,
+    );
     expect(path).toContain('6,8'); // stood on the gate cell
     expect(path).toContain('6,9'); // and came out the other side
     expect(ofType(events, 'building_destroyed')).toEqual([]);
@@ -165,6 +175,7 @@ describe('gates', () => {
       y: 12,
     });
     let fell = -1;
+    const cells: { tick: number; x: number; y: number }[] = [];
     for (let t = 0; t < 600; t++) {
       stepArena(sim, ctx);
       if (
@@ -173,15 +184,16 @@ describe('gates', () => {
       ) {
         fell = t;
       }
+      const c = cellOfUnit(foe);
+      cells.push({ tick: t, x: c.x, y: c.y });
     }
     expect(fell).toBeGreaterThan(0);
     // Before the gate fell the unit never stood on it or below it ...
-    const moves = ofType(events, 'unit_moved').filter((m) => m.unit === foe.id);
-    expect(moves.filter((m) => m.tick <= fell).every((m) => m.y > 8)).toBe(
+    expect(cells.filter((m) => m.tick <= fell).every((m) => m.y > 8)).toBe(
       true,
     );
     // ... and afterwards it walked through the gate's cell.
-    expect(moves.some((m) => m.tick > fell && m.x === 6 && m.y === 8)).toBe(
+    expect(cells.some((m) => m.tick > fell && m.x === 6 && m.y === 8)).toBe(
       true,
     );
     // It attacked only the gate (the cheapest breach), not a wall.
@@ -219,9 +231,10 @@ describe('gates', () => {
     );
     for (let t = 0; t < 120 && sim.units.length === 0; t++) stepArena(sim, ctx);
     const u = got(sim.units[0]);
-    expect(u.x).toBe(4);
-    expect(openFor(ctx.arena, 0, u.y * W + u.x)).toBe(true);
-    expect(ctx.arena.occupant[u.y * W + u.x]).toBeGreaterThanOrEqual(0);
+    const c = cellOfUnit(u);
+    expect(c.x).toBe(4);
+    expect(openFor(ctx.arena, 0, c.y * W + c.x)).toBe(true);
+    expect(ctx.arena.occupant[c.y * W + c.x]).toBeGreaterThanOrEqual(0);
   });
 });
 
@@ -242,16 +255,9 @@ describe('turrets', () => {
     return { state: lab.state, turret };
   }
 
+  /** A target dummy of side 1 (see `postContent`) at the centre of a cell. */
   function park(sim: ArenaSim, ctx: ArenaContext, x: number, y: number) {
-    const u = spawnUnitForTest(sim, ctx, {
-      side: 1,
-      def: 'unit_soldier',
-      x,
-      y,
-    });
-    u.moveCooldown = 1000;
-    u.hp = 1000;
-    return u;
+    return spawnUnitForTest(sim, ctx, { side: 1, def: 'unit_post', x, y });
   }
 
   test('never fires at a unit that has not crossed the front edge', () => {
@@ -260,10 +266,10 @@ describe('turrets', () => {
       state,
       coreOnly(),
       GAP,
-      content,
+      postContent,
       simConfig,
     );
-    const foe = park(sim, ctx, 3, 16); // in the gap, one cell from the turret
+    const foe = park(sim, ctx, 3, 17); // in the gap, two cells from the turret
     for (let t = 0; t < 200; t++) stepArena(sim, ctx);
     expect(ofType(events, 'turret_fired')).toEqual([]);
     expect(foe.hp).toBe(1000);
@@ -271,8 +277,8 @@ describe('turrets', () => {
     expect(got(sim.turrets[0]).charge).toBe(1);
     // A unit on the enemy board is out of reach as well.
     // Step onto the owner's front row: it is fired upon at once.
-    foe.y = 15;
-    foe.x = 4;
+    foe.py = mid(15);
+    foe.px = mid(4);
     stepArena(sim, ctx);
     const shots = ofType(events, 'turret_fired');
     expect(shots).toEqual([
@@ -298,21 +304,19 @@ describe('turrets', () => {
       coreOnly(),
       lab.state,
       GAP,
-      content,
+      postContent,
       simConfig,
     );
     const u = spawnUnitForTest(sim, ctx, {
       side: 0,
-      def: 'unit_soldier',
+      def: 'unit_post',
       x: 8,
       y: 19,
     });
-    u.moveCooldown = 1000;
-    u.hp = 1000;
     for (let t = 0; t < 100; t++) stepArena(sim, ctx);
     expect(ofType(events, 'turret_fired')).toEqual([]);
-    u.x = 7;
-    u.y = 20; // side 1's front row
+    u.px = mid(7);
+    u.py = mid(20); // side 1's front row
     for (let t = 0; t < 10; t++) stepArena(sim, ctx);
     expect(ofType(events, 'turret_fired').length).toBeGreaterThan(0);
     expect(u.hp).toBeLessThan(1000);
@@ -320,7 +324,13 @@ describe('turrets', () => {
 
   test('an unpowered turret never fires; restored supply restores fire', () => {
     const none = turretBoard(false);
-    const a = startArenaBattle(none.state, coreOnly(), GAP, content, simConfig);
+    const a = startArenaBattle(
+      none.state,
+      coreOnly(),
+      GAP,
+      postContent,
+      simConfig,
+    );
     park(a.sim, a.ctx, 4, 15);
     for (let t = 0; t < 200; t++) stepArena(a.sim, a.ctx);
     expect(ofType(a.events, 'turret_fired')).toEqual([]);
@@ -332,7 +342,7 @@ describe('turrets', () => {
     // 210 and is delivered at tick 211, charged in the same tick's Production
     // step, and fired in the same tick's Decide step.
     const { state } = turretBoard(true);
-    const b = startArenaBattle(state, coreOnly(), GAP, content, simConfig);
+    const b = startArenaBattle(state, coreOnly(), GAP, postContent, simConfig);
     got(b.sim.boards[0].sources[0]).countdown = 200;
     const foe = park(b.sim, b.ctx, 4, 15);
     for (let t = 0; t < 300; t++) stepArena(b.sim, b.ctx);
@@ -349,7 +359,7 @@ describe('turrets', () => {
       state,
       coreOnly(),
       GAP,
-      content,
+      postContent,
       simConfig,
     );
     for (let t = 0; t < 400; t++) stepArena(sim, ctx);
@@ -369,7 +379,7 @@ describe('turrets', () => {
       state,
       coreOnly(),
       GAP,
-      content,
+      postContent,
       simConfig,
     );
     for (let t = 0; t < 100; t++) stepArena(sim, ctx);
@@ -384,22 +394,59 @@ describe('turrets', () => {
     expect(got(sim.turrets[0]).cooldown).toBe(5); // 6, minus this tick's decrement
   });
 
-  test('targets the nearest unit by Manhattan distance, ties to the lowest ID', () => {
+  test('targets the unit nearest by distance to its cells, ties to the lowest ID', () => {
     const { state } = turretBoard(true);
     const { sim, ctx, events } = startArenaBattle(
       state,
       coreOnly(),
       GAP,
-      content,
+      postContent,
       simConfig,
     );
     for (let t = 0; t < 50; t++) stepArena(sim, ctx);
-    const far = park(sim, ctx, 6, 15); // distance 3
-    const near1 = park(sim, ctx, 2, 14); // distance 2
-    park(sim, ctx, 4, 14); // distance 2, higher ID
+    // The turret covers board cell (3, 15): x 720..960, y 3600..3840. All
+    // three stand level with it, so the distance is the horizontal gap.
+    const at = (px: number) =>
+      spawnUnitForTest(sim, ctx, {
+        side: 1,
+        def: 'unit_post',
+        px,
+        py: 3720,
+      });
+    const far = at(960 + 400);
+    const near1 = at(720 - 200);
+    const near2 = at(960 + 200);
     expect(far.id).toBeLessThan(near1.id);
+    expect(near1.id).toBeLessThan(near2.id);
     stepArena(sim, ctx);
+    // near1 and near2 are both 200 away: the lower ID is shot.
     expect(got(ofType(events, 'turret_fired')[0]).unit).toBe(near1.id);
+  });
+
+  test('range is measured to the unit\'s edge: a post just in range is shot, one just out is not', () => {
+    // Tier 1 range is 4 cells = 960; the unit's radius 72 is added.
+    for (const [gap, shot] of [
+      [960 + 72, true],
+      [960 + 73, false],
+    ] as const) {
+      const { state } = turretBoard(true);
+      const { sim, ctx, events } = startArenaBattle(
+        state,
+        coreOnly(),
+        GAP,
+        postContent,
+        simConfig,
+      );
+      for (let t = 0; t < 50; t++) stepArena(sim, ctx);
+      spawnUnitForTest(sim, ctx, {
+        side: 1,
+        def: 'unit_post',
+        px: 960 + gap,
+        py: 3720,
+      });
+      stepArena(sim, ctx);
+      expect(ofType(events, 'turret_fired').length > 0).toBe(shot);
+    }
   });
 
   test('turrets block movement like any building and can be destroyed', () => {
@@ -408,7 +455,7 @@ describe('turrets', () => {
       state,
       coreOnly(),
       GAP,
-      content,
+      postContent,
       simConfig,
     );
     expect(openFor(ctx.arena, 0, 15 * W + 3)).toBe(false);
@@ -422,7 +469,7 @@ describe('turrets', () => {
       state,
       coreOnly(),
       GAP,
-      content,
+      postContent,
       simConfig,
     );
     const h = got(sim.health.find((x) => x.side === 0 && x.building > 0));
@@ -489,11 +536,14 @@ describe('funnelling', () => {
   test('the same turrets kill more of the same wave when the approach is funnelled', () => {
     const open = runWave(false);
     const funnel = runWave(true);
-    expect(funnel.dead).toBeGreaterThanOrEqual(open.dead + 6);
-    expect(funnel.leftHp).toBeLessThan(open.leftHp - 150);
+    // Funnelling still helps the turrets, but units now queue in front of
+    // the Core in any case (they cannot stack), which keeps them in range
+    // longer on the open ground too.
+    expect(funnel.dead).toBeGreaterThan(open.dead);
+    expect(funnel.leftHp).toBeLessThan(open.leftHp);
     expect({ open, funnel }).toEqual({
-      open: { dead: 0, leftHp: 340 },
-      funnel: { dead: 9, leftHp: 100 },
+      open: { dead: 9, leftHp: 95 },
+      funnel: { dead: 12, leftHp: 0 },
     });
   });
 });
@@ -532,87 +582,131 @@ describe('aggro', () => {
     ).toEqual([]);
   });
 
-  test('a unit does not chase an enemy outside aggro range', () => {
-    for (const [ey, expectDown] of [
-      [13, true], // distance 4 from (3, 17): ignored
-      [14, false], // distance 3: chased
+  test('a unit does not chase an enemy outside aggro range (3 cells, centre to centre)', () => {
+    for (const [dist, chased] of [
+      [721, false],
+      [720, true],
     ] as const) {
-      const { sim, ctx, events } = startArenaBattle(
+      const { sim, ctx } = startArenaBattle(
         coreOnly(),
         coreOnly(),
         GAP,
-        content,
+        postContent,
         simConfig,
       );
       const me = spawnUnitForTest(sim, ctx, {
         side: 0,
         def: 'unit_soldier',
-        x: 3,
-        y: 17,
+        px: mid(3),
+        py: mid(17),
       });
-      me.moveCooldown = 0;
-      const foe = spawnUnitForTest(sim, ctx, {
+      spawnUnitForTest(sim, ctx, {
         side: 1,
-        def: 'unit_soldier',
-        x: 3,
-        y: ey,
+        def: 'unit_post',
+        px: mid(3),
+        py: mid(17) - dist,
       });
-      foe.moveCooldown = 1000;
       stepArena(sim, ctx);
-      const first = got(
-        ofType(events, 'unit_moved').find((m) => m.unit === me.id),
-      );
-      // Its field leads north (towards the enemy Core); chasing goes south.
-      expect(first.y < 17).toBe(!expectDown);
+      // Its field leads north (towards the enemy Core, larger y); chasing
+      // the enemy, which stands to the south, lowers y.
+      expect(me.py < mid(17)).toBe(chased);
     }
   });
 
-  test('aggro steps never enter blocked cells, and fall through to the field', () => {
-    // A lake cell between the two: the chaser must not step onto it.
-    const map = tiny([], [[3, 16]]);
-    const a = coreOnly(5, 0, map);
-    const { sim, ctx, events } = startArenaBattle(
-      a,
+  test('aggro needs a clear line: a blocked cell between the units hides the enemy', () => {
+    // A blocked gap cell at (3, 17) between a chaser at (3, 16) and an enemy
+    // at (3, 18): the chaser follows its field (sideways round the block).
+    const { sim, ctx } = startArenaBattle(
       coreOnly(),
-      0,
-      content,
+      coreOnly(),
+      GAP,
+      postContent,
+      simConfig,
+      { gapBlocked: [{ x: 3, y: 17 }] },
+    );
+    const me = spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: 3,
+      y: 16,
+    });
+    spawnUnitForTest(sim, ctx, { side: 1, def: 'unit_post', x: 3, y: 18 });
+    const start = { x: me.px, y: me.py };
+    stepArena(sim, ctx);
+    expect(me.py).toBe(start.y);
+    expect(me.px).not.toBe(start.x);
+    // Without the block it walks straight at the enemy.
+    const open = startArenaBattle(
+      coreOnly(),
+      coreOnly(),
+      GAP,
+      postContent,
       simConfig,
     );
+    const me2 = spawnUnitForTest(open.sim, open.ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: 3,
+      y: 16,
+    });
+    spawnUnitForTest(open.sim, open.ctx, {
+      side: 1,
+      def: 'unit_post',
+      x: 3,
+      y: 18,
+    });
+    stepArena(open.sim, open.ctx);
+    expect(me2.px).toBe(start.x);
+    expect(me2.py).toBeGreaterThan(start.y);
+  });
+
+  test('aggro never pushes a unit into blocked ground', () => {
+    // A lake cell between the two: the chaser must not enter it.
+    const map = tiny([], [[3, 16]]);
+    const a = coreOnly(5, 0, map);
+    const { sim, ctx } = startArenaBattle(a, coreOnly(), 0, content, simConfig);
     const me = spawnUnitForTest(sim, ctx, {
       side: 1,
       def: 'unit_soldier',
       ...toArena({ ...GEOM, gapRows: 0, height: 32 }, 1, { x: 3, y: 15 }),
     });
     expect(me.id).toBeGreaterThan(0);
-    for (let t = 0; t < 40; t++) stepArena(sim, ctx);
-    for (const m of ofType(events, 'unit_moved')) {
-      expect(ctx.arena.blocked[m.y * W + m.x]).toBe(0);
+    for (let t = 0; t < 40; t++) {
+      stepArena(sim, ctx);
+      expect(circleViolations(sim, ctx)).toEqual([]);
     }
   });
 });
 
-describe('aggro convergence (Chebyshev reach, larger-axis step)', () => {
-  const R = simConfig.aggroRangeCells;
-
-  /** All offsets with Chebyshev distance 2..R, both signs. */
+describe('aggro convergence (Euclidean reach and range)', () => {
+  /**
+   * All cell offsets within Euclidean aggro range 3 (dx^2 + dy^2 <= 9) and
+   * farther than one cell in some axis.
+   */
   function offsets(): [number, number][] {
     const out: [number, number][] = [];
-    for (let dy = -R; dy <= R; dy++)
-      for (let dx = -R; dx <= R; dx++) {
+    for (let dy = -3; dy <= 3; dy++)
+      for (let dx = -3; dx <= 3; dx++) {
         const c = Math.max(Math.abs(dx), Math.abs(dy));
-        if (c >= 2 && c <= R) out.push([dx, dy]);
+        if (c >= 2 && dx * dx + dy * dy <= 9) out.push([dx, dy]);
       }
     return out;
   }
 
   /** First tick at which A and B attack each other, or -1. */
-  function meet(a: Cell, b: Cell, bMoves: boolean, ticks: number): number {
+  function meet(
+    a: Cell,
+    b: Cell,
+    bMoves: boolean,
+    ticks: number,
+    cfg = simConfig,
+  ): number {
     const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       coreOnly(),
       8,
-      content,
-      simConfig,
+      postContent,
+      cfg,
     );
     const ua = spawnUnitForTest(sim, ctx, {
       side: 0,
@@ -621,11 +715,9 @@ describe('aggro convergence (Chebyshev reach, larger-axis step)', () => {
     });
     const ub = spawnUnitForTest(sim, ctx, {
       side: 1,
-      def: 'unit_soldier',
+      def: bMoves ? 'unit_soldier' : 'unit_post',
       ...b,
     });
-    ua.moveCooldown = 0;
-    ub.moveCooldown = bMoves ? 0 : 1000;
     for (let t = 0; t < ticks; t++) {
       stepArena(sim, ctx);
       const hit = ofType(events, 'unit_attacked').find(
@@ -639,19 +731,17 @@ describe('aggro convergence (Chebyshev reach, larger-axis step)', () => {
     return -1;
   }
 
-  test('both units moving: they meet within ceil(M / 2) rounds', () => {
-    // Each round (one move each, 6 ticks apart) lowers the Manhattan offset M
-    // by 2 until the units are within Chebyshev 1, so the last move is in round
-    // ceil(M / 2) at tick 6 * (round - 1) and the attack follows in the next
-    // tick: tick <= 6 * ceil(M / 2).
+  test('both units moving: they meet within the closing time', () => {
+    // Both close the distance at 40 sub-cell units per tick each; they are in
+    // contact at a centre distance of 204. Allow two ticks for separation.
     let worst = 0;
     const cases = offsets();
-    expect(cases.length).toBe(40);
+    expect(cases.length).toBe(20);
     for (const [dx, dy] of cases) {
       const a = { x: 5, y: 19 };
       const b = { x: 5 + dx, y: 19 + dy };
-      const m = Math.abs(dx) + Math.abs(dy);
-      const bound = 6 * Math.ceil(m / 2);
+      const dist = Math.ceil(240 * Math.sqrt(dx * dx + dy * dy));
+      const bound = Math.ceil((dist - 204) / 80) + 2;
       const t = meet(a, b, true, bound + 1);
       expect(t, `offset ${String(dx)},${String(dy)}`).toBeGreaterThanOrEqual(0);
       expect(t).toBeLessThanOrEqual(bound);
@@ -660,42 +750,49 @@ describe('aggro convergence (Chebyshev reach, larger-axis step)', () => {
     expect(worst).toBeGreaterThan(0);
   });
 
+  test('a diagonal pair two cells apart in both axes is within aggro range', () => {
+    // 2 * sqrt(2) cells = 679 <= 720. Without aggro the post is passed by.
+    expect(meet({ x: 5, y: 19 }, { x: 7, y: 21 }, false, 40)).toBeGreaterThan(
+      -1,
+    );
+    expect(
+      meet({ x: 5, y: 19 }, { x: 7, y: 21 }, false, 40, {
+        ...simConfig,
+        aggroRangeCells: 0,
+      }),
+    ).toBe(-1);
+  });
+
+  test('only one unit able to move: still converges', () => {
+    for (const [dx, dy] of offsets()) {
+      const dist = Math.ceil(240 * Math.sqrt(dx * dx + dy * dy));
+      const bound = Math.ceil((dist - 204) / 40) + 2;
+      const t = meet({ x: 5, y: 19 }, { x: 5 + dx, y: 19 + dy }, false, bound);
+      expect(t, `offset ${String(dx)},${String(dy)}`).toBeGreaterThanOrEqual(0);
+      expect(t).toBeLessThanOrEqual(bound);
+    }
+  });
+
   test('the former livelock: (5,16) against (6,18) now fight', () => {
     expect(meet({ x: 5, y: 16 }, { x: 6, y: 18 }, true, 30)).toBeGreaterThan(
       -1,
     );
   });
 
-  test('only one unit able to move: still converges within M moves', () => {
-    for (const [dx, dy] of offsets()) {
-      const m = Math.abs(dx) + Math.abs(dy);
-      const bound = 6 * m;
-      const t = meet(
-        { x: 5, y: 19 },
-        { x: 5 + dx, y: 19 + dy },
-        false,
-        bound + 1,
-      );
-      expect(t, `offset ${String(dx)},${String(dy)}`).toBeGreaterThanOrEqual(0);
-      expect(t).toBeLessThanOrEqual(bound);
-    }
-  });
-
-  test('a melee unit attacks an enemy on a diagonal neighbour', () => {
+  test('a melee unit closes in on an enemy on a diagonal neighbour cell within a few ticks', () => {
     for (const [dx, dy] of [
       [1, 1],
       [-1, 1],
       [1, -1],
       [-1, -1],
-      [0, 0],
     ] as const) {
-      expect(meet({ x: 5, y: 19 }, { x: 5 + dx, y: 19 + dy }, false, 2)).toBe(
-        0,
-      );
+      const t = meet({ x: 5, y: 19 }, { x: 5 + dx, y: 19 + dy }, false, 6);
+      expect(t).toBeGreaterThanOrEqual(0);
+      expect(t).toBeLessThanOrEqual(4);
     }
   });
 
-  test('nearest enemy: Chebyshev first, then Manhattan, then lowest ID', () => {
+  test('nearest enemy: smallest Euclidean distance, ties to the lowest ID', () => {
     const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       coreOnly(),
@@ -706,17 +803,22 @@ describe('aggro convergence (Chebyshev reach, larger-axis step)', () => {
     const me = spawnUnitForTest(sim, ctx, {
       side: 0,
       def: 'unit_soldier',
-      x: 5,
-      y: 19,
+      px: mid(5),
+      py: mid(19),
     });
-    // (6,20) is diagonal (Chebyshev 1, Manhattan 2); (5,18) is orthogonal
-    // (Chebyshev 1, Manhattan 1): the orthogonal one is nearer.
-    spawnUnitForTest(sim, ctx, { side: 1, def: 'unit_soldier', x: 6, y: 20 });
+    // A diagonal enemy at (130, 130) is 183.8 away; an orthogonal one at 180
+    // is nearer.
+    spawnUnitForTest(sim, ctx, {
+      side: 1,
+      def: 'unit_soldier',
+      px: mid(5) + 130,
+      py: mid(19) + 130,
+    });
     const orth = spawnUnitForTest(sim, ctx, {
       side: 1,
       def: 'unit_soldier',
-      x: 5,
-      y: 18,
+      px: mid(5) - 180,
+      py: mid(19),
     });
     stepArena(sim, ctx);
     const first = got(
@@ -725,56 +827,40 @@ describe('aggro convergence (Chebyshev reach, larger-axis step)', () => {
     expect(first.target).toEqual({ kind: 'unit', unit: orth.id });
   });
 
-  test('blocked larger axis: the other axis is tried, else no aggro move', () => {
+  test('a wall corner blocks the larger-axis approach: the chaser slides along the lake', () => {
     // Lake directly east of the chaser; the enemy is further east and a row
-    // up, so the x step is blocked and it steps along y instead.
+    // up. The circle slides along the lake edge instead of entering it.
     const map = tiny([], [[6, 17]]);
-    const { sim, ctx, events } = startArenaBattle(
+    const { sim, ctx } = startArenaBattle(
       coreOnly(5, 0, map),
       coreOnly(),
       8,
-      content,
+      postContent,
       simConfig,
     );
-    const me = spawnUnitForTest(sim, ctx, {
-      side: 0,
-      def: 'unit_soldier',
-      x: 5,
-      y: 17,
-    });
-    me.moveCooldown = 0;
-    const foe = spawnUnitForTest(sim, ctx, {
-      side: 1,
-      def: 'unit_soldier',
-      x: 8,
-      y: 18,
-    });
-    foe.moveCooldown = 1000;
-    stepArena(sim, ctx);
-    expect(
-      ofType(events, 'unit_moved').find((m) => m.unit === me.id),
-    ).toMatchObject({ x: 5, y: 18 });
+    spawnUnitForTest(sim, ctx, { side: 0, def: 'unit_soldier', x: 5, y: 17 });
+    spawnUnitForTest(sim, ctx, { side: 1, def: 'unit_post', x: 8, y: 18 });
+    for (let t = 0; t < 60; t++) {
+      stepArena(sim, ctx);
+      expect(circleViolations(sim, ctx)).toEqual([]);
+    }
   });
 });
 
 // ---------------------------------------------------------------------------
 
 describe('targeting rule b: a goal in reach', () => {
-  test('a ranged unit in a sealed pocket attacks the Core in reach instead of breaching (#46)', () => {
+  test('a long-reach unit in a sealed pocket attacks the Core in reach instead of breaching (#46)', () => {
     const soldier = got(content.units.get('unit_soldier'));
-    const archer = { ...soldier, id: 'unit_archer', rangeCells: 3 };
-    const ranged = {
+    const longarm = { ...soldier, id: 'unit_longarm', reach: 480 };
+    const custom: ArenaContent = {
       ...content,
-      units: {
-        get: (id: string) =>
-          id === 'unit_archer' ? archer : content.units.get(id),
-        list: () => [...content.units.list(), archer],
-      },
+      units: loadUnitsOrThrow({ units: [...content.units.list(), longarm] }),
     };
     const lab = new Lab(tiny());
     lab.core(5, 0);
     // The pocket (4, 3) is walled in on every side; no route reaches it, but
-    // the Core cell (5, 1) is three steps away.
+    // the Core is within the reach of the unit.
     const walls = [
       lab.put('bld_wall', 3, 3),
       lab.put('bld_wall', 5, 3),
@@ -785,16 +871,15 @@ describe('targeting rule b: a goal in reach', () => {
       lab.state,
       coreOnly(),
       GAP,
-      ranged,
+      custom,
       simConfig,
     );
     const u = spawnUnitForTest(sim, ctx, {
       side: 1,
-      def: 'unit_archer',
+      def: 'unit_longarm',
       x: 4,
       y: 3,
     });
-    u.moveCooldown = 1000;
     for (let t = 0; t < 3; t++) stepArena(sim, ctx);
     const hits = ofType(events, 'unit_attacked').filter((e) => e.unit === u.id);
     expect(hits.length).toBeGreaterThan(0);
@@ -940,14 +1025,8 @@ describe('enemy-path preview', () => {
         def: 'unit_soldier',
         ...toArena(GEOM, 0, p.entry),
       });
-      u.moveCooldown = 0;
-      for (let t = 0; t < 6 * p.cells.length + 12; t++) stepArena(sim, ctx);
-      const walked = [
-        p.cells[0],
-        ...ofType(events, 'unit_moved')
-          .filter((m) => m.unit === u.id)
-          .map((m) => ({ x: m.x, y: m.y })),
-      ];
+      const walked = walk(sim, ctx, u, 6 * p.cells.length + 12);
+      expect(events.length).toBeGreaterThanOrEqual(0);
       expect(walked.slice(0, p.cells.length)).toEqual(p.cells);
     }
   });
@@ -986,7 +1065,6 @@ describe('enemy-path preview', () => {
         def: 'unit_soldier',
         ...toArena(GEOM, 0, { x: 0, y: 15 }),
       });
-      u.moveCooldown = 0;
       for (let t = 0; t < 200; t++) stepArena(sim, ctx);
       const hit = ofType(events, 'unit_attacked').find(
         (e) => e.unit === u.id && e.target.kind === 'building',

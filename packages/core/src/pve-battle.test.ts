@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { openFor } from './arena-paths.js';
 import { stepArena, type ArenaEvent } from './arena-sim.js';
 import { hashJson } from './hash.js';
+import { CELL_UNITS } from './limits.js';
 import { simulatePveBattle, startPveBattle } from './pve-battle.js';
 import {
   REFERENCE_BOARDS,
@@ -179,9 +180,18 @@ describe('waves along the whole front', () => {
       if (!s.ok) throw new Error('refused');
       const { battle } = s;
       const lastWave = Math.max(...t.waves.map((w) => w.tick));
-      // `stepArena` never ends a battle, so every wave is spawned whatever
-      // happens to the Cores.
-      while (battle.sim.tick <= lastWave) stepArena(battle.sim, battle.ctx);
+      // A party Core that does not fall keeps the wave units busy.
+      got(battle.sim.health.find((h) => h.side === 0 && h.building === 0)).hp =
+        10 ** 12;
+      // `stepArena` never ends a battle, so every wave is queued whatever
+      // happens to the Cores; units that find no room enter a little later.
+      while (
+        battle.sim.tick <= lastWave ||
+        (battle.sim.entering.length > 0 && battle.sim.tick < lastWave + 600)
+      ) {
+        stepArena(battle.sim, battle.ctx);
+      }
+      expect(battle.sim.entering).toHaveLength(0);
       const spawns = battle.eventLog.filter(
         (e): e is Extract<ArenaEvent, { type: 'unit_spawned' }> =>
           e.type === 'unit_spawned' && e.side === 1 && e.building === 0,
@@ -191,11 +201,13 @@ describe('waves along the whole front', () => {
       const byTick = new Map<number, number[]>();
       for (const e of spawns) {
         // Own-frame column and the front row of side 1.
-        expect(e.y).toBe(geom.height - geom.boardHeight);
-        const k = e.y * geom.width + e.x;
+        const cx = Math.floor(e.px / CELL_UNITS);
+        const cy = Math.floor(e.py / CELL_UNITS);
+        expect(cy).toBe(geom.height - geom.boardHeight);
+        const k = cy * geom.width + cx;
         expect(battle.ctx.arena.blocked[k]).toBe(0);
         expect(openFor(battle.ctx.arena, 1, k)).toBe(true);
-        const col = geom.width - 1 - e.x;
+        const col = geom.width - 1 - cx;
         byTick.set(e.tick, [...(byTick.get(e.tick) ?? []), col]);
       }
       for (const [tick, cols] of byTick) {
@@ -204,7 +216,10 @@ describe('waves along the whole front', () => {
         const plots = new Set(
           cols.map((c) => Math.floor(c / mapgen.plotWidth)),
         );
-        if (total >= 4) expect([...plots].sort()).toEqual([0, 1, 2, 3]);
+        // Units that enter on the wave's own tick are spread over the width.
+        if (total >= 4 && cols.length >= 4) {
+          expect([...plots].sort()).toEqual([0, 1, 2, 3]);
+        }
       }
     }
   }, 120_000);
@@ -225,7 +240,9 @@ describe('waves along the whole front', () => {
           .filter((w) => w.tick === got(t.waves[0]).tick && w !== t.waves[0])
           .reduce((a, w) => a + w.count, 0),
     );
-    expect(new Set(units.map((u) => u.y)).size).toBe(1);
+    expect(new Set(units.map((u) => Math.floor(u.py / CELL_UNITS))).size).toBe(
+      1,
+    );
   });
 });
 

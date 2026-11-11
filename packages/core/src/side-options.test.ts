@@ -7,7 +7,15 @@ import {
   type ArenaEvent,
   type SideOptions,
 } from './arena-sim.js';
-import { Lab, board, content, got, simConfig } from './test-support.js';
+import { CELL_UNITS } from './limits.js';
+import {
+  Lab,
+  board,
+  circleViolations,
+  content,
+  got,
+  simConfig,
+} from './test-support.js';
 import type { TeamState } from './team-state.js';
 
 /** Arena rows for 16 + 7 + 16 with a 24 wide board. */
@@ -36,10 +44,16 @@ function start(
   return { sim, ctx, events };
 }
 
+/** The arena cells (of the centres) of the units spawned in the events. */
 function spawns(events: readonly ArenaEvent[]): { x: number; y: number }[] {
   const out: { x: number; y: number }[] = [];
   for (const e of events) {
-    if (e.type === 'unit_spawned') out.push({ x: e.x, y: e.y });
+    if (e.type === 'unit_spawned') {
+      out.push({
+        x: Math.floor(e.px / CELL_UNITS),
+        y: Math.floor(e.py / CELL_UNITS),
+      });
+    }
   }
   return out;
 }
@@ -96,15 +110,70 @@ describe('side options: scheduled waves', () => {
     expect(ctx.arena.occupant[only.y * W + only.x]).toBe(-1);
   });
 
-  test('a wave of a fully blocked row spawns nothing', () => {
+  test('a wave of a fully blocked row waits in the queue, none is dropped', () => {
     const lab = new Lab(board([]));
     lab.core(11, 0);
     for (let x = 0; x < W; x++) lab.put('bld_wall', x, 15);
     const { sim, ctx } = start(lab.state, {
       scheduledWaves: [{ tick: 0, unit: 'unit_soldier', count: 3 }],
     });
-    stepArena(sim, ctx);
+    for (let t = 0; t < 5; t++) stepArena(sim, ctx);
     expect(sim.units).toHaveLength(0);
+    expect(sim.entering).toHaveLength(3);
+    expect(sim.spawned).toEqual([0, 0]);
+  });
+
+  test('units that do not fit wait and enter on later ticks in queue order; none is dropped', () => {
+    // 100 soldiers want the 24 columns of one row: a cell holds one circle
+    // (two adjacent ones touch), so the rest enter as the front clears.
+    const count = 100;
+    const { sim, ctx, events } = start(empty(), {
+      scheduledWaves: [{ tick: 0, unit: 'unit_soldier', count }],
+    });
+    // A Core that does not fall keeps the units busy (queueing in front of it).
+    got(sim.health.find((h) => h.side === 0 && h.building === 0)).hp = 10 ** 12;
+    const wanted: number[] = [];
+    for (let i = 0; i < count; i++) {
+      wanted.push(Math.floor(((2 * i + 1) * W) / (2 * count)));
+    }
+    stepArena(sim, ctx);
+    const first = sim.units.length;
+    expect(first).toBeGreaterThan(10);
+    expect(first).toBeLessThan(count);
+    expect(sim.entering).toHaveLength(count - first);
+    // The waiting entries keep their order: a subsequence of the wanted list.
+    const waiting = sim.entering.map((e) => e.col);
+    let at = 0;
+    for (const c of wanted) if (waiting[at] === c) at += 1;
+    expect(at).toBe(waiting.length);
+    for (let t = 0; t < 600 && sim.entering.length > 0; t++) {
+      stepArena(sim, ctx);
+      expect(circleViolations(sim, ctx)).toEqual([]);
+    }
+    expect(sim.entering).toHaveLength(0);
+    expect(sim.spawned).toEqual([0, count]);
+    expect(spawns(events)).toHaveLength(count);
+  });
+
+  test('the state with a waiting queue can be saved and restored mid-battle', () => {
+    const run = (restoreAt: number): string => {
+      const { sim, ctx } = start(empty(), {
+        scheduledWaves: [{ tick: 0, unit: 'unit_soldier', count: 80 }],
+      });
+      got(sim.health.find((h) => h.side === 0 && h.building === 0)).hp = 10 ** 12;
+      let s = sim;
+      let c = ctx;
+      for (let t = 0; t < 40; t++) {
+        if (t === restoreAt) {
+          s = JSON.parse(JSON.stringify(s)) as typeof sim;
+          c = createArenaContext(s, content, simConfig);
+        }
+        stepArena(s, c);
+      }
+      return JSON.stringify(s);
+    };
+    expect(run(7)).toBe(run(-1));
+    expect(run(25)).toBe(run(-1));
   });
 });
 

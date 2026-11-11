@@ -56,6 +56,18 @@ export function cellCoord(v: number, n: number): number {
   return c < 0 ? 0 : c >= n ? n - 1 : c;
 }
 
+/**
+ * The cell coordinate of a position coordinate in the frame of `side`: for
+ * side 0 it is `cellCoord`; for side 1 the coordinate is rotated first (the
+ * arena rotation, `n * 240 - v`) and the cell mapped back, so a position
+ * exactly on a cell boundary belongs to the lower cell of its own side's
+ * frame. This keeps a mirrored battle exactly symmetric: every cell lookup of
+ * a unit's decisions uses it.
+ */
+export function ownCellCoord(side: number, v: number, n: number): number {
+  return side === 0 ? cellCoord(v, n) : n - 1 - cellCoord(n * S - v, n);
+}
+
 /** Squared distance from point `(x, y)` to the closed square of cell `(cx, cy)`. */
 export function boxDist2(x: number, y: number, cx: number, cy: number): number {
   const lx = cx * S;
@@ -152,8 +164,17 @@ export function pushOutSolid(
     const y0 = Math.max(0, Math.floor((y - r) / S));
     const y1 = Math.min(height - 1, Math.floor((y + r) / S));
     const r2 = r * r;
-    for (let cy = y0; cy <= y1; cy++) {
-      for (let cx = x0; cx <= x1; cx++) {
+    // Side 1 visits the cells in the opposite order and prefers the opposite
+    // faces: the same rule in its own (rotated) frame.
+    const dir = side === 0 ? 1 : -1;
+    const cyFirst = side === 0 ? y0 : y1;
+    const cxFirst = side === 0 ? x0 : x1;
+    const rows = y1 - y0;
+    const cols = x1 - x0;
+    for (let iy = 0; iy <= rows; iy++) {
+      const cy = cyFirst + dir * iy;
+      for (let ix = 0; ix <= cols; ix++) {
+        const cx = cxFirst + dir * ix;
         if (solid[cy * width + cx] !== 1) continue;
         const lx = cx * S;
         const ly = cy * S;
@@ -175,10 +196,15 @@ export function pushOutSolid(
           const down = y - ly;
           const up = ly + S - y;
           const m = Math.min(left, right, down, up);
-          if (left === m) x = lx - r;
-          else if (right === m) x = lx + S + r;
-          else if (down === m) y = ly - r;
-          else y = ly + S + r;
+          if (side === 0) {
+            if (left === m) x = lx - r;
+            else if (right === m) x = lx + S + r;
+            else if (down === m) y = ly - r;
+            else y = ly + S + r;
+          } else if (right === m) x = lx + S + r;
+          else if (left === m) x = lx - r;
+          else if (up === m) y = ly + S + r;
+          else y = ly - r;
         }
       }
     }
