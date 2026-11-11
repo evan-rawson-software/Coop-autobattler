@@ -62,7 +62,7 @@ describe('menuRows', () => {
 
   test('a run in an unreadable format is listed but cannot be resumed', () => {
     const [row] = menuRows(
-      [{ ...item({ runId: 'a' }), unsupportedFormat: true }],
+      [item({ runId: 'a', unsupportedFormat: true } as never)],
       NOW,
       5,
     );
