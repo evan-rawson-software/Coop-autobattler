@@ -1,0 +1,856 @@
+/**
+ * Ghost snapshots (W3-1, MM-1..MM-17): the format and every check a snapshot
+ * must pass before it may be used as an opponent. Pure; no I/O.
+ *
+ * A snapshot is a party's whole team state taken at the start of a PvP
+ * battle, plus enough context to match it (game version, party size, round)
+ * and to judge it (the map seed, lives, PvP record). The pool is external,
+ * mutable, untrusted data, so every candidate goes through
+ * `validateGhostSnapshot` first. See docs/rules-reference.md, "Ghosts".
+ */
+
+import { canonicalJson, sortedKeys } from './hash.js';
+import type { Content } from './content.js';
+import type { EconomyConfig } from './economy.js';
+import { findModifier, type EventsConfig } from './events.js';
+import { generateMap } from './generate-map.js';
+import { isRecord } from './load-util.js';
+import type { MapgenConfig } from './mapgen.js';
+import { tierPrice } from './shop.js';
+import { validateTeamState, type TeamState } from './team-state.js';
+
+/** The snapshot format. Bump when a field changes meaning. */
+export const GHOST_SNAPSHOT_FORMAT_VERSION = 1;
+
+/** Longest owner id, owner label and run id accepted. */
+export const GHOST_MAX_ID_LENGTH = 128;
+export const GHOST_MAX_LABEL_LENGTH = 40;
+
+/**
+ * Hardening limits for untrusted snapshots (the pool is external data).
+ *
+ * A snapshot's size is the length of its canonical JSON text. The limit is not
+ * a flat number: it is derived from what a legitimate snapshot of that party
+ * size and round can contain, see `ghostMaxSerializedSize`.
+ */
+/** Fixed allowance on top of the derived limit (ids, labels, counters, field names). */
+export const GHOST_MAX_BYTES_MARGIN = 4096;
+/** Highest round accepted in a snapshot (bounds the limit computed from it). */
+export const GHOST_MAX_ROUND = 1000;
+/** Deepest nesting of a snapshot (the real one is under 8 levels). */
+export const GHOST_MAX_DEPTH = 16;
+/** Longest string anywhere in a snapshot (ids, labels, terrain and building names). */
+export const GHOST_MAX_STRING_LENGTH = 128;
+/** Most errors reported for one snapshot (the rest are counted, not listed). */
+export const GHOST_MAX_ERRORS = 10;
+/** Largest building instance id the size bound assumes (digits of its text). */
+const SIZE_ID_SAMPLE = 9_999_999;
+/** Modifier entry size assumed when the events configuration is not known. */
+const SIZE_MODIFIER_FALLBACK = 512;
+
+/** What the size limit needs; `economy` and `events` give the tighter form. */
+export interface GhostSizeContext {
+  readonly content: Content;
+  readonly mapgen: MapgenConfig;
+  readonly economy?: EconomyConfig;
+  readonly events?: EventsConfig;
+}
+
+function longest(ids: readonly string[]): string {
+  let best = '';
+  for (const id of ids) if (id.length > best.length) best = id;
+  return best;
+}
+
+/** Length of the canonical JSON of a sample, plus a separator. */
+function entryLength(sample: unknown): number {
+  return canonicalJson(sample).length + 1;
+}
+
+/**
+ * The largest accepted serialized size (characters of canonical JSON) of a
+ * snapshot of a party of `partySize` at `round`, derived from what a
+ * legitimate one can hold. With `cells = partySize * plotWidth * plotDepth`
+ * and `N = floor(ghostValueBound(...).limit / cheapestPrice)` (the most
+ * buildings the value bound allows; `cells` when `economy` is not given):
+ *
+ *   map         cells * longest feature/node entry          (every cell a feature or node)
+ *   board       min(cells, N) * (placed building entry      (a building or conduit cell per cell)
+ *                  + 2 * conduit entry without cells)       (a conduit has two distinct side ends)
+ *               + conduit cells: cells * cell entry         (cells not holding a building)
+ *   stash       N * stash entry
+ *   modifiers   (2 * round - 1) * longest modifier entry
+ *   margin      GHOST_MAX_BYTES_MARGIN
+ *
+ * Every entry is measured on a worst-case sample (longest content ids,
+ * highest coordinates, instance id up to 7 digits). Compute it from the
+ * party size and round read safely first, so the structural walk is bounded
+ * before anything else reads the value.
+ */
+export function ghostMaxSerializedSize(
+  partySize: number,
+  round: number,
+  ctx: GhostSizeContext,
+): number {
+  const { content, mapgen } = ctx;
+  const width = partySize * mapgen.plotWidth;
+  const cells = width * mapgen.plotDepth;
+  const digits = (n: number): number => String(n).length;
+  const coord = {
+    x: 10 ** digits(Math.max(0, width - 1)) - 1,
+    y: 10 ** digits(Math.max(0, mapgen.plotDepth - 1)) - 1,
+  };
+  const featureId = longest(content.terrain.list().map((t) => t.id));
+  const resourceId = longest(content.resources.list().map((r) => r.id));
+  const mapEntry = Math.max(
+    entryLength({ ...coord, feature: featureId }),
+    entryLength({ ...coord, resource: resourceId }),
+  );
+  const defId = longest(content.buildings.list().map((b) => b.id));
+  const building = entryLength({
+    def: defId,
+    id: SIZE_ID_SAMPLE,
+    owner: partySize,
+    rotation: 3,
+    tier: 3,
+    ...coord,
+  });
+  const stashEntry = entryLength({
+    def: defId,
+    id: SIZE_ID_SAMPLE,
+    owner: partySize,
+    tier: 3,
+  });
+  const end = { building: SIZE_ID_SAMPLE, side: 'north' };
+  const conduit = entryLength({
+    cells: [],
+    from: end,
+    id: SIZE_ID_SAMPLE,
+    to: end,
+  });
+  const cellEntry = entryLength(coord);
+
+  let items = cells;
+  if (ctx.economy !== undefined && ctx.events !== undefined) {
+    let cheapest = Number.POSITIVE_INFINITY;
+    for (const b of content.buildings.list()) {
+      const t = b.tiers[0];
+      if ('price' in t) {
+        const price = (t as { readonly price: number }).price;
+        if (price > 0 && price < cheapest) cheapest = price;
+      }
+    }
+    if (Number.isFinite(cheapest)) {
+      const limit = ghostValueBound(
+        round,
+        partySize,
+        content,
+        ctx.economy,
+        ctx.events,
+      ).limit;
+      items = Math.floor(limit / cheapest);
+    }
+  }
+  let modifier = SIZE_MODIFIER_FALLBACK;
+  if (ctx.events !== undefined) {
+    modifier = 0;
+    for (const m of ctx.events.modifiers) {
+      modifier = Math.max(
+        modifier,
+        entryLength({ effects: m.effects, id: m.id }),
+      );
+    }
+  }
+  const placed = Math.min(cells, items);
+  return (
+    cells * mapEntry +
+    placed * (building + 2 * conduit) +
+    cells * cellEntry +
+    items * stashEntry +
+    (2 * round - 1) * modifier +
+    GHOST_MAX_BYTES_MARGIN
+  );
+}
+
+export interface GhostOwner {
+  /** A stable identifier of the player (a device id, later a Steam id). */
+  readonly id: string;
+  /** What the opponent is called on screen. */
+  readonly label: string;
+}
+
+export interface GhostPvpRecord {
+  readonly wins: number;
+  readonly losses: number;
+}
+
+export interface GhostSnapshot {
+  readonly formatVersion: 1;
+  /** The game version (`major.minor`) the run was played on. */
+  readonly gameVersion: string;
+  readonly partySize: number;
+  /** The round whose PvP battle this was taken at the start of. */
+  readonly round: number;
+  /** The seed the team's map was generated from (`generateMap(mapSeed, partySize)`). */
+  readonly mapSeed: number;
+  readonly team: TeamState;
+  readonly owner: GhostOwner;
+  /** The run it was taken from. */
+  readonly runId: string;
+  /** Lives the run had when the snapshot was taken. */
+  readonly lives: number;
+  /** PvP battles won and lost in the rounds before this one. */
+  readonly pvpRecord: GhostPvpRecord;
+  // Reserved for TA-22b and NOT accepted yet: `runSeed` (the run's seed) and
+  // `actionLog` (its action log). `snapshotOf` never writes them and
+  // `validateGhostSnapshot` rejects a snapshot that has either, so an
+  // unbounded value cannot ride along into a run's state and save.
+}
+
+/** Which snapshots can meet each other: same version, party size and round. */
+export interface GhostBucket {
+  readonly gameVersion: string;
+  readonly partySize: number;
+  readonly round: number;
+}
+
+/** `version|partySize|round`; stable text for a bucket. */
+export function ghostBucketKey(b: GhostBucket): string {
+  return `${b.gameVersion}|${String(b.partySize)}|${String(b.round)}`;
+}
+
+export function ghostBucketOf(s: GhostBucket): GhostBucket {
+  return {
+    gameVersion: s.gameVersion,
+    partySize: s.partySize,
+    round: s.round,
+  };
+}
+
+/** Identity of one snapshot: owner and run (a run takes one per round). */
+export function ghostKey(s: Pick<GhostSnapshot, 'owner' | 'runId'>): string {
+  return JSON.stringify([s.owner.id, s.runId]);
+}
+
+/** Canonical order of candidates: by owner id, then run id (code units). */
+export function compareGhosts(
+  a: Pick<GhostSnapshot, 'owner' | 'runId'>,
+  b: Pick<GhostSnapshot, 'owner' | 'runId'>,
+): number {
+  const x = a.owner.id;
+  const y = b.owner.id;
+  if (x !== y) return x < y ? -1 : 1;
+  if (a.runId === b.runId) return 0;
+  return a.runId < b.runId ? -1 : 1;
+}
+
+/** What validation needs to know. */
+export interface GhostValidationContext {
+  readonly content: Content;
+  readonly mapgen: MapgenConfig;
+  readonly economy: EconomyConfig;
+  readonly events: EventsConfig;
+  readonly rules: {
+    readonly startingLives: number;
+    readonly pvpLossLifeCost: number;
+  };
+}
+
+export type GhostValidationResult =
+  | { readonly ok: true; readonly snapshot: GhostSnapshot }
+  | { readonly ok: false; readonly errors: readonly string[] };
+
+// ---------------------------------------------------------------------------
+// Value bound
+
+/** Gold value of everything a team owns (placed and stashed), by tier price. */
+export function teamBuildingValue(team: TeamState, content: Content): number {
+  let total = 0;
+  for (const b of team.buildings) total += tierPrice(content, b.def, b.tier);
+  for (const b of team.stash) total += tierPrice(content, b.def, b.tier);
+  return total;
+}
+
+/** The largest `gold` event parameter (a Windfall pays this), else 0. */
+function maxEventGold(events: EventsConfig): number {
+  let max = 0;
+  for (const e of events.events) {
+    const g = e.params['gold'];
+    if (typeof g === 'number' && g > max) max = g;
+  }
+  return max;
+}
+
+export interface GhostValueBound {
+  /** Gold one player can have received by the start of the PvP battle of the round. */
+  readonly goldPerPlayer: number;
+  /** Price of the starting kit, per player. */
+  readonly kitPerPlayer: number;
+  /** `partySize * (goldPerPlayer + kitPerPlayer)`: the limit. */
+  readonly limit: number;
+}
+
+/**
+ * The most building value (the sum of the shop prices of every building at
+ * its tier, placed or stashed) a party can own at the start of the PvP battle
+ * of `round`. Per player:
+ *
+ *   startingGold
+ *   + baseIncomePerShop * (2 * round - 1)          shops entered so far
+ *   + bestPveWin * round                           best PvE reward in each round up to this one
+ *   + bestPvpGold * (round - 1)                    best PvP reward in the rounds before
+ *   + maxEventGold * (2 * round - 1)               every event a Windfall
+ *   + kit                                          price of the starting kit
+ *
+ * times the party size. There is no margin: every gold source is counted at
+ * its best case, buying converts gold to value one to one, selling returns
+ * less than was paid, and a Workshop upgrade adds less building value
+ * (`price(t+1) - price(t)`) than it costs (`floor(price(t+1) * percent / 100)`)
+ * for every building and tier of the shipped content (a test checks this).
+ * It rejects the impossible, not the strong.
+ */
+export function ghostValueBound(
+  round: number,
+  partySize: number,
+  content: Content,
+  economy: EconomyConfig,
+  events: EventsConfig,
+): GhostValueBound {
+  const shops = 2 * round - 1;
+  const rewards = economy.rewards;
+  const goldPerPlayer =
+    economy.startingGold +
+    economy.baseIncomePerShop * shops +
+    Math.max(rewards.pveWin.easy, rewards.pveWin.medium, rewards.pveWin.hard) *
+      round +
+    Math.max(rewards.pvpWin, rewards.pvpLoss) * (round - 1) +
+    maxEventGold(events) * shops;
+  let kitPerPlayer = 0;
+  for (const k of economy.startingKit) {
+    kitPerPlayer += tierPrice(content, k.def, k.tier) * k.count;
+  }
+  return {
+    goldPerPlayer,
+    kitPerPlayer,
+    limit: partySize * (goldPerPlayer + kitPerPlayer),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Tier bound
+
+export interface GhostTierBound {
+  /** The highest tier the shop could have offered by the PvP battle of the round. */
+  readonly shopTier: number;
+  /** Workshop raises one owner can have had by then (0 without a Workshop event). */
+  readonly upgradesPerOwner: number;
+}
+
+/**
+ * The tier rule, derived from `economy.tierOdds`, the starting kit and
+ * `events.json`, with no round numbers written into the code:
+ *
+ *  - `shopTier`: the highest tier with a non-zero weight in any `tierOdds`
+ *    row that applies in some round up to `round` (the shop of round `r`
+ *    offers tiers by the row `tierOddsFor(r)`; shops of later rounds are not
+ *    reached), at least the tier of every kit entry, at least 1.
+ *  - `upgradesPerOwner`: `2 * round - 1` (the event steps before the PvP
+ *    battle of `round`) if some configured event has type `workshop`, else 0.
+ *    Each Workshop event raises at most one building per player by one tier.
+ *
+ * A snapshot passes if, for every owner, the sum over that owner's buildings
+ * (placed and stashed) of `max(0, tier - shopTier)` is at most
+ * `upgradesPerOwner`: every tier above what the shop sold must have been
+ * paid for by one Workshop raise of that owner.
+ */
+export function ghostTierBound(
+  round: number,
+  economy: EconomyConfig,
+  events: EventsConfig,
+): GhostTierBound {
+  let shopTier = 1;
+  for (const k of economy.startingKit) shopTier = Math.max(shopTier, k.tier);
+  const first = economy.tierOdds[0];
+  for (const row of economy.tierOdds) {
+    if (row !== first && row.fromRound > round) continue;
+    row.weights.forEach((w, i) => {
+      if (w > 0) shopTier = Math.max(shopTier, i + 1);
+    });
+  }
+  const workshop = events.events.some((e) => e.type === 'workshop');
+  return { shopTier, upgradesPerOwner: workshop ? 2 * round - 1 : 0 };
+}
+
+// ---------------------------------------------------------------------------
+// Validation
+
+/** The two fields reserved for TA-22b: not accepted yet. */
+const RESERVED = ['runSeed', 'actionLog'];
+
+const KEYS = new Set([
+  'formatVersion',
+  'gameVersion',
+  'partySize',
+  'round',
+  'mapSeed',
+  'team',
+  'owner',
+  'runId',
+  'lives',
+  'pvpRecord',
+]);
+
+function isInt(v: unknown): v is number {
+  return typeof v === 'number' && Number.isSafeInteger(v);
+}
+
+function isU32(v: unknown): v is number {
+  return isInt(v) && v >= 0 && v < 2 ** 32;
+}
+
+// Printable text: no control characters, no leading/trailing space.
+// eslint-disable-next-line no-control-regex
+const CONTROL = /[\u0000-\u001f\u007f]/;
+
+function textProblem(v: unknown, max: number): string | null {
+  if (typeof v !== 'string' || v === '') return 'must be a non-empty string';
+  if (v.length > max) return `must be at most ${String(max)} characters`;
+  if (CONTROL.test(v)) return 'must not contain control characters';
+  if (v !== v.trim()) return 'must not start or end with a space';
+  return null;
+}
+
+/**
+ * The length of a string as canonical JSON writes it, quotes included:
+ * `"` `\\` and the control characters `\b \t \n \f \r` take two
+ * characters, any other control character below U+0020 takes six (`\u00XX`).
+ * Everything else counts as its UTF-16 length. Returns -1 for a string with a
+ * lone surrogate, which canonical JSON refuses.
+ */
+function jsonStringLength(s: string): number {
+  let n = 2;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (
+      c === 0x22 ||
+      c === 0x5c ||
+      c === 0x08 ||
+      (c >= 0x09 && c <= 0x0d && c !== 0x0b)
+    ) {
+      n += 2;
+    } else if (c < 0x20) {
+      n += 6;
+    } else if (c >= 0xd800 && c <= 0xdbff) {
+      const d = s.charCodeAt(i + 1);
+      if (d >= 0xdc00 && d <= 0xdfff) {
+        n += 2;
+        i++;
+      } else return -1;
+    } else if (c >= 0xdc00 && c <= 0xdfff) {
+      return -1;
+    } else n += 1;
+  }
+  return n;
+}
+
+/**
+ * The generic limits, checked on the raw value before anything else reads it:
+ * plain JSON only (objects, arrays, strings, booleans, null, safe integers;
+ * no `undefined`, floats, NaN, Infinity, class instances), nesting at most
+ * `GHOST_MAX_DEPTH`, every string at most `GHOST_MAX_STRING_LENGTH`, and a
+ * serialized length (counted as the canonical JSON text would be) at most
+ * `maxSize`. The budget is charged incrementally and the walk stops at the
+ * first violation: an array or object whose element count alone cannot fit in
+ * the remaining budget (at least two characters per element, four per key) is
+ * rejected before its elements are visited, and keys are never sorted. (Only
+ * listing the keys of an object costs time in proportion to their number; the
+ * caller reads the cheap fields first, so a hostile object normally fails
+ * before this walk starts.) Returns the problem, or null.
+ */
+function structureProblem(root: unknown, maxSize: number): string | null {
+  let size = 0;
+  const tooBig = `larger than the ${String(maxSize)} characters allowed`;
+  const visit = (v: unknown, depth: number): string | null => {
+    if (depth > GHOST_MAX_DEPTH) {
+      return `nested deeper than ${String(GHOST_MAX_DEPTH)} levels`;
+    }
+    if (v === null) size += 4;
+    else if (typeof v === 'boolean') size += v ? 4 : 5;
+    else if (typeof v === 'number') {
+      // Mirror canonicalJson: safe integers only, and not -0.
+      if (!Number.isSafeInteger(v) || Object.is(v, -0)) {
+        return 'numbers must be safe integers';
+      }
+      size += String(v).length;
+    } else if (typeof v === 'string') {
+      if (v.length > GHOST_MAX_STRING_LENGTH) {
+        return `a string is longer than ${String(GHOST_MAX_STRING_LENGTH)} characters`;
+      }
+      const len = jsonStringLength(v);
+      if (len < 0) return 'a string has a lone surrogate';
+      size += len;
+    } else if (Array.isArray(v)) {
+      size += 2;
+      if (size + 2 * v.length - 1 > maxSize) return tooBig;
+      for (const item of v as unknown[]) {
+        const p = visit(item, depth + 1);
+        if (p !== null) return p;
+        size += 1;
+        if (size > maxSize) return tooBig;
+      }
+      if (v.length > 0) size -= 1; // no comma after the last element
+    } else if (isRecord(v)) {
+      size += 2;
+      // eslint-disable-next-line no-restricted-properties -- order does not matter, no key is read twice
+      const keys = Object.keys(v);
+      if (size + 4 * keys.length - 1 > maxSize) return tooBig;
+      for (const k of keys) {
+        if (k.length > GHOST_MAX_STRING_LENGTH) return 'a key is too long';
+        const klen = jsonStringLength(k);
+        if (klen < 0) return 'a key has a lone surrogate';
+        size += klen + 1;
+        const p = visit(v[k], depth + 1);
+        if (p !== null) return p;
+        size += 1;
+        if (size > maxSize) return tooBig;
+      }
+      if (keys.length > 0) size -= 1;
+    } else {
+      return 'only plain JSON values are allowed';
+    }
+    return size > maxSize ? tooBig : null;
+  };
+  return visit(root, 0);
+}
+
+/**
+ * Check shape, team state, map, and consistency of a snapshot, without the
+ * economy bound. Never throws. Used by `validateRunState`, which has no
+ * economy configuration; everything else uses `validateGhostSnapshot`.
+ */
+export function checkGhostSnapshotShape(
+  raw: unknown,
+  content: Content,
+  mapgen: MapgenConfig,
+  rules?: GhostValidationContext['rules'],
+  bounds?: Pick<GhostSizeContext, 'economy' | 'events'>,
+): GhostValidationResult {
+  const errors: string[] = [];
+  try {
+    const s = shapeInner(raw, content, mapgen, rules, bounds, errors);
+    if (errors.length === 0 && s !== undefined)
+      return { ok: true, snapshot: s };
+  } catch (e) {
+    errors.push(
+      `snapshot: could not be checked (${e instanceof Error ? e.message : 'unknown error'}).`,
+    );
+  }
+  if (errors.length === 0) errors.push('snapshot: invalid.');
+  return { ok: false, errors: capErrors(errors) };
+}
+
+/** The first `GHOST_MAX_ERRORS` errors, then one line counting the rest. */
+function capErrors(errors: readonly string[]): readonly string[] {
+  if (errors.length <= GHOST_MAX_ERRORS) return errors;
+  return [
+    ...errors.slice(0, GHOST_MAX_ERRORS),
+    `and ${String(errors.length - GHOST_MAX_ERRORS)} more.`,
+  ];
+}
+
+function shapeInner(
+  raw: unknown,
+  content: Content,
+  mapgen: MapgenConfig,
+  rules: GhostValidationContext['rules'] | undefined,
+  bounds: Pick<GhostSizeContext, 'economy' | 'events'> | undefined,
+  errors: string[],
+): GhostSnapshot | undefined {
+  if (!isRecord(raw)) {
+    errors.push('snapshot: must be an object.');
+    return undefined;
+  }
+  // Cheap and bounded first: reserved fields by lookup, then the two fields
+  // the size limit is computed from. Nothing here lists the keys of `raw`.
+  for (const k of RESERVED) {
+    if (Object.prototype.hasOwnProperty.call(raw, k)) {
+      errors.push(`snapshot: "${k}" is reserved and not accepted yet.`);
+    }
+  }
+  const declared = raw['partySize'];
+  const declaredRound = raw['round'];
+  const sizeOk =
+    isInt(declared) && declared >= 1 && declared <= mapgen.maxPartySize;
+  const roundOk =
+    isInt(declaredRound) &&
+    declaredRound >= 1 &&
+    declaredRound <= GHOST_MAX_ROUND;
+  if (!sizeOk || !roundOk) {
+    if (!sizeOk) {
+      errors.push(
+        `partySize: must be an integer from 1 to ${String(mapgen.maxPartySize)}.`,
+      );
+    }
+    if (!roundOk) {
+      errors.push(
+        `round: must be an integer from 1 to ${String(GHOST_MAX_ROUND)}.`,
+      );
+    }
+    return undefined;
+  }
+  // Before anything reads into the value: its size, depth and numbers.
+  const sizeProblem = structureProblem(
+    raw,
+    ghostMaxSerializedSize(declared, declaredRound, {
+      content,
+      mapgen,
+      ...bounds,
+    }),
+  );
+  if (sizeProblem !== null) {
+    errors.push(`snapshot: ${sizeProblem}.`);
+    return undefined;
+  }
+  for (const k of sortedKeys(raw)) {
+    if (!KEYS.has(k) && !RESERVED.includes(k)) {
+      errors.push(`snapshot: unknown field "${k}".`);
+    }
+  }
+  if (raw['formatVersion'] !== GHOST_SNAPSHOT_FORMAT_VERSION) {
+    errors.push(
+      `formatVersion: unsupported (this game reads ${String(GHOST_SNAPSHOT_FORMAT_VERSION)}).`,
+    );
+    return undefined;
+  }
+  const version = raw['gameVersion'];
+  if (
+    typeof version !== 'string' ||
+    !/^(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)
+  ) {
+    errors.push('gameVersion: must look like "major.minor".');
+  }
+  const partySize = raw['partySize'];
+  if (!isInt(partySize) || partySize < 1 || partySize > mapgen.maxPartySize) {
+    errors.push(
+      `partySize: must be an integer from 1 to ${String(mapgen.maxPartySize)}.`,
+    );
+  }
+  const round = raw['round'];
+  const mapSeed = raw['mapSeed'];
+  if (!isU32(mapSeed)) errors.push('mapSeed: must be a u32 integer.');
+  const runId = raw['runId'];
+  const runIdProblem = textProblem(runId, GHOST_MAX_ID_LENGTH);
+  if (runIdProblem !== null) errors.push(`runId: ${runIdProblem}.`);
+
+  const owner = raw['owner'];
+  if (!isRecord(owner)) {
+    errors.push('owner: must be { id, label }.');
+  } else {
+    for (const k of sortedKeys(owner)) {
+      if (k !== 'id' && k !== 'label')
+        errors.push(`owner: unknown field "${k}".`);
+    }
+    const idProblem = textProblem(owner['id'], GHOST_MAX_ID_LENGTH);
+    if (idProblem !== null) errors.push(`owner.id: ${idProblem}.`);
+    const labelProblem = textProblem(owner['label'], GHOST_MAX_LABEL_LENGTH);
+    if (labelProblem !== null) errors.push(`owner.label: ${labelProblem}.`);
+  }
+
+  const lives = raw['lives'];
+  if (!isInt(lives) || lives < 1)
+    errors.push('lives: must be an integer >= 1.');
+  const record = raw['pvpRecord'];
+  let wins = -1;
+  let losses = -1;
+  if (
+    !isRecord(record) ||
+    !isInt(record['wins']) ||
+    !isInt(record['losses']) ||
+    record['wins'] < 0 ||
+    record['losses'] < 0
+  ) {
+    errors.push('pvpRecord: must be { wins, losses } of integers >= 0.');
+  } else {
+    wins = record['wins'];
+    losses = record['losses'];
+    for (const k of sortedKeys(record)) {
+      if (k !== 'wins' && k !== 'losses') {
+        errors.push(`pvpRecord: unknown field "${k}".`);
+      }
+    }
+  }
+
+  if (errors.length > 0) return undefined;
+  const size = partySize as number;
+  const r = round as number;
+
+  // Consistency of the numbers with the round.
+  if (wins + losses !== r - 1) {
+    errors.push(
+      `pvpRecord: wins + losses must be ${String(r - 1)} (the PvP battles before round ${String(r)}).`,
+    );
+  }
+  if (rules !== undefined) {
+    if ((lives as number) > rules.startingLives) {
+      errors.push(`lives: at most ${String(rules.startingLives)}.`);
+    }
+    if (
+      losses * rules.pvpLossLifeCost !==
+      rules.startingLives - (lives as number)
+    ) {
+      errors.push('lives: does not match the PvP losses in pvpRecord.');
+    }
+  }
+
+  // Two bounds that no legal board can exceed, checked before the per-building
+  // and per-conduit work runs over padding (the network analysis is linear,
+  // but junk is still cheaper to refuse up front):
+  // - buildings: placed buildings cannot overlap, so there are at most as many
+  //   as cells on the board (`partySize * plotWidth * plotDepth`);
+  // - conduits: each takes one output side of a placed building and a side
+  //   carries at most one conduit end (`side_in_use`), so there are at most
+  //   `buildings * (most output sides of any building in the content)` (the
+  //   Core is not a conduit end).
+  const rawTeam = raw['team'];
+  if (isRecord(rawTeam)) {
+    const bs = rawTeam['buildings'];
+    const cs = rawTeam['conduits'];
+    if (Array.isArray(bs)) {
+      const cells = size * mapgen.plotWidth * mapgen.plotDepth;
+      if (bs.length > cells) {
+        errors.push(
+          `team: more buildings (${String(bs.length)}) than the board has cells (${String(cells)}).`,
+        );
+        return undefined;
+      }
+    }
+    if (Array.isArray(bs) && Array.isArray(cs)) {
+      let maxOutputs = 0;
+      for (const d of content.buildings.list()) {
+        maxOutputs = Math.max(maxOutputs, d.outputs.length);
+      }
+      if (cs.length > bs.length * maxOutputs) {
+        errors.push(
+          `team: more conduits (${String(cs.length)}) than the buildings' output sides can hold (${String(bs.length * maxOutputs)}).`,
+        );
+        return undefined;
+      }
+    }
+  }
+
+  const team = validateTeamState(raw['team'], content, mapgen);
+  if (!team.ok) {
+    for (const e of team.errors.slice(0, GHOST_MAX_ERRORS)) {
+      errors.push(`team: ${e}`);
+    }
+    return undefined;
+  }
+  const t = team.state;
+  if (t.core === null) errors.push('team: the Core must be placed.');
+  if (t.map.partySize !== size) {
+    errors.push('team: map party size does not match partySize.');
+  }
+  let expected;
+  try {
+    expected = generateMap(mapSeed as number, size, content, mapgen);
+  } catch (e) {
+    errors.push(
+      `map: cannot be regenerated (${e instanceof Error ? e.message : 'unknown error'}).`,
+    );
+  }
+  if (
+    expected !== undefined &&
+    canonicalJson(expected) !== canonicalJson(t.map)
+  ) {
+    errors.push('map: differs from the map generated from mapSeed.');
+  }
+  if (errors.length > 0) return undefined;
+  return { ...(raw as object), team: t } as unknown as GhostSnapshot;
+}
+
+/**
+ * Validate untrusted data as a ghost snapshot: the schema-level shape, the
+ * whole team state (legal placement on its own map), the map equal to
+ * `generateMap(mapSeed, partySize)`, the numbers consistent with the round,
+ * the building value within `ghostValueBound`, the tiers within
+ * `ghostTierBound`, and the modifiers known to
+ * content and within what the events of the round allow. Never throws.
+ */
+export function validateGhostSnapshot(
+  raw: unknown,
+  ctx: GhostValidationContext,
+): GhostValidationResult {
+  const shape = checkGhostSnapshotShape(
+    raw,
+    ctx.content,
+    ctx.mapgen,
+    ctx.rules,
+    ctx,
+  );
+  if (!shape.ok) return shape;
+  const errors: string[] = [];
+  try {
+    plausibility(shape.snapshot, ctx, errors);
+  } catch (e) {
+    errors.push(
+      `snapshot: could not be checked (${e instanceof Error ? e.message : 'unknown error'}).`,
+    );
+  }
+  return errors.length === 0 ? shape : { ok: false, errors: capErrors(errors) };
+}
+
+function plausibility(
+  s: GhostSnapshot,
+  ctx: GhostValidationContext,
+  errors: string[],
+): void {
+  const value = teamBuildingValue(s.team, ctx.content);
+  const bound = ghostValueBound(
+    s.round,
+    s.partySize,
+    ctx.content,
+    ctx.economy,
+    ctx.events,
+  );
+  if (value > bound.limit) {
+    errors.push(
+      `team: building value ${String(value)} is more than the ${String(bound.limit)} possible by round ${String(s.round)}.`,
+    );
+  }
+  const tiers = ghostTierBound(s.round, ctx.economy, ctx.events);
+  const excess = new Map<number, number>();
+  for (const b of [...s.team.buildings, ...s.team.stash]) {
+    if (b.tier > tiers.shopTier) {
+      excess.set(b.owner, (excess.get(b.owner) ?? 0) + b.tier - tiers.shopTier);
+    }
+  }
+  for (const [owner, n] of [...excess].sort((a, b) => a[0] - b[0])) {
+    if (n > tiers.upgradesPerOwner) {
+      errors.push(
+        `team: player ${String(owner)} has ${String(n)} tiers above the shop's tier ${String(tiers.shopTier)}, at most ${String(tiers.upgradesPerOwner)} possible by round ${String(s.round)} (Workshop raises).`,
+      );
+    }
+  }
+  const held = s.team.modifiers ?? [];
+  const events = 2 * s.round - 1;
+  if (held.length > events) {
+    errors.push(
+      `modifiers: ${String(held.length)} held, at most ${String(events)} possible by round ${String(s.round)}.`,
+    );
+  }
+  const seen = new Set<string>();
+  held.forEach((m, i) => {
+    const def = findModifier(ctx.events, m.id);
+    if (def === undefined) {
+      errors.push(`modifiers[${String(i)}]: unknown modifier "${m.id}".`);
+      return;
+    }
+    if (canonicalJson(def.effects) !== canonicalJson(m.effects)) {
+      errors.push(`modifiers[${String(i)}]: effects differ from "${m.id}".`);
+    }
+    if (!def.stackable && seen.has(m.id)) {
+      errors.push(`modifiers[${String(i)}]: "${m.id}" cannot be held twice.`);
+    }
+    seen.add(m.id);
+  });
+}

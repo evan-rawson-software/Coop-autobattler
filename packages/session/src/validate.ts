@@ -4,7 +4,13 @@
  * The JSON Schema in schemas/run-state.schema.json covers the same shape;
  * this adds the checks a schema cannot express.
  */
-import { validateTeamState } from '@game/core';
+import {
+  checkGhostSnapshotShape,
+  ghostKey,
+  validateGhostSnapshot,
+  validateTeamState,
+} from '@game/core';
+import { ghostContext, BOSS_LABEL } from './ghosts.js';
 import {
   MAX_PLAYERS,
   RUN_STATE_FORMAT_VERSION,
@@ -86,6 +92,8 @@ const KEYS = [
   'perPlayer',
   'votes',
   'upcomingPve',
+  'pvpOpponent',
+  'ghostsFought',
   'pending',
   'history',
   'thisRound',
@@ -102,7 +110,7 @@ const READY_STEPS: readonly Step[] = [
 
 export function validateRunState(
   data: unknown,
-  deps: Pick<RunDeps, 'content' | 'mapgenConfig' | 'rules'>,
+  deps: Pick<RunDeps, 'content' | 'mapgenConfig' | 'rules' | 'ghosts'>,
 ): ValidateRunStateResult {
   const errors: string[] = [];
   try {
@@ -118,7 +126,7 @@ export function validateRunState(
 
 function check(
   data: unknown,
-  deps: Pick<RunDeps, 'content' | 'mapgenConfig' | 'rules'>,
+  deps: Pick<RunDeps, 'content' | 'mapgenConfig' | 'rules' | 'ghosts'>,
   errors: string[],
 ): void {
   if (!isRec(data)) {
@@ -325,6 +333,7 @@ function check(
   } else if (upcomingRequired) {
     err(`upcomingPve: must be set in step "${st}" (leg "${leg as string}").`);
   }
+  checkGhostFields(data, st, n, deps, err);
   const pending = data['pending'];
   if (!isJson(pending)) err('pending: must be JSON.');
   const p = isRec(pending) ? pending : {};
@@ -499,4 +508,78 @@ function validBattleRecord(v: unknown, pve: boolean): boolean {
     (o['kind'] === 'pve' || o['kind'] === 'ghost' || o['kind'] === 'boss') &&
     typeof o['label'] === 'string'
   );
+}
+
+/**
+ * `pvpOpponent` and `ghostsFought` (W3-1). The opponent exists only in the
+ * shop of the PvE leg, for the current round; a ghost in it must pass the same
+ * checks as any candidate (the economy bound too, when the deps carry the
+ * ghost configuration) and be one the run could have drawn.
+ */
+function checkGhostFields(
+  data: Rec,
+  st: Step,
+  n: number,
+  deps: Pick<RunDeps, 'content' | 'mapgenConfig' | 'rules' | 'ghosts'>,
+  err: (m: string) => void,
+): void {
+  const fought = data['ghostsFought'];
+  if (!Array.isArray(fought) || !fought.every((k) => typeof k === 'string')) {
+    err('ghostsFought: must be an array of strings.');
+  } else if (new Set(fought).size !== fought.length) {
+    err('ghostsFought: must not repeat a ghost.');
+  }
+  const o = data['pvpOpponent'];
+  if (o === null) return;
+  if (st !== 'shop' || data['leg'] !== 'pve') {
+    err(
+      `pvpOpponent: must be null in step "${st}" (leg "${String(data['leg'])}").`,
+    );
+    return;
+  }
+  if (
+    !isRec(o) ||
+    !isInt(o['round']) ||
+    (o['kind'] !== 'ghost' && o['kind'] !== 'boss') ||
+    typeof o['label'] !== 'string' ||
+    !('ghost' in o)
+  ) {
+    err('pvpOpponent: must be null or { round, kind, label, ghost }.');
+    return;
+  }
+  if (o['round'] !== data['round']) {
+    err('pvpOpponent: round does not match the coming PvP battle.');
+  }
+  if (o['kind'] === 'boss') {
+    if (o['ghost'] !== null || o['label'] !== BOSS_LABEL) {
+      err('pvpOpponent: a boss has no ghost and the label "the boss".');
+    }
+    return;
+  }
+  const ctx = ghostContext(deps);
+  const checked =
+    ctx === null
+      ? checkGhostSnapshotShape(o['ghost'], deps.content, deps.mapgenConfig)
+      : validateGhostSnapshot(o['ghost'], ctx);
+  if (!checked.ok) {
+    for (const e of checked.errors) err(`pvpOpponent.ghost: ${e}`);
+    return;
+  }
+  const g = checked.snapshot;
+  if (o['label'] !== g.owner.label) {
+    err('pvpOpponent: the label must be the ghost owner label.');
+  }
+  if (
+    g.gameVersion !== data['runVersion'] ||
+    g.partySize !== n ||
+    g.round !== data['round'] ||
+    g.runId === data['runId']
+  ) {
+    err(
+      'pvpOpponent.ghost: not eligible for this run (version, size, round or run).',
+    );
+  }
+  if (Array.isArray(fought) && fought.includes(ghostKey(g))) {
+    err('pvpOpponent.ghost: already fought in this run.');
+  }
 }

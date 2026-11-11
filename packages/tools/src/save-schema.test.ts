@@ -34,6 +34,7 @@ describe('save.schema.json', () => {
   const ajv = new Ajv2020({ allErrors: true, strict: true });
   ajv.addSchema(readSchema('map.schema.json'));
   ajv.addSchema(readSchema('team-state.schema.json'));
+  ajv.addSchema(readSchema('ghost-snapshot.schema.json'));
   ajv.addSchema(readSchema('run-state.schema.json'));
   const validate = ajv.compile(readSchema('save.schema.json'));
   const content = loadAllContentOrThrow({

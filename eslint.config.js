@@ -183,7 +183,7 @@ export default tseslint.config(
   {
     // The browser smoke script: plain Node ESM that also contains functions
     // run inside the page.
-    files: ['packages/web/scripts/**/*.mjs'],
+    files: ['packages/web/scripts/**/*.mjs', 'scripts/**/*.mjs'],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: {
       parserOptions: { projectService: false },

@@ -33,7 +33,12 @@ import {
   previewPlace,
   type Verdict,
 } from './ops.js';
-import { parseCell, reasonMessage } from './reasons.js';
+import {
+  parseCell,
+  reasonMessage,
+  selectionNote,
+  type SelectionCause,
+} from './reasons.js';
 import { BuildSession, isEditStep, type SessionView } from './session.js';
 import {
   chooseInput,
@@ -499,8 +504,12 @@ export class BuildController {
     this.set({ status: { text, kind } });
   }
 
-  private refuse(reason: string, detail?: string): void {
-    this.say(reasonMessage(reason, detail), 'error');
+  private refuse(
+    reason: string,
+    detail?: string,
+    cause?: SelectionCause,
+  ): void {
+    this.say(reasonMessage(reason, detail, cause), 'error');
   }
 
   // ---- Simple setters -----------------------------------------------------
@@ -774,7 +783,7 @@ export class BuildController {
     const before = s.run.step;
     const r = await s.dispatch({ type: readyNow ? 'unready' : 'ready' });
     if (!r.ok) {
-      this.refuse(r.reason, r.detail);
+      this.refuse(r.reason, r.detail, r.selectionFailure);
       return;
     }
     if (s.run.step !== before) {
@@ -793,6 +802,9 @@ export class BuildController {
         readyNow ? 'Not ready.' : 'Ready. Waiting for the others.',
         'ok',
       );
+    }
+    if (r.selectionFailure !== undefined) {
+      this.say(selectionNote(r.selectionFailure), 'error');
     }
   }
 

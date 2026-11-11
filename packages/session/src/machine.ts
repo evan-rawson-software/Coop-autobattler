@@ -7,6 +7,7 @@
 import {
   addConduit,
   canonicalJson,
+  ghostKey,
   eraseConduit,
   generateMap,
   createTeamState,
@@ -17,6 +18,12 @@ import {
   sealedProducers,
   type Json,
 } from '@game/core';
+import {
+  ghostBucketFor,
+  ghostOwnerFor,
+  hasSelection,
+  snapshotOf,
+} from './ghosts.js';
 import { STEP_INTENTS, lockedWhileReady } from './step-table.js';
 import { drawStream, rootRng, streamLabels } from './streams.js';
 import { parseVersion } from './version.js';
@@ -159,6 +166,8 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
     perPlayer: args.players.map(() => ({ gold: 0, ready: false, shop: null })),
     votes: emptyVotes('core', n),
     upcomingPve: null,
+    pvpOpponent: null,
+    ghostsFought: [],
     pending: { proposals: [] },
     history: [],
     thisRound: { pve: null, pvp: null },
@@ -273,10 +282,30 @@ function enter(
       if (s.leg === 'pvp') s = drawUpcoming(s, s.round + 1, deps);
       const d = drawStream(s, streamLabels.shop(s.round, s.leg));
       s = applyPatch(d.state, deps.hooks.onShopEnter(d.state, d.stream));
+      if (s.leg === 'pve' && deps.ghosts !== undefined) {
+        // The opponent of the coming PvP battle is fixed here (W3-1): the
+        // controller answers this effect with `select_ghost`.
+        fx.push({
+          type: 'ghost_selection_needed',
+          round: s.round,
+          bucket: ghostBucketFor(s),
+        });
+        return { ...s, pending: null, pvpOpponent: null };
+      }
       return { ...s, pending: null };
     }
     case 'pvp_battle': {
       s = { ...s, leg: 'pvp' };
+      if (deps.ghosts !== undefined) {
+        // Taken before the fight, win or lose; the controller stores it.
+        fx.push({
+          type: 'ghost_snapshot',
+          snapshot: snapshotOf(
+            s,
+            ghostOwnerFor(s, deps.ghosts.ownerId, deps.ghosts.ownerLabel),
+          ),
+        });
+      }
       const d = drawStream(s, streamLabels.battle('pvp', s.round));
       const result = deps.battle.resolve({
         kind: 'pvp',
@@ -284,8 +313,17 @@ function enter(
         rng: d.stream,
         option: null,
       });
+      const fought = d.state.pvpOpponent;
       s = {
         ...d.state,
+        pvpOpponent: null,
+        ghostsFought:
+          fought !== null &&
+          fought.round === d.state.round &&
+          fought.ghost !== null &&
+          result.opponent.kind === 'ghost'
+            ? [...d.state.ghostsFought, ghostKey(fought.ghost)]
+            : d.state.ghostsFought,
         thisRound: {
           ...d.state.thisRound,
           pvp: {
@@ -307,8 +345,9 @@ function enter(
       return enter(s, 'pvp_summary', deps, fx);
     }
     case 'run_over':
-      // Nothing is coming any more: no pending data, no upcoming options.
-      return { ...s, pending: null, upcomingPve: null };
+      // Nothing is coming any more: no pending data, no upcoming options, no
+      // opponent (abandoning in the shop after the selection left one).
+      return { ...s, pending: null, upcomingPve: null, pvpOpponent: null };
     default:
       // core_placement, pve_summary, pvp_summary, event_resolve: the caller
       // sets `pending` (and `votes` for core_placement) itself.
@@ -619,6 +658,15 @@ function applyBuiltin(
 
     case 'ready': {
       if (s.perPlayer[player]?.ready === true) return fail('already_ready');
+      // The PvP opponent must be fixed before the party can leave the shop.
+      if (
+        s.step === 'shop' &&
+        s.leg === 'pve' &&
+        deps.ghosts !== undefined &&
+        !hasSelection(s)
+      ) {
+        return fail('ghost_selection_pending');
+      }
       // A sealed-in unit producer cannot be left behind (issue #37, 3a).
       if (s.step === 'build' || s.step === 'shop') {
         const sealed = sealedProducers(s.team, content);
@@ -721,6 +769,22 @@ export function applyIntent(
   intent: Intent,
   deps: RunDeps,
 ): IntentResult {
+  return applyIntentAs(state, player, intent, deps, false);
+}
+
+/**
+ * `applyIntent`, live (`replay` false) or as a logged action being replayed.
+ * The log stores the intent as received, except where a handler returns a
+ * `logged` form (see `HandlerResult`): that form is stored instead, and only
+ * a replay accepts it back.
+ */
+function applyIntentAs(
+  state: RunState,
+  player: number,
+  intent: Intent,
+  deps: RunDeps,
+  replay: boolean,
+): IntentResult {
   if (!isInt(player) || player < 0 || player >= state.players.length) {
     return fail('not_a_player');
   }
@@ -730,6 +794,7 @@ export function applyIntent(
   const type = intent.type;
   const fx: Effect[] = [];
   let result: Next;
+  let logged: Json | undefined;
   if (isBuiltinType(type)) {
     result = applyBuiltin(state, player, intent as BuiltinIntent, deps, fx);
   } else {
@@ -739,13 +804,18 @@ export function applyIntent(
     if (handler === undefined) return fail('unknown_intent', type);
     if (!handler.steps.includes(state.step)) return fail('wrong_step');
     if (isLocked(state, player, type)) return fail('locked_ready');
+    if (handler.hostOnly === true && player !== state.host) {
+      return fail('not_host');
+    }
     const r = handler.handle({
       state,
       player,
       intent: intent as ExtensionIntent,
       deps,
+      ...(replay ? { replay: true } : {}),
     });
     if (!r.ok) return fail(r.reason, r.detail);
+    logged = r.logged;
     fx.push(...(r.effects ?? []));
     result = {
       ok: true,
@@ -757,7 +827,11 @@ export function applyIntent(
   }
   if (!result.ok) return result;
   const n = state.actionCounter + 1;
-  const entry: LoggedAction = { n, player, intent: intent as unknown as Json };
+  const entry: LoggedAction = {
+    n,
+    player,
+    intent: logged ?? (intent as unknown as Json),
+  };
   return {
     ok: true,
     state: {
@@ -796,6 +870,9 @@ export type ReplayResult =
 /**
  * Create a run and apply the logged actions in order. Used by tests and
  * later by save verification. Fails at the first action that is rejected.
+ * Logged actions are applied in replay mode: a handler's normalised form
+ * (for `select_ghost`, the compact record of the draw) is accepted here and
+ * nowhere else. Needs no store.
  */
 export function replayRun(
   args: CreateRunArgs,
@@ -806,7 +883,13 @@ export function replayRun(
   if (!created.ok) return created;
   let state = created.state;
   for (const entry of actionLog) {
-    const r = applyIntent(state, entry.player, entry.intent as Intent, deps);
+    const r = applyIntentAs(
+      state,
+      entry.player,
+      entry.intent as Intent,
+      deps,
+      true,
+    );
     if (!r.ok) {
       return r.detail === undefined
         ? { ok: false, reason: r.reason, at: entry.n }

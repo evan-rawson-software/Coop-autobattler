@@ -39,6 +39,7 @@ import {
   randomNetwork,
   simConfig,
   walk,
+  TIMING,
 } from './test-support.js';
 
 // ---------------------------------------------------------------------------
@@ -1809,7 +1810,7 @@ describe('stress', () => {
       expect(
         ms,
         `1000 arena ticks with up to ${String(peak)} units took ${String(ms)} ms`,
-      ).toBeLessThan(60000);
+      ).toBeLessThan(60000 * TIMING);
       conserved(sim);
     },
   );

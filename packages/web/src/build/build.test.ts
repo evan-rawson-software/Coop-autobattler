@@ -9,6 +9,8 @@ import {
 import { content } from '../content.js';
 import { proposePath, routeBetween } from './autoroute.js';
 import { previewConduit } from './ops.js';
+import { CONTROLLER_REASONS, GHOST_REASONS } from '@game/session';
+import { shopReason } from '../shop/messages.js';
 import { KNOWN_REASONS, reasonMessage, REASON_MESSAGES } from './reasons.js';
 import { simConfig } from './setup.js';
 import { BuildSession } from './session.js';
@@ -80,6 +82,24 @@ describe('reason messages', () => {
     for (const reason of KNOWN_REASONS) {
       expect(REASON_MESSAGES[reason].length).toBeGreaterThan(3);
     }
+  });
+
+  test('every reason a session intent can return has plain wording', () => {
+    for (const reason of [...GHOST_REASONS, ...CONTROLLER_REASONS]) {
+      expect(Object.keys(REASON_MESSAGES), reason).toContain(reason);
+      expect(shopReason(reason), reason).not.toMatch(/^Not allowed \(/);
+    }
+    expect(reasonMessage('invalid_state')).toBe(
+      'The game hit an internal error and did not save this action. Reload and try again.',
+    );
+    expect(reasonMessage('ghost_selection_pending')).toBe(
+      'Still choosing your next opponent…',
+    );
+    expect(
+      reasonMessage('ghost_selection_pending', undefined, {
+        reason: 'save_failed',
+      }),
+    ).toContain('could not be saved');
   });
 
   test('covers placement, core, stash and conduit reasons from core', () => {

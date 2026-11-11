@@ -20,11 +20,13 @@ import {
   eventHooks,
   type EventHandlers,
 } from './events.js';
+import { SELECT_GHOST, selectGhostHandler } from './ghosts.js';
 import { pveOptionsHook } from './pve-options.js';
 import { createBattleResolver, type FindPvpOpponent } from './real-battle.js';
 import { rewardHooks } from './rewards.js';
 import type {
   BattleResolver,
+  GhostRules,
   IntentHandler,
   RunDeps,
   RunHooks,
@@ -50,6 +52,12 @@ export interface GameOverrides {
   readonly eventHandlers?: EventHandlers;
   /** The ghost seam: return a team to fight in PvP, or null for a boss. */
   readonly findPvpOpponent?: FindPvpOpponent;
+  /**
+   * Switch the ghost pool on (W3-1): `select_ghost`, the snapshot and
+   * selection effects and the ready gate before a PvP battle. Without it PvP
+   * always fights the generated boss.
+   */
+  readonly ghosts?: Pick<GhostRules, 'ownerId' | 'ownerLabel'>;
 }
 
 /**
@@ -94,8 +102,26 @@ export function createGameDeps(
     handlers: {
       ...economyHandlers(content, configs.economy),
       ...eventChooseHandlers(content, configs.events, eventHandlers),
+      ...(overrides.ghosts === undefined
+        ? {}
+        : { [SELECT_GHOST]: selectGhostHandler }),
       ...overrides.handlers,
     },
   });
-  return { ...deps, rewards: configs.economy.rewards };
+  return {
+    ...deps,
+    rewards: configs.economy.rewards,
+    ...(overrides.ghosts === undefined
+      ? {}
+      : {
+          ghosts: {
+            ownerId: overrides.ghosts.ownerId,
+            ...(overrides.ghosts.ownerLabel === undefined
+              ? {}
+              : { ownerLabel: overrides.ghosts.ownerLabel }),
+            economy: configs.economy,
+            events: configs.events,
+          },
+        }),
+  };
 }

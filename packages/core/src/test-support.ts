@@ -451,3 +451,14 @@ export const postContent: ArenaContent = {
     ],
   }),
 };
+
+/**
+ * Wall-time limits in tests are multiplied by this. CI sets
+ * CI_RELAXED_TIMING=1 (shared runners are slow and noisy), which makes it 3;
+ * locally it is 1, the strict limits.
+ */
+export const TIMING =
+  (globalThis as { process?: { env: Record<string, string | undefined> } })
+    .process?.env['CI_RELAXED_TIMING'] === '1'
+    ? 3
+    : 1;

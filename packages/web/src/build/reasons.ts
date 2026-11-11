@@ -8,7 +8,13 @@
 
 import type { BuiltinReason } from '@game/session';
 
-export type KnownReason = BuiltinReason | 'save_failed';
+export type KnownReason =
+  | BuiltinReason
+  | 'save_failed'
+  | 'invalid_state'
+  | 'ghost_selection_pending'
+  | 'already_selected'
+  | 'replay_mismatch';
 
 export const REASON_MESSAGES: Readonly<Record<KnownReason, string>> = {
   // Placement
@@ -52,6 +58,13 @@ export const REASON_MESSAGES: Readonly<Record<KnownReason, string>> = {
   invalid_choice: 'That choice is not valid.',
   unknown_intent: 'Unknown action.',
   save_failed: 'The run could not be saved. Try again.',
+  // Run controller and opponent selection
+  invalid_state:
+    'The game hit an internal error and did not save this action. Reload and try again.',
+  ghost_selection_pending: 'Still choosing your next opponent…',
+  already_selected: 'Your next opponent is already chosen.',
+  replay_mismatch:
+    'This run could not be replayed: its record does not match the rules.',
 };
 
 export const KNOWN_REASONS = Object.keys(REASON_MESSAGES) as KnownReason[];
@@ -63,14 +76,36 @@ export function parseCell(detail: string): { x: number; y: number } | null {
   return { x: Number(m[1]), y: Number(m[2]) };
 }
 
-/** Message for a reason, with the offending cell when `core` gave one. */
-export function reasonMessage(reason: string, detail?: string): string {
+/** Why the opponent could not be chosen (a `SelectionFailure`). */
+export interface SelectionCause {
+  readonly reason: string;
+  readonly detail?: string;
+}
+
+/**
+ * Message for a reason, with the offending cell when `core` gave one. For
+ * `ghost_selection_pending` a known `cause` (why choosing the opponent
+ * failed) is added.
+ */
+export function reasonMessage(
+  reason: string,
+  detail?: string,
+  cause?: SelectionCause,
+): string {
   const base: string | undefined = (
     REASON_MESSAGES as Readonly<Record<string, string>>
   )[reason];
   const text = base ?? `Not allowed (${reason}).`;
+  if (reason === 'ghost_selection_pending' && cause !== undefined) {
+    return `${text} It could not be chosen yet: ${reasonMessage(cause.reason, cause.detail)}`;
+  }
   const cell = detail === undefined ? null : parseCell(detail);
   return cell === null
     ? text
     : `${text} At (${String(cell.x)}, ${String(cell.y)}).`;
+}
+
+/** A note for a dispatch that succeeded but left the opponent unchosen. */
+export function selectionNote(cause: SelectionCause): string {
+  return `Your next opponent could not be chosen yet: ${reasonMessage(cause.reason, cause.detail)} It is tried again on your next action.`;
 }

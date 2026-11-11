@@ -8,6 +8,7 @@
  */
 import type { Intent } from '@game/session';
 import type { BuildSession } from '../build/session.js';
+import { selectionNote } from '../build/reasons.js';
 import { shopReason } from './messages.js';
 
 export interface ActionOutcome {
@@ -22,7 +23,18 @@ export async function performAction(
   okText: string,
 ): Promise<ActionOutcome> {
   const r = await session.dispatch(intent);
-  return r.ok
+  if (!r.ok) {
+    return {
+      ok: false,
+      text: shopReason(r.reason, r.detail, r.selectionFailure),
+      kind: 'error',
+    };
+  }
+  return r.selectionFailure === undefined
     ? { ok: true, text: okText, kind: 'ok' }
-    : { ok: false, text: shopReason(r.reason, r.detail), kind: 'error' };
+    : {
+        ok: true,
+        text: `${okText} ${selectionNote(r.selectionFailure)}`,
+        kind: 'error',
+      };
 }

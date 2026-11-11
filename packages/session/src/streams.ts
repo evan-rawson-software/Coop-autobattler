@@ -47,5 +47,7 @@ export const streamLabels = {
    */
   vote: (topic: string, round: number, leg: string): string =>
     `vote:${topic}:r${String(round)}:${leg}`,
+  /** The ghost draw for the PvP battle of the round (W3-1). */
+  ghost: (round: number): string => `ghost:r${String(round)}`,
   shop: (round: number, leg: string): string => `shop:r${String(round)}:${leg}`,
 } as const;

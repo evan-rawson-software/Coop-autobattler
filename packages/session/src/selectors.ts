@@ -5,6 +5,7 @@ import {
   readPveOption,
   type PveOptionView,
 } from './pve-options.js';
+import { SELECT_GHOST, selectionPending } from './ghosts.js';
 import { STEP_INTENTS, lockedWhileReady } from './step-table.js';
 import {
   DEFAULT_WORKSHOP_PERCENT,
@@ -172,7 +173,7 @@ export function eventFollowUp(
 export function allowedIntents(
   state: RunState,
   player: number,
-  deps?: Pick<RunDeps, 'handlers'>,
+  deps?: Pick<RunDeps, 'handlers' | 'ghosts'>,
 ): string[] {
   const me = state.perPlayer[player];
   if (me === undefined) return [];
@@ -187,6 +188,9 @@ export function allowedIntents(
   if (deps !== undefined && state.step !== 'run_over') {
     for (const [type, handler] of Object.entries(deps.handlers)) {
       if (me.ready && lockedWhileReady(state.step, type)) continue;
+      if (handler.hostOnly === true && player !== state.host) continue;
+      // The selection is offered only while one is owed.
+      if (type === SELECT_GHOST && !selectionPending(state, deps)) continue;
       if (handler.steps.includes(state.step)) out.push(type);
     }
   }
