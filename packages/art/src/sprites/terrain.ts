@@ -127,7 +127,7 @@ function lakeAuto(mask: number): Pix {
       const d = depthAt(x, y, mask, 3);
       if (d < 0) continue;
       if (d === 0) p.set(x, y, 'W');
-      else if (d === 1) p.set(x, y, (x + y) % 2 === 0 ? 'u' : 'v');
+      else if (d === 1) p.set(x, y, (x + y) % 3 === 0 ? 'u' : 'v');
       else if (d === 2) p.set(x, y, 'v');
       else p.set(x, y, waterAt(x, y, 0));
     }
