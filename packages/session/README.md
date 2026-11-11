@@ -180,17 +180,24 @@ newTier, price, placed, affordable }`), the choice `skip` is always allowed,
 and `votes[i]` is player i's own choice. Each player raises at most one
 building they own by one tier for `workshopPricePercent` (80, from the event's
 `params`) percent of that tier's shop price (rounded down) from their own gold;
-it is offered only if some player can afford an upgrade. The price charged
-is computed at the moment of choosing from current content (the stored
-`price` and `affordable` are display data, never trusted; a save made under an
-older minor version keeps working under new prices); validation checks only the
-option's structure. A choice can be
+it is offered only if some player can afford an upgrade. Affordability is
+checked when a player submits a choice, against current content and their gold
+then; the price is computed again from current content and charged when the
+last player has chosen (the stored `price` and `affordable` are display data,
+never trusted; a save made under an older minor version keeps working under new
+prices). A choice that can no longer be paid at that point is applied as a skip
+(no charge, no upgrade). The `event_resolved` effect carries `choices` and
+`applied` (per player: `skip`, `upgrade` with `building`, `def`, `newTier`,
+`price`, or a skip with `dropped: true` and a `reason`). Validation checks only
+the option's structure. A choice can be
 changed until the last player has chosen, then all are applied in player order
 and the run goes to the shop; nothing is drawn. Rejections: `not_owner`
 (someone else's building), `not_enough_gold`, `invalid_choice`. Use
 `eventFollowUp(state, player, deps)` for a screen's view (that player's options
 with the CURRENT `price` and `affordable`, the stored price kept as
-`storedPrice`; who has chosen). Show these, not the stored values. Events never add a building.
+`storedPrice`; who has chosen). Show these, not the stored values. Without
+`deps` it returns the stored, possibly out-of-date price and affordability, so
+screens must pass `deps`. Events never add a building.
 
 **Battles and playback.** `BattleResult.detail` has no event log: it holds the
 seed, the opponent source, a hash of the team and a small summary with the

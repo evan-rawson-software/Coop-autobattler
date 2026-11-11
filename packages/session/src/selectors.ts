@@ -95,8 +95,9 @@ export interface FollowUpView {
  * (from current content, the offer's percent and the owner's gold now); the
  * stored price is then kept as `storedPrice`. Screens must show these and not
  * the stored values: a save made under older content continues under current
- * numbers, and the price charged is computed when the player chooses. Without
- * `deps` the options are returned as stored.
+ * numbers, and the price charged is computed when the last player has chosen.
+ * Without `deps` the options are returned as stored, with a possibly
+ * out-of-date price and affordability: screens must pass `deps`.
  */
 export function eventFollowUp(
   state: RunState,

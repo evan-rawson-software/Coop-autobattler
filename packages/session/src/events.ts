@@ -95,7 +95,15 @@ export interface FollowUpSpec {
 }
 
 export type ChooseResult =
-  | { readonly ok: true; readonly patch: StatePatch }
+  | {
+      readonly ok: true;
+      readonly patch: StatePatch;
+      /**
+       * Per-player follow-ups: what was actually applied for each player, in
+       * player order. Recorded in the `event_resolved` effect as `applied`.
+       */
+      readonly applied?: readonly Json[];
+    }
   | { readonly ok: false; readonly reason: string };
 
 export interface EventHandler {
@@ -141,7 +149,9 @@ export interface EventHandler {
   ): string | null;
   /**
    * Per-player follow-ups: apply every player's choice, in player order.
-   * `picks[i]` is player i's chosen option, or null for `skip`.
+   * `picks[i]` is player i's chosen option, or null for `skip`. A stored
+   * pick that no longer holds is applied as a skip, never rejected: only the
+   * submitting player's own choice can cause a rejection (`checkChoice`).
    */
   chooseEach?(
     ctx: EventContext,
@@ -286,21 +296,34 @@ export const workshopHandler: EventHandler = {
     return gold >= price ? null : 'not_enough_gold';
   },
   chooseEach({ state, content }, offer, picks) {
+    // Every stored pick is re-checked against current content and the
+    // player's current gold. One that no longer holds (cannot be paid, the
+    // building is no longer eligible) is applied as a skip: no charge, no
+    // upgrade. Nobody's submission is rejected for another player's pick.
     let team = state.team;
     let perPlayer = state.perPlayer;
+    const applied: Json[] = [];
     for (let player = 0; player < picks.length; player++) {
       const pick = picks[player];
-      if (pick === null || pick === undefined) continue;
-      if (!isRecord(pick) || pick['player'] !== player) {
-        return { ok: false, reason: 'not_owner' };
+      if (pick === null || pick === undefined) {
+        applied.push({ player, result: 'skip' });
+        continue;
       }
+      const dropped = (reason: string): Json => ({
+        player,
+        result: 'skip',
+        dropped: true,
+        reason,
+      });
       const me = perPlayer[player];
-      if (me === undefined) return { ok: false, reason: 'invalid_choice' };
-      // Checked against the team as it is now (earlier players' raises are
-      // already applied); the stored price is ignored and the current one
-      // charged.
-      if (workshopOptionProblem(team, player, pick) !== null) {
-        return { ok: false, reason: 'invalid_choice' };
+      if (
+        me === undefined ||
+        !isRecord(pick) ||
+        pick['player'] !== player ||
+        workshopOptionProblem(team, player, pick) !== null
+      ) {
+        applied.push(dropped('invalid_choice'));
+        continue;
       }
       const id = pick['building'] as number;
       const price = currentWorkshopPrice(
@@ -309,16 +332,33 @@ export const workshopHandler: EventHandler = {
         pick['def'] as string,
         pick['tier'] as number,
       );
-      if (price === null) return { ok: false, reason: 'invalid_choice' };
-      if (me.gold < price) return { ok: false, reason: 'not_enough_gold' };
+      if (price === null) {
+        applied.push(dropped('invalid_choice'));
+        continue;
+      }
+      if (me.gold < price) {
+        applied.push(dropped('not_enough_gold'));
+        continue;
+      }
       const r = raiseTier(team, { id });
-      if (!r.ok) return { ok: false, reason: 'cannot_raise' };
+      if (!r.ok) {
+        applied.push(dropped('cannot_raise'));
+        continue;
+      }
       team = r.state;
       perPlayer = perPlayer.map((p, i) =>
         i === player ? { ...p, gold: p.gold - price } : p,
       );
+      applied.push({
+        player,
+        result: 'upgrade',
+        building: id,
+        def: pick['def'] as string,
+        newTier: pick['newTier'] as number,
+        price,
+      });
     }
-    return { ok: true, patch: { team, perPlayer } };
+    return { ok: true, patch: { team, perPlayer }, applied };
   },
 };
 
@@ -554,7 +594,10 @@ function idOfOption(o: Json): string | null {
  * any other id must be an option of this player (`not_owner` for another
  * player's) that the handler accepts (`not_enough_gold`). The choice is
  * stored at once and can be changed until the last player has chosen; then
- * every choice is applied in player order. No vote is drawn.
+ * every choice is applied in player order, each re-checked against current
+ * content and that player's gold now (one that can no longer be paid is
+ * applied as a skip and flagged in the effect's `applied`). Only the
+ * submitting player's own choice is checked at submission. No vote is drawn.
  */
 function choosePerPlayer(
   ctx: EventContext,
@@ -597,7 +640,12 @@ function choosePerPlayer(
   effects.push({
     type: 'custom',
     name: 'event_resolved',
-    data: { offer: offer.id, type: offer.type, choices: votes },
+    data: {
+      offer: offer.id,
+      type: offer.type,
+      choices: votes,
+      applied: r.applied ?? [],
+    },
   });
   return {
     ok: true,

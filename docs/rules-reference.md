@@ -2617,13 +2617,17 @@ any number of offers from 1 to `offerCount`. More event types will come later.
     their own option ids or `"skip"`. `skip` is always allowed, also when an
     upgrade is affordable. Another player's option is rejected with
     `not_owner`, an unknown id with `invalid_choice`, and an option the
-    player's gold does not cover with `not_enough_gold`. The price charged is
-    computed at the moment of choosing from CURRENT content
+    player's gold does not cover with `not_enough_gold`. Affordability is
+    checked when a player submits a choice, against current content
     (`workshopPrice(content, def, tier + 1, percent)` with the offer's stored
     percent) and the player's gold at that moment; the stored `price` and
     `affordable` are display data and are ignored, so a player who could pay
     the stored price but not the current one gets `not_enough_gold` and can
-    still skip. `votes` pre-filled with `skip` (a player with nothing
+    still skip. The price is computed again from current content and charged
+    when the last player has chosen; a stored choice that can no longer be
+    paid then (or whose building is no longer eligible) is applied as a skip
+    for that player: no charge, no upgrade, and nobody's submission is
+    rejected for it. `votes` pre-filled with `skip` (a player with nothing
     affordable when the offer was made) can be changed like any other choice. A choice is stored at once and may be changed until
     the last player has chosen; nothing is applied before that. There is no
     party vote on the building and no random draw.
@@ -2631,7 +2635,11 @@ any number of offers from 1 to `offerCount`. More event types will come later.
     player order (price taken from the player's gold, `raiseTier` on the
     building) and the run goes to the shop. With one player the first choice
     applies at once. The `event_resolved` custom effect carries `choices`
-    (the votes in player order) instead of `choice`.
+    (the votes in player order) instead of `choice`, and `applied`: one entry
+    per player in player order, `{ player, result: 'skip' }`, `{ player,
+    result: 'upgrade', building, def, newTier, price }` (the price charged), or
+    `{ player, result: 'skip', dropped: true, reason }` when a chosen upgrade
+    was dropped (`not_enough_gold`, `invalid_choice`, `cannot_raise`).
 - **Shrine** (`params.choices`, default 3): available when a modifier can be
   taken. The offer lists up to `choices` modifier IDs, a random subset of the
   modifiers not already held (stackable ones are always eligible), in file
