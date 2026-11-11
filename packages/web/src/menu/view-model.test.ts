@@ -60,6 +60,15 @@ describe('menuRows', () => {
     expect(row?.kind === 'run' ? row.blocked : null).toMatch(/newer version/);
   });
 
+  test('a run in an unreadable format is listed but cannot be resumed', () => {
+    const [row] = menuRows(
+      [{ ...item({ runId: 'a' }), unsupportedFormat: true }],
+      NOW,
+      5,
+    );
+    expect(row?.kind === 'run' ? row.blocked : null).toMatch(/format/);
+  });
+
   test('a damaged record is listed so it can be discarded', () => {
     const [row] = menuRows(
       [{ corrupt: true, runId: 'x', updatedAt: 0, errors: ['bad'] }],

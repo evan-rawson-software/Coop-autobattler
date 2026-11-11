@@ -64,10 +64,7 @@ export async function runRunSmoke({
     await settle();
   };
   const waitStep = (step, p = page) =>
-    p.waitForFunction(
-      (s) => window.__debug?.run?.state().step === s,
-      step,
-    );
+    p.waitForFunction((s) => window.__debug?.run?.state().step === s, step);
   const reloadSame = async (what) => {
     const before = await R.state();
     const screen = await R.screen();
@@ -280,8 +277,7 @@ export async function runRunSmoke({
     `Core confirmed at (${pick.x}, ${pick.y}); the first build opens`,
   );
   check(
-    (await page.locator('#panel-core').count()) === 0 &&
-      t1.stash.length >= 4,
+    (await page.locator('#panel-core').count()) === 0 && t1.stash.length >= 4,
     `first build: the starting kit is in the stash (${t1.stash.length} buildings)`,
   );
   // The Core cannot be moved: drag it somewhere else.
@@ -425,7 +421,9 @@ export async function runRunSmoke({
     nCards >= 1 && nCards <= 3,
     `event: ${nCards} event card(s) offered (1 to 3 is valid)`,
   );
-  const evTexts = await page.locator('.event-card [data-field="does"]').allInnerTexts();
+  const evTexts = await page
+    .locator('.event-card [data-field="does"]')
+    .allInnerTexts();
   check(
     evTexts.every((t) => t.trim().length > 10 && !/evt_|mod_/.test(t)),
     'event: every card says what it does in words',
@@ -433,17 +431,20 @@ export async function runRunSmoke({
   await shot('run-7-event-choice');
   await reloadSame('the event choice');
   // Prefer an event with a follow-up.
-  const offers = await page.locator('.event-card').evaluateAll((els) =>
-    els.map((e) => ({ id: e.dataset.offer, type: e.dataset.type })),
-  );
+  const offers = await page
+    .locator('.event-card')
+    .evaluateAll((els) =>
+      els.map((e) => ({ id: e.dataset.offer, type: e.dataset.type })),
+    );
   const withFollow =
     offers.find((o) => o.type === 'workshop') ??
     offers.find((o) => o.type === 'shrine') ??
     offers[0];
-  await page.click(`[data-action="choose-event"][data-offer="${withFollow.id}"]`);
-  await page.waitForFunction(
-    () =>
-      ['event_resolve', 'shop'].includes(window.__debug?.run?.state().step),
+  await page.click(
+    `[data-action="choose-event"][data-offer="${withFollow.id}"]`,
+  );
+  await page.waitForFunction(() =>
+    ['event_resolve', 'shop'].includes(window.__debug?.run?.state().step),
   );
   if ((await R.state()).step === 'event_resolve') {
     await page.waitForSelector('#event-resolve');
@@ -475,10 +476,12 @@ export async function runRunSmoke({
   await page.waitForSelector('#shop-screen');
   await settle();
   const g0 = Number(await page.locator('#gold').getAttribute('data-gold'));
-  const buy = page.locator('#offers [data-action="buy"]:not([disabled])').first();
+  const buy = page
+    .locator('#offers [data-action="buy"]:not([disabled])')
+    .first();
   if ((await buy.count()) > 0) {
-    const stash0 = (await page.evaluate(() => window.__debug.shop.state())).stash
-      .length;
+    const stash0 = (await page.evaluate(() => window.__debug.shop.state()))
+      .stash.length;
     await buy.click();
     await page.waitForFunction(
       (n) => window.__debug.shop.state().stash.length === n,
@@ -572,7 +575,10 @@ export async function runRunSmoke({
         await page.waitForFunction(() => window.__debug?.battle?.phase, null, {
           timeout: 20000,
         });
-        if ((await page.evaluate(() => window.__debug.battle.phase())) === 'playing') {
+        if (
+          (await page.evaluate(() => window.__debug.battle.phase())) ===
+          'playing'
+        ) {
           await page.click('#skip');
         }
         await page.waitForFunction(
@@ -644,7 +650,9 @@ export async function runRunSmoke({
   check(runB !== runA, `a second run was started (${runB})`);
   // Place its Core, then back to the menu.
   await page.waitForFunction(() => window.__debug?.placement?.legal);
-  const pickB = (await page.evaluate(() => window.__debug.placement.legal()))[3];
+  const pickB = (
+    await page.evaluate(() => window.__debug.placement.legal())
+  )[3];
   const pB = await page.evaluate(
     ([x, y]) => window.__debug.placement.cellToScreen(x, y),
     [pickB.x, pickB.y],
@@ -654,17 +662,16 @@ export async function runRunSmoke({
   await waitStep('build');
   await page.click('#menu-button');
   await page.waitForSelector('#main-menu');
-  await page.waitForFunction(
-    () => window.__debug.menu.runIds().length === 2,
-  );
+  await page.waitForFunction(() => window.__debug.menu.runIds().length === 2);
   await page.reload();
   await page.waitForSelector('#main-menu');
-  await page.waitForFunction(
-    () => window.__debug.menu.runIds().length === 2,
-  );
+  await page.waitForFunction(() => window.__debug.menu.runIds().length === 2);
   const ids = await page.evaluate(() => window.__debug.menu.runIds());
   check(
-    ids.length === 2 && new Set(ids).size === 2 && ids.includes(runA) && ids.includes(runB),
+    ids.length === 2 &&
+      new Set(ids).size === 2 &&
+      ids.includes(runA) &&
+      ids.includes(runB),
     'main menu: two saved runs at once, each listed once, after a reload',
   );
   await shot('run-11-main-menu-two-runs');
@@ -700,9 +707,7 @@ export async function runRunSmoke({
   );
   await page.reload();
   await page.waitForSelector('#main-menu');
-  await page.waitForFunction(
-    () => window.__debug.menu.runIds().length === 4,
-  );
+  await page.waitForFunction(() => window.__debug.menu.runIds().length === 4);
   const oldRow = await page.locator('[data-run="old-version-run"]').innerText();
   check(
     /older version: some things may have changed/i.test(oldRow),
@@ -728,9 +733,7 @@ export async function runRunSmoke({
   await page.waitForSelector('#main-menu');
   await page.waitForFunction(() => window.__debug.menu.runIds().length === 4);
   // Abandon the old-version copy; discard the damaged one.
-  await page.click(
-    '[data-run="old-version-run"] [data-action="abandon"]',
-  );
+  await page.click('[data-run="old-version-run"] [data-action="abandon"]');
   await page.click(
     '[data-run="old-version-run"] [data-action="abandon-confirm"]',
   );
@@ -759,7 +762,9 @@ export async function runRunSmoke({
   await waitStep('pve_summary', tab2);
   await page.waitForSelector('#run-conflict', { timeout: 8000 });
   check(
-    /changed in another tab/i.test(await page.locator('#run-conflict').innerText()),
+    /changed in another tab/i.test(
+      await page.locator('#run-conflict').innerText(),
+    ),
     'a run changed in another tab shows "This run changed in another tab" here',
   );
   await tab2.close();
@@ -769,7 +774,7 @@ export async function runRunSmoke({
   );
   check(
     (await R.screen()) === 'battle',
-    'Reload brings the tab to the other tab\'s progress (the battle summary)',
+    "Reload brings the tab to the other tab's progress (the battle summary)",
   );
   // Resume straight to the current step from the list.
   await page.click('#menu-button');
@@ -780,7 +785,7 @@ export async function runRunSmoke({
   );
   check(
     (await R.state()).runId === runA && (await R.screen()) === 'battle',
-    'Resume goes straight to the run\'s current step',
+    "Resume goes straight to the run's current step",
   );
 
   // ---------------------------------------------------------------------
@@ -877,7 +882,9 @@ export async function runRunSmoke({
     `Run over: a new best is flagged ("${await page.locator('#best').innerText()}")`,
   );
   check(
-    /PvP battles/.test(final) && /PvE battles/.test(final) && /vs\. bosses/.test(final),
+    /PvP battles/.test(final) &&
+      /PvE battles/.test(final) &&
+      /vs\. bosses/.test(final),
     'Run over: battle records',
   );
   await shot('run-14-run-over');

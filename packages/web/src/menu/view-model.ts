@@ -85,11 +85,13 @@ export function menuRows(
       playedAgo: agoText(item.updatedAt, now),
       note: kind === 'older_minor' ? OLDER_VERSION_NOTE : null,
       blocked:
-        kind === 'newer'
-          ? 'Made by a newer version of the game. Open that version to continue it.'
-          : kind === 'older_major'
-            ? 'Made by an older version that is no longer supported.'
-            : null,
+        item.unsupportedFormat === true
+          ? 'Saved in a format this version of the game cannot read. It has not been deleted.'
+          : kind === 'newer'
+            ? 'Made by a newer version of the game. Open that version to continue it.'
+            : kind === 'older_major'
+              ? 'Made by an older version that is no longer supported.'
+              : null,
     });
   }
   return rows;
