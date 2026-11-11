@@ -22,7 +22,13 @@ import { registerDebug, unregisterDebug } from '../debug-hook.js';
 import type { RunHandle } from '../run/handle.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import { drawCoreOverlay, type Candidate } from './overlay.js';
-import { kitRows, legalSet, routesFor, verdictAt } from './view-model.js';
+import {
+  hintText,
+  kitRows,
+  legalSet,
+  routesFor,
+  verdictAt,
+} from './view-model.js';
 import { count } from '../plural.js';
 
 const camera = new CameraController();
@@ -140,12 +146,6 @@ export function CoreScreen(props: { run: RunHandle }) {
       });
   };
 
-  const shownText =
-    hoverCand !== null
-      ? hoverCand.verdict.ok
-        ? 'The Core fits here. Click to choose this spot.'
-        : hoverCand.verdict.text
-      : null;
   const kit = kitRows(economy, content);
   const routeCount = paths?.length ?? 0;
 
@@ -219,11 +219,11 @@ export function CoreScreen(props: { run: RunHandle }) {
           data-field="core-hint"
           role="status"
         >
-          {problem ??
-            shownText ??
-            (selected === null
-              ? 'Point at the map to try a position.'
-              : `Chosen: column ${String(selected.x)}, row ${String(selected.y)}.`)}
+          {hintText({
+            hover: hoverCand?.verdict ?? null,
+            selected,
+            message: problem,
+          })}
         </p>
 
         <BoardView
@@ -236,11 +236,14 @@ export function CoreScreen(props: { run: RunHandle }) {
           drawOverlay={drawOverlay.current}
           overlayKey={`${String(hover?.x)},${String(hover?.y)}|${String(selected?.x)},${String(selected?.y)}|${String(paths?.length)}`}
           onHover={(hit) => {
-            setHover(
+            const next =
               hit === null || hit.board !== 'own'
                 ? null
-                : { x: hit.x, y: hit.y },
-            );
+                : { x: hit.x, y: hit.y };
+            setHover((prev) => {
+              if (prev?.x !== next?.x || prev?.y !== next?.y) setProblem(null);
+              return next;
+            });
           }}
           onSelect={(s) => {
             if (s !== null && s.board === 'own') onSelect({ x: s.x, y: s.y });

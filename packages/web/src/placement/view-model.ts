@@ -88,6 +88,27 @@ export function verdictAt(
   };
 }
 
+/**
+ * The hint line: it describes the cell under the pointer, or the chosen cell
+ * when the pointer is off the board. A stored message (a failed Confirm, or a
+ * click on a touch screen with no pointer) shows only when no cell is hovered.
+ */
+export function hintText(input: {
+  readonly hover: Verdict | null;
+  readonly selected: Cell | null;
+  readonly message: string | null;
+}): string {
+  if (input.hover !== null) {
+    return input.hover.ok
+      ? 'The Core fits here. Click to choose this spot.'
+      : (input.hover.text ?? '');
+  }
+  if (input.message !== null) return input.message;
+  return input.selected === null
+    ? 'Point at the map to try a position.'
+    : `Chosen: column ${String(input.selected.x)}, row ${String(input.selected.y)}.`;
+}
+
 /** Every legal position, as a lookup by `y * width + x`. */
 export function legalSet(team: TeamState, content: WebContent): Set<number> {
   const w = team.map.width;

@@ -97,6 +97,38 @@ describe('menuRows', () => {
     expect(rows).toEqual([]);
   });
 
+  test('a finished save in an unreadable state stays listed so it can be removed', () => {
+    const over = {
+      round: 2,
+      lives: 0,
+      step: 'run_over',
+      outcome: 'defeated',
+    } as never;
+    const rows = menuRows(
+      [
+        item({
+          runId: 'f',
+          runVersion: '2.0',
+          unsupportedFormat: true,
+          summary: over,
+        } as never),
+        item({ runId: 'n', runVersion: '9.0', summary: over }),
+        item({ runId: 'o', runVersion: '1.0', summary: over }),
+        item({ runId: 'ok', runVersion: '2.0', summary: over }),
+      ],
+      NOW,
+      5,
+      '2.0.0',
+    );
+    expect(
+      rows.map((r) => r.kind === 'run' && [r.runId, r.blocked !== null]),
+    ).toEqual([
+      ['f', true],
+      ['n', true],
+      ['o', true],
+    ]);
+  });
+
   test('a party shows its names', () => {
     const [row] = menuRows(
       [item({ runId: 'a', playerNames: ['You', 'Ana', 'Bo'] })],

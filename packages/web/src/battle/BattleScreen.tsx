@@ -50,6 +50,7 @@ import {
   parseSampleHash,
   type SampleSelection,
 } from './samples.js';
+import { createReadyGate } from './ready-gate.js';
 import { battleConfig } from './setup.js';
 import type { BattleDescription, BattleViewProps } from './types.js';
 import { REFERENCE_BOARDS } from '@game/core';
@@ -185,7 +186,13 @@ export function BattleView(props: BattleViewProps) {
             Result: {won ? 'Victory' : 'Defeat'},{' '}
             <span data-field="reward">{props.reward(won)}</span>
           </p>
-          <button type="button" class="primary" onClick={props.onReady}>
+          <button
+            type="button"
+            class="primary"
+            onClick={() => {
+              void props.onReady();
+            }}
+          >
             Ready
           </button>
         </div>
@@ -374,9 +381,13 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
     props.onTick?.(0);
     setPhase('playing');
   };
+  const gate = useRef<(() => void) | null>(null);
+  gate.current ??= createReadyGate(
+    () => latest.current.props.onReady(),
+    setReady,
+  );
   const onReady = (): void => {
-    setReady(true);
-    props.onReady();
+    gate.current?.();
   };
   const onFocus = (m: Moment): void => {
     if (m.focus !== null) camera.focusAt(m.focus);
@@ -605,6 +616,7 @@ export function BattleSampleScreen() {
       }}
       onReady={() => {
         setReadyCount((n) => n + 1);
+        return Promise.resolve(true);
       }}
       topBarExtra={picker}
     />

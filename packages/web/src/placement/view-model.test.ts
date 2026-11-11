@@ -6,6 +6,7 @@ import { legalCore, newRun, send } from '../run/test-run.js';
 import {
   clipPaths,
   coreCells,
+  hintText,
   kitRows,
   legalSet,
   problemText,
@@ -136,5 +137,35 @@ describe('starting kit', () => {
     expect(rows.length).toBe(economy.startingKit.length + 1);
     for (const r of rows.slice(0, -1)) expect(r.text).toMatch(/ × \d+$/);
     expect(rows.map((r) => r.text).join(' ')).not.toMatch(/bld_/);
+  });
+});
+
+describe('hint line', () => {
+  const legalCell = legalCore(run)[0] ?? { x: 0, y: 0 };
+  const good = verdictAt(team, content, legalCell);
+  const bad = verdictAt(team, content, { x: width - 1, y: 0 });
+  const stale = 'The Core is 2 × 2 and would hang over the edge of the board.';
+
+  test('hovering a legal cell after an illegal click shows the legal text', () => {
+    expect(bad.ok).toBe(false);
+    expect(hintText({ hover: good, selected: null, message: stale })).toMatch(
+      /fits here/,
+    );
+  });
+  test('hovering an illegal cell shows its own reason', () => {
+    expect(hintText({ hover: bad, selected: null, message: null })).toBe(
+      bad.text,
+    );
+  });
+  test('nothing hovered: the selection, or a stored message', () => {
+    expect(
+      hintText({ hover: null, selected: { x: 3, y: 4 }, message: null }),
+    ).toBe('Chosen: column 3, row 4.');
+    expect(hintText({ hover: null, selected: null, message: 'No.' })).toBe(
+      'No.',
+    );
+    expect(hintText({ hover: null, selected: null, message: null })).toMatch(
+      /Point at the map/,
+    );
   });
 });

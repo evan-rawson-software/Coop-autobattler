@@ -110,3 +110,57 @@ describe('the finished record is durable before the save is removed', () => {
     expect(history.filter((h) => h.runId === 'r')).toHaveLength(1);
   });
 });
+
+describe('a save the game cannot read never gets a finished record', () => {
+  async function stored(patch: (rec: Record<string, unknown>) => void) {
+    const t = rig();
+    // Put back a finished save as the stores hold it, then damage it.
+    const base = createMemorySaveStore();
+    const started = await startRun(
+      {
+        runId: 'u',
+        runVersion: RUN_VERSION,
+        seed: 4,
+        players: ['You'],
+        host: 0,
+      },
+      gameDeps(),
+      base,
+      1,
+      INSTALLED_VERSION,
+    );
+    if (!started.ok) throw new Error('start');
+    const rec = structuredClone(await base.get('u')) as Record<string, unknown>;
+    const st = rec['state'] as Record<string, unknown>;
+    st['outcome'] = { reason: 'abandoned' };
+    (rec['summary'] as Record<string, unknown>)['outcome'] = 'abandoned';
+    patch(rec);
+    return { t, rec };
+  }
+
+  for (const [name, patch] of [
+    [
+      'unsupported format',
+      (r: Record<string, unknown>) => {
+        (r['state'] as Record<string, unknown>)['formatVersion'] = 999;
+      },
+    ],
+    [
+      'newer version',
+      (r: Record<string, unknown>) => {
+        r['runVersion'] = '99.0';
+        (r['state'] as Record<string, unknown>)['runVersion'] = '99.0';
+        (r['createArgs'] as Record<string, unknown>)['runVersion'] = '99.0';
+      },
+    ],
+  ] as const) {
+    test(`${name}: removed, no finished record`, async () => {
+      const { t, rec } = await stored(patch);
+      await t.saves.put(rec as never);
+      expect(await t.saves.get('u')).not.toBeNull();
+      await t.saves.remove('u');
+      expect(await t.saves.get('u')).toBeNull();
+      expect(await t.finished.get('u')).toBeNull();
+    });
+  }
+});

@@ -45,8 +45,11 @@ export interface BattleViewProps {
     readonly won: boolean;
     readonly eventLogHash: string;
   };
-  /** The Ready button of the summary. */
-  readonly onReady: () => void;
+  /**
+   * The Ready button of the summary. Returns whether Ready was accepted; when
+   * it was not, the button is available again.
+   */
+  readonly onReady: () => Promise<boolean>;
   /**
    * Resume at this tick (the battle is re-simulated to it). Playback starts
    * revealed when above 0. Read once per battle, when `battle` is simulated:

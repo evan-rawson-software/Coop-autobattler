@@ -31,16 +31,19 @@ export function RunBattleScreen(props: { run: RunHandle }) {
   const key = tickKey(run);
   const initialTick = useMemo(() => readTick(key), [key]);
 
-  const ready = (): void => {
+  /** Resolves true when Ready was accepted (or already was), else shows why. */
+  const ready = (): Promise<boolean> => {
     setError(null);
-    void session.dispatch({ type: 'ready' }).then((r) => {
+    return session.dispatch({ type: 'ready' }).then((r) => {
       if (r.ok) {
         // Past this battle: its playback position is not needed any more.
         clearTick(key);
         if (r.state.step === 'run_over') clearRunTicks(run.runId);
-      } else if (r.reason !== 'already_ready') {
-        setError(reasonMessage(r.reason, r.detail));
+        return true;
       }
+      if (r.reason === 'already_ready') return true;
+      setError(reasonMessage(r.reason, r.detail));
+      return false;
     });
   };
 
@@ -53,7 +56,13 @@ export function RunBattleScreen(props: { run: RunHandle }) {
             <p class="muted">
               The result of the battle is still in your run. You can continue.
             </p>
-            <button type="button" class="primary" onClick={ready}>
+            <button
+              type="button"
+              class="primary"
+              onClick={() => {
+                void ready();
+              }}
+            >
               Continue
             </button>
           </Panel>

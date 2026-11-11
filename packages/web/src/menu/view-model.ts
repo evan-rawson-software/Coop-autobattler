@@ -68,9 +68,14 @@ export function menuRows(
       });
       continue;
     }
-    // A run that already ended is finished off at start-up; do not list it.
-    if (item.summary.outcome !== null) continue;
     const kind = classify(item.runVersion, installed);
+    const unreadable =
+      item.unsupportedFormat === true ||
+      kind === 'newer' ||
+      kind === 'older_major';
+    // A readable run that already ended is finished off at start-up; do not
+    // list it. One the game cannot read stays listed, so it can be removed.
+    if (item.summary.outcome !== null && !unreadable) continue;
     const names = item.playerNames;
     const title =
       names.length === 1 ? `${names[0] ?? 'You'} (solo)` : names.join(' + ');

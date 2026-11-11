@@ -252,6 +252,13 @@ export async function runRunSmoke({
     (await page.evaluate(() => window.__debug.placement.pathCount())) > 0,
     'Core placement: the routes enemy units would take are shown for a legal position',
   );
+  // After the illegal click, the hint follows the pointer to a legal cell.
+  const goodHint = await page.locator('#core-hint').innerText();
+  check(
+    /fits here/i.test(goodHint) &&
+      !/edge|Water|cliff|node|front/i.test(goodHint),
+    `Core placement: the hint over a legal cell is not stale after an illegal click ("${goodHint}")`,
+  );
   await page.mouse.click(pGood.x, pGood.y);
   await settle();
   check(
