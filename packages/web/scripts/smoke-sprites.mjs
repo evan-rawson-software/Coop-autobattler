@@ -4,6 +4,8 @@
 // Loads the #sprites route, waits for every sheet image, and takes
 // screenshots of the main sections into smoke-output/.
 
+import { slow } from './smoke-timing.mjs';
+
 export async function runSpritesSmoke({
   page,
   baseUrl,
@@ -22,7 +24,7 @@ export async function runSpritesSmoke({
   page.on('response', onResponse);
   await page.goto(`${baseUrl}#sprites`);
   await page.waitForSelector('#sprites-root[data-ready="true"]', {
-    timeout: 15000,
+    timeout: slow(15000),
   });
   await settle();
   const root = await page.evaluate(() => {
