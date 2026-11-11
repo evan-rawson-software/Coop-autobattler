@@ -1,0 +1,302 @@
+{
+  "name": "siege",
+  "description": "Heavy and slow: tier 3 extractors feed two tier 3 barracks and a tier 3 armory behind a tier 2 wall screen.",
+  "mapSeed": 5,
+  "partySize": 1,
+  "team": {
+    "map": {
+      "width": 24,
+      "height": 16,
+      "partySize": 1,
+      "plotWidth": 24,
+      "features": [
+        {
+          "x": 4,
+          "y": 2,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 5,
+          "y": 2,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 6,
+          "y": 2,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 11,
+          "y": 2,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 12,
+          "y": 2,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 13,
+          "y": 2,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 14,
+          "y": 2,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 4,
+          "y": 3,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 6,
+          "y": 3,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 7,
+          "y": 3,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 6,
+          "y": 4,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 13,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 14,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 15,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 16,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 17,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 18,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 19,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 20,
+          "y": 4,
+          "feature": "ter_cliff"
+        }
+      ],
+      "nodes": [
+        {
+          "x": 10,
+          "y": 1,
+          "resource": "res_a"
+        },
+        {
+          "x": 19,
+          "y": 1,
+          "resource": "res_c"
+        },
+        {
+          "x": 1,
+          "y": 2,
+          "resource": "res_b"
+        },
+        {
+          "x": 21,
+          "y": 4,
+          "resource": "res_a"
+        },
+        {
+          "x": 19,
+          "y": 5,
+          "resource": "res_b"
+        },
+        {
+          "x": 23,
+          "y": 6,
+          "resource": "res_b"
+        },
+        {
+          "x": 8,
+          "y": 8,
+          "resource": "res_a"
+        }
+      ]
+    },
+    "core": {
+      "x": 11,
+      "y": 5
+    },
+    "buildings": [
+      {
+        "id": 1,
+        "def": "bld_extractor",
+        "tier": 3,
+        "x": 10,
+        "y": 1,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 2,
+        "def": "bld_barracks",
+        "tier": 3,
+        "x": 9,
+        "y": 2,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 4,
+        "def": "bld_extractor",
+        "tier": 3,
+        "x": 8,
+        "y": 8,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 5,
+        "def": "bld_armory",
+        "tier": 3,
+        "x": 8,
+        "y": 9,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 7,
+        "def": "bld_extractor",
+        "tier": 3,
+        "x": 21,
+        "y": 4,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 8,
+        "def": "bld_barracks",
+        "tier": 3,
+        "x": 21,
+        "y": 5,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 10,
+        "def": "bld_wall",
+        "tier": 2,
+        "x": 9,
+        "y": 8,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 11,
+        "def": "bld_wall",
+        "tier": 2,
+        "x": 10,
+        "y": 8,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 12,
+        "def": "bld_wall",
+        "tier": 2,
+        "x": 11,
+        "y": 8,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 13,
+        "def": "bld_wall",
+        "tier": 2,
+        "x": 12,
+        "y": 8,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 14,
+        "def": "bld_wall",
+        "tier": 2,
+        "x": 13,
+        "y": 8,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 15,
+        "def": "bld_wall",
+        "tier": 2,
+        "x": 14,
+        "y": 8,
+        "rotation": 0,
+        "owner": 0
+      }
+    ],
+    "stash": [],
+    "nextId": 16,
+    "conduits": [
+      {
+        "id": 3,
+        "from": {
+          "building": 1,
+          "side": "north"
+        },
+        "to": {
+          "building": 2,
+          "side": "south"
+        },
+        "cells": []
+      },
+      {
+        "id": 6,
+        "from": {
+          "building": 4,
+          "side": "north"
+        },
+        "to": {
+          "building": 5,
+          "side": "south"
+        },
+        "cells": []
+      },
+      {
+        "id": 9,
+        "from": {
+          "building": 7,
+          "side": "north"
+        },
+        "to": {
+          "building": 8,
+          "side": "south"
+        },
+        "cells": []
+      }
+    ]
+  }
+}
