@@ -21,3 +21,20 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - run: pnpm validate:content
+
+  bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The scripted bot plays short runs of every strategy through the
+      # session intents. Fails on a rejected intent, a crash, or a run that
+      # differs when played again with the same seed.
+      - run: pnpm sim bot --strategy all --count 3 --max-rounds 4 --verify
+      - run: pnpm sim bot --strategy all --count 2 --party 3 --max-rounds 3 --verify
