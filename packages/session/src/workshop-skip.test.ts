@@ -309,6 +309,8 @@ describe('Workshop: a stored choice that can no longer be paid', () => {
       if (s.step !== 'event_resolve') continue;
       const order = rng.shuffle(names.map((_x, i) => i));
       for (const p of order) {
+        // The event may already have resolved (nobody left who can choose).
+        if (s.step !== 'event_resolve') break;
         const d = decks[rnd(3)] as typeof deps;
         const mine = mineOf(s, p);
         const pick =
