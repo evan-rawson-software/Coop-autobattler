@@ -8,7 +8,7 @@
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { frames, slow } from './smoke-timing.mjs';
+import { frames, hookReady, slow } from './smoke-timing.mjs';
 
 const SEED = 7;
 
@@ -37,11 +37,20 @@ export async function runRunSmoke({
   const errorsAtStart = consoleErrors.length;
 
   const R = {
-    state: (p = page) => p.evaluate(() => window.__debug.run.state()),
-    screen: (p = page) => p.evaluate(() => window.__debug.run.screen()),
+    state: async (p = page) => {
+      await hookReady(p, 'run');
+      return await p.evaluate(() => window.__debug.run.state());
+    },
+    screen: async (p = page) => {
+      await hookReady(p, 'run');
+      return await p.evaluate(() => window.__debug.run.screen());
+    },
   };
   const B = {
-    team: () => page.evaluate(() => window.__debug.build.team()),
+    team: async () => {
+      await hookReady(page, 'build');
+      return await page.evaluate(() => window.__debug.build.team());
+    },
   };
   const at = (x, y) =>
     page.evaluate(

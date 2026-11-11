@@ -17,6 +17,14 @@ export const CPU_THROTTLE = Math.max(
 export const slow = (ms) => ms * TIMING * CPU_THROTTLE;
 
 /**
+ * Wait until a screen has installed its read-only debug hook
+ * (window.__debug.<name>). The hooks are set when the screen mounts, which on a
+ * slow runner can be after the element the script just waited for appeared.
+ */
+export const hookReady = (page, name) =>
+  page.waitForFunction((n) => window.__debug?.[n] !== undefined, name);
+
+/**
  * Wait for `n` animation frames to be presented. A fixed sleep assumes the
  * page renders at a known rate; this scales with however loaded the machine
  * is, so "let the app react" holds on a slow runner too.
