@@ -237,7 +237,7 @@ export class MotionScratch {
                       // Coinciding centres: along an axis chosen by the
                       // parity of the id sum, towards negative for the lower
                       // id.
-                      const sign = iLoses ? 1 : -1;
+                      const sign = iLoses ? -1 : 1;
                       px = parity ? sign * r : 0;
                       py = parity ? 0 : sign * r;
                     }

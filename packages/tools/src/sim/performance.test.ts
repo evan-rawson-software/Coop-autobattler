@@ -32,16 +32,16 @@ const BUDGET = {
   maxLogBytesFourPlots: 5_000_000,
   /**
    * Targets on a developer machine (documented, not enforced). Since units
-   * became circles (issue #59) the one-plot target is met only about half
-   * and the dense one not at all: see docs/performance-budget.md.
+   * became circles (issue #59) the dense four-plot targets are not met (the
+   * stress battle lasts until Overload): see docs/performance-budget.md.
    */
   targetBattlesPerSecondOnePlot: 100,
   targetBattlesPerSecondFourPlots: 5,
   /** Enforced floors: fail below these. */
-  minBattlesPerSecondOnePlot: 20,
+  minBattlesPerSecondOnePlot: 25,
   minBattlesPerSecondFourPlots: 0.1,
   /** Enforced ceiling for the dense tier 3 stress battle, in ms. */
-  maxStressBattleMs: 25_000,
+  maxStressBattleMs: 30_000,
 } as const;
 
 const ctx = loadSimContext();

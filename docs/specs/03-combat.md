@@ -23,7 +23,8 @@ Status: Draft v4.5
   and randomized **natural features** such as lakes and cliffs. Players must
   build around them, and can use them to **funnel enemy units**.
 - **CB-3d [DECIDED]** Some buildings **produce units** that move toward the
-  enemy base, attack its infrastructure, and eventually kill its Core.
+  enemy base, fight the units they meet, break what stands in their way and
+  eventually kill its Core.
 - **CB-3f [DECIDED]** The things players place are called **buildings**.
   Buildings can be **rotated**.
 - **CB-3g [DECIDED]** **Conduits** — the connections that carry resources
@@ -313,8 +314,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
     is still ramping.
   - **Fortify and ramp** — defenses first, economy behind them, an
     overwhelming army late; beats a rush that cannot break through.
-  - **Siege** — steady pressure with units that dismantle defenses and
-    infrastructure before the ramp pays off.
+  - **Siege** — steady pressure with strong units that dismantle the
+    defenses in their way before the ramp pays off.
 - **CB-22** The party can **re-plan before each battle** (the shop step, RS-5f):
   everything but the Core can move, so the factory can be re-routed for a
   PvE threat whose style is shown in advance, or hedged for the unknown PvP

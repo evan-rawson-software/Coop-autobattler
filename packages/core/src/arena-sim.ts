@@ -1221,10 +1221,19 @@ function enterWaves(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
   const arena = ctx.arena;
   const { width, height, boardHeight } = arena.geom;
   const rest: EnteringSim[] = [];
+  // Units only get added during the walk, which can only take room away: once
+  // an entry of collision radius `r` found no place on a side's row, no later
+  // entry of that side with a radius of at least `r` can find one either.
+  // (Only a shortcut: it never changes who enters.)
+  const failed: [number, number] = [Infinity, Infinity];
   for (const e of sim.entering) {
     const unitDef = ctx.content.units.get(e.unit);
     if (unitDef === undefined) throw new Error(`Unknown unit "${e.unit}".`);
     const side = e.side;
+    if (unitDef.collisionRadius >= failed[side === 0 ? 0 : 1]) {
+      rest.push(e);
+      continue;
+    }
     const row = side === 0 ? boardHeight - 1 : height - boardHeight;
     let pos: { x: number; y: number } | null = null;
     for (let d = 0; d < width && pos === null; d++) {
@@ -1236,8 +1245,11 @@ function enterWaves(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
         if (pos !== null) break;
       }
     }
-    if (pos === null) rest.push(e);
-    else addUnit(sim, ctx, side, unitDef, pos.x, pos.y, 0, tick);
+    if (pos === null) {
+      rest.push(e);
+      const f = side === 0 ? 0 : 1;
+      failed[f] = Math.min(failed[f], unitDef.collisionRadius);
+    } else addUnit(sim, ctx, side, unitDef, pos.x, pos.y, 0, tick);
   }
   sim.entering = rest;
 }
