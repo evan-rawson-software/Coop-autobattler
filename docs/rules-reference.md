@@ -115,6 +115,11 @@ generator that is only used to derive children.
 - `a * b` must fit the safe range, |a * b| <= 2^53 - 1; otherwise the
   reference implementation throws. Ported code should treat such inputs as
   an error too (never wrap or saturate silently).
+- `addInt(a, b)` is `a + b` and throws if the sum leaves the safe range.
+  Sums that are accumulated over many terms (the per-tick damage per target,
+  see "Resolve attacks simultaneously") use it term by term: they are exact up
+  to 2^53 - 1 and an error beyond, never truncated to 32 bits. A 64-bit port
+  gets the same results for every input that does not throw.
 - All helpers throw on non-integer or out-of-range input.
 - Basis points: 10000 = 100%. `mulBps(v, bps) = mulDiv(v, bps, 10000)`.
   `mulPct(v, p) = mulDiv(v, p, 100)`. Both floor.
@@ -1180,7 +1185,9 @@ exactly like the original.
    escalated by Overload, `mulPct(damage, 100 + level * overloadDamageStepPercent)`
    (see "Overload"), to its target; the `unit_attacked` event carries that
    escalated value. Damage from all
-   attackers, and from turret shots, is summed per target and applied together
+   attackers, and from turret shots, is summed per target (exactly, as 64-bit
+   integers; a sum above 2^53 - 1 is an error, see "Integer math conventions")
+   and applied together
    (so two units can kill each other in the same tick; a target that is killed
    this tick still receives every blow aimed at it). Each attacker's `attackCooldown` becomes
    `attackCooldownTicks`. A building's health stops at 0 (a Core's health

@@ -17,6 +17,19 @@ export function assertInt(value: number, name = 'value'): void {
   }
 }
 
+/** a + b, throwing if either input or the sum is not a safe integer. */
+export function addInt(a: number, b: number): number {
+  assertInt(a, 'a');
+  assertInt(b, 'b');
+  const sum = a + b;
+  if (!Number.isSafeInteger(sum)) {
+    throw new RangeError(
+      `a + b overflows the safe range: ${String(a)} + ${String(b)}`,
+    );
+  }
+  return sum;
+}
+
 /** Normalises -0 to 0. */
 function noNegZero(n: number): number {
   return n === 0 ? 0 : n;

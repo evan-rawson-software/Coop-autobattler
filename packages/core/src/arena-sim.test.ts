@@ -1288,6 +1288,64 @@ describe('rendering', () => {
   });
 });
 
+describe('damage sums beyond 32 bits (int.ts contract)', () => {
+  /** A side 1 Core with the given health, and `n` side 0 soldiers beside it. */
+  function pile(n: number, damage: number, coreHp: number) {
+    const b = startArenaBattle(coreOnly(), coreOnly(), GAP, content, simConfig);
+    const at = arenaCell(1, 5, 2);
+    for (let k = 0; k < n; k++) {
+      const u = spawnUnitForTest(b.sim, b.ctx, {
+        side: 0,
+        def: 'unit_soldier',
+        x: at.x,
+        y: at.y,
+      });
+      u.damage = damage;
+      u.attackCooldown = 0;
+    }
+    got(b.sim.health.find((h) => h.side === 1 && h.building === 0)).hp = coreHp;
+    return b;
+  }
+
+  test('twelve hits of 2e8 on a building sum to 2.4e9 exactly (no wrap)', () => {
+    const { sim, ctx } = pile(12, 200_000_000, 1_000_000_000_000);
+    stepArena(sim, ctx);
+    expect(healthOf(sim, 1, 0)).toBe(1_000_000_000_000 - 12 * 200_000_000);
+    expect(ctx.coreRemaining[1]).toBe(1_000_000_000_000 - 12 * 200_000_000);
+  });
+
+  test('twelve hits of 2e8 on a unit sum to 2.4e9 exactly (no wrap)', () => {
+    const b = startArenaBattle(coreOnly(), coreOnly(), GAP, content, simConfig);
+    const victim = spawnUnitForTest(b.sim, b.ctx, {
+      side: 1,
+      def: 'unit_soldier',
+      x: 4,
+      y: 18,
+    });
+    victim.hp = 1_000_000_000_000;
+    for (let k = 0; k < 12; k++) {
+      const u = spawnUnitForTest(b.sim, b.ctx, {
+        side: 0,
+        def: 'unit_soldier',
+        x: 4,
+        y: 18,
+      });
+      u.damage = 200_000_000;
+    }
+    stepArena(b.sim, b.ctx);
+    expect(victim.hp).toBe(1_000_000_000_000 - 12 * 200_000_000);
+  });
+
+  test('a per-tick sum past the safe-integer limit throws instead of wrapping', () => {
+    // 101 hits of 9e13 (each scaled by 100 / 100 in the Overload step) sum to
+    // 9.09e15 > 2^53 - 1.
+    const { sim, ctx } = pile(101, 90_000_000_000_000, 2 ** 52);
+    expect(() => {
+      stepArena(sim, ctx);
+    }).toThrow(RangeError);
+  });
+});
+
 describe('stress', () => {
   test(
     'several hundred units on a four-plot arena for 1000 ticks',

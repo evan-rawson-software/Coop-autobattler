@@ -36,7 +36,7 @@ import {
   type SimEvent,
 } from './flow-sim.js';
 import type { EconomyEffectType, Side } from './buildings.js';
-import { divFloor, modFloor, mulPct } from './int.js';
+import { addInt, divFloor, modFloor, mulPct } from './int.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
 import type { Cell } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
@@ -376,8 +376,13 @@ export interface ArenaContext {
   next: Int32Array;
   action: Uint8Array;
   arg: Int32Array;
-  unitDamage: Int32Array;
-  buildingDamage: Int32Array;
+  /**
+   * Damage accumulated this tick. Float64Array holding integers, summed with
+   * `addInt`: exact up to the safe-integer limit, a RangeError beyond it
+   * (never a wrap-around, which an Int32Array would do past 2^31).
+   */
+  unitDamage: Float64Array;
+  buildingDamage: Float64Array;
 }
 
 const bkey = (side: number, id: number): number => id * 2 + side;
@@ -505,8 +510,8 @@ export function createArenaContext(
     next: new Int32Array(0),
     action: new Uint8Array(0),
     arg: new Int32Array(0),
-    unitDamage: new Int32Array(0),
-    buildingDamage: new Int32Array(arena.buildings.length),
+    unitDamage: new Float64Array(0),
+    buildingDamage: new Float64Array(arena.buildings.length),
   };
   return options.events === undefined
     ? base
@@ -945,7 +950,7 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (target === undefined) continue;
     t.charge = 0;
     t.cooldown = info.cooldownTicks;
-    ctx.unitDamage[best] = (ctx.unitDamage[best] ?? 0) + info.damage;
+    ctx.unitDamage[best] = addInt(ctx.unitDamage[best] ?? 0, info.damage);
     ctx.events?.push({
       tick,
       type: 'turret_fired',
@@ -1013,7 +1018,7 @@ function growScratch(ctx: ArenaContext, n: number): void {
     ctx.next = new Int32Array(size);
     ctx.action = new Uint8Array(size);
     ctx.arg = new Int32Array(size);
-    ctx.unitDamage = new Int32Array(size);
+    ctx.unitDamage = new Float64Array(size);
   }
 }
 
@@ -1352,12 +1357,12 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     if (act === ACT_UNIT) {
       const t = units[arg];
       if (t === undefined) continue;
-      ctx.unitDamage[arg] = (ctx.unitDamage[arg] ?? 0) + damage;
+      ctx.unitDamage[arg] = addInt(ctx.unitDamage[arg] ?? 0, damage);
       target = { kind: 'unit', unit: t.id };
     } else {
       const b = arena.buildings[arg];
       if (b === undefined) continue;
-      ctx.buildingDamage[arg] = (ctx.buildingDamage[arg] ?? 0) + damage;
+      ctx.buildingDamage[arg] = addInt(ctx.buildingDamage[arg] ?? 0, damage);
       target =
         b.kind === 'core'
           ? { kind: 'core', side: b.side }
@@ -1378,7 +1383,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     for (const side of [0, 1]) {
       const ref = arena.coreRef[side] ?? -1;
       if (ref < 0 || arena.buildings[ref]?.alive !== true) continue;
-      ctx.buildingDamage[ref] = (ctx.buildingDamage[ref] ?? 0) + decay;
+      ctx.buildingDamage[ref] = addInt(ctx.buildingDamage[ref] ?? 0, decay);
       events?.push({ tick, type: 'overload_core_damage', side, damage: decay });
     }
   }

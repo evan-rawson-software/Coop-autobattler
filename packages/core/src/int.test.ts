@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+  addInt,
   clamp,
   divFloor,
   maxInt,
@@ -11,6 +12,16 @@ import {
 } from './int.js';
 
 describe('int helpers', () => {
+  test('addInt is exact to the safe limit and throws beyond it', () => {
+    expect(addInt(2 ** 31, 2 ** 31)).toBe(2 ** 32);
+    expect(addInt(Number.MAX_SAFE_INTEGER - 1, 1)).toBe(
+      Number.MAX_SAFE_INTEGER,
+    );
+    expect(addInt(-5, 3)).toBe(-2);
+    expect(() => addInt(Number.MAX_SAFE_INTEGER, 1)).toThrow(RangeError);
+    expect(() => addInt(1.5, 1)).toThrow(RangeError);
+  });
+
   test('mulDiv floors, including negatives', () => {
     expect(mulDiv(7, 3, 2)).toBe(10);
     expect(mulDiv(-7, 3, 2)).toBe(-11);
