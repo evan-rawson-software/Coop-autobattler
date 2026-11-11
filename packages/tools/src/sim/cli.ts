@@ -24,6 +24,7 @@ import {
   pveCommand,
   type CommandOutput,
 } from './commands.js';
+import { botCommand } from './bot-command.js';
 import { loadSimContext, type SimContext } from './context.js';
 
 export const repoRoot = path.resolve(
@@ -132,6 +133,7 @@ export function main(argv: readonly string[], io: Io): number {
     const ctx = loadSimContext();
     const t0 = performance.now();
     let output: CommandOutput;
+    let failed = false;
     switch (cmd.kind) {
       case 'map':
         output = mapCommand(ctx, cmd);
@@ -152,6 +154,12 @@ export function main(argv: readonly string[], io: Io): number {
           ascii: cmd.ascii,
         });
         break;
+      case 'bot': {
+        const r = botCommand(ctx, cmd);
+        output = r;
+        failed = r.failed;
+        break;
+      }
       case 'batch':
         output = batchCommand(ctx, {
           a: load(cmd.a),
@@ -175,7 +183,7 @@ export function main(argv: readonly string[], io: Io): number {
       io.out(`Event log written to ${logFile}`);
     }
     if (cmd.time) io.out(`Time: ${ms.toFixed(0)} ms`);
-    return 0;
+    return failed ? 1 : 0;
   } catch (e) {
     if (e instanceof CliError) {
       io.err(`Error: ${e.message}`);
