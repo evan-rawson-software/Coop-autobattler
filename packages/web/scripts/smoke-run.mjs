@@ -608,6 +608,48 @@ export async function runRunSmoke({
     left === 0,
     `first build: the starting kit is placed on the board (${left} left in the stash)`,
   );
+  {
+    // The static sprite layer is rebuilt by an edit (place, rotate, undo) and
+    // never by hovering.
+    const builds = async () => {
+      await page.waitForTimeout(250);
+      return await page.evaluate(() => window.__debug.sprites().layerBuilds);
+    };
+    const t0 = await B.team();
+    const last = t0.buildings[t0.buildings.length - 1];
+    let n = await builds();
+    await page.click('[data-action="undo"]');
+    let m = await builds();
+    check(m > n, `layer: undo rebuilds the static layer (${n} -> ${m})`);
+    n = m;
+    const box = await page
+      .locator(`[data-stash-def="${last.def}"]`)
+      .first()
+      .boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    const dst = await at(last.x, last.y);
+    await page.mouse.move(dst.x, dst.y, { steps: 6 });
+    await page.mouse.up();
+    m = await builds();
+    check(m > n, `layer: placing rebuilds the static layer (${n} -> ${m})`);
+    n = m;
+    await page.mouse.click(dst.x, dst.y);
+    await page.click('[data-action="rotate"]');
+    m = await builds();
+    check(m > n, `layer: rotating rebuilds the static layer (${n} -> ${m})`);
+    n = m;
+    for (let i = 0; i < 6; i++) {
+      await page.mouse.move(dst.x + 40 + i * 9, dst.y + 30 + i * 7, {
+        steps: 3,
+      });
+    }
+    m = await builds();
+    check(
+      m === n,
+      `layer: hovering does not rebuild the static layer (${n} -> ${m})`,
+    );
+  }
   await reloadSame('the first Build screen');
   await shotDark('art2-build-factory');
   {
