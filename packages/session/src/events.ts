@@ -82,6 +82,23 @@ export interface EventHandler {
   checkParams?(def: EventDef): string | null;
   /** Can this event be offered now? (A Workshop needs a raisable building.) */
   available(ctx: EventContext, def: EventDef): boolean;
+  /**
+   * True if `available` is true in every state (a Windfall). Wiring requires
+   * at least one event definition with such a handler, so an event step
+   * always has at least one offer.
+   */
+  readonly alwaysAvailable?: boolean;
+  /**
+   * An upper bound on how many different instances of this event can be
+   * offered together now (default: unlimited). Used by the second offer
+   * pass to skip a repeat that cannot differ, without drawing for it.
+   */
+  maxInstances?(ctx: EventContext, def: EventDef): number;
+  /**
+   * True if `resolve` may return a follow-up. Wiring then requires `choose`.
+   * (`resolve` returning a follow-up without this flag is an error.)
+   */
+  readonly canAskFollowUp?: boolean;
   /** Extra data stored in the offer, drawn from `rng` (a child stream). */
   instantiate(
     ctx: EventContext,
@@ -170,6 +187,7 @@ function raisable(team: TeamState): Raisable[] {
 
 export const workshopHandler: EventHandler = {
   type: 'workshop',
+  canAskFollowUp: true,
   checkParams(def) {
     const t = def.params['tiers'];
     return t === undefined || (typeof t === 'number' && t >= 1 && t <= 2)
@@ -223,8 +241,20 @@ function eligibleModifiers(ctx: EventContext): string[] {
     .map((m) => m.id);
 }
 
+/** C(n, k), capped so it cannot overflow (the callers only compare to small numbers). */
+function choose(n: number, k: number): number {
+  const cap = 1_000_000;
+  let r = 1;
+  for (let i = 1; i <= k; i++) {
+    r = (r * (n - k + i)) / i;
+    if (r > cap) return cap;
+  }
+  return Math.round(r);
+}
+
 export const shrineHandler: EventHandler = {
   type: 'shrine',
+  canAskFollowUp: true,
   checkParams(def) {
     const c = def.params['choices'];
     return c === undefined || (typeof c === 'number' && c >= 1)
@@ -232,6 +262,12 @@ export const shrineHandler: EventHandler = {
       : '"choices" must be a positive integer';
   },
   available: (ctx) => eligibleModifiers(ctx).length > 0,
+  // A Shrine offers min(choices, eligible) modifiers, so the number of
+  // different offers is the number of such subsets.
+  maxInstances(ctx, def) {
+    const e = eligibleModifiers(ctx).length;
+    return choose(e, Math.min(intParam(def, 'choices', 3), e));
+  },
   instantiate(ctx, def, rng) {
     const eligible = eligibleModifiers(ctx);
     const n = Math.min(intParam(def, 'choices', 3), eligible.length);
@@ -281,6 +317,7 @@ export const windfallHandler: EventHandler = {
       : '"gold" must be a positive integer';
   },
   available: () => true,
+  alwaysAvailable: true,
   instantiate: (_ctx, def) => ({ gold: intParam(def, 'gold', 0) }),
   resolve({ state }, offer) {
     const gold = typeof offer['gold'] === 'number' ? offer['gold'] : 0;
@@ -323,6 +360,19 @@ export function checkEventHandlers(
     }
     const p = h.checkParams?.(def) ?? null;
     if (p !== null) problems.push(`event "${def.id}": ${p}.`);
+    if (h.canAskFollowUp === true && h.choose === undefined) {
+      problems.push(
+        `event "${def.id}": handler "${def.type}" can ask for a follow-up but has no "choose".`,
+      );
+    }
+  }
+  const sure = config.events.some(
+    (d) => handlerFor(handlers, d.type)?.alwaysAvailable === true,
+  );
+  if (!sure) {
+    problems.push(
+      'events: at least one event definition needs a handler that is always available (such as a windfall), so every event step has an offer.',
+    );
   }
   return problems;
 }
@@ -341,26 +391,38 @@ export function eventHooks(
       );
       const offers: EventOffer[] = [];
       const seen = new Set<string>();
-      const add = (def: EventDef): boolean => {
+      /**
+       * Try to add an offer of `def`. The instance data comes from child
+       * streams of `rng` (they do not advance it): attempt 0 is
+       * `<id>:<offers so far>` and later attempts add `#<k>`, so how many
+       * attempts a draw needs never changes what `rng` yields afterwards.
+       */
+      const add = (def: EventDef, attempts: number): boolean => {
         const handler = handlerFor(handlers, def.type) as EventHandler;
-        const data = handler.instantiate(
-          ctx,
-          def,
-          rng.child(`${def.id}:${String(offers.length)}`),
-        );
-        const key = canonicalJson({ event: def.id, data });
-        if (seen.has(key)) return false;
-        seen.add(key);
-        const same = offers.filter((o) => o.event === def.id).length;
-        offers.push({
-          id: same === 0 ? def.id : `${def.id}#${String(same + 1)}`,
-          event: def.id,
-          type: def.type,
-          ...data,
-        });
-        return true;
+        for (let k = 0; k < attempts; k++) {
+          const label = `${def.id}:${String(offers.length)}`;
+          const data = handler.instantiate(
+            ctx,
+            def,
+            rng.child(k === 0 ? label : `${label}#${String(k)}`),
+          );
+          const key = canonicalJson({ event: def.id, data });
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const same = offers.filter((o) => o.event === def.id).length;
+          offers.push({
+            id: same === 0 ? def.id : `${def.id}#${String(same + 1)}`,
+            event: def.id,
+            type: def.type,
+            ...data,
+          });
+          return true;
+        }
+        return false;
       };
-      // First pass: distinct event definitions, weighted, without replacement.
+      // First pass: distinct event definitions, weighted, without
+      // replacement. One `pickWeightedIndex` draw per definition picked
+      // (min(offerCount, available) draws); each is added on its first attempt.
       const pool = [...available];
       while (offers.length < config.offerCount && pool.length > 0) {
         const i = pickWeightedIndex(
@@ -368,25 +430,39 @@ export function eventHooks(
           pool.map((d) => d.weight),
         );
         const [def] = pool.splice(i, 1);
-        if (def !== undefined) add(def);
+        if (def !== undefined) add(def, 1);
       }
-      // Second pass: repeatable events, as long as the instances differ.
+      // Second pass: repeatable events, only while some repeatable
+      // definition still has room for an instance that differs from the
+      // ones offered (`maxInstances`, known without drawing). Each round of
+      // this loop makes exactly one weighted draw, whatever happens after
+      // it; fewer than `offerCount` offers is deliberate when no room is
+      // left (issue #48).
       const repeatable = available.filter((d) => d.repeatable);
-      for (
-        let tries = 0;
-        offers.length < config.offerCount &&
-        repeatable.length > 0 &&
-        tries < 32;
-        tries++
-      ) {
+      for (;;) {
+        if (offers.length >= config.offerCount) break;
+        const open = repeatable.filter((d) => {
+          const cap =
+            handlerFor(handlers, d.type)?.maxInstances?.(ctx, d) ??
+            Number.POSITIVE_INFINITY;
+          return cap > offers.filter((o) => o.event === d.id).length;
+        });
+        if (open.length === 0) break;
         const def =
-          repeatable[
+          open[
             pickWeightedIndex(
               rng,
-              repeatable.map((d) => d.weight),
+              open.map((d) => d.weight),
             )
           ];
-        if (def !== undefined) add(def);
+        if (def === undefined) break;
+        if (!add(def, 32)) {
+          // Cannot find a different instance: this definition is done.
+          repeatable.splice(repeatable.indexOf(def), 1);
+        }
+      }
+      if (offers.length === 0) {
+        throw new Error('eventOffers: no event could be offered.');
       }
       return offers as unknown as readonly Json[];
     },
@@ -400,6 +476,11 @@ export function eventHooks(
       }
       const r = handler.resolve({ state, content, config }, offer);
       if (r.followUp === null) return { patch: r.patch, followUp: null };
+      if (handler.canAskFollowUp !== true || handler.choose === undefined) {
+        throw new Error(
+          `resolveEvent: handler "${offer.type}" returned a follow-up but does not declare canAskFollowUp with a choose function.`,
+        );
+      }
       return {
         patch: r.patch,
         followUp: {

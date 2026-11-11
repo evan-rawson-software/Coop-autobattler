@@ -26,6 +26,7 @@ import {
   type TeamState,
   type ThreatConfigs,
   type ThreatInput,
+  type ThreatProfile,
   type ThreatsConfig,
 } from '@game/core';
 import { readPveOption } from './pve-options.js';
@@ -55,8 +56,16 @@ export type FindPvpOpponent = (input: BattleInput) => PvpOpponent | null;
 export type BattleSource =
   /** PvE: the threat is `pending.option.threat`. */
   | { readonly type: 'option' }
-  /** A generated threat; regenerate it with `generateThreat(input)`. */
-  | { readonly type: 'generated'; readonly input: ThreatInput }
+  /**
+   * A generated threat. `threat` is the stored profile the battle is fought
+   * (and replayed) against, so a later change to the threat content cannot
+   * change a replay; `input` records how it was made.
+   */
+  | {
+      readonly type: 'generated';
+      readonly input: ThreatInput;
+      readonly threat: ThreatProfile;
+    }
   /** A ghost: its team is stored here. */
   | {
       readonly type: 'ghost';
@@ -159,7 +168,7 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
       if (option === null) return { error: 'the PvE option is not stored' };
       threat = option.threat;
     } else {
-      threat = generateThreat(source.input, content, threatConfigs);
+      threat = source.threat;
     }
     const started = startPveBattle({ team, threat, seed }, content, config);
     return started.ok
@@ -183,15 +192,17 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
         if (ghost !== null) {
           source = { type: 'ghost', label: ghost.label, team: ghost.team };
         } else {
+          const threatInput: ThreatInput = {
+            seed: rng.child('threat').nextU32(),
+            round: state.round,
+            type: 'boss',
+            partySize: state.players.length,
+            archetype: rng.child('archetype').pick(bossArchetypes()),
+          };
           source = {
             type: 'generated',
-            input: {
-              seed: rng.child('threat').nextU32(),
-              round: state.round,
-              type: 'boss',
-              partySize: state.players.length,
-              archetype: rng.child('archetype').pick(bossArchetypes()),
-            },
+            input: threatInput,
+            threat: generateThreat(threatInput, content, threatConfigs),
           };
         }
       }

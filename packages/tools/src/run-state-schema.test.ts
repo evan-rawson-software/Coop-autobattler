@@ -140,6 +140,31 @@ describe('run-state.schema.json', () => {
     expect(states.some((s) => s.votes !== null)).toBe(true);
   });
 
+  test('the schema ties upcomingPve to the first build and the round-ending shop', () => {
+    const states = playAll();
+    const first = (f: (s: RunState) => boolean): RunState => {
+      const s = states.find(f);
+      if (s === undefined) throw new Error('no such state');
+      return s;
+    };
+    const build = first((s) => s.step === 'build');
+    const pvpShop = first((s) => s.step === 'shop' && s.leg === 'pvp');
+    const pveShop = first((s) => s.step === 'shop' && s.leg === 'pve');
+    const choice = first((s) => s.step === 'pve_choice');
+    const over = states.at(-1) as RunState;
+    const stored = pvpShop.upcomingPve;
+    expect(stored).not.toBeNull();
+    const ok = (s: RunState): boolean =>
+      validate(JSON.parse(JSON.stringify(s)));
+    for (const s of [build, pvpShop, pveShop, choice, over])
+      expect(ok(s)).toBe(true);
+    expect(ok({ ...build, upcomingPve: null })).toBe(false);
+    expect(ok({ ...pvpShop, upcomingPve: null })).toBe(false);
+    for (const s of [pveShop, choice, over]) {
+      expect(ok({ ...s, upcomingPve: stored })).toBe(false);
+    }
+  });
+
   test('the schema rejects broken states', () => {
     const good = JSON.parse(JSON.stringify(playAll()[5])) as Record<
       string,
@@ -152,7 +177,8 @@ describe('run-state.schema.json', () => {
     };
     expect(bad(() => undefined)).toBe(true);
     expect(bad((o) => delete o['seed'])).toBe(false);
-    expect(bad((o) => (o['formatVersion'] = 2))).toBe(false);
+    expect(bad((o) => (o['formatVersion'] = 1))).toBe(false);
+    expect(bad((o) => (o['formatVersion'] = 3))).toBe(false);
     expect(bad((o) => (o['step'] = 'pve_battle'))).toBe(false);
     expect(bad((o) => (o['rng'] = [1, 2, 3]))).toBe(false);
     expect(bad((o) => (o['runVersion'] = 'v1'))).toBe(false);

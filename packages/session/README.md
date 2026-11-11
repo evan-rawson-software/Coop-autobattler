@@ -13,6 +13,10 @@ const r = applyIntent(state, playerIndex, { type: 'ready' }, deps);
 Every change is one intent from one player. An accepted intent bumps
 `actionCounter` and is appended to `actionLog`; a rejected one changes
 nothing. `replayRun(args, actionLog, deps)` rebuilds a state from the seed.
+`RunState.formatVersion` is `RUN_STATE_FORMAT_VERSION` (2: `upcomingPve` and the
+new battle detail); `validateRunState` rejects any other version with an
+"unsupported format version" error before anything else. The save record's
+own `saveFormatVersion` is separate and still 1.
 `validateRunState(data, deps)` checks untrusted data (also see
 `schemas/run-state.schema.json`). `allowedIntents`, `openVote` and
 `whoIsReady` are for the UI.
@@ -31,7 +35,7 @@ last player has voted; the most votes wins, a tie goes to the host's vote.
 | `pve_choice`     | `vote` (an option id from `pending.options`)      | All voted: winner chosen, then `pve_battle`. The options were stored earlier in `upcomingPve` (see "Game deps"). |
 | `pve_battle`     | none (never saved)                                | Resolved at once through `deps.battle`; goes to `pve_summary`.                                            |
 | `pve_summary`    | `ready`, `unready`                                | All ready: `rewards` hook, then `event_choice`. A PvE loss costs no life.                                 |
-| `event_choice`   | `vote` (one of three offers)                      | All voted: `resolveEvent` hook; `event_resolve` if it returns a follow-up, else `shop`.                   |
+| `event_choice`   | `vote` (one of the 1 to 3 offers)                 | All voted: `resolveEvent` hook; `event_resolve` if it returns a follow-up with options, else `shop`.     |
 | `event_resolve`  | `event_choose` (extension intent)                 | All players chose (most votes, ties to the host): the handler applies it and advances to `shop`.          |
 | `shop`           | board edits, `ready`, `unready`, extension intents | All ready: after the PvE leg `pvp_battle`; after the PvP leg the round counter goes up and `pve_choice`. |
 | `pvp_battle`     | none (never saved)                                | Resolved at once; goes to `pvp_summary`.                                                                  |
@@ -105,7 +109,9 @@ keeps the stub battle and placeholder event hooks; `stubBattle` and
 holds the three options (easy, medium, hard) for the coming PvE battle. They
 are drawn and stored on entering the first `build` step and on entering the
 shop that ends a round, not when `pve_choice` opens; `pve_choice` moves them
-into `pending.options` and clears `upcomingPve`. Each option is `{ id,
+into `pending.options` and clears `upcomingPve`. It is set only in the first
+`build` (round 1) and in the shop of the PvP leg, null everywhere else
+(`validateRunState` checks this), and entering `run_over` clears it. Each option is `{ id,
 difficulty, archetype, reward: { gold }, budget, summary, threat }` (see
 `readPveOption`, `PveOption`). `nextBattleInfo(state, deps)` is the selector
 for the build and shop screens: `{ kind: 'pve', round, options }` (options
@@ -120,11 +126,20 @@ option, PvE loss nothing (and no life), PvP win and PvP loss (consolation) from
 
 **Events.** `content/events.json` lists event definitions and modifiers. Each
 definition's `type` selects an `EventHandler` (`available`, `instantiate`,
-`resolve`, optional `choose`); `defaultEventHandlers` has `workshop`, `shrine`
-and `windfall`. A new type is data plus one handler passed as
+`resolve`, optional `choose`); A handler that can return a follow-up sets
+`canAskFollowUp` and must have `choose`; a handler that is always available
+(the Windfall) sets `alwaysAvailable`. `defaultEventHandlers` has `workshop`,
+`shrine` and `windfall`. A new type is data plus one handler passed as
 `eventHandlers: { ...defaultEventHandlers, mine }`; the machine is unchanged.
-`createGameDeps` throws when a definition names a type without a handler.
-Offers are `{ id, event, type, ...data }` in `pending.options` (vote with
+`createGameDeps` throws when a definition names a type without a handler,
+when a follow-up handler has no `choose`, or when no definition has an
+always-available handler. Offers are 1 to 3, not always 3: with the Workshop
+unavailable and three or fewer eligible modifiers a second Shrine is
+impossible and the step offers two events on purpose (a design question,
+issue #48). The first pass draws one weighted pick per event offered; the
+second pass (repeatable events) draws one pick per extra offer and only while
+a different instance can exist (`maxInstances`), so the draws never depend on
+how many retries an instance needed. Offers are `{ id, event, type, ...data }` in `pending.options` (vote with
 `{ type: 'vote', choice: <offer id> }`). A pick with a follow-up (Workshop:
 which building; Shrine: which modifier) enters `event_resolve` with `pending =
 { offer, followUp: { prompt, options, votes } }`; every player sends `{ type:
@@ -140,7 +155,9 @@ event-log hash (`BattleDetail`). `replayLastBattle(state, deps)` (legal in
 `pve_summary` and `pvp_summary`) returns `{ ok, battle, stored,
 storedEventLogHash }` with a started `Battle` at tick 0 for playback;
 `verifyLastBattle` runs it and compares hashes. PvP fights a generated boss
-until a ghost pool exists (`findPvpOpponent`).
+until a ghost pool exists (`findPvpOpponent`); the boss's `ThreatProfile` is
+stored in the detail (`source.threat`) and replays use it, not current
+content. A ghost's modifiers (its own team state) apply to side 1.
 
 ## Saving (W2-4)
 

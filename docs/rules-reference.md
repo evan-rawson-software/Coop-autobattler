@@ -2224,8 +2224,10 @@ target held by the side):
 | `unit_strength_percent` | added to the unit strength percent at each spawn (health and damage, see the unit stats seam in "The arena") |
 | `turret_damage_percent` | to the damage of each of the side's turrets, when the arena context is built |
 
-Only the party (side 0) has modifiers today. An extractor-speed kind is not
-implemented.
+Each side's modifiers come from its own team state (`TeamState.modifiers`):
+the party's from the run, and a ghost from `findPvpOpponent` brings its own,
+which apply to side 1. Generated threats (PvE options and the PvP boss) have
+none. An extractor-speed kind is not implemented.
 
 ### Events (RS-4)
 
@@ -2237,13 +2239,30 @@ follow-up choice is applied. Adding a type is data plus one handler.
 
 Offers (stream `event_offers:r<r>:<leg>`): the definitions whose handler says
 `available` are drawn by weight without replacement until `offerCount` offers
-exist (`pickWeightedIndex` over the remaining weights, one draw each). If
-there are fewer available definitions than offers, `repeatable` definitions
-are drawn again (up to 32 tries) as long as the new instance's data differs
-(compared as canonical JSON). Each instance gets its data from a child stream
-`<event id>:<index>`. An offer is `{ id, event, type, ...data }`; `id` is the
-event id, and `<event id>#2` for a second instance. Offers are stored in
+exist (`pickWeightedIndex` over the remaining weights, one draw each: first
+pass, `min(offerCount, available)` draws). If there are fewer available
+definitions than offers, `repeatable` definitions are drawn again (second
+pass), as long as the new instance's data differs (compared as canonical
+JSON). The second pass only runs while some repeatable definition has room for
+another different instance (the handler's optional `maxInstances`; a Shrine
+has one instance per subset of its eligible modifiers), and then makes exactly
+one weighted draw per extra offer; the instance data comes from child streams
+`<event id>:<index>` (and `<event id>:<index>#<k>` for the k-th retry), which
+do not advance the stream, so the draws made never depend on how many retries
+were needed. An offer is `{ id, event, type, ...data }`; `id` is the event id,
+and `<event id>#2` for a second instance. Offers are stored in
 `pending.options` before they are shown.
+
+**Fewer than three offers is allowed, on purpose.** With the Workshop
+unavailable (every building at tier 3) and three or fewer eligible modifiers,
+a second, different Shrine cannot exist, so the step offers two events (the
+Shrine and the Windfall); with only the Windfall available it offers one. The
+step always has at least one offer, because wiring requires an event
+definition whose handler is `alwaysAvailable` (the Windfall); `createGameDeps`
+throws otherwise. The machine, the vote, `validateRunState` (1 or more offers
+in `event_choice`) and the schema accept any number of offers from 1 to
+`offerCount`. Whether the step should instead pad the offers is open: see
+issue #48.
 
 - **Workshop** (`params.tiers`, default 1): available when some owned building
   (placed or in the stash) is below tier 3. Follow-up options, in instance ID
@@ -2260,7 +2279,9 @@ event id, and `<event id>#2` for a second instance. Offers are stored in
 
 After the party votes for an offer (the usual vote: most votes, host breaks a
 tie), a handler with no follow-up applies at once and the step goes to the
-shop. Otherwise the step becomes `event_resolve` with `pending = { offer,
+shop; so does a follow-up that lists no options (nobody could answer it). A
+handler that can return a follow-up declares `canAskFollowUp` and must have a
+`choose` function (checked when the deps are built). Otherwise the step becomes `event_resolve` with `pending = { offer,
 followUp: { prompt, options, votes } }`, and each player sends `{ type:
 "event_choose", choice: <option id> }`. Votes count at once and can be
 changed; when all players have voted the winner (most votes, ties to the
@@ -2274,8 +2295,10 @@ generated `boss` threat for the round (archetype drawn from the boss-only
 archetypes; opponent kind `boss`). The battle seed is the first `nextU32` of
 the battle stream. `BattleResult.detail` is `{ version, kind, round, seed,
 source, teamHash, summary }`: no event log. `source` is `{type: "option"}`
-(threat in `pending.option.threat`), `{type: "generated", input}` (a
-`ThreatInput`) or `{type: "ghost", label, team}`. `summary` holds the winner,
+(threat in `pending.option.threat`), `{type: "generated", input, threat}` (the
+`ThreatInput` and the generated `ThreatProfile`; a replay fights the stored
+profile, so later content changes cannot alter it) or `{type: "ghost", label,
+team}`. `summary` holds the winner,
 reason, end tick, event count, Core health on both sides, and `eventLogHash =
 hashJson(eventLog)`. The summary steps accept only ready, unready and abandon,
 so the team cannot change between a battle and the end of its summary step;
