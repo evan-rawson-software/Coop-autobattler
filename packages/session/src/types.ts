@@ -7,7 +7,6 @@
 import type {
   AnyReason,
   Battle,
-  Battle,
   Cell,
   ConduitReason,
   Content,
@@ -106,17 +105,6 @@ export interface BattleResult {
   readonly opponent: Opponent;
   /** Whatever the battle implementation wants kept (seed, event log, ...). */
   readonly detail: Json;
-}
-
-/**
- * The PvE options for the battle that comes next, drawn and stored before
- * the shop (or first build step) that leads up to it (RS-6a). Moved into
- * `pending.options` when `pve_choice` opens. `round` is the round of that
- * battle.
- */
-export interface UpcomingPve {
-  readonly round: number;
-  readonly options: readonly Json[];
 }
 
 /**

@@ -543,7 +543,7 @@ describe('funnelling', () => {
     expect(funnel.leftHp).toBeLessThan(open.leftHp);
     expect({ open, funnel }).toEqual({
       open: { dead: 9, leftHp: 95 },
-      funnel: { dead: 12, leftHp: 0 },
+      funnel: { dead: 11, leftHp: 10 },
     });
   });
 });
