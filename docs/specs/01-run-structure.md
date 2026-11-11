@@ -60,8 +60,8 @@ Lobby -> Map + Core placement ->
   - **Survey** — extra information about the coming PvE battles, beyond the
     archetype and reward already shown. It never reveals a PvP opponent
     (RS-6a).
-- **RS-4b [DECIDED]** At each event step the **party picks one of three
-  offered events**. The choice is made by party vote (CP-16).
+- **RS-4b [DECIDED]** At each event step the **party picks one of up to
+  three offered events** (never two of the same type). The choice is made by party vote (CP-16).
 - **RS-4d [DECIDED]** Up to three events are offered, drawn at random from
   the event types available at that depth, and never two of the same type.
   When fewer types are available the party is offered fewer (two, or one).

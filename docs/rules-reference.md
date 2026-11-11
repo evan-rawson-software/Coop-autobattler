@@ -2274,7 +2274,8 @@ Every party decision (Core placement, PvE difficulty, event choice, event
 follow-up choice) is one vote per player, changeable until the last player has
 voted. It resolves when the last vote arrives:
 
-1. If every player chose the same option, that option wins. Nothing is drawn.
+1. If every player chose the same option, that option wins. The random pick of
+   step 2 is not made (the stream is derived but unused).
 2. Otherwise one player's vote is picked at random: `pick = nextInt(n)` on the
    child stream `vote:<topic>:r<round>:<leg>` (topic `core`, `pve`, `event` or
    `event_follow_up`), where `n` is the number of players and tickets are
@@ -2283,9 +2284,12 @@ voted. It resolves when the last vote arrives:
    3/4. The host has no tie-break.
 
 The stream is derived with the run's `drawStream` (which advances the run
-generator by one output) exactly once, at the moment of the last vote, and only
-for a split vote. Unanimous votes and one-player runs therefore consume no
-randomness (a solo run is unchanged by this rule). The result is applied in the
+generator by one output) exactly once, at the moment of the last vote, for
+every vote in a party of two or more players, whether it was unanimous or not.
+This keeps the later rolls independent of how the party voted: if only a split
+vote advanced the generator, one dissenting voter could choose between two
+different futures for every later roll. A one-player run draws nothing (a solo
+run is unchanged by this rule). The result is applied in the
 same action and stored in the state, so a reload cannot change it and a replay
 of the action log reproduces it. The `vote_resolved` effect lists `tickets`
 (every vote in player order) and, for a random pick, `picked: { player, random:
@@ -2300,13 +2304,19 @@ handler decides availability, extra offer data, what happens on pick, and how a
 follow-up choice is applied. Adding a type is data plus one handler.
 
 Offers (stream `event_offers:r<r>:<leg>`): **never two offers of the same
-type** (issue #48). The definitions whose handler says `available` (Workshop:
-some owned building below tier 3; Shrine: at least one modifier can be taken;
-Windfall: always) are drawn by weight without replacement until `offerCount`
-offers exist or none are left. The draw sequence is exactly one
-`pickWeightedIndex` over the remaining definitions' weights (in file order,
-the picked one removed) per offer made, so `min(offerCount, available)` draws
-and none wasted. The instance data (such as a Shrine's modifiers) comes from
+type** (issue #48). The content may hold several definitions of one type (for
+example a small and a big Windfall); they compete for a single place. The
+definitions whose handler says `available` (Workshop: some owned building
+below tier 3; Shrine: at least one modifier can be taken; Windfall: always)
+form the pool, in file order. The draw sequence is: one `pickWeightedIndex`
+over the weights of the pool; the picked definition is offered, and it and
+every other definition of the same type are removed from the pool; repeat
+until `offerCount` offers exist or the pool is empty. There is exactly one
+draw per offer made, so the number of draws is the number of offers (at most
+the number of available types) and none is wasted. A type with several
+definitions is therefore chosen with the probability of its first draw, which
+is the sum of its definitions' weights, and the definition within it is
+weighted by its own weight. The instance data (such as a Shrine's modifiers) comes from
 the child stream `<event id>:<index>` of the offer stream, which does not
 advance it. An offer is `{ id, event, type, ...data }` with `id` the event id.
 Offers are stored in `pending.options` before they are shown.
@@ -2333,11 +2343,13 @@ any number of offers from 1 to `offerCount`. More event types will come later.
 - **Windfall** (`params.gold`): no follow-up; every player gets that much gold
   at once.
 
-After the party votes for an offer (the usual party vote, see "Party votes" below), a handler with no follow-up applies at once and the step goes to the
+After the party votes for an offer (the usual party vote, see "Party votes"
+above), a handler with no follow-up applies at once and the step goes to the
 shop; so does a follow-up that lists no options (nobody could answer it). A
 handler that can return a follow-up declares `canAskFollowUp` and must have a
-`choose` function (checked when the deps are built). Otherwise the step becomes `event_resolve` with `pending = { offer,
-followUp: { prompt, options, votes } }`, and each player sends `{ type:
+`choose` function (checked when the deps are built). Otherwise the step
+becomes `event_resolve` with `pending = { offer, followUp: { prompt, options,
+votes } }`, and each player sends `{ type:
 "event_choose", choice: <option id> }`. Votes count at once and can be
 changed; when all players have voted the winner (see "Party votes") is
 applied and the step goes to the shop.

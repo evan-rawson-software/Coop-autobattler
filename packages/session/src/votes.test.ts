@@ -27,14 +27,26 @@ describe('tally', () => {
     return hits / n;
   };
 
-  test('unanimous: no randomness is drawn and the state is untouched', () => {
+  test('unanimous: no pick is made, but the generator advances like a split', () => {
     const s = withSeed(5);
     const t = tally(s, ['x', 'x', 'x'], 'vote:test');
     expect(t.winner).toBe('x');
     expect(t.picked).toBeNull();
+    const split = tally(s, ['x', 'y', 'x'], 'vote:test');
+    expect(t.state.rng).toEqual(split.state.rng);
+    expect(t.state.rng).not.toEqual(s.rng);
+    // Whatever the votes, the state after a resolution is the same.
+    expect(tally(s, ['y', 'y'], 'vote:test').state).toEqual(
+      tally(s, ['x', 'y'], 'vote:test').state,
+    );
+  });
+
+  test('one player: nothing is drawn and the state is untouched', () => {
+    const s = withSeed(5);
+    const t = tally(s, ['x'], 'vote:test');
+    expect(t.winner).toBe('x');
+    expect(t.picked).toBeNull();
     expect(t.state).toBe(s);
-    // One player: the same.
-    expect(tally(s, ['x'], 'vote:test').state).toBe(s);
   });
 
   test('a split draws exactly once, deterministically from the state', () => {
@@ -78,6 +90,18 @@ describe('a split PvE vote in a run', () => {
     return readyAll(placeCoreAll(r.state));
   };
   const split: readonly string[] = ['easy', 'hard', 'easy', 'hard'];
+
+  function splitVoteWith(
+    seed: number,
+    players: readonly string[],
+    votes: readonly string[],
+  ): RunState {
+    let s = toPveChoice(seed, players);
+    for (let p = 0; p < players.length; p++) {
+      s = ok(s, p, { type: 'vote', choice: votes[p] as string }).state;
+    }
+    return s;
+  }
 
   function splitVote(seed: number, n: number) {
     const players = ['A', 'B', 'C', 'D'].slice(0, n);
@@ -148,6 +172,28 @@ describe('a split PvE vote in a run', () => {
     expect(
       applyIntent(reloaded, 0, { type: 'vote', choice: 'easy' }, baseDeps),
     ).toMatchObject({ ok: false });
+  });
+
+  test('unanimous and split votes leave the same run generator (2 to 4 players)', () => {
+    for (const n of [2, 3, 4]) {
+      const players = ['A', 'B', 'C', 'D'].slice(0, n);
+      for (const seed of [1, 2, 3]) {
+        const same = splitVoteWith(
+          seed,
+          players,
+          players.map(() => 'easy'),
+        );
+        const diff = splitVoteWith(seed, players, split.slice(0, n));
+        expect(same.rng).toEqual(diff.rng);
+        const replayed = replayRun(
+          runArgs(players, seed),
+          same.actionLog,
+          baseDeps,
+        );
+        expect(replayed.ok).toBe(true);
+        if (replayed.ok) expect(replayed.state).toEqual(same);
+      }
+    }
   });
 
   test('a solo run draws nothing for its votes', () => {

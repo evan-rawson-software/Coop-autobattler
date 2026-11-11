@@ -27,14 +27,15 @@ A round is: PvE battle, event, shop, PvP battle, event, shop. The run starts
 with `core_placement` and a first `build`. Ready flags and votes reset when a
 step is entered. Voting: a vote counts at once and can be changed until the
 last player has voted. Then, if every player chose the same option, that
-option wins and nothing is drawn; otherwise ONE player's vote is picked at
-random, each player's vote being one equally likely ticket (so an option with
+option wins; otherwise ONE player's vote is picked at random, each player's vote being one equally likely ticket (so an option with
 3 of 4 votes wins with probability 3/4; there is no host tie-break). The pick
 is one `nextInt(players)` from the stream `vote:<topic>:r<r>:<leg>` (topic
 `core`, `pve`, `event` or `event_follow_up`), drawn once when the last vote
 arrives and stored in the new state (the chosen option is in `pending`/`team`),
-so a reload or a replay gives the same result and nothing can re-roll it. Only
-a split draws, so unanimous votes and one-player runs consume no randomness.
+so a reload or a replay gives the same result and nothing can re-roll it. For a
+party of two or more, every vote resolution advances the run generator exactly
+once, unanimous or not (the draw is unused when unanimous), so how the party
+voted never changes later rolls; a one-player run draws nothing.
 The `vote_resolved` effect carries `tickets` (every vote, in player order) and,
 when a pick was made, `picked: { player, random: true }`.
 
@@ -145,9 +146,11 @@ definition's `type` selects an `EventHandler` (`available`, `instantiate`,
 `createGameDeps` throws when a definition names a type without a handler,
 when a follow-up handler has no `choose`, or when no definition has an
 always-available handler. Offers are 1 to 3, never two of one type: up to
-`offerCount` distinct event definitions are drawn by weight without
-replacement from the available ones (one weighted pick per offer made), so
-fewer types available means fewer offers (issue #48). Offers are `{ id, event, type, ...data }` in `pending.options` (vote with
+`offerCount` offers are drawn by weight from the available definitions (one
+weighted pick per offer made); the picked definition and every other
+definition of its type then leave the pool, so content may hold several
+definitions of one type but fewer types available means fewer offers (issue
+#48). Offers are `{ id, event, type, ...data }` in `pending.options` (vote with
 `{ type: 'vote', choice: <offer id> }`). A pick with a follow-up (Workshop:
 which building; Shrine: which modifier) enters `event_resolve` with `pending =
 { offer, followUp: { prompt, options, votes } }`; every player sends `{ type:
@@ -203,8 +206,14 @@ round reached), finishes saves whose state has an `outcome`, and reports
 deleted by `openRun`. A save that is well formed but whose run state has an
 unsupported `formatVersion` is not corrupt: `list()` flags its entry with
 `unsupportedFormat: true` (absent otherwise) and `openRun` refuses it with the
-reason `unsupported_format`, leaving it in the store (a `newer` or
-`older_major` version is reported first).
+reason `unsupported_format`, leaving it in the store. `openRun` checks, in
+order: the record's shape, that its `runId` matches the key (`corrupt`
+otherwise), the game version from the record's own `runVersion` (`newer`, then
+`older_major`, both reported even if the state would not validate), the state
+format (`unsupported_format`), and only then validates the state (`corrupt`).
+`initSaves` lists unsupported-format saves in `unsupported` and leaves them
+in place: they are never finished into history or wiped, whatever their
+outcome or version, because their state cannot be read.
 
 **One save per run, no copies**: a record is keyed by `runId`. `put` with an
 existing `runId` replaces it, `startRun` rejects (`run_exists`) an ID that is

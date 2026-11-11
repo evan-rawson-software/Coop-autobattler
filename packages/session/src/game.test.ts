@@ -1124,6 +1124,79 @@ describe('event offers: one per type, up to three (issue #48)', () => {
     }
   });
 
+  describe('several definitions of one type', () => {
+    const twoWindfalls = loadEventsOrThrow({
+      offerCount: 3,
+      events: [
+        ...gameConfigs.events.events.map((e) => ({ ...e })),
+        {
+          id: 'evt_windfall_big',
+          type: 'windfall',
+          weight: 3,
+          params: { gold: 9 },
+        },
+      ],
+      modifiers: gameConfigs.events.modifiers.map((m) => ({ ...m })),
+    });
+    const twoHooks = eventHooks(content, twoWindfalls);
+
+    test('never both are offered, each can appear, one draw per offer', () => {
+      const seen = new Set<string>();
+      for (let seed = 1; seed <= 300; seed++) {
+        const rng = Rng.fromSeed(seed);
+        const offers = twoHooks.eventOffers(atEvent, rng) as Record<
+          string,
+          Json
+        >[];
+        const types = offers.map((o) => o['type']);
+        expect(new Set(types).size).toBe(types.length);
+        for (const o of offers) {
+          if (o['type'] === 'windfall') seen.add(o['id'] as string);
+        }
+        // RNG use: exactly one draw per offer made.
+        const probe = Rng.fromSeed(seed);
+        for (let k = 0; k < offers.length; k++) probe.nextU32();
+        expect(rng.getState()).toEqual(probe.getState());
+      }
+      expect([...seen].sort()).toEqual(['evt_windfall', 'evt_windfall_big']);
+    });
+
+    test('with only the two Windfalls, exactly one offer', () => {
+      const only = eventHooks(
+        content,
+        loadEventsOrThrow({
+          offerCount: 3,
+          events: twoWindfalls.events
+            .filter((e) => e.type === 'windfall')
+            .map((e) => ({ ...e })),
+          modifiers: [],
+        }),
+      );
+      for (let seed = 1; seed <= 50; seed++) {
+        expect(only.eventOffers(atEvent, Rng.fromSeed(seed))).toHaveLength(1);
+      }
+    });
+
+    test('a full run with both definitions replays to the same state', () => {
+      for (const players of [['Ann'], ['Ann', 'Bo', 'Cy']]) {
+        const d = makeGameDeps(
+          { battle: scripted(true, true) },
+          { ...gameConfigs, events: twoWindfalls },
+        );
+        const s0 = start(d, players);
+        const s = until(s0, d, (x) => x.step === 'event_choice');
+        const offers = offersOf(s);
+        expect(
+          offers.filter((o) => o['type'] === 'windfall').length,
+        ).toBeLessThanOrEqual(1);
+        const cur = voteAll(s, offers[0]?.['id'] as string, d);
+        const r = replayRun(runArgs(players, 7), cur.actionLog, d);
+        expect(r.ok).toBe(true);
+        if (r.ok) expect(r.state).toEqual(cur);
+      }
+    });
+  });
+
   test('one offer is enough for the machine: vote, shop, validate', () => {
     const none = loadEventsOrThrow({
       offerCount: 3,

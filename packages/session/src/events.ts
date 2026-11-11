@@ -17,8 +17,9 @@
  * and never change on reload. A follow-up lives in `pending.followUp`:
  *   { prompt, options: [{ id, ... }], votes: (string | null)[] }
  * The party votes with `{ type: 'event_choose', choice: <option id> }`; the
- * unanimous, or one player's vote picked at random (as for every other vote).
- * Events never add a building to a stash.
+ * winner is the unanimous choice or, if the votes are split, one player's vote
+ * picked at random (as for every other vote). Events never add a building to
+ * a stash.
  */
 import {
   Rng,
@@ -366,21 +367,23 @@ export function eventHooks(
       const available = config.events.filter(
         (d) => handlerFor(handlers, d.type)?.available(ctx, d) === true,
       );
-      // Distinct event definitions, weighted, without replacement: one
-      // `pickWeightedIndex` draw per offer made (min(offerCount, available)
-      // draws, none wasted). A type is never offered twice (issue #48), so
-      // fewer than `offerCount` offers is deliberate when fewer types are
-      // available. The instance data comes from a child stream of `rng`
+      // Weighted draws from the pool of available definitions: one
+      // `pickWeightedIndex` draw per offer made, none wasted. After a pick,
+      // every definition of the same type leaves the pool, so a type is never
+      // offered twice even when the content holds several definitions of it
+      // (issue #48); fewer than `offerCount` offers is deliberate when fewer
+      // types are available. The instance data comes from a child stream of `rng`
       // (`<event id>:<offers so far>`), which does not advance `rng`.
       const offers: EventOffer[] = [];
-      const pool = [...available];
+      let pool = [...available];
       while (offers.length < config.offerCount && pool.length > 0) {
         const i = pickWeightedIndex(
           rng,
           pool.map((d) => d.weight),
         );
-        const [def] = pool.splice(i, 1);
-        if (def === undefined) continue;
+        const def = pool[i];
+        if (def === undefined) break;
+        pool = pool.filter((d) => d.type !== def.type);
         const handler = handlerFor(handlers, def.type) as EventHandler;
         const data = handler.instantiate(
           ctx,
@@ -428,10 +431,11 @@ function idOfOption(o: Json): string | null {
 /**
  * The `event_choose` intent: `{ type: 'event_choose', choice: <option id> }`,
  * legal in `event_resolve`. Each player's vote counts at once and can be
- * changed until the last player has voted; then the winner (most votes, ties
- * to the host) is applied by the offer's handler and the step ends. With one
- * player the first choice decides. Rejections: `invalid_intent`,
- * `invalid_choice`, and whatever the handler reports.
+ * changed until the last player has voted; then the winner (the unanimous
+ * choice, or one player's vote picked at random) is applied by the offer's
+ * handler and the step ends. With one player the first choice decides.
+ * Rejections: `invalid_intent`, `invalid_choice`, and whatever the handler
+ * reports.
  */
 export function eventChooseHandlers(
   content: Content,

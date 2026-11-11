@@ -426,13 +426,16 @@ export interface TallyResult {
 
 /**
  * The one rule for every party decision. `choices` has one entry per player,
- * in player order (each is one ticket). If all chose the same, that wins and
- * nothing is drawn. Otherwise ONE ticket is picked at random: a single
- * `nextInt(players)` from the dedicated stream `label` (so an option with 3 of
- * 4 votes wins with probability 3/4). Drawing only on a split keeps solo runs
- * and unanimous votes from consuming randomness; the draw is still
- * deterministic because the votes are part of the action log. It happens once,
- * when the last vote arrives, and its outcome is stored in the new state.
+ * in player order (each is one ticket). If all chose the same, that wins.
+ * Otherwise ONE ticket is picked at random: a single `nextInt(players)` from
+ * the dedicated stream `label` (so an option with 3 of 4 votes wins with
+ * probability 3/4). For a party of two or more, every resolution advances the
+ * run generator exactly once, whether the vote was unanimous or not (the
+ * stream is simply unused when it was), so one dissenting voter cannot choose
+ * between two different futures for the later rolls. A one-player run draws
+ * nothing. The draw is deterministic because the votes are part of the action
+ * log; it happens once, when the last vote arrives, and its outcome is stored
+ * in the new state.
  */
 export function tally(
   state: RunState,
@@ -440,11 +443,12 @@ export function tally(
   label: string,
 ): TallyResult {
   const first = choices[0] as Json;
+  if (choices.length < 2) return { state, winner: first, picked: null };
+  const d = drawStream(state, label);
   const key = canonicalJson(first);
   if (choices.every((c) => canonicalJson(c) === key)) {
-    return { state, winner: first, picked: null };
+    return { state: d.state, winner: first, picked: null };
   }
-  const d = drawStream(state, label);
   const picked = d.stream.nextInt(choices.length);
   return { state: d.state, winner: choices[picked] as Json, picked };
 }
