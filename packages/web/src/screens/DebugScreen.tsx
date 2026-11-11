@@ -182,12 +182,26 @@ function SetupPanel() {
   );
 }
 
-/** The sprite of the first building of a kind, if it has one. */
+/**
+ * The sprite id a building kind is shown with, if it has one. A defense is
+ * shown as its turret; the wall has its own entry.
+ */
 function kindSprite(kind: string): string | null {
+  const set = spriteSet();
+  const defs = content.buildings.list().filter((b) => b.kind === kind);
+  const def =
+    (kind === 'defense'
+      ? defs.find((b) => b.defenseType === 'turret' && set?.atlas.sprites[b.id])
+      : undefined) ?? defs.find((b) => set?.atlas.sprites[b.id]);
+  return def?.id ?? null;
+}
+
+/** The wall's sprite id, if it has one. */
+function wallSprite(): string | null {
   const set = spriteSet();
   const def = content.buildings
     .list()
-    .find((b) => b.kind === kind && set?.atlas.sprites[b.id]);
+    .find((b) => b.defenseType === 'wall' && set?.atlas.sprites[b.id]);
   return def?.id ?? null;
 }
 
@@ -255,7 +269,11 @@ function LegendPanel() {
               </li>
             ))}
             <li>
-              <span class="swatch wall" />
+              {sprites && wallSprite() !== null ? (
+                <SpriteIcon name={wallSprite() ?? ''} size={24} />
+              ) : (
+                <span class="swatch wall" />
+              )}
               Wall (solid block)
             </li>
           </ul>
@@ -265,10 +283,14 @@ function LegendPanel() {
           <ul>
             {content.terrain.list().map((t, i) => (
               <li key={t.id}>
-                <span
-                  class={`swatch feature-${String(i % 3)}`}
-                  style={{ background: `var(--feature-${String(i % 3)})` }}
-                />
+                {sprites && spriteSet()?.atlas.sprites[t.id] ? (
+                  <SpriteIcon name={t.id} size={24} />
+                ) : (
+                  <span
+                    class={`swatch feature-${String(i % 3)}`}
+                    style={{ background: `var(--feature-${String(i % 3)})` }}
+                  />
+                )}
                 {name(t.id)}
               </li>
             ))}

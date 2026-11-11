@@ -91,10 +91,22 @@
   }
 
   /* Panels and the top bar: the slate tile under a dark veil. */
-  :root[data-skin='pixel']:not([data-theme='light']) .panel,
-  :root[data-skin='pixel']:not([data-theme='light']) .topbar,
-  :root[data-skin='pixel']:not([data-theme='light']) .dry-table,
-  :root[data-skin='pixel']:not([data-theme='light']) .camera-controls {
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    .panel,
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    .topbar,
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    .dry-table,
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    .camera-controls {
     background-color: var(--surface);
     background-image:
       linear-gradient(var(--veil), var(--veil)), var(--sprite-ui-panel);
