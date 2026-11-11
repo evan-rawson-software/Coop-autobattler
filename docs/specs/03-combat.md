@@ -261,9 +261,13 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   the factory's ramp.
 - **CB-14** **Movement.** Units are **circles** with a position finer than a
   cell and a radius that depends on their type (stronger units can be
-  larger). Two units, friend or foe, never overlap, and a unit never overlaps
-  terrain, a building or the Core, so a unit cannot pass a gap narrower than
-  its diameter. Units walk over open ground: around natural features,
+  larger). Units collide **softly**: two units, friend or foe, that overlap
+  are pushed apart over the next ticks and may overlap a little for a while
+  (a crowd squeezes through a choke instead of jamming), whereas a unit never
+  overlaps terrain, a building or the Core, so a unit cannot pass a gap narrower than
+  its collision diameter (about 65 percent of its drawn size). Fighting units
+  hold their place against enemies, and waiting allies give way to units that
+  are moving. Units walk over open ground: around natural features,
   around buildings, across the front edge into the enemy board, and over
   conduits. Routing is grid-based and deterministic (CB-30): the shortest
   path of cells towards the Core says where a unit heads; the circles then
