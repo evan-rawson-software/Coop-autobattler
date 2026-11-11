@@ -981,9 +981,9 @@ describe('overlap is bounded', () => {
     }
     expect(deepMax).toBeLessThanOrEqual(40);
     expect(deepMean / runs).toBeLessThanOrEqual(1.5);
-    // Centres do coincide now and then (how long pairs stay stacked is pinned
-    // on whole battles in stacking.test.ts).
-    expect(worstPct).toBe(100);
+    // Centres come (almost) together now and then (how long pairs stay stacked
+    // is pinned on whole battles in stacking.test.ts).
+    expect(worstPct).toBeGreaterThanOrEqual(90);
   });
 
   test('overlap is temporary: a crowd whose target is gone is clear of overlap within 20 ticks', () => {

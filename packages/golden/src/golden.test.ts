@@ -40,15 +40,20 @@ describe('golden vector files', () => {
 
 describe('golden vectors reproduce', () => {
   const all = files.flatMap((f) => f.vectors);
-  test.each(all.map((v) => [v.id, v] as const))('%s', (_id, v) => {
-    const problems = compareVector(v);
-    if (problems.length > 0) {
-      throw new Error(
-        `golden vector "${v.id}" (${v.kind}) differs:\n  ${problems.join('\n  ')}\n` +
-          'If the change is intended, run: pnpm golden:update',
-      );
-    }
-  });
+  // A long battle (the 12000-tick wave-queue vector) takes a few seconds.
+  test.each(all.map((v) => [v.id, v] as const))(
+    '%s',
+    (_id, v) => {
+      const problems = compareVector(v);
+      if (problems.length > 0) {
+        throw new Error(
+          `golden vector "${v.id}" (${v.kind}) differs:\n  ${problems.join('\n  ')}\n` +
+            'If the change is intended, run: pnpm golden:update',
+        );
+      }
+    },
+    60_000,
+  );
 });
 
 describe('runner itself', () => {

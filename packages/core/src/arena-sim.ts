@@ -1815,47 +1815,47 @@ function moveAlong(
   let vy = hy;
   if (heads !== undefined) {
     const l2 = hx * hx + hy * hy;
-    const gx = cellCoord(u.px, width);
-    const gy = cellCoord(u.py, height);
+    // Candidates: allies whose centre is closer than `reach` (below), found
+    // in the cells that hold the square of that half-width around the unit,
+    // so the set does not depend on the alignment of the grid.
+    const reach = 4 * ctx.maxRadius;
+    const gx0 = cellCoord(u.px - reach, width);
+    const gx1 = cellCoord(u.px + reach, width);
+    const gy0 = cellCoord(u.py - reach, height);
+    const gy1 = cellCoord(u.py + reach, height);
     const cr = ctx.crad[i] ?? 0;
     let best = -1;
     let bestD = 0;
     let bestCross = 0;
-    for (let y = Math.max(0, gy - 1); y <= Math.min(height - 1, gy + 1); y++) {
-      for (
-        let x = Math.max(0, gx - 1);
-        x <= Math.min(width - 1, gx + 1);
-        x++
-      ) {
+    for (let y = gy0; y <= gy1; y++) {
+      for (let x = gx0; x <= gx1; x++) {
         let j = heads[y * width + x] ?? -1;
         while (j !== -1) {
           const f = j !== i ? sim.units[j] : undefined;
           if (f !== undefined) {
             const rx = f.px - u.px;
             const ry = f.py - u.py;
-            const dot = rx * hx + ry * hy;
-            const cross = rx * hy - ry * hx;
-            const rc = cr + (ctx.crad[j] ?? 0);
             const d = rx * rx + ry * ry;
-            // Closer than one cell, so the cell window below holds every
-            // candidate whatever the alignment of the grid.
-            if (
-              d < S * S &&
-              (ctx.holds[j] === 1 || d < rc * rc) &&
-              dot > 0 &&
-              dot < l2 &&
-              cross * cross <= rc * rc * l2
-            ) {
-              if (
-                best < 0 ||
-                d < bestD ||
-                (d === bestD &&
-                  (cross > bestCross ||
-                    (cross === bestCross && f.id < (sim.units[best]?.id ?? 0))))
-              ) {
-                best = j;
-                bestD = d;
-                bestCross = cross;
+            const rc = cr + (ctx.crad[j] ?? 0);
+            // A holder blocks within two collision diameters, an ally that
+            // moves only when its circle already overlaps ours.
+            const lim = ctx.holds[j] === 1 ? 4 * rc * rc : rc * rc;
+            if (d < lim) {
+              const dot = rx * hx + ry * hy;
+              const cross = rx * hy - ry * hx;
+              if (dot > 0 && dot < l2 && cross * cross <= rc * rc * l2) {
+                if (
+                  best < 0 ||
+                  d < bestD ||
+                  (d === bestD &&
+                    (cross > bestCross ||
+                      (cross === bestCross &&
+                        f.id < (sim.units[best]?.id ?? 0))))
+                ) {
+                  best = j;
+                  bestD = d;
+                  bestCross = cross;
+                }
               }
             }
           }

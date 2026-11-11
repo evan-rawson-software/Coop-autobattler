@@ -139,10 +139,10 @@ describe('stacking duration, tier 3 and mixed', () => {
     const t3 = heavy.state;
     const a = stacking(t3, t3, 1);
     const b = stacking(t1, t3, 1);
-    expect(a.longest).toBeLessThanOrEqual(30);
-    expect(a.over50 / a.unitTicks).toBeLessThanOrEqual(0.11);
-    expect(a.over90 / a.unitTicks).toBeLessThanOrEqual(0.008);
-    expect(b.longest).toBeLessThanOrEqual(5);
+    expect(a.longest).toBeLessThanOrEqual(34);
+    expect(a.over50 / a.unitTicks).toBeLessThanOrEqual(0.075);
+    expect(a.over90 / a.unitTicks).toBeLessThanOrEqual(0.005);
+    expect(b.longest).toBeLessThanOrEqual(6);
     expect(b.over50 / b.unitTicks).toBeLessThanOrEqual(0.003);
     expect(b.over90 / b.unitTicks).toBeLessThanOrEqual(0.0002);
   }, 120_000);
@@ -150,14 +150,15 @@ describe('stacking duration, tier 3 and mixed', () => {
 
 // Pinned from measurements (after the wide-front pathing of #82 part 2; before it, in brackets).
 // reference: longest 0 [3] ticks, 0 [0.19] percent of unit-ticks over 50, 0 over 90;
-// dense tier 1: longest 14 [10], 0.77 [3.4] over 50, 0.006 [0.15] over 90;
-// tier 3: longest 26 [17], 10.3 [8.6] over 50, 0.67 [0.6] over 90 (the units
-// press on the Core from every side and the battle runs a quarter longer, with
-// more units alive at once; crowd density in the field is deferred, #86);
-// tier 1 against tier 3: longest 3 [11], 0.15 [1.1] over 50, 0 [0.015] over 90.
+// dense tier 1: longest 12 [10], 1.04 [3.4] over 50, 0.008 [0.15] over 90;
+// tier 3: longest 30 [17], 6.5 [8.6] over 50, 0.34 [0.6] over 90;
+// tier 1 against tier 3: longest 5 [11], 0.22 [1.1] over 50, 0.005 [0.015] over 90.
+// The longest run of a pair is one worst case and rises where armies press on
+// the Core from every side (crowd density in the field is deferred, #86); the
+// shares of unit-ticks, which count the whole battle, all fall.
 const LONGEST_REFERENCE = 2;
 const SHARE50_REFERENCE = 0.0005;
 const SHARE90_REFERENCE = 0.0005;
-const LONGEST_DENSE = 16;
-const SHARE50_DENSE = 0.01;
+const LONGEST_DENSE = 14;
+const SHARE50_DENSE = 0.012;
 const SHARE90_DENSE = 0.0002;
