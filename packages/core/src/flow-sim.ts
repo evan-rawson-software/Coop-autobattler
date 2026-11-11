@@ -145,6 +145,13 @@ interface PlanRoute {
   readonly merger: boolean;
   /** Conduit index per input (clockwise from north), or -1. */
   readonly inputs: readonly number[];
+  /**
+   * Per input: the route index feeding it when the conduit is a direct
+   * connection (`L = 0`) from a route building, else -1.
+   */
+  readonly inputRoute: readonly number[];
+  /** Per input: the source index feeding it directly, else -1. */
+  readonly inputSource: readonly number[];
   /** Conduit index per output (clockwise from north), or -1. */
   readonly outputs: readonly number[];
 }
@@ -297,10 +304,30 @@ function compile(
 
   const idxOf = (id: number | null): number =>
     id === null ? -1 : (conduitIndex.get(id) ?? -1);
+  // Source index (in sim.sources order) by building ID.
+  const sourceIndex = new Map<number, number>();
+  for (const b of state.buildings) {
+    if (defOf(b.def).kind === 'source') sourceIndex.set(b.id, sourceIndex.size);
+  }
+  /** The route or source behind a direct (zero-length) input conduit. */
+  const directOrigin = (conduit: number | null): [number, number] => {
+    if (conduit === null) return [-1, -1];
+    const c = state.conduits[conduitIndex.get(conduit) ?? -1];
+    const e = edgeOf.get(conduit);
+    if (c === undefined || e === undefined || c.cells.length > 0) {
+      return [-1, -1];
+    }
+    return [
+      routeIndex.get(e.from) ?? -1,
+      sourceIndex.get(Number(e.from)) ?? -1,
+    ];
+  };
   const planRoutes: PlanRoute[] = routeNodes.map((n) => ({
     splitter: n.kind === 'splitter',
     merger: n.kind === 'merger',
     inputs: n.inputs.map((i) => idxOf(i.conduit)),
+    inputRoute: n.inputs.map((i) => directOrigin(i.conduit)[0]),
+    inputSource: n.inputs.map((i) => directOrigin(i.conduit)[1]),
     outputs: n.outputs.map((o) => idxOf(o.conduit)),
   }));
   const routeOrder: number[] = [];
@@ -517,17 +544,22 @@ export function cloneBoardSim(sim: BoardSim): BoardSim {
 function offerTarget(
   sim: BoardSim,
   ctx: FlowContext,
+  winners: Int32Array,
   target: PlanTarget,
   resource: ResourceId,
 ): boolean {
   if (target.toRoute) {
     const r = at(sim.routes, target.index);
     if (r.held !== null) return false;
-    r.held = resource;
     if (at(ctx.plan.routes, target.index).merger) {
+      // Only the merger's winner of step 0 may fill the cell (nobody else
+      // when it has a winner; anybody when it has none).
+      const w = winners[target.index] ?? -1;
+      if (w >= 0 && w !== target.input) return false;
       r.pointer =
         (target.input + 1) % at(ctx.plan.routes, target.index).inputs.length;
     }
+    r.held = resource;
     return true;
   }
   const input = at(at(sim.consumers, target.index).inputs, target.input);
@@ -548,11 +580,12 @@ function offerTarget(
 function pushOnto(
   sim: BoardSim,
   ctx: FlowContext,
+  winners: Int32Array,
   conduit: number,
   resource: ResourceId,
 ): boolean {
   const pc = at(ctx.plan.conduits, conduit);
-  if (pc.length === 0) return offerTarget(sim, ctx, pc.to, resource);
+  if (pc.length === 0) return offerTarget(sim, ctx, winners, pc.to, resource);
   const slots = at(sim.conduits, conduit).slots;
   if (slots[0] !== null) return false;
   slots[0] = resource;
@@ -569,20 +602,31 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
   const plan = ctx.plan;
   const events = ctx.events;
 
-  // Merger fairness: decide, before anything moves, which input conduit may
-  // deliver into each empty merger this tick.
-  const winners = new Map<number, number>();
+  // Merger fairness: decide, before anything moves, which input may fill each
+  // merger's cell this tick. Conduit inputs, direct route inputs and direct
+  // source inputs all take part (see docs/rules-reference.md, step 0).
+  const winners = new Int32Array(plan.routes.length).fill(-1);
   for (const ri of plan.mergers) {
-    const route = at(sim.routes, ri);
-    if (route.held !== null) continue;
-    const inputs = at(plan.routes, ri).inputs;
-    for (let k = 0; k < inputs.length; k++) {
-      const input = (route.pointer + k) % inputs.length;
-      const c = at(inputs, input);
-      if (c < 0 || at(plan.conduits, c).length === 0) continue;
-      const slots = at(sim.conduits, c).slots;
-      if (slots[slots.length - 1] !== null) {
-        winners.set(ri, input);
+    const pr = at(plan.routes, ri);
+    const n = pr.inputs.length;
+    const pointer = at(sim.routes, ri).pointer;
+    for (let k = 0; k < n; k++) {
+      const input = (pointer + k) % n;
+      const c = at(pr.inputs, input);
+      if (c < 0) continue;
+      let ready: boolean;
+      if (at(plan.conduits, c).length > 0) {
+        const slots = at(sim.conduits, c).slots;
+        ready = slots[slots.length - 1] !== null;
+      } else if (at(pr.inputRoute, input) >= 0) {
+        ready = at(sim.routes, at(pr.inputRoute, input)).held !== null;
+      } else if (at(pr.inputSource, input) >= 0) {
+        ready = at(sim.sources, at(pr.inputSource, input)).countdown <= 1;
+      } else {
+        ready = false;
+      }
+      if (ready) {
+        winners[ri] = input;
         break;
       }
     }
@@ -596,12 +640,7 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
     const last = pc.length - 1;
     const item = slots[last];
     if (item !== null && item !== undefined) {
-      const t = pc.to;
-      const allowed =
-        !t.toRoute ||
-        !at(plan.routes, t.index).merger ||
-        winners.get(t.index) === t.input;
-      if (allowed && offerTarget(sim, ctx, t, item)) slots[last] = null;
+      if (offerTarget(sim, ctx, winners, pc.to, item)) slots[last] = null;
     }
     for (let i = last - 1; i >= 0; i--) {
       const it = slots[i];
@@ -627,7 +666,7 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
         const c = at(pr.outputs, o);
         if (c < 0) continue;
         connected = true;
-        if (pushOnto(sim, ctx, c, item)) {
+        if (pushOnto(sim, ctx, winners, c, item)) {
           route.held = null;
           route.pointer = (o + 1) % n;
           placed = true;
@@ -638,7 +677,7 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
     } else {
       const c = at(pr.outputs, 0);
       if (c < 0) lose(sim, ctx, route, item);
-      else if (pushOnto(sim, ctx, c, item)) route.held = null;
+      else if (pushOnto(sim, ctx, winners, c, item)) route.held = null;
     }
   }
 
@@ -656,7 +695,7 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
       const c = at(ps.outputs, o);
       if (c < 0) continue;
       connected = true;
-      if (pushOnto(sim, ctx, c, s.resource)) {
+      if (pushOnto(sim, ctx, winners, c, s.resource)) {
         s.pointer = (o + 1) % n;
         placed = true;
         break;

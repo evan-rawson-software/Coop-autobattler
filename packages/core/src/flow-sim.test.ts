@@ -378,14 +378,16 @@ describe('(c) a merger joining two sources of one resource', () => {
 
   /*
    * Both sources have I = 20 and both direct-connect to the merger, which
-   * connects directly to the barracks. Step 20: source A (lower ID) puts its
-   * item in the merger's empty cell; source B finds the cell full, stalls (one
-   * `stalled` event), and keeps its countdown at 0. Step 21: the merger pushes
-   * A's item to the barracks (delivered in step 21), then B's attempt
-   * succeeds and its countdown restarts at 20. Step 22: the merger pushes B's
-   * item (delivered in step 22). From then A is made in steps 20j and B in
-   * 20j+1, so deliveries are at steps 20j+1 (A) and 20j+2 (B). With N = 100:
-   * j = 1..4 for each (j = 5 would be step 101) -> 4 + 4 = 8.
+   * connects directly to the barracks. Step 20: both items are ready, so the
+   * merger arbitrates (step 0) from its pointer, input 0 (the east side, where
+   * source B arrives): B wins and puts its item in the empty cell; source A is
+   * refused, stalls (one `stalled` event) and keeps its countdown at 0. Step
+   * 21: the merger pushes B's item to the barracks (delivered in step 21),
+   * then A's attempt succeeds (the pointer is now past B's input) and its
+   * countdown restarts at 20. Step 22: the merger pushes A's item (delivered in
+   * step 22). From then B is made in steps 20j and A in 20j+1, so deliveries
+   * are at steps 20j+1 (B) and 20j+2 (A). With N = 100: j = 1..4 for each
+   * (j = 5 would be step 101) -> 4 + 4 = 8.
    */
   test('same-step arrivals take turns without loss', () => {
     const { lab, cons } = mergerBoard();
@@ -396,8 +398,8 @@ describe('(c) a merger joining two sources of one resource', () => {
     );
     expect(flowTotals(r.sim).lost).toBe(0);
     const stalls = r.events.filter((e) => e.type === 'stalled');
-    expect(stalls).toEqual([{ tick: 19, type: 'stalled', building: 2 }]);
-    expect(got(r.sim.sources[1]).stalledTicks).toBe(1);
+    expect(stalls).toEqual([{ tick: 19, type: 'stalled', building: 1 }]);
+    expect(got(r.sim.sources[0]).stalledTicks).toBe(1);
   });
 
   test('a merger takes turns between its inputs when both back up', () => {
@@ -420,6 +422,169 @@ describe('(c) a merger joining two sources of one resource', () => {
     const dB = got(after[1]) - got(before[1]);
     expect(dA + dB).toBe(8);
     expect(Math.abs(dA - dB)).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('merger fairness with direct inputs under backpressure', () => {
+  /** Items an input branch got through: produced minus what it still holds. */
+  function through(r: Run, source: number, inFlight: number): number {
+    const s = got(r.sim.sources.find((x) => x.building === source));
+    return s.produced - inFlight;
+  }
+
+  function slotsHeld(r: Run, conduit: number): number {
+    const c = got(r.sim.conduits.find((x) => x.id === conduit));
+    return c.slots.filter((s) => s !== null).length;
+  }
+
+  function heldBy(r: Run, building: number): number {
+    return got(r.sim.routes.find((x) => x.building === building)).held === null
+      ? 0
+      : 1;
+  }
+
+  /**
+   * Extractor E1 -> merger M1 -> (direct) merger M -> barracks, and a second
+   * extractor E2 into M through a 5-cell conduit. Both extractors outpace the
+   * consumer, which takes one item per 25 ticks.
+   */
+  function layout(): {
+    lab: Lab;
+    e1: number;
+    e2: number;
+    m1: number;
+    m: number;
+    cons: number;
+    conduit: number;
+  } {
+    const lab = new Lab(
+      board([
+        [7, 4, 'res_a'],
+        [14, 5, 'res_a'],
+      ]),
+    );
+    const e1 = lab.put('bld_extractor', 7, 4, 0, 3);
+    const m1 = lab.put('bld_merger', 7, 5, 90);
+    const m = lab.put('bld_merger', 8, 5);
+    const cons = lab.put('bld_barracks', 8, 6);
+    const e2 = lab.put('bld_extractor', 14, 5, 270, 3);
+    lab.link(e1, 'north', m1, 'south');
+    lab.link(m1, 'east', m, 'west');
+    const conduit = lab.link(e2, 'west', m, 'east', [
+      [13, 5],
+      [12, 5],
+      [11, 5],
+      [10, 5],
+      [9, 5],
+    ]);
+    lab.link(m, 'north', cons, 'south');
+    return { lab, e1, e2, m1, m, cons, conduit };
+  }
+
+  test('a direct input and a 5-cell conduit share a backed-up merger evenly', () => {
+    const n = layout();
+    const r = start(n.lab.state, 'hold');
+    let taken = 0;
+    for (let t = 0; t < 6000; t++) {
+      if (t % 25 === 24 && takeFromBuffer(r.sim, n.cons, 'south', 1)) taken++;
+      stepFlow(r.sim, r.ctx);
+    }
+    expect(taken).toBeGreaterThan(200);
+    const direct = through(r, n.e1, heldBy(r, n.m1));
+    const viaConduit = through(r, n.e2, slotsHeld(r, n.conduit));
+    expect(direct + viaConduit).toBeGreaterThan(200);
+    expect(Math.abs(direct - viaConduit)).toBeLessThanOrEqual(1);
+    const f = flowTotals(r.sim);
+    expect(f.produced).toBe(
+      f.inConduits + f.held + f.inBuffers + f.consumed + f.lost,
+    );
+    expect(f.lost).toBe(0);
+  });
+
+  test('three inputs, two direct and one by conduit, are served evenly', () => {
+    // Merger M (8,5): west input from M1 (direct, fed by E1), south input from
+    // E3 (direct source at (8,4)), east input from E2 by conduit.
+    const lab = new Lab(
+      board([
+        [7, 4, 'res_a'],
+        [14, 5, 'res_a'],
+        [8, 4, 'res_a'],
+      ]),
+    );
+    const e1 = lab.put('bld_extractor', 7, 4, 0, 3);
+    const m1 = lab.put('bld_merger', 7, 5, 90);
+    const m = lab.put('bld_merger', 8, 5);
+    const cons = lab.put('bld_barracks', 8, 6);
+    const e2 = lab.put('bld_extractor', 14, 5, 270, 3);
+    const e3 = lab.put('bld_extractor', 8, 4, 0, 3);
+    lab.link(e1, 'north', m1, 'south');
+    lab.link(m1, 'east', m, 'west');
+    const conduit = lab.link(e2, 'west', m, 'east', [
+      [13, 5],
+      [12, 5],
+      [11, 5],
+      [10, 5],
+      [9, 5],
+    ]);
+    lab.link(e3, 'north', m, 'south');
+    lab.link(m, 'north', cons, 'south');
+    const r = start(lab.state, 'hold');
+    for (let t = 0; t < 6000; t++) {
+      if (t % 25 === 24) takeFromBuffer(r.sim, cons, 'south', 1);
+      stepFlow(r.sim, r.ctx);
+    }
+    const a = through(r, e1, heldBy(r, m1));
+    const b = through(r, e2, slotsHeld(r, conduit));
+    const c = through(r, e3, 0);
+    expect(a + b + c).toBeGreaterThan(200);
+    expect(Math.max(a, b, c) - Math.min(a, b, c)).toBeLessThanOrEqual(2);
+    const f = flowTotals(r.sim);
+    expect(f.produced).toBe(
+      f.inConduits + f.held + f.inBuffers + f.consumed + f.lost,
+    );
+  });
+
+  test('a direct splitter output is not starved by a conduit input', () => {
+    // E1 -> splitter S; S east -> (direct) merger M west; S north -> a second
+    // barracks with a full buffer (blocked); E2 reaches M by a conduit.
+    const lab = new Lab(
+      board([
+        [6, 3, 'res_a'],
+        [14, 4, 'res_a'],
+      ]),
+    );
+    const e1 = lab.put('bld_extractor', 6, 3, 0, 3);
+    const s = lab.put('bld_splitter', 6, 4);
+    const blocked = lab.put('bld_barracks', 5, 5);
+    const m = lab.put('bld_merger', 7, 4);
+    const cons = lab.put('bld_barracks', 7, 5);
+    const e2 = lab.put('bld_extractor', 14, 4, 270, 3);
+    lab.link(e1, 'north', s, 'south');
+    lab.link(s, 'north', blocked, 'south');
+    lab.link(s, 'east', m, 'west');
+    const conduit = lab.link(e2, 'west', m, 'east', [
+      [13, 4],
+      [12, 4],
+      [11, 4],
+      [10, 4],
+      [9, 4],
+      [8, 4],
+    ]);
+    lab.link(m, 'north', cons, 'south');
+    const r = start(lab.state, 'hold');
+    for (let t = 0; t < 6000; t++) {
+      if (t % 25 === 24) takeFromBuffer(r.sim, cons, 'south', 1);
+      stepFlow(r.sim, r.ctx);
+    }
+    const held = heldBy(r, s);
+    const blockedIn = got(r.sim.consumers.find((c) => c.building === blocked))
+      .inputs[0];
+    // Items that went the direct way: made, minus those taken by the blocked
+    // branch, minus the one the splitter still holds.
+    const a = through(r, e1, held + got(blockedIn).delivered);
+    const b = through(r, e2, slotsHeld(r, conduit));
+    expect(a + b).toBeGreaterThan(200);
+    expect(Math.abs(a - b)).toBeLessThanOrEqual(2);
   });
 });
 

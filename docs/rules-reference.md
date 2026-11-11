@@ -773,14 +773,28 @@ chooses the consumer mode, `hold` or `drain`, and may carry an event list that
 the step appends to. Let `T` be `tick` at the start of the step; every event of
 the step has `tick = T`. In this order:
 
-**0. Merger arbitration.** For each merger whose holding cell is empty: let `n`
-be its number of input sides (the order of `FlowNode.inputs`, clockwise from
-north, including sides with no conduit). Look at input indices `pointer,
-pointer + 1, ...` (mod `n`) and pick the first whose conduit exists, has
-`L >= 1` and whose **last slot holds an item** (as the tick began, before
-anything moves). That input is the merger's _winner_ for this tick; if there is
-none, the merger has no winner. This is decided before any item moves, so it
-does not depend on the order in which conduits are processed.
+**0. Merger arbitration.** For **every** merger (whether its holding cell is
+empty or full): let `n` be its number of input sides (the order of
+`FlowNode.inputs`, clockwise from north, including sides with no conduit).
+Look at input indices `pointer, pointer + 1, ...` (mod `n`) and pick the first
+that is _ready_, using the state as the tick began (before anything moves).
+Input `i` is ready when its conduit exists and
+
+- it has `L >= 1` and its **last slot holds an item**; or
+- it is a direct connection (`L = 0`) from a **route building** (a splitter,
+  merger or crossover channel) whose **holding cell holds an item**; or
+- it is a direct connection from a **source** whose `countdown` is at most 1
+  (it produces this tick if it can place the item).
+
+That input is the merger's _winner_ for this tick; if no input is ready the
+merger has no winner. This is decided before any item moves, so it does not
+depend on the order in which anything is processed. A winner is only a
+reservation: if the winner does not (or cannot) deliver, the cell stays empty
+for the rest of the tick and the pointer does not move. A direct upstream
+splitter counts as ready whenever it holds an item, even if this tick it
+prefers another of its outputs; the reservation is then unused for one tick
+(the splitter's own pointer has moved on by the next tick, so the two
+outputs still alternate).
 
 **1. Deliver and advance, downstream first.** Process the conduits with
 `L >= 1` in this order: reverse of the position of the conduit's `from` node in
@@ -866,18 +880,27 @@ An item offered to a building's input side (by step 1a, or by a push):
   and `{tick: T, type: "delivered", building, side, resource}` is recorded.
   Otherwise refused, and the conduit backs up.
 - _Route building or crossover channel_: accepted if its holding cell is empty;
-  the item goes into the cell. Offers from a conduit in step 1a to a **merger**
-  are additionally accepted only from the merger's winner of step 0. An offer
-  to a merger by a direct connection (step 2 or 3) is accepted when the cell is
-  empty, whichever input it comes through. Whenever a merger accepts an item
-  through input index `i`, its `pointer` becomes `(i + 1) mod n`. A splitter
-  or crossover channel has one input, so there is nothing to arbitrate (their
-  pointers do not change on input).
+  the item goes into the cell. An offer to a **merger** is additionally
+  accepted only if the merger has no winner in step 0 or the offer comes
+  through the winner's input; this holds whether the offer is made by a conduit
+  in step 1a or by a direct connection (step 2 or 3). Whenever a merger accepts
+  an item through input index `i`, its `pointer` becomes `(i + 1) mod n`. A
+  splitter or crossover channel has one input, so there is nothing to
+  arbitrate (their pointers do not change on input).
 - Anything else (cannot happen in a valid state): refused.
 
-Because step 1 comes before steps 2 and 3, a conduit delivery into a merger's
-empty cell beats a direct connection arriving in the same tick, and a source
-stalls rather than push into a cell that is already full.
+Because step 1 comes before steps 2 and 3, a merger's cell is only free for a
+conduit in step 1 and for a direct connection in step 2 or 3; step 0 is what
+keeps every kind of input in the rotation. Without it a conduit delivery would
+always refill the cell before a directly connected route could push (the route
+pushes before the merger empties it), and a ready direct source would refill
+the cell in step 3 right after the merger emptied it in step 2, so the direct
+input would starve (or monopolise) behind a slow consumer. A source still
+stalls rather than push into a cell that is full or reserved for another
+input. A splitter's outputs and a crossover's channels need no such rule:
+their only shared resource is a consumer buffer or conduit slot fed by one
+input, and a splitter already rotates over the outputs that accept; the
+direct-connection case matters only where several inputs meet, at a merger.
 
 ### Consumer seam
 
@@ -917,14 +940,18 @@ last `w` ticks (so the cold start does not distort it; 0 when `w` is 0).
 ### Golden kind `flow-sim`
 
 Input: a `team-state-ops` script (`seed`, `partySize`, `ops`) plus `ticks` and
-`consumers` (`"hold"` or `"drain"`). The script builds the board, then the flow
+`consumers` (`"hold"` or `"drain"`), and optionally `take`, `{building, side,
+every}`: before every tick `T` with `T mod every = every - 1` one unit is taken
+from that consumer input with `takeFromBuffer` (if it holds one), which paces a
+slow consumer in `"hold"` mode. The script builds the board, then the flow
 simulation runs for `ticks` ticks from the cold start. Result:
 `{ tick, stateHash, flow, sources, routes, consumers }`: `stateHash` is the
 hash of the final state, `flow` the conservation totals, and the lists give
 per-building counters (and, for consumers and routes, what they hold at the
 end). The event log of the run is the vector's event log (`eventLogHash`).
 Vectors: `golden/flow-sim.json` (a long conduit, a splitter, a merger, a
-crossover with two resources, a dead end, and a full-buffer backpressure case).
+crossover with two resources, a dead end, a full-buffer backpressure case, and a
+merger with a direct input and a conduit input behind a slow consumer).
 
 ### Mid-battle removal
 
@@ -2066,8 +2093,9 @@ of it is fixed by the tick order above and uses no random numbers:
 - Conduits resolve downstream first, ties by conduit ID; routes in topological
   order of the flow graph (ties by building ID, then channel); sources by
   building ID.
-- A merger arbitrates between inputs with its round-robin pointer (step 0);
-  splitters and sources with several outputs alternate with theirs.
+- A merger arbitrates between all its ready inputs, conduit and direct alike,
+  with its round-robin pointer (step 0); splitters and sources with several
+  outputs alternate with theirs.
 - When two things want the same space in one tick, the earlier step wins
   (conduits, then routes, then sources), and within a step the earlier one in
   the orders above.

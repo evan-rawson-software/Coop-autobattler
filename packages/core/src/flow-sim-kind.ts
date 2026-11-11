@@ -1,7 +1,10 @@
 /**
  * Golden-vector kind `flow-sim`. Input: a `team-state-ops` script (`seed`,
  * `partySize`, `ops`) plus `ticks` (integer >= 0) and `consumers` (`"hold"` or
- * `"drain"`). The script builds the board; the flow simulation then runs for
+ * `"drain"`) and optionally `take`: `{building, side, every}`, which removes
+ * one unit from that consumer input (`takeFromBuffer`) before every tick whose
+ * number T satisfies `T mod every = every - 1` (when a unit is there); it paces
+ * a slow consumer in `"hold"` mode. The script builds the board; the flow simulation then runs for
  * `ticks` ticks. Result: `{ tick, stateHash, flow, sources, routes,
  * consumers }` where `stateHash` is the hash of the final `BoardSim`, `flow`
  * the item accounting and the lists the per-building totals. The event log
@@ -13,6 +16,7 @@ import {
   createFlowContext,
   flowTotals,
   stepFlow,
+  takeFromBuffer,
   type SimEvent,
 } from './flow-sim.js';
 import { hashJson, type Json } from './hash.js';
@@ -43,6 +47,22 @@ export function makeFlowSimKind(
     if (mode !== 'hold' && mode !== 'drain') {
       throw new TypeError('flow-sim: consumers must be "hold" or "drain"');
     }
+    const take = field(input, 'take');
+    let taker: { building: number; side: string; every: number } | undefined;
+    if (take !== undefined) {
+      const t = take as Record<string, Json>;
+      const every = t['every'];
+      if (
+        typeof t['building'] !== 'number' ||
+        typeof t['side'] !== 'string' ||
+        typeof every !== 'number' ||
+        !Number.isInteger(every) ||
+        every < 1
+      ) {
+        throw new TypeError('flow-sim: take needs building, side and every');
+      }
+      taker = { building: t['building'], side: t['side'], every };
+    }
     const { state } = runTeamStateOps(input, content, mapgen);
     const events: SimEvent[] = [];
     const sim = createBoardSim(state, content, simConfig);
@@ -50,7 +70,12 @@ export function makeFlowSimKind(
       consumers: mode,
       events,
     });
-    for (let t = 0; t < ticks; t++) stepFlow(sim, ctx);
+    for (let t = 0; t < ticks; t++) {
+      if (taker !== undefined && t % taker.every === taker.every - 1) {
+        takeFromBuffer(sim, taker.building, taker.side, 1);
+      }
+      stepFlow(sim, ctx);
+    }
     const result: Json = {
       tick: sim.tick,
       stateHash: hashJson(sim),
