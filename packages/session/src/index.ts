@@ -153,6 +153,16 @@ export {
   snapshotOf,
   type GhostSelection,
 } from './ghosts.js';
+export {
+  BOT_STRATEGIES,
+  describeBotStrategy,
+  isBotStrategy,
+  playBotRun,
+  type BotOptions,
+  type BotRunResult,
+  type BotStrategyName,
+  type Rejection,
+} from './bot.js';
 export { drawStream, streamLabels } from './streams.js';
 export { STEP_INTENTS } from './step-table.js';
 export {
