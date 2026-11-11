@@ -8,6 +8,7 @@ import {
 } from './arena-sim.js';
 import { simulateBattle, startBattle, type BattleResult } from './battle.js';
 import { hashJson, type Json } from './hash.js';
+import { overloadDeadline, overloadOutcome } from './ramp.js';
 import type { GameMap } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
 import type { SimConfig } from './sim-config.js';
@@ -364,11 +365,11 @@ describe('mirror matches (symmetry)', () => {
     return battle;
   }
 
-  test('an empty zone: exactly symmetric, ends by the defender tiebreak', () => {
+  test('an empty zone: exactly symmetric, ends by the attacker tiebreak', () => {
     const battle = symmetricRun(emptyZone(12));
     expect(battle.result()).toMatchObject({
-      winner: 1,
-      reason: 'tiebreak_defender',
+      winner: 0,
+      reason: 'tiebreak_attacker',
     });
     const [s0, s1] = battle.summary().sides;
     expect(s0).toEqual(s1);
@@ -397,8 +398,8 @@ describe('mirror matches (symmetry)', () => {
     );
     const battle = symmetricRun(zone);
     expect(battle.result()).toMatchObject({
-      winner: 1,
-      reason: 'tiebreak_defender',
+      winner: 0,
+      reason: 'tiebreak_attacker',
     });
   });
 
@@ -525,13 +526,13 @@ describe('end conditions', () => {
     expect(r1.result).toMatchObject({ winner: 1, reason: 'core_destroyed' });
   });
 
-  test('two bare Cores: Overload kills both at tick 3700, the defender wins', () => {
+  test('two bare Cores: Overload kills both at tick 3100, the attacker wins', () => {
     const battle = started(coreOnly(), coreOnly());
     const r = finish(battle);
     expect(r).toEqual({
-      winner: 1,
-      reason: 'tiebreak_defender',
-      endTick: 3701,
+      winner: 0,
+      reason: 'tiebreak_attacker',
+      endTick: 3101,
     });
     const s = battle.summary();
     expect(s.sides[0].coreOverkill).toBe(s.sides[1].coreOverkill);
@@ -540,7 +541,7 @@ describe('end conditions', () => {
   });
 
   test('both Cores fall in one tick: the higher remaining health wins', () => {
-    // Overload damage on the beats at 2400, 2500, 2600 is 5, 10, 15.
+    // Overload damage on the beats at 1800, 1900, 2000 is 5, 10, 15.
     for (const [hp0, hp1, winner, over0, over1] of [
       [28, 26, 0, 2, 4],
       [26, 28, 1, 4, 2],
@@ -550,7 +551,7 @@ describe('end conditions', () => {
       setCore(battle, 0, hp0);
       setCore(battle, 1, hp1);
       const r = finish(battle);
-      expect(r).toEqual({ winner, reason: 'tiebreak_overkill', endTick: 2601 });
+      expect(r).toEqual({ winner, reason: 'tiebreak_overkill', endTick: 2001 });
       const s = battle.summary();
       expect(s.sides[0].coreHealth).toBe(0);
       expect(s.sides[1].coreHealth).toBe(0);
@@ -568,7 +569,9 @@ describe('end conditions', () => {
     for (const [hp0, hp1, winner, reason] of [
       [1000, 900, 0, 'tiebreak_overkill'],
       [900, 1000, 1, 'tiebreak_overkill'],
-      [1000, 1000, 1, 'tiebreak_defender'],
+      // Equal overkill: both Cores took 1000 of attack damage (the hit past
+      // their health does not count), no kills: the attacker wins.
+      [1000, 1000, 0, 'tiebreak_attacker'],
     ] as const) {
       const battle = started(coreOnly(), coreOnly());
       setCore(battle, 0, hp0);
@@ -595,14 +598,74 @@ describe('end conditions', () => {
     }
   });
 
-  test('equal remaining health goes to side 1', () => {
+  test('equal overkill: the tiebreak ladder (building damage, kills, attacker)', () => {
+    // The counters are plain state, so a test can set them. Bare Cores of
+    // equal health fall to Overload decay on the same tick with equal overkill.
+    // [damage0, damage1, died0, died1, winner, reason]: a side's kills are the
+    // other side's deaths.
+    for (const [d0, d1, died0, died1, winner, reason] of [
+      [10, 9, 5, 0, 0, 'tiebreak_building_damage'],
+      [9, 10, 0, 5, 1, 'tiebreak_building_damage'],
+      [0, 1, 7, 0, 1, 'tiebreak_building_damage'], // damage before kills
+      [4, 4, 0, 3, 0, 'tiebreak_kills'], // side 0 killed the 3 that died on side 1
+      [4, 4, 3, 0, 1, 'tiebreak_kills'],
+      [4, 4, 2, 2, 0, 'tiebreak_attacker'],
+      [0, 0, 0, 0, 0, 'tiebreak_attacker'],
+    ] as const) {
+      const battle = started(coreOnly(), coreOnly());
+      battle.sim.buildingDamageDealt[0] = d0;
+      battle.sim.buildingDamageDealt[1] = d1;
+      battle.sim.unitsDied[0] = died0;
+      battle.sim.unitsDied[1] = died1;
+      expect(finish(battle)).toEqual({ winner, reason, endTick: 3101 });
+      const s = battle.summary();
+      expect(s.sides[0].buildingDamageDealt).toBe(d0);
+      expect(s.sides[1].buildingDamageDealt).toBe(d1);
+      expect(s.sides[0].unitsKilled).toBe(died1);
+      expect(s.sides[1].unitsKilled).toBe(died0);
+    }
+  });
+
+  test('overkill comes before the ladder; a decided overkill ignores the counters', () => {
     const battle = started(coreOnly(), coreOnly());
-    setCore(battle, 0, 27);
-    setCore(battle, 1, 27);
-    expect(finish(battle)).toMatchObject({
-      winner: 1,
-      reason: 'tiebreak_defender',
+    setCore(battle, 0, 28);
+    setCore(battle, 1, 26);
+    battle.sim.buildingDamageDealt[1] = 1_000_000;
+    battle.sim.unitsDied[0] = 50;
+    expect(finish(battle)).toEqual({
+      winner: 0,
+      reason: 'tiebreak_overkill',
+      endTick: 2001,
     });
+  });
+
+  test('building damage counts attacks only, at most the health the building had', () => {
+    const battle = started(coreOnly(), coreOnly());
+    setCore(battle, 1, 10);
+    const geom = battle.ctx.arena.geom;
+    // Three soldiers of side 0 beside side 1's Core hit it for 6 each (18)
+    // in one tick; the Core had 10. Side 1 has no units.
+    const at = toArena(geom, 1, { x: 5, y: 2 });
+    for (let k = 0; k < 3; k++) {
+      const u = spawnUnitForTest(battle.sim, battle.ctx, {
+        side: 0,
+        def: 'unit_soldier',
+        x: at.x,
+        y: at.y,
+      });
+      u.attackCooldown = 0;
+    }
+    battle.step();
+    expect(battle.result()).toMatchObject({
+      winner: 0,
+      reason: 'core_destroyed',
+    });
+    expect(battle.sim.buildingDamageDealt).toEqual([10, 0]);
+    expect(battle.summary().sides[1].coreOverkill).toBe(8);
+    // Overload decay is never counted: run bare Cores through several beats.
+    const bare = started(coreOnly(), coreOnly());
+    finish(bare);
+    expect(bare.sim.buildingDamageDealt).toEqual([0, 0]);
   });
 
   test('the time limit decides by the Core health fraction (Overload disabled)', () => {
@@ -615,19 +678,39 @@ describe('end conditions', () => {
     for (const [hp0, hp1, winner] of [
       [300, 250, 0],
       [250, 300, 1],
-      [400, 400, 1],
+      [400, 400, 0], // equal fractions: the ladder, then the attacker
       [500, 499, 0],
     ] as const) {
       const battle = started(coreOnly(), coreOnly(), cfg);
       setCore(battle, 0, hp0);
       setCore(battle, 1, hp1);
       const r = finish(battle);
-      expect(r).toEqual({ winner, reason: 'time_limit', endTick: 300 });
+      expect(r).toEqual({
+        winner,
+        reason: hp0 === hp1 ? 'tiebreak_attacker' : 'time_limit',
+        endTick: 300,
+      });
       expect(battle.sim.tick).toBe(300);
     }
-    // A walled stalemate on full-health Cores: equal fractions, side 1 wins.
+    // A walled stalemate on full-health Cores: equal fractions, equal
+    // counters, the attacker wins.
     const r = finish(started(coreOnly(), coreOnly(), cfg));
-    expect(r).toEqual({ winner: 1, reason: 'time_limit', endTick: 300 });
+    expect(r).toEqual({ winner: 0, reason: 'tiebreak_attacker', endTick: 300 });
+    // Equal fractions go down the ladder: building damage, then kills.
+    const byDamage = started(coreOnly(), coreOnly(), cfg);
+    byDamage.sim.buildingDamageDealt[1] = 3;
+    expect(finish(byDamage)).toEqual({
+      winner: 1,
+      reason: 'tiebreak_building_damage',
+      endTick: 300,
+    });
+    const byKills = started(coreOnly(), coreOnly(), cfg);
+    byKills.sim.unitsDied[0] = 2;
+    expect(finish(byKills)).toEqual({
+      winner: 1,
+      reason: 'tiebreak_kills',
+      endTick: 300,
+    });
   });
 
   test('the Core health fraction is compared exactly', () => {
@@ -643,7 +726,11 @@ describe('end conditions', () => {
     const battle = started(coreOnly(), coreOnly(), { sim: noOverload, mapgen });
     setCore(battle, 0, 125);
     setCore(battle, 1, 125);
-    expect(finish(battle).winner).toBe(1);
+    // Equal fractions: no winner by health; the ladder gives the attacker.
+    expect(finish(battle)).toMatchObject({
+      winner: 0,
+      reason: 'tiebreak_attacker',
+    });
   });
 
   test('the time limit compares fractions exactly with maxima near the cap', () => {
@@ -660,7 +747,7 @@ describe('end conditions', () => {
       [M, M - 1, M - 1, M - 2, 0], // (M-1)/M > (M-2)/(M-1)
       [M - 1, M - 2, M, M - 1, 1],
       [M, M - 1, M - 1, M - 1, 1], // 1 - 1/M < 1
-      [M, M, M - 1, M - 1, 1], // equal fractions: side 1
+      [M, M, M - 1, M - 1, 0], // equal fractions: the ladder, the attacker
       [M, 500_000_000_000, M - 2, 499_999_999_998, 0],
       [999_999_999_989, 499_999_999_994, M, 500_000_000_000, 1],
       [M, 123_456_789_012, 999_999_999_999, 123_456_789_011, 0],
@@ -680,7 +767,9 @@ describe('end conditions', () => {
       setCore(s.battle, 0, hp0);
       setCore(s.battle, 1, hp1);
       const r = finish(s.battle);
-      expect(r.reason).toBe('time_limit');
+      expect(r.reason).toBe(
+        hp0 === max0 && hp1 === max1 ? 'tiebreak_attacker' : 'time_limit',
+      );
       expect(
         r.winner,
         `${String(hp0)}/${String(max0)} vs ${String(hp1)}/${String(max1)}`,
@@ -691,6 +780,83 @@ describe('end conditions', () => {
   test('with the real constants no battle reaches the time limit', () => {
     expect(simConfig.maxBattleTicks).toBe(12000);
     expect(simConfig.timelineSampleTicks).toBe(50);
+  });
+});
+
+describe('Overload helpers against real bare-Core battles (time limit)', () => {
+  const bare = (hpA: number, hpB: number) => {
+    const s = startBattle(
+      {
+        teamA: coreOnly(),
+        teamB: coreOnly(),
+        seed: 1,
+        sideOptions: [{ coreHealth: hpA }, { coreHealth: hpB }],
+      },
+      content,
+      config,
+      { zone: emptyZone(12) },
+    );
+    if (!s.ok) throw new Error('refused');
+    while (!s.battle.isOver()) s.battle.step();
+    const r = s.battle.result();
+    if (r === null) throw new Error('no result');
+    return r;
+  };
+
+  test('the decay lands up to tick maxBattleTicks - 1 and no longer', () => {
+    // 102 beats (ticks 1800 .. 11900) take 5 * 102 * 103 / 2 = 26265; beat
+    // 103 would be at tick 12000 = maxBattleTicks and never lands.
+    expect(simConfig.maxBattleTicks).toBe(12000);
+    for (const hp of [25_755, 25_756, 26_000, 26_264, 26_265, 26_266, 26_267]) {
+      const d = overloadDeadline(simConfig, hp);
+      const r = bare(hp, hp);
+      if (hp <= 26_265) {
+        // Both Cores fall on the same beat: a 'core_destroyed' end after the
+        // step of that tick (the tick counter is then one higher).
+        expect(d.decayDestroysTick, String(hp)).not.toBeNull();
+        expect(r.reason, String(hp)).not.toBe('time_limit');
+        expect(r.endTick, String(hp)).toBe((d.decayDestroysTick ?? -1) + 1);
+        expect(overloadOutcome(simConfig, hp, hp)).toEqual({
+          first: 'both',
+          tick: d.decayDestroysTick,
+        });
+      } else {
+        expect(d, String(hp)).toEqual({
+          startTick: 1800,
+          decayDestroysTick: null,
+          decayDestroysLevel: null,
+        });
+        expect(r.endTick, String(hp)).toBe(simConfig.maxBattleTicks);
+        expect(overloadOutcome(simConfig, hp, hp)).toEqual({
+          first: null,
+          tick: null,
+        });
+      }
+    }
+    expect(overloadDeadline(simConfig, 25_755).decayDestroysTick).toBe(11_800);
+    expect(overloadDeadline(simConfig, 26_265).decayDestroysTick).toBe(11_900);
+  });
+
+  test('with one Core beyond the limit the other still falls first', () => {
+    for (const [a, b] of [
+      [26_265, 26_266],
+      [26_266, 26_265],
+      [26_265, 500],
+      [26_266, 26_267],
+    ] as const) {
+      const r = bare(a, b);
+      const o = overloadOutcome(simConfig, a, b);
+      const side = a < b ? 'a' : 'b';
+      if (Math.min(a, b) <= 26_265) {
+        expect(o.first, `${String(a)} ${String(b)}`).toBe(side);
+        expect(r.reason).toBe('core_destroyed');
+        expect(r.winner).toBe(side === 'a' ? 1 : 0);
+        expect(r.endTick).toBe((o.tick ?? -1) + 1);
+      } else {
+        expect(o).toEqual({ first: null, tick: null });
+        expect(r.endTick).toBe(simConfig.maxBattleTicks);
+      }
+    }
   });
 });
 

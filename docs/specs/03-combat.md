@@ -234,6 +234,24 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   destroyed in a battle are back for the next one.
 - **CB-12** **Overload**: late in a battle, both sides' units and damage
   escalate, so that two fortified sides cannot stall forever.
+  - **[DECIDED] In PvE the Overload decay is a deadline** (CB-29, #43; decided
+    in #75: turtling is a justified strategy). Overload takes the same flat
+    amount from both
+    Cores at every beat (5, 10, 15, ... health, from tick 1800, 3 minutes, at
+    every 100th tick), so the Core with less health falls first. The party's
+    Core of 500 health dies from the decay alone at tick 3100 (14 beats take
+    525), as `overloadDeadline` computes (see the rules reference,
+    "Overload"). A stronghold's Core is often smaller (sample: all four archetypes,
+    easy, medium and hard, rounds 1 to 8, party size 1, seed 100 + round, 96
+    shipped threats: median 313.5, minimum 42, under 500 in 68), so there the
+    decay destroys the stronghold's Core first (315 at tick 2800, 42 at tick
+    2100) and the party wins by outlasting it, which is a legitimate way to
+    win. The other 28 have more than 500 Core health (Rusher 12, Fortress 9,
+    Boss 6, Escalator 1, all from round 4); against those the party must
+    break the stronghold before tick 3100, before its own Core falls. This
+    is the intended rule: the decay applies equally to both Cores and the
+    smaller falls first. Screens should compute the deadline for both Cores
+    and show which falls first.
 
 ## Units
 
@@ -369,8 +387,12 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   conduit, and run
   modifiers that affect combat. This is exactly what a snapshot stores
   (MM-1).
-- **CB-33** If both Cores are destroyed on the same tick, a deterministic
-  tiebreak applies (then the defender/ghost wins).
+- **CB-33 [DECIDED]** If both Cores are destroyed on the same tick, a
+  deterministic tiebreak applies: less overkill damage wins; then more damage
+  dealt to the enemy's buildings; then more enemy units killed; then the
+  attacker (the party) wins. At the time limit the larger share of maximum
+  Core health wins and an equal share goes down the same last three steps. The
+  defender/ghost wins no tie (#33). Overload starts at 3 minutes (CB-12).
 - **CB-34** An **opponent** is either a team state (ghost) or a threat
   profile (PvE, CB-29). Both are data and run through the same simulation
   entry point.

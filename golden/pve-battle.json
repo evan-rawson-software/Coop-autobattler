@@ -155,7 +155,9 @@
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 180,
+              "unitsKilled": 3
             },
             {
               "unitsSpawned": 3,
@@ -164,7 +166,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 180,
               "coreOverkill": 6,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
             }
           ]
         },
@@ -201,7 +205,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "8fb8ae10",
+        "stateHash": "0b19ef62",
         "events": 431
       },
       "eventLogHash": "51d0f63d"
@@ -363,7 +367,9 @@
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 130,
+              "unitsKilled": 0
             },
             {
               "unitsSpawned": 0,
@@ -372,7 +378,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 130,
               "coreOverkill": 2,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
             }
           ]
         },
@@ -409,7 +417,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "7648c964",
+        "stateHash": "ba850945",
         "events": 292
       },
       "eventLogHash": "a569c11c"
@@ -571,7 +579,9 @@
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 63,
+              "unitsKilled": 1
             },
             {
               "unitsSpawned": 2,
@@ -580,7 +590,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 63,
               "coreOverkill": 9,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
             }
           ]
         },
@@ -617,7 +629,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "a5c75e5b",
+        "stateHash": "49c35975",
         "events": 289
       },
       "eventLogHash": "30343bd2"
@@ -779,7 +791,9 @@
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 148,
+              "unitsKilled": 1
             },
             {
               "unitsSpawned": 1,
@@ -788,7 +802,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 148,
               "coreOverkill": 2,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
             }
           ]
         },
@@ -825,7 +841,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "9b86e20a",
+        "stateHash": "24f3c494",
         "events": 329
       },
       "eventLogHash": "a7635593"
@@ -1269,7 +1285,9 @@
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 6
+              "rampSteps": 6,
+              "buildingDamageDealt": 180,
+              "unitsKilled": 6
             },
             {
               "unitsSpawned": 6,
@@ -1278,7 +1296,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 180,
               "coreOverkill": 0,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 4
             }
           ]
         },
@@ -1315,7 +1335,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "98ab3650",
+        "stateHash": "c99ecaee",
         "events": 669
       },
       "eventLogHash": "35663056"
@@ -1759,7 +1779,9 @@
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 6
+              "rampSteps": 6,
+              "buildingDamageDealt": 130,
+              "unitsKilled": 1
             },
             {
               "unitsSpawned": 1,
@@ -1768,7 +1790,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 130,
               "coreOverkill": 5,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 5
             }
           ]
         },
@@ -1805,7 +1829,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "d5f020f9",
+        "stateHash": "79a26d38",
         "events": 557
       },
       "eventLogHash": "bcd038b1"
@@ -2249,7 +2273,9 @@
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 6
+              "rampSteps": 6,
+              "buildingDamageDealt": 63,
+              "unitsKilled": 4
             },
             {
               "unitsSpawned": 4,
@@ -2258,7 +2284,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 63,
               "coreOverkill": 3,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 2
             }
           ]
         },
@@ -2295,7 +2323,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "71456419",
+        "stateHash": "a6d9ccd9",
         "events": 452
       },
       "eventLogHash": "c11ccef1"
@@ -2739,7 +2767,9 @@
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 5
+              "rampSteps": 5,
+              "buildingDamageDealt": 148,
+              "unitsKilled": 2
             },
             {
               "unitsSpawned": 2,
@@ -2748,7 +2778,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 148,
               "coreOverkill": 2,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 1
             }
           ]
         },
@@ -2785,7 +2817,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "e6e70fff",
+        "stateHash": "6cfa1e5d",
         "events": 395
       },
       "eventLogHash": "22aeb930"
@@ -3005,7 +3037,9 @@
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 180,
+              "unitsKilled": 6
             },
             {
               "unitsSpawned": 6,
@@ -3014,7 +3048,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 180,
               "coreOverkill": 0,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 6
             }
           ]
         },
@@ -3051,7 +3087,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "9aaa08cd",
+        "stateHash": "027b19af",
         "events": 594
       },
       "eventLogHash": "b1e04e6e"
@@ -3271,7 +3307,9 @@
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 130,
+              "unitsKilled": 1
             },
             {
               "unitsSpawned": 2,
@@ -3280,7 +3318,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 130,
               "coreOverkill": 2,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 6
             }
           ]
         },
@@ -3317,7 +3357,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "de99942b",
+        "stateHash": "1c54a99e",
         "events": 487
       },
       "eventLogHash": "ae97cf82"
@@ -3537,7 +3577,9 @@
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 63,
+              "unitsKilled": 5
             },
             {
               "unitsSpawned": 5,
@@ -3546,7 +3588,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 63,
               "coreOverkill": 3,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 5
             }
           ]
         },
@@ -3583,7 +3627,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "cc3150a2",
+        "stateHash": "bd33ac4c",
         "events": 417
       },
       "eventLogHash": "aba4b678"
@@ -3803,7 +3847,9 @@
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 148,
+              "unitsKilled": 2
             },
             {
               "unitsSpawned": 2,
@@ -3812,7 +3858,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 148,
               "coreOverkill": 8,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 2
             }
           ]
         },
@@ -3849,7 +3897,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "9dab1369",
+        "stateHash": "56636e37",
         "events": 291
       },
       "eventLogHash": "52e57a89"
@@ -4293,7 +4341,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 4,
-              "rampSteps": 2
+              "rampSteps": 2,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
             },
             {
               "unitsSpawned": 2,
@@ -4302,7 +4352,9 @@
               "coreHealth": 1722,
               "coreMaxHealth": 1722,
               "coreOverkill": 0,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 500,
+              "unitsKilled": 0
             }
           ]
         },
@@ -4339,7 +4391,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "246463ed",
+        "stateHash": "76b59e37",
         "events": 285
       },
       "eventLogHash": "fa7940d5"
@@ -4501,7 +4553,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 14,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 1
             },
             {
               "unitsSpawned": 16,
@@ -4510,7 +4564,9 @@
               "coreHealth": 1458,
               "coreMaxHealth": 1458,
               "coreOverkill": 0,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 590,
+              "unitsKilled": 5
             }
           ]
         },
@@ -4542,7 +4598,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "3372dd45",
+        "stateHash": "4ed35fce",
         "events": 660
       },
       "eventLogHash": "a4a51eb9"

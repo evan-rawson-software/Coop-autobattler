@@ -759,6 +759,51 @@ describe('aggro convergence (Chebyshev reach, larger-axis step)', () => {
 
 // ---------------------------------------------------------------------------
 
+describe('targeting rule b: a goal in reach', () => {
+  test('a ranged unit in a sealed pocket attacks the Core in reach instead of breaching (#46)', () => {
+    const soldier = got(content.units.get('unit_soldier'));
+    const archer = { ...soldier, id: 'unit_archer', rangeCells: 3 };
+    const ranged = {
+      ...content,
+      units: {
+        get: (id: string) =>
+          id === 'unit_archer' ? archer : content.units.get(id),
+        list: () => [...content.units.list(), archer],
+      },
+    };
+    const lab = new Lab(tiny());
+    lab.core(5, 0);
+    // The pocket (4, 3) is walled in on every side; no route reaches it, but
+    // the Core cell (5, 1) is three steps away.
+    const walls = [
+      lab.put('bld_wall', 3, 3),
+      lab.put('bld_wall', 5, 3),
+      lab.put('bld_wall', 4, 2),
+      lab.put('bld_wall', 4, 4),
+    ];
+    const { sim, ctx, events } = startArenaBattle(
+      lab.state,
+      coreOnly(),
+      GAP,
+      ranged,
+      simConfig,
+    );
+    const u = spawnUnitForTest(sim, ctx, {
+      side: 1,
+      def: 'unit_archer',
+      x: 4,
+      y: 3,
+    });
+    u.moveCooldown = 1000;
+    for (let t = 0; t < 3; t++) stepArena(sim, ctx);
+    const hits = ofType(events, 'unit_attacked').filter((e) => e.unit === u.id);
+    expect(hits.length).toBeGreaterThan(0);
+    // Every attack is on the Core, none on the walls (which a breach would hit).
+    for (const h of hits) expect(h.target.kind).toBe('core');
+    expect(walls.length).toBe(4);
+  });
+});
+
 describe('enemy-path preview', () => {
   function pathCells(p: { cells: readonly Cell[] }): string {
     return p.cells.map((c) => `${String(c.x)},${String(c.y)}`).join(' ');
@@ -804,6 +849,36 @@ describe('enemy-path preview', () => {
     lab.put('bld_turret', 4, 15);
     const paths = previewEnemyPaths(lab.state, content, simConfig);
     expect(paths.map((p) => p.entry.x)).toEqual([0, 1, 5, 6, 7, 8, 9, 10, 11]);
+  });
+
+  test('every returned cell lies on the board; a detour across the gap rows is reported as approach cells (#32)', () => {
+    const lab = new Lab(tiny());
+    lab.core(5, 0);
+    // Row 14 is walled from x = 0 to 9 and (5, 15) is walled too: a soldier
+    // entering at x = 0..4 can only pass through the neutral zone, row 16.
+    for (let x = 0; x <= 9; x++) lab.put('bld_wall', x, 14);
+    lab.put('bld_wall', 5, 15);
+    const paths = previewEnemyPaths(lab.state, content, simConfig);
+    const at = (x: number) => got(paths.find((q) => q.entry.x === x));
+    const text = (cs: readonly Cell[]): string =>
+      cs.map((c) => `${String(c.x)},${String(c.y)}`).join(' ');
+    expect(text(at(3).approach)).toBe(
+      '3,16 4,16 5,16 6,16 7,16 8,16 9,16 10,16',
+    );
+    // The on-board cells are the entry and the walk from (10, 15) on.
+    expect(text(at(3).cells).startsWith('3,15 10,15 10,14 10,13 9,13')).toBe(
+      true,
+    );
+    expect(text(at(7).approach)).toBe('');
+    for (const p of paths) {
+      for (const c of p.cells) {
+        expect(c.y).toBeGreaterThanOrEqual(0);
+        expect(c.y).toBeLessThan(16);
+        expect(c.x).toBeGreaterThanOrEqual(0);
+        expect(c.x).toBeLessThan(W);
+      }
+      for (const c of p.approach) expect(c.y).toBeGreaterThanOrEqual(16);
+    }
   });
 
   test('a gate blocks the route like a wall, so the path goes around it', () => {

@@ -296,6 +296,17 @@ export interface ArenaSim {
   readonly spawned: [number, number];
   /** Units that died, by side. */
   readonly unitsDied: [number, number];
+  /**
+   * Building damage dealt, by the side that dealt it (index = the attacker):
+   * the total damage that side's units have applied to the enemy's buildings,
+   * Core included, over the battle. Per building and tick it counts
+   * `min(attack damage that tick, the building's health before the tick)`:
+   * Overload Core decay and damage beyond the building's remaining health
+   * (overkill) are not counted. A tiebreak input (CB-33); at most
+   * `MAX_ARENA_CELLS * MAX_HEALTH`, so always exact. The units a side has
+   * killed are `unitsDied` of the other side.
+   */
+  readonly buildingDamageDealt: [number, number];
   /** Present only when a side was given options (PvE); absent otherwise. */
   readonly sideOptions?: [SideOptions, SideOptions];
 }
@@ -390,7 +401,8 @@ export interface ArenaContext {
   readonly ramps: Map<number, RampInfo>;
   readonly flowEvents: SimEvent[][];
   /**
-   * `ref` -> the building's maximum health (its tier's health). The breach
+   * `ref` -> the building's maximum health (`maxHealthOf`: its tier's health
+   * with the team's modifiers and any Core health override). The breach
    * field is built from this, never from current health (CB-20), so the
    * cached field is a pure function of which buildings exist.
    */
@@ -411,6 +423,8 @@ export interface ArenaContext {
    */
   unitDamage: Float64Array;
   buildingDamage: Float64Array;
+  /** The part of `buildingDamage` that comes from unit attacks (no decay). */
+  attackDamage: Float64Array;
 }
 
 const bkey = (side: number, id: number): number => id * 2 + side;
@@ -441,10 +455,18 @@ function addDamage(sum: number, hit: number): number {
 
 /** A turret tier's damage with the team's `turret_damage_percent`, checked. */
 function turretDamageOf(team: TeamState, damage: number): number {
-  const v = mulPct(
-    damage,
-    100 + modifierPercent(team, 'turret_damage_percent'),
-  );
+  const pct = modifierPercent(team, 'turret_damage_percent');
+  // Largest percent sum for which damage * (100 + pct) stays a safe integer.
+  const room =
+    damage === 0
+      ? Number.MAX_SAFE_INTEGER
+      : divFloor(Number.MAX_SAFE_INTEGER, damage);
+  if (pct > room - 100) {
+    throw new RangeError(
+      `Modifier turret_damage_percent: the percent sum ${String(pct)} is too large for turret damage ${String(damage)}; damage times (100 + percent) must stay within ${String(Number.MAX_SAFE_INTEGER)}.`,
+    );
+  }
+  const v = mulPct(damage, addInt(100, pct));
   if (v > MAX_DAMAGE) {
     throw new RangeError(
       `Turret damage ${String(v)} with modifiers exceeds the maximum ${String(MAX_DAMAGE)}.`,
@@ -551,6 +573,7 @@ export function createArenaContext(
     arg: new Int32Array(0),
     unitDamage: new Float64Array(0),
     buildingDamage: new Float64Array(arena.buildings.length),
+    attackDamage: new Float64Array(arena.buildings.length),
   };
   return options.events === undefined
     ? base
@@ -680,6 +703,7 @@ export function createArenaSim(
     units: [],
     spawned: [0, 0],
     unitsDied: [0, 0],
+    buildingDamageDealt: [0, 0],
   };
 }
 
@@ -1237,15 +1261,17 @@ function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
 
   const here = u.y * width + u.x;
   const field = fieldFor(ctx, u.side, def.targeting);
+  // b. Attack the goal building in reach. Evaluated whether or not the unit's
+  // cell has a route in the field (a unit in a sealed pocket still attacks a
+  // goal within its reach).
+  const ref = goalInReach(ctx, u, reach, field);
+  if (ref >= 0) {
+    ctx.action[i] = ACT_BUILDING;
+    ctx.arg[i] = ref;
+    return;
+  }
   const d = field.dist[here] ?? -1;
   if (d >= 0) {
-    // b. Attack the goal building in reach.
-    const ref = goalInReach(ctx, u, reach, field);
-    if (ref >= 0) {
-      ctx.action[i] = ACT_BUILDING;
-      ctx.arg[i] = ref;
-      return;
-    }
     // c. Move one step along the field.
     if (u.moveCooldown === 0 && d > 0) {
       const k = fieldStep(arena, u.side, field, here);
@@ -1432,6 +1458,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
 
   // 4. Resolve attacks simultaneously.
   ctx.buildingDamage.fill(0);
+  ctx.attackDamage.fill(0);
   for (let i = 0; i < n; i++) {
     const u = units[i];
     const act = ctx.action[i] ?? ACT_NONE;
@@ -1453,6 +1480,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
       const b = arena.buildings[arg];
       if (b === undefined) continue;
       ctx.buildingDamage[arg] = addDamage(ctx.buildingDamage[arg] ?? 0, damage);
+      ctx.attackDamage[arg] = addDamage(ctx.attackDamage[arg] ?? 0, damage);
       target =
         b.kind === 'core'
           ? { kind: 'core', side: b.side }
@@ -1487,6 +1515,16 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     if (dmg === 0) continue;
     const h = sim.health[ctx.healthIndex[r] ?? 0];
     if (h === undefined) continue;
+    // Damage dealt to buildings (tiebreak): the attacks only, at most the
+    // health the building had, credited to the other side.
+    const applied = Math.min(ctx.attackDamage[r] ?? 0, h.hp);
+    if (applied > 0) {
+      const dealer = h.side === 0 ? 1 : 0;
+      sim.buildingDamageDealt[dealer] = addInt(
+        sim.buildingDamageDealt[dealer],
+        applied,
+      );
+    }
     const remaining = h.hp - dmg;
     if (h.building === 0) ctx.coreRemaining[h.side === 0 ? 0 : 1] = remaining;
     h.hp = Math.max(0, remaining);

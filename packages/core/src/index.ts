@@ -311,7 +311,15 @@ export type { WorkshopOption } from './workshop.js';
 export { rampBonus } from './arena-sim.js';
 export type { RampSim } from './arena-sim.js';
 export { scaledInterval } from './flow-sim.js';
-export { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
+export {
+  cappedBonus,
+  isOverloadBeat,
+  overloadDeadline,
+  overloadLevel,
+  overloadOutcome,
+  type OverloadDeadline,
+  type OverloadOutcome,
+} from './ramp.js';
 
 // The neutral zone and whole battles (W1-8).
 export {

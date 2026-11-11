@@ -25,7 +25,7 @@ import { loadSimContext } from './context.js';
 /** The budget (docs/performance-budget.md); keep the two in sync. */
 const BUDGET = {
   maxUnitsPerSide: 1000,
-  /** Typical battles end by this tick; Overload ends every battle by 3701. */
+  /** Typical battles end by this tick; Overload ends every battle by 3101. */
   maxTicks: 4000,
   /** Event log size in JSON bytes. */
   maxLogBytesOnePlot: 1_000_000,

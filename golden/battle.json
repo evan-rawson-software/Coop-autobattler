@@ -236,29 +236,33 @@
       "result": {
         "ok": true,
         "result": {
-          "winner": 1,
-          "reason": "tiebreak_defender",
-          "endTick": 3701
+          "winner": 0,
+          "reason": "tiebreak_attacker",
+          "endTick": 3101
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 184,
-              "unitsLost": 179,
+              "unitsSpawned": 154,
+              "unitsLost": 149,
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 25,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 149
             },
             {
-              "unitsSpawned": 184,
-              "unitsLost": 179,
+              "unitsSpawned": 154,
+              "unitsLost": 149,
               "buildingsLost": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 25,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 149
             }
           ]
         },
@@ -294,8 +298,8 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "46da8c37",
-        "events": 10315
+        "stateHash": "18ac4847",
+        "events": 8529
       }
     }
   },
@@ -1372,7 +1376,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 7,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 34
             },
             {
               "unitsSpawned": 88,
@@ -1381,7 +1387,9 @@
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 30
+              "rampSteps": 30,
+              "buildingDamageDealt": 500,
+              "unitsKilled": 139
             }
           ]
         },
@@ -1402,7 +1410,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "1240e267",
+        "stateHash": "9581a8e5",
         "events": 8754
       }
     }
@@ -1706,7 +1714,9 @@
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 500,
+              "unitsKilled": 0
             },
             {
               "unitsSpawned": 0,
@@ -1715,7 +1725,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 10,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
             }
           ]
         },
@@ -1751,7 +1763,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "3fe53004",
+        "stateHash": "5ac0816e",
         "events": 1116
       }
     }
@@ -1759,7 +1771,7 @@
   {
     "id": "battle.walled-stalemate-overload",
     "kind": "battle",
-    "description": "Two Cores in wall rings and no producers: Overload destroys both Cores on the same tick; equal remaining health, so the defender (side 1) wins.",
+    "description": "Two Cores in wall rings and no producers: Overload destroys both Cores on the same tick; equal overkill, no building damage and no kills, so the attacker (side 0) wins.",
     "input": {
       "teamA": {
         "map": {
@@ -2113,9 +2125,9 @@
       "result": {
         "ok": true,
         "result": {
-          "winner": 1,
-          "reason": "tiebreak_defender",
-          "endTick": 3701
+          "winner": 0,
+          "reason": "tiebreak_attacker",
+          "endTick": 3101
         },
         "summary": {
           "sides": [
@@ -2126,7 +2138,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 25,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
             },
             {
               "unitsSpawned": 0,
@@ -2135,7 +2149,9 @@
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 25,
-              "rampSteps": 0
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
             }
           ]
         },
@@ -2171,9 +2187,1549 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "e5b630ed",
+        "stateHash": "e8a04cee",
         "events": 47
       }
+    }
+  },
+  {
+    "id": "battle.tiebreak-building-damage",
+    "kind": "battle",
+    "description": "Equal overkill, decided by damage to enemy buildings before kills: side 1 sends one soldier (a scheduled wave) at a Core in a wall ring with a tier 1 turret in front that needs no supply (free power). The soldier hits the turret for 18 damage before it dies, so side 1 dealt more damage to buildings although side 0 killed more units; both Cores fall to Overload decay on the same tick with the same overkill and side 1 wins.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 1,
+            "x": 10,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 2,
+            "x": 13,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 3,
+            "x": 10,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 4,
+            "x": 13,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 5,
+            "x": 11,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 6,
+            "x": 12,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 7,
+            "x": 11,
+            "y": 5,
+            "rotation": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "seed": 1,
+      "sideOptions": [
+        {
+          "freePower": true
+        },
+        {
+          "scheduledWaves": [
+            {
+              "tick": 1,
+              "unit": "unit_soldier",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 1,
+          "reason": "tiebreak_building_damage",
+          "endTick": 3101
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 500,
+              "coreOverkill": 25,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 1
+            },
+            {
+              "unitsSpawned": 1,
+              "unitsLost": 1,
+              "buildingsLost": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 500,
+              "coreOverkill": 25,
+              "rampSteps": 0,
+              "buildingDamageDealt": 18,
+              "unitsKilled": 0
+            }
+          ]
+        },
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "98ae9f68",
+        "events": 81
+      },
+      "eventLogHash": "4ba7ac30"
+    }
+  },
+  {
+    "id": "battle.tiebreak-kills",
+    "kind": "battle",
+    "description": "Equal overkill and no damage to buildings on either side, decided by units killed: side 0 sends three soldiers (a scheduled wave) at a Core guarded by five tier 3 turrets that need no supply (free power); the turrets kill all three before they reach anything. Both Cores fall to Overload decay on the same tick with the same overkill and side 1, with three kills, wins.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 1,
+            "x": 4,
+            "y": 14,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 2,
+            "x": 8,
+            "y": 14,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 3,
+            "x": 12,
+            "y": 14,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 4,
+            "x": 16,
+            "y": 14,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 5,
+            "x": 20,
+            "y": 14,
+            "rotation": 0
+          }
+        ]
+      },
+      "seed": 1,
+      "sideOptions": [
+        {
+          "scheduledWaves": [
+            {
+              "tick": 1,
+              "unit": "unit_soldier",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "freePower": true
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 1,
+          "reason": "tiebreak_kills",
+          "endTick": 3101
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 3,
+              "unitsLost": 3,
+              "buildingsLost": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 500,
+              "coreOverkill": 25,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            },
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 500,
+              "coreOverkill": 25,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 3
+            }
+          ]
+        },
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "7df0e6bb",
+        "events": 112
+      },
+      "eventLogHash": "664e8e03"
+    }
+  },
+  {
+    "id": "battle.tiebreak-attacker",
+    "kind": "battle",
+    "description": "Two bare Cores and nothing else: equal overkill, no damage to buildings, no kills, so the attacker (side 0) wins the final rung when Overload decay destroys both Cores on the same tick.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "seed": 1
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "tiebreak_attacker",
+          "endTick": 3101
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 500,
+              "coreOverkill": 25,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            },
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 500,
+              "coreOverkill": 25,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            }
+          ]
+        },
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "54fc8bc5",
+        "events": 47
+      },
+      "eventLogHash": "2bd6670f"
+    }
+  },
+  {
+    "id": "battle.time-limit-fraction-side0",
+    "kind": "battle",
+    "description": "Both Cores have 30000 health and survive Overload decay to the 12000-tick limit. Side 1 loses a few more Core health points (a soldier of side 0 reaches its Core before a tier 2 turret kills it) than side 0 loses to a soldier of side 1 that only hits a walled turret: side 0 wins on the Core health fraction (time_limit) although side 1 has dealt more building damage.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 1,
+            "x": 10,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 2,
+            "x": 13,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 3,
+            "x": 10,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 4,
+            "x": 13,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 5,
+            "x": 11,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 6,
+            "x": 12,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 7,
+            "x": 11,
+            "y": 5,
+            "rotation": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 1,
+            "x": 13,
+            "y": 2,
+            "rotation": 0
+          }
+        ]
+      },
+      "seed": 1,
+      "sideOptions": [
+        {
+          "coreHealth": 30000,
+          "freePower": true,
+          "scheduledWaves": [
+            {
+              "tick": 300,
+              "unit": "unit_soldier",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "coreHealth": 30000,
+          "freePower": true,
+          "scheduledWaves": [
+            {
+              "tick": 1,
+              "unit": "unit_soldier",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "time_limit",
+          "endTick": 12000
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 1,
+              "unitsLost": 1,
+              "buildingsLost": 0,
+              "coreHealth": 3735,
+              "coreMaxHealth": 30000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 12,
+              "unitsKilled": 1
+            },
+            {
+              "unitsSpawned": 1,
+              "unitsLost": 1,
+              "buildingsLost": 0,
+              "coreHealth": 3723,
+              "coreMaxHealth": 30000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 18,
+              "unitsKilled": 1
+            }
+          ]
+        },
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "b0bf7b7b",
+        "events": 373
+      },
+      "eventLogHash": "8a3aee41"
+    }
+  },
+  {
+    "id": "battle.time-limit-fraction-side1",
+    "kind": "battle",
+    "description": "The mirror of battle.time-limit-fraction-side0 with the sides swapped: side 1 wins on the Core health fraction at the time limit although side 0 has dealt more building damage.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 1,
+            "x": 13,
+            "y": 2,
+            "rotation": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 1,
+            "x": 10,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 2,
+            "x": 13,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 3,
+            "x": 10,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 4,
+            "x": 13,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 5,
+            "x": 11,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 6,
+            "x": 12,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 7,
+            "x": 11,
+            "y": 5,
+            "rotation": 0
+          }
+        ]
+      },
+      "seed": 1,
+      "sideOptions": [
+        {
+          "coreHealth": 30000,
+          "freePower": true,
+          "scheduledWaves": [
+            {
+              "tick": 1,
+              "unit": "unit_soldier",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "coreHealth": 30000,
+          "freePower": true,
+          "scheduledWaves": [
+            {
+              "tick": 300,
+              "unit": "unit_soldier",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 1,
+          "reason": "time_limit",
+          "endTick": 12000
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 1,
+              "unitsLost": 1,
+              "buildingsLost": 0,
+              "coreHealth": 3723,
+              "coreMaxHealth": 30000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 18,
+              "unitsKilled": 1
+            },
+            {
+              "unitsSpawned": 1,
+              "unitsLost": 1,
+              "buildingsLost": 0,
+              "coreHealth": 3735,
+              "coreMaxHealth": 30000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 12,
+              "unitsKilled": 1
+            }
+          ]
+        },
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "f28aa18d",
+        "events": 373
+      },
+      "eventLogHash": "cb785b84"
+    }
+  },
+  {
+    "id": "battle.time-limit-building-damage",
+    "kind": "battle",
+    "description": "Both Cores have 30000 health and lose only to decay, so the Core health fractions are equal at the 12000-tick limit. A soldier of side 1 hits a walled turret of side 0 (building damage 18) and dies; side 0's turret has the kill. Side 1 wins on building damage (the kills rung would give side 0).",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 1,
+            "x": 10,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 2,
+            "x": 13,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 3,
+            "x": 10,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 4,
+            "x": 13,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 5,
+            "x": 11,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 6,
+            "x": 12,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 7,
+            "x": 11,
+            "y": 5,
+            "rotation": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "seed": 1,
+      "sideOptions": [
+        {
+          "coreHealth": 30000,
+          "freePower": true
+        },
+        {
+          "coreHealth": 30000,
+          "scheduledWaves": [
+            {
+              "tick": 1,
+              "unit": "unit_soldier",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 1,
+          "reason": "tiebreak_building_damage",
+          "endTick": 12000
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "coreHealth": 3735,
+              "coreMaxHealth": 30000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 1
+            },
+            {
+              "unitsSpawned": 1,
+              "unitsLost": 1,
+              "buildingsLost": 0,
+              "coreHealth": 3735,
+              "coreMaxHealth": 30000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 18,
+              "unitsKilled": 0
+            }
+          ]
+        },
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "606dc2c2",
+        "events": 343
+      },
+      "eventLogHash": "0f197c0e"
+    }
+  },
+  {
+    "id": "battle.time-limit-kills",
+    "kind": "battle",
+    "description": "Equal Core health fractions at the time limit and no building damage on either side: free-power turrets of side 1 kill a wave of side 0 and side 1 wins on kills (the attacker rung would give side 0).",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 1,
+            "x": 4,
+            "y": 14,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 2,
+            "x": 8,
+            "y": 14,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 3,
+            "x": 12,
+            "y": 14,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 4,
+            "x": 16,
+            "y": 14,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 5,
+            "x": 20,
+            "y": 14,
+            "rotation": 0
+          }
+        ]
+      },
+      "seed": 1,
+      "sideOptions": [
+        {
+          "coreHealth": 30000,
+          "scheduledWaves": [
+            {
+              "tick": 1,
+              "unit": "unit_soldier",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "coreHealth": 30000,
+          "freePower": true
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 1,
+          "reason": "tiebreak_kills",
+          "endTick": 12000
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 3,
+              "unitsLost": 3,
+              "buildingsLost": 0,
+              "coreHealth": 3735,
+              "coreMaxHealth": 30000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            },
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "coreHealth": 3735,
+              "coreMaxHealth": 30000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 3
+            }
+          ]
+        },
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "10e60e01",
+        "events": 374
+      },
+      "eventLogHash": "b39e5f0b"
+    }
+  },
+  {
+    "id": "battle.time-limit-attacker",
+    "kind": "battle",
+    "description": "Two bare Cores of 30000 health: everything is equal at the time limit and side 0, the attacker, wins.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "seed": 1,
+      "sideOptions": [
+        {
+          "coreHealth": 30000
+        },
+        {
+          "coreHealth": 30000
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "tiebreak_attacker",
+          "endTick": 12000
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "coreHealth": 3735,
+              "coreMaxHealth": 30000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            },
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "coreHealth": 3735,
+              "coreMaxHealth": 30000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            }
+          ]
+        },
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "39361b58",
+        "events": 309
+      },
+      "eventLogHash": "aad2525d"
     }
   },
   {

@@ -25,11 +25,21 @@ export interface EnemyPath {
   /** The front-row board cell where the enemy unit starts. */
   readonly entry: Cell;
   /**
-   * The walked path in board coordinates: the entry cell first, then each
-   * step, up to the cell next to the Core, or, when the base is sealed, up to
-   * the last open cell before the breach point.
+   * The walked path in board coordinates, restricted to cells on the board
+   * (`0 <= y < height`): the entry cell first, then each step, up to the cell
+   * next to the Core, or, when the base is sealed, up to the last open cell
+   * before the breach point. Where the cheapest route leaves the board (see
+   * `approach`) the on-board cells before and after that stretch are not
+   * adjacent.
    */
   readonly cells: readonly Cell[];
+  /**
+   * The cells of the walked path that lie off the board (`y >= height`: the
+   * neutral zone, where a soldier detours around a wall in the front row), in
+   * walk order, in the same coordinates. Empty for most paths. The Build
+   * screen can ignore them.
+   */
+  readonly approach: readonly Cell[];
   /** The building the unit would attack and the cell of it it would enter. */
   readonly breach: { readonly building: number; readonly cell: Cell } | null;
 }
@@ -78,6 +88,12 @@ export function previewEnemyPaths(
     const start = cellIndex(arena.geom, x, y);
     if (!openFor(arena, side, start)) continue;
     const cells: Cell[] = [cellOf(start)];
+    const approach: Cell[] = [];
+    // The walked cells split into on-board cells and the off-board approach.
+    const walk = (k: number): void => {
+      const c = cellOf(k);
+      (c.y < boardHeight ? cells : approach).push(c);
+    };
     let at = start;
     let found: EnemyPath['breach'] = null;
     if ((field.dist[at] ?? -1) >= 0) {
@@ -85,7 +101,7 @@ export function previewEnemyPaths(
         const next = fieldStep(arena, side, field, at);
         if (next < 0) break;
         at = next;
-        cells.push(cellOf(at));
+        walk(at);
       }
     } else {
       breach ??= computeBreach(arena, side, hpOf, base, per);
@@ -103,10 +119,10 @@ export function previewEnemyPaths(
           break;
         }
         at = next;
-        cells.push(cellOf(at));
+        walk(at);
       }
     }
-    out.push({ entry: cellOf(start), cells, breach: found });
+    out.push({ entry: cellOf(start), cells, approach, breach: found });
   }
   return out;
 }
