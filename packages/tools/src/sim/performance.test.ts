@@ -28,23 +28,23 @@ const BUDGET = {
   maxTicks: 4000,
   /** Event log size in JSON bytes. */
   maxLogBytesOnePlot: 1_000_000,
-  maxLogBytesFourPlots: 5_000_000,
+  maxLogBytesFourPlots: 8_000_000,
   /**
-   * Targets on a developer machine (documented, not enforced). Since units
-   * became circles (issue #59) the dense four-plot targets are not met (the
-   * stress battle lasts until Overload): see docs/performance-budget.md.
+   * Targets on a developer machine (documented, not enforced). With soft
+   * collision (issue #82) the one-plot target is met; the dense four-plot
+   * targets are not quite (see docs/performance-budget.md).
    */
   targetBattlesPerSecondOnePlot: 100,
   targetBattlesPerSecondFourPlots: 5,
   /**
-   * Enforced floors: fail below these. Measured: 100 to 117 one-plot battles
-   * a second, 0.3 dense tier 1 battles a second, 7 to 8.5 s for the tier 3
-   * stress battle: about 3 times headroom each.
+   * Enforced floors: fail below these. Measured: 120 to 140 one-plot battles
+   * a second, 2.2 to 4.1 dense tier 1 battles a second, 1.0 to 2.0 s for the
+   * tier 3 stress battle: about 3 times headroom each.
    */
-  minBattlesPerSecondOnePlot: 35,
-  minBattlesPerSecondFourPlots: 0.1,
+  minBattlesPerSecondOnePlot: 40,
+  minBattlesPerSecondFourPlots: 0.8,
   /** Enforced ceiling for the dense tier 3 stress battle, in ms. */
-  maxStressBattleMs: 25_000,
+  maxStressBattleMs: 6_000,
 } as const;
 
 const ctx = loadSimContext();

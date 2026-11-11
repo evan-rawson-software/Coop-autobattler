@@ -60,6 +60,23 @@ for (const tier of [1, 3]) {
   const t = denseFourPlotTeam(ctx, tier);
   console.log('dense tier', tier, JSON.stringify(shape(t, t, 1)));
 }
+{
+  // How the dense stress boards end (a Core kill before Overload starts at
+  // tick 1800 means the units got through; mirror matches fall together).
+  const rows: string[] = [];
+  for (const [ta, tb] of [
+    [1, 1],
+    [3, 3],
+    [1, 3],
+    [3, 1],
+  ] as const) {
+    const b = shape(denseFourPlotTeam(ctx, ta), denseFourPlotTeam(ctx, tb), 1);
+    rows.push(
+      `T${String(ta)} vs T${String(tb)}: ${String(b.reason)} @${String(b.ticks)}`,
+    );
+  }
+  console.log('dense outcomes', rows.join('; '));
+}
 const boards = ALL_REFERENCE_BOARDS.map((n) =>
   buildAnyReferenceBoard(n, ctx.content, ctx.mapgen),
 );
