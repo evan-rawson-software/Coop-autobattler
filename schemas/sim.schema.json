@@ -10,6 +10,7 @@
     "breachBaseCost",
     "breachHealthPerCost",
     "aggroRangeCells",
+    "separationPasses",
     "maxSourceSpeedPercent",
     "maxUnitStrengthPercent",
     "overloadStartTick",
@@ -45,9 +46,16 @@
       "maximum": 1000000
     },
     "aggroRangeCells": {
-      "description": "Manhattan range within which a unit that has no enemy in reach chases the nearest enemy unit (CB-16). 0 turns chasing off.",
+      "description": "Centre-to-centre range, in cells, within which a unit that has no enemy in reach chases the nearest visible enemy unit (CB-16). 0 turns chasing off.",
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "maximum": 8192
+    },
+    "separationPasses": {
+      "description": "Relaxation passes of the unit separation step (issue #59). 0 leaves separation to the validation step alone.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 16
     },
     "maxSourceSpeedPercent": {
       "description": "Global cap, in percent, on the summed source_speed bonus of one side (SC-8). The source interval is floor(interval * 100 / (100 + bonus)), at least 1.",

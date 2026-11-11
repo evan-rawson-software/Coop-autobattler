@@ -22,9 +22,12 @@
         "health",
         "damage",
         "attackCooldownTicks",
-        "rangeCells",
         "moveCooldownTicks",
-        "targeting"
+        "radius",
+        "collisionRadius",
+        "reach",
+        "flying",
+        "attackType"
       ],
       "additionalProperties": false,
       "properties": {
@@ -42,19 +45,37 @@
           "maximum": 1000000000000
         },
         "attackCooldownTicks": { "type": "integer", "minimum": 1 },
-        "rangeCells": {
-          "description": "0 means melee (adjacent).",
-          "type": "integer",
-          "minimum": 0
-        },
         "moveCooldownTicks": {
-          "description": "Ticks per cell moved.",
+          "description": "Ticks to walk one cell. The speed is floor(240 / moveCooldownTicks) sub-cell units per tick.",
           "type": "integer",
-          "minimum": 1
+          "minimum": 1,
+          "maximum": 240
         },
-        "targeting": {
-          "description": "core: head for the enemy Core, attack what blocks. infrastructure: prefer sources and route buildings. defenses: prefer walls and turrets (CB-15).",
-          "enum": ["core", "infrastructure", "defenses"]
+        "radius": {
+          "description": "Radius of the unit's body in sub-cell units (240 per cell): used for reach, aggro, turret range and drawing.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 480
+        },
+        "collisionRadius": {
+          "description": "Radius of the circle that may not overlap another unit or blocked ground, in sub-cell units.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 480
+        },
+        "reach": {
+          "description": "Most the gap between the unit's circle and its target may be for it to attack, in sub-cell units.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1920
+        },
+        "flying": {
+          "description": "Reserved: false for every unit for now.",
+          "const": false
+        },
+        "attackType": {
+          "description": "Reserved: melee is the only attack type for now.",
+          "enum": ["melee"]
         }
       }
     }
