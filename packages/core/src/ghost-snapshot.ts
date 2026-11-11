@@ -421,6 +421,39 @@ function textProblem(v: unknown, max: number): string | null {
 }
 
 /**
+ * The length of a string as canonical JSON writes it, quotes included:
+ * `"` `\\` and the control characters `\b \t \n \f \r` take two
+ * characters, any other control character below U+0020 takes six (`\u00XX`),
+ * and a lone surrogate (which canonical JSON refuses) is counted as six.
+ * Everything else counts as its UTF-16 length.
+ */
+function jsonStringLength(s: string): number {
+  let n = 2;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (
+      c === 0x22 ||
+      c === 0x5c ||
+      c === 0x08 ||
+      (c >= 0x09 && c <= 0x0d && c !== 0x0b)
+    ) {
+      n += 2;
+    } else if (c < 0x20) {
+      n += 6;
+    } else if (c >= 0xd800 && c <= 0xdbff) {
+      const d = s.charCodeAt(i + 1);
+      if (d >= 0xdc00 && d <= 0xdfff) {
+        n += 2;
+        i++;
+      } else n += 6;
+    } else if (c >= 0xdc00 && c <= 0xdfff) {
+      n += 6;
+    } else n += 1;
+  }
+  return n;
+}
+
+/**
  * The generic limits, checked on the raw value before anything else reads it:
  * plain JSON only (objects, arrays, strings, booleans, null, safe integers;
  * no `undefined`, floats, NaN, Infinity, class instances), nesting at most
@@ -450,7 +483,7 @@ function structureProblem(root: unknown, maxSize: number): string | null {
       if (v.length > GHOST_MAX_STRING_LENGTH) {
         return `a string is longer than ${String(GHOST_MAX_STRING_LENGTH)} characters`;
       }
-      size += v.length + 2;
+      size += jsonStringLength(v);
     } else if (Array.isArray(v)) {
       size += 2;
       if (size + 2 * v.length - 1 > maxSize) return tooBig;
@@ -468,7 +501,7 @@ function structureProblem(root: unknown, maxSize: number): string | null {
       if (size + 4 * keys.length - 1 > maxSize) return tooBig;
       for (const k of keys) {
         if (k.length > GHOST_MAX_STRING_LENGTH) return 'a key is too long';
-        size += k.length + 3;
+        size += jsonStringLength(k) + 1;
         const p = visit(v[k], depth + 1);
         if (p !== null) return p;
         size += 1;

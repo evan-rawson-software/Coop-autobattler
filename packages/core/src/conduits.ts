@@ -196,7 +196,8 @@ function occupancyOf(map: GameMap, conduits: readonly Conduit[]): Occupancy {
     bump(outs, endKey(o.from));
     bump(ins, endKey(o.to));
     for (const cell of o.cells) {
-      if (isInt(cell.x) && isInt(cell.y)) bump(cells, cellKey(map, cell.x, cell.y));
+      if (isInt(cell.x) && isInt(cell.y))
+        bump(cells, cellKey(map, cell.x, cell.y));
     }
   }
   return { outs, ins, cells };

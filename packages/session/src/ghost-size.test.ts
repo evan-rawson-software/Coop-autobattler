@@ -230,9 +230,9 @@ describe('size limit derived from board capacity', () => {
     expect(ghostMaxSerializedSize(4, 10, { content, mapgen })).toBeGreaterThan(
       size(4, 10),
     );
-    expect(
-      ghostMaxSerializedSize(4, 200, { content, mapgen }),
-    ).toBeLessThan(size(4, 200));
+    expect(ghostMaxSerializedSize(4, 200, { content, mapgen })).toBeLessThan(
+      size(4, 200),
+    );
   });
 
   test('a maximal legitimate four-player board at round 23 passes', () => {
@@ -482,5 +482,36 @@ describe('replay accepts what selection accepted', () => {
     expect(size).toBeLessThan(full);
     const r = replay(JSON.parse(JSON.stringify(snap)));
     expect(r.ok ? '' : (r.detail ?? r.reason)).not.toContain('larger than');
+  });
+});
+
+describe('escaped characters count at their JSON length', () => {
+  test('strings that escape to more than their length are measured as written', () => {
+    const snap = base4();
+    const limit = ghostMaxSerializedSize(4, snap.round, ctx);
+    const baseLen = canonicalJson(snap).length;
+    const make = (ch: string): unknown => {
+      // Each element is 130 characters as written when ch is plain.
+      const unit = ch.repeat(128);
+      const n = Math.floor((limit - baseLen - 100) / 131);
+      return { ...snap, pad: new Array<string>(n).fill(unit) };
+    };
+    const sizeErrors = (v: unknown): string =>
+      validateGhostSnapshot(JSON.parse(JSON.stringify(v)), ctx).ok
+        ? ''
+        : (
+            validateGhostSnapshot(JSON.parse(JSON.stringify(v)), ctx) as {
+              errors: string[];
+            }
+          ).errors.join(' ');
+    // Plain characters: just under the limit, not a size error.
+    expect(sizeErrors(make('a'))).not.toContain('larger than');
+    // Quotes, backslashes, newlines (two characters each) and other control
+    // characters (six each) push the same string count over the limit.
+    for (const ch of ['"', '\\', '\n', '\u0001']) {
+      const v = make(ch);
+      expect(canonicalJson(v).length).toBeGreaterThan(limit);
+      expect(sizeErrors(v)).toContain('larger than');
+    }
   });
 });

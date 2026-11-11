@@ -2953,7 +2953,7 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
    length of at most `ghostMaxSerializedSize(partySize, round)`, below. Only
    `partySize` (1 to `maxPartySize`) and `round` (1 to 1000) are read before
    this walk, and a value where either is not an integer in range is rejected
-   without being walked. The walk counts characters incrementally and gives up
+   without being walked. The walk counts characters incrementally, each string at its length as JSON writes it (quotes, backslashes and `\b \t \n \f \r` two characters, other control characters six), and gives up
    as soon as the budget is exceeded (an array or object whose element count
    alone cannot fit is rejected before its elements are visited; nothing is
    sorted), and at most 10 errors are reported (then "and N more").
