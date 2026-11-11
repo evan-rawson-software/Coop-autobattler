@@ -1124,6 +1124,27 @@ describe('maximum health includes run modifiers (breach cost and start agree)', 
     ).toThrow(RangeError);
   });
 
+  test('a turret-damage percent too large to scale exactly fails at setup with a named RangeError (#69)', () => {
+    const lab = new Lab(tiny());
+    lab.core(5, 0);
+    lab.put('bld_turret', 10, 15);
+    const withPercent = (percent: number): TeamState =>
+      withModifier(lab.state, {
+        id: 'mod_test_turret',
+        effects: [{ kind: 'turret_damage_percent', percent }],
+      });
+    const build = (percent: number): unknown =>
+      createArenaSim(withPercent(percent), coreOnly(), GAP, content, simConfig);
+    // Exact scaling, but past MAX_DAMAGE.
+    expect(() => build(1e14)).toThrow(/Turret damage .* exceeds the maximum/);
+    // The product with (100 + percent) would not be a safe integer.
+    expect(() => build(2e15)).toThrow(
+      /Modifier turret_damage_percent: the percent sum 2000000000000000 is too large/,
+    );
+    expect(() => build(2e15)).toThrow(RangeError);
+    expect(() => build(1000)).not.toThrow();
+  });
+
   test('a wall-health modifier changes the breach cost by the modified maximum', () => {
     const per = simConfig.breachHealthPerCost;
     const field = (team: TeamState): number => {

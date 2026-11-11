@@ -1407,8 +1407,10 @@ A unit's **targeting** comes from its definition: `core`, `infrastructure`
   the same comparison on the rotated cell `(W - 1 - x, H - 1 - y)`. This is what
   keeps a mirrored battle exactly symmetric.
 - **No sealed bases (CB-20).** If the unit's cell has no distance in its
-  movement field (every route to the goals is blocked), it uses the **breach
-  field** of its side. This is a least-cost map (Dijkstra, integer costs)
+  movement field (every route to the goals is blocked) and no goal building is
+  within `reach` (rule b is evaluated first, whether or not the cell has a
+  distance: a unit in a sealed pocket attacks a goal building in its reach),
+  it uses the **breach field** of its side. This is a least-cost map (Dijkstra, integer costs)
   towards the enemy Core. Passable cells are open cells and cells covered by an
   enemy building other than the Core; terrain, the unit's own side's blocking
   buildings and the Core's own cells are impassable. Entering an open cell
@@ -1595,10 +1597,14 @@ no second pathfinder; gates, walls and turrets all block the enemy):
 
 For every `x` from 0 to `width - 1`, in order, such that the front-row cell
 `(x, height - 1)` is open for the enemy side (no terrain, no building that
-blocks it), an entry `{entry: {x, y}, cells, breach}`:
+blocks it), an entry `{entry: {x, y}, cells, approach, breach}`:
 
 - `cells` is the walked path in board coordinates, **starting with the entry
-  cell**. If the entry has a distance in the movement field of an enemy
+  cell**, restricted to cells on the board (`y < height`); the walked cells
+  with `y >= height` (the unit leaves the board through the neutral zone to
+  pass a wall in the front row) are listed in `approach`, in walk order, and
+  are left out of `cells`, whose consecutive on-board cells are then not
+  adjacent. The Build screen can ignore `approach`. If the entry has a distance in the movement field of an enemy
   Core-targeting unit (side 1, `core`), the unit takes `fieldStep` (the
   neighbour with a smaller field distance, ties by tie key) until the distance
   is 0; the last cell is the one beside the Core and `breach` is `null`.
@@ -1619,7 +1625,7 @@ state and content (no random numbers). Identical tails are not merged.
 Golden kind `enemy-paths`: input is a team script (`team-state-ops` format,
 with `map` or `seed`/`partySize`) that places the Core; result
 `{paths: [{entry: [x, y], cells: [[x, y], ...], breach: null | {building,
-cell: [x, y]}}, ...]}`. Vectors: `golden/enemy-paths.json` (an open base around
+cell: [x, y]}}, ...]}` (`approach` is not part of the golden result). Vectors: `golden/enemy-paths.json` (an open base around
 terrain, a wall, a gate and a turret; a sealed base with one weak wall).
 
 ### Seams for later issues

@@ -390,7 +390,8 @@ export interface ArenaContext {
   readonly ramps: Map<number, RampInfo>;
   readonly flowEvents: SimEvent[][];
   /**
-   * `ref` -> the building's maximum health (its tier's health). The breach
+   * `ref` -> the building's maximum health (`maxHealthOf`: its tier's health
+   * with the team's modifiers and any Core health override). The breach
    * field is built from this, never from current health (CB-20), so the
    * cached field is a pure function of which buildings exist.
    */
@@ -441,10 +442,18 @@ function addDamage(sum: number, hit: number): number {
 
 /** A turret tier's damage with the team's `turret_damage_percent`, checked. */
 function turretDamageOf(team: TeamState, damage: number): number {
-  const v = mulPct(
-    damage,
-    100 + modifierPercent(team, 'turret_damage_percent'),
-  );
+  const pct = modifierPercent(team, 'turret_damage_percent');
+  // Largest percent sum for which damage * (100 + pct) stays a safe integer.
+  const room =
+    damage === 0
+      ? Number.MAX_SAFE_INTEGER
+      : divFloor(Number.MAX_SAFE_INTEGER, damage);
+  if (pct > room - 100) {
+    throw new RangeError(
+      `Modifier turret_damage_percent: the percent sum ${String(pct)} is too large for turret damage ${String(damage)}; damage times (100 + percent) must stay within ${String(Number.MAX_SAFE_INTEGER)}.`,
+    );
+  }
+  const v = mulPct(damage, addInt(100, pct));
   if (v > MAX_DAMAGE) {
     throw new RangeError(
       `Turret damage ${String(v)} with modifiers exceeds the maximum ${String(MAX_DAMAGE)}.`,
@@ -1237,15 +1246,17 @@ function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
 
   const here = u.y * width + u.x;
   const field = fieldFor(ctx, u.side, def.targeting);
+  // b. Attack the goal building in reach. Evaluated whether or not the unit's
+  // cell has a route in the field (a unit in a sealed pocket still attacks a
+  // goal within its reach).
+  const ref = goalInReach(ctx, u, reach, field);
+  if (ref >= 0) {
+    ctx.action[i] = ACT_BUILDING;
+    ctx.arg[i] = ref;
+    return;
+  }
   const d = field.dist[here] ?? -1;
   if (d >= 0) {
-    // b. Attack the goal building in reach.
-    const ref = goalInReach(ctx, u, reach, field);
-    if (ref >= 0) {
-      ctx.action[i] = ACT_BUILDING;
-      ctx.arg[i] = ref;
-      return;
-    }
     // c. Move one step along the field.
     if (u.moveCooldown === 0 && d > 0) {
       const k = fieldStep(arena, u.side, field, here);
