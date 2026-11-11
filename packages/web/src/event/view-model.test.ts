@@ -52,6 +52,20 @@ describe('the battle header', () => {
     );
   });
 
+  test('the PvE payout is the recorded gold, or the rewards table for an older save', () => {
+    const run = reachStep('event_choice');
+    const pve = run.thisRound.pve;
+    if (pve === null || !pve.won) return;
+    const recorded = {
+      ...run,
+      thisRound: { ...run.thisRound, pve: { ...pve, goldPaid: 77 } },
+    };
+    expect(battleHeader(recorded, realDeps())?.payout).toBe('+77 gold');
+    const { goldPaid: _unused, ...old } = { ...pve, goldPaid: 0 };
+    const legacy = { ...run, thisRound: { ...run.thisRound, pve: old } };
+    expect(battleHeader(legacy, realDeps())?.payout).toMatch(/^\+\d+ gold$/);
+  });
+
   test('after a PvP battle: the boss, and the life a loss costs', () => {
     const run = playUntil(
       newRun(),

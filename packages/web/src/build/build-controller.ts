@@ -48,6 +48,7 @@ import {
 } from './sides.js';
 import { buildingName } from './view-model.js';
 import { DEFAULT_SEED } from './setup.js';
+import { READY_LOCK_TEXT } from './lock.js';
 import type { LayoutAction } from './undo.js';
 
 export type Tool = 'select' | 'conduit' | 'erase';
@@ -750,9 +751,18 @@ export class BuildController {
     } else this.refuse(r.reason, r.detail);
   }
 
+  /** The viewing player has pressed Ready: edits (and undo) are locked. */
+  private isReady(): boolean {
+    return this.session?.run.perPlayer[0]?.ready === true;
+  }
+
   async undo(): Promise<void> {
     const s = this.session;
     if (s === null) return;
+    if (this.isReady()) {
+      this.say(READY_LOCK_TEXT, 'info');
+      return;
+    }
     const r = await s.undo();
     if (r === null) this.say('Nothing to undo in this step.', 'info');
     else if (r.ok) this.say('Undone.', 'ok');
@@ -766,6 +776,10 @@ export class BuildController {
   async redo(): Promise<void> {
     const s = this.session;
     if (s === null) return;
+    if (this.isReady()) {
+      this.say(READY_LOCK_TEXT, 'info');
+      return;
+    }
     const r = await s.redo();
     if (r === null) this.say('Nothing to redo.', 'info');
     else if (r.ok) this.say('Redone.', 'ok');
@@ -1170,6 +1184,11 @@ export class BuildController {
     }
     if (e.ctrlKey || e.metaKey) return false;
     if (!isEditStep(this.step())) return false;
+    // A Ready player's edit tools are disabled; the keys must not reach them.
+    if (this.isReady() && (k === 'r' || k === 'c' || k === 'e')) {
+      this.say(READY_LOCK_TEXT, 'info');
+      return true;
+    }
     switch (k) {
       case 'r':
         void this.rotate();
