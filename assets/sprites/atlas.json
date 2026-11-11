@@ -1,0 +1,1694 @@
+{
+  "version": 1,
+  "tile": 16,
+  "gutter": 1,
+  "filter": "nearest",
+  "sheets": {
+    "terrain": {
+      "file": "terrain.png",
+      "w": 320,
+      "h": 68
+    },
+    "buildings": {
+      "file": "buildings.png",
+      "w": 320,
+      "h": 52
+    },
+    "units": {
+      "file": "units.png",
+      "w": 320,
+      "h": 68
+    },
+    "effects": {
+      "file": "effects.png",
+      "w": 320,
+      "h": 32
+    },
+    "ui": {
+      "file": "ui.png",
+      "w": 320,
+      "h": 32
+    }
+  },
+  "palette": [
+    {
+      "key": "K",
+      "name": "ink",
+      "hex": "#0a0d11"
+    },
+    {
+      "key": "0",
+      "name": "grey0",
+      "hex": "#222a32"
+    },
+    {
+      "key": "1",
+      "name": "grey1",
+      "hex": "#35404b"
+    },
+    {
+      "key": "2",
+      "name": "grey2",
+      "hex": "#4e5b68"
+    },
+    {
+      "key": "3",
+      "name": "grey3",
+      "hex": "#6f7d8b"
+    },
+    {
+      "key": "4",
+      "name": "grey4",
+      "hex": "#98a5b1"
+    },
+    {
+      "key": "5",
+      "name": "grey5",
+      "hex": "#c5cfd7"
+    },
+    {
+      "key": "6",
+      "name": "white",
+      "hex": "#f0f4f6"
+    },
+    {
+      "key": "a",
+      "name": "ground0",
+      "hex": "#1b2622"
+    },
+    {
+      "key": "b",
+      "name": "ground1",
+      "hex": "#222f29"
+    },
+    {
+      "key": "c",
+      "name": "ground2",
+      "hex": "#2b3b33"
+    },
+    {
+      "key": "d",
+      "name": "ground3",
+      "hex": "#364a3e"
+    },
+    {
+      "key": "f",
+      "name": "neutral0",
+      "hex": "#2a2730"
+    },
+    {
+      "key": "g",
+      "name": "neutral1",
+      "hex": "#363240"
+    },
+    {
+      "key": "W",
+      "name": "water0",
+      "hex": "#0f2d47"
+    },
+    {
+      "key": "w",
+      "name": "water1",
+      "hex": "#19446a"
+    },
+    {
+      "key": "v",
+      "name": "water2",
+      "hex": "#2a6b95"
+    },
+    {
+      "key": "u",
+      "name": "water3",
+      "hex": "#6fb0d2"
+    },
+    {
+      "key": "R",
+      "name": "rock0",
+      "hex": "#34302c"
+    },
+    {
+      "key": "r",
+      "name": "rock1",
+      "hex": "#4f4a44"
+    },
+    {
+      "key": "q",
+      "name": "rock2",
+      "hex": "#716a62"
+    },
+    {
+      "key": "p",
+      "name": "rock3",
+      "hex": "#9d9487"
+    },
+    {
+      "key": "o",
+      "name": "copper",
+      "hex": "#a8501c"
+    },
+    {
+      "key": "O",
+      "name": "orange",
+      "hex": "#e08a2e"
+    },
+    {
+      "key": "y",
+      "name": "gold",
+      "hex": "#eac435"
+    },
+    {
+      "key": "m",
+      "name": "red0",
+      "hex": "#8c2a30"
+    },
+    {
+      "key": "M",
+      "name": "red1",
+      "hex": "#e2574c"
+    },
+    {
+      "key": "t",
+      "name": "teal0",
+      "hex": "#0e5f6b"
+    },
+    {
+      "key": "T",
+      "name": "teal1",
+      "hex": "#33b8c6"
+    },
+    {
+      "key": "s",
+      "name": "violet0",
+      "hex": "#55389c"
+    },
+    {
+      "key": "S",
+      "name": "violet1",
+      "hex": "#9a6cf8"
+    },
+    {
+      "key": "N",
+      "name": "green",
+      "hex": "#6fcf7a"
+    }
+  ],
+  "tint": {
+    "keys": [
+      "X",
+      "x",
+      "Z"
+    ],
+    "neutral": [
+      "#6e6e6e",
+      "#a6a6a6",
+      "#dcdcdc"
+    ],
+    "teamA": [
+      "#1f4f9e",
+      "#3f86e0",
+      "#9cc8ff"
+    ],
+    "teamB": [
+      "#9e3a14",
+      "#e0742a",
+      "#ffc48a"
+    ],
+    "resources": {
+      "res_a": [
+        "#5c3e25",
+        "#b0713b",
+        "#d4b193"
+      ],
+      "res_b": [
+        "#77661f",
+        "#e5c230",
+        "#f1dd8d"
+      ],
+      "res_c": [
+        "#493382",
+        "#8a5cf6",
+        "#bfa5fa"
+      ]
+    }
+  },
+  "sprites": {
+    "ground_1": {
+      "sheet": "terrain",
+      "x": 0,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "terrain",
+      "note": "Buildable ground; tiles seamlessly."
+    },
+    "ground_2": {
+      "sheet": "terrain",
+      "x": 17,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "terrain",
+      "note": "Buildable ground; tiles seamlessly."
+    },
+    "ground_3": {
+      "sheet": "terrain",
+      "x": 34,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "terrain",
+      "note": "Buildable ground; tiles seamlessly."
+    },
+    "neutral_1": {
+      "sheet": "terrain",
+      "x": 51,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "terrain",
+      "note": "Neutral-zone ground; tiles seamlessly."
+    },
+    "neutral_2": {
+      "sheet": "terrain",
+      "x": 68,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "terrain",
+      "note": "Neutral-zone ground; tiles seamlessly."
+    },
+    "ter_lake": {
+      "sheet": "terrain",
+      "x": 85,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 2,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "terrain",
+      "id": "ter_lake",
+      "note": "Open water, 2 frames, tiles seamlessly."
+    },
+    "ter_lake_auto": {
+      "sheet": "terrain",
+      "x": 0,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 16,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "terrain",
+      "note": "Shoreline autotile: frame = N1 + E2 + S4 + W8 for neighbours that are also water. Draw over ground."
+    },
+    "ter_cliff": {
+      "sheet": "terrain",
+      "x": 257,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "terrain",
+      "id": "ter_cliff",
+      "note": "A lone cliff block."
+    },
+    "ter_cliff_auto": {
+      "sheet": "terrain",
+      "x": 0,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 16,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "terrain",
+      "note": "Cliff autotile, same frame index rule as the lake. Draw over ground."
+    },
+    "node_res_a": {
+      "sheet": "terrain",
+      "x": 257,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 2,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "node",
+      "id": "res_a",
+      "note": "Resource node, pre-tinted from the resource colour; shape differs per resource."
+    },
+    "node_res_b": {
+      "sheet": "terrain",
+      "x": 0,
+      "y": 51,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 2,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "node",
+      "id": "res_b",
+      "note": "Resource node, pre-tinted from the resource colour; shape differs per resource."
+    },
+    "node_res_c": {
+      "sheet": "terrain",
+      "x": 33,
+      "y": 51,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 2,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "node",
+      "id": "res_c",
+      "note": "Resource node, pre-tinted from the resource colour; shape differs per resource."
+    },
+    "bld_extractor": {
+      "sheet": "buildings",
+      "x": 0,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "id": "bld_extractor",
+      "note": "1x1 tiles."
+    },
+    "bld_splitter": {
+      "sheet": "buildings",
+      "x": 17,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "id": "bld_splitter",
+      "note": "1x1 tiles."
+    },
+    "bld_merger": {
+      "sheet": "buildings",
+      "x": 34,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "id": "bld_merger",
+      "note": "1x1 tiles."
+    },
+    "bld_crossover": {
+      "sheet": "buildings",
+      "x": 51,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "id": "bld_crossover",
+      "note": "1x1 tiles."
+    },
+    "bld_barracks": {
+      "sheet": "buildings",
+      "x": 68,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        16,
+        16
+      ],
+      "category": "building",
+      "id": "bld_barracks",
+      "note": "2x2 tiles."
+    },
+    "bld_wall": {
+      "sheet": "buildings",
+      "x": 101,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "id": "bld_wall",
+      "note": "1x1 tiles."
+    },
+    "bld_gate": {
+      "sheet": "buildings",
+      "x": 118,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "id": "bld_gate",
+      "note": "1x1 tiles."
+    },
+    "bld_turret": {
+      "sheet": "buildings",
+      "x": 135,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "id": "bld_turret",
+      "note": "1x1 tiles."
+    },
+    "bld_overclocker": {
+      "sheet": "buildings",
+      "x": 152,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "id": "bld_overclocker",
+      "note": "1x1 tiles."
+    },
+    "bld_armory": {
+      "sheet": "buildings",
+      "x": 169,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "id": "bld_armory",
+      "note": "1x1 tiles."
+    },
+    "bld_core": {
+      "sheet": "buildings",
+      "x": 186,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        16,
+        16
+      ],
+      "category": "building",
+      "id": "bld_core",
+      "note": "2x2 tiles."
+    },
+    "bld_turret_base": {
+      "sheet": "buildings",
+      "x": 219,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "note": "Turret without its head, for drawing a rotating head on top."
+    },
+    "bld_turret_head": {
+      "sheet": "buildings",
+      "x": 236,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        9
+      ],
+      "category": "building",
+      "note": "Turret head with the barrel pointing north; rotate about the anchor."
+    },
+    "bld_range": {
+      "sheet": "buildings",
+      "x": 253,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        16,
+        16
+      ],
+      "category": "building",
+      "id": "bld_range",
+      "planned": true,
+      "note": "Planned: produces ranged ground units. 2x2 tiles."
+    },
+    "bld_hangar": {
+      "sheet": "buildings",
+      "x": 286,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        16,
+        16
+      ],
+      "category": "building",
+      "id": "bld_hangar",
+      "planned": true,
+      "note": "Planned: produces flying units. 2x2 tiles."
+    },
+    "tier_pips": {
+      "sheet": "buildings",
+      "x": 0,
+      "y": 33,
+      "w": 16,
+      "h": 16,
+      "frames": 3,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "note": "Overlay on a building tile: frame 0..2 = tier 1..3 (1 to 3 gold pips at the bottom edge). Place on the bottom-left tile of the footprint."
+    },
+    "conduit_straight": {
+      "sheet": "buildings",
+      "x": 49,
+      "y": 33,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "conduit",
+      "tintable": true,
+      "note": "Open north and south; rotate for east-west."
+    },
+    "conduit_corner": {
+      "sheet": "buildings",
+      "x": 66,
+      "y": 33,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "conduit",
+      "tintable": true,
+      "note": "Open north and east; rotate for the other corners."
+    },
+    "conduit_t": {
+      "sheet": "buildings",
+      "x": 83,
+      "y": 33,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "conduit",
+      "tintable": true,
+      "note": "Open east, south and west."
+    },
+    "conduit_cross": {
+      "sheet": "buildings",
+      "x": 100,
+      "y": 33,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "conduit",
+      "tintable": true,
+      "note": "Open on all four sides."
+    },
+    "conduit_end": {
+      "sheet": "buildings",
+      "x": 117,
+      "y": 33,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "conduit",
+      "tintable": true,
+      "note": "Open south, capped north."
+    },
+    "conduit_item": {
+      "sheet": "buildings",
+      "x": 134,
+      "y": 33,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "conduit",
+      "tintable": true,
+      "note": "An item travelling on a conduit; tint with the resource colour."
+    },
+    "unit_soldier": {
+      "sheet": "units",
+      "x": 0,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_soldier",
+      "tintable": true,
+      "note": "Melee ground unit. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_soldier.walk": {
+      "sheet": "units",
+      "x": 17,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_soldier",
+      "tintable": true,
+      "note": "Melee ground unit. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_soldier.attack": {
+      "sheet": "units",
+      "x": 50,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_soldier",
+      "tintable": true,
+      "note": "Melee ground unit. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_soldier@a": {
+      "sheet": "units",
+      "x": 83,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_soldier",
+      "note": "Melee ground unit. Side A, faces north."
+    },
+    "unit_soldier@a.walk": {
+      "sheet": "units",
+      "x": 100,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_soldier",
+      "note": "Melee ground unit. Side A, faces north."
+    },
+    "unit_soldier@a.attack": {
+      "sheet": "units",
+      "x": 133,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_soldier",
+      "note": "Melee ground unit. Side A, faces north."
+    },
+    "unit_soldier@b": {
+      "sheet": "units",
+      "x": 166,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_soldier",
+      "note": "Melee ground unit. Side B, faces south."
+    },
+    "unit_soldier@b.walk": {
+      "sheet": "units",
+      "x": 183,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_soldier",
+      "note": "Melee ground unit. Side B, faces south."
+    },
+    "unit_soldier@b.attack": {
+      "sheet": "units",
+      "x": 216,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_soldier",
+      "note": "Melee ground unit. Side B, faces south."
+    },
+    "unit_raider": {
+      "sheet": "units",
+      "x": 249,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_raider",
+      "tintable": true,
+      "note": "Fast melee ground unit. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_raider.walk": {
+      "sheet": "units",
+      "x": 266,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_raider",
+      "tintable": true,
+      "note": "Fast melee ground unit. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_raider.attack": {
+      "sheet": "units",
+      "x": 0,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_raider",
+      "tintable": true,
+      "note": "Fast melee ground unit. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_raider@a": {
+      "sheet": "units",
+      "x": 33,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_raider",
+      "note": "Fast melee ground unit. Side A, faces north."
+    },
+    "unit_raider@a.walk": {
+      "sheet": "units",
+      "x": 50,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_raider",
+      "note": "Fast melee ground unit. Side A, faces north."
+    },
+    "unit_raider@a.attack": {
+      "sheet": "units",
+      "x": 83,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_raider",
+      "note": "Fast melee ground unit. Side A, faces north."
+    },
+    "unit_raider@b": {
+      "sheet": "units",
+      "x": 116,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_raider",
+      "note": "Fast melee ground unit. Side B, faces south."
+    },
+    "unit_raider@b.walk": {
+      "sheet": "units",
+      "x": 133,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_raider",
+      "note": "Fast melee ground unit. Side B, faces south."
+    },
+    "unit_raider@b.attack": {
+      "sheet": "units",
+      "x": 166,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_raider",
+      "note": "Fast melee ground unit. Side B, faces south."
+    },
+    "unit_archer": {
+      "sheet": "units",
+      "x": 199,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_archer",
+      "planned": true,
+      "tintable": true,
+      "note": "Planned: ranged ground unit. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_archer.walk": {
+      "sheet": "units",
+      "x": 216,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_archer",
+      "planned": true,
+      "tintable": true,
+      "note": "Planned: ranged ground unit. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_archer.attack": {
+      "sheet": "units",
+      "x": 249,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_archer",
+      "planned": true,
+      "tintable": true,
+      "note": "Planned: ranged ground unit. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_archer@a": {
+      "sheet": "units",
+      "x": 282,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_archer",
+      "planned": true,
+      "note": "Planned: ranged ground unit. Side A, faces north."
+    },
+    "unit_archer@a.walk": {
+      "sheet": "units",
+      "x": 0,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_archer",
+      "planned": true,
+      "note": "Planned: ranged ground unit. Side A, faces north."
+    },
+    "unit_archer@a.attack": {
+      "sheet": "units",
+      "x": 33,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_archer",
+      "planned": true,
+      "note": "Planned: ranged ground unit. Side A, faces north."
+    },
+    "unit_archer@b": {
+      "sheet": "units",
+      "x": 66,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_archer",
+      "planned": true,
+      "note": "Planned: ranged ground unit. Side B, faces south."
+    },
+    "unit_archer@b.walk": {
+      "sheet": "units",
+      "x": 83,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_archer",
+      "planned": true,
+      "note": "Planned: ranged ground unit. Side B, faces south."
+    },
+    "unit_archer@b.attack": {
+      "sheet": "units",
+      "x": 116,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_archer",
+      "planned": true,
+      "note": "Planned: ranged ground unit. Side B, faces south."
+    },
+    "unit_drone": {
+      "sheet": "units",
+      "x": 149,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_drone",
+      "planned": true,
+      "tintable": true,
+      "note": "Planned: flying unit; place fx_shadow under it. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_drone.walk": {
+      "sheet": "units",
+      "x": 166,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_drone",
+      "planned": true,
+      "tintable": true,
+      "note": "Planned: flying unit; place fx_shadow under it. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_drone.attack": {
+      "sheet": "units",
+      "x": 199,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_drone",
+      "planned": true,
+      "tintable": true,
+      "note": "Planned: flying unit; place fx_shadow under it. Neutral greys in the team parts (tint keys)."
+    },
+    "unit_drone@a": {
+      "sheet": "units",
+      "x": 232,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_drone",
+      "planned": true,
+      "note": "Planned: flying unit; place fx_shadow under it. Side A, faces north."
+    },
+    "unit_drone@a.walk": {
+      "sheet": "units",
+      "x": 249,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_drone",
+      "planned": true,
+      "note": "Planned: flying unit; place fx_shadow under it. Side A, faces north."
+    },
+    "unit_drone@a.attack": {
+      "sheet": "units",
+      "x": 282,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_drone",
+      "planned": true,
+      "note": "Planned: flying unit; place fx_shadow under it. Side A, faces north."
+    },
+    "unit_drone@b": {
+      "sheet": "units",
+      "x": 0,
+      "y": 51,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_drone",
+      "planned": true,
+      "note": "Planned: flying unit; place fx_shadow under it. Side B, faces south."
+    },
+    "unit_drone@b.walk": {
+      "sheet": "units",
+      "x": 17,
+      "y": 51,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_drone",
+      "planned": true,
+      "note": "Planned: flying unit; place fx_shadow under it. Side B, faces south."
+    },
+    "unit_drone@b.attack": {
+      "sheet": "units",
+      "x": 50,
+      "y": 51,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_drone",
+      "planned": true,
+      "note": "Planned: flying unit; place fx_shadow under it. Side B, faces south."
+    },
+    "fx_hit_spark": {
+      "sheet": "effects",
+      "x": 0,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 3,
+      "fps": 14,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "effect",
+      "note": "Play once, 3 frames."
+    },
+    "fx_explosion": {
+      "sheet": "effects",
+      "x": 49,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "frames": 4,
+      "fps": 10,
+      "anchor": [
+        16,
+        16
+      ],
+      "category": "effect",
+      "note": "Destroyed unit or building, 4 frames, 32x32 (scale down for units)."
+    },
+    "fx_spawn_puff": {
+      "sheet": "effects",
+      "x": 178,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 3,
+      "fps": 9,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "effect",
+      "note": "Unit spawn, 3 frames."
+    },
+    "fx_turret_shot": {
+      "sheet": "effects",
+      "x": 227,
+      "y": 0,
+      "w": 8,
+      "h": 8,
+      "frames": 2,
+      "fps": 12,
+      "anchor": [
+        4,
+        4
+      ],
+      "category": "effect",
+      "note": "Projectile pointing north; rotate to aim."
+    },
+    "fx_shadow": {
+      "sheet": "effects",
+      "x": 244,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "effect",
+      "note": "Soft ground shadow (semi-transparent black) for flyers; scale with the unit."
+    },
+    "ui_panel": {
+      "sheet": "ui",
+      "x": 0,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Tileable panel texture."
+    },
+    "ui_bg": {
+      "sheet": "ui",
+      "x": 17,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        16,
+        16
+      ],
+      "category": "ui",
+      "note": "Tileable page background, darker than the panel."
+    },
+    "ui_button_normal": {
+      "sheet": "ui",
+      "x": 50,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "nineSlice": [
+        5,
+        5,
+        5,
+        5
+      ],
+      "note": "Button 9-slice, normal."
+    },
+    "ui_button_hover": {
+      "sheet": "ui",
+      "x": 67,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "nineSlice": [
+        5,
+        5,
+        5,
+        5
+      ],
+      "note": "Button 9-slice, hover."
+    },
+    "ui_button_disabled": {
+      "sheet": "ui",
+      "x": 84,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "nineSlice": [
+        5,
+        5,
+        5,
+        5
+      ],
+      "note": "Button 9-slice, disabled."
+    },
+    "ui_card": {
+      "sheet": "ui",
+      "x": 101,
+      "y": 0,
+      "w": 24,
+      "h": 24,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        12,
+        12
+      ],
+      "category": "ui",
+      "nineSlice": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "note": "Card frame 9-slice."
+    },
+    "ui_icon_coin": {
+      "sheet": "ui",
+      "x": 126,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Gold."
+    },
+    "ui_icon_heart": {
+      "sheet": "ui",
+      "x": 143,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Lives."
+    },
+    "ui_icon_lock": {
+      "sheet": "ui",
+      "x": 160,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Locked."
+    },
+    "ui_icon_ready": {
+      "sheet": "ui",
+      "x": 177,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Ready tick."
+    },
+    "ui_event_workshop": {
+      "sheet": "ui",
+      "x": 194,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Event type workshop."
+    },
+    "ui_event_shrine": {
+      "sheet": "ui",
+      "x": 211,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Event type shrine."
+    },
+    "ui_event_windfall": {
+      "sheet": "ui",
+      "x": 228,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Event type windfall."
+    }
+  },
+  "planned": [
+    "bld_range",
+    "bld_hangar",
+    "unit_archer",
+    "unit_archer.walk",
+    "unit_archer.attack",
+    "unit_archer@a",
+    "unit_archer@a.walk",
+    "unit_archer@a.attack",
+    "unit_archer@b",
+    "unit_archer@b.walk",
+    "unit_archer@b.attack",
+    "unit_drone",
+    "unit_drone.walk",
+    "unit_drone.attack",
+    "unit_drone@a",
+    "unit_drone@a.walk",
+    "unit_drone@a.attack",
+    "unit_drone@b",
+    "unit_drone@b.walk",
+    "unit_drone@b.attack"
+  ]
+}
