@@ -210,13 +210,13 @@ function enter(
     }
     case 'pve_choice': {
       s = { ...s, leg: 'pve' };
-      // Normally drawn earlier (see `drawUpcoming`); drawn here only if a
-      // state arrives without them.
+      // Drawn earlier (see `drawUpcoming`); validation requires it.
       if (s.upcomingPve === null || s.upcomingPve.round !== s.round) {
-        s = drawUpcoming(s, s.round, deps);
+        throw new Error(
+          `enter pve_choice: no upcomingPve for round ${String(s.round)}.`,
+        );
       }
-      const options = (s.upcomingPve as NonNullable<RunState['upcomingPve']>)
-        .options;
+      const options = s.upcomingPve.options;
       return {
         ...s,
         upcomingPve: null,

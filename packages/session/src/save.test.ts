@@ -470,6 +470,35 @@ describe('the run controller', () => {
     );
   });
 
+  test('a save with an unsupported run-state format is listed as such and openRun says so', async () => {
+    const store = createMemorySaveStore();
+    await start(store);
+    const good = (await store.get('run-1')) as SaveRecord;
+    // A normal save lists without the flag.
+    expect((await store.list())[0]).not.toHaveProperty('unsupportedFormat');
+    store.injectRaw('run-1', {
+      ...good,
+      state: { ...good.state, formatVersion: 1 },
+    });
+    const item = (await store.list())[0];
+    expect(item).toMatchObject({
+      corrupt: false,
+      runId: 'run-1',
+      unsupportedFormat: true,
+    });
+    const r = await openRun('run-1', depsFor(), store, INSTALLED);
+    expect(r).toMatchObject({ ok: false, reason: 'unsupported_format' });
+    // Left in the store, untouched.
+    expect(store.size()).toBe(1);
+    // Genuinely damaged data stays corrupt.
+    store.injectRaw('run-1', { ...good, actionCounter: 9 });
+    expect((await store.list())[0]).toMatchObject({ runId: 'run-1' });
+    expect(await openRun('run-1', depsFor(), store, INSTALLED)).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+    });
+  });
+
   test('7: a finished run leaves the saved list and enters history', async () => {
     const store = createMemorySaveStore();
     const deps = depsFor(economy, fixedBattle(false));

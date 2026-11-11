@@ -189,7 +189,11 @@ only affects the next roll and the next battle. Only the most recent battle's
 now)` deletes older-major saves (history reason `version_wiped`, with the
 round reached), finishes saves whose state has an `outcome`, and reports
 `newer` and corrupt ones without touching them. A corrupt save is never
-deleted by `openRun`.
+deleted by `openRun`. A save that is well formed but whose run state has an
+unsupported `formatVersion` is not corrupt: `list()` flags its entry with
+`unsupportedFormat: true` (absent otherwise) and `openRun` refuses it with the
+reason `unsupported_format`, leaving it in the store (a `newer` or
+`older_major` version is reported first).
 
 **One save per run, no copies**: a record is keyed by `runId`. `put` with an
 existing `runId` replaces it, `startRun` rejects (`run_exists`) an ID that is
@@ -205,7 +209,9 @@ new ID. Do not add one.
   not alter the store).
 - `list()` returns every stored run (no limit), sorted by `updatedAt`
   descending, then `runId`. A stored value that does not parse is still listed,
-  as `{corrupt: true, runId, updatedAt, errors}` (use `summarizeStored`).
+  as `{corrupt: true, runId, updatedAt, errors}` (use `summarizeStored`). A
+  record that parses but has an unsupported run-state `formatVersion` is a
+  normal entry with `unsupportedFormat: true`.
 - `get(runId)` returns what was stored (even if damaged; callers validate), or
   null. `remove` resolves also for an unknown ID.
 - At most one record per `runId`, ever; no duplicate IDs.

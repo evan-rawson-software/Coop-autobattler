@@ -11,6 +11,7 @@ import { applyIntent, createRun } from './machine.js';
 import {
   buildSaveRecord,
   checkSaveShape,
+  hasUnsupportedFormat,
   historyEntryFor,
   parseSaveRecord,
   type HistoryReason,
@@ -209,7 +210,12 @@ export type OpenRunResult =
   | {
       readonly ok: false;
       readonly reason:
-        'not_found' | 'corrupt' | 'newer' | 'older_major' | 'load_failed';
+        | 'not_found'
+        | 'corrupt'
+        | 'unsupported_format'
+        | 'newer'
+        | 'older_major'
+        | 'load_failed';
       /** For `corrupt`: why. The record is left in the store. */
       readonly errors?: readonly string[];
     };
@@ -233,6 +239,16 @@ export async function openRun(
   }
   if (raw === null || raw === undefined)
     return { ok: false, reason: 'not_found' };
+  // A well-formed record whose run state has another format version is not
+  // damaged: say so (after a newer or much older game version, which are
+  // more useful to report).
+  const shape = checkSaveShape(raw);
+  if (shape.ok && hasUnsupportedFormat(shape.record)) {
+    const kind = classify(shape.record.runVersion, installedVersion);
+    if (kind === 'newer') return { ok: false, reason: 'newer' };
+    if (kind === 'older_major') return { ok: false, reason: 'older_major' };
+    return { ok: false, reason: 'unsupported_format' };
+  }
   const parsed = parseSaveRecord(raw, deps);
   if (!parsed.ok)
     return { ok: false, reason: 'corrupt', errors: parsed.errors };
