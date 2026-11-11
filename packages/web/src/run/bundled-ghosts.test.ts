@@ -31,10 +31,10 @@ function bucket(partySize: number, round: number) {
   return { gameVersion: RUN_VERSION, partySize, round };
 }
 
-async function layered(): Promise<{
+function layered(): {
   local: GhostStore;
   pool: GhostStore;
-}> {
+} {
   const local = createMemoryGhostStore();
   return {
     local,
@@ -83,7 +83,7 @@ describe('the bundled ghost file', () => {
 
 describe('the bundled source in the pool', () => {
   test('a fresh pool lists bundled ghosts; clearing the local pool keeps them', async () => {
-    const { local, pool } = await layered();
+    const { local, pool } = layered();
     expect(await local.list(bucket(1, 1))).toEqual([]);
     const rows = await pool.list(bucket(1, 1));
     expect(rows.length).toBeGreaterThanOrEqual(4);
@@ -92,7 +92,7 @@ describe('the bundled source in the pool', () => {
   });
 
   test('the bundled rows are read-only and outside the per-owner cap', async () => {
-    const { local, pool } = await layered();
+    const { local, pool } = layered();
     const [first] = await pool.list(bucket(1, 1));
     await expect(
       loadBundledGhostStore(RUN_VERSION).then((s) =>
@@ -118,7 +118,7 @@ describe('the bundled source in the pool', () => {
   });
 
   test('the listing is the union in the canonical order, the same however it is read', async () => {
-    const { pool } = await layered();
+    const { pool } = layered();
     const [first] = await pool.list(bucket(1, 1));
     await pool.save({
       ...(first as GhostSnapshot),
@@ -164,7 +164,7 @@ describe('the bundled source in the pool', () => {
 
 describe('a run with only the bundled source', () => {
   test('meets a bundled ghost at the first PvP battle, and a reload keeps it', async () => {
-    const { pool } = await layered();
+    const { pool } = layered();
     const saves = createMemorySaveStore();
     const args = {
       runId: 'fresh-run',
