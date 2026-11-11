@@ -4,8 +4,12 @@
 // the read-only window.__debug hook), drives it with Playwright, takes
 // screenshots into packages/web/smoke-output/ and exits non-zero on failure.
 //
-// Run it with `pnpm smoke` from the repository root. It needs Playwright with
-// Chromium installed globally (CI has no browser, so CI does not run it).
+// Run it with `pnpm smoke` from the repository root. It uses the repo's
+// pinned Playwright and the Chromium in Playwright's browser path (set
+// PLAYWRIGHT_BROWSERS_PATH, or run `playwright install chromium`).
+//
+// CI_RELAXED_TIMING=1 (set in CI) multiplies the frame-interval limits by 3
+// for slow shared runners; unset keeps the strict limits.
 
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
@@ -19,6 +23,8 @@ import { runRunSmoke } from './smoke-run.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
+
+const TIMING = process.env.CI_RELAXED_TIMING === '1' ? 3 : 1;
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const webDir = path.resolve(here, '..');
@@ -441,7 +447,7 @@ try {
   );
   for (const p of perf) {
     check(
-      p.meanFrameMs < 33,
+      p.meanFrameMs < 33 * TIMING,
       `${p.label}: mean frame ${p.meanFrameMs.toFixed(1)} ms (draw ${p.draw.meanMs.toFixed(2)} ms mean, ${p.draw.maxMs.toFixed(1)} ms max)`,
     );
   }
@@ -1451,8 +1457,8 @@ try {
       `battle: the stress battle has hundreds of units alive in total (peak ${peak}, at least 300)`,
     );
     check(
-      frames.length > 100 && p95 < 34,
-      `battle: smooth at 4x with ${peak} units (frame interval p95 ${p95.toFixed(1)} ms over ${frames.length} frames; limit 34 ms)`,
+      frames.length > 100 && p95 < 34 * TIMING,
+      `battle: smooth at 4x with ${peak} units (frame interval p95 ${p95.toFixed(1)} ms over ${frames.length} frames; limit ${34 * TIMING} ms)`,
     );
     // Skip, watch again, play: no page errors (more than 64 units spawned).
     {
