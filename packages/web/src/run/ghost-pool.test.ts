@@ -358,8 +358,9 @@ describe('ghost pool upgrades and clean-up', () => {
 
     const db = await openGhostDb(factory);
     expect(db.version).toBe(2);
-    const indexes = db.transaction('ghosts', 'readonly').objectStore('ghosts')
-      .indexNames;
+    const indexes = db
+      .transaction('ghosts', 'readonly')
+      .objectStore('ghosts').indexNames;
     expect(Array.from(indexes).sort()).toEqual(['listing', 'own']);
     const store = createIdbGhostStore(db);
     expect(await store.list(B)).toEqual([]);
