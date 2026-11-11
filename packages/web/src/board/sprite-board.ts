@@ -144,7 +144,7 @@ function drawTerrain(
   }
 }
 
-/** Side bits of each conduit cell, keyed by view cell, from its point list. */
+/** Side bits of each conduit cell, keyed by board-local cell, from its point list. */
 export function conduitCells(
   board: BoardScene,
 ): { x: number; y: number; sides: number; resource: string | null }[] {
@@ -169,8 +169,8 @@ export function conduitCells(
         sides |= sideBit(q.x - cell.x, q.y - cell.y);
       }
       out.push({
-        x: Math.floor(cell.x),
-        y: Math.floor(cell.y),
+        x: Math.floor(cell.x - board.frame.ox),
+        y: Math.floor(cell.y - board.frame.oy),
         sides,
         resource: c.resource,
       });
@@ -200,6 +200,30 @@ export function buildingSpriteRot(
   const upright = b.def.kind === 'defense' || b.def.kind === 'core';
   if (upright && !isTurret(b)) return 0;
   return ((b.instance.rotation / 90 + (turned ? 2 : 0)) % 4) as 0 | 1 | 2 | 3;
+}
+
+/**
+ * Tier pips for tier 2 and 3 (tier 1 has none): a small cluster of gold dots
+ * in the top-left corner of the building, inside the trim bracket. Ports sit
+ * in the middle of a side, so a corner never covers one.
+ */
+function drawTierPips(
+  lc: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  tier: number,
+): void {
+  const spots: readonly (readonly [number, number])[] = [
+    [4, 4],
+    [7, 4],
+    [4, 7],
+  ];
+  const n = tier >= 3 ? 3 : 2;
+  const pips = spots.slice(0, n);
+  lc.fillStyle = '#1a1410';
+  for (const [x, y] of pips) lc.fillRect(px + x - 1, py + y - 1, 4, 4);
+  lc.fillStyle = '#f0c040';
+  for (const [x, y] of pips) lc.fillRect(px + x, py + y, 2, 2);
 }
 
 function drawBuildings(
@@ -255,9 +279,7 @@ function drawBuildings(
         frame: tier - 2,
       });
     }
-    if (tier >= 1 && findSprite('tier_pips')) {
-      drawSprite(lc, 'tier_pips', px, py + ph - T, 1, { frame: tier - 1 });
-    }
+    if (tier >= 2) drawTierPips(lc, px, py, tier);
     if (multi) {
       // Several owners: a thin frame in the owner's colour.
       lc.strokeStyle =
@@ -300,8 +322,8 @@ function buildBoardLayer(
       drawSprite(
         lc,
         name,
-        (Math.floor(n.x) - f.ox) * T,
-        (Math.floor(n.y) - f.oy) * T,
+        Math.floor(n.x - f.ox) * T,
+        Math.floor(n.y - f.oy) * T,
         1,
       );
     }
@@ -311,7 +333,7 @@ function buildBoardLayer(
     const ramp = rampOf(set, c.resource);
     const name: `conduit_${ConduitKind}` = `conduit_${piece.kind}`;
     const opts = ramp ? { rot: piece.rot, ramp } : { rot: piece.rot };
-    drawSprite(lc, name, (c.x - f.ox) * T, (c.y - f.oy) * T, 1, opts);
+    drawSprite(lc, name, c.x * T, c.y * T, 1, opts);
   }
   drawBuildings(lc, set, board, theme);
   return { canvas, cw: f.w, ch: f.h, theme };

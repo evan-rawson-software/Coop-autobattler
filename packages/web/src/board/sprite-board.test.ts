@@ -19,6 +19,7 @@ function boardWith(
   cells: { x: number; y: number }[],
 ): BoardScene {
   return {
+    frame: { ox: 0, oy: 0 },
     conduits: [
       { id: 1, points, cells, color: '#fff', pattern: 0, resource: 'res_a' },
     ],
@@ -88,4 +89,23 @@ describe('building sprite rotation follows the ports', () => {
         }
     });
   }
+});
+
+describe('conduit cells are board-local', () => {
+  test('the frame origin is subtracted before flooring', () => {
+    const board = {
+      frame: { ox: 10, oy: 4 },
+      conduits: [
+        {
+          id: 1,
+          points: [pt(10, 5), pt(11, 5), pt(12, 5)],
+          cells: [pt(11, 5)],
+          color: '#fff',
+          pattern: 0,
+          resource: null,
+        },
+      ],
+    } as unknown as BoardScene;
+    expect(conduitCells(board).map((c) => [c.x, c.y])).toEqual([[1, 1]]);
+  });
 });
