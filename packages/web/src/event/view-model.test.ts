@@ -242,7 +242,7 @@ describe('follow-ups', () => {
           ...pending.followUp,
           options: pending.followUp.options.map((o) => ({ ...o, price: 9999 })),
         },
-      } as unknown as Json,
+      },
     };
     const shown = followUpView(stale, config, content, 0, realDeps());
     const fresh = followUpView(s, config, content, 0, realDeps());
@@ -284,10 +284,10 @@ describe('follow-ups', () => {
       pending: {
         ...(s.pending as object),
         followUp: {
-          ...((s.pending as { followUp: object }).followUp as object),
+          ...(s.pending as { followUp: object }).followUp,
           votes: [SKIP_CHOICE, null],
         },
-      } as unknown as Json,
+      },
     };
     const v = followUpView(two, config, content, 0, realDeps());
     expect(v?.voted).toBe(SKIP_CHOICE);

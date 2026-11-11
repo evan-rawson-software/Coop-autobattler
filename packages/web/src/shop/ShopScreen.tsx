@@ -108,8 +108,10 @@ function StashList(props: {
   pending: StashRow | null;
   onPick: (row: StashRow) => void;
   onDrag: (row: StashRow | null) => void;
+  /** Why selling is refused right now; null when it is open. */
+  blocked: string | null;
 }) {
-  const { rows, pending, onPick, onDrag } = props;
+  const { rows, pending, onPick, onDrag, blocked } = props;
   if (rows.length === 0) {
     return <p class="muted">Empty. Everything you own is on the board.</p>;
   }
@@ -126,7 +128,7 @@ function StashList(props: {
             data-stash-def={r.def}
             data-stash-tier={r.tier}
             data-count={r.ids.length}
-            draggable
+            draggable={blocked === null}
             onDragStart={(e) => {
               e.dataTransfer?.setData('text/plain', key);
               if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
@@ -143,7 +145,8 @@ function StashList(props: {
             <button
               type="button"
               data-action="sell"
-              title={`Sell one for ${String(r.refund)} gold`}
+              disabled={blocked !== null}
+              title={blocked ?? `Sell one for ${String(r.refund)} gold`}
               onClick={() => {
                 onPick(r);
               }}
@@ -211,7 +214,10 @@ export function ShopTab(props: { run: RunHandle }) {
   const { session, deps } = props.run;
   const view: SessionView = useStore(session.store);
   const run = view.run;
-  const sv: ShopView = useMemo(() => buildShopView(run, ME, ctx), [run]);
+  const sv: ShopView = useMemo(
+    () => buildShopView(run, ME, ctx, deps),
+    [run, deps],
+  );
   const next = useMemo(() => nextBattleView(run, deps), [run, deps]);
   const [pending, setPending] = useState<StashRow | null>(null);
   const [status, setStatus] = useState<{
@@ -398,6 +404,7 @@ export function ShopTab(props: { run: RunHandle }) {
               rows={sv.stash}
               pending={pending}
               onPick={setPending}
+              blocked={sv.sellBlock}
               onDrag={(r) => {
                 dragged.current = r;
               }}
@@ -411,7 +418,9 @@ export function ShopTab(props: { run: RunHandle }) {
               onDrop={(e) => {
                 e.preventDefault();
                 // The drop is only a request: the player still confirms.
-                if (dragged.current !== null) setPending(dragged.current);
+                if (dragged.current !== null && sv.sellBlock === null) {
+                  setPending(dragged.current);
+                }
               }}
             >
               {pending === null ? (
@@ -469,14 +478,22 @@ export function ShopTab(props: { run: RunHandle }) {
                 id="shop-ready"
                 class={sv.ready ? 'ready-btn on' : 'ready-btn'}
                 data-action="ready"
+                disabled={sv.readyBlock !== null}
+                title={sv.readyBlock ?? undefined}
                 onClick={onReady}
               >
                 {sv.ready ? 'Unready' : 'Ready'}
               </button>
-              <span class="muted" data-field="ready-state">
-                {sv.ready
-                  ? 'Ready. Waiting to continue.'
-                  : 'Ready when you are done shopping and building.'}
+              <span
+                class={sv.readyBlock === null ? 'muted' : 'error'}
+                data-field="ready-state"
+                data-blocked={sv.readyBlock === null ? 'false' : 'true'}
+              >
+                {sv.readyBlock !== null
+                  ? sv.readyBlock
+                  : sv.ready
+                    ? 'Ready — press Unready to make changes.'
+                    : 'Ready when you are done shopping and building.'}
               </span>
             </div>
           </Panel>
@@ -500,6 +517,25 @@ export function ShopTab(props: { run: RunHandle }) {
           </Panel>
         </div>
 
+        {view.notice === null ? null : (
+          <div
+            class="status-line ok"
+            id="shop-notice"
+            role="status"
+            data-field="notice"
+          >
+            <span>{view.notice}</span>{' '}
+            <button
+              type="button"
+              data-action="dismiss-notice"
+              onClick={() => {
+                session.dismissNotice();
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
         <div
           class={`status-line ${status.kind}`}
           id="shop-status"
