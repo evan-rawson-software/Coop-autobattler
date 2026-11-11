@@ -4,16 +4,22 @@
  */
 import {
   loadAllContentOrThrow,
+  loadEconomyOrThrow,
+  loadEventsOrThrow,
   loadMapgenOrThrow,
   loadSimConfigOrThrow,
   loadThreatsOrThrow,
-  type ArenaContent,
+  type Content,
+  type EconomyConfig,
+  type EventsConfig,
   type MapgenConfig,
   type SimConfig,
   type ThreatsConfig,
 } from '@game/core';
 import {
   rawBuildings,
+  rawEconomy,
+  rawEvents,
   rawMapgen,
   rawPresentationEn,
   rawResources,
@@ -24,10 +30,12 @@ import {
 } from '@game/content';
 
 export interface SimContext {
-  readonly content: ArenaContent;
+  readonly content: Content;
   readonly mapgen: MapgenConfig;
   readonly sim: SimConfig;
   readonly threats: ThreatsConfig;
+  readonly economy: EconomyConfig;
+  readonly events: EventsConfig;
 }
 
 let cached: SimContext | undefined;
@@ -48,6 +56,10 @@ export function loadSimContext(): SimContext {
     units: content.units,
     buildings: content.buildings,
   });
-  cached = { content, mapgen, sim, threats };
+  const economy = loadEconomyOrThrow(rawEconomy, {
+    buildings: content.buildings,
+  });
+  const events = loadEventsOrThrow(rawEvents);
+  cached = { content, mapgen, sim, threats, economy, events };
   return cached;
 }

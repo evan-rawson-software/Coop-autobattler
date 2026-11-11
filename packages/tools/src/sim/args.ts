@@ -1,4 +1,5 @@
 /** Command-line argument parsing for `pnpm sim` (pure; no I/O). */
+import { BOT_STRATEGIES, isBotStrategy } from '@game/session';
 
 export class CliError extends Error {
   constructor(
@@ -58,6 +59,19 @@ export type Command =
       readonly count: number;
       readonly seed: number;
       readonly time: boolean;
+    }
+  | {
+      readonly kind: 'bot';
+      /** Strategy names, in the order given. */
+      readonly strategies: readonly string[];
+      readonly count: number;
+      readonly seed: number;
+      readonly party: number;
+      /** Stop each run after this round; null plays to defeat. */
+      readonly maxRounds: number | null;
+      /** Also play every run again and compare (fails on any difference). */
+      readonly verify: boolean;
+      readonly time: boolean;
     };
 
 export const USAGE = `Usage: pnpm sim <command> [options]
@@ -73,16 +87,23 @@ Commands:
   batch   --a BOARD (--b BOARD | --archetype ID [--type T] [--round N])
           [--count N] [--seed N]
             Run N battles with seeds seed .. seed+N-1; report win rate and length.
+  bot     [--strategy NAME[,NAME...]|all] [--count N] [--seed N] [--party N]
+          [--max-rounds N] [--verify]
+            Let the scripted bot play whole runs (strategies: ${BOT_STRATEGIES.join(', ')})
+            with seeds seed .. seed+count-1; report depth reached, win rate by
+            round, where each run ended and the number of rejected intents
+            (exit code 1 if any, or with --verify if a replay differs).
 
 BOARD is a path to a board JSON file, or a reference board name (rush,
 fortify, siege, poor) which means boards/<name>.json.
 
 Options:
-  --seed N     battle seed (default 1); a batch uses N, N+1, ...
+  --seed N     battle seed (default 1); a batch or bot play uses N, N+1, ...
   --time       also print the wall time (the only non-deterministic output)
   --help       show this text
 
-Example: pnpm sim battle --a rush --b fortify --seed 1
+Examples: pnpm sim battle --a rush --b fortify --seed 1
+          pnpm sim bot --strategy all --count 3 --party 2 --verify
 `;
 
 const FLAGS: Readonly<Record<string, readonly string[]>> = {
@@ -110,6 +131,7 @@ const FLAGS: Readonly<Record<string, readonly string[]>> = {
     'threat-seed',
     'time',
   ],
+  bot: ['strategy', 'count', 'seed', 'party', 'max-rounds', 'verify', 'time'],
 };
 /** The largest seed (an unsigned 32-bit integer, as core requires). */
 const MAX_SEED = 0xffffffff;
@@ -118,7 +140,7 @@ const MAX_SEED = 0xffffffff;
  * `maxThreatRound` for the loaded content, checked when the command runs.
  */
 const MAX_ROUND_PARSE = 1000;
-const BOOLEAN_FLAGS: readonly string[] = ['ascii', 'time'];
+const BOOLEAN_FLAGS: readonly string[] = ['ascii', 'time', 'verify'];
 
 function usageError(message: string): CliError {
   return new CliError(`${message}\n\n${USAGE}`, 2);
@@ -249,6 +271,38 @@ export function parseArgs(argv: readonly string[]): Command {
         ascii: flags.has('ascii'),
         time,
       };
+    case 'bot': {
+      const raw = flags.get('strategy') ?? 'all';
+      const names = raw === 'all' ? [...BOT_STRATEGIES] : raw.split(',');
+      for (const n of names) {
+        if (!isBotStrategy(n)) {
+          throw usageError(
+            `Unknown strategy "${n}"; use ${BOT_STRATEGIES.join(', ')} or all.`,
+          );
+        }
+      }
+      const count = parseInteger('count', flags.get('count') ?? '3', 1, 1000);
+      const seed = seedOf(flags);
+      if (seed + count - 1 > MAX_SEED) {
+        throw usageError(
+          `Seeds seed .. seed+count-1 must stay within ${String(MAX_SEED)}.`,
+        );
+      }
+      const mr = flags.get('max-rounds');
+      return {
+        kind: 'bot',
+        strategies: names,
+        count,
+        seed,
+        party: parseInteger('party', flags.get('party') ?? '1', 1, 4),
+        maxRounds:
+          mr === undefined
+            ? null
+            : parseInteger('max-rounds', mr, 1, MAX_ROUND_PARSE),
+        verify: flags.has('verify'),
+        time,
+      };
+    }
     default: {
       const b = flags.get('b');
       const hasThreat = flags.has('archetype');
