@@ -388,35 +388,47 @@ describe('save and restore at any tick', () => {
     }
   }, 120_000);
 
-  test('a PvE battle with a waiting queue restores at any of several ticks', () => {
-    const threat = generateThreat(
-      {
-        seed: 7,
-        round: 9,
-        type: 'hard',
-        partySize: 1,
-        archetype: 'arch_rusher',
-      },
-      content,
-      { threats, mapgen },
-    );
-    const make = () => {
-      const s = startPveBattle(
-        { team: buildReferenceBoard('rush', content, mapgen), threat, seed: 3 },
-        content,
-        config,
-      );
-      if (!s.ok) throw new Error('refused');
-      return s.battle;
-    };
+  test('a battle with a waiting queue restores at any of several ticks', () => {
+    // A wave of 80 soldiers is larger than the 24 cells of the front row can
+    // hold at once (as in the `battle.wave-queue` golden vector): the
+    // rest waits in the `entering` queue while the row clears.
+    const wide: GameMap = { ...tiny(24), plotWidth: 24 };
+    const lab = new Lab(wide);
+    lab.core(11, 0);
+    const make = () =>
+      startArenaBattle(lab.state, lab.state, 4, content, simConfig, {
+        sideOptions: [
+          null,
+          {
+            scheduledWaves: [{ tick: 0, unit: 'unit_soldier', count: 80 }],
+            coreHealth: 200000,
+          },
+        ],
+      });
     const ref = make();
-    for (let t = 0; t < 500; t++) stepArena(ref.sim, ref.ctx);
-    for (const at of [3, 101, 160, 333]) {
+    let waitingTicks = 0;
+    const waitingAt: number[] = [];
+    for (let t = 0; t < 300; t++) {
+      stepArena(ref.sim, ref.ctx);
+      if (ref.sim.entering.length > 0) {
+        waitingTicks += 1;
+        waitingAt.push(t);
+      }
+    }
+    // The queue is non-empty for many ticks and has emptied by the end.
+    expect(waitingTicks).toBeGreaterThanOrEqual(100);
+    expect(waitingAt[0]).toBe(0);
+    const ats = [0, 40, 90, 150].map(
+      (k) => (waitingAt[Math.min(k, waitingTicks - 1)] ?? 0) + 1,
+    );
+    for (const at of ats) {
       const b = make();
       let sim = b.sim;
       let ctx = b.ctx;
-      for (let t = 0; t < 500; t++) {
+      for (let t = 0; t < 300; t++) {
         if (t === at) {
+          // Restore between two ticks with entries waiting.
+          expect(sim.entering.length).toBeGreaterThan(0);
           sim = JSON.parse(JSON.stringify(sim)) as ArenaSim;
           ctx = createArenaContext(sim, content, simConfig);
         }
@@ -435,6 +447,111 @@ describe('save and restore at any tick', () => {
       return [hashJson(r.sim), hashJson(r.events)];
     });
     expect(hashes[0]).toEqual(hashes[1]);
+  });
+});
+
+/**
+ * Wave queue with units of different collision radii. The front row of the
+ * board has one open cell (arena column 5, row 15: lakes on both sides); the
+ * offsets tried inside it scale with `120 - radius`, so the stout unit (radius
+ * 90) and the bulky one (radius 100) try different positions. Three or two
+ * posts (radius 72) are placed so that one of them has no free position and
+ * the other has.
+ */
+describe('wave queue with mixed collision radii', () => {
+  const queueContent: ArenaContent = {
+    ...postContent,
+    units: loadUnitsOrThrow({
+      units: [
+        ...postContent.units.list(),
+        ...(['unit_stout', 'unit_bulky'] as const).map((id) => ({
+          id,
+          health: 100,
+          damage: 1,
+          attackCooldownTicks: 10,
+          moveCooldownTicks: 240,
+          radius: id === 'unit_stout' ? 90 : 100,
+          collisionRadius: id === 'unit_stout' ? 90 : 100,
+          reach: 0,
+          flying: false,
+          attackType: 'melee' as const,
+        })),
+      ],
+    }),
+  };
+
+  function oneOpenCellRow(): TeamState {
+    const features = [];
+    for (let x = 0; x < 12; x++) {
+      if (x !== 5) features.push({ x, y: 15, feature: 'ter_lake' });
+    }
+    const lab = new Lab({ ...tiny(), features });
+    lab.core(8, 0);
+    return lab.state;
+  }
+
+  function run(
+    queue: readonly string[],
+    posts: readonly (readonly [number, number])[],
+  ) {
+    const waves = queue.map((unit) => ({ tick: 0, unit, count: 1 }));
+    const { sim, ctx } = startArenaBattle(
+      oneOpenCellRow(),
+      coreOnly(),
+      4,
+      queueContent,
+      simConfig,
+      { sideOptions: [{ scheduledWaves: waves }, null] },
+    );
+    for (const [px, py] of posts) {
+      spawnUnitForTest(sim, ctx, { side: 0, def: 'unit_post', px, py });
+    }
+    const before = sim.units.length;
+    stepArena(sim, ctx);
+    // Positions as spawned, give or take the one step of a unit that already
+    // started walking (speed 1).
+    const entered = sim.units
+      .slice(before)
+      .map((u) => [u.def, Math.round(u.px / 4) * 4, Math.round(u.py / 4) * 4]);
+    return { entered, waiting: sim.entering.map((e) => e.unit) };
+  }
+
+  test('a larger unit enters where the smaller one in front of it found no room', () => {
+    const r = run(
+      ['unit_stout', 'unit_bulky'],
+      [
+        [1386, 3889],
+        [1241, 3902],
+        [1294, 3568],
+      ],
+    );
+    expect(r.entered).toEqual([['unit_bulky', 1300, 3740]]);
+    expect(r.waiting).toEqual(['unit_stout']);
+  });
+
+  test('a smaller unit enters where the larger one in front of it found no room', () => {
+    const r = run(
+      ['unit_bulky', 'unit_stout'],
+      [
+        [1391, 3896],
+        [1275, 3594],
+      ],
+    );
+    expect(r.entered).toEqual([['unit_stout', 1320, 3752]]);
+    expect(r.waiting).toEqual(['unit_bulky']);
+  });
+
+  test('units of the same radius behind a failed one wait, in order', () => {
+    const r = run(
+      ['unit_stout', 'unit_stout', 'unit_bulky'],
+      [
+        [1386, 3889],
+        [1241, 3902],
+        [1294, 3568],
+      ],
+    );
+    expect(r.entered).toEqual([['unit_bulky', 1300, 3740]]);
+    expect(r.waiting).toEqual(['unit_stout', 'unit_stout']);
   });
 });
 

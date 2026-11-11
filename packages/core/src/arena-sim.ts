@@ -1222,15 +1222,21 @@ function enterWaves(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
   const { width, height, boardHeight } = arena.geom;
   const rest: EnteringSim[] = [];
   // Units only get added during the walk, which can only take room away: once
-  // an entry of collision radius `r` found no place on a side's row, no later
-  // entry of that side with a radius of at least `r` can find one either.
-  // (Only a shortcut: it never changes who enters.)
-  const failed: [number, number] = [Infinity, Infinity];
+  // an entry found no place on a side's row, no later entry of that side with
+  // the very same collision radius can find one either (it tries the same
+  // positions, whatever its wanted column, since every open cell of the row is
+  // tried). Entries of another radius try other offsets inside a cell (the
+  // offsets scale with `120 - radius`), so a larger unit can fit where a
+  // smaller one did not and vice versa: they are tried. (Only a shortcut: it
+  // never changes who enters.)
+  let failed0: number[] | null = null;
+  let failed1: number[] | null = null;
   for (const e of sim.entering) {
     const unitDef = ctx.content.units.get(e.unit);
     if (unitDef === undefined) throw new Error(`Unknown unit "${e.unit}".`);
     const side = e.side;
-    if (unitDef.collisionRadius >= failed[side === 0 ? 0 : 1]) {
+    const failedHere = side === 0 ? failed0 : failed1;
+    if (failedHere?.includes(unitDef.collisionRadius) === true) {
       rest.push(e);
       continue;
     }
@@ -1247,8 +1253,8 @@ function enterWaves(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     }
     if (pos === null) {
       rest.push(e);
-      const f = side === 0 ? 0 : 1;
-      failed[f] = Math.min(failed[f], unitDef.collisionRadius);
+      if (side === 0) (failed0 ??= []).push(unitDef.collisionRadius);
+      else (failed1 ??= []).push(unitDef.collisionRadius);
     } else addUnit(sim, ctx, side, unitDef, pos.x, pos.y, 0, tick);
   }
   sim.entering = rest;

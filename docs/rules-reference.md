@@ -2337,7 +2337,13 @@ identically; with none the field is absent.
   that blocks the side) the same **offsets** as for producers (step 2.2) are
   tried from the cell centre; the first position where the unit's collision
   circle fits and overlaps no living unit (the units that entered earlier in this
-  walk included) is its spawn position. An entry that finds none stays in the
+  walk included) is its spawn position. (The offsets are `120 - collisionRadius`
+  times the offset table, so a unit of another collision radius tries other
+  positions inside a cell: a larger unit can find room where a smaller one did
+  not, and the other way round. An entry of the very same collision radius and
+  side as an entry that found none earlier in this walk cannot find any either,
+  since units are only added during the walk; skipping it without trying is
+  only a shortcut and never changes the result.) An entry that finds none stays in the
   queue, **in its place**, and tries again next tick; the entries behind it are
   still tried this tick (no head-of-line blocking), so the relative order of
   waiting entries never changes. No entry is ever dropped: if the front row has
