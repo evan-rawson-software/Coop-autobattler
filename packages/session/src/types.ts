@@ -10,6 +10,10 @@ import type {
   Cell,
   ConduitReason,
   Content,
+  EconomyConfig,
+  EventsConfig,
+  GhostBucket,
+  GhostSnapshot,
   Json,
   MapgenConfig,
   Rng,
@@ -42,9 +46,10 @@ export type Step = (typeof STEPS)[number];
  * The format of `RunState`. Version 2 added the required `upcomingPve` and
  * changed the battle detail; version 3 made the Workshop per-player and
  * dependent on gold (a version-2 save mid-Workshop could not be finished);
- * older states are not readable.
+ * version 4 added the ghost fields `pvpOpponent` and `ghostsFought` (W3-1).
+ * Older states are not readable.
  */
-export const RUN_STATE_FORMAT_VERSION = 3;
+export const RUN_STATE_FORMAT_VERSION = 4;
 
 /**
  * Steps a saved state can never be in. `pve_battle` and `pvp_battle` are
@@ -118,6 +123,21 @@ export interface UpcomingPve {
   readonly options: readonly Json[];
 }
 
+/**
+ * The PvP opponent chosen for the coming PvP battle (W3-1), fixed before the
+ * battle is revealed. For a ghost the whole validated snapshot is stored, so
+ * nothing outside the run state is consulted again; for the boss `ghost` is
+ * null and the battle generates the boss from the battle stream as before.
+ */
+export interface PvpOpponentChoice {
+  /** The round of that battle. */
+  readonly round: number;
+  readonly kind: 'ghost' | 'boss';
+  /** The ghost owner's label, or `the boss`. */
+  readonly label: string;
+  readonly ghost: GhostSnapshot | null;
+}
+
 export interface PveRecord {
   readonly difficulty: string;
   readonly won: boolean;
@@ -151,7 +171,7 @@ export interface RunState {
   readonly runId: string;
   readonly runVersion: string;
   /** `RUN_STATE_FORMAT_VERSION`; a state of another version is rejected. */
-  readonly formatVersion: 3;
+  readonly formatVersion: 4;
   readonly seed: number;
   /** The saved state of the run's `Rng`. */
   readonly rng: readonly [number, number, number, number];
@@ -173,6 +193,14 @@ export interface RunState {
    * `pve_choice` opens (they are then in `pending.options`).
    */
   readonly upcomingPve: UpcomingPve | null;
+  /**
+   * W3-1: the opponent of the coming PvP battle. Null until `select_ghost`
+   * has been applied in the shop of the PvE leg (and always null with ghosts
+   * switched off); set to null again when the PvP battle is fought.
+   */
+  readonly pvpOpponent: PvpOpponentChoice | null;
+  /** W3-1: `ghostKey` of every ghost fought in this run, in order. */
+  readonly ghostsFought: readonly string[];
   /** Step-specific data, opaque to everything but the step's owner. */
   readonly pending: Json;
   /** One entry per finished round (and the unfinished one at run end). */
@@ -299,6 +327,30 @@ export type Effect =
       readonly opponent: Opponent;
     }
   | { readonly type: 'life_lost'; readonly lives: number }
+  /**
+   * W3-1 (only with `deps.ghosts`): the shop of the PvE leg was entered; the
+   * run controller reads the pool for `bucket` and applies `select_ghost`.
+   */
+  | {
+      readonly type: 'ghost_selection_needed';
+      readonly round: number;
+      readonly bucket: GhostBucket;
+    }
+  /** W3-1: `select_ghost` was applied; the opponent is now fixed. */
+  | {
+      readonly type: 'ghost_selected';
+      readonly round: number;
+      readonly kind: 'ghost' | 'boss';
+      readonly label: string;
+      /** How many candidates were eligible and valid. */
+      readonly candidates: number;
+    }
+  /**
+   * W3-1: a PvP battle is starting. The snapshot is derived from the state at
+   * that moment; the run controller writes it to the ghost store after the
+   * save succeeds. `applyIntent` and `replayRun` never touch a store.
+   */
+  | { readonly type: 'ghost_snapshot'; readonly snapshot: GhostSnapshot }
   | { readonly type: 'round_started'; readonly round: number }
   | {
       readonly type: 'run_over';
@@ -424,6 +476,18 @@ export interface IntentHandler {
   handle(ctx: HandlerContext): HandlerResult;
 }
 
+/**
+ * Switches the ghost pool on (W3-1). Absent: PvP always fights the generated
+ * boss, `select_ghost` is unknown and no snapshot effect is emitted.
+ */
+export interface GhostRules {
+  /** The stable identifier written into every snapshot of this install. */
+  readonly ownerId: string;
+  /** For the value bound and the modifier checks of `validateGhostSnapshot`. */
+  readonly economy: EconomyConfig;
+  readonly events: EventsConfig;
+}
+
 export interface RunDeps {
   readonly content: Content;
   readonly mapgenConfig: MapgenConfig;
@@ -434,6 +498,8 @@ export interface RunDeps {
   readonly handlers: Readonly<Record<string, IntentHandler>>;
   /** The configured rewards, when wired (`createGameDeps`); for selectors. */
   readonly rewards?: RewardsConfig;
+  /** W3-1: present when the ghost pool is in use. */
+  readonly ghosts?: GhostRules;
 }
 
 export interface CreateRunArgs {

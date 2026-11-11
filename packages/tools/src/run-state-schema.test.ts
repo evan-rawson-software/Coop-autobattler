@@ -41,6 +41,7 @@ describe('run-state.schema.json', () => {
   const ajv = new Ajv2020({ allErrors: true, strict: true });
   ajv.addSchema(readSchema('map.schema.json'));
   ajv.addSchema(readSchema('team-state.schema.json'));
+  ajv.addSchema(readSchema('ghost-snapshot.schema.json'));
   const validate = ajv.compile(readSchema('run-state.schema.json'));
   const content = loadAllContentOrThrow({
     resources: rawResources,
@@ -178,7 +179,7 @@ describe('run-state.schema.json', () => {
     expect(bad(() => undefined)).toBe(true);
     expect(bad((o) => delete o['seed'])).toBe(false);
     expect(bad((o) => (o['formatVersion'] = 1))).toBe(false);
-    expect(bad((o) => (o['formatVersion'] = 4))).toBe(false);
+    expect(bad((o) => (o['formatVersion'] = 5))).toBe(false);
     expect(bad((o) => (o['step'] = 'pve_battle'))).toBe(false);
     expect(bad((o) => (o['rng'] = [1, 2, 3]))).toBe(false);
     expect(bad((o) => (o['runVersion'] = 'v1'))).toBe(false);

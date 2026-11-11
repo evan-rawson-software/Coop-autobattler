@@ -7,6 +7,14 @@
  *
  * Time is passed in (`now`, an integer); this module has no clock.
  */
+import type { GhostStore } from './ghost-store.js';
+import {
+  SELECT_GHOST,
+  ghostBucketFor,
+  ghostContext,
+  presentCandidates,
+  selectionPending,
+} from './ghosts.js';
 import { applyIntent, createRun } from './machine.js';
 import {
   buildSaveRecord,
@@ -21,6 +29,7 @@ import type {
   CreateRunArgs,
   Effect,
   Intent,
+  Json,
   RejectReason,
   RunDeps,
   RunState,
@@ -44,6 +53,18 @@ export type DispatchResult =
       readonly detail?: string;
     };
 
+/** Optional parts of a controller. */
+export interface ControllerOptions {
+  /**
+   * The ghost pool (W3-1). Used only when `deps.ghosts` is set: snapshots are
+   * written to it after the save that started a PvP battle, and it is read
+   * when the shop before a PvP battle is entered. A failing store never fails
+   * a dispatch: a failed write loses that snapshot, a failed read means no
+   * candidates (the boss).
+   */
+  readonly ghostStore?: GhostStore;
+}
+
 export interface RunController {
   readonly runId: string;
   /** The last committed state (saved). */
@@ -58,6 +79,12 @@ export interface RunController {
     intent: Intent,
     now: number,
   ): Promise<DispatchResult>;
+  /**
+   * Make sure the PvP opponent is fixed if the run is in the shop before a
+   * PvP battle and ghosts are on (e.g. after reopening a save made between
+   * entering the shop and selecting). `dispatch` does this itself first.
+   */
+  prepare(now: number): Promise<void>;
 }
 
 /** Record a finished run in history, then remove its save, in that order. */
@@ -77,10 +104,13 @@ function makeController(
   deps: RunDeps,
   store: SaveStore,
   installedVersion: string,
+  options: ControllerOptions,
 ): RunController {
   let current = initial;
   let tail: Promise<unknown> = Promise.resolve();
+  const ghostStore = options.ghostStore;
 
+  /** Apply, save, then do the side effects the machine asked for. */
   async function run(
     player: number,
     intent: Intent,
@@ -121,13 +151,82 @@ function makeController(
     return { ok: true, state: r.state, effects: r.effects };
   }
 
+  /** Side effects of an accepted, saved intent: the ghost pool. */
+  async function afterSave(
+    r: Extract<DispatchResult, { ok: true }>,
+    now: number,
+  ): Promise<Extract<DispatchResult, { ok: true }>> {
+    let result = r;
+    for (const fx of r.effects) {
+      if (fx.type === 'ghost_snapshot' && ghostStore !== undefined) {
+        try {
+          await ghostStore.save(fx.snapshot);
+        } catch {
+          // The snapshot is lost; the run is unaffected.
+        }
+      }
+    }
+    if (selectionPending(current, deps)) {
+      const sel = await selectGhostNow(now);
+      if (sel !== null && sel.ok) {
+        result = {
+          ...sel,
+          effects: [...r.effects, ...sel.effects],
+          ...(r.warning === undefined ? {} : { warning: r.warning }),
+        };
+      }
+    }
+    return result;
+  }
+
+  /** Read the pool and apply `select_ghost` (the host sends it). */
+  async function selectGhostNow(now: number): Promise<DispatchResult | null> {
+    const vctx = ghostContext(deps);
+    if (vctx === null) return null;
+    let raw: readonly unknown[] = [];
+    if (ghostStore !== undefined) {
+      try {
+        raw = await ghostStore.list(ghostBucketFor(current));
+      } catch {
+        raw = [];
+      }
+    }
+    const candidates = presentCandidates(raw, current, vctx);
+    return commit(
+      current.host,
+      { type: SELECT_GHOST, candidates: candidates as unknown as Json },
+      now,
+    );
+  }
+
+  async function commit(
+    player: number,
+    intent: Intent,
+    now: number,
+  ): Promise<DispatchResult> {
+    const r = await run(player, intent, now);
+    return r.ok ? afterSave(r, now) : r;
+  }
+
+  async function ensureSelection(now: number): Promise<void> {
+    if (selectionPending(current, deps)) await selectGhostNow(now);
+  }
+
   return {
     runId: initial.runId,
     get state(): RunState {
       return current;
     },
     dispatch(player, intent, now) {
-      const result = tail.then(() => run(player, intent, now));
+      const result = tail.then(async () => {
+        await ensureSelection(now);
+        return commit(player, intent, now);
+      });
+      tail = result.catch(() => undefined);
+      return result;
+    },
+    prepare(now) {
+      const result = tail.then(() => ensureSelection(now));
       tail = result.catch(() => undefined);
       return result;
     },
@@ -156,6 +255,7 @@ export async function startRun(
   store: SaveStore,
   now: number,
   installedVersion: string,
+  options: ControllerOptions = {},
 ): Promise<StartRunResult> {
   const created = createRun(createArgs, deps);
   if (!created.ok) {
@@ -191,6 +291,7 @@ export async function startRun(
       deps,
       store,
       installedVersion,
+      options,
     ),
   };
 }
@@ -228,6 +329,7 @@ export async function openRun(
   deps: RunDeps,
   store: SaveStore,
   installedVersion: string,
+  options: ControllerOptions = {},
 ): Promise<OpenRunResult> {
   let raw: unknown;
   try {
@@ -259,6 +361,7 @@ export async function openRun(
           deps,
           store,
           installedVersion,
+          options,
         ),
       };
   }

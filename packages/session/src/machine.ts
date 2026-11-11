@@ -7,6 +7,7 @@
 import {
   addConduit,
   canonicalJson,
+  ghostKey,
   eraseConduit,
   generateMap,
   createTeamState,
@@ -17,6 +18,12 @@ import {
   sealedProducers,
   type Json,
 } from '@game/core';
+import {
+  ghostBucketFor,
+  ghostOwnerFor,
+  hasSelection,
+  snapshotOf,
+} from './ghosts.js';
 import { STEP_INTENTS, lockedWhileReady } from './step-table.js';
 import { drawStream, rootRng, streamLabels } from './streams.js';
 import { parseVersion } from './version.js';
@@ -159,6 +166,8 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
     perPlayer: args.players.map(() => ({ gold: 0, ready: false, shop: null })),
     votes: emptyVotes('core', n),
     upcomingPve: null,
+    pvpOpponent: null,
+    ghostsFought: [],
     pending: { proposals: [] },
     history: [],
     thisRound: { pve: null, pvp: null },
@@ -273,10 +282,27 @@ function enter(
       if (s.leg === 'pvp') s = drawUpcoming(s, s.round + 1, deps);
       const d = drawStream(s, streamLabels.shop(s.round, s.leg));
       s = applyPatch(d.state, deps.hooks.onShopEnter(d.state, d.stream));
+      if (s.leg === 'pve' && deps.ghosts !== undefined) {
+        // The opponent of the coming PvP battle is fixed here (W3-1): the
+        // controller answers this effect with `select_ghost`.
+        fx.push({
+          type: 'ghost_selection_needed',
+          round: s.round,
+          bucket: ghostBucketFor(s),
+        });
+        return { ...s, pending: null, pvpOpponent: null };
+      }
       return { ...s, pending: null };
     }
     case 'pvp_battle': {
       s = { ...s, leg: 'pvp' };
+      if (deps.ghosts !== undefined) {
+        // Taken before the fight, win or lose; the controller stores it.
+        fx.push({
+          type: 'ghost_snapshot',
+          snapshot: snapshotOf(s, ghostOwnerFor(s, deps.ghosts.ownerId)),
+        });
+      }
       const d = drawStream(s, streamLabels.battle('pvp', s.round));
       const result = deps.battle.resolve({
         kind: 'pvp',
@@ -284,8 +310,17 @@ function enter(
         rng: d.stream,
         option: null,
       });
+      const fought = d.state.pvpOpponent;
       s = {
         ...d.state,
+        pvpOpponent: null,
+        ghostsFought:
+          fought !== null &&
+          fought.round === d.state.round &&
+          fought.ghost !== null &&
+          result.opponent.kind === 'ghost'
+            ? [...d.state.ghostsFought, ghostKey(fought.ghost)]
+            : d.state.ghostsFought,
         thisRound: {
           ...d.state.thisRound,
           pvp: {
@@ -619,6 +654,15 @@ function applyBuiltin(
 
     case 'ready': {
       if (s.perPlayer[player]?.ready === true) return fail('already_ready');
+      // The PvP opponent must be fixed before the party can leave the shop.
+      if (
+        s.step === 'shop' &&
+        s.leg === 'pve' &&
+        deps.ghosts !== undefined &&
+        !hasSelection(s)
+      ) {
+        return fail('ghost_selection_pending');
+      }
       // A sealed-in unit producer cannot be left behind (issue #37, 3a).
       if (s.step === 'build' || s.step === 'shop') {
         const sealed = sealedProducers(s.team, content);

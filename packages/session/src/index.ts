@@ -83,6 +83,7 @@ export {
   openRun,
   removeRun,
   startRun,
+  type ControllerOptions,
   type DispatchResult,
   type InitSavesResult,
   type OpenRunResult,
@@ -125,6 +126,30 @@ export {
   type ParsedVersion,
   type VersionClass,
 } from './version.js';
+export {
+  createMemoryGhostStore,
+  ghostStoreKey,
+  type GhostStore,
+  type MemoryGhostStore,
+} from './ghost-store.js';
+export {
+  BOSS_LABEL,
+  MAX_GHOST_CANDIDATES,
+  SELECT_GHOST,
+  eligibleGhosts,
+  ghostBucketFor,
+  ghostContext,
+  ghostOwnerFor,
+  hasSelection,
+  partyLabel,
+  presentCandidates,
+  pvpOpponentInfo,
+  selectGhost,
+  selectGhostHandler,
+  selectionPending,
+  snapshotOf,
+  type GhostSelection,
+} from './ghosts.js';
 export { drawStream, streamLabels } from './streams.js';
 export { STEP_INTENTS } from './step-table.js';
 export {
