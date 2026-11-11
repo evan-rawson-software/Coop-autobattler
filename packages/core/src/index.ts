@@ -462,3 +462,28 @@ export {
   buildAnyReferenceBoard,
 } from './reference-boards-siege.js';
 export type { AnyReferenceBoardName } from './reference-boards-siege.js';
+
+// Ghost snapshots (W3-1).
+export {
+  GHOST_MAX_ID_LENGTH,
+  GHOST_MAX_LABEL_LENGTH,
+  GHOST_SNAPSHOT_FORMAT_VERSION,
+  GHOST_VALUE_MARGIN_PERCENT,
+  checkGhostSnapshotShape,
+  compareGhosts,
+  ghostBucketKey,
+  ghostBucketOf,
+  ghostKey,
+  ghostValueBound,
+  teamBuildingValue,
+  validateGhostSnapshot,
+} from './ghost-snapshot.js';
+export type {
+  GhostBucket,
+  GhostOwner,
+  GhostPvpRecord,
+  GhostSnapshot,
+  GhostValidationContext,
+  GhostValidationResult,
+  GhostValueBound,
+} from './ghost-snapshot.js';
