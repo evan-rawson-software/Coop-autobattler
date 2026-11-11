@@ -11,6 +11,8 @@ import {
   runVaried,
   summariseVaried,
   denseBoards,
+  matchedBoards,
+  matchedPairs,
   variedBoards,
   variedPairs,
   type VariedBoard,
@@ -41,27 +43,46 @@ const boards: readonly VariedBoard[] =
         ...(args.includes('--dense')
           ? denseBoards(ctx, list(args, '--party', [1, 2]))
           : []),
+        ...(args.includes('--matched')
+          ? matchedBoards(ctx, list(args, '--party', [1, 2]))
+          : []),
       ]
     : (JSON.parse(readFileSync(file, 'utf8')) as VariedBoard[]);
 const save = text(args, '--save');
 if (save !== undefined) writeFileSync(save, JSON.stringify(boards));
-const pairs = variedPairs(boards, list(args, '--opponents', [3])[0] ?? 3);
+const isMatched = (b: VariedBoard): boolean => b.label.startsWith('matched/');
+const plain = boards.filter((b) => !isMatched(b));
+const matched = boards.filter(isMatched);
+const pairs = [
+  ...variedPairs(plain, list(args, '--opponents', [3])[0] ?? 3).map(
+    ([i, j]) => [boards.indexOf(plain[i] as VariedBoard), boards.indexOf(plain[j] as VariedBoard)] as const,
+  ),
+  ...matchedPairs(matched).map(
+    ([i, j]) => [boards.indexOf(matched[i] as VariedBoard), boards.indexOf(matched[j] as VariedBoard)] as const,
+  ),
+];
 const t0 = Date.now();
 const rows = pairs.map(([i, j], n) =>
   runVaried(ctx, boards[i] as VariedBoard, boards[j] as VariedBoard, 1 + n),
 );
 const dump = text(args, '--dump');
 if (dump !== undefined) writeFileSync(dump, JSON.stringify(rows));
-const byParty = new Map<number, typeof rows>();
-pairs.forEach(([i], n) => {
-  const p = (boards[i] as VariedBoard).party;
-  const row = rows[n];
-  if (row === undefined) return;
-  byParty.set(p, [...(byParty.get(p) ?? []), row]);
+const group = (label: string): string =>
+  label.startsWith('matched/')
+    ? 'matched'
+    : label.startsWith('dense')
+      ? 'dense'
+      : 'bot';
+const byGroup = new Map<string, typeof rows>();
+rows.forEach((row) => {
+  const g = group(row.a);
+  byGroup.set(g, [...(byGroup.get(g) ?? []), row]);
 });
 console.log(`boards ${String(boards.length)}, battles ${String(rows.length)}`);
-for (const [p, r] of [...byParty.entries()].sort((a, b) => a[0] - b[0])) {
-  console.log(`party ${String(p)}:`, JSON.stringify(summariseVaried(r)));
+for (const [g, r] of [...byGroup.entries()].sort((a, b) =>
+  a[0] < b[0] ? -1 : 1,
+)) {
+  console.log(`${g}:`, JSON.stringify(summariseVaried(r)));
 }
 console.log('all:', JSON.stringify(summariseVaried(rows)));
 console.log(`wall ${String(Date.now() - t0)} ms`);

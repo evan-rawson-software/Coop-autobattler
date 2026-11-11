@@ -203,6 +203,46 @@ export function denseBoards(
 }
 
 /**
+ * Evenly matched boards: the full dense factory of one tier (1, 2 or 3) with
+ * the Core in one of three places. Two of them differ only in where the Core
+ * is, so the armies are equal but the battle is not a mirror image.
+ */
+export function matchedBoards(
+  ctx: SimContext,
+  parties: readonly number[],
+): readonly VariedBoard[] {
+  const out: VariedBoard[] = [];
+  for (const party of parties) {
+    for (const tier of [1, 2, 3]) {
+      for (const [n, core] of [3, 17, 41].entries()) {
+        out.push({
+          label: `matched/t${String(tier)}/c${String(n)}/p${String(party)}`,
+          party,
+          team: denseVariant(ctx, party, 99, tier, tier, 100, core),
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/** Every ordered pair of matched boards of one tier and party size whose Cores differ. */
+export function matchedPairs(
+  boards: readonly VariedBoard[],
+): readonly (readonly [number, number])[] {
+  const pairs: [number, number][] = [];
+  boards.forEach((a, i) => {
+    boards.forEach((b, j) => {
+      if (i === j) return;
+      const ta = a.label.split('/')[1];
+      const tb = b.label.split('/')[1];
+      if (ta === tb && a.party === b.party) pairs.push([i, j]);
+    });
+  });
+  return pairs;
+}
+
+/**
  * The pairs (attacker index, defender index) of battles on `boards`: each
  * board meets `opponents` others of its own party size, picked by a fixed
  * stride; never itself and never an identical factory.
