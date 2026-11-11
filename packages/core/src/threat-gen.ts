@@ -8,6 +8,7 @@
 import type { ArenaContent } from './arena.js';
 import type { BuildingConfig, BuildingId } from './buildings.js';
 import { divFloor, mulPct } from './int.js';
+import { MAX_HEALTH } from './limits.js';
 import { coreFootprint } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
 import { Rng } from './rng.js';
@@ -27,7 +28,7 @@ import {
   placeFromStash,
   type TeamState,
 } from './team-state.js';
-import type { UnitId } from './units.js';
+import { maxStrengthPercent, type UnitId } from './units.js';
 
 // ---------------------------------------------------------------------------
 // Profile (plain JSON, schemas/threat-profile.schema.json)
@@ -127,6 +128,10 @@ function defenseOf(
  *    unit counts and the strength conversion.
  * 4. Stronghold: wall and turret counts, layout (turret and gap positions
  *    from `holdRng`), Core health.
+ * 5. Content bounds (a safety net): `unitStrengthPercent` is clamped to the
+ *    largest value that keeps every unit type within MAX_HEALTH / MAX_DAMAGE,
+ *    and the Core health to MAX_HEALTH. With the shipped content no threat of
+ *    rounds 1..maxThreatRound reaches either clamp (threat-bounds.test.ts).
  */
 export function generateThreat(
   input: ThreatInput,
@@ -225,6 +230,16 @@ export function generateThreat(
       }
     }
   }
+  // Safety net: the strength may not push any unit type's health or damage
+  // past MAX_HEALTH / MAX_DAMAGE; the excess is lost. Not reached by the
+  // shipped content within maxThreatRound.
+  const strengthLimit = content.units
+    .list()
+    .reduce(
+      (m, def) => Math.min(m, maxStrengthPercent(def)),
+      Number.MAX_SAFE_INTEGER,
+    );
+  unitStrengthPercent = Math.min(unitStrengthPercent, strengthLimit);
   const waves: ThreatWave[] = [];
   for (const w of planned) {
     for (const e of w.entries) {
@@ -278,9 +293,12 @@ export function generateThreat(
   ].sort((a, b) => a.y - b.y || a.x - b.x);
   const spent =
     plan.walls.length * wall.price + plan.turrets.length * turret.price;
-  const coreHealth = Math.max(
-    threats.minCoreHealth,
-    mulPct(strongholdBudget - spent, sh.coreHealthPerBudget),
+  const coreHealth = Math.min(
+    MAX_HEALTH,
+    Math.max(
+      threats.minCoreHealth,
+      mulPct(strongholdBudget - spent, sh.coreHealthPerBudget),
+    ),
   );
 
   return {

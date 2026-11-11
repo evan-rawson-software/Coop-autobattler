@@ -26,6 +26,21 @@ export interface UnitDef {
   readonly targeting: Targeting;
 }
 
+/**
+ * The largest strength percent `P` for which `unitStats` keeps this unit
+ * within the stat bounds: the largest `P` with `floor(health * (100 + P) /
+ * 100) <= MAX_HEALTH` and the same for damage and `MAX_DAMAGE`. Exact:
+ * `floor(v * (100 + P) / 100) <= M` holds iff `v * (100 + P) <= 100 * M + 99`.
+ * A unit with 0 damage does not limit damage.
+ */
+export function maxStrengthPercent(def: UnitDef): number {
+  const room = (value: number, max: number): number =>
+    value === 0
+      ? Number.MAX_SAFE_INTEGER
+      : Math.floor((100 * max + 99) / value) - 100;
+  return Math.min(room(def.health, MAX_HEALTH), room(def.damage, MAX_DAMAGE));
+}
+
 export interface UnitConfig {
   get(id: UnitId): UnitDef | undefined;
   /** Every unit, in file order. */

@@ -5,6 +5,8 @@ export {
   MAX_BREACH_BASE_COST,
   MAX_DAMAGE,
   MAX_HEALTH,
+  MAX_HIT,
+  MAX_TICK_DAMAGE,
 } from './limits.js';
 export { loadResources, loadResourcesOrThrow } from './resources.js';
 export type {
@@ -21,7 +23,7 @@ export type {
   TerrainFeatureId,
   TerrainLoadResult,
 } from './terrain.js';
-export { loadUnits, loadUnitsOrThrow } from './units.js';
+export { loadUnits, loadUnitsOrThrow, maxStrengthPercent } from './units.js';
 export type {
   Targeting,
   UnitConfig,
@@ -82,6 +84,8 @@ export {
   BPS_SCALE,
   assertInt,
   clamp,
+  addSaturating,
+  compareFractions,
   divFloor,
   maxInt,
   minInt,

@@ -162,64 +162,88 @@ canonical JSON of the array of event objects.
 
 ## Content bounds
 
-Health, damage and the breach constants are capped so that every sum below
-stays an exact integer (|x| <= 2^53 - 1) on the largest supported board.
-The core exports the constants (`limits.ts`); the loaders and the JSON
-schemas enforce the same numbers.
+Health, damage and the breach constants are capped so that every sum and
+product that affects an outcome stays an exact integer (|x| <= 2^53 - 1) on
+the largest supported board. The core exports the constants (`limits.ts`);
+the loaders and the JSON schemas enforce the same numbers. The caps are huge
+on purpose: PvE threats (below) are not limited by them in rounds 1 to
+`maxThreatRound`.
 
-| Constant               | Value      | Applies to                                                                 |
-| ---------------------- | ---------- | -------------------------------------------------------------------------- |
-| `MAX_HEALTH`           | 10 000 000 | `health` of every building tier (Core included) and unit; run-time health  |
-| `MAX_DAMAGE`           | 10 000 000 | `damage` of a unit and of a turret tier; run-time scaled unit damage       |
-| `MAX_BREACH_BASE_COST` | 1 000 000  | `breachBaseCost` and `breachHealthPerCost` in `sim.json`                   |
-| `MAX_ARENA_CELLS`      | 16 384     | arena cells (`width * height`) for which a breach field is computed        |
+| Constant               | Value               | Applies to                                                                |
+| ---------------------- | ------------------- | ------------------------------------------------------------------------- |
+| `MAX_HEALTH`           | 1 000 000 000 000   | `health` of every building tier (Core included) and unit; run-time health |
+| `MAX_DAMAGE`           | 1 000 000 000 000   | `damage` of a unit and of a turret tier; run-time scaled unit damage      |
+| `MAX_BREACH_BASE_COST` | 1 000 000           | `breachBaseCost` and `breachHealthPerCost` in `sim.json`                  |
+| `MAX_ARENA_CELLS`      | 8 192               | arena cells (`width * height`) for which a breach field is computed       |
+| `MAX_TICK_DAMAGE`      | 2^52                | most damage one target takes in one tick (the sum saturates here)         |
+| `MAX_HIT`              | 2^51                | most one hit may deal after Overload scaling                              |
 
 A loader reports a value above its cap like any other bad field (for example
-`"health" must be at most 10000000 (got 3000000000)`), and the schemas carry
-the same `maximum`. The caps apply to the numbers as declared; they are not
-tier-by-tier relative.
+`"health" must be at most 1000000000000 (got 3000000000000)`), and the schemas
+carry the same `maximum`. The caps apply to the numbers as declared; they are
+not tier-by-tier relative.
 
-Derivation of the bound, for the largest supported board (four plots; the
-shipped content gives `4 * 24` columns and `2 * 16 + 7` rows, 3744 cells,
-well under `MAX_ARENA_CELLS`):
+Every place where health, damage or strength is multiplied or summed, with
+its worst case at the caps (`H = MAX_HEALTH = MAX_DAMAGE = 1e12`; the shipped
+board has 3744 cells, `MAX_ARENA_CELLS` allows more than twice that):
 
-- A cell on a breach route costs at most `breachBaseCost + ceil(health /
-  breachHealthPerCost)`, at most `1 000 000 + 10 000 000 = 1.1e7` (an open
-  cell costs 1).
-- A least-cost route enters each cell at most once, so every distance is at
-  most `16 384 * 1.1e7 < 1.81e11`.
-- The breach heap packs `distance * cells + cell` into one number, at most
-  `(1.81e11 + 1.1e7) * 16 384 + 16 383 < 2.97e15`, below `2^53 - 1 =
-  9.007e15`. The computation never rounds. Distances and each building's
-  maximum health are held in 64-bit float arrays that only ever contain
-  integers (never 32-bit integers, which would wrap at 2^31), and every sum
-  uses `addInt`/`mulInt`, so a value outside the safe range is an error
-  (`RangeError`), never a wrapped number. A board with more than
-  `MAX_ARENA_CELLS` cells is an error when its breach field is computed.
-- The time-limit rule multiplies two Core healths: at most `MAX_HEALTH^2 =
-  1e14`.
+| Quantity | Worst case | Why it is exact |
+| --- | --- | --- |
+| Breach cost of one cell, `breachBaseCost + ceil(health / breachHealthPerCost)` | `1e6 + 1e12 = 1.000001e12` | one addition, checked with `addInt` |
+| Breach distance, the sum of cell costs along a least-cost route | `8192 * 1.000001e12 < 8.2e15` | a route enters each cell at most once; below `2^53 - 1 = 9.007e15`; `addInt` throws otherwise |
+| Breach heap order | none | the heap compares `(distance, cell)` pairs, distance first and then cell index; no packed key and no product |
+| Time-limit rule, `hp0 / max0` against `hp1 / max1` | none | compared exactly by the Euclid-style `compareFractions` (no product of healths), for any safe integers |
+| Scaled unit health or damage, `floor(v * (100 + P) / 100)` | `v * (100 + P) <= 100 * H + 99 < 1.1e14` | the result is checked against the cap; `mulPct` throws if the product is unsafe |
+| Modifier on health or turret damage, `floor(v * (100 + S) / 100)` | `v <= H`, so `S` up to 8907 is safe | `mulPct` throws beyond that; the result is checked against the cap |
+| Overload hit, `floor(damage * (100 + level * overloadDamageStepPercent) / 100)` | at most `MAX_HIT = 2^51 = 2.25e15` | `createArenaSim` computes it for the largest `level` (at `maxBattleTicks`) and for every unit type at the side's largest strength, and fails at setup if it passes `MAX_HIT`; shipped: level 97, 2040 percent, so at most 2.04e13 for a unit of 1e12 damage |
+| Overload Core decay, `level * overloadCoreDamageStep` | at most `MAX_HIT` | checked at setup the same way; shipped: 485 |
+| Damage to one target in one tick (units, turrets, decay) | saturates at `MAX_TICK_DAMAGE = 2^52` | each term is at most `MAX_HIT` (a turret at most `MAX_DAMAGE`); `partial sum + hit <= 2^52 + 2^51 < 2^53`, so the sum is exact, and a sum that reaches the cap stays there |
+| Core overkill, `coreRemaining = hp - damage` | magnitude at most `2^52` | a saturated sum means the target is long dead (health is at most `H`); two sums at the cap compare equal |
+| Unit strength percent `P` (base option + modifiers + ramp bonus) | the largest value accepted is `maxStrengthPercent(unit)`, 2 499 999 999 902 for the shipped soldier | `unitStats` throws a `RangeError` for any `P` that would push a unit past `MAX_HEALTH` or `MAX_DAMAGE`; `addInt` for the sum of percents |
+
+Distances and each building's maximum health are held in 64-bit float arrays
+that only ever contain integers (never 32-bit integers, which would wrap at
+2^31), and every sum outside the damage rule uses `addInt`/`mulInt`/`mulPct`,
+so a value outside the safe range is an error (`RangeError`), never a wrapped
+or rounded number. A board with more than `MAX_ARENA_CELLS` cells is an error
+when its breach field is computed.
 
 Values that are scaled at run time are held to the same bound and checked,
-never wrapped:
+never wrapped. Every check is made by `createArenaSim` before tick 0, so a
+battle either starts or fails with a `RangeError` at setup, never in the
+middle:
 
+- **Maximum health** of a building is computed in one place (`maxHealthOf` in
+  `arena-sim.ts`) and used for both the health it starts with and its breach
+  cost: the tier's health (the Core is tier 1), or the `coreHealth` side
+  option for the Core, then raised by the team's `core_health_percent` (Core)
+  or matching `building_health_percent` effects (any other building), as
+  `floor(value * (100 + sum) / 100)`. The result must not exceed `MAX_HEALTH`;
+  the `coreHealth` option must be an integer from 1 to `MAX_HEALTH`.
+- **Turret damage** (`floor(tier damage * (100 + sum) / 100)` with the team's
+  `turret_damage_percent`) must not exceed `MAX_DAMAGE`.
 - A unit's scaled health and damage (`mulPct(base, 100 + P)`, see "Units")
   must not exceed `MAX_HEALTH` and `MAX_DAMAGE`; otherwise `unitStats` throws a
-  `RangeError` naming the unit. `createArenaSim` makes the check for every
-  unit type up front, with the side's `unitStrengthPercent` option plus the
-  largest `unit_strength` bonus (`maxUnitStrengthPercent`), so a battle either
-  starts or fails at tick 0.
-- The `coreHealth` side option must be an integer from 1 to `MAX_HEALTH`;
-  otherwise `createArenaSim` throws a `RangeError`.
-- Consequence for PvE: a generated threat is not limited (the budget grows
-  until `maxThreatRound`, 63 with the shipped content), but a battle against
-  it can only start while its Core health and scaled unit stats are within the
-  bound. With the shipped content the Core is the limit: every threat is
-  within it up to round 29, the first to pass it is a hard or boss Fortress
-  for a party of four at round 30 (a Core of 13 million health), and from round
-  42 on every threat is past it; the scaled health of a shipped unit passes
-  the cap only at much higher rounds, near the clamp. Starting a PvE battle against such a threat throws the
-  `RangeError` above (it is not returned as a `BattleError`). Rounds that high
-  are far beyond any run that can be survived.
+  `RangeError` naming the unit. For each side, `createArenaSim` checks every
+  unit type up front with `P` = the side's `unitStrengthPercent` option, plus
+  its `unit_strength_percent` modifiers, plus the largest ramp bonus the side
+  can reach: `maxUnitStrengthPercent` if it has a `unit_strength` economy
+  building, otherwise 0. `maxStrengthPercent(unit)` (in `units.ts`) is the
+  largest `P` a unit allows: the largest `P` with `floor(health * (100 + P) /
+  100) <= MAX_HEALTH` and `floor(damage * (100 + P) / 100) <= MAX_DAMAGE`
+  (a unit with 0 damage does not limit on damage).
+- The Overload hit and Core decay at the last possible tick must not exceed
+  `MAX_HIT` (see the table).
+- **Generated threats stay far below these bounds.** With the shipped content,
+  for every archetype, threat type and party size 1 to 4, in every round 1 to
+  `maxThreatRound` (63), the generated Core health is below `MAX_HEALTH` and
+  `unitStrengthPercent` is below the largest `P` every unit allows, so
+  nothing is cut off. The largest values, at round 63, are a Core health of
+  266 885 486 545 (2.67e11, 3.7 times below `MAX_HEALTH`) and a
+  `unitStrengthPercent` of 4 271 604 748 (585 times below 2 499 999 999 902).
+  `generateThreat` still clamps (see "PvE threats", step 8) as a safety net
+  for other content, and a test asserts that the clamp is never reached by the
+  shipped content in rounds 1 to 63.
 
 ## Golden vectors
 
@@ -1353,7 +1377,7 @@ A unit's **targeting** comes from its definition: `core`, `infrastructure`
   enemy building other than the Core; terrain, the unit's own side's blocking
   buildings and the Core's own cells are impassable. Entering an open cell
   costs 1; entering a cell covered by an enemy building costs
-  `breachBaseCost + ceil(maxHealth / breachHealthPerCost)` (at most 1.1e7: see
+  `breachBaseCost + ceil(maxHealth / breachHealthPerCost)` (at most 1.000001e12: see
   "Content bounds" for why every distance stays exact), where `maxHealth` is
   that building's **maximum** health (its tier's health from the content, the
   health it starts the battle with), never its current health (`content/sim.json`:
@@ -1787,8 +1811,10 @@ that applies ends the battle.
    `reason: "tiebreak_defender"`.
 3. **Time limit**: `maxBattleTicks` (12000) ticks have been simulated with
    both Cores alive: the side with the higher Core health as a fraction of its
-   Core's maximum health wins, compared by cross-multiplication in integers
-   (`hp0 * max1` against `hp1 * max0`); if equal, side 1 wins. `reason:
+   Core's maximum health wins, compared exactly in integers without forming a product (the fractions
+   `hp0 / max0` and `hp1 / max1` are compared by Euclid's algorithm: integer
+   parts first, then the reciprocals of the remainders, see `compareFractions`
+   in `int.ts`); if equal, side 1 wins. `reason:
    "time_limit"`. With Overload this is unreachable (see the bound under
    "Overload"); it is a safety net, tested with Overload effectively disabled.
 
@@ -1894,13 +1920,15 @@ identically; with none the field is absent.
 - **`unitStrengthPercent`**: a base strength percent for every unit the side
   spawns (producers and waves). `unitStats` receives the sum of this and the
   side's `unit_strength` ramp bonus (which is capped separately by
-  `maxUnitStrengthPercent`; the base is not).
+  `maxUnitStrengthPercent`; the base is not) and its `unit_strength_percent`
+  modifiers.
 - **`coreHealth`**: the side's Core starts with this health (and it is the
   Core's maximum health in the summary and the time-limit rule) instead of the
-  definition's. It must be an integer from 1 to `MAX_HEALTH`, and
-  `unitStrengthPercent` must keep every unit type within the stat bounds even
-  with the largest ramp bonus added; otherwise the battle does not start (a
-  `RangeError` from `createArenaSim`), see "Content bounds".
+  definition's (before the team's `core_health_percent`). It must be an integer
+  from 1 to `MAX_HEALTH`, and `unitStrengthPercent` must keep every unit type
+  within the stat bounds even with the modifiers and the largest ramp bonus the
+  side can reach added; otherwise the battle does not start (a `RangeError`
+  from `createArenaSim`), see "Content bounds".
 
 Everything else (unit behaviour, aggro, breach logic, Overload, end conditions
 and the defender tiebreak) is unchanged.
@@ -2023,6 +2051,12 @@ the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
    max(minCoreHealth, floor((S - spent) * coreHealthPerBudget / 100))`: every
    unspent point of the stronghold budget, including what a full layout or the
    building caps could not absorb, becomes Core health.
+8. **Content bounds.** After steps 1 to 7: `coreHealth = min(MAX_HEALTH,
+   coreHealth)` and `unitStrengthPercent = min(unitStrengthPercent, L)`, where
+   `L` is the smallest `maxStrengthPercent` over all unit types (see "Content
+   bounds"). The unit counts are not changed; the excess strength or health
+   budget is lost. This is only a safety net: with the shipped content neither
+   clamp is reached in rounds 1 to `maxThreatRound` (see "Content bounds").
 
 ### Layouts (in `threat-layouts.ts`; parameters in `threats.json`)
 
@@ -2383,8 +2417,8 @@ target held by the side):
 
 | Kind | Applied |
 | --- | --- |
-| `building_health_percent` (`target`: `all`, `wall`, `gate`, `turret`, `source`, `route`, `unit_producer`, `economy`) | to the starting health of matching placed buildings (not the Core; a defense matches its defense type, others their kind; `all` matches every building); at tick 0 in `createArenaSim` |
-| `core_health_percent` | to the starting Core health (after a side-option Core override) |
+| `building_health_percent` (`target`: `all`, `wall`, `gate`, `turret`, `source`, `route`, `unit_producer`, `economy`) | to the maximum (and so the starting) health of matching placed buildings (not the Core; a defense matches its defense type, others their kind; `all` matches every building); at tick 0 in `createArenaSim` |
+| `core_health_percent` | to the maximum (and so the starting) Core health (after a side-option Core override) |
 | `unit_strength_percent` | added to the unit strength percent at each spawn (health and damage, see the unit stats seam in "The arena") |
 | `turret_damage_percent` | to the damage of each of the side's turrets, when the arena context is built |
 

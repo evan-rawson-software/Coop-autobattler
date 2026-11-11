@@ -1,3 +1,4 @@
+import { MAX_HEALTH } from './limits.js';
 import { describe, expect, test } from 'vitest';
 import type { ArenaEvent, UnitSim } from './arena-sim.js';
 import { simulateBattle, startBattle, type BattleResult } from './battle.js';
@@ -604,6 +605,48 @@ describe('end conditions', () => {
     setCore(battle, 0, 125);
     setCore(battle, 1, 125);
     expect(finish(battle).winner).toBe(1);
+  });
+
+  test('the time limit compares fractions exactly with maxima near the cap', () => {
+    const noOverload: SimConfig = {
+      ...simConfig,
+      overloadStartTick: 1_000_000,
+      maxBattleTicks: 20,
+    };
+    const cfg = { sim: noOverload, mapgen };
+    const M = MAX_HEALTH;
+    // [max0, hp0, max1, hp1, winner]. The cross products are near 1e24, past
+    // 2^53, so only an exact comparison gets these right.
+    for (const [max0, hp0, max1, hp1, winner] of [
+      [M, M - 1, M - 1, M - 2, 0], // (M-1)/M > (M-2)/(M-1)
+      [M - 1, M - 2, M, M - 1, 1],
+      [M, M - 1, M - 1, M - 1, 1], // 1 - 1/M < 1
+      [M, M, M - 1, M - 1, 1], // equal fractions: side 1
+      [M, 500_000_000_000, M - 2, 499_999_999_998, 0],
+      [999_999_999_989, 499_999_999_994, M, 500_000_000_000, 1],
+      [M, 123_456_789_012, 999_999_999_999, 123_456_789_011, 0],
+    ] as const) {
+      const s = startBattle(
+        {
+          teamA: coreOnly(),
+          teamB: coreOnly(),
+          seed: 1,
+          sideOptions: [{ coreHealth: max0 }, { coreHealth: max1 }],
+        },
+        content,
+        cfg,
+        { zone: emptyZone(12) },
+      );
+      if (!s.ok) throw new Error('refused');
+      setCore(s.battle, 0, hp0);
+      setCore(s.battle, 1, hp1);
+      const r = finish(s.battle);
+      expect(r.reason).toBe('time_limit');
+      expect(
+        r.winner,
+        `${String(hp0)}/${String(max0)} vs ${String(hp1)}/${String(max1)}`,
+      ).toBe(winner);
+    }
   });
 
   test('with the real constants no battle reaches the time limit', () => {

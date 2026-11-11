@@ -6,7 +6,12 @@ import simJson from '../../../content/sim.json';
 import terrainJson from '../../../content/terrain.json';
 import unitsJson from '../../../content/units.json';
 import { toArena } from './arena.js';
-import { computeBreach } from './arena-paths.js';
+import {
+  breachCost,
+  breachPassable,
+  computeBreach,
+  NEIGHBORS,
+} from './arena-paths.js';
 import { createArenaSim, startArenaBattle, unitStats } from './arena-sim.js';
 import { loadBuildings } from './buildings.js';
 import { loadAllContentOrThrow } from './content.js';
@@ -15,6 +20,8 @@ import {
   MAX_BREACH_BASE_COST,
   MAX_DAMAGE,
   MAX_HEALTH,
+  MAX_HIT,
+  MAX_TICK_DAMAGE,
 } from './limits.js';
 import { loadSimConfig } from './sim-config.js';
 import { loadUnits, loadUnitsOrThrow } from './units.js';
@@ -78,12 +85,16 @@ function ringedLab(variant: typeof content): {
 }
 
 describe('bounds: the constants', () => {
-  test('heap keys, distances and Core cross products stay safe integers', () => {
+  test('the huge caps and the breach distance stay safe integers', () => {
+    expect(MAX_HEALTH).toBeGreaterThanOrEqual(1e12);
+    expect(MAX_DAMAGE).toBeGreaterThanOrEqual(1e12);
     const cell = MAX_BREACH_BASE_COST + MAX_HEALTH;
+    // A least-cost route enters each cell once; the heap forms no product.
     const dist = MAX_ARENA_CELLS * cell;
-    const key = (dist + cell) * MAX_ARENA_CELLS + MAX_ARENA_CELLS;
-    expect(key).toBeLessThan(Number.MAX_SAFE_INTEGER);
-    expect(MAX_HEALTH * MAX_HEALTH).toBeLessThan(Number.MAX_SAFE_INTEGER);
+    expect(dist).toBeLessThan(Number.MAX_SAFE_INTEGER);
+    // Damage sums: a saturated sum plus one more hit is exact.
+    expect(MAX_TICK_DAMAGE + MAX_HIT).toBeLessThan(Number.MAX_SAFE_INTEGER);
+    expect(MAX_HIT).toBeGreaterThan(MAX_DAMAGE);
     // Four shipped plots plus a neutral zone fit with room to spare.
     expect(4 * 24 * (2 * 16 + 7)).toBeLessThan(MAX_ARENA_CELLS);
   });
@@ -96,11 +107,11 @@ describe('bounds: loaders reject content above the cap', () => {
   test('a building tier health above the cap', () => {
     const b = clone(buildingsJson) as { buildings: RawBuilding[] };
     got(got(b.buildings.find((x) => x.id === 'bld_wall')).tiers[2])['health'] =
-      3_000_000_000;
+      3_000_000_000_000;
     const r = loadBuildings(b, { resources, units });
     if (r.ok) throw new Error('expected failure');
     expect(r.errors.join('\n')).toMatch(
-      /bld_wall.*tiers\[2\]: "health" must be at most 10000000 \(got 3000000000\)/,
+      /bld_wall.*tiers\[2\]: "health" must be at most 1000000000000 \(got 3000000000000\)/,
     );
   });
 
@@ -116,18 +127,20 @@ describe('bounds: loaders reject content above the cap', () => {
     ] = MAX_DAMAGE + 1;
     const r = loadBuildings(b, { resources, units });
     if (r.ok) throw new Error('expected failure');
-    expect(r.errors.join('\n')).toMatch(/"damage" must be at most 10000000/);
+    expect(r.errors.join('\n')).toMatch(
+      /"damage" must be at most 1000000000000/,
+    );
   });
 
   test('a unit health or damage above the cap', () => {
     const u = clone(unitsJson) as { units: Record<string, unknown>[] };
-    got(u.units[0])['health'] = 2 ** 31;
+    got(u.units[0])['health'] = MAX_HEALTH + 1;
     got(u.units[1])['damage'] = MAX_DAMAGE + 1;
     const r = loadUnits(u);
     if (r.ok) throw new Error('expected failure');
     const text = r.errors.join('\n');
-    expect(text).toMatch(/"health" must be at most 10000000/);
-    expect(text).toMatch(/"damage" must be at most 10000000/);
+    expect(text).toMatch(/"health" must be at most 1000000000000/);
+    expect(text).toMatch(/"damage" must be at most 1000000000000/);
   });
 
   test('sim.json breach constants above the cap', () => {
@@ -189,7 +202,7 @@ describe('bounds: breach costs with health near the cap', () => {
     expect(wall).toBeGreaterThan(0);
   });
 
-  test('distances past 2^31 are exact (Float64, no wrap, no overflow in keys)', () => {
+  test('distances past 2^31 are exact (Float64, no wrap, no packed keys)', () => {
     const { lab } = ringedLab(content);
     const core = new Lab(board([]));
     core.core(11, 0);
@@ -224,6 +237,121 @@ describe('bounds: breach costs with health near the cap', () => {
   });
 });
 
+describe('bounds: the (distance, cell) heap', () => {
+  /** A plain O(n^2) Dijkstra with the same cost rules, as the reference. */
+  function reference(
+    ctx: ReturnType<typeof startArenaBattle>['ctx'],
+    hpOf: (ref: number) => number,
+    base: number,
+    per: number,
+  ): number[] {
+    const { width, height } = ctx.arena.geom;
+    const n = width * height;
+    const dist: number[] = new Array<number>(n).fill(-1);
+    const done: boolean[] = new Array<boolean>(n).fill(false);
+    const core = got(ctx.arena.buildings[ctx.arena.coreRef[1] ?? -1]);
+    for (const c of core.cells) {
+      for (const [dx, dy] of NEIGHBORS) {
+        const x = c.x + dx;
+        const y = c.y + dy;
+        if (x < 0 || y < 0 || x >= width || y >= height) continue;
+        const k = y * width + x;
+        if (breachPassable(ctx.arena, 0, k)) dist[k] = 0;
+      }
+    }
+    for (;;) {
+      let best = -1;
+      for (let k = 0; k < n; k++) {
+        const d = dist[k] ?? -1;
+        if (d < 0 || done[k] === true) continue;
+        if (best < 0 || d < (dist[best] ?? 0)) best = k;
+      }
+      if (best < 0) break;
+      done[best] = true;
+      const through =
+        (dist[best] ?? 0) + breachCost(ctx.arena, 0, best, hpOf, base, per);
+      const x = best % width;
+      const y = Math.floor(best / width);
+      for (const [dx, dy] of NEIGHBORS) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+        const nk = ny * width + nx;
+        if (!breachPassable(ctx.arena, 0, nk)) continue;
+        const cur = dist[nk] ?? -1;
+        if (cur === -1 || through < cur) dist[nk] = through;
+      }
+    }
+    return dist;
+  }
+
+  test('matches a reference Dijkstra with many ties and costs near the cap', () => {
+    let seed = 7;
+    const next = (m: number): number => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed % m;
+    };
+    for (let round = 0; round < 12; round++) {
+      const lab = new Lab(board([]));
+      lab.core(11, 0);
+      for (let i = 0; i < 40; i++) {
+        const x = next(24);
+        const y = 1 + next(15);
+        try {
+          lab.put('bld_wall', x, y, 0, 1);
+        } catch {
+          // The cell is taken or invalid: try another layout.
+        }
+      }
+      const mine = new Lab(board([]));
+      mine.core(11, 0);
+      const { ctx } = startArenaBattle(
+        mine.state,
+        lab.state,
+        GAP,
+        content,
+        simConfig,
+      );
+      // Costs: 0 and small values (ties everywhere) or up to MAX_HEALTH.
+      const hp: number[] = ctx.arena.buildings.map(() => {
+        const k = next(4);
+        return k === 0 ? MAX_HEALTH : k === 1 ? 1 : k === 2 ? 2 : next(1000);
+      });
+      const hpOf = (r: number): number => hp[r] ?? 0;
+      const per = round % 2 === 0 ? 1 : 3;
+      const base = round % 3 === 0 ? 0 : 5;
+      const f = computeBreach(ctx.arena, 0, hpOf, base, per);
+      expect(Array.from(f)).toEqual(reference(ctx, hpOf, base, per));
+    }
+  });
+
+  test('the longest possible route at the cap stays exact', () => {
+    const lab = new Lab(board([]));
+    lab.core(11, 0);
+    const mine = new Lab(board([]));
+    mine.core(11, 0);
+    const { ctx } = startArenaBattle(
+      mine.state,
+      lab.state,
+      GAP,
+      content,
+      simConfig,
+    );
+    // Every passable cell costs the maximum a cell can cost.
+    const cell = MAX_BREACH_BASE_COST + MAX_HEALTH;
+    const f = computeBreach(
+      ctx.arena,
+      0,
+      () => MAX_HEALTH,
+      MAX_BREACH_BASE_COST,
+      1,
+    );
+    expect(Math.max(...f)).toBeLessThan(Number.MAX_SAFE_INTEGER);
+    for (const v of f) expect(v === -1 || v % 1 === 0).toBe(true);
+    expect(cell * MAX_ARENA_CELLS).toBeLessThan(Number.MAX_SAFE_INTEGER);
+  });
+});
+
 describe('bounds: run-time scaling is checked', () => {
   const soldier = got(content.units.get('unit_soldier'));
 
@@ -233,8 +361,8 @@ describe('bounds: run-time scaling is checked', () => {
   });
 
   test('unit strength past the cap throws a clear error', () => {
-    expect(() => unitStats(0, soldier, 100_000_000)).toThrow(
-      /unit_soldier: scaled health .* exceeds the maximum 10000000/,
+    expect(() => unitStats(0, soldier, 3_000_000_000_000)).toThrow(
+      /unit_soldier: scaled health .* exceeds the maximum 1000000000000/,
     );
   });
 
@@ -248,7 +376,7 @@ describe('bounds: run-time scaling is checked', () => {
     };
     expect(() => {
       mk(MAX_HEALTH + 1);
-    }).toThrow(/coreHealth must be an integer from 1 to 10000000/);
+    }).toThrow(/coreHealth must be an integer from 1 to 1000000000000/);
     expect(() => {
       mk(0);
     }).toThrow(RangeError);
@@ -262,7 +390,7 @@ describe('bounds: run-time scaling is checked', () => {
     a.core(11, 0);
     expect(() =>
       startArenaBattle(a.state, a.state, GAP, content, simConfig, {
-        sideOptions: [{ unitStrengthPercent: 1_000_000_000 }, null],
+        sideOptions: [{ unitStrengthPercent: 3_000_000_000_000 }, null],
       }),
     ).toThrow(/exceeds the maximum/);
     // A strength that fits every unit type works.

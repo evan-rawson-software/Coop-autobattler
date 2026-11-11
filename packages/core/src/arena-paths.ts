@@ -5,7 +5,7 @@
  * See docs/rules-reference.md, "Goals and movement fields".
  */
 
-import { addInt, divFloor, mulInt } from './int.js';
+import { addInt, divFloor } from './int.js';
 import { assertWithin, MAX_ARENA_CELLS } from './limits.js';
 import type { Arena, ArenaBuilding } from './arena.js';
 import type { Targeting } from './units.js';
@@ -265,41 +265,66 @@ export function computeBreach(
   const n = width * height;
   // Distances can exceed 2^31 (a wall may have health up to MAX_HEALTH), so
   // they live in a Float64Array of integers. See limits.ts for why every
-  // distance and heap key below stays a safe integer.
+  // distance below stays a safe integer.
   assertWithin(n, 1, MAX_ARENA_CELLS, 'Breach: arena cell count');
   const dist = new Float64Array(n).fill(-1);
   const core = arena.buildings[arena.coreRef[1 - side] ?? -1];
   if (core === undefined || !core.alive) return dist;
 
-  // Binary min-heap of dist * n + cell.
-  const heap: number[] = [];
-  const push = (v: number): void => {
-    let i = heap.length;
-    heap.push(v);
+  // Binary min-heap of (distance, cell) pairs, ordered by distance and then
+  // by cell index, held in two parallel arrays (no packed key, so a distance
+  // only has to be a safe integer, see limits.ts).
+  const heapD: number[] = [];
+  const heapK: number[] = [];
+  const less = (d1: number, k1: number, d2: number, k2: number): boolean =>
+    d1 < d2 || (d1 === d2 && k1 < k2);
+  const push = (d: number, k: number): void => {
+    let i = heapD.length;
+    heapD.push(d);
+    heapK.push(k);
     while (i > 0) {
       const p = (i - 1) >> 1;
-      if ((heap[p] ?? 0) <= v) break;
-      heap[i] = heap[p] ?? 0;
+      if (!less(d, k, heapD[p] ?? 0, heapK[p] ?? 0)) break;
+      heapD[i] = heapD[p] ?? 0;
+      heapK[i] = heapK[p] ?? 0;
       i = p;
     }
-    heap[i] = v;
+    heapD[i] = d;
+    heapK[i] = k;
   };
+  /** Removes the smallest pair; returns its cell, its distance in `popped`. */
+  let popped = 0;
   const pop = (): number => {
-    const top = heap[0] ?? 0;
-    const last = heap.pop() ?? 0;
-    if (heap.length > 0) {
+    const topD = heapD[0] ?? 0;
+    const topK = heapK[0] ?? 0;
+    const lastD = heapD.pop() ?? 0;
+    const lastK = heapK.pop() ?? 0;
+    if (heapD.length > 0) {
       let i = 0;
       for (;;) {
         let c = 2 * i + 1;
-        if (c >= heap.length) break;
-        if (c + 1 < heap.length && (heap[c + 1] ?? 0) < (heap[c] ?? 0)) c += 1;
-        if ((heap[c] ?? 0) >= last) break;
-        heap[i] = heap[c] ?? 0;
+        if (c >= heapD.length) break;
+        if (
+          c + 1 < heapD.length &&
+          less(
+            heapD[c + 1] ?? 0,
+            heapK[c + 1] ?? 0,
+            heapD[c] ?? 0,
+            heapK[c] ?? 0,
+          )
+        ) {
+          c += 1;
+        }
+        if (!less(heapD[c] ?? 0, heapK[c] ?? 0, lastD, lastK)) break;
+        heapD[i] = heapD[c] ?? 0;
+        heapK[i] = heapK[c] ?? 0;
         i = c;
       }
-      heap[i] = last;
+      heapD[i] = lastD;
+      heapK[i] = lastK;
     }
-    return top;
+    popped = topD;
+    return topK;
   };
 
   for (const c of core.cells) {
@@ -310,13 +335,12 @@ export function computeBreach(
       const k = y * width + x;
       if (dist[k] !== -1 || !breachPassable(arena, side, k)) continue;
       dist[k] = 0;
-      push(k);
+      push(0, k);
     }
   }
-  while (heap.length > 0) {
-    const top = pop();
-    const k = top % n;
-    const d = divFloor(top, n);
+  while (heapD.length > 0) {
+    const k = pop();
+    const d = popped;
     if (d !== dist[k]) continue; // stale entry
     const x = k % width;
     const y = divFloor(k, width);
@@ -330,7 +354,7 @@ export function computeBreach(
       const cur = dist[nk] ?? -1;
       if (cur === -1 || through < cur) {
         dist[nk] = through;
-        push(addInt(mulInt(through, n), nk));
+        push(through, nk);
       }
     }
   }

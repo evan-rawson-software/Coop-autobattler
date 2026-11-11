@@ -36,8 +36,21 @@ import {
   type SimEvent,
 } from './flow-sim.js';
 import type { EconomyEffectType, Side } from './buildings.js';
-import { addInt, divFloor, modFloor, mulPct } from './int.js';
-import { assertWithin, MAX_DAMAGE, MAX_HEALTH } from './limits.js';
+import {
+  addInt,
+  addSaturating,
+  divFloor,
+  modFloor,
+  mulInt,
+  mulPct,
+} from './int.js';
+import {
+  assertWithin,
+  MAX_DAMAGE,
+  MAX_HEALTH,
+  MAX_HIT,
+  MAX_TICK_DAMAGE,
+} from './limits.js';
 import { modifierPercent } from './modifiers.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
 import type { Cell } from './map.js';
@@ -391,8 +404,9 @@ export interface ArenaContext {
   arg: Int32Array;
   /**
    * Damage accumulated this tick. Float64Array holding integers, summed with
-   * `addInt`: exact up to the safe-integer limit, a RangeError beyond it
-   * (never a wrap-around, which an Int32Array would do past 2^31).
+   * `addDamage` (saturating at MAX_TICK_DAMAGE, each hit at most MAX_HIT, so
+   * every sum is exact; never a wrap-around, which an Int32Array would do
+   * past 2^31).
    */
   unitDamage: Float64Array;
   buildingDamage: Float64Array;
@@ -463,9 +477,17 @@ function maxHealthOf(
   return hp;
 }
 
+/** Adds one hit to the damage a target takes this tick (saturating, exact). */
+function addDamage(sum: number, hit: number): number {
+  return addSaturating(sum, hit, MAX_TICK_DAMAGE);
+}
+
 /** A turret tier's damage with the team's `turret_damage_percent`, checked. */
 function turretDamageOf(team: TeamState, damage: number): number {
-  const v = mulPct(damage, 100 + modifierPercent(team, 'turret_damage_percent'));
+  const v = mulPct(
+    damage,
+    100 + modifierPercent(team, 'turret_damage_percent'),
+  );
   if (v > MAX_DAMAGE) {
     throw new RangeError(
       `Turret damage ${String(v)} with modifiers exceeds the maximum ${String(MAX_DAMAGE)}.`,
@@ -499,7 +521,7 @@ export function createArenaContext(
       sim.teams[side],
       b,
       content,
-      b.kind === 'core' ? sim.sideOptions?.[side]?.coreHealth : undefined,
+      b.kind === 'core' ? sim.sideOptions?.[side].coreHealth : undefined,
     );
   }
   const producers = new Map<number, ProducerInfo>();
@@ -615,18 +637,39 @@ export function createArenaSim(
     health.push({ side: b.side, building: b.id, hp });
   }
   // Fail at the start, not mid-battle: with the side's base strength, its
-  // strength modifiers and the largest ramp bonus, every unit type must stay
-  // within the stat bounds.
+  // strength modifiers and the largest ramp bonus it can reach (none without
+  // a unit_strength economy building), every unit type must stay within the
+  // stat bounds.
+  const maxLevel = overloadLevel(simConfig.maxBattleTicks, simConfig);
   for (const side of [0, 1] as const) {
     const base = options.sideOptions?.[side]?.unitStrengthPercent ?? 0;
     assertWithin(base, 0, Number.MAX_SAFE_INTEGER, 'unitStrengthPercent');
     const team = teams[side];
+    const hasRamp = team.buildings.some((p) => {
+      const def = content.buildings.get(p.def);
+      return def?.kind === 'economy' && def.effect.type === 'unit_strength';
+    });
     const strength = addInt(
       addInt(base, modifierPercent(team, 'unit_strength_percent')),
-      simConfig.maxUnitStrengthPercent,
+      hasRamp ? simConfig.maxUnitStrengthPercent : 0,
     );
-    for (const def of content.units.list()) unitStats(0, def, strength);
+    for (const def of content.units.list()) {
+      const stats = unitStats(0, def, strength);
+      // Overload at the last possible tick scales every hit; one hit must
+      // stay within MAX_HIT so the per-tick damage sums are exact.
+      const hit = mulPct(
+        stats.damage,
+        addInt(100, mulInt(maxLevel, simConfig.overloadDamageStepPercent)),
+      );
+      assertWithin(hit, 0, MAX_HIT, `Unit ${def.id}: Overload hit`);
+    }
   }
+  assertWithin(
+    mulInt(maxLevel, simConfig.overloadCoreDamageStep),
+    0,
+    MAX_HIT,
+    'Overload Core damage',
+  );
   // Turret damage with modifiers: createArenaContext derives it by the same
   // checked function; run it now so the error comes at setup.
   for (const team of teams) {
@@ -1040,7 +1083,7 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (target === undefined) continue;
     t.charge = 0;
     t.cooldown = info.cooldownTicks;
-    ctx.unitDamage[best] = addInt(ctx.unitDamage[best] ?? 0, info.damage);
+    ctx.unitDamage[best] = addDamage(ctx.unitDamage[best] ?? 0, info.damage);
     ctx.events?.push({
       tick,
       type: 'turret_fired',
@@ -1447,12 +1490,12 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     if (act === ACT_UNIT) {
       const t = units[arg];
       if (t === undefined) continue;
-      ctx.unitDamage[arg] = addInt(ctx.unitDamage[arg] ?? 0, damage);
+      ctx.unitDamage[arg] = addDamage(ctx.unitDamage[arg] ?? 0, damage);
       target = { kind: 'unit', unit: t.id };
     } else {
       const b = arena.buildings[arg];
       if (b === undefined) continue;
-      ctx.buildingDamage[arg] = addInt(ctx.buildingDamage[arg] ?? 0, damage);
+      ctx.buildingDamage[arg] = addDamage(ctx.buildingDamage[arg] ?? 0, damage);
       target =
         b.kind === 'core'
           ? { kind: 'core', side: b.side }
@@ -1473,7 +1516,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     for (const side of [0, 1]) {
       const ref = arena.coreRef[side] ?? -1;
       if (ref < 0 || arena.buildings[ref]?.alive !== true) continue;
-      ctx.buildingDamage[ref] = addInt(ctx.buildingDamage[ref] ?? 0, decay);
+      ctx.buildingDamage[ref] = addDamage(ctx.buildingDamage[ref] ?? 0, decay);
       events?.push({ tick, type: 'overload_core_damage', side, damage: decay });
     }
   }
