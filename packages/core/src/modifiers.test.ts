@@ -200,8 +200,8 @@ describe('loadEvents', () => {
     const r = loadEvents({
       offerCount: 0,
       events: [
-        { id: 'evt_a', type: 'x', weight: 1, repeatable: false },
-        { id: 'evt_a', type: 'x', weight: 1, repeatable: false },
+        { id: 'evt_a', type: 'x', weight: 1 },
+        { id: 'evt_a', type: 'x', weight: 1 },
       ],
       modifiers: [
         {

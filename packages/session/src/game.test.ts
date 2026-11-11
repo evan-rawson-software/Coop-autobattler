@@ -398,11 +398,10 @@ describe('the event step', () => {
         Json
       >[];
       expect(offers.some((o) => o['type'] === 'workshop')).toBe(false);
-      expect(offers).toHaveLength(3);
-      expect(new Set(offers.map((o) => o['id'])).size).toBe(3);
-      expect(
-        new Set(offers.map((o) => canonicalJson({ ...o, id: 0 }))).size,
-      ).toBe(3);
+      expect(offers.map((o) => o['type']).sort()).toEqual([
+        'shrine',
+        'windfall',
+      ]);
     }
     // One building below tier 3 is the only candidate.
     const one: RunState = {
@@ -480,7 +479,7 @@ describe('the event step', () => {
     });
   });
 
-  test('the follow-up is a party vote: partial votes wait, a tie goes to the host', () => {
+  test('the follow-up is a party vote: partial votes wait, a split picks one vote at random', () => {
     const s = atEvent(deps, ['Ann', 'Bo']);
     let cur = voteAll(s, 'evt_workshop', deps);
     const fu = pending(cur)['followUp'] as Record<string, Json>;
@@ -496,10 +495,15 @@ describe('the event step', () => {
       deps,
     );
     expect(bad.ok).toBe(false);
-    cur = ok(cur, 0, { type: 'event_choose', choice: a }, deps).state;
+    const last = ok(cur, 0, { type: 'event_choose', choice: a }, deps);
+    cur = last.state;
     expect(cur.step).toBe('shop');
-    // Host (player 0) chose a; the tie went to the host.
-    const id = options[0]?.['building'] as number;
+    // Player 0 chose a, player 1 chose b: one of the two votes was picked.
+    const resolved = last.effects.find((e) => e.type === 'vote_resolved');
+    expect(resolved).toMatchObject({ topic: 'event', tickets: [a, b] });
+    const winner = resolved?.type === 'vote_resolved' ? resolved.choice : null;
+    expect([a, b]).toContain(winner);
+    const id = options[winner === a ? 0 : 1]?.['building'] as number;
     const was = [...s.team.buildings, ...s.team.stash].find((x) => x.id === id);
     const now = [...cur.team.buildings, ...cur.team.stash].find(
       (x) => x.id === id,
@@ -539,7 +543,6 @@ describe('the event step', () => {
           id: 'evt_tribute',
           type: 'tribute',
           weight: 50,
-          repeatable: false,
           params: { gold: 9 },
         },
       ],
@@ -576,9 +579,7 @@ describe('the event step', () => {
   test('an event type without a handler is rejected when the deps are built', () => {
     const events = loadEventsOrThrow({
       offerCount: 3,
-      events: [
-        { id: 'evt_odd', type: 'unheard_of', weight: 1, repeatable: false },
-      ],
+      events: [{ id: 'evt_odd', type: 'unheard_of', weight: 1 }],
       modifiers: [],
     });
     expect(() => createGameDeps(content, { ...gameConfigs, events })).toThrow(
@@ -964,7 +965,7 @@ describe('the run-state format version', () => {
   });
 });
 
-describe('fewer than three event offers, on purpose (issue #48)', () => {
+describe('event offers: one per type, up to three (issue #48)', () => {
   const deps = fixedDeps(true, true);
   const hooks = eventHooks(content, gameConfigs.events);
   const atEvent = until(start(deps), deps, (x) => x.step === 'event_choice');
@@ -1010,7 +1011,7 @@ describe('fewer than three event offers, on purpose (issue #48)', () => {
     }
   });
 
-  test('exactly the draws of the first pass happen; the impossible second Shrine draws nothing', () => {
+  test('exactly one weighted draw per offer happens, none wasted', () => {
     const state = holding(tier3(atEvent), [
       'mod_stout_walls',
       'mod_sharp_turrets',
@@ -1027,16 +1028,67 @@ describe('fewer than three event offers, on purpose (issue #48)', () => {
     }
   });
 
-  test('with a fourth eligible modifier a second, different Shrine is offered', () => {
-    const state = holding(tier3(atEvent), ['mod_stout_walls']);
-    for (let seed = 1; seed <= 100; seed++) {
-      const offers = offersFor(state, seed);
-      expect(offers).toHaveLength(3);
-      const shrines = offers.filter((o) => o['type'] === 'shrine');
-      expect(shrines).toHaveLength(2);
-      expect(shrines[0]?.['modifiers']).not.toEqual(shrines[1]?.['modifiers']);
-      expect(shrines[1]?.['id']).toBe('evt_shrine#2');
+  test('three types available: three offers, never two of one type', () => {
+    // Even with a fourth eligible modifier, there is no second Shrine.
+    for (const state of [
+      atEvent,
+      holding(atEvent, ['mod_stout_walls']),
+      holding(atEvent, ['mod_stout_walls', 'mod_sharp_turrets']),
+    ]) {
+      for (let seed = 1; seed <= 100; seed++) {
+        const offers = offersFor(state, seed);
+        expect(offers.map((o) => o['type']).sort()).toEqual([
+          'shrine',
+          'windfall',
+          'workshop',
+        ]);
+        expect(offers.map((o) => o['id'])).toEqual(
+          offers.map((o) => o['event']),
+        );
+      }
     }
+  });
+
+  test('two types available (no modifier can be taken): two offers', () => {
+    const noMods = eventHooks(
+      content,
+      loadEventsOrThrow({
+        offerCount: 3,
+        events: gameConfigs.events.events.map((e) => ({ ...e })),
+        modifiers: [],
+      }),
+    );
+    for (let seed = 1; seed <= 100; seed++) {
+      const offers = noMods.eventOffers(atEvent, Rng.fromSeed(seed)) as Record<
+        string,
+        Json
+      >[];
+      expect(offers.map((o) => o['type']).sort()).toEqual([
+        'windfall',
+        'workshop',
+      ]);
+    }
+  });
+
+  test('a run with two offers replays to the same state', () => {
+    const events = loadEventsOrThrow({
+      offerCount: 3,
+      events: gameConfigs.events.events.map((e) => ({ ...e })),
+      modifiers: [],
+    });
+    const d = makeGameDeps(
+      { battle: scripted(true, true) },
+      { ...gameConfigs, events },
+    );
+    let s = until(start(d, ['Ann', 'Bo']), d, (x) => x.step === 'event_choice');
+    expect(offersOf(s)).toHaveLength(2);
+    s = voteAll(s, 'evt_windfall', d);
+    s = until(s, d, (x) => x.step === 'event_choice');
+    s = voteAll(s, 'evt_workshop', d);
+    s = step(s, d);
+    const replayed = replayRun(runArgs(['Ann', 'Bo']), s.actionLog, d);
+    expect(replayed.ok).toBe(true);
+    if (replayed.ok) expect(replayed.state).toEqual(s);
   });
 
   test('a Shrine with fewer than three eligible modifiers offers what is left; with none it is not offered', () => {
@@ -1072,6 +1124,79 @@ describe('fewer than three event offers, on purpose (issue #48)', () => {
     }
   });
 
+  describe('several definitions of one type', () => {
+    const twoWindfalls = loadEventsOrThrow({
+      offerCount: 3,
+      events: [
+        ...gameConfigs.events.events.map((e) => ({ ...e })),
+        {
+          id: 'evt_windfall_big',
+          type: 'windfall',
+          weight: 3,
+          params: { gold: 9 },
+        },
+      ],
+      modifiers: gameConfigs.events.modifiers.map((m) => ({ ...m })),
+    });
+    const twoHooks = eventHooks(content, twoWindfalls);
+
+    test('never both are offered, each can appear, one draw per offer', () => {
+      const seen = new Set<string>();
+      for (let seed = 1; seed <= 300; seed++) {
+        const rng = Rng.fromSeed(seed);
+        const offers = twoHooks.eventOffers(atEvent, rng) as Record<
+          string,
+          Json
+        >[];
+        const types = offers.map((o) => o['type']);
+        expect(new Set(types).size).toBe(types.length);
+        for (const o of offers) {
+          if (o['type'] === 'windfall') seen.add(o['id'] as string);
+        }
+        // RNG use: exactly one draw per offer made.
+        const probe = Rng.fromSeed(seed);
+        for (let k = 0; k < offers.length; k++) probe.nextU32();
+        expect(rng.getState()).toEqual(probe.getState());
+      }
+      expect([...seen].sort()).toEqual(['evt_windfall', 'evt_windfall_big']);
+    });
+
+    test('with only the two Windfalls, exactly one offer', () => {
+      const only = eventHooks(
+        content,
+        loadEventsOrThrow({
+          offerCount: 3,
+          events: twoWindfalls.events
+            .filter((e) => e.type === 'windfall')
+            .map((e) => ({ ...e })),
+          modifiers: [],
+        }),
+      );
+      for (let seed = 1; seed <= 50; seed++) {
+        expect(only.eventOffers(atEvent, Rng.fromSeed(seed))).toHaveLength(1);
+      }
+    });
+
+    test('a full run with both definitions replays to the same state', () => {
+      for (const players of [['Ann'], ['Ann', 'Bo', 'Cy']]) {
+        const d = makeGameDeps(
+          { battle: scripted(true, true) },
+          { ...gameConfigs, events: twoWindfalls },
+        );
+        const s0 = start(d, players);
+        const s = until(s0, d, (x) => x.step === 'event_choice');
+        const offers = offersOf(s);
+        expect(
+          offers.filter((o) => o['type'] === 'windfall').length,
+        ).toBeLessThanOrEqual(1);
+        const cur = voteAll(s, offers[0]?.['id'] as string, d);
+        const r = replayRun(runArgs(players, 7), cur.actionLog, d);
+        expect(r.ok).toBe(true);
+        if (r.ok) expect(r.state).toEqual(cur);
+      }
+    });
+  });
+
   test('one offer is enough for the machine: vote, shop, validate', () => {
     const none = loadEventsOrThrow({
       offerCount: 3,
@@ -1080,7 +1205,6 @@ describe('fewer than three event offers, on purpose (issue #48)', () => {
           id: 'evt_windfall',
           type: 'windfall',
           weight: 1,
-          repeatable: false,
           params: { gold: 4 },
         },
       ],
@@ -1112,7 +1236,6 @@ describe('fewer than three event offers, on purpose (issue #48)', () => {
           id: 'evt_workshop',
           type: 'workshop',
           weight: 1,
-          repeatable: false,
           params: {},
         },
       ],
@@ -1150,14 +1273,12 @@ describe('event follow-ups', () => {
         id: 'evt_windfall',
         type: 'windfall',
         weight: 1,
-        repeatable: false,
         params: { gold: 4 },
       },
       {
         id: 'evt_oracle',
         type: 'oracle',
         weight: 50,
-        repeatable: false,
         params: {},
       },
     ],

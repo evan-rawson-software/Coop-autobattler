@@ -40,5 +40,8 @@ export const streamLabels = {
     `event_offers:r${String(round)}:${leg}`,
   eventResolve: (round: number, leg: string): string =>
     `event_resolve:r${String(round)}:${leg}`,
+  /** A party vote that was not unanimous: one vote is picked at random. */
+  vote: (topic: string, round: number, leg: string): string =>
+    `vote:${topic}:r${String(round)}:${leg}`,
   shop: (round: number, leg: string): string => `shop:r${String(round)}:${leg}`,
 } as const;

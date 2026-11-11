@@ -18,6 +18,7 @@ import {
 } from '@game/core';
 import { STEP_INTENTS } from './step-table.js';
 import { drawStream, rootRng, streamLabels } from './streams.js';
+import { parseVersion } from './version.js';
 import {
   BUILTIN_INTENT_TYPES,
   MAX_PLAYERS,
@@ -36,6 +37,7 @@ import {
   type RunState,
   type StatePatch,
   type Step,
+  type VoteTopic,
 } from './types.js';
 
 // ---------------------------------------------------------------------------
@@ -122,10 +124,9 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
   if (typeof args.runId !== 'string' || args.runId === '') {
     return bad('runId must be a non-empty string');
   }
-  if (
-    typeof args.runVersion !== 'string' ||
-    !/^\d+\.\d+$/.test(args.runVersion)
-  ) {
+  // The same rule as the save format (no leading zeros, no patch part).
+  const parsedVersion = parseVersion(args.runVersion);
+  if (parsedVersion === null || parsedVersion.patch !== null) {
     return bad('runVersion must look like "major.minor"');
   }
   if (!isInt(args.seed) || args.seed < 0 || args.seed >= 2 ** 32) {
@@ -210,13 +211,13 @@ function enter(
     }
     case 'pve_choice': {
       s = { ...s, leg: 'pve' };
-      // Normally drawn earlier (see `drawUpcoming`); drawn here only if a
-      // state arrives without them.
+      // Drawn earlier (see `drawUpcoming`); validation requires it.
       if (s.upcomingPve === null || s.upcomingPve.round !== s.round) {
-        s = drawUpcoming(s, s.round, deps);
+        throw new Error(
+          `enter pve_choice: no upcomingPve for round ${String(s.round)}.`,
+        );
       }
-      const options = (s.upcomingPve as NonNullable<RunState['upcomingPve']>)
-        .options;
+      const options = s.upcomingPve.options;
       return {
         ...s,
         upcomingPve: null,
@@ -415,26 +416,58 @@ function completeStep(s: RunState, deps: RunDeps, fx: Effect[]): RunState {
 // ---------------------------------------------------------------------------
 // Votes
 
-export function tally(choices: readonly Json[], host: number): Json {
-  const counts = new Map<string, { choice: Json; count: number }>();
-  for (const choice of choices) {
-    const key = canonicalJson(choice);
-    const entry = counts.get(key);
-    if (entry === undefined) counts.set(key, { choice, count: 1 });
-    else entry.count += 1;
+export interface TallyResult {
+  /** The state with the generator advanced if a random pick was drawn. */
+  readonly state: RunState;
+  readonly winner: Json;
+  /** The player whose vote was picked at random; null if unanimous. */
+  readonly picked: number | null;
+}
+
+/**
+ * The one rule for every party decision. `choices` has one entry per player,
+ * in player order (each is one ticket). If all chose the same, that wins.
+ * Otherwise ONE ticket is picked at random: a single `nextInt(players)` from
+ * the dedicated stream `label` (so an option with 3 of 4 votes wins with
+ * probability 3/4). For a party of two or more, every resolution advances the
+ * run generator exactly once, whether the vote was unanimous or not (the
+ * stream is simply unused when it was), so one dissenting voter cannot choose
+ * between two different futures for the later rolls. A one-player run draws
+ * nothing. The draw is deterministic because the votes are part of the action
+ * log; it happens once, when the last vote arrives, and its outcome is stored
+ * in the new state.
+ */
+export function tally(
+  state: RunState,
+  choices: readonly Json[],
+  label: string,
+): TallyResult {
+  const first = choices[0] as Json;
+  if (choices.length < 2) return { state, winner: first, picked: null };
+  const d = drawStream(state, label);
+  const key = canonicalJson(first);
+  if (choices.every((c) => canonicalJson(c) === key)) {
+    return { state: d.state, winner: first, picked: null };
   }
-  let max = 0;
-  for (const e of counts.values()) max = Math.max(max, e.count);
-  const tied = [...counts.entries()].filter(([, e]) => e.count === max);
-  const hostChoice = choices[host];
-  if (tied.length > 1 && hostChoice !== undefined) {
-    const hostEntry = tied.find(([k]) => k === canonicalJson(hostChoice));
-    if (hostEntry !== undefined) return hostEntry[1].choice;
-  }
-  // Unreachable with at most four players (the host is always in a top tie),
-  // but defined: the first tied choice in player order.
-  const first = tied[0];
-  return first === undefined ? null : first[1].choice;
+  const picked = d.stream.nextInt(choices.length);
+  return { state: d.state, winner: choices[picked] as Json, picked };
+}
+
+/** The `vote_resolved` effect for a tally. */
+export function voteResolvedEffect(
+  topic: VoteTopic,
+  choices: readonly Json[],
+  t: TallyResult,
+): Effect {
+  return {
+    type: 'vote_resolved',
+    topic,
+    choice: t.winner,
+    tickets: choices,
+    ...(t.picked === null
+      ? {}
+      : { picked: { player: t.picked, random: true as const } }),
+  };
 }
 
 function normalizeChoice(s: RunState, choice: Json): Json | null {
@@ -477,29 +510,30 @@ function resolveVotes(s: RunState, deps: RunDeps, fx: Effect[]): Next {
     all.push(c);
   }
   if (votes.topic === 'core') {
-    const first = all[0] as Json;
-    const key = canonicalJson(first);
-    if (!all.every((c) => canonicalJson(c) === key))
-      return { ok: true, state: s };
+    // Every player has voted (CP-16): unanimous, or one vote picked at random.
+    const t = tally(s, all, streamLabels.vote('core', s.round, s.leg));
+    const first = t.winner;
     const pos = first as { x: number; y: number };
     const placed = placeCore(s.team, deps.content, deps.mapgenConfig, pos);
     if (!placed.ok) return fail(placed.reason, placed.detail);
-    fx.push({ type: 'vote_resolved', topic: 'core', choice: first });
+    fx.push(voteResolvedEffect('core', all, t));
     fx.push({ type: 'core_placed', x: pos.x, y: pos.y });
     return {
       ok: true,
       state: enter(
-        { ...s, team: placed.state, pending: null },
+        { ...t.state, team: placed.state, pending: null },
         'build',
         deps,
         fx,
       ),
     };
   }
-  const winner = tally(all, s.host);
+  const t = tally(s, all, streamLabels.vote(votes.topic, s.round, s.leg));
+  s = t.state;
+  const winner = t.winner;
   const option =
     pendingList(s, 'options').find((o) => idOf(o) === winner) ?? null;
-  fx.push({ type: 'vote_resolved', topic: votes.topic, choice: winner });
+  fx.push(voteResolvedEffect(votes.topic, all, t));
   if (votes.topic === 'pve') {
     return {
       ok: true,
