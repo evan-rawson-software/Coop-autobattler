@@ -429,7 +429,9 @@ describe('sweep of reference boards against every threat', () => {
     }
     expect(
       get('fortify', 'arch_fortress', 'easy', 1).endTick,
-    ).toBeGreaterThanOrEqual(2 * get('rush', 'arch_fortress', 'easy', 1).endTick);
+    ).toBeGreaterThanOrEqual(
+      2 * get('rush', 'arch_fortress', 'easy', 1).endTick,
+    );
     expect(ratioSum / cases).toBeGreaterThan(1.4);
   }, 300_000);
 });

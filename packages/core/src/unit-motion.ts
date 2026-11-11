@@ -198,8 +198,7 @@ export class MotionScratch {
                 if (d2 < r * r) {
                   any = true;
                   const uj = units[j];
-                  const parity =
-                    uj !== undefined && (ui.id + uj.id) % 2 === 0;
+                  const parity = uj !== undefined && (ui.id + uj.id) % 2 === 0;
                   if (mj && (prio[i] ?? 0) === (prio[j] ?? 0)) {
                     // Two movers equally far from their targets share the
                     // push (no side or id decides, which keeps a mirrored

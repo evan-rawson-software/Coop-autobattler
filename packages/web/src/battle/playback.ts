@@ -14,6 +14,7 @@
 
 import {
   startBattle,
+  CELL_UNITS,
   startPveBattle,
   type ArenaEvent,
   type ArenaSim,
@@ -141,9 +142,6 @@ export function simulateRecord(
 const MAX_STEPS_PER_ADVANCE = 40;
 /** The longest frame time that counts as real time, in milliseconds. */
 const MAX_FRAME_MS = 100;
-/** Longest a unit's step between two cells is smoothed over, in ticks. */
-const MAX_SMOOTH_TICKS = 6;
-
 export class Playback {
   readonly record: BattleRecord;
   speed: PlaybackSpeed = 1;
@@ -155,14 +153,14 @@ export class Playback {
   private acc = 0;
   private readonly tps: number;
 
-  // Per unit ID (IDs only grow, so these are indexed directly).
+  // Per unit ID (IDs only grow, so these are indexed directly): the position
+  // in cells after the latest tracked tick (`cx, cy`) and after the one
+  // before (`px, py`); the picture eases from one to the other.
   private seen = new Uint8Array(0);
   private cx = new Float32Array(0);
   private cy = new Float32Array(0);
   private px = new Float32Array(0);
   private py = new Float32Array(0);
-  private moveTick = new Int32Array(0);
-  private smooth = new Uint8Array(0);
 
   constructor(
     private readonly desc: BattleDescription,
@@ -267,15 +265,13 @@ export class Playback {
     this.acc = 0;
   }
 
-  /** Forget every unit track (all seven arrays, so their lengths agree). */
+  /** Forget every unit track (all arrays, so their lengths agree). */
   private resetTracks(): void {
     this.seen = new Uint8Array(0);
     this.cx = new Float32Array(0);
     this.cy = new Float32Array(0);
     this.px = new Float32Array(0);
     this.py = new Float32Array(0);
-    this.moveTick = new Int32Array(0);
-    this.smooth = new Uint8Array(0);
   }
 
   private stepTicks(n: number): void {
@@ -290,17 +286,11 @@ export class Playback {
       left -= 1;
       if (every) this.updateTracks();
     }
-    if (!every) this.updateTracks();
+    if (!every) this.updateTracks(true);
   }
 
   private grow(size: number): void {
-    const cap = Math.max(
-      size,
-      this.seen.length * 2,
-      this.cx.length * 2,
-      this.moveTick.length * 2,
-      64,
-    );
+    const cap = Math.max(size, this.seen.length * 2, this.cx.length * 2, 64);
     const g = <T extends Float32Array | Int32Array | Uint8Array>(
       a: T,
       make: (n: number) => T,
@@ -314,56 +304,50 @@ export class Playback {
     this.cy = g(this.cy, (n) => new Float32Array(n));
     this.px = g(this.px, (n) => new Float32Array(n));
     this.py = g(this.py, (n) => new Float32Array(n));
-    this.moveTick = g(this.moveTick, (n) => new Int32Array(n));
-    this.smooth = g(this.smooth, (n) => new Uint8Array(n));
   }
 
-  private updateTracks(): void {
+  /**
+   * Record the unit positions after a tick: the previous latest position
+   * becomes the one to ease from. A unit seen for the first time (or after a
+   * jump, see `stepTicks`) has no history: it is drawn where it is.
+   */
+  private updateTracks(still = false): void {
     const sim = this.battle.sim;
     if (sim.nextUnitId + 1 > this.seen.length) this.grow(sim.nextUnitId + 1);
-    const tick = sim.tick;
     for (const u of sim.units) {
       const id = u.id;
-      if (this.seen[id] === 0) {
+      const x = u.px / CELL_UNITS;
+      const y = u.py / CELL_UNITS;
+      if (this.seen[id] === 0 || still) {
         this.seen[id] = 1;
-        this.cx[id] = this.px[id] = u.x;
-        this.cy[id] = this.py[id] = u.y;
-        this.moveTick[id] = tick;
-        const def = this.content.units.get(u.def);
-        this.smooth[id] = Math.max(
-          1,
-          Math.min(MAX_SMOOTH_TICKS, def?.moveCooldownTicks ?? 1),
-        );
-      } else if (this.cx[id] !== u.x || this.cy[id] !== u.y) {
-        this.px[id] = this.cx[id] ?? u.x;
-        this.py[id] = this.cy[id] ?? u.y;
-        this.cx[id] = u.x;
-        this.cy[id] = u.y;
-        this.moveTick[id] = tick;
+        this.cx[id] = this.px[id] = x;
+        this.cy[id] = this.py[id] = y;
+      } else {
+        this.px[id] = this.cx[id] ?? x;
+        this.py[id] = this.cy[id] ?? y;
+        this.cx[id] = x;
+        this.cy[id] = y;
       }
     }
   }
 
   /**
-   * The drawn arena position of a unit: its last step between cells, eased
-   * over the ticks the move takes. Writes into `out` (no allocation).
+   * The drawn arena position of a unit, in cells (the centre of cell `c` is
+   * `c + 0.5`): its last step, eased over the tick. Writes into `out` (no
+   * allocation).
    */
   displayPos(u: UnitSim, out: { x: number; y: number }): void {
     const id = u.id;
+    const x = u.px / CELL_UNITS;
+    const y = u.py / CELL_UNITS;
     if (this.seen[id] !== 1) {
-      out.x = u.x;
-      out.y = u.y;
+      out.x = x;
+      out.y = y;
       return;
     }
-    const w = this.smooth[id] ?? 1;
-    const a = Math.min(
-      1,
-      (this.battle.sim.tick - (this.moveTick[id] ?? 0) + this.acc) / w,
-    );
-    out.x =
-      (this.px[id] ?? u.x) + ((this.cx[id] ?? u.x) - (this.px[id] ?? u.x)) * a;
-    out.y =
-      (this.py[id] ?? u.y) + ((this.cy[id] ?? u.y) - (this.py[id] ?? u.y)) * a;
+    const a = Math.min(1, this.acc);
+    out.x = (this.px[id] ?? x) + ((this.cx[id] ?? x) - (this.px[id] ?? x)) * a;
+    out.y = (this.py[id] ?? y) + ((this.cy[id] ?? y) - (this.py[id] ?? y)) * a;
   }
 
   /** Index range of the events of ticks `from .. to - 1` in the record. */

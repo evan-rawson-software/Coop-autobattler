@@ -160,7 +160,8 @@ describe('side options: scheduled waves', () => {
       const { sim, ctx } = start(empty(), {
         scheduledWaves: [{ tick: 0, unit: 'unit_soldier', count: 80 }],
       });
-      got(sim.health.find((h) => h.side === 0 && h.building === 0)).hp = 10 ** 12;
+      got(sim.health.find((h) => h.side === 0 && h.building === 0)).hp =
+        10 ** 12;
       let s = sim;
       let c = ctx;
       for (let t = 0; t < 40; t++) {

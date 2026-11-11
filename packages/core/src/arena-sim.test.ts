@@ -507,13 +507,11 @@ describe('combat', () => {
     });
     runArena(sim, ctx, 1);
     expect(ofType(events, 'unit_attacked')).toHaveLength(2);
-    const { sim: s2, ctx: c2, events: e2 } = startArenaBattle(
-      coreOnly(),
-      coreOnly(),
-      GAP,
-      content,
-      simConfig,
-    );
+    const {
+      sim: s2,
+      ctx: c2,
+      events: e2,
+    } = startArenaBattle(coreOnly(), coreOnly(), GAP, content, simConfig);
     // (145, 145): 205.06 > 204, not yet in contact.
     spawnUnitForTest(s2, c2, {
       side: 0,
@@ -1796,7 +1794,7 @@ describe('stress', () => {
           side,
           def: k % 3 === 0 ? 'unit_raider' : 'unit_soldier',
           x: (k >> 1) % 96,
-          y: (side === 0 ? 17 : 22) + ((k >> 1) >= 96 ? 1 : 0),
+          y: (side === 0 ? 17 : 22) + (k >> 1 >= 96 ? 1 : 0),
         });
       }
       let peak = 0;

@@ -609,7 +609,10 @@ export function createArenaContext(
     ramps,
     flowEvents,
     world: { width: arena.geom.width, height: arena.geom.height, solid },
-    maxRadius: Math.max(1, ...content.units.list().map((d) => d.collisionRadius)),
+    maxRadius: Math.max(
+      1,
+      ...content.units.list().map((d) => d.collisionRadius),
+    ),
     maxBody: Math.max(1, ...content.units.list().map((d) => d.radius)),
     fields: new Array<Field | undefined>(2).fill(undefined),
     breach: [undefined, undefined] as (Float64Array | undefined)[],
@@ -925,7 +928,12 @@ function ensureUnitCapacity(ctx: ArenaContext, n: number): void {
 }
 
 /** Put unit index `i` (already in `sim.units`) into the per-side cell grid. */
-function linkUnit(ctx: ArenaContext, i: number, u: UnitSim, def: UnitDef): void {
+function linkUnit(
+  ctx: ArenaContext,
+  i: number,
+  u: UnitSim,
+  def: UnitDef,
+): void {
   const { width, height } = ctx.arena.geom;
   const heads = ctx.heads[u.side];
   if (heads === undefined) return;
@@ -986,8 +994,16 @@ function freeInCell(
   const win = Math.max(1, divCeil(r + ctx.maxRadius, S));
   let count = 0;
   for (const heads of ctx.heads) {
-    for (let y = Math.max(0, cy - win); y <= Math.min(height - 1, cy + win); y++) {
-      for (let x = Math.max(0, cx - win); x <= Math.min(width - 1, cx + win); x++) {
+    for (
+      let y = Math.max(0, cy - win);
+      y <= Math.min(height - 1, cy + win);
+      y++
+    ) {
+      for (
+        let x = Math.max(0, cx - win);
+        x <= Math.min(width - 1, cx + win);
+        x++
+      ) {
         let j = heads[y * width + x] ?? -1;
         while (j !== -1) {
           const e = sim.units[j];
@@ -1063,7 +1079,9 @@ function spawnPosition(
       cands.push({ k, cls, d, tie: tieKey(arena, side, x, y) });
     }
   }
-  cands.sort((a, b) => a.cls - b.cls || a.d - b.d || a.tie - b.tie || a.k - b.k);
+  cands.sort(
+    (a, b) => a.cls - b.cls || a.d - b.d || a.tie - b.tie || a.k - b.k,
+  );
   let last = -1;
   for (const c of cands) {
     if (c.k === last) continue;
@@ -1359,10 +1377,8 @@ export function spawnUnitForTest(
 ): UnitSim {
   const def = ctx.content.units.get(args.def);
   if (def === undefined) throw new Error(`Unknown unit "${args.def}".`);
-  const px =
-    args.px ?? (args.x === undefined ? undefined : args.x * S + S / 2);
-  const py =
-    args.py ?? (args.y === undefined ? undefined : args.y * S + S / 2);
+  const px = args.px ?? (args.x === undefined ? undefined : args.x * S + S / 2);
+  const py = args.py ?? (args.y === undefined ? undefined : args.y * S + S / 2);
   if (px === undefined || py === undefined) {
     throw new Error('spawnUnitForTest: give x and y or px and py.');
   }
@@ -1521,11 +1537,7 @@ function lineClear(
  * Index of the nearest visible enemy unit within the aggro range (squared
  * centre distance, ties by lowest unit ID); -1 if none.
  */
-function nearestVisible(
-  sim: ArenaSim,
-  ctx: ArenaContext,
-  u: UnitSim,
-): number {
+function nearestVisible(sim: ArenaSim, ctx: ArenaContext, u: UnitSim): number {
   const { width, height } = ctx.arena.geom;
   const heads = ctx.heads[1 - u.side];
   if (heads === undefined) return -1;
@@ -1670,7 +1682,12 @@ function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
   if (d > 0) {
     const k = stepFor(ctx, u.side, field, cell);
     if (k >= 0) {
-      moveTo(ctx, i, (k % width) * S + S / 2, Math.floor(k / width) * S + S / 2);
+      moveTo(
+        ctx,
+        i,
+        (k % width) * S + S / 2,
+        Math.floor(k / width) * S + S / 2,
+      );
     }
     return;
   }

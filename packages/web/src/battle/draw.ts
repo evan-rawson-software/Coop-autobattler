@@ -5,7 +5,7 @@
  * between frames except scratch buffers, so there is no per-unit allocation.
  */
 
-import type { UnitSim } from '@game/core';
+import { CELL_UNITS, type UnitSim } from '@game/core';
 import type { OverlayContext } from '../board/BoardView.js';
 import type { Scene, ViewRect } from '../board/scene.js';
 import type { WebContent } from '../content.js';
@@ -70,7 +70,6 @@ const LIFE_MAX = 16;
 const FONT = '600 {s}px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
 
 // Scratch buffers, reused across frames.
-let cellCount = new Uint16Array(0);
 let idToIndex = new Int32Array(0);
 const tmp: Pt = { x: 0, y: 0 };
 const tmp2: Pt = { x: 0, y: 0 };
@@ -168,11 +167,8 @@ export function drawBattleOverlay(
   }
 
   // --- Units ----------------------------------------------------------------
+  // Units are circles at their real position and radius (they never overlap).
   const units = sim.units;
-  const W = geo.width;
-  const cellsN = W * geo.height;
-  if (cellCount.length < cellsN) cellCount = new Uint16Array(cellsN);
-  else cellCount.fill(0, 0, cellsN);
   if (idToIndex.length < sim.nextUnitId + 1) {
     idToIndex = new Int32Array(
       Math.max(sim.nextUnitId + 1, idToIndex.length * 2),
@@ -180,34 +176,26 @@ export function drawBattleOverlay(
   }
   for (let i = 0; i < units.length; i++) {
     const u = units[i];
-    if (u === undefined) continue;
-    idToIndex[u.id] = i;
-    const ci = u.y * W + u.x;
-    if (ci >= 0 && ci < cellsN) cellCount[ci] = (cellCount[ci] ?? 0) + 1;
+    if (u !== undefined) idToIndex[u.id] = i;
   }
-  const r = Math.max(2.5, z * 0.2);
+  const radiusOf = (u: UnitSim): number =>
+    Math.max(2, ((content.units.get(u.def)?.radius ?? 72) / CELL_UNITS) * z);
+  const r = Math.max(2.5, z * 0.3);
   const pxOf = (u: UnitSim, out: Pt): void => {
     pb.displayPos(u, out);
-    let ax = out.x;
-    let ay = out.y;
-    const ci = u.y * W + u.x;
-    if ((cellCount[ci] ?? 0) > 1) {
-      const ang = u.id * 2.399963;
-      const rad = 0.3 * Math.sqrt(((u.id * 37) % 100) / 100);
-      ax += Math.cos(ang) * rad;
-      ay += Math.sin(ang) * rad;
-    }
-    out.x = ox + (ax + 0.5) * z;
-    out.y = oy + (geo.height - 1 - ay + 0.5) * z;
+    out.x = ox + out.x * z;
+    out.y = oy + (geo.height - out.y) * z;
   };
-  // Side 0 as circles, side 1 as diamonds: shape as well as colour.
+  // Both sides are filled circles of their real radius; side 1 carries a
+  // small diamond in the middle: shape as well as colour.
   ctx.beginPath();
   for (let i = 0; i < units.length; i++) {
     const u = units[i];
     if (u === undefined || u.side !== 0) continue;
     pxOf(u, tmp);
-    ctx.moveTo(tmp.x + r, tmp.y);
-    ctx.arc(tmp.x, tmp.y, r, 0, Math.PI * 2);
+    const ur = radiusOf(u);
+    ctx.moveTo(tmp.x + ur, tmp.y);
+    ctx.arc(tmp.x, tmp.y, ur, 0, Math.PI * 2);
   }
   ctx.fillStyle = own;
   ctx.fill();
@@ -215,20 +203,31 @@ export function drawBattleOverlay(
   ctx.strokeStyle = theme.outline;
   ctx.stroke();
   ctx.beginPath();
-  const rd = r * 1.25;
   for (let i = 0; i < units.length; i++) {
     const u = units[i];
     if (u === undefined || u.side === 0) continue;
     pxOf(u, tmp);
-    ctx.moveTo(tmp.x, tmp.y - rd);
-    ctx.lineTo(tmp.x + rd, tmp.y);
-    ctx.lineTo(tmp.x, tmp.y + rd);
-    ctx.lineTo(tmp.x - rd, tmp.y);
-    ctx.closePath();
+    const ur = radiusOf(u);
+    ctx.moveTo(tmp.x + ur, tmp.y);
+    ctx.arc(tmp.x, tmp.y, ur, 0, Math.PI * 2);
   }
   ctx.fillStyle = foe;
   ctx.fill();
   ctx.stroke();
+  ctx.beginPath();
+  for (let i = 0; i < units.length; i++) {
+    const u = units[i];
+    if (u === undefined || u.side === 0) continue;
+    pxOf(u, tmp);
+    const dd = radiusOf(u) * 0.5;
+    ctx.moveTo(tmp.x, tmp.y - dd);
+    ctx.lineTo(tmp.x + dd, tmp.y);
+    ctx.lineTo(tmp.x, tmp.y + dd);
+    ctx.lineTo(tmp.x - dd, tmp.y);
+    ctx.closePath();
+  }
+  ctx.fillStyle = theme.boardBg;
+  ctx.fill();
 
   // Health bars of damaged units, when zoomed in.
   if (z >= 18) {
@@ -242,27 +241,6 @@ export function drawBattleOverlay(
       ctx.fillRect(tmp.x - r, tmp.y - r - 5, r * 2, 3);
       ctx.fillStyle = sideColor(u.side);
       ctx.fillRect(tmp.x - r, tmp.y - r - 5, r * 2 * (u.hp / max), 3);
-    }
-  }
-
-  // Stack badges: a count where three or more units share a cell.
-  if (z >= 10) {
-    ctx.font = FONT.replace('{s}', String(Math.min(13, Math.max(9, z * 0.4))));
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    for (let ci = 0; ci < cellsN; ci++) {
-      const n = cellCount[ci] ?? 0;
-      if (n < 3) continue;
-      const ax = ci % W;
-      const ay = (ci - ax) / W;
-      const bx = ox + (ax + 0.86) * z;
-      const by = oy + (geo.height - 1 - ay + 0.14) * z;
-      const text = String(n);
-      const w = Math.max(14, text.length * 8 + 6);
-      ctx.fillStyle = theme.ink;
-      ctx.fillRect(bx - w / 2, by - 7, w, 14);
-      ctx.fillStyle = theme.boardBg;
-      ctx.fillText(text, bx, by + 0.5);
     }
   }
 
@@ -343,8 +321,8 @@ export function drawBattleOverlay(
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(
-          ox + (e.x + 0.5) * z,
-          oy + (geo.height - 1 - e.y + 0.5) * z,
+          ox + (e.px / CELL_UNITS) * z,
+          oy + (geo.height - e.py / CELL_UNITS) * z,
           z * (0.3 + 0.5 * p),
           0,
           Math.PI * 2,

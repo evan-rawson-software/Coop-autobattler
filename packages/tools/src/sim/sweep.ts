@@ -61,14 +61,28 @@ for (const board of REFERENCE_BOARDS) {
 }
 const winsIn = (lo: number, hi: number): number =>
   rows.filter((r) => r.won && r.round >= lo && r.round <= hi).length;
-console.log('blocks', winsIn(1, 5), winsIn(6, 10), winsIn(11, 15), winsIn(16, 20));
+console.log(
+  'blocks',
+  winsIn(1, 5),
+  winsIn(6, 10),
+  winsIn(11, 15),
+  winsIn(16, 20),
+);
 const reasons: Record<string, number> = {};
 for (const r of rows) reasons[r.reason] = (reasons[r.reason] ?? 0) + 1;
 console.log('reasons', JSON.stringify(reasons));
 const get = (b: string, a: string, t: string, round: number): Row | undefined =>
-  rows.find((r) => r.board === b && r.arch === a && r.type === t && r.round === round);
+  rows.find(
+    (r) => r.board === b && r.arch === a && r.type === t && r.round === round,
+  );
 for (const type of ['medium', 'hard']) {
-  console.log('rush vs rusher r5', type, get('rush', 'arch_rusher', type, 5)?.won, 'fortify', get('fortify', 'arch_rusher', type, 5)?.won);
+  console.log(
+    'rush vs rusher r5',
+    type,
+    get('rush', 'arch_rusher', type, 5)?.won,
+    'fortify',
+    get('fortify', 'arch_rusher', type, 5)?.won,
+  );
 }
 for (const type of ['medium', 'hard']) {
   for (let round = 4; round <= 9; round++) {
@@ -87,6 +101,14 @@ for (const type of ['easy', 'medium', 'hard']) {
   for (const round of [1, 2, 3]) {
     const a = get('rush', 'arch_fortress', type, round);
     const b = get('fortify', 'arch_fortress', type, round);
-    console.log('fortress', type, round, a?.won, a?.endTick, b?.won, b?.endTick);
+    console.log(
+      'fortress',
+      type,
+      round,
+      a?.won,
+      a?.endTick,
+      b?.won,
+      b?.endTick,
+    );
   }
 }

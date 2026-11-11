@@ -8,7 +8,12 @@ import terrainJson from '../../../content/terrain.json';
 import threatsJson from '../../../content/threats.json';
 import unitsJson from '../../../content/units.json';
 import type { Side } from './buildings.js';
-import { stepArena, type ArenaContext, type ArenaSim, type UnitSim } from './arena-sim.js';
+import {
+  stepArena,
+  type ArenaContext,
+  type ArenaSim,
+  type UnitSim,
+} from './arena-sim.js';
 import type { ArenaContent } from './arena.js';
 import { addConduit } from './conduits.js';
 import { loadAllContentOrThrow } from './content.js';
@@ -300,10 +305,7 @@ export function bigBoard(): TeamState {
  * blocks it, outside the arena), or two units whose collision circles
  * overlap. Empty when the state is good.
  */
-export function circleViolations(
-  sim: ArenaSim,
-  ctx: ArenaContext,
-): string[] {
+export function circleViolations(sim: ArenaSim, ctx: ArenaContext): string[] {
   const out: string[] = [];
   const radius = (u: UnitSim): number =>
     content.units.get(u.def)?.collisionRadius ?? 0;
@@ -311,7 +313,9 @@ export function circleViolations(
   for (let i = 0; i < units.length; i++) {
     const u = got(units[i]);
     if (!fits(ctx.world, u.side, radius(u), u.px, u.py)) {
-      out.push(`unit ${String(u.id)} does not fit at ${String(u.px)},${String(u.py)}`);
+      out.push(
+        `unit ${String(u.id)} does not fit at ${String(u.px)},${String(u.py)}`,
+      );
     }
     for (let j = i + 1; j < units.length; j++) {
       const v = got(units[j]);

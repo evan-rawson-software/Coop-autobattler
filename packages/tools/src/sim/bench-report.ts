@@ -76,10 +76,19 @@ for (const [a, b, s] of pairs) {
   maxTicks = Math.max(maxTicks, m.ticks);
   maxPeak = Math.max(maxPeak, m.peak);
 }
-console.log('one plot: max log bytes', maxBytes, 'max ticks', maxTicks, 'peak', maxPeak);
+console.log(
+  'one plot: max log bytes',
+  maxBytes,
+  'max ticks',
+  maxTicks,
+  'peak',
+  maxPeak,
+);
 console.log('one plot battles/s', rate(pairs));
 const team = denseFourPlotTeam(ctx, 1);
 console.log(
   'dense tier 1 battles/s',
-  rate([1, 2, 3, 4].map((s) => [team, team, s] as [TeamState, TeamState, number])),
+  rate(
+    [1, 2, 3, 4].map((s) => [team, team, s] as [TeamState, TeamState, number]),
+  ),
 );

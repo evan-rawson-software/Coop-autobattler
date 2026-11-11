@@ -423,7 +423,7 @@ describe('turrets', () => {
     expect(got(ofType(events, 'turret_fired')[0]).unit).toBe(near1.id);
   });
 
-  test('range is measured to the unit\'s edge: a post just in range is shot, one just out is not', () => {
+  test("range is measured to the unit's edge: a post just in range is shot, one just out is not", () => {
     // Tier 1 range is 4 cells = 960; the unit's radius 72 is added.
     for (const [gap, shot] of [
       [960 + 72, true],
