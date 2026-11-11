@@ -2800,7 +2800,8 @@ Workshop) is not a vote: see the Workshop above.
 ### Battles and playback
 
 `createBattleResolver` runs `simulatePveBattle` with the voted option's threat
-(PvE), or, for PvP, a ghost when `findPvpOpponent` returns a team, else a
+(PvE), or, for PvP, the ghost fixed in `state.pvpOpponent` (see "Ghosts"; or
+the team `findPvpOpponent` returns), else a
 generated `boss` threat for the round (archetype drawn from the boss-only
 archetypes; opponent kind `boss`). The battle seed is the first `nextU32` of
 the battle stream. `BattleResult.detail` is `{ version, kind, round, seed,
@@ -2814,3 +2815,134 @@ hashJson(eventLog)`. The summary steps accept only ready, unready and abandon,
 so the team cannot change between a battle and the end of its summary step;
 `teamHash` records the team that fought and a replay refuses (`team_changed`)
 if it differs.
+
+## Ghosts
+
+A ghost is another run's party, frozen at the start of one of its PvP battles
+and fought by a later run (MM-1..MM-17, W3-1). Everything below is implemented
+in `core/src/ghost-snapshot.ts` (format and validation) and
+`session/src/ghosts.ts` (taking, matching, selecting); the pool itself is the
+`GhostStore` interface (`session/src/ghost-store.ts`, see the session README).
+Ghosts are switched on by giving the run's deps `ghosts` (`createGameDeps(...,
+{ ghosts: { ownerId } })`); without it PvP always fights the generated boss.
+
+### Format (`schemas/ghost-snapshot.schema.json`)
+
+`formatVersion` (1), `gameVersion` (`major.minor`, the run's `runVersion`),
+`partySize`, `round`, `mapSeed` and `team` (the whole team state: map, Core,
+buildings, stash, conduits, modifiers), `owner` (`{id, label}`; the id is a
+stable install identifier, the label is shown to opponents), `runId`, `lives`
+(lives left when taken), `pvpRecord` (`{wins, losses}`: the PvP battles of the
+rounds before this one) and the reserved optional `runSeed` and `actionLog`
+(TA-22b; never written yet). `mapSeed` is the run's seed: the party's map is
+`generateMap(mapSeed, partySize)`, so a verifier regenerates it and compares
+(this also covers the map-integrity question of issue #51 for ghosts). A
+snapshot is plain JSON and round-trips through `JSON.stringify` unchanged.
+Its bucket is `(gameVersion, partySize, round)`; an owner has at most one
+snapshot per bucket, a newer one replaces it (MM-1c).
+
+### When it is taken
+
+On entering the PvP battle (`pvp_battle`), before the fight, win or lose
+(MM-1a). `snapshotOf(state, owner)` is a pure function of the run state at
+that moment; the machine puts its result in a `ghost_snapshot` effect. The run
+controller writes it to the store after the save of that step succeeded. The
+store is never touched by `applyIntent`, `replayRun` or any validation of a
+run state, so replaying a run needs no pool.
+
+### Matching
+
+A snapshot is eligible for a run only if its `gameVersion` equals the run's
+`runVersion`, its `partySize` equals the number of players and its `round`
+equals the run's round (MM-2), it is not from the run itself (`runId`), and
+that ghost (its owner and run, `ghostKey`) has not been fought in this run
+already (`state.ghostsFought`, MM-3). Own-device snapshots of other runs are
+eligible: a local pool has one owner id, so excluding the owner would make the
+pool useless.
+
+### Selection
+
+The opponent is fixed in the shop of the PvE leg, the step before the PvP
+battle, by the intent `select_ghost` (extension handler, shop only, once per
+round). Entering that shop emits `ghost_selection_needed`; the run controller
+reads the pool and sends `select_ghost` as the host with the candidates as
+payload (at most 16: the eligible, valid ones; with more, the 16 with the
+smallest `hashJson([runId, round, key])`). The party cannot `ready` in that
+shop until it has been applied (`ghost_selection_pending`). The handler:
+
+1. validates and filters the payload again (nothing in it is trusted), drops
+   duplicates, and sorts by `(owner id, run id)`;
+2. takes the stream `ghost:r<round>` (`drawStream`, which advances the run
+   generator by exactly one output whatever the payload holds);
+3. with `n >= 1` candidates picks `candidates[stream.nextInt(n)]`; with none,
+   the boss;
+4. stores the whole chosen snapshot in `state.pvpOpponent = { round, kind:
+   'ghost' | 'boss', label, ghost }`.
+
+Skipping an invalid snapshot and drawing another is therefore done by
+filtering before the single draw, which is the deterministic form of that
+rule. The payload is part of the action log, so `replayRun` repeats the draw
+with no store; the PvP battle uses the stored snapshot's team as side 1 (the
+existing `startBattle` with the party as side 0), stores it in the battle
+detail like any ghost, and clears `pvpOpponent` afterwards (the ghost's key
+joins `ghostsFought`). A reload before the battle reads the same
+`pvpOpponent` from the save. If a run was saved after entering the shop but
+before the selection, `RunController.prepare` finishes it when the run is
+opened. Players are told before the battle: "Opponent: a ghost of <label>" or
+"Opponent: the boss (no ghost available)" (MM-11).
+
+### Validation (`validateGhostSnapshot`)
+
+Every candidate, and a ghost inside a loaded run state, must pass all of:
+
+1. **Shape**: no unknown fields, `formatVersion` 1, `gameVersion` as
+   `major.minor`, sizes and ids within their limits (labels printable, at most
+   40 characters).
+2. **Whole team state** (`validateTeamState`): legal placement on its own map
+   (extractors on nodes, nothing on natural features, a legal Core position,
+   known buildings, tiers 1 to 3, conduits), plus the Core must be placed and
+   the map's party size equal `partySize`.
+3. **Map**: `team.map` equals `generateMap(mapSeed, partySize)`.
+4. **Numbers**: `wins + losses = round - 1`, `lives <= startingLives` and
+   `losses * pvpLossLifeCost = startingLives - lives`.
+5. **Value bound**: the sum of the shop prices (at the building's tier) of
+   every building, placed or stashed, is at most the bound below.
+6. **Modifiers**: each is known to `events.json`, has exactly its defined
+   effects, a non-stackable one is held once, and there are at most `2 * round
+   - 1` of them (one per event step that can have happened by then).
+
+The value bound, for `n` players at the start of the PvP battle of round `r`:
+
+    per player = startingGold
+               + baseIncomePerShop * (2r - 1)     shops entered so far
+               + pveWin.hard * r                  best PvE win of each round up to r
+               + pvpWin * (r - 1)                 PvP wins of the rounds before
+               + maxEventGold * (2r - 1)          every event a Windfall
+               + kit                              price of the starting kit
+    limit = floor(n * per player * (100 + 25) / 100)
+
+Spending, selling at a loss, consolation gold and lost battles only lower the
+real figure; the 25% margin (`GHOST_VALUE_MARGIN_PERCENT`) covers Workshop
+upgrades, which turn gold into slightly more value. With the current content
+(starting gold 10, income 3, hard win 8, PvP win 6, Windfall 4, kit worth 67):
+
+| Party | Round | Gold per player | Raw bound | Limit |
+| ----- | ----- | --------------- | --------- | ----- |
+| 1     | 1     | 25              | 92        | 115   |
+| 1     | 2     | 53              | 120       | 150   |
+| 1     | 3     | 81              | 148       | 185   |
+| 1     | 5     | 137             | 204       | 255   |
+| 1     | 8     | 221             | 288       | 360   |
+| 1     | 12    | 333             | 400       | 500   |
+| 2     | 3     | 81              | 296       | 370   |
+
+The bound is the installed version's, which is also the ghost's version
+(MM-15), so no tolerance for runs that spanned an update is needed yet (MM-17).
+The signature check (TA-22a) is not implemented.
+
+### Fallback
+
+With no eligible valid snapshot, `pvpOpponent` is `{ round, kind: 'boss',
+label: 'the boss', ghost: null }` and the battle generates the boss for the
+round from the battle stream, as before. The run's round record shows the
+opponent as `ghost` (label: the owner's label) or `boss`.

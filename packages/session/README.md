@@ -13,9 +13,9 @@ const r = applyIntent(state, playerIndex, { type: 'ready' }, deps);
 Every change is one intent from one player. An accepted intent bumps
 `actionCounter` and is appended to `actionLog`; a rejected one changes
 nothing. `replayRun(args, actionLog, deps)` rebuilds a state from the seed.
-`RunState.formatVersion` is `RUN_STATE_FORMAT_VERSION` (3: the per-player
-Workshop, on top of 2's `upcomingPve` and new battle detail; a version-2
-save is `unsupported_format`); `validateRunState` rejects any other version with an
+`RunState.formatVersion` is `RUN_STATE_FORMAT_VERSION` (4: the ghost fields
+`pvpOpponent` and `ghostsFought`, on top of 3's per-player Workshop and 2's
+`upcomingPve` and new battle detail; an older save is `unsupported_format`); `validateRunState` rejects any other version with an
 "unsupported format version" error before anything else. The save record's
 own `saveFormatVersion` is separate and still 1.
 `validateRunState(data, deps)` checks untrusted data (also see
@@ -92,6 +92,7 @@ All are fields of `RunDeps`; `createDeps` fills the defaults.
 | `hooks.resolveEvent`         | no effect, no follow-up                 | W2-3: `eventHooks`             |
 | `hooks.rewards`              | no-op                                   | W2-3: `rewardHooks` (gold, consolation gold) |
 | `rules` (`RunRules`)         | 5 lives, PvP loss costs 1               |                                |
+| `ghosts` (optional)          | absent: PvP fights the boss             | W3-1: set by `createGameDeps` with `ghosts` |
 | `rewards` (optional)         | absent                                  | W2-3: set by `createGameDeps`; read by `nextBattleInfo` |
 | `handlers` (intent registry) | empty                                   | W2-2 `buy`, `sell` (shop, build), `reroll` via `economyHandlers`; W2-3 `event_choose` (event follow-ups) via `eventChooseHandlers` |
 | `perPlayer[i].shop`, `pending` | `null`, per step                      | opaque JSON owned by W2-2 / W2-3 |
@@ -119,6 +120,7 @@ the round number, `leg` is `pve` or `pvp`.
 | `event_offers:r<r>:<leg>`  | `eventOffers` hook                      |
 | `event_resolve:r<r>:<leg>` | `resolveEvent` hook                     |
 | `shop:r<r>:<leg>`       | `onShopEnter` hook                         |
+| `ghost:r<r>`            | the ghost draw for the PvP battle of round `r`, taken by `select_ghost` (W3-1) |
 | `vote:<topic>:r<r>:<leg>` | the random pick of a party vote: drawn for every vote resolution with two or more players, but the pick is used only when the votes differ |
 
 Handlers that need randomness should call `drawStream` with their own label,
@@ -204,10 +206,50 @@ seed, the opponent source, a hash of the team and a small summary with the
 event-log hash (`BattleDetail`). `replayLastBattle(state, deps)` (legal in
 `pve_summary` and `pvp_summary`) returns `{ ok, battle, stored,
 storedEventLogHash }` with a started `Battle` at tick 0 for playback;
-`verifyLastBattle` runs it and compares hashes. PvP fights a generated boss
-until a ghost pool exists (`findPvpOpponent`); the boss's `ThreatProfile` is
-stored in the detail (`source.threat`) and replays use it, not current
-content. A ghost's modifiers (its own team state) apply to side 1.
+`verifyLastBattle` runs it and compares hashes. PvP fights the ghost in
+`state.pvpOpponent` (see "Ghosts"), else a generated boss; the boss's
+`ThreatProfile` is stored in the detail (`source.threat`) and replays use it,
+not current content. A ghost's team is stored in the detail (`source.team`),
+and its modifiers (its own team state) apply to side 1.
+
+## Ghosts (W3-1)
+
+`createGameDeps(content, configs, { ghosts: { ownerId, ownerLabel? } })` turns
+the ghost pool on (default: off, PvP fights the boss). The full rules,
+validation formula and format are in `docs/rules-reference.md`, "Ghosts"; the
+snapshot format is `core`'s `GhostSnapshot` (`schemas/ghost-snapshot.schema.json`).
+What `session` adds:
+
+- **`snapshotOf(state, owner)`**: pure; the snapshot of the party now.
+- **Effects** (only with ghosts on): `ghost_snapshot` when a PvP battle starts
+  (carries `snapshotOf`; the controller stores it after the save), and
+  `ghost_selection_needed` when the shop of the PvE leg is entered.
+- **`select_ghost` intent** (`{ candidates: GhostSnapshot[] }`, at most 16; shop
+  of the PvE leg; once per round, else `already_selected`). It re-validates the
+  candidates, draws once from `ghost:r<r>` over the eligible, valid ones in
+  `(owner id, run id)` order and stores the result in `state.pvpOpponent`. The
+  candidates are in the action log, so `replayRun` needs no store. `ready` in
+  that shop is refused with `ghost_selection_pending` until it was applied.
+- **`RunState.pvpOpponent`** (`{ round, kind: 'ghost' | 'boss', label, ghost }`,
+  non-null only in the shop of the PvE leg after the selection) and
+  **`ghostsFought`** (keys of ghosts met, in order). `validateRunState` checks
+  them, including the whole ghost when `deps.ghosts` is set.
+- **`GhostStore`** (`ghost-store.ts`): `save(snapshot)` (one per owner per
+  bucket; a newer one replaces it), `list(bucket)` (canonical order, unvalidated
+  `unknown` values), `get(bucket, ownerId)`, `clear()`.
+  `createMemoryGhostStore` is the reference (with `failNextSave`, `injectRaw`);
+  `runGhostStoreConformance(name, makeStore)` from `@game/session/testing`
+  checks an implementation (the browser stores in `packages/web` pass it; the
+  Steam one must). A bucket is `(gameVersion, partySize, round)`.
+- **Controller**: `startRun` / `openRun` take `{ ghostStore }`. After a save
+  that carried `ghost_snapshot` the controller writes it to the store; a store
+  failure loses that snapshot but never fails the dispatch. After a save that
+  carried `ghost_selection_needed` it lists the bucket (a failing read means no
+  candidates), presents the eligible valid candidates (`presentCandidates`) and
+  dispatches `select_ghost` as the host; its result's effects are appended to
+  the original's. `controller.prepare(now)` (also run first by every
+  `dispatch`) finishes a selection owed by a save made in between.
+- **`pvpOpponentInfo(state)`** for screens: `{ kind, label }` once fixed.
 
 ## Saving (W2-4)
 
