@@ -2948,7 +2948,9 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
    `actionLog` are reserved and rejected), `formatVersion` 1, `gameVersion` as
    `major.minor`, sizes and ids within their limits (labels printable, at most
    40 characters). Checked first, on the raw value, stopping at the first
-   violation: plain JSON only, every number a safe integer, nesting at most 16
+   violation: plain JSON only, every number a safe integer (and not `-0`), no string or key with a lone
+   surrogate (canonical JSON refuses both, so a snapshot that passes can always
+   be hashed), nesting at most 16
    levels, every string and key at most 128 characters, and a canonical JSON
    length of at most `ghostMaxSerializedSize(partySize, round)`, below. Only
    `partySize` (1 to `maxPartySize`) and `round` (1 to 1000) are read before

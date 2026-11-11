@@ -175,6 +175,7 @@ export function eligibleGhosts(
       if (!cheapEligible(item, state)) continue;
       const v = validateGhostSnapshot(item, ctx);
       if (!v.ok) continue;
+      hashJson(v.snapshot); // defence in depth: a value canonical JSON refuses is no candidate
       const key = ghostKey(v.snapshot);
       if (fought.has(key) || seen.has(key)) continue;
       seen.add(key);
@@ -342,7 +343,18 @@ export const selectGhostHandler: IntentHandler = {
         detail: `candidates must be an array of at most ${String(MAX_GHOST_CANDIDATES)}`,
       };
     }
-    const sel = selectGhost(state, list as readonly unknown[], vctx);
+    let sel: GhostSelection;
+    try {
+      sel = selectGhost(state, list as readonly unknown[], vctx);
+    } catch (e) {
+      // Never throw out of a handler: report it, the controller records a
+      // selection failure.
+      return {
+        ok: false,
+        reason: 'invalid_intent',
+        detail: `selection failed (${e instanceof Error ? e.message : 'unknown error'})`,
+      };
+    }
     return {
       ok: true,
       state: sel.state,

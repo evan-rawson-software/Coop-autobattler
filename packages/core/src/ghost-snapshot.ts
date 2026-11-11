@@ -423,9 +423,9 @@ function textProblem(v: unknown, max: number): string | null {
 /**
  * The length of a string as canonical JSON writes it, quotes included:
  * `"` `\\` and the control characters `\b \t \n \f \r` take two
- * characters, any other control character below U+0020 takes six (`\u00XX`),
- * and a lone surrogate (which canonical JSON refuses) is counted as six.
- * Everything else counts as its UTF-16 length.
+ * characters, any other control character below U+0020 takes six (`\u00XX`).
+ * Everything else counts as its UTF-16 length. Returns -1 for a string with a
+ * lone surrogate, which canonical JSON refuses.
  */
 function jsonStringLength(s: string): number {
   let n = 2;
@@ -445,9 +445,9 @@ function jsonStringLength(s: string): number {
       if (d >= 0xdc00 && d <= 0xdfff) {
         n += 2;
         i++;
-      } else n += 6;
+      } else return -1;
     } else if (c >= 0xdc00 && c <= 0xdfff) {
-      n += 6;
+      return -1;
     } else n += 1;
   }
   return n;
@@ -477,13 +477,18 @@ function structureProblem(root: unknown, maxSize: number): string | null {
     if (v === null) size += 4;
     else if (typeof v === 'boolean') size += v ? 4 : 5;
     else if (typeof v === 'number') {
-      if (!Number.isSafeInteger(v)) return 'numbers must be safe integers';
+      // Mirror canonicalJson: safe integers only, and not -0.
+      if (!Number.isSafeInteger(v) || Object.is(v, -0)) {
+        return 'numbers must be safe integers';
+      }
       size += String(v).length;
     } else if (typeof v === 'string') {
       if (v.length > GHOST_MAX_STRING_LENGTH) {
         return `a string is longer than ${String(GHOST_MAX_STRING_LENGTH)} characters`;
       }
-      size += jsonStringLength(v);
+      const len = jsonStringLength(v);
+      if (len < 0) return 'a string has a lone surrogate';
+      size += len;
     } else if (Array.isArray(v)) {
       size += 2;
       if (size + 2 * v.length - 1 > maxSize) return tooBig;
@@ -501,7 +506,9 @@ function structureProblem(root: unknown, maxSize: number): string | null {
       if (size + 4 * keys.length - 1 > maxSize) return tooBig;
       for (const k of keys) {
         if (k.length > GHOST_MAX_STRING_LENGTH) return 'a key is too long';
-        size += jsonStringLength(k) + 1;
+        const klen = jsonStringLength(k);
+        if (klen < 0) return 'a key has a lone surrogate';
+        size += klen + 1;
         const p = visit(v[k], depth + 1);
         if (p !== null) return p;
         size += 1;
