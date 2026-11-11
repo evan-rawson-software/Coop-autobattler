@@ -214,7 +214,9 @@ Everything from here down describes the Godot game.
     current *numbers*. Loading a save from an older version shows a prompt
     saying that some things may have changed (CP-23e).
   - **On a major release** the game deletes local and Steam Cloud saves
-    from older major versions at first launch and tells the player. Ghost
+    from older major versions at first launch and tells the player. This
+    includes saves that can no longer be read (as long as their version
+    can be): they are deleted too, with no history entry. Ghost
     data for old versions lives in Steam leaderboards and shared files that
     players' games cannot delete for each other, so removing it is a
     release step carried out by the developers through Steamworks; how to

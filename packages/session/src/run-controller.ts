@@ -20,7 +20,6 @@ import {
   buildSaveRecord,
   checkSaveShape,
   classifySave,
-  hasUnsupportedFormat,
   historyEntryFor,
   type HistoryReason,
   type SaveStore,
@@ -488,6 +487,15 @@ export interface InitSavesResult {
     readonly round: number;
     readonly hostName: string;
   }[];
+  /**
+   * Older-major saves whose state could not be read or validated: deleted
+   * all the same (issue #71), with no history entry because there is no
+   * state to summarise.
+   */
+  readonly wipedUnreadable: readonly {
+    readonly runId: string;
+    readonly runVersion: string;
+  }[];
   /** Saves whose run had already ended, now recorded and removed. */
   readonly finished: readonly string[];
   /** Saves from a newer version: left alone, not openable. */
@@ -497,18 +505,18 @@ export interface InitSavesResult {
   }[];
   /**
    * Well-formed saves whose run state has a format this build cannot read:
-   * left alone (never finished into history, never wiped, whatever their game
-   * version or outcome) because their state cannot be trusted.
+   * left alone (never finished into history) because their state cannot be
+   * trusted. Older-major ones are the exception: they are deleted
+   * (`wipedUnreadable`).
    */
   readonly unsupported: readonly {
     readonly runId: string;
     readonly runVersion: string;
   }[];
   /**
-   * Stored values that do not parse or validate, including an older-major
-   * save whose state does not validate (so it cannot be safely wiped): left
-   * alone. (An older-major save whose state has an unknown format version is
-   * listed in `unsupported` instead.)
+   * Stored values that do not parse or validate: left alone. (An
+   * older-major save is never listed here: it is deleted, see `wiped` and
+   * `wipedUnreadable`.)
    */
   readonly corrupt: readonly {
     readonly runId: string;
@@ -520,17 +528,15 @@ export interface InitSavesResult {
 
 /**
  * Run once at app start. Every stored save is classified with the same
- * function as `openRun` (`classifySave`), and only what that has fully read
- * is touched: a save whose run has ended is recorded in history and removed,
- * and a save from an older major version is deleted (recorded as
- * `version_wiped`), but only when its state also validates against this
- * build. Saves from a newer version, ones whose state format this build
- * cannot read, and damaged ones are left in place and reported in `newer`,
- * `unsupported` and `corrupt`. An older-major save whose state does not
- * validate is such a case too: `openRun` says `older_major` (the version is
- * classified first), `initSaves` leaves it and reports it as `unsupported`
- * (unknown state format) or `corrupt`. Safe to run again after an interruption:
- * history entries are unique per run.
+ * function as `openRun` (`classifySave`). A save whose run has ended is
+ * recorded in history and removed. A save from an older major version is
+ * deleted whether or not it can be read (issue #71): recorded as
+ * `version_wiped` when its state validates (`wiped`), otherwise removed with
+ * no history entry (`wipedUnreadable`), as only its version field is trusted.
+ * Saves from a newer version, ones whose state format this build cannot read,
+ * and damaged ones are left in place and reported in `newer`, `unsupported`
+ * and `corrupt`. Safe to run again after an interruption: history entries
+ * are unique per run.
  */
 export async function initSaves(
   store: SaveStore,
@@ -539,6 +545,7 @@ export async function initSaves(
   deps: Pick<RunDeps, 'content' | 'mapgenConfig' | 'rules'>,
 ): Promise<InitSavesResult> {
   const wiped: InitSavesResult['wiped'][number][] = [];
+  const wipedUnreadable: InitSavesResult['wipedUnreadable'][number][] = [];
   const finished: string[] = [];
   const newer: InitSavesResult['newer'][number][] = [];
   const unsupported: InitSavesResult['unsupported'][number][] = [];
@@ -562,13 +569,9 @@ export async function initSaves(
           break;
         case 'older_major': {
           if (!c.validation.ok) {
-            // Unreadable: leave it, and say why (a state format this build
-            // does not know is "unsupported", anything else "corrupt").
-            if (hasUnsupportedFormat(c.record)) {
-              unsupported.push({ runId, runVersion: c.record.runVersion });
-            } else {
-              corrupt.push({ runId, errors: c.validation.errors });
-            }
+            // Unreadable, but the version field is: delete, no history.
+            await store.remove(runId);
+            wipedUnreadable.push({ runId, runVersion: c.record.runVersion });
             break;
           }
           const state = c.validation.record.state;
@@ -602,5 +605,13 @@ export async function initSaves(
       failed.push(runId);
     }
   }
-  return { wiped, finished, newer, unsupported, corrupt, failed };
+  return {
+    wiped,
+    wipedUnreadable,
+    finished,
+    newer,
+    unsupported,
+    corrupt,
+    failed,
+  };
 }

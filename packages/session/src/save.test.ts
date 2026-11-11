@@ -592,9 +592,8 @@ describe('the run controller', () => {
       },
       summary: { ...ended.summary, outcome: 'defeated' },
     });
-    // Installed 1.4.0 makes all three older majors: the readable one is
-    // wiped, the unreadable ones are not.
-    const res = await initSaves(store, '1.4.0', 9000, deps);
+    // Same major: the unreadable ones are listed and left alone.
+    const res = await initSaves(store, '0.9.0', 9000, deps);
     expect(
       [...res.unsupported].sort((a, b) => (a.runId < b.runId ? -1 : 1)),
     ).toEqual([
@@ -602,9 +601,21 @@ describe('the run controller', () => {
       { runId: 'fmt', runVersion: '0.1' },
     ]);
     expect(res.finished).toEqual([]);
-    expect(res.wiped.map((w) => w.runId)).toEqual(['ok']);
+    expect(res.wiped).toEqual([]);
     expect(await store.get('fmt')).not.toBeNull();
     expect(await store.get('ended')).not.toBeNull();
+    expect(await store.listHistory()).toEqual([]);
+    // Installed 1.4.0 makes all three older majors (issue #71): the readable
+    // one is wiped into history, the unreadable ones are deleted without.
+    const major = await initSaves(store, '1.4.0', 9000, deps);
+    expect(major.unsupported).toEqual([]);
+    expect(major.wiped.map((w) => w.runId)).toEqual(['ok']);
+    expect([...major.wipedUnreadable.map((w) => w.runId)].sort()).toEqual([
+      'ended',
+      'fmt',
+    ]);
+    expect(await store.get('fmt')).toBeNull();
+    expect(await store.get('ended')).toBeNull();
     expect((await store.listHistory()).map((h) => h.runId)).toEqual(['ok']);
     // A normal start-up reports none.
     expect(
