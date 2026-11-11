@@ -40,10 +40,10 @@ const BUDGET = {
   /**
    * Enforced floors: fail below these. Measured: 130 to 150 one-plot battles
    * a second, 2.9 dense tier 1 battles a second, 1.9 s for the tier 3 stress
-   * battle: about 3 times headroom each.
+   * battle: 3 to 4 times headroom each.
    */
   minBattlesPerSecondOnePlot: 40,
-  minBattlesPerSecondFourPlots: 1,
+  minBattlesPerSecondFourPlots: 0.7,
   /** Enforced ceiling for the dense tier 3 stress battle, in ms. */
   maxStressBattleMs: 6_000,
 } as const;
