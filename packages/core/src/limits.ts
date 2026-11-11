@@ -37,6 +37,13 @@
  *   compares `hp - damage`, not the damages: when both Cores' sums saturate,
  *   the damages are equal, so the Core with the higher pre-tick health has
  *   the less negative `hp - damage`, less overkill, and wins.
+ * - The tiebreak counter `buildingDamageDealt` of a side sums, over ticks and
+ *   enemy buildings, `min(attack damage that tick, health before the tick)`.
+ *   Each building yields at most its maximum health (a credit also lowers its
+ *   health by at least that much), so at most `MAX_HEALTH`, and there are at
+ *   most `MAX_ARENA_CELLS` buildings: the total is below `8192 * 1e12 =
+ *   8.192e15 < 2^53 - 1`, exact, summed with the checked `addInt` (it never
+ *   throws for content within the caps).
  */
 
 /** Largest health a building tier or unit may declare, and the largest a

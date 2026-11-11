@@ -1443,5 +1443,213 @@
       },
       "eventLogHash": "ef3f8e43"
     }
+  },
+  {
+    "id": "flow-sim.merger-direct-source-ready-drain",
+    "kind": "flow-sim",
+    "description": "Drained: a slow direct extractor (tier 1, one item per 20 ticks) and a fast one (tier 3, one per 10 ticks) behind a 10-cell conduit feed a merger. On the tick the conduit's item reaches its last cell, the direct extractor has a countdown of 1 and would produce: it counts as ready, so the merger's round-robin pointer (which favours the direct input) lets it fill the cell and the conduit item waits one tick. If a source were ready only at countdown 0, the conduit would win that tick and the slow extractor would lose a tick (19 items instead of 20).",
+    "input": {
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 5,
+            "resource": "res_a"
+          },
+          {
+            "x": 15,
+            "y": 5,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ticks": 400,
+      "consumers": "drain",
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 15,
+          "y": 5,
+          "rotation": 270
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_merger",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 2,
+          "x": 14,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 3,
+          "x": 14,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 4,
+          "x": 3,
+          "y": 5,
+          "rotation": 90
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 1,
+            "side": "west"
+          },
+          "to": {
+            "building": 2,
+            "side": "east"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 4,
+            "side": "east"
+          },
+          "to": {
+            "building": 2,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 4,
+              "y": 5
+            },
+            {
+              "x": 5,
+              "y": 5
+            },
+            {
+              "x": 6,
+              "y": 5
+            },
+            {
+              "x": 7,
+              "y": 5
+            },
+            {
+              "x": 8,
+              "y": 5
+            },
+            {
+              "x": 9,
+              "y": 5
+            },
+            {
+              "x": 10,
+              "y": 5
+            },
+            {
+              "x": 11,
+              "y": 5
+            },
+            {
+              "x": 12,
+              "y": 5
+            },
+            {
+              "x": 13,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": []
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 400,
+        "stateHash": "9b6acad3",
+        "flow": {
+          "produced": 60,
+          "inConduits": 2,
+          "held": 1,
+          "inBuffers": 0,
+          "consumed": 57,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 20,
+            "lost": 0,
+            "stalledTicks": 0
+          },
+          {
+            "building": 4,
+            "resource": "res_a",
+            "produced": 40,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [
+          {
+            "building": 2,
+            "key": "2",
+            "lost": 0,
+            "held": "res_a"
+          }
+        ],
+        "consumers": [
+          {
+            "building": 3,
+            "side": "south",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 57,
+            "consumed": 57
+          }
+        ]
+      },
+      "eventLogHash": "ac4bbf6f"
+    }
   }
 ]

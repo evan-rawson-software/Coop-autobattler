@@ -2,6 +2,7 @@ import {
   generateThreat,
   hashJson,
   runTeamStateOps,
+  type BattleInput,
   type Json,
   type ThreatInput,
 } from '@game/core';
@@ -61,6 +62,14 @@ function describeVector(kind: 'battle' | 'pve', v: Vector): BattleDescription {
         teamA: team(input['teamA'] as Json),
         teamB: team(input['teamB'] as Json),
         seed,
+        // Scenario vectors (waves, free power) carry their side options.
+        ...(input['sideOptions'] === undefined
+          ? {}
+          : {
+              sideOptions: input['sideOptions'] as unknown as NonNullable<
+                BattleInput['sideOptions']
+              >,
+            }),
       },
     };
   }
@@ -442,12 +451,17 @@ describe('live chart axes', () => {
 describe('result reasons', () => {
   test('every reason is worded after the rules of the core battle', () => {
     expect(reasonText('time_limit', 'Core')).toMatch(/share of its maximum/);
-    expect(reasonText('time_limit', 'Core')).toMatch(
-      /tie goes to the defender/i,
-    );
+    expect(reasonText('time_limit', 'Core')).not.toMatch(/defender/i);
     expect(reasonText('tiebreak_overkill', 'Core')).toMatch(/less overkill/);
     expect(reasonText('tiebreak_overkill', 'Core')).toMatch(/same tick/);
-    expect(reasonText('tiebreak_defender', 'Core')).toMatch(/equal overkill/);
+    expect(reasonText('tiebreak_building_damage', 'Core')).toMatch(
+      /equal overkill/,
+    );
+    expect(reasonText('tiebreak_building_damage', 'Core')).toMatch(
+      /more damage to the enemy's buildings/,
+    );
+    expect(reasonText('tiebreak_kills', 'Core')).toMatch(/killed more/);
+    expect(reasonText('tiebreak_attacker', 'Core')).toMatch(/attacker/);
     expect(reasonText('core_destroyed', 'Heart')).toMatch(/Heart/);
   });
 });

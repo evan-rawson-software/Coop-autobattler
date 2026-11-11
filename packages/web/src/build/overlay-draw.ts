@@ -9,6 +9,7 @@ import type { OverlayContext } from '../board/BoardView.js';
 import { cellToView } from '../board/layout.js';
 import type { WebContent } from '../content.js';
 import type { Ui } from './build-controller.js';
+import { pathSegments, pathStubs } from './path-segments.js';
 import { isEditStep } from './session.js';
 import { sideMarkers, type SideMarker } from './sides.js';
 import type { FlowView } from './view-model.js';
@@ -172,12 +173,25 @@ export function drawBuildOverlay(
     ctx.globalAlpha = 0.5;
     ctx.lineJoin = 'round';
     for (const p of d.paths) {
+      // One sub-path per run of adjacent cells: after an off-board detour
+      // (`approach`) the next cell is not adjacent and no line crosses it.
       ctx.beginPath();
-      p.cells.forEach((c, i) => {
-        const q = centre(c);
-        if (i === 0) ctx.moveTo(q.x, q.y);
-        else ctx.lineTo(q.x, q.y);
-      });
+      for (const run of pathSegments(p.cells)) {
+        run.forEach((c, i) => {
+          const q = centre(c);
+          if (i === 0) ctx.moveTo(q.x, q.y);
+          else ctx.lineTo(q.x, q.y);
+        });
+      }
+      // The detour itself: a short stub just outside the front edge at every
+      // exit and re-entry, including a final exit when the walk ends off the
+      // board.
+      for (const stub of pathStubs(p.cells, p.approach)) {
+        const a = centre(stub.cell);
+        const b = centre({ x: stub.cell.x, y: stub.cell.y + 1 });
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo((a.x + b.x) / 2, (a.y + b.y) / 2);
+      }
       ctx.stroke();
     }
     ctx.restore();
