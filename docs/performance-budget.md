@@ -1,11 +1,11 @@
-# Performance budget (CB-36)
+# Performance budget (CB-36, W1-10)
 
 Baseline measurements of whole battles (`simulateBattle` / `startBattle` run to
-the end, event log recorded) and the budget numbers proposed from them. The
-rules are in [`rules-reference.md`](rules-reference.md) ("Battles"). The
-benchmark tests are in `packages/core/src/battle.test.ts` ("performance
-(CB-36)"); they assert the budgets below with generous timeouts, so they fail
-only on a large regression, not on a slow machine.
+the end, event log recorded) and the budget derived from them. The rules are in
+[`rules-reference.md`](rules-reference.md) ("Battles"). The budget is enforced by
+`packages/tools/src/sim/performance.test.ts` (W1-10) and, with looser limits,
+by `packages/core/src/battle.test.ts` ("performance (CB-36)"). Both fail only
+on a large regression, not on a slow machine.
 
 ## Method
 
@@ -41,21 +41,56 @@ reached (40 random matchups, none came near it). Per-tick cost scales with the
 number of units and buildings; the dense tier 3 battle costs about 0.28 ms per
 tick on average with up to 1,220 units on the field.
 
-## Proposed budgets
+## Budget (W1-10)
 
-| Quantity                          | Budget            | Baseline worst case | Note |
-| --------------------------------- | ----------------- | ------------------- | ---- |
-| Units alive per side              | 1,000             | 610                 | Content and shop balance should stay below this; it is also what the playback has to draw. |
-| Battle length                     | 4,000 ticks (400 s) | 3,701              | Fixed by Overload; `maxBattleTicks` (12,000) stays as a safety net. |
-| Simulation time, one plot         | 100 ms            | 40 ms               | To completion on a developer machine. |
-| Simulation time, four plots       | 1 s               | 0.21 s              | The dense board above is the stress case. |
-| Event log, one plot               | 1 MB              | 0.94 MB             | JSON bytes; keep the log in memory only, store `(teams, seed)` and replay (CB-30). |
-| Event log, four plots             | 5 MB              | 3.24 MB             | Same. |
+| Quantity                                | Budget                 | Measured (worst case) | Enforced by                                  |
+| --------------------------------------- | ---------------------- | --------------------- | -------------------------------------------- |
+| Units alive per side                    | 1,000                  | 610 (dense tier 3)    | `performance.test.ts`, exact                 |
+| Battle length                           | 4,000 ticks            | 3,701                 | `performance.test.ts`, exact                 |
+| Hard cap on battle length               | `maxBattleTicks` 12,000 | never reached        | the end conditions                           |
+| One plot: battles per second (target)   | at least 100           | 110-215               | fails below 25 (6.6x idle, 3.5x loaded)      |
+| Four plots, dense: battles per second   | at least 5             | 9-16 (tier 1)         | fails below 2 (7.5x idle, 4.5x loaded)       |
+| Four plots, dense tier 3, one battle    | at most 1 s            | 0.21 s                | fails above 1.5 s (7x idle, 7x loaded)       |
+| Event log, one plot                     | 1 MB                   | 0.89 MB               | `performance.test.ts`, exact                 |
+| Event log, four plots                   | 5 MB                   | 3.24 MB               | `performance.test.ts`, exact                 |
 
-The tests assert looser limits than these (2 s and 10 s for the one-plot and
-dense four-plot battles, 20 s for the tier 3 stress battle) so that a slow CI
-runner does not fail them; a regression that doubles the numbers above shows
-up in these measurements rather than in the tests.
+Where the budget is written once more: the `BUDGET` constant at the top of
+`packages/tools/src/sim/performance.test.ts`. Keep the two in sync.
+
+**Benchmark.** `packages/tools/src/sim/performance.test.ts` (run by `pnpm
+test`; about 5 s, each test has a 30 s timeout):
+
+- _One plot_: every ordered pair of the four reference boards (rush, fortify,
+  siege, poor) at seeds 1 to 8, 128 battles, including the long stalls that
+  end by Overload at tick 3700. The rate is battles completed per second of
+  wall time, best of three rounds (`performance.now()`, allowed in `tools`
+  only). Measured on the sandbox this was written on: 110 to 215 battles per
+  second (the best of three 128-battle rounds; the first round is slower
+  while the engine warms up).
+- _Four plots_: the dense board below mirrored against itself, tier 1, four
+  seeds, best of three rounds: 9 to 16 battles per second (60 to 110 ms each).
+  The tier 3 version runs once for its time (about 210 ms) and, with tier 1,
+  for the unit peak, length and log size (untimed, deterministic).
+
+The enforced limits are below the measured speed, so a slow or noisy CI
+runner passes and a regression of several times fails. CI runs `pnpm -r run
+test`, so the package suites run in parallel and the benchmark competes for
+CPU; the margins are given idle (the benchmark alone) and loaded (three runs
+of `pnpm test` from the repository root, 4 cores): one plot at least 25
+battles per second against about 165 idle (6.6x) and 87 to 183 loaded (3.5x at
+worst); dense tier 1 at least 2 per second against about 15 idle (7.5x) and
+8.9 to 12.2 loaded (4.5x at worst; a slower 2-vCPU machine measured 3.5 to
+5.9 under load, 1.7x); the tier 3 stress battle under 1.5 s against about
+0.21 s idle and 0.18 to 0.21 s loaded (7x). The dense floor was lowered from 3
+to 2 for that reason. The limits on
+units, ticks and log bytes are deterministic and are checked at the budget
+itself: change a board or a content file in a way that grows them and the test
+fails until the budget (or the change) is reconsidered. The core tests
+(`packages/core/src/battle.test.ts`, "performance (CB-36)") keep their own
+looser limits (2 s, 10 s, 20 s) as an extra guard.
+
+**Command-line check.** `pnpm sim batch --a rush --b fortify --count 300
+--time` runs 300 one-plot battles and prints the wall time (see the README).
 
 ## PvE battles (W1-9)
 

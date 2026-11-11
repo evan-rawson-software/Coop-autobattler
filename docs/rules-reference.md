@@ -2012,16 +2012,49 @@ width on the threat's front row, which is arena row 23; the threat is on top,
 
 ### Reference boards
 
-`reference-boards.ts` (importable by later tools; not a test module): three
-solo boards as `team-state-ops` scripts on the map of seed 5 (party size 1),
-Core at (11, 5): **rush** (three tier 1 extractors, each feeding a tier 1
-barracks directly; nothing else), **fortify** (seven walls around the Core, three
-tier 2 turrets each powered by its own tier 2 extractor through a conduit, one
-barracks and one armory fed directly) and **poor** (the starting kit placed
-badly: one extractor far from its barracks over a 17-cell conduit, one
-extractor with no conduit, an unpowered turret and three walls in a back
-corner). `referenceBoardScript(name)` gives the script, `buildReferenceBoard`
-builds the state.
+`reference-boards.ts` and `reference-boards-siege.ts` (importable by later
+tools; not test modules): four solo boards as `team-state-ops` scripts on the
+map of seed 5 (party size 1), Core at (11, 5): **rush** (three tier 1
+extractors, each feeding a tier 1 barracks directly; nothing else), **fortify**
+(seven walls around the Core, three tier 2 turrets each powered by its own
+tier 2 extractor, one barracks and one armory fed directly), **siege** (all
+three extractors at tier 3, each feeding a tier 3 building directly: two
+barracks and one armory; six tier 2 walls in a row in front of the Core) and
+**poor** (the starting kit placed badly: one extractor far from its barracks
+over a 17-cell conduit, one extractor with no conduit, an unpowered turret and
+three walls in a back corner). No player building produces raiders (only the
+threat scripts do, see `content/units.json`), so siege is a build of few strong
+units: the armory raises the strength of every soldier spawned after it has
+charged. `ALL_REFERENCE_BOARDS` lists them in the order rush, fortify, siege,
+poor. `referenceBoardScript(name)` (the original three) and
+`anyReferenceBoardScript(name)` (all four) give the script,
+`buildReferenceBoard` and `buildAnyReferenceBoard` build the state.
+
+**Board files.** `boards/<name>.json` holds each board as plain JSON:
+`{name, description, mapSeed, partySize, team}` where `team` is a team state
+(`schemas/team-state.schema.json`, whole-state validation as in "Whole-state
+validation"). A bare team state is also accepted by the command-line runner. A
+test requires each file to equal what its script builds; `pnpm boards:export`
+rewrites the files.
+
+### Text templates
+
+Presentation text (not simulation) refers to a resource as `{res_x}`, where
+`res_x` is a resource ID (lowercase letters, digits and underscores after
+`res_`). `formatText` replaces each placeholder with that resource's display
+name and leaves all other text unchanged; an unknown ID is an error.
+`placeholderIds` lists the IDs mentioned, in order, with repeats. Resource
+display names exist only in `content/resources.json`.
+
+### Command-line runner
+
+`pnpm sim` (in `packages/tools`; see the README) is a thin shell over the rules
+above and adds none. Conventions it fixes: in `battle` the first board is side
+0 (the party, "A") and the second side 1 (the defender, "B"); in `pve` the
+party is side 0; `batch` runs the battles with seeds `seed, seed + 1, ...,
+seed + count - 1` and, against a threat, generates the threat with the same
+seed unless a threat seed is given. The event log hash printed is the golden
+convention: the hash of the whole event log (see "Golden vectors").
 
 ### Golden kinds `threat-gen` and `pve-battle`
 
@@ -2033,7 +2066,10 @@ threatHash, zone, stateHash, events}` or `{ok: false, error: {code, message}}`;
 the event log is the vector's event log. Vectors: `golden/threat-gen.json`
 (every archetype at rounds 1, 5 and 10, a four-plot Escalator, a round beyond
 the budget clamp) and `golden/pve-battle.json` (each reference board against
-each archetype at round 1, and two battles the party loses).
+each archetype at round 1, and two battles the party loses) and
+`golden/reference-matrix.json` (the `pve-battle` kind again: the siege board
+against each archetype at round 1, and every reference board against each
+archetype at round 5 (medium) and round 10 (hard)).
 
 ### Decided simplifications
 
@@ -2046,8 +2082,9 @@ each archetype at round 1, and two battles the party loses).
 
 ## Performance budget
 
-See `docs/performance-budget.md` (CB-36): baseline measurements of whole
-battles and the proposed budgets.
+See `docs/performance-budget.md` (CB-36, W1-10): baseline measurements of
+whole battles and the budget the benchmark test enforces (units per side,
+battle length, battles per second at one and four plots, event log size).
 
 ## Resolution order
 

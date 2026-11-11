@@ -1,0 +1,486 @@
+{
+  "name": "fortify",
+  "description": "Walls around the Core, three tier 2 turrets each powered by its own tier 2 extractor, one barracks and one armory.",
+  "mapSeed": 5,
+  "partySize": 1,
+  "team": {
+    "map": {
+      "width": 24,
+      "height": 16,
+      "partySize": 1,
+      "plotWidth": 24,
+      "features": [
+        {
+          "x": 4,
+          "y": 2,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 5,
+          "y": 2,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 6,
+          "y": 2,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 11,
+          "y": 2,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 12,
+          "y": 2,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 13,
+          "y": 2,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 14,
+          "y": 2,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 4,
+          "y": 3,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 6,
+          "y": 3,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 7,
+          "y": 3,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 6,
+          "y": 4,
+          "feature": "ter_lake"
+        },
+        {
+          "x": 13,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 14,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 15,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 16,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 17,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 18,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 19,
+          "y": 4,
+          "feature": "ter_cliff"
+        },
+        {
+          "x": 20,
+          "y": 4,
+          "feature": "ter_cliff"
+        }
+      ],
+      "nodes": [
+        {
+          "x": 10,
+          "y": 1,
+          "resource": "res_a"
+        },
+        {
+          "x": 19,
+          "y": 1,
+          "resource": "res_c"
+        },
+        {
+          "x": 1,
+          "y": 2,
+          "resource": "res_b"
+        },
+        {
+          "x": 21,
+          "y": 4,
+          "resource": "res_a"
+        },
+        {
+          "x": 19,
+          "y": 5,
+          "resource": "res_b"
+        },
+        {
+          "x": 23,
+          "y": 6,
+          "resource": "res_b"
+        },
+        {
+          "x": 8,
+          "y": 8,
+          "resource": "res_a"
+        }
+      ]
+    },
+    "core": {
+      "x": 11,
+      "y": 5
+    },
+    "buildings": [
+      {
+        "id": 1,
+        "def": "bld_wall",
+        "tier": 1,
+        "x": 9,
+        "y": 8,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 2,
+        "def": "bld_wall",
+        "tier": 1,
+        "x": 10,
+        "y": 8,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 3,
+        "def": "bld_wall",
+        "tier": 1,
+        "x": 13,
+        "y": 8,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 4,
+        "def": "bld_wall",
+        "tier": 1,
+        "x": 14,
+        "y": 8,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 5,
+        "def": "bld_wall",
+        "tier": 1,
+        "x": 9,
+        "y": 7,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 6,
+        "def": "bld_wall",
+        "tier": 1,
+        "x": 14,
+        "y": 7,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 7,
+        "def": "bld_wall",
+        "tier": 1,
+        "x": 9,
+        "y": 4,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 8,
+        "def": "bld_turret",
+        "tier": 2,
+        "x": 13,
+        "y": 7,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 9,
+        "def": "bld_extractor",
+        "tier": 2,
+        "x": 19,
+        "y": 5,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 11,
+        "def": "bld_turret",
+        "tier": 2,
+        "x": 16,
+        "y": 8,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 12,
+        "def": "bld_extractor",
+        "tier": 2,
+        "x": 23,
+        "y": 6,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 14,
+        "def": "bld_turret",
+        "tier": 2,
+        "x": 10,
+        "y": 7,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 15,
+        "def": "bld_extractor",
+        "tier": 2,
+        "x": 1,
+        "y": 2,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 17,
+        "def": "bld_extractor",
+        "tier": 1,
+        "x": 10,
+        "y": 1,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 18,
+        "def": "bld_barracks",
+        "tier": 1,
+        "x": 9,
+        "y": 2,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 20,
+        "def": "bld_extractor",
+        "tier": 1,
+        "x": 8,
+        "y": 8,
+        "rotation": 0,
+        "owner": 0
+      },
+      {
+        "id": 21,
+        "def": "bld_armory",
+        "tier": 1,
+        "x": 8,
+        "y": 9,
+        "rotation": 0,
+        "owner": 0
+      }
+    ],
+    "stash": [],
+    "nextId": 23,
+    "conduits": [
+      {
+        "id": 10,
+        "from": {
+          "building": 9,
+          "side": "north"
+        },
+        "to": {
+          "building": 8,
+          "side": "south"
+        },
+        "cells": [
+          {
+            "x": 19,
+            "y": 6
+          },
+          {
+            "x": 18,
+            "y": 6
+          },
+          {
+            "x": 17,
+            "y": 6
+          },
+          {
+            "x": 16,
+            "y": 6
+          },
+          {
+            "x": 15,
+            "y": 6
+          },
+          {
+            "x": 14,
+            "y": 6
+          },
+          {
+            "x": 13,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "from": {
+          "building": 12,
+          "side": "north"
+        },
+        "to": {
+          "building": 11,
+          "side": "south"
+        },
+        "cells": [
+          {
+            "x": 23,
+            "y": 7
+          },
+          {
+            "x": 22,
+            "y": 7
+          },
+          {
+            "x": 21,
+            "y": 7
+          },
+          {
+            "x": 20,
+            "y": 7
+          },
+          {
+            "x": 19,
+            "y": 7
+          },
+          {
+            "x": 18,
+            "y": 7
+          },
+          {
+            "x": 17,
+            "y": 7
+          },
+          {
+            "x": 16,
+            "y": 7
+          }
+        ]
+      },
+      {
+        "id": 16,
+        "from": {
+          "building": 15,
+          "side": "north"
+        },
+        "to": {
+          "building": 14,
+          "side": "south"
+        },
+        "cells": [
+          {
+            "x": 1,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 3,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 5,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 8,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 10,
+            "y": 6
+          }
+        ]
+      },
+      {
+        "id": 19,
+        "from": {
+          "building": 17,
+          "side": "north"
+        },
+        "to": {
+          "building": 18,
+          "side": "south"
+        },
+        "cells": []
+      },
+      {
+        "id": 22,
+        "from": {
+          "building": 20,
+          "side": "north"
+        },
+        "to": {
+          "building": 21,
+          "side": "south"
+        },
+        "cells": []
+      }
+    ]
+  }
+}
