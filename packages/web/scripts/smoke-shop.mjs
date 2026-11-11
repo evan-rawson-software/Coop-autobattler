@@ -698,9 +698,9 @@ export async function runShopSmoke({
   const redoBtn = page.locator('[data-action="redo"]');
   // Make a real edit first, so Undo is enabled and a lock has something to hold back.
   const twoTeam = await B.team();
-  let placed = null;
-  for (let y = 6; y < twoTeam.height - 2 && placed === null; y++) {
-    for (let x = 1; x < twoTeam.width - 2 && placed === null; x++) {
+  let twoPlaced = null;
+  for (let y = 6; y < twoTeam.height - 2 && twoPlaced === null; y++) {
+    for (let x = 1; x < twoTeam.width - 2 && twoPlaced === null; x++) {
       const before = (await B.team()).buildings.length;
       const b = await page
         .locator('[data-stash-def="bld_wall"]')
@@ -713,12 +713,12 @@ export async function runShopSmoke({
       await settle();
       await page.mouse.up();
       await frames(page, 6);
-      if ((await B.team()).buildings.length > before) placed = { x, y };
+      if ((await B.team()).buildings.length > before) twoPlaced = { x, y };
       else await page.keyboard.press('Escape');
     }
   }
-  check(placed !== null, 'two players: a wall was placed before Ready');
-  const placedCount = (await B.team()).buildings.length;
+  check(twoPlaced !== null, 'two players: a wall was twoPlaced before Ready');
+  const twoPlacedCount = (await B.team()).buildings.length;
   check(
     !(await undoBtn.isDisabled()),
     'two players: Undo is enabled after an edit (so the Ready check below can fail)',
@@ -740,7 +740,7 @@ export async function runShopSmoke({
     'Ready — press Unready to make changes.',
   );
   check(
-    (await B.team()).buildings.length === placedCount &&
+    (await B.team()).buildings.length === twoPlacedCount &&
       (await B.counts()).undo === 1,
     'two players: Ctrl+Z while Ready changes nothing and keeps the history',
   );
@@ -767,10 +767,10 @@ export async function runShopSmoke({
   await undoBtn.click();
   await page.waitForFunction(
     (n) => window.__debug.build.team().buildings.length < n,
-    placedCount,
+    twoPlacedCount,
   );
   check(
-    (await B.team()).buildings.length === placedCount - 1,
+    (await B.team()).buildings.length === twoPlacedCount - 1,
     'two players: after Unready, Undo takes the wall back',
   );
   await page.click('#ready-button');
