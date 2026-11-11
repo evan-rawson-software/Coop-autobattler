@@ -352,7 +352,8 @@
       "properties": {
         "difficulty": { "type": "string" },
         "won": { "type": "boolean" },
-        "opponent": { "$ref": "#/$defs/opponent" }
+        "opponent": { "$ref": "#/$defs/opponent" },
+        "goldPaid": { "type": "integer", "minimum": 0 }
       }
     },
     "pvpRecord": {
