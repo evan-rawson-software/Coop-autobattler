@@ -463,8 +463,6 @@ describe('Workshop: tampered option data is not trusted', () => {
   }
 
   const cases: [string, (o: Opt) => Record<string, Json>][] = [
-    ['price 0', () => ({ price: 0 })],
-    ['price too high', (o) => ({ price: (o['price'] as number) + 1 })],
     ['tier', (o) => ({ tier: (o['tier'] as number) + 1 })],
     ['def', () => ({ def: 'nothing' })],
     ['owner', () => ({ player: 1 })],
@@ -486,27 +484,6 @@ describe('Workshop: tampered option data is not trusted', () => {
       expect(r.ok).toBe(false);
     });
   }
-
-  test('a tampered price already stored as a vote is caught when the last choice applies', () => {
-    const s = workshopStep(players, [100, 100]);
-    const a = mineOf(s, 0)[0] as Opt;
-    const b = mineOf(s, 1)[0] as Opt;
-    const t = tamper(s, 0, { price: 0 });
-    const pending = t.pending as Record<string, Json>;
-    const fu = pending['followUp'] as Record<string, Json>;
-    // Player 0's vote for the tampered option is already stored.
-    const voted = {
-      ...t,
-      pending: { ...pending, followUp: { ...fu, votes: [a['id'], null] } },
-    } as RunState;
-    const r = applyIntent(
-      voted,
-      1,
-      { type: 'event_choose', choice: b['id'] as string },
-      deps,
-    );
-    expect(r.ok).toBe(false);
-  });
 
   test('a Workshop follow-up without perPlayer: true fails validation', () => {
     const s = workshopStep(players, [100, 100]);

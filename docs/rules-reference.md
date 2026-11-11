@@ -2603,17 +2603,28 @@ any number of offers from 1 to `offerCount`. More event types will come later.
     A player who cannot afford any of their options starts with `"skip"`
     already chosen (they have nothing else to choose); if nobody can, there
     are no options and the step goes straight to the shop. Stored option data
-    is never trusted: `validateRunState` and `event_choose` recompute each
-    option's price (and check its `tier`, `def`, `player`) from the current
-    team, and a tampered option is rejected (`invalid_choice`). A save made
-    under run-state format 2 (the old party-wide Workshop) is
+    is never trusted: `validateRunState` checks only the STRUCTURE of each
+    option (id format, `player` in range, the building exists and belongs to
+    that player, `def` and `tier` match the building's current tier,
+    `newTier = tier + 1 <= 3`, `placed` matches, `price` a non-negative
+    safe integer, `affordable` a boolean) and compares nothing with content
+    prices or gold, so a run saved under an older minor version stays
+    openable under changed prices. A tampered structure is rejected
+    (`invalid_choice` in `event_choose`). A save made under run-state format 2
+    (the old party-wide Workshop) is
     `unsupported_format`; the format version is now 3.
   - *Choosing.* Each player sends `{ type: "event_choose", choice }` with one of
     their own option ids or `"skip"`. `skip` is always allowed, also when an
     upgrade is affordable. Another player's option is rejected with
     `not_owner`, an unknown id with `invalid_choice`, and an option the
-    player's gold does not cover with `not_enough_gold` (gold cannot change
-    during the step). A choice is stored at once and may be changed until
+    player's gold does not cover with `not_enough_gold`. The price charged is
+    computed at the moment of choosing from CURRENT content
+    (`workshopPrice(content, def, tier + 1, percent)` with the offer's stored
+    percent) and the player's gold at that moment; the stored `price` and
+    `affordable` are display data and are ignored, so a player who could pay
+    the stored price but not the current one gets `not_enough_gold` and can
+    still skip. `votes` pre-filled with `skip` (a player with nothing
+    affordable when the offer was made) can be changed like any other choice. A choice is stored at once and may be changed until
     the last player has chosen; nothing is applied before that. There is no
     party vote on the building and no random draw.
   - *Applying.* When every player has chosen, the choices are applied in

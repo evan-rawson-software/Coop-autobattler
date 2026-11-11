@@ -6,6 +6,10 @@ import {
   type PveOptionView,
 } from './pve-options.js';
 import { STEP_INTENTS, lockedWhileReady } from './step-table.js';
+import {
+  DEFAULT_WORKSHOP_PERCENT,
+  currentWorkshopPrice,
+} from './workshop-option.js';
 import type { Json, RunDeps, RunState, VoteTopic } from './types.js';
 
 /** Indices of the players who are currently ready. */
@@ -61,6 +65,10 @@ export function openVote(state: RunState): OpenVoteView | null {
   };
 }
 
+function isObj(v: unknown): boolean {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
 export interface FollowUpView {
   /** What is being chosen (`workshop_building`, `shrine_modifier`, ...). */
   readonly prompt: string;
@@ -82,10 +90,18 @@ export interface FollowUpView {
 /**
  * The follow-up open in `event_resolve`, or null in any other step. Pass
  * `player` to get that player's own options in a per-player follow-up.
+ *
+ * Pass `deps` to get each Workshop option's CURRENT `price` and `affordable`
+ * (from current content, the offer's percent and the owner's gold now); the
+ * stored price is then kept as `storedPrice`. Screens must show these and not
+ * the stored values: a save made under older content continues under current
+ * numbers, and the price charged is computed when the player chooses. Without
+ * `deps` the options are returned as stored.
  */
 export function eventFollowUp(
   state: RunState,
   player?: number,
+  deps?: Pick<RunDeps, 'content'>,
 ): FollowUpView | null {
   if (state.step !== 'event_resolve') return null;
   const pending = state.pending;
@@ -110,10 +126,35 @@ export function eventFollowUp(
         )
       : options;
   const mine = player === undefined ? undefined : votes[player];
+  const percentRaw = isObj(rec['offer'])
+    ? (rec['offer'] as Record<string, Json>)['workshopPricePercent']
+    : undefined;
+  const percent =
+    typeof percentRaw === 'number' ? percentRaw : DEFAULT_WORKSHOP_PERCENT;
+  const shown =
+    deps !== undefined && f['prompt'] === 'workshop_building'
+      ? mineOptions.map((o): Json => {
+          if (!isObj(o)) return o;
+          const r = o as Record<string, Json>;
+          const owner = r['player'];
+          const price =
+            typeof r['def'] === 'string' && typeof r['tier'] === 'number'
+              ? currentWorkshopPrice(deps.content, percent, r['def'], r['tier'])
+              : null;
+          if (price === null || typeof owner !== 'number') return o;
+          const gold = state.perPlayer[owner]?.gold ?? 0;
+          return {
+            ...r,
+            storedPrice: r['price'] ?? null,
+            price,
+            affordable: gold >= price,
+          };
+        })
+      : mineOptions;
   return {
     prompt: typeof f['prompt'] === 'string' ? f['prompt'] : '',
     perPlayer: per,
-    options: mineOptions,
+    options: shown,
     chosen: votes.map((v) => v !== null),
     waitingFor: votes.flatMap((v, i) => (v === null ? [i] : [])),
     mine: typeof mine === 'string' ? mine : null,

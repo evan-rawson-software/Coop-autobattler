@@ -39,6 +39,7 @@ import {
 import { tally, voteResolvedEffect } from './machine.js';
 import {
   DEFAULT_WORKSHOP_PERCENT,
+  currentWorkshopPrice,
   workshopOptionProblem,
 } from './workshop-option.js';
 import { streamLabels } from './streams.js';
@@ -267,22 +268,22 @@ export const workshopHandler: EventHandler = {
     };
   },
   checkChoice({ state, content }, offer, player, option) {
-    // The stored price, tier, def and owner are not trusted: they are checked
-    // against the actual building and the recomputed Workshop price.
+    // The structure is checked against the actual building; the stored price
+    // and `affordable` are ignored. The price charged is computed now from
+    // current content, against the player's gold at this moment.
     if (!isRecord(option) || option['player'] !== player) return 'not_owner';
-    if (
-      workshopOptionProblem(
-        state.team,
-        content,
-        offerPercent(offer),
-        player,
-        option,
-      ) !== null
-    ) {
+    if (workshopOptionProblem(state.team, player, option) !== null) {
       return 'invalid_choice';
     }
+    const price = currentWorkshopPrice(
+      content,
+      offerPercent(offer),
+      option['def'] as string,
+      option['tier'] as number,
+    );
+    if (price === null) return 'invalid_choice';
     const gold = state.perPlayer[player]?.gold ?? 0;
-    return gold >= (option['price'] as number) ? null : 'not_enough_gold';
+    return gold >= price ? null : 'not_enough_gold';
   },
   chooseEach({ state, content }, offer, picks) {
     let team = state.team;
@@ -296,20 +297,19 @@ export const workshopHandler: EventHandler = {
       const me = perPlayer[player];
       if (me === undefined) return { ok: false, reason: 'invalid_choice' };
       // Checked against the team as it is now (earlier players' raises are
-      // already applied), with the price recomputed from it.
-      if (
-        workshopOptionProblem(
-          team,
-          content,
-          offerPercent(offer),
-          player,
-          pick,
-        ) !== null
-      ) {
+      // already applied); the stored price is ignored and the current one
+      // charged.
+      if (workshopOptionProblem(team, player, pick) !== null) {
         return { ok: false, reason: 'invalid_choice' };
       }
       const id = pick['building'] as number;
-      const price = pick['price'] as number;
+      const price = currentWorkshopPrice(
+        content,
+        offerPercent(offer),
+        pick['def'] as string,
+        pick['tier'] as number,
+      );
+      if (price === null) return { ok: false, reason: 'invalid_choice' };
       if (me.gold < price) return { ok: false, reason: 'not_enough_gold' };
       const r = raiseTier(team, { id });
       if (!r.ok) return { ok: false, reason: 'cannot_raise' };

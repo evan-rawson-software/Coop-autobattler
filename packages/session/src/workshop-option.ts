@@ -1,19 +1,34 @@
 /**
- * Checks a Workshop follow-up option against the team it claims to describe.
- * The price, tier, def and owner in a stored option are never trusted: they
- * are recomputed from the current state (`workshopPrice`), so an edited save
- * cannot buy an upgrade for less. Used by event_choose and validateRunState.
+ * Checks the STRUCTURE of a Workshop follow-up option against the team it
+ * claims to describe: id format, owner, building, def, tier, newTier and
+ * placed flag. The stored `price` and `affordable` are display data only:
+ * they are checked for type but never compared with content or gold, because
+ * a run saved under an older minor version continues under current numbers.
+ * The price actually charged is `currentWorkshopPrice`, computed when the
+ * player chooses. Used by event_choose and validateRunState.
  */
 import { workshopPrice, type ShopContent, type TeamState } from '@game/core';
 
 /** The Workshop price percent used when an offer carries none. */
 export const DEFAULT_WORKSHOP_PERCENT = 80;
 
-/** A problem with `option` (as one of `player`'s), or null if it is exact. */
-export function workshopOptionProblem(
-  team: TeamState,
+/** The price to raise `option`'s building now, from current content; null if it cannot be. */
+export function currentWorkshopPrice(
   content: ShopContent,
   percent: number,
+  def: string,
+  tier: number,
+): number | null {
+  try {
+    return workshopPrice(content, def, tier + 1, percent);
+  } catch {
+    return null;
+  }
+}
+
+/** A structural problem with `option` (as one of `player`'s), or null. */
+export function workshopOptionProblem(
+  team: TeamState,
   player: number,
   option: unknown,
 ): string | null {
@@ -36,13 +51,11 @@ export function workshopOptionProblem(
   if (o['newTier'] !== b.tier + 1 || o['placed'] !== (placed !== undefined)) {
     return 'newTier or placed does not match the building';
   }
-  let price: number;
-  try {
-    price = workshopPrice(content, b.def, b.tier + 1, percent);
-  } catch {
-    return 'the building cannot be raised';
+  const price = o['price'];
+  if (typeof price !== 'number' || !Number.isSafeInteger(price) || price < 0) {
+    return 'price must be a non-negative integer';
   }
-  return o['price'] === price
-    ? null
-    : `price must be ${String(price)}, not ${JSON.stringify(o['price'])}`;
+  if (typeof o['affordable'] !== 'boolean')
+    return 'affordable must be a boolean';
+  return null;
 }

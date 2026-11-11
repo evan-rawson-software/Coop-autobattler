@@ -374,13 +374,7 @@ function check(
             const player = isRec(o) ? o['player'] : undefined;
             const problem =
               isInt(player) && player >= 0 && player < n
-                ? workshopOptionProblem(
-                    team.state,
-                    deps.content,
-                    pct,
-                    player,
-                    o,
-                  )
+                ? workshopOptionProblem(team.state, player, o)
                 : 'player: must be a player index';
             if (problem !== null) {
               err(`pending.followUp.options[${String(i)}]: ${problem}.`);
