@@ -44,11 +44,20 @@ page of the web build (`pnpm --filter @game/web dev`, then open `#sprites`).
 - Buildings fill whole tiles that match `footprint` in `content/buildings.json`
   (1x1 is 16x16, 2x2 is 32x32). A test checks this.
 - Units are 16x16, top-down figures with a head and shoulders. The BODY (tunic,
-  cloak, hood, shield face, drone hull) carries the team colour. Side A faces
-  north (up the screen) and wears a gold plume (a fan standing in front of the
-  head or hull); side B faces south and has bone horns (or wedges on the drone),
-  so the sides differ in silhouette as well as in colour. `fx_shadow` is a soft
-  shadow to place under flyers.
+  cloak, hood, shield face, drone hull) carries the team colour, which is the
+  primary side cue. A second cue works without colour at 1x: side A wears a
+  narrow gold plume (5 px wide, 4 tall, a tuft in front of the head or hull);
+  side B has big bone horns (12 px wide, 6 tall, sweeping out to the shoulders;
+  wedges on the drone). Tall and narrow versus wide and flat; the silhouettes
+  differ by 30 to 45 px per unit. `fx_shadow` is a soft shadow to place under
+  flyers.
+- Facing convention: every unit is DRAWN facing north (up the screen). Side A
+  and the neutral (draw-time-tinted) sprite are that drawing, so they face
+  north. Side B (`@b`) is the same drawing flipped vertically, so it faces
+  south and the lighting stays on the left. Side A is therefore the team that
+  attacks up the screen. The neutral sprite has the same body and shape as `@a`
+  without the plume; to use it for side B, flip it vertically
+  (`scale.y = -1`) and add your own cue.
 - Tiers: a tier 2 building gets silver corner brackets (`tier_trim_*`), tier 3
   gold ones, plus the pips (`tier_pips`).
 - A restrained shared palette on a dark UI. It is listed in `atlas.json`
@@ -171,9 +180,11 @@ TileSet settings:
   which is how they are stored.
 - Ground and neutral variants: add each as its own tile and set
   `TileData.probability` so a random one is placed per cell.
-- Autotiles: use a terrain set in "Match Corners and Sides" mode. For frame `i`
-  with mask `m = masks[i]`, set the peering bit to terrain 0 where the bit is set
-  and to -1 where it is not:
+- Autotiles: use a terrain set in "Match Corners and Sides" mode. For each tile
+  set `TileData.terrain_set` and `TileData.terrain` FIRST; peering bits can only
+  be set on a tile that already belongs to a terrain set, and Godot rejects or
+  ignores them otherwise. Then, for frame `i` with mask `m = masks[i]`, set the
+  peering bit to terrain 0 where the bit is set and to -1 where it is not:
 
   | Bit  | `TileSet.CellNeighbor`        |
   | ---- | ----------------------------- |
@@ -186,9 +197,17 @@ TileSet settings:
   | W    | `CELL_NEIGHBOR_LEFT_SIDE`     |
   | NW   | `CELL_NEIGHBOR_TOP_LEFT_CORNER` |
 
-- Conduits: add the five pieces once and enable the `TileData` transpose and flip
-  alternatives for the other orientations; tint them with the shader below or
-  with a modulate for a plain overall tint.
+- Conduits: add the five pieces once and get the other orientations by
+  rotation, which depends on the Godot version.
+  - Godot 4.0 to 4.2: create alternative tiles and set `TileData.transpose`,
+    `flip_h` and `flip_v` on them.
+  - Godot 4.3 and later: do not create alternatives for this. Pass the flags
+    `TileSetAtlasSource.TRANSFORM_FLIP_H`, `TRANSFORM_FLIP_V` and
+    `TRANSFORM_TRANSPOSE`, OR-ed together, as the alternative-tile argument of
+    `TileMapLayer.set_cell` (a quarter turn clockwise is transpose + flip_h).
+    Check the result in the editor before relying on it.
+
+  Tint them with the shader below or with a modulate for a plain overall tint.
 
 ## Tinting
 
@@ -202,6 +221,11 @@ awkward, and the pre-tinted and draw-time-tinted versions agree on the body
 pixels (tested). Resource nodes are pre-tinted only.
 
 ## Importing into Godot 4
+
+These notes were written against Godot 4.3 (the Godot 4.0 to 4.2 differences are
+called out where they matter). The recipes below, including the palette-swap
+shader and the TileSet setup, have NOT been run in Godot yet; they come from the
+documentation, so expect to adjust names or details on the first import.
 
 1. Copy `assets/sprites/` into the project. In the Import dock keep
    **Compress > Mode: Lossless** and mipmaps off. Godot 4 has no "Filter" import

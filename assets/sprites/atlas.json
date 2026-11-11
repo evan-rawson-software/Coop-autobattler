@@ -1006,7 +1006,7 @@
       ],
       "category": "unit",
       "id": "unit_soldier",
-      "note": "Melee ground unit. Side A, faces north, gold plume."
+      "note": "Melee ground unit. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_soldier@a.walk": {
       "sheet": "units",
@@ -1022,7 +1022,7 @@
       ],
       "category": "unit",
       "id": "unit_soldier",
-      "note": "Melee ground unit. Side A, faces north, gold plume."
+      "note": "Melee ground unit. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_soldier@a.attack": {
       "sheet": "units",
@@ -1038,7 +1038,7 @@
       ],
       "category": "unit",
       "id": "unit_soldier",
-      "note": "Melee ground unit. Side A, faces north, gold plume."
+      "note": "Melee ground unit. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_soldier@b": {
       "sheet": "units",
@@ -1054,7 +1054,7 @@
       ],
       "category": "unit",
       "id": "unit_soldier",
-      "note": "Melee ground unit. Side B, faces south, bone horns."
+      "note": "Melee ground unit. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_soldier@b.walk": {
       "sheet": "units",
@@ -1070,7 +1070,7 @@
       ],
       "category": "unit",
       "id": "unit_soldier",
-      "note": "Melee ground unit. Side B, faces south, bone horns."
+      "note": "Melee ground unit. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_soldier@b.attack": {
       "sheet": "units",
@@ -1086,7 +1086,7 @@
       ],
       "category": "unit",
       "id": "unit_soldier",
-      "note": "Melee ground unit. Side B, faces south, bone horns."
+      "note": "Melee ground unit. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_raider": {
       "sheet": "units",
@@ -1153,7 +1153,7 @@
       ],
       "category": "unit",
       "id": "unit_raider",
-      "note": "Fast melee ground unit. Side A, faces north, gold plume."
+      "note": "Fast melee ground unit. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_raider@a.walk": {
       "sheet": "units",
@@ -1169,7 +1169,7 @@
       ],
       "category": "unit",
       "id": "unit_raider",
-      "note": "Fast melee ground unit. Side A, faces north, gold plume."
+      "note": "Fast melee ground unit. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_raider@a.attack": {
       "sheet": "units",
@@ -1185,7 +1185,7 @@
       ],
       "category": "unit",
       "id": "unit_raider",
-      "note": "Fast melee ground unit. Side A, faces north, gold plume."
+      "note": "Fast melee ground unit. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_raider@b": {
       "sheet": "units",
@@ -1201,7 +1201,7 @@
       ],
       "category": "unit",
       "id": "unit_raider",
-      "note": "Fast melee ground unit. Side B, faces south, bone horns."
+      "note": "Fast melee ground unit. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_raider@b.walk": {
       "sheet": "units",
@@ -1217,7 +1217,7 @@
       ],
       "category": "unit",
       "id": "unit_raider",
-      "note": "Fast melee ground unit. Side B, faces south, bone horns."
+      "note": "Fast melee ground unit. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_raider@b.attack": {
       "sheet": "units",
@@ -1233,7 +1233,7 @@
       ],
       "category": "unit",
       "id": "unit_raider",
-      "note": "Fast melee ground unit. Side B, faces south, bone horns."
+      "note": "Fast melee ground unit. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_archer": {
       "sheet": "units",
@@ -1304,7 +1304,7 @@
       "category": "unit",
       "id": "unit_archer",
       "planned": true,
-      "note": "Planned: Ranged ground unit. Side A, faces north, gold plume."
+      "note": "Planned: Ranged ground unit. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_archer@a.walk": {
       "sheet": "units",
@@ -1321,7 +1321,7 @@
       "category": "unit",
       "id": "unit_archer",
       "planned": true,
-      "note": "Planned: Ranged ground unit. Side A, faces north, gold plume."
+      "note": "Planned: Ranged ground unit. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_archer@a.attack": {
       "sheet": "units",
@@ -1338,7 +1338,7 @@
       "category": "unit",
       "id": "unit_archer",
       "planned": true,
-      "note": "Planned: Ranged ground unit. Side A, faces north, gold plume."
+      "note": "Planned: Ranged ground unit. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_archer@b": {
       "sheet": "units",
@@ -1355,7 +1355,7 @@
       "category": "unit",
       "id": "unit_archer",
       "planned": true,
-      "note": "Planned: Ranged ground unit. Side B, faces south, bone horns."
+      "note": "Planned: Ranged ground unit. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_archer@b.walk": {
       "sheet": "units",
@@ -1372,7 +1372,7 @@
       "category": "unit",
       "id": "unit_archer",
       "planned": true,
-      "note": "Planned: Ranged ground unit. Side B, faces south, bone horns."
+      "note": "Planned: Ranged ground unit. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_archer@b.attack": {
       "sheet": "units",
@@ -1389,7 +1389,7 @@
       "category": "unit",
       "id": "unit_archer",
       "planned": true,
-      "note": "Planned: Ranged ground unit. Side B, faces south, bone horns."
+      "note": "Planned: Ranged ground unit. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_drone": {
       "sheet": "units",
@@ -1460,7 +1460,7 @@
       "category": "unit",
       "id": "unit_drone",
       "planned": true,
-      "note": "Planned: Flying unit; place fx_shadow under it. Side A, faces north, gold plume."
+      "note": "Planned: Flying unit; place fx_shadow under it. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_drone@a.walk": {
       "sheet": "units",
@@ -1477,7 +1477,7 @@
       "category": "unit",
       "id": "unit_drone",
       "planned": true,
-      "note": "Planned: Flying unit; place fx_shadow under it. Side A, faces north, gold plume."
+      "note": "Planned: Flying unit; place fx_shadow under it. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_drone@a.attack": {
       "sheet": "units",
@@ -1494,7 +1494,7 @@
       "category": "unit",
       "id": "unit_drone",
       "planned": true,
-      "note": "Planned: Flying unit; place fx_shadow under it. Side A, faces north, gold plume."
+      "note": "Planned: Flying unit; place fx_shadow under it. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_drone@b": {
       "sheet": "units",
@@ -1511,7 +1511,7 @@
       "category": "unit",
       "id": "unit_drone",
       "planned": true,
-      "note": "Planned: Flying unit; place fx_shadow under it. Side B, faces south, bone horns."
+      "note": "Planned: Flying unit; place fx_shadow under it. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_drone@b.walk": {
       "sheet": "units",
@@ -1528,7 +1528,7 @@
       "category": "unit",
       "id": "unit_drone",
       "planned": true,
-      "note": "Planned: Flying unit; place fx_shadow under it. Side B, faces south, bone horns."
+      "note": "Planned: Flying unit; place fx_shadow under it. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_drone@b.attack": {
       "sheet": "units",
@@ -1545,7 +1545,7 @@
       "category": "unit",
       "id": "unit_drone",
       "planned": true,
-      "note": "Planned: Flying unit; place fx_shadow under it. Side B, faces south, bone horns."
+      "note": "Planned: Flying unit; place fx_shadow under it. Side B, faces south (flipped vertically), wide bone horns."
     },
     "fx_hit_spark": {
       "sheet": "effects",

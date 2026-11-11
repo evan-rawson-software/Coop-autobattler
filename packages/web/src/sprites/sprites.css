@@ -31,6 +31,8 @@
   padding-bottom: 3px;
 }
 .px {
+  /* 1 canvas pixel = 1 CSS pixel at 1x: never let a border shrink it. */
+  box-sizing: content-box;
   image-rendering: pixelated;
   display: block;
 }
@@ -104,5 +106,6 @@
   background: rgb(0 0 0 / 0.18);
 }
 .mock-board {
-  border: 1px solid rgb(127 140 150 / 0.5);
+  /* An outline sits outside the box, so the canvas keeps its pixel size. */
+  outline: 1px solid rgb(127 140 150 / 0.5);
 }

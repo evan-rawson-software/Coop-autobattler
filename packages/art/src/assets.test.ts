@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 import type { Atlas } from './atlas.js';
-import { BLOB47, NE, N, E, blobFrame, canonical } from './autotile.js';
+import { BLOB47, NE, N, E, S, W, blobFrame, canonical } from './autotile.js';
 import { outDir, buildAll } from './build.js';
 import {
   type BuildingInfo,
@@ -260,6 +260,79 @@ describe('autotiles', () => {
         px(sheet, sp, full, x, y)[3],
         `full ${String(x)},${String(y)}`,
       ).toBe(255);
+  });
+});
+
+describe('no tiling stripes', () => {
+  type Sprite = Atlas['sprites'][string];
+  const sheet = readSheet('tiles.png');
+  const key = (sp: Sprite, f: number, x: number, y: number): string =>
+    px(sheet, sp, f, x, y).join(',');
+  const dominant = (sp: Sprite, f: number): string => {
+    const counts = new Map<string, number>();
+    for (let y = 0; y < 16; y++)
+      for (let x = 0; x < 16; x++)
+        counts.set(key(sp, f, x, y), (counts.get(key(sp, f, x, y)) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
+  };
+  /** Indices of lines (rows or columns) that are one flat non-dominant colour. */
+  const flatLines = (sp: Sprite, f: number, tiles: number): string[] => {
+    const dom = dominant(sp, f);
+    const n = 16 * tiles;
+    const at = (x: number, y: number): string => key(sp, f, x % 16, y % 16);
+    const bad: string[] = [];
+    for (let i = 0; i < n; i++) {
+      const col = new Set<string>();
+      const row = new Set<string>();
+      for (let j = 0; j < n; j++) {
+        col.add(at(i, j));
+        row.add(at(j, i));
+      }
+      const c = [...col];
+      const r = [...row];
+      if (c.length === 1 && c[0] !== dom) bad.push(`col ${String(i)}`);
+      if (r.length === 1 && r[0] !== dom) bad.push(`row ${String(i)}`);
+    }
+    return bad;
+  };
+
+  test('tileable terrain has no flat stripe when tiled 4x4', () => {
+    for (const [name, sp] of Object.entries(committed.sprites)) {
+      if (!/^(ground_|neutral_|ter_water)/.test(name)) continue;
+      for (let f = 0; f < sp.frames; f++)
+        expect(flatLines(sp, f, 4), `${name} frame ${String(f)}`).toEqual([]);
+    }
+  });
+
+  test('interior autotile frames have no flat stripe when tiled 4x4', () => {
+    for (const name of ['ter_lake_auto', 'ter_cliff_auto']) {
+      const sp = committed.sprites[name] as Sprite;
+      expect(flatLines(sp, blobFrame(255), 4), name).toEqual([]);
+    }
+  });
+
+  test('a joined edge is never a flat colour unlike the interior', () => {
+    for (const name of ['ter_lake_auto', 'ter_cliff_auto']) {
+      const sp = committed.sprites[name] as Sprite;
+      BLOB47.forEach((mask, f) => {
+        const dom = dominant(sp, f);
+        const edges: [number, (i: number) => [number, number]][] = [
+          [N, (i) => [i, 0]],
+          [S, (i) => [i, 15]],
+          [W, (i) => [0, i]],
+          [E, (i) => [15, i]],
+        ];
+        for (const [bit, at] of edges) {
+          if (!(mask & bit)) continue;
+          const colours = new Set<string>();
+          for (let i = 0; i < 16; i++) colours.add(key(sp, f, ...at(i)));
+          const flat = colours.size === 1 ? [...colours][0] : dom;
+          expect(flat, `${name} mask ${String(mask)} side ${String(bit)}`).toBe(
+            dom,
+          );
+        }
+      });
+    }
   });
 });
 

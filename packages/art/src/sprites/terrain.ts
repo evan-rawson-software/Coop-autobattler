@@ -181,7 +181,8 @@ function lakeAuto(mask: number): Pix {
 }
 
 function plateauAt(x: number, y: number): string {
-  const h = (x * 7 + y * 13 + ((x * y) % 5)) % 13;
+  // Neither coefficient is a multiple of 13, so no row or column is constant.
+  const h = (x * 7 + y * 5 + ((x * y) % 5)) % 13;
   if (h === 0) return 'r';
   if (h === 6) return 'p';
   return 'q';

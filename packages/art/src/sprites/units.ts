@@ -6,7 +6,7 @@
  * Team colour goes on the BODY (tunic, cloak, hull and shield face) through
  * the tint keys X, x, Z; the neutral set leaves them grey. The side cue is a
  * shape on the head or hull, not just a hue: side A wears a gold plume (a
- * tall tuft), side B has bone horns (a wide spread), so the silhouettes differ
+ * narrow tuft), side B has big bone horns (a wide spread), so the silhouettes differ
  * at 1x.
  */
 
@@ -58,14 +58,15 @@ function mirror(g: Grid): string[] {
 const PLUME: Grid = ['.yyy.', 'yOOOy', '.OOO.', '..o..'];
 /**
  * Side B: bone horns, a horseshoe that rises from behind the head and
- * curves out and forward, 10 px wide. The head is drawn over its base.
+ * curves out and forward, 12 px wide and 6 tall. The head is drawn over its base.
  */
 const HORNS: Grid = [
-  '6........6',
-  '56......65',
-  '55......55',
-  '.55....55.',
-  '..555555..',
+  '6..........6',
+  '56........65',
+  '55........55',
+  '555......555',
+  '.5555555555.',
+  '..55555555..',
 ];
 
 /**
@@ -77,7 +78,7 @@ function sideCue(p: Pix, side: Side, hx: number, hy: number, hw: number): void {
   if (side === 'a') {
     p.stamp(PLUME, hx + Math.floor((hw - 5) / 2), hy - 3);
   } else if (side === 'b') {
-    p.stamp(HORNS, hx + Math.floor((hw - 10) / 2), hy - 3);
+    p.stamp(HORNS, hx + Math.floor((hw - 12) / 2), hy - 3);
   }
 }
 
@@ -260,8 +261,9 @@ function drone(L: Layers, c: Ctx): void {
   // Side cue. A: a gold prow in front. B: bone wedges jutting from the sides.
   if (c.side === 'a') L.front.stamp(['.yy.', 'yOOy'], 6, 2 + dy);
   else if (c.side === 'b') {
-    L.front.stamp(['..5', '.56', '556', '.55'], 1, 6 + dy);
-    L.front.stamp(mirror(['..5', '.56', '556', '.55']), 12, 6 + dy);
+    const wedge = ['...5', '..56', '.556', '5556', '.555'];
+    L.front.stamp(wedge, 0, 5 + dy);
+    L.front.stamp(mirror(wedge), 12, 5 + dy);
   }
 }
 
@@ -402,7 +404,7 @@ export function unitSprites(
             fps,
             tintable: side === 'n',
             ...(planned ? { planned: true } : {}),
-            note: `${planned ? 'Planned: ' : ''}${NOTES[id] ?? ''} ${side === 'n' ? 'Neutral greys in the team parts (tint keys).' : side === 'a' ? 'Side A, faces north, gold plume.' : 'Side B, faces south, bone horns.'}`,
+            note: `${planned ? 'Planned: ' : ''}${NOTES[id] ?? ''} ${side === 'n' ? 'Neutral greys in the team parts (tint keys).' : side === 'a' ? 'Side A, faces north (up the screen), narrow gold plume.' : 'Side B, faces south (flipped vertically), wide bone horns.'}`,
           }),
         );
       }
