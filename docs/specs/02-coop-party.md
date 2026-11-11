@@ -74,9 +74,14 @@ Status: Draft v4.5
   are never timed; players are not rushed and play at their own pace.
   **Every player must ready up before the party moves on to the next
   step.**
-- **CP-17a [PROPOSED]** All players act at the same time within a step
-  (everyone shops and builds simultaneously), and any player can un-ready
-  until the last player readies.
+- **CP-17a [DECIDED]** All players act at the same time within a step
+  (everyone shops and builds simultaneously). **Ready locks a player's own
+  editing:** in a build or shop step, once a player is Ready, their buy,
+  sell, re-roll and board-editing actions are refused (reason
+  `locked_ready`) until they Unready. A player can Unready for as long as at
+  least one other player is not ready; the moment the last player readies the
+  step ends, so with one player Ready advances at once. Other players keep
+  editing while someone is Ready.
 - **CP-17b [DECIDED]** **A vote counts as soon as it is cast and can be
   changed until the last player has voted.** There is no separate confirm
   step. The choice resolves once everyone has voted.

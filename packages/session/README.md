@@ -53,6 +53,14 @@ when a pick was made, `picked: { player, random: true }`.
 | `pvp_summary`    | `ready`, `unready`                                | All ready: `rewards` hook; a loss costs `pvpLossLifeCost` lives; 0 lives gives `run_over`, else `event_choice`. |
 | `run_over`       | none                                              | Final. `outcome` is `defeated` or `abandoned`.                                                            |
 
+**Ready locks (issue #58).** In `build` and `shop`, a player who is Ready can
+only `unready` (the host can also `abandon`): their buy, sell, re-roll, board
+edits and extension intents are rejected with `locked_ready` until they
+unready. `applyIntent` enforces it for built-in and extension intents alike
+(after the `wrong_step` check), and `allowedIntents` leaves them out. When the
+last player readies the step advances, so a solo player's Ready never leaves
+a locked state.
+
 Any intent not in a step's row is rejected with `wrong_step`. `abandon` (host
 only, else `not_host`) ends the run from any step except `run_over`. The
 legal built-in intents per step are in `src/step-table.ts`.

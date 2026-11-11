@@ -4,7 +4,7 @@ import {
   readPveOption,
   type PveOptionView,
 } from './pve-options.js';
-import { STEP_INTENTS } from './step-table.js';
+import { STEP_INTENTS, lockedWhileReady } from './step-table.js';
 import type { Json, RunDeps, RunState, VoteTopic } from './types.js';
 
 /** Indices of the players who are currently ready. */
@@ -110,8 +110,9 @@ export function eventFollowUp(
 /**
  * The intent types `player` may send right now. Extension intents are
  * included when `deps` is given and their handler allows the current step.
- * This is about the step and the player's own flags; the board and shop can
- * still refuse a particular intent.
+ * This is about the step and the player's own flags (a Ready player in a build
+ * or shop step may only unready, or abandon as host: issue #58); the board and
+ * shop can still refuse a particular intent.
  */
 export function allowedIntents(
   state: RunState,
@@ -122,6 +123,7 @@ export function allowedIntents(
   if (me === undefined) return [];
   const out: string[] = [];
   for (const type of STEP_INTENTS[state.step]) {
+    if (me.ready && lockedWhileReady(state.step, type)) continue;
     if (type === 'ready' && me.ready) continue;
     if (type === 'unready' && !me.ready) continue;
     if (type === 'abandon' && player !== state.host) continue;
@@ -129,6 +131,7 @@ export function allowedIntents(
   }
   if (deps !== undefined && state.step !== 'run_over') {
     for (const [type, handler] of Object.entries(deps.handlers)) {
+      if (me.ready && lockedWhileReady(state.step, type)) continue;
       if (handler.steps.includes(state.step)) out.push(type);
     }
   }

@@ -251,6 +251,7 @@ export type BuiltinReason =
   | 'not_host'
   | 'already_ready'
   | 'not_ready'
+  | 'locked_ready'
   | 'invalid_intent'
   | 'invalid_choice'
   | 'unknown_intent'

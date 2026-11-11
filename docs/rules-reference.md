@@ -2295,6 +2295,22 @@ of the action log reproduces it. The `vote_resolved` effect lists `tickets`
 (every vote in player order) and, for a random pick, `picked: { player, random:
 true }`.
 
+### Ready (CP-17, CP-17a)
+
+`ready` and `unready` are legal in `build`, `shop`, `pve_summary` and
+`pvp_summary`. A step ends when every player is ready (a solo player's `ready`
+ends it at once); the ready flags are cleared on entering the next step.
+**Ready locks editing (issue #58):** in `build` and `shop`, while a player is
+ready, every intent of theirs other than `unready` (and `abandon` by the host)
+is rejected with `locked_ready`: `buy`, `sell`, `reroll`, the board edits
+(`place_building`, `move_building`, `return_building`, `add_conduit`,
+`erase_conduit`) and any extension intent a handler allows in those steps.
+The step check comes first (a `vote` in `build` is still `wrong_step`), and
+`ready` while ready is still `already_ready`. Other players are not affected.
+`allowedIntents` leaves the locked intents out. Because the step ends the
+moment the last player readies, an unready is always possible while the flag
+is set. The summary steps have nothing to edit and are not locked.
+
 ### Events (RS-4)
 
 `content/events.json` lists event definitions `{ id, type, weight,
