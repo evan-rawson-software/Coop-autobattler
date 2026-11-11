@@ -491,7 +491,7 @@ export function BattleSummaryView(props: SummaryProps) {
           </strong>
           .
         </p>
-        <p class="result-detail muted" data-field="tiebreak-counters">
+        <p class="muted" data-field="tiebreak-counters">
           Damage to buildings: yours {own.buildingDamageDealt}, theirs{' '}
           {foe.buildingDamageDealt}. Units killed: yours {own.unitsKilled},
           theirs {foe.unitsKilled}.
