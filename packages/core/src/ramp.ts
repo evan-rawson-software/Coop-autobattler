@@ -46,7 +46,10 @@ export interface OverloadDeadline {
    * of `level * overloadCoreDamageStep` over the beats so far, no other
    * damage at all) has taken a Core of the given maximum health to 0 or
    * below: that Core is destroyed on this tick unless it fell earlier. `null`
-   * when `overloadCoreDamageStep` is 0 (the decay never kills).
+   * when `overloadCoreDamageStep` is 0 (the decay never kills) and when that
+   * tick is not within the battle: a battle processes ticks
+   * `0 .. maxBattleTicks - 1` (it ends after the step of tick
+   * `maxBattleTicks - 1`), so a beat at or after `maxBattleTicks` never lands.
    */
   readonly decayDestroysTick: number | null;
   /** The Overload level at `decayDestroysTick` (`null` with it). */
@@ -60,13 +63,16 @@ export interface OverloadDeadline {
  * `overloadStartTick + (n - 1) * overloadIntervalTicks`; the answer is the
  * first beat where that total reaches `coreMaxHealth`. This is a deadline for
  * a Core that is not damaged otherwise: damage from units or turrets makes it
- * earlier. The decay applies equally to both Cores, so a screen must compute
+ * earlier. A deadline at or after `config.maxBattleTicks` is not within the
+ * battle: the fields are `null` (the battle ends at the time limit first; the
+ * most decay that can land with the shipped configuration is 26,265). The
+ * decay applies equally to both Cores, so a screen must compute
  * the deadline for BOTH Cores (or call `overloadOutcome`) and show which one
  * falls first: the Core with less health. In PvE (CB-29) the stronghold's
  * Core is often smaller than the party's 500 (then it falls first and the
- * party wins by surviving) and sometimes larger (then the party must break
- * it before its own deadline); see docs/rules-reference.md, "Overload", and
- * issue #75. Exact integers (`RangeError` if a product would leave the safe
+ * party wins by outlasting it, an intended way to win) and sometimes larger
+ * (then the party must break it before its own deadline); see
+ * docs/rules-reference.md, "Overload". Exact integers (`RangeError` if a product would leave the safe
  * range).
  */
 export function overloadDeadline(
@@ -79,12 +85,13 @@ export function overloadDeadline(
     );
   }
   const step = config.overloadCoreDamageStep;
+  const never: OverloadDeadline = {
+    startTick: config.overloadStartTick,
+    decayDestroysTick: null,
+    decayDestroysLevel: null,
+  };
   if (step === 0) {
-    return {
-      startTick: config.overloadStartTick,
-      decayDestroysTick: null,
-      decayDestroysLevel: null,
-    };
+    return never;
   }
   const decayAfter = (n: number): number =>
     mulInt(step, divFloor(mulInt(n, n + 1), 2));
@@ -97,19 +104,23 @@ export function overloadDeadline(
     if (decayAfter(mid) >= coreMaxHealth) hi = mid;
     else lo = mid + 1;
   }
+  const tick = addInt(
+    config.overloadStartTick,
+    mulInt(lo - 1, config.overloadIntervalTicks),
+  );
+  // The last tick processed is maxBattleTicks - 1 (battle.ts ends the battle
+  // once the tick counter reaches maxBattleTicks, after that tick's decay).
+  if (tick >= config.maxBattleTicks) return never;
   return {
     startTick: config.overloadStartTick,
-    decayDestroysTick: addInt(
-      config.overloadStartTick,
-      mulInt(lo - 1, config.overloadIntervalTicks),
-    ),
+    decayDestroysTick: tick,
     decayDestroysLevel: lo,
   };
 }
 
 /** Which Core the Overload decay alone destroys first (`overloadOutcome`). */
 export interface OverloadOutcome {
-  /** `'a'`/`'b'`: that Core falls first; `'both'`: on the same tick; `null`: the decay never kills. */
+  /** `'a'`/`'b'`: that Core falls first; `'both'`: on the same tick; `null`: the decay destroys neither within the battle. */
   readonly first: 'a' | 'b' | 'both' | null;
   /** The tick of the first fall (`null` with `first`). */
   readonly tick: number | null;
@@ -117,8 +128,10 @@ export interface OverloadOutcome {
 
 /**
  * Which of two Cores (maximum health `coreMaxA`, `coreMaxB`) the Overload decay
- * alone destroys first, and on which tick; equal ticks give `'both'`. Other
- * damage is ignored (it only makes a fall earlier).
+ * alone destroys first within the battle (before `maxBattleTicks`, see
+ * `overloadDeadline`), and on which tick; equal ticks give `'both'`. A Core the
+ * decay does not destroy within the battle never falls first: if only one does,
+ * that one is first. Other damage is ignored (it only makes a fall earlier).
  */
 export function overloadOutcome(
   config: SimConfig,
@@ -127,7 +140,10 @@ export function overloadOutcome(
 ): OverloadOutcome {
   const a = overloadDeadline(config, coreMaxA).decayDestroysTick;
   const b = overloadDeadline(config, coreMaxB).decayDestroysTick;
-  if (a === null || b === null) return { first: null, tick: null };
+  if (a === null) {
+    return b === null ? { first: null, tick: null } : { first: 'b', tick: b };
+  }
+  if (b === null) return { first: 'a', tick: a };
   if (a === b) return { first: 'both', tick: a };
   return a < b ? { first: 'a', tick: a } : { first: 'b', tick: b };
 }

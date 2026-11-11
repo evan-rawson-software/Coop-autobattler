@@ -8,6 +8,7 @@ import {
 } from './arena-sim.js';
 import { simulateBattle, startBattle, type BattleResult } from './battle.js';
 import { hashJson, type Json } from './hash.js';
+import { overloadDeadline, overloadOutcome } from './ramp.js';
 import type { GameMap } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
 import type { SimConfig } from './sim-config.js';
@@ -779,6 +780,83 @@ describe('end conditions', () => {
   test('with the real constants no battle reaches the time limit', () => {
     expect(simConfig.maxBattleTicks).toBe(12000);
     expect(simConfig.timelineSampleTicks).toBe(50);
+  });
+});
+
+describe('Overload helpers against real bare-Core battles (time limit)', () => {
+  const bare = (hpA: number, hpB: number) => {
+    const s = startBattle(
+      {
+        teamA: coreOnly(),
+        teamB: coreOnly(),
+        seed: 1,
+        sideOptions: [{ coreHealth: hpA }, { coreHealth: hpB }],
+      },
+      content,
+      config,
+      { zone: emptyZone(12) },
+    );
+    if (!s.ok) throw new Error('refused');
+    while (!s.battle.isOver()) s.battle.step();
+    const r = s.battle.result();
+    if (r === null) throw new Error('no result');
+    return r;
+  };
+
+  test('the decay lands up to tick maxBattleTicks - 1 and no longer', () => {
+    // 102 beats (ticks 1800 .. 11900) take 5 * 102 * 103 / 2 = 26265; beat
+    // 103 would be at tick 12000 = maxBattleTicks and never lands.
+    expect(simConfig.maxBattleTicks).toBe(12000);
+    for (const hp of [25_755, 25_756, 26_000, 26_264, 26_265, 26_266, 26_267]) {
+      const d = overloadDeadline(simConfig, hp);
+      const r = bare(hp, hp);
+      if (hp <= 26_265) {
+        // Both Cores fall on the same beat: a 'core_destroyed' end after the
+        // step of that tick (the tick counter is then one higher).
+        expect(d.decayDestroysTick, String(hp)).not.toBeNull();
+        expect(r.reason, String(hp)).not.toBe('time_limit');
+        expect(r.endTick, String(hp)).toBe((d.decayDestroysTick ?? -1) + 1);
+        expect(overloadOutcome(simConfig, hp, hp)).toEqual({
+          first: 'both',
+          tick: d.decayDestroysTick,
+        });
+      } else {
+        expect(d, String(hp)).toEqual({
+          startTick: 1800,
+          decayDestroysTick: null,
+          decayDestroysLevel: null,
+        });
+        expect(r.endTick, String(hp)).toBe(simConfig.maxBattleTicks);
+        expect(overloadOutcome(simConfig, hp, hp)).toEqual({
+          first: null,
+          tick: null,
+        });
+      }
+    }
+    expect(overloadDeadline(simConfig, 25_755).decayDestroysTick).toBe(11_800);
+    expect(overloadDeadline(simConfig, 26_265).decayDestroysTick).toBe(11_900);
+  });
+
+  test('with one Core beyond the limit the other still falls first', () => {
+    for (const [a, b] of [
+      [26_265, 26_266],
+      [26_266, 26_265],
+      [26_265, 500],
+      [26_266, 26_267],
+    ] as const) {
+      const r = bare(a, b);
+      const o = overloadOutcome(simConfig, a, b);
+      const side = a < b ? 'a' : 'b';
+      if (Math.min(a, b) <= 26_265) {
+        expect(o.first, `${String(a)} ${String(b)}`).toBe(side);
+        expect(r.reason).toBe('core_destroyed');
+        expect(r.winner).toBe(side === 'a' ? 1 : 0);
+        expect(r.endTick).toBe((o.tick ?? -1) + 1);
+      } else {
+        expect(o).toEqual({ first: null, tick: null });
+        expect(r.endTick).toBe(simConfig.maxBattleTicks);
+      }
+    }
   });
 });
 

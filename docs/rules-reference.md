@@ -1534,13 +1534,23 @@ Overload guarantees that battles end. Constants (`content/sim.json`):
   `startTick = overloadStartTick`, and `decayDestroysTick` is the tick of the
   first beat `n` (1, 2, ...) at which `overloadCoreDamageStep * n * (n + 1) /
   2 >= coreMaxHealth`, namely `overloadStartTick + (n - 1) *
-  overloadIntervalTicks` (`decayDestroysLevel = n`; both `null` when
-  `overloadCoreDamageStep` is 0). It counts the decay alone: any other damage
+  overloadIntervalTicks` (`decayDestroysLevel = n`). Both are `null` when
+  `overloadCoreDamageStep` is 0 and when that tick is not within the battle:
+  a battle processes ticks 0 to `maxBattleTicks - 1` (it ends after the step
+  of the tick before `maxBattleTicks`, and the Core destruction is checked
+  first), so a beat at or after `maxBattleTicks` never lands. With the
+  shipped configuration (12000 ticks) the last beat is at tick 11900 (level
+  102) and at most 26,265 decay lands, so a Core of more than 26,265 health
+  is never destroyed by the decay. `overloadOutcome(simConfig, coreMaxA,
+  coreMaxB)` returns `{first, tick}` with `first` `'a'`, `'b'` or `'both'`
+  for the Core(s) that fall first within the battle (a Core the decay does
+  not destroy within the battle never falls first), and `first: null` when
+  neither does. The helpers count the decay alone: any other damage
   to the Core makes the Core fall earlier. For a Core of 500 health, n = 14
   (13 beats take 455, 14 take 525), so with the standard constants it falls
   at tick 3100 (start 1800), that is 3 minutes 10 seconds, and the battle
   ends at `endTick` 3101 at the latest.
-- **PvE: the deadline is intended (CB-12, CB-29, #43; open question #75).**
+- **PvE: the deadline is intended (CB-12, CB-29, #43).**
   In a PvE battle side 1's Core is the stronghold's, whose health is
   `coreHealthPerBudget` times the budget, at least `minCoreHealth`. The decay
   applies equally to both Cores, a flat amount per beat (5, 10, 15, ...), so
@@ -1548,19 +1558,25 @@ Overload guarantees that battles end. Constants (`content/sim.json`):
   `overloadDeadline(simConfig, coreMaxHealth).decayDestroysTick` for that
   Core; the battle ends with `reason: "core_destroyed"`. The party's Core has
   500 health and falls at tick 3100 (14 beats take 525). A stronghold's Core
-  is often smaller than that: over the 96 sampled shipped threats its health
-  has a median of 315, a minimum of 42 and is under 500 in 62 of them. A
-  Core of 315 falls at tick 2800 (11 beats take 330, 10 take 275) and one of
-  42 at tick 2100 (4 beats take 50, 3 take 30), so against those the decay
-  kills the stronghold's Core first and the party wins by surviving. Only
-  strongholds with more than 500 Core health (mainly the Fortress, in late
-  rounds) outlast the party's Core, and then the party must destroy the
-  stronghold before tick 3100 or the threat wins. Damage from units or
-  turrets moves either deadline earlier. No rule is special-cased for PvE.
-  Whether the decay should instead favour one side in PvE is an open design
-  question tracked in issue #75; this section only states what the rules do
-  today. Screens should compute the deadline for both Cores (`overloadDeadline`,
-  or `overloadOutcome(simConfig, partyCoreMax, strongholdCoreMax)` for the
+  is often smaller than that. In the sample of 96 shipped threats (all four
+  archetypes, types easy, medium and hard, rounds 1 to 8, party size 1,
+  seed `100 + round`, from `generateThreat`) the stronghold's Core health has
+  a median of 313.5, a minimum of 42 and a maximum of 2140, and is under 500
+  in 68 of the 96 (none is exactly 500). A Core of 315 falls at tick 2800
+  (11 beats take 330, 10 take 275) and one of 42 at tick 2100 (4 beats take
+  50, 3 take 30), so against those the decay destroys the stronghold's Core
+  first and the party wins by outlasting it: this is a legitimate way to win,
+  and turtling is an intended strategy. The other 28 have more than 500 Core
+  health (Rusher 12, Fortress 9, Boss 6, Escalator 1; all in round 4 or
+  later) and outlast the party's Core: against those the party must destroy
+  the stronghold before tick 3100 or the threat wins. Larger parties meet
+  larger strongholds (party size 2: median 584.5, size 4: median 1137.5, same
+  grid), so the share of such threats rises with the party size. Damage from
+  units or turrets moves either deadline earlier. This is decided and
+  intended, and no rule is special-cased for PvE: the decay applies equally
+  to both Cores and the smaller falls first. Screens should compute the
+  deadline for both Cores (`overloadDeadline`, or
+  `overloadOutcome(simConfig, partyCoreMax, strongholdCoreMax)` for the
   comparison) and show which falls first.
 
 ### Events (arena log)

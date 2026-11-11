@@ -9,7 +9,7 @@ import type { OverlayContext } from '../board/BoardView.js';
 import { cellToView } from '../board/layout.js';
 import type { WebContent } from '../content.js';
 import type { Ui } from './build-controller.js';
-import { pathGaps, pathSegments } from './path-segments.js';
+import { pathSegments, pathStubs } from './path-segments.js';
 import { isEditStep } from './session.js';
 import { sideMarkers, type SideMarker } from './sides.js';
 import type { FlowView } from './view-model.js';
@@ -183,16 +183,14 @@ export function drawBuildOverlay(
           else ctx.lineTo(q.x, q.y);
         });
       }
-      // The detour itself: a short stub just outside the front edge from the
-      // cell where the path leaves the board and into the one where it
-      // returns.
-      for (const g of pathGaps(p.cells)) {
-        for (const c of [g.from, g.to]) {
-          const a = centre(c);
-          const b = centre({ x: c.x, y: c.y + 1 });
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo((a.x + b.x) / 2, (a.y + b.y) / 2);
-        }
+      // The detour itself: a short stub just outside the front edge at every
+      // exit and re-entry, including a final exit when the walk ends off the
+      // board.
+      for (const stub of pathStubs(p.cells, p.approach)) {
+        const a = centre(stub.cell);
+        const b = centre({ x: stub.cell.x, y: stub.cell.y + 1 });
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo((a.x + b.x) / 2, (a.y + b.y) / 2);
       }
       ctx.stroke();
     }

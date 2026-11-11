@@ -142,9 +142,17 @@ describe('overloadDeadline (#43)', () => {
     });
     expect(() => overloadDeadline(cfg, 0)).toThrow(RangeError);
     expect(() => overloadDeadline(cfg, 1.5)).toThrow(RangeError);
-    // The largest Core health stays exact.
-    const big = overloadDeadline(cfg, 1_000_000_000_000);
+    // The largest Core health stays exact (with a time limit far enough out).
+    const far = { ...cfg, maxBattleTicks: 100_000_000 };
+    const big = overloadDeadline(far, 1_000_000_000_000);
     expect(big.decayDestroysLevel).toBe(632456);
+    expect(big.decayDestroysTick).toBe(1800 + 632455 * 100);
+    // Without the time limit far out the same health is not within the battle.
+    expect(overloadDeadline(cfg, 1_000_000_000_000)).toEqual({
+      startTick: 1800,
+      decayDestroysTick: null,
+      decayDestroysLevel: null,
+    });
   });
 });
 
@@ -163,6 +171,22 @@ describe('overloadOutcome (#75)', () => {
       tick: 3100,
     });
     expect(overloadOutcome(cfg, 500, 455)).toEqual({ first: 'b', tick: 3000 });
+  });
+  test('a Core the decay does not destroy within the battle never falls first', () => {
+    const short = { ...cfg, maxBattleTicks: 3000 };
+    // 455 falls at tick 3000 (not before the limit 3000), 315 at 2800.
+    expect(overloadOutcome(short, 500, 315)).toEqual({
+      first: 'b',
+      tick: 2800,
+    });
+    expect(overloadOutcome(short, 315, 500)).toEqual({
+      first: 'a',
+      tick: 2800,
+    });
+    expect(overloadOutcome(short, 500, 455)).toEqual({
+      first: null,
+      tick: null,
+    });
   });
   test('no decay: nothing falls', () => {
     expect(

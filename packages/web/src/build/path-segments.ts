@@ -31,19 +31,41 @@ export function pathSegments(cells: readonly Cell[]): Cell[][] {
   return out;
 }
 
+/** A stub the screen draws just outside the front edge. */
+export interface PathStub {
+  /** The on-board cell the stub starts from (it points off the board). */
+  readonly cell: Cell;
+  /** `exit`: the path leaves the board here; `reentry`: it comes back here. */
+  readonly kind: 'exit' | 'reentry';
+}
+
 /**
- * The cells where a detour leaves and re-enters the board: for each break
- * between two runs, the last cell of the earlier and the first cell of the
- * later one (`from`, `to`). The screen draws a short stub outside the front
- * edge from each.
+ * The stubs of a previewed path: one `exit` at every cell where the walk
+ * leaves the board and one `reentry` at every cell where it returns, in walk
+ * order. `cells` and `approach` are those of an `EnemyPath`: `approach` holds
+ * the off-board cells in walk order, each detour a run of 4-adjacent cells,
+ * and every detour sits between two on-board runs (`pathSegments(cells)`) or,
+ * for the last one, ends the walk. So the i-th detour leaves at the last cell
+ * of run i and returns at the first cell of run i + 1; the final detour has
+ * no run after it and gets an exit only (the line would otherwise stop short).
+ * A break between runs with no `approach` still gets its two stubs. A path
+ * with no detour gives none.
  */
-export function pathGaps(cells: readonly Cell[]): { from: Cell; to: Cell }[] {
+export function pathStubs(
+  cells: readonly Cell[],
+  approach: readonly Cell[],
+): PathStub[] {
   const runs = pathSegments(cells);
-  const out: { from: Cell; to: Cell }[] = [];
-  for (let i = 1; i < runs.length; i++) {
-    const a = runs[i - 1] as Cell[];
-    const b = runs[i] as Cell[];
-    out.push({ from: a[a.length - 1] as Cell, to: b[0] as Cell });
+  const detours = pathSegments(approach).length;
+  const count = Math.max(detours, runs.length - 1);
+  const out: PathStub[] = [];
+  for (let i = 0; i < count; i++) {
+    const before = runs[i];
+    const after = runs[i + 1];
+    const exit = before?.[before.length - 1];
+    if (exit !== undefined) out.push({ cell: exit, kind: 'exit' });
+    const back = after?.[0];
+    if (back !== undefined) out.push({ cell: back, kind: 'reentry' });
   }
   return out;
 }
