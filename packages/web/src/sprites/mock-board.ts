@@ -1,6 +1,6 @@
 /** A mock 12x8 board patch composed from the sprites, to judge the style in context. */
 
-import { atlas, drawFrame, spriteOf, type Sheets } from './atlas.js';
+import { atlas, blobFrame, drawFrame, spriteOf, type Sheets } from './atlas.js';
 
 export const MOCK_COLS = 12;
 export const MOCK_ROWS = 8;
@@ -54,8 +54,8 @@ const OBJECTS: Obj[] = [
   { name: 'bld_wall', x: 4, y: 3 },
   { name: 'bld_gate', x: 5, y: 3 },
   { name: 'bld_wall', x: 6, y: 3 },
-  { name: 'bld_armory', x: 2, y: 5 },
-  { name: 'bld_overclocker', x: 8, y: 2 },
+  { name: 'bld_armory', x: 2, y: 5, tier: 2 },
+  { name: 'bld_overclocker', x: 8, y: 2, tier: 3 },
 ];
 
 const NODES: [string, number, number][] = [
@@ -65,15 +65,37 @@ const NODES: [string, number, number][] = [
   ['node_res_a', 2, 2],
 ];
 
+/** 8-neighbour mask: N1 NE2 E4 SE8 S16 SW32 W64 NW128 for same-terrain neighbours. */
 function mask(set: Set<string>, x: number, y: number): number {
   const has = (cx: number, cy: number): boolean =>
     set.has(String(cx) + ',' + String(cy));
   return (
     (has(x, y - 1) ? 1 : 0) |
-    (has(x + 1, y) ? 2 : 0) |
-    (has(x, y + 1) ? 4 : 0) |
-    (has(x - 1, y) ? 8 : 0)
+    (has(x + 1, y - 1) ? 2 : 0) |
+    (has(x + 1, y) ? 4 : 0) |
+    (has(x + 1, y + 1) ? 8 : 0) |
+    (has(x, y + 1) ? 16 : 0) |
+    (has(x - 1, y + 1) ? 32 : 0) |
+    (has(x - 1, y) ? 64 : 0) |
+    (has(x - 1, y - 1) ? 128 : 0)
   );
+}
+
+/** A small integer hash, for picking ground variants at random per cell. */
+export function cellHash(x: number, y: number, salt = 0): number {
+  let h = Math.imul(x + 1, 374761393) ^ Math.imul(y + 1, 668265263) ^ salt;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+export const pickGround = (x: number, y: number): string =>
+  `ground_${String((cellHash(x, y) % 6) + 1)}`;
+export const pickNeutral = (x: number, y: number): string =>
+  `neutral_${String((cellHash(x, y, 7) % 4) + 1)}`;
+
+/** The ground sprite for a cell: a random variant, neutral rows on top. */
+export function groundAt(x: number, y: number): string {
+  return y < NEUTRAL_ROWS ? pickNeutral(x, y) : pickGround(x, y);
 }
 
 function ramp(res: string): readonly string[] | undefined {
@@ -89,26 +111,26 @@ export function drawMockBoard(
 ): void {
   const px = T * scale;
   ctx.clearRect(0, 0, MOCK_COLS * px, MOCK_ROWS * px);
-  // Ground and neutral zone.
+  // Ground and neutral zone: a random variant per cell.
   for (let y = 0; y < MOCK_ROWS; y++)
-    for (let x = 0; x < MOCK_COLS; x++) {
-      const h = (x * 7 + y * 13 + x * y) % 5;
-      const name =
-        y < NEUTRAL_ROWS
-          ? h % 2 === 0
-            ? 'neutral_1'
-            : 'neutral_2'
-          : (['ground_1', 'ground_2', 'ground_3'][h % 3] ?? 'ground_1');
-      drawFrame(ctx, sheets, name, 0, x * px, y * px, scale);
-    }
-  // Lake and cliffs through their autotiles.
+    for (let x = 0; x < MOCK_COLS; x++)
+      drawFrame(ctx, sheets, groundAt(x, y), 0, x * px, y * px, scale);
+  // Lake and cliffs through their blob autotiles.
   for (const [set, name] of [
     [LAKE, 'ter_lake_auto'],
     [CLIFF, 'ter_cliff_auto'],
   ] as const)
     for (const key of set) {
       const [x, y] = key.split(',').map(Number) as [number, number];
-      drawFrame(ctx, sheets, name, mask(set, x, y), x * px, y * px, scale);
+      drawFrame(
+        ctx,
+        sheets,
+        name,
+        blobFrame(mask(set, x, y)),
+        x * px,
+        y * px,
+        scale,
+      );
     }
   for (const [name, x, y] of NODES) {
     const frame = Math.floor(t / 500) % 2;
@@ -137,6 +159,10 @@ export function drawMockBoard(
     drawFrame(ctx, sheets, o.name, 0, o.x * px, o.y * px, scale);
     if (o.tier) {
       const sp = spriteOf(o.name);
+      if (o.tier >= 2) {
+        const trim = sp.w > T ? 'tier_trim_2x2' : 'tier_trim_1x1';
+        drawFrame(ctx, sheets, trim, o.tier - 2, o.x * px, o.y * px, scale);
+      }
       const bottom = o.y * px + (sp.h - T) * scale;
       drawFrame(ctx, sheets, 'tier_pips', o.tier - 1, o.x * px, bottom, scale);
     }

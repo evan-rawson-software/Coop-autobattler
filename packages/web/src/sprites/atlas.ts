@@ -7,7 +7,7 @@
 import atlasJson from '../../../../assets/sprites/atlas.json';
 import buildingsUrl from '../../../../assets/sprites/buildings.png?url';
 import effectsUrl from '../../../../assets/sprites/effects.png?url';
-import terrainUrl from '../../../../assets/sprites/terrain.png?url';
+import tilesUrl from '../../../../assets/sprites/tiles.png?url';
 import uiUrl from '../../../../assets/sprites/ui.png?url';
 import unitsUrl from '../../../../assets/sprites/units.png?url';
 
@@ -19,6 +19,9 @@ export interface AtlasSprite {
   w: number;
   h: number;
   frames: number;
+  /** Frames per row; absent means all frames in one row. */
+  columns?: number;
+  autotile?: 'blob47';
   fps: number;
   anchor: [number, number];
   category: string;
@@ -31,7 +34,8 @@ export interface AtlasSprite {
 
 export interface Atlas {
   tile: number;
-  sheets: Record<string, { file: string; w: number; h: number }>;
+  sheets: Record<string, { file: string; w: number; h: number; grid?: number }>;
+  autotile: { blob47: { bits: Record<string, number>; masks: number[] } };
   tint: {
     keys: string[];
     neutral: string[];
@@ -46,7 +50,7 @@ export interface Atlas {
 export const atlas = atlasJson as unknown as Atlas;
 
 const SHEET_URLS: Record<string, string> = {
-  terrain: terrainUrl,
+  tiles: tilesUrl,
   buildings: buildingsUrl,
   units: unitsUrl,
   effects: effectsUrl,
@@ -90,6 +94,27 @@ export function spriteOf(name: string): AtlasSprite {
   return s;
 }
 
+/** Top-left of frame `f` of a sprite on its sheet. */
+export function frameOrigin(sp: AtlasSprite, f: number): [number, number] {
+  const cols = sp.columns ?? sp.frames;
+  return [sp.x + (f % cols) * sp.w, sp.y + Math.floor(f / cols) * sp.h];
+}
+
+const BITS = { N: 1, NE: 2, E: 4, SE: 8, S: 16, SW: 32, W: 64, NW: 128 };
+
+/**
+ * Frame index of a blob autotile for an 8-bit neighbour mask (N1 NE2 E4 SE8
+ * S16 SW32 W64 NW128). A corner bit counts only with both of its sides.
+ */
+export function blobFrame(mask: number): number {
+  let m = mask & 255;
+  if (!(m & BITS.N && m & BITS.E)) m &= ~BITS.NE;
+  if (!(m & BITS.S && m & BITS.E)) m &= ~BITS.SE;
+  if (!(m & BITS.S && m & BITS.W)) m &= ~BITS.SW;
+  if (!(m & BITS.N && m & BITS.W)) m &= ~BITS.NW;
+  return atlas.autotile.blob47.masks.indexOf(m);
+}
+
 export type Ramp = readonly string[];
 
 const tintCache = new Map<string, HTMLCanvasElement>();
@@ -115,7 +140,8 @@ function tintedFrame(
   const ctx = c.getContext('2d');
   const img = sheets.images[sp.sheet];
   if (ctx && img) {
-    ctx.drawImage(img, sp.x + frame * sp.w, sp.y, sp.w, sp.h, 0, 0, sp.w, sp.h);
+    const [ox, oy] = frameOrigin(sp, frame);
+    ctx.drawImage(img, ox, oy, sp.w, sp.h, 0, 0, sp.w, sp.h);
     const data = ctx.getImageData(0, 0, sp.w, sp.h);
     const from = atlas.tint.neutral.map(rgbOf);
     const to = ramp.map(rgbOf);
@@ -174,7 +200,10 @@ export function drawFrame(
     ctx.drawImage(tintedFrame(sheets, name, f, opts.ramp), 0, 0, w, h);
   } else {
     const img = sheets.images[sp.sheet];
-    if (img) ctx.drawImage(img, sp.x + f * sp.w, sp.y, sp.w, sp.h, 0, 0, w, h);
+    if (img) {
+      const [ox, oy] = frameOrigin(sp, f);
+      ctx.drawImage(img, ox, oy, sp.w, sp.h, 0, 0, w, h);
+    }
   }
   ctx.restore();
 }
@@ -222,27 +251,4 @@ export function drawNine(
         h,
       );
     }
-}
-
-/** Fill a rectangle by tiling a sprite's first frame. */
-export function drawTiled(
-  ctx: CanvasRenderingContext2D,
-  sheets: Sheets,
-  name: string,
-  cols: number,
-  rows: number,
-  scale: number,
-): void {
-  const sp = spriteOf(name);
-  for (let j = 0; j < rows; j++)
-    for (let i = 0; i < cols; i++)
-      drawFrame(
-        ctx,
-        sheets,
-        name,
-        0,
-        i * sp.w * scale,
-        j * sp.h * scale,
-        scale,
-      );
 }

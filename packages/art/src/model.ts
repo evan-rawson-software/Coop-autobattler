@@ -2,7 +2,7 @@
 
 import { Pix, rng, wrap } from './pix.js';
 
-export type SheetName = 'terrain' | 'buildings' | 'units' | 'effects' | 'ui';
+export type SheetName = 'tiles' | 'buildings' | 'units' | 'effects' | 'ui';
 
 export type Category =
   'terrain' | 'building' | 'unit' | 'conduit' | 'node' | 'effect' | 'ui';
@@ -12,8 +12,15 @@ export interface SpriteDef {
   readonly name: string;
   readonly sheet: SheetName;
   readonly category: Category;
-  /** Frames, all the same size, laid out horizontally in the sheet. */
+  /** Frames, all the same size. */
   readonly frames: readonly Pix[];
+  /**
+   * Frames per row in the sheet. Omitted: all frames side by side in one row.
+   * Set for big sets (autotiles) that would not fit the sheet width.
+   */
+  readonly columns?: number;
+  /** Autotile scheme the frames follow, when they are an autotile set. */
+  readonly autotile?: 'blob47';
   readonly fps: number;
   /** Pixel position inside one frame that should sit on the object's centre. */
   readonly anchor: readonly [number, number];

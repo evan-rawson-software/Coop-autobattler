@@ -1,5 +1,6 @@
 /** Packs sprites into sheets and builds the atlas JSON. Deterministic. */
 
+import { BLOB47, N, NE, E, SE, S, SW, W, NW } from './autotile.js';
 import { PALETTE, TINT_KEYS, TINT_NEUTRAL, TEAM_A, TEAM_B } from './palette.js';
 import { Pix } from './pix.js';
 import { encodePng } from './png.js';
@@ -8,8 +9,12 @@ import type { SheetName, SpriteDef } from './model.js';
 export const TILE = 16;
 export const SHEET_WIDTH = 320;
 export const GUTTER = 1;
+/** Sheets laid out on an exact TILE grid with no gutter (one Godot TileSet source). */
+export const GRID_SHEETS: ReadonlySet<SheetName> = new Set<SheetName>([
+  'tiles',
+]);
 export const SHEET_NAMES: readonly SheetName[] = [
-  'terrain',
+  'tiles',
   'buildings',
   'units',
   'effects',
@@ -24,6 +29,9 @@ export interface AtlasSprite {
   w: number;
   h: number;
   frames: number;
+  /** Frames per row; absent means all frames in one row. */
+  columns?: number;
+  autotile?: 'blob47';
   fps: number;
   anchor: [number, number];
   category: string;
@@ -37,10 +45,14 @@ export interface AtlasSprite {
 export interface Atlas {
   version: 1;
   tile: number;
-  /** Frames of one sprite sit side by side; sprites are separated by this gutter. */
+  /** Empty pixels between sprites on free-form sheets (grid sheets have none). */
   gutter: number;
   filter: 'nearest';
-  sheets: Record<string, { file: string; w: number; h: number }>;
+  /** `grid` is the cell size of a sheet whose sprites all sit on that grid. */
+  sheets: Record<string, { file: string; w: number; h: number; grid?: number }>;
+  autotile: {
+    blob47: { bits: Record<string, number>; masks: number[] };
+  };
   palette: { key: string; name: string; hex: string }[];
   tint: {
     keys: string[];
@@ -68,8 +80,11 @@ export function buildSheets(
   const seen = new Set<string>();
   for (const sheetName of SHEET_NAMES) {
     const list = defs.filter((d) => d.sheet === sheetName);
-    // Shelf packing in definition order.
+    const grid = GRID_SHEETS.has(sheetName);
     const placed: { def: SpriteDef; x: number; y: number }[] = [];
+    // Shelf packing in definition order. Grid sheets pack whole cells with no
+    // gutter; free-form sheets keep GUTTER pixels between sprites.
+    const gap = grid ? 0 : GUTTER;
     let x = 0;
     let y = 0;
     let rowH = 0;
@@ -78,24 +93,30 @@ export function buildSheets(
       seen.add(def.name);
       const first = def.frames[0];
       if (!first) throw new Error(`no frames: ${def.name}`);
-      const w = first.w * def.frames.length;
+      if (grid && (first.w % TILE !== 0 || first.h % TILE !== 0))
+        throw new Error(`${def.name} is not a multiple of ${String(TILE)} px`);
+      const cols = def.columns ?? def.frames.length;
+      const rows = Math.ceil(def.frames.length / cols);
+      const w = first.w * cols;
+      const h = first.h * rows;
       if (w > SHEET_WIDTH) throw new Error(`${def.name} is wider than a sheet`);
       if (x > 0 && x + w > SHEET_WIDTH) {
         x = 0;
-        y += rowH + GUTTER;
+        y += rowH + gap;
         rowH = 0;
       }
       placed.push({ def, x, y });
-      x += w + GUTTER;
-      rowH = Math.max(rowH, first.h);
+      x += w + gap;
+      rowH = Math.max(rowH, h);
     }
-    const height = Math.ceil((y + rowH) / 4) * 4;
+    const height = grid ? y + rowH : Math.ceil((y + rowH) / 4) * 4;
     const sheet = new Pix(SHEET_WIDTH, height);
     for (const { def, x: px, y: py } of placed) {
-      def.frames.forEach((f, i) => {
-        sheet.blit(f, px + i * f.w, py);
-      });
       const first = def.frames[0] as Pix;
+      const cols = def.columns ?? def.frames.length;
+      def.frames.forEach((f, i) => {
+        sheet.blit(f, px + (i % cols) * f.w, py + Math.floor(i / cols) * f.h);
+      });
       const entry: AtlasSprite = {
         sheet: sheetName,
         x: px,
@@ -107,6 +128,8 @@ export function buildSheets(
         anchor: [def.anchor[0], def.anchor[1]],
         category: def.category,
       };
+      if (def.columns !== undefined) entry.columns = def.columns;
+      if (def.autotile) entry.autotile = def.autotile;
       if (def.id !== undefined) entry.id = def.id;
       if (def.planned) entry.planned = true;
       if (def.nineSlice)
@@ -120,7 +143,12 @@ export function buildSheets(
       if (def.note) entry.note = def.note;
       sprites[def.name] = entry;
     }
-    sheets[sheetName] = { file: `${sheetName}.png`, w: SHEET_WIDTH, h: height };
+    sheets[sheetName] = {
+      file: `${sheetName}.png`,
+      w: SHEET_WIDTH,
+      h: height,
+      ...(grid ? { grid: TILE } : {}),
+    };
     pngs.set(`${sheetName}.png`, encodePng(SHEET_WIDTH, height, sheet.data));
   }
   const atlas: Atlas = {
@@ -129,6 +157,12 @@ export function buildSheets(
     gutter: GUTTER,
     filter: 'nearest',
     sheets,
+    autotile: {
+      blob47: {
+        bits: { N, NE, E, SE, S, SW, W, NW },
+        masks: [...BLOB47],
+      },
+    },
     palette: PALETTE.map((p) => ({ key: p.key, name: p.name, hex: p.hex })),
     tint: {
       keys: [...TINT_KEYS],
@@ -138,7 +172,9 @@ export function buildSheets(
       resources: resourceRamps,
     },
     sprites,
-    planned: defs.filter((d) => d.planned).map((d) => d.name),
+    planned: [
+      ...new Set(defs.filter((d) => d.planned).map((d) => d.id ?? d.name)),
+    ],
   };
   return { atlas, pngs };
 }

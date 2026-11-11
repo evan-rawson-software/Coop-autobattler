@@ -1,6 +1,7 @@
 /** Short effects: sparks, explosion, spawn puff, projectile, shadow. */
 
 import { Pix, rng } from '../pix.js';
+import { angleIndex, cos64, sin64 } from '../trig.js';
 import { sprite, type SpriteDef } from '../model.js';
 
 function hitSpark(frame: number): Pix {
@@ -35,7 +36,10 @@ function hitSpark(frame: number): Pix {
   return p;
 }
 
-/** An irregular blob: radius wobbles with the angle, so it reads as flame. */
+/**
+ * An irregular blob: the radius wobbles with the angle, so it reads as flame.
+ * `phase` is a whole number of angle steps (64 per turn), no trig functions.
+ */
 function flame(
   p: Pix,
   cx: number,
@@ -45,14 +49,14 @@ function flame(
   phase: number,
   wobble = 0.28,
 ): void {
+  const ph = Math.round(phase * 10);
   for (let y = 0; y < p.h; y++)
     for (let x = 0; x < p.w; x++) {
       const dx = x + 0.5 - cx;
       const dy = y + 0.5 - cy;
-      const ang = Math.atan2(dy, dx);
-      const r =
-        rad *
-        (1 + wobble * Math.sin(ang * 5 + phase) * Math.cos(ang * 3 - phase));
+      const i = angleIndex(dx, dy);
+      const wob = (sin64(i * 5 + ph) * sin64(i * 3 - ph)) / 1000000;
+      const r = rad * (1 + wobble * wob);
       if (dx * dx + dy * dy <= r * r) p.set(x, y, key);
     }
 }
@@ -77,24 +81,38 @@ function explosion(frame: number): Pix {
     flame(p, 16, 16, 4, 'y', 5.6, 0.2);
     // Dark gaps where the fire is tearing apart.
     for (let i = 0; i < 4; i++) {
-      const a = r() * Math.PI * 2;
+      const a = Math.floor(r() * 64);
       const d = 6 + r() * 6;
-      p.ellipse(16 + Math.cos(a) * d, 16 + Math.sin(a) * d, 1.6, 1.6, '1');
+      p.ellipse(
+        16 + (cos64(a) * d) / 1000,
+        16 + (sin64(a) * d) / 1000,
+        1.6,
+        1.6,
+        '1',
+      );
     }
   } else {
     // Embers and smoke, dithered away.
     for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2 + 0.4;
-      flame(p, 16 + Math.cos(a) * 9, 16 + Math.sin(a) * 9, 3.4, '2', i, 0.3);
+      const a = Math.round((i * 64) / 6) + 4;
+      flame(
+        p,
+        16 + (cos64(a) * 9) / 1000,
+        16 + (sin64(a) * 9) / 1000,
+        3.4,
+        '2',
+        i,
+        0.3,
+      );
     }
     for (let y = 0; y < 32; y++)
       for (let x = 0; x < 32; x++) if ((x + y) % 2 === 0) p.set(x, y, '.');
     for (let i = 0; i < 10; i++) {
-      const a = r() * Math.PI * 2;
+      const a = Math.floor(r() * 64);
       const d = 8 + r() * 7;
       p.set(
-        Math.round(16 + Math.cos(a) * d),
-        Math.round(16 + Math.sin(a) * d),
+        Math.round(16 + (cos64(a) * d) / 1000),
+        Math.round(16 + (sin64(a) * d) / 1000),
         i % 2 === 0 ? 'O' : 'y',
       );
     }
@@ -156,9 +174,9 @@ function shadow(): Pix {
     for (let x = 0; x < 16; x++) {
       const dx = (x + 0.5 - 8) / 7.5;
       const dy = (y + 0.5 - 8) / 5;
-      const d = Math.hypot(dx, dy);
-      if (d > 1) continue;
-      const a = d < 0.5 ? 100 : d < 0.8 ? 70 : (x + y) % 2 === 0 ? 42 : 0;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > 1) continue;
+      const a = d2 < 0.25 ? 100 : d2 < 0.64 ? 70 : (x + y) % 2 === 0 ? 42 : 0;
       if (a > 0) p.setRgba(x, y, [0, 0, 0, a]);
     }
   return p;

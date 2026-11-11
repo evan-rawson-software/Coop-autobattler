@@ -6,8 +6,8 @@ import { BuildScreen } from '../build/BuildScreen.js';
 import { ShopBuildScreen } from '../build/ShopBuildScreen.js';
 import { DebugScreen } from '../screens/DebugScreen.js';
 import { ShopScreen } from '../shop/ShopScreen.js';
-import { SpritesScreen } from '../sprites/SpritesScreen.js';
 import type { ScreenId } from '../app-state.js';
+import { lazyScreen } from './lazy-screen.js';
 
 export interface ScreenDef {
   readonly id: ScreenId;
@@ -21,5 +21,11 @@ export const screens: readonly ScreenDef[] = [
   { id: 'shop', name: 'Shop', component: ShopScreen },
   { id: 'shop-build', name: 'Shop · Build tab', component: ShopBuildScreen },
   { id: 'battle', name: 'Battle', component: BattleSampleScreen },
-  { id: 'sprites', name: 'Sprites', component: SpritesScreen },
+  {
+    id: 'sprites',
+    name: 'Sprites',
+    component: lazyScreen('Sprites', () =>
+      import('../sprites/SpritesScreen.js').then((m) => m.SpritesScreen),
+    ),
+  },
 ];

@@ -3,7 +3,13 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { buildSheets, type Built } from './atlas.js';
-import { loadResources, repoRoot } from './content.js';
+import {
+  loadBuildings,
+  loadResources,
+  loadUnitIds,
+  repoRoot,
+  type BuildingInfo,
+} from './content.js';
 import { rampFromColor } from './palette.js';
 import type { SpriteDef } from './model.js';
 import { buildingSprites } from './sprites/buildings.js';
@@ -14,20 +20,34 @@ import { unitSprites } from './sprites/units.js';
 
 export const outDir = path.join(repoRoot, 'assets', 'sprites');
 
-export function allSprites(): SpriteDef[] {
+/** The content facts the generator reads; tests inject their own. */
+export interface ContentLists {
+  units: readonly string[];
+  buildings: readonly BuildingInfo[];
+}
+
+export function allSprites(
+  content: ContentLists = {
+    units: loadUnitIds(),
+    buildings: loadBuildings(),
+  },
+): SpriteDef[] {
   return [
     ...terrainSprites(),
-    ...buildingSprites(),
-    ...unitSprites(),
+    ...buildingSprites(content.buildings),
+    ...unitSprites(content.units),
     ...effectSprites(),
     ...uiSprites(),
   ];
 }
 
-export function buildAll(): { built: Built; atlasJson: string } {
+export function buildAll(content?: ContentLists): {
+  built: Built;
+  atlasJson: string;
+} {
   const ramps: Record<string, string[]> = {};
   for (const r of loadResources()) ramps[r.id] = rampFromColor(r.color);
-  const built = buildSheets(allSprites(), ramps);
+  const built = buildSheets(allSprites(content), ramps);
   return { built, atlasJson: JSON.stringify(built.atlas, null, 2) + '\n' };
 }
 

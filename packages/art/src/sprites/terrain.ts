@@ -4,67 +4,80 @@ import { loadResources } from '../content.js';
 import { colorsWithRamp, rampFromColor } from '../palette.js';
 import { Pix, rng } from '../pix.js';
 import { sprite, wset, type SpriteDef } from '../model.js';
+import { BLOB47, N, NE, E, SE, S, SW, W, NW } from '../autotile.js';
+import { halfSqrtCeil, halfSqrtFloor } from '../trig.js';
 
 const T = 16;
 
-/** Buildable ground: a flat green-slate base with sparse speckles. */
-function groundTile(seed: number, variant: 0 | 1 | 2): Pix {
+/**
+ * Scatter single-pixel specks, no two within `gap` pixels (wrapping), so the
+ * tile has no clumps that would show up as a repeating pattern when tiled.
+ */
+function scatter(
+  p: Pix,
+  r: () => number,
+  count: number,
+  key: string,
+  taken: [number, number][],
+  gap = 3,
+): void {
+  for (let n = 0; n < count; n++) {
+    for (let attempt = 0; attempt < 40; attempt++) {
+      const x = Math.floor(r() * T);
+      const y = Math.floor(r() * T);
+      const near = taken.some(([tx, ty]) => {
+        const dx = Math.min(Math.abs(tx - x), T - Math.abs(tx - x));
+        const dy = Math.min(Math.abs(ty - y), T - Math.abs(ty - y));
+        return Math.max(dx, dy) < gap;
+      });
+      if (near) continue;
+      taken.push([x, y]);
+      wset(p, x, y, key);
+      break;
+    }
+  }
+}
+
+/**
+ * Buildable ground: a flat green-slate base with a few single-pixel specks,
+ * deliberately low contrast (only the neighbouring shades of the ground
+ * ramp), so tiles can be placed at random without a visible pattern. Variants
+ * 4 and 5 add a short two-pixel blade of grass; none has a landmark.
+ */
+function groundTile(seed: number, variant: number): Pix {
   const p = new Pix(T, T);
   const r = rng(seed);
   p.rect(0, 0, T, T, 'c');
-  const at = (): [number, number] => [Math.floor(r() * T), Math.floor(r() * T)];
-  for (let i = 0; i < 16; i++) {
-    const [x, y] = at();
-    wset(p, x, y, 'b');
-    if (i % 3 === 0) wset(p, x + 1, y, 'b');
-  }
-  for (let i = 0; i < 9; i++) {
-    const [x, y] = at();
-    wset(p, x, y, 'd');
-  }
-  if (variant === 1) {
-    for (let i = 0; i < 5; i++) {
-      const [x, y] = at();
-      wset(p, x, y, 'd');
-      wset(p, x - 1, y - 1, 'd');
-      wset(p, x + 1, y - 1, 'd');
-      wset(p, x, y + 1, 'b');
-    }
-  }
-  if (variant === 2) {
+  const taken: [number, number][] = [];
+  scatter(p, r, 6, 'b', taken);
+  scatter(p, r, 5, 'd', taken);
+  if (variant >= 3) {
     for (let i = 0; i < 2; i++) {
-      const [x, y] = at();
-      wset(p, x, y, '3');
-      wset(p, x + 1, y, '2');
-      wset(p, x, y + 1, '1');
-      wset(p, x + 1, y + 1, '1');
+      const x = Math.floor(r() * T);
+      const y = Math.floor(r() * T);
+      wset(p, x, y, 'd');
+      wset(p, x + 1, y, 'd');
+      wset(p, x, y + 1, 'b');
     }
   }
   return p;
 }
 
 /** Neutral-zone ground: a dusty violet-brown, a touch rougher. */
-function neutralTile(seed: number, variant: 0 | 1): Pix {
+function neutralTile(seed: number, variant: number): Pix {
   const p = new Pix(T, T);
   const r = rng(seed);
   p.rect(0, 0, T, T, 'f');
-  const at = (): [number, number] => [Math.floor(r() * T), Math.floor(r() * T)];
-  for (let i = 0; i < 20; i++) {
-    const [x, y] = at();
-    wset(p, x, y, 'g');
-    if (i % 2 === 0) wset(p, x + 1, y, 'g');
-  }
-  for (let i = 0; i < 10; i++) {
-    const [x, y] = at();
-    wset(p, x, y, 'a');
-  }
-  if (variant === 1) {
-    // A hairline crack that wraps.
+  const taken: [number, number][] = [];
+  scatter(p, r, 9, 'g', taken, 2);
+  scatter(p, r, 4, 'a', taken, 3);
+  if (variant === 3) {
+    // A short hairline crack that wraps.
     let x = Math.floor(r() * T);
-    const y0 = Math.floor(r() * 6);
-    for (let y = y0; y < y0 + 9; y++) {
-      wset(p, x, y, 'a');
-      if (r() < 0.4) x += r() < 0.5 ? -1 : 1;
+    const y0 = Math.floor(r() * 8);
+    for (let y = y0; y < y0 + 5; y++) {
+      wset(p, x, y, 'g');
+      if (r() < 0.5) x += r() < 0.5 ? -1 : 1;
     }
   }
   return p;
@@ -92,40 +105,72 @@ function waterTile(frame: number): Pix {
   return p;
 }
 
-const N = 1;
-const E = 2;
-const S = 4;
-const W = 8;
+type Dir = 'n' | 'e' | 's' | 'w' | 'ne' | 'se' | 'sw' | 'nw';
+/** Notches are concave corners: the diagonal neighbour is missing. */
+type Kind = 'side' | 'corner' | 'notch';
+
+interface Depth {
+  /** Pixels inside the shape's edge: below 0 is outside, 0 the outline. */
+  depth: number;
+  dir: Dir;
+  kind: Kind;
+}
 
 /**
- * How far inside the shape a pixel is, given which neighbours are the same
- * terrain (bit set = present). Negative means outside the shape (transparent).
- * Absent sides get a rounded edge band of radius `rad`.
+ * How far inside the shape a pixel is, for a canonical blob mask (see
+ * autotile.ts), and which edge is nearest. Missing sides get an edge, two
+ * missing sides a rounded outer corner of radius `rad`, and a missing
+ * diagonal between two present sides a concave notch of the same radius.
+ * Integer arithmetic only.
  */
-function depthAt(x: number, y: number, mask: number, rad: number): number {
-  const dN = (mask & N) === 0 ? y : Infinity;
-  const dS = (mask & S) === 0 ? T - 1 - y : Infinity;
-  const dW = (mask & W) === 0 ? x : Infinity;
-  const dE = (mask & E) === 0 ? T - 1 - x : Infinity;
-  let depth = Math.min(dN, dS, dW, dE);
-  const corner = (da: number, db: number): void => {
+function depthAt(x: number, y: number, mask: number, rad: number): Depth {
+  const none = (m: number): boolean => (mask & m) === 0;
+  let best: Depth = { depth: 99, dir: 'n', kind: 'side' };
+  const offer = (depth: number, dir: Dir, kind: Kind): void => {
+    if (depth < best.depth) best = { depth, dir, kind };
+  };
+  const dN = none(N) ? y : 99;
+  const dS = none(S) ? T - 1 - y : 99;
+  const dW = none(W) ? x : 99;
+  const dE = none(E) ? T - 1 - x : 99;
+  offer(dS, 's', 'side');
+  offer(dE, 'e', 'side');
+  offer(dN, 'n', 'side');
+  offer(dW, 'w', 'side');
+  const outer = (da: number, db: number, dir: Dir): void => {
     if (da < rad && db < rad) {
-      const rr = Math.hypot(rad - da - 0.5, rad - db - 0.5);
-      depth = Math.min(depth, Math.floor(rad - rr));
+      const a = 2 * rad - 2 * da - 1;
+      const b = 2 * rad - 2 * db - 1;
+      offer(rad - halfSqrtCeil(a * a + b * b), dir, 'corner');
     }
   };
-  corner(dN, dW);
-  corner(dN, dE);
-  corner(dS, dW);
-  corner(dS, dE);
-  return depth;
+  outer(dN, dW, 'nw');
+  outer(dN, dE, 'ne');
+  outer(dS, dW, 'sw');
+  outer(dS, dE, 'se');
+  // Concave notch around a tile corner point (cx, cy) in pixel corners.
+  const notch = (bit: number, cx: number, cy: number, dir: Dir): void => {
+    if (mask & bit) return;
+    const a = 2 * Math.abs(cx - x) - (cx > x ? 1 : -1);
+    const b = 2 * Math.abs(cy - y) - (cy > y ? 1 : -1);
+    offer(halfSqrtFloor(a * a + b * b) - rad, dir, 'notch');
+  };
+  // Only where both side neighbours are present (canonical masks guarantee
+  // the bit is clear otherwise, so check the sides explicitly).
+  const sides = (a: number, b: number): boolean =>
+    (mask & a) !== 0 && (mask & b) !== 0;
+  if (sides(N, E)) notch(NE, T, 0, 'ne');
+  if (sides(S, E)) notch(SE, T, T, 'se');
+  if (sides(S, W)) notch(SW, 0, T, 'sw');
+  if (sides(N, W)) notch(NW, 0, 0, 'nw');
+  return best;
 }
 
 function lakeAuto(mask: number): Pix {
   const p = new Pix(T, T);
   for (let y = 0; y < T; y++)
     for (let x = 0; x < T; x++) {
-      const d = depthAt(x, y, mask, 3);
+      const d = depthAt(x, y, mask, 3).depth;
       if (d < 0) continue;
       if (d === 0) p.set(x, y, 'W');
       else if (d === 1) p.set(x, y, (x + y) % 3 === 0 ? 'u' : 'v');
@@ -136,37 +181,52 @@ function lakeAuto(mask: number): Pix {
 }
 
 function plateauAt(x: number, y: number): string {
-  const h = (x * 7 + y * 13 + ((x * y) % 5)) % 11;
-  if (h === 0) return 'p';
-  if (h === 3 || h === 7) return 'r';
+  const h = (x * 7 + y * 13 + ((x * y) % 5)) % 13;
+  if (h === 0) return 'r';
+  if (h === 6) return 'p';
   return 'q';
 }
 
+/** Rows of south face under a plateau edge. */
+const FACE = 3;
+
+/**
+ * A raised rock slab seen from above and slightly south: a light top with a
+ * bright lip along its north and west edges, and a dark three-pixel face
+ * wherever the south (or a notch's south side) is open, with stone
+ * strata cracks. Outer corners are rounded, inner corners carved.
+ */
 function cliffAuto(mask: number): Pix {
   const p = new Pix(T, T);
+  const southOpen = (mask & S) === 0;
   for (let y = 0; y < T; y++)
     for (let x = 0; x < T; x++) {
-      const d = depthAt(x, y, mask, 2);
-      if (d < 0) continue;
-      const dN = (mask & N) === 0 ? y : Infinity;
-      const dS = (mask & S) === 0 ? T - 1 - y : Infinity;
-      const dW = (mask & W) === 0 ? x : Infinity;
-      const dE = (mask & E) === 0 ? T - 1 - x : Infinity;
-      if (d === 0) {
+      const { depth, dir, kind } = depthAt(x, y, mask, 2);
+      if (depth < 0) continue;
+      if (depth === 0) {
         p.set(x, y, 'K');
         continue;
       }
-      // South face: three rows of shaded rock below the plateau.
-      if (dS <= 3 && dS === d) {
-        p.set(x, y, (x * 3 + dS) % 5 === 0 ? 'R' : dS === 3 ? 'R' : 'r');
+      const dS = T - 1 - y;
+      const southFacing = dir === 's' || dir === 'se' || dir === 'sw';
+      const inFace =
+        (southOpen && dS >= 1 && dS <= FACE) ||
+        (kind !== 'side' && southFacing && depth <= FACE);
+      if (inFace) {
+        // Top of the face a shade lighter, the rest dark, with strata cracks.
+        const top = southFacing ? depth === FACE : dS === FACE;
+        const crack = (x * 5 + dS * 3) % 9 === 0;
+        p.set(x, y, top ? 'r' : crack ? 'K' : 'R');
         continue;
       }
-      if (d === 1 && dE === 1 && dS > 3) {
-        p.set(x, y, 'r');
-        continue;
-      }
-      if (d === 1 && (dN === 1 || dW === 1)) {
+      if (southOpen && dS === FACE + 1) {
+        // The lip where the top meets the face.
         p.set(x, y, 'p');
+        continue;
+      }
+      if (depth === 1) {
+        const lit = dir === 'n' || dir === 'w' || dir === 'nw';
+        p.set(x, y, lit ? 'p' : dir === 'e' || dir === 'ne' ? 'r' : 'q');
         continue;
       }
       p.set(x, y, plateauAt(x, y));
@@ -174,8 +234,9 @@ function cliffAuto(mask: number): Pix {
   return p;
 }
 
-function autoSheet(fn: (mask: number) => Pix): Pix[] {
-  return Array.from({ length: 16 }, (_, m) => fn(m));
+/** All 47 frames of a blob autotile, in `BLOB47` order. */
+function blobSet(fn: (mask: number) => Pix): Pix[] {
+  return BLOB47.map((m) => fn(m));
 }
 
 type Draw = (p: Pix) => void;
@@ -265,65 +326,70 @@ function resourceNode(color: string, shape: number): Pix[] {
   return frames;
 }
 
+export const GROUND_VARIANTS = 6;
+export const NEUTRAL_VARIANTS = 4;
+
 export function terrainSprites(): SpriteDef[] {
   const out: SpriteDef[] = [];
   const add = (d: Parameters<typeof sprite>[0]): void => {
     out.push(sprite(d));
   };
-  ([0, 1, 2] as const).forEach((v, i) => {
-    add({
-      name: `ground_${String(i + 1)}`,
-      sheet: 'terrain',
-      category: 'terrain',
-      frames: groundTile(11 + i * 7, v),
-      note: 'Buildable ground; tiles seamlessly.',
-    });
+  add({
+    name: 'ter_lake_auto',
+    sheet: 'tiles',
+    category: 'terrain',
+    frames: blobSet(lakeAuto),
+    columns: 8,
+    autotile: 'blob47',
+    note: 'Shoreline autotile, 47 frames in 8 columns: frame = index of the canonical 8-neighbour mask in atlas.autotile.blob47.masks (bits N1 NE2 E4 SE8 S16 SW32 W64 NW128, a corner bit only counts when both its sides are set). Draw over ground.',
   });
-  ([0, 1] as const).forEach((v, i) => {
-    add({
-      name: `neutral_${String(i + 1)}`,
-      sheet: 'terrain',
-      category: 'terrain',
-      frames: neutralTile(101 + i * 9, v),
-      note: 'Neutral-zone ground; tiles seamlessly.',
-    });
+  add({
+    name: 'ter_cliff_auto',
+    sheet: 'tiles',
+    category: 'terrain',
+    frames: blobSet(cliffAuto),
+    columns: 8,
+    autotile: 'blob47',
+    note: 'Cliff autotile, same 47-frame mask scheme as the lake. The dark south face is part of the tile where the south side is open. Draw over ground.',
   });
   add({
     name: 'ter_lake',
     id: 'ter_lake',
-    sheet: 'terrain',
+    sheet: 'tiles',
     category: 'terrain',
     frames: [waterTile(0), waterTile(1)],
     fps: 2,
     note: 'Open water, 2 frames, tiles seamlessly.',
   });
   add({
-    name: 'ter_lake_auto',
-    sheet: 'terrain',
-    category: 'terrain',
-    frames: autoSheet(lakeAuto),
-    note: 'Shoreline autotile: frame = N1 + E2 + S4 + W8 for neighbours that are also water. Draw over ground.',
-  });
-  add({
     name: 'ter_cliff',
     id: 'ter_cliff',
-    sheet: 'terrain',
+    sheet: 'tiles',
     category: 'terrain',
     frames: cliffAuto(0),
     note: 'A lone cliff block.',
   });
-  add({
-    name: 'ter_cliff_auto',
-    sheet: 'terrain',
-    category: 'terrain',
-    frames: autoSheet(cliffAuto),
-    note: 'Cliff autotile, same frame index rule as the lake. Draw over ground.',
-  });
+  for (let i = 0; i < GROUND_VARIANTS; i++)
+    add({
+      name: `ground_${String(i + 1)}`,
+      sheet: 'tiles',
+      category: 'terrain',
+      frames: groundTile(11 + i * 7, i),
+      note: 'Buildable ground; tiles seamlessly. Pick a variant at random per cell.',
+    });
+  for (let i = 0; i < NEUTRAL_VARIANTS; i++)
+    add({
+      name: `neutral_${String(i + 1)}`,
+      sheet: 'tiles',
+      category: 'terrain',
+      frames: neutralTile(101 + i * 9, i),
+      note: 'Neutral-zone ground; tiles seamlessly. Pick a variant at random per cell.',
+    });
   loadResources().forEach((r, i) => {
     add({
       name: `node_${r.id}`,
       id: r.id,
-      sheet: 'terrain',
+      sheet: 'tiles',
       category: 'node',
       frames: resourceNode(r.color, i),
       fps: 2,

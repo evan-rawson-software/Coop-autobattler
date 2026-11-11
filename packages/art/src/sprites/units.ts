@@ -1,9 +1,13 @@
 /**
- * Unit sprites. 16x16 frames, drawn as a round body so they can be scaled to
- * different circle sizes. Parts that take a team colour use the tint keys
- * X, x, Z; the neutral set leaves them grey. Side A faces north (up the
- * screen) and carries a single gold plume; side B faces south and carries two
- * bone prongs, so the sides differ by shape and not only by hue.
+ * Unit sprites. 16x16 frames, top-down, drawn facing north (up the screen).
+ * Side B is the same drawing flipped to face south, so all shading puts the
+ * light on the left and the shadow on the right (it survives the flip).
+ *
+ * Team colour goes on the BODY (tunic, cloak, hull and shield face) through
+ * the tint keys X, x, Z; the neutral set leaves them grey. The side cue is a
+ * shape on the head or hull, not just a hue: side A wears a gold plume (a
+ * tall tuft), side B has bone horns (a wide spread), so the silhouettes differ
+ * at 1x.
  */
 
 import { loadUnitIds } from '../content.js';
@@ -15,57 +19,14 @@ type Side = 'n' | 'a' | 'b';
 type Anim = 'idle' | 'walk' | 'attack';
 
 interface Ctx {
-  /** -1 faces north, +1 faces south. */
-  dir: -1 | 1;
   side: Side;
   /** Walk phase: -1, 0, +1. */
-  step: number;
+  step: -1 | 0 | 1;
   /** Attack phase: 0 none, 1 wind-up, 2 strike. */
   atk: 0 | 1 | 2;
 }
 
-type Ramp = readonly [string, string, string];
-
-/**
- * A flat-shaded disc: mid tone, a shadow crescent bottom-right and a small
- * highlight top-left. `ring` adds the 1-px dark rim (the body does; pieces
- * drawn on the front layer get theirs from the layer outline).
- */
-function ball(
-  p: Pix,
-  cx: number,
-  cy: number,
-  rx: number,
-  ry: number,
-  ramp: Ramp,
-  ring = true,
-): void {
-  const inside = (
-    x: number,
-    y: number,
-    ox: number,
-    oy: number,
-    sx: number,
-    sy: number,
-  ): boolean => {
-    const dx = (x + 0.5 - cx - ox) / sx;
-    const dy = (y + 0.5 - cy - oy) / sy;
-    return dx * dx + dy * dy <= 1;
-  };
-  for (let y = 0; y < p.h; y++)
-    for (let x = 0; x < p.w; x++) {
-      if (!inside(x, y, 0, 0, rx, ry)) continue;
-      if (ring && !inside(x, y, 0, 0, rx - 1, ry - 1)) {
-        p.set(x, y, 'K');
-        continue;
-      }
-      let key = ramp[1];
-      if (!inside(x, y, -1, -1, rx - 0.6, ry - 0.6)) key = ramp[0];
-      else if (inside(x, y, -rx * 0.38, -ry * 0.38, rx * 0.34, ry * 0.34))
-        key = ramp[2];
-      p.set(x, y, key);
-    }
-}
+type Grid = readonly string[];
 
 /** Three layers: things behind the body, the body, things in front. */
 class Layers {
@@ -79,175 +40,280 @@ class Layers {
   }
   compose(map: Pix['map']): Pix {
     const out = new Pix(16, 16, map);
-    this.back.outline('K');
-    out.blit(this.back, 0, 0);
-    out.blit(this.body, 0, 0);
-    this.front.outline('K');
-    out.blit(this.front, 0, 0);
+    for (const layer of [this.back, this.body, this.front]) {
+      layer.outline('K');
+      out.blit(layer, 0, 0);
+    }
     return out;
   }
 }
 
-/** The side-specific shape accent at the front of the head. */
-function accent(p: Pix, c: Ctx, hx: number, hy: number, hr: number): void {
-  if (c.side === 'a') {
-    for (let k = hr; k <= hr + 2; k++)
-      p.set(hx, hy + c.dir * k, k === hr + 2 ? 'O' : 'y');
-  } else if (c.side === 'b') {
-    for (const sx of [-2, 2]) {
-      p.set(hx + sx, hy + c.dir * hr, '6');
-      p.set(hx + sx, hy + c.dir * (hr + 1), '5');
-    }
+function mirror(g: Grid): string[] {
+  return g.map((r) => r.split('').reverse().join(''));
+}
+
+// ---- Shared parts ------------------------------------------------------
+
+/** Side A: a gold fan-plume standing in front of the head (5 wide, 4 tall). */
+const PLUME: Grid = ['.yyy.', 'yOOOy', '.OOO.', '..o..'];
+/** Side B: a bone horn for the left side: out from the head, tip forward. */
+const HORN: Grid = ['6....', '56...', '.55..', '..555', '...55'];
+
+/**
+ * The side cue for a head whose top-left is (hx, hy) and width hw, drawn
+ * before the head so the head covers the roots. The plume stands in front
+ * (north); the horns spread out from the sides, which widens the silhouette.
+ */
+function sideCue(p: Pix, side: Side, hx: number, hy: number, hw: number): void {
+  if (side === 'a') {
+    p.stamp(PLUME, hx + Math.floor((hw - 5) / 2), hy - 3);
+  } else if (side === 'b') {
+    p.stamp(HORN, hx - 4, hy);
+    p.stamp(mirror(HORN), hx + hw - 1, hy);
   }
 }
 
+// ---- Soldier -----------------------------------------------------------
+
+const SOLDIER_TORSO: Grid = [
+  '..xxxxxxxx..',
+  '.xZZxxxxxxX.',
+  'xZZxxxxxxxXX',
+  'xZxxxxxxxxXX',
+  'xxxxxxxxxxXX',
+  'xxxxxxxxxXXX',
+  '.xxxxxxxXXX.',
+  '..XXXXXXXX..',
+];
+const SOLDIER_HELM: Grid = ['.5444.', '544443', '544433', '443332', '.3222.'];
+/** Round shield: steel rim, team-coloured face, gold boss. */
+const SOLDIER_SHIELD: Grid = ['.55.', '5ZxX', '5xyX', '5xXX', '3xXX', '.33.'];
+
 function soldier(L: Layers, c: Ctx): void {
-  const lunge = c.atk === 2 ? 1 : c.atk === 1 ? -1 : 0;
-  const cx = 8;
-  const cy = 8 + c.dir * lunge;
+  const lunge = c.atk === 2 ? -1 : c.atk === 1 ? 1 : 0;
+  const bob = c.step === -1 ? -1 : 0;
+  const dy = lunge + bob;
   const s = c.step;
   // Boots, stepping.
-  L.back.rect(cx - 3, Math.round(cy + c.dir * (3 + s)), 2, 2, '1');
-  L.back.rect(cx + 1, Math.round(cy + c.dir * (3 - s)), 2, 2, '1');
-  // Spear on the right: long, so it sticks out of the round body.
-  const reach = c.atk === 2 ? 11 : c.atk === 1 ? 6 : 9;
-  const sx = 14;
-  const y0 = Math.round(cy - c.dir * 3);
-  for (let k = 0; k < reach; k++)
-    L.back.set(sx, y0 + c.dir * k, k >= reach - 2 ? '6' : 'o');
-  L.back.set(sx, y0 + c.dir * (reach - 3), '5');
-  // Body: team tunic.
-  ball(L.body, cx, cy, 5.6, 5.6, ['X', 'x', 'Z']);
-  // Steel cap, then a round shield held out on the left.
-  ball(L.body, cx + 0.5, cy + c.dir * 0.5, 2.5, 2.5, ['3', '4', '5'], false);
-  ball(L.front, cx - 5.2, cy + c.dir * 0.5, 2, 3.2, ['2', '4', '5'], false);
-  L.front.set(cx - 6, Math.round(cy + c.dir * 0.5), 'y');
-  L.front.set(cx - 5, Math.round(cy + c.dir * 0.5), 'y');
-  accent(L.front, c, cx, Math.round(cy), 3);
+  L.back.rect(5, 12 + s, 2, 2, '1');
+  L.back.rect(9, 12 - s, 2, 2, '1');
+  // Spear on the right: thrust on the strike, drawn back on the wind-up.
+  const tip = c.atk === 2 ? 0 : c.atk === 1 ? 5 : 1;
+  const tail = c.atk === 2 ? 11 : c.atk === 1 ? 15 : 13;
+  for (let y = tip + 2; y <= tail; y++) L.back.set(14, y + bob, 'o');
+  L.back.stamp(['.6.', '565', '.5.'], 13, tip + bob);
+  // Body, then the shield held out on the left, then the helmet.
+  L.body.stamp(SOLDIER_TORSO, 2, 5 + dy);
+  L.front.stamp(SOLDIER_SHIELD, 0, 6 + dy + (c.atk === 2 ? -1 : 0));
+  sideCue(L.front, c.side, 5, 3 + dy, 6);
+  L.front.stamp(SOLDIER_HELM, 5, 3 + dy);
+}
+
+// ---- Raider ------------------------------------------------------------
+
+const RAIDER_VEST: Grid = [
+  '.xxxxxxxx.',
+  'xZZxxxxxXX',
+  'xZxxxxxxXX',
+  'xxxxxxxxXX',
+  'xxxxxxxxXX',
+  '.xxxxxxXX.',
+  '..XXXXXX..',
+];
+/** Team-coloured hood with a dark opening at the front. */
+const RAIDER_HOOD: Grid = ['.xZZx.', 'xZxxxX', 'x1111X', 'xxxxXX', '.XXXX.'];
+
+function dagger(p: Pix, x0: number, y0: number, x1: number, y1: number): void {
+  // Hilt at (x0, y0), blade out to (x1, y1), two pixels wide.
+  p.line(x0 + 1, y0, x1 + 1, y1, '4');
+  p.line(x0, y0, x1, y1, '5');
+  p.set(x1, y1, '6');
+  p.set(x0, y0, 'y');
+  p.set(x0 + 1, y0, 'o');
 }
 
 function raider(L: Layers, c: Ctx): void {
-  const lunge = c.atk === 2 ? 2 : c.atk === 1 ? -1 : 0;
-  const cx = 8;
-  const cy = 8 + c.dir * lunge;
+  const lunge = c.atk === 2 ? -2 : c.atk === 1 ? 1 : 0;
+  const bob = c.step === -1 ? -1 : 0;
+  const dy = lunge + bob;
   const s = c.step;
-  // Scarf tails streaming behind, in the team colour.
-  const sway = c.step;
-  for (let k = 3; k <= 6; k++) {
-    L.back.set(
-      cx - 1 + (k > 4 ? sway : 0),
-      Math.round(cy - c.dir * k),
-      k > 4 ? 'X' : 'x',
-    );
-    L.back.set(
-      cx + 1 + (k > 4 ? -sway : 0),
-      Math.round(cy - c.dir * k),
-      k > 4 ? 'X' : 'x',
-    );
+  // Scarf tails streaming behind in the team colour, swaying as it runs.
+  for (let k = 0; k < 4; k++) {
+    const sway = k > 1 ? s : 0;
+    const key = k > 2 ? 'X' : 'x';
+    const ly = Math.min(15, 12 + k + dy);
+    L.back.set(6 + sway, ly, key);
+    L.back.set(7 + sway, ly, key);
+    L.back.set(9 - sway, ly, key);
+    L.back.set(10 - sway, ly, key);
   }
   // Quick feet.
-  L.back.rect(cx - 3, Math.round(cy + c.dir * (2 + s)), 1, 2, '1');
-  L.back.rect(cx + 2, Math.round(cy + c.dir * (2 - s)), 1, 2, '1');
-  // Twin daggers, crossing on the strike.
-  const spread = c.atk === 2 ? 2 : c.atk === 1 ? 5 : 5;
-  const reach = c.atk === 2 ? 6 : 4;
-  for (const side of [-1, 1]) {
-    const dx = cx + side * spread;
-    for (let k = 0; k < reach; k++)
-      L.back.set(
-        dx,
-        Math.round(cy + c.dir * (k - 1)),
-        k >= reach - 2 ? '6' : '5',
-      );
-    L.back.set(dx, Math.round(cy + c.dir * -2), 'y');
+  L.back.rect(5, 12 + s, 2, 2, '1');
+  L.back.rect(9, 12 - s, 2, 2, '1');
+  // Twin daggers: forward at rest, spread on the wind-up, crossed on the strike.
+  if (c.atk === 2) {
+    dagger(L.front, 3, 10 + dy, 8, 1);
+    dagger(L.front, 11, 10 + dy, 6, 1);
+  } else if (c.atk === 1) {
+    dagger(L.front, 2, 9 + dy, 0, 5);
+    dagger(L.front, 12, 9 + dy, 14, 5);
+  } else {
+    dagger(L.front, 1, 10 + dy, 1, 5 + dy);
+    dagger(L.front, 13, 10 + dy, 13, 5 + dy);
   }
-  ball(L.body, cx, cy, 4.2, 4.8, ['0', '1', '2']);
-  ball(L.body, cx, cy + c.dir * 0.7, 2.6, 2.6, ['X', 'x', 'Z'], false);
-  L.body.set(cx - 1, Math.round(cy + c.dir * 1.5), 'K');
-  L.body.set(cx + 1, Math.round(cy + c.dir * 1.5), 'K');
-  accent(L.front, c, cx, Math.round(cy + c.dir * 0.7), 2);
+  L.body.stamp(RAIDER_VEST, 3, 6 + dy);
+  // Dark bandolier across the vest.
+  for (let k = 0; k < 6; k++)
+    L.body.set(4 + k, 9 + dy + Math.floor(k / 1.5), '1');
+  sideCue(L.front, c.side, 5, 4 + dy, 6);
+  L.front.stamp(RAIDER_HOOD, 5, 4 + dy);
 }
+
+// ---- Archer ------------------------------------------------------------
+
+const ARCHER_CLOAK: Grid = [
+  '..xxxxxxxx..',
+  '.xZZxxxxxxX.',
+  'xZxxxxxxxxXX',
+  '.xxxxxxxxXX.',
+  '..xxxxxxXX..',
+  '...xxxxXX...',
+  '....xxXX....',
+  '.....XX.....',
+];
+/** Hood in the team colour with a leather band. */
+const ARCHER_HOOD: Grid = ['.xZZx.', 'xZxxxX', 'xxxxXX', 'qqqqqq', '.XXXX.'];
 
 function archer(L: Layers, c: Ctx): void {
-  const cx = 9;
-  const cy = 8;
+  const lean = c.atk === 1 ? 1 : 0;
+  const bob = c.step === -1 ? -1 : 0;
+  const dy = lean + bob;
   const s = c.step;
-  L.back.rect(cx - 3, Math.round(cy + c.dir * (3 + s)), 2, 2, '1');
-  L.back.rect(cx + 1, Math.round(cy + c.dir * (3 - s)), 2, 2, '1');
-  // Bow held out front on the left; the string is pulled on the wind-up.
-  const bx = cx - 6;
-  for (let k = -4; k <= 4; k++) {
-    const bend = Math.floor((k * k) / 6);
-    L.back.set(
-      bx - bend + 1,
-      Math.round(cy + c.dir * (k + 1)),
-      k === 0 ? 'O' : 'o',
-    );
-  }
+  // Boots peeking out under the cloak tail.
+  L.back.rect(4, 12 + s, 2, 2, '1');
+  L.back.rect(10, 12 - s, 2, 2, '1');
+  // Quiver on the back, feathers peeking out beside the shoulder.
+  L.back.stamp(['6.5', 'ooo', 'oOo', 'ooo'], 13, 7 + bob);
+  // Bow in front, arcing across the line of fire; string and arrow.
+  const by = 0;
   const pull = c.atk === 1 ? 3 : 0;
-  L.back.set(bx + 2 + pull, Math.round(cy + c.dir), '5');
-  for (let k = 0; k < 4; k++) {
-    L.back.set(
-      bx + 1 + (k === 0 ? 0 : 0),
-      Math.round(cy + c.dir * (1 + k - 4 + (k > 2 ? 0 : 0))),
-      '5',
-    );
+  for (let x = 1; x <= 14; x++) {
+    const k0 = Math.round(((2 * x - 15) * (2 * x - 15)) / 56);
+    // The limbs spring forward after the shot.
+    const k = c.atk === 2 ? Math.max(0, k0 - 1) : k0;
+    L.back.set(x, by + k, k <= 1 ? 'O' : 'o');
   }
   if (c.atk === 1) {
-    for (let k = 0; k < 6; k++)
-      L.back.set(bx + 2, Math.round(cy + c.dir * (k - 1)), k === 5 ? '6' : '4');
+    // String drawn back to the cheek.
+    L.back.line(1, by + 3, 7, by + 3 + pull, '4');
+    L.back.line(14, by + 3, 8, by + 3 + pull, '4');
+  } else {
+    L.back.hline(2, by + (c.atk === 2 ? 2 : 3), 12, c.atk === 2 ? 'y' : '4');
   }
   if (c.atk === 2) {
-    for (let k = 0; k < 5; k++)
-      L.back.set(bx + 2, Math.round(cy + c.dir * (5 + k)), k === 4 ? '6' : '4');
+    // The shot has left: only the arrow's tail is still in sight.
+    L.back.set(7, 0, '6');
+  } else {
+    L.back.vline(7, by + 1, 3 + pull + 2, '5');
+    L.back.set(7, by + 1, '6');
   }
-  ball(L.body, cx, cy, 5, 5, ['r', 'q', 'p']);
-  ball(L.body, cx, cy, 3, 3, ['X', 'x', 'Z'], false);
-  accent(L.front, c, cx, cy, 3);
+  L.body.stamp(ARCHER_CLOAK, 2, 6 + dy);
+  sideCue(L.front, c.side, 5, 5 + dy, 6);
+  L.front.stamp(ARCHER_HOOD, 5, 5 + dy);
 }
+
+// ---- Drone -------------------------------------------------------------
+
+const DRONE_HULL: Grid = [
+  '..xxxx..',
+  '.xZZxxX.',
+  'xZxxxxXX',
+  'xxxxxxXX',
+  'xxxxxxXX',
+  'xxxxxXXX',
+  '.XXXXXX.',
+  '..3333..',
+];
 
 function drone(L: Layers, c: Ctx): void {
-  const cx = 8;
-  const cy = 8;
-  for (const [dx, dy] of [
-    [-1, -1],
-    [1, -1],
-    [-1, 1],
-    [1, 1],
-  ] as const) {
-    L.back.line(cx + dx * 2, cy + dy * 2, cx + dx * 4, cy + dy * 4, '2');
-    L.back.set(cx + dx * 5, cy + dy * 5, '1');
-  }
-  ball(L.body, cx, cy, 4, 4, ['2', '3', '4']);
-  ball(L.body, cx, cy, 2.3, 2.3, ['X', 'x', 'Z'], false);
+  // Bobs while moving, rocks back to charge and lurches forward on the shot.
+  const dy = c.atk === 1 ? 1 : c.atk === 2 ? -1 : c.step === -1 ? -1 : 0;
+  L.body.stamp(DRONE_HULL, 4, 4 + dy);
+  // Lens at the front; it charges to gold and flares red on the shot.
   const lens = c.atk === 2 ? 'M' : c.atk === 1 ? 'y' : 'T';
-  L.front.rect(cx - 1, cy - 1, 2, 2, lens);
-  accent(L.front, c, cx, cy, 3);
+  L.front.rect(7, 4 + dy, 2, 1, lens);
+  if (c.atk === 2) {
+    L.front.vline(6, 1 + dy, 3, 'y');
+    L.front.vline(9, 1 + dy, 3, 'y');
+  } else if (c.atk === 1) {
+    L.front.rect(7, 5 + dy, 2, 1, 'O');
+    L.front.set(6, 3 + dy, 'O');
+    L.front.set(9, 3 + dy, 'O');
+  }
+  // Side cue. A: a gold prow in front. B: bone wedges jutting from the sides.
+  if (c.side === 'a') L.front.stamp(['.yy.', 'yOOy'], 6, 2 + dy);
+  else if (c.side === 'b') {
+    L.front.stamp(['..5', '.56', '556', '.55'], 1, 6 + dy);
+    L.front.stamp(mirror(['..5', '.56', '556', '.55']), 12, 6 + dy);
+  }
 }
 
-/** Translucent spinning rotors, drawn last so they sit over everything. */
-function rotors(p: Pix, c: Ctx): void {
-  for (const [dx, dy] of [
-    [-1, -1],
-    [1, -1],
-    [-1, 1],
-    [1, 1],
+/** Arms and small translucent rotor discs, drawn under and around the hull. */
+function dronePost(p: Pix, c: Ctx): void {
+  const dy = c.atk === 1 ? 1 : c.atk === 2 ? -1 : c.step === -1 ? -1 : 0;
+  const phase = c.step === 0 ? 0 : c.step === 1 ? 1 : 2;
+  const free = (x: number, y: number): boolean => !p.opaque(x, y);
+  for (const [cx, cy] of [
+    [2, 2],
+    [13, 2],
+    [2, 13],
+    [13, 13],
   ] as const) {
-    const rx = 8 + dx * 5;
-    const ry = 8 + dy * 5;
-    for (let y = -3; y <= 3; y++)
-      for (let x = -3; x <= 3; x++)
-        if (x * x + y * y <= 9) {
-          const o = p.get(rx + x, ry + y);
-          if (o[3] === 0) p.setRgba(rx + x, ry + y, [205, 225, 240, 120]);
-        }
-    const horizontal = c.step >= 0;
-    for (let k = -2; k <= 2; k++)
-      p.setRgba(
-        horizontal ? rx + k : rx,
-        horizontal ? ry : ry + k,
-        [240, 244, 246, 235],
-      );
+    const ry = cy + dy;
+    // Arm from the hull corner to the rotor mount.
+    const hx = cx < 8 ? 5 : 10;
+    const hy = (cy < 8 ? 5 : 10) + dy;
+    const arm = new Pix(16, 16);
+    arm.line(hx, hy, cx, ry, '2');
+    for (let y = 0; y < 16; y++)
+      for (let x = 0; x < 16; x++)
+        if (arm.opaque(x, y) && free(x, y)) p.setRgba(x, y, arm.get(x, y));
+    // Disc: 6x6, soft edge, one blade.
+    for (let y = -2; y <= 2; y++)
+      for (let x = -2; x <= 2; x++) {
+        const d2 = x * x + y * y;
+        if (d2 > 5) continue;
+        if (free(cx + x, ry + y))
+          p.setRgba(
+            cx + x,
+            ry + y,
+            d2 > 3 ? [225, 238, 246, 130] : [205, 225, 240, 60],
+          );
+      }
+    const blade: [number, number][] =
+      phase === 1
+        ? [
+            [-2, 0],
+            [-1, 0],
+            [0, 0],
+            [1, 0],
+          ]
+        : phase === 2
+          ? [
+              [0, -2],
+              [0, -1],
+              [0, 0],
+              [0, 1],
+            ]
+          : [
+              [-2, -2],
+              [-1, -1],
+              [0, 0],
+              [1, 1],
+            ];
+    for (const [bx, by] of blade)
+      if (free(cx + bx, ry + by))
+        p.setRgba(cx + bx, ry + by, [244, 248, 250, 235]);
   }
 }
 
@@ -258,16 +324,24 @@ const DRAWERS: Readonly<Record<string, (L: Layers, c: Ctx) => void>> = {
   unit_drone: drone,
 };
 
-const PLANNED = new Set(['unit_archer', 'unit_drone']);
+/** Art that exists ahead of its content: planned until content has the id. */
+const ART_ONLY: readonly string[] = ['unit_archer', 'unit_drone'];
 const NOTES: Readonly<Record<string, string>> = {
   unit_soldier: 'Melee ground unit.',
   unit_raider: 'Fast melee ground unit.',
-  unit_archer: 'Planned: ranged ground unit.',
-  unit_drone: 'Planned: flying unit; place fx_shadow under it.',
+  unit_archer: 'Ranged ground unit.',
+  unit_drone: 'Flying unit; place fx_shadow under it.',
 };
 
 function ramp(side: Side): readonly [string, string, string] {
   return side === 'a' ? TEAM_A : side === 'b' ? TEAM_B : TINT_NEUTRAL;
+}
+
+function flipY(p: Pix): Pix {
+  const out = new Pix(p.w, p.h, p.map);
+  for (let y = 0; y < p.h; y++)
+    for (let x = 0; x < p.w; x++) out.setRgba(x, p.h - 1 - y, p.get(x, y));
+  return out;
 }
 
 function frame(id: string, side: Side, anim: Anim, i: number): Pix {
@@ -276,22 +350,31 @@ function frame(id: string, side: Side, anim: Anim, i: number): Pix {
   const draw = DRAWERS[id];
   if (!draw) throw new Error(`no drawing for ${id}`);
   const ctx: Ctx = {
-    dir: side === 'b' ? 1 : -1,
     side,
     step: anim === 'walk' ? (i === 0 ? 1 : -1) : 0,
     atk: anim === 'attack' ? ((i + 1) as 1 | 2) : 0,
   };
   draw(L, ctx);
   const p = L.compose(map);
-  if (id === 'unit_drone') rotors(p, ctx);
-  return p;
+  if (id === 'unit_drone') dronePost(p, ctx);
+  // Side A faces north as drawn; side B faces south.
+  return side === 'b' ? flipY(p) : p;
 }
 
-export function unitSprites(): SpriteDef[] {
+/**
+ * Unit sprites for the content units plus art-only units. An art-only unit
+ * is flagged `planned` only while `contentIds` lacks it, so adding it to
+ * content later neither duplicates the sprite nor leaves the flag behind.
+ */
+export function unitSprites(
+  contentIds: readonly string[] = loadUnitIds(),
+): SpriteDef[] {
   const out: SpriteDef[] = [];
-  const ids = [...loadUnitIds(), 'unit_archer', 'unit_drone'];
+  const ids = [...new Set([...contentIds, ...ART_ONLY])];
+  const inContent = new Set(contentIds);
   for (const id of ids) {
     if (!DRAWERS[id]) continue;
+    const planned = !inContent.has(id);
     for (const side of ['n', 'a', 'b'] as const) {
       const base = side === 'n' ? id : `${id}@${side}`;
       const anims: readonly [Anim, number, number, string][] = [
@@ -311,8 +394,8 @@ export function unitSprites(): SpriteDef[] {
             ),
             fps,
             tintable: side === 'n',
-            ...(PLANNED.has(id) ? { planned: true } : {}),
-            note: `${NOTES[id] ?? ''} ${side === 'n' ? 'Neutral greys in the team parts (tint keys).' : side === 'a' ? 'Side A, faces north.' : 'Side B, faces south.'}`,
+            ...(planned ? { planned: true } : {}),
+            note: `${planned ? 'Planned: ' : ''}${NOTES[id] ?? ''} ${side === 'n' ? 'Neutral greys in the team parts (tint keys).' : side === 'a' ? 'Side A, faces north, gold plume.' : 'Side B, faces south, bone horns.'}`,
           }),
         );
       }

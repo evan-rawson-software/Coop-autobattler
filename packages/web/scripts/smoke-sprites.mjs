@@ -15,10 +15,11 @@ export async function runSpritesSmoke({
   const errorsBefore = consoleErrors.length;
   const failedRequests = [];
   const onFail = (r) => failedRequests.push(r.url());
-  page.on('requestfailed', onFail);
-  page.on('response', (r) => {
+  const onResponse = (r) => {
     if (r.status() >= 400) failedRequests.push(`${r.status()} ${r.url()}`);
-  });
+  };
+  page.on('requestfailed', onFail);
+  page.on('response', onResponse);
   await page.goto(`${baseUrl}#sprites`);
   await page.waitForSelector('#sprites-root[data-ready="true"]', {
     timeout: 15000,
@@ -41,12 +42,17 @@ export async function runSpritesSmoke({
     root.cards > 80 && root.canvases > 200,
     `sprites: the page lists the atlas (${root.cards} cards, ${root.canvases} canvases)`,
   );
+  const tiled = await page.evaluate(
+    () => document.querySelectorAll('[data-tiled]').length,
+  );
+  check(tiled >= 7, `sprites: ${tiled} tiling samples are shown`);
   const decoded = await page.evaluate(() =>
     [...document.images].every((i) => i.complete && i.naturalWidth > 0),
   );
   check(decoded, 'sprites: no broken <img> elements on the page');
   const shots = [
     ['.mock-board', 'sprites-1-board'],
+    ['[data-tiled]', 'sprites-4-tiling'],
     ['.unit-row[data-unit="unit_soldier"]', 'sprites-2-soldier'],
     ['[data-sprite="bld_core"]', 'sprites-3-core'],
   ];
@@ -74,6 +80,7 @@ export async function runSpritesSmoke({
     await shot(name);
   }
   page.off('requestfailed', onFail);
+  page.off('response', onResponse);
   check(
     failedRequests.length === 0,
     `sprites: no failed requests${failedRequests.length ? ': ' + failedRequests.join(' | ') : ''}`,

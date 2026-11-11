@@ -11,17 +11,23 @@ import {
   atlas,
   drawFrame,
   drawNine,
-  drawTiled,
   loadSheets,
   spriteOf,
   type Ramp,
   type Sheets,
 } from './atlas.js';
-import { MOCK_COLS, MOCK_ROWS, drawMockBoard } from './mock-board.js';
+import {
+  MOCK_COLS,
+  MOCK_ROWS,
+  drawMockBoard,
+  pickGround,
+  pickNeutral,
+} from './mock-board.js';
 
 const px = (n: number): string => `${String(n)}px`;
 
-// One animation loop drives every canvas on the page.
+// One animation loop drives only the canvases that animate; the rest are
+// drawn once when they appear (or when their inputs change).
 type Drawer = (t: number) => void;
 const drawers = new Set<Drawer>();
 let raf = 0;
@@ -43,18 +49,23 @@ function useCanvasLoop(
   height: number,
   draw: (ctx: CanvasRenderingContext2D, t: number) => void,
   deps: readonly unknown[],
+  animated: boolean,
 ) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = ref.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
-    const off = register((t) => {
+    const paint = (t: number): void => {
       ctx.clearRect(0, 0, width, height);
       draw(ctx, t);
-    });
-    return off;
-  }, [width, height, ...deps]);
+    };
+    if (!animated) {
+      paint(0);
+      return;
+    }
+    return register(paint);
+  }, [width, height, animated, ...deps]);
   return ref;
 }
 
@@ -68,8 +79,10 @@ function SpriteCanvas(props: {
 }) {
   const sp = spriteOf(props.name);
   const strip = props.strip === true;
-  const w = sp.w * props.scale * (strip ? sp.frames : 1);
-  const h = sp.h * props.scale;
+  const cols = strip ? (sp.columns ?? sp.frames) : 1;
+  const rows = strip ? Math.ceil(sp.frames / cols) : 1;
+  const w = sp.w * props.scale * cols;
+  const h = sp.h * props.scale * rows;
   const ref = useCanvasLoop(
     w,
     h,
@@ -82,8 +95,8 @@ function SpriteCanvas(props: {
             props.sheets,
             props.name,
             f,
-            f * sp.w * props.scale,
-            0,
+            (f % cols) * sp.w * props.scale,
+            Math.floor(f / cols) * sp.h * props.scale,
             props.scale,
             opts,
           );
@@ -93,6 +106,7 @@ function SpriteCanvas(props: {
       }
     },
     [props.sheets, props.name, props.scale, props.ramp, strip],
+    !strip && sp.fps > 0,
   );
   return (
     <canvas
@@ -192,24 +206,47 @@ function UnitRow(props: { sheets: Sheets; id: string }) {
   );
 }
 
-function TiledCanvas(props: { sheets: Sheets; name: string }) {
-  const sp = spriteOf(props.name);
-  const scale = 2;
-  const w = sp.w * 6 * scale;
-  const h = sp.h * 4 * scale;
+const SAMPLE_COLS = 12;
+const SAMPLE_ROWS = 8;
+
+/** A 12x8 sample of a texture; `pick` names the sprite for each cell. */
+function TiledSample(props: {
+  sheets: Sheets;
+  label: string;
+  /** Sprite used to size the cells. */
+  size: string;
+  pick: (x: number, y: number) => string;
+}) {
+  const sp = spriteOf(props.size);
+  const scale = sp.w >= 64 ? 1 : sp.w >= 32 ? 1 : 2;
+  const w = sp.w * SAMPLE_COLS * scale;
+  const h = sp.h * SAMPLE_ROWS * scale;
   const ref = useCanvasLoop(
     w,
     h,
     (ctx) => {
-      drawTiled(ctx, props.sheets, props.name, 6, 4, scale);
+      for (let y = 0; y < SAMPLE_ROWS; y++)
+        for (let x = 0; x < SAMPLE_COLS; x++)
+          drawFrame(
+            ctx,
+            props.sheets,
+            props.pick(x, y),
+            0,
+            x * sp.w * scale,
+            y * sp.h * scale,
+            scale,
+          );
     },
-    [props.sheets, props.name],
+    [props.sheets, props.size, props.pick],
+    false,
   );
   return (
-    <figure class="sprite-card" data-tiled={props.name}>
+    <figure class="sprite-card" data-tiled={props.label}>
       <figcaption>
-        <code>{props.name}</code>
-        <span class="meta">tiled 6x4</span>
+        <code>{props.label}</code>
+        <span class="meta">
+          {SAMPLE_COLS}x{SAMPLE_ROWS} cells of {sp.w}x{sp.h}, {scale}x
+        </span>
       </figcaption>
       <canvas
         ref={ref}
@@ -221,6 +258,8 @@ function TiledCanvas(props: { sheets: Sheets; name: string }) {
     </figure>
   );
 }
+
+const same = (name: string) => (): string => name;
 
 function NineSliceCanvas(props: { sheets: Sheets; name: string }) {
   const sizes: [number, number][] = [
@@ -252,6 +291,7 @@ function NineSliceCanvas(props: { sheets: Sheets; name: string }) {
       }
     },
     [props.sheets, props.name],
+    false,
   );
   return (
     <figure class="sprite-card wide" data-nine={props.name}>
@@ -283,6 +323,7 @@ function MockBoard(props: { sheets: Sheets; scale: number }) {
       drawMockBoard(ctx, props.sheets, props.scale, t);
     },
     [props.sheets, props.scale],
+    true,
   );
   return (
     <canvas
@@ -344,26 +385,59 @@ function Preview(props: { sheets: Sheets }) {
       </Section>
       <Section
         title="Units"
-        note="Each unit: neutral, pre-tinted side A (faces north, gold plume) and side B (faces south, two bone prongs), and the neutral sprite recoloured at draw time."
+        note="Each unit: neutral, pre-tinted side A (faces north, gold plume) and side B (faces south, bone horns), and the neutral sprite recoloured at draw time."
       >
         {unitIds.map((id) => (
           <UnitRow key={id} sheets={sheets} id={id} />
         ))}
       </Section>
-      <Section title="Tiles, tiled 6x4">
+      <Section
+        title="Tiling, 12x8 samples"
+        note="Ground and neutral pick a random variant per cell, as the board does; the single-variant samples are the worst case and show any pattern the tile repeats."
+      >
         <div class="sprite-grid">
-          {[
-            'ground_1',
-            'ground_2',
-            'ground_3',
-            'neutral_1',
-            'neutral_2',
-            'ter_lake',
-            'ui_panel',
-            'ui_bg',
-          ].map((n) => (
-            <TiledCanvas key={n} sheets={sheets} name={n} />
-          ))}
+          <TiledSample
+            sheets={sheets}
+            label="ground, 6 variants at random"
+            size="ground_1"
+            pick={pickGround}
+          />
+          <TiledSample
+            sheets={sheets}
+            label="neutral, 4 variants at random"
+            size="neutral_1"
+            pick={pickNeutral}
+          />
+          <TiledSample
+            sheets={sheets}
+            label="ground_1 alone"
+            size="ground_1"
+            pick={same('ground_1')}
+          />
+          <TiledSample
+            sheets={sheets}
+            label="neutral_1 alone"
+            size="neutral_1"
+            pick={same('neutral_1')}
+          />
+          <TiledSample
+            sheets={sheets}
+            label="ui_panel"
+            size="ui_panel"
+            pick={same('ui_panel')}
+          />
+          <TiledSample
+            sheets={sheets}
+            label="ui_bg"
+            size="ui_bg"
+            pick={same('ui_bg')}
+          />
+          <TiledSample
+            sheets={sheets}
+            label="ter_lake"
+            size="ter_lake"
+            pick={same('ter_lake')}
+          />
         </div>
       </Section>
       <Section title="9-slices">
@@ -384,7 +458,7 @@ function Preview(props: { sheets: Sheets }) {
       </Section>
       <Section
         title="Buildings"
-        note="Tier pips are an overlay drawn on the building tile."
+        note="Tier 2 and 3 add a trim overlay (silver or gold corner brackets) and pips on the building tile."
       >
         <Grid sheets={sheets} names={namesOf('building')} />
       </Section>

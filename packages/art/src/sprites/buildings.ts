@@ -1,6 +1,6 @@
 /** Building and conduit sprites. Top-down, light from the top-left. */
 
-import { loadBuildings } from '../content.js';
+import { loadBuildings, type BuildingInfo } from '../content.js';
 import { Pix, bevelShape, roundRect } from '../pix.js';
 import { sprite, type SpriteDef } from '../model.js';
 
@@ -58,92 +58,100 @@ function arrow(
   }
 }
 
-type ArmKind = 'in' | 'out' | 'none';
+/** A two-pixel-wide channel from (x0, y0) to (x1, y1): `key` lit, `dark` shaded. */
+function channel(
+  p: Pix,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  key: string,
+  dark: string,
+): void {
+  const steep = Math.abs(y1 - y0) >= Math.abs(x1 - x0);
+  p.line(
+    x0 + (steep ? 1 : 0),
+    y0 + (steep ? 0 : 1),
+    x1 + (steep ? 1 : 0),
+    y1 + (steep ? 0 : 1),
+    dark,
+  );
+  p.line(x0, y0, x1, y1, key);
+}
 
-function drawRoute(
-  arms: Record<'n' | 'e' | 's' | 'w', ArmKind>,
-  hub: (p: Pix) => void,
-): Pix {
+/** A flat three-pixel-wide arrowhead whose tip is at (x, y). */
+const HEADS: Readonly<Record<string, readonly string[]>> = {
+  n: ['.xx.', 'xxxx'],
+  s: ['xxxx', '.xx.'],
+  w: ['.x', 'xx', 'xx', '.x'],
+  e: ['x.', 'xx', 'xx', 'x.'],
+};
+function head(
+  p: Pix,
+  dir: 'n' | 's' | 'w' | 'e',
+  x: number,
+  y: number,
+  key: string,
+): void {
+  const g = (HEADS[dir] as readonly string[]).map((r) => r.replace(/x/g, key));
+  p.stamp(g, x, y);
+}
+
+function routePlate(): Pix {
   const p = new Pix(16, 16);
   plate(p, 1, 1, 14, 14, KIND_RAMP['route'] as Ramp);
-  const arm = (x: number, y: number, w: number, h: number): void => {
-    p.rect(x, y, w, h, '3');
-    p.rect(x, y, w, 1, '4');
-  };
-  if (arms.n !== 'none') arm(6, 1, 4, 8);
-  if (arms.s !== 'none') arm(6, 7, 4, 8);
-  if (arms.w !== 'none') arm(1, 6, 8, 4);
-  if (arms.e !== 'none') arm(7, 6, 8, 4);
-  const OUT = {
-    n: [7, 2, 'n'],
-    s: [7, 13, 's'],
-    w: [2, 7, 'w'],
-    e: [13, 7, 'e'],
-  } as const;
-  const IN = {
-    n: [7, 4, 's'],
-    s: [7, 11, 'n'],
-    w: [4, 7, 'e'],
-    e: [11, 7, 'w'],
-  } as const;
-  const place = (side: 'n' | 'e' | 's' | 'w', k: ArmKind): void => {
-    if (k === 'none') return;
-    const [x, y, d] = (k === 'out' ? OUT : IN)[side];
-    arrow(p, x, y, d, k === 'out' ? 'y' : 'T');
-  };
-  place('n', arms.n);
-  place('s', arms.s);
-  place('w', arms.w);
-  place('e', arms.e);
-  hub(p);
   return p;
 }
 
+/** One channel in at the bottom, fanning out into three at the top. */
 function splitterSprite(): Pix {
-  return drawRoute({ n: 'out', e: 'out', s: 'in', w: 'out' }, (p) => {
-    // Gold diamond hub: one flow becomes many.
-    for (let y = 5; y <= 10; y++)
-      for (let x = 5; x <= 10; x++) {
-        const d = Math.abs(x - 7.5) + Math.abs(y - 7.5);
-        if (d > 3.5) continue;
-        p.set(x, y, d > 2.5 ? 'o' : x + y < 15 ? 'y' : 'O');
-      }
-  });
+  const p = routePlate();
+  channel(p, 7, 14, 7, 9, 'T', 't');
+  channel(p, 7, 8, 3, 4, 'y', 'O');
+  channel(p, 7, 8, 7, 4, 'y', 'O');
+  channel(p, 8, 8, 12, 4, 'y', 'O');
+  head(p, 'n', 6, 2, 'y');
+  p.stamp(['yy.', 'yyy', '.yy'], 2, 2);
+  p.stamp(['.yy', 'yyy', 'yy.'], 11, 2);
+  // Junction.
+  p.rect(6, 8, 4, 3, 'K');
+  p.rect(7, 8, 2, 2, '6');
+  return p;
 }
 
+/** Three channels converging into one that leaves at the top. */
 function mergerSprite(): Pix {
-  return drawRoute({ n: 'out', e: 'in', s: 'in', w: 'in' }, (p) => {
-    // Teal disc hub: many flows become one.
-    p.ellipse(8, 8, 3.2, 3.2, 'K');
-    p.ellipse(8, 8, 2.4, 2.4, 't');
-    p.set(7, 7, 'T');
-    p.set(8, 7, 'T');
-    p.set(7, 8, 'T');
-  });
+  const p = routePlate();
+  channel(p, 7, 8, 7, 3, 'y', 'O');
+  head(p, 'n', 6, 2, 'y');
+  channel(p, 3, 12, 7, 9, 'T', 't');
+  channel(p, 7, 14, 7, 9, 'T', 't');
+  channel(p, 12, 12, 8, 9, 'T', 't');
+  // Inward heads on the three feeders.
+  p.stamp(['.TT', 'TTT', 'TT.'], 5, 8);
+  p.stamp(['TT.', 'TTT', '.TT'], 9, 8);
+  head(p, 'n', 6, 11, 'T');
+  p.rect(6, 6, 4, 3, 'K');
+  p.rect(7, 6, 2, 2, '6');
+  return p;
 }
 
+/** Two channels crossing: the vertical one rides a bridge over the horizontal one. */
 function crossoverSprite(): Pix {
-  const p = new Pix(16, 16);
-  plate(p, 1, 1, 14, 14, KIND_RAMP['route'] as Ramp);
-  // Horizontal channel runs underneath, vertical channel rides a bridge.
-  p.rect(1, 6, 14, 4, '3');
-  p.rect(1, 6, 14, 1, '4');
-  p.rect(6, 1, 4, 14, '3');
-  p.rect(6, 1, 4, 1, '4');
-  arrow(p, 7, 2, 'n', 'y');
-  arrow(p, 13, 7, 'e', 'y');
-  arrow(p, 7, 11, 'n', 'T');
-  arrow(p, 4, 7, 'e', 'T');
-  // The bridge: a violet slab with its own outline and shadow.
-  p.rect(5, 5, 6, 7, 'K');
-  p.rect(5, 5, 6, 6, 'K');
-  p.rect(6, 6, 4, 4, 's');
-  p.rect(6, 6, 4, 1, 'S');
-  p.rect(6, 6, 1, 4, 'S');
-  p.rect(9, 7, 1, 3, '0');
-  p.rect(5, 11, 6, 1, 'a');
-  p.set(7, 8, 'y');
-  p.set(8, 8, 'y');
+  const p = routePlate();
+  // Horizontal channel passes underneath.
+  channel(p, 2, 7, 13, 7, 'T', 't');
+  head(p, 'e', 11, 5, 'T');
+  // Bridge: a raised violet deck with its own outline and a cast shadow.
+  p.rect(5, 4, 8, 11, 'a');
+  p.rect(4, 3, 8, 11, 'K');
+  p.rect(5, 4, 6, 9, 's');
+  p.rect(5, 4, 1, 9, 'S');
+  p.rect(5, 4, 6, 1, 'S');
+  p.rect(10, 5, 1, 8, '0');
+  // The vertical channel rides the deck and carries on to the edges.
+  channel(p, 7, 14, 7, 2, 'y', 'O');
+  head(p, 'n', 6, 2, 'y');
   return p;
 }
 
@@ -375,7 +383,10 @@ function coreSprite(): Pix {
   // Glow dither.
   for (let y = 8; y < 24; y++)
     for (let x = 8; x < 24; x++)
-      if ((x + y) % 2 === 0 && Math.hypot(x - 15.5, y - 15.5) < 7.8)
+      if (
+        (x + y) % 2 === 0 &&
+        (x - 15.5) * (x - 15.5) + (y - 15.5) * (y - 15.5) < 60.84
+      )
         p.set(x, y, 't');
   // Crystal.
   for (let y = 0; y < 32; y++)
@@ -463,6 +474,39 @@ function tierPips(): Pix[] {
   });
 }
 
+/**
+ * Tier trim, an overlay for a whole building: corner brackets just inside the
+ * plate outline. Tier 2 is silver, tier 3 gold (thicker, with studs), so the
+ * tier shows at 1x without reading the pips.
+ */
+function tierTrim(size: number, tier: 2 | 3): Pix {
+  const p = new Pix(size, size);
+  const len = size === 16 ? 5 : 9;
+  const lo = 2;
+  const hi = size - 3;
+  const key = tier === 2 ? '5' : 'y';
+  const edge = tier === 2 ? '3' : 'O';
+  for (const [cx, cy, sx, sy] of [
+    [lo, lo, 1, 1],
+    [hi, lo, -1, 1],
+    [lo, hi, 1, -1],
+    [hi, hi, -1, -1],
+  ] as const) {
+    for (let k = 0; k < len; k++) {
+      p.set(cx + sx * k, cy, key);
+      p.set(cx, cy + sy * k, key);
+    }
+    if (tier === 3) {
+      for (let k = 1; k < len - 1; k++) {
+        p.set(cx + sx * k, cy + sy, edge);
+        p.set(cx + sx, cy + sy * k, edge);
+      }
+      p.set(cx + sx, cy + sy, '6');
+    } else p.set(cx, cy, '6');
+  }
+  return p;
+}
+
 const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_extractor: extractorSprite,
   bld_splitter: splitterSprite,
@@ -475,14 +519,24 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_overclocker: () => economySprite(gearIcon),
   bld_armory: () => economySprite(shieldIcon),
   bld_core: coreSprite,
+  bld_range: rangeSprite,
+  bld_hangar: hangarSprite,
 };
 
-export function buildingSprites(): SpriteDef[] {
+/** Buildings that have art ahead of their content; planned until content adds them. */
+const PLANNED: Readonly<Record<string, string>> = {
+  bld_range: 'Planned: produces ranged ground units. 2x2 tiles.',
+  bld_hangar: 'Planned: produces flying units. 2x2 tiles.',
+};
+
+export function buildingSprites(
+  content: readonly BuildingInfo[] = loadBuildings(),
+): SpriteDef[] {
   const out: SpriteDef[] = [];
   const add = (d: Parameters<typeof sprite>[0]): void => {
     out.push(sprite(d));
   };
-  for (const b of loadBuildings()) {
+  for (const b of content) {
     const make = MAKERS[b.id];
     if (!make) continue; // The coverage test names the missing one.
     const frame = make();
@@ -513,24 +567,22 @@ export function buildingSprites(): SpriteDef[] {
     anchor: [8, 9],
     note: 'Turret head with the barrel pointing north; rotate about the anchor.',
   });
-  add({
-    name: 'bld_range',
-    id: 'bld_range',
-    sheet: 'buildings',
-    category: 'building',
-    planned: true,
-    frames: rangeSprite(),
-    note: 'Planned: produces ranged ground units. 2x2 tiles.',
-  });
-  add({
-    name: 'bld_hangar',
-    id: 'bld_hangar',
-    sheet: 'buildings',
-    category: 'building',
-    planned: true,
-    frames: hangarSprite(),
-    note: 'Planned: produces flying units. 2x2 tiles.',
-  });
+  // Art that exists before its content does: planned only while the content
+  // list lacks the id, so adding the building to content cannot duplicate it.
+  const inContent = new Set(content.map((b) => b.id));
+  for (const [id, note] of Object.entries(PLANNED)) {
+    const make = MAKERS[id];
+    if (!make || inContent.has(id)) continue;
+    add({
+      name: id,
+      id,
+      sheet: 'buildings',
+      category: 'building',
+      planned: true,
+      frames: make(),
+      note,
+    });
+  }
   add({
     name: 'tier_pips',
     sheet: 'buildings',
@@ -538,10 +590,20 @@ export function buildingSprites(): SpriteDef[] {
     frames: tierPips(),
     note: 'Overlay on a building tile: frame 0..2 = tier 1..3 (1 to 3 gold pips at the bottom edge). Place on the bottom-left tile of the footprint.',
   });
+  for (const size of [16, 32] as const) {
+    const t = size / 16;
+    add({
+      name: `tier_trim_${String(t)}x${String(t)}`,
+      sheet: 'buildings',
+      category: 'building',
+      frames: [tierTrim(size, 2), tierTrim(size, 3)],
+      note: `Overlay for a ${String(t)}x${String(t)} building: frame 0 = tier 2 (silver corner brackets), frame 1 = tier 3 (gold). Tier 1 has none. Draw over the building, then tier_pips.`,
+    });
+  }
   const c = (name: string, open: Open, note: string): void => {
     add({
       name,
-      sheet: 'buildings',
+      sheet: 'tiles',
       category: 'conduit',
       frames: conduit(open),
       tintable: true,
@@ -575,7 +637,7 @@ export function buildingSprites(): SpriteDef[] {
   );
   add({
     name: 'conduit_item',
-    sheet: 'buildings',
+    sheet: 'tiles',
     category: 'conduit',
     frames: itemDot(),
     tintable: true,

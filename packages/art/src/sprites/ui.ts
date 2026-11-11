@@ -4,6 +4,11 @@ import { loadEventTypes } from '../content.js';
 import { Pix, bevelShape, rng, roundRect } from '../pix.js';
 import { sprite, wset, type SpriteDef } from '../model.js';
 
+/**
+ * A tileable texture: a flat base with a few single-pixel specks of the
+ * neighbouring shades, no two close together (wrapping), so it shows no
+ * pattern when tiled.
+ */
 function speckled(
   size: number,
   base: string,
@@ -15,26 +20,20 @@ function speckled(
   const p = new Pix(size, size);
   p.rect(0, 0, size, size, base);
   const r = rng(seed);
+  const taken: [number, number][] = [];
   for (let i = 0; i < n; i++) {
-    wset(
-      p,
-      Math.floor(r() * size),
-      Math.floor(r() * size),
-      i % 3 === 0 ? light : dark,
-    );
-  }
-  return p;
-}
-
-function pageBackground(): Pix {
-  const p = speckled(32, 'K', '0', 'a', 7, 40);
-  // A faint 16 px lattice so the page does not feel empty.
-  for (let i = 0; i < 32; i++) {
-    if (i % 2 === 0) {
-      p.set(i, 0, '0');
-      p.set(0, i, '0');
-      p.set(i, 16, '0');
-      p.set(16, i, '0');
+    for (let attempt = 0; attempt < 40; attempt++) {
+      const x = Math.floor(r() * size);
+      const y = Math.floor(r() * size);
+      const near = taken.some(([tx, ty]) => {
+        const dx = Math.min(Math.abs(tx - x), size - Math.abs(tx - x));
+        const dy = Math.min(Math.abs(ty - y), size - Math.abs(ty - y));
+        return Math.max(dx, dy) < 3;
+      });
+      if (near) continue;
+      taken.push([x, y]);
+      wset(p, x, y, i % 2 === 0 ? light : dark);
+      break;
     }
   }
   return p;
@@ -97,7 +96,8 @@ function heart(): Pix {
     for (let x = 0; x < 16; x++) {
       const u = (x + 0.5 - 8) / 5.6;
       const v = -(y + 0.5 - 8.6) / 5.2;
-      const f = Math.pow(u * u + v * v - 1, 3) - u * u * v * v * v;
+      const q = u * u + v * v - 1;
+      const f = q * q * q - u * u * v * v * v;
       if (f > 0) continue;
       p.set(x, y, u + v * 0.3 > 0.25 ? 'm' : 'M');
     }
@@ -213,15 +213,15 @@ export function uiSprites(): SpriteDef[] {
     name: 'ui_panel',
     sheet: 'ui',
     category: 'ui',
-    frames: speckled(16, '1', '0', '2', 21, 14),
-    note: 'Tileable panel texture.',
+    frames: speckled(32, '1', '0', '2', 21, 26),
+    note: 'Tileable panel texture, 32x32, low contrast.',
   });
   add({
     name: 'ui_bg',
     sheet: 'ui',
     category: 'ui',
-    frames: pageBackground(),
-    note: 'Tileable page background, darker than the panel.',
+    frames: speckled(64, 'K', '0', '0', 7, 40),
+    note: 'Tileable page background, 64x64, darker than the panel.',
   });
   for (const k of ['normal', 'hover', 'disabled'] as const) {
     add({
