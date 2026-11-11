@@ -31,7 +31,8 @@ pnpm lint           # eslint, including the layer rule
 pnpm test           # vitest in every package
 pnpm build          # static site into packages/web/dist
 pnpm preview        # serve that build locally (run pnpm build first)
-pnpm smoke          # browser smoke test of the web app (local only, see below)
+pnpm smoke          # browser smoke test of the web app (see below)
+pnpm check          # the whole CI chain (see below)
 pnpm golden:update   # regenerate golden/ expected values (deliberate)
 pnpm format         # prettier --write
 pnpm format:check   # prettier --check
@@ -110,10 +111,17 @@ simulation; playback only re-steps a second copy to draw it.
 `pnpm smoke` builds the site with `--mode debug` (which adds a read-only
 `window.__debug` hook that production builds leave out), serves it, and drives
 it with Playwright: page checks, camera and selection checks, a performance
-run, and screenshots into `packages/web/smoke-output/` (git-ignored). It needs
-Playwright with Chromium installed on your machine. CI has no browser
-installed, so CI does not run it: run it locally before changing the board
-view or the shell.
+run, and screenshots into `packages/web/smoke-output/` (git-ignored). It uses
+the pinned Playwright and Chromium from Playwright's browser path
+(`PLAYWRIGHT_BROWSERS_PATH`, or `pnpm --filter @game/web exec playwright
+install chromium`). CI installs it and runs it on every push.
+
+`pnpm check` runs the whole CI chain in order and stops at the first failure:
+typecheck, lint, format check, test, build, content validation, smoke, then
+`golden:update`, failing if that leaves any changed file. Run it before
+pushing. CI sets `CI_RELAXED_TIMING=1`, which multiplies wall-time limits
+(smoke frame intervals, battles per second, ms bounds in tests) by 3; unset,
+the strict limits apply.
 
 ## Layer rule
 

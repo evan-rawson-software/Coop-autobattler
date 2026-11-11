@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+env:
+  CI_RELAXED_TIMING: '1'
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -21,6 +24,29 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - run: pnpm validate:content
+      - id: playwright
+        run: echo "version=$(pnpm --filter @game/web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - if: steps.browsers.outputs.cache-hit != 'true'
+        run: pnpm --filter @game/web exec playwright install --with-deps chromium
+      - if: steps.browsers.outputs.cache-hit == 'true'
+        run: pnpm --filter @game/web exec playwright install-deps chromium
+      - run: pnpm smoke
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: smoke-output
+          path: packages/web/smoke-output
+          if-no-files-found: ignore
+      - name: Golden files are up to date
+        run: |
+          pnpm golden:update
+          git status --porcelain
+          test -z "$(git status --porcelain)"
 
   bot:
     runs-on: ubuntu-latest
