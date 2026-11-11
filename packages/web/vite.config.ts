@@ -23,7 +23,8 @@ export default defineConfig({
   base: './',
   // Preact's JSX runtime; no Vite preset needed.
   oxc: { jsx: { runtime: 'automatic', importSource: 'preact' } },
-  build: { outDir: 'dist' },
+  // Never inline: the sprite sheets and the atlas load on demand as files.
+  build: { outDir: 'dist', assetsInlineLimit: 0 },
   define: {
     __BUILD_COMMIT__: JSON.stringify(commitHash()),
     __BUILD_DATE__: JSON.stringify(buildDate),

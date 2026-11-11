@@ -23,6 +23,16 @@ pixel, or if `atlas.json` differs in value, so the script and the files never
 drift. The test compares pixels, not file bytes, because the bytes of a
 compressed PNG depend on the zlib build inside Node.
 
+## Use in the web build
+
+`packages/web/src/sprites/atlas.ts` loads `atlas.json` and the sheets once, on
+demand, as separate files (never inlined into the main bundle), and draws from
+them. The board (`packages/web/src/board/sprite-board.ts`) renders a static
+sprite layer per scene and falls back to flat shapes while the images load, if
+they fail to load, and below 12 CSS pixels a cell. The interface skin
+(`packages/web/src/skin.css`, `sprites/skin.ts`) cuts the UI sprites out of
+`ui.png` at run time; it only applies in the dark colour scheme.
+
 ## Regenerating
 
 ```

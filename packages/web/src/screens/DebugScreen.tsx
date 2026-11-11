@@ -21,6 +21,8 @@ import { content } from '../content.js';
 import { registerDebug } from '../debug-hook.js';
 import { buildSampleTeam } from '../sample-team.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
+import { spriteSet } from '../sprites/atlas.js';
+import { SpriteIcon, spriteUrl, useSprites } from '../sprites/SpriteIcon.js';
 import { debugStore, patchDebug } from './debug-state.js';
 
 const controller = new CameraController();
@@ -76,6 +78,28 @@ function Dash(props: { pattern: number; color: string | null }) {
         stroke-dasharray={dash.length > 0 ? dash.join(' ') : undefined}
       />
     </svg>
+  );
+}
+
+/** A conduit piece in a resource's tint, as the sprite board draws it. */
+function TintedPipe(props: { resource: string | null }) {
+  const set = spriteSet();
+  const ramp =
+    props.resource === null
+      ? undefined
+      : set?.atlas.tint.resources[props.resource];
+  const url = spriteUrl('conduit_straight', 0, ramp);
+  if (!url) return <Dash pattern={-1} color={null} />;
+  return (
+    <img
+      class="sprite-icon legend-pipe"
+      src={url}
+      alt=""
+      aria-hidden="true"
+      width="32"
+      height="32"
+      style={{ transform: 'rotate(90deg)' }}
+    />
   );
 }
 
@@ -158,7 +182,19 @@ function SetupPanel() {
   );
 }
 
+/** The sprite of the first building of a kind, if it has one. */
+function kindSprite(kind: string): string | null {
+  const set = spriteSet();
+  const def = content.buildings
+    .list()
+    .find((b) => b.kind === kind && set?.atlas.sprites[b.id]);
+  return def?.id ?? null;
+}
+
 function LegendPanel() {
+  // Sprite look (zoomed in, atlas loaded): tinted pipes and building sprites.
+  // The flat look (zoomed far out, or no atlas): dashes and kind colours.
+  const sprites = useSprites();
   const resources = content.resources.list();
   const kinds = Array.from(
     new Set(content.buildings.list().map((b) => b.kind)),
@@ -177,26 +213,44 @@ function LegendPanel() {
                 >
                   {Array.from(r.name)[0]?.toUpperCase()}
                 </span>
-                <Dash pattern={i} color={r.color ?? null} />
+                {sprites ? (
+                  <TintedPipe resource={r.id} />
+                ) : (
+                  <Dash pattern={i} color={r.color ?? null} />
+                )}
                 {r.name}
               </li>
             ))}
             <li>
               <span class="diamond none" />
-              <Dash pattern={-1} color={null} />
+              {sprites ? (
+                <TintedPipe resource={null} />
+              ) : (
+                <Dash pattern={-1} color={null} />
+              )}
               Not yet determined
             </li>
           </ul>
+          {sprites && (
+            <p class="muted">
+              Zoomed far out the board turns flat: pipes then show dash patterns
+              instead of tints.
+            </p>
+          )}
         </div>
         <div class="legend-group">
           <h3>Buildings</h3>
           <ul>
             {kinds.map((k) => (
               <li key={k}>
-                <span
-                  class="swatch"
-                  style={{ background: `var(--kind-${k.replace('_', '-')})` }}
-                />
+                {sprites && kindSprite(k) !== null ? (
+                  <SpriteIcon name={kindSprite(k) ?? ''} size={24} />
+                ) : (
+                  <span
+                    class="swatch"
+                    style={{ background: `var(--kind-${k.replace('_', '-')})` }}
+                  />
+                )}
                 {humanize(k)}
               </li>
             ))}

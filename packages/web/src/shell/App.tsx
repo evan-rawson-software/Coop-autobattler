@@ -9,6 +9,10 @@ export function App() {
   useEffect(() => {
     bindScreenToHash(screens.map((s) => s.id));
   }, []);
+  // Lets the stylesheet keep the developer screens plain.
+  useEffect(() => {
+    document.documentElement.dataset['screen'] = screen;
+  }, [screen]);
   const def = screens.find((s) => s.id === screen) ?? screens[0];
   if (!def) return null;
   const Screen = def.component;

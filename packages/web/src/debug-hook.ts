@@ -26,6 +26,15 @@ export interface DebugHook {
   run?: RunDebug;
   placement?: PlacementDebug;
   menu?: MenuDebug;
+  /** The sprite atlas: load state and how much was drawn from it. */
+  sprites?: () => {
+    state: string;
+    drawn: number;
+    spriteFrames: number;
+    flatFrames: number;
+    layerBuilds: number;
+    tintCache: number;
+  };
   /** Terrain cells of the neutral strip that are currently drawn. */
   neutralFeatureCount?: () => number;
 }
