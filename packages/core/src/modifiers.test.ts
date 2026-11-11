@@ -33,6 +33,16 @@ function fight(
   round: number,
   mods: readonly string[],
 ): number {
+  return fightResult(boardName, archetype, type, round, mods).winner;
+}
+
+function fightResult(
+  boardName: 'rush' | 'fortify' | 'poor',
+  archetype: string,
+  type: 'easy' | 'medium' | 'hard',
+  round: number,
+  mods: readonly string[],
+): { winner: number; kills: number } {
   let team = buildReferenceBoard(boardName, content, mapgen);
   for (const m of mods) team = withModifier(team, modifier(m));
   const threat = generateThreat(
@@ -42,27 +52,32 @@ function fight(
   );
   const r = simulatePveBattle({ team, threat, seed: 3 }, content, config);
   if (!r.ok) throw new Error(r.error.message);
-  return r.result.winner;
+  return { winner: r.result.winner, kills: r.summary.sides[0].unitsKilled };
 }
 
 describe('modifiers travel in team state and change battles', () => {
   test('a Core health modifier turns a lost battle into a won one', () => {
-    expect(fight('rush', 'arch_fortress', 'hard', 5, [])).toBe(1);
+    expect(fight('rush', 'arch_fortress', 'medium', 6, [])).toBe(1);
     expect(
-      fight('rush', 'arch_fortress', 'hard', 5, ['mod_fortified_core']),
+      fight('rush', 'arch_fortress', 'medium', 6, ['mod_fortified_core']),
     ).toBe(0);
   });
 
-  test('a turret damage modifier does the same', () => {
-    expect(fight('fortify', 'arch_rusher', 'medium', 6, [])).toBe(1);
-    expect(
-      fight('fortify', 'arch_rusher', 'medium', 6, ['mod_sharp_turrets']),
-    ).toBe(0);
+  test('a turret damage modifier makes the same turrets kill more', () => {
+    // The party loses this round either way; with sharper turrets it kills
+    // more of the wave first.
+    const plain = fightResult('fortify', 'arch_fortress', 'medium', 12, []);
+    const sharp = fightResult('fortify', 'arch_fortress', 'medium', 12, [
+      'mod_sharp_turrets',
+    ]);
+    expect(plain.winner).toBe(1);
+    expect(sharp.kills).toBeGreaterThan(plain.kills);
   });
 
-  test('a unit strength modifier does the same', () => {
+  test('a unit strength modifier turns a lost battle into a won one', () => {
+    expect(fight('poor', 'arch_rusher', 'medium', 3, [])).toBe(1);
     expect(
-      fight('fortify', 'arch_rusher', 'medium', 6, ['mod_drilled_troops']),
+      fight('poor', 'arch_rusher', 'medium', 3, ['mod_drilled_troops']),
     ).toBe(0);
   });
 

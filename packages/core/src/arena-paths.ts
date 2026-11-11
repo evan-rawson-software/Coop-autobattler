@@ -8,13 +8,6 @@
 import { addInt, divFloor } from './int.js';
 import { assertWithin, MAX_ARENA_CELLS } from './limits.js';
 import type { Arena, ArenaBuilding } from './arena.js';
-import type { Targeting } from './units.js';
-
-export const TARGETINGS: readonly Targeting[] = [
-  'core',
-  'infrastructure',
-  'defenses',
-];
 
 /** The four moves. Order does not matter: ties are broken by `tieKey`. */
 export const NEIGHBORS: readonly (readonly [number, number])[] = [
@@ -149,24 +142,15 @@ export function breachStep(
   );
 }
 
-/** The goal set for a side's targeting preference (see the rules reference). */
-export function goalBuildings(
-  arena: Arena,
-  side: number,
-  targeting: Targeting,
-): ArenaBuilding[] {
+/**
+ * The goal set of a side's units: the enemy Core, while it stands (every unit
+ * heads for the Core; no unit prefers other buildings, issue #66).
+ */
+export function goalBuildings(arena: Arena, side: number): ArenaBuilding[] {
   const enemy = 1 - side;
   const core = arena.coreRef[enemy] ?? -1;
   const coreB = core >= 0 ? arena.buildings[core] : undefined;
-  const coreGoal = coreB !== undefined && coreB.alive ? [coreB] : [];
-  if (targeting === 'core') return coreGoal;
-  const goals = arena.buildings.filter((b) => {
-    if (b.side !== enemy || !b.alive) return false;
-    return targeting === 'infrastructure'
-      ? b.kind === 'source' || b.kind === 'route'
-      : b.kind === 'defense';
-  });
-  return goals.length > 0 ? goals : coreGoal;
+  return coreB !== undefined && coreB.alive ? [coreB] : [];
 }
 
 export interface Field {
@@ -176,19 +160,15 @@ export interface Field {
   readonly isGoal: Uint8Array;
 }
 
-/** Breadth-first movement field for (side, targeting). */
-export function computeField(
-  arena: Arena,
-  side: number,
-  targeting: Targeting,
-): Field {
+/** Breadth-first movement field of a side towards the enemy Core. */
+export function computeField(arena: Arena, side: number): Field {
   const { width, height } = arena.geom;
   const n = width * height;
   const dist = new Int32Array(n).fill(-1);
   const isGoal = new Uint8Array(arena.buildings.length);
   const queue = new Int32Array(n);
   let tail = 0;
-  for (const g of goalBuildings(arena, side, targeting)) {
+  for (const g of goalBuildings(arena, side)) {
     isGoal[g.ref] = 1;
     for (const c of g.cells) {
       for (const [dx, dy] of NEIGHBORS) {

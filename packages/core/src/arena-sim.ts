@@ -16,7 +16,6 @@ import {
 } from './arena.js';
 import {
   NEIGHBORS,
-  TARGETINGS,
   breachStep,
   computeBreach,
   computeField,
@@ -25,6 +24,18 @@ import {
   tieKey,
   type Field,
 } from './arena-paths.js';
+import {
+  CELL_UNITS,
+  boxDist2,
+  buildSolid,
+  buildingDist2,
+  cellCoord,
+  fillSolid,
+  ownCellCoord,
+  fits,
+  type World,
+} from './geometry.js';
+import { MotionScratch } from './unit-motion.js';
 import {
   createBoardSim,
   createFlowContext,
@@ -39,6 +50,7 @@ import type { EconomyEffectType, Side } from './buildings.js';
 import {
   addInt,
   addSaturating,
+  divCeil,
   divFloor,
   modFloor,
   mulInt,
@@ -59,7 +71,7 @@ import type { NeutralZone } from './neutral-zone.js';
 import type { ResourceId } from './resources.js';
 import type { SimConfig } from './sim-config.js';
 import type { TeamState } from './team-state.js';
-import type { UnitDef, UnitId } from './units.js';
+import { unitSpeed, type UnitDef, type UnitId } from './units.js';
 
 // ---------------------------------------------------------------------------
 // Events (arena coordinates)
@@ -116,16 +128,10 @@ export type ArenaEvent =
       readonly unit: number;
       readonly side: number;
       readonly def: UnitId;
-      readonly x: number;
-      readonly y: number;
+      /** The centre of the unit, in sub-cell units (`CELL_UNITS` per cell). */
+      readonly px: number;
+      readonly py: number;
       readonly building: number;
-    }
-  | {
-      readonly tick: number;
-      readonly type: 'unit_moved';
-      readonly unit: number;
-      readonly x: number;
-      readonly y: number;
     }
   | {
       readonly tick: number;
@@ -199,13 +205,12 @@ export interface UnitSim {
   readonly id: number;
   readonly side: number;
   readonly def: UnitId;
-  /** Arena coordinates. */
-  x: number;
-  y: number;
+  /** The centre of the unit's circle, arena sub-cell units (`CELL_UNITS` per cell). */
+  px: number;
+  py: number;
   hp: number;
   /** Attack damage fixed at spawn (base damage with the side's strength bonus). */
   damage: number;
-  moveCooldown: number;
   attackCooldown: number;
 }
 
@@ -240,6 +245,17 @@ export interface ProducerSim {
   readonly building: number;
   /** Resource units collected towards the next unit. */
   progress: number;
+}
+
+/**
+ * A scheduled-wave unit that has not found room yet (see
+ * `SideOptions.scheduledWaves`): the unit type and the own-frame column it
+ * wants on the side's front row.
+ */
+export interface EnteringSim {
+  readonly side: number;
+  readonly unit: UnitId;
+  readonly col: number;
 }
 
 /** One scheduled wave of a side (see `SideOptions.scheduledWaves`). */
@@ -292,6 +308,8 @@ export interface ArenaSim {
   ramps: RampSim[];
   /** Living units, sorted by `id`. */
   units: UnitSim[];
+  /** Scheduled-wave units waiting for room, in queue order. */
+  entering: EnteringSim[];
   /** Units spawned, by side. */
   readonly spawned: [number, number];
   /** Units that died, by side. */
@@ -407,12 +425,40 @@ export interface ArenaContext {
    * cached field is a pure function of which buildings exist.
    */
   readonly maxHealth: Float64Array;
+  /** The arena as the circle geometry sees it (solid cells per side). */
+  readonly world: World;
+  /** Largest collision radius and largest body radius among the unit types. */
+  readonly maxRadius: number;
+  readonly maxBody: number;
   /** Lazily computed, dropped whenever a building is destroyed. */
   fields: (Field | undefined)[];
   breach: (Float64Array | undefined)[];
-  // Scratch buffers reused across ticks.
+  /** Per building `ref`: its cached `spawnCells`, dropped with the fields. */
+  spawnCells: (Int32Array | undefined)[];
+  // Scratch buffers reused across ticks (rebuilt from the state every tick).
+  /** Per side, per cell: the first unit index whose centre is in the cell. */
   heads: Int32Array[];
   next: Int32Array;
+  /** Per unit index: collision radius and body radius. */
+  crad: Int32Array;
+  brad: Int32Array;
+  motion: MotionScratch;
+  /** Per side, per cell: cached `fieldStep` (-1 none, -2 not computed yet). */
+  readonly steps: Int32Array[];
+  /**
+   * Per side: summed-area table of the number of units whose centre is in a
+   * cell ((width + 1) * (height + 1) entries), rebuilt every tick; lets the
+   * searches skip windows without enemies.
+   */
+  readonly present: Int32Array[];
+  presenceOn: boolean;
+  /** Per side: the indices of its units (ascending), and how many. */
+  readonly bySide: Int32Array[];
+  readonly sideCount: [number, number];
+  /** Scratch list of nearby units (x, y, radius triples) for spawn checks. */
+  near: Int32Array;
+  /** The part of `near` that can overlap one spawn cell. */
+  nearCell: Int32Array;
   action: Uint8Array;
   arg: Int32Array;
   /**
@@ -546,6 +592,7 @@ export function createArenaContext(
     if (h.building === 0) coreRemaining[h.side === 0 ? 0 : 1] = h.hp;
   }
   const cells = arena.geom.width * arena.geom.height;
+  const solid = buildSolid(arena);
   const flowEvents: SimEvent[][] = [[], []];
   const flows = sim.teams.map((team, side) =>
     flowContextFor(
@@ -565,10 +612,32 @@ export function createArenaContext(
     turrets,
     ramps,
     flowEvents,
-    fields: new Array<Field | undefined>(2 * TARGETINGS.length).fill(undefined),
+    world: { width: arena.geom.width, height: arena.geom.height, solid },
+    maxRadius: Math.max(
+      1,
+      ...content.units.list().map((d) => d.collisionRadius),
+    ),
+    maxBody: Math.max(1, ...content.units.list().map((d) => d.radius)),
+    fields: new Array<Field | undefined>(2).fill(undefined),
     breach: [undefined, undefined] as (Float64Array | undefined)[],
+    spawnCells: new Array<Int32Array | undefined>(arena.buildings.length).fill(
+      undefined,
+    ),
     heads: [new Int32Array(cells), new Int32Array(cells)],
     next: new Int32Array(0),
+    crad: new Int32Array(0),
+    brad: new Int32Array(0),
+    motion: new MotionScratch(),
+    steps: [new Int32Array(cells).fill(-2), new Int32Array(cells).fill(-2)],
+    present: [
+      new Int32Array((arena.geom.width + 1) * (arena.geom.height + 1)),
+      new Int32Array((arena.geom.width + 1) * (arena.geom.height + 1)),
+    ],
+    presenceOn: false,
+    bySide: [new Int32Array(0), new Int32Array(0)],
+    sideCount: [0, 0] as [number, number],
+    near: new Int32Array(192),
+    nearCell: new Int32Array(192),
     action: new Uint8Array(0),
     arg: new Int32Array(0),
     unitDamage: new Float64Array(0),
@@ -701,6 +770,7 @@ export function createArenaSim(
     turrets,
     ramps,
     units: [],
+    entering: [],
     spawned: [0, 0],
     unitsDied: [0, 0],
     buildingDamageDealt: [0, 0],
@@ -710,18 +780,82 @@ export function createArenaSim(
 // ---------------------------------------------------------------------------
 // Fields
 
-function fieldFor(
-  ctx: ArenaContext,
-  side: number,
-  targeting: UnitDef['targeting'],
-): Field {
-  const idx = side * TARGETINGS.length + TARGETINGS.indexOf(targeting);
-  let f = ctx.fields[idx];
+function fieldFor(ctx: ArenaContext, side: number): Field {
+  let f = ctx.fields[side];
   if (f === undefined) {
-    f = computeField(ctx.arena, side, targeting);
-    ctx.fields[idx] = f;
+    f = computeField(ctx.arena, side);
+    ctx.fields[side] = f;
   }
   return f;
+}
+
+/** `fieldStep` for a cell, cached until the next destruction. */
+function stepFor(
+  ctx: ArenaContext,
+  side: number,
+  field: Field,
+  cell: number,
+): number {
+  const cache = ctx.steps[side];
+  if (cache === undefined) return -1;
+  let v = cache[cell] ?? -2;
+  if (v === -2) {
+    v = fieldStep(ctx.arena, side, field, cell);
+    cache[cell] = v;
+  }
+  return v;
+}
+
+/** Rebuild the per-side presence tables from the unit list. */
+function buildPresence(sim: ArenaSim, ctx: ArenaContext): void {
+  // Only an accelerator (a window without enemies is skipped): with few units
+  // the table costs more than it saves, and the result is the same either way.
+  ctx.presenceOn = sim.units.length >= 128;
+  if (!ctx.presenceOn) return;
+  const { width, height } = ctx.arena.geom;
+  const stride = width + 1;
+  for (const sat of ctx.present) sat.fill(0);
+  for (const u of sim.units) {
+    const sat = ctx.present[u.side];
+    if (sat === undefined) continue;
+    const k =
+      (cellCoord(u.py, height) + 1) * stride + cellCoord(u.px, width) + 1;
+    sat[k] = (sat[k] ?? 0) + 1;
+  }
+  for (const sat of ctx.present) {
+    for (let y = 1; y <= height; y++) {
+      for (let x = 1; x <= width; x++) {
+        const k = y * stride + x;
+        sat[k] =
+          (sat[k] ?? 0) +
+          (sat[k - stride] ?? 0) +
+          (sat[k - 1] ?? 0) -
+          (sat[k - stride - 1] ?? 0);
+      }
+    }
+  }
+}
+
+/** Whether `side` has a unit centre in cells `x0..x1` x `y0..y1` (inclusive). */
+function anyPresent(
+  ctx: ArenaContext,
+  side: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+): boolean {
+  const sat = ctx.present[side];
+  if (sat === undefined) return false;
+  if (!ctx.presenceOn) return true;
+  const stride = ctx.arena.geom.width + 1;
+  return (
+    (sat[(y1 + 1) * stride + x1 + 1] ?? 0) -
+      (sat[y0 * stride + x1 + 1] ?? 0) -
+      (sat[(y1 + 1) * stride + x0] ?? 0) +
+      (sat[y0 * stride + x0] ?? 0) >
+    0
+  );
 }
 
 function breachFor(ctx: ArenaContext, side: number): Float64Array {
@@ -775,19 +909,215 @@ function defOf(ctx: ArenaContext, unit: UnitSim): UnitDef {
 // ---------------------------------------------------------------------------
 // Spawning
 
-function spawnCell(
+const S = CELL_UNITS;
+
+/** Make room for `n` units in the per-unit scratch arrays (contents kept). */
+function ensureUnitCapacity(ctx: ArenaContext, n: number): void {
+  if (ctx.next.length >= n) return;
+  const size = Math.max(n, 2 * ctx.next.length, 64);
+  const g32 = (a: Int32Array): Int32Array => {
+    const b = new Int32Array(size);
+    b.set(a);
+    return b;
+  };
+  ctx.next = g32(ctx.next);
+  ctx.bySide[0] = g32(ctx.bySide[0] ?? new Int32Array(0));
+  ctx.bySide[1] = g32(ctx.bySide[1] ?? new Int32Array(0));
+  ctx.crad = g32(ctx.crad);
+  ctx.brad = g32(ctx.brad);
+  ctx.arg = g32(ctx.arg);
+  const action = new Uint8Array(size);
+  action.set(ctx.action);
+  ctx.action = action;
+  const damage = new Float64Array(size);
+  damage.set(ctx.unitDamage);
+  ctx.unitDamage = damage;
+  ctx.motion.ensure(size);
+}
+
+/** Put unit index `i` (already in `sim.units`) into the per-side cell grid. */
+function linkUnit(
+  ctx: ArenaContext,
+  i: number,
+  u: UnitSim,
+  def: UnitDef,
+): void {
+  const { width, height } = ctx.arena.geom;
+  const heads = ctx.heads[u.side];
+  if (heads === undefined) return;
+  const k = cellCoord(u.py, height) * width + cellCoord(u.px, width);
+  ctx.next[i] = heads[k] ?? -1;
+  heads[k] = i;
+  ctx.crad[i] = def.collisionRadius;
+  ctx.brad[i] = def.radius;
+  const list = ctx.bySide[u.side];
+  if (list !== undefined) {
+    list[ctx.sideCount[u.side === 0 ? 0 : 1]] = i;
+    ctx.sideCount[u.side === 0 ? 0 : 1] += 1;
+  }
+}
+
+/** Rebuild the per-side cell grid of the units (start of the Production step). */
+function buildUnitGrid(sim: ArenaSim, ctx: ArenaContext): void {
+  ensureUnitCapacity(ctx, sim.units.length + 16);
+  ctx.heads[0]?.fill(-1);
+  ctx.heads[1]?.fill(-1);
+  ctx.sideCount[0] = 0;
+  ctx.sideCount[1] = 0;
+  sim.units.forEach((u, i) => {
+    linkUnit(ctx, i, u, defOf(ctx, u));
+  });
+}
+
+/** The offsets (own frame, in units of `m`) tried inside a spawn cell, in order. */
+const SPAWN_OFFSETS: readonly (readonly [number, number])[] = [
+  [0, 0],
+  [0, 1],
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [-1, 1],
+  [1, 1],
+  [-1, -1],
+  [1, -1],
+];
+
+/**
+ * Gather into `ctx.near` (x, y, radius triples) the living units whose centre
+ * is in arena cells `x0 .. x1` x `y0 .. y1` widened by what a unit of
+ * collision radius `r` can reach: every unit that could overlap a circle of
+ * that radius centred anywhere inside the window. Returns how many.
+ */
+function gatherNear(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  r: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+): number {
+  const { width, height } = ctx.arena.geom;
+  const win = Math.max(1, divCeil(r + ctx.maxRadius, S));
+  let count = 0;
+  const yLo = Math.max(0, y0 - win);
+  const yHi = Math.min(height - 1, y1 + win);
+  const xLo = Math.max(0, x0 - win);
+  const xHi = Math.min(width - 1, x1 + win);
+  for (const heads of ctx.heads) {
+    for (let y = yLo; y <= yHi; y++) {
+      for (let x = xLo; x <= xHi; x++) {
+        let j = heads[y * width + x] ?? -1;
+        while (j !== -1) {
+          const e = sim.units[j];
+          if (e !== undefined) {
+            if (3 * count + 3 > ctx.near.length) {
+              const bigger = new Int32Array(2 * ctx.near.length);
+              bigger.set(ctx.near);
+              ctx.near = bigger;
+            }
+            ctx.near[3 * count] = e.px;
+            ctx.near[3 * count + 1] = e.py;
+            ctx.near[3 * count + 2] = ctx.crad[j] ?? 0;
+            count += 1;
+          }
+          j = ctx.next[j] ?? -1;
+        }
+      }
+    }
+  }
+  return count;
+}
+
+/**
+ * The first free position inside arena cell `(cx, cy)` for a unit of `side`
+ * and type `def`: the cell's centre plus the offsets of `SPAWN_OFFSETS` times
+ * `m = 120 - collisionRadius` (negated for side 1, the rotated frame), or null.
+ * A position is free when the circle fits and overlaps no living unit. The
+ * `count` units of `ctx.near` (see `gatherNear`) must include every unit that
+ * could overlap such a position; extra units do no harm.
+ */
+function firstFreeIn(
   ctx: ArenaContext,
   side: number,
+  def: UnitDef,
+  count: number,
+  cx: number,
+  cy: number,
+): { x: number; y: number } | null {
+  const r = def.collisionRadius;
+  const m = S / 2 - r;
+  const sign = side === 0 ? 1 : -1;
+  // Keep the gathered units that can overlap a position of this cell: a
+  // position is at most `max(m, 0)` from the cell's centre.
+  const mx = cx * S + S / 2;
+  const my = cy * S + S / 2;
+  const lim = r + ctx.maxRadius + (m > 0 ? m : 0);
+  if (ctx.nearCell.length < ctx.near.length) {
+    ctx.nearCell = new Int32Array(ctx.near.length);
+  }
+  const near = ctx.nearCell;
+  let kept = 0;
+  for (let q = 0; q < count; q++) {
+    const ux = ctx.near[3 * q] ?? 0;
+    const uy = ctx.near[3 * q + 1] ?? 0;
+    if (ux - mx >= lim || mx - ux >= lim || uy - my >= lim || my - uy >= lim) {
+      continue;
+    }
+    near[3 * kept] = ux;
+    near[3 * kept + 1] = uy;
+    near[3 * kept + 2] = ctx.near[3 * q + 2] ?? 0;
+    kept += 1;
+  }
+  for (const [ox, oy] of SPAWN_OFFSETS) {
+    if (m <= 0 && (ox !== 0 || oy !== 0)) continue;
+    const x = mx + sign * ox * m;
+    const y = my + sign * oy * m;
+    if (!fits(ctx.world, side, r, x, y)) continue;
+    let free = true;
+    for (let q = 0; q < kept && free; q++) {
+      const dx = (near[3 * q] ?? 0) - x;
+      const dy = (near[3 * q + 1] ?? 0) - y;
+      const rr = r + (near[3 * q + 2] ?? 0);
+      if (dx * dx + dy * dy < rr * rr) free = false;
+    }
+    if (free) return { x, y };
+  }
+  return null;
+}
+
+/** `firstFreeIn` for one cell, gathering the units around it first. */
+function freeInCell(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  side: number,
+  def: UnitDef,
+  cx: number,
+  cy: number,
+): { x: number; y: number } | null {
+  const count = gatherNear(sim, ctx, def.collisionRadius, cx, cy, cx, cy);
+  return firstFreeIn(ctx, side, def, count, cx, cy);
+}
+
+/**
+ * The cells a unit leaving `producer` may appear in, in the order tried: the
+ * cells 4-adjacent to the producer's footprint that are open for the side, in
+ * the order of the key (class, distance, tie key), without repeats. A pure
+ * function of which buildings exist, so it is cached per building until the
+ * next destruction (like the movement fields) and rebuilt on demand.
+ */
+function spawnCells(
+  ctx: ArenaContext,
+  side: number,
+  ref: number,
   producer: ArenaBuilding,
-  unitDef: UnitDef,
-): number {
+): Int32Array {
+  const cached = ctx.spawnCells[ref];
+  if (cached !== undefined) return cached;
   const arena = ctx.arena;
   const { width, height } = arena.geom;
-  const field = fieldFor(ctx, side, unitDef.targeting);
-  let best = -1;
-  let bestClass = 3;
-  let bestDist = 0;
-  let bestTie = 0;
+  const field = fieldFor(ctx, side);
+  const cands: { k: number; cls: number; d: number; tie: number }[] = [];
   for (const c of producer.cells) {
     for (const [dx, dy] of NEIGHBORS) {
       const x = c.x + dx;
@@ -805,34 +1135,83 @@ function spawnCell(
           d = 0;
         }
       }
-      const tie = tieKey(arena, side, x, y);
-      if (
-        best < 0 ||
-        cls < bestClass ||
-        (cls === bestClass &&
-          (d < bestDist || (d === bestDist && tie < bestTie)))
-      ) {
-        best = k;
-        bestClass = cls;
-        bestDist = d;
-        bestTie = tie;
-      }
+      cands.push({ k, cls, d, tie: tieKey(arena, side, x, y) });
     }
   }
-  return best;
+  cands.sort(
+    (a, b) => a.cls - b.cls || a.d - b.d || a.tie - b.tie || a.k - b.k,
+  );
+  const out: number[] = [];
+  let last = -1;
+  for (const c of cands) {
+    if (c.k === last) continue;
+    last = c.k;
+    out.push(c.k);
+  }
+  const cells = Int32Array.from(out);
+  ctx.spawnCells[ref] = cells;
+  return cells;
+}
+
+/**
+ * The spawn position of a unit leaving `producer`: the first free position in
+ * the first of its `spawnCells` that has one. The units near any of the cells
+ * are gathered once. Null when no position is free (the unit is held).
+ */
+function spawnPosition(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  side: number,
+  ref: number,
+  producer: ArenaBuilding,
+  unitDef: UnitDef,
+): { x: number; y: number } | null {
+  const cells = spawnCells(ctx, side, ref, producer);
+  if (cells.length === 0) return null;
+  const width = ctx.arena.geom.width;
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -1;
+  let y1 = -1;
+  for (const k of cells) {
+    const x = k % width;
+    const y = divFloor(k, width);
+    if (x < x0) x0 = x;
+    if (x > x1) x1 = x;
+    if (y < y0) y0 = y;
+    if (y > y1) y1 = y;
+  }
+  const count = gatherNear(sim, ctx, unitDef.collisionRadius, x0, y0, x1, y1);
+  for (const k of cells) {
+    const pos = firstFreeIn(
+      ctx,
+      side,
+      unitDef,
+      count,
+      k % width,
+      divFloor(k, width),
+    );
+    if (pos !== null) return pos;
+  }
+  return null;
 }
 
 function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
+  buildUnitGrid(sim, ctx);
   for (const p of sim.producers) {
     const info = ctx.producers.get(bkey(p.side, p.building));
     const board = sim.boards[p.side === 0 ? 0 : 1];
     if (info === undefined) continue;
-    const consumer = board.consumers.find((c) => c.building === p.building);
-    if (consumer !== undefined) {
-      for (const input of consumer.inputs) {
-        const n = input.count;
-        if (n > 0 && takeFromBuffer(board, p.building, input.side, n)) {
-          p.progress += n;
+    // A producer holding a finished unit takes nothing: its buffers fill and
+    // its conduits back up.
+    if (p.progress < info.cost) {
+      const consumer = board.consumers.find((c) => c.building === p.building);
+      if (consumer !== undefined) {
+        for (const input of consumer.inputs) {
+          const n = input.count;
+          if (n > 0 && takeFromBuffer(board, p.building, input.side, n)) {
+            p.progress += n;
+          }
         }
       }
     }
@@ -841,22 +1220,13 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (unitDef === undefined) throw new Error(`Unknown unit "${info.unit}".`);
     const producer = ctx.arena.buildings[info.ref];
     if (producer === undefined) continue;
-    const k = spawnCell(ctx, p.side, producer, unitDef);
-    if (k < 0) continue; // no free cell: the spawn waits, progress is kept
+    const pos = spawnPosition(sim, ctx, p.side, info.ref, producer, unitDef);
+    if (pos === null) continue; // held: no free position at the exit
     p.progress -= info.cost;
-    const { width } = ctx.arena.geom;
-    addUnit(
-      sim,
-      ctx,
-      p.side,
-      unitDef,
-      k % width,
-      divFloor(k, width),
-      p.building,
-      tick,
-    );
+    addUnit(sim, ctx, p.side, unitDef, pos.x, pos.y, p.building, tick);
   }
-  spawnWaves(sim, ctx, tick);
+  queueWaves(sim, tick);
+  enterWaves(sim, ctx, tick);
 }
 
 /** The strength percent a unit of `side` spawned now gets: ramp bonus plus base. */
@@ -868,14 +1238,14 @@ function spawnStrength(sim: ArenaSim, ctx: ArenaContext, side: number): number {
   );
 }
 
-/** Create a unit of `side` on cell `(x, y)` and record `unit_spawned`. */
+/** Create a unit of `side` at `(px, py)` and record `unit_spawned`. */
 function addUnit(
   sim: ArenaSim,
   ctx: ArenaContext,
   side: number,
   unitDef: UnitDef,
-  x: number,
-  y: number,
+  px: number,
+  py: number,
   building: number,
   tick: number,
 ): void {
@@ -884,15 +1254,17 @@ function addUnit(
     id: sim.nextUnitId,
     side,
     def: unitDef.id,
-    x,
-    y,
+    px,
+    py,
     hp: stats.health,
     damage: stats.damage,
-    moveCooldown: stats.moveCooldownTicks,
     attackCooldown: 0,
   };
   sim.nextUnitId += 1;
   sim.units.push(unit);
+  const index = sim.units.length - 1;
+  ensureUnitCapacity(ctx, index + 1 + 16);
+  linkUnit(ctx, index, unit, unitDef);
   sim.spawned[side === 0 ? 0 : 1] += 1;
   ctx.events?.push({
     tick,
@@ -900,8 +1272,8 @@ function addUnit(
     unit: unit.id,
     side,
     def: unit.def,
-    x,
-    y,
+    px,
+    py,
     building,
   });
 }
@@ -910,61 +1282,79 @@ function addUnit(
 const WAVE_START_STRIDE = 7;
 
 /**
- * Scheduled waves (side options), after all unit producers: for side 0 then
- * side 1, each wave whose tick is the current tick, in list order, spawns its
- * `count` units on the side's front row. Wave number `j` (its index in the
- * side's list) with `n` units on a board `W` wide puts unit `i` (0-based) in
- * the side's own-frame column `(floor((2i + 1) * W / (2n)) + 7j) mod W`, i.e.
- * evenly across the whole width from a start column that moves with `j`. A
- * column whose front-row cell is not open for the side (terrain, a building
- * that blocks it) is replaced by the nearest open front-row cell, ties to the
- * lower own-frame column; if the row has no open cell the unit is not spawned.
- * The event has `building = 0`.
+ * Scheduled waves (side options), step 1: for side 0 then side 1, each wave
+ * whose tick is the current tick, in list order, appends its `count` units to
+ * the `entering` queue, unit `i` (0-based) of wave `j` wanting the own-frame
+ * column `(floor((2i + 1) * W / (2n)) + 7j) mod W`.
  */
-function spawnWaves(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
+function queueWaves(sim: ArenaSim, tick: number): void {
   const options = sim.sideOptions;
   if (options === undefined) return;
-  const arena = ctx.arena;
-  const { width, height, boardHeight } = arena.geom;
+  const width = sim.teams[0].map.width;
   for (const side of [0, 1] as const) {
     const waves = options[side].scheduledWaves;
     if (waves === undefined) continue;
-    const row = side === 0 ? boardHeight - 1 : height - boardHeight;
-    const cellOf = (col: number): number =>
-      row * width + (side === 0 ? col : width - 1 - col);
     waves.forEach((w, j) => {
       if (w.tick !== tick) return;
-      const unitDef = ctx.content.units.get(w.unit);
-      if (unitDef === undefined) throw new Error(`Unknown unit "${w.unit}".`);
       for (let i = 0; i < w.count; i++) {
-        const want = modFloor(
+        const col = modFloor(
           divFloor((2 * i + 1) * width, 2 * w.count) + WAVE_START_STRIDE * j,
           width,
         );
-        let col = -1;
-        for (let d = 0; d < width && col < 0; d++) {
-          for (const c of d === 0 ? [want] : [want - d, want + d]) {
-            if (c >= 0 && c < width && openFor(arena, side, cellOf(c))) {
-              col = c;
-              break;
-            }
-          }
-        }
-        if (col < 0) continue;
-        const k = cellOf(col);
-        addUnit(
-          sim,
-          ctx,
-          side,
-          unitDef,
-          k % width,
-          divFloor(k, width),
-          0,
-          tick,
-        );
+        sim.entering.push({ side, unit: w.unit, col });
       }
     });
   }
+}
+
+/**
+ * Scheduled waves, step 2: walk the `entering` queue once in order. An entry
+ * tries the side's front row at its wanted column, then `col - 1`, `col + 1`,
+ * `col - 2`, ... (cells open for the side); in each the first free position
+ * (see `freeInCell`). It enters, or stays in the queue in its place.
+ */
+function enterWaves(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
+  if (sim.entering.length === 0) return;
+  const arena = ctx.arena;
+  const { width, height, boardHeight } = arena.geom;
+  const rest: EnteringSim[] = [];
+  // Units only get added during the walk, which can only take room away: once
+  // an entry found no place on a side's row, no later entry of that side with
+  // the very same collision radius can find one either (it tries the same
+  // positions, whatever its wanted column, since every open cell of the row is
+  // tried). Entries of another radius try other offsets inside a cell (the
+  // offsets scale with `120 - radius`), so a larger unit can fit where a
+  // smaller one did not and vice versa: they are tried. (Only a shortcut: it
+  // never changes who enters.)
+  let failed0: number[] | null = null;
+  let failed1: number[] | null = null;
+  for (const e of sim.entering) {
+    const unitDef = ctx.content.units.get(e.unit);
+    if (unitDef === undefined) throw new Error(`Unknown unit "${e.unit}".`);
+    const side = e.side;
+    const failedHere = side === 0 ? failed0 : failed1;
+    if (failedHere?.includes(unitDef.collisionRadius) === true) {
+      rest.push(e);
+      continue;
+    }
+    const row = side === 0 ? boardHeight - 1 : height - boardHeight;
+    let pos: { x: number; y: number } | null = null;
+    for (let d = 0; d < width && pos === null; d++) {
+      for (const c of d === 0 ? [e.col] : [e.col - d, e.col + d]) {
+        if (c < 0 || c >= width) continue;
+        const cx = side === 0 ? c : width - 1 - c;
+        if (!openFor(arena, side, row * width + cx)) continue;
+        pos = freeInCell(sim, ctx, side, unitDef, cx, row);
+        if (pos !== null) break;
+      }
+    }
+    if (pos === null) {
+      rest.push(e);
+      if (side === 0) (failed0 ??= []).push(unitDef.collisionRadius);
+      else (failed1 ??= []).push(unitDef.collisionRadius);
+    } else addUnit(sim, ctx, side, unitDef, pos.x, pos.y, 0, tick);
+  }
+  sim.entering = rest;
 }
 
 /**
@@ -1031,8 +1421,12 @@ function chargeRamps(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
 /**
  * Turret fire (end of step 3). Each ready turret (cooldown 0, fully charged),
  * side 0 first then by building ID, shoots the nearest enemy unit that is
- * within range and standing inside the arena rows of the turret owner's own
- * board; ties by lowest unit ID. Damage joins the pending damage.
+ * in range and whose centre stands inside the arena rows of the turret
+ * owner's own board. In range: the squared distance from the unit's centre to
+ * the nearest cell of the turret is at most `(rangeCells * CELL_UNITS +
+ * radius)^2`, i.e. the gap from the unit's circle to the turret is at most
+ * `rangeCells` cells. Nearest: smallest such squared distance; ties by lowest
+ * unit ID. Damage joins the pending damage.
  */
 function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
   const geom = ctx.arena.geom;
@@ -1046,16 +1440,15 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     const rowLo = t.side === 0 ? 0 : geom.height - geom.boardHeight;
     const rowHi = rowLo + geom.boardHeight - 1;
     let best = -1;
-    let bestD = info.rangeCells + 1;
+    let bestD = Number.MAX_SAFE_INTEGER;
     for (let i = 0; i < units.length; i++) {
       const u = units[i];
       if (u === undefined || u.side === t.side) continue;
-      if (u.y < rowLo || u.y > rowHi) continue;
-      let d = bestD;
-      for (const c of turret.cells) {
-        d = Math.min(d, Math.abs(c.x - u.x) + Math.abs(c.y - u.y));
-      }
-      if (d < bestD) {
+      const row = ownCellCoord(t.side, u.py, geom.height);
+      if (row < rowLo || row > rowHi) continue;
+      const d = buildingDist2(u.px, u.py, turret);
+      const reach = info.rangeCells * S + (ctx.brad[i] ?? 0);
+      if (d <= reach * reach && d < bestD) {
         best = i;
         bestD = d; // units are in ID order, so a tie keeps the lower ID
       }
@@ -1077,39 +1470,58 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
 }
 
 /**
- * Put a unit on an open cell, as if spawned (tests and scenarios). Throws if
- * the cell is blocked or covered by a building that blocks the unit's side
- * (a gate of its own side does not). Emits no event.
+ * Put a unit on the map, as if spawned (tests and scenarios), at the centre of
+ * arena cell `(x, y)` or at the exact position `(px, py)` (sub-cell units).
+ * Throws if its circle does not fit for its side (blocked ground or a
+ * building that blocks the side; a gate of its own side does not) or overlaps
+ * a living unit (unless `allowOverlap`). Emits no event.
  */
 export function spawnUnitForTest(
   sim: ArenaSim,
   ctx: ArenaContext,
-  args: { side: number; def: UnitId; x: number; y: number },
+  args: {
+    side: number;
+    def: UnitId;
+    x?: number;
+    y?: number;
+    px?: number;
+    py?: number;
+    /** Skip the overlap check (tests of damage sums that stack units). */
+    allowOverlap?: boolean;
+  },
 ): UnitSim {
   const def = ctx.content.units.get(args.def);
   if (def === undefined) throw new Error(`Unknown unit "${args.def}".`);
-  const { width, height } = ctx.arena.geom;
-  if (
-    args.x < 0 ||
-    args.y < 0 ||
-    args.x >= width ||
-    args.y >= height ||
-    !openFor(ctx.arena, args.side, args.y * width + args.x)
-  ) {
+  const px = args.px ?? (args.x === undefined ? undefined : args.x * S + S / 2);
+  const py = args.py ?? (args.y === undefined ? undefined : args.y * S + S / 2);
+  if (px === undefined || py === undefined) {
+    throw new Error('spawnUnitForTest: give x and y or px and py.');
+  }
+  if (!fits(ctx.world, args.side, def.collisionRadius, px, py)) {
     throw new Error(
-      `spawnUnitForTest: (${String(args.x)}, ${String(args.y)}) is not open.`,
+      `spawnUnitForTest: (${String(px)}, ${String(py)}) is not open.`,
     );
+  }
+  for (const e of args.allowOverlap === true ? [] : sim.units) {
+    const other = ctx.content.units.get(e.def);
+    const rr = def.collisionRadius + (other?.collisionRadius ?? 0);
+    const dx = e.px - px;
+    const dy = e.py - py;
+    if (dx * dx + dy * dy < rr * rr) {
+      throw new Error(
+        `spawnUnitForTest: (${String(px)}, ${String(py)}) overlaps unit ${String(e.id)}.`,
+      );
+    }
   }
   const stats = unitStats(args.side, def, spawnStrength(sim, ctx, args.side));
   const unit: UnitSim = {
     id: sim.nextUnitId,
     side: args.side,
     def: def.id,
-    x: args.x,
-    y: args.y,
+    px,
+    py,
     hp: stats.health,
     damage: stats.damage,
-    moveCooldown: stats.moveCooldownTicks,
     attackCooldown: 0,
   };
   sim.nextUnitId += 1;
@@ -1126,56 +1538,75 @@ const ACT_UNIT = 1;
 const ACT_BUILDING = 2;
 const ACT_MOVE = 3;
 
-function growScratch(ctx: ArenaContext, n: number): void {
-  if (ctx.next.length < n) {
-    const size = Math.max(n, 2 * ctx.next.length, 64);
-    ctx.next = new Int32Array(size);
-    ctx.action = new Uint8Array(size);
-    ctx.arg = new Int32Array(size);
-    ctx.unitDamage = new Float64Array(size);
-  }
-}
+/** Below this many enemy units the searches look at every one of them. */
+const FEW_UNITS = 24;
 
 /**
- * Index of the nearest enemy unit within `reach` (Chebyshev distance), or -1.
- * Nearest is by Chebyshev distance, ties by Manhattan distance, then by
- * lowest unit ID.
+ * Index of the enemy unit in contact with `u` (the gap between the circles is
+ * at most `reach`) that is nearest by squared centre distance, ties by lowest
+ * unit ID; -1 if none.
  */
-function nearestEnemy(
+function nearestContact(
   sim: ArenaSim,
   ctx: ArenaContext,
   u: UnitSim,
-  reach: number,
+  def: UnitDef,
 ): number {
   const { width, height } = ctx.arena.geom;
   const heads = ctx.heads[1 - u.side];
   if (heads === undefined) return -1;
+  const win = Math.max(1, divCeil(def.reach + def.radius + ctx.maxBody, S));
+  const gx = cellCoord(u.px, width);
+  const gy = cellCoord(u.py, height);
   let best = -1;
-  let bestC = reach + 1;
-  let bestM = 0;
+  let bestD = 0;
   let bestId = 0;
-  const y0 = Math.max(0, u.y - reach);
-  const y1 = Math.min(height - 1, u.y + reach);
-  const x0 = Math.max(0, u.x - reach);
-  const x1 = Math.min(width - 1, u.x + reach);
+  const y0 = Math.max(0, gy - win);
+  const y1 = Math.min(height - 1, gy + win);
+  const x0 = Math.max(0, gx - win);
+  const x1 = Math.min(width - 1, gx + win);
+  const few = ctx.sideCount[1 - u.side === 0 ? 0 : 1];
+  if (few <= FEW_UNITS) {
+    // Few enemies: look at all of them (the same result as the cell search).
+    const list = ctx.bySide[1 - u.side];
+    for (let q = 0; q < few; q++) {
+      const j = list?.[q] ?? -1;
+      const e = sim.units[j];
+      if (e === undefined) continue;
+      const dx = e.px - u.px;
+      const dy = e.py - u.py;
+      const d2 = dx * dx + dy * dy;
+      const lim = def.reach + def.radius + (ctx.brad[j] ?? 0);
+      if (
+        d2 <= lim * lim &&
+        (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId))
+      ) {
+        best = j;
+        bestD = d2;
+        bestId = e.id;
+      }
+    }
+    return best;
+  }
+  if (!anyPresent(ctx, 1 - u.side, x0, y0, x1, y1)) return -1;
   for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {
-      const ax = Math.abs(x - u.x);
-      const ay = Math.abs(y - u.y);
-      const c = Math.max(ax, ay);
-      const m = ax + ay;
       let j = heads[y * width + x] ?? -1;
       while (j !== -1) {
         const e = sim.units[j];
-        if (
-          e !== undefined &&
-          (c < bestC ||
-            (c === bestC && (m < bestM || (m === bestM && e.id < bestId))))
-        ) {
-          best = j;
-          bestC = c;
-          bestM = m;
-          bestId = e.id;
+        if (e !== undefined) {
+          const dx = e.px - u.px;
+          const dy = e.py - u.py;
+          const d2 = dx * dx + dy * dy;
+          const lim = def.reach + def.radius + (ctx.brad[j] ?? 0);
+          if (
+            d2 <= lim * lim &&
+            (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId))
+          ) {
+            best = j;
+            bestD = d2;
+            bestId = e.id;
+          }
         }
         j = ctx.next[j] ?? -1;
       }
@@ -1184,137 +1615,230 @@ function nearestEnemy(
   return best;
 }
 
-/** The goal building within `reach` of the unit (nearest; ties: Core, lowest ID). */
-function goalInReach(
+/**
+ * Cell-level line of sight: every sample point from `(x0, y0)` to `(x1, y1)`,
+ * spaced at most half a cell apart, lies in a cell that is not solid for
+ * `side`.
+ */
+function lineClear(
   ctx: ArenaContext,
-  u: UnitSim,
-  reach: number,
-  field: Field,
-): number {
-  const arena = ctx.arena;
-  const { width, height } = arena.geom;
+  side: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+): boolean {
+  const { width, height } = ctx.arena.geom;
+  const solid = ctx.world.solid[side];
+  if (solid === undefined) return false;
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const n = Math.max(1, divCeil(Math.max(Math.abs(dx), Math.abs(dy)), S / 2));
+  for (let k = 0; k <= n; k++) {
+    const x = x0 + Math.trunc((dx * k) / n);
+    const y = y0 + Math.trunc((dy * k) / n);
+    if (
+      solid[
+        ownCellCoord(side, y, height) * width + ownCellCoord(side, x, width)
+      ] === 1
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Index of the nearest visible enemy unit within the aggro range (squared
+ * centre distance, ties by lowest unit ID); -1 if none.
+ */
+function nearestVisible(sim: ArenaSim, ctx: ArenaContext, u: UnitSim): number {
+  const { width, height } = ctx.arena.geom;
+  const heads = ctx.heads[1 - u.side];
+  if (heads === undefined) return -1;
+  const range = ctx.simConfig.aggroRangeCells * S;
+  const range2 = range * range;
+  const win = Math.max(1, divCeil(range, S));
+  const gx = cellCoord(u.px, width);
+  const gy = cellCoord(u.py, height);
   let best = -1;
-  let bestD = reach + 1;
+  let bestD = 0;
   let bestId = 0;
-  for (let dy = -reach; dy <= reach; dy++) {
-    const y = u.y + dy;
-    if (y < 0 || y >= height) continue;
-    const span = reach - Math.abs(dy);
-    const x0 = Math.max(0, u.x - span);
-    const x1 = Math.min(width - 1, u.x + span);
+  const y0 = Math.max(0, gy - win);
+  const y1 = Math.min(height - 1, gy + win);
+  const x0 = Math.max(0, gx - win);
+  const x1 = Math.min(width - 1, gx + win);
+  const few = ctx.sideCount[1 - u.side === 0 ? 0 : 1];
+  if (few <= FEW_UNITS) {
+    const list = ctx.bySide[1 - u.side];
+    for (let q = 0; q < few; q++) {
+      const j = list?.[q] ?? -1;
+      const e = sim.units[j];
+      if (e === undefined) continue;
+      const dx = e.px - u.px;
+      const dy = e.py - u.py;
+      const d2 = dx * dx + dy * dy;
+      if (
+        d2 <= range2 &&
+        (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId)) &&
+        lineClear(ctx, u.side, u.px, u.py, e.px, e.py)
+      ) {
+        best = j;
+        bestD = d2;
+        bestId = e.id;
+      }
+    }
+    return best;
+  }
+  if (!anyPresent(ctx, 1 - u.side, x0, y0, x1, y1)) return -1;
+  for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {
-      const ref = arena.occupant[y * width + x] ?? -1;
-      if (ref < 0 || field.isGoal[ref] !== 1) continue;
-      const d = Math.abs(dy) + Math.abs(x - u.x);
-      const id = arena.buildings[ref]?.id ?? 0;
-      if (d < bestD || (d === bestD && id < bestId)) {
-        best = ref;
-        bestD = d;
-        bestId = id;
+      let j = heads[y * width + x] ?? -1;
+      while (j !== -1) {
+        const e = sim.units[j];
+        if (e !== undefined) {
+          const dx = e.px - u.px;
+          const dy = e.py - u.py;
+          const d2 = dx * dx + dy * dy;
+          if (
+            d2 <= range2 &&
+            (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId)) &&
+            lineClear(ctx, u.side, u.px, u.py, e.px, e.py)
+          ) {
+            best = j;
+            bestD = d2;
+            bestId = e.id;
+          }
+        }
+        j = ctx.next[j] ?? -1;
       }
     }
   }
   return best;
 }
 
+/** Set the move target of unit `i` to `(tx, ty)`. */
+function moveTo(ctx: ArenaContext, i: number, tx: number, ty: number): void {
+  ctx.action[i] = ACT_MOVE;
+  ctx.motion.want[i] = 1;
+  ctx.motion.tx[i] = tx;
+  ctx.motion.ty[i] = ty;
+}
+
+/** Move towards the centre of the Core cell nearest to the unit. */
+function moveToCore(ctx: ArenaContext, i: number, u: UnitSim): void {
+  const core = ctx.arena.coreRef[1 - u.side] ?? -1;
+  const b = core >= 0 ? ctx.arena.buildings[core] : undefined;
+  if (b === undefined || !b.alive) return;
+  let bx = 0;
+  let by = 0;
+  let bestD = Number.MAX_SAFE_INTEGER;
+  // Ties go to the first cell in the unit's own frame: side 1 reads the
+  // arena-ordered list from the end.
+  const n = b.cells.length;
+  for (let q = 0; q < n; q++) {
+    const c = b.cells[u.side === 0 ? q : n - 1 - q];
+    if (c === undefined) continue;
+    const d = boxDist2(u.px, u.py, c.x, c.y);
+    if (d < bestD) {
+      bestD = d;
+      bx = c.x;
+      by = c.y;
+    }
+  }
+  moveTo(ctx, i, bx * S + S / 2, by * S + S / 2);
+}
+
 function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
   const arena = ctx.arena;
-  const { width } = arena.geom;
-  const def = unitStats(u.side, defOf(ctx, u));
-  const reach = Math.max(1, def.rangeCells);
+  const { width, height } = arena.geom;
+  const def = defOf(ctx, u);
+  const reachR = def.reach + def.radius;
   ctx.action[i] = ACT_NONE;
+  ctx.motion.want[i] = 0;
 
-  // a. Attack the nearest enemy unit in reach.
-  const j = nearestEnemy(sim, ctx, u, reach);
+  // a. Attack the nearest enemy unit in contact.
+  const j = nearestContact(sim, ctx, u, def);
   if (j >= 0) {
     ctx.action[i] = ACT_UNIT;
     ctx.arg[i] = j;
     return;
   }
 
-  // a2. Aggro (CB-16): step towards the nearest enemy unit within aggro range.
-  const aggro = ctx.simConfig.aggroRangeCells;
-  if (aggro > reach && u.moveCooldown === 0) {
-    const a = nearestEnemy(sim, ctx, u, aggro);
+  // a2. Aggro (CB-16): move towards the nearest visible enemy unit in range.
+  if (ctx.simConfig.aggroRangeCells > 0) {
+    const a = nearestVisible(sim, ctx, u);
     const e = a >= 0 ? sim.units[a] : undefined;
     if (e !== undefined) {
-      // One step along the axis with the larger difference (y when equal),
-      // else along the other axis if it differs.
-      const ex = e.x - u.x;
-      const ey = e.y - u.y;
-      const stepX = (): number =>
-        ex === 0 ? -1 : u.y * width + u.x + (ex > 0 ? 1 : -1);
-      const stepY = (): number =>
-        ey === 0 ? -1 : (u.y + (ey > 0 ? 1 : -1)) * width + u.x;
-      const order =
-        Math.abs(ex) > Math.abs(ey) ? [stepX, stepY] : [stepY, stepX];
-      for (const step of order) {
-        const k = step();
-        if (k >= 0 && openFor(arena, u.side, k)) {
-          ctx.action[i] = ACT_MOVE;
-          ctx.arg[i] = k;
-          return;
-        }
-      }
+      moveTo(ctx, i, e.px, e.py);
+      return;
     }
   }
 
-  const here = u.y * width + u.x;
-  const field = fieldFor(ctx, u.side, def.targeting);
-  // b. Attack the goal building in reach. Evaluated whether or not the unit's
-  // cell has a route in the field (a unit in a sealed pocket still attacks a
-  // goal within its reach).
-  const ref = goalInReach(ctx, u, reach, field);
-  if (ref >= 0) {
+  // b. Attack the Core when it is within reach.
+  const coreRef = arena.coreRef[1 - u.side] ?? -1;
+  const core = coreRef >= 0 ? arena.buildings[coreRef] : undefined;
+  if (
+    core !== undefined &&
+    core.alive &&
+    buildingDist2(u.px, u.py, core) <= reachR * reachR
+  ) {
     ctx.action[i] = ACT_BUILDING;
-    ctx.arg[i] = ref;
+    ctx.arg[i] = coreRef;
     return;
   }
-  const d = field.dist[here] ?? -1;
-  if (d >= 0) {
-    // c. Move one step along the field.
-    if (u.moveCooldown === 0 && d > 0) {
-      const k = fieldStep(arena, u.side, field, here);
-      if (k >= 0) {
-        ctx.action[i] = ACT_MOVE;
-        ctx.arg[i] = k;
-      }
+
+  // c. Move.
+  const cell =
+    ownCellCoord(u.side, u.py, height) * width +
+    ownCellCoord(u.side, u.px, width);
+  const field = fieldFor(ctx, u.side);
+  const d = field.dist[cell] ?? -1;
+  if (d > 0) {
+    const k = stepFor(ctx, u.side, field, cell);
+    if (k >= 0) {
+      moveTo(
+        ctx,
+        i,
+        (k % width) * S + S / 2,
+        Math.floor(k / width) * S + S / 2,
+      );
     }
+    return;
+  }
+  if (d === 0) {
+    moveToCore(ctx, i, u);
     return;
   }
 
   // No route in the normal field: breach (CB-20).
   const bd = breachFor(ctx, u.side);
-  const here0 = bd[here] ?? -1;
+  const here0 = bd[cell] ?? -1;
   if (here0 < 0) return; // wait
   if (here0 === 0) {
-    const core = arena.coreRef[1 - u.side] ?? -1;
-    if (core >= 0 && arena.buildings[core]?.alive === true) {
-      ctx.action[i] = ACT_BUILDING;
-      ctx.arg[i] = core;
-    }
+    moveToCore(ctx, i, u);
     return;
   }
-  const base = ctx.simConfig.breachBaseCost;
-  const per = ctx.simConfig.breachHealthPerCost;
   const k = breachStep(
     arena,
     u.side,
     bd,
-    here,
+    cell,
     (r) => ctx.maxHealth[r] ?? 0,
-    base,
-    per,
+    ctx.simConfig.breachBaseCost,
+    ctx.simConfig.breachHealthPerCost,
   );
   if (k < 0) return;
   const occ = arena.occupant[k] ?? -1;
   if (occ >= 0 && !openFor(arena, u.side, k)) {
-    ctx.action[i] = ACT_BUILDING;
-    ctx.arg[i] = occ;
-  } else if (u.moveCooldown === 0) {
-    ctx.action[i] = ACT_MOVE;
-    ctx.arg[i] = k;
+    const b = arena.buildings[occ];
+    if (b !== undefined && buildingDist2(u.px, u.py, b) <= reachR * reachR) {
+      ctx.action[i] = ACT_BUILDING;
+      ctx.arg[i] = occ;
+      return;
+    }
   }
+  moveTo(ctx, i, (k % width) * S + S / 2, Math.floor(k / width) * S + S / 2);
 }
 
 // ---------------------------------------------------------------------------
@@ -1388,13 +1912,12 @@ function destroyBuilding(
  * Advance the battle by one tick, in place. Order: (1) flow on both boards;
  * (2) production and turret charging; (3) decisions from a snapshot, then
  * turret fire; (4) simultaneous attacks;
- * (5) moves; (6) deaths and destruction; (7) cooldowns and the tick counter.
+ * (5) moves and separation; (6) deaths and destruction; (7) cooldowns and the tick counter.
  */
 export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   const tick = sim.tick;
   const events = ctx.events;
   const arena = ctx.arena;
-  const { width } = arena.geom;
 
   // 0. Overload level (derived from the tick; events on the ticks it rises).
   const cfg = ctx.simConfig;
@@ -1435,21 +1958,13 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   chargeRamps(sim, ctx, tick);
 
   // 3. Decide, from a snapshot.
+  // (The per-side cell grid was built in the Production step, new units
+  // linked as they were placed.)
   const units = sim.units;
   const n = units.length;
-  growScratch(ctx, n);
-  ctx.heads[0]?.fill(-1);
-  ctx.heads[1]?.fill(-1);
-  for (let i = 0; i < n; i++) {
-    const u = units[i];
-    if (u === undefined) continue;
-    const heads = ctx.heads[u.side];
-    if (heads === undefined) continue;
-    const k = u.y * width + u.x;
-    ctx.next[i] = heads[k] ?? -1;
-    heads[k] = i;
-  }
+  ensureUnitCapacity(ctx, n);
   ctx.unitDamage.fill(0, 0, n);
+  buildPresence(sim, ctx);
   for (let i = 0; i < n; i++) {
     const u = units[i];
     if (u !== undefined) decide(sim, ctx, i, u);
@@ -1530,16 +2045,16 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     h.hp = Math.max(0, remaining);
   }
 
-  // 5. Resolve moves.
+  // 5. Move and separate.
   for (let i = 0; i < n; i++) {
     const u = units[i];
-    if (u === undefined || ctx.action[i] !== ACT_MOVE) continue;
-    const k = ctx.arg[i] ?? 0;
-    u.x = k % width;
-    u.y = divFloor(k, width);
-    u.moveCooldown = unitStats(u.side, defOf(ctx, u)).moveCooldownTicks;
-    events?.push({ tick, type: 'unit_moved', unit: u.id, x: u.x, y: u.y });
+    if (u === undefined) continue;
+    ctx.motion.rad[i] = ctx.crad[i] ?? 0;
+    if (ctx.action[i] === ACT_MOVE) {
+      ctx.motion.speed[i] = unitSpeed(defOf(ctx, u));
+    }
   }
+  ctx.motion.resolve(units, ctx.world, cfg.separationPasses, ctx.maxRadius);
 
   // 6. Deaths and destruction.
   let died = false;
@@ -1566,6 +2081,9 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   if (destroyed) {
     ctx.fields.fill(undefined);
     ctx.breach.fill(undefined);
+    ctx.spawnCells.fill(undefined);
+    for (const s of ctx.steps) s.fill(-2);
+    fillSolid(arena, ctx.world.solid);
   }
 
   // 7. Cooldowns, then the tick counter.
@@ -1573,7 +2091,6 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     if (t.cooldown > 0) t.cooldown -= 1;
   }
   for (const u of sim.units) {
-    if (u.moveCooldown > 0) u.moveCooldown -= 1;
     if (u.attackCooldown > 0) u.attackCooldown -= 1;
   }
   sim.tick += 1;

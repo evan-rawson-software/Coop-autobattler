@@ -6,18 +6,24 @@
       "health": 40,
       "damage": 6,
       "attackCooldownTicks": 10,
-      "rangeCells": 0,
       "moveCooldownTicks": 6,
-      "targeting": "core"
+      "radius": 72,
+      "collisionRadius": 72,
+      "reach": 60,
+      "flying": false,
+      "attackType": "melee"
     },
     {
       "id": "unit_raider",
       "health": 25,
       "damage": 8,
       "attackCooldownTicks": 8,
-      "rangeCells": 0,
       "moveCooldownTicks": 4,
-      "targeting": "infrastructure"
+      "radius": 60,
+      "collisionRadius": 60,
+      "reach": 60,
+      "flying": false,
+      "attackType": "melee"
     }
   ]
 }

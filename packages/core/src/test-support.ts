@@ -8,13 +8,23 @@ import terrainJson from '../../../content/terrain.json';
 import threatsJson from '../../../content/threats.json';
 import unitsJson from '../../../content/units.json';
 import type { Side } from './buildings.js';
+import {
+  stepArena,
+  type ArenaContext,
+  type ArenaSim,
+  type UnitSim,
+} from './arena-sim.js';
+import type { ArenaContent } from './arena.js';
 import { addConduit } from './conduits.js';
 import { loadAllContentOrThrow } from './content.js';
 import { generateMap } from './generate-map.js';
+import { fits } from './geometry.js';
 import { listLegalCorePositions, type Cell, type GameMap } from './map.js';
 import { loadMapgenOrThrow } from './mapgen.js';
 import { Rng } from './rng.js';
 import { loadSimConfigOrThrow } from './sim-config.js';
+import { loadUnitsOrThrow } from './units.js';
+import { CELL_UNITS } from './limits.js';
 import { loadThreatsOrThrow } from './threats.js';
 import {
   addToStash,
@@ -288,3 +298,99 @@ export function bigBoard(): TeamState {
   }
   return lab.state;
 }
+
+/**
+ * The violations of the circle invariant in a battle state: a unit whose
+ * collision circle does not fit for its side (blocked ground, a building that
+ * blocks it, outside the arena), or two units whose collision circles
+ * overlap (radii from the battle's own content, test-only units included).
+ * Throws on a unit of an unknown type.
+ * Empty when the state is good.
+ */
+export function circleViolations(sim: ArenaSim, ctx: ArenaContext): string[] {
+  const out: string[] = [];
+  const radius = (u: UnitSim): number => {
+    const def = ctx.content.units.get(u.def);
+    if (def === undefined) {
+      throw new Error(`circleViolations: unknown unit type "${u.def}".`);
+    }
+    return def.collisionRadius;
+  };
+  const units = sim.units;
+  for (let i = 0; i < units.length; i++) {
+    const u = got(units[i]);
+    if (!fits(ctx.world, u.side, radius(u), u.px, u.py)) {
+      out.push(
+        `unit ${String(u.id)} does not fit at ${String(u.px)},${String(u.py)}`,
+      );
+    }
+    for (let j = i + 1; j < units.length; j++) {
+      const v = got(units[j]);
+      const r = radius(u) + radius(v);
+      const dx = u.px - v.px;
+      const dy = u.py - v.py;
+      if (dx * dx + dy * dy < r * r) {
+        out.push(`units ${String(u.id)} and ${String(v.id)} overlap`);
+      }
+    }
+  }
+  return out;
+}
+
+/** The centre coordinate of arena cell column or row `c`. */
+export const mid = (c: number): number => c * CELL_UNITS + CELL_UNITS / 2;
+
+/** The arena cell holding a unit's centre. */
+export function cellOfUnit(u: { px: number; py: number }): Cell {
+  return {
+    x: Math.floor(u.px / CELL_UNITS),
+    y: Math.floor(u.py / CELL_UNITS),
+  };
+}
+
+/**
+ * Step `ticks` ticks and return the distinct cells the unit's centre visited,
+ * starting with its first cell (units do not emit movement events).
+ */
+export function walk(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  u: UnitSim,
+  ticks: number,
+): Cell[] {
+  const path = [cellOfUnit(u)];
+  for (let t = 0; t < ticks; t++) {
+    stepArena(sim, ctx);
+    if (!sim.units.includes(u)) break;
+    const c = cellOfUnit(u);
+    const last = got(path[path.length - 1]);
+    if (c.x !== last.x || c.y !== last.y) path.push(c);
+  }
+  return path;
+}
+
+/**
+ * The content plus `unit_post`, a unit that practically stands still (one
+ * sub-cell unit per tick), has plenty of health and does no damage: a target
+ * dummy for turret and aggro tests.
+ */
+export const postContent: ArenaContent = {
+  ...content,
+  units: loadUnitsOrThrow({
+    units: [
+      ...content.units.list(),
+      {
+        id: 'unit_post',
+        health: 1000,
+        damage: 0,
+        attackCooldownTicks: 1000,
+        moveCooldownTicks: 240,
+        radius: 72,
+        collisionRadius: 72,
+        reach: 0,
+        flying: false,
+        attackType: 'melee',
+      },
+    ],
+  }),
+};

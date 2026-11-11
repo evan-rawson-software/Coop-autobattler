@@ -1,9 +1,16 @@
 /** Unit rules (CB-13..CB-15). All numbers are integers; times are in ticks. */
 
 import { addInt, divFloor, mulInt } from './int.js';
-import { MAX_DAMAGE, MAX_HEALTH } from './limits.js';
+import {
+  CELL_UNITS,
+  MAX_DAMAGE,
+  MAX_HEALTH,
+  MAX_UNIT_RADIUS,
+  MAX_UNIT_REACH,
+} from './limits.js';
 import {
   isRecord,
+  readBool,
   readId,
   readInt,
   readList,
@@ -13,18 +20,37 @@ import {
 } from './load-util.js';
 
 export type UnitId = string;
-export type Targeting = 'core' | 'infrastructure' | 'defenses';
+export type AttackType = 'melee';
 
 export interface UnitDef {
   readonly id: UnitId;
   readonly health: number;
   readonly damage: number;
   readonly attackCooldownTicks: number;
-  /** 0 means melee (adjacent). */
-  readonly rangeCells: number;
-  /** Ticks per cell moved. */
+  /** Ticks to walk one cell; the speed is `unitSpeed(def)`. */
   readonly moveCooldownTicks: number;
-  readonly targeting: Targeting;
+  /**
+   * Radius of the body, in sub-cell units (`CELL_UNITS` per cell): used for
+   * reach, aggro and turret range, and for drawing.
+   */
+  readonly radius: number;
+  /** Radius of the circle that may not overlap anything, sub-cell units. */
+  readonly collisionRadius: number;
+  /**
+   * Most the gap between this unit's circle and its target (a unit's circle
+   * or the nearest point of a building) may be for it to attack, in sub-cell
+   * units.
+   */
+  readonly reach: number;
+  /** Reserved for part 2: always false for now. */
+  readonly flying: boolean;
+  /** Reserved for part 2: always 'melee' for now. */
+  readonly attackType: AttackType;
+}
+
+/** Sub-cell units a unit walks per tick: `floor(CELL_UNITS / moveCooldownTicks)`. */
+export function unitSpeed(def: UnitDef): number {
+  return divFloor(CELL_UNITS, def.moveCooldownTicks);
 }
 
 /**
@@ -50,16 +76,18 @@ export interface UnitConfig {
 
 export type UnitLoadResult = LoadResult<UnitConfig>;
 
-const TARGETING: readonly string[] = ['core', 'infrastructure', 'defenses'];
 const ID_PATTERN = /^unit_[a-z0-9_]+$/;
 const KNOWN_KEYS = new Set([
   'id',
   'health',
   'damage',
   'attackCooldownTicks',
-  'rangeCells',
   'moveCooldownTicks',
-  'targeting',
+  'radius',
+  'collisionRadius',
+  'reach',
+  'flying',
+  'attackType',
 ]);
 
 /** Validate parsed unit data (the contents of units.json). */
@@ -93,18 +121,32 @@ export function loadUnits(data: unknown): UnitLoadResult {
       label,
       errors,
     );
-    const rangeCells = readInt(entry, 'rangeCells', 0, label, errors);
     const moveCooldownTicks = readInt(
       entry,
       'moveCooldownTicks',
       1,
       label,
       errors,
+      CELL_UNITS,
     );
-    const targeting = entry['targeting'];
-    if (typeof targeting !== 'string' || !TARGETING.includes(targeting)) {
+    const radius = readInt(entry, 'radius', 1, label, errors, MAX_UNIT_RADIUS);
+    const collisionRadius = readInt(
+      entry,
+      'collisionRadius',
+      1,
+      label,
+      errors,
+      MAX_UNIT_RADIUS,
+    );
+    const reach = readInt(entry, 'reach', 0, label, errors, MAX_UNIT_REACH);
+    const flying = readBool(entry, 'flying', label, errors);
+    if (flying === true) {
+      errors.push(`${label}: "flying" units are not supported yet.`);
+    }
+    const attackType = entry['attackType'];
+    if (attackType !== 'melee') {
       errors.push(
-        `${label}: unknown targeting ${JSON.stringify(targeting)}; expected one of ${TARGETING.join(', ')}.`,
+        `${label}: unknown attackType ${JSON.stringify(attackType)}; expected "melee".`,
       );
     }
     rejectUnknownKeys(entry, KNOWN_KEYS, label, errors);
@@ -114,17 +156,23 @@ export function loadUnits(data: unknown): UnitLoadResult {
       health !== undefined &&
       damage !== undefined &&
       attackCooldownTicks !== undefined &&
-      rangeCells !== undefined &&
-      moveCooldownTicks !== undefined
+      moveCooldownTicks !== undefined &&
+      radius !== undefined &&
+      collisionRadius !== undefined &&
+      reach !== undefined &&
+      flying === false
     ) {
       defs.push({
         id,
         health,
         damage,
         attackCooldownTicks,
-        rangeCells,
         moveCooldownTicks,
-        targeting: targeting as Targeting,
+        radius,
+        collisionRadius,
+        reach,
+        flying,
+        attackType: 'melee',
       });
     }
   });

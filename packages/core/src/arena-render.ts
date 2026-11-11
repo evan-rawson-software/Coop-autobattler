@@ -2,6 +2,7 @@
 
 import type { ArenaContent } from './arena.js';
 import { arenaOf, type ArenaSim } from './arena-sim.js';
+import { CELL_UNITS } from './limits.js';
 
 const LETTERS: Readonly<Record<string, string>> = {
   source: 'S',
@@ -50,7 +51,9 @@ export function renderArenaAscii(sim: ArenaSim, content: ArenaContent): string {
   }
   const seen = new Map<number, number>();
   for (const u of sim.units) {
-    const k = u.y * width + u.x;
+    const k =
+      Math.min(height - 1, Math.floor(u.py / CELL_UNITS)) * width +
+      Math.min(width - 1, Math.floor(u.px / CELL_UNITS));
     seen.set(k, (seen.get(k) ?? 0) | (u.side === 0 ? 1 : 2));
   }
   for (const [k, mask] of seen) {

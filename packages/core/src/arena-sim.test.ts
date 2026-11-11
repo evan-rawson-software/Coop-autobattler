@@ -19,21 +19,26 @@ import {
   type ArenaEvent,
   type ArenaSim,
 } from './arena-sim.js';
+import { buildingDist2, fits } from './geometry.js';
 import { cloneBoardSim, flowTotals } from './flow-sim.js';
 import { withModifier, type TeamModifier } from './modifiers.js';
 import { hashJson } from './hash.js';
 import { Rng } from './rng.js';
-import { MAX_HEALTH, MAX_TICK_DAMAGE } from './limits.js';
+import { CELL_UNITS, MAX_HEALTH, MAX_TICK_DAMAGE } from './limits.js';
 import { loadUnitsOrThrow, maxStrengthPercent } from './units.js';
 import type { Cell, GameMap } from './map.js';
 import type { TeamState } from './team-state.js';
 import {
   Lab,
   bigBoard,
+  circleViolations,
+  cellOfUnit,
   content,
   got,
+  mid,
   randomNetwork,
   simConfig,
+  walk,
 } from './test-support.js';
 
 // ---------------------------------------------------------------------------
@@ -78,14 +83,7 @@ function arenaCell(side: number, x: number, y: number): Cell {
   );
 }
 
-function movesOf(events: readonly ArenaEvent[], unit: number): Cell[] {
-  const out: Cell[] = [];
-  for (const e of events) {
-    if (e.type === 'unit_moved' && e.unit === unit)
-      out.push({ x: e.x, y: e.y });
-  }
-  return out;
-}
+const CU = CELL_UNITS;
 
 function ofType<T extends ArenaEvent['type']>(
   events: readonly ArenaEvent[],
@@ -259,19 +257,20 @@ describe('movement', () => {
     const dist = bfs(ctx.arena, core1.cells);
     const expected = got(dist[start.y * 12 + start.x]);
     expect(expected).toBeGreaterThan(25); // the straight way is 21
-    runArena(sim, ctx, 6 * expected + 20);
-    const path = movesOf(events, u.id);
-    expect(path).toHaveLength(expected);
-    // Every step lands on an open cell and gets one step closer.
+    const path = walk(sim, ctx, u, 6 * expected + 60);
+    // The circle cuts corners, so it needs at most the cells of the shortest
+    // path (and, being a 4-neighbour route, not many fewer).
+    expect(path.length - 1).toBeLessThanOrEqual(expected);
+    expect(path.length - 1).toBeGreaterThan(expected - 6);
+    // Every cell it stood in is open ground, and the field only gets closer.
     let prev = got(dist[start.y * 12 + start.x]);
-    for (const c of path) {
+    for (const c of path.slice(1)) {
       expect(ctx.arena.blocked[c.y * 12 + c.x]).toBe(0);
       expect(ctx.arena.occupant[c.y * 12 + c.x]).toBe(-1);
       const d = got(dist[c.y * 12 + c.x]);
-      expect(d).toBe(prev - 1);
+      expect(d).toBeLessThanOrEqual(prev);
       prev = d;
     }
-    expect(prev).toBe(0);
     // It went through the opening, not through the barrier.
     expect(path.some((c) => c.y === 18 && c.x >= 10)).toBe(true);
     // Then it attacks the Core.
@@ -283,25 +282,45 @@ describe('movement', () => {
     expect(healthOf(sim, 1, 0)).toBeLessThan(500);
   });
 
-  test('a unit moves once per moveCooldownTicks, starting after the first', () => {
-    const { sim, ctx, events } = startArenaBattle(
+  test('a unit walks at its speed: a cell in moveCooldownTicks ticks, from tick 0', () => {
+    const { sim, ctx } = startArenaBattle(
       coreOnly(),
       coreOnly(),
       GAP,
       content,
       simConfig,
     );
-    spawnUnitForTest(sim, ctx, { side: 0, def: 'unit_soldier', x: 5, y: 16 });
-    runArena(sim, ctx, 25);
-    // Soldier: 6 ticks per cell, spawned with the cooldown running: it first
-    // moves in tick 6, then 12, 18, 24.
-    expect(ofType(events, 'unit_moved').map((e) => e.tick)).toEqual([
-      6, 12, 18, 24,
-    ]);
+    const u = spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: 5,
+      y: 16,
+    });
+    const x0 = u.px;
+    const y0 = u.py;
+    // Soldier: 6 ticks per cell = 40 sub-cell units per tick, along one axis
+    // towards the centre of the next cell, starting in the first tick.
+    for (let t = 1; t <= 6; t++) {
+      stepArena(sim, ctx);
+      expect(Math.abs(u.px - x0) + Math.abs(u.py - y0)).toBe(40 * t);
+    }
+    expect((u.px - CU / 2) % CU).toBe(0);
+    expect((u.py - CU / 2) % CU).toBe(0);
+    const r = spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_raider',
+      x: 9,
+      y: 16,
+    });
+    const rx = r.px;
+    const ry = r.py;
+    stepArena(sim, ctx);
+    // Raider: 4 ticks per cell = 60 per tick.
+    expect(Math.abs(r.px - rx) + Math.abs(r.py - ry)).toBe(60);
   });
 
   test('ties between equal paths go to the lowest y, then lowest x of the mover', () => {
-    const { sim, ctx, events } = startArenaBattle(
+    const { sim, ctx } = startArenaBattle(
       coreOnly(8, 0),
       coreOnly(8, 0),
       GAP,
@@ -324,9 +343,9 @@ describe('movement', () => {
       x: 6,
       y: 19,
     });
-    runArena(sim, ctx, 7);
-    expect(movesOf(events, a.id)).toEqual([{ x: 4, y: 16 }]);
-    expect(movesOf(events, b.id)).toEqual([{ x: 7, y: 19 }]);
+    runArena(sim, ctx, 6);
+    expect([a.px, a.py]).toEqual([mid(4), mid(16)]);
+    expect([b.px, b.py]).toEqual([mid(7), mid(19)]);
   });
 
   test('conduits never block movement or change paths', () => {
@@ -334,12 +353,12 @@ describe('movement', () => {
       const lab = new Lab(tiny([[1, 3, 'res_b']]));
       lab.core(5, 0);
       const src = lab.put('bld_extractor', 1, 3);
-      const turret = lab.put('bld_turret', 10, 15);
+      const end = lab.put('bld_splitter', 10, 15);
       if (withConduit) {
         const cells: [number, number][] = [];
         for (let y = 4; y <= 14; y++) cells.push([1, y]);
         for (let x = 2; x <= 10; x++) cells.push([x, 14]);
-        lab.link(src, 'north', turret, 'south', cells);
+        lab.link(src, 'north', end, 'south', cells);
       }
       return lab.state;
     }
@@ -359,43 +378,45 @@ describe('movement', () => {
           y: 16,
         });
       }
+      const trace: number[][] = [];
+      const visited = new Set<string>();
       for (let t = 0; t < 900; t++) {
         stepArena(b.sim, b.ctx);
-        // No unit ever stands in a building or on blocked ground.
         for (const u of b.sim.units) {
-          expect(b.ctx.arena.occupant[u.y * 12 + u.x]).toBe(-1);
+          // No unit ever stands in a building or on blocked ground.
+          expect(fits(b.ctx.world, u.side, 72, u.px, u.py)).toBe(true);
+          trace.push([t, u.id, u.px, u.py, u.hp]);
+          const c = cellOfUnit(u);
+          visited.add(`${String(c.x)},${String(c.y)}`);
         }
       }
-      return b;
+      return { b, trace, visited };
     };
     const plain = run(false);
     const wired = run(true);
     const strip = (e: ArenaEvent[]): ArenaEvent[] =>
-      e.filter(
-        (x) =>
-          x.type === 'unit_moved' ||
-          x.type === 'unit_attacked' ||
-          x.type === 'unit_died',
-      );
-    expect(strip(wired.events)).toEqual(strip(plain.events));
-    expect(strip(wired.events).length).toBeGreaterThan(50);
+      e.filter((x) => x.type === 'unit_attacked' || x.type === 'unit_died');
+    expect(wired.trace).toEqual(plain.trace);
+    expect(strip(wired.b.events)).toEqual(strip(plain.b.events));
+    expect(strip(wired.b.events).length).toBeGreaterThan(20);
     // Units really walked over conduit cells (board y = 14 is arena y = 21).
-    const onConduit = ofType(wired.events, 'unit_moved').filter(
-      (e) => e.y === 21 && e.x >= 1 && e.x <= 10,
-    );
+    const onConduit = [...wired.visited].filter((k) => {
+      const [x, y] = k.split(',').map(Number);
+      return y === 21 && (x ?? -1) >= 1 && (x ?? 99) <= 10;
+    });
     expect(onConduit.length).toBeGreaterThan(0);
     // The conduits are not targets: attacks only name units, buildings, Cores.
-    const ids = new Set(wired.sim.teams[1].buildings.map((b) => b.id));
-    for (const e of ofType(wired.events, 'unit_attacked')) {
+    const ids = new Set(wired.b.sim.teams[1].buildings.map((b) => b.id));
+    for (const e of ofType(wired.b.events, 'unit_attacked')) {
       if (e.target.kind === 'building')
         expect(ids.has(e.target.building)).toBe(true);
     }
-    expect(wired.sim.teams[1].conduits).toHaveLength(1);
+    expect(wired.b.sim.teams[1].conduits).toHaveLength(1);
   });
 });
 
 describe('combat', () => {
-  test('adjacent enemies hit each other simultaneously', () => {
+  test('enemies in contact hit each other simultaneously', () => {
     const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       coreOnly(),
@@ -403,17 +424,19 @@ describe('combat', () => {
       content,
       simConfig,
     );
+    // Soldiers: radius 72 each and reach 60, so circles 204 apart (a gap of
+    // 60) are in contact.
     const a = spawnUnitForTest(sim, ctx, {
       side: 0,
       def: 'unit_soldier',
-      x: 5,
-      y: 16,
+      px: mid(5),
+      py: mid(16),
     });
     const b = spawnUnitForTest(sim, ctx, {
       side: 1,
       def: 'unit_soldier',
-      x: 5,
-      y: 17,
+      px: mid(5),
+      py: mid(16) + 204,
     });
     runArena(sim, ctx, 1);
     expect(a.hp).toBe(34);
@@ -429,7 +452,81 @@ describe('combat', () => {
     runArena(sim, ctx, 1);
     expect(a.hp).toBe(28);
     // Nobody moved: units in melee hold position.
-    expect(ofType(events, 'unit_moved')).toHaveLength(0);
+    expect([a.px, a.py]).toEqual([mid(5), mid(16)]);
+    expect([b.px, b.py]).toEqual([mid(5), mid(16) + 204]);
+  });
+
+  test('contact is edge to edge: one unit more than reach apart closes in first', () => {
+    const { sim, ctx, events } = startArenaBattle(
+      coreOnly(),
+      coreOnly(),
+      GAP,
+      content,
+      simConfig,
+    );
+    spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      px: mid(5),
+      py: mid(16),
+    });
+    // 205 apart: a gap of 61, one more than the reach of 60.
+    spawnUnitForTest(sim, ctx, {
+      side: 1,
+      def: 'unit_soldier',
+      px: mid(5),
+      py: mid(16) + 205,
+    });
+    runArena(sim, ctx, 1);
+    expect(ofType(events, 'unit_attacked')).toHaveLength(0);
+    runArena(sim, ctx, 1);
+    expect(ofType(events, 'unit_attacked').length).toBeGreaterThan(0);
+  });
+
+  test('contact on a diagonal is measured by the Euclidean distance', () => {
+    const { sim, ctx, events } = startArenaBattle(
+      coreOnly(),
+      coreOnly(),
+      GAP,
+      content,
+      simConfig,
+    );
+    // (144, 144) apart: distance 203.6 <= 204, in contact on a diagonal; a
+    // Chebyshev or Manhattan rule would disagree.
+    spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      px: mid(5),
+      py: mid(16),
+    });
+    spawnUnitForTest(sim, ctx, {
+      side: 1,
+      def: 'unit_soldier',
+      px: mid(5) + 144,
+      py: mid(16) + 144,
+    });
+    runArena(sim, ctx, 1);
+    expect(ofType(events, 'unit_attacked')).toHaveLength(2);
+    const {
+      sim: s2,
+      ctx: c2,
+      events: e2,
+    } = startArenaBattle(coreOnly(), coreOnly(), GAP, content, simConfig);
+    // (145, 145): 205.06 > 204, not yet in contact.
+    spawnUnitForTest(s2, c2, {
+      side: 0,
+      def: 'unit_soldier',
+      px: mid(5),
+      py: mid(16),
+    });
+    spawnUnitForTest(s2, c2, {
+      side: 1,
+      def: 'unit_soldier',
+      px: mid(5) + 145,
+      py: mid(16) + 145,
+    });
+    runArena(s2, c2, 1);
+    expect(ofType(e2, 'unit_attacked')).toHaveLength(0);
   });
 
   test('a unit attacks the nearest enemy; ties go to the lowest ID', () => {
@@ -440,32 +537,62 @@ describe('combat', () => {
       content,
       simConfig,
     );
-    const far = spawnUnitForTest(sim, ctx, {
+    const x = mid(5);
+    const y = mid(17);
+    // Three enemies at the same distance 200 (IDs 1, 2, 3).
+    const e1 = spawnUnitForTest(sim, ctx, {
       side: 1,
       def: 'unit_soldier',
-      x: 5,
-      y: 18,
+      px: x,
+      py: y + 200,
     });
-    const near2 = spawnUnitForTest(sim, ctx, {
+    const e2 = spawnUnitForTest(sim, ctx, {
       side: 1,
       def: 'unit_soldier',
-      x: 6,
-      y: 17,
+      px: x + 200,
+      py: y,
     });
-    const near1 = spawnUnitForTest(sim, ctx, {
+    const e3 = spawnUnitForTest(sim, ctx, {
       side: 1,
       def: 'unit_soldier',
-      x: 4,
-      y: 17,
+      px: x - 200,
+      py: y,
     });
-    // The attacker is at (5, 17): both near ones are at distance 1 (the lower
-    // ID wins) and the third is also at distance 1 above... put it at (5, 18).
-    spawnUnitForTest(sim, ctx, { side: 0, def: 'unit_soldier', x: 5, y: 17 });
+    const me = spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      px: x,
+      py: y,
+    });
     runArena(sim, ctx, 1);
-    const mine = ofType(events, 'unit_attacked').find((e) => e.unit === 4);
-    // IDs: far = 1, near2 = 2, near1 = 3; all three are at distance 1.
-    expect([far.id, near2.id, near1.id]).toEqual([1, 2, 3]);
+    expect([e1.id, e2.id, e3.id, me.id]).toEqual([1, 2, 3, 4]);
+    const mine = ofType(events, 'unit_attacked').find((e) => e.unit === me.id);
     expect(mine?.target).toEqual({ kind: 'unit', unit: 1 });
+    // A closer enemy with a higher ID is preferred to a lower ID further away.
+    const b = startArenaBattle(coreOnly(), coreOnly(), GAP, content, simConfig);
+    const far = spawnUnitForTest(b.sim, b.ctx, {
+      side: 1,
+      def: 'unit_soldier',
+      px: x,
+      py: y + 200,
+    });
+    const near = spawnUnitForTest(b.sim, b.ctx, {
+      side: 1,
+      def: 'unit_soldier',
+      px: x + 190,
+      py: y,
+    });
+    const me2 = spawnUnitForTest(b.sim, b.ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      px: x,
+      py: y,
+    });
+    runArena(b.sim, b.ctx, 1);
+    expect(far.id).toBeLessThan(near.id);
+    expect(
+      ofType(b.events, 'unit_attacked').find((e) => e.unit === me2.id)?.target,
+    ).toEqual({ kind: 'unit', unit: near.id });
   });
 
   test('two equal groups meeting annihilate each other symmetrically', () => {
@@ -523,39 +650,44 @@ describe('combat', () => {
   });
 
   test('a unit on cooldown holds position instead of walking away', () => {
-    // A raider at a source: after its first blow it must not move on.
-    const lab = new Lab(tiny([[5, 12, 'res_a']]));
-    lab.core(0, 0);
-    const src = lab.put('bld_extractor', 5, 12, 0, 3);
     const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
-      lab.state,
+      coreOnly(),
       GAP,
       content,
       simConfig,
     );
-    const at = arenaCell(1, 5, 12);
-    const r = spawnUnitForTest(sim, ctx, {
+    const a = spawnUnitForTest(sim, ctx, {
       side: 0,
-      def: 'unit_raider',
-      x: at.x,
-      y: at.y - 1,
+      def: 'unit_soldier',
+      px: mid(5),
+      py: mid(16),
     });
-    runArena(sim, ctx, 12);
-    expect(movesOf(events, r.id)).toHaveLength(0);
-    const hits = ofType(events, 'unit_attacked').filter((e) => e.unit === r.id);
-    expect(hits.map((h) => h.tick)).toEqual([0, 8]);
-    expect(hits[0]?.target).toEqual({
-      kind: 'building',
+    // A raider of the other side with plenty of health, in contact.
+    const r = spawnUnitForTest(sim, ctx, {
       side: 1,
-      building: src,
+      def: 'unit_raider',
+      px: mid(5),
+      py: mid(16) + 192,
     });
-    expect(healthOf(sim, 1, src)).toBe(60 - 16);
+    r.hp = 1000;
+    a.hp = 1000;
+    for (let t = 0; t < 12; t++) {
+      stepArena(sim, ctx);
+      expect([a.px, a.py]).toEqual([mid(5), mid(16)]);
+      expect([r.px, r.py]).toEqual([mid(5), mid(16) + 192]);
+    }
+    const mine = ofType(events, 'unit_attacked').filter((e) => e.unit === a.id);
+    expect(mine.map((h) => h.tick)).toEqual([0, 10]);
+    const theirs = ofType(events, 'unit_attacked').filter(
+      (e) => e.unit === r.id,
+    );
+    expect(theirs.map((h) => h.tick)).toEqual([0, 8]);
   });
 });
 
-describe('targeting', () => {
-  test('a raider goes for infrastructure over a nearer wall, then for the Core', () => {
+describe('targeting (#66: every unit heads for the Core)', () => {
+  test('a raider walks past sources, splitters and walls to the Core', () => {
     const lab = new Lab(tiny([[8, 5, 'res_a']]));
     lab.core(5, 0);
     const wall = lab.put('bld_wall', 6, 14);
@@ -568,116 +700,85 @@ describe('targeting', () => {
       content,
       simConfig,
     );
-    for (const x of [6, 7]) {
+    for (const x of [6, 8]) {
       spawnUnitForTest(sim, ctx, { side: 0, def: 'unit_raider', x, y: 16 });
     }
+    const before = [wall, src, sp].map((b) => healthOf(sim, 1, b));
     runArena(sim, ctx, 700);
     const targets = ofType(events, 'unit_attacked').map((e) => e.target);
-    const buildingHits = targets.flatMap((t) =>
-      t.kind === 'building' ? [t.building] : [],
-    );
-    expect(new Set(buildingHits)).toEqual(new Set([src, sp]));
-    expect(buildingHits).not.toContain(wall);
-    expect(healthOf(sim, 1, wall)).toBe(100);
-    expect(healthOf(sim, 1, src)).toBe(0);
-    expect(healthOf(sim, 1, sp)).toBe(0);
-    // Core hits only once nothing else of the infrastructure is left.
-    const lastInfra = Math.max(
-      ...targets.map((t, i) => (t.kind === 'building' ? i : -1)),
-    );
-    const firstCore = targets.findIndex((t) => t.kind === 'core');
-    expect(firstCore).toBeGreaterThan(lastInfra - 1);
+    // No building but the Core is ever attacked: there is an open way.
+    expect(targets.filter((t) => t.kind === 'building')).toEqual([]);
+    expect(targets.some((t) => t.kind === 'core')).toBe(true);
+    expect([wall, src, sp].map((b) => healthOf(sim, 1, b))).toEqual(before);
     expect(healthOf(sim, 1, 0)).toBeLessThan(500);
-    const destroyed = ofType(events, 'building_destroyed').map(
-      (e) => e.building,
-    );
-    expect(new Set(destroyed)).toEqual(new Set([src, sp]));
+    expect(ofType(events, 'building_destroyed')).toEqual([]);
   });
 
-  test('a unit with a defenses preference attacks walls and turrets first', () => {
-    const lab = new Lab(tiny());
-    lab.core(5, 0);
-    const wall = lab.put('bld_wall', 2, 14);
-    const turret = lab.put('bld_turret', 9, 8);
-    const sp = lab.put('bld_splitter', 6, 12);
-    const custom: ArenaContent = {
-      ...content,
-      units: loadUnitsOrThrow({
-        units: [
-          {
-            id: 'unit_sapper',
-            health: 40,
-            damage: 30,
-            attackCooldownTicks: 5,
-            rangeCells: 0,
-            moveCooldownTicks: 2,
-            targeting: 'defenses',
-          },
-        ],
-      }),
+  test('the loader rejects the removed targeting and rangeCells fields', () => {
+    const base = {
+      id: 'unit_x',
+      health: 10,
+      damage: 1,
+      attackCooldownTicks: 5,
+      moveCooldownTicks: 2,
+      radius: 70,
+      collisionRadius: 70,
+      reach: 60,
+      flying: false,
+      attackType: 'melee',
     };
-    const { sim, ctx, events } = startArenaBattle(
-      coreOnly(),
-      lab.state,
-      GAP,
-      custom,
-      simConfig,
-    );
-    spawnUnitForTest(sim, ctx, { side: 0, def: 'unit_sapper', x: 6, y: 16 });
-    runArena(sim, ctx, 600);
-    const hit = ofType(events, 'unit_attacked').flatMap((e) =>
-      e.target.kind === 'building' ? [e.target.building] : [],
-    );
-    expect(new Set(hit)).toEqual(new Set([wall, turret]));
-    expect(hit).not.toContain(sp);
-    expect(healthOf(sim, 1, sp)).toBe(20);
-    expect(
-      ofType(events, 'unit_attacked').some((e) => e.target.kind === 'core'),
-    ).toBe(true);
+    expect(() => loadUnitsOrThrow({ units: [base] })).not.toThrow();
+    expect(() =>
+      loadUnitsOrThrow({ units: [{ ...base, targeting: 'core' }] }),
+    ).toThrow(/targeting/);
+    expect(() =>
+      loadUnitsOrThrow({ units: [{ ...base, rangeCells: 0 }] }),
+    ).toThrow(/rangeCells/);
   });
 
-  test('ranged units attack from their range and then stop', () => {
-    const lab = new Lab(tiny());
-    lab.core(5, 0);
-    const wall = lab.put('bld_wall', 5, 14);
+  test('reach is edge to edge, to the nearest point of a building', () => {
     const custom: ArenaContent = {
       ...content,
       units: loadUnitsOrThrow({
         units: [
           {
-            id: 'unit_archer',
+            id: 'unit_longarm',
             health: 10,
             damage: 2,
             attackCooldownTicks: 5,
-            rangeCells: 3,
             moveCooldownTicks: 2,
-            targeting: 'defenses',
+            radius: 72,
+            collisionRadius: 72,
+            reach: 480,
+            flying: false,
+            attackType: 'melee',
           },
         ],
       }),
     };
     const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
-      lab.state,
+      coreOnly(),
       GAP,
       custom,
       simConfig,
     );
     const u = spawnUnitForTest(sim, ctx, {
       side: 0,
-      def: 'unit_archer',
-      x: 6,
-      y: 16,
+      def: 'unit_longarm',
+      x: 5,
+      y: 20,
     });
+    const core = got(ctx.arena.buildings[got(ctx.arena.coreRef[1])]);
     runArena(sim, ctx, 40);
-    const first = ofType(events, 'unit_attacked')[0];
-    expect(first?.target).toEqual({
-      kind: 'building',
-      side: 1,
-      building: wall,
-    });
-    // The wall is at arena (6, 21); the archer stops at Manhattan distance 3.
-    expect(Math.abs(u.x - 6) + Math.abs(u.y - 21)).toBe(3);
+    const first = got(ofType(events, 'unit_attacked')[0]);
+    expect(first.target).toEqual({ kind: 'core', side: 1 });
+    // It stopped as soon as the gap to the Core was at most 480: the squared
+    // distance to the nearest cell is within (480 + 72)^2 and, because it
+    // walks 120 per tick, more than 120 closer-than-that is not needed.
+    const d2 = buildingDist2(u.px, u.py, core);
+    expect(d2).toBeLessThanOrEqual((480 + 72) ** 2);
+    expect(d2).toBeGreaterThan((480 + 72 - 120) ** 2);
   });
 
   test('with nothing left to attack, units wait', () => {
@@ -690,13 +791,26 @@ describe('targeting', () => {
     );
     const h = sim.health.find((x) => x.side === 1 && x.building === 0);
     got(h).hp = 0;
-    spawnUnitForTest(sim, ctx, { side: 0, def: 'unit_soldier', x: 5, y: 16 });
-    spawnUnitForTest(sim, ctx, { side: 0, def: 'unit_raider', x: 6, y: 16 });
-    runArena(sim, ctx, 50);
+    const a = spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: 5,
+      y: 16,
+    });
+    const b = spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_raider',
+      x: 8,
+      y: 16,
+    });
+    // Tick 0 still decides with the Core standing (it falls in step 6).
+    runArena(sim, ctx, 1);
+    const at = [a.px, a.py, b.px, b.py];
+    runArena(sim, ctx, 49);
     expect(ofType(events, 'core_destroyed')).toEqual([
       { tick: 0, type: 'core_destroyed', side: 1 },
     ]);
-    expect(ofType(events, 'unit_moved')).toHaveLength(0);
+    expect([a.px, a.py, b.px, b.py]).toEqual(at);
     expect(ofType(events, 'unit_attacked')).toHaveLength(0);
     expect(sim.tick).toBe(50);
     // The Core's cells are open ground again.
@@ -785,9 +899,9 @@ describe('breaching sealed bases (CB-20)', () => {
       x: 5,
       y: 32,
     });
-    runArena(sim, ctx, 14);
+    runArena(sim, ctx, 30);
     // It sidestepped towards the weak wall (arena (6, 33)) and attacked it.
-    expect(u.x).toBe(6);
+    expect(cellOfUnit(u).x).toBe(6);
     expect(healthOf(sim, 1, weak)).toBeLessThan(100);
   });
 });
@@ -1325,7 +1439,7 @@ describe('destruction', () => {
       y: 20,
     });
     runArena(a.sim, a.ctx, 220);
-    expect(ofType(a.events, 'building_destroyed').length).toBeGreaterThan(0);
+    expect(ofType(a.events, 'unit_attacked').length).toBeGreaterThan(0);
     const copy = JSON.parse(JSON.stringify(a.sim)) as ArenaSim;
     expect(hashJson(copy)).toBe(hashJson(a.sim));
     const events: ArenaEvent[] = [];
@@ -1414,8 +1528,13 @@ describe('production', () => {
     // Core at arena (5..6, 0..1). Board (3, 7) and board (4, 6) are both 28
     // steps from it; the tie goes to the lower board y, so (4, 6).
     const cell = arenaCell(1, 4, 6);
-    expect(s).toMatchObject({ x: cell.x, y: cell.y, building: bar });
-    expect(ctx.arena.occupant[s.y * 12 + s.x]).toBe(-1);
+    // The unit appears at the centre of that cell.
+    expect(s).toMatchObject({
+      px: mid(cell.x),
+      py: mid(cell.y),
+      building: bar,
+    });
+    expect(ctx.arena.occupant[cell.y * 12 + cell.x]).toBe(-1);
   });
 });
 
@@ -1451,9 +1570,9 @@ describe('determinism and symmetry', () => {
     return sim.units
       .filter((u) => u.side === side)
       .map((u) => {
-        const x = side === 0 ? u.x : 11 - u.x;
-        const y = side === 0 ? u.y : H - 1 - u.y;
-        return `${u.def} ${String(x)},${String(y)} hp${String(u.hp)} m${String(u.moveCooldown)} a${String(u.attackCooldown)}`;
+        const x = side === 0 ? u.px : 12 * CU - u.px;
+        const y = side === 0 ? u.py : H * CU - u.py;
+        return `${u.def} ${String(x)},${String(y)} hp${String(u.hp)} a${String(u.attackCooldown)}`;
       })
       .sort();
   }
@@ -1518,8 +1637,19 @@ describe('rendering', () => {
       simConfig,
     );
     spawnUnitForTest(sim, ctx, { side: 0, def: 'unit_soldier', x: 4, y: 12 });
-    spawnUnitForTest(sim, ctx, { side: 0, def: 'unit_soldier', x: 9, y: 16 });
-    spawnUnitForTest(sim, ctx, { side: 1, def: 'unit_soldier', x: 9, y: 16 });
+    // Two circles of different sides with centres in the same cell.
+    spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      px: 9 * CU + 40,
+      py: mid(16),
+    });
+    spawnUnitForTest(sim, ctx, {
+      side: 1,
+      def: 'unit_soldier',
+      px: 9 * CU + 190,
+      py: mid(16),
+    });
     spawnUnitForTest(sim, ctx, { side: 1, def: 'unit_soldier', x: 3, y: 20 });
     const text = renderArenaAscii(sim, content);
     const body = text.split('\n').slice(0, -1).join('\n');
@@ -1576,6 +1706,7 @@ describe('damage sums beyond 32 bits (int.ts contract)', () => {
         def: 'unit_soldier',
         x: at.x,
         y: at.y,
+        allowOverlap: true,
       });
       u.damage = damage;
       u.attackCooldown = 0;
@@ -1606,6 +1737,7 @@ describe('damage sums beyond 32 bits (int.ts contract)', () => {
         def: 'unit_soldier',
         x: 4,
         y: 18,
+        allowOverlap: true,
       });
       u.damage = 200_000_000;
     }
@@ -1662,7 +1794,7 @@ describe('stress', () => {
           side,
           def: k % 3 === 0 ? 'unit_raider' : 'unit_soldier',
           x: (k >> 1) % 96,
-          y: side === 0 ? 17 : 22,
+          y: (side === 0 ? 17 : 22) + (k >> 1 >= 96 ? 1 : 0),
         });
       }
       let peak = 0;
@@ -1685,17 +1817,15 @@ describe('stress', () => {
 
 /** Per-tick invariants of a battle (shared by the property tests). */
 function checkTick(sim: ArenaSim, ctx: ArenaContext): void {
-  const { width } = ctx.arena.geom;
   let prev = 0;
   for (const u of sim.units) {
     expect(u.id).toBeGreaterThan(prev);
     prev = u.id;
-    const k = u.y * width + u.x;
-    expect(ctx.arena.blocked[k]).toBe(0);
-    expect(openFor(ctx.arena, u.side, k)).toBe(true);
+    expect(Number.isInteger(u.px) && Number.isInteger(u.py)).toBe(true);
     expect(Number.isInteger(u.hp)).toBe(true);
     expect(u.hp).toBeGreaterThan(0);
   }
+  expect(circleViolations(sim, ctx)).toEqual([]);
   for (const h of sim.health) {
     expect(Number.isInteger(h.hp)).toBe(true);
     expect(h.hp).toBeGreaterThanOrEqual(0);
@@ -1741,7 +1871,7 @@ function stepChecked(
   events: ArenaEvent[],
 ): number {
   const before = new Map(
-    sim.units.map((u) => [u.id, { y: u.y, side: u.side }]),
+    sim.units.map((u) => [u.id, { y: Math.floor(u.py / CU), side: u.side }]),
   );
   const start = events.length;
   const { boardHeight, height } = ctx.arena.geom;
@@ -1850,12 +1980,16 @@ describe('property: turrets and gates', () => {
           const y = side === 0 ? 14 + (k % 6) : height - 15 - (k % 6);
           const idx = y * width + x;
           if (!openFor(ctx.arena, side, idx)) continue;
-          spawnUnitForTest(sim, ctx, {
-            side,
-            def: k % 3 === 0 ? 'unit_raider' : 'unit_soldier',
-            x,
-            y,
-          });
+          try {
+            spawnUnitForTest(sim, ctx, {
+              side,
+              def: k % 3 === 0 ? 'unit_raider' : 'unit_soldier',
+              x,
+              y,
+            });
+          } catch {
+            // That spot is taken by another unit: skip it.
+          }
         }
         for (let t = 0; t < 400; t++) {
           shots += stepChecked(sim, ctx, events);
@@ -1873,7 +2007,6 @@ describe('property: turrets and gates', () => {
 describe('property: random battles', () => {
   test('invariants hold every tick', { timeout: 120000 }, () => {
     let spawned = 0;
-    let destroyed = 0;
     let died = 0;
     for (let seed = 1; seed <= 12; seed++) {
       const a = randomNetwork(seed, { core: true });
@@ -1897,12 +2030,16 @@ describe('property: random battles', () => {
           (ctx.arena.occupant[idx] ?? -1) >= 0
         )
           continue;
-        spawnUnitForTest(sim, ctx, {
-          side,
-          def: k % 3 === 0 ? 'unit_raider' : 'unit_soldier',
-          x,
-          y,
-        });
+        try {
+          spawnUnitForTest(sim, ctx, {
+            side,
+            def: k % 3 === 0 ? 'unit_raider' : 'unit_soldier',
+            x,
+            y,
+          });
+        } catch {
+          // That spot is taken by another unit: skip it.
+        }
       }
       for (let t = 0; t < 300; t++) {
         stepChecked(sim, ctx, events);
@@ -1910,10 +2047,8 @@ describe('property: random battles', () => {
       }
       spawned += sim.spawned[0] + sim.spawned[1];
       died += sim.unitsDied[0] + sim.unitsDied[1];
-      destroyed += sim.health.filter((h) => h.hp === 0).length;
     }
     expect(spawned).toBeGreaterThan(200);
     expect(died).toBeGreaterThan(20);
-    expect(destroyed).toBeGreaterThan(3);
   });
 });
