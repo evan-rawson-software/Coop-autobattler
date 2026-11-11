@@ -63,10 +63,13 @@ const resources = JSON.parse(
 ).resources;
 
 const browser = await chromium.launch();
-const page = await browser.newPage({
+// A context (not browser.newPage) so the Shop checks can open a second tab
+// that shares this page's localStorage.
+const context = await browser.newContext({
   viewport: { width: 1920, height: 1080 },
   deviceScaleFactor: 1,
 });
+const page = await context.newPage();
 const consoleErrors = [];
 page.on('console', (m) => {
   if (m.type() === 'error' || m.type() === 'warning') {

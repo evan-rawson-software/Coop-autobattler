@@ -20,6 +20,7 @@ import {
   type RunState,
 } from '@game/session';
 import type { WebContent } from '../content.js';
+import { isEditStep } from '../build/session.js';
 import { buildingName } from '../build/view-model.js';
 import { effectText, KIND_LABELS, needsText } from './effect-text.js';
 
@@ -168,6 +169,16 @@ export function buildShopView(
     readyCount: run.perPlayer.filter((p) => p.ready).length,
     playerCount: run.players.length,
   };
+}
+
+/**
+ * "N of M ready" for the status bar, or null outside the steps where players
+ * ready up to shop and build (the flags are reset when the step changes).
+ */
+export function readyLabel(run: RunState): string | null {
+  if (!isEditStep(run.step)) return null;
+  const n = run.perPlayer.filter((p) => p.ready).length;
+  return `${String(n)} of ${String(run.players.length)} ready`;
 }
 
 // ---------------------------------------------------------------------------

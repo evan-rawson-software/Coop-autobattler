@@ -12,6 +12,7 @@ import {
   createMemoryStorage,
 } from '../run/local-storage-store.js';
 import { createShopDeps, loadShopRun, shopRunId } from '../run/shop-run.js';
+import { performAction } from './actions.js';
 import {
   EFFECT_TEMPLATES,
   effectText,
@@ -21,6 +22,7 @@ import {
 import {
   buildShopView,
   nextBattleView,
+  readyLabel,
   saleQuote,
   type ShopContext,
 } from './view-model.js';
@@ -291,5 +293,54 @@ describe('reload', () => {
     const back = opened.controller.state;
     expect(back).toEqual(saved);
     expect(buildShopView(back, ME, ctx)).toEqual(buildShopView(saved, ME, ctx));
+  });
+});
+
+describe('actions sent back to back', () => {
+  test('two affordable buys both apply, in order', async () => {
+    const { s } = await shopSession();
+    const view = buildShopView(s.run, ME, ctx);
+    const affordable = view.offers.filter((c) => c.canBuy && c.offer);
+    const total = affordable
+      .slice(0, 2)
+      .reduce((n, c) => n + (c.offer?.price ?? 0), 0);
+    const slots = affordable.slice(0, 2).map((c) => c.slot);
+    if (slots.length < 2 || total > view.gold) return;
+    const stash0 = s.run.team.stash.length;
+    const [r1, r2] = await Promise.all(
+      slots.map((slot) => performAction(s, { type: 'buy', slot }, 'ok')),
+    );
+    expect(r1?.ok).toBe(true);
+    expect(r2?.ok).toBe(true);
+    expect(s.run.team.stash).toHaveLength(stash0 + 2);
+    expect(buildShopView(s.run, ME, ctx).gold).toBe(view.gold - total);
+  });
+
+  test('a queued action that no longer fits shows its own reason', async () => {
+    const { s } = await shopSession();
+    const slot = buildShopView(s.run, ME, ctx).offers.findIndex(
+      (c) => c.canBuy,
+    );
+    const stash0 = s.run.team.stash.length;
+    // The same slot twice: the second runs after the first and finds it sold.
+    const [r1, r2] = await Promise.all([
+      performAction(s, { type: 'buy', slot }, 'ok'),
+      performAction(s, { type: 'buy', slot }, 'ok'),
+    ]);
+    expect(r1.ok).toBe(true);
+    expect(r2).toMatchObject({ ok: false, kind: 'error' });
+    expect(r2.text).toMatch(/gone|already/i);
+    expect(s.run.team.stash).toHaveLength(stash0 + 1);
+  });
+});
+
+describe('the ready count', () => {
+  test('is shown in the shop step and hidden after Ready moves the run on', async () => {
+    const { s } = await shopSession();
+    expect(readyLabel(s.run)).toBe('0 of 1 ready');
+    const r = await s.dispatch({ type: 'ready' });
+    expect(r.ok).toBe(true);
+    expect(s.run.step).not.toBe('shop');
+    expect(readyLabel(s.run)).toBeNull();
   });
 });

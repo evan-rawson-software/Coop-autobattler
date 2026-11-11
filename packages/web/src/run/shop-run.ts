@@ -28,6 +28,12 @@ import { driveToShop, type NextBattle } from './drive.js';
 import {
   browserStorage,
   createLocalStorageSaveStore,
+  DEFAULT_PREFIX,
+  saveKey,
+  STALE_MESSAGE,
+  usableStorage,
+  watchSaveKey,
+  type StorageLike,
 } from './local-storage-store.js';
 
 /** The version recorded in saves written by this prototype. */
@@ -43,11 +49,49 @@ export interface ShopRun {
   readonly storage: 'local' | 'memory';
   /** True when the run was opened from a save rather than set up now. */
   readonly restored: boolean;
+  /** True once the save changed in another tab; the session then refuses actions. */
+  readonly conflict: Store<boolean>;
+  /** Stop listening for changes from other tabs. */
+  dispose(): void;
 }
 
 export interface ShopRunOptions {
   readonly next?: NextBattle;
   readonly seed?: number;
+  /** Storage to use instead of `localStorage` (tests); null means none. */
+  readonly storage?: StorageLike | null;
+}
+
+/** A saved run exists but `openRun` refused it. It is never deleted for you. */
+export class UnopenableRunError extends Error {
+  constructor(
+    readonly reason: string,
+    readonly errors: readonly string[],
+  ) {
+    super(describeUnopenable(reason, errors));
+    this.name = 'UnopenableRunError';
+  }
+}
+
+/** Plain words for why a saved run could not be opened. */
+export function describeUnopenable(
+  reason: string,
+  errors: readonly string[] = [],
+): string {
+  switch (reason) {
+    case 'corrupt':
+      return errors.some((e) => /format ?version/i.test(e))
+        ? 'The saved run was written in a format this version of the game cannot read.'
+        : 'The saved run is damaged and cannot be read.';
+    case 'newer':
+      return 'The saved run was made by a newer version of the game.';
+    case 'older_major':
+      return 'The saved run was made by an older version of the game that is no longer supported.';
+    case 'load_failed':
+      return 'The browser could not read the saved run from storage.';
+    default:
+      return 'The saved run could not be opened.';
+  }
 }
 
 /**
@@ -73,11 +117,29 @@ export function optionsFromUrl(search: string): ShopRunOptions {
     : { next };
 }
 
-function chooseStore(): { store: SaveStore; storage: 'local' | 'memory' } {
-  const ls = browserStorage();
+function chooseStore(
+  provided: StorageLike | null | undefined,
+  onStale: () => void,
+): {
+  store: SaveStore;
+  storage: 'local' | 'memory';
+  raw: StorageLike | null;
+} {
+  const ls = provided === undefined ? browserStorage() : usableOrNull(provided);
   return ls === null
-    ? { store: createMemorySaveStore(), storage: 'memory' }
-    : { store: createLocalStorageSaveStore(ls), storage: 'local' };
+    ? { store: createMemorySaveStore(), storage: 'memory', raw: null }
+    : {
+        store: createLocalStorageSaveStore(ls, DEFAULT_PREFIX, {
+          rejectStale: true,
+          onStale,
+        }),
+        storage: 'local',
+        raw: ls,
+      };
+}
+
+function usableOrNull(s: StorageLike | null): StorageLike | null {
+  return s === null ? null : usableStorage(s);
 }
 
 async function create(
@@ -105,8 +167,9 @@ async function create(
 }
 
 /**
- * Open the saved sample run, or set a new one up. `fresh` discards a saved
- * one first. A save that cannot be opened is replaced.
+ * Open the saved sample run, or set a new one up when there is none. `fresh`
+ * discards a saved one first (only ever on the player's say-so). A save that
+ * cannot be opened is never deleted here: this throws `UnopenableRunError`.
  */
 export async function loadShopRun(
   options: ShopRunOptions & { readonly fresh?: boolean } = {},
@@ -115,29 +178,44 @@ export async function loadShopRun(
   const seed = options.seed ?? 11;
   const runId = shopRunId(next);
   const deps = createShopDeps();
-  const { store, storage } = chooseStore();
+  const conflict = createStore<boolean>(false);
+  let session: BuildSession | null = null;
+  const markConflict = (): void => {
+    session?.lock(STALE_MESSAGE);
+    conflict.set(true);
+  };
+  const { store, storage, raw } = chooseStore(options.storage, markConflict);
   if (options.fresh === true) await store.remove(runId);
 
   const opened = await openRun(runId, deps, store, INSTALLED_VERSION);
+  let controller: RunController;
+  let restored: boolean;
   if (opened.ok) {
-    return {
-      session: BuildSession.fromController(opened.controller),
-      deps,
-      runId,
-      next,
-      storage,
-      restored: true,
-    };
+    controller = opened.controller;
+    restored = true;
+  } else if (opened.reason === 'not_found') {
+    controller = await create(runId, seed, next, deps, store);
+    restored = false;
+  } else {
+    throw new UnopenableRunError(opened.reason, opened.errors ?? []);
   }
-  if (opened.reason !== 'not_found') await store.remove(runId);
-  const controller = await create(runId, seed, next, deps, store);
+  session = BuildSession.fromController(controller);
+  let stop: (() => void) | null = null;
+  if (raw !== null && typeof window !== 'undefined') {
+    stop = watchSaveKey(window, raw, saveKey(runId), markConflict);
+  }
   return {
-    session: BuildSession.fromController(controller),
+    session,
     deps,
     runId,
     next,
     storage,
-    restored: false,
+    restored,
+    conflict,
+    dispose: () => {
+      stop?.();
+      stop = null;
+    },
   };
 }
 
@@ -147,6 +225,12 @@ export async function loadShopRun(
 export type ShopRunState =
   | { readonly status: 'loading' }
   | { readonly status: 'ready'; readonly run: ShopRun }
+  /** A save exists but cannot be opened; the player decides what happens. */
+  | {
+      readonly status: 'unopenable';
+      readonly reason: string;
+      readonly message: string;
+    }
   | { readonly status: 'error'; readonly message: string };
 
 export const shopRunStore: Store<ShopRunState> = createStore<ShopRunState>({
@@ -155,35 +239,59 @@ export const shopRunStore: Store<ShopRunState> = createStore<ShopRunState>({
 
 let loading: Promise<void> | null = null;
 
+function failure(e: unknown): ShopRunState {
+  if (e instanceof UnopenableRunError) {
+    return { status: 'unopenable', reason: e.reason, message: e.message };
+  }
+  return {
+    status: 'error',
+    message: e instanceof Error ? e.message : String(e),
+  };
+}
+
+function current(): ShopRun | null {
+  const st = shopRunStore.get();
+  return st.status === 'ready' ? st.run : null;
+}
+
+async function replaceRun(
+  options: (ShopRunOptions & { readonly fresh?: boolean }) | undefined,
+): Promise<void> {
+  current()?.dispose();
+  shopRunStore.set({ status: 'loading' });
+  try {
+    shopRunStore.set({
+      status: 'ready',
+      run: await loadShopRun(options),
+    });
+  } catch (e) {
+    shopRunStore.set(failure(e));
+  }
+}
+
+function start(
+  options: (ShopRunOptions & { readonly fresh?: boolean }) | undefined,
+): Promise<void> {
+  const p = replaceRun(options).finally(() => {
+    if (loading === p) loading = null;
+  });
+  loading = p;
+  return p;
+}
+
 /** Load the shared run once; later calls return the same load. */
 export function ensureShopRun(options?: ShopRunOptions): Promise<void> {
-  if (shopRunStore.get().status === 'ready') return Promise.resolve();
-  loading ??= loadShopRun(options)
-    .then((run) => {
-      shopRunStore.set({ status: 'ready', run });
-    })
-    .catch((e: unknown) => {
-      shopRunStore.set({
-        status: 'error',
-        message: e instanceof Error ? e.message : String(e),
-      });
-    })
-    .finally(() => {
-      loading = null;
-    });
-  return loading;
+  if (loading !== null) return loading;
+  if (shopRunStore.get().status !== 'loading') return Promise.resolve();
+  return start(options);
+}
+
+/** Open the run again from the store (after a change in another tab). */
+export function reloadShopRun(options?: ShopRunOptions): Promise<void> {
+  return start(options);
 }
 
 /** Discard the saved sample run and set up a new one. */
-export async function restartShopRun(options?: ShopRunOptions): Promise<void> {
-  shopRunStore.set({ status: 'loading' });
-  try {
-    const run = await loadShopRun({ ...options, fresh: true });
-    shopRunStore.set({ status: 'ready', run });
-  } catch (e) {
-    shopRunStore.set({
-      status: 'error',
-      message: e instanceof Error ? e.message : String(e),
-    });
-  }
+export function restartShopRun(options?: ShopRunOptions): Promise<void> {
+  return start({ ...options, fresh: true });
 }

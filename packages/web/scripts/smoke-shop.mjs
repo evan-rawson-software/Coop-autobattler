@@ -49,10 +49,18 @@ export async function runShopSmoke({
     await page.waitForFunction(() => window.__debug?.build?.step() === 'shop');
     await settle();
   };
+  // Each mount of the Shop tab has its own number, so waiting for a larger
+  // one cannot be satisfied by data left over from the previous mount.
+  const mounts = () =>
+    page.evaluate(() => window.__debug?.shop?.mounts?.() ?? 0);
   const goShopTab = async () => {
+    const m0 = await mounts();
     await page.click('.topbar-tabs button:has-text("Shop")');
     await page.waitForSelector('#shop-screen');
-    await page.waitForFunction(() => window.__debug?.shop?.state);
+    await page.waitForFunction(
+      (m) => (window.__debug?.shop?.mounts?.() ?? 0) > m,
+      m0,
+    );
     await settle();
   };
   const gold = async () =>
@@ -377,6 +385,12 @@ export async function runShopSmoke({
   await goShopTab();
   const snap0 = await snapshot();
   const roundTrips = [];
+  await goBuildTab();
+  check(
+    await page.evaluate(() => window.__debug?.shop === undefined),
+    'the Shop debug hook is unregistered when the tab is left',
+  );
+  await goShopTab();
   for (let i = 0; i < 3; i++) {
     await goBuildTab();
     await goShopTab();
@@ -457,6 +471,92 @@ export async function runShopSmoke({
   await page.setViewportSize({ width: 1920, height: 1080 });
   await settle();
 
+  // --- Two tabs on one run: a stale tab cannot undo a re-roll
+  const stateOf = (p) => p.evaluate(() => window.__debug.shop.state());
+  const context = page.context();
+  const tabB = await context.newPage();
+  // Tab B never hears about storage changes, as if the event were missed, so
+  // only the store's own check can stop its purchase.
+  await tabB.addInitScript(() => {
+    const add = window.addEventListener.bind(window);
+    window.addEventListener = (type, ...rest) =>
+      type === 'storage' ? undefined : add(type, ...rest);
+  });
+  await tabB.setViewportSize({ width: 1920, height: 1080 });
+  await tabB.goto(`${baseUrl}?next=pvp#shop`);
+  await tabB.waitForSelector('#shop-screen');
+  await tabB.waitForFunction(() => window.__debug?.shop?.state);
+  const a0 = await S.state();
+  const b0 = await stateOf(tabB);
+  check(
+    JSON.stringify(a0.offers) === JSON.stringify(b0.offers) &&
+      a0.gold === b0.gold,
+    'two tabs: both open on the same saved run',
+  );
+  const rerollGold = Number(
+    (await page.locator('#reroll').innerText()).match(/(\d+) gold/)[1],
+  );
+  await page.click('#reroll');
+  await page.waitForFunction(
+    (g) => window.__debug.shop.state().gold === g,
+    a0.gold - rerollGold,
+  );
+  const aRolled = await S.state();
+  let bSlot = -1;
+  b0.offers.forEach((def, i) => {
+    if (def !== null && b0.offerPrices[i] <= b0.gold && bSlot < 0) bSlot = i;
+  });
+  check(bSlot >= 0, 'two tabs: tab B still shows an affordable old offer');
+  await tabB
+    .locator(`#offers .offer[data-slot="${bSlot}"] [data-action="buy"]`)
+    .click();
+  await tabB.waitForSelector('#run-conflict');
+  const conflictText = await tabB.locator('#run-conflict').innerText();
+  check(
+    /changed in another tab/i.test(conflictText) &&
+      (await tabB.locator('#run-reload').count()) === 1,
+    'two tabs: the refused purchase stops tab B and offers Reload',
+  );
+  await page.reload();
+  await page.waitForSelector('#shop-screen');
+  await page.waitForFunction(() => window.__debug?.shop?.state);
+  const aAfter = await S.state();
+  check(
+    aAfter.gold === aRolled.gold &&
+      JSON.stringify(aAfter.offers) === JSON.stringify(aRolled.offers) &&
+      aAfter.stash.length === aRolled.stash.length &&
+      aAfter.actions === aRolled.actions,
+    `two tabs: after reload gold (${aAfter.gold}) and offers are tab A's re-roll and tab B's buy was refused`,
+  );
+  await tabB.click('#run-reload');
+  await tabB.waitForSelector('#shop-screen');
+  await tabB.waitForFunction(() => window.__debug?.shop?.state);
+  const bReloaded = await stateOf(tabB);
+  check(
+    JSON.stringify(bReloaded.offers) === JSON.stringify(aRolled.offers) &&
+      bReloaded.gold === aRolled.gold,
+    'two tabs: Reload in tab B shows the saved run',
+  );
+  // Now a change in B reaches A through the storage event.
+  await tabB.click('#reroll');
+  await page.waitForSelector('#run-conflict');
+  check(
+    /changed in another tab/i.test(
+      await page.locator('#run-conflict').innerText(),
+    ),
+    'two tabs: a save from another tab stops tab A with a Reload button',
+  );
+  await page.click('#run-reload');
+  await page.waitForSelector('#shop-screen');
+  await page.waitForFunction(() => window.__debug?.shop?.state);
+  check(
+    JSON.stringify((await S.state()).offers) ===
+      JSON.stringify((await stateOf(tabB)).offers),
+    'two tabs: Reload in tab A shows what tab B saved',
+  );
+  await tabB.close();
+  await shot('shop-6b-two-tabs');
+
   // --- Ready from the Shop tab
   const readyBefore = await page.locator('#shop-ready').innerText();
   check(readyBefore === 'Ready', 'Ready is available on the Shop tab');
@@ -468,7 +568,104 @@ export async function runShopSmoke({
     `ready from the Shop tab: the run advances and a placeholder names the step ("${ph.replace(/\s+/g, ' ').slice(0, 100)}")`,
   );
   await shot('shop-7-ready');
+  check(
+    !/ready/i.test(await page.locator('[data-field="run-info"]').innerText()),
+    'after Ready the status bar shows no ready count',
+  );
   await page.reload();
   await page.waitForSelector('#step-placeholder');
   check(true, 'the ready state survives a reload');
+
+  // --- Starting over asks first
+  const savedKey = 'coop:save:shop-sample-pvp';
+  const saved = () => page.evaluate((k) => localStorage.getItem(k), savedKey);
+  const savedBefore = await saved();
+  await page.click('#dev-new-run');
+  await page.waitForSelector('#restart-confirm');
+  check(
+    /cannot be undone/.test(
+      await page.locator('#restart-confirm').innerText(),
+    ) && (await saved()) === savedBefore,
+    'start a new sample run: asks first and deletes nothing yet',
+  );
+  await page.click('#dev-new-run-cancel');
+  check(
+    (await page.locator('#dev-new-run').count()) === 1 &&
+      (await saved()) === savedBefore,
+    'start a new sample run: Keep it leaves the save alone',
+  );
+  await page.click('#dev-new-run');
+  await page.click('#dev-new-run-confirm');
+  await page.waitForSelector('#shop-screen');
+  await page.waitForFunction(() => window.__debug?.shop?.state);
+  check(
+    (await saved()) !== savedBefore &&
+      (await S.state()).step === 'shop' &&
+      (await S.state()).ready === false,
+    'start a new sample run: confirming starts a fresh run in the shop',
+  );
+
+  // --- A save that cannot be opened is kept, and the player decides
+  const reloadAndExpectBlocked = async () => {
+    await page.reload();
+    await page.waitForSelector('#run-unopenable');
+  };
+  const old = JSON.parse(await saved());
+  old.state.formatVersion = 1;
+  const oldText = JSON.stringify(old);
+  await page.evaluate(
+    ([k, v]) => localStorage.setItem(k, v),
+    [savedKey, oldText],
+  );
+  await reloadAndExpectBlocked();
+  check(
+    /format/i.test(
+      await page.locator('#run-unopenable [data-field="reason"]').innerText(),
+    ) && (await saved()) === oldText,
+    'an old-format save: the reason is shown and the save is not deleted',
+  );
+  await shot('shop-8-unopenable');
+  await page.evaluate((k) => localStorage.setItem(k, '{not json'), savedKey);
+  await reloadAndExpectBlocked();
+  check(
+    /damaged/i.test(
+      await page.locator('#run-unopenable [data-field="reason"]').innerText(),
+    ) && (await saved()) === '{not json',
+    'a damaged save: the reason is shown and the save is not deleted',
+  );
+  await page.click('#run-discard');
+  await page.waitForSelector('#shop-screen');
+  await page.waitForFunction(() => window.__debug?.shop?.state);
+  check(
+    (await S.state()).step === 'shop' &&
+      JSON.parse(await saved()).runId === 'shop-sample-pvp',
+    'Discard and start a new sample run replaces the damaged save on request',
+  );
+
+  // --- localStorage that refuses writes: the run works but says it is unsaved
+  const noStore = await context.newPage();
+  await noStore.addInitScript(() => {
+    Storage.prototype.setItem = () => {
+      throw new Error('QuotaExceededError');
+    };
+  });
+  await noStore.setViewportSize({ width: 1920, height: 1080 });
+  await noStore.goto(`${baseUrl}?next=pvp#shop`);
+  await noStore.waitForSelector('#shop-screen');
+  const note = 'Not saved — progress is lost on reload';
+  check(
+    (await noStore.locator('#not-saved-note').innerText()) === note,
+    'unsaved run: the Shop tab shows "Not saved — progress is lost on reload"',
+  );
+  await noStore.click('.topbar-tabs button:has-text("Build")');
+  await noStore.waitForSelector('canvas');
+  check(
+    (await noStore.locator('#not-saved-note').innerText()) === note,
+    'unsaved run: the Build tab shows the same note',
+  );
+  await noStore.close();
+  check(
+    (await page.locator('#not-saved-note').count()) === 0,
+    'a saved run shows no unsaved note',
+  );
 }

@@ -190,6 +190,24 @@ export class BuildController {
 
   /** True when the session belongs to the shared Shop + Build run. */
   shared = false;
+  /** The dev run (`#build`), kept aside while the shared run is attached. */
+  private devSession: BuildSession | null = null;
+  private devSeed = DEFAULT_SEED;
+
+  /**
+   * Show the dev run on `#build`: the one that was in progress before the
+   * shared run was attached, or else a new one.
+   */
+  async enterDev(seed: number): Promise<void> {
+    const dev = this.devSession;
+    if (this.shared && dev !== null) {
+      this.devSession = null;
+      this.seed = this.devSeed;
+      this.attach(dev, false);
+      return;
+    }
+    await this.newRun(seed);
+  }
 
   async newRun(seed: number): Promise<void> {
     this.unsub?.();
@@ -209,6 +227,10 @@ export class BuildController {
    * (tool, selection) starts fresh; the run itself is untouched.
    */
   attach(s: BuildSession, shared = false): void {
+    if (shared && !this.shared && this.session !== null) {
+      this.devSession = this.session;
+      this.devSeed = this.seed;
+    }
     this.unsub?.();
     this.shared = shared;
     this.session = s;

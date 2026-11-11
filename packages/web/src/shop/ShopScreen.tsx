@@ -14,21 +14,21 @@ import { CameraController } from '../board/controller.js';
 import { economy, simConfig } from '../build/setup.js';
 import { ME, type SessionView } from '../build/session.js';
 import { content } from '../content.js';
-import { registerDebug } from '../debug-hook.js';
+import { registerDebug, unregisterDebug } from '../debug-hook.js';
+import { NotSavedNote, RestartButton, RunGate } from '../run/RunGate.js';
 import {
   ensureShopRun,
   optionsFromUrl,
-  restartShopRun,
-  shopRunStore,
   type ShopRun,
 } from '../run/shop-run.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import './shop.css';
-import { shopReason } from './messages.js';
+import { performAction } from './actions.js';
 import { onStepTab, stepTabs } from './tabs.js';
 import {
   buildShopView,
   nextBattleView,
+  readyLabel,
   saleQuote,
   type NextBattleView,
   type OfferCard,
@@ -42,33 +42,17 @@ miniCamera.refitOnResize = true;
 
 const ctx = { content, economy, sim: simConfig };
 
+/** Counts mounts of the Shop tab, so the smoke script can wait for a new one. */
+let mountCount = 0;
+
 const plain = (v: unknown): unknown => JSON.parse(JSON.stringify(v)) as unknown;
 
 /** The Shop tab: loads the shared run, then shows it. */
 export function ShopScreen() {
-  const state = useStore(shopRunStore);
   useEffect(() => {
     void ensureShopRun(optionsFromUrl(window.location.search));
   }, []);
-  if (state.status === 'loading') {
-    return (
-      <AppShell title="Shop + Build">
-        <p class="muted pad" id="shop-loading">
-          Setting up a run in the shop.
-        </p>
-      </AppShell>
-    );
-  }
-  if (state.status === 'error') {
-    return (
-      <AppShell title="Shop + Build">
-        <p class="error" id="shop-error">
-          Could not set up the run: {state.message}
-        </p>
-      </AppShell>
-    );
-  }
-  return <ShopTab run={state.run} />;
+  return <RunGate>{(run) => <ShopTab run={run} />}</RunGate>;
 }
 
 function Card(props: { card: OfferCard; onBuy: (slot: number) => void }) {
@@ -240,7 +224,7 @@ function ShopTab(props: { run: ShopRun }) {
     text: 'Buying, selling and re-rolling cannot be undone.',
     kind: 'info',
   });
-  const busy = useRef(false);
+  const [mountId] = useState(() => ++mountCount);
   const dragged = useRef<StashRow | null>(null);
 
   // Drop a pending sale when its row is gone (sold, or the state changed).
@@ -252,9 +236,19 @@ function ShopTab(props: { run: ShopRun }) {
     if (row === undefined) setPending(null);
   }, [sv, pending]);
 
+  // The hook belongs to this mount: remove it when the tab goes away so a
+  // reader never sees the previous mount's data.
+  useEffect(
+    () => () => {
+      unregisterDebug('shop');
+    },
+    [],
+  );
+
   useEffect(() => {
     registerDebug({
       shop: {
+        mounts: () => mountId,
         state: () =>
           plain({
             step: run.step,
@@ -277,22 +271,17 @@ function ShopTab(props: { run: ShopRun }) {
           }),
       },
     });
-  }, [run, sv, view.undoCount, next]);
+  }, [run, sv, view.undoCount, next, mountId]);
 
   const act = async (
     intent: Parameters<typeof session.dispatch>[0],
     okText: string,
   ): Promise<boolean> => {
-    if (busy.current) return false;
-    busy.current = true;
-    try {
-      const r = await session.dispatch(intent);
-      if (r.ok) setStatus({ text: okText, kind: 'ok' });
-      else setStatus({ text: shopReason(r.reason, r.detail), kind: 'error' });
-      return r.ok;
-    } finally {
-      busy.current = false;
-    }
+    // No guard against a second action in flight: the controller queues them
+    // in order and a rejected one reports its own reason.
+    const r = await performAction(session, intent, okText);
+    setStatus({ text: r.text, kind: r.kind });
+    return r.ok;
   };
 
   const onBuy = (slot: number): void => {
@@ -337,11 +326,15 @@ function ShopTab(props: { run: ShopRun }) {
   const solo = sv.playerCount === 1;
   const stepOpen = run.step === 'shop';
 
+  const ready = readyLabel(run);
   const status_bar = (
-    <span data-field="run-info">
-      Round {run.round} · Lives {run.lives} / {deps.rules.startingLives} ·{' '}
-      {sv.readyCount} of {sv.playerCount} ready
-    </span>
+    <>
+      <span data-field="run-info">
+        Round {run.round} · Lives {run.lives} / {deps.rules.startingLives}
+        {ready === null ? '' : ` · ${ready}`}
+      </span>
+      <NotSavedNote run={props.run} />
+    </>
   );
 
   if (!stepOpen) {
@@ -357,15 +350,7 @@ function ShopTab(props: { run: ShopRun }) {
               <strong data-field="step">{run.step}</strong> (round {run.round}).
               There is no screen for it yet.
             </p>
-            <button
-              type="button"
-              id="dev-new-run"
-              onClick={() => {
-                void restartShopRun(optionsFromUrl(window.location.search));
-              }}
-            >
-              Start a new sample run
-            </button>
+            <RestartButton />
           </Panel>
         </div>
       </AppShell>

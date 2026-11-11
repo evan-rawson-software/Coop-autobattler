@@ -9,6 +9,11 @@
  * a failed `put` (quota) leaves the old record. A value that is not valid
  * JSON is returned as the raw string, so callers see it as damaged data
  * rather than losing it.
+ *
+ * With `rejectStale`, `put` refuses to write over a record whose
+ * `actionCounter` is the same or higher (another tab saved a later or
+ * competing step first). The shop uses it; the plain store (and the shared
+ * conformance suite, which rewrites one record at a fixed counter) does not.
  */
 import {
   bestDepthFromHistory,
@@ -31,9 +36,35 @@ export interface StorageLike {
 
 export const DEFAULT_PREFIX = 'coop:';
 
+/** The text of a refused stale write (shown to the player). */
+export const STALE_MESSAGE = 'This run changed in another tab.';
+
+export class StaleSaveError extends Error {
+  constructor() {
+    super(STALE_MESSAGE);
+    this.name = 'StaleSaveError';
+  }
+}
+
+export interface LocalStoreOptions {
+  /** Refuse a `put` whose `actionCounter` is not above the stored one. */
+  readonly rejectStale?: boolean;
+  /** Called when a stale `put` was refused. */
+  readonly onStale?: () => void;
+}
+
+/** The storage key a run is saved under. */
+export function saveKey(
+  runId: string,
+  prefix: string = DEFAULT_PREFIX,
+): string {
+  return `${prefix}save:${runId}`;
+}
+
 export function createLocalStorageSaveStore(
   storage: StorageLike,
   prefix: string = DEFAULT_PREFIX,
+  options: LocalStoreOptions = {},
 ): SaveStore {
   const savePrefix = `${prefix}save:`;
   const historyKey = `${prefix}history`;
@@ -84,6 +115,20 @@ export function createLocalStorageSaveStore(
       if (typeof runId !== 'string' || runId === '') {
         throw new Error('put: record has no runId');
       }
+      if (options.rejectStale === true) {
+        const stored = parse(storage.getItem(savePrefix + runId));
+        const have = (stored as { actionCounter?: unknown } | null)
+          ?.actionCounter;
+        const next = (record as { actionCounter?: unknown }).actionCounter;
+        if (
+          typeof have === 'number' &&
+          typeof next === 'number' &&
+          have >= next
+        ) {
+          options.onStale?.();
+          throw new StaleSaveError();
+        }
+      }
       // Serialising copies the record; setItem either stores all of it or
       // throws and keeps the old value.
       storage.setItem(savePrefix + runId, JSON.stringify(record));
@@ -132,17 +177,43 @@ export function createMemoryStorage(): StorageLike {
   };
 }
 
+/** Call `onChange` when another tab changes, removes or clears `key`. */
+export function watchSaveKey(
+  target: Pick<EventTarget, 'addEventListener' | 'removeEventListener'>,
+  storage: unknown,
+  key: string,
+  onChange: () => void,
+): () => void {
+  const handler = (e: Event): void => {
+    const ev = e as Event & { key?: string | null; storageArea?: unknown };
+    if (ev.storageArea !== storage) return;
+    if (ev.key === null || ev.key === key) onChange();
+  };
+  target.addEventListener('storage', handler);
+  return () => {
+    target.removeEventListener('storage', handler);
+  };
+}
+
+/** `s` if it can be written to, else null (private modes can throw). */
+export function usableStorage(s: StorageLike): StorageLike | null {
+  try {
+    const probe = `${DEFAULT_PREFIX}probe`;
+    s.setItem(probe, '1');
+    s.removeItem(probe);
+    return s;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * The browser's `localStorage`, or null if it is missing or blocked (private
  * modes can throw on access).
  */
 export function browserStorage(): StorageLike | null {
   try {
-    const s = window.localStorage;
-    const probe = `${DEFAULT_PREFIX}probe`;
-    s.setItem(probe, '1');
-    s.removeItem(probe);
-    return s;
+    return usableStorage(window.localStorage);
   } catch {
     return null;
   }

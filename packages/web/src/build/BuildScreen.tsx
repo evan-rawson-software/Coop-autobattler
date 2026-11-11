@@ -18,13 +18,11 @@ import { cellToView } from '../board/layout.js';
 import type { Selection } from '../board/render.js';
 import { content } from '../content.js';
 import { registerDebug } from '../debug-hook.js';
-import {
-  restartShopRun,
-  optionsFromUrl,
-  type ShopRun,
-} from '../run/shop-run.js';
+import { NotSavedNote, RestartButton } from '../run/RunGate.js';
+import { type ShopRun } from '../run/shop-run.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import { onStepTab, stepTabs } from '../shop/tabs.js';
+import { readyLabel } from '../shop/view-model.js';
 import './build.css';
 import { BuildController } from './build-controller.js';
 import { drawBuildOverlay } from './overlay-draw.js';
@@ -87,7 +85,7 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
       if (ctl.session !== shared.session) ctl.attach(shared.session, true);
     } else if (!started || ctl.shared) {
       started = true;
-      void ctl.newRun(DEFAULT_SEED);
+      void ctl.enterDev(DEFAULT_SEED);
     }
   }, [shared?.session]);
 
@@ -280,13 +278,16 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
     if (p.focus !== null) ctl.focusCell(p.focus);
   };
 
+  const readyText = run === null ? null : readyLabel(run);
   const devStrip = shared ? (
     run === null ? null : (
-      <span class="muted" data-field="run-info">
-        Round {run.round} · Lives {run.lives} ·{' '}
-        {run.perPlayer.filter((p) => p.ready).length} of {run.players.length}{' '}
-        ready
-      </span>
+      <>
+        <span class="muted" data-field="run-info">
+          Round {run.round} · Lives {run.lives}
+          {readyText === null ? '' : ` · ${readyText}`}
+        </span>
+        <NotSavedNote run={shared} />
+      </>
     )
   ) : (
     <span class="dev-strip">
@@ -316,9 +317,8 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
       </button>
       {run !== null ? (
         <span class="muted" data-field="run-info">
-          Round {run.round} · Lives {run.lives} ·{' '}
-          {run.perPlayer.filter((p) => p.ready).length} of {run.players.length}{' '}
-          ready
+          Round {run.round} · Lives {run.lives}
+          {readyText === null ? '' : ` · ${readyText}`}
         </span>
       ) : null}
     </span>
@@ -347,21 +347,19 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
             <p class="muted" data-field="status-line">
               {ui.status.text}
             </p>
-            <button
-              type="button"
-              id="dev-new-run"
-              onClick={() => {
-                if (shared !== undefined) {
-                  void restartShopRun(optionsFromUrl(window.location.search));
-                } else {
+            {shared !== undefined ? (
+              <RestartButton />
+            ) : (
+              <button
+                type="button"
+                id="dev-new-run"
+                onClick={() => {
                   void ctl.newRun(model.seed);
-                }
-              }}
-            >
-              {shared !== undefined
-                ? 'Start a new sample run'
-                : `Start a new run (seed ${String(model.seed)})`}
-            </button>
+                }}
+              >
+                {`Start a new run (seed ${String(model.seed)})`}
+              </button>
+            )}
           </Panel>
         </div>
       </AppShell>

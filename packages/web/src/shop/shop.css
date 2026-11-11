@@ -349,3 +349,27 @@ button.danger {
     grid-template-columns: 1fr 1.6fr 1fr;
   }
 }
+
+.not-saved {
+  color: var(--warn, #b26a00);
+  font-weight: 600;
+  margin-left: 0.75rem;
+}
+
+.run-blocked {
+  max-width: 36rem;
+  margin: 2rem auto;
+  padding: 0 16px;
+}
+
+.confirm-restart {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.confirm-restart p {
+  flex-basis: 100%;
+  margin: 0;
+}

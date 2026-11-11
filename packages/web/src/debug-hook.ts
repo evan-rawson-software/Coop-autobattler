@@ -43,6 +43,8 @@ export interface BuildDebug {
 
 /** Read-only view of the Shop tab for the smoke script. */
 export interface ShopDebug {
+  /** Which mount of the Shop tab this is (1, 2, ...): changes on every remount. */
+  mounts: () => number;
   /** Plain data: step, gold, offers, stash, ready flag, action count, undo depth. */
   state: () => unknown;
 }
@@ -59,4 +61,14 @@ export const DEBUG_HOOK: boolean =
 export function registerDebug(patch: DebugHook): void {
   if (!DEBUG_HOOK) return;
   window.__debug = { ...window.__debug, ...patch };
+}
+
+/** Remove hooks that belong to a screen that has gone away. */
+export function unregisterDebug(...keys: (keyof DebugHook)[]): void {
+  if (!DEBUG_HOOK || window.__debug === undefined) return;
+  window.__debug = Object.fromEntries(
+    Object.entries(window.__debug).filter(
+      ([k]) => !(keys as string[]).includes(k),
+    ),
+  );
 }

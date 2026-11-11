@@ -58,6 +58,7 @@ export class BuildSession {
   readonly stack = new UndoStack();
   readonly store: Store<SessionView>;
   private stepAnchor: string;
+  private lockedDetail: string | null = null;
 
   private constructor(readonly controller: RunController) {
     this.stepAnchor = this.anchor();
@@ -114,9 +115,25 @@ export class BuildSession {
     this.store.set(this.view());
   }
 
+  /**
+   * Stop accepting intents (the saved run changed elsewhere). Every later
+   * dispatch is refused as `save_failed` with this text, and nothing is sent
+   * to the controller.
+   */
+  lock(detail: string): void {
+    this.lockedDetail = detail;
+  }
+
+  get locked(): boolean {
+    return this.lockedDetail !== null;
+  }
+
   /** Dispatch one intent. Clears the undo stack at a step change or on any
    * intent that is not a layout change (buying, selling, re-rolling). */
   async dispatch(intent: Intent): Promise<DispatchResult> {
+    if (this.lockedDetail !== null) {
+      return { ok: false, reason: 'save_failed', detail: this.lockedDetail };
+    }
     const r = await this.controller.dispatch(ME, intent, ++clock);
     if (r.ok) {
       if (
