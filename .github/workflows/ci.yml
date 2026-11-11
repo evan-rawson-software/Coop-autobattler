@@ -2,7 +2,13 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+
+# A newer push to the same branch/PR supersedes the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CI_RELAXED_TIMING: '1'
@@ -10,6 +16,7 @@ env:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -36,12 +43,16 @@ jobs:
       - if: steps.browsers.outputs.cache-hit == 'true'
         run: pnpm --filter @game/web exec playwright install-deps chromium
       - run: pnpm smoke
+        timeout-minutes: 12
       - uses: actions/upload-artifact@v4
         if: failure()
+        timeout-minutes: 3
+        continue-on-error: true
         with:
           name: smoke-output
-          path: packages/web/smoke-output
+          path: packages/web/smoke-output/*.png
           if-no-files-found: ignore
+          retention-days: 3
       - name: Golden files are up to date
         run: |
           pnpm golden:update

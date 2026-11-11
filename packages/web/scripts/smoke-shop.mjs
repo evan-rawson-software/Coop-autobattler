@@ -7,6 +7,7 @@
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { frames, hookReady } from './smoke-timing.mjs';
 
 export async function runShopSmoke({
   page,
@@ -26,11 +27,17 @@ export async function runShopSmoke({
     ).buildings.map((b) => [b.id, b.footprint]),
   );
   const S = {
-    state: () => page.evaluate(() => window.__debug.shop.state()),
+    state: async () => {
+      await hookReady(page, 'shop');
+      return await page.evaluate(() => window.__debug.shop.state());
+    },
   };
   const B = {
     step: () => page.evaluate(() => window.__debug.build.step()),
-    team: () => page.evaluate(() => window.__debug.build.team()),
+    team: async () => {
+      await hookReady(page, 'build');
+      return await page.evaluate(() => window.__debug.build.team());
+    },
     counts: () => page.evaluate(() => window.__debug.build.counts()),
   };
   const at = (x, y) =>
@@ -332,7 +339,7 @@ export async function runShopSmoke({
       await page.mouse.move(p.x, p.y, { steps: 8 });
       await settle();
       await page.mouse.up();
-      await page.waitForTimeout(80);
+      await frames(page, 6);
       if ((await B.team()).buildings.length > before) return c;
       await page.keyboard.press('Escape');
     }
@@ -352,7 +359,7 @@ export async function runShopSmoke({
 
   // Undo only reverses the placement, never the purchase.
   await page.click('[data-action="undo"]');
-  await page.waitForTimeout(100);
+  await frames(page, 6);
   const undone = await B.team();
   check(
     undone.stash.some((x) => x.id === bought.id) &&
@@ -440,7 +447,7 @@ export async function runShopSmoke({
   // --- 1366x768
   await page.setViewportSize({ width: 1366, height: 768 });
   await settle();
-  await page.waitForTimeout(150);
+  await frames(page, 9);
   const sc2 = await noScroll(1366, 768);
   check(sc2.ok, `shop has no page scroll at 1366x768 (${JSON.stringify(sc2)})`);
   const clipped = await page.evaluate(() => {
@@ -600,6 +607,12 @@ export async function runShopSmoke({
   await page.click('#dev-new-run-confirm');
   await page.waitForSelector('#shop-screen');
   await page.waitForFunction(() => window.__debug?.shop?.state);
+  // The new run is written to storage as the screen mounts; wait for it.
+  await page.waitForFunction(
+    ([k, v]) => localStorage.getItem(k) !== v,
+    [savedKey, savedBefore],
+  );
+  await page.waitForFunction(() => window.__debug.shop.state().ready === false);
   check(
     (await saved()) !== savedBefore &&
       (await S.state()).step === 'shop' &&
