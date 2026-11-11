@@ -27,7 +27,12 @@ import type { SimConfig } from './sim-config.js';
 import type { TeamState } from './team-state.js';
 
 export type BattleReason =
-  'core_destroyed' | 'tiebreak_overkill' | 'tiebreak_defender' | 'time_limit';
+  | 'core_destroyed'
+  | 'tiebreak_overkill'
+  | 'tiebreak_building_damage'
+  | 'tiebreak_kills'
+  | 'tiebreak_attacker'
+  | 'time_limit';
 
 export interface BattleResult {
   /** 0 = the party, 1 = the opponent. */
@@ -94,6 +99,14 @@ export interface BattleSideSummary {
   readonly coreOverkill: number;
   /** `ramp_step` events of this side over the battle. */
   readonly rampSteps: number;
+  /**
+   * Damage this side's units have applied to the enemy's buildings, Core
+   * included (no Overload decay, no overkill past a building's remaining
+   * health): the first tiebreak counter. See "Battles", "Tiebreak counters".
+   */
+  readonly buildingDamageDealt: number;
+  /** Enemy units that died from this side's damage: the second counter. */
+  readonly unitsKilled: number;
 }
 
 export interface TimelineSide {
@@ -248,6 +261,31 @@ export function startBattle(
   const coreHp = (s: number): number =>
     sim.health.find((h) => h.side === s && h.building === 0)?.hp ?? 0;
 
+  /**
+   * The tiebreak rungs shared by a same-tick double Core fall (after the
+   * overkill rung) and the time limit (after the Core health fraction): more
+   * building damage dealt, then more enemy units killed, then the attacker
+   * (side 0). The defender wins no tie.
+   */
+  const ladder = (): Omit<BattleResult, 'endTick'> => {
+    const d0 = sim.buildingDamageDealt[0];
+    const d1 = sim.buildingDamageDealt[1];
+    if (d0 !== d1) {
+      return {
+        winner: d0 > d1 ? 0 : 1,
+        reason: 'tiebreak_building_damage',
+      };
+    }
+    // A unit's damage always comes from the other side, so a side's kills are
+    // the other side's deaths.
+    const k0 = sim.unitsDied[1];
+    const k1 = sim.unitsDied[0];
+    if (k0 !== k1) {
+      return { winner: k0 > k1 ? 0 : 1, reason: 'tiebreak_kills' };
+    }
+    return { winner: 0, reason: 'tiebreak_attacker' };
+  };
+
   /** The end conditions, checked after each tick (CB-33). */
   const decide = (): Omit<BattleResult, 'endTick'> | null => {
     const dead0 = coreHp(0) <= 0;
@@ -258,7 +296,7 @@ export function startBattle(
       if (r0 !== r1) {
         return { winner: r0 > r1 ? 0 : 1, reason: 'tiebreak_overkill' };
       }
-      return { winner: 1, reason: 'tiebreak_defender' };
+      return ladder();
     }
     if (dead0) return { winner: 1, reason: 'core_destroyed' };
     if (dead1) return { winner: 0, reason: 'core_destroyed' };
@@ -270,7 +308,10 @@ export function startBattle(
         coreHp(1),
         coreMax[1],
       );
-      return { winner: cmp > 0 ? 0 : 1, reason: 'time_limit' };
+      if (cmp !== 0) {
+        return { winner: cmp > 0 ? 0 : 1, reason: 'time_limit' };
+      }
+      return ladder();
     }
     return null;
   };
@@ -290,6 +331,8 @@ export function startBattle(
         coreMaxHealth: coreMax[s],
         coreOverkill: hp > 0 ? 0 : 0 - ctx.coreRemaining[s],
         rampSteps: rampSteps[s],
+        buildingDamageDealt: sim.buildingDamageDealt[s],
+        unitsKilled: sim.unitsDied[s === 0 ? 1 : 0],
       };
     };
     return { sides: [side(0), side(1)], timeline: timeline.slice() };

@@ -12,8 +12,8 @@
  * that many ticks; a restored battle must continue exactly like the original,
  * so the result is the same with or without it. Result: `{ tick, stateHash, events, sides }` where `stateHash` is the hash
  * of the final `ArenaSim`, `events` the number of events, and `sides` a
- * summary per side (`spawned`, `alive`, `unitsDied`, `buildingsDestroyed`,
- * `coreHealth`). The event log is the vector's event log.
+ * summary per side (`spawned`, `alive`, `unitsDied`, `buildingDamageDealt`,
+ * `buildingsDestroyed`, `coreHealth`). The event log is the vector's event log.
  */
 import type { ArenaContent } from './arena.js';
 import {
@@ -58,6 +58,7 @@ export function summarizeArena(sim: ArenaSim): Json {
       spawned: sim.spawned[side === 0 ? 0 : 1],
       alive: sim.units.filter((u) => u.side === side).length,
       unitsDied: sim.unitsDied[side === 0 ? 0 : 1],
+      buildingDamageDealt: sim.buildingDamageDealt[side === 0 ? 0 : 1],
       buildingsDestroyed,
       coreHealth,
     };

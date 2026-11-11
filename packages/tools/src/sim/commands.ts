@@ -115,7 +115,11 @@ function sideSummaryLines(
 const REASONS: Readonly<Record<string, string>> = {
   core_destroyed: 'the other Core was destroyed',
   tiebreak_overkill: 'both Cores fell; less overkill damage won',
-  tiebreak_defender: 'both Cores fell with equal overkill; the defender wins',
+  tiebreak_building_damage:
+    'equal overkill (or equal Core health at the time limit); more damage to enemy buildings won',
+  tiebreak_kills:
+    'equal overkill and building damage (or the same at the time limit); more enemy units killed won',
+  tiebreak_attacker: 'a complete tie on every rung; the attacker (side 0) wins',
   time_limit: 'time limit; more Core health (as a fraction) won',
 };
 

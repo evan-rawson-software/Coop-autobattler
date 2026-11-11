@@ -56,7 +56,12 @@ export function nextIntent(state: RunState): Intent | null {
     }
     case 'event_resolve': {
       const fu = pending['followUp'];
-      const id = isRecord(fu) ? firstId(fu['options']) : null;
+      // A per-player follow-up (Workshop, issue #50): skip.
+      const id = isRecord(fu)
+        ? fu['perPlayer'] === true
+          ? 'skip'
+          : firstId(fu['options'])
+        : null;
       return id === null ? null : { type: 'event_choose', choice: id };
     }
     case 'build':

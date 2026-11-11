@@ -326,9 +326,10 @@ export function RightPanels(props: {
 /**
  * Why the battle ended, worded after the rules of the core battle's end
  * check: a destroyed Core ends it; Cores destroyed in the same tick are
- * decided by the smaller overkill, then for the defender (the opponent); at
- * the time limit the larger share of maximum health left wins, and a tie goes
- * to the defender too.
+ * decided by the smaller overkill, then by more damage dealt to the enemy's
+ * buildings, then by more enemy units killed, then for the attacker (the
+ * party); at the time limit the larger share of maximum health left wins and
+ * a tie there goes down the same last three steps. The defender wins no tie.
  */
 export function reasonText(reason: BattleReason, coreName: string): string {
   switch (reason) {
@@ -336,10 +337,14 @@ export function reasonText(reason: BattleReason, coreName: string): string {
       return `One side's ${coreName} was destroyed; the other side wins.`;
     case 'tiebreak_overkill':
       return `Both ${coreName}s were destroyed in the same tick; the side whose ${coreName} took less overkill damage wins.`;
-    case 'tiebreak_defender':
-      return `Both ${coreName}s were destroyed in the same tick with equal overkill damage; the defender (the opponent) wins.`;
+    case 'tiebreak_building_damage':
+      return `A tie on ${coreName} health (both ${coreName}s destroyed in the same tick with equal overkill damage, or equal shares of maximum health at the time limit); the side that dealt more damage to the enemy's buildings wins.`;
+    case 'tiebreak_kills':
+      return `A tie on ${coreName} health and on damage dealt to the enemy's buildings; the side that killed more enemy units wins.`;
+    case 'tiebreak_attacker':
+      return `A tie on ${coreName} health, on damage dealt to the enemy's buildings and on enemy units killed; the attacker (the party) wins.`;
     case 'time_limit':
-      return `Time ran out; the side whose ${coreName} has the larger share of its maximum health left wins. A tie goes to the defender (the opponent).`;
+      return `Time ran out; the side whose ${coreName} has the larger share of its maximum health left wins.`;
   }
 }
 

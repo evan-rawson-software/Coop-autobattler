@@ -14,9 +14,10 @@ import {
   placeCore,
   placeFromStash,
   returnToStash,
+  sealedProducers,
   type Json,
 } from '@game/core';
-import { STEP_INTENTS } from './step-table.js';
+import { STEP_INTENTS, lockedWhileReady } from './step-table.js';
 import { drawStream, rootRng, streamLabels } from './streams.js';
 import { parseVersion } from './version.js';
 import {
@@ -580,6 +581,14 @@ function castVote(s: RunState, player: number, choice: Json): RunState {
   };
 }
 
+/**
+ * Ready locks (#58): in `build` and `shop` a player who is Ready cannot buy,
+ * sell, re-roll or edit the board until they Unready.
+ */
+function isLocked(s: RunState, player: number, type: string): boolean {
+  return s.perPlayer[player]?.ready === true && lockedWhileReady(s.step, type);
+}
+
 function applyBuiltin(
   s: RunState,
   player: number,
@@ -588,6 +597,7 @@ function applyBuiltin(
   fx: Effect[],
 ): Next {
   if (!STEP_INTENTS[s.step].includes(intent.type)) return fail('wrong_step');
+  if (isLocked(s, player, intent.type)) return fail('locked_ready');
   const { content, mapgenConfig } = deps;
   const withTeam = (
     r:
@@ -609,6 +619,11 @@ function applyBuiltin(
 
     case 'ready': {
       if (s.perPlayer[player]?.ready === true) return fail('already_ready');
+      // A sealed-in unit producer cannot be left behind (issue #37, 3a).
+      if (s.step === 'build' || s.step === 'shop') {
+        const sealed = sealedProducers(s.team, content);
+        if (sealed.length > 0) return fail('sealed_producer', sealed.join(','));
+      }
       const next = setReady(s, player, true);
       fx.push({ type: 'ready_changed', player, ready: true });
       return {
@@ -723,6 +738,7 @@ export function applyIntent(
       : undefined;
     if (handler === undefined) return fail('unknown_intent', type);
     if (!handler.steps.includes(state.step)) return fail('wrong_step');
+    if (isLocked(state, player, type)) return fail('locked_ready');
     const r = handler.handle({
       state,
       player,

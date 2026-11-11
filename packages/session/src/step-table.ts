@@ -35,3 +35,20 @@ export const STEP_INTENTS: Readonly<
   pvp_summary: ['ready', 'unready', 'abandon'],
   run_over: [],
 };
+
+/** The steps in which a player's Ready flag locks their own editing (#58). */
+export const READY_LOCK_STEPS: readonly Step[] = ['build', 'shop'];
+
+/**
+ * True if `type` is refused for a player who is Ready in `step`: in a build
+ * or shop step a Ready player may only unready (or abandon, for the host).
+ * Every other intent, built-in or from an extension handler, is locked.
+ */
+export function lockedWhileReady(step: Step, type: string): boolean {
+  return (
+    READY_LOCK_STEPS.includes(step) &&
+    type !== 'unready' &&
+    type !== 'ready' &&
+    type !== 'abandon'
+  );
+}

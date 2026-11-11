@@ -300,11 +300,26 @@ export type {
   ShopResult,
 } from './shop.js';
 
+// Sealed unit producers (issue #37).
+export { sealedProducers } from './sealed-producers.js';
+
+// Workshop event rules (issue #50).
+export { workshopOptions, workshopPrice } from './workshop.js';
+export type { WorkshopOption } from './workshop.js';
+
 // In-battle ramp (economy buildings) and Overload (W1-7).
 export { rampBonus } from './arena-sim.js';
 export type { RampSim } from './arena-sim.js';
 export { scaledInterval } from './flow-sim.js';
-export { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
+export {
+  cappedBonus,
+  isOverloadBeat,
+  overloadDeadline,
+  overloadLevel,
+  overloadOutcome,
+  type OverloadDeadline,
+  type OverloadOutcome,
+} from './ramp.js';
 
 // The neutral zone and whole battles (W1-8).
 export {

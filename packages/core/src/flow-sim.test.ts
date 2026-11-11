@@ -79,7 +79,7 @@ describe('simulation config', () => {
       aggroRangeCells: 3,
       maxSourceSpeedPercent: 300,
       maxUnitStrengthPercent: 300,
-      overloadStartTick: 2400,
+      overloadStartTick: 1800,
       overloadIntervalTicks: 100,
       overloadDamageStepPercent: 20,
       overloadCoreDamageStep: 5,
