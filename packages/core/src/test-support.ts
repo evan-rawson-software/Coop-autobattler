@@ -303,12 +303,13 @@ export function bigBoard(): TeamState {
  * The violations of the circle invariant in a battle state: a unit whose
  * collision circle does not fit for its side (blocked ground, a building that
  * blocks it, outside the arena), or two units whose collision circles
- * overlap. Empty when the state is good.
+ * overlap (radii from the battle's own content, test-only units included).
+ * Empty when the state is good.
  */
 export function circleViolations(sim: ArenaSim, ctx: ArenaContext): string[] {
   const out: string[] = [];
   const radius = (u: UnitSim): number =>
-    content.units.get(u.def)?.collisionRadius ?? 0;
+    ctx.content.units.get(u.def)?.collisionRadius ?? 0;
   const units = sim.units;
   for (let i = 0; i < units.length; i++) {
     const u = got(units[i]);
