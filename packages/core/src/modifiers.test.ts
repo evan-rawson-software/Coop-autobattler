@@ -57,9 +57,9 @@ function fightResult(
 
 describe('modifiers travel in team state and change battles', () => {
   test('a Core health modifier turns a lost battle into a won one', () => {
-    expect(fight('rush', 'arch_fortress', 'medium', 6, [])).toBe(1);
+    expect(fight('fortify', 'arch_fortress', 'medium', 6, [])).toBe(1);
     expect(
-      fight('rush', 'arch_fortress', 'medium', 6, ['mod_fortified_core']),
+      fight('fortify', 'arch_fortress', 'medium', 6, ['mod_fortified_core']),
     ).toBe(0);
   });
 
@@ -75,9 +75,9 @@ describe('modifiers travel in team state and change battles', () => {
   });
 
   test('a unit strength modifier turns a lost battle into a won one', () => {
-    expect(fight('poor', 'arch_rusher', 'medium', 3, [])).toBe(1);
+    expect(fight('poor', 'arch_escalator', 'hard', 5, [])).toBe(1);
     expect(
-      fight('poor', 'arch_rusher', 'medium', 3, ['mod_drilled_troops']),
+      fight('poor', 'arch_escalator', 'hard', 5, ['mod_drilled_troops']),
     ).toBe(0);
   });
 

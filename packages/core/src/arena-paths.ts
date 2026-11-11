@@ -222,8 +222,9 @@ export interface Field {
  * Movement field of a side towards the enemy Core: a least-cost map over open
  * cells with 8 directions (orthogonal step 10, diagonal 14, a diagonal only if
  * both orthogonal cells are open). Distance 0 for every open cell that
- * touches a Core cell (8 neighbours), so every free side of the Core is a
- * goal. The values are exact whatever order the cells are processed in.
+ * shares an edge with a Core cell (4 neighbours), so every free side of the
+ * Core is a goal and a base whose edge cells are all walls is sealed even if
+ * a corner cell is open. The values are exact whatever order the cells are processed in.
  */
 export function computeField(arena: Arena, side: number): Field {
   const { width, height } = arena.geom;
@@ -265,7 +266,7 @@ export function computeField(arena: Arena, side: number): Field {
   for (const g of goalBuildings(arena, side)) {
     isGoal[g.ref] = 1;
     for (const c of g.cells) {
-      for (const [dx, dy] of NEIGHBORS8) {
+      for (const [dx, dy] of NEIGHBORS) {
         const x = c.x + dx;
         const y = c.y + dy;
         if (x < 0 || y < 0 || x >= width || y >= height) continue;

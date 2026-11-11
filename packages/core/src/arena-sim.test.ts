@@ -297,16 +297,17 @@ describe('movement', () => {
       x: 5,
       y: 16,
     });
-    const x0 = u.px;
-    const y0 = u.py;
-    // Soldier: 6 ticks per cell = 40 sub-cell units per tick, along one axis
-    // towards the centre of the next cell, starting in the first tick.
+    // Soldier: 6 ticks per cell = 40 sub-cell units per tick, along the
+    // direction of the field step (it may be diagonal), from the first tick.
     for (let t = 1; t <= 6; t++) {
+      const x0 = u.px;
+      const y0 = u.py;
       stepArena(sim, ctx);
-      expect(Math.abs(u.px - x0) + Math.abs(u.py - y0)).toBe(40 * t);
+      const d2 = (u.px - x0) ** 2 + (u.py - y0) ** 2;
+      // A step is the speed rounded down on each axis: 39 or 40 long.
+      expect(d2).toBeLessThanOrEqual(40 * 40);
+      expect(d2).toBeGreaterThanOrEqual(39 * 39);
     }
-    expect((u.px - CU / 2) % CU).toBe(0);
-    expect((u.py - CU / 2) % CU).toBe(0);
     const r = spawnUnitForTest(sim, ctx, {
       side: 0,
       def: 'unit_raider',
@@ -317,10 +318,37 @@ describe('movement', () => {
     const ry = r.py;
     stepArena(sim, ctx);
     // Raider: 4 ticks per cell = 60 per tick.
-    expect(Math.abs(r.px - rx) + Math.abs(r.py - ry)).toBe(60);
+    const rd2 = (r.px - rx) ** 2 + (r.py - ry) ** 2;
+    expect(rd2).toBeLessThanOrEqual(60 * 60);
+    expect(rd2).toBeGreaterThanOrEqual(59 * 59);
   });
 
-  test('ties between equal paths go to the lowest y, then lowest x of the mover', () => {
+  test('a unit steers by the direction of the step and keeps its lateral offset', () => {
+    const { sim, ctx } = startArenaBattle(
+      coreOnly(5, 0),
+      coreOnly(5, 0),
+      GAP,
+      content,
+      { ...simConfig, aggroRangeCells: 0 },
+    );
+    // Side 0's Core is at the bottom; the enemy Core is straight ahead (same
+    // columns), so the step is straight up and a unit near the left edge of
+    // its cell stays there instead of drifting to the centre line.
+    const a = spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: 5,
+      y: 16,
+    });
+    a.px = 5 * CU + 60;
+    const x0 = a.px;
+    const y0 = a.py;
+    runArena(sim, ctx, 6);
+    expect(a.px).toBe(x0);
+    expect(a.py).toBe(y0 + 6 * 40);
+  });
+
+  test('ties between equal paths go forward, then to the lowest x of the mover', () => {
     const { sim, ctx } = startArenaBattle(
       coreOnly(8, 0),
       coreOnly(8, 0),
@@ -328,25 +356,25 @@ describe('movement', () => {
       content,
       { ...simConfig, aggroRangeCells: 0 },
     );
-    // Side 1's Core is at arena x 2..3; from (5, 16) going left and going up
-    // are equally good: the lower y wins, so it goes left to (4, 16).
+    // Both units have the same cost to the enemy Core going forward (and
+    // diagonally) or sideways; the mirror image of a side 0 unit is the side 1
+    // unit at the rotated position, and the rule is the same in its own frame.
     const a = spawnUnitForTest(sim, ctx, {
       side: 0,
       def: 'unit_soldier',
       x: 5,
       y: 16,
     });
-    // Its mirror image is a side 1 unit at (6, 19): the same rule in its own
-    // frame sends it to (7, 19), the mirror of (4, 16).
     const b = spawnUnitForTest(sim, ctx, {
       side: 1,
       def: 'unit_soldier',
-      x: 6,
-      y: 19,
+      x: 12 - 1 - 5,
+      y: H - 1 - 16,
     });
     runArena(sim, ctx, 6);
-    expect([a.px, a.py]).toEqual([mid(4), mid(16)]);
-    expect([b.px, b.py]).toEqual([mid(7), mid(19)]);
+    expect(a.py).toBeGreaterThan(mid(16));
+    expect(b.px).toBe(12 * CU - a.px);
+    expect(b.py).toBe(H * CU - a.py);
   });
 
   test('conduits never block movement or change paths', () => {
@@ -911,8 +939,9 @@ describe('breach step prices a building by its maximum health (CB-20)', () => {
   test('a damaged neighbour is not preferred over an equal healthy one', () => {
     // Core at board (5, 0) ringed by six tier 3 walls; the soldier stands on
     // the corner cell (7, 2) beside walls A (6, 2) and B (7, 1). Both have
-    // the same maximum health, so the tie key decides (A). B has 20 of 240
-    // health; a step priced by current health would go for B instead.
+    // the same maximum health, so the tie key decides: B is further forward
+    // for the attacker (the higher arena y). A has 20 of 240 health, and the
+    // test swaps nothing: a step priced by current health would go for A.
     const lab = new Lab(tiny());
     lab.core(5, 0);
     const ids = new Map<string, number>();
@@ -926,8 +955,8 @@ describe('breach step prices a building by its maximum health (CB-20)', () => {
     ] as const) {
       ids.set(`${String(x)},${String(y)}`, lab.put('bld_wall', x, y, 0, 3));
     }
-    const a = got(ids.get('6,2'));
-    const b = got(ids.get('7,1'));
+    const a = got(ids.get('7,1'));
+    const b = got(ids.get('6,2'));
     const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       lab.state,
@@ -1526,9 +1555,10 @@ describe('production', () => {
     runArena(sim, ctx, 125);
     const s = got(ofType(events, 'unit_spawned')[0]);
     // The barracks (side 1's board, cells (2..3, 5..6)) heads for side 0's
-    // Core at arena (5..6, 0..1). Board (3, 7) and board (4, 6) are both 28
-    // steps from it; the tie goes to the lower board y, so (4, 6).
-    const cell = arenaCell(1, 4, 6);
+    // Core at arena (5..6, 0..1). Board (3, 7) and board (4, 6) have the same
+    // field distance; the tie goes to the more forward one (the higher board
+    // y), so (3, 7).
+    const cell = arenaCell(1, 3, 7);
     // The unit appears at the centre of that cell.
     expect(s).toMatchObject({
       px: mid(cell.x),
