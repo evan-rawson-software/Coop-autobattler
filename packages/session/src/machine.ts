@@ -21,6 +21,7 @@ import { drawStream, rootRng, streamLabels } from './streams.js';
 import {
   BUILTIN_INTENT_TYPES,
   MAX_PLAYERS,
+  RUN_STATE_FORMAT_VERSION,
   type BattleResult,
   type BuiltinIntent,
   type BuiltinIntentType,
@@ -142,7 +143,7 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
   const state: RunState = {
     runId: args.runId,
     runVersion: args.runVersion,
-    formatVersion: 1,
+    formatVersion: RUN_STATE_FORMAT_VERSION,
     seed: args.seed,
     rng: rootRng(args.seed).getState(),
     actionCounter: 0,
@@ -155,6 +156,7 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
     team: createTeamState(map),
     perPlayer: args.players.map(() => ({ gold: 0, ready: false, shop: null })),
     votes: emptyVotes('core', n),
+    upcomingPve: null,
     pending: { proposals: [] },
     history: [],
     thisRound: { pve: null, pvp: null },
@@ -166,6 +168,18 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
 
 // ---------------------------------------------------------------------------
 // Entering steps
+
+/**
+ * Draw and store the PvE options for the battle of `round` (RS-6a). Done on
+ * entering the first `build` and on entering the shop that ends a round, so
+ * the options exist in state while the party builds, not when the choice
+ * step opens.
+ */
+function drawUpcoming(s: RunState, round: number, deps: RunDeps): RunState {
+  const d = drawStream(s, streamLabels.pveOptions(round));
+  const options = deps.hooks.pveOptions(d.state, d.stream, round);
+  return { ...d.state, upcomingPve: { round, options } };
+}
 
 /**
  * Move to `step`: clears ready flags and votes, runs the step's entry work
@@ -192,13 +206,23 @@ function enter(
     case 'build': {
       const d = drawStream(s, streamLabels.kit);
       s = applyPatch(d.state, deps.hooks.startingKit(d.state, d.stream));
-      return { ...s, pending: null };
+      return { ...drawUpcoming(s, s.round, deps), pending: null };
     }
     case 'pve_choice': {
       s = { ...s, leg: 'pve' };
-      const d = drawStream(s, streamLabels.pveOptions(s.round));
-      const options = deps.hooks.pveOptions(d.state, d.stream);
-      return { ...d.state, pending: { options }, votes: emptyVotes('pve', n) };
+      // Normally drawn earlier (see `drawUpcoming`); drawn here only if a
+      // state arrives without them.
+      if (s.upcomingPve === null || s.upcomingPve.round !== s.round) {
+        s = drawUpcoming(s, s.round, deps);
+      }
+      const options = (s.upcomingPve as NonNullable<RunState['upcomingPve']>)
+        .options;
+      return {
+        ...s,
+        upcomingPve: null,
+        pending: { options },
+        votes: emptyVotes('pve', n),
+      };
     }
     case 'pve_battle': {
       const option = pendingRecord(s)['option'] ?? null;
@@ -242,6 +266,9 @@ function enter(
       };
     }
     case 'shop': {
+      // The shop that ends a round is the last stop before the next PvE
+      // battle: its options are drawn now (RS-6a).
+      if (s.leg === 'pvp') s = drawUpcoming(s, s.round + 1, deps);
       const d = drawStream(s, streamLabels.shop(s.round, s.leg));
       s = applyPatch(d.state, deps.hooks.onShopEnter(d.state, d.stream));
       return { ...s, pending: null };
@@ -278,7 +305,8 @@ function enter(
       return enter(s, 'pvp_summary', deps, fx);
     }
     case 'run_over':
-      return { ...s, pending: null };
+      // Nothing is coming any more: no pending data, no upcoming options.
+      return { ...s, pending: null, upcomingPve: null };
     default:
       // core_placement, pve_summary, pvp_summary, event_resolve: the caller
       // sets `pending` (and `votes` for core_placement) itself.
@@ -387,7 +415,7 @@ function completeStep(s: RunState, deps: RunDeps, fx: Effect[]): RunState {
 // ---------------------------------------------------------------------------
 // Votes
 
-function tally(choices: readonly Json[], host: number): Json {
+export function tally(choices: readonly Json[], host: number): Json {
   const counts = new Map<string, { choice: Json; count: number }>();
   for (const choice of choices) {
     const key = canonicalJson(choice);
@@ -426,6 +454,17 @@ function normalizeChoice(s: RunState, choice: Json): Json | null {
   return pendingList(s, 'options').some((o) => idOf(o) === choice)
     ? choice
     : null;
+}
+
+/**
+ * A follow-up to ask the party about: non-null, and not one that lists
+ * options and has none (nobody could answer it).
+ */
+function hasOptions(followUp: Json | null): boolean {
+  if (followUp === null) return false;
+  if (!isRecord(followUp)) return true;
+  const o = followUp['options'];
+  return !(Array.isArray(o) && o.length === 0);
 }
 
 /** Resolve the open vote if it has met its condition. */
@@ -467,11 +506,12 @@ function resolveVotes(s: RunState, deps: RunDeps, fx: Effect[]): Next {
       state: enter({ ...s, pending: { option } }, 'pve_battle', deps, fx),
     };
   }
-  // Event: apply it, then either a follow-up choice or the shop.
+  // Event: apply it, then either a follow-up choice or the shop. A follow-up
+  // with no options would leave the party stuck, so it is skipped.
   const d = drawStream(s, streamLabels.eventResolve(s.round, s.leg));
   const outcome = deps.hooks.resolveEvent(d.state, option, d.stream);
   const next = applyPatch(d.state, outcome.patch);
-  if (outcome.followUp !== null) {
+  if (hasOptions(outcome.followUp)) {
     return {
       ok: true,
       state: enter(

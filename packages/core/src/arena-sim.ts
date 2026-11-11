@@ -37,6 +37,7 @@ import {
 } from './flow-sim.js';
 import type { EconomyEffectType, Side } from './buildings.js';
 import { divFloor, modFloor, mulPct } from './int.js';
+import { modifierPercent } from './modifiers.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
 import type { Cell } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
@@ -441,7 +442,10 @@ export function createArenaContext(
         if (tier === undefined) continue;
         turrets.set(bkey(side, p.id), {
           ref,
-          damage: tier.damage,
+          damage: mulPct(
+            tier.damage,
+            100 + modifierPercent(team, 'turret_damage_percent'),
+          ),
           rangeCells: tier.rangeCells,
           cooldownTicks: tier.cooldownTicks,
           costPerShot: tier.costPerShot,
@@ -518,6 +522,18 @@ export function createArenaSim(
     const coreOverride =
       options.sideOptions?.[b.side === 0 ? 0 : 1]?.coreHealth;
     if (b.kind === 'core' && coreOverride !== undefined) hp = coreOverride;
+    const team = teams[b.side === 0 ? 0 : 1];
+    if (team !== undefined) {
+      const pct =
+        b.kind === 'core'
+          ? modifierPercent(team, 'core_health_percent')
+          : modifierPercent(
+              team,
+              'building_health_percent',
+              b.defenseType ?? b.kind,
+            );
+      if (pct > 0) hp = mulPct(hp, 100 + pct);
+    }
     health.push({ side: b.side, building: b.id, hp });
   }
   const producers: ProducerSim[] = [];
@@ -726,7 +742,8 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
 function spawnStrength(sim: ArenaSim, ctx: ArenaContext, side: number): number {
   return (
     rampBonus(sim, ctx, side, 'unit_strength') +
-    (sim.sideOptions?.[side === 0 ? 0 : 1]?.unitStrengthPercent ?? 0)
+    (sim.sideOptions?.[side === 0 ? 0 : 1]?.unitStrengthPercent ?? 0) +
+    modifierPercent(sim.teams[side === 0 ? 0 : 1], 'unit_strength_percent')
   );
 }
 

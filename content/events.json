@@ -1,0 +1,58 @@
+{
+  "$schema": "../schemas/events.schema.json",
+  "offerCount": 3,
+  "events": [
+    {
+      "id": "evt_workshop",
+      "type": "workshop",
+      "weight": 10,
+      "repeatable": false,
+      "params": { "tiers": 1 }
+    },
+    {
+      "id": "evt_shrine",
+      "type": "shrine",
+      "weight": 10,
+      "repeatable": true,
+      "params": { "choices": 3 }
+    },
+    {
+      "id": "evt_windfall",
+      "type": "windfall",
+      "weight": 6,
+      "repeatable": false,
+      "params": { "gold": 4 }
+    }
+  ],
+  "modifiers": [
+    {
+      "id": "mod_stout_walls",
+      "stackable": false,
+      "effects": [
+        { "kind": "building_health_percent", "target": "wall", "percent": 25 }
+      ]
+    },
+    {
+      "id": "mod_sharp_turrets",
+      "stackable": false,
+      "effects": [{ "kind": "turret_damage_percent", "percent": 20 }]
+    },
+    {
+      "id": "mod_fortified_core",
+      "stackable": false,
+      "effects": [{ "kind": "core_health_percent", "percent": 20 }]
+    },
+    {
+      "id": "mod_drilled_troops",
+      "stackable": true,
+      "effects": [{ "kind": "unit_strength_percent", "percent": 10 }]
+    },
+    {
+      "id": "mod_reinforced_frames",
+      "stackable": false,
+      "effects": [
+        { "kind": "building_health_percent", "target": "all", "percent": 10 }
+      ]
+    }
+  ]
+}

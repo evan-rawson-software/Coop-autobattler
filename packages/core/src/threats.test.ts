@@ -169,6 +169,32 @@ describe('the loader', () => {
     );
     expect(loadThreats(null, ctx).ok).toBe(false);
   });
+
+  test('easy, medium and hard multipliers must increase strictly', () => {
+    const errorsFor = (easy: number, medium: number, hard: number) => {
+      const r = loadThreats(
+        edit((d) => {
+          d['typeMultiplierPercent'] = {
+            ...(d['typeMultiplierPercent'] as Record<string, number>),
+            easy,
+            medium,
+            hard,
+          };
+        }),
+        ctx,
+      );
+      return r.ok ? [] : r.errors;
+    };
+    expect(errorsFor(70, 100, 140)).toEqual([]);
+    for (const [e, m, h] of [
+      [100, 100, 140],
+      [70, 100, 100],
+      [120, 100, 140],
+      [70, 150, 140],
+    ] as const) {
+      expect(errorsFor(e, m, h).join()).toMatch(/increase strictly/);
+    }
+  });
 });
 
 describe('generateThreat', () => {

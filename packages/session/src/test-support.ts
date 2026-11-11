@@ -2,15 +2,24 @@
 import {
   listLegalCorePositions,
   loadAllContentOrThrow,
+  loadEconomyOrThrow,
+  loadEventsOrThrow,
   loadMapgenOrThrow,
+  loadSimConfigOrThrow,
+  loadThreatsOrThrow,
 } from '@game/core';
 import buildingsJson from '../../../content/buildings.json';
+import economyJson from '../../../content/economy.json';
+import eventsJson from '../../../content/events.json';
 import mapgenJson from '../../../content/mapgen.json';
 import presentationJson from '../../../content/presentation.en.json';
 import resourcesJson from '../../../content/resources.json';
+import simJson from '../../../content/sim.json';
 import terrainJson from '../../../content/terrain.json';
+import threatsJson from '../../../content/threats.json';
 import unitsJson from '../../../content/units.json';
 import { createDeps } from './defaults.js';
+import { createGameDeps, type GameConfigs } from './game-deps.js';
 import { applyIntent, createRun } from './machine.js';
 import type {
   CreateRunArgs,
@@ -31,6 +40,25 @@ export const mapgenConfig = loadMapgenOrThrow(mapgenJson, {
   terrain: content.terrain,
 });
 export const baseDeps: RunDeps = createDeps(content, mapgenConfig);
+
+export const gameConfigs: GameConfigs = {
+  mapgen: mapgenConfig,
+  economy: loadEconomyOrThrow(economyJson, { buildings: content.buildings }),
+  events: loadEventsOrThrow(eventsJson),
+  threats: loadThreatsOrThrow(threatsJson, {
+    units: content.units,
+    buildings: content.buildings,
+  }),
+  sim: loadSimConfigOrThrow(simJson),
+};
+
+/** Fully wired deps: economy, PvE options, events, rewards, real battles. */
+export function makeGameDeps(
+  overrides: Parameters<typeof createGameDeps>[2] = {},
+  configs: GameConfigs = gameConfigs,
+): RunDeps {
+  return createGameDeps(content, configs, overrides);
+}
 
 export function runArgs(
   players: readonly string[] = ['Ann'],

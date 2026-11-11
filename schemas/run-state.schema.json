@@ -20,6 +20,7 @@
     "team",
     "perPlayer",
     "votes",
+    "upcomingPve",
     "pending",
     "history",
     "thisRound",
@@ -27,6 +28,32 @@
     "outcome"
   ],
   "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "upcomingPve is set exactly in the first build step (round 1) and in the shop that ends a round (the PvP leg); null everywhere else. Whether its round matches the coming battle is checked by validateRunState.",
+      "if": {
+        "anyOf": [
+          {
+            "properties": {
+              "step": { "const": "build" },
+              "leg": { "const": "pve" },
+              "round": { "const": 1 }
+            },
+            "required": ["step", "leg", "round"]
+          },
+          {
+            "properties": {
+              "step": { "const": "shop" },
+              "leg": { "const": "pvp" }
+            },
+            "required": ["step", "leg"]
+          }
+        ]
+      },
+      "then": { "properties": { "upcomingPve": { "type": "object" } } },
+      "else": { "properties": { "upcomingPve": { "type": "null" } } }
+    }
+  ],
   "properties": {
     "runId": { "type": "string", "minLength": 1 },
     "runVersion": {
@@ -34,7 +61,10 @@
       "type": "string",
       "pattern": "^[0-9]+\\.[0-9]+$"
     },
-    "formatVersion": { "const": 1 },
+    "formatVersion": {
+      "description": "The run-state format. Version 2 added upcomingPve and changed the battle detail; version 1 states are not readable.",
+      "const": 2
+    },
     "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
     "rng": {
       "description": "The saved state of the run's Rng: four u32 words, not all zero.",
@@ -176,6 +206,21 @@
                 ]
               }
             }
+          }
+        }
+      ]
+    },
+    "upcomingPve": {
+      "description": "The options of the next PvE battle, drawn and stored before the shop (or first build step) that leads up to it (RS-6a); null otherwise. Moved into pending.options when pve_choice opens. It is also null once the run is over.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["round", "options"],
+          "additionalProperties": false,
+          "properties": {
+            "round": { "type": "integer", "minimum": 1 },
+            "options": { "type": "array" }
           }
         }
       ]

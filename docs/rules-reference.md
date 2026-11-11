@@ -359,7 +359,7 @@ never changes its input.
 ### Format (plain JSON, `schemas/team-state.schema.json`)
 
 ```
-{ map, core, buildings, stash, nextId, conduits }
+{ map, core, buildings, stash, nextId, conduits, modifiers? }
 ```
 
 - `map`: the map format above.
@@ -380,6 +380,9 @@ never changes its input.
   and `buildings`.
 - `conduits`: conduits `{ id, from, to, cells }`, sorted by `id` (see
   Conduits). Their `id` comes from the same counter as building IDs.
+
+- `modifiers` (optional): run modifiers `{ id, effects }` taken so far; omitted
+  when there are none. See "PvE options, rewards, events and run modifiers".
 
 Buildings of kind `core` never appear in `buildings` or `stash`.
 
@@ -2206,3 +2209,135 @@ shown, and reloading or replaying never changes them.
   back bought slots.
 - Buy and re-roll are legal only in the `shop` step (`wrong_step` elsewhere,
   including the first `build`). None of these can be undone.
+
+## PvE options, rewards, events and run modifiers
+
+Code: `packages/core/src/modifiers.ts`, `events.ts`, `economy.ts` (rewards),
+`team-state.ts` (`raiseTier`), `arena-sim.ts` (modifiers in the simulation);
+`packages/session/src/pve-options.ts`, `rewards.ts`, `events.ts`,
+`real-battle.ts`, `replay.ts`, `game-deps.ts`. Data: `content/events.json`
+(`schemas/events.schema.json`) and `rewards` in `content/economy.json`.
+
+### PvE options (RS-3, RS-3b, RS-6a)
+
+For the PvE battle of round `r` three options are generated, `easy`, `medium`
+and `hard`, and stored in `RunState.upcomingPve = { round, options }`. They
+are drawn on entering the first `build` step (round 1) and on entering the
+shop that ends round `r - 1` (round `r`), so they exist in state while the
+party builds. When `pve_choice` opens they move to `pending.options` and
+`upcomingPve` becomes null. Stream `pve_options:r<r>` (`r` is the round of the
+battle): `pickArchetypes(rng.child("archetypes").nextU32(), r, threats)` gives
+the three archetypes, and each difficulty's threat is
+`generateThreat({seed: rng.child(<difficulty>).nextU32(), round: r, type:
+<difficulty>, partySize, archetype})`. An option is
+`{ id, difficulty, archetype, reward: {gold}, budget, summary, threat }` with
+`id = difficulty`, `summary = threatSummary(threat)` and `threat` the whole
+profile. The budget multipliers (70 / 100 / 140 percent) and the strictly
+increasing `rewards.pveWin` (checked by the loader) make harder options
+strictly larger in budget and reward.
+
+### Rewards (EC-6, EC-7)
+
+Gold only, per player, paid when the battle's summary step ends (before the
+event step). PvE win: the chosen option's `reward.gold`. PvE loss: nothing,
+and no life is lost. PvP win: `rewards.pvpWin`. PvP loss: `rewards.pvpLoss`
+and `pvpLossLifeCost` lives. Placeholder values: PvE easy 3, medium 5, hard 8;
+PvP win 6; PvP loss 2. No battle or event adds a building (only shop
+purchases and the starting kit do).
+
+### Run modifiers (EC-8)
+
+`TeamState.modifiers` is an optional list `{ id, effects }` in the order taken;
+it is omitted (never an empty list) when there are none, so states without
+modifiers hash as before. A modifier's effects are copied into the team state
+when it is taken. Effects (percent is an integer 1 to 1000; the simulation
+uses `floor(value * (100 + sum) / 100)`, summing all effects of a kind and
+target held by the side):
+
+| Kind | Applied |
+| --- | --- |
+| `building_health_percent` (`target`: `all`, `wall`, `gate`, `turret`, `source`, `route`, `unit_producer`, `economy`) | to the starting health of matching placed buildings (not the Core; a defense matches its defense type, others their kind; `all` matches every building); at tick 0 in `createArenaSim` |
+| `core_health_percent` | to the starting Core health (after a side-option Core override) |
+| `unit_strength_percent` | added to the unit strength percent at each spawn (health and damage, see the unit stats seam in "The arena") |
+| `turret_damage_percent` | to the damage of each of the side's turrets, when the arena context is built |
+
+Each side's modifiers come from its own team state (`TeamState.modifiers`):
+the party's from the run, and a ghost from `findPvpOpponent` brings its own,
+which apply to side 1. Generated threats (PvE options and the PvP boss) have
+none. An extractor-speed kind is not implemented.
+
+### Events (RS-4)
+
+`content/events.json` lists event definitions `{ id, type, weight,
+repeatable, params }` and modifier definitions `{ id, stackable, effects }`,
+and `offerCount` (3). The `type` names a handler in the session package; the
+handler decides availability, extra offer data, what happens on pick, and how a
+follow-up choice is applied. Adding a type is data plus one handler.
+
+Offers (stream `event_offers:r<r>:<leg>`): the definitions whose handler says
+`available` are drawn by weight without replacement until `offerCount` offers
+exist (`pickWeightedIndex` over the remaining weights, one draw each: first
+pass, `min(offerCount, available)` draws). If there are fewer available
+definitions than offers, `repeatable` definitions are drawn again (second
+pass), as long as the new instance's data differs (compared as canonical
+JSON). The second pass only runs while some repeatable definition has room for
+another different instance (the handler's optional `maxInstances`; a Shrine
+has one instance per subset of its eligible modifiers), and then makes exactly
+one weighted draw per extra offer; the instance data comes from child streams
+`<event id>:<index>` (and `<event id>:<index>#<k>` for the k-th retry), which
+do not advance the stream, so the draws made never depend on how many retries
+were needed. An offer is `{ id, event, type, ...data }`; `id` is the event id,
+and `<event id>#2` for a second instance. Offers are stored in
+`pending.options` before they are shown.
+
+**Fewer than three offers is allowed, on purpose.** With the Workshop
+unavailable (every building at tier 3) and three or fewer eligible modifiers,
+a second, different Shrine cannot exist, so the step offers two events (the
+Shrine and the Windfall); with only the Windfall available it offers one. The
+step always has at least one offer, because wiring requires an event
+definition whose handler is `alwaysAvailable` (the Windfall); `createGameDeps`
+throws otherwise. The machine, the vote, `validateRunState` (1 or more offers
+in `event_choice`) and the schema accept any number of offers from 1 to
+`offerCount`. Whether the step should instead pad the offers is open: see
+issue #48.
+
+- **Workshop** (`params.tiers`, default 1): available when some owned building
+  (placed or in the stash) is below tier 3. Follow-up options, in instance ID
+  order: `{ id: "b<instance id>", building, def, tier, owner, placed }` for
+  every owned building below tier 3. The chosen building is raised by `tiers`
+  tiers, stopping at 3 (`raiseTier`).
+- **Shrine** (`params.choices`, default 3): available when a modifier can be
+  taken. The offer lists up to `choices` modifier IDs, a random subset of the
+  modifiers not already held (stackable ones are always eligible), in file
+  order. The follow-up options are those modifiers; the chosen one is added to
+  `TeamState.modifiers`.
+- **Windfall** (`params.gold`): no follow-up; every player gets that much gold
+  at once.
+
+After the party votes for an offer (the usual vote: most votes, host breaks a
+tie), a handler with no follow-up applies at once and the step goes to the
+shop; so does a follow-up that lists no options (nobody could answer it). A
+handler that can return a follow-up declares `canAskFollowUp` and must have a
+`choose` function (checked when the deps are built). Otherwise the step becomes `event_resolve` with `pending = { offer,
+followUp: { prompt, options, votes } }`, and each player sends `{ type:
+"event_choose", choice: <option id> }`. Votes count at once and can be
+changed; when all players have voted the winner (most votes, ties to the
+host) is applied and the step goes to the shop.
+
+### Battles and playback
+
+`createBattleResolver` runs `simulatePveBattle` with the voted option's threat
+(PvE), or, for PvP, a ghost when `findPvpOpponent` returns a team, else a
+generated `boss` threat for the round (archetype drawn from the boss-only
+archetypes; opponent kind `boss`). The battle seed is the first `nextU32` of
+the battle stream. `BattleResult.detail` is `{ version, kind, round, seed,
+source, teamHash, summary }`: no event log. `source` is `{type: "option"}`
+(threat in `pending.option.threat`), `{type: "generated", input, threat}` (the
+`ThreatInput` and the generated `ThreatProfile`; a replay fights the stored
+profile, so later content changes cannot alter it) or `{type: "ghost", label,
+team}`. `summary` holds the winner,
+reason, end tick, event count, Core health on both sides, and `eventLogHash =
+hashJson(eventLog)`. The summary steps accept only ready, unready and abandon,
+so the team cannot change between a battle and the end of its summary step;
+`teamHash` records the team that fought and a replay refuses (`team_changed`)
+if it differs.
