@@ -7,6 +7,7 @@
 import { validateTeamState } from '@game/core';
 import {
   MAX_PLAYERS,
+  RUN_STATE_FORMAT_VERSION,
   STEPS,
   TRANSIENT_STEPS,
   type RunDeps,
@@ -80,6 +81,7 @@ const KEYS = [
   'team',
   'perPlayer',
   'votes',
+  'upcomingPve',
   'pending',
   'history',
   'thisRound',
@@ -122,6 +124,17 @@ function check(
   const err = (m: string): void => {
     errors.push(m);
   };
+  // First, so that a state from an older format is rejected for that reason
+  // and not for a field the newer format added.
+  if (
+    'formatVersion' in data &&
+    data['formatVersion'] !== RUN_STATE_FORMAT_VERSION
+  ) {
+    err(
+      `formatVersion: unsupported format version ${JSON.stringify(data['formatVersion'])} (this game reads version ${String(RUN_STATE_FORMAT_VERSION)}).`,
+    );
+    return;
+  }
   for (const k of Object.keys(data)) {
     if (!KEYS.includes(k)) err(`run state: unknown field "${k}".`);
   }
@@ -139,7 +152,6 @@ function check(
   ) {
     err('runVersion: must look like "major.minor".');
   }
-  if (data['formatVersion'] !== 1) err('formatVersion: must be 1.');
   if (!isU32(data['seed'])) err('seed: must be a u32 integer.');
   const rng = data['rng'];
   if (!Array.isArray(rng) || rng.length !== 4 || !rng.every(isU32)) {
@@ -280,6 +292,35 @@ function check(
       }
     });
   }
+  // The coming PvE options exist exactly from the moment they are drawn to
+  // the moment `pve_choice` takes them: in the first `build` (round 1) and in
+  // the shop that ends a round (the shop of the PvP leg).
+  const upcoming = data['upcomingPve'];
+  const upcomingRequired =
+    (st === 'build' && leg === 'pve' && data['round'] === 1) ||
+    (st === 'shop' && leg === 'pvp');
+  if (upcoming !== null) {
+    if (
+      !isRec(upcoming) ||
+      !isInt(upcoming['round']) ||
+      upcoming['round'] < 1 ||
+      !Array.isArray(upcoming['options']) ||
+      !isJson(upcoming['options'])
+    ) {
+      err('upcomingPve: must be null or {round, options: JSON array}.');
+    } else if (!upcomingRequired) {
+      err(
+        `upcomingPve: must be null in step "${st}" (leg "${leg as string}").`,
+      );
+    } else if (
+      isInt(data['round']) &&
+      upcoming['round'] !== (leg === 'pvp' ? data['round'] + 1 : data['round'])
+    ) {
+      err('upcomingPve: round does not match the coming PvE battle.');
+    }
+  } else if (upcomingRequired) {
+    err(`upcomingPve: must be set in step "${st}" (leg "${leg as string}").`);
+  }
   const pending = data['pending'];
   if (!isJson(pending)) err('pending: must be JSON.');
   const p = isRec(pending) ? pending : {};
@@ -291,6 +332,22 @@ function check(
     !Array.isArray(p['options'])
   ) {
     err(`pending.options: must be an array in step "${st}".`);
+  } else if (st === 'event_choice' && (p['options'] as unknown[]).length < 1) {
+    err('pending.options: an event step needs at least one offer.');
+  }
+  if (st === 'event_resolve') {
+    const fu = p['followUp'];
+    if (
+      !isRec(p['offer']) ||
+      !isRec(fu) ||
+      !Array.isArray(fu['options']) ||
+      !Array.isArray(fu['votes']) ||
+      fu['votes'].length !== n
+    ) {
+      err(
+        'pending: must hold {offer, followUp: {options, votes}} in step "event_resolve".',
+      );
+    }
   }
   if (st === 'pve_summary' || st === 'pvp_summary') {
     const b = p['battle'];

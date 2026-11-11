@@ -11,6 +11,7 @@
     "shopOfferCount",
     "rerollCost",
     "sellRefundPercent",
+    "rewards",
     "offerWeights",
     "tierOdds"
   ],
@@ -56,6 +57,30 @@
       "type": "integer",
       "minimum": 0,
       "maximum": 100
+    },
+    "rewards": {
+      "description": "Gold paid to each player after a battle (W2-3, EC-6, EC-7). A PvE loss pays nothing. pveWin must increase strictly from easy to medium to hard.",
+      "type": "object",
+      "required": ["pveWin", "pvpWin", "pvpLoss"],
+      "additionalProperties": false,
+      "properties": {
+        "pveWin": {
+          "type": "object",
+          "required": ["easy", "medium", "hard"],
+          "additionalProperties": false,
+          "properties": {
+            "easy": { "type": "integer", "minimum": 0 },
+            "medium": { "type": "integer", "minimum": 0 },
+            "hard": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "pvpWin": { "type": "integer", "minimum": 0 },
+        "pvpLoss": {
+          "description": "Consolation gold after losing a PvP battle.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
     },
     "offerWeights": {
       "description": "How likely each building is to be offered. Buildings not listed are never offered.",

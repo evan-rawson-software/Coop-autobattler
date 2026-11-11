@@ -6,12 +6,14 @@
  */
 import type {
   AnyReason,
+  Battle,
   Cell,
   ConduitReason,
   Content,
   Json,
   MapgenConfig,
   Rng,
+  RewardsConfig,
   TeamState,
 } from '@game/core';
 
@@ -35,6 +37,12 @@ export const STEPS = [
 ] as const;
 
 export type Step = (typeof STEPS)[number];
+
+/**
+ * The format of `RunState`. Version 2 added the required `upcomingPve` and
+ * changed the battle detail; version 1 states are not readable.
+ */
+export const RUN_STATE_FORMAT_VERSION = 2;
 
 /**
  * Steps a saved state can never be in. `pve_battle` and `pvp_battle` are
@@ -97,6 +105,17 @@ export interface BattleResult {
   readonly detail: Json;
 }
 
+/**
+ * The PvE options for the battle that comes next, drawn and stored before
+ * the shop (or first build step) that leads up to it (RS-6a). Moved into
+ * `pending.options` when `pve_choice` opens. `round` is the round of that
+ * battle.
+ */
+export interface UpcomingPve {
+  readonly round: number;
+  readonly options: readonly Json[];
+}
+
 export interface PveRecord {
   readonly difficulty: string;
   readonly won: boolean;
@@ -129,7 +148,8 @@ export interface RunOutcome {
 export interface RunState {
   readonly runId: string;
   readonly runVersion: string;
-  readonly formatVersion: 1;
+  /** `RUN_STATE_FORMAT_VERSION`; a state of another version is rejected. */
+  readonly formatVersion: 2;
   readonly seed: number;
   /** The saved state of the run's `Rng`. */
   readonly rng: readonly [number, number, number, number];
@@ -145,6 +165,12 @@ export interface RunState {
   /** Parallel to `players`. */
   readonly perPlayer: readonly PlayerRunState[];
   readonly votes: OpenVote | null;
+  /**
+   * The options of the next PvE battle (RS-6a): set on entering the first
+   * `build` step and on entering the shop that ends a round; cleared when
+   * `pve_choice` opens (they are then in `pending.options`).
+   */
+  readonly upcomingPve: UpcomingPve | null;
   /** Step-specific data, opaque to everything but the step's owner. */
   readonly pending: Json;
   /** One entry per finished round (and the unfinished one at run end). */
@@ -305,13 +331,35 @@ export interface BattleInput {
 
 export interface BattleResolver {
   resolve(input: BattleInput): BattleResult;
+  /**
+   * Optional: re-create the latest battle (the one in `pending.battle`) from
+   * the stored `detail`, for playback. See `replayLastBattle`.
+   */
+  replay?(state: RunState): ReplayBattleResult;
 }
+
+/** What `BattleResolver.replay` returns; see `replayLastBattle`. */
+export type ReplayBattleResult =
+  | {
+      readonly ok: true;
+      /** The battle at tick 0; call `step()` until `isOver()`. */
+      readonly battle: Battle;
+      /** The summary stored when the battle was resolved. */
+      readonly stored: Json;
+      /** The event-log hash stored when the battle was resolved. */
+      readonly storedEventLogHash: string;
+    }
+  | { readonly ok: false; readonly reason: string };
 
 export interface RunHooks {
   /** W2-2: add the starting buildings and gold (entering `build`). */
   startingKit(state: RunState, rng: Rng): StatePatch;
-  /** W2-3: the options for the coming PvE battle; each has a string `id`. */
-  pveOptions(state: RunState, rng: Rng): readonly Json[];
+  /**
+   * W2-3: the options for the PvE battle of round `round` (the current round
+   * on entering the first `build`, the next one on entering the shop that
+   * ends a round); each has a string `id`.
+   */
+  pveOptions(state: RunState, rng: Rng, round: number): readonly Json[];
   /** W2-3: three event offers; each has a string `id`. */
   eventOffers(state: RunState, rng: Rng): readonly Json[];
   /**
@@ -373,6 +421,8 @@ export interface RunDeps {
   readonly hooks: RunHooks;
   /** Extension intents, keyed by intent type. */
   readonly handlers: Readonly<Record<string, IntentHandler>>;
+  /** The configured rewards, when wired (`createGameDeps`); for selectors. */
+  readonly rewards?: RewardsConfig;
 }
 
 export interface CreateRunArgs {

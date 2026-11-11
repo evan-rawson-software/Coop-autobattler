@@ -314,7 +314,13 @@ export function loadThreats(
       if (v !== undefined) m[t] = v;
     }
     if (THREAT_TYPES.every((t) => m[t] !== undefined)) {
-      multipliers = m as Record<ThreatType, number>;
+      const full = m as Record<ThreatType, number>;
+      multipliers = full;
+      if (!(full.easy < full.medium && full.medium < full.hard)) {
+        errors.push(
+          'threats.typeMultiplierPercent: must increase strictly from easy to medium to hard.',
+        );
+      }
     }
   }
 

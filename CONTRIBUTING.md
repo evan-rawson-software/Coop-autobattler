@@ -36,6 +36,8 @@ pnpm golden:update   # regenerate golden/ expected values (deliberate)
 pnpm format         # prettier --write
 pnpm format:check   # prettier --check
 pnpm validate:content  # check content/ against schemas/ and the core loaders
+pnpm sim <command>     # command-line battle runner (see below)
+pnpm boards:export     # rewrite boards/*.json from the reference board scripts
 ```
 
 Resource names live only in `content/resources.json` (TA-27a). Refer to
@@ -45,6 +47,48 @@ another content file, add a row to `packages/tools/src/registry.ts`.
 
 CI (`.github/workflows/ci.yml`) runs install with a frozen lockfile, then
 typecheck, lint, format:check, test, and build.
+
+## Battle runner (`pnpm sim`)
+
+`packages/tools/src/sim/` is a command-line runner over the core simulation.
+Output is deterministic for the same input; wall time is printed only with
+`--time`. A `BOARD` is a path to a board JSON file or a reference board name
+(`rush`, `fortify`, `siege`, `poor`), which means `boards/<name>.json`; a bare word that is not one of those names is
+treated as a path. Relative paths (boards and `--log`) resolve against the
+directory you ran `pnpm sim` from. Bad
+input prints an error and exits non-zero (2 for usage errors, 1 otherwise).
+
+```
+pnpm sim map --seed 5 [--party 1]
+pnpm sim battle --a rush --b fortify --seed 1 [--log events.json] [--ascii]
+pnpm sim pve --team boards/rush.json --archetype rusher --type medium --round 3 --seed 1
+pnpm sim batch --a rush --b fortify --count 300 --seed 1 [--time]
+pnpm sim batch --a siege --archetype fortress --round 5 --count 100
+pnpm sim --help
+```
+
+- `map` generates the map for a seed and prints it with its resource nodes.
+- `battle` fights board A (side 0, the party) against board B (side 1, the
+  defender) and prints the result, the neutral zone depth, per-side totals, a
+  timeline sample, and the event log hash. `--log FILE` writes the full event
+  log as JSON; `--ascii` also prints the final arena.
+- `pve` fights a board against a generated threat (`--archetype` with or without
+  the `arch_` prefix; `--type` easy, medium, hard or boss; `--round`, at most the highest round with its own budget, 63 with the
+  current content). The
+  threat is generated with the battle seed unless `--threat-seed` is given.
+- `batch` runs `--count` battles with seeds `seed .. seed + count - 1` against a
+  board (`--b`) or a threat (`--archetype`) and reports win rate and the length
+  distribution. The seeds must stay within 0 to 4294967295, and `--type`,
+  `--round` and `--threat-seed` need `--archetype`.
+
+Board files hold a team state plus a name, description, map seed and party size
+(see the rules reference, "Reference boards"); `mapSeed` and `partySize` are
+required and the team's map is checked against them. A bare team state without
+that wrapper is accepted, with a note on stderr that its map cannot be verified. The four reference boards are built by
+scripts in `packages/core/src/reference-boards*.ts`; after changing one, run
+`pnpm boards:export` and commit the result (a test fails while they differ).
+Every board file must pass the whole-state validator. The performance budget
+and its benchmark are in [`docs/performance-budget.md`](docs/performance-budget.md).
 
 ## Web app
 

@@ -15,7 +15,8 @@ Filled by later issues.
 | `buildings.json`       | Building rules (`bld_*` IDs): kind, footprint, tiers, sides | `schemas/buildings.schema.json`    |
 | `mapgen.json`          | Map generation parameters (board size, nodes, lakes, cliffs) | `schemas/mapgen.schema.json`       |
 | `sim.json`             | Battle clock, flow and breach constants (ticks per second, buffer size, breach costs) | `schemas/sim.schema.json`          |
-| `economy.json`         | Gold, starting kit, shop size, re-roll/sell rules, offer and tier odds | `schemas/economy.schema.json`      |
+| `economy.json`         | Gold, starting kit, shop size, re-roll/sell rules, battle rewards, offer and tier odds | `schemas/economy.schema.json`      |
+| `events.json`          | Event definitions (type, weight, params) and the run modifiers a Shrine offers | `schemas/events.schema.json`       |
 | `threats.json`         | PvE threats: budget curve (SC-1), unit prices, layout parameters, archetype templates | `schemas/threats.schema.json`      |
 | `presentation.en.json` | English names and descriptions for buildings, units, terrain | `schemas/presentation.schema.json` |
 

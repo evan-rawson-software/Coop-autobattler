@@ -11,6 +11,11 @@
   "shopOfferCount": 5,
   "rerollCost": 1,
   "sellRefundPercent": 50,
+  "rewards": {
+    "pveWin": { "easy": 3, "medium": 5, "hard": 8 },
+    "pvpWin": 6,
+    "pvpLoss": 2
+  },
   "offerWeights": [
     { "def": "bld_extractor", "weight": 10 },
     { "def": "bld_splitter", "weight": 6 },

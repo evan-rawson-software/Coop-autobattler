@@ -399,3 +399,47 @@ export {
 } from './reference-boards.js';
 export type { ReferenceBoardName, TeamScript } from './reference-boards.js';
 export { makePveBattleKind, makeThreatGenKind } from './threat-kind.js';
+
+// Events and run modifiers (W2-3).
+export {
+  findEvent,
+  findModifier,
+  loadEvents,
+  loadEventsOrThrow,
+} from './events.js';
+export type {
+  EventDef,
+  EventParams,
+  EventsConfig,
+  EventsLoadResult,
+  ModifierDef,
+} from './events.js';
+export {
+  MAX_MODIFIER_PERCENT,
+  MODIFIER_EFFECT_KINDS,
+  MODIFIER_ID,
+  MODIFIER_TARGETS,
+  heldModifierIds,
+  modifierPercent,
+  parseModifierEffect,
+  parseTeamModifiers,
+  withModifier,
+} from './modifiers.js';
+export type {
+  HasModifiers,
+  ModifierEffect,
+  ModifierEffectKind,
+  ModifierTarget,
+  TeamModifier,
+} from './modifiers.js';
+export { raiseTier } from './team-state.js';
+export type { RaiseTierReason } from './team-state.js';
+export type { RewardsConfig } from './economy.js';
+
+// Reference boards, including the siege board (W1-10).
+export {
+  ALL_REFERENCE_BOARDS,
+  anyReferenceBoardScript,
+  buildAnyReferenceBoard,
+} from './reference-boards-siege.js';
+export type { AnyReferenceBoardName } from './reference-boards-siege.js';

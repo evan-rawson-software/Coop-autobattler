@@ -38,6 +38,7 @@ import {
 import type { EconomyEffectType, Side } from './buildings.js';
 import { addInt, divFloor, modFloor, mulPct } from './int.js';
 import { assertWithin, MAX_DAMAGE, MAX_HEALTH } from './limits.js';
+import { modifierPercent } from './modifiers.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
 import type { Cell } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
@@ -419,19 +420,58 @@ export function arenaOf(sim: ArenaSim, content: ArenaContent): Arena {
 }
 
 /**
- * A building's maximum health: its tier's health (the Core is tier 1).
- * This is the health it starts the battle with, apart from a Core health
- * override in the side options.
+ * A building's maximum health, the single definition used for both the health
+ * it starts the battle with and the breach cost of covering it. It is the
+ * tier's health (the Core is tier 1), or `coreHealthOverride` for the Core
+ * when the side options give one, raised by the team's modifiers: for the Core
+ * `core_health_percent`, for any other building `building_health_percent`
+ * matching its defense type or kind. Rounded down. Throws a RangeError when
+ * the result exceeds MAX_HEALTH or an override is out of range, so a bad
+ * combination fails at battle setup, never mid-battle.
  */
 function maxHealthOf(
   team: TeamState | undefined,
   b: ArenaBuilding,
   content: ArenaContent,
+  coreHealthOverride?: number,
 ): number {
   const def = content.buildings.get(b.def);
   const placed = team?.buildings.find((p) => p.id === b.id);
   const tier = b.kind === 'core' ? 0 : (placed?.tier ?? 1) - 1;
-  return def?.tiers[tier]?.health ?? 0;
+  let hp = def?.tiers[tier]?.health ?? 0;
+  if (b.kind === 'core' && coreHealthOverride !== undefined) {
+    // Checked: the time-limit rule multiplies two Core healths.
+    assertWithin(coreHealthOverride, 1, MAX_HEALTH, 'Side option coreHealth');
+    hp = coreHealthOverride;
+  }
+  if (team !== undefined) {
+    const pct =
+      b.kind === 'core'
+        ? modifierPercent(team, 'core_health_percent')
+        : modifierPercent(
+            team,
+            'building_health_percent',
+            b.defenseType ?? b.kind,
+          );
+    if (pct > 0) hp = mulPct(hp, 100 + pct);
+  }
+  if (hp > MAX_HEALTH) {
+    throw new RangeError(
+      `Building ${b.def} (id ${String(b.id)}): maximum health ${String(hp)} with modifiers exceeds the maximum ${String(MAX_HEALTH)}.`,
+    );
+  }
+  return hp;
+}
+
+/** A turret tier's damage with the team's `turret_damage_percent`, checked. */
+function turretDamageOf(team: TeamState, damage: number): number {
+  const v = mulPct(damage, 100 + modifierPercent(team, 'turret_damage_percent'));
+  if (v > MAX_DAMAGE) {
+    throw new RangeError(
+      `Turret damage ${String(v)} with modifiers exceeds the maximum ${String(MAX_DAMAGE)}.`,
+    );
+  }
+  return v;
 }
 
 /** Derive the context for a state (new or restored). */
@@ -454,7 +494,13 @@ export function createArenaContext(
   // would wrap. Content health is at most MAX_HEALTH (limits.ts).
   const maxHealth = new Float64Array(arena.buildings.length);
   for (const b of arena.buildings) {
-    maxHealth[b.ref] = maxHealthOf(sim.teams[b.side], b, content);
+    const side = b.side === 0 ? 0 : 1;
+    maxHealth[b.ref] = maxHealthOf(
+      sim.teams[side],
+      b,
+      content,
+      b.kind === 'core' ? sim.sideOptions?.[side]?.coreHealth : undefined,
+    );
   }
   const producers = new Map<number, ProducerInfo>();
   const turrets = new Map<number, TurretInfo>();
@@ -486,7 +532,7 @@ export function createArenaContext(
         if (tier === undefined) continue;
         turrets.set(bkey(side, p.id), {
           ref,
-          damage: tier.damage,
+          damage: turretDamageOf(team, tier.damage),
           rangeCells: tier.rangeCells,
           cooldownTicks: tier.cooldownTicks,
           costPerShot: tier.costPerShot,
@@ -555,26 +601,41 @@ export function createArenaSim(
     .sort((p, q) => p.y - q.y || p.x - q.x);
   const arena = createArena(teamA, teamB, gapRows, content, gapBlocked);
   const health: HealthSim[] = [];
-  const teams = [teamA, teamB];
+  const teams: [TeamState, TeamState] = [teamA, teamB];
   for (const b of arena.buildings) {
-    let hp = maxHealthOf(teams[b.side], b, content);
-    const coreOverride =
-      options.sideOptions?.[b.side === 0 ? 0 : 1]?.coreHealth;
-    if (b.kind === 'core' && coreOverride !== undefined) {
-      // Checked: the time-limit rule multiplies two Core healths.
-      assertWithin(coreOverride, 1, MAX_HEALTH, 'Side option coreHealth');
-      hp = coreOverride;
-    }
+    const side = b.side === 0 ? 0 : 1;
+    // The one place a building's maximum health is computed (checked against
+    // the content bound); a building starts the battle at full health.
+    const hp = maxHealthOf(
+      teams[side],
+      b,
+      content,
+      b.kind === 'core' ? options.sideOptions?.[side]?.coreHealth : undefined,
+    );
     health.push({ side: b.side, building: b.id, hp });
   }
-  // Fail at the start, not mid-battle: with the side's base strength plus the
-  // largest ramp bonus, every unit type must stay within the stat bounds.
-  for (const o of options.sideOptions ?? []) {
-    const base = o?.unitStrengthPercent;
-    if (base === undefined) continue;
+  // Fail at the start, not mid-battle: with the side's base strength, its
+  // strength modifiers and the largest ramp bonus, every unit type must stay
+  // within the stat bounds.
+  for (const side of [0, 1] as const) {
+    const base = options.sideOptions?.[side]?.unitStrengthPercent ?? 0;
     assertWithin(base, 0, Number.MAX_SAFE_INTEGER, 'unitStrengthPercent');
-    for (const def of content.units.list()) {
-      unitStats(0, def, addInt(base, simConfig.maxUnitStrengthPercent));
+    const team = teams[side];
+    const strength = addInt(
+      addInt(base, modifierPercent(team, 'unit_strength_percent')),
+      simConfig.maxUnitStrengthPercent,
+    );
+    for (const def of content.units.list()) unitStats(0, def, strength);
+  }
+  // Turret damage with modifiers: createArenaContext derives it by the same
+  // checked function; run it now so the error comes at setup.
+  for (const team of teams) {
+    for (const p of team.buildings) {
+      const def = content.buildings.get(p.def);
+      if (def?.kind === 'defense' && def.defenseType === 'turret') {
+        const tier = def.tiers[p.tier - 1];
+        if (tier !== undefined) turretDamageOf(team, tier.damage);
+      }
     }
   }
   const producers: ProducerSim[] = [];
@@ -778,7 +839,8 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
 function spawnStrength(sim: ArenaSim, ctx: ArenaContext, side: number): number {
   return (
     rampBonus(sim, ctx, side, 'unit_strength') +
-    (sim.sideOptions?.[side === 0 ? 0 : 1]?.unitStrengthPercent ?? 0)
+    (sim.sideOptions?.[side === 0 ? 0 : 1]?.unitStrengthPercent ?? 0) +
+    modifierPercent(sim.teams[side === 0 ? 0 : 1], 'unit_strength_percent')
   );
 }
 
