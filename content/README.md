@@ -18,7 +18,7 @@ Filled by later issues.
 | `economy.json`         | Gold, starting kit, shop size, re-roll/sell rules, battle rewards, offer and tier odds | `schemas/economy.schema.json`      |
 | `events.json`          | Event definitions (type, weight, params) and the run modifiers a Shrine offers | `schemas/events.schema.json`       |
 | `threats.json`         | PvE threats: budget curve (SC-1), unit prices, layout parameters, archetype templates | `schemas/threats.schema.json`      |
-| `presentation.en.json` | English names and descriptions for buildings, units, terrain | `schemas/presentation.schema.json` |
+| `presentation.en.json` | English names and descriptions for buildings, units, terrain, archetypes, event types and run modifiers, plus the effect-sentence templates, kind labels and "needs" words | `schemas/presentation.schema.json` |
 
 Rules files hold no display text; the presentation file holds no rules and
 needs exactly one entry per building, unit, and terrain feature. Descriptions

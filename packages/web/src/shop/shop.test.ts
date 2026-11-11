@@ -13,12 +13,7 @@ import {
 } from '../run/local-storage-store.js';
 import { createShopDeps, loadShopRun, shopRunId } from '../run/shop-run.js';
 import { performAction } from './actions.js';
-import {
-  EFFECT_TEMPLATES,
-  effectText,
-  needsText,
-  templateKey,
-} from './effect-text.js';
+import { effectText, needsText, templateKey } from './effect-text.js';
 import {
   buildShopView,
   nextBattleView,
@@ -43,7 +38,9 @@ describe('effect text', () => {
 
   test('every building kind maps to an existing template', () => {
     for (const def of content.buildings.list()) {
-      expect(EFFECT_TEMPLATES[templateKey(def)]).toBeTypeOf('string');
+      expect(
+        content.presentation.templates.effects[templateKey(def)],
+      ).toBeTypeOf('string');
     }
   });
 
@@ -64,15 +61,15 @@ describe('effect text', () => {
     const name = content.resources.get(res)?.name ?? '';
     expect(name).not.toBe('');
     expect(effectText(content, simConfig, barracks, 1)).toContain(name);
-    expect(needsText(barracks, content.resources)).toBe(name);
+    expect(needsText(barracks, content)).toBe(name);
   });
 
   test('needs: nothing for walls, any resource for routes', () => {
     const wall = content.buildings.get('bld_wall');
     const splitter = content.buildings.get('bld_splitter');
     if (wall === undefined || splitter === undefined) throw new Error('def');
-    expect(needsText(wall, content.resources)).toBe('nothing');
-    expect(needsText(splitter, content.resources)).toBe('any resource');
+    expect(needsText(wall, content)).toBe('nothing');
+    expect(needsText(splitter, content)).toBe('any resource');
   });
 
   test('unknown tier gives empty text', () => {

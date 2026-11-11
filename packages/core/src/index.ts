@@ -74,9 +74,16 @@ export type {
   UnitProducerTier,
   WallOrGateBuildingDef,
 } from './buildings.js';
-export { loadPresentation, loadPresentationOrThrow } from './presentation.js';
+export {
+  loadPresentation,
+  loadPresentationOrThrow,
+  TEMPLATE_SLOTS,
+} from './presentation.js';
 export type {
+  ArchetypeEntry,
+  EventEntry,
   PresentationConfig,
+  PresentationTemplates,
   PresentationEntry,
   PresentationLoadContext,
   PresentationLoadResult,

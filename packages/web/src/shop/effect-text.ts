@@ -1,58 +1,26 @@
 /**
  * One-line effect text for a building tier, generated from the building's
- * rules data (`content/buildings.json`) and the templates below. Nothing is
- * written per building: a new building of an existing kind gets its text
- * with no change here.
+ * rules data (`content/buildings.json`) and the templates in
+ * `content/presentation.en.json`. Nothing is written per building: a new
+ * building of an existing kind gets its text with no change here.
  *
  * Templates use `{name}` slots filled from the rules numbers, and `{res_x}`
  * for resources, which `formatText` replaces with the configured display
- * name (TA-27a). Resource names never appear in this file.
- *
- * The templates live here because the presentation loader in `core` accepts
- * only names and descriptions. Moving them to `presentation.en.json` needs a
- * small change to that loader.
+ * name (TA-27a). Neither sentences nor resource names appear in this file.
  */
-import {
-  formatText,
-  type BuildingDef,
-  type ResourceConfig,
-  type SimConfig,
-} from '@game/core';
+import { formatText, type BuildingDef, type SimConfig } from '@game/core';
 import type { WebContent } from '../content.js';
 
-export const EFFECT_TEMPLATES = {
-  source: 'Mines its node: 1 every {seconds} s · {health} health',
-  splitter: 'Splits one flow into {outs} outputs · {health} health',
-  merger: 'Merges {ins} inputs into one flow · {health} health',
-  crossover: 'Lets two flows cross without mixing · {health} health',
-  unit_producer: 'Trains 1 {unit} per {cost} {resource} · {health} health',
-  wall: 'Blocks movement · {health} health',
-  gate: 'Blocks enemies, lets your units pass · {health} health',
-  turret:
-    'Fires {damage} damage up to {range} cells every {seconds} s, using {cost} {resource} per shot · {health} health',
-  source_speed:
-    '+{step}% source speed per {cost} {resource} supplied, up to +{max}% · {health} health',
-  unit_strength:
-    '+{step}% unit strength per {cost} {resource} supplied, up to +{max}% · {health} health',
-  core: 'Your party’s health · {health} health',
-} as const;
+/** A key of `templates.effects` in the presentation file. */
+export type EffectTemplateKey = string;
 
-export type EffectTemplateKey = keyof typeof EFFECT_TEMPLATES;
-
-/** Human labels for building kinds (the card's second line). */
-export const KIND_LABELS = {
-  source: 'Source',
-  route: 'Route',
-  unit_producer: 'Units',
-  defense: 'Defense',
-  economy: 'Economy',
-  core: 'Core',
-} as const;
-
-export const NEEDS_TEMPLATES = {
-  nothing: 'nothing',
-  any: 'any resource',
-} as const;
+/** Human label for a building kind (the card's second line). */
+export function kindLabel(
+  content: Pick<WebContent, 'presentation'>,
+  kind: string,
+): string {
+  return content.presentation.templates.kinds[kind] ?? kind;
+}
 
 function fill(template: string, values: Record<string, string>): string {
   return template.replace(/\{([a-z]+)\}/g, (whole, key: string) =>
@@ -75,12 +43,16 @@ export function neededResources(def: BuildingDef): string[] {
 }
 
 /** The `Needs:` text, with resource display names from configuration. */
-export function needsText(def: BuildingDef, resources: ResourceConfig): string {
+export function needsText(
+  def: BuildingDef,
+  content: Pick<WebContent, 'resources' | 'presentation'>,
+): string {
   const ids = neededResources(def);
   if (ids.length > 0) {
-    return ids.map((id) => formatText(`{${id}}`, resources)).join(', ');
+    return ids.map((id) => formatText(`{${id}}`, content.resources)).join(', ');
   }
-  return def.kind === 'route' ? NEEDS_TEMPLATES.any : NEEDS_TEMPLATES.nothing;
+  const needs = content.presentation.templates.needs;
+  return def.kind === 'route' ? needs.any : needs.nothing;
 }
 
 /** The template key for a building. */
@@ -158,7 +130,10 @@ export function effectText(
       break;
   }
   return formatText(
-    fill(EFFECT_TEMPLATES[templateKey(def)], values),
+    fill(
+      content.presentation.templates.effects[templateKey(def)] ?? '',
+      values,
+    ),
     content.resources,
   );
 }

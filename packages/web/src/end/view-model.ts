@@ -6,7 +6,7 @@
 import type { TeamState } from '@game/core';
 import type { HistoryEntry, RoundRecord, RunState } from '@game/session';
 import { opponentName } from '../event/view-model.js';
-import { bossName } from '../run/temporary-text.js';
+import { bossName } from '../run/display-text.js';
 import { count } from '../plural.js';
 
 export interface BestView {

@@ -65,5 +65,88 @@
       "name": "Cliff",
       "description": "An impassable ridge. Nothing can be built on it."
     }
+  },
+  "archetypes": {
+    "arch_rusher": {
+      "name": "Rusher",
+      "description": "Heavy waves from the first seconds against a stronghold with almost no defenses.",
+      "tests": "defense"
+    },
+    "arch_fortress": {
+      "name": "Fortress",
+      "description": "A heavily defended stronghold ringed with walls and turrets. Light waves that arrive late.",
+      "tests": "ramp and siege"
+    },
+    "arch_escalator": {
+      "name": "Escalator",
+      "description": "Waves that grow quickly, behind a line of walls and turrets.",
+      "tests": "speed"
+    },
+    "arch_boss": {
+      "name": "Boss",
+      "description": "A strong stronghold with steady waves and a signature unit every few waves.",
+      "tests": "everything at once"
+    }
+  },
+  "events": {
+    "workshop": {
+      "name": "Workshop",
+      "icon": "⚙",
+      "flavour": ""
+    },
+    "shrine": {
+      "name": "Shrine",
+      "icon": "✦",
+      "flavour": ""
+    },
+    "windfall": {
+      "name": "Windfall",
+      "icon": "$",
+      "flavour": "No choice to make."
+    }
+  },
+  "modifiers": {
+    "mod_stout_walls": {
+      "name": "Stout walls"
+    },
+    "mod_sharp_turrets": {
+      "name": "Sharp turrets"
+    },
+    "mod_fortified_core": {
+      "name": "Fortified Core"
+    },
+    "mod_drilled_troops": {
+      "name": "Drilled troops"
+    },
+    "mod_reinforced_frames": {
+      "name": "Reinforced frames"
+    }
+  },
+  "templates": {
+    "effects": {
+      "source": "Mines its node: 1 every {seconds} s · {health} health",
+      "splitter": "Splits one flow into {outs} outputs · {health} health",
+      "merger": "Merges {ins} inputs into one flow · {health} health",
+      "crossover": "Lets two flows cross without mixing · {health} health",
+      "unit_producer": "Trains 1 {unit} per {cost} {resource} · {health} health",
+      "wall": "Blocks movement · {health} health",
+      "gate": "Blocks enemies, lets your units pass · {health} health",
+      "turret": "Fires {damage} damage up to {range} cells every {seconds} s, using {cost} {resource} per shot · {health} health",
+      "source_speed": "+{step}% source speed per {cost} {resource} supplied, up to +{max}% · {health} health",
+      "unit_strength": "+{step}% unit strength per {cost} {resource} supplied, up to +{max}% · {health} health",
+      "core": "Your party’s health · {health} health"
+    },
+    "kinds": {
+      "source": "Source",
+      "route": "Route",
+      "unit_producer": "Units",
+      "defense": "Defense",
+      "economy": "Economy",
+      "core": "Core"
+    },
+    "needs": {
+      "nothing": "nothing",
+      "any": "any resource"
+    }
   }
 }
