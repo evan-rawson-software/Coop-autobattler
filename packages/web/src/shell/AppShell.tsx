@@ -6,6 +6,7 @@
 
 import { createContext, type ComponentChildren } from 'preact';
 import { useContext } from 'preact/hooks';
+import { StorageNotes } from '../run/StorageNotes.js';
 
 export interface TabDef {
   readonly id: string;
@@ -71,6 +72,7 @@ export function AppShell(props: AppShellProps) {
           {runBar}
         </div>
       </header>
+      <StorageNotes />
       <div class="main">
         <main class="main-view">{props.children}</main>
         {left ? <Dock region="left">{left}</Dock> : null}

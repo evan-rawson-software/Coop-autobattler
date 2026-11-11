@@ -47,6 +47,15 @@ export interface IdbOptions {
   readonly onStale?: (runId: string) => void;
   /** Called after a record was written (to tell other tabs). */
   readonly onWritten?: (runId: string) => void;
+  /** The open is waiting for another tab (see `openDb`). */
+  readonly onBlocked?: () => void;
+  readonly onUnblocked?: () => void;
+  readonly signal?: AbortSignal;
+  /**
+   * Another tab needs to upgrade the database: this connection has been
+   * closed, so the stores no longer work until the page is reloaded.
+   */
+  readonly onVersionChange?: () => void;
 }
 
 export interface IdbStores {
@@ -55,9 +64,39 @@ export interface IdbStores {
   close(): void;
 }
 
-function openDb(factory: IDBFactory, name: string): Promise<IDBDatabase> {
+export interface OpenHooks {
+  /** Another tab holds an older version of the database open. */
+  readonly onBlocked?: () => void;
+  /** The blocked open went ahead. */
+  readonly onUnblocked?: () => void;
+  /**
+   * Give up: the open is rejected, and a connection that opens after that is
+   * closed again instead of being leaked.
+   */
+  readonly signal?: AbortSignal;
+}
+
+/**
+ * Open the database. A blocked open (another tab is upgrading or holds an old
+ * connection) is NOT an error: the request stays pending and goes ahead when
+ * the other tab lets go, so this keeps waiting and only reports it.
+ */
+export function openDb(
+  factory: IDBFactory,
+  name: string,
+  hooks: OpenHooks = {},
+): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const open = factory.open(name, DB_VERSION);
+    let rejected = false;
+    let blocked = false;
+    const giveUp = (error: Error): void => {
+      rejected = true;
+      reject(error);
+    };
+    hooks.signal?.addEventListener('abort', () => {
+      if (!rejected) giveUp(new Error('Opening the database was cancelled'));
+    });
     open.onupgradeneeded = () => {
       const db = open.result;
       if (!db.objectStoreNames.contains(SAVES)) db.createObjectStore(SAVES);
@@ -70,13 +109,23 @@ function openDb(factory: IDBFactory, name: string): Promise<IDBDatabase> {
       }
     };
     open.onsuccess = () => {
-      resolve(open.result);
+      const db = open.result;
+      if (rejected) {
+        // Nobody is waiting for this connection any more.
+        db.close();
+        return;
+      }
+      if (blocked) hooks.onUnblocked?.();
+      resolve(db);
     };
     open.onerror = () => {
-      reject(open.error ?? new Error('IndexedDB could not be opened'));
+      if (!rejected) {
+        giveUp(open.error ?? new Error('IndexedDB could not be opened'));
+      }
     };
     open.onblocked = () => {
-      reject(new Error('IndexedDB is blocked by another tab'));
+      blocked = true;
+      hooks.onBlocked?.();
     };
   });
 }
@@ -142,9 +191,18 @@ export async function openIndexedDbStores(
   factory: IDBFactory,
   options: IdbOptions = {},
 ): Promise<IdbStores> {
-  const db = await openDb(factory, options.dbName ?? DB_NAME);
+  const db = await openDb(factory, options.dbName ?? DB_NAME, {
+    ...(options.onBlocked === undefined
+      ? {}
+      : { onBlocked: options.onBlocked }),
+    ...(options.onUnblocked === undefined
+      ? {}
+      : { onUnblocked: options.onUnblocked }),
+    ...(options.signal === undefined ? {} : { signal: options.signal }),
+  });
   db.onversionchange = () => {
     db.close();
+    options.onVersionChange?.();
   };
 
   const listHistory = (): Promise<HistoryEntry[]> =>

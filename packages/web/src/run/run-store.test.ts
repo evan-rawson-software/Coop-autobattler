@@ -8,7 +8,14 @@ import {
   type RunState,
 } from '@game/session';
 import { reachStep } from './test-run.js';
-import { gameDeps, createServices, type ServiceEnv } from './services.js';
+import {
+  gameDeps,
+  createServices,
+  type ServiceEnv,
+  type StorageStatus,
+} from './services.js';
+import { createStore } from '../app-state.js';
+import { createMemoryStorage } from './local-storage-store.js';
 import {
   abandonSavedRun,
   closeRun,
@@ -292,5 +299,49 @@ describe('abandoning and removing saves, by kind of row', () => {
     }
     expect(await stored('flaky')).toBe(true);
     closeRun();
+  });
+});
+
+describe('when IndexedDB cannot be used', () => {
+  test('the fallback storage is named, and the note says other saves are not visible', async () => {
+    const status = createStore<StorageStatus>({
+      blocked: false,
+      reloadNeeded: false,
+      fallbackNote: null,
+    });
+    const broken = {
+      open: () => {
+        throw new Error('The database is locked');
+      },
+    } as unknown as IDBFactory;
+    const services = await createServices(
+      {
+        indexedDB: broken,
+        localStorage: createMemoryStorage(),
+        broadcast: null,
+        window: null,
+        now: () => 1,
+        tabId: 't',
+      },
+      gameDeps(),
+      status,
+    );
+    expect(services.storage).toBe('local');
+    expect(services.fallback).toBe('The database is locked');
+    const note = status.get().fallbackNote ?? '';
+    expect(note).toMatch(/local storage/);
+    expect(note).toMatch(/other storage are not shown here/);
+    expect(note).toMatch(/database is locked/);
+  });
+
+  test('IndexedDB in use needs no note', async () => {
+    const status = createStore<StorageStatus>({
+      blocked: false,
+      reloadNeeded: false,
+      fallbackNote: null,
+    });
+    const s = await createServices(env(new IDBFactory()), gameDeps(), status);
+    expect(s.fallback).toBeNull();
+    expect(status.get().fallbackNote).toBeNull();
   });
 });

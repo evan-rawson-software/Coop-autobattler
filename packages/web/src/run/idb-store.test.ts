@@ -2,7 +2,7 @@ import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, test } from 'vitest';
 import type { SaveRecord } from '@game/session';
 import { runSaveStoreConformance } from '@game/session/testing';
-import { openIndexedDbStores } from './idb-store.js';
+import { openDb, openIndexedDbStores } from './idb-store.js';
 import { StaleSaveError } from './local-storage-store.js';
 
 runSaveStoreConformance('IndexedDB store', async () => {
@@ -109,5 +109,81 @@ describe('IndexedDB store: finished runs', () => {
     const state = { runId: 'r', round: 3 } as unknown as SaveRecord['state'];
     await stores.finished.put({ runId: 'r', state, finishedAt: 5 });
     expect((await stores.finished.get('r'))?.state).toEqual(state);
+  });
+});
+
+describe('IndexedDB store: open and upgrade', () => {
+  /** A request that the test drives by hand. */
+  function fakeFactory() {
+    const closed: string[] = [];
+    const req = {} as {
+      onsuccess?: () => void;
+      onerror?: () => void;
+      onblocked?: () => void;
+      onupgradeneeded?: () => void;
+      result: unknown;
+      error: Error | null;
+    };
+    req.result = { close: () => closed.push('closed') };
+    req.error = null;
+    const factory = { open: () => req } as unknown as IDBFactory;
+    return { factory, req, closed };
+  }
+
+  test('a blocked open keeps waiting, says so, and goes ahead when unblocked', async () => {
+    const { factory, req, closed } = fakeFactory();
+    const events: string[] = [];
+    const opening = openDb(factory, 'x', {
+      onBlocked: () => events.push('blocked'),
+      onUnblocked: () => events.push('unblocked'),
+    });
+    let settled = false;
+    void opening.then(() => {
+      settled = true;
+    });
+    req.onblocked?.();
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    req.onsuccess?.();
+    await expect(opening).resolves.toBe(req.result);
+    expect(events).toEqual(['blocked', 'unblocked']);
+    expect(closed).toEqual([]);
+  });
+
+  test('a connection that opens after the wait was given up is closed, not leaked', async () => {
+    const { factory, req, closed } = fakeFactory();
+    const abort = new AbortController();
+    const opening = openDb(factory, 'x', { signal: abort.signal });
+    req.onblocked?.();
+    abort.abort();
+    await expect(opening).rejects.toThrow(/cancelled/);
+    req.onsuccess?.();
+    expect(closed).toEqual(['closed']);
+  });
+
+  test('an upgrade by another tab closes this connection and reports it', async () => {
+    const factory = new IDBFactory();
+    let changed = 0;
+    const tab = await openIndexedDbStores(factory, {
+      dbName: 'up',
+      onVersionChange: () => {
+        changed += 1;
+      },
+    });
+    await tab.saves.put(record('a', 0));
+    // Another tab (a newer build) asks for a higher version.
+    await new Promise<void>((resolve, reject) => {
+      const r = factory.open('up', 2);
+      r.onsuccess = () => {
+        r.result.close();
+        resolve();
+      };
+      r.onerror = () => {
+        reject(new Error('upgrade failed'));
+      };
+    });
+    expect(changed).toBe(1);
+    // The old connection is closed: its stores refuse instead of lingering.
+    await expect(tab.saves.get('a')).rejects.toThrow();
   });
 });

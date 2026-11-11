@@ -18,6 +18,7 @@ import {
   type RunDeps,
   type SaveStore,
 } from '@game/session';
+import { createStore, type Store } from '../app-state.js';
 import { gameConfigs } from '../build/setup.js';
 import { content } from '../content.js';
 import {
@@ -35,6 +36,35 @@ import {
 } from './local-storage-store.js';
 import { INSTALLED_VERSION } from './version.js';
 
+/**
+ * What the player must be told about storage, shown on every screen: kept
+ * apart from the services because a blocked open happens before they exist.
+ */
+export interface StorageStatus {
+  /** Another tab holds the saves database while this tab waits to open it. */
+  readonly blocked: boolean;
+  /** Another tab upgraded the saves database; this tab must reload. */
+  readonly reloadNeeded: boolean;
+  /** Which storage is in use when it is not the preferred one, and what that means. */
+  readonly fallbackNote: string | null;
+}
+
+export const storageStatus: Store<StorageStatus> = createStore<StorageStatus>({
+  blocked: false,
+  reloadNeeded: false,
+  fallbackNote: null,
+});
+
+const STORAGE_NAMES: Readonly<Record<'local' | 'memory', string>> = {
+  local: "this browser's local storage",
+  memory: 'memory only (nothing is kept after the page closes)',
+};
+
+/** The note for a tab that could not use IndexedDB. */
+export function fallbackText(kind: 'local' | 'memory', reason: string): string {
+  return `Saves could not be opened in the browser database (${reason}). This tab is using ${STORAGE_NAMES[kind]}. Runs saved in the other storage are not shown here, and runs started here are not visible there.`;
+}
+
 export type StorageKind = 'indexeddb' | 'local' | 'memory';
 
 export interface GameServices {
@@ -42,6 +72,8 @@ export interface GameServices {
   readonly finished: FinishedRuns;
   readonly storage: StorageKind;
   readonly deps: RunDeps;
+  /** Why the preferred storage (IndexedDB) is not in use, or null. */
+  readonly fallback: string | null;
   /** What `initSaves` did at start-up (wiped, finished, newer, corrupt). */
   readonly init: InitSavesResult;
   /** Call `onChange` when something else writes or refuses a write of `runId`. */
@@ -102,7 +134,12 @@ const CHANNEL = 'coop-saves';
 export async function createServices(
   env: ServiceEnv,
   runDeps: RunDeps,
+  status: Store<StorageStatus> = storageStatus,
 ): Promise<GameServices> {
+  const patch = (p: Partial<StorageStatus>): void => {
+    status.set({ ...status.get(), ...p });
+  };
+  let fallback: string | null = null;
   const watchers = new Map<string, Set<() => void>>();
   const fire = (runId: string | null): void => {
     for (const [id, set] of watchers) {
@@ -132,15 +169,28 @@ export async function createServices(
         onWritten: (id) => {
           channel?.postMessage({ runId: id, from: env.tabId });
         },
+        onBlocked: () => {
+          patch({ blocked: true });
+        },
+        onUnblocked: () => {
+          patch({ blocked: false });
+        },
+        onVersionChange: () => {
+          patch({ reloadNeeded: true });
+        },
       });
       saves = stores.saves;
       finished = stores.finished;
       storage = 'indexeddb';
-    } catch {
+    } catch (e) {
       channel?.close();
       channel = null;
       saves = null;
+      fallback = e instanceof Error ? e.message : 'unknown error';
+      patch({ blocked: false });
     }
+  } else {
+    fallback = 'IndexedDB is not available';
   }
   if (saves === null && env.localStorage !== null) {
     const ls = env.localStorage;
@@ -172,11 +222,17 @@ export async function createServices(
   // wrapper keeps its final state first, so the Run over screen can open it.
   // Removing a finished run's save always goes through it.
   saves = finishFirst(saves, finished, env.now);
+  if (storage !== 'indexeddb') {
+    patch({
+      fallbackNote: fallbackText(storage, fallback ?? 'unavailable'),
+    });
+  }
   const init = await initSaves(saves, INSTALLED_VERSION, env.now());
   return {
     saves,
     finished,
     storage,
+    fallback: storage === 'indexeddb' ? null : (fallback ?? 'unavailable'),
     deps: runDeps,
     init,
     watch(runId, onChange) {
