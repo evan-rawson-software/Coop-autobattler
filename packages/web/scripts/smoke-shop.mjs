@@ -7,6 +7,7 @@
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { frames } from './smoke-timing.mjs';
 
 export async function runShopSmoke({
   page,
@@ -332,7 +333,7 @@ export async function runShopSmoke({
       await page.mouse.move(p.x, p.y, { steps: 8 });
       await settle();
       await page.mouse.up();
-      await page.waitForTimeout(80);
+      await frames(page, 6);
       if ((await B.team()).buildings.length > before) return c;
       await page.keyboard.press('Escape');
     }
@@ -352,7 +353,7 @@ export async function runShopSmoke({
 
   // Undo only reverses the placement, never the purchase.
   await page.click('[data-action="undo"]');
-  await page.waitForTimeout(100);
+  await frames(page, 6);
   const undone = await B.team();
   check(
     undone.stash.some((x) => x.id === bought.id) &&
@@ -440,7 +441,7 @@ export async function runShopSmoke({
   // --- 1366x768
   await page.setViewportSize({ width: 1366, height: 768 });
   await settle();
-  await page.waitForTimeout(150);
+  await frames(page, 9);
   const sc2 = await noScroll(1366, 768);
   check(sc2.ok, `shop has no page scroll at 1366x768 (${JSON.stringify(sc2)})`);
   const clipped = await page.evaluate(() => {

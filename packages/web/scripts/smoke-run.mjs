@@ -8,6 +8,7 @@
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { frames, slow } from './smoke-timing.mjs';
 
 const SEED = 7;
 
@@ -147,7 +148,7 @@ export async function runRunSmoke({
           .waitForFunction(
             (n) => window.__debug.build.team().buildings.length > n,
             before,
-            { timeout: 400 },
+            { timeout: slow(400) },
           )
           .catch(() => undefined);
         if ((await B.team()).buildings.length > before) {
@@ -263,7 +264,7 @@ export async function runRunSmoke({
       await page.waitForFunction(
         (n) => window.__debug.build.team().buildings.length > n,
         before,
-        { timeout: 3000 },
+        { timeout: slow(3000) },
       );
     };
     const toStash = async (b) => {
@@ -274,7 +275,7 @@ export async function runRunSmoke({
       await page.waitForFunction(
         (n) => window.__debug.build.team().stash.length > n,
         before,
-        { timeout: 3000 },
+        { timeout: slow(3000) },
       );
     };
     const t = await B.team();
@@ -588,7 +589,7 @@ export async function runRunSmoke({
   await page.mouse.down();
   await page.mouse.move(pTo.x, pTo.y, { steps: 6 });
   await page.mouse.up();
-  await page.waitForTimeout(80);
+  await frames(page, 6);
   await page.keyboard.press('Escape');
   const t1b = await B.team();
   check(
@@ -612,7 +613,7 @@ export async function runRunSmoke({
     // The static sprite layer is rebuilt by an edit (place, rotate, undo) and
     // never by hovering.
     const builds = async () => {
-      await page.waitForTimeout(250);
+      await frames(page, 15);
       return await page.evaluate(() => window.__debug.sprites().layerBuilds);
     };
     const t0 = await B.team();
@@ -742,7 +743,7 @@ export async function runRunSmoke({
   await page.waitForFunction(
     () => (window.__debug?.battle?.tick?.() ?? 0) > 6,
     null,
-    { timeout: 20000 },
+    { timeout: slow(20000) },
   );
   await page.waitForFunction(
     (n) => {
@@ -756,7 +757,7 @@ export async function runRunSmoke({
       return best >= n;
     },
     tps * 6,
-    { timeout: 40000 },
+    { timeout: slow(40000) },
   );
   await page.click('#pause');
   await page.waitForFunction(() => window.__debug.battle.paused());
@@ -777,7 +778,7 @@ export async function runRunSmoke({
       return false;
     },
     tickBefore,
-    { timeout: 10000 },
+    { timeout: slow(10000) },
   );
   const stored = await storedTick();
   await page.reload();
@@ -932,6 +933,9 @@ export async function runRunSmoke({
   await page.click('.topbar-tabs button:has-text("Build")');
   await page.waitForFunction(() => window.__debug?.build?.step() === 'shop');
   await settle();
+  await page.waitForFunction(
+    () => window.__debug?.run?.screen() === 'shop_build',
+  );
   check(
     (await R.screen()) === 'shop_build' &&
       (await page.locator('#run-bar').count()) === 1,
@@ -948,7 +952,7 @@ export async function runRunSmoke({
 
   // PvP battle against the generated boss.
   await page.waitForFunction(() => window.__debug?.battle?.phase, null, {
-    timeout: 20000,
+    timeout: slow(20000),
   });
   const vs = await page.locator('[data-field="vs"]').innerText();
   check(/boss/i.test(vs), `PvP battle: the opponent is the boss ("${vs}")`);
@@ -1004,7 +1008,7 @@ export async function runRunSmoke({
       case 'pve_summary':
       case 'pvp_summary': {
         await page.waitForFunction(() => window.__debug?.battle?.phase, null, {
-          timeout: 20000,
+          timeout: slow(20000),
         });
         if (
           (await page.evaluate(() => window.__debug.battle.phase())) ===
@@ -1186,6 +1190,7 @@ export async function runRunSmoke({
   await shot('run-12-older-version-prompt');
   await page.click('#version-continue');
   await page.waitForSelector('#version-prompt', { state: 'detached' });
+  await waitStep('pve_choice');
   check(
     (await R.state()).runId === 'old-version-run' &&
       (await R.state()).step === 'pve_choice',
@@ -1222,7 +1227,7 @@ export async function runRunSmoke({
   await tab2.waitForFunction(() => window.__debug?.run?.state);
   await tab2.click('[data-action="choose"][data-difficulty="medium"]');
   await waitStep('pve_summary', tab2);
-  await page.waitForSelector('#run-conflict', { timeout: 8000 });
+  await page.waitForSelector('#run-conflict', { timeout: slow(8000) });
   check(
     /changed in another tab/i.test(
       await page.locator('.run-blocked').first().innerText(),
@@ -1234,6 +1239,7 @@ export async function runRunSmoke({
   await page.waitForFunction(
     () => window.__debug?.run?.state().step === 'pve_summary',
   );
+  await page.waitForFunction(() => window.__debug?.run?.screen() === 'battle');
   check(
     (await R.screen()) === 'battle',
     "Reload brings the tab to the other tab's progress (the battle summary)",
@@ -1245,6 +1251,7 @@ export async function runRunSmoke({
   await page.waitForFunction(
     () => window.__debug?.run?.state().step === 'pve_summary',
   );
+  await page.waitForFunction(() => window.__debug?.run?.screen() === 'battle');
   check(
     (await R.state()).runId === runA && (await R.screen()) === 'battle',
     "Resume goes straight to the run's current step",
@@ -1372,6 +1379,7 @@ export async function runRunSmoke({
   // New run from the run-over screen goes to Core placement.
   await page.click('#over-new-run');
   await page.waitForSelector('#core-confirm');
+  await waitStep('core_placement');
   check(
     (await R.state()).step === 'core_placement' &&
       (await R.state()).runId !== runA,
