@@ -430,7 +430,7 @@ describe('replay accepts what selection accepted', () => {
         index: 0,
         chosen,
         hash: 'h',
-        chosenHash: hashJson(chosen as never),
+        chosenHash: hashJson(chosen),
       } as never,
     });
   }
@@ -496,14 +496,10 @@ describe('escaped characters count at their JSON length', () => {
       const n = Math.floor((limit - baseLen - 100) / 131);
       return { ...snap, pad: new Array<string>(n).fill(unit) };
     };
-    const sizeErrors = (v: unknown): string =>
-      validateGhostSnapshot(JSON.parse(JSON.stringify(v)), ctx).ok
-        ? ''
-        : (
-            validateGhostSnapshot(JSON.parse(JSON.stringify(v)), ctx) as {
-              errors: string[];
-            }
-          ).errors.join(' ');
+    const sizeErrors = (v: unknown): string => {
+      const r = validateGhostSnapshot(JSON.parse(JSON.stringify(v)), ctx);
+      return r.ok ? '' : r.errors.join(' ');
+    };
     // Plain characters: just under the limit, not a size error.
     expect(sizeErrors(make('a'))).not.toContain('larger than');
     // Quotes, backslashes, newlines (two characters each) and other control
