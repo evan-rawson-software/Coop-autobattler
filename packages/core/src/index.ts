@@ -115,7 +115,7 @@ export {
   toHex8,
   type Json,
 } from './hash.js';
-export { placeholderDuel, type SimulationOutput } from './placeholder-duel.js';
+export type { SimulationOutput } from './golden-kinds.js';
 export { goldenKinds, type SimulationFn } from './golden-kinds.js';
 export { loadMapgen, loadMapgenOrThrow } from './mapgen.js';
 export type {
