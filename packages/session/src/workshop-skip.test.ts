@@ -3,7 +3,7 @@
  * chosen is applied as a skip; nobody's submission is rejected for it.
  */
 import { describe, expect, test } from 'vitest';
-import { workshopPrice } from '@game/core';
+import { Rng, workshopPrice } from '@game/core';
 import { createGameDeps } from './game-deps.js';
 import { fixedBattle } from './defaults.js';
 import { applyIntent, createRun, replayRun } from './machine.js';
@@ -298,11 +298,8 @@ describe('Workshop: a stored choice that can no longer be paid', () => {
   });
 
   test('fuzz: content changes between choices; always valid, gold never negative', () => {
-    let seed = 12345;
-    const rnd = (n: number) => {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-      return seed % n;
-    };
+    const rng = Rng.fromSeed(12345);
+    const rnd = (n: number) => rng.nextInt(n);
     const decks = [deps, dear, cheap];
     for (let iter = 0; iter < 60; iter++) {
       const n = 1 + rnd(4);
@@ -310,7 +307,7 @@ describe('Workshop: a stored choice that can no longer be paid', () => {
       const golds = names.map(() => rnd(140));
       let s = workshop(names, golds);
       if (s.step !== 'event_resolve') continue;
-      const order = names.map((_x, i) => i).sort(() => rnd(3) - 1);
+      const order = rng.shuffle(names.map((_x, i) => i));
       for (const p of order) {
         const d = decks[rnd(3)] as typeof deps;
         const mine = mineOf(s, p);

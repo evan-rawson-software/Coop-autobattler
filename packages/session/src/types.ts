@@ -142,6 +142,12 @@ export interface PveRecord {
   readonly difficulty: string;
   readonly won: boolean;
   readonly opponent: Opponent;
+  /**
+   * Gold each player was paid for this battle. Set when the summary is left
+   * (so absent while the summary is open, and in older saves). Additive:
+   * no format version change.
+   */
+  readonly goldPaid?: number;
 }
 
 export interface PvpRecord {

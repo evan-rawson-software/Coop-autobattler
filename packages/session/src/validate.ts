@@ -502,6 +502,12 @@ function validBattleRecord(v: unknown, pve: boolean): boolean {
   if (v === null) return true;
   if (!isRec(v) || typeof v['won'] !== 'boolean') return false;
   if (pve && typeof v['difficulty'] !== 'string') return false;
+  const gp = v['goldPaid'];
+  if (
+    gp !== undefined &&
+    (!pve || !Number.isSafeInteger(gp) || (gp as number) < 0)
+  )
+    return false;
   const o = v['opponent'];
   return (
     isRec(o) &&

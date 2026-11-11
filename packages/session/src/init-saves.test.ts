@@ -110,6 +110,7 @@ describe('initSaves classifies like openRun (issue #68)', () => {
           expect(res.failed).toEqual([]);
           const lists = {
             wiped: res.wiped.map((w) => w.runId),
+            wipedUnreadable: res.wipedUnreadable.map((w) => w.runId),
             finished: res.finished,
             newer: res.newer.map((n) => n.runId),
             unsupported: res.unsupported.map((u) => u.runId),
@@ -132,6 +133,14 @@ describe('initSaves classifies like openRun (issue #68)', () => {
               expect(kept).toBe(true);
               expect(history).toEqual([]);
             }
+          } else if (
+            said === 'older_major' &&
+            (damage === 'format' || damage === 'state')
+          ) {
+            // Old major that cannot be read: deleted, no history entry.
+            only('wipedUnreadable');
+            expect(kept).toBe(false);
+            expect(history).toEqual([]);
           } else if (said === 'older_major' && damage === 'none') {
             // Readable old major: wiped, or finished with its own outcome.
             if (ended) {
@@ -143,8 +152,9 @@ describe('initSaves classifies like openRun (issue #68)', () => {
             }
             expect(kept).toBe(false);
           } else {
-            // Anything it cannot fully read is left alone, never finished or
-            // wiped, and reported.
+            // Anything else it cannot fully read (including an old-major
+            // record whose shape or key is broken, so its version is not
+            // trusted) is left alone, never finished or wiped, and reported.
             const bucket =
               said === 'newer'
                 ? 'newer'
@@ -167,6 +177,7 @@ describe('initSaves classifies like openRun (issue #68)', () => {
     const again = await initSaves(store, INSTALLED, 2, deps);
     expect(again).toEqual({
       wiped: [],
+      wipedUnreadable: [],
       finished: [],
       newer: [],
       unsupported: [],

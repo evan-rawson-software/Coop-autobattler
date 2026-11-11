@@ -122,7 +122,7 @@ describe('compareFractions', () => {
     let seed = 12345;
     const next = (m: number): number => {
       seed = (Math.imul(seed, 1103515245) + 12345) >>> 0;
-      return seed % m;
+      return (seed >>> 8) % m;
     };
     for (let i = 0; i < 20000; i++) {
       const m = 1 + next(i % 2 === 0 ? 12 : 3000);

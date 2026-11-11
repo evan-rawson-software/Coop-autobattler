@@ -123,7 +123,10 @@ Lobby -> Map + Core placement ->
   expensive event option could be added later.)
 - **RS-7d [DECIDED]** Players can leave a run at any time. Only the host can
   fully abandon a run; an abandoned run is recorded at its current depth
-  (CP-21d).
+  (CP-21d) and counts toward depth records and ghosts like a defeat. A save
+  the game cannot open can be removed from the saves list ("Remove save"; it
+  is deleted, with no summary and no record). Saves from an older major
+  version are deleted at start-up even if they cannot be read.
 
 Note the interaction with V-5: lives are only lost in PvP battles, so the
 exponential wall must reach the party there. It does so in two ways — bosses

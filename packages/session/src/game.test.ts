@@ -288,6 +288,24 @@ describe('rewards (EC-6, EC-7)', () => {
     }
   });
 
+  test('the round record keeps the gold actually paid for the PvE battle', () => {
+    for (const [won, d, want] of [
+      [true, 'easy', rewards.pveWin.easy],
+      [true, 'hard', rewards.pveWin.hard],
+      [false, 'medium', 0],
+    ] as const) {
+      const deps = fixedDeps(won, true);
+      let s = start(deps);
+      s = until(s, deps, (x) => x.step === 'pve_summary', { difficulty: d });
+      expect(s.thisRound.pve?.goldPaid).toBeUndefined();
+      s = readyAll(s, deps);
+      expect(s.thisRound.pve?.goldPaid).toBe(want);
+      expect(validateRunState(JSON.parse(JSON.stringify(s)), deps).ok).toBe(
+        true,
+      );
+    }
+  });
+
   test('every player is paid', () => {
     const deps = fixedDeps(true, true);
     let s = start(deps, ['Ann', 'Bo', 'Cy']);
