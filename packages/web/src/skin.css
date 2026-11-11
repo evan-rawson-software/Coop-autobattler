@@ -1,0 +1,158 @@
+/* Sprite interface (issue #80). Two parts.
+
+   1. Icons and sprite boxes: always on. They hold a fixed size from the first
+      paint, so nothing moves when the images arrive.
+   2. The pixel skin: textures and 9-slice frames, set up by `sprites/skin.ts`
+      (it sets `data-skin="pixel"` and the `--sprite-*` custom properties once
+      the atlas has loaded). The art is for a dark interface, so the skin only
+      applies in the dark scheme; the light scheme keeps the flat look. Text
+      colours are never changed and every textured surface keeps a dark veil
+      over the texture, so contrast stays where it was. */
+
+.sprite-icon {
+  image-rendering: pixelated;
+  flex: none;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.bar-icon {
+  margin-right: 0.3rem;
+  margin-top: -2px;
+}
+
+.gold-icon {
+  align-self: center;
+  margin-right: 0.15rem;
+}
+
+.ready-icon {
+  margin-right: 0.35rem;
+  margin-top: -2px;
+}
+
+.offer-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.offer-art > img {
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.offer-lock {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  filter: drop-shadow(0 0 2px #000);
+}
+
+.stash-item .swatch {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: none !important;
+}
+
+.stash-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.event-icon {
+  overflow: hidden;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-skin='pixel']:not([data-theme='light']) {
+    --veil: rgba(16, 22, 27, 0.66);
+  }
+
+  /* Page: the dark star-field texture, seen in the gaps between panels. */
+  :root[data-skin='pixel']:not([data-theme='light']),
+  :root[data-skin='pixel']:not([data-theme='light']) body {
+    background-color: #0a0d11;
+    background-image: var(--sprite-ui-bg);
+    background-size: 128px 128px;
+    image-rendering: pixelated;
+  }
+
+  /* Panels and the top bar: the slate tile under a dark veil. */
+  :root[data-skin='pixel']:not([data-theme='light']) .panel,
+  :root[data-skin='pixel']:not([data-theme='light']) .topbar,
+  :root[data-skin='pixel']:not([data-theme='light']) .dry-table,
+  :root[data-skin='pixel']:not([data-theme='light']) .camera-controls {
+    background-color: var(--surface);
+    background-image:
+      linear-gradient(var(--veil), var(--veil)), var(--sprite-ui-panel);
+    background-size:
+      auto,
+      64px 64px;
+    image-rendering: pixelated;
+  }
+
+  /* Cards: the 9-slice frame on top of the card's own flat background. The
+     frame is 8 px, drawn over the card's padding, so no layout moves. */
+  :root[data-skin='pixel']:not([data-theme='light']) .offer:not(.sold),
+  :root[data-skin='pixel']:not([data-theme='light']) .pve-card,
+  :root[data-skin='pixel']:not([data-theme='light']) .event-card,
+  :root[data-skin='pixel']:not([data-theme='light']) .modal {
+    border-image: var(--sprite-ui-card) 8 / 8px / 0 stretch;
+    image-rendering: pixelated;
+  }
+
+  :root[data-skin='pixel']:not([data-theme='light']) .pve-card.selected,
+  :root[data-skin='pixel']:not([data-theme='light']) .event-card.selected {
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+
+  :root[data-skin='pixel']:not([data-theme='light']) .offer.unaffordable {
+    opacity: 0.82;
+  }
+
+  /* Buttons: the 9-slice button, filled. */
+  :root[data-skin='pixel']:not([data-theme='light']) button {
+    border: 1px solid transparent;
+    border-radius: 0;
+    border-image: var(--sprite-ui-button-normal) 5 fill / 5px / 0 stretch;
+    image-rendering: pixelated;
+  }
+
+  :root[data-skin='pixel']:not([data-theme='light'])
+    button:hover:not(:disabled) {
+    border-image-source: var(--sprite-ui-button-hover);
+    color: #ffffff;
+  }
+
+  /* Accent buttons keep their colour: only the frame is drawn, not the fill. */
+  :root[data-skin='pixel']:not([data-theme='light']) button.primary,
+  :root[data-skin='pixel']:not([data-theme='light']) button.ready-btn,
+  :root[data-skin='pixel']:not([data-theme='light']) button.buy-btn,
+  :root[data-skin='pixel']:not([data-theme='light']) button.danger,
+  :root[data-skin='pixel']:not([data-theme='light']) button.on,
+  :root[data-skin='pixel']:not([data-theme='light']) button.active,
+  :root[data-skin='pixel']:not([data-theme='light']) .stash-item.active {
+    border-image-slice: 5;
+  }
+
+  :root[data-skin='pixel']:not([data-theme='light']) button:disabled {
+    border-image-source: var(--sprite-ui-button-disabled);
+    border-image-slice: 5 fill;
+  }
+
+  /* Link-like buttons stay plain. */
+  :root[data-skin='pixel']:not([data-theme='light']) button.link,
+  :root[data-skin='pixel']:not([data-theme='light']) button.link-button,
+  :root[data-skin='pixel']:not([data-theme='light']) button.problem {
+    border: 0;
+    border-image: none;
+    background: transparent;
+  }
+}

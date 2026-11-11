@@ -10,6 +10,7 @@ import type { RunState } from '@game/session';
 import { content } from '../content.js';
 import { Panel } from '../shell/AppShell.js';
 import type { BuildController, Model, Tool } from './build-controller.js';
+import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { simConfig } from './setup.js';
 import {
@@ -118,7 +119,9 @@ export function StashPanel(props: {
                     style={{
                       background: `var(--kind-${(def?.kind ?? 'core').replace('_', '-')})`,
                     }}
-                  />
+                  >
+                    <SpriteIcon name={g.def} size={32} />
+                  </span>
                   <span class="stash-name">{name}</span>
                   <span class="stash-tier">T{g.tier}</span>
                   <span class="stash-count">× {g.ids.length}</span>
