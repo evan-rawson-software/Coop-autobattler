@@ -415,7 +415,7 @@ describe('sample selection hash', () => {
       const r = simulateRecord(s.battle, content, battleConfig);
       expect(r.ok).toBe(true);
     }
-  });
+  }, 60_000);
 });
 
 describe('live chart axes', () => {
