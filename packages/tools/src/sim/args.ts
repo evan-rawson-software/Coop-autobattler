@@ -95,7 +95,9 @@ Commands:
             (exit code 1 if any, or with --verify if a replay differs).
 
 BOARD is a path to a board JSON file, or a reference board name (rush,
-fortify, siege, poor) which means boards/<name>.json.
+fortify, siege, poor) which means boards/<name>.json; any other bare word is
+read as a path. Relative paths (boards and --log) resolve against the
+directory the command was run from.
 
 Options:
   --seed N     battle seed (default 1); a batch or bot play uses N, N+1, ...
