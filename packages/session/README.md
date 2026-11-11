@@ -47,7 +47,7 @@ when a pick was made, `picked: { player, random: true }`.
 | `pve_battle`     | none (never saved)                                | Resolved at once through `deps.battle`; goes to `pve_summary`.                                            |
 | `pve_summary`    | `ready`, `unready`                                | All ready: `rewards` hook, then `event_choice`. A PvE loss costs no life.                                 |
 | `event_choice`   | `vote` (one of the 1 to 3 offers)                 | All voted: `resolveEvent` hook; `event_resolve` if it returns a follow-up with options, else `shop`.     |
-| `event_resolve`  | `event_choose` (extension intent)                 | All players chose (unanimous or one vote picked at random): the handler applies it and advances to `shop`.          |
+| `event_resolve`  | `event_choose` (extension intent)                 | Party follow-up (Shrine): all players chose (unanimous or one vote picked at random), the handler applies it, then `shop`. Per-player follow-up (Workshop): every player chose their own option or `skip`; all are applied in player order, then `shop`. |
 | `shop`           | board edits, `ready`, `unready`, extension intents | All ready: after the PvE leg `pvp_battle`; after the PvP leg the round counter goes up and `pve_choice`. |
 | `pvp_battle`     | none (never saved)                                | Resolved at once; goes to `pvp_summary`.                                                                  |
 | `pvp_summary`    | `ready`, `unready`                                | All ready: `rewards` hook; a loss costs `pvpLossLifeCost` lives; 0 lives gives `run_over`, else `event_choice`. |
@@ -139,7 +139,7 @@ option, PvE loss nothing (and no life), PvP win and PvP loss (consolation) from
 **Events.** `content/events.json` lists event definitions and modifiers. Each
 definition's `type` selects an `EventHandler` (`available`, `instantiate`,
 `resolve`, optional `choose`); A handler that can return a follow-up sets
-`canAskFollowUp` and must have `choose`; a handler that is always available
+`canAskFollowUp` and must have `choose` (or `chooseEach`, for a per-player follow-up); a handler that is always available
 (the Windfall) sets `alwaysAvailable`. `defaultEventHandlers` has `workshop`,
 `shrine` and `windfall`. A new type is data plus one handler passed as
 `eventHandlers: { ...defaultEventHandlers, mine }`; the machine is unchanged.
@@ -151,14 +151,24 @@ weighted pick per offer made); the picked definition and every other
 definition of its type then leave the pool, so content may hold several
 definitions of one type but fewer types available means fewer offers (issue
 #48). Offers are `{ id, event, type, ...data }` in `pending.options` (vote with
-`{ type: 'vote', choice: <offer id> }`). A pick with a follow-up (Workshop:
-which building; Shrine: which modifier) enters `event_resolve` with `pending =
+`{ type: 'vote', choice: <offer id> }`). A pick with a follow-up enters `event_resolve` with `pending =
 { offer, followUp: { prompt, options, votes } }`; every player sends `{ type:
-'event_choose', choice: <option id> }`. This is a party vote like the others:
-changeable until the last player has voted, then unanimous or one vote picked
-at random. The Shrine's modifier is added to `team.modifiers` (applied by the
-simulation, see `docs/rules-reference.md`); Workshop raises one owned building
-by one tier (never above 3). Events never add a building.
+'event_choose', choice: <option id> }`. The Shrine's follow-up is a party vote
+like the others: changeable until the last player has voted, then unanimous or
+one vote picked at random; the modifier is added to `team.modifiers` (applied
+by the simulation, see `docs/rules-reference.md`). The Workshop's follow-up
+(issue #50) is `perPlayer: true` and is NOT a vote: each option carries the
+`player` who may take it (`{ id: 'b<building>', player, building, def, tier,
+newTier, price, placed, affordable }`), the choice `skip` is always allowed,
+and `votes[i]` is player i's own choice. Each player raises at most one
+building they own by one tier for `workshopPricePercent` (80, from the event's
+`params`) percent of that tier's shop price (rounded down) from their own gold;
+it is offered only if some player can afford an upgrade. A choice can be
+changed until the last player has chosen, then all are applied in player order
+and the run goes to the shop; nothing is drawn. Rejections: `not_owner`
+(someone else's building), `not_enough_gold`, `invalid_choice`. Use
+`eventFollowUp(state, player)` for a screen's view (that player's options, who
+has chosen). Events never add a building.
 
 **Battles and playback.** `BattleResult.detail` has no event log: it holds the
 seed, the opponent source, a hash of the team and a small summary with the

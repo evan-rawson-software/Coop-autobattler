@@ -2330,11 +2330,42 @@ because wiring requires an event definition whose handler is `alwaysAvailable`
 `validateRunState` (1 or more offers in `event_choice`) and the schema accept
 any number of offers from 1 to `offerCount`. More event types will come later.
 
-- **Workshop** (`params.tiers`, default 1): available when some owned building
-  (placed or in the stash) is below tier 3. Follow-up options, in instance ID
-  order: `{ id: "b<instance id>", building, def, tier, owner, placed }` for
-  every owned building below tier 3. The chosen building is raised by `tiers`
-  tiers, stopping at 3 (`raiseTier`).
+- **Workshop** (`params.workshopPricePercent`, 80; an integer from 1 to 100,
+  checked by the schema and at wiring): every player may raise ONE building
+  they own by one tier, paying from their own gold. Issue #50 replaced the
+  earlier party-wide free upgrade.
+  - *Available* when, at the moment the offers are generated, at least one
+    player owns a building (placed or in the stash) below tier 3 whose
+    upgrade price their gold covers. The offer stores `workshopPricePercent`.
+  - *Price* of raising a building of definition `d` from tier `t` to `t + 1`:
+    `floor(tierPrice(d, t + 1) * workshopPricePercent / 100)`. `tierPrice` is
+    the shop price of that tier (the function the shop rolls offers with), the
+    division is integer division rounding down, so with 80% a tier price of 9
+    gives 7. A building at tier 3 is never an option; events never add a
+    building.
+  - *Follow-up.* After the party votes for the Workshop (the usual party vote)
+    the step is `event_resolve` with `pending.followUp = { prompt:
+    "workshop_building", perPlayer: true, options, votes }`. `options` lists,
+    for every player, the buildings they own below tier 3, in player then
+    instance order: `{ id: "b<instance id>", player, building, def, tier,
+    newTier, price, placed, affordable }`. `votes[i]` is player i's choice (an
+    option id or `"skip"`) or null; it is the only record of who has chosen.
+    A player who cannot afford any of their options starts with `"skip"`
+    already chosen (they have nothing else to choose); if nobody can, there
+    are no options and the step goes straight to the shop.
+  - *Choosing.* Each player sends `{ type: "event_choose", choice }` with one of
+    their own option ids or `"skip"`. `skip` is always allowed, also when an
+    upgrade is affordable. Another player's option is rejected with
+    `not_owner`, an unknown id with `invalid_choice`, and an option the
+    player's gold does not cover with `not_enough_gold` (gold cannot change
+    during the step). A choice is stored at once and may be changed until
+    the last player has chosen; nothing is applied before that. There is no
+    party vote on the building and no random draw.
+  - *Applying.* When every player has chosen, the choices are applied in
+    player order (price taken from the player's gold, `raiseTier` on the
+    building) and the run goes to the shop. With one player the first choice
+    applies at once. The `event_resolved` custom effect carries `choices`
+    (the votes in player order) instead of `choice`.
 - **Shrine** (`params.choices`, default 3): available when a modifier can be
   taken. The offer lists up to `choices` modifier IDs, a random subset of the
   modifiers not already held (stackable ones are always eligible), in file
@@ -2347,12 +2378,14 @@ After the party votes for an offer (the usual party vote, see "Party votes"
 above), a handler with no follow-up applies at once and the step goes to the
 shop; so does a follow-up that lists no options (nobody could answer it). A
 handler that can return a follow-up declares `canAskFollowUp` and must have a
-`choose` function (checked when the deps are built). Otherwise the step
+`choose` function (a party vote) or a `chooseEach` function (a per-player
+follow-up, the Workshop), checked when the deps are built. Otherwise the step
 becomes `event_resolve` with `pending = { offer, followUp: { prompt, options,
 votes } }`, and each player sends `{ type:
 "event_choose", choice: <option id> }`. Votes count at once and can be
 changed; when all players have voted the winner (see "Party votes") is
-applied and the step goes to the shop.
+applied and the step goes to the shop. A follow-up with `perPlayer: true` (the
+Workshop) is not a vote: see the Workshop above.
 
 ### Battles and playback
 

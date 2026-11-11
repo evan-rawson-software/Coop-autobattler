@@ -288,6 +288,10 @@ export type {
   ShopResult,
 } from './shop.js';
 
+// Workshop event rules (issue #50).
+export { workshopOptions, workshopPrice } from './workshop.js';
+export type { WorkshopOption } from './workshop.js';
+
 // In-battle ramp (economy buildings) and Overload (W1-7).
 export { rampBonus } from './arena-sim.js';
 export type { RampSim } from './arena-sim.js';

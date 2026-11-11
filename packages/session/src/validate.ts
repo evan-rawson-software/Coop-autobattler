@@ -347,6 +347,30 @@ function check(
       err(
         'pending: must hold {offer, followUp: {options, votes}} in step "event_resolve".',
       );
+    } else if (isRec(fu)) {
+      const opts = fu['options'] as unknown[];
+      const ids = opts.map((o) => (isRec(o) ? o['id'] : undefined));
+      if (!ids.every((id) => typeof id === 'string')) {
+        err('pending.followUp.options: every option needs a string id.');
+      }
+      const per = fu['perPlayer'] === true;
+      if ('perPlayer' in fu && fu['perPlayer'] !== true) {
+        err('pending.followUp.perPlayer: must be true when present.');
+      }
+      (fu['votes'] as unknown[]).forEach((v, i) => {
+        if (v === null) return;
+        const known =
+          typeof v === 'string' &&
+          (per
+            ? v === 'skip' ||
+              opts.some((o) => isRec(o) && o['id'] === v && o['player'] === i)
+            : ids.includes(v));
+        if (!known) {
+          err(
+            `pending.followUp.votes[${String(i)}]: must be null or an option id${per ? ' of that player, or "skip"' : ''}.`,
+          );
+        }
+      });
     }
   }
   if (st === 'pve_summary' || st === 'pvp_summary') {

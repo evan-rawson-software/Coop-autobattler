@@ -6,7 +6,7 @@
       "id": "evt_workshop",
       "type": "workshop",
       "weight": 10,
-      "params": { "tiers": 1 }
+      "params": { "workshopPricePercent": 80 }
     },
     {
       "id": "evt_shrine",

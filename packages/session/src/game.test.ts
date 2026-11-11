@@ -108,7 +108,10 @@ function step(s: RunState, deps: RunDeps, policy: Policy = {}): RunState {
     case 'event_resolve': {
       const fu = pending(s)['followUp'] as Record<string, Json>;
       const first = (fu['options'] as Record<string, Json>[])[0];
-      const id = policy.choose?.(s) ?? (first?.['id'] as string);
+      // A per-player follow-up (Workshop): everyone skips unless told.
+      const id =
+        policy.choose?.(s) ??
+        (fu['perPlayer'] === true ? 'skip' : (first?.['id'] as string));
       let cur = s;
       for (let p = 0; p < s.players.length; p++) {
         cur = ok(cur, p, { type: 'event_choose', choice: id }, deps).state;
@@ -352,35 +355,6 @@ describe('the event step', () => {
     expect(voteAll(reloaded.state, id, deps)).toEqual(voteAll(s, id, deps));
   });
 
-  test('Workshop: raises one owned building by one tier and adds none', () => {
-    const s = atEvent();
-    const before = s.team;
-    let cur = voteAll(s, 'evt_workshop', deps);
-    expect(cur.step).toBe('event_resolve');
-    expect(allowedIntents(cur, 0, deps)).toContain('event_choose');
-    const fu = pending(cur)['followUp'] as Record<string, Json>;
-    const options = fu['options'] as Record<string, Json>[];
-    expect(options.length).toBeGreaterThan(0);
-    const target = options[1] ?? options[0];
-    const id = target?.['id'] as string;
-    const building = target?.['building'] as number;
-    cur = step(cur, deps, { choose: () => id });
-    expect(cur.step).toBe('shop');
-    expect(totalBuildings(cur.team)).toBe(totalBuildings(before));
-    const find = (t: TeamState) =>
-      [...t.buildings, ...t.stash].find((b) => b.id === building);
-    expect(find(cur.team)?.tier).toBe((find(before)?.tier as number) + 1);
-    for (const b of [...cur.team.buildings, ...cur.team.stash]) {
-      if (b.id !== building) {
-        expect(b.tier).toBe(
-          find(before) &&
-            [...before.buildings, ...before.stash].find((x) => x.id === b.id)
-              ?.tier,
-        );
-      }
-    }
-  });
-
   test('Workshop never raises above tier 3 and is not offered without a candidate', () => {
     const s = atEvent();
     const maxed: RunState = {
@@ -403,21 +377,6 @@ describe('the event step', () => {
         'windfall',
       ]);
     }
-    // One building below tier 3 is the only candidate.
-    const one: RunState = {
-      ...maxed,
-      team: {
-        ...maxed.team,
-        stash: maxed.team.stash.map((b, i) =>
-          i === 0 ? { ...b, tier: 2 } : b,
-        ),
-      },
-    };
-    const fu = defaultEventHandlers['workshop']?.resolve(
-      { state: one, content, config: gameConfigs.events },
-      { id: 'evt_workshop', event: 'evt_workshop', type: 'workshop' },
-    );
-    expect(fu?.followUp?.options).toHaveLength(1);
   });
 
   test('Shrine: choose one of three modifiers; it is stored in team state', () => {
@@ -479,10 +438,11 @@ describe('the event step', () => {
     });
   });
 
-  test('the follow-up is a party vote: partial votes wait, a split picks one vote at random', () => {
+  test('the Shrine follow-up is a party vote: partial votes wait, a split picks one vote at random', () => {
     const s = atEvent(deps, ['Ann', 'Bo']);
-    let cur = voteAll(s, 'evt_workshop', deps);
+    let cur = voteAll(s, 'evt_shrine', deps);
     const fu = pending(cur)['followUp'] as Record<string, Json>;
+    expect(fu['perPlayer']).toBeUndefined();
     const options = fu['options'] as Record<string, Json>[];
     const a = options[0]?.['id'] as string;
     const b = options[1]?.['id'] as string;
@@ -503,12 +463,7 @@ describe('the event step', () => {
     expect(resolved).toMatchObject({ topic: 'event', tickets: [a, b] });
     const winner = resolved?.type === 'vote_resolved' ? resolved.choice : null;
     expect([a, b]).toContain(winner);
-    const id = options[winner === a ? 0 : 1]?.['building'] as number;
-    const was = [...s.team.buildings, ...s.team.stash].find((x) => x.id === id);
-    const now = [...cur.team.buildings, ...cur.team.stash].find(
-      (x) => x.id === id,
-    );
-    expect(now?.tier).toBe((was?.tier as number) + 1);
+    expect(cur.team.modifiers?.map((m) => m.id)).toEqual([winner]);
   });
 
   test('the event choice and follow-up are replayable', () => {
@@ -1321,8 +1276,11 @@ describe('event follow-ups', () => {
     // The shipped handlers declare it and have it.
     for (const t of ['workshop', 'shrine'] as const) {
       expect(defaultEventHandlers[t]?.canAskFollowUp).toBe(true);
-      expect(typeof defaultEventHandlers[t]?.choose).toBe('function');
     }
+    expect(typeof defaultEventHandlers['shrine']?.choose).toBe('function');
+    expect(typeof defaultEventHandlers['workshop']?.chooseEach).toBe(
+      'function',
+    );
     expect(
       checkEventHandlers(gameConfigs.events, defaultEventHandlers),
     ).toEqual([]);

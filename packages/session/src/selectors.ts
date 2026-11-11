@@ -48,6 +48,65 @@ export function openVote(state: RunState): OpenVoteView | null {
   };
 }
 
+export interface FollowUpView {
+  /** What is being chosen (`workshop_building`, `shrine_modifier`, ...). */
+  readonly prompt: string;
+  /**
+   * True if each player chooses for themselves (Workshop): `options` are then
+   * only the options of the asked player (or all, when no player is given),
+   * and `skip` is always allowed besides them. False for a party vote.
+   */
+  readonly perPlayer: boolean;
+  readonly options: readonly Json[];
+  /** Who has chosen (not what), parallel to the players. */
+  readonly chosen: readonly boolean[];
+  /** Players who have not chosen yet. */
+  readonly waitingFor: readonly number[];
+  /** The asked player's own current choice (an option id), or null. */
+  readonly mine: string | null;
+}
+
+/**
+ * The follow-up open in `event_resolve`, or null in any other step. Pass
+ * `player` to get that player's own options in a per-player follow-up.
+ */
+export function eventFollowUp(
+  state: RunState,
+  player?: number,
+): FollowUpView | null {
+  if (state.step !== 'event_resolve') return null;
+  const pending = state.pending;
+  const rec =
+    typeof pending === 'object' && pending !== null && !Array.isArray(pending)
+      ? (pending as Record<string, Json>)
+      : {};
+  const fu = rec['followUp'];
+  if (typeof fu !== 'object' || fu === null || Array.isArray(fu)) return null;
+  const f = fu as Record<string, Json>;
+  const votes = Array.isArray(f['votes']) ? (f['votes'] as Json[]) : [];
+  const options = Array.isArray(f['options']) ? (f['options'] as Json[]) : [];
+  const per = f['perPlayer'] === true;
+  const mineOptions =
+    per && player !== undefined
+      ? options.filter(
+          (o) =>
+            typeof o === 'object' &&
+            o !== null &&
+            !Array.isArray(o) &&
+            (o as Record<string, Json>)['player'] === player,
+        )
+      : options;
+  const mine = player === undefined ? undefined : votes[player];
+  return {
+    prompt: typeof f['prompt'] === 'string' ? f['prompt'] : '',
+    perPlayer: per,
+    options: mineOptions,
+    chosen: votes.map((v) => v !== null),
+    waitingFor: votes.flatMap((v, i) => (v === null ? [i] : [])),
+    mine: typeof mine === 'string' ? mine : null,
+  };
+}
+
 /**
  * The intent types `player` may send right now. Extension intents are
  * included when `deps` is given and their handler allows the current step.
