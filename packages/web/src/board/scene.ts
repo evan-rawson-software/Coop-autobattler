@@ -8,6 +8,7 @@ import {
   conduitResource,
   occupancy,
   type BuildingDef,
+  type FeatureCell,
   type Occupancy,
   type PlacedBuilding,
   type Side,
@@ -57,6 +58,11 @@ export interface SceneConduit {
   readonly id: number;
   /** View-space cell centres, from one building to the other. */
   readonly points: readonly { x: number; y: number }[];
+  /**
+   * View-space centres of the conduit's own cells, in slot order (the cell
+   * next to the `from` building first); empty for a direct connection.
+   */
+  readonly cells: readonly { x: number; y: number }[];
   /** CSS colour, or null while the resource is undetermined. */
   readonly color: string | null;
   /** Position in the resource list, for the dash pattern; -1 if undetermined. */
@@ -88,9 +94,20 @@ export interface BoardScene {
   readonly conduits: readonly SceneConduit[];
 }
 
+/** The neutral strip's terrain, as the battle screen shows it. */
+export interface NeutralView {
+  /** Zone-local features: `y = 0` is the row next to the own board. */
+  readonly features: readonly FeatureCell[];
+  /** True until the battle begins: the features are not drawn. */
+  readonly hidden: boolean;
+}
+
 export interface Scene {
   readonly layout: BoardLayout;
   readonly boards: readonly BoardScene[];
+  /** Neutral strip terrain, in view space; null when there is none. */
+  readonly neutralFeatures: readonly SceneFeature[];
+  readonly neutralHidden: boolean;
 }
 
 export const FALLBACK_RESOURCE_COLOR = '#8a8a8a';
@@ -275,6 +292,7 @@ function buildBoard(
     return {
       id: c.id,
       points: pts,
+      cells: c.cells.map(centre),
       color: res === null ? null : resourceColor(content, res),
       pattern: res === null ? -1 : (resourceOrder.get(res) ?? 0),
     };
@@ -288,13 +306,31 @@ export function buildScene(
   enemy: TeamState | null,
   neutralHeight: number,
   content: WebContent,
+  neutral: NeutralView | null = null,
 ): Scene {
   const layout = makeLayout(own.map, enemy ? enemy.map : null, neutralHeight);
   const boards = [buildBoard(own, layout.own, content)];
   if (enemy && layout.enemy) {
     boards.unshift(buildBoard(enemy, layout.enemy, content));
   }
-  return { layout, boards };
+  const terrainIndex = new Map(
+    content.terrain.list().map((t, i) => [t.id, i] as const),
+  );
+  const strip = layout.neutral;
+  const neutralFeatures: SceneFeature[] =
+    neutral === null || neutral.hidden || strip === null
+      ? []
+      : neutral.features.map((f) => ({
+          x: f.x,
+          y: strip.y1 - 1 - f.y,
+          style: terrainIndex.get(f.feature) ?? 0,
+        }));
+  return {
+    layout,
+    boards,
+    neutralFeatures,
+    neutralHidden: neutral?.hidden ?? false,
+  };
 }
 
 /** What a pointer is over, in board-local terms. */
@@ -319,6 +355,14 @@ export function hitTest(scene: Scene, vx: number, vy: number): Hit | null {
     }
   }
   return null;
+}
+
+/** View-space centre of the enemy board's Core, if there is one. */
+export function enemyCoreCentre(scene: Scene): { x: number; y: number } | null {
+  const enemy = scene.boards.find((b) => b.frame.id === 'enemy');
+  if (!enemy?.core) return null;
+  const r = enemy.core.rect;
+  return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
 }
 
 /** View-space centre of the own board's Core, if placed. */

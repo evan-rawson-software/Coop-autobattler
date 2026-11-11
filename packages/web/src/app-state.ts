@@ -45,16 +45,23 @@ export const DEFAULT_SCREEN: ScreenId = 'debug';
 export const screenStore: Store<ScreenId> =
   createStore<ScreenId>(DEFAULT_SCREEN);
 
+/** The screen name of a hash: `#battle?p=1` names `battle`. */
+export function screenOfHash(hash: string): string {
+  return hash.replace(/^#/, '').split('?')[0] ?? '';
+}
+
 /** Read the hash, if it names one of `known`, into the store; then follow it. */
 export function bindScreenToHash(known: readonly ScreenId[]): void {
   const fromHash = (): void => {
-    const name = window.location.hash.replace(/^#/, '');
+    const name = screenOfHash(window.location.hash);
     if (known.includes(name)) screenStore.set(name);
   };
   fromHash();
   window.addEventListener('hashchange', fromHash);
   screenStore.subscribe((id) => {
-    if (window.location.hash !== `#${id}`) {
+    // A screen may keep its own parameters after `?`; keep them while the
+    // screen does not change.
+    if (screenOfHash(window.location.hash) !== id) {
       history.replaceState(null, '', `#${id}`);
     }
   });

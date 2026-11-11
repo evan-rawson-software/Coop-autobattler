@@ -21,7 +21,47 @@ export interface DebugHook {
   /** Number of buildings and conduit cells in the own board. */
   counts?: () => { buildings: number; conduits: number; conduitCells: number };
   build?: BuildDebug;
+  battle?: BattleDebug;
+  /** Terrain cells of the neutral strip that are currently drawn. */
+  neutralFeatureCount?: () => number;
 }
+
+/** Read-only view of the Battle screen for the smoke script. */
+export interface BattleDebug {
+  phase: () => string;
+  tick: () => number;
+  endTick: () => number;
+  speed: () => number;
+  paused: () => boolean;
+  revealed: () => boolean;
+  /** The result of the up-front simulation. */
+  result: () => { winner: number; reason: string; endTick: number };
+  /** Final Core health of both sides from the up-front simulation. */
+  coreHealth: () => readonly [number, number];
+  /** Hash of the visual simulation's current state. */
+  stateHash: () => string;
+  unitsAlive: () => number;
+  simMs: () => number;
+  ready: () => boolean;
+  /** Per side, what the visual simulation's board holds. */
+  scene: () => DebugScene;
+  /**
+   * Animation frame intervals in milliseconds while playing, oldest first;
+   * `true` clears the record.
+   */
+  frameTimes: (reset?: boolean) => readonly number[];
+  setSpeed: (speed: 1 | 2 | 4) => void;
+  /** Arena size in cells (both boards and the neutral strip). */
+  geometry: () => { width: number; height: number };
+}
+
+export interface DebugSceneSide {
+  readonly buildings: number;
+  readonly conduits: number;
+  /** Building count by `kind:id`. */
+  readonly kinds: Readonly<Record<string, number>>;
+}
+export type DebugScene = readonly [DebugSceneSide, DebugSceneSide];
 
 /** Read-only view of the Build screen for the smoke script. */
 export interface BuildDebug {
@@ -52,4 +92,12 @@ export const DEBUG_HOOK: boolean =
 export function registerDebug(patch: DebugHook): void {
   if (!DEBUG_HOOK) return;
   window.__debug = { ...window.__debug, ...patch };
+}
+
+/** Remove the hooks added under `key` (a screen unmounting). */
+export function unregisterDebug(key: keyof DebugHook): void {
+  if (!DEBUG_HOOK || window.__debug === undefined) return;
+  window.__debug = Object.fromEntries(
+    Object.entries(window.__debug).filter(([k]) => k !== key),
+  );
 }
