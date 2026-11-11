@@ -65,21 +65,18 @@ export class UnopenableRunError extends Error {
     readonly reason: string,
     readonly errors: readonly string[],
   ) {
-    super(describeUnopenable(reason, errors));
+    super(describeUnopenable(reason));
     this.name = 'UnopenableRunError';
   }
 }
 
 /** Plain words for why a saved run could not be opened. */
-export function describeUnopenable(
-  reason: string,
-  errors: readonly string[] = [],
-): string {
+export function describeUnopenable(reason: string): string {
   switch (reason) {
     case 'corrupt':
-      return errors.some((e) => /format ?version/i.test(e))
-        ? 'The saved run was written in a format this version of the game cannot read.'
-        : 'The saved run is damaged and cannot be read.';
+      return 'The saved run is damaged and cannot be read.';
+    case 'unsupported_format':
+      return 'This save was written in a format this version of the game cannot read.';
     case 'newer':
       return 'The saved run was made by a newer version of the game.';
     case 'older_major':

@@ -6,21 +6,18 @@
       "id": "evt_workshop",
       "type": "workshop",
       "weight": 10,
-      "repeatable": false,
       "params": { "tiers": 1 }
     },
     {
       "id": "evt_shrine",
       "type": "shrine",
       "weight": 10,
-      "repeatable": true,
       "params": { "choices": 3 }
     },
     {
       "id": "evt_windfall",
       "type": "windfall",
       "weight": 6,
-      "repeatable": false,
       "params": { "gold": 4 }
     }
   ],

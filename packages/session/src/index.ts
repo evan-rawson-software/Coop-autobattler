@@ -91,6 +91,7 @@ export {
   bestDepthFromHistory,
   buildSaveRecord,
   checkSaveShape,
+  hasUnsupportedFormat,
   compareListItems,
   historyEntryFor,
   parseSaveRecord,

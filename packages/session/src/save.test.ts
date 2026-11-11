@@ -470,6 +470,148 @@ describe('the run controller', () => {
     );
   });
 
+  test('a save with an unsupported run-state format is listed as such and openRun says so', async () => {
+    const store = createMemorySaveStore();
+    await start(store);
+    const good = (await store.get('run-1')) as SaveRecord;
+    // A normal save lists without the flag.
+    expect((await store.list())[0]).not.toHaveProperty('unsupportedFormat');
+    store.injectRaw('run-1', {
+      ...good,
+      state: { ...good.state, formatVersion: 1 },
+    });
+    const item = (await store.list())[0];
+    expect(item).toMatchObject({
+      corrupt: false,
+      runId: 'run-1',
+      unsupportedFormat: true,
+    });
+    const r = await openRun('run-1', depsFor(), store, INSTALLED);
+    expect(r).toMatchObject({ ok: false, reason: 'unsupported_format' });
+    // Left in the store, untouched.
+    expect(store.size()).toBe(1);
+    // Genuinely damaged data stays corrupt.
+    store.injectRaw('run-1', { ...good, actionCounter: 9 });
+    const damaged = (await store.list())[0];
+    expect(damaged).toMatchObject({ corrupt: true, runId: 'run-1' });
+    expect(damaged).not.toHaveProperty('unsupportedFormat');
+    const reopened = await openRun('run-1', depsFor(), store, INSTALLED);
+    expect(reopened).toMatchObject({ ok: false, reason: 'corrupt' });
+    expect(reopened).not.toMatchObject({ reason: 'unsupported_format' });
+  });
+
+  test('an unsupported-format save from a newer or an older-major game reports the version first', async () => {
+    const deps = depsFor();
+    const store = createMemorySaveStore();
+    await start(store, deps, {
+      ...runArgs(),
+      runId: 'newer',
+      runVersion: '3.0',
+    });
+    await start(store, deps, { ...runArgs(), runId: 'old', runVersion: '0.1' });
+    for (const id of ['newer', 'old']) {
+      const good = (await store.get(id)) as SaveRecord;
+      store.injectRaw(id, {
+        ...good,
+        state: { ...good.state, formatVersion: 1 },
+      });
+    }
+    // Installed 2.0.0: 3.0 is newer, 0.1 is an older major.
+    expect(await openRun('newer', deps, store, '2.0.0')).toEqual({
+      ok: false,
+      reason: 'newer',
+    });
+    expect(await openRun('old', deps, store, '2.0.0')).toEqual({
+      ok: false,
+      reason: 'older_major',
+    });
+    // Same major and minor as installed: the format is the reason.
+    expect(await openRun('old', deps, store, '0.1.0')).toEqual({
+      ok: false,
+      reason: 'unsupported_format',
+    });
+  });
+
+  test('openRun checks the run ID against the key before the format or version', async () => {
+    const deps = depsFor();
+    const store = createMemorySaveStore();
+    await start(store, deps);
+    const good = (await store.get('run-1')) as SaveRecord;
+    store.injectRaw('other', {
+      ...good,
+      state: { ...good.state, formatVersion: 1 },
+    });
+    expect(await openRun('other', deps, store, INSTALLED)).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+    });
+  });
+
+  test('a same-format save from a newer game that fails validation is "newer", not corrupt', async () => {
+    const deps = depsFor();
+    const store = createMemorySaveStore();
+    await start(store, deps, { ...runArgs(), runId: 'n', runVersion: '3.0' });
+    const good = (await store.get('n')) as SaveRecord;
+    // A step this build does not know: fails validation, shape is fine.
+    // The summary must stay consistent with the state for the shape check.
+    store.injectRaw('n', {
+      ...good,
+      state: { ...good.state, step: 'future_step' },
+      summary: { ...good.summary, step: 'future_step' },
+    });
+    expect(parseSaveRecord(await store.get('n'), deps).ok).toBe(false);
+    expect(await openRun('n', deps, store, '2.0.0')).toEqual({
+      ok: false,
+      reason: 'newer',
+    });
+    // The same damage in a save of the installed version is corrupt.
+    expect(await openRun('n', deps, store, '3.0.0')).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+    });
+  });
+
+  test('initSaves lists unsupported-format saves and leaves them alone, even finished or old ones', async () => {
+    const deps = depsFor();
+    const store = createMemorySaveStore();
+    await start(store, deps, { ...runArgs(), runId: 'fmt' });
+    await start(store, deps, { ...runArgs(), runId: 'ended' });
+    await start(store, deps, { ...runArgs(), runId: 'ok' });
+    const fmt = (await store.get('fmt')) as SaveRecord;
+    store.injectRaw('fmt', {
+      ...fmt,
+      state: { ...fmt.state, formatVersion: 1 },
+    });
+    const ended = (await store.get('ended')) as SaveRecord;
+    store.injectRaw('ended', {
+      ...ended,
+      state: {
+        ...ended.state,
+        formatVersion: 1,
+        outcome: { reason: 'defeated', round: 1 },
+      },
+      summary: { ...ended.summary, outcome: 'defeated' },
+    });
+    // Installed 1.4.0 makes all three older majors: the readable one is
+    // wiped, the unreadable ones are not.
+    const res = await initSaves(store, '1.4.0', 9000);
+    expect(
+      [...res.unsupported].sort((a, b) => (a.runId < b.runId ? -1 : 1)),
+    ).toEqual([
+      { runId: 'ended', runVersion: '0.1' },
+      { runId: 'fmt', runVersion: '0.1' },
+    ]);
+    expect(res.finished).toEqual([]);
+    expect(res.wiped.map((w) => w.runId)).toEqual(['ok']);
+    expect(await store.get('fmt')).not.toBeNull();
+    expect(await store.get('ended')).not.toBeNull();
+    expect((await store.listHistory()).map((h) => h.runId)).toEqual(['ok']);
+    // A normal start-up reports none.
+    expect(
+      (await initSaves(createMemorySaveStore(), '1.4.0', 1)).unsupported,
+    ).toEqual([]);
+  });
+
   test('7: a finished run leaves the saved list and enters history', async () => {
     const store = createMemorySaveStore();
     const deps = depsFor(economy, fixedBattle(false));

@@ -11,6 +11,7 @@ import { applyIntent, createRun } from './machine.js';
 import {
   buildSaveRecord,
   checkSaveShape,
+  hasUnsupportedFormat,
   historyEntryFor,
   parseSaveRecord,
   type HistoryReason,
@@ -209,7 +210,12 @@ export type OpenRunResult =
   | {
       readonly ok: false;
       readonly reason:
-        'not_found' | 'corrupt' | 'newer' | 'older_major' | 'load_failed';
+        | 'not_found'
+        | 'corrupt'
+        | 'unsupported_format'
+        | 'newer'
+        | 'older_major'
+        | 'load_failed';
       /** For `corrupt`: why. The record is left in the store. */
       readonly errors?: readonly string[];
     };
@@ -233,20 +239,33 @@ export async function openRun(
   }
   if (raw === null || raw === undefined)
     return { ok: false, reason: 'not_found' };
-  const parsed = parseSaveRecord(raw, deps);
-  if (!parsed.ok)
-    return { ok: false, reason: 'corrupt', errors: parsed.errors };
-  const record = parsed.record;
-  if (record.runId !== runId) {
+  // Read the record's own fields first (they need no game content): a record
+  // stored under another key is damaged whatever its version, and the game
+  // version is classified BEFORE the run state is validated, because a save
+  // from a newer game can fail validation (unknown content ids, say) and is
+  // then "newer", not "corrupt".
+  const shape = checkSaveShape(raw);
+  if (!shape.ok) return { ok: false, reason: 'corrupt', errors: shape.errors };
+  if (shape.record.runId !== runId) {
     return {
       ok: false,
       reason: 'corrupt',
       errors: ['save: runId does not match the key it is stored under.'],
     };
   }
-  const kind = classify(record.runVersion, installedVersion);
+  const kind = classify(shape.record.runVersion, installedVersion);
   if (kind === 'newer') return { ok: false, reason: 'newer' };
   if (kind === 'older_major') return { ok: false, reason: 'older_major' };
+  // A well-formed record whose run state has another format version is not
+  // damaged: say so (after a newer or much older game version, which are
+  // more useful to report).
+  if (hasUnsupportedFormat(shape.record)) {
+    return { ok: false, reason: 'unsupported_format' };
+  }
+  const parsed = parseSaveRecord(raw, deps);
+  if (!parsed.ok)
+    return { ok: false, reason: 'corrupt', errors: parsed.errors };
+  const record = parsed.record;
   return {
     ok: true,
     versionNotice: kind === 'older_minor',
@@ -316,6 +335,15 @@ export interface InitSavesResult {
     readonly runId: string;
     readonly runVersion: string;
   }[];
+  /**
+   * Well-formed saves whose run state has a format this build cannot read:
+   * left alone (never finished into history, never wiped, whatever their game
+   * version or outcome) because their state cannot be trusted.
+   */
+  readonly unsupported: readonly {
+    readonly runId: string;
+    readonly runVersion: string;
+  }[];
   /** Stored values that do not parse: left alone. */
   readonly corrupt: readonly {
     readonly runId: string;
@@ -328,7 +356,8 @@ export interface InitSavesResult {
 /**
  * Run once at app start. Finishes off ended runs, deletes saves from an older
  * major version (recording them as `version_wiped`), and reports saves from a
- * newer version and damaged ones without touching them. Safe to run again
+ * newer version, ones whose state format this build cannot read, and damaged
+ * ones without touching them. Safe to run again
  * after an interruption: history entries are unique per run.
  */
 export async function initSaves(
@@ -339,6 +368,7 @@ export async function initSaves(
   const wiped: InitSavesResult['wiped'][number][] = [];
   const finished: string[] = [];
   const newer: InitSavesResult['newer'][number][] = [];
+  const unsupported: InitSavesResult['unsupported'][number][] = [];
   const corrupt: InitSavesResult['corrupt'][number][] = [];
   const failed: string[] = [];
 
@@ -356,6 +386,10 @@ export async function initSaves(
         continue;
       }
       const record: SaveRecord = shape.record;
+      if (hasUnsupportedFormat(record)) {
+        unsupported.push({ runId: item.runId, runVersion: record.runVersion });
+        continue;
+      }
       const state = { ...record.state, runId: item.runId };
       if (state.outcome !== null) {
         await finishRun(store, state, state.outcome.reason, now);
@@ -375,5 +409,5 @@ export async function initSaves(
       failed.push(item.runId);
     }
   }
-  return { wiped, finished, newer, corrupt, failed };
+  return { wiped, finished, newer, unsupported, corrupt, failed };
 }
