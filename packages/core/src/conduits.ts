@@ -14,7 +14,7 @@ import {
 } from './buildings.js';
 import { sortedKeys } from './hash.js';
 import { isRecord } from './load-util.js';
-import { queryMap, type Cell, type MapQuery } from './map.js';
+import { queryMap, type Cell, type GameMap, type MapQuery } from './map.js';
 import type { ResourceId } from './resources.js';
 import type {
   Conduit,
@@ -171,6 +171,39 @@ function pt(c: Cell): string {
 }
 
 /**
+ * How often each conduit end side and each path cell is used across a list of
+ * conduits, built once so that checking every conduit stays linear (counting
+ * "the other conduits" as the total minus the conduit's own use).
+ */
+interface Occupancy {
+  readonly outs: Map<string, number>;
+  readonly ins: Map<string, number>;
+  readonly cells: Map<number, number>;
+}
+
+function endKey(e: { building: number; side: Side }): string {
+  return `${String(e.building)}.${e.side}`;
+}
+
+function occupancyOf(map: GameMap, conduits: readonly Conduit[]): Occupancy {
+  const outs = new Map<string, number>();
+  const ins = new Map<string, number>();
+  const cells = new Map<number, number>();
+  const bump = <K>(m: Map<K, number>, k: K): void => {
+    m.set(k, (m.get(k) ?? 0) + 1);
+  };
+  for (const o of conduits) {
+    bump(outs, endKey(o.from));
+    bump(ins, endKey(o.to));
+    for (const cell of o.cells) {
+      if (isInt(cell.x) && isInt(cell.y))
+        bump(cells, cellKey(map, cell.x, cell.y));
+    }
+  }
+  return { outs, ins, cells };
+}
+
+/**
  * Check one conduit against the board and the other conduits. Rules in this
  * order, the first failure reported: unknown_building, not_an_output,
  * not_an_input, side_in_use, invalid_path, blocked_by_feature, overlaps_core,
@@ -180,7 +213,8 @@ function pt(c: Cell): string {
 function checkConduit(
   view: View,
   c: Conduit,
-  others: readonly Conduit[],
+  occ: Occupancy,
+  self: boolean,
 ): Failure | null {
   const map = view.state.map;
   const a = view.byId.get(c.from.building);
@@ -198,18 +232,11 @@ function checkConduit(
   if (!b.inputs.some((i) => i.side === c.to.side)) {
     return { ok: false, reason: 'not_an_input', detail: c.to.side };
   }
-  if (
-    others.some(
-      (o) => o.from.building === c.from.building && o.from.side === c.from.side,
-    )
-  ) {
+  const own = self ? 1 : 0;
+  if ((occ.outs.get(endKey(c.from)) ?? 0) > own) {
     return { ok: false, reason: 'side_in_use', detail: 'output' };
   }
-  if (
-    others.some(
-      (o) => o.to.building === c.to.building && o.to.side === c.to.side,
-    )
-  ) {
+  if ((occ.ins.get(endKey(c.to)) ?? 0) > own) {
     return { ok: false, reason: 'side_in_use', detail: 'input' };
   }
 
@@ -282,15 +309,10 @@ function checkConduit(
       return { ok: false, reason: 'overlaps_building', detail: pt(cell) };
     }
   }
-  const used = new Set<number>();
-  for (const o of others) {
-    for (const cell of o.cells) {
-      if (isInt(cell.x) && isInt(cell.y))
-        used.add(cellKey(map, cell.x, cell.y));
-    }
-  }
+  // The cells are distinct here, so this conduit holds each of its own cells
+  // once in `occ.cells`; any more is another conduit's.
   for (const cell of cells) {
-    if (used.has(cellKey(map, cell.x, cell.y))) {
+    if ((occ.cells.get(cellKey(map, cell.x, cell.y)) ?? 0) > own) {
       return { ok: false, reason: 'crosses_conduit', detail: pt(cell) };
     }
   }
@@ -356,17 +378,53 @@ function topoOrder(
     indeg.set(e.to, (indeg.get(e.to) ?? 0) + 1);
     out.get(e.from)?.push(e.to);
   }
-  const done = new Set<string>();
+  // Ready nodes sit in a binary min-heap of ranks (positions in `sorted`), so
+  // the smallest ready node by `compareNodes` still goes first, in O(E log V).
+  // A node's indegree only falls, so a node that is ready stays ready.
+  const rank = new Map<string, number>();
+  sorted.forEach((n, i) => rank.set(n.key, i));
+  const heap: number[] = [];
+  const push = (r: number): void => {
+    let i = heap.length;
+    heap.push(r);
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if ((heap[p] ?? 0) <= r) break;
+      heap[i] = heap[p] ?? 0;
+      i = p;
+    }
+    heap[i] = r;
+  };
+  const pop = (): number => {
+    const top = heap[0] ?? 0;
+    const last = heap.pop() ?? 0;
+    if (heap.length > 0) {
+      let i = 0;
+      for (;;) {
+        let c = 2 * i + 1;
+        if (c >= heap.length) break;
+        if (c + 1 < heap.length && (heap[c + 1] ?? 0) < (heap[c] ?? 0)) c++;
+        if ((heap[c] ?? 0) >= last) break;
+        heap[i] = heap[c] ?? 0;
+        i = c;
+      }
+      heap[i] = last;
+    }
+    return top;
+  };
+  sorted.forEach((n, i) => {
+    if ((indeg.get(n.key) ?? 0) === 0) push(i);
+  });
   const order: string[] = [];
-  for (;;) {
-    const next = sorted.find(
-      (n) => !done.has(n.key) && (indeg.get(n.key) ?? 0) === 0,
-    );
+  while (heap.length > 0) {
+    const next = sorted[pop()];
     if (next === undefined) break;
-    done.add(next.key);
     order.push(next.key);
     for (const t of out.get(next.key) ?? []) {
-      indeg.set(t, (indeg.get(t) ?? 0) - 1);
+      const d = (indeg.get(t) ?? 0) - 1;
+      indeg.set(t, d);
+      const r = rank.get(t);
+      if (d === 0 && r !== undefined) push(r);
     }
   }
   return order;
@@ -466,13 +524,17 @@ function findMismatch(
       return `conduit ${String(c.id)} carries ${got} into building ${String(e.b.id)}, which takes ${need}`;
     }
   }
+  // The first conduit (in list order) into each building side.
+  const firstInto = new Map<string, Conduit>();
+  for (const x of list) {
+    const k = `${String(x.to.building)}:${x.to.side}`;
+    if (!firstInto.has(k)) firstInto.set(k, x);
+  }
   for (const e of view.byId.values()) {
     if (e.def.kind !== 'route' || e.def.routeType !== 'merger') continue;
     let first: ResourceId | null = null;
     for (const side of SIDE_ORDER) {
-      const c = list.find(
-        (x) => x.to.building === e.b.id && x.to.side === side,
-      );
+      const c = firstInto.get(`${String(e.b.id)}:${side}`);
       const v = c === undefined ? null : (res.get(c.id) ?? null);
       if (v === null) continue;
       if (first === null) first = v;
@@ -525,7 +587,12 @@ export function addConduit(
     cells,
   };
   const view = makeView(state, content);
-  const failure = checkConduit(view, candidate, state.conduits);
+  const failure = checkConduit(
+    view,
+    candidate,
+    occupancyOf(state.map, state.conduits),
+    false,
+  );
   if (failure !== null) return failure;
   const conduits = [...state.conduits, candidate];
   const mismatch = findMismatch(
@@ -807,9 +874,9 @@ export function checkConduitList(
   errors: string[],
 ): void {
   const view = makeView(state, content);
+  const occ = occupancyOf(state.map, state.conduits);
   state.conduits.forEach((c, i) => {
-    const others = state.conduits.filter((_, j) => j !== i);
-    const failure = checkConduit(view, c, others);
+    const failure = checkConduit(view, c, occ, true);
     if (failure !== null) {
       errors.push(
         `conduits[${String(i)}] (id ${String(c.id)}): ${failure.reason}${failure.detail === undefined ? '' : ` (${failure.detail})`}.`,

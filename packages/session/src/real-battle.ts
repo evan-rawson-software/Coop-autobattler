@@ -1,8 +1,8 @@
 /**
- * The real `BattleResolver` (W2-3): PvE battles run `simulatePveBattle`
- * against the voted option's stored threat; PvP battles run against a ghost
- * when `findPvpOpponent` returns one, else (for now, until the ghost pool
- * exists) against a generated threat of type `boss` for the round.
+ * The real `BattleResolver` (W2-3, W3-1): PvE battles run `simulatePveBattle`
+ * against the voted option's stored threat; PvP battles run against the ghost
+ * stored in `state.pvpOpponent` (or the one `findPvpOpponent` returns), else
+ * against a generated threat of type `boss` for the round.
  *
  * `BattleResult.detail` never holds the event log (it can be megabytes and
  * the save is rewritten after every action). It holds what is needed to
@@ -39,16 +39,17 @@ import type {
   RunState,
 } from './types.js';
 
-/** A ghost opponent (later issues): a stored team to fight in a PvP battle. */
+/** A ghost opponent: a stored team to fight in a PvP battle. */
 export interface PvpOpponent {
   readonly label: string;
   readonly team: TeamState;
 }
 
 /**
- * The seam for ghosts. Return an opponent to fight a ghost, or null to fight
- * a generated boss. Must be deterministic in its input (it may use
- * `input.rng`).
+ * An override for the opponent. Return an opponent to fight a ghost, or null
+ * to use the opponent stored in the run state (`state.pvpOpponent`, fixed by
+ * `select_ghost`) or else a generated boss. Must be deterministic in its input
+ * (it may use `input.rng`).
  */
 export type FindPvpOpponent = (input: BattleInput) => PvpOpponent | null;
 
@@ -103,7 +104,7 @@ export interface BattleSetup {
   readonly sim: SimConfig;
   readonly mapgen: MapgenConfig;
   readonly threats: ThreatsConfig;
-  /** Default: no ghosts, so PvP fights a boss. */
+  /** Default: none (the stored `pvpOpponent` or else a boss). */
   readonly findPvpOpponent?: FindPvpOpponent;
 }
 
@@ -188,7 +189,14 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
         }
         source = { type: 'option' };
       } else {
-        const ghost = setup.findPvpOpponent?.(input) ?? null;
+        // The opponent fixed before the battle (W3-1) comes first; the
+        // `findPvpOpponent` override is for tests and other front ends.
+        const fixed = state.pvpOpponent;
+        const ghost: PvpOpponent | null =
+          setup.findPvpOpponent?.(input) ??
+          (fixed !== null && fixed.round === state.round && fixed.ghost !== null
+            ? { label: fixed.ghost.owner.label, team: fixed.ghost.team }
+            : null);
         if (ghost !== null) {
           source = { type: 'ghost', label: ghost.label, team: ghost.team };
         } else {

@@ -7,6 +7,14 @@
  *
  * Time is passed in (`now`, an integer); this module has no clock.
  */
+import type { GhostStore } from './ghost-store.js';
+import {
+  SELECT_GHOST,
+  ghostBucketFor,
+  ghostContext,
+  presentCandidates,
+  selectionPending,
+} from './ghosts.js';
 import { applyIntent, createRun } from './machine.js';
 import {
   buildSaveRecord,
@@ -17,10 +25,12 @@ import {
   type HistoryReason,
   type SaveStore,
 } from './save.js';
+import { validateRunState } from './validate.js';
 import type {
   CreateRunArgs,
   Effect,
   Intent,
+  Json,
   RejectReason,
   RunDeps,
   RunState,
@@ -36,13 +46,51 @@ export type DispatchResult =
        * removing the save failed. `initSaves` finishes the job at next start.
        */
       readonly warning?: 'finish_incomplete';
+      /**
+       * Set when this dispatch left the PvP opponent still to be chosen and
+       * the automatic selection failed (`save_failed` or `invalid_state`):
+       * the cause, which the next dispatch or `prepare` retries.
+       */
+      readonly selectionFailure?: SelectionFailure;
     }
   | {
       readonly ok: false;
-      /** A rule rejection from `applyIntent`, or `save_failed`. */
-      readonly reason: RejectReason | 'save_failed';
+      /**
+       * A rule rejection from `applyIntent`, `save_failed`, or
+       * `invalid_state`: the rules produced a state that does not pass
+       * `validateRunState`. Nothing was saved, revealed or advanced; `detail`
+       * has the first problems. It is a bug (or a poisoned input the rules
+       * let through), never something the player can fix.
+       */
+      readonly reason: RejectReason | 'save_failed' | 'invalid_state';
       readonly detail?: string;
+      /**
+       * When the rejection is `ghost_selection_pending`, why the automatic
+       * selection did not happen (if it was tried and failed).
+       */
+      readonly selectionFailure?: SelectionFailure;
     };
+
+/** Reasons only the run controller adds to a rule rejection. */
+export const CONTROLLER_REASONS = ['save_failed', 'invalid_state'] as const;
+
+/** Why the automatic ghost selection did not complete. */
+export interface SelectionFailure {
+  readonly reason: RejectReason | 'save_failed' | 'invalid_state';
+  readonly detail?: string;
+}
+
+/** Optional parts of a controller. */
+export interface ControllerOptions {
+  /**
+   * The ghost pool (W3-1). Used only when `deps.ghosts` is set: snapshots are
+   * written to it after the save that started a PvP battle, and it is read
+   * when the shop before a PvP battle is entered. A failing store never fails
+   * a dispatch: a failed write loses that snapshot, a failed read means no
+   * candidates (the boss).
+   */
+  readonly ghostStore?: GhostStore;
+}
 
 export interface RunController {
   readonly runId: string;
@@ -58,6 +106,16 @@ export interface RunController {
     intent: Intent,
     now: number,
   ): Promise<DispatchResult>;
+  /**
+   * Make sure the PvP opponent is fixed if the run is in the shop before a
+   * PvP battle and ghosts are on (e.g. after reopening a save made between
+   * entering the shop and selecting). `dispatch` does this itself first.
+   * Resolves with the failure when the selection was tried and did not
+   * complete (it is retried by the next call), else null.
+   */
+  prepare(now: number): Promise<SelectionFailure | null>;
+  /** The failure of the last selection attempt, or null (none, or it succeeded). */
+  readonly selectionFailure: SelectionFailure | null;
 }
 
 /** Record a finished run in history, then remove its save, in that order. */
@@ -77,10 +135,14 @@ function makeController(
   deps: RunDeps,
   store: SaveStore,
   installedVersion: string,
+  options: ControllerOptions,
 ): RunController {
   let current = initial;
   let tail: Promise<unknown> = Promise.resolve();
+  let selectionFailure: SelectionFailure | null = null;
+  const ghostStore = options.ghostStore;
 
+  /** Apply, save, then do the side effects the machine asked for. */
   async function run(
     player: number,
     intent: Intent,
@@ -91,6 +153,16 @@ function makeController(
       return r.detail === undefined
         ? { ok: false, reason: r.reason }
         : { ok: false, reason: r.reason, detail: r.detail };
+    }
+    // Nothing is written that would not open again: the next state must pass
+    // the same validation `openRun` applies.
+    const valid = validateRunState(r.state, deps);
+    if (!valid.ok) {
+      return {
+        ok: false,
+        reason: 'invalid_state',
+        detail: valid.errors.slice(0, 3).join(' '),
+      };
     }
     // A signature (a later phase) would cover the old state, so a rewritten
     // record carries none; signing happens on write in that phase.
@@ -121,13 +193,112 @@ function makeController(
     return { ok: true, state: r.state, effects: r.effects };
   }
 
+  /** Side effects of an accepted, saved intent: the ghost pool. */
+  async function afterSave(
+    r: Extract<DispatchResult, { ok: true }>,
+    now: number,
+  ): Promise<Extract<DispatchResult, { ok: true }>> {
+    let result = r;
+    for (const fx of r.effects) {
+      if (fx.type === 'ghost_snapshot' && ghostStore !== undefined) {
+        try {
+          await ghostStore.save(fx.snapshot);
+        } catch {
+          // The snapshot is lost; the run is unaffected.
+        }
+      }
+    }
+    if (selectionPending(current, deps)) {
+      const sel = await selectGhostNow(now);
+      if (sel !== null && sel.ok) {
+        result = {
+          ...sel,
+          effects: [...r.effects, ...sel.effects],
+          ...(r.warning === undefined ? {} : { warning: r.warning }),
+        };
+      } else if (selectionFailure !== null) {
+        result = { ...result, selectionFailure };
+      }
+    }
+    return result;
+  }
+
+  /** Read the pool and apply `select_ghost` (the host sends it). */
+  async function selectGhostNow(now: number): Promise<DispatchResult | null> {
+    const vctx = ghostContext(deps);
+    if (vctx === null) return null;
+    let raw: readonly unknown[] = [];
+    if (ghostStore !== undefined) {
+      try {
+        raw = await ghostStore.list(ghostBucketFor(current));
+      } catch {
+        raw = [];
+      }
+    }
+    const candidates = presentCandidates(raw, current, vctx);
+    const r = await run(
+      current.host,
+      { type: SELECT_GHOST, candidates: candidates as unknown as Json },
+      now,
+    );
+    if (r.ok) {
+      selectionFailure = null;
+      return r;
+    }
+    selectionFailure = {
+      reason: r.reason,
+      ...(r.detail === undefined ? {} : { detail: r.detail }),
+    };
+    return r;
+  }
+
+  async function commit(
+    player: number,
+    intent: Intent,
+    now: number,
+  ): Promise<DispatchResult> {
+    const r = await run(player, intent, now);
+    return r.ok ? afterSave(r, now) : r;
+  }
+
+  async function ensureSelection(
+    now: number,
+  ): Promise<SelectionFailure | null> {
+    if (!selectionPending(current, deps)) {
+      selectionFailure = null;
+      return null;
+    }
+    await selectGhostNow(now);
+    return selectionFailure;
+  }
+
   return {
     runId: initial.runId,
     get state(): RunState {
       return current;
     },
+    get selectionFailure(): SelectionFailure | null {
+      return selectionFailure;
+    },
     dispatch(player, intent, now) {
-      const result = tail.then(() => run(player, intent, now));
+      const result = tail.then(async () => {
+        const failed = await ensureSelection(now);
+        const r = await commit(player, intent, now);
+        // A rule rejection that is only the missing selection says why.
+        if (
+          !r.ok &&
+          r.reason === 'ghost_selection_pending' &&
+          failed !== null
+        ) {
+          return { ...r, selectionFailure: failed };
+        }
+        return r;
+      });
+      tail = result.catch(() => undefined);
+      return result;
+    },
+    prepare(now) {
+      const result = tail.then(() => ensureSelection(now));
       tail = result.catch(() => undefined);
       return result;
     },
@@ -156,6 +327,7 @@ export async function startRun(
   store: SaveStore,
   now: number,
   installedVersion: string,
+  options: ControllerOptions = {},
 ): Promise<StartRunResult> {
   const created = createRun(createArgs, deps);
   if (!created.ok) {
@@ -191,6 +363,7 @@ export async function startRun(
       deps,
       store,
       installedVersion,
+      options,
     ),
   };
 }
@@ -228,6 +401,7 @@ export async function openRun(
   deps: RunDeps,
   store: SaveStore,
   installedVersion: string,
+  options: ControllerOptions = {},
 ): Promise<OpenRunResult> {
   let raw: unknown;
   try {
@@ -259,6 +433,7 @@ export async function openRun(
           deps,
           store,
           installedVersion,
+          options,
         ),
       };
   }

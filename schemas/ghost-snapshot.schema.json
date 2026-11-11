@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ghost-snapshot.schema.json",
+  "title": "Ghost snapshot",
+  "description": "A party's whole team state at the start of a PvP battle (W3-1, MM-1..MM-17), kept in a local ghost pool for other runs to fight. It carries what is needed to match it (game version, party size, round) and to judge it (map seed, lives, PvP record). The schema covers the shape; whole-team-state legality, the map equalling generateMap(mapSeed, partySize), the consistency of the numbers with the round, the building-value bound and the modifier checks are done by validateGhostSnapshot in core. The pool is untrusted input: every snapshot is validated before use. The fields runSeed and actionLog are reserved for TA-22b (the run's seed and action log) and are NOT accepted yet: a snapshot that carries either is rejected, so an unbounded value cannot ride along into a run state or save. validateGhostSnapshot also bounds the serialized size (4096 + 12288 per player characters), the nesting depth (16), every string (128 characters) and requires all numbers to be safe integers.",
+  "type": "object",
+  "required": [
+    "formatVersion",
+    "gameVersion",
+    "partySize",
+    "round",
+    "mapSeed",
+    "team",
+    "owner",
+    "runId",
+    "lives",
+    "pvpRecord"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "formatVersion": {
+      "description": "The snapshot format.",
+      "const": 1
+    },
+    "gameVersion": {
+      "description": "The game version the run was played on, as major.minor. Only snapshots of the same version meet.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "partySize": { "type": "integer", "minimum": 1, "maximum": 4 },
+    "round": {
+      "description": "The round whose PvP battle this was taken at the start of.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "mapSeed": {
+      "description": "The seed the map was generated from: team.map equals generateMap(mapSeed, partySize).",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "team": { "$ref": "team-state.schema.json" },
+    "owner": {
+      "type": "object",
+      "required": ["id", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "A stable identifier of the player.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "label": {
+          "description": "What the opponent is called on screen.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        }
+      }
+    },
+    "runId": {
+      "description": "The run the snapshot was taken from.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "lives": {
+      "description": "Lives the run had when the snapshot was taken.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "pvpRecord": {
+      "description": "PvP battles won and lost in the rounds before this one (wins + losses = round - 1).",
+      "type": "object",
+      "required": ["wins", "losses"],
+      "additionalProperties": false,
+      "properties": {
+        "wins": { "type": "integer", "minimum": 0 },
+        "losses": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

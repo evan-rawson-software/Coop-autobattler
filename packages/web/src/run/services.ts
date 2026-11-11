@@ -14,6 +14,7 @@ import {
   createGameDeps,
   createMemorySaveStore,
   initSaves,
+  type GhostStore,
   type InitSavesResult,
   type RunDeps,
   type SaveStore,
@@ -27,6 +28,12 @@ import {
   type FinishedRuns,
 } from './finished.js';
 import { finishFirst } from './finish-first.js';
+import {
+  installOwnerId,
+  openGhostStore,
+  ownerLabelFor,
+  type GhostStorageKind,
+} from './ghost-pool.js';
 import { openIndexedDbStores } from './idb-store.js';
 import {
   browserStorage,
@@ -72,6 +79,9 @@ export interface GameServices {
   readonly finished: FinishedRuns;
   readonly storage: StorageKind;
   readonly deps: RunDeps;
+  /** The local ghost pool (W3-1); runs write their snapshots to it and read it. */
+  readonly ghosts: GhostStore;
+  readonly ghostStorage: GhostStorageKind;
   /** Why the preferred storage (IndexedDB) is not in use, or null. */
   readonly fallback: string | null;
   /** What `initSaves` did at start-up (wiped, finished, newer, corrupt). */
@@ -104,7 +114,12 @@ let deps: RunDeps | null = null;
 
 /** The rules with real battles (not the fixed-result stand-in). */
 export function gameDeps(): RunDeps {
-  deps ??= createGameDeps(content, gameConfigs);
+  if (deps === null) {
+    const ownerId = installOwnerId(browserStorage());
+    deps = createGameDeps(content, gameConfigs, {
+      ghosts: { ownerId, ownerLabel: ownerLabelFor(ownerId) },
+    });
+  }
   return deps;
 }
 
@@ -227,6 +242,7 @@ export async function createServices(
       fallbackNote: fallbackText(storage, fallback ?? 'unavailable'),
     });
   }
+  const ghostPool = await openGhostStore(env);
   const init = await initSaves(saves, INSTALLED_VERSION, env.now(), runDeps);
   return {
     saves,
@@ -234,6 +250,8 @@ export async function createServices(
     storage,
     fallback: storage === 'indexeddb' ? null : (fallback ?? 'unavailable'),
     deps: runDeps,
+    ghosts: ghostPool.store,
+    ghostStorage: ghostPool.kind,
     init,
     watch(runId, onChange) {
       let set = watchers.get(runId);

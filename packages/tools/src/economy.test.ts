@@ -56,6 +56,7 @@ describe('run-state.schema.json with shop data', () => {
   const ajv = new Ajv2020({ allErrors: true, strict: true });
   ajv.addSchema(readSchema('map.schema.json'));
   ajv.addSchema(readSchema('team-state.schema.json'));
+  ajv.addSchema(readSchema('ghost-snapshot.schema.json'));
   const validate = ajv.compile(readSchema('run-state.schema.json'));
   const content = loadAllContentOrThrow({
     resources: rawResources,

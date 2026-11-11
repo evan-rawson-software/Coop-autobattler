@@ -65,6 +65,16 @@ The loop is defined in `01-run-structure.md` RS-1.
   board is locked. The ghost may be fetched earlier in the round to avoid a
   wait (TA-19).
 
+*Implementation note (W3-1; spec statuses unchanged).* The local ghost pool
+decides these [PROPOSED] details: the opponent is selected on entering the shop
+before the PvP battle (MM-7, MM-11); MM-3's member exclusion is "the same run"
+only, because a local pool has a single owner; ghosts already fought are
+excluded by owner and run, so one ghost is met at most once per run (MM-3);
+invalid snapshots are filtered out before one uniform draw (MM-4, MM-17); the
+power bound is the building-value formula in `docs/rules-reference.md`,
+"Ghosts"; signatures (MM-17, TA-22a) and the run seed and action log (MM-1d)
+are not implemented, the latter two are reserved fields.
+
 ## Boss fallback
 
 - **MM-8 [DECIDED]** The generated boss is a function of how far the party has

@@ -21,6 +21,8 @@
     "perPlayer",
     "votes",
     "upcomingPve",
+    "pvpOpponent",
+    "ghostsFought",
     "pending",
     "history",
     "thisRound",
@@ -62,8 +64,8 @@
       "pattern": "^[0-9]+\\.[0-9]+$"
     },
     "formatVersion": {
-      "description": "The run-state format. Version 2 added upcomingPve and changed the battle detail; version 3 made the Workshop per-player and gold-dependent (older saves are not readable).",
-      "const": 3
+      "description": "The run-state format. Version 2 added upcomingPve and changed the battle detail; version 3 made the Workshop per-player and gold-dependent; version 4 added pvpOpponent and ghostsFought (W3-1). Older saves are not readable.",
+      "const": 4
     },
     "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
     "rng": {
@@ -224,6 +226,44 @@
           }
         }
       ]
+    },
+    "pvpOpponent": {
+      "description": "The opponent of the coming PvP battle, fixed by select_ghost in the shop of the PvE leg (W3-1); null before that and everywhere else. A ghost holds the whole snapshot, so a reload or a replay never consults the ghost pool. Its eligibility and validity are checked by validateRunState.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["round", "kind", "label", "ghost"],
+          "additionalProperties": false,
+          "properties": {
+            "round": { "type": "integer", "minimum": 1 },
+            "kind": { "enum": ["ghost", "boss"] },
+            "label": {
+              "description": "The ghost owner's label, or \"the boss\".",
+              "type": "string"
+            },
+            "ghost": {
+              "oneOf": [
+                { "type": "null" },
+                { "$ref": "ghost-snapshot.schema.json" }
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "kind": { "const": "ghost" } } },
+              "then": { "properties": { "ghost": { "type": "object" } } },
+              "else": { "properties": { "ghost": { "type": "null" } } }
+            }
+          ]
+        }
+      ]
+    },
+    "ghostsFought": {
+      "description": "The identity of every ghost fought in this run (a JSON text of [owner id, run id]), in order; those ghosts are not drawn again.",
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
     },
     "pending": {
       "description": "Step-specific data, opaque JSON: Core proposals, PvE options, event offers, or the battle result being shown."
