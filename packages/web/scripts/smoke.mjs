@@ -9,7 +9,10 @@
 // PLAYWRIGHT_BROWSERS_PATH, or run `playwright install chromium`).
 //
 // CI_RELAXED_TIMING=1 (set in CI) multiplies the frame-interval limits by 3
-// for slow shared runners; unset keeps the strict limits.
+// for slow shared runners; unset keeps the strict limits. Waits are on
+// conditions with generous timeouts (see smoke-timing.mjs), not fixed sleeps.
+// SMOKE_CPU_THROTTLE=<n> throttles Chromium's CPU n-fold to mimic a slow
+// runner locally (and scales the timeouts and frame limits with it).
 
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
@@ -20,11 +23,19 @@ import { runShopSmoke } from './smoke-shop.mjs';
 import { runSpritesSmoke } from './smoke-sprites.mjs';
 import { runArtSmoke, spritesInfo } from './smoke-art.mjs';
 import { runRunSmoke } from './smoke-run.mjs';
+import {
+  CPU_THROTTLE,
+  TIMING,
+  frames as waitFrames,
+  slow,
+} from './smoke-timing.mjs';
+
+// Frame-interval limits: x3 on CI (CI_RELAXED_TIMING), and scaled by the CPU
+// throttle when one is set on purpose, since that makes every frame slower.
+const FRAME_SCALE = TIMING * CPU_THROTTLE;
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
-
-const TIMING = process.env.CI_RELAXED_TIMING === '1' ? 3 : 1;
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const webDir = path.resolve(here, '..');
@@ -73,6 +84,37 @@ const resources = JSON.parse(
 ).resources;
 
 const browser = await chromium.launch();
+
+// SMOKE_CPU_THROTTLE=<rate> slows every page's CPU by that factor (CDP
+// Emulation.setCPUThrottlingRate) so the slow-runner behaviour of CI can be
+// reproduced locally, e.g. `SMOKE_CPU_THROTTLE=5 pnpm smoke`.
+//
+// Every context made through browser.newContext (here and in the smoke-*.mjs
+// modules) also gets a generous default action/wait timeout: Playwright's own
+// 30 s default is shorter than the main thread can be busy generating a
+// four-plot map on a slow runner, and a timeout there is not a product failure.
+if (CPU_THROTTLE > 1) console.log(`CPU throttle: ${CPU_THROTTLE}x`);
+{
+  const throttle = async (p) => {
+    const cdp = await p.context().newCDPSession(p);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLE });
+  };
+  const newContext = browser.newContext.bind(browser);
+  browser.newContext = async (...args) => {
+    const ctx = await newContext(...args);
+    ctx.setDefaultTimeout(slow(30000));
+    if (CPU_THROTTLE > 1) {
+      const newPage = ctx.newPage.bind(ctx);
+      ctx.newPage = async (...a) => {
+        const p = await newPage(...a);
+        await throttle(p);
+        return p;
+      };
+    }
+    return ctx;
+  };
+}
+
 // A context (not browser.newPage) so the Shop checks can open a second tab
 // that shares this page's localStorage.
 const context = await browser.newContext({
@@ -95,7 +137,7 @@ const shot = (name) =>
 const shotDark = async (name) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await settle();
-  await page.waitForTimeout(250);
+  await waitFrames(page, 15);
   await page.screenshot({ path: path.join(outDir, `${name}.png`) });
   await page.emulateMedia({ colorScheme: 'light' });
   await settle();
@@ -351,7 +393,7 @@ try {
   await page.waitForFunction(
     () => window.__debug.counts().buildings > 150,
     null,
-    { timeout: 120000 },
+    { timeout: slow(120000) },
   );
   await settle();
   const dense = await page.evaluate(() => window.__debug.counts());
@@ -447,7 +489,7 @@ try {
   );
   for (const p of perf) {
     check(
-      p.meanFrameMs < 33 * TIMING,
+      p.meanFrameMs < 33 * FRAME_SCALE,
       `${p.label}: mean frame ${p.meanFrameMs.toFixed(1)} ms (draw ${p.draw.meanMs.toFixed(2)} ms mean, ${p.draw.maxMs.toFixed(1)} ms max)`,
     );
   }
@@ -481,7 +523,7 @@ try {
       ([cx, cy]) => window.__debug.build.cellToScreen(cx, cy),
       [x, y],
     );
-  const pause = () => page.waitForTimeout(60);
+  const pause = () => waitFrames(page, 4);
   const moveTo = async (x, y, steps = 3) => {
     const p = await at(x, y);
     await page.mouse.move(p.x, p.y, { steps });
@@ -998,7 +1040,7 @@ try {
       tableText.includes(String(dry.consumers[0].delivered)),
     'dry-run table shows the numbers from dryRunFlow',
   );
-  await page.waitForTimeout(300);
+  await waitFrames(page, 18);
   await shot('build-4-factory-flow');
   await shotDark('art2-build-conduits');
   await page.click('[data-overlay="dry"]');
@@ -1049,7 +1091,7 @@ try {
   await settle();
   await page.click('[data-camera="fit"]');
   await settle();
-  await page.waitForTimeout(150);
+  await waitFrames(page, 9);
   const s720 = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth,
     sh: document.documentElement.scrollHeight,
@@ -1086,7 +1128,7 @@ try {
   // --- Battle screen (W2-8)
   {
     const bd = (name) => page.evaluate((n) => window.__debug.battle[n](), name);
-    const waitPhase = (phase, timeout = 30000) =>
+    const waitPhase = (phase, timeout = slow(30000)) =>
       page.waitForFunction(
         (p) => window.__debug?.battle?.phase?.() === p,
         phase,
@@ -1100,7 +1142,7 @@ try {
           window.__debug?.battle !== undefined &&
           window.__debug.battle.phase !== undefined,
         undefined,
-        { timeout: 30000 },
+        { timeout: slow(30000) },
       );
     };
     // The golden PvE battles are reproducible through the route: the board is
@@ -1186,7 +1228,7 @@ try {
       () => window.__debug.battle.revealed(),
       undefined,
       {
-        timeout: 10000,
+        timeout: slow(10000),
       },
     );
     const revealedFeatures = await page.evaluate(() =>
@@ -1207,7 +1249,7 @@ try {
     await page.waitForFunction(() => window.__debug.battle.tick() > 80);
     await page.click('#pause');
     const pausedAt = await bd('tick');
-    await page.waitForTimeout(400);
+    await waitFrames(page, 24);
     check(
       (await bd('tick')) === pausedAt && (await bd('paused')),
       `battle: pausing stops playback (tick ${pausedAt})`,
@@ -1229,7 +1271,9 @@ try {
     }
 
     // Reload mid-battle resumes the same battle.
-    await page.waitForTimeout(700);
+    await page.waitForFunction(
+      () => Number(/[?&]t=(\d+)/.exec(window.location.hash)?.[1] ?? 0) > 80,
+    );
     const hashMid = await page.evaluate(() => window.location.hash);
     const savedTick = Number(/[?&]t=(\d+)/.exec(hashMid)?.[1] ?? 0);
     check(savedTick > 80, `battle: the tick is kept in the URL (${hashMid})`);
@@ -1357,7 +1401,7 @@ try {
       () => window.__debug.battle.revealed(),
       undefined,
       {
-        timeout: 10000,
+        timeout: slow(10000),
       },
     );
     await page.click('#speed-4');
@@ -1424,7 +1468,7 @@ try {
       () => window.__debug.battle.revealed(),
       undefined,
       {
-        timeout: 10000,
+        timeout: slow(10000),
       },
     );
     await page.click('#speed-4');
@@ -1457,8 +1501,8 @@ try {
       `battle: the stress battle has hundreds of units alive in total (peak ${peak}, at least 300)`,
     );
     check(
-      frames.length > 100 && p95 < 34 * TIMING,
-      `battle: smooth at 4x with ${peak} units (frame interval p95 ${p95.toFixed(1)} ms over ${frames.length} frames; limit ${34 * TIMING} ms)`,
+      frames.length > 100 && p95 < 34 * FRAME_SCALE,
+      `battle: smooth at 4x with ${peak} units (frame interval p95 ${p95.toFixed(1)} ms over ${frames.length} frames; limit ${34 * FRAME_SCALE} ms)`,
     );
     // Skip, watch again, play: no page errors (more than 64 units spawned).
     {
@@ -1481,7 +1525,7 @@ try {
         () => window.__debug.battle.revealed(),
         undefined,
         {
-          timeout: 10000,
+          timeout: slow(10000),
         },
       );
       await page.click('#speed-4');
