@@ -39,7 +39,7 @@
 
 .over-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 2fr) minmax(0, 1.1fr);
   gap: 0.8rem;
   flex: 1 1 auto;
   min-height: 14rem;
@@ -66,7 +66,7 @@
 
 .final-board {
   position: relative;
-  height: 15rem;
+  height: clamp(18rem, 55vh, 40rem);
   background: var(--board-bg);
   border: 1px solid var(--border);
 }

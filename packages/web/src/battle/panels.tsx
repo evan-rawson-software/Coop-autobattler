@@ -548,6 +548,12 @@ export function BattleSummaryView(props: SummaryProps) {
                 <th scope="row">
                   {r.name}
                   {r.count > 1 ? ` ×${String(r.count)}` : ''}
+                  {r.note === null ? null : (
+                    <span class="muted fine" data-field="idle-note">
+                      {' '}
+                      · {r.note}
+                    </span>
+                  )}
                 </th>
                 {cols.produced ? <td>{r.produced || '–'}</td> : null}
                 {cols.delivered ? <td>{r.delivered || '–'}</td> : null}

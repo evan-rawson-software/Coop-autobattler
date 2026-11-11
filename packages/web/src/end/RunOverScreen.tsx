@@ -171,6 +171,7 @@ export function RunOverScreen(props: {
                 controller={camera}
                 resetKey={`${state.runId}:final`}
                 frontLabel="FRONT EDGE"
+                controls={false}
               />
             </div>
             <p class="muted" data-field="factory-counts">
