@@ -22,6 +22,8 @@ export interface OverlayData {
   readonly paths: readonly EnemyPath[] | null;
   readonly legalCore: readonly Cell[];
   readonly content: WebContent;
+  /** Placed unit producers with no walkable route to the front row. */
+  readonly sealed?: readonly number[];
 }
 
 interface Colors {
@@ -269,6 +271,47 @@ export function drawBuildOverlay(
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('!', x + b.rect.w * z - 2, y + 2.5);
+    }
+  }
+
+  // ---- Sealed unit producers (Ready is refused while any) -----------------
+  if (board !== undefined && d.sealed !== undefined && d.sealed.length > 0) {
+    for (const b of board.buildings) {
+      if (!d.sealed.includes(b.instance.id)) continue;
+      const x = sx(b.rect.x);
+      const y = sy(b.rect.y);
+      const w = b.rect.w * z;
+      const h = b.rect.h * z;
+      ctx.save();
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = col.warn;
+      ctx.fillRect(x, y, w, h);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = col.warn;
+      ctx.lineWidth = 4;
+      ctx.setLineDash([8, 4]);
+      ctx.strokeRect(x - 2, y - 2, w + 4, h + 4);
+      ctx.setLineDash([]);
+      // A warning triangle with "!" in the top-left corner.
+      const r = Math.max(9, z * 0.32);
+      const cx = x + r * 0.9;
+      const cy = y + r * 0.9;
+      ctx.fillStyle = col.warn;
+      ctx.strokeStyle = col.surface;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - r);
+      ctx.lineTo(cx + r, cy + r * 0.8);
+      ctx.lineTo(cx - r, cy + r * 0.8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = `800 ${String(Math.max(11, r * 1.1))}px ui-monospace, monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('!', cx, cy + r * 0.2);
+      ctx.restore();
     }
   }
 

@@ -4,6 +4,8 @@ import type { ComponentType } from 'preact';
 import { BattleSampleScreen } from '../battle/BattleScreen.js';
 import { BuildScreen } from '../build/BuildScreen.js';
 import { ShopBuildScreen } from '../build/ShopBuildScreen.js';
+import { MainMenuScreen } from '../menu/MainMenu.js';
+import { RunScreen } from '../run/RunScreen.js';
 import { DebugScreen } from '../screens/DebugScreen.js';
 import { ShopScreen } from '../shop/ShopScreen.js';
 import type { ScreenId } from '../app-state.js';
@@ -16,6 +18,8 @@ export interface ScreenDef {
 }
 
 export const screens: readonly ScreenDef[] = [
+  { id: 'menu', name: 'Main menu', component: MainMenuScreen },
+  { id: 'run', name: 'Run', component: RunScreen },
   { id: 'debug', name: 'Debug', component: DebugScreen },
   { id: 'build', name: 'Build', component: BuildScreen },
   { id: 'shop', name: 'Shop', component: ShopScreen },

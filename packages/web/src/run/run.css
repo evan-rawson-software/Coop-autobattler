@@ -1,0 +1,160 @@
+/* The run bar, the run's blocking states, the older-version prompt, and the
+   Core placement screen. Plain CSS on the shared custom properties. */
+
+.run-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  color: var(--ink);
+}
+
+.run-bar .bar-step {
+  color: var(--ink-muted);
+}
+
+.run-bar .saved-hint {
+  margin: 0;
+}
+
+.topbar-status {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+/* Once the run bar shows round and lives, the screens' own copy is redundant. */
+.topbar.has-run-bar [data-field='run-info'] {
+  display: none;
+}
+
+.fine {
+  font-size: 0.78rem;
+}
+
+.run-blocked {
+  padding: 1.5rem;
+  max-width: 44rem;
+}
+
+.run-blocked button {
+  margin-right: 0.5rem;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 0.45);
+}
+
+.modal {
+  width: min(32rem, calc(100vw - 2rem));
+  padding: 1.25rem 1.5rem;
+  background: var(--surface-2);
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+}
+
+.modal h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1.1rem;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+/* Core placement */
+
+.core-board {
+  position: absolute;
+  inset: 0;
+}
+
+.legend-list {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.legend-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.legend-list .swatch {
+  flex: none;
+  margin-top: 0.1rem;
+}
+
+.swatch.ok {
+  background: color-mix(in srgb, var(--ok) 35%, transparent);
+  border-color: var(--ok);
+}
+
+.swatch.bad {
+  background: color-mix(in srgb, var(--bad) 22%, transparent);
+  border-color: var(--bad);
+}
+
+.swatch.path {
+  background: transparent;
+  border: 2px dashed var(--path-line);
+}
+
+/* One fixed line over the board, so the reason a cell is refused is always
+   in the same place and never scrolls out of view. */
+.core-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 0.75rem;
+  transform: translateX(-50%);
+  z-index: 5;
+  box-sizing: border-box;
+  width: min(36rem, calc(100% - 1.5rem));
+  margin: 0;
+  padding: 0.45rem 0.6rem;
+  min-height: 2.6em;
+  pointer-events: none;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.core-hint.bad {
+  border-color: var(--bad);
+}
+
+#core-confirm {
+  width: 100%;
+  padding: 0.6rem;
+  font-weight: 600;
+}
+
+.kit-list {
+  list-style: none;
+  margin: 0 0 0.4rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.kit-list li {
+  padding: 0.4rem 0.9rem;
+  background: var(--surface-2);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+}

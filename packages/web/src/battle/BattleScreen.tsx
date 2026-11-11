@@ -38,6 +38,7 @@ import { drawBattleOverlay, makeDrawIndex } from './draw.js';
 import { BattleSummaryView, LeftPanels, RightPanels } from './panels.js';
 import {
   Playback,
+  replayMatches,
   simulateRecord,
   type BattleRecord,
   type PlaybackSpeed,
@@ -49,6 +50,8 @@ import {
   parseSampleHash,
   type SampleSelection,
 } from './samples.js';
+import { overloadLine } from '../choice/overload.js';
+import { createReadyGate } from './ready-gate.js';
 import { battleConfig } from './setup.js';
 import type { BattleDescription, BattleViewProps } from './types.js';
 import { REFERENCE_BOARDS } from '@game/core';
@@ -70,6 +73,8 @@ interface Prep {
   readonly enemyCentre: { x: number; y: number } | null;
 }
 
+const MISMATCH = Symbol('replay mismatch');
+
 /**
  * Simulate a battle and set up its playback. Depends on the battle (and the
  * tick to resume at) alone; everything that depends on who the opponent is
@@ -78,10 +83,14 @@ interface Prep {
 function prepare(
   battle: BattleDescription,
   initialTick: number,
-): Prep | string {
+  storedHash: string | undefined,
+): Prep | string | typeof MISMATCH {
   const made = simulateRecord(battle, content, battleConfig);
   if (!made.ok) return made.error.message;
   const record = made.record;
+  if (storedHash !== undefined && !replayMatches(record, storedHash)) {
+    return MISMATCH;
+  }
   const pb = new Playback(battle, content, battleConfig, record);
   if (initialTick > 0) pb.seekTo(initialTick);
   const init = buildScene(
@@ -124,10 +133,14 @@ function sceneSummary(
 }
 
 export function BattleView(props: BattleViewProps) {
-  const [prep, setPrep] = useState<Prep | string | null>(null);
+  const [prep, setPrep] = useState<Prep | string | typeof MISMATCH | null>(
+    null,
+  );
   // `initialTick` is read once per battle, when the simulation is set up.
   const initialTick = useRef(props.initialTick ?? 0);
   initialTick.current = props.initialTick ?? 0;
+  const latestStored = useRef(props.stored);
+  latestStored.current = props.stored;
 
   // Simulate after the first paint, so the page shows "preparing" first.
   useEffect(() => {
@@ -138,7 +151,13 @@ export function BattleView(props: BattleViewProps) {
       timer = window.setTimeout(() => {
         if (cancelled) return;
         try {
-          setPrep(prepare(props.battle, initialTick.current));
+          setPrep(
+            prepare(
+              props.battle,
+              initialTick.current,
+              latestStored.current?.eventLogHash,
+            ),
+          );
         } catch (e) {
           setPrep(e instanceof Error ? e.message : String(e));
         }
@@ -152,6 +171,35 @@ export function BattleView(props: BattleViewProps) {
     // A new battle (a new description) is simulated afresh; nothing else is.
   }, [props.battle]);
 
+  if (prep === MISMATCH) {
+    const stored = props.stored;
+    const won = stored?.won === true;
+    return (
+      <AppShell title={props.title} status={props.topBarExtra}>
+        <div class="battle-preparing" id="battle-mismatch" role="status">
+          <h2 class="result-title">
+            <span data-field="result-word">{won ? 'Victory' : 'Defeat'}</span>
+            {' · vs. '}
+            {props.opponent.name}
+          </h2>
+          <p data-field="mismatch">
+            This battle was fought under different rules and cannot be replayed.
+            Result: {won ? 'Victory' : 'Defeat'},{' '}
+            <span data-field="reward">{props.reward(won)}</span>
+          </p>
+          <button
+            type="button"
+            class="primary"
+            onClick={() => {
+              void props.onReady();
+            }}
+          >
+            Ready
+          </button>
+        </div>
+      </AppShell>
+    );
+  }
   if (prep === null || typeof prep === 'string') {
     return (
       <AppShell title={props.title} status={props.topBarExtra}>
@@ -168,6 +216,8 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
   const { prep, opponent } = props;
   const { pb, record, geo, init } = prep;
   const foeKind = opponent.kind;
+  // The run state's outcome when there is one; the simulation's otherwise.
+  const won = props.stored?.won ?? record.result.winner === 0;
   const foeWord = foeKind === 'ghost' ? 'Enemy' : 'Stronghold';
   const moments = useMemo(
     () =>
@@ -227,6 +277,9 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           record.summary.sides[1].coreHealth,
         ],
         stateHash: () => hashJson(pb.sim),
+        eventLogHash: () => hashJson(record.eventLog),
+        storedEventLogHash: () =>
+          latest.current.props.stored?.eventLogHash ?? null,
         unitsAlive: () => pb.sim.units.length,
         simMs: () => record.simMs,
         ready: () => latest.current.ready,
@@ -329,9 +382,13 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
     props.onTick?.(0);
     setPhase('playing');
   };
+  const gate = useRef<(() => void) | null>(null);
+  gate.current ??= createReadyGate(
+    () => latest.current.props.onReady(),
+    setReady,
+  );
   const onReady = (): void => {
-    setReady(true);
-    props.onReady();
+    gate.current?.();
   };
   const onFocus = (m: Moment): void => {
     if (m.focus !== null) camera.focusAt(m.focus);
@@ -355,7 +412,8 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           opponent={opponent}
           title={props.title}
           moments={moments}
-          rewardText={props.reward(record.result)}
+          rewardText={props.reward(won)}
+          won={won}
           tps={tps}
           ready={ready}
           onWatchAgain={onWatchAgain}
@@ -367,6 +425,10 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
 
   const mine = sideStats(pb, content, 0, tps);
   const theirs = sideStats(pb, content, 1, tps);
+  const overloadNote =
+    foeKind === 'ghost'
+      ? null
+      : overloadLine(battleConfig.sim, record.coreMax[0], record.coreMax[1]);
   const overloadTick = moments.find((m) => m.kind === 'overload')?.tick ?? null;
 
   return (
@@ -381,6 +443,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           content={content}
           foeName={opponent.name}
           overloadTick={overloadTick}
+          overloadNote={overloadNote}
           tps={tps}
         />
       }
@@ -559,6 +622,7 @@ export function BattleSampleScreen() {
       }}
       onReady={() => {
         setReadyCount((n) => n + 1);
+        return Promise.resolve(true);
       }}
       topBarExtra={picker}
     />

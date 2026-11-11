@@ -14,6 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runShopSmoke } from './smoke-shop.mjs';
 import { runSpritesSmoke } from './smoke-sprites.mjs';
+import { runRunSmoke } from './smoke-run.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -92,7 +93,7 @@ const settle = () =>
 const canvasBox = async () => await page.locator('canvas').boundingBox();
 
 try {
-  await page.goto(baseUrl);
+  await page.goto(baseUrl + '#debug');
   await page.waitForSelector('canvas');
   await page.waitForFunction(
     () => window.__debug?.camera && window.__debug.viewport().w > 0,
@@ -1499,6 +1500,18 @@ try {
   // Shop + Build step (W2-7)
   await runShopSmoke({ page, baseUrl, check, shot, settle, webDir });
   await runSpritesSmoke({ page, baseUrl, check, shot, settle, consoleErrors });
+
+  // Run flow: menu, Core placement, choices, run end (W2-9)
+  await runRunSmoke({
+    page,
+    baseUrl,
+    check,
+    shot,
+    settle,
+    webDir,
+    context,
+    consoleErrors,
+  });
 
   check(
     consoleErrors.length === 0,

@@ -1,0 +1,384 @@
+/**
+ * The route `#run/<id>`: the run at its current step. It loads the run into
+ * the run store, then lets the step decide which screen shows (`router.ts`).
+ * The screens read the run from the store and change it by intents only.
+ *
+ * Also the states around it: loading, a run that changed in another tab, a
+ * saved run that cannot be opened, a run that has ended, and the prompt when
+ * a run was saved by an older version.
+ */
+import { hashJson } from '@game/core';
+import type { ComponentChildren } from 'preact';
+import { useEffect, useMemo, useState } from 'preact/hooks';
+import { hashStore, navigate, useStore } from '../app-state.js';
+import { RunBattleScreen } from '../battle/RunBattleScreen.js';
+import { BuildView } from '../build/BuildScreen.js';
+import { PveChoiceScreen } from '../choice/PveChoiceScreen.js';
+import { registerDebug, unregisterDebug } from '../debug-hook.js';
+import { RunOverScreen } from '../end/RunOverScreen.js';
+import { EventChoiceScreen, EventResolveScreen } from '../event/EventScreen.js';
+import { CoreScreen } from '../placement/CoreScreen.js';
+import { AppShell, Panel, RunBarContext } from '../shell/AppShell.js';
+import { ShopTab } from '../shop/ShopScreen.js';
+import { stepTabStore } from '../shop/tabs.js';
+import { RunBar } from './RunBar.js';
+import { screenForStep, runIdFromHash } from './router.js';
+import {
+  acknowledgeVersionNotice,
+  discardSavedRun,
+  needsVersionPrompt,
+  reloadRun,
+  runStore,
+  showRun,
+  type ActiveRun,
+} from './run-store.js';
+import { gameDeps } from './services.js';
+import './run.css';
+
+function Blocked(props: { title: string; children: ComponentChildren }) {
+  return (
+    <AppShell title="Run">
+      <div class="run-blocked">
+        <Panel title={props.title}>{props.children}</Panel>
+      </div>
+    </AppShell>
+  );
+}
+
+function MenuButton() {
+  return (
+    <button
+      type="button"
+      id="to-menu"
+      onClick={() => {
+        navigate('#/');
+      }}
+    >
+      Back to the menu
+    </button>
+  );
+}
+
+function Conflict(props: { runId: string }) {
+  return (
+    <Blocked title="This run changed in another tab">
+      <div id="run-conflict" role="alert">
+        <p>
+          This run was saved from another tab or window, so this one is out of
+          date. Nothing here can be changed until you reload it.
+        </p>
+        <button
+          type="button"
+          id="run-reload"
+          class="primary"
+          onClick={() => {
+            void reloadRun(props.runId);
+          }}
+        >
+          Reload the run
+        </button>
+        <MenuButton />
+      </div>
+    </Blocked>
+  );
+}
+
+function VersionPrompt(props: { onContinue: () => void }) {
+  return (
+    <div class="modal-backdrop">
+      <div
+        class="modal"
+        role="alertdialog"
+        aria-labelledby="version-title"
+        id="version-prompt"
+      >
+        <h2 id="version-title">Saved on an older version</h2>
+        <p>
+          This run was saved on an older version of the game. Some things may
+          have changed since. Offers and battle results you already have stay as
+          they are.
+        </p>
+        <div class="modal-buttons">
+          <button
+            type="button"
+            class="primary"
+            id="version-continue"
+            onClick={props.onContinue}
+          >
+            Continue the run
+          </button>
+          <MenuButton />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReadyRun(props: { run: ActiveRun }) {
+  const { run } = props;
+  const view = useStore(run.session.store);
+  const conflict = useStore(run.conflict);
+  const tab = useStore(stepTabStore);
+  const [, bump] = useState(0);
+  const state = view.run;
+  const maxLives = run.deps.rules.startingLives;
+
+  // Each shop step opens on its Shop tab.
+  const stepKey = `${String(state.round)}:${state.leg}:${state.step}`;
+  useEffect(() => {
+    stepTabStore.set('shop');
+  }, [stepKey]);
+
+  const screen = screenForStep(
+    state.step,
+    tab === 'shop-build' ? 'shop_build' : 'shop',
+  );
+
+  useEffect(() => {
+    registerDebug({
+      run: {
+        screen: () => screen,
+        state: () => ({
+          runId: state.runId,
+          step: state.step,
+          round: state.round,
+          leg: state.leg,
+          lives: state.lives,
+          gold: state.perPlayer[0]?.gold ?? 0,
+          actions: state.actionCounter,
+          history: state.history.length,
+          hash: hashJson(state),
+          storage: run.storage,
+        }),
+      },
+    });
+    return () => {
+      unregisterDebug('run');
+    };
+  }, [screen, state, run.storage]);
+
+  const bar = useMemo(
+    () => <RunBar state={state} maxLives={maxLives} storage={run.storage} />,
+    [state, maxLives, run.storage],
+  );
+
+  if (conflict) return <Conflict runId={run.runId} />;
+
+  let body: ComponentChildren;
+  switch (screen) {
+    case 'core':
+      body = <CoreScreen run={run} />;
+      break;
+    case 'build':
+    case 'shop_build':
+      body = <BuildView shared={run} />;
+      break;
+    case 'shop':
+      body = <ShopTab run={run} />;
+      break;
+    case 'pve_choice':
+      body = <PveChoiceScreen run={run} />;
+      break;
+    case 'battle':
+      body = <RunBattleScreen run={run} />;
+      break;
+    case 'event_choice':
+      body = <EventChoiceScreen run={run} />;
+      break;
+    case 'event_resolve':
+      body = <EventResolveScreen run={run} />;
+      break;
+    case 'run_over':
+      body = <RunOverScreen state={state} startingLives={maxLives} />;
+      break;
+    case 'transient':
+      body = (
+        <AppShell title="Battle">
+          <p class="muted pad" role="status">
+            The battle is being resolved.
+          </p>
+        </AppShell>
+      );
+      break;
+  }
+  return (
+    <RunBarContext.Provider value={bar}>
+      {body}
+      {needsVersionPrompt(run) ? (
+        <VersionPrompt
+          onContinue={() => {
+            acknowledgeVersionNotice(run.runId);
+            bump((n) => n + 1);
+          }}
+        />
+      ) : null}
+    </RunBarContext.Provider>
+  );
+}
+
+function BlockedRun(props: { runId: string; message: string; reason: string }) {
+  const [asking, setAsking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <Blocked title="The saved run cannot be opened">
+      <div id="run-unopenable" role="alert">
+        <p data-field="reason">{props.message}</p>
+        <p class="muted">
+          It has not been deleted. Closing this tab or fixing the cause may let
+          it open.
+          {props.reason === 'load_failed'
+            ? ''
+            : ' Removing the save deletes it for good, with no summary and no record.'}
+        </p>
+        {error === null ? null : <p class="error">{error}</p>}
+        {asking ? (
+          <>
+            <p data-field="remove-warning">
+              Remove this save? It is deleted for good, with no summary and no
+              record of the run.
+            </p>
+            <button
+              type="button"
+              class="danger"
+              id="run-discard-confirm"
+              onClick={() => {
+                void discardSavedRun(props.runId).then((r) => {
+                  if (r.ok) navigate('#/');
+                  else setError(r.message);
+                });
+              }}
+            >
+              Remove save
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAsking(false);
+              }}
+            >
+              Keep it
+            </button>
+          </>
+        ) : (
+          <>
+            {props.reason === 'load_failed' ? (
+              <button
+                type="button"
+                class="primary"
+                id="run-retry"
+                onClick={() => {
+                  void reloadRun(props.runId);
+                }}
+              >
+                Try again
+              </button>
+            ) : (
+              <button
+                type="button"
+                class="danger"
+                id="run-discard"
+                onClick={() => {
+                  setAsking(true);
+                }}
+              >
+                Remove save
+              </button>
+            )}
+            <MenuButton />
+          </>
+        )}
+      </div>
+    </Blocked>
+  );
+}
+
+export function RunScreen() {
+  const hash = useStore(hashStore);
+  const runId = runIdFromHash(hash);
+  const st = useStore(runStore);
+
+  useEffect(() => {
+    if (runId !== null) void showRun(runId);
+  }, [runId]);
+
+  if (runId === null) {
+    return (
+      <Blocked title="No run">
+        <p>There is no run in this address.</p>
+        <MenuButton />
+      </Blocked>
+    );
+  }
+  const current =
+    st.status === 'ready'
+      ? st.run.runId
+      : st.status === 'idle'
+        ? null
+        : st.runId;
+  if (current !== runId) {
+    return (
+      <AppShell title="Run">
+        <p class="muted pad" id="run-loading" role="status">
+          Opening your run.
+        </p>
+      </AppShell>
+    );
+  }
+  switch (st.status) {
+    case 'idle':
+    case 'loading':
+      return (
+        <AppShell title="Run">
+          <p class="muted pad" id="run-loading" role="status">
+            Opening your run.
+          </p>
+        </AppShell>
+      );
+    case 'ready':
+      return <ReadyRun run={st.run} />;
+    case 'over': {
+      const maxLives = gameDeps().rules.startingLives;
+      return (
+        <RunBarContext.Provider
+          value={<RunBar state={st.state} maxLives={maxLives} />}
+        >
+          <RunOverScreen state={st.state} startingLives={maxLives} />
+        </RunBarContext.Provider>
+      );
+    }
+    case 'ended':
+      return (
+        <Blocked title="This run has ended">
+          <p data-field="reason">
+            {st.entry === null
+              ? 'This run is over.'
+              : `This run ended at round ${String(st.entry.round)}. Its depth is kept in your records.`}
+          </p>
+          <MenuButton />
+        </Blocked>
+      );
+    case 'missing':
+      return (
+        <Blocked title="Run not found">
+          <p data-field="reason">
+            There is no saved run with this address. It may have been abandoned
+            or finished.
+          </p>
+          <MenuButton />
+        </Blocked>
+      );
+    case 'blocked':
+      return (
+        <BlockedRun runId={runId} message={st.message} reason={st.reason} />
+      );
+    case 'error':
+      return (
+        <Blocked title="Could not open the run">
+          <p class="error" data-field="reason">
+            {st.message}
+          </p>
+          <MenuButton />
+        </Blocked>
+      );
+  }
+}

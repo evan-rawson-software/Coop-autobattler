@@ -1,0 +1,208 @@
+/* PvE choice and event cards. Plain CSS on the shared custom properties. */
+
+.choice-screen {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 0.9rem 1.25rem;
+}
+
+.choice-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.7rem 1rem;
+  flex: none;
+}
+
+.choice-banner p {
+  margin: 0;
+}
+
+.choice-banner.result {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.choice-banner.result.lost {
+  border-color: var(--bad);
+}
+
+.deadline {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.pve-cards,
+.event-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.1rem;
+  flex: 0 1 auto;
+  align-items: start;
+  min-height: 0;
+}
+
+.event-cards[data-count='1'] {
+  grid-template-columns: minmax(0, 28rem);
+  justify-content: center;
+}
+
+.event-cards[data-count='2'] {
+  grid-template-columns: repeat(2, minmax(0, 28rem));
+  justify-content: center;
+}
+
+.pve-card,
+.event-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  background: var(--surface-2);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+}
+
+.pve-card.selected,
+.event-card.selected {
+  border-color: var(--accent);
+  border-width: 4px;
+}
+
+.pve-card-head,
+.event-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.event-card-head {
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.pve-card h2,
+.event-card h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.pve-archetype {
+  font-weight: 600;
+}
+
+.pve-desc,
+.pve-card p,
+.event-lines p {
+  margin: 0;
+}
+
+.pve-threat-box {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.label {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.pips {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.pip {
+  width: 30px;
+  height: 12px;
+  background: var(--border);
+}
+
+.pip.on {
+  background: var(--bad);
+}
+
+.facts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
+.pve-reward {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.4rem;
+}
+
+.pve-card button.primary,
+.event-card button.primary {
+  padding: 0.55rem;
+  font-weight: 600;
+}
+
+.event-icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.event-lines {
+  display: grid;
+  gap: 0.4rem;
+  flex: 1 1 auto;
+}
+
+.modifier-list {
+  list-style: none;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.modifier-list li {
+  padding: 0.3rem 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.event-cards.follow {
+  align-content: start;
+}
+
+.choice-foot {
+  flex: none;
+  margin: 0;
+}
+
+@media (max-width: 1100px) {
+  .pve-cards,
+  .event-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
