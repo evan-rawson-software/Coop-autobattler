@@ -313,7 +313,9 @@ export function opponentText(
 ): string {
   const o = pvpOpponentInfo(run);
   if (o === null) return 'Opponent unknown until the battle starts.';
-  return o.kind === 'ghost'
-    ? `Opponent: a ghost of ${o.label}`
-    : 'Opponent: the boss (no ghost available)';
+  if (o.kind === 'boss') return 'Opponent: the boss';
+  // Bundled ghosts ship with the game; their label says so (MM-12).
+  return o.label.startsWith('Bundled ')
+    ? `Opponent: a ghost of ${o.label} (shipped with the game)`
+    : `Opponent: a ghost of ${o.label}`;
 }

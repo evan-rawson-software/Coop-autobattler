@@ -11,7 +11,12 @@ import {
   type PlacedBuilding,
   type TeamState,
 } from '@game/core';
-import { useEffect, useMemo } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
+import {
+  readForcedOpponent,
+  writeForcedOpponent,
+  type ForcedOpponent,
+} from '../run/force-opponent.js';
 import { useStore } from '../app-state.js';
 import { BoardView } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
@@ -213,6 +218,37 @@ function wallSprite(): string | null {
         set?.atlas.sprites[b.id],
     );
   return def?.id ?? null;
+}
+
+function OpponentPanel() {
+  const [mode, setMode] = useState<ForcedOpponent>(() => readForcedOpponent());
+  return (
+    <Panel title="Next PvP opponent" id="panel-opponent">
+      <div class="form-grid">
+        <label>
+          Force
+          <select
+            id="force-opponent"
+            value={mode}
+            onChange={(e) => {
+              const v = e.currentTarget.value as ForcedOpponent;
+              writeForcedOpponent(v);
+              setMode(v);
+            }}
+          >
+            <option value="auto">Automatic (ghost if one exists)</option>
+            <option value="ghost">Ghost (the boss if none exists)</option>
+            <option value="boss">Boss</option>
+          </select>
+        </label>
+      </div>
+      <p class="muted">
+        Applies when a shop fixes the opponent of its PvP battle; one already
+        fixed stays. Stays set in this browser until you switch it back. For
+        playtesting only.
+      </p>
+    </Panel>
+  );
 }
 
 function LegendPanel() {
@@ -477,6 +513,7 @@ export function DebugScreen() {
       bottom={
         <>
           <SetupPanel />
+          <OpponentPanel />
           <LegendPanel />
         </>
       }

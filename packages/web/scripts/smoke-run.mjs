@@ -956,6 +956,15 @@ export async function runRunSmoke({
   await page.waitForSelector('#shop-screen');
   await shot('run-9-shop');
   await shotDark('art2-shop');
+  {
+    const shopText = await page.locator('#shop-screen').innerText();
+    check(
+      /Opponent: a ghost of Bundled \w+ bot \(shipped with the game\)/.test(
+        shopText,
+      ) && /Lose: -1 life/.test(shopText),
+      'shop (before the PvP battle): the opponent is a bundled ghost, and a loss costs 1 life',
+    );
+  }
   await page.click('#shop-ready');
   await waitStep('pvp_summary');
 
@@ -968,6 +977,13 @@ export async function runRunSmoke({
     /Bundled \w+ bot/.test(vs),
     `PvP battle: the opponent is a bundled ghost ("${vs}")`,
   );
+  {
+    const scene = await page.evaluate(() => window.__debug.battle.scene());
+    check(
+      scene[1].buildings > 0,
+      `PvP battle: the ghost's factory is on the field (${scene[1].buildings} buildings)`,
+    );
+  }
   await page.click('#skip');
   await page.waitForFunction(() => window.__debug.battle.phase() === 'summary');
   const pvpReward = await page.locator('[data-field="reward"]').innerText();
@@ -1134,6 +1150,18 @@ export async function runRunSmoke({
     ),
     'shop: "Opponent: a ghost of ..." is shown before the PvP battle',
   );
+  {
+    // The first run's snapshot is in this browser's own pool (#111): the
+    // opponent check above also passes with a bundled ghost, this does not.
+    await hookReady(page, 'ghostPool');
+    const mine = await page.evaluate(() =>
+      window.__debug.ghostPool.local(1, 1),
+    );
+    check(
+      mine.some((g) => g.runId === runA && g.ownerId.startsWith('dev-')),
+      `second run: the local ghost pool holds the first run's round-1 snapshot (${JSON.stringify(mine)})`,
+    );
+  }
   await reloadSame('the shop with a ghost opponent');
   check(
     JSON.stringify((await R.state()).pvpOpponent) ===
@@ -1330,13 +1358,38 @@ export async function runRunSmoke({
   await page.click(`[data-run="${runA}"] [data-action="resume"]`);
   await waitStep('pve_choice');
   const roundsBefore = (await R.state()).round;
+  // Debug option: the boss for every battle from here on (the pool holds no
+  // ghost for the later rounds of a real install either).
+  await page.evaluate(() =>
+    localStorage.setItem('coop-autobattler:debug-force-opponent', 'boss'),
+  );
   let ended = false;
+  let livesSeen = (await R.state()).lives;
+  let bossShops = 0;
   for (let i = 0; i < 90 && !ended; i++) {
     const s = await R.state().catch(() => null);
     if (s === null) break;
     if (s.step === 'run_over') {
       ended = true;
       break;
+    }
+    if (s.lives < livesSeen) {
+      check(
+        s.lives === livesSeen - 1,
+        `lives drop by exactly one per loss (${livesSeen} -> ${s.lives})`,
+      );
+    }
+    livesSeen = s.lives;
+    if (s.step === 'shop' && s.leg === 'pve' && s.pvpOpponent !== null) {
+      await page.waitForSelector('#shop-screen');
+      const t = await page.locator('#shop-screen').innerText();
+      if (s.pvpOpponent.kind === 'boss') {
+        bossShops++;
+        check(
+          /Opponent: the boss/.test(t) && /Lose: -1 life/.test(t),
+          `shop (round ${s.round}): the boss is announced before the battle, a loss costs 1 life`,
+        );
+      }
     }
     await advance().catch(async (e) => {
       // The last battle's Ready can end the run: the screen is then Run over.
@@ -1345,6 +1398,7 @@ export async function runRunSmoke({
     if ((await page.locator('#run-over').count()) > 0) ended = true;
   }
   check(ended, 'the run ends when its lives reach 0 against the boss');
+  check(bossShops >= 1, `the forced boss was met (${bossShops} shops)`);
   await page.waitForSelector('#run-over');
   await settle();
   const final = await page.locator('#run-over').innerText();
@@ -1363,6 +1417,26 @@ export async function runRunSmoke({
     (await page.locator('#best').getAttribute('data-new-best')) === 'true' &&
       /New best/.test(await page.locator('#best').innerText()),
     `Run over: a new best is flagged ("${await page.locator('#best').innerText()}")`,
+  );
+  {
+    const pvpCells = await page
+      .locator('#round-table tbody tr td:nth-child(4)')
+      .allInnerTexts();
+    const pvpResults = await page
+      .locator('#round-table tbody tr td:nth-child(5)')
+      .allInnerTexts();
+    check(
+      pvpCells.some((t) => /^Ghost · Bundled \w+ bot \(bundled\)$/.test(t)) &&
+        pvpCells.some((t) => /^the boss/.test(t)),
+      `Run over: the table names each round's opponent, a bundled ghost and the boss (${pvpCells.join(' | ')})`,
+    );
+    check(
+      pvpResults.filter((r) => r === 'lost').length === 5,
+      `Run over: 5 lost PvP battles for 5 lives (${pvpResults.join(', ')})`,
+    );
+  }
+  await page.evaluate(() =>
+    localStorage.removeItem('coop-autobattler:debug-force-opponent'),
   );
   check(
     /PvP battles/.test(final) &&
