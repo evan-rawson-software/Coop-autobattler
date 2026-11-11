@@ -5200,5 +5200,313 @@
       },
       "eventLogHash": "c4cc71f0"
     }
+  },
+  {
+    "id": "arena-sim.coincident-centres",
+    "kind": "arena-sim",
+    "description": "Nine groups, apart from each other. In eight, a fast dart (side 0 or 1) aggroes on a stationary post of the other side whose centre it reaches in one step, so the two centres coincide; the unit ids give odd and even sums, the mover the higher or the lower id. In the ninth, two darts of equal priority reach the same post. Each pushed unit leaves along the separation axis in the frame of its own side (side 1 mirrors side 0); a harmless pin of the dart side keeps each post in contact (so anchored) without blocking the push. The positions pin the rule.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 11,
+            "y": 0
+          }
+        ]
+      },
+      "gapRows": 6,
+      "ticks": 1,
+      "extraUnits": [
+        {
+          "id": "unit_dart",
+          "health": 60,
+          "damage": 1,
+          "attackCooldownTicks": 10,
+          "moveCooldownTicks": 1,
+          "radius": 60,
+          "collisionRadius": 60,
+          "reach": 10,
+          "flying": false,
+          "attackType": "melee"
+        },
+        {
+          "id": "unit_post",
+          "health": 1000,
+          "damage": 0,
+          "attackCooldownTicks": 1000,
+          "moveCooldownTicks": 240,
+          "radius": 72,
+          "collisionRadius": 72,
+          "reach": 100,
+          "flying": false,
+          "attackType": "melee"
+        },
+        {
+          "id": "unit_pin",
+          "health": 1000,
+          "damage": 0,
+          "attackCooldownTicks": 1000,
+          "moveCooldownTicks": 240,
+          "radius": 20,
+          "collisionRadius": 20,
+          "reach": 10,
+          "flying": false,
+          "attackType": "melee"
+        }
+      ],
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_dart",
+          "px": 600,
+          "py": 4100
+        },
+        {
+          "side": 1,
+          "def": "unit_post",
+          "px": 800,
+          "py": 4100
+        },
+        {
+          "side": 1,
+          "def": "unit_post",
+          "px": 2200,
+          "py": 4100
+        },
+        {
+          "side": 0,
+          "def": "unit_dart",
+          "px": 2000,
+          "py": 4100
+        },
+        {
+          "side": 0,
+          "def": "unit_dart",
+          "px": 3400,
+          "py": 4100
+        },
+        {
+          "side": 0,
+          "def": "unit_post",
+          "px": 5000,
+          "py": 5000
+        },
+        {
+          "side": 1,
+          "def": "unit_post",
+          "px": 3600,
+          "py": 4100
+        },
+        {
+          "side": 1,
+          "def": "unit_post",
+          "px": 5000,
+          "py": 4100
+        },
+        {
+          "side": 1,
+          "def": "unit_dart",
+          "px": 600,
+          "py": 5000
+        },
+        {
+          "side": 0,
+          "def": "unit_dart",
+          "px": 4800,
+          "py": 4100
+        },
+        {
+          "side": 1,
+          "def": "unit_dart",
+          "px": 3400,
+          "py": 5000
+        },
+        {
+          "side": 1,
+          "def": "unit_dart",
+          "px": 4800,
+          "py": 5000
+        },
+        {
+          "side": 0,
+          "def": "unit_post",
+          "px": 2200,
+          "py": 5000
+        },
+        {
+          "side": 0,
+          "def": "unit_post",
+          "px": 800,
+          "py": 5000
+        },
+        {
+          "side": 0,
+          "def": "unit_post",
+          "px": 3600,
+          "py": 5000
+        },
+        {
+          "side": 1,
+          "def": "unit_dart",
+          "px": 2000,
+          "py": 5000
+        },
+        {
+          "side": 0,
+          "def": "unit_dart",
+          "px": 2500,
+          "py": 4550
+        },
+        {
+          "side": 0,
+          "def": "unit_dart",
+          "px": 2900,
+          "py": 4550
+        },
+        {
+          "side": 1,
+          "def": "unit_post",
+          "px": 2700,
+          "py": 4550
+        },
+        {
+          "side": 0,
+          "def": "unit_pin",
+          "px": 884,
+          "py": 4184
+        },
+        {
+          "side": 0,
+          "def": "unit_pin",
+          "px": 2284,
+          "py": 4184
+        },
+        {
+          "side": 0,
+          "def": "unit_pin",
+          "px": 3684,
+          "py": 4184
+        },
+        {
+          "side": 0,
+          "def": "unit_pin",
+          "px": 5084,
+          "py": 4184
+        },
+        {
+          "side": 1,
+          "def": "unit_pin",
+          "px": 884,
+          "py": 5084
+        },
+        {
+          "side": 1,
+          "def": "unit_pin",
+          "px": 2284,
+          "py": 5084
+        },
+        {
+          "side": 1,
+          "def": "unit_pin",
+          "px": 3684,
+          "py": 5084
+        },
+        {
+          "side": 1,
+          "def": "unit_pin",
+          "px": 5084,
+          "py": 5084
+        },
+        {
+          "side": 0,
+          "def": "unit_pin",
+          "px": 2784,
+          "py": 4634
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 1,
+        "stateHash": "8089f3e6",
+        "events": 9,
+        "sides": [
+          {
+            "spawned": 15,
+            "alive": 15,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": 500
+          },
+          {
+            "spawned": 13,
+            "alive": 13,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": 500
+          }
+        ],
+        "positions": [
+          [1, 800, 3968],
+          [2, 800, 4100],
+          [3, 2200, 4100],
+          [4, 2200, 4232],
+          [5, 3468, 4100],
+          [6, 5000, 5000],
+          [7, 3600, 4100],
+          [8, 5000, 4100],
+          [9, 800, 5132],
+          [10, 5132, 4100],
+          [11, 3732, 5000],
+          [12, 4868, 5000],
+          [13, 2200, 5000],
+          [14, 800, 5000],
+          [15, 3600, 5000],
+          [16, 2200, 4868],
+          [17, 2568, 4490],
+          [18, 2700, 4418],
+          [19, 2700, 4550],
+          [20, 884, 4184],
+          [21, 2284, 4184],
+          [22, 3684, 4184],
+          [23, 5084, 4184],
+          [24, 884, 5084],
+          [25, 2284, 5084],
+          [26, 3684, 5084],
+          [27, 5084, 5084],
+          [28, 2784, 4634]
+        ]
+      },
+      "eventLogHash": "675f87cd"
+    }
   }
 ]
