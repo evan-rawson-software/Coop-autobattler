@@ -6,11 +6,13 @@ import { ghostBucketKey, type GhostSnapshot } from '@game/core';
 import {
   createIdbGhostStore,
   createLocalStorageGhostStore,
+  GHOST_DB_NAME,
   installOwnerId,
   openGhostDb,
   openGhostStore,
   ownerLabelFor,
 } from './ghost-pool.js';
+import { DB_NAME, openDb } from './idb-store.js';
 import { createMemoryStorage } from './local-storage-store.js';
 import { opponentText } from '../shop/view-model.js';
 
@@ -266,5 +268,109 @@ describe('ghost pool bounds', () => {
         /ghosts\.clear/,
       );
     }
+  });
+});
+
+function settle(tx: IDBTransaction): Promise<void> {
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => {
+      resolve();
+    };
+    tx.onerror = () => {
+      reject(tx.error ?? new Error('transaction failed'));
+    };
+  });
+}
+
+function fetchRow(
+  db: IDBDatabase,
+  store: string,
+  key: string,
+): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const r = db.transaction(store, 'readonly').objectStore(store).get(key);
+    r.onsuccess = () => {
+      resolve(r.result);
+    };
+    r.onerror = () => {
+      reject(r.error ?? new Error('get failed'));
+    };
+  });
+}
+
+describe('ghost pool upgrades and clean-up', () => {
+  test('localStorage: old-shape ghost rows are removed at start-up and nothing else', async () => {
+    const ls = createMemoryStorage();
+    const bk = ghostBucketKey(B);
+    const oldKey = `coop:ghost:${JSON.stringify([bk, 'ann'])}`;
+    // Not positively old-shape ghost rows: they must stay.
+    ls.setItem('coop:ghost:x', '{not json');
+    ls.setItem('coop:ghost:["only-one"]', '1');
+    ls.setItem('coop:ghost:[1,2]', '2');
+    ls.setItem('coop:save:run-1', '{"save":true}');
+    ls.setItem('coop:history', '[]');
+    ls.setItem('other:ghost:["a","b"]', '3');
+    // A current-shape row with its meta key.
+    await createLocalStorageGhostStore(ls).save(snap('bob'));
+    // Written by an older version, after the store above was made.
+    ls.setItem(oldKey, JSON.stringify({ bucket: bk, value: { old: true } }));
+    const keys = (): string[] =>
+      Array.from({ length: ls.length }, (_, i) => ls.key(i) as string).sort();
+    const before = keys();
+    expect(before).toContain(oldKey);
+
+    const s2 = createLocalStorageGhostStore(ls);
+    expect(keys()).toEqual(before.filter((k) => k !== oldKey));
+    expect(await s2.list(B)).toHaveLength(1);
+    expect(ls.getItem('coop:save:run-1')).toBe('{"save":true}');
+  });
+
+  test('IndexedDB: a version 1 database upgrades to an empty version 2 pool and leaves the saves database alone', async () => {
+    const factory = new IDBFactory();
+    const savesDb = await openDb(factory, DB_NAME);
+    const savesVersion = savesDb.version;
+    const saveStores = Array.from(savesDb.objectStoreNames);
+    const saveStore = saveStores[0] as string;
+    const wsaves = savesDb.transaction(saveStore, 'readwrite');
+    wsaves.objectStore(saveStore).put({ keep: 'me' }, 'k');
+    await settle(wsaves);
+    savesDb.close();
+
+    // The ghost database as version 1 left it: a store with a bucket index.
+    const v1 = await new Promise<IDBDatabase>((resolve, reject) => {
+      const open = factory.open(GHOST_DB_NAME, 1);
+      open.onupgradeneeded = () => {
+        open.result.createObjectStore('ghosts').createIndex('bucket', 'bucket');
+      };
+      open.onsuccess = () => {
+        resolve(open.result);
+      };
+      open.onerror = () => {
+        reject(open.error ?? new Error('open failed'));
+      };
+    });
+    const wv1 = v1.transaction('ghosts', 'readwrite');
+    wv1
+      .objectStore('ghosts')
+      .put({ bucket: ghostBucketKey(B), value: snap('old') }, 'ann');
+    await settle(wv1);
+    v1.close();
+
+    const db = await openGhostDb(factory);
+    expect(db.version).toBe(2);
+    const indexes = db.transaction('ghosts', 'readonly').objectStore('ghosts')
+      .indexNames;
+    expect(Array.from(indexes).sort()).toEqual(['listing', 'own']);
+    const store = createIdbGhostStore(db);
+    expect(await store.list(B)).toEqual([]);
+    await store.save(snap('ann'));
+    expect(await store.list(B)).toHaveLength(1);
+    db.close();
+
+    const again = await openDb(factory, DB_NAME);
+    expect(again.version).toBe(savesVersion);
+    expect(Array.from(again.objectStoreNames)).toEqual(saveStores);
+    expect(await fetchRow(again, saveStore, 'k')).toEqual({ keep: 'me' });
+    again.close();
   });
 });
