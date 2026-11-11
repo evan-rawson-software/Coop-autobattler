@@ -75,9 +75,15 @@
     --veil: rgba(16, 22, 27, 0.66);
   }
 
+  /* Game screens only: #debug and #sprites stay plain. */
   /* Page: the dark star-field texture, seen in the gaps between panels. */
-  :root[data-skin='pixel']:not([data-theme='light']),
-  :root[data-skin='pixel']:not([data-theme='light']) body {
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites']),
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    body {
     background-color: #0a0d11;
     background-image: var(--sprite-ui-bg);
     background-size: 128px 128px;
@@ -118,39 +124,74 @@
   }
 
   /* Buttons: the 9-slice button, filled. */
-  :root[data-skin='pixel']:not([data-theme='light']) button {
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button {
     border: 1px solid transparent;
     border-radius: 0;
     border-image: var(--sprite-ui-button-normal) 5 fill / 5px / 0 stretch;
     image-rendering: pixelated;
   }
 
-  :root[data-skin='pixel']:not([data-theme='light'])
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
     button:hover:not(:disabled) {
     border-image-source: var(--sprite-ui-button-hover);
     color: #ffffff;
   }
 
   /* Accent buttons keep their colour: only the frame is drawn, not the fill. */
-  :root[data-skin='pixel']:not([data-theme='light']) button.primary,
-  :root[data-skin='pixel']:not([data-theme='light']) button.ready-btn,
-  :root[data-skin='pixel']:not([data-theme='light']) button.buy-btn,
-  :root[data-skin='pixel']:not([data-theme='light']) button.danger,
-  :root[data-skin='pixel']:not([data-theme='light']) button.on,
-  :root[data-skin='pixel']:not([data-theme='light']) button.active,
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.primary,
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.ready-btn,
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.buy-btn,
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.danger,
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.on,
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.active,
   :root[data-skin='pixel']:not([data-theme='light']) .stash-item.active {
     border-image-slice: 5;
   }
 
-  :root[data-skin='pixel']:not([data-theme='light']) button:disabled {
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button:disabled {
     border-image-source: var(--sprite-ui-button-disabled);
     border-image-slice: 5 fill;
   }
 
   /* Link-like buttons stay plain. */
-  :root[data-skin='pixel']:not([data-theme='light']) button.link,
-  :root[data-skin='pixel']:not([data-theme='light']) button.link-button,
-  :root[data-skin='pixel']:not([data-theme='light']) button.problem {
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.link,
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.link-button,
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.problem {
     border: 0;
     border-image: none;
     background: transparent;
