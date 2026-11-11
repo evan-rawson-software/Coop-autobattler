@@ -24,6 +24,7 @@ import { createStore, type Store } from '../app-state.js';
 import { BuildSession } from '../build/session.js';
 import { gameConfigs } from '../build/setup.js';
 import { content } from '../content.js';
+import { registerDebug } from '../debug-hook.js';
 import { driveToShop, type NextBattle } from './drive.js';
 import { INSTALLED_VERSION, RUN_VERSION } from './version.js';
 import {
@@ -55,6 +56,8 @@ export interface ShopRun {
 export interface ShopRunOptions {
   readonly next?: NextBattle;
   readonly seed?: number;
+  /** 1 (default) or 2: the second player is driven from the debug hook. */
+  readonly players?: 1 | 2;
   /** Storage to use instead of `localStorage` (tests); null means none. */
   readonly storage?: StorageLike | null;
 }
@@ -96,19 +99,20 @@ export function createShopDeps(): RunDeps {
   return createGameDeps(content, gameConfigs, { battle: fixedBattle(true) });
 }
 
-export function shopRunId(next: NextBattle): string {
-  return `shop-sample-${next}`;
+export function shopRunId(next: NextBattle, players: 1 | 2 = 1): string {
+  return players === 2 ? `shop-sample-${next}-2p` : `shop-sample-${next}`;
 }
 
 /** Options from the page URL: `?next=pve|pvp` and `?seed=<n>`. */
 export function optionsFromUrl(search: string): ShopRunOptions {
   const q = new URLSearchParams(search);
   const next = q.get('next') === 'pve' ? 'pve' : 'pvp';
+  const players = q.get('players') === '2' ? 2 : 1;
   const seedText = q.get('seed');
   const n = seedText === null ? NaN : Math.floor(Number(seedText));
   return Number.isFinite(n) && n >= 0 && n <= 0xffffffff
-    ? { next, seed: n }
-    : { next };
+    ? { next, seed: n, players }
+    : { next, players };
 }
 
 function chooseStore(
@@ -142,9 +146,16 @@ async function create(
   next: NextBattle,
   deps: RunDeps,
   store: SaveStore,
+  players: 1 | 2,
 ): Promise<RunController> {
   const r = await startRun(
-    { runId, runVersion: RUN_VERSION, seed, players: ['You'], host: 0 },
+    {
+      runId,
+      runVersion: RUN_VERSION,
+      seed,
+      players: players === 2 ? ['You', 'Partner'] : ['You'],
+      host: 0,
+    },
     deps,
     store,
     Date.now(),
@@ -156,6 +167,10 @@ async function create(
     () => session.run,
     (i) => session.dispatch(i),
     { next },
+    {
+      count: players - 1,
+      dispatchAs: (p, i) => session.dispatchAs(p, i),
+    },
   );
   return r.controller;
 }
@@ -170,7 +185,8 @@ export async function loadShopRun(
 ): Promise<ShopRun> {
   const next = options.next ?? 'pvp';
   const seed = options.seed ?? 11;
-  const runId = shopRunId(next);
+  const players = options.players ?? 1;
+  const runId = shopRunId(next, players);
   const deps = createShopDeps();
   const conflict = createStore<boolean>(false);
   let session: BuildSession | null = null;
@@ -188,12 +204,24 @@ export async function loadShopRun(
     controller = opened.controller;
     restored = true;
   } else if (opened.reason === 'not_found') {
-    controller = await create(runId, seed, next, deps, store);
+    controller = await create(runId, seed, next, deps, store, players);
     restored = false;
   } else {
     throw new UnopenableRunError(opened.reason, opened.errors ?? []);
   }
-  session = BuildSession.fromController(controller);
+  const live = BuildSession.fromController(controller);
+  session = live;
+  if (players === 2 && typeof window !== 'undefined') {
+    // The partner is driven from the page (the smoke script), never by a screen.
+    registerDebug({
+      partner: {
+        ready: () => live.dispatchAs(1, { type: 'ready' }).then((r) => r.ok),
+        unready: () =>
+          live.dispatchAs(1, { type: 'unready' }).then((r) => r.ok),
+        isReady: () => live.run.perPlayer[1]?.ready === true,
+      },
+    });
+  }
   let stop: (() => void) | null = null;
   if (raw !== null && typeof window !== 'undefined') {
     stop = watchSaveKey(window, raw, saveKey(runId), markConflict);

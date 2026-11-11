@@ -683,4 +683,42 @@ export async function runShopSmoke({
     (await page.locator('#not-saved-note').count()) === 0,
     'a saved run shows no unsaved note',
   );
+
+  // --- Two players (?players=2): the Ready lock with the partner not ready
+  await page.goto(`${baseUrl}?next=pvp&players=2#shop`);
+  await page.waitForSelector('#shop-screen');
+  await page.waitForFunction(() => window.__debug?.shop?.state);
+  await page.waitForFunction(() => window.__debug?.partner !== undefined);
+  check(
+    (await S.state()).runId === 'shop-sample-pvp-2p',
+    'two players: the ?players=2 route starts its own sample run',
+  );
+  await goBuildTab();
+  await page.click('#ready-button');
+  await page.waitForSelector('[data-field="ready-locked"]');
+  check(
+    (await page.locator('#ready-button').innerText()) === 'Unready' &&
+      (await B.step()) === 'shop',
+    'two players: Ready locks this player and the run stays in the shop',
+  );
+  check(
+    (await page.locator('[data-action="undo"]').isDisabled()) &&
+      (await page.locator('[data-action="redo"]').isDisabled()),
+    'two players: Undo and Redo are disabled while Ready',
+  );
+  const hookTool = () => page.evaluate(() => window.__debug.build.ui().tool);
+  await page.keyboard.press('c');
+  await page.waitForFunction(
+    (t) => window.__debug.build.status().text === t,
+    'Ready — press Unready to make changes.',
+  );
+  check(
+    (await hookTool()) === 'select',
+    'two players: the conduit hotkey does not switch to a disabled tool while Ready',
+  );
+  await shot('shop-9-two-player-ready');
+  // The partner readies too: everyone is ready and the run moves on.
+  await page.evaluate(() => window.__debug.partner.ready());
+  await page.waitForFunction(() => window.__debug.build.step() !== 'shop');
+  check(true, 'two players: when the partner is Ready the run continues');
 }

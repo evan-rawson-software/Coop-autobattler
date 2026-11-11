@@ -22,6 +22,8 @@ export interface DebugHook {
   counts?: () => { buildings: number; conduits: number; conduitCells: number };
   build?: BuildDebug;
   shop?: ShopDebug;
+  /** The second player of the two-player sample route (`?players=2`). */
+  partner?: PartnerDebug;
   battle?: BattleDebug;
   run?: RunDebug;
   placement?: PlacementDebug;
@@ -121,6 +123,12 @@ export interface BuildDebug {
 }
 
 /** Read-only view of the Shop tab for the smoke script. */
+export interface PartnerDebug {
+  ready: () => Promise<boolean>;
+  unready: () => Promise<boolean>;
+  isReady: () => boolean;
+}
+
 export interface ShopDebug {
   /** Which mount of the Shop tab this is (1, 2, ...): changes on every remount. */
   mounts: () => number;

@@ -186,6 +186,19 @@ export class BuildSession {
     return r;
   }
 
+  /**
+   * Dispatch an intent as another player of this device (the two-player
+   * sample route drives the partner this way). Layout history is untouched.
+   */
+  async dispatchAs(player: number, intent: Intent): Promise<DispatchResult> {
+    if (this.lockedDetail !== null) {
+      return { ok: false, reason: 'save_failed', detail: this.lockedDetail };
+    }
+    const r = await this.controller.dispatch(player, intent, this.stamp());
+    this.publish();
+    return r;
+  }
+
   /** Hide the notice. */
   dismissNotice(): void {
     this.notice = null;

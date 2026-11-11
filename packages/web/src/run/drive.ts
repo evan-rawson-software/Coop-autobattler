@@ -93,6 +93,14 @@ export async function driveToShop(
   getState: () => RunState,
   dispatch: (intent: Intent) => Promise<DispatchResult>,
   target: DriveTarget,
+  /** Other players, for a run with more than one: `[1, 2, ...]` and how to send as them. */
+  others: {
+    readonly count: number;
+    readonly dispatchAs: (
+      player: number,
+      intent: Intent,
+    ) => Promise<DispatchResult>;
+  } = { count: 0, dispatchAs: () => Promise.reject(new Error('solo')) },
 ): Promise<void> {
   for (let i = 0; i < 80; i++) {
     const state = getState();
@@ -106,6 +114,18 @@ export async function driveToShop(
       throw new Error(
         `setup: ${intent.type} refused in "${state.step}": ${r.reason}`,
       );
+    }
+    // Everyone else proposes, votes, readies and chooses too. The step moves
+    // on with the last of them.
+    for (let p = 1; p <= others.count; p++) {
+      const own = nextIntent(getState());
+      if (own === null || getState().step !== state.step) break;
+      const o = await others.dispatchAs(p, own);
+      if (!o.ok) {
+        throw new Error(
+          `setup: player ${String(p)} ${own.type} refused in "${state.step}": ${o.reason}`,
+        );
+      }
     }
   }
   throw new Error('setup: did not reach the shop');
