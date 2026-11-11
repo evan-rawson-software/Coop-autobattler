@@ -14,6 +14,10 @@ import {
   type RunState,
   type Step,
 } from './types.js';
+import {
+  DEFAULT_WORKSHOP_PERCENT,
+  workshopOptionProblem,
+} from './workshop-option.js';
 
 export type ValidateRunStateResult =
   | { readonly ok: true; readonly state: RunState }
@@ -347,6 +351,51 @@ function check(
       err(
         'pending: must hold {offer, followUp: {options, votes}} in step "event_resolve".',
       );
+    } else if (isRec(fu)) {
+      const opts = fu['options'] as unknown[];
+      const ids = opts.map((o) => (isRec(o) ? o['id'] : undefined));
+      if (!ids.every((id) => typeof id === 'string')) {
+        err('pending.followUp.options: every option needs a string id.');
+      }
+      const per = fu['perPlayer'] === true;
+      if ('perPlayer' in fu && fu['perPlayer'] !== true) {
+        err('pending.followUp.perPlayer: must be true when present.');
+      }
+      if (fu['prompt'] === 'workshop_building') {
+        if (!per) {
+          err('pending.followUp.perPlayer: a Workshop follow-up needs true.');
+        }
+        const offer = p['offer'];
+        const pct = offer['workshopPricePercent'] ?? DEFAULT_WORKSHOP_PERCENT;
+        if (!isInt(pct) || pct < 1 || pct > 100) {
+          err('pending.offer.workshopPricePercent: must be an integer 1-100.');
+        } else if (team.ok) {
+          opts.forEach((o, i) => {
+            const player = isRec(o) ? o['player'] : undefined;
+            const problem =
+              isInt(player) && player >= 0 && player < n
+                ? workshopOptionProblem(team.state, player, o)
+                : 'player: must be a player index';
+            if (problem !== null) {
+              err(`pending.followUp.options[${String(i)}]: ${problem}.`);
+            }
+          });
+        }
+      }
+      (fu['votes'] as unknown[]).forEach((v, i) => {
+        if (v === null) return;
+        const known =
+          typeof v === 'string' &&
+          (per
+            ? v === 'skip' ||
+              opts.some((o) => isRec(o) && o['id'] === v && o['player'] === i)
+            : ids.includes(v));
+        if (!known) {
+          err(
+            `pending.followUp.votes[${String(i)}]: must be null or an option id${per ? ' of that player, or "skip"' : ''}.`,
+          );
+        }
+      });
     }
   }
   if (st === 'pve_summary' || st === 'pvp_summary') {

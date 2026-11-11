@@ -11,14 +11,12 @@ import { applyIntent, createRun } from './machine.js';
 import {
   buildSaveRecord,
   checkSaveShape,
+  classifySave,
   hasUnsupportedFormat,
   historyEntryFor,
-  parseSaveRecord,
   type HistoryReason,
-  type SaveRecord,
   type SaveStore,
 } from './save.js';
-import { classify } from './version.js';
 import type {
   CreateRunArgs,
   Effect,
@@ -239,44 +237,31 @@ export async function openRun(
   }
   if (raw === null || raw === undefined)
     return { ok: false, reason: 'not_found' };
-  // Read the record's own fields first (they need no game content): a record
-  // stored under another key is damaged whatever its version, and the game
-  // version is classified BEFORE the run state is validated, because a save
-  // from a newer game can fail validation (unknown content ids, say) and is
-  // then "newer", not "corrupt".
-  const shape = checkSaveShape(raw);
-  if (!shape.ok) return { ok: false, reason: 'corrupt', errors: shape.errors };
-  if (shape.record.runId !== runId) {
-    return {
-      ok: false,
-      reason: 'corrupt',
-      errors: ['save: runId does not match the key it is stored under.'],
-    };
+  // One classification shared with `initSaves` (see `classifySave`): shape,
+  // the key, the game version (before validation: a save from a newer game
+  // can fail validation and is then "newer", not "corrupt"), the state
+  // format, and only then the state itself.
+  const c = classifySave(raw, runId, installedVersion, deps);
+  switch (c.kind) {
+    case 'corrupt':
+      return { ok: false, reason: 'corrupt', errors: c.errors };
+    case 'newer':
+    case 'older_major':
+    case 'unsupported_format':
+      return { ok: false, reason: c.kind };
+    case 'open':
+      return {
+        ok: true,
+        versionNotice: c.version === 'older_minor',
+        controller: makeController(
+          c.record.createArgs,
+          c.record.state,
+          deps,
+          store,
+          installedVersion,
+        ),
+      };
   }
-  const kind = classify(shape.record.runVersion, installedVersion);
-  if (kind === 'newer') return { ok: false, reason: 'newer' };
-  if (kind === 'older_major') return { ok: false, reason: 'older_major' };
-  // A well-formed record whose run state has another format version is not
-  // damaged: say so (after a newer or much older game version, which are
-  // more useful to report).
-  if (hasUnsupportedFormat(shape.record)) {
-    return { ok: false, reason: 'unsupported_format' };
-  }
-  const parsed = parseSaveRecord(raw, deps);
-  if (!parsed.ok)
-    return { ok: false, reason: 'corrupt', errors: parsed.errors };
-  const record = parsed.record;
-  return {
-    ok: true,
-    versionNotice: kind === 'older_minor',
-    controller: makeController(
-      record.createArgs,
-      record.state,
-      deps,
-      store,
-      installedVersion,
-    ),
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -344,7 +329,12 @@ export interface InitSavesResult {
     readonly runId: string;
     readonly runVersion: string;
   }[];
-  /** Stored values that do not parse: left alone. */
+  /**
+   * Stored values that do not parse or validate, including an older-major
+   * save whose state does not validate (so it cannot be safely wiped): left
+   * alone. (An older-major save whose state has an unknown format version is
+   * listed in `unsupported` instead.)
+   */
   readonly corrupt: readonly {
     readonly runId: string;
     readonly errors: readonly string[];
@@ -354,16 +344,24 @@ export interface InitSavesResult {
 }
 
 /**
- * Run once at app start. Finishes off ended runs, deletes saves from an older
- * major version (recording them as `version_wiped`), and reports saves from a
- * newer version, ones whose state format this build cannot read, and damaged
- * ones without touching them. Safe to run again
- * after an interruption: history entries are unique per run.
+ * Run once at app start. Every stored save is classified with the same
+ * function as `openRun` (`classifySave`), and only what that has fully read
+ * is touched: a save whose run has ended is recorded in history and removed,
+ * and a save from an older major version is deleted (recorded as
+ * `version_wiped`), but only when its state also validates against this
+ * build. Saves from a newer version, ones whose state format this build
+ * cannot read, and damaged ones are left in place and reported in `newer`,
+ * `unsupported` and `corrupt`. An older-major save whose state does not
+ * validate is such a case too: `openRun` says `older_major` (the version is
+ * classified first), `initSaves` leaves it and reports it as `unsupported`
+ * (unknown state format) or `corrupt`. Safe to run again after an interruption:
+ * history entries are unique per run.
  */
 export async function initSaves(
   store: SaveStore,
   installedVersion: string,
   now: number,
+  deps: Pick<RunDeps, 'content' | 'mapgenConfig' | 'rules'>,
 ): Promise<InitSavesResult> {
   const wiped: InitSavesResult['wiped'][number][] = [];
   const finished: string[] = [];
@@ -373,40 +371,60 @@ export async function initSaves(
   const failed: string[] = [];
 
   for (const item of await store.list()) {
-    if (item.corrupt) {
-      corrupt.push({ runId: item.runId, errors: item.errors });
-      continue;
-    }
+    const runId = item.runId;
     try {
-      const kind = classify(item.runVersion, installedVersion);
-      const raw = await store.get(item.runId);
-      const shape = checkSaveShape(raw);
-      if (!shape.ok) {
-        corrupt.push({ runId: item.runId, errors: shape.errors });
-        continue;
-      }
-      const record: SaveRecord = shape.record;
-      if (hasUnsupportedFormat(record)) {
-        unsupported.push({ runId: item.runId, runVersion: record.runVersion });
-        continue;
-      }
-      const state = { ...record.state, runId: item.runId };
-      if (state.outcome !== null) {
-        await finishRun(store, state, state.outcome.reason, now);
-        finished.push(item.runId);
-      } else if (kind === 'older_major') {
-        await finishRun(store, state, 'version_wiped', now);
-        wiped.push({
-          runId: item.runId,
-          runVersion: record.runVersion,
-          round: state.round,
-          hostName: record.hostName,
-        });
-      } else if (kind === 'newer') {
-        newer.push({ runId: item.runId, runVersion: record.runVersion });
+      const raw = await store.get(runId);
+      const c = classifySave(raw, runId, installedVersion, deps);
+      switch (c.kind) {
+        case 'corrupt':
+          corrupt.push({ runId, errors: c.errors });
+          break;
+        case 'newer':
+          newer.push({ runId, runVersion: c.record.runVersion });
+          break;
+        case 'unsupported_format':
+          unsupported.push({ runId, runVersion: c.record.runVersion });
+          break;
+        case 'older_major': {
+          if (!c.validation.ok) {
+            // Unreadable: leave it, and say why (a state format this build
+            // does not know is "unsupported", anything else "corrupt").
+            if (hasUnsupportedFormat(c.record)) {
+              unsupported.push({ runId, runVersion: c.record.runVersion });
+            } else {
+              corrupt.push({ runId, errors: c.validation.errors });
+            }
+            break;
+          }
+          const state = c.validation.record.state;
+          if (state.outcome !== null) {
+            await finishRun(store, state, state.outcome.reason, now);
+            finished.push(runId);
+          } else {
+            await finishRun(store, state, 'version_wiped', now);
+            wiped.push({
+              runId,
+              runVersion: c.record.runVersion,
+              round: state.round,
+              hostName: c.record.hostName,
+            });
+          }
+          break;
+        }
+        case 'open':
+          if (c.record.state.outcome !== null) {
+            await finishRun(
+              store,
+              c.record.state,
+              c.record.state.outcome.reason,
+              now,
+            );
+            finished.push(runId);
+          }
+          break;
       }
     } catch {
-      failed.push(item.runId);
+      failed.push(runId);
     }
   }
   return { wiped, finished, newer, unsupported, corrupt, failed };

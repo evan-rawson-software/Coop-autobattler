@@ -5,7 +5,7 @@
  * the RULES (run-controller.ts) and the INTERFACE (`SaveStore`). Real storage
  * (IndexedDB) lives in packages/web. See the README section "Saving".
  */
-import { parseVersion } from './version.js';
+import { classify, parseVersion } from './version.js';
 import { validateRunState } from './validate.js';
 import {
   RUN_STATE_FORMAT_VERSION,
@@ -445,4 +445,71 @@ export function summarizeStored(runId: string, raw: unknown): SaveListItem {
 export function compareListItems(a: SaveListItem, b: SaveListItem): number {
   if (a.updatedAt !== b.updatedAt) return b.updatedAt - a.updatedAt;
   return a.runId < b.runId ? -1 : a.runId > b.runId ? 1 : 0;
+}
+
+// ---------------------------------------------------------------------------
+// One classification for every reader of a stored save
+
+/**
+ * What a stored value is, as far as it can be read. The ONE classification
+ * used by `openRun` and `initSaves` (issue #68), in this order:
+ *
+ *  1. the record's shape (`checkSaveShape`)            -> `corrupt`
+ *  2. its `runId` against the key it is stored under   -> `corrupt`
+ *  3. the game version of its own `runVersion`         -> `newer`, `older_major`
+ *     (reported even if the state would not validate)
+ *  4. the run state's `formatVersion`                  -> `unsupported_format`
+ *  5. `validateRunState` on the state                  -> `corrupt`
+ *
+ * Anything but `open` cannot be played. Only `open` has a validated state,
+ * and for `older_major` the result of that validation is carried along
+ * (`validation`) because `initSaves` may only wipe or finish a save it has
+ * validated.
+ */
+export type SaveClassification =
+  | { readonly kind: 'corrupt'; readonly errors: readonly string[] }
+  | { readonly kind: 'newer'; readonly record: SaveRecord }
+  | {
+      readonly kind: 'older_major';
+      readonly record: SaveRecord;
+      /** The state checked against the current rules and content. */
+      readonly validation: ParseSaveResult;
+    }
+  | { readonly kind: 'unsupported_format'; readonly record: SaveRecord }
+  | {
+      readonly kind: 'open';
+      /** Shape and state both validated. */
+      readonly record: SaveRecord;
+      readonly version: 'same' | 'older_minor';
+    };
+
+export function classifySave(
+  raw: unknown,
+  key: string,
+  installedVersion: string,
+  deps: Pick<RunDeps, 'content' | 'mapgenConfig' | 'rules'>,
+): SaveClassification {
+  const shape = checkSaveShape(raw);
+  if (!shape.ok) return { kind: 'corrupt', errors: shape.errors };
+  if (shape.record.runId !== key) {
+    return {
+      kind: 'corrupt',
+      errors: ['save: runId does not match the key it is stored under.'],
+    };
+  }
+  const version = classify(shape.record.runVersion, installedVersion);
+  if (version === 'newer') return { kind: 'newer', record: shape.record };
+  if (version === 'older_major') {
+    return {
+      kind: 'older_major',
+      record: shape.record,
+      validation: parseSaveRecord(raw, deps),
+    };
+  }
+  if (hasUnsupportedFormat(shape.record)) {
+    return { kind: 'unsupported_format', record: shape.record };
+  }
+  const parsed = parseSaveRecord(raw, deps);
+  if (!parsed.ok) return { kind: 'corrupt', errors: parsed.errors };
+  return { kind: 'open', record: parsed.record, version };
 }

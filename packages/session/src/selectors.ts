@@ -1,10 +1,15 @@
 /** Read-only helpers for the presentation layer. */
+import { sealedProducers as sealedIn } from '@game/core';
 import {
   pveOptionView,
   readPveOption,
   type PveOptionView,
 } from './pve-options.js';
-import { STEP_INTENTS } from './step-table.js';
+import { STEP_INTENTS, lockedWhileReady } from './step-table.js';
+import {
+  DEFAULT_WORKSHOP_PERCENT,
+  currentWorkshopPrice,
+} from './workshop-option.js';
 import type { Json, RunDeps, RunState, VoteTopic } from './types.js';
 
 /** Indices of the players who are currently ready. */
@@ -14,6 +19,18 @@ export function whoIsReady(state: RunState): number[] {
     if (p.ready) out.push(i);
   });
   return out;
+}
+
+/**
+ * The ids of the placed unit producers whose units could not reach the front
+ * row of the board (issue #37, 3a); `ready` is refused with `sealed_producer`
+ * while there are any. Empty when nothing is sealed in.
+ */
+export function sealedProducers(
+  state: RunState,
+  deps: Pick<RunDeps, 'content'>,
+): number[] {
+  return sealedIn(state.team, deps.content);
 }
 
 export interface OpenVoteView {
@@ -48,11 +65,109 @@ export function openVote(state: RunState): OpenVoteView | null {
   };
 }
 
+function isObj(v: unknown): boolean {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+export interface FollowUpView {
+  /** What is being chosen (`workshop_building`, `shrine_modifier`, ...). */
+  readonly prompt: string;
+  /**
+   * True if each player chooses for themselves (Workshop): `options` are then
+   * only the options of the asked player (or all, when no player is given),
+   * and `skip` is always allowed besides them. False for a party vote.
+   */
+  readonly perPlayer: boolean;
+  readonly options: readonly Json[];
+  /** Who has chosen (not what), parallel to the players. */
+  readonly chosen: readonly boolean[];
+  /** Players who have not chosen yet. */
+  readonly waitingFor: readonly number[];
+  /** The asked player's own current choice (an option id), or null. */
+  readonly mine: string | null;
+}
+
+/**
+ * The follow-up open in `event_resolve`, or null in any other step. Pass
+ * `player` to get that player's own options in a per-player follow-up.
+ *
+ * Pass `deps` to get each Workshop option's CURRENT `price` and `affordable`
+ * (from current content, the offer's percent and the owner's gold now); the
+ * stored price is then kept as `storedPrice`. Screens must show these and not
+ * the stored values: a save made under older content continues under current
+ * numbers, and the price charged is computed when the last player has chosen.
+ * Without `deps` the options are returned as stored, with a possibly
+ * out-of-date price and affordability: screens must pass `deps`.
+ */
+export function eventFollowUp(
+  state: RunState,
+  player?: number,
+  deps?: Pick<RunDeps, 'content'>,
+): FollowUpView | null {
+  if (state.step !== 'event_resolve') return null;
+  const pending = state.pending;
+  const rec =
+    typeof pending === 'object' && pending !== null && !Array.isArray(pending)
+      ? (pending as Record<string, Json>)
+      : {};
+  const fu = rec['followUp'];
+  if (typeof fu !== 'object' || fu === null || Array.isArray(fu)) return null;
+  const f = fu as Record<string, Json>;
+  const votes = Array.isArray(f['votes']) ? (f['votes'] as Json[]) : [];
+  const options = Array.isArray(f['options']) ? (f['options'] as Json[]) : [];
+  const per = f['perPlayer'] === true;
+  const mineOptions =
+    per && player !== undefined
+      ? options.filter(
+          (o) =>
+            typeof o === 'object' &&
+            o !== null &&
+            !Array.isArray(o) &&
+            (o as Record<string, Json>)['player'] === player,
+        )
+      : options;
+  const mine = player === undefined ? undefined : votes[player];
+  const percentRaw = isObj(rec['offer'])
+    ? (rec['offer'] as Record<string, Json>)['workshopPricePercent']
+    : undefined;
+  const percent =
+    typeof percentRaw === 'number' ? percentRaw : DEFAULT_WORKSHOP_PERCENT;
+  const shown =
+    deps !== undefined && f['prompt'] === 'workshop_building'
+      ? mineOptions.map((o): Json => {
+          if (!isObj(o)) return o;
+          const r = o as Record<string, Json>;
+          const owner = r['player'];
+          const price =
+            typeof r['def'] === 'string' && typeof r['tier'] === 'number'
+              ? currentWorkshopPrice(deps.content, percent, r['def'], r['tier'])
+              : null;
+          if (price === null || typeof owner !== 'number') return o;
+          const gold = state.perPlayer[owner]?.gold ?? 0;
+          return {
+            ...r,
+            storedPrice: r['price'] ?? null,
+            price,
+            affordable: gold >= price,
+          };
+        })
+      : mineOptions;
+  return {
+    prompt: typeof f['prompt'] === 'string' ? f['prompt'] : '',
+    perPlayer: per,
+    options: shown,
+    chosen: votes.map((v) => v !== null),
+    waitingFor: votes.flatMap((v, i) => (v === null ? [i] : [])),
+    mine: typeof mine === 'string' ? mine : null,
+  };
+}
+
 /**
  * The intent types `player` may send right now. Extension intents are
  * included when `deps` is given and their handler allows the current step.
- * This is about the step and the player's own flags; the board and shop can
- * still refuse a particular intent.
+ * This is about the step and the player's own flags (a Ready player in a build
+ * or shop step may only unready, or abandon as host: issue #58); the board and
+ * shop can still refuse a particular intent.
  */
 export function allowedIntents(
   state: RunState,
@@ -63,6 +178,7 @@ export function allowedIntents(
   if (me === undefined) return [];
   const out: string[] = [];
   for (const type of STEP_INTENTS[state.step]) {
+    if (me.ready && lockedWhileReady(state.step, type)) continue;
     if (type === 'ready' && me.ready) continue;
     if (type === 'unready' && !me.ready) continue;
     if (type === 'abandon' && player !== state.host) continue;
@@ -70,6 +186,7 @@ export function allowedIntents(
   }
   if (deps !== undefined && state.step !== 'run_over') {
     for (const [type, handler] of Object.entries(deps.handlers)) {
+      if (me.ready && lockedWhileReady(state.step, type)) continue;
       if (handler.steps.includes(state.step)) out.push(type);
     }
   }

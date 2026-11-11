@@ -13,8 +13,9 @@ const r = applyIntent(state, playerIndex, { type: 'ready' }, deps);
 Every change is one intent from one player. An accepted intent bumps
 `actionCounter` and is appended to `actionLog`; a rejected one changes
 nothing. `replayRun(args, actionLog, deps)` rebuilds a state from the seed.
-`RunState.formatVersion` is `RUN_STATE_FORMAT_VERSION` (2: `upcomingPve` and the
-new battle detail); `validateRunState` rejects any other version with an
+`RunState.formatVersion` is `RUN_STATE_FORMAT_VERSION` (3: the per-player
+Workshop, on top of 2's `upcomingPve` and new battle detail; a version-2
+save is `unsupported_format`); `validateRunState` rejects any other version with an
 "unsupported format version" error before anything else. The save record's
 own `saveFormatVersion` is separate and still 1.
 `validateRunState(data, deps)` checks untrusted data (also see
@@ -47,11 +48,27 @@ when a pick was made, `picked: { player, random: true }`.
 | `pve_battle`     | none (never saved)                                | Resolved at once through `deps.battle`; goes to `pve_summary`.                                            |
 | `pve_summary`    | `ready`, `unready`                                | All ready: `rewards` hook, then `event_choice`. A PvE loss costs no life.                                 |
 | `event_choice`   | `vote` (one of the 1 to 3 offers)                 | All voted: `resolveEvent` hook; `event_resolve` if it returns a follow-up with options, else `shop`.     |
-| `event_resolve`  | `event_choose` (extension intent)                 | All players chose (unanimous or one vote picked at random): the handler applies it and advances to `shop`.          |
+| `event_resolve`  | `event_choose` (extension intent)                 | Party follow-up (Shrine): all players chose (unanimous or one vote picked at random), the handler applies it, then `shop`. Per-player follow-up (Workshop): every player chose their own option or `skip`; all are applied in player order, then `shop`. |
 | `shop`           | board edits, `ready`, `unready`, extension intents | All ready: after the PvE leg `pvp_battle`; after the PvP leg the round counter goes up and `pve_choice`. |
 | `pvp_battle`     | none (never saved)                                | Resolved at once; goes to `pvp_summary`.                                                                  |
 | `pvp_summary`    | `ready`, `unready`                                | All ready: `rewards` hook; a loss costs `pvpLossLifeCost` lives; 0 lives gives `run_over`, else `event_choice`. |
 | `run_over`       | none                                              | Final. `outcome` is `defeated` or `abandoned`.                                                            |
+
+**Ready locks (issue #58).** In `build` and `shop`, a player who is Ready can
+only `unready` (the host can also `abandon`): their buy, sell, re-roll, board
+edits and extension intents are rejected with `locked_ready` until they
+unready. `applyIntent` enforces it for built-in and extension intents alike
+(after the `wrong_step` check), and `allowedIntents` leaves them out. When the
+last player readies the step advances, so a solo player's Ready never leaves
+a locked state.
+
+**Sealed producers (issue #37, 3a).** In `build` and `shop`, `ready` is
+rejected with `sealed_producer` (`detail`: the ids, such as `"12,15"`) while a
+placed unit producer is fully enclosed: no walkable route from its spawn cells
+to the board's front row (gates are walkable; see "Sealed unit producers" in
+`docs/rules-reference.md`). The check covers the whole shared board and is
+the pure function `sealedProducers` in `core`; the selector
+`sealedProducers(state, deps)` returns the same ids for a screen.
 
 Any intent not in a step's row is rejected with `wrong_step`. `abandon` (host
 only, else `not_host`) ends the run from any step except `run_over`. The
@@ -102,7 +119,7 @@ the round number, `leg` is `pve` or `pvp`.
 | `event_offers:r<r>:<leg>`  | `eventOffers` hook                      |
 | `event_resolve:r<r>:<leg>` | `resolveEvent` hook                     |
 | `shop:r<r>:<leg>`       | `onShopEnter` hook                         |
-| `vote:<topic>:r<r>:<leg>` | the random pick of a split party vote (only drawn when the votes differ) |
+| `vote:<topic>:r<r>:<leg>` | the random pick of a party vote: drawn for every vote resolution with two or more players, but the pick is used only when the votes differ |
 
 Handlers that need randomness should call `drawStream` with their own label,
 for example `reroll:r<r>:p<player>:<action number>`.
@@ -139,7 +156,7 @@ option, PvE loss nothing (and no life), PvP win and PvP loss (consolation) from
 **Events.** `content/events.json` lists event definitions and modifiers. Each
 definition's `type` selects an `EventHandler` (`available`, `instantiate`,
 `resolve`, optional `choose`); A handler that can return a follow-up sets
-`canAskFollowUp` and must have `choose`; a handler that is always available
+`canAskFollowUp` and must have `choose` (or `chooseEach`, for a per-player follow-up); a handler that is always available
 (the Windfall) sets `alwaysAvailable`. `defaultEventHandlers` has `workshop`,
 `shrine` and `windfall`. A new type is data plus one handler passed as
 `eventHandlers: { ...defaultEventHandlers, mine }`; the machine is unchanged.
@@ -151,14 +168,36 @@ weighted pick per offer made); the picked definition and every other
 definition of its type then leave the pool, so content may hold several
 definitions of one type but fewer types available means fewer offers (issue
 #48). Offers are `{ id, event, type, ...data }` in `pending.options` (vote with
-`{ type: 'vote', choice: <offer id> }`). A pick with a follow-up (Workshop:
-which building; Shrine: which modifier) enters `event_resolve` with `pending =
+`{ type: 'vote', choice: <offer id> }`). A pick with a follow-up enters `event_resolve` with `pending =
 { offer, followUp: { prompt, options, votes } }`; every player sends `{ type:
-'event_choose', choice: <option id> }`. This is a party vote like the others:
-changeable until the last player has voted, then unanimous or one vote picked
-at random. The Shrine's modifier is added to `team.modifiers` (applied by the
-simulation, see `docs/rules-reference.md`); Workshop raises one owned building
-by one tier (never above 3). Events never add a building.
+'event_choose', choice: <option id> }`. The Shrine's follow-up is a party vote
+like the others: changeable until the last player has voted, then unanimous or
+one vote picked at random; the modifier is added to `team.modifiers` (applied
+by the simulation, see `docs/rules-reference.md`). The Workshop's follow-up
+(issue #50) is `perPlayer: true` and is NOT a vote: each option carries the
+`player` who may take it (`{ id: 'b<building>', player, building, def, tier,
+newTier, price, placed, affordable }`), the choice `skip` is always allowed,
+and `votes[i]` is player i's own choice. Each player raises at most one
+building they own by one tier for `workshopPricePercent` (80, from the event's
+`params`) percent of that tier's shop price (rounded down) from their own gold;
+it is offered only if some player can afford an upgrade. Affordability is
+checked when a player submits a choice, against current content and their gold
+then; the price is computed again from current content and charged when the
+last player has chosen (the stored `price` and `affordable` are display data,
+never trusted; a save made under an older minor version keeps working under new
+prices). A choice that can no longer be paid at that point is applied as a skip
+(no charge, no upgrade). The `event_resolved` effect carries `choices` and
+`applied` (per player: `skip`, `upgrade` with `building`, `def`, `newTier`,
+`price`, or a skip with `dropped: true` and a `reason`). Validation checks only
+the option's structure. A choice can be
+changed until the last player has chosen, then all are applied in player order
+and the run goes to the shop; nothing is drawn. Rejections: `not_owner`
+(someone else's building), `not_enough_gold`, `invalid_choice`. Use
+`eventFollowUp(state, player, deps)` for a screen's view (that player's options
+with the CURRENT `price` and `affordable`, the stored price kept as
+`storedPrice`; who has chosen). Show these, not the stored values. Without
+`deps` it returns the stored, possibly out-of-date price and affordability, so
+screens must pass `deps`. Events never add a building.
 
 **Battles and playback.** `BattleResult.detail` has no event log: it holds the
 seed, the opponent source, a hash of the team and a small summary with the
@@ -199,21 +238,32 @@ only affects the next roll and the next battle. Only the most recent battle's
 
 **Versions**: `classify(runVersion, installed)` is `same`, `older_minor`,
 `older_major` or `newer`. `openRun` sets `versionNotice` for `older_minor`;
-`older_major` and `newer` saves cannot be opened. `initSaves(store, installed,
-now)` deletes older-major saves (history reason `version_wiped`, with the
-round reached), finishes saves whose state has an `outcome`, and reports
-`newer` and corrupt ones without touching them. A corrupt save is never
+`older_major` and `newer` saves cannot be opened. A corrupt save is never
 deleted by `openRun`. A save that is well formed but whose run state has an
 unsupported `formatVersion` is not corrupt: `list()` flags its entry with
 `unsupportedFormat: true` (absent otherwise) and `openRun` refuses it with the
-reason `unsupported_format`, leaving it in the store. `openRun` checks, in
-order: the record's shape, that its `runId` matches the key (`corrupt`
-otherwise), the game version from the record's own `runVersion` (`newer`, then
-`older_major`, both reported even if the state would not validate), the state
-format (`unsupported_format`), and only then validates the state (`corrupt`).
-`initSaves` lists unsupported-format saves in `unsupported` and leaves them
-in place: they are never finished into history or wiped, whatever their
-outcome or version, because their state cannot be read.
+reason `unsupported_format`, leaving it in the store.
+
+**Statuses by entry point.** An older-major save whose state does not validate
+is `older_major` from `openRun` (the version is classified first) and
+`corrupt` (or `unsupported`, when its state names an unknown `formatVersion`)
+from `initSaves`; neither entry point deletes it.
+
+**One classification (issue #68).** `openRun` and `initSaves` both call
+`classifySave(raw, key, installed, deps)`, which checks, in order: the record's
+shape; that its `runId` matches the key (`corrupt` otherwise); the game version
+from the record's own `runVersion` (`newer`, then `older_major`, both reported
+even if the state would not validate); the state format (`unsupported_format`);
+and only then `validateRunState` (`corrupt`). `initSaves(store, installed,
+now, deps)` acts only on what that has fully read: a save whose run has an
+`outcome` is recorded in history and removed (`finished`), and an older-major
+save is deleted with the history reason `version_wiped` and the round reached
+(`wiped`), but only when its state validated. Everything else is left in the
+store and reported: `newer`, `unsupported` (unknown state format, whatever the
+outcome or game version) and `corrupt` (including a key mismatch, and an
+older-major save whose state does not validate, which `openRun` calls
+`older_major` because the version is classified first). Nothing unreadable is
+ever finished into history or wiped.
 
 **One save per run, no copies**: a record is keyed by `runId`. `put` with an
 existing `runId` replaces it, `startRun` rejects (`run_exists`) an ID that is

@@ -40,7 +40,11 @@ export const streamLabels = {
     `event_offers:r${String(round)}:${leg}`,
   eventResolve: (round: number, leg: string): string =>
     `event_resolve:r${String(round)}:${leg}`,
-  /** A party vote that was not unanimous: one vote is picked at random. */
+  /**
+   * Every party vote resolution with two or more players draws this stream
+   * once (a one-player run draws nothing); the pick from it is used only when
+   * the votes differ.
+   */
   vote: (topic: string, round: number, leg: string): string =>
     `vote:${topic}:r${String(round)}:${leg}`,
   shop: (round: number, leg: string): string => `shop:r${String(round)}:${leg}`,

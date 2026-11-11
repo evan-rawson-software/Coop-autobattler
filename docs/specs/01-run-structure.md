@@ -52,7 +52,11 @@ Lobby -> Map + Core placement ->
 - **RS-4a [DECIDED as a starting set; to be refined later]** An event is a
   short non-combat moment that changes the run in some way other than
   buying. Starting types:
-  - **Workshop** — raise one building the party owns by one tier.
+  - **Workshop** — every player may raise one building they own by one
+    tier (never above tier 3), paying 80% of that tier's shop price from
+    their own gold, or skip. The party votes on the event; each player then
+    chooses for themselves, and it is offered only if some player can afford
+    an upgrade.
   - **Shrine** — choose one of several run modifiers.
   - **Gamble** — stake gold for a chance at more.
   - **Salvage** — trade a building in for gold, at a better rate than
