@@ -188,6 +188,13 @@ describe('deterministic ground variants', () => {
     expect(ncount['neutral_1'] ?? 0).toBeGreaterThan(total * 0.2);
   });
 
+  test('maps of the same size but different content get different salts', () => {
+    const a = mapSalt(24, 16, 1, 24, [{ x: 1, y: 2 }]);
+    const b = mapSalt(24, 16, 1, 24, [{ x: 2, y: 2 }]);
+    expect(a).not.toBe(b);
+    expect(a).toBe(mapSalt(24, 16, 1, 24, [{ x: 1, y: 2 }]));
+  });
+
   test('a different map salt gives a different pattern', () => {
     const other = mapSalt(30, 20, 2, 30);
     let diff = 0;

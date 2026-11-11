@@ -315,7 +315,10 @@ function buildBoard(
   });
 
   const m = state.map;
-  const salt = mapSalt(m.width, m.height, m.partySize, m.plotWidth);
+  const salt = mapSalt(m.width, m.height, m.partySize, m.plotWidth, [
+    ...m.features,
+    ...m.nodes,
+  ]);
   return {
     frame,
     state,

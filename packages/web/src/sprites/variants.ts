@@ -10,14 +10,23 @@ export function cellHash(x: number, y: number, salt = 0): number {
   return (h ^ (h >>> 16)) >>> 0;
 }
 
-/** A salt that depends on a map's size and party, so maps differ. */
+/**
+ * A salt that depends on a map's size and party and, through `marks` (the
+ * map's feature and node cells), on the map itself. A map is a pure function
+ * of its seed, so the seed is folded in without the map having to carry it:
+ * the salt is stable across reloads and the same wherever the run's map is
+ * drawn (Build, Battle).
+ */
 export function mapSalt(
   width: number,
   height: number,
   partySize: number,
   plotWidth: number,
+  marks: readonly { x: number; y: number }[] = [],
 ): number {
-  return cellHash(width * 64 + height, partySize * 64 + plotWidth, 0x9e3779b1);
+  let h = cellHash(width * 64 + height, partySize * 64 + plotWidth, 0x9e3779b1);
+  for (const m of marks) h = cellHash(m.x + (h & 0xffff), m.y, h);
+  return h | 0;
 }
 
 // Sixteen weighted slots: ground 1-2 are common, 5 and 6 rare. Neutral 4
