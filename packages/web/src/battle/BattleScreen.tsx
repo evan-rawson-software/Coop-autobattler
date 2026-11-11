@@ -73,6 +73,9 @@ interface Prep {
   readonly enemyCentre: { x: number; y: number } | null;
 }
 
+/** Main-thread time of the last `prepare` (measurement only). */
+let prepareMs = 0;
+
 const MISMATCH = Symbol('replay mismatch');
 
 /**
@@ -154,14 +157,15 @@ export function BattleView(props: BattleViewProps) {
       (made) => {
         if (cancelled) return;
         try {
-          setPrep(
-            prepare(
-              props.battle,
-              made,
-              initialTick.current,
-              latestStored.current?.eventLogHash,
-            ),
+          const t0 = performance.now();
+          const next = prepare(
+            props.battle,
+            made,
+            initialTick.current,
+            latestStored.current?.eventLogHash,
           );
+          prepareMs = performance.now() - t0;
+          setPrep(next);
         } catch (e) {
           setPrep(e instanceof Error ? e.message : String(e));
         }
@@ -295,6 +299,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           usesWorker: simClient.usesWorker,
           ranOnMainThread: simClient.lastRanOnMainThread,
           roundTripMs: simClient.lastRoundTripMs,
+          prepareMs,
         }),
         ready: () => latest.current.ready,
         scene: () => sceneSummary(pb.sim.teams, content),

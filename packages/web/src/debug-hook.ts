@@ -85,6 +85,8 @@ export interface BattleDebug {
     usesWorker: boolean;
     ranOnMainThread: boolean;
     roundTripMs: number;
+    /** Main-thread time to set up playback from the received record. */
+    prepareMs: number;
   };
   ready: () => boolean;
   /** Per side, what the visual simulation's board holds. */

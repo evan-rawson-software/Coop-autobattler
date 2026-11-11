@@ -59,7 +59,8 @@ describe('the simulation worker client', () => {
     expect(hashJson(out.record.eventLog)).toBe(
       hashJson(direct.record.eventLog),
     );
-    expect(out.record.result.stateHash).toBe(direct.record.result.stateHash);
+    expect(out.record.result).toEqual(direct.record.result);
+    expect(hashJson(out.record.summary)).toBe(hashJson(direct.record.summary));
     // Everything but the timing is identical, typed arrays included.
     const strip = (r: typeof out.record) => ({
       ...r,
@@ -149,6 +150,7 @@ describe('the stress battle', () => {
     expect(hashJson(out.record.eventLog)).toBe(
       hashJson(direct.record.eventLog),
     );
-    expect(out.record.result.stateHash).toBe(direct.record.result.stateHash);
+    expect(out.record.result).toEqual(direct.record.result);
+    expect(hashJson(out.record.summary)).toBe(hashJson(direct.record.summary));
   }, 60000);
 });

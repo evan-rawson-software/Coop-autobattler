@@ -23,6 +23,7 @@ import { runShopSmoke } from './smoke-shop.mjs';
 import { runSpritesSmoke } from './smoke-sprites.mjs';
 import { runArtSmoke, spritesInfo } from './smoke-art.mjs';
 import { runRunSmoke } from './smoke-run.mjs';
+import { runWorkerSmoke } from './smoke-worker.mjs';
 import {
   CPU_THROTTLE,
   TIMING,
@@ -52,9 +53,19 @@ const MIME = {
   '.png': 'image/png',
 };
 
+// SMOKE_BASE_PATH=/Coop-autobattler/ serves the app under that prefix, like
+// GitHub Pages does, to check that relative asset and worker URLs resolve.
+const basePath = process.env.SMOKE_BASE_PATH ?? '/';
 const server = createServer((req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
-  let file = path.join(distDir, decodeURIComponent(url.pathname));
+  if (!url.pathname.startsWith(basePath)) {
+    res.writeHead(404).end('not found');
+    return;
+  }
+  let file = path.join(
+    distDir,
+    decodeURIComponent(url.pathname.slice(basePath.length)),
+  );
   if (!file.startsWith(distDir)) {
     res.writeHead(403).end();
     return;
@@ -71,7 +82,7 @@ const server = createServer((req, res) => {
   }
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-const baseUrl = `http://127.0.0.1:${server.address().port}/`;
+const baseUrl = `http://127.0.0.1:${server.address().port}${basePath}`;
 
 const failures = [];
 function check(ok, message) {
@@ -1580,6 +1591,8 @@ try {
       'battle: the debug hooks are removed when the screen unmounts',
     );
   }
+
+  await runWorkerSmoke({ browser, baseUrl, check });
 
   // Shop + Build step (W2-7)
   await runShopSmoke({ page, baseUrl, check, shot, shotDark, settle, webDir });
