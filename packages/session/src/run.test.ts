@@ -321,6 +321,13 @@ describe('bookkeeping', () => {
     expect(bad({ host: 1 })).toBe(false);
     expect(bad({ seed: -1 })).toBe(false);
     expect(bad({ runVersion: 'x' })).toBe(false);
+    // The save format's rule: no leading zeros, no patch part.
+    for (const v of ['01.2', '1.02', '00.0', '1.2.3', '1', '1.']) {
+      expect(bad({ runVersion: v })).toBe(false);
+    }
+    for (const v of ['0.1', '1.0', '10.20']) {
+      expect(bad({ runVersion: v })).toBe(true);
+    }
   });
 
   test('the Core and starting hooks run once the Core is placed', () => {

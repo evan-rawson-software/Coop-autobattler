@@ -18,6 +18,7 @@ import {
 } from '@game/core';
 import { STEP_INTENTS } from './step-table.js';
 import { drawStream, rootRng, streamLabels } from './streams.js';
+import { parseVersion } from './version.js';
 import {
   BUILTIN_INTENT_TYPES,
   MAX_PLAYERS,
@@ -122,10 +123,9 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
   if (typeof args.runId !== 'string' || args.runId === '') {
     return bad('runId must be a non-empty string');
   }
-  if (
-    typeof args.runVersion !== 'string' ||
-    !/^\d+\.\d+$/.test(args.runVersion)
-  ) {
+  // The same rule as the save format (no leading zeros, no patch part).
+  const parsedVersion = parseVersion(args.runVersion);
+  if (parsedVersion === null || parsedVersion.patch !== null) {
     return bad('runVersion must look like "major.minor"');
   }
   if (!isInt(args.seed) || args.seed < 0 || args.seed >= 2 ** 32) {
