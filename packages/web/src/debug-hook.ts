@@ -21,6 +21,28 @@ export interface DebugHook {
   /** Number of buildings and conduit cells in the own board. */
   counts?: () => { buildings: number; conduits: number; conduitCells: number };
   build?: BuildDebug;
+  battle?: BattleDebug;
+  /** Terrain cells of the neutral strip that are currently drawn. */
+  neutralFeatureCount?: () => number;
+}
+
+/** Read-only view of the Battle screen for the smoke script. */
+export interface BattleDebug {
+  phase: () => string;
+  tick: () => number;
+  endTick: () => number;
+  speed: () => number;
+  paused: () => boolean;
+  revealed: () => boolean;
+  /** The result of the up-front simulation. */
+  result: () => { winner: number; reason: string; endTick: number };
+  /** Final Core health of both sides from the up-front simulation. */
+  coreHealth: () => readonly [number, number];
+  /** Hash of the visual simulation's current state. */
+  stateHash: () => string;
+  unitsAlive: () => number;
+  simMs: () => number;
+  ready: () => boolean;
 }
 
 /** Read-only view of the Build screen for the smoke script. */

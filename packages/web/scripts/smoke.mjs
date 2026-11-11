@@ -1057,6 +1057,230 @@ try {
   );
   check(true, 'the dev button starts a new run');
 
+  // --- Battle screen (W2-8)
+  {
+    const bd = (name) => page.evaluate((n) => window.__debug.battle[n](), name);
+    const waitPhase = (phase, timeout = 30000) =>
+      page.waitForFunction(
+        (p) => window.__debug?.battle?.phase?.() === p,
+        phase,
+        { timeout },
+      );
+    const open = async (hash) => {
+      await page.goto(baseUrl + hash);
+      await page.reload();
+      await page.waitForFunction(
+        () =>
+          window.__debug?.battle !== undefined &&
+          window.__debug.battle.phase !== undefined,
+        undefined,
+        { timeout: 30000 },
+      );
+    };
+    const QUICK = '#battle?p=rush&o=pve:arch_rusher:1:medium&s=1';
+
+    await open(QUICK);
+    await waitPhase('playing');
+    const hiddenBefore = await page.evaluate(() => ({
+      revealed: window.__debug.battle.revealed(),
+      features: window.__debug.neutralFeatureCount(),
+    }));
+    check(
+      !hiddenBefore.revealed && hiddenBefore.features === 0,
+      `battle: neutral zone is hidden before the battle starts (${JSON.stringify(hiddenBefore)})`,
+    );
+    await shot('battle-0-before-start');
+    const noScrollBattle = await page.evaluate(() => ({
+      fits:
+        document.documentElement.scrollWidth <= window.innerWidth &&
+        document.documentElement.scrollHeight <= window.innerHeight,
+    }));
+    check(noScrollBattle.fits, 'battle: screen fits 1920x1080 without scroll');
+    await page.waitForFunction(
+      () => window.__debug.battle.revealed(),
+      undefined,
+      {
+        timeout: 10000,
+      },
+    );
+    const revealedFeatures = await page.evaluate(() =>
+      window.__debug.neutralFeatureCount(),
+    );
+    check(
+      revealedFeatures > 0,
+      `battle: neutral zone features appear once playback begins (${revealedFeatures})`,
+    );
+    const result0 = await bd('result');
+    const core0 = await bd('coreHealth');
+
+    // Speed, pause.
+    await page.click('#speed-4');
+    check(
+      (await bd('speed')) === 4,
+      'battle: the 4x button sets the speed to 4',
+    );
+    await page.waitForFunction(() => window.__debug.battle.tick() > 80);
+    await page.click('#pause');
+    const pausedAt = await bd('tick');
+    await page.waitForTimeout(400);
+    check(
+      (await bd('tick')) === pausedAt && (await bd('paused')),
+      `battle: pausing stops playback (tick ${pausedAt})`,
+    );
+    await page.click('#pause');
+    await page.waitForFunction(
+      (t) => window.__debug.battle.tick() > t + 20,
+      pausedAt,
+    );
+    await page.waitForFunction(() => window.__debug.battle.tick() > 230);
+    await shot('battle-1-playing');
+
+    // Reload mid-battle resumes the same battle.
+    await page.waitForTimeout(700);
+    const hashMid = await page.evaluate(() => window.location.hash);
+    const savedTick = Number(/[?&]t=(\d+)/.exec(hashMid)?.[1] ?? 0);
+    check(savedTick > 80, `battle: the tick is kept in the URL (${hashMid})`);
+    await page.reload();
+    await page.waitForFunction(
+      () => window.__debug?.battle?.phase?.() !== undefined,
+    );
+    const resumed = await page.evaluate(() => ({
+      tick: window.__debug.battle.tick(),
+      revealed: window.__debug.battle.revealed(),
+      result: window.__debug.battle.result(),
+      features: window.__debug.neutralFeatureCount(),
+    }));
+    check(
+      resumed.tick >= savedTick &&
+        resumed.revealed &&
+        JSON.stringify(resumed.result) === JSON.stringify(result0),
+      `battle: a reload resumes at tick ${resumed.tick} (saved ${savedTick}) with the same result`,
+    );
+
+    // Play to the summary at the top speed.
+    await page.click('#speed-4');
+    await waitPhase('summary', 60000);
+    const hashEnd = await bd('stateHash');
+    const bannerText = await page.locator('#result-banner').innerText();
+    check(
+      bannerText.includes(result0.winner === 0 ? 'Victory' : 'Defeat'),
+      `battle: the summary banner shows the result of the simulation ("${bannerText.split('\n')[0]}")`,
+    );
+    const finalCores = await page.evaluate(() => [
+      document.querySelector('[data-field="final-core-own"]')?.textContent,
+      document.querySelector('[data-field="final-core-foe"]')?.textContent,
+    ]);
+    check(
+      finalCores[0].startsWith(String(core0[0])) &&
+        finalCores[1].startsWith(String(core0[1])),
+      `battle: the summary shows the final Core health (${finalCores.join(' / ')})`,
+    );
+    const reward = await page.locator('[data-field="reward"]').innerText();
+    check(
+      /gold/.test(reward),
+      `battle: summary shows the reward line ("${reward}")`,
+    );
+    check(
+      (await page.locator('#panel-buildings tbody tr').count()) > 0 &&
+        (await page
+          .locator('[data-testid="chart-strength-summary"]')
+          .count()) === 1 &&
+        (await page.locator('#panel-breaches canvas').count()) === 1,
+      'battle: summary has the chart, the breach map and the building table',
+    );
+    await shot('battle-3-summary');
+
+    // Watch again, then skip: the same result.
+    await page.click('#watch-again');
+    await waitPhase('playing');
+    const again = await page.evaluate(() => ({
+      tick: window.__debug.battle.tick(),
+      revealed: window.__debug.battle.revealed(),
+      features: window.__debug.neutralFeatureCount(),
+      hash: window.location.hash,
+    }));
+    check(
+      again.tick === 0 &&
+        !again.revealed &&
+        again.features === 0 &&
+        !/t=/.test(again.hash),
+      `battle: Watch again starts over with the zone hidden (${JSON.stringify(again)})`,
+    );
+    await page.click('#skip');
+    await waitPhase('summary');
+    const skipped = {
+      result: await bd('result'),
+      hash: await bd('stateHash'),
+    };
+    check(
+      JSON.stringify(skipped.result) === JSON.stringify(result0) &&
+        skipped.hash === hashEnd,
+      'battle: skipping to the end gives the same result and final state as watching',
+    );
+    await page.click('#battle-ready');
+    check(
+      (await bd('ready')) &&
+        (await page.locator('#battle-ready').innerText()).includes('Ready') &&
+        (await page.locator('#sample-ready').count()) === 1,
+      'battle: Ready is confirmed',
+    );
+    await shot('battle-5-ready');
+
+    // PvE: the stronghold takes the place of an enemy factory.
+    await open('#battle?p=fortify&o=pve:arch_fortress:3:medium&s=2');
+    await waitPhase('playing');
+    await page.waitForFunction(
+      () => window.__debug.battle.revealed(),
+      undefined,
+      {
+        timeout: 10000,
+      },
+    );
+    await page.click('#speed-4');
+    await page.waitForFunction(() => window.__debug.battle.tick() > 250);
+    const enemyTitle = await page
+      .locator('#panel-enemy .panel-title')
+      .innerText();
+    const kindChip = await page.locator('[data-field="opp-kind"]').innerText();
+    check(
+      /stronghold/i.test(enemyTitle) && kindChip.length > 0,
+      `battle: PvE shows the stronghold ("${enemyTitle}", "${kindChip}")`,
+    );
+    await shot('battle-4-pve-stronghold');
+
+    // Performance at 4x with hundreds of units.
+    await open('#battle?p=rush&o=stress&s=1');
+    await waitPhase('playing');
+    await page.waitForFunction(
+      () => window.__debug.battle.revealed(),
+      undefined,
+      {
+        timeout: 10000,
+      },
+    );
+    await page.click('#speed-4');
+    await page.waitForFunction(() => window.__debug.battle.tick() > 250);
+    await page.evaluate(() => window.__debug.resetDrawStats());
+    let peak = 0;
+    for (let i = 0; i < 20; i++) {
+      await page.waitForTimeout(200);
+      peak = Math.max(peak, await bd('unitsAlive'));
+    }
+    const draw = await page.evaluate(() => window.__debug.drawStats());
+    console.log(
+      `battle perf: 4x, peak ${peak} units alive, ${draw.count} frames drawn, mean ${draw.meanMs.toFixed(2)} ms, max ${draw.maxMs.toFixed(1)} ms, simulate-up-front ${(await bd('simMs')).toFixed(0)} ms`,
+    );
+    check(
+      peak >= 200,
+      `battle: the stress battle has hundreds of units (peak ${peak})`,
+    );
+    check(
+      draw.count > 40 && draw.meanMs < 12,
+      `battle: smooth at 4x with ${peak} units (mean draw ${draw.meanMs.toFixed(2)} ms over ${draw.count} frames)`,
+    );
+    await shot('battle-6-stress');
+  }
+
   check(
     consoleErrors.length === 0,
     `no console errors or warnings${consoleErrors.length ? ': ' + consoleErrors.join(' | ') : ''}`,

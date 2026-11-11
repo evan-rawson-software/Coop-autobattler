@@ -56,6 +56,13 @@ router or state library). The page you land on is the debug screen
 and gesture code (`src/board/camera.ts`, `gestures.ts`, `layout.ts`) has unit
 tests that run with `pnpm test`.
 
+The battle screen (`src/battle/`, route `#battle`) plays a battle back from
+its event log. `BattleView` takes a battle description (team against team, or
+PvE) and callbacks; `#battle?p=<board>&o=<opponent>&s=<seed>&t=<tick>` is a
+sample route whose URL keeps the selection and the playback tick, so a reload
+resumes the same battle. The result shown is always the one of an up-front
+simulation; playback only re-steps a second copy to draw it.
+
 `pnpm smoke` builds the site with `--mode debug` (which adds a read-only
 `window.__debug` hook that production builds leave out), serves it, and drives
 it with Playwright: page checks, camera and selection checks, a performance

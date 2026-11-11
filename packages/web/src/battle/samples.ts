@@ -1,0 +1,185 @@
+/**
+ * Sample battles for the `#battle` route, until the run flow supplies real
+ * ones. A selection (the party's board, the opponent, the seed and the tick)
+ * lives in the URL hash so a reload resumes the same battle.
+ *
+ * Hash form: `#battle?p=<board>&o=<opponent>&s=<seed>&t=<tick>`.
+ */
+
+import {
+  REFERENCE_BOARDS,
+  buildReferenceBoard,
+  generateThreat,
+  type BattleResult,
+  type ReferenceBoardName,
+  type ThreatType,
+} from '@game/core';
+import { content } from '../content.js';
+import { threatsConfig } from './setup.js';
+import type { BattleDescription, OpponentInfo } from './types.js';
+
+export interface SampleSelection {
+  readonly player: ReferenceBoardName;
+  /** An `OpponentOption` ID. */
+  readonly opponent: string;
+  readonly seed: number;
+  /** Tick to resume at; 0 starts from the beginning. */
+  readonly tick: number;
+}
+
+export interface OpponentOption {
+  readonly id: string;
+  readonly label: string;
+}
+
+/** `arch_rusher` -> `Rusher`. */
+export function archetypeLabel(id: string): string {
+  const words = id
+    .replace(/^arch_/, '')
+    .split('_')
+    .filter((w) => w.length > 0);
+  const text = words.join(' ');
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+const PVE_ROUNDS: readonly number[] = [1, 3];
+
+/** Every opponent the picker offers: ghosts of the reference boards, then threats. */
+export function opponentOptions(): readonly OpponentOption[] {
+  const out: OpponentOption[] = REFERENCE_BOARDS.map((b) => ({
+    id: `ghost:${b}`,
+    label: `Ghost of the "${b}" board`,
+  }));
+  for (const a of threatsConfig.archetypes) {
+    const type: ThreatType = a.bossOnly ? 'boss' : 'medium';
+    for (const round of PVE_ROUNDS) {
+      out.push({
+        id: `pve:${a.id}:${String(round)}:${type}`,
+        label: `${archetypeLabel(a.id)} (${type}), round ${String(round)}`,
+      });
+    }
+  }
+  out.push({ id: STRESS_ID, label: 'Stress test: hundreds of units' });
+  return out;
+}
+
+/** Two copies of the party's board, with scripted waves of units. */
+export const STRESS_ID = 'stress';
+
+export const DEFAULT_SELECTION: SampleSelection = {
+  player: 'rush',
+  opponent: 'pve:arch_rusher:1:medium',
+  seed: 1,
+  tick: 0,
+};
+
+const isBoard = (v: string | null): v is ReferenceBoardName =>
+  REFERENCE_BOARDS.some((b) => b === v);
+
+/** Read a selection from a URL hash; anything missing or unknown is default. */
+export function parseSampleHash(hash: string): SampleSelection {
+  const q = hash.indexOf('?');
+  const params = new URLSearchParams(q < 0 ? '' : hash.slice(q + 1));
+  const p = params.get('p');
+  const o = params.get('o');
+  const known = opponentOptions().some((x) => x.id === o);
+  const num = (key: string, fallback: number): number => {
+    const n = Number(params.get(key));
+    return params.has(key) && Number.isInteger(n) && n >= 0 && n <= 0xffffffff
+      ? n
+      : fallback;
+  };
+  return {
+    player: isBoard(p) ? p : DEFAULT_SELECTION.player,
+    opponent: known && o !== null ? o : DEFAULT_SELECTION.opponent,
+    seed: num('s', DEFAULT_SELECTION.seed),
+    tick: num('t', 0),
+  };
+}
+
+export function formatSampleHash(sel: SampleSelection): string {
+  const params = new URLSearchParams({
+    p: sel.player,
+    o: sel.opponent,
+    s: String(sel.seed),
+  });
+  if (sel.tick > 0) params.set('t', String(sel.tick));
+  return `#battle?${params.toString()}`;
+}
+
+export interface Sample {
+  readonly battle: BattleDescription;
+  readonly opponent: OpponentInfo;
+  readonly title: string;
+}
+
+/** Build the battle a selection names. Deterministic in the selection. */
+export function buildSample(sel: SampleSelection): Sample {
+  const team = buildReferenceBoard(sel.player, content, content.mapgen);
+  const [kind, a, b, c] = sel.opponent.split(':');
+  if (kind === 'pve' && a !== undefined && b !== undefined && c !== undefined) {
+    const round = Number(b);
+    const threat = generateThreat(
+      {
+        seed: sel.seed,
+        round,
+        type: c as ThreatType,
+        partySize: team.map.partySize,
+        archetype: a,
+      },
+      content,
+      { threats: threatsConfig, mapgen: content.mapgen },
+    );
+    const boss = c === 'boss';
+    return {
+      battle: { kind: 'pve', input: { team, threat, seed: sel.seed } },
+      opponent: {
+        name: `${archetypeLabel(a)} threat, round ${String(round)}`,
+        kind: boss ? 'boss' : 'pve',
+        label: boss ? 'Boss' : archetypeLabel(a),
+      },
+      title: `Round ${String(round)} · PvE battle`,
+    };
+  }
+  if (kind === STRESS_ID) {
+    // Both sides get a steady stream of units and sturdy Cores, so a few
+    // hundred units meet in the middle for a long while.
+    const waves = Array.from({ length: 12 }, (_, i) => ({
+      tick: 20 + i * 40,
+      unit: 'unit_soldier',
+      count: 40,
+    }));
+    const options = { scheduledWaves: waves, coreHealth: 5000 };
+    return {
+      battle: {
+        kind: 'versus',
+        input: {
+          teamA: team,
+          teamB: team,
+          seed: sel.seed,
+          sideOptions: [options, options],
+        },
+      },
+      opponent: { name: 'stress test', kind: 'ghost' },
+      title: 'Sample · stress test',
+    };
+  }
+  const ghostBoard = isBoard(a ?? null) ? (a as ReferenceBoardName) : 'rush';
+  const teamB = buildReferenceBoard(ghostBoard, content, content.mapgen);
+  return {
+    battle: {
+      kind: 'versus',
+      input: { teamA: team, teamB, seed: sel.seed },
+    },
+    opponent: {
+      name: `ghost of the "${ghostBoard}" board`,
+      kind: 'ghost',
+    },
+    title: 'Sample · PvP battle',
+  };
+}
+
+/** Placeholder reward text for the sample route (gold only, per wireframe 8). */
+export function sampleReward(result: BattleResult): string {
+  return result.winner === 0 ? '+3 gold' : '-1 life · +1 gold';
+}
