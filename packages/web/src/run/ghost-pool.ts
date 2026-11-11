@@ -3,16 +3,33 @@
  * to `localStorage`, then to memory, like the save store. It lives in its own
  * database so the saves database keeps its version.
  *
- * Layout. IndexedDB: database `coop-autobattler-ghosts`, object store
- * `ghosts`, key = `ghostStoreKey(bucket, ownerId)`, value `{ bucket, value }`
- * with an index on `bucket` (the text of `ghostBucketKey`). localStorage: one
- * key per snapshot, `<prefix>ghost:<store key>`, holding the same record as
- * JSON. A stored value that is not valid JSON is returned as the raw string;
- * the caller validates everything it reads.
+ * Bounded reads. A snapshot larger than the size bound is refused at write
+ * time. `list` never reads a row it cannot use: it reads at most
+ * `GHOST_LIST_LIMIT` rows, in the canonical order, and only rows marked as
+ * within the bound; a row without that mark is never loaded.
+ *
+ * Layout. IndexedDB (version 2): database `coop-autobattler-ghosts`, object
+ * store `ghosts`, key = `ghostStoreKey(bucket, ownerId, runId)`, value
+ * `{ bucket, owner, runId, seq, size, fit?, value }`. `seq` is a counter kept
+ * under the key `meta:seq` (so "oldest" never depends on the clock); `fit` is
+ * 1 when `size` is within the bound. Index `listing` is
+ * `[bucket, fit, owner, runId]` (rows without `fit` are not in it); index
+ * `own` is `[bucket, owner, seq]` (read as keys only, for eviction). The
+ * upgrade from version 1 (one snapshot per owner) empties the pool.
+ * localStorage: per snapshot, `<prefix>ghost:<store key>` holds
+ * `{ bucket, value }` and `<prefix>ghostmeta:<store key>` holds the small
+ * `{ bucket, owner, runId, seq, size }`; the counter is `<prefix>ghost-seq`.
+ * `list` reads the small meta keys and only then the values it will return.
+ * A stored value that is not valid JSON is returned as the raw string; the
+ * caller validates everything it reads.
  */
 import {
   createMemoryGhostStore,
+  evictionKeys,
   ghostStoreKey,
+  GHOST_KEEP_PER_OWNER_BUCKET,
+  GHOST_LIST_LIMIT,
+  GHOST_STORE_DEFAULT_MAX_SIZE,
   type GhostStore,
 } from '@game/session';
 import {
@@ -26,11 +43,35 @@ import { DEFAULT_PREFIX, type StorageLike } from './local-storage-store.js';
 
 export const GHOST_DB_NAME = 'coop-autobattler-ghosts';
 const STORE = 'ghosts';
-const BUCKET_INDEX = 'bucket';
+
+const OWN_INDEX = 'own';
+const LISTING_INDEX = 'listing';
+const SEQ_KEY = 'meta:seq';
 
 interface Stored {
   readonly bucket: string;
   readonly value: unknown;
+}
+
+/** The largest snapshot (characters of JSON) accepted for a party and round. */
+export type GhostMaxSize = (partySize: number, round: number) => number;
+
+export interface GhostStoreOptions {
+  readonly maxSize?: GhostMaxSize;
+}
+
+function sizeBound(
+  options: GhostStoreOptions | undefined,
+  partySize: number,
+  round: number,
+): number {
+  try {
+    const n = options?.maxSize?.(partySize, round);
+    if (typeof n === 'number' && Number.isFinite(n) && n > 0) return n;
+  } catch {
+    // fall back to the fixed bound
+  }
+  return GHOST_STORE_DEFAULT_MAX_SIZE;
 }
 
 function compareStored(a: unknown, b: unknown): number {
@@ -79,13 +120,15 @@ export function openGhostDb(
   name: string = GHOST_DB_NAME,
 ): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const open = factory.open(name, 1);
+    const open = factory.open(name, 2);
     open.onupgradeneeded = () => {
       const db = open.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        const os = db.createObjectStore(STORE);
-        os.createIndex(BUCKET_INDEX, 'bucket');
-      }
+      // Version 1 kept one snapshot per owner under another key; the pool is
+      // a rebuildable cache, so it starts empty.
+      if (db.objectStoreNames.contains(STORE)) db.deleteObjectStore(STORE);
+      const os = db.createObjectStore(STORE);
+      os.createIndex(LISTING_INDEX, ['bucket', 'fit', 'owner', 'runId']);
+      os.createIndex(OWN_INDEX, ['bucket', 'owner', 'seq']);
     };
     open.onsuccess = () => {
       resolve(open.result);
@@ -98,39 +141,80 @@ export function openGhostDb(
 }
 
 /** A `GhostStore` over an open IndexedDB database. */
-export function createIdbGhostStore(db: IDBDatabase): GhostStore {
+export function createIdbGhostStore(
+  db: IDBDatabase,
+  options?: GhostStoreOptions,
+): GhostStore {
   db.onversionchange = () => {
     db.close();
   };
   return {
     async save(snapshot) {
       const bucket = ghostBucketOf(snapshot);
-      const record: Stored = {
-        bucket: ghostBucketKey(bucket),
-        value: JSON.parse(JSON.stringify(snapshot)) as unknown,
-      };
+      const value = JSON.parse(JSON.stringify(snapshot)) as unknown;
+      const size = JSON.stringify(value).length;
+      if (size > sizeBound(options, snapshot.partySize, snapshot.round)) {
+        throw new Error('the ghost snapshot is too large');
+      }
+      const bk = ghostBucketKey(bucket);
+      const owner = snapshot.owner.id;
       const tx = db.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).put(
-        record,
-        ghostStoreKey(bucket, snapshot.owner.id),
-      );
-      await done(tx);
+      const os = tx.objectStore(STORE);
+      const finished = done(tx);
+      try {
+        const meta = (await request(os.get(SEQ_KEY))) as
+          { seq?: unknown } | undefined;
+        const seq = (typeof meta?.seq === 'number' ? meta.seq : 0) + 1;
+        os.put({ seq }, SEQ_KEY);
+        os.put(
+          {
+            bucket: bk,
+            owner,
+            runId: snapshot.runId,
+            seq,
+            size,
+            fit: 1,
+            value,
+          },
+          ghostStoreKey(bucket, owner, snapshot.runId),
+        );
+        // Keys only: the values of the owner's other snapshots are not read.
+        const own = await request(
+          os
+            .index(OWN_INDEX)
+            .getAllKeys(
+              IDBKeyRange.bound([bk, owner, 0], [bk, owner, Infinity]),
+            ),
+        );
+        for (const k of own.slice(
+          0,
+          Math.max(0, own.length - GHOST_KEEP_PER_OWNER_BUCKET),
+        )) {
+          os.delete(k);
+        }
+      } catch (e) {
+        tx.abort();
+        await finished.catch(() => undefined);
+        throw e;
+      }
+      await finished;
     },
     async list(bucket) {
+      const bk = ghostBucketKey(bucket);
       const tx = db.transaction(STORE, 'readonly');
       const rows = (await request(
         tx
           .objectStore(STORE)
-          .index(BUCKET_INDEX)
-          .getAll(ghostBucketKey(bucket)),
-      )) as Stored[];
+          .index(LISTING_INDEX)
+          .getAll(IDBKeyRange.bound([bk, 1], [bk, 1, []]), GHOST_LIST_LIMIT),
+      )) as { value: unknown }[];
       return rows.map((r) => r.value).sort(compareStored);
     },
-    async get(bucket, ownerId) {
+    async get(bucket, ownerId, runId) {
       const tx = db.transaction(STORE, 'readonly');
       const row = (await request(
-        tx.objectStore(STORE).get(ghostStoreKey(bucket, ownerId)),
-      )) as Stored | undefined;
+        tx.objectStore(STORE).get(ghostStoreKey(bucket, ownerId, runId)),
+      )) as { value: unknown } | undefined;
       return row === undefined ? null : row.value;
     },
     async clear() {
@@ -153,32 +237,97 @@ function parse(text: string | null): Stored | null {
   }
 }
 
+interface Meta {
+  readonly bucket: string;
+  readonly owner: string;
+  readonly runId: string;
+  readonly seq: number;
+  readonly size: number;
+}
+
+function parseMeta(text: string | null): Meta | null {
+  if (text === null) return null;
+  try {
+    const v = JSON.parse(text) as Partial<Meta> | null;
+    return v !== null &&
+      typeof v === 'object' &&
+      typeof v.bucket === 'string' &&
+      typeof v.owner === 'string' &&
+      typeof v.runId === 'string' &&
+      typeof v.seq === 'number' &&
+      typeof v.size === 'number'
+      ? (v as Meta)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 /** A `GhostStore` over `localStorage` (or anything shaped like it). */
 export function createLocalStorageGhostStore(
   ls: StorageLike,
   prefix: string = DEFAULT_PREFIX,
+  options?: GhostStoreOptions,
 ): GhostStore {
   const head = `${prefix}ghost:`;
-  const keys = (): string[] => {
+  const metaHead = `${prefix}ghostmeta:`;
+  const seqKey = `${prefix}ghost-seq`;
+  const keysWith = (h: string): string[] => {
     const out: string[] = [];
     for (let i = 0; i < ls.length; i++) {
       const k = ls.key(i);
-      if (k !== null && k.startsWith(head)) out.push(k);
+      if (k !== null && k.startsWith(h)) out.push(k);
+    }
+    return out;
+  };
+  const metas = (): { key: string; meta: Meta }[] => {
+    const out: { key: string; meta: Meta }[] = [];
+    for (const k of keysWith(metaHead)) {
+      const meta = parseMeta(ls.getItem(k));
+      if (meta !== null) out.push({ key: k.slice(metaHead.length), meta });
     }
     return out;
   };
   return {
     save(snapshot) {
       const bucket = ghostBucketOf(snapshot);
-      const record: Stored = {
-        bucket: ghostBucketKey(bucket),
-        value: snapshot,
-      };
+      const bk = ghostBucketKey(bucket);
+      const owner = snapshot.owner.id;
+      const record: Stored = { bucket: bk, value: snapshot };
+      const text = JSON.stringify(record);
+      const size = JSON.stringify(snapshot).length;
+      if (size > sizeBound(options, snapshot.partySize, snapshot.round)) {
+        return Promise.reject(new Error('the ghost snapshot is too large'));
+      }
+      const key = ghostStoreKey(bucket, owner, snapshot.runId);
       try {
-        ls.setItem(
-          head + ghostStoreKey(bucket, snapshot.owner.id),
-          JSON.stringify(record),
-        );
+        const old = Number(ls.getItem(seqKey));
+        const seq = (Number.isInteger(old) && old >= 0 ? old : 0) + 1;
+        ls.setItem(head + key, text);
+        try {
+          ls.setItem(
+            metaHead + key,
+            JSON.stringify({
+              bucket: bk,
+              owner,
+              runId: snapshot.runId,
+              seq,
+              size,
+            }),
+          );
+          ls.setItem(seqKey, String(seq));
+        } catch (e) {
+          ls.removeItem(head + key);
+          ls.removeItem(metaHead + key);
+          throw e;
+        }
+        const own = metas()
+          .filter((m) => m.meta.bucket === bk && m.meta.owner === owner)
+          .map((m) => ({ key: m.key, seq: m.meta.seq }));
+        for (const k of evictionKeys(own, GHOST_KEEP_PER_OWNER_BUCKET)) {
+          ls.removeItem(head + k);
+          ls.removeItem(metaHead + k);
+        }
         return Promise.resolve();
       } catch (e) {
         return Promise.reject(e instanceof Error ? e : new Error(String(e)));
@@ -186,19 +335,34 @@ export function createLocalStorageGhostStore(
     },
     list(bucket: GhostBucket) {
       const want = ghostBucketKey(bucket);
+      const cap = sizeBound(options, bucket.partySize, bucket.round);
+      // Only the small meta keys are read to choose; the values after.
+      const chosen = metas()
+        .filter((m) => m.meta.bucket === want && m.meta.size <= cap)
+        .sort((a, b) =>
+          compareGhosts(
+            { owner: { id: a.meta.owner, label: '' }, runId: a.meta.runId },
+            { owner: { id: b.meta.owner, label: '' }, runId: b.meta.runId },
+          ),
+        )
+        .slice(0, GHOST_LIST_LIMIT);
       const out: unknown[] = [];
-      for (const k of keys()) {
-        const row = parse(ls.getItem(k));
+      for (const m of chosen) {
+        const row = parse(ls.getItem(head + m.key));
         if (row !== null && row.bucket === want) out.push(row.value);
       }
       return Promise.resolve(out.sort(compareStored));
     },
-    get(bucket, ownerId) {
-      const row = parse(ls.getItem(head + ghostStoreKey(bucket, ownerId)));
+    get(bucket, ownerId, runId) {
+      const row = parse(
+        ls.getItem(head + ghostStoreKey(bucket, ownerId, runId)),
+      );
       return Promise.resolve(row === null ? null : row.value);
     },
     clear() {
-      for (const k of keys()) ls.removeItem(k);
+      for (const k of keysWith(head)) ls.removeItem(k);
+      for (const k of keysWith(metaHead)) ls.removeItem(k);
+      ls.removeItem(seqKey);
       return Promise.resolve();
     },
   };
@@ -215,22 +379,29 @@ export interface OpenedGhostStore {
 export async function openGhostStore(env: {
   readonly indexedDB: IDBFactory | null;
   readonly localStorage: StorageLike | null;
+  readonly maxSize?: GhostMaxSize;
 }): Promise<OpenedGhostStore> {
+  const options: GhostStoreOptions =
+    env.maxSize === undefined ? {} : { maxSize: env.maxSize };
   if (env.indexedDB !== null) {
     try {
       const db = await openGhostDb(env.indexedDB);
-      return { store: createIdbGhostStore(db), kind: 'indexeddb' };
+      return { store: createIdbGhostStore(db, options), kind: 'indexeddb' };
     } catch {
       // fall through
     }
   }
   if (env.localStorage !== null) {
     return {
-      store: createLocalStorageGhostStore(env.localStorage),
+      store: createLocalStorageGhostStore(
+        env.localStorage,
+        DEFAULT_PREFIX,
+        options,
+      ),
       kind: 'local',
     };
   }
-  return { store: createMemoryGhostStore(), kind: 'memory' };
+  return { store: createMemoryGhostStore(options), kind: 'memory' };
 }
 
 const OWNER_KEY = `${DEFAULT_PREFIX}owner-id`;

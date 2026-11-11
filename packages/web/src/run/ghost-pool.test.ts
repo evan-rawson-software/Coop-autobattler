@@ -1,4 +1,4 @@
-import { IDBFactory } from 'fake-indexeddb';
+import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { describe, expect, test } from 'vitest';
 import { runGhostStoreConformance } from '@game/session/testing';
 import type { GhostSnapshot } from '@game/core';
@@ -12,6 +12,8 @@ import {
 } from './ghost-pool.js';
 import { createMemoryStorage } from './local-storage-store.js';
 import { opponentText } from '../shop/view-model.js';
+
+Object.assign(globalThis, { IDBKeyRange });
 
 runGhostStoreConformance('IndexedDB ghost store', async () =>
   createIdbGhostStore(await openGhostDb(new IDBFactory())),

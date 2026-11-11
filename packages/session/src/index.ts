@@ -130,13 +130,18 @@ export {
 } from './version.js';
 export {
   createMemoryGhostStore,
+  evictionKeys,
   ghostStoreKey,
+  GHOST_KEEP_PER_OWNER_BUCKET,
+  GHOST_LIST_LIMIT,
+  GHOST_STORE_DEFAULT_MAX_SIZE,
   type GhostStore,
   type MemoryGhostStore,
 } from './ghost-store.js';
 export {
   BOSS_LABEL,
   MAX_GHOST_CANDIDATES,
+  MAX_GHOST_ROWS_VALIDATED,
   SELECT_GHOST,
   eligibleGhosts,
   ghostBucketFor,
