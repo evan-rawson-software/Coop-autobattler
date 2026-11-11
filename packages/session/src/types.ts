@@ -39,6 +39,12 @@ export const STEPS = [
 export type Step = (typeof STEPS)[number];
 
 /**
+ * The format of `RunState`. Version 2 added the required `upcomingPve` and
+ * changed the battle detail; version 1 states are not readable.
+ */
+export const RUN_STATE_FORMAT_VERSION = 2;
+
+/**
  * Steps a saved state can never be in. `pve_battle` and `pvp_battle` are
  * entered and left inside one intent (the battle is resolved before anything
  * is revealed), so they never appear in a state that `applyIntent` returns.
@@ -142,7 +148,8 @@ export interface RunOutcome {
 export interface RunState {
   readonly runId: string;
   readonly runVersion: string;
-  readonly formatVersion: 1;
+  /** `RUN_STATE_FORMAT_VERSION`; a state of another version is rejected. */
+  readonly formatVersion: 2;
   readonly seed: number;
   /** The saved state of the run's `Rng`. */
   readonly rng: readonly [number, number, number, number];

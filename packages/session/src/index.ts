@@ -123,6 +123,7 @@ export { STEP_INTENTS } from './step-table.js';
 export {
   BUILTIN_INTENT_TYPES,
   MAX_PLAYERS,
+  RUN_STATE_FORMAT_VERSION,
   STEPS,
   TRANSIENT_STEPS,
 } from './types.js';

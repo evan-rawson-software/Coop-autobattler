@@ -21,6 +21,7 @@ import { drawStream, rootRng, streamLabels } from './streams.js';
 import {
   BUILTIN_INTENT_TYPES,
   MAX_PLAYERS,
+  RUN_STATE_FORMAT_VERSION,
   type BattleResult,
   type BuiltinIntent,
   type BuiltinIntentType,
@@ -142,7 +143,7 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
   const state: RunState = {
     runId: args.runId,
     runVersion: args.runVersion,
-    formatVersion: 1,
+    formatVersion: RUN_STATE_FORMAT_VERSION,
     seed: args.seed,
     rng: rootRng(args.seed).getState(),
     actionCounter: 0,
@@ -304,7 +305,8 @@ function enter(
       return enter(s, 'pvp_summary', deps, fx);
     }
     case 'run_over':
-      return { ...s, pending: null };
+      // Nothing is coming any more: no pending data, no upcoming options.
+      return { ...s, pending: null, upcomingPve: null };
     default:
       // core_placement, pve_summary, pvp_summary, event_resolve: the caller
       // sets `pending` (and `votes` for core_placement) itself.
@@ -454,6 +456,17 @@ function normalizeChoice(s: RunState, choice: Json): Json | null {
     : null;
 }
 
+/**
+ * A follow-up to ask the party about: non-null, and not one that lists
+ * options and has none (nobody could answer it).
+ */
+function hasOptions(followUp: Json | null): boolean {
+  if (followUp === null) return false;
+  if (!isRecord(followUp)) return true;
+  const o = followUp['options'];
+  return !(Array.isArray(o) && o.length === 0);
+}
+
 /** Resolve the open vote if it has met its condition. */
 function resolveVotes(s: RunState, deps: RunDeps, fx: Effect[]): Next {
   const votes = s.votes;
@@ -493,11 +506,12 @@ function resolveVotes(s: RunState, deps: RunDeps, fx: Effect[]): Next {
       state: enter({ ...s, pending: { option } }, 'pve_battle', deps, fx),
     };
   }
-  // Event: apply it, then either a follow-up choice or the shop.
+  // Event: apply it, then either a follow-up choice or the shop. A follow-up
+  // with no options would leave the party stuck, so it is skipped.
   const d = drawStream(s, streamLabels.eventResolve(s.round, s.leg));
   const outcome = deps.hooks.resolveEvent(d.state, option, d.stream);
   const next = applyPatch(d.state, outcome.patch);
-  if (outcome.followUp !== null) {
+  if (hasOptions(outcome.followUp)) {
     return {
       ok: true,
       state: enter(

@@ -1,13 +1,17 @@
 import { describe, expect, test } from 'vitest';
 import {
   canonicalJson,
+  generateThreat,
   hashJson,
   loadEventsOrThrow,
+  pickWeightedIndex,
   Rng,
+  withModifier,
   type TeamState,
 } from '@game/core';
 import { fixedBattle } from './defaults.js';
 import {
+  checkEventHandlers,
   defaultEventHandlers,
   eventHooks,
   shrineHandler,
@@ -660,11 +664,18 @@ describe('real battles', () => {
     });
   });
 
-  test('the ghost seam: findPvpOpponent can supply a team', () => {
+  test('the ghost seam: a ghost team that differs from the party brings its own modifiers', () => {
     const ghostDeps = makeGameDeps({
       findPvpOpponent: (input) => ({
         label: 'ghost of the test',
-        team: input.state.team,
+        // Not the party's team: its modifiers are its own, not the party's.
+        team: withModifier(
+          { ...input.state.team, modifiers: [] },
+          {
+            id: 'mod_ghost_core',
+            effects: [{ kind: 'core_health_percent', percent: 50 }],
+          },
+        ),
       }),
     });
     let s = start(ghostDeps);
@@ -673,8 +684,54 @@ describe('real battles', () => {
       kind: 'ghost',
       label: 'ghost of the test',
     });
-    expect(detailOf(s).source.type).toBe('ghost');
+    // The party holds no Core-health modifier of its own.
+    expect(
+      (s.team.modifiers ?? []).some((m) =>
+        m.effects.some((e) => e.kind === 'core_health_percent'),
+      ),
+    ).toBe(false);
+    const d = detailOf(s);
+    expect(d.source.type).toBe('ghost');
+    if (d.source.type === 'ghost') {
+      expect(d.source.team).not.toEqual(s.team);
+    }
+    // The ghost's modifier applies to side 1; the party has none.
+    const [mine, theirs] = d.summary.coreMaxHealth;
+    expect(theirs).toBe(Math.floor((mine * 150) / 100));
     expect(verifyLastBattle(s, ghostDeps)).toBe(true);
+  });
+
+  test('a generated PvP threat is stored, and replay uses the stored profile', () => {
+    let s = start(deps);
+    s = until(s, deps, (x) => x.step === 'pvp_summary');
+    const d = detailOf(s);
+    expect(d.source.type).toBe('generated');
+    if (d.source.type !== 'generated') return;
+    expect(d.source.threat.round).toBe(1);
+    expect(d.source.threat.archetype).toBe(d.source.input.archetype);
+    // Same threat content: it is what generateThreat gives for the input.
+    expect(d.source.threat).toEqual(
+      generateThreat(d.source.input, content, {
+        threats: gameConfigs.threats,
+        mapgen: gameConfigs.mapgen,
+      }),
+    );
+    // Content changes later in the run: the replay must not follow them.
+    const changed = {
+      ...gameConfigs,
+      threats: {
+        ...gameConfigs.threats,
+        baseBudget: gameConfigs.threats.baseBudget * 3,
+      },
+    };
+    const regenerated = generateThreat(d.source.input, content, {
+      threats: changed.threats,
+      mapgen: changed.mapgen,
+    });
+    expect(hashJson(regenerated)).not.toBe(hashJson(d.source.threat));
+    const changedDeps = makeGameDeps({}, changed);
+    expect(verifyLastBattle(s, changedDeps)).toBe(true);
+    expect(verifyLastBattle(clone(s), changedDeps)).toBe(true);
   });
 
   test('a Shrine modifier reaches the next battle through team state', () => {
@@ -746,13 +803,29 @@ describe('a whole run with real battles', () => {
   test('two players: every state validates, and replay matches', () => {
     const { deps, s, states } = play(['Ann', 'Bo'], 11);
     for (const st of states) {
-      if (st.step === 'run_over') continue;
       const v = validateRunState(clone(st), deps);
       expect(v.ok ? [] : v.errors).toEqual([]);
     }
     const replayed = replayRun(runArgs(['Ann', 'Bo'], 11), s.actionLog, deps);
     expect(replayed.ok).toBe(true);
     if (replayed.ok) expect(replayed.state).toEqual(s);
+  });
+
+  test('abandoning from any state of the run leaves a state that validates', () => {
+    const { deps, states } = play(['Ann', 'Bo'], 11);
+    let abandoned = 0;
+    for (const st of states) {
+      if (st.step === 'run_over') continue;
+      const r = applyIntent(st, 0, { type: 'abandon' }, deps);
+      expect(r.ok).toBe(true);
+      if (!r.ok) continue;
+      abandoned += 1;
+      expect(r.state.step).toBe('run_over');
+      expect(r.state.upcomingPve).toBeNull();
+      const v = validateRunState(clone(r.state), deps);
+      expect(v.ok ? [] : v.errors).toEqual([]);
+    }
+    expect(abandoned).toBeGreaterThan(30);
   });
 
   test('PvE losses never cost a life; only PvP losses do', () => {
@@ -767,5 +840,500 @@ describe('a whole run with real battles', () => {
       }
     }
     expect(livesLostInPvp).toBe(5 - s.lives);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Review findings
+
+describe('abandoning a run', () => {
+  const deps = fixedDeps(true, true);
+
+  test('in the first build step, while the PvE options are stored', () => {
+    const s = start(deps);
+    expect(s.step).toBe('build');
+    expect(s.upcomingPve).not.toBeNull();
+    const r = ok(s, 0, { type: 'abandon' }, deps).state;
+    expect(r.step).toBe('run_over');
+    expect(r.outcome).toEqual({ reason: 'abandoned', round: 1 });
+    expect(r.upcomingPve).toBeNull();
+    const v = validateRunState(clone(r), deps);
+    expect(v.ok ? [] : v.errors).toEqual([]);
+  });
+
+  test('in the shop that ends a round, while the next options are stored', () => {
+    const s = until(
+      start(deps),
+      deps,
+      (x) => x.step === 'shop' && x.leg === 'pvp',
+    );
+    expect(s.upcomingPve).not.toBeNull();
+    const r = ok(s, 0, { type: 'abandon' }, deps).state;
+    expect(r.step).toBe('run_over');
+    expect(r.upcomingPve).toBeNull();
+    expect(r.pending).toBeNull();
+    const v = validateRunState(clone(r), deps);
+    expect(v.ok ? [] : v.errors).toEqual([]);
+  });
+});
+
+describe('the upcomingPve invariant (validateRunState)', () => {
+  const deps = fixedDeps(true, true);
+  const check = (s: RunState) => validateRunState(clone(s), deps);
+  const errorsOf = (s: RunState): string =>
+    (() => {
+      const r = check(s);
+      return r.ok ? '' : r.errors.join('\n');
+    })();
+
+  test('is set exactly in the first build and the round-ending shop', () => {
+    const build = start(deps);
+    const pveShop = until(
+      build,
+      deps,
+      (x) => x.step === 'shop' && x.leg === 'pve',
+    );
+    const pvpShop = until(
+      build,
+      deps,
+      (x) => x.step === 'shop' && x.leg === 'pvp',
+    );
+    const eventPve = until(build, deps, (x) => x.step === 'event_choice');
+    const summary = until(build, deps, (x) => x.step === 'pvp_summary');
+    const choice = until(build, deps, (x) => x.step === 'pve_choice');
+    const stored = pvpShop.upcomingPve;
+    for (const s of [build, pvpShop]) expect(check(s).ok).toBe(true);
+    for (const s of [pveShop, eventPve, summary, choice]) {
+      expect(s.upcomingPve).toBeNull();
+      expect(check(s).ok).toBe(true);
+    }
+    // Missing where it is required.
+    expect(errorsOf({ ...build, upcomingPve: null })).toMatch(
+      /upcomingPve: must be set/,
+    );
+    expect(errorsOf({ ...pvpShop, upcomingPve: null })).toMatch(
+      /upcomingPve: must be set/,
+    );
+    // Present where it must be null.
+    for (const s of [pveShop, eventPve, summary, choice]) {
+      expect(errorsOf({ ...s, upcomingPve: stored })).toMatch(
+        /upcomingPve: must be null/,
+      );
+    }
+    // A pve-leg event step, a pvp-leg event step and the pvp-leg shop differ.
+    const eventPvp = until(
+      build,
+      deps,
+      (x) => x.step === 'event_choice' && x.leg === 'pvp',
+    );
+    expect(errorsOf({ ...eventPvp, upcomingPve: stored })).toMatch(
+      /must be null/,
+    );
+    // Wrong round.
+    expect(
+      errorsOf({
+        ...pvpShop,
+        upcomingPve: { round: 1, options: stored?.options ?? [] },
+      }),
+    ).toMatch(/round does not match/);
+  });
+});
+
+describe('the run-state format version', () => {
+  const deps = fixedDeps(true, true);
+
+  test('a new run has version 2; version 1 and other versions are rejected clearly', () => {
+    const s = start(deps);
+    expect(s.formatVersion).toBe(2);
+    expect(validateRunState(clone(s), deps).ok).toBe(true);
+    // A version-1 state: the old version, and no upcomingPve field.
+    const old = clone(s) as unknown as Record<string, unknown>;
+    old['formatVersion'] = 1;
+    delete old['upcomingPve'];
+    const r = validateRunState(old, deps);
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.errors).toHaveLength(1);
+    expect(r.errors[0]).toMatch(/unsupported format version 1/);
+    for (const v of [3, '2', null, 0]) {
+      const o = clone(s) as unknown as Record<string, unknown>;
+      o['formatVersion'] = v;
+      const x = validateRunState(o, deps);
+      expect(x.ok ? [] : x.errors.join()).toMatch(/unsupported format version/);
+    }
+  });
+});
+
+describe('fewer than three event offers, on purpose (issue #48)', () => {
+  const deps = fixedDeps(true, true);
+  const hooks = eventHooks(content, gameConfigs.events);
+  const atEvent = until(start(deps), deps, (x) => x.step === 'event_choice');
+  const tier3 = (s: RunState): RunState => ({
+    ...s,
+    team: {
+      ...s.team,
+      buildings: s.team.buildings.map((b) => ({ ...b, tier: 3 })),
+      stash: s.team.stash.map((b) => ({ ...b, tier: 3 })),
+    },
+  });
+  const holding = (s: RunState, ids: readonly string[]): RunState => ({
+    ...s,
+    team: {
+      ...s.team,
+      modifiers: gameConfigs.events.modifiers
+        .filter((m) => ids.includes(m.id))
+        .map((m) => ({ id: m.id, effects: m.effects })),
+    },
+  });
+  const offersFor = (s: RunState, seed: number) =>
+    hooks.eventOffers(s, Rng.fromSeed(seed)) as Record<string, Json>[];
+
+  test('Workshop unavailable and only three modifiers eligible: a Shrine and the Windfall', () => {
+    // Five modifiers; two non-stackable ones held leaves three.
+    const state = holding(tier3(atEvent), [
+      'mod_stout_walls',
+      'mod_sharp_turrets',
+    ]);
+    const eligible = [
+      'mod_fortified_core',
+      'mod_drilled_troops',
+      'mod_reinforced_frames',
+    ];
+    for (let seed = 1; seed <= 300; seed++) {
+      const offers = offersFor(state, seed);
+      expect(offers.map((o) => o['type']).sort()).toEqual([
+        'shrine',
+        'windfall',
+      ]);
+      const shrine = offers.find((o) => o['type'] === 'shrine');
+      expect(shrine?.['modifiers']).toEqual(eligible);
+    }
+  });
+
+  test('exactly the draws of the first pass happen; the impossible second Shrine draws nothing', () => {
+    const state = holding(tier3(atEvent), [
+      'mod_stout_walls',
+      'mod_sharp_turrets',
+    ]);
+    for (let seed = 1; seed <= 50; seed++) {
+      const rng = Rng.fromSeed(seed);
+      hooks.eventOffers(state, rng);
+      // Reference: the two weighted picks of the first pass (shrine 10,
+      // windfall 6, in file order), then nothing.
+      const ref = Rng.fromSeed(seed);
+      const first = pickWeightedIndex(ref, [10, 6]);
+      pickWeightedIndex(ref, [first === 0 ? 6 : 10]);
+      expect(rng.getState()).toEqual(ref.getState());
+    }
+  });
+
+  test('with a fourth eligible modifier a second, different Shrine is offered', () => {
+    const state = holding(tier3(atEvent), ['mod_stout_walls']);
+    for (let seed = 1; seed <= 100; seed++) {
+      const offers = offersFor(state, seed);
+      expect(offers).toHaveLength(3);
+      const shrines = offers.filter((o) => o['type'] === 'shrine');
+      expect(shrines).toHaveLength(2);
+      expect(shrines[0]?.['modifiers']).not.toEqual(shrines[1]?.['modifiers']);
+      expect(shrines[1]?.['id']).toBe('evt_shrine#2');
+    }
+  });
+
+  test('a Shrine with fewer than three eligible modifiers offers what is left; with none it is not offered', () => {
+    const state = tier3(atEvent);
+    const stackable = gameConfigs.events.modifiers
+      .filter((m) => m.stackable)
+      .map((m) => m.id);
+    const nonStackable = gameConfigs.events.modifiers
+      .filter((m) => !m.stackable)
+      .map((m) => m.id);
+    // Three non-stackable held: one non-stackable and the stackable one left.
+    const two = holding(state, nonStackable.slice(0, 3));
+    const left = [nonStackable[3] as string, ...stackable];
+    for (let seed = 1; seed <= 50; seed++) {
+      const shrine = offersFor(two, seed).find((o) => o['type'] === 'shrine');
+      expect([...(shrine?.['modifiers'] as string[])].sort()).toEqual(
+        [...left].sort(),
+      );
+    }
+    // No modifier can be taken at all: configuration with no modifiers.
+    const none = loadEventsOrThrow({
+      offerCount: 3,
+      events: gameConfigs.events.events.map((e) => ({ ...e })),
+      modifiers: [],
+    });
+    const noneHooks = eventHooks(content, none);
+    for (let seed = 1; seed <= 50; seed++) {
+      const offers = noneHooks.eventOffers(
+        tier3(atEvent),
+        Rng.fromSeed(seed),
+      ) as Record<string, Json>[];
+      expect(offers.map((o) => o['type'])).toEqual(['windfall']);
+    }
+  });
+
+  test('one offer is enough for the machine: vote, shop, validate', () => {
+    const none = loadEventsOrThrow({
+      offerCount: 3,
+      events: [
+        {
+          id: 'evt_windfall',
+          type: 'windfall',
+          weight: 1,
+          repeatable: false,
+          params: { gold: 4 },
+        },
+      ],
+      modifiers: [],
+    });
+    const d = makeGameDeps(
+      { battle: scripted(true, true) },
+      { ...gameConfigs, events: none },
+    );
+    const s = until(
+      start(d, ['Ann', 'Bo']),
+      d,
+      (x) => x.step === 'event_choice',
+    );
+    expect(offersOf(s)).toHaveLength(1);
+    expect(validateRunState(clone(s), d).ok).toBe(true);
+    const cur = voteAll(s, 'evt_windfall', d);
+    expect(cur.step).toBe('shop');
+    // The validator rejects an event step with no offer at all.
+    const empty: RunState = { ...s, pending: { options: [] } };
+    expect(validateRunState(clone(empty), d).ok).toBe(false);
+  });
+
+  test('wiring needs an always-available event so there is at least one offer', () => {
+    const events = loadEventsOrThrow({
+      offerCount: 3,
+      events: [
+        {
+          id: 'evt_workshop',
+          type: 'workshop',
+          weight: 1,
+          repeatable: false,
+          params: {},
+        },
+      ],
+      modifiers: [],
+    });
+    expect(() => createGameDeps(content, { ...gameConfigs, events })).toThrow(
+      /always available/,
+    );
+    const hooksOnly = eventHooks(content, events);
+    expect(() =>
+      hooksOnly.eventOffers(tier3(atEvent), Rng.fromSeed(1)),
+    ).toThrow(/no event could be offered/);
+  });
+});
+
+describe('event follow-ups', () => {
+  const base = (options: readonly Json[]): EventHandler => ({
+    type: 'oracle',
+    available: () => true,
+    instantiate: () => ({}),
+    resolve: () => ({
+      patch: {},
+      followUp: { prompt: 'oracle', options },
+    }),
+  });
+  const oracle = (options: readonly Json[]): EventHandler => ({
+    ...base(options),
+    canAskFollowUp: true,
+    choose: () => ({ ok: true, patch: {} }),
+  });
+  const events = loadEventsOrThrow({
+    offerCount: 3,
+    events: [
+      {
+        id: 'evt_windfall',
+        type: 'windfall',
+        weight: 1,
+        repeatable: false,
+        params: { gold: 4 },
+      },
+      {
+        id: 'evt_oracle',
+        type: 'oracle',
+        weight: 50,
+        repeatable: false,
+        params: {},
+      },
+    ],
+    modifiers: [],
+  });
+  const depsWith = (handler: EventHandler): RunDeps =>
+    createGameDeps(
+      content,
+      { ...gameConfigs, events },
+      {
+        battle: scripted(true, true),
+        eventHandlers: { ...defaultEventHandlers, oracle: handler },
+      },
+    );
+  const atEvent = (d: RunDeps) =>
+    until(start(d), d, (x) => x.step === 'event_choice');
+
+  test('a follow-up with no options goes straight to the shop', () => {
+    const d = depsWith(oracle([]));
+    const cur = voteAll(atEvent(d), 'evt_oracle', d);
+    expect(cur.step).toBe('shop');
+    expect(allowedIntents(cur, 0, d)).toContain('ready');
+    expect(validateRunState(clone(cur), d).ok).toBe(true);
+  });
+
+  test('a follow-up with options is asked', () => {
+    const d = depsWith(oracle([{ id: 'a' }, { id: 'b' }]));
+    let cur = voteAll(atEvent(d), 'evt_oracle', d);
+    expect(cur.step).toBe('event_resolve');
+    cur = ok(cur, 0, { type: 'event_choose', choice: 'b' }, d).state;
+    expect(cur.step).toBe('shop');
+  });
+
+  test('wiring rejects a handler that can ask for a follow-up but cannot apply one', () => {
+    const noChoose: EventHandler = {
+      ...base([{ id: 'a' }]),
+      canAskFollowUp: true,
+    };
+    expect(() => depsWith(noChoose)).toThrow(/follow-up but has no "choose"/);
+    // The shipped handlers declare it and have it.
+    for (const t of ['workshop', 'shrine'] as const) {
+      expect(defaultEventHandlers[t]?.canAskFollowUp).toBe(true);
+      expect(typeof defaultEventHandlers[t]?.choose).toBe('function');
+    }
+    expect(
+      checkEventHandlers(gameConfigs.events, defaultEventHandlers),
+    ).toEqual([]);
+  });
+
+  test('a handler that returns a follow-up without declaring it is an error when it happens', () => {
+    const undeclared: EventHandler = {
+      ...base([{ id: 'a' }]),
+      choose: () => ({ ok: true, patch: {} }),
+    };
+    const d = depsWith(undeclared);
+    expect(() => voteAll(atEvent(d), 'evt_oracle', d)).toThrow(
+      /does not declare canAskFollowUp/,
+    );
+  });
+});
+
+describe('a Shrine modifier changes the outcome of a real battle', () => {
+  // A modifier far stronger than the shipped ones, so that the party's thin
+  // board (it never wins without help) wins a battle it would have lost. The
+  // seed was found by searching seeds 1 to 40 at test-writing time: at this
+  // seed the Shrine offers it and the second PvE battle flips from a loss to
+  // a win.
+  const SEED = 8;
+  const events = loadEventsOrThrow({
+    offerCount: 3,
+    events: gameConfigs.events.events.map((e) => ({ ...e })),
+    modifiers: [
+      ...gameConfigs.events.modifiers.map((m) => ({ ...m })),
+      {
+        id: 'mod_titan',
+        stackable: false,
+        effects: [
+          { kind: 'core_health_percent', percent: 1000 },
+          { kind: 'turret_damage_percent', percent: 1000 },
+          { kind: 'unit_strength_percent', percent: 1000 },
+        ],
+      },
+    ],
+  });
+  const deps = makeGameDeps({}, { ...gameConfigs, events });
+
+  /** Place every stash building on the free cells nearest the Core. */
+  function layout(s0: RunState): RunState {
+    let s = s0;
+    const core = s.team.core;
+    if (core === null) throw new Error('no core');
+    const cells: { x: number; y: number }[] = [];
+    for (let x = 0; x < s.team.map.width; x++) {
+      for (let y = 0; y < s.team.map.height; y++) cells.push({ x, y });
+    }
+    const dist = (c: { x: number; y: number }) =>
+      Math.abs(c.x - core.x) + Math.abs(c.y - core.y);
+    cells.sort((a, b) => dist(a) - dist(b) || a.x - b.x || a.y - b.y);
+    const order = ['bld_turret', 'bld_barracks', 'bld_wall', 'bld_extractor'];
+    const stash = [...s.team.stash].sort(
+      (a, b) => order.indexOf(a.def) - order.indexOf(b.def),
+    );
+    for (const b of stash) {
+      for (const c of cells) {
+        let placed = false;
+        for (const rotation of [0, 90, 180, 270]) {
+          const r = applyIntent(
+            s,
+            0,
+            { type: 'place_building', id: b.id, x: c.x, y: c.y, rotation },
+            deps,
+          );
+          if (r.ok) {
+            s = r.state;
+            placed = true;
+            break;
+          }
+        }
+        if (placed) break;
+      }
+    }
+    return s;
+  }
+
+  /** Winners of the first four battles; the Shrine (or a Windfall) is the first event. */
+  function winners(takeTitan: boolean): {
+    pve1: boolean;
+    pvp1: boolean;
+    pve2: boolean;
+    shrineOffer: boolean;
+  } {
+    let s = layout(start(deps, ['Ann'], SEED));
+    expect(s.team.stash).toHaveLength(0);
+    const won: boolean[] = [];
+    let shrineOffer = false;
+    for (let i = 0; i < 60 && won.length < 3; i++) {
+      if (s.step === 'pve_summary' || s.step === 'pvp_summary') {
+        won.push(detailOf(s).summary.winner === 0);
+      }
+      s = step(s, deps, {
+        difficulty: 'easy',
+        event: (x) => {
+          const offers = offersOf(x);
+          const shrine = offers.find((o) => o['type'] === 'shrine');
+          const first = x.round === 1 && x.leg === 'pve';
+          if (first && shrine !== undefined) {
+            shrineOffer = (shrine['modifiers'] as string[]).includes(
+              'mod_titan',
+            );
+          }
+          return (
+            takeTitan && first && shrine !== undefined
+              ? shrine['id']
+              : offers.find((o) => o['type'] === 'windfall')?.['id']
+          ) as string;
+        },
+        choose: () => 'mod_titan',
+      });
+    }
+    expect(won).toHaveLength(3);
+    return {
+      pve1: won[0] as boolean,
+      pvp1: won[1] as boolean,
+      pve2: won[2] as boolean,
+      shrineOffer,
+    };
+  }
+
+  test('taking the modifier flips a battle the same run loses without it', () => {
+    const without = winners(false);
+    const withIt = winners(true);
+    expect(withIt.shrineOffer).toBe(true);
+    // Before the Shrine: identical.
+    expect(withIt.pve1).toBe(without.pve1);
+    // After it: the run without it loses the second PvE battle, the run with it wins.
+    expect(without.pve2).toBe(false);
+    expect(withIt.pve2).toBe(true);
   });
 });
