@@ -34,10 +34,14 @@ export function buildAll(): { built: Built; atlasJson: string } {
 export function writeAll(): void {
   const { built, atlasJson } = buildAll();
   mkdirSync(outDir, { recursive: true });
-  for (const [file, buf] of built.pngs) writeFileSync(path.join(outDir, file), buf);
+  for (const [file, buf] of built.pngs)
+    writeFileSync(path.join(outDir, file), buf);
   writeFileSync(path.join(outDir, 'atlas.json'), atlasJson);
   const n = Object.keys(built.atlas.sprites).length;
-  console.log(`wrote ${built.pngs.size} sheets and an atlas with ${n} sprites to ${outDir}`);
+  console.log(
+    `wrote ${String(built.pngs.size)} sheets and an atlas with ${String(n)} sprites to ${outDir}`,
+  );
 }
 
-if (process.argv[1] && import.meta.url.endsWith(path.basename(process.argv[1]))) writeAll();
+if (process.argv[1] && import.meta.url.endsWith(path.basename(process.argv[1])))
+  writeAll();

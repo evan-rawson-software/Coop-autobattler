@@ -38,7 +38,9 @@ describe('committed assets', () => {
     const again = buildAll();
     expect(again.atlasJson).toBe(fresh.atlasJson);
     for (const [file, buf] of fresh.built.pngs)
-      expect(Buffer.compare(again.built.pngs.get(file) ?? Buffer.alloc(0), buf)).toBe(0);
+      expect(
+        Buffer.compare(again.built.pngs.get(file) ?? Buffer.alloc(0), buf),
+      ).toBe(0);
   });
 });
 
@@ -50,7 +52,10 @@ describe('atlas consistency', () => {
       expect({ w: png.w, h: png.h }, name).toEqual({ w: s.w, h: s.h });
       sizes.set(name, { w: s.w, h: s.h });
     }
-    const bySheet = new Map<string, { name: string; x: number; y: number; w: number; h: number }[]>();
+    const bySheet = new Map<
+      string,
+      { name: string; x: number; y: number; w: number; h: number }[]
+    >();
     for (const [name, sp] of Object.entries(committed.sprites)) {
       const sheet = sizes.get(sp.sheet);
       expect(sheet, `${name} sheet`).toBeDefined();
@@ -71,7 +76,10 @@ describe('atlas consistency', () => {
       for (const [i, a] of list.entries())
         for (const b of list.slice(i + 1)) {
           const apart =
-            a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y;
+            a.x + a.w <= b.x ||
+            b.x + b.w <= a.x ||
+            a.y + a.h <= b.y ||
+            b.y + b.h <= a.y;
           expect(apart, `${a.name} overlaps ${b.name}`).toBe(true);
         }
   });
@@ -86,10 +94,11 @@ describe('atlas consistency', () => {
         let any = false;
         for (let y = 0; y < sp.h && !any; y++)
           for (let x = 0; x < sp.w && !any; x++) {
-            const o = ((sp.y + y) * (png?.w ?? 0) + sp.x + f * sp.w + x) * 4 + 3;
+            const o =
+              ((sp.y + y) * (png?.w ?? 0) + sp.x + f * sp.w + x) * 4 + 3;
             if ((png?.rgba[o] ?? 0) > 0) any = true;
           }
-        expect(any, `${name} frame ${f} is empty`).toBe(true);
+        expect(any, `${name} frame ${String(f)} is empty`).toBe(true);
       }
     }
   });
@@ -120,13 +129,19 @@ describe('content coverage', () => {
     for (const id of loadUnitIds())
       for (const base of [id, `${id}@a`, `${id}@b`]) {
         expect(has(base), base).toBe(true);
-        expect(committed.sprites[`${base}.walk`]?.frames, `${base}.walk`).toBe(2);
-        expect(committed.sprites[`${base}.attack`]?.frames, `${base}.attack`).toBeGreaterThanOrEqual(2);
+        expect(committed.sprites[`${base}.walk`]?.frames, `${base}.walk`).toBe(
+          2,
+        );
+        expect(
+          committed.sprites[`${base}.attack`]?.frames,
+          `${base}.attack`,
+        ).toBeGreaterThanOrEqual(2);
       }
   });
 
   test('every terrain feature has a sprite', () => {
-    for (const id of loadTerrainIds()) expect(has(id), `terrain ${id}`).toBe(true);
+    for (const id of loadTerrainIds())
+      expect(has(id), `terrain ${id}`).toBe(true);
   });
 
   test('every resource has a node sprite and a tint ramp', () => {
@@ -137,16 +152,40 @@ describe('content coverage', () => {
   });
 
   test('every event type has an icon', () => {
-    for (const t of loadEventTypes()) expect(has(`ui_event_${t}`), t).toBe(true);
+    for (const t of loadEventTypes())
+      expect(has(`ui_event_${t}`), t).toBe(true);
   });
 
   test('conduit, effect and ui pieces are present', () => {
     for (const n of [
-      'conduit_straight', 'conduit_corner', 'conduit_t', 'conduit_cross', 'conduit_end', 'conduit_item',
-      'fx_hit_spark', 'fx_explosion', 'fx_spawn_puff', 'fx_turret_shot', 'fx_shadow',
-      'ui_panel', 'ui_bg', 'ui_button_normal', 'ui_button_hover', 'ui_button_disabled', 'ui_card',
-      'ui_icon_coin', 'ui_icon_heart', 'ui_icon_lock', 'ui_icon_ready', 'tier_pips',
-      'ground_1', 'ground_2', 'ground_3', 'neutral_1', 'ter_lake_auto', 'ter_cliff_auto',
+      'conduit_straight',
+      'conduit_corner',
+      'conduit_t',
+      'conduit_cross',
+      'conduit_end',
+      'conduit_item',
+      'fx_hit_spark',
+      'fx_explosion',
+      'fx_spawn_puff',
+      'fx_turret_shot',
+      'fx_shadow',
+      'ui_panel',
+      'ui_bg',
+      'ui_button_normal',
+      'ui_button_hover',
+      'ui_button_disabled',
+      'ui_card',
+      'ui_icon_coin',
+      'ui_icon_heart',
+      'ui_icon_lock',
+      'ui_icon_ready',
+      'tier_pips',
+      'ground_1',
+      'ground_2',
+      'ground_3',
+      'neutral_1',
+      'ter_lake_auto',
+      'ter_cliff_auto',
     ])
       expect(has(n), n).toBe(true);
     expect(committed.sprites['fx_hit_spark']?.frames).toBe(3);

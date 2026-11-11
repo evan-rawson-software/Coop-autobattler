@@ -8,7 +8,7 @@
 
 import { loadUnitIds } from '../content.js';
 import { TEAM_A, TEAM_B, TINT_NEUTRAL, colorsWithRamp } from '../palette.js';
-import { Pix, bevelShape } from '../pix.js';
+import { Pix } from '../pix.js';
 import { sprite, type SpriteDef } from '../model.js';
 
 type Side = 'n' | 'a' | 'b';
@@ -40,7 +40,14 @@ function ball(
   ramp: Ramp,
   ring = true,
 ): void {
-  const inside = (x: number, y: number, ox: number, oy: number, sx: number, sy: number): boolean => {
+  const inside = (
+    x: number,
+    y: number,
+    ox: number,
+    oy: number,
+    sx: number,
+    sy: number,
+  ): boolean => {
     const dx = (x + 0.5 - cx - ox) / sx;
     const dy = (y + 0.5 - cy - oy) / sy;
     return dx * dx + dy * dy <= 1;
@@ -54,7 +61,8 @@ function ball(
       }
       let key = ramp[1];
       if (!inside(x, y, -1, -1, rx - 0.6, ry - 0.6)) key = ramp[0];
-      else if (inside(x, y, -rx * 0.38, -ry * 0.38, rx * 0.34, ry * 0.34)) key = ramp[2];
+      else if (inside(x, y, -rx * 0.38, -ry * 0.38, rx * 0.34, ry * 0.34))
+        key = ramp[2];
       p.set(x, y, key);
     }
 }
@@ -83,7 +91,8 @@ class Layers {
 /** The side-specific shape accent at the front of the head. */
 function accent(p: Pix, c: Ctx, hx: number, hy: number, hr: number): void {
   if (c.side === 'a') {
-    for (let k = hr; k <= hr + 2; k++) p.set(hx, hy + c.dir * k, k === hr + 2 ? 'O' : 'y');
+    for (let k = hr; k <= hr + 2; k++)
+      p.set(hx, hy + c.dir * k, k === hr + 2 ? 'O' : 'y');
   } else if (c.side === 'b') {
     for (const sx of [-2, 2]) {
       p.set(hx + sx, hy + c.dir * hr, '6');
@@ -104,7 +113,8 @@ function soldier(L: Layers, c: Ctx): void {
   const reach = c.atk === 2 ? 11 : c.atk === 1 ? 6 : 9;
   const sx = 14;
   const y0 = Math.round(cy - c.dir * 3);
-  for (let k = 0; k < reach; k++) L.back.set(sx, y0 + c.dir * k, k >= reach - 2 ? '6' : 'o');
+  for (let k = 0; k < reach; k++)
+    L.back.set(sx, y0 + c.dir * k, k >= reach - 2 ? '6' : 'o');
   L.back.set(sx, y0 + c.dir * (reach - 3), '5');
   // Body: team tunic.
   ball(L.body, cx, cy, 5.6, 5.6, ['X', 'x', 'Z']);
@@ -124,8 +134,16 @@ function raider(L: Layers, c: Ctx): void {
   // Scarf tails streaming behind, in the team colour.
   const sway = c.step;
   for (let k = 3; k <= 6; k++) {
-    L.back.set(cx - 1 + (k > 4 ? sway : 0), Math.round(cy - c.dir * k), k > 4 ? 'X' : 'x');
-    L.back.set(cx + 1 + (k > 4 ? -sway : 0), Math.round(cy - c.dir * k), k > 4 ? 'X' : 'x');
+    L.back.set(
+      cx - 1 + (k > 4 ? sway : 0),
+      Math.round(cy - c.dir * k),
+      k > 4 ? 'X' : 'x',
+    );
+    L.back.set(
+      cx + 1 + (k > 4 ? -sway : 0),
+      Math.round(cy - c.dir * k),
+      k > 4 ? 'X' : 'x',
+    );
   }
   // Quick feet.
   L.back.rect(cx - 3, Math.round(cy + c.dir * (2 + s)), 1, 2, '1');
@@ -136,7 +154,11 @@ function raider(L: Layers, c: Ctx): void {
   for (const side of [-1, 1]) {
     const dx = cx + side * spread;
     for (let k = 0; k < reach; k++)
-      L.back.set(dx, Math.round(cy + c.dir * (k - 1)), k >= reach - 2 ? '6' : '5');
+      L.back.set(
+        dx,
+        Math.round(cy + c.dir * (k - 1)),
+        k >= reach - 2 ? '6' : '5',
+      );
     L.back.set(dx, Math.round(cy + c.dir * -2), 'y');
   }
   ball(L.body, cx, cy, 4.2, 4.8, ['0', '1', '2']);
@@ -156,18 +178,28 @@ function archer(L: Layers, c: Ctx): void {
   const bx = cx - 6;
   for (let k = -4; k <= 4; k++) {
     const bend = Math.floor((k * k) / 6);
-    L.back.set(bx - bend + 1, Math.round(cy + c.dir * (k + 1)), k === 0 ? 'O' : 'o');
+    L.back.set(
+      bx - bend + 1,
+      Math.round(cy + c.dir * (k + 1)),
+      k === 0 ? 'O' : 'o',
+    );
   }
   const pull = c.atk === 1 ? 3 : 0;
   L.back.set(bx + 2 + pull, Math.round(cy + c.dir), '5');
   for (let k = 0; k < 4; k++) {
-    L.back.set(bx + 1 + (k === 0 ? 0 : 0), Math.round(cy + c.dir * (1 + k - 4 + (k > 2 ? 0 : 0))), '5');
+    L.back.set(
+      bx + 1 + (k === 0 ? 0 : 0),
+      Math.round(cy + c.dir * (1 + k - 4 + (k > 2 ? 0 : 0))),
+      '5',
+    );
   }
   if (c.atk === 1) {
-    for (let k = 0; k < 6; k++) L.back.set(bx + 2, Math.round(cy + c.dir * (k - 1)), k === 5 ? '6' : '4');
+    for (let k = 0; k < 6; k++)
+      L.back.set(bx + 2, Math.round(cy + c.dir * (k - 1)), k === 5 ? '6' : '4');
   }
   if (c.atk === 2) {
-    for (let k = 0; k < 5; k++) L.back.set(bx + 2, Math.round(cy + c.dir * (5 + k)), k === 4 ? '6' : '4');
+    for (let k = 0; k < 5; k++)
+      L.back.set(bx + 2, Math.round(cy + c.dir * (5 + k)), k === 4 ? '6' : '4');
   }
   ball(L.body, cx, cy, 5, 5, ['r', 'q', 'p']);
   ball(L.body, cx, cy, 3, 3, ['X', 'x', 'Z'], false);
@@ -211,7 +243,11 @@ function rotors(p: Pix, c: Ctx): void {
         }
     const horizontal = c.step >= 0;
     for (let k = -2; k <= 2; k++)
-      p.setRgba(horizontal ? rx + k : rx, horizontal ? ry : ry + k, [240, 244, 246, 235]);
+      p.setRgba(
+        horizontal ? rx + k : rx,
+        horizontal ? ry : ry + k,
+        [240, 244, 246, 235],
+      );
   }
 }
 
@@ -270,7 +306,9 @@ export function unitSprites(): SpriteDef[] {
             id,
             sheet: 'units',
             category: 'unit',
-            frames: Array.from({ length: n }, (_, i) => frame(id, side, anim, i)),
+            frames: Array.from({ length: n }, (_, i) =>
+              frame(id, side, anim, i),
+            ),
             fps,
             tintable: side === 'n',
             ...(PLANNED.has(id) ? { planned: true } : {}),

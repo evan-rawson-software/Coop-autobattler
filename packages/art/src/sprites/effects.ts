@@ -35,35 +35,68 @@ function hitSpark(frame: number): Pix {
   return p;
 }
 
+/** An irregular blob: radius wobbles with the angle, so it reads as flame. */
+function flame(
+  p: Pix,
+  cx: number,
+  cy: number,
+  rad: number,
+  key: string,
+  phase: number,
+  wobble = 0.28,
+): void {
+  for (let y = 0; y < p.h; y++)
+    for (let x = 0; x < p.w; x++) {
+      const dx = x + 0.5 - cx;
+      const dy = y + 0.5 - cy;
+      const ang = Math.atan2(dy, dx);
+      const r =
+        rad *
+        (1 + wobble * Math.sin(ang * 5 + phase) * Math.cos(ang * 3 - phase));
+      if (dx * dx + dy * dy <= r * r) p.set(x, y, key);
+    }
+}
+
 function explosion(frame: number): Pix {
   const p = new Pix(32, 32);
   const r = rng(40 + frame);
-  const blob = (cx: number, cy: number, rad: number, key: string): void =>
-    p.ellipse(cx, cy, rad, rad, key);
   if (frame === 0) {
-    blob(16, 16, 6, 'O');
-    blob(16, 16, 4.5, 'y');
-    blob(16, 16, 2.5, '6');
+    flame(p, 16, 16, 7, 'O', 0.5, 0.2);
+    flame(p, 16, 16, 5, 'y', 1, 0.2);
+    flame(p, 16, 16, 2.6, '6', 2, 0.1);
   } else if (frame === 1) {
-    blob(16, 16, 11, 'M');
-    blob(16, 16, 9, 'O');
-    blob(16, 15, 6, 'y');
-    blob(15, 14, 3, '6');
-    for (let i = 0; i < 6; i++) blob(16 + (r() - 0.5) * 22, 16 + (r() - 0.5) * 22, 2, 'O');
+    flame(p, 16, 16, 12, 'm', 1.2);
+    flame(p, 16, 16, 10.5, 'M', 2.2);
+    flame(p, 16, 15.5, 8, 'O', 3.1);
+    flame(p, 15.5, 15, 5, 'y', 4);
+    flame(p, 15, 14.5, 2.6, '6', 5, 0.1);
   } else if (frame === 2) {
-    blob(16, 16, 13, 'm');
-    blob(16, 16, 11, 'M');
-    blob(15, 16, 7, 'O');
-    blob(15, 15, 3.5, 'y');
-    for (let i = 0; i < 5; i++) blob(16 + (r() - 0.5) * 26, 16 + (r() - 0.5) * 26, 2.5, '1');
+    flame(p, 16, 16, 14, 'm', 2.6, 0.3);
+    flame(p, 16, 16, 12, 'M', 3.6, 0.3);
+    flame(p, 16, 16, 8.5, 'O', 4.6, 0.3);
+    flame(p, 16, 16, 4, 'y', 5.6, 0.2);
+    // Dark gaps where the fire is tearing apart.
+    for (let i = 0; i < 4; i++) {
+      const a = r() * Math.PI * 2;
+      const d = 6 + r() * 6;
+      p.ellipse(16 + Math.cos(a) * d, 16 + Math.sin(a) * d, 1.6, 1.6, '1');
+    }
   } else {
-    // Smoke, dithered away.
-    for (let i = 0; i < 7; i++) blob(16 + (r() - 0.5) * 20, 14 + (r() - 0.5) * 18, 4, '2');
+    // Embers and smoke, dithered away.
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + 0.4;
+      flame(p, 16 + Math.cos(a) * 9, 16 + Math.sin(a) * 9, 3.4, '2', i, 0.3);
+    }
     for (let y = 0; y < 32; y++)
       for (let x = 0; x < 32; x++) if ((x + y) % 2 === 0) p.set(x, y, '.');
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 10; i++) {
       const a = r() * Math.PI * 2;
-      p.set(Math.round(16 + Math.cos(a) * 12), Math.round(16 + Math.sin(a) * 12), 'O');
+      const d = 8 + r() * 7;
+      p.set(
+        Math.round(16 + Math.cos(a) * d),
+        Math.round(16 + Math.sin(a) * d),
+        i % 2 === 0 ? 'O' : 'y',
+      );
     }
   }
   return p;

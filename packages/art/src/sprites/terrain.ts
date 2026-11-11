@@ -32,7 +32,7 @@ function groundTile(seed: number, variant: 0 | 1 | 2): Pix {
     }
   }
   if (variant === 2) {
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       const [x, y] = at();
       wset(p, x, y, '3');
       wset(p, x + 1, y, '2');
@@ -61,7 +61,8 @@ function neutralTile(seed: number, variant: 0 | 1): Pix {
   if (variant === 1) {
     // A hairline crack that wraps.
     let x = Math.floor(r() * T);
-    for (let y = 0; y < T; y++) {
+    const y0 = Math.floor(r() * 6);
+    for (let y = y0; y < y0 + 9; y++) {
       wset(p, x, y, 'a');
       if (r() < 0.4) x += r() < 0.5 ? -1 : 1;
     }
@@ -179,7 +180,13 @@ function autoSheet(fn: (mask: number) => Pix): Pix[] {
 
 type Draw = (p: Pix) => void;
 
-function rockBlob(p: Pix, cx: number, cy: number, rx: number, ry: number): void {
+function rockBlob(
+  p: Pix,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+): void {
   for (let y = 0; y < p.h; y++)
     for (let x = 0; x < p.w; x++) {
       const dx = (x + 0.5 - cx) / rx;
@@ -193,13 +200,7 @@ function rockBlob(p: Pix, cx: number, cy: number, rx: number, ry: number): void 
     }
 }
 
-function diamond(
-  p: Pix,
-  cx: number,
-  cy: number,
-  rx: number,
-  ry: number,
-): void {
+function diamond(p: Pix, cx: number, cy: number, rx: number, ry: number): void {
   for (let y = 0; y < p.h; y++)
     for (let x = 0; x < p.w; x++) {
       const dx = x + 0.5 - cx;
@@ -271,7 +272,7 @@ export function terrainSprites(): SpriteDef[] {
   };
   ([0, 1, 2] as const).forEach((v, i) => {
     add({
-      name: `ground_${i + 1}`,
+      name: `ground_${String(i + 1)}`,
       sheet: 'terrain',
       category: 'terrain',
       frames: groundTile(11 + i * 7, v),
@@ -280,7 +281,7 @@ export function terrainSprites(): SpriteDef[] {
   });
   ([0, 1] as const).forEach((v, i) => {
     add({
-      name: `neutral_${i + 1}`,
+      name: `neutral_${String(i + 1)}`,
       sheet: 'terrain',
       category: 'terrain',
       frames: neutralTile(101 + i * 9, v),

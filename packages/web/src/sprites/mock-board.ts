@@ -66,11 +66,13 @@ const NODES: [string, number, number][] = [
 ];
 
 function mask(set: Set<string>, x: number, y: number): number {
+  const has = (cx: number, cy: number): boolean =>
+    set.has(String(cx) + ',' + String(cy));
   return (
-    (set.has(`${x},${y - 1}`) ? 1 : 0) |
-    (set.has(`${x + 1},${y}`) ? 2 : 0) |
-    (set.has(`${x},${y + 1}`) ? 4 : 0) |
-    (set.has(`${x - 1},${y}`) ? 8 : 0)
+    (has(x, y - 1) ? 1 : 0) |
+    (has(x + 1, y) ? 2 : 0) |
+    (has(x, y + 1) ? 4 : 0) |
+    (has(x - 1, y) ? 8 : 0)
   );
 }
 
@@ -96,7 +98,7 @@ export function drawMockBoard(
           ? h % 2 === 0
             ? 'neutral_1'
             : 'neutral_2'
-          : ['ground_1', 'ground_2', 'ground_3'][h % 3] ?? 'ground_1';
+          : (['ground_1', 'ground_2', 'ground_3'][h % 3] ?? 'ground_1');
       drawFrame(ctx, sheets, name, 0, x * px, y * px, scale);
     }
   // Lake and cliffs through their autotiles.
@@ -116,7 +118,16 @@ export function drawMockBoard(
   for (const c of CONDUITS) {
     const r = ramp(c.res);
     const o = r ? { ramp: r, rot: c.rot } : { rot: c.rot };
-    drawFrame(ctx, sheets, `conduit_${c.kind}`, 0, c.x * px, c.y * px, scale, o);
+    drawFrame(
+      ctx,
+      sheets,
+      `conduit_${c.kind}`,
+      0,
+      c.x * px,
+      c.y * px,
+      scale,
+      o,
+    );
     if (c.kind !== 'cross' && c.kind !== 't') {
       const o2 = r ? { ramp: r } : {};
       drawFrame(ctx, sheets, 'conduit_item', 0, c.x * px, c.y * px, scale, o2);
@@ -132,10 +143,24 @@ export function drawMockBoard(
   }
   // Units: party (side A) marching up, enemies (side B) coming down.
   const step = Math.floor(t / 160) % 2;
-  const unit = (id: string, side: 'a' | 'b', cx: number, cy: number, anim: string): void => {
+  const unit = (
+    id: string,
+    side: 'a' | 'b',
+    cx: number,
+    cy: number,
+    anim: string,
+  ): void => {
     const name = `${id}@${side}${anim}`;
     const frame = anim === '' ? 0 : step;
-    drawFrame(ctx, sheets, name, frame, cx * scale - 8 * scale, cy * scale - 8 * scale, scale);
+    drawFrame(
+      ctx,
+      sheets,
+      name,
+      frame,
+      cx * scale - 8 * scale,
+      cy * scale - 8 * scale,
+      scale,
+    );
   };
   unit('unit_soldier', 'a', 52, 70, '.walk');
   unit('unit_soldier', 'a', 66, 60, '.walk');
@@ -147,13 +172,45 @@ export function drawMockBoard(
   unit('unit_soldier', 'a', 70, 47, '.attack');
   // A flyer with its shadow.
   const bob = Math.sin(t / 300) * 1.5;
-  drawFrame(ctx, sheets, 'fx_shadow', 0, 138 * scale - 8 * scale, (30 + 7) * scale - 8 * scale, scale);
+  drawFrame(
+    ctx,
+    sheets,
+    'fx_shadow',
+    0,
+    138 * scale - 8 * scale,
+    (30 + 7) * scale - 8 * scale,
+    scale,
+  );
   unit('unit_drone', 'b', 138, 30 + bob, '.walk');
   // Effects.
   const fx = Math.floor(t / 110);
   drawFrame(ctx, sheets, 'fx_hit_spark', fx % 3, 66 * scale, 40 * scale, scale);
-  drawFrame(ctx, sheets, 'fx_spawn_puff', fx % 3, 5 * px + 4 * scale, 7 * px - 2 * scale, scale);
-  drawFrame(ctx, sheets, 'fx_explosion', Math.floor(t / 150) % 4, 150 * scale, 8 * scale, scale);
+  drawFrame(
+    ctx,
+    sheets,
+    'fx_spawn_puff',
+    fx % 3,
+    5 * px + 4 * scale,
+    7 * px - 2 * scale,
+    scale,
+  );
+  drawFrame(
+    ctx,
+    sheets,
+    'fx_explosion',
+    Math.floor(t / 150) % 4,
+    150 * scale,
+    8 * scale,
+    scale,
+  );
   const shotY = 62 - ((t / 40) % 40);
-  drawFrame(ctx, sheets, 'fx_turret_shot', 0, 7 * px + 4 * scale, shotY * scale, scale);
+  drawFrame(
+    ctx,
+    sheets,
+    'fx_turret_shot',
+    0,
+    7 * px + 4 * scale,
+    shotY * scale,
+    scale,
+  );
 }

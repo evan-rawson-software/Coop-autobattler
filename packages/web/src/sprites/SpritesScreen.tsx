@@ -19,6 +19,8 @@ import {
 } from './atlas.js';
 import { MOCK_COLS, MOCK_ROWS, drawMockBoard } from './mock-board.js';
 
+const px = (n: number): string => `${String(n)}px`;
+
 // One animation loop drives every canvas on the page.
 type Drawer = (t: number) => void;
 const drawers = new Set<Drawer>();
@@ -75,7 +77,16 @@ function SpriteCanvas(props: {
       const opts = props.ramp ? { ramp: props.ramp } : {};
       if (strip) {
         for (let f = 0; f < sp.frames; f++)
-          drawFrame(ctx, props.sheets, props.name, f, f * sp.w * props.scale, 0, props.scale, opts);
+          drawFrame(
+            ctx,
+            props.sheets,
+            props.name,
+            f,
+            f * sp.w * props.scale,
+            0,
+            props.scale,
+            opts,
+          );
       } else {
         const f = sp.fps > 0 ? Math.floor((t / 1000) * sp.fps) : 0;
         drawFrame(ctx, props.sheets, props.name, f, 0, 0, props.scale, opts);
@@ -89,7 +100,7 @@ function SpriteCanvas(props: {
       class="px"
       width={w}
       height={h}
-      style={{ width: `${w}px`, height: `${h}px` }}
+      style={{ width: px(w), height: px(h) }}
     />
   );
 }
@@ -99,19 +110,28 @@ function SpriteCard(props: { sheets: Sheets; name: string }) {
   const strip = sp.fps === 0 && sp.frames > 1;
   const scales = strip ? [1, 2] : [1, 2, 4];
   return (
-    <figure class={`sprite-card${strip && sp.frames > 6 ? ' wide' : ''}`} data-sprite={props.name}>
+    <figure
+      class={`sprite-card${strip && sp.frames > 6 ? ' wide' : ''}`}
+      data-sprite={props.name}
+    >
       <figcaption>
         <code>{props.name}</code>
         {sp.planned ? <span class="badge">planned</span> : null}
         <span class="meta">
           {sp.w}x{sp.h}
-          {sp.frames > 1 ? ` x${sp.frames}` : ''}
-          {sp.fps > 0 ? ` @${sp.fps}fps` : ''}
+          {sp.frames > 1 ? ` x${String(sp.frames)}` : ''}
+          {sp.fps > 0 ? ` @${String(sp.fps)}fps` : ''}
         </span>
       </figcaption>
       <div class="scales">
         {scales.map((s) => (
-          <SpriteCanvas key={s} sheets={props.sheets} name={props.name} scale={s} strip={strip} />
+          <SpriteCanvas
+            key={s}
+            sheets={props.sheets}
+            name={props.name}
+            scale={s}
+            strip={strip}
+          />
         ))}
       </div>
     </figure>
@@ -120,7 +140,8 @@ function SpriteCard(props: { sheets: Sheets; name: string }) {
 
 function namesOf(category: string, filter?: (n: string) => boolean): string[] {
   return Object.keys(atlas.sprites).filter(
-    (n) => atlas.sprites[n]?.category === category && (filter ? filter(n) : true),
+    (n) =>
+      atlas.sprites[n]?.category === category && (filter ? filter(n) : true),
   );
 }
 
@@ -129,8 +150,16 @@ function UnitRow(props: { sheets: Sheets; id: string }) {
     { label: 'neutral', suffix: '' },
     { label: 'side A', suffix: '@a' },
     { label: 'side B', suffix: '@b' },
-    { label: 'neutral, tinted A at draw time', suffix: '', ramp: atlas.tint.teamA },
-    { label: 'neutral, tinted B at draw time', suffix: '', ramp: atlas.tint.teamB },
+    {
+      label: 'neutral, tinted A at draw time',
+      suffix: '',
+      ramp: atlas.tint.teamA,
+    },
+    {
+      label: 'neutral, tinted B at draw time',
+      suffix: '',
+      ramp: atlas.tint.teamB,
+    },
   ];
   const anims = ['', '.walk', '.attack'];
   const planned = atlas.planned.includes(props.id);
@@ -182,7 +211,13 @@ function TiledCanvas(props: { sheets: Sheets; name: string }) {
         <code>{props.name}</code>
         <span class="meta">tiled 6x4</span>
       </figcaption>
-      <canvas ref={ref} class="px" width={w} height={h} style={{ width: `${w}px`, height: `${h}px` }} />
+      <canvas
+        ref={ref}
+        class="px"
+        width={w}
+        height={h}
+        style={{ width: px(w), height: px(h) }}
+      />
     </figure>
   );
 }
@@ -203,7 +238,16 @@ function NineSliceCanvas(props: { sheets: Sheets; name: string }) {
     (ctx) => {
       let x = 0;
       for (const [sw, sh] of sizes) {
-        drawNine(ctx, props.sheets, props.name, x, 0, sw * scale, sh * scale, scale);
+        drawNine(
+          ctx,
+          props.sheets,
+          props.name,
+          x,
+          0,
+          sw * scale,
+          sh * scale,
+          scale,
+        );
         x += sw * scale + 12;
       }
     },
@@ -213,9 +257,18 @@ function NineSliceCanvas(props: { sheets: Sheets; name: string }) {
     <figure class="sprite-card wide" data-nine={props.name}>
       <figcaption>
         <code>{props.name}</code>
-        <span class="meta">9-slice {JSON.stringify(spriteOf(props.name).nineSlice)} at four sizes, 2x</span>
+        <span class="meta">
+          9-slice {JSON.stringify(spriteOf(props.name).nineSlice)} at four
+          sizes, 2x
+        </span>
       </figcaption>
-      <canvas ref={ref} class="px" width={w} height={h} style={{ width: `${w}px`, height: `${h}px` }} />
+      <canvas
+        ref={ref}
+        class="px"
+        width={w}
+        height={h}
+        style={{ width: px(w), height: px(h) }}
+      />
     </figure>
   );
 }
@@ -237,12 +290,16 @@ function MockBoard(props: { sheets: Sheets; scale: number }) {
       class="px mock-board"
       width={w}
       height={h}
-      style={{ width: `${w}px`, height: `${h}px` }}
+      style={{ width: px(w), height: px(h) }}
     />
   );
 }
 
-function Section(props: { title: string; note?: string; children: preact.ComponentChildren }) {
+function Section(props: {
+  title: string;
+  note?: string;
+  children: preact.ComponentChildren;
+}) {
   return (
     <section class="sprites-section">
       <h3>{props.title}</h3>
@@ -264,35 +321,59 @@ function Grid(props: { sheets: Sheets; names: string[] }) {
 
 function Preview(props: { sheets: Sheets }) {
   const { sheets } = props;
-  const unitIds = [...new Set(namesOf('unit').map((n) => atlas.sprites[n]?.id ?? n))];
+  const unitIds = [
+    ...new Set(namesOf('unit').map((n) => atlas.sprites[n]?.id ?? n)),
+  ];
   const total = Object.keys(atlas.sprites).length;
   return (
     <div class="sprites-page">
       <p class="note">
-        {total} sprites on {Object.keys(atlas.sheets).length} sheets. Nearest-neighbour scaling. Sprites listed as
-        planned are placeholders for content that does not exist yet.
+        {total} sprites on {Object.keys(atlas.sheets).length} sheets.
+        Nearest-neighbour scaling. Sprites listed as planned are placeholders
+        for content that does not exist yet.
       </p>
-      <Section title="Mock board patch" note="12x8 cells at 3x and 5x: ground, neutral zone, lake and cliff autotiles, nodes, buildings, conduits with items (tinted per resource), units of both sides, a flyer with shadow, effects.">
+      <Section
+        title="Mock board patch"
+        note="12x8 cells at 5x, 3x and 1x: ground, neutral zone, lake and cliff autotiles, nodes, buildings, conduits with items (tinted per resource), units of both sides, a flyer with shadow, effects."
+      >
         <div class="board-row">
           <MockBoard sheets={sheets} scale={5} />
           <MockBoard sheets={sheets} scale={3} />
+          <MockBoard sheets={sheets} scale={1} />
         </div>
       </Section>
-      <Section title="Units" note="Each unit: neutral, pre-tinted side A (faces north, gold plume) and side B (faces south, two bone prongs), and the neutral sprite recoloured at draw time.">
+      <Section
+        title="Units"
+        note="Each unit: neutral, pre-tinted side A (faces north, gold plume) and side B (faces south, two bone prongs), and the neutral sprite recoloured at draw time."
+      >
         {unitIds.map((id) => (
           <UnitRow key={id} sheets={sheets} id={id} />
         ))}
       </Section>
       <Section title="Tiles, tiled 6x4">
         <div class="sprite-grid">
-          {['ground_1', 'ground_2', 'ground_3', 'neutral_1', 'neutral_2', 'ter_lake', 'ui_panel', 'ui_bg'].map((n) => (
+          {[
+            'ground_1',
+            'ground_2',
+            'ground_3',
+            'neutral_1',
+            'neutral_2',
+            'ter_lake',
+            'ui_panel',
+            'ui_bg',
+          ].map((n) => (
             <TiledCanvas key={n} sheets={sheets} name={n} />
           ))}
         </div>
       </Section>
       <Section title="9-slices">
         <div class="sprite-grid">
-          {['ui_button_normal', 'ui_button_hover', 'ui_button_disabled', 'ui_card'].map((n) => (
+          {[
+            'ui_button_normal',
+            'ui_button_hover',
+            'ui_button_disabled',
+            'ui_card',
+          ].map((n) => (
             <NineSliceCanvas key={n} sheets={sheets} name={n} />
           ))}
         </div>
@@ -301,10 +382,16 @@ function Preview(props: { sheets: Sheets }) {
         <Grid sheets={sheets} names={namesOf('terrain')} />
         <Grid sheets={sheets} names={namesOf('node')} />
       </Section>
-      <Section title="Buildings" note="Tier pips are an overlay drawn on the building tile.">
+      <Section
+        title="Buildings"
+        note="Tier pips are an overlay drawn on the building tile."
+      >
         <Grid sheets={sheets} names={namesOf('building')} />
       </Section>
-      <Section title="Conduits" note="Neutral grey flow; swap the tint ramp per resource. Shown neutral, then tinted with each resource ramp.">
+      <Section
+        title="Conduits"
+        note="Neutral grey flow; swap the tint ramp per resource. Shown neutral, then tinted with each resource ramp."
+      >
         <Grid sheets={sheets} names={namesOf('conduit')} />
         <div class="sprite-grid">
           {Object.keys(atlas.tint.resources).map((res) => (
@@ -313,8 +400,21 @@ function Preview(props: { sheets: Sheets }) {
                 <code>{res}</code>
               </figcaption>
               <div class="scales">
-                {['conduit_straight', 'conduit_corner', 'conduit_t', 'conduit_cross', 'conduit_end', 'conduit_item'].map((n) => (
-                  <SpriteCanvas key={n} sheets={sheets} name={n} scale={3} ramp={atlas.tint.resources[res] ?? []} />
+                {[
+                  'conduit_straight',
+                  'conduit_corner',
+                  'conduit_t',
+                  'conduit_cross',
+                  'conduit_end',
+                  'conduit_item',
+                ].map((n) => (
+                  <SpriteCanvas
+                    key={n}
+                    sheets={sheets}
+                    name={n}
+                    scale={3}
+                    ramp={atlas.tint.resources[res] ?? []}
+                  />
                 ))}
               </div>
             </figure>
@@ -325,7 +425,13 @@ function Preview(props: { sheets: Sheets }) {
         <Grid sheets={sheets} names={namesOf('effect')} />
       </Section>
       <Section title="Interface">
-        <Grid sheets={sheets} names={namesOf('ui', (n) => !n.startsWith('ui_panel') && n !== 'ui_bg')} />
+        <Grid
+          sheets={sheets}
+          names={namesOf(
+            'ui',
+            (n) => !n.startsWith('ui_panel') && n !== 'ui_bg',
+          )}
+        />
       </Section>
       <Section title="All unit sprites">
         <Grid sheets={sheets} names={namesOf('unit')} />
@@ -371,7 +477,9 @@ export function SpritesScreen() {
         id="sprites-root"
         data-images-loaded={sheets?.loaded ?? 0}
         data-images-failed={sheets?.failed.length ?? 0}
-        data-ready={sheets !== null && sheets.failed.length === 0 ? 'true' : 'false'}
+        data-ready={
+          sheets !== null && sheets.failed.length === 0 ? 'true' : 'false'
+        }
       >
         {sheets === null ? null : sheets.failed.length > 0 ? (
           <p class="note">Failed to load: {sheets.failed.join(', ')}</p>

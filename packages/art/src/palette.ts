@@ -69,9 +69,7 @@ export function hexToRgba(hex: string, alpha = 255): Rgba {
 }
 
 export const COLORS: Readonly<Record<string, Rgba>> = {
-  ...Object.fromEntries(
-    PALETTE.map((p) => [p.key, hexToRgba(p.hex)] as const),
-  ),
+  ...Object.fromEntries(PALETTE.map((p) => [p.key, hexToRgba(p.hex)] as const)),
   ...Object.fromEntries(
     TINT_KEYS.map((k, i) => [k, hexToRgba(TINT_NEUTRAL[i] ?? '#fff')] as const),
   ),

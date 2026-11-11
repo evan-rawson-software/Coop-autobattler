@@ -105,7 +105,7 @@ function tintedFrame(
   frame: number,
   ramp: Ramp,
 ): HTMLCanvasElement {
-  const key = `${name}#${frame}#${ramp.join(',')}`;
+  const key = `${name}#${String(frame)}#${ramp.join(',')}`;
   const hit = tintCache.get(key);
   if (hit) return hit;
   const sp = spriteOf(name);
@@ -121,7 +121,8 @@ function tintedFrame(
     const to = ramp.map(rgbOf);
     const px = data.data;
     for (let i = 0; i < px.length; i += 4) {
-      const v = ((px[i] ?? 0) << 16) | ((px[i + 1] ?? 0) << 8) | (px[i + 2] ?? 0);
+      const v =
+        ((px[i] ?? 0) << 16) | ((px[i + 1] ?? 0) << 8) | (px[i + 2] ?? 0);
       const k = from.indexOf(v);
       const target = k >= 0 ? to[k] : undefined;
       if (target !== undefined) {
@@ -209,7 +210,17 @@ export function drawNine(
       const w = (dx[i + 1] ?? 0) - d0x;
       const h = (dy[j + 1] ?? 0) - d0y;
       if (sw <= 0 || sh <= 0 || w <= 0 || h <= 0) continue;
-      ctx.drawImage(img, sp.x + s0x, sp.y + s0y, sw, sh, x + d0x, y + d0y, w, h);
+      ctx.drawImage(
+        img,
+        sp.x + s0x,
+        sp.y + s0y,
+        sw,
+        sh,
+        x + d0x,
+        y + d0y,
+        w,
+        h,
+      );
     }
 }
 
@@ -225,5 +236,13 @@ export function drawTiled(
   const sp = spriteOf(name);
   for (let j = 0; j < rows; j++)
     for (let i = 0; i < cols; i++)
-      drawFrame(ctx, sheets, name, 0, i * sp.w * scale, j * sp.h * scale, scale);
+      drawFrame(
+        ctx,
+        sheets,
+        name,
+        0,
+        i * sp.w * scale,
+        j * sp.h * scale,
+        scale,
+      );
 }

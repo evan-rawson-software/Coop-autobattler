@@ -4,7 +4,14 @@
 // Loads the #sprites route, waits for every sheet image, and takes
 // screenshots of the main sections into smoke-output/.
 
-export async function runSpritesSmoke({ page, baseUrl, check, shot, settle, consoleErrors }) {
+export async function runSpritesSmoke({
+  page,
+  baseUrl,
+  check,
+  shot,
+  settle,
+  consoleErrors,
+}) {
   const errorsBefore = consoleErrors.length;
   const failedRequests = [];
   const onFail = (r) => failedRequests.push(r.url());
@@ -13,7 +20,9 @@ export async function runSpritesSmoke({ page, baseUrl, check, shot, settle, cons
     if (r.status() >= 400) failedRequests.push(`${r.status()} ${r.url()}`);
   });
   await page.goto(`${baseUrl}#sprites`);
-  await page.waitForSelector('#sprites-root[data-ready="true"]', { timeout: 15000 });
+  await page.waitForSelector('#sprites-root[data-ready="true"]', {
+    timeout: 15000,
+  });
   await settle();
   const root = await page.evaluate(() => {
     const el = document.querySelector('#sprites-root');
@@ -56,7 +65,9 @@ export async function runSpritesSmoke({ page, baseUrl, check, shot, settle, cons
   ]) {
     await page.locator('h3', { hasText: id }).first().scrollIntoViewIfNeeded();
     await page.evaluate((t) => {
-      const h = [...document.querySelectorAll('h3')].find((e) => e.textContent === t);
+      const h = [...document.querySelectorAll('h3')].find(
+        (e) => e.textContent === t,
+      );
       h?.scrollIntoView({ block: 'start' });
     }, id);
     await settle();

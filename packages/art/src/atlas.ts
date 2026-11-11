@@ -110,7 +110,12 @@ export function buildSheets(
       if (def.id !== undefined) entry.id = def.id;
       if (def.planned) entry.planned = true;
       if (def.nineSlice)
-        entry.nineSlice = [...def.nineSlice] as [number, number, number, number];
+        entry.nineSlice = [...def.nineSlice] as [
+          number,
+          number,
+          number,
+          number,
+        ];
       if (def.tintable) entry.tintable = true;
       if (def.note) entry.note = def.note;
       sprites[def.name] = entry;

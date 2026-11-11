@@ -16,11 +16,24 @@ const KIND_RAMP: Readonly<Record<string, Ramp>> = {
   core: ['1', '3', '5'],
 };
 
-function plate(p: Pix, x: number, y: number, w: number, h: number, ramp: Ramp): void {
+function plate(
+  p: Pix,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  ramp: Ramp,
+): void {
   bevelShape(p, roundRect(x, y, w, h, 1), ramp);
 }
 
-function arrow(p: Pix, cx: number, cy: number, dir: 'n' | 'e' | 's' | 'w', key: string): void {
+function arrow(
+  p: Pix,
+  cx: number,
+  cy: number,
+  dir: 'n' | 'e' | 's' | 'w',
+  key: string,
+): void {
   // A 3-deep triangle, 6 wide at its base, centred on (cx, cy) = middle of the base row.
   const rows = [
     [0, 1],
@@ -47,7 +60,10 @@ function arrow(p: Pix, cx: number, cy: number, dir: 'n' | 'e' | 's' | 'w', key: 
 
 type ArmKind = 'in' | 'out' | 'none';
 
-function drawRoute(arms: Record<'n' | 'e' | 's' | 'w', ArmKind>, hub: (p: Pix) => void): Pix {
+function drawRoute(
+  arms: Record<'n' | 'e' | 's' | 'w', ArmKind>,
+  hub: (p: Pix) => void,
+): Pix {
   const p = new Pix(16, 16);
   plate(p, 1, 1, 14, 14, KIND_RAMP['route'] as Ramp);
   const arm = (x: number, y: number, w: number, h: number): void => {
@@ -58,8 +74,18 @@ function drawRoute(arms: Record<'n' | 'e' | 's' | 'w', ArmKind>, hub: (p: Pix) =
   if (arms.s !== 'none') arm(6, 7, 4, 8);
   if (arms.w !== 'none') arm(1, 6, 8, 4);
   if (arms.e !== 'none') arm(7, 6, 8, 4);
-  const OUT = { n: [7, 2, 'n'], s: [7, 13, 's'], w: [2, 7, 'w'], e: [13, 7, 'e'] } as const;
-  const IN = { n: [7, 4, 's'], s: [7, 11, 'n'], w: [4, 7, 'e'], e: [11, 7, 'w'] } as const;
+  const OUT = {
+    n: [7, 2, 'n'],
+    s: [7, 13, 's'],
+    w: [2, 7, 'w'],
+    e: [13, 7, 'e'],
+  } as const;
+  const IN = {
+    n: [7, 4, 's'],
+    s: [7, 11, 'n'],
+    w: [4, 7, 'e'],
+    e: [11, 7, 'w'],
+  } as const;
   const place = (side: 'n' | 'e' | 's' | 'w', k: ArmKind): void => {
     if (k === 'none') return;
     const [x, y, d] = (k === 'out' ? OUT : IN)[side];
@@ -197,7 +223,7 @@ function hangarSprite(): Pix {
   p.rect(6, 6, 20, 20, '1');
   p.rect(6, 6, 20, 1, '2');
   for (let i = 0; i < 6; i++) {
-    p.set(6 + i, 6 + ((i % 2) * 0), 'y');
+    p.set(6 + i, 6 + (i % 2) * 0, 'y');
     p.set(25 - i, 25, i % 2 === 0 ? 'y' : 'K');
   }
   p.ellipse(16, 16, 7.5, 7.5, 'K');
@@ -349,7 +375,8 @@ function coreSprite(): Pix {
   // Glow dither.
   for (let y = 8; y < 24; y++)
     for (let x = 8; x < 24; x++)
-      if ((x + y) % 2 === 0 && Math.hypot(x - 15.5, y - 15.5) < 7.8) p.set(x, y, 't');
+      if ((x + y) % 2 === 0 && Math.hypot(x - 15.5, y - 15.5) < 7.8)
+        p.set(x, y, 't');
   // Crystal.
   for (let y = 0; y < 32; y++)
     for (let x = 0; x < 32; x++) {
@@ -399,7 +426,11 @@ function conduit(open: Open): Pix {
       const inV = x >= 6 && x <= 9;
       const inH = y >= 6 && y <= 9;
       const horizontal = inH && (!inV || (!vOpen && (open.w || open.e)));
-      p.set(x, y, horizontal ? (rowRule[y - 6] as string) : (colRule[x - 6] as string));
+      p.set(
+        x,
+        y,
+        horizontal ? (rowRule[y - 6] as string) : (colRule[x - 6] as string),
+      );
     }
   // Rivets on the casing.
   return p;
@@ -464,7 +495,7 @@ export function buildingSprites(): SpriteDef[] {
       category: 'building',
       frames: frame,
       anchor: [frame.w / 2, frame.h / 2],
-      note: `${b.width}x${b.height} tiles.`,
+      note: `${String(b.width)}x${String(b.height)} tiles.`,
     });
   }
   add({
@@ -517,11 +548,31 @@ export function buildingSprites(): SpriteDef[] {
       note,
     });
   };
-  c('conduit_straight', { n: true, e: false, s: true, w: false }, 'Open north and south; rotate for east-west.');
-  c('conduit_corner', { n: true, e: true, s: false, w: false }, 'Open north and east; rotate for the other corners.');
-  c('conduit_t', { n: false, e: true, s: true, w: true }, 'Open east, south and west.');
-  c('conduit_cross', { n: true, e: true, s: true, w: true }, 'Open on all four sides.');
-  c('conduit_end', { n: false, e: false, s: true, w: false }, 'Open south, capped north.');
+  c(
+    'conduit_straight',
+    { n: true, e: false, s: true, w: false },
+    'Open north and south; rotate for east-west.',
+  );
+  c(
+    'conduit_corner',
+    { n: true, e: true, s: false, w: false },
+    'Open north and east; rotate for the other corners.',
+  );
+  c(
+    'conduit_t',
+    { n: false, e: true, s: true, w: true },
+    'Open east, south and west.',
+  );
+  c(
+    'conduit_cross',
+    { n: true, e: true, s: true, w: true },
+    'Open on all four sides.',
+  );
+  c(
+    'conduit_end',
+    { n: false, e: false, s: true, w: false },
+    'Open south, capped north.',
+  );
   add({
     name: 'conduit_item',
     sheet: 'buildings',

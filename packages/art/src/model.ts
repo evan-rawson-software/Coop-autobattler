@@ -5,13 +5,7 @@ import { Pix, rng, wrap } from './pix.js';
 export type SheetName = 'terrain' | 'buildings' | 'units' | 'effects' | 'ui';
 
 export type Category =
-  | 'terrain'
-  | 'building'
-  | 'unit'
-  | 'conduit'
-  | 'node'
-  | 'effect'
-  | 'ui';
+  'terrain' | 'building' | 'unit' | 'conduit' | 'node' | 'effect' | 'ui';
 
 export interface SpriteDef {
   /** Unique name; content ids are used verbatim where a sprite stands for one. */

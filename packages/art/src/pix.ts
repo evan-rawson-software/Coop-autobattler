@@ -221,7 +221,11 @@ export function bevelShape(
       const lightEdge = edge(x - 1, y) || edge(x, y - 1);
       const darkEdge = edge(x + 1, y) || edge(x, y + 1);
       const key =
-        lightEdge && !darkEdge ? ramp[2] : darkEdge && !lightEdge ? ramp[0] : ramp[1];
+        lightEdge && !darkEdge
+          ? ramp[2]
+          : darkEdge && !lightEdge
+            ? ramp[0]
+            : ramp[1];
       p.set(x, y, key);
     }
 }

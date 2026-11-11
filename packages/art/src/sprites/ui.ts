@@ -4,12 +4,24 @@ import { loadEventTypes } from '../content.js';
 import { Pix, bevelShape, rng, roundRect } from '../pix.js';
 import { sprite, wset, type SpriteDef } from '../model.js';
 
-function speckled(size: number, base: string, dark: string, light: string, seed: number, n: number): Pix {
+function speckled(
+  size: number,
+  base: string,
+  dark: string,
+  light: string,
+  seed: number,
+  n: number,
+): Pix {
   const p = new Pix(size, size);
   p.rect(0, 0, size, size, base);
   const r = rng(seed);
   for (let i = 0; i < n; i++) {
-    wset(p, Math.floor(r() * size), Math.floor(r() * size), i % 3 === 0 ? light : dark);
+    wset(
+      p,
+      Math.floor(r() * size),
+      Math.floor(r() * size),
+      i % 3 === 0 ? light : dark,
+    );
   }
   return p;
 }
@@ -201,7 +213,7 @@ export function uiSprites(): SpriteDef[] {
     name: 'ui_panel',
     sheet: 'ui',
     category: 'ui',
-    frames: speckled(16, '1', '0', '2', 21, 22),
+    frames: speckled(16, '1', '0', '2', 21, 14),
     note: 'Tileable panel texture.',
   });
   add({
@@ -229,10 +241,34 @@ export function uiSprites(): SpriteDef[] {
     nineSlice: [8, 8, 8, 8],
     note: 'Card frame 9-slice.',
   });
-  add({ name: 'ui_icon_coin', sheet: 'ui', category: 'ui', frames: coin(), note: 'Gold.' });
-  add({ name: 'ui_icon_heart', sheet: 'ui', category: 'ui', frames: heart(), note: 'Lives.' });
-  add({ name: 'ui_icon_lock', sheet: 'ui', category: 'ui', frames: lock(), note: 'Locked.' });
-  add({ name: 'ui_icon_ready', sheet: 'ui', category: 'ui', frames: tick(), note: 'Ready tick.' });
+  add({
+    name: 'ui_icon_coin',
+    sheet: 'ui',
+    category: 'ui',
+    frames: coin(),
+    note: 'Gold.',
+  });
+  add({
+    name: 'ui_icon_heart',
+    sheet: 'ui',
+    category: 'ui',
+    frames: heart(),
+    note: 'Lives.',
+  });
+  add({
+    name: 'ui_icon_lock',
+    sheet: 'ui',
+    category: 'ui',
+    frames: lock(),
+    note: 'Locked.',
+  });
+  add({
+    name: 'ui_icon_ready',
+    sheet: 'ui',
+    category: 'ui',
+    frames: tick(),
+    note: 'Ready tick.',
+  });
   for (const type of loadEventTypes()) {
     const make = EVENT_ICONS[type];
     if (!make) continue;
