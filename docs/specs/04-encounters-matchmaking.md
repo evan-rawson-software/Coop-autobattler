@@ -78,6 +78,13 @@ power bound is the building-value formula in `docs/rules-reference.md`,
 "Ghosts"; signatures (MM-17, TA-22a) and the run seed and action log (MM-1d)
 are not implemented, the latter two are reserved fields.
 
+*Implementation note (W3-2; spec statuses unchanged).* MM-12 (b) is
+implemented for the prototype: a bundled file of bot-made snapshots (party
+sizes 1 to 4, rounds 1 to 6, four per bucket, owner labels "Bundled <strategy>
+bot") is a read-only second source beside the local pool, ignored when its game
+version differs from the build's; "Clear ghost pool" clears only the local
+rows. See `docs/rules-reference.md`, "Bundled ghosts".
+
 ## Boss fallback
 
 - **MM-8 [DECIDED]** The generated boss is a function of how far the party has

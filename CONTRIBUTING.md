@@ -66,6 +66,8 @@ pnpm sim battle --a rush --b fortify --seed 1 [--log events.json] [--ascii]
 pnpm sim pve --team boards/rush.json --archetype rusher --type medium --round 3 --seed 1
 pnpm sim batch --a rush --b fortify --count 300 --seed 1 [--time]
 pnpm sim batch --a siege --archetype fortress --round 5 --count 100
+pnpm sim bot --strategy all --count 3 --party 2 --verify
+pnpm sim ghosts [--check]          # same as: pnpm ghosts:update
 pnpm sim --help
 ```
 
@@ -123,6 +125,12 @@ typecheck, lint, format check, test, build, content validation, smoke, then
 pushing. CI sets `CI_RELAXED_TIMING=1`, which multiplies wall-time limits
 (smoke frame intervals, battles per second, ms bounds in tests) by 3; unset,
 the strict limits apply.
+
+The web build ships bundled ghosts (`packages/web/src/run/bundled-ghosts.json`),
+made by the bot. `pnpm ghosts:update` regenerates the file (deterministic);
+a test in `packages/tools` fails when the committed file differs, so after any
+change to the sim, the bot, the content or the ghost rules run
+`pnpm ghosts:update` and commit the result (it often does not change).
 
 ## Layer rule
 

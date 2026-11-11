@@ -10,3 +10,4 @@ dist-debug/
 smoke-output/
 boards/
 assets/sprites/
+packages/web/src/run/bundled-ghosts.json
