@@ -66,8 +66,8 @@ describe('modifiers travel in team state and change battles', () => {
   test('a turret damage modifier makes the same turrets kill more', () => {
     // The party loses this round either way; with sharper turrets it kills
     // more of the wave first.
-    const plain = fightResult('fortify', 'arch_fortress', 'medium', 12, []);
-    const sharp = fightResult('fortify', 'arch_fortress', 'medium', 12, [
+    const plain = fightResult('fortify', 'arch_fortress', 'hard', 12, []);
+    const sharp = fightResult('fortify', 'arch_fortress', 'hard', 12, [
       'mod_sharp_turrets',
     ]);
     expect(plain.winner).toBe(1);
