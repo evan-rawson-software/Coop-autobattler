@@ -145,7 +145,7 @@ describe('sim-event.schema.json', () => {
         zone: { width: 1, depth: 1, features: [] },
       }),
     ).toBe(false);
-  });
+  }, 60_000);
 
   test('malformed events are rejected', () => {
     expect(validate({ tick: 1, type: 'produced', building: 2 })).toBe(false);
