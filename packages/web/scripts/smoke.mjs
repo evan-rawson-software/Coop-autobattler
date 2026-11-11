@@ -13,6 +13,7 @@ import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runShopSmoke } from './smoke-shop.mjs';
+import { runSpritesSmoke } from './smoke-sprites.mjs';
 import { runRunSmoke } from './smoke-run.mjs';
 
 const require = createRequire(import.meta.url);
@@ -30,6 +31,7 @@ const MIME = {
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json',
   '.svg': 'image/svg+xml',
+  '.png': 'image/png',
 };
 
 const server = createServer((req, res) => {
@@ -1499,6 +1501,7 @@ try {
 
   // Shop + Build step (W2-7)
   await runShopSmoke({ page, baseUrl, check, shot, settle, webDir });
+  await runSpritesSmoke({ page, baseUrl, check, shot, settle, consoleErrors });
 
   // Run flow: menu, Core placement, choices, run end (W2-9)
   await runRunSmoke({

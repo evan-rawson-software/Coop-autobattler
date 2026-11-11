@@ -1,0 +1,111 @@
+/* The #sprites review page. Always dark so sprites are judged on a dark UI. */
+
+.sprites-scroll {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 0 16px 24px;
+  color: #d9e0e5;
+  font-size: 13px;
+}
+.sprites-scroll.backdrop-dark {
+  background: #171e23;
+}
+.sprites-scroll.backdrop-mid {
+  background: #3a4651;
+}
+.sprites-scroll.backdrop-light {
+  background: #d7dde2;
+  color: #1b2329;
+}
+
+.sprites-page .note {
+  margin: 6px 0 10px;
+  opacity: 0.8;
+  max-width: 90ch;
+}
+.sprites-section h3 {
+  margin: 22px 0 4px;
+  font-size: 15px;
+  border-bottom: 1px solid rgb(127 140 150 / 0.4);
+  padding-bottom: 3px;
+}
+.px {
+  /* 1 canvas pixel = 1 CSS pixel at 1x: never let a border shrink it. */
+  box-sizing: content-box;
+  image-rendering: pixelated;
+  display: block;
+}
+.board-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.sprite-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 8px 0;
+}
+.sprite-card {
+  margin: 0;
+  padding: 6px 8px 8px;
+  border: 1px solid rgb(127 140 150 / 0.35);
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.18);
+}
+.sprite-card.wide {
+  flex-basis: 100%;
+  overflow-x: auto;
+}
+.sprite-card figcaption {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.meta {
+  opacity: 0.65;
+  font-size: 11px;
+}
+.badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 5px;
+  border-radius: 3px;
+  background: #8a5cf6;
+  color: #fff;
+}
+.scales {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+}
+.unit-row {
+  margin: 10px 0;
+}
+.unit-row h4 {
+  margin: 8px 0 4px;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.unit-sides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.unit-side {
+  padding: 6px 8px;
+  border: 1px solid rgb(127 140 150 / 0.35);
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.18);
+}
+.mock-board {
+  /* An outline sits outside the box, so the canvas keeps its pixel size. */
+  outline: 1px solid rgb(127 140 150 / 0.5);
+}
