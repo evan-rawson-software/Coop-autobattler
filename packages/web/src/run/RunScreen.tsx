@@ -147,6 +147,14 @@ function ReadyRun(props: { run: ActiveRun }) {
           gold: state.perPlayer[0]?.gold ?? 0,
           actions: state.actionCounter,
           history: state.history.length,
+          pvpOpponent:
+            state.pvpOpponent === null
+              ? null
+              : {
+                  round: state.pvpOpponent.round,
+                  kind: state.pvpOpponent.kind,
+                  label: state.pvpOpponent.label,
+                },
           hash: hashJson(state),
           storage: run.storage,
         }),

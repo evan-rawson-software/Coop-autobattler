@@ -1039,6 +1039,29 @@ export async function runRunSmoke({
   await page.mouse.click(pB.x, pB.y);
   await page.click('#core-confirm');
   await waitStep('build');
+  // The first run left its round-1 snapshot in the local ghost pool (W3-1):
+  // this run meets it in the shop before its own round-1 PvP battle.
+  await advanceUntil((s) => s.step === 'shop' && s.leg === 'pve');
+  const ghostState = await R.state();
+  check(
+    ghostState.pvpOpponent?.kind === 'ghost' &&
+      ghostState.pvpOpponent.round === ghostState.round &&
+      /^Runner /.test(ghostState.pvpOpponent.label),
+    `second run: the PvP opponent is a ghost of round ${ghostState.round} (${JSON.stringify(ghostState.pvpOpponent)})`,
+  );
+  await page.waitForSelector('#shop-screen');
+  check(
+    /Opponent: a ghost of Runner/.test(
+      await page.locator('#shop-screen').innerText(),
+    ),
+    'shop: "Opponent: a ghost of ..." is shown before the PvP battle',
+  );
+  await reloadSame('the shop with a ghost opponent');
+  check(
+    JSON.stringify((await R.state()).pvpOpponent) ===
+      JSON.stringify(ghostState.pvpOpponent),
+    'a reload before the battle keeps the selected ghost',
+  );
   await page.click('#menu-button');
   await page.waitForSelector('#main-menu');
   await page.waitForFunction(() => window.__debug?.menu?.runIds().length === 2);
