@@ -7,18 +7,28 @@
   "required": ["map", "core", "buildings", "stash", "nextId", "conduits"],
   "additionalProperties": false,
   "properties": {
-    "map": { "$ref": "map.schema.json" },
+    "map": {
+      "$ref": "map.schema.json"
+    },
     "core": {
       "description": "The Core's lowest-x, lowest-y cell, or null before it is placed.",
       "oneOf": [
-        { "type": "null" },
+        {
+          "type": "null"
+        },
         {
           "type": "object",
           "required": ["x", "y"],
           "additionalProperties": false,
           "properties": {
-            "x": { "type": "integer", "minimum": 0 },
-            "y": { "type": "integer", "minimum": 0 }
+            "x": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "y": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         }
       ]
@@ -30,13 +40,34 @@
         "required": ["id", "def", "tier", "x", "y", "rotation", "owner"],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "integer", "minimum": 1 },
-          "def": { "type": "string", "pattern": "^bld_[a-z0-9_]+$" },
-          "tier": { "type": "integer", "minimum": 1, "maximum": 3 },
-          "x": { "type": "integer", "minimum": 0 },
-          "y": { "type": "integer", "minimum": 0 },
-          "rotation": { "enum": [0, 90, 180, 270] },
-          "owner": { "type": "integer", "minimum": 0 }
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "def": {
+            "type": "string",
+            "pattern": "^bld_[a-z0-9_]+$"
+          },
+          "tier": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rotation": {
+            "enum": [0, 90, 180, 270]
+          },
+          "owner": {
+            "type": "integer",
+            "minimum": 0
+          }
         }
       }
     },
@@ -47,14 +78,53 @@
         "required": ["id", "def", "tier", "owner"],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "integer", "minimum": 1 },
-          "def": { "type": "string", "pattern": "^bld_[a-z0-9_]+$" },
-          "tier": { "type": "integer", "minimum": 1, "maximum": 3 },
-          "owner": { "type": "integer", "minimum": 0 }
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "def": {
+            "type": "string",
+            "pattern": "^bld_[a-z0-9_]+$"
+          },
+          "tier": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "owner": {
+            "type": "integer",
+            "minimum": 0
+          }
         }
       }
     },
-    "nextId": { "type": "integer", "minimum": 1 },
+    "nextId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "modifiers": {
+      "description": "Run modifiers taken so far (W2-3, EC-8), in the order taken, each with the effects it had when taken. Omitted when there are none.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "effects"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^mod_[a-z0-9_]+$"
+          },
+          "effects": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/effect"
+            }
+          }
+        }
+      }
+    },
     "conduits": {
       "description": "Conduits, sorted by ascending id. Each runs from a side of one placed building to a side of another; cells is the ordered path from the cell just outside the from side to the cell just outside the to side, empty for a direct connection.",
       "type": "array",
@@ -63,9 +133,16 @@
         "required": ["id", "from", "to", "cells"],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "integer", "minimum": 1 },
-          "from": { "$ref": "#/$defs/conduitEnd" },
-          "to": { "$ref": "#/$defs/conduitEnd" },
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "$ref": "#/$defs/conduitEnd"
+          },
+          "to": {
+            "$ref": "#/$defs/conduitEnd"
+          },
           "cells": {
             "type": "array",
             "items": {
@@ -73,8 +150,14 @@
               "required": ["x", "y"],
               "additionalProperties": false,
               "properties": {
-                "x": { "type": "integer", "minimum": 0 },
-                "y": { "type": "integer", "minimum": 0 }
+                "x": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "y": {
+                  "type": "integer",
+                  "minimum": 0
+                }
               }
             }
           }
@@ -93,8 +176,61 @@
           "type": "integer",
           "minimum": 1
         },
-        "side": { "enum": ["north", "east", "south", "west"] }
+        "side": {
+          "enum": ["north", "east", "south", "west"]
+        }
       }
+    },
+    "effect": {
+      "description": "One effect of a modifier; the simulation applies percent bonuses in integers, rounded down.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "target", "percent"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "building_health_percent"
+            },
+            "target": {
+              "enum": [
+                "all",
+                "wall",
+                "gate",
+                "turret",
+                "source",
+                "route",
+                "unit_producer",
+                "economy"
+              ]
+            },
+            "percent": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "percent"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "core_health_percent",
+                "unit_strength_percent",
+                "turret_damage_percent"
+              ]
+            },
+            "percent": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        }
+      ]
     }
   }
 }

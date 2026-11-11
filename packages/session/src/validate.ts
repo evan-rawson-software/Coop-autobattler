@@ -80,6 +80,7 @@ const KEYS = [
   'team',
   'perPlayer',
   'votes',
+  'upcomingPve',
   'pending',
   'history',
   'thisRound',
@@ -280,6 +281,31 @@ function check(
       }
     });
   }
+  const upcoming = data['upcomingPve'];
+  if (upcoming !== null) {
+    if (
+      !isRec(upcoming) ||
+      !isInt(upcoming['round']) ||
+      upcoming['round'] < 1 ||
+      !Array.isArray(upcoming['options']) ||
+      !isJson(upcoming['options'])
+    ) {
+      err('upcomingPve: must be null or {round, options: JSON array}.');
+    } else if (
+      st === 'pve_choice' ||
+      st === 'pve_battle' ||
+      st === 'core_placement' ||
+      st === 'pve_summary' ||
+      st === 'run_over'
+    ) {
+      err(`upcomingPve: must be null in step "${st}".`);
+    } else if (
+      isInt(data['round']) &&
+      upcoming['round'] !== (leg === 'pvp' ? data['round'] + 1 : data['round'])
+    ) {
+      err('upcomingPve: round does not match the coming PvE battle.');
+    }
+  }
   const pending = data['pending'];
   if (!isJson(pending)) err('pending: must be JSON.');
   const p = isRec(pending) ? pending : {};
@@ -291,6 +317,20 @@ function check(
     !Array.isArray(p['options'])
   ) {
     err(`pending.options: must be an array in step "${st}".`);
+  }
+  if (st === 'event_resolve') {
+    const fu = p['followUp'];
+    if (
+      !isRec(p['offer']) ||
+      !isRec(fu) ||
+      !Array.isArray(fu['options']) ||
+      !Array.isArray(fu['votes']) ||
+      fu['votes'].length !== n
+    ) {
+      err(
+        'pending: must hold {offer, followUp: {options, votes}} in step "event_resolve".',
+      );
+    }
   }
   if (st === 'pve_summary' || st === 'pvp_summary') {
     const b = p['battle'];

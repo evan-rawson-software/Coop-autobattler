@@ -20,6 +20,7 @@
     "team",
     "perPlayer",
     "votes",
+    "upcomingPve",
     "pending",
     "history",
     "thisRound",
@@ -176,6 +177,21 @@
                 ]
               }
             }
+          }
+        }
+      ]
+    },
+    "upcomingPve": {
+      "description": "The options of the next PvE battle, drawn and stored before the shop (or first build step) that leads up to it (RS-6a); null otherwise. Moved into pending.options when pve_choice opens.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["round", "options"],
+          "additionalProperties": false,
+          "properties": {
+            "round": { "type": "integer", "minimum": 1 },
+            "options": { "type": "array" }
           }
         }
       ]

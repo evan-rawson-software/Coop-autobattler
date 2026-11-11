@@ -155,6 +155,7 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
     team: createTeamState(map),
     perPlayer: args.players.map(() => ({ gold: 0, ready: false, shop: null })),
     votes: emptyVotes('core', n),
+    upcomingPve: null,
     pending: { proposals: [] },
     history: [],
     thisRound: { pve: null, pvp: null },
@@ -166,6 +167,18 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
 
 // ---------------------------------------------------------------------------
 // Entering steps
+
+/**
+ * Draw and store the PvE options for the battle of `round` (RS-6a). Done on
+ * entering the first `build` and on entering the shop that ends a round, so
+ * the options exist in state while the party builds, not when the choice
+ * step opens.
+ */
+function drawUpcoming(s: RunState, round: number, deps: RunDeps): RunState {
+  const d = drawStream(s, streamLabels.pveOptions(round));
+  const options = deps.hooks.pveOptions(d.state, d.stream, round);
+  return { ...d.state, upcomingPve: { round, options } };
+}
 
 /**
  * Move to `step`: clears ready flags and votes, runs the step's entry work
@@ -192,13 +205,23 @@ function enter(
     case 'build': {
       const d = drawStream(s, streamLabels.kit);
       s = applyPatch(d.state, deps.hooks.startingKit(d.state, d.stream));
-      return { ...s, pending: null };
+      return { ...drawUpcoming(s, s.round, deps), pending: null };
     }
     case 'pve_choice': {
       s = { ...s, leg: 'pve' };
-      const d = drawStream(s, streamLabels.pveOptions(s.round));
-      const options = deps.hooks.pveOptions(d.state, d.stream);
-      return { ...d.state, pending: { options }, votes: emptyVotes('pve', n) };
+      // Normally drawn earlier (see `drawUpcoming`); drawn here only if a
+      // state arrives without them.
+      if (s.upcomingPve === null || s.upcomingPve.round !== s.round) {
+        s = drawUpcoming(s, s.round, deps);
+      }
+      const options = (s.upcomingPve as NonNullable<RunState['upcomingPve']>)
+        .options;
+      return {
+        ...s,
+        upcomingPve: null,
+        pending: { options },
+        votes: emptyVotes('pve', n),
+      };
     }
     case 'pve_battle': {
       const option = pendingRecord(s)['option'] ?? null;
@@ -242,6 +265,9 @@ function enter(
       };
     }
     case 'shop': {
+      // The shop that ends a round is the last stop before the next PvE
+      // battle: its options are drawn now (RS-6a).
+      if (s.leg === 'pvp') s = drawUpcoming(s, s.round + 1, deps);
       const d = drawStream(s, streamLabels.shop(s.round, s.leg));
       s = applyPatch(d.state, deps.hooks.onShopEnter(d.state, d.stream));
       return { ...s, pending: null };
@@ -387,7 +413,7 @@ function completeStep(s: RunState, deps: RunDeps, fx: Effect[]): RunState {
 // ---------------------------------------------------------------------------
 // Votes
 
-function tally(choices: readonly Json[], host: number): Json {
+export function tally(choices: readonly Json[], host: number): Json {
   const counts = new Map<string, { choice: Json; count: number }>();
   for (const choice of choices) {
     const key = canonicalJson(choice);
