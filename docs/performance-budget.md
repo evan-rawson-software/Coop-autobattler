@@ -28,14 +28,17 @@ alive on one side at the end of any tick. The event log size is the length of
 | Battle                                   | Wall time | Ticks | Peak units per side | Events | Event log (JSON) |
 | ---------------------------------------- | --------- | ----- | ------------------- | ------ | ---------------- |
 | One plot, one typical battle             | 5 ms      | 970   | 11                  | 3,653  | 261 KB           |
-| One plot, mean (max) of 20 random        | 10 (40) ms | 940 (3701) | 13 (29)       | 2,659 (13,221) | 190 (942) KB |
+| One plot, mean (max) of 20 random        | 10 (40) ms | 940 (3101) | 13 (29)       | 2,659 (13,221) | 190 (942) KB |
 | Two plots, mean (max) of 20 random       | 5 (9) ms  | 589 (914) | 17 (37)         | 2,975 (5,776)  | 211 (398) KB |
 | Four plots, mean (max) of 20 random      | 9 (21) ms | 582 (1047) | 30 (62)        | 6,366 (10,593) | 447 (744) KB |
 | Dense four plots, tier 1                 | 90-110 ms | 687   | 157                 | 13,078 | 968 KB           |
 | Dense four plots, every building tier 3  | 212 ms    | 753   | 610                 | 44,974 | 3.24 MB          |
 
-The longest battles end at tick 3701: both Cores are destroyed by Overload
-(Core decay) at tick 3700 at the latest, so with the standard constants no
+The mean columns of the "20 random" rows and the typical-battle row were measured with Overload at tick 2400; only the maximum tick was updated for #33 (the means can only have fallen).
+
+The longest battles end at tick 3101: both Cores are destroyed by Overload
+(Core decay) at tick 3100 at the latest (Overload starts at tick 1800, and
+since #33 no longer at 2400, which made it 3701), so with the standard constants no
 battle can last longer, and the 12000-tick cap (`maxBattleTicks`) is never
 reached (40 random matchups, none came near it). Per-tick cost scales with the
 number of units and buildings; the dense tier 3 battle costs about 0.28 ms per
@@ -62,7 +65,7 @@ test`; about 5 s, each test has a 30 s timeout):
 
 - _One plot_: every ordered pair of the four reference boards (rush, fortify,
   siege, poor) at seeds 1 to 8, 128 battles, including the long stalls that
-  end by Overload at tick 3700. The rate is battles completed per second of
+  end by Overload at tick 3100. The rate is battles completed per second of
   wall time, best of three rounds (`performance.now()`, allowed in `tools`
   only). Measured on the sandbox this was written on: 110 to 215 battles per
   second (the best of three 128-battle rounds; the first round is slower
@@ -117,7 +120,8 @@ on the threat side at the end of any tick):
 The peaks are low because late threats end the battle quickly (the party's Core
 falls in a few hundred ticks); the bound above is what matters. Across the
 reference-board sweep (3 boards, 4 archetypes, 4 types, rounds 1 to 20: 960
-battles) the longest battle was 3701 ticks and none reached `maxBattleTicks`.
+battles) the longest battle was 3101 ticks (the party lost to the Overload decay of
+its own Core in 12 of them) and none reached `maxBattleTicks`.
 
 ## Notes
 

@@ -296,6 +296,17 @@ export interface ArenaSim {
   readonly spawned: [number, number];
   /** Units that died, by side. */
   readonly unitsDied: [number, number];
+  /**
+   * Building damage dealt, by the side that dealt it (index = the attacker):
+   * the total damage that side's units have applied to the enemy's buildings,
+   * Core included, over the battle. Per building and tick it counts
+   * `min(attack damage that tick, the building's health before the tick)`:
+   * Overload Core decay and damage beyond the building's remaining health
+   * (overkill) are not counted. A tiebreak input (CB-33); at most
+   * `MAX_ARENA_CELLS * MAX_HEALTH`, so always exact. The units a side has
+   * killed are `unitsDied` of the other side.
+   */
+  readonly buildingDamageDealt: [number, number];
   /** Present only when a side was given options (PvE); absent otherwise. */
   readonly sideOptions?: [SideOptions, SideOptions];
 }
@@ -412,6 +423,8 @@ export interface ArenaContext {
    */
   unitDamage: Float64Array;
   buildingDamage: Float64Array;
+  /** The part of `buildingDamage` that comes from unit attacks (no decay). */
+  attackDamage: Float64Array;
 }
 
 const bkey = (side: number, id: number): number => id * 2 + side;
@@ -560,6 +573,7 @@ export function createArenaContext(
     arg: new Int32Array(0),
     unitDamage: new Float64Array(0),
     buildingDamage: new Float64Array(arena.buildings.length),
+    attackDamage: new Float64Array(arena.buildings.length),
   };
   return options.events === undefined
     ? base
@@ -689,6 +703,7 @@ export function createArenaSim(
     units: [],
     spawned: [0, 0],
     unitsDied: [0, 0],
+    buildingDamageDealt: [0, 0],
   };
 }
 
@@ -1443,6 +1458,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
 
   // 4. Resolve attacks simultaneously.
   ctx.buildingDamage.fill(0);
+  ctx.attackDamage.fill(0);
   for (let i = 0; i < n; i++) {
     const u = units[i];
     const act = ctx.action[i] ?? ACT_NONE;
@@ -1464,6 +1480,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
       const b = arena.buildings[arg];
       if (b === undefined) continue;
       ctx.buildingDamage[arg] = addDamage(ctx.buildingDamage[arg] ?? 0, damage);
+      ctx.attackDamage[arg] = addDamage(ctx.attackDamage[arg] ?? 0, damage);
       target =
         b.kind === 'core'
           ? { kind: 'core', side: b.side }
@@ -1498,6 +1515,16 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     if (dmg === 0) continue;
     const h = sim.health[ctx.healthIndex[r] ?? 0];
     if (h === undefined) continue;
+    // Damage dealt to buildings (tiebreak): the attacks only, at most the
+    // health the building had, credited to the other side.
+    const applied = Math.min(ctx.attackDamage[r] ?? 0, h.hp);
+    if (applied > 0) {
+      const dealer = h.side === 0 ? 1 : 0;
+      sim.buildingDamageDealt[dealer] = addInt(
+        sim.buildingDamageDealt[dealer],
+        applied,
+      );
+    }
     const remaining = h.hp - dmg;
     if (h.building === 0) ctx.coreRemaining[h.side === 0 ? 0 : 1] = remaining;
     h.hp = Math.max(0, remaining);

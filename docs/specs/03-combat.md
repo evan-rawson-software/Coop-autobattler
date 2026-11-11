@@ -238,8 +238,10 @@ Everything below is [PROPOSED] detail unless marked otherwise.
     #43). Overload also takes a flat amount from both Cores at every beat, and
     the party's Core is usually much smaller than a stronghold's, so the party has to
     destroy the stronghold before the decay alone destroys its own Core: a
-    Core of 500 health dies from the decay alone at the beat given by
-    `overloadDeadline` (see the rules reference, "Overload"). This is a
+    Core of 500 health dies from the decay alone at tick 3100 (Overload
+    starts at tick 1800, 3 minutes, and takes 5, 10, 15, ... health at every
+    100th tick; 14 beats take 525), as `overloadDeadline` computes (see the
+    rules reference, "Overload"). This is a
     design choice, not a side effect: a party that cannot break the
     stronghold in time loses. Screens can show the deadline with that helper.
 
@@ -377,8 +379,12 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   conduit, and run
   modifiers that affect combat. This is exactly what a snapshot stores
   (MM-1).
-- **CB-33** If both Cores are destroyed on the same tick, a deterministic
-  tiebreak applies (then the defender/ghost wins).
+- **CB-33 [DECIDED]** If both Cores are destroyed on the same tick, a
+  deterministic tiebreak applies: less overkill damage wins; then more damage
+  dealt to the enemy's buildings; then more enemy units killed; then the
+  attacker (the party) wins. At the time limit the larger share of maximum
+  Core health wins and an equal share goes down the same last three steps. The
+  defender/ghost wins no tie (#33). Overload starts at 3 minutes (CB-12).
 - **CB-34** An **opponent** is either a team state (ghost) or a threat
   profile (PvE, CB-29). Both are data and run through the same simulation
   entry point.

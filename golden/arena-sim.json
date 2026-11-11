@@ -236,13 +236,14 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "669db7c3",
+        "stateHash": "3e26527e",
         "events": 2394,
         "sides": [
           {
             "spawned": 44,
             "alive": 7,
             "unitsDied": 37,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -250,6 +251,7 @@
             "spawned": 44,
             "alive": 7,
             "unitsDied": 37,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           }
@@ -406,13 +408,14 @@
     "expected": {
       "result": {
         "tick": 1800,
-        "stateHash": "f16874ce",
+        "stateHash": "59b72084",
         "events": 1265,
         "sides": [
           {
             "spawned": 88,
             "alive": 88,
             "unitsDied": 0,
+            "buildingDamageDealt": 500,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -420,6 +423,7 @@
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": 0
           }
@@ -667,26 +671,28 @@
     "expected": {
       "result": {
         "tick": 2200,
-        "stateHash": "61b7e60e",
-        "events": 1527,
+        "stateHash": "2006eff1",
+        "events": 1536,
         "sides": [
           {
             "spawned": 108,
             "alive": 108,
             "unitsDied": 0,
+            "buildingDamageDealt": 600,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": 450
           },
           {
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 1,
             "coreHealth": 0
           }
         ]
       },
-      "eventLogHash": "b6ef6604"
+      "eventLogHash": "c8d97772"
     }
   },
   {
@@ -841,13 +847,14 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "cd608357",
+        "stateHash": "f41c67a1",
         "events": 91,
         "sides": [
           {
             "spawned": 2,
             "alive": 2,
             "unitsDied": 0,
+            "buildingDamageDealt": 412,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -855,6 +862,7 @@
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 1,
             "coreHealth": 272
           }
@@ -1035,13 +1043,14 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "a52cc0d0",
+        "stateHash": "78c06bf9",
         "events": 133,
         "sides": [
           {
             "spawned": 3,
             "alive": 3,
             "unitsDied": 0,
+            "buildingDamageDealt": 565,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -1049,6 +1058,7 @@
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 2,
             "coreHealth": 0
           }
@@ -1387,13 +1397,14 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "9989473b",
+        "stateHash": "37f0870c",
         "events": 166,
         "sides": [
           {
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -1401,6 +1412,7 @@
             "spawned": 3,
             "alive": 0,
             "unitsDied": 3,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           }
@@ -1513,13 +1525,14 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "2011949c",
+        "stateHash": "86de049b",
         "events": 154,
         "sides": [
           {
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": 56
           },
@@ -1527,6 +1540,7 @@
             "spawned": 3,
             "alive": 3,
             "unitsDied": 0,
+            "buildingDamageDealt": 444,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           }
@@ -1750,13 +1764,14 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "eced0854",
+        "stateHash": "0ddf52cf",
         "events": 80,
         "sides": [
           {
             "spawned": 1,
             "alive": 1,
             "unitsDied": 0,
+            "buildingDamageDealt": 150,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -1764,6 +1779,7 @@
             "spawned": 1,
             "alive": 0,
             "unitsDied": 1,
+            "buildingDamageDealt": 6,
             "buildingsDestroyed": 0,
             "coreHealth": 350
           }
@@ -2610,13 +2626,14 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "eded06b0",
+        "stateHash": "3f0e0f6f",
         "events": 653,
         "sides": [
           {
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": 32
           },
@@ -2624,6 +2641,7 @@
             "spawned": 12,
             "alive": 3,
             "unitsDied": 9,
+            "buildingDamageDealt": 468,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           }
@@ -2764,13 +2782,14 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "79731b37",
+        "stateHash": "157b790c",
         "events": 349,
         "sides": [
           {
             "spawned": 6,
             "alive": 6,
             "unitsDied": 0,
+            "buildingDamageDealt": 426,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -2778,6 +2797,7 @@
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": 74
           }
@@ -2918,13 +2938,14 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "410beb3e",
+        "stateHash": "20145c5f",
         "events": 222,
         "sides": [
           {
             "spawned": 4,
             "alive": 4,
             "unitsDied": 0,
+            "buildingDamageDealt": 192,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -2932,6 +2953,7 @@
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": 308
           }
@@ -3029,13 +3051,14 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "397e63b9",
+        "stateHash": "62c09544",
         "events": 63,
         "sides": [
           {
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -3043,6 +3066,7 @@
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           }
@@ -3383,13 +3407,14 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "74daef62",
+        "stateHash": "fd9d8244",
         "events": 1013,
         "sides": [
           {
             "spawned": 44,
             "alive": 44,
             "unitsDied": 0,
+            "buildingDamageDealt": 540,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -3397,6 +3422,7 @@
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 1,
             "coreHealth": 0
           }
@@ -3408,7 +3434,7 @@
   {
     "id": "arena-sim.overload-walled-stalemate",
     "kind": "arena-sim",
-    "description": "Two Cores in wall rings and no producers: Overload decay (5 * level on every 100th tick from 2400) destroys both Cores at tick 3700 (cumulative 525 >= 500).",
+    "description": "Two Cores in wall rings and no producers: Overload decay (5 * level on every 100th tick from 1800) destroys both Cores at tick 3100 (cumulative 525 >= 500).",
     "input": {
       "teamA": {
         "map": {
@@ -3762,13 +3788,14 @@
     "expected": {
       "result": {
         "tick": 3800,
-        "stateHash": "8d7e2acc",
-        "events": 45,
+        "stateHash": "ca6c1841",
+        "events": 51,
         "sides": [
           {
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": 0
           },
@@ -3776,12 +3803,13 @@
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": 0
           }
         ]
       },
-      "eventLogHash": "ecbc0fe8"
+      "eventLogHash": "886406be"
     }
   },
   {
@@ -3922,13 +3950,14 @@
     "expected": {
       "result": {
         "tick": 60,
-        "stateHash": "ed9a05fa",
+        "stateHash": "67058efc",
         "events": 6,
         "sides": [
           {
             "spawned": 1,
             "alive": 1,
             "unitsDied": 0,
+            "buildingDamageDealt": 36,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           },
@@ -3936,6 +3965,7 @@
             "spawned": 0,
             "alive": 0,
             "unitsDied": 0,
+            "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
             "coreHealth": 500
           }

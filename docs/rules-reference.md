@@ -227,10 +227,12 @@ board has 3744 cells, `MAX_ARENA_CELLS` allows more than twice that):
 | Time-limit rule, `hp0 / max0` against `hp1 / max1` | none | compared exactly by the Euclid-style `compareFractions` (no product of healths), for any safe integers |
 | Scaled unit health or damage, `floor(v * (100 + P) / 100)` | `v * (100 + P) <= 100 * H + 99 < 1.1e14` | the result is checked against the cap; `mulPct` throws if the product is unsafe |
 | Modifier on health or turret damage, `floor(v * (100 + S) / 100)` | `v <= H`, so `S` up to 8907 is safe | `mulPct` throws beyond that; the result is checked against the cap |
-| Overload hit, `floor(damage * (100 + level * overloadDamageStepPercent) / 100)` | at most `MAX_HIT = 2^51 = 2.25e15` | `createArenaSim` computes it for the largest `level` (at `maxBattleTicks`) and for every unit type at the side's largest strength, and fails at setup if it passes `MAX_HIT`; shipped: level 97, 2040 percent, so at most 2.04e13 for a unit of 1e12 damage |
-| Overload Core decay, `level * overloadCoreDamageStep` | at most `MAX_HIT` | checked at setup the same way; shipped: 485 |
+| Overload hit, `floor(damage * (100 + level * overloadDamageStepPercent) / 100)` | at most `MAX_HIT = 2^51 = 2.25e15` | `createArenaSim` computes it for the largest `level` (at `maxBattleTicks`) and for every unit type at the side's largest strength, and fails at setup if it passes `MAX_HIT`; shipped: level 103, 2160 percent, so at most 2.16e13 for a unit of 1e12 damage |
+| Overload Core decay, `level * overloadCoreDamageStep` | at most `MAX_HIT` | checked at setup the same way; shipped: 515 |
 | Damage to one target in one tick (units, turrets, decay) | saturates at `MAX_TICK_DAMAGE = 2^52` | each term is at most `MAX_HIT` (a turret at most `MAX_DAMAGE`); `partial sum + hit <= 2^52 + 2^51 < 2^53`, so the sum is exact, and a sum that reaches the cap stays there |
-| Core overkill, `coreRemaining = hp - damage` | magnitude at most `2^52` | a saturated sum means the target is long dead (health is at most `H`); the tiebreak compares `hp - damage`, not the damages, so when both sums saturate the side with the higher pre-tick Core health has less overkill and wins (equal health: side 1) |
+| Core overkill, `coreRemaining = hp - damage` | magnitude at most `2^52` | a saturated sum means the target is long dead (health is at most `H`); the tiebreak compares `hp - damage`, not the damages, so when both sums saturate the side with the higher pre-tick Core health has less overkill and wins (equal health: the tiebreak ladder, "End conditions") |
+| Building damage dealt by one side (`buildingDamageDealt`), the sum over ticks and buildings of `min(attack damage, health before the tick)` | `8192 * 1e12 = 8.192e15 < 9.007e15` | each building yields at most its maximum health over the battle (every credit also lowers its health by at least that much), `H` at most; at most `MAX_ARENA_CELLS` buildings; summed with `addInt`, which therefore never throws, so no saturation is needed |
+| Units killed by one side | at most the units ever spawned | counted as the other side's `unitsDied`, one per dead unit |
 | Unit strength percent `P` (base option + modifiers + ramp bonus) | the largest value accepted is `maxStrengthPercent(unit)`, 2 499 999 999 902 for the shipped soldier | `unitStats` throws a `RangeError` for any `P` that would push a unit past `MAX_HEALTH` or `MAX_DAMAGE`; `addInt` for the sum of percents |
 
 Distances and each building's maximum health are held in 64-bit float arrays
@@ -256,7 +258,10 @@ middle:
   result must not exceed `MAX_HEALTH`;
   the `coreHealth` option must be an integer from 1 to `MAX_HEALTH`.
 - **Turret damage** (`floor(tier damage * (100 + sum) / 100)` with the team's
-  `turret_damage_percent`) must not exceed `MAX_DAMAGE`.
+  `turret_damage_percent`) must not exceed `MAX_DAMAGE`. The percent sum is
+  accumulated with `addInt`, and a sum for which `damage * (100 + sum)` would
+  leave the safe range is a `RangeError` naming `turret_damage_percent`, like
+  the health modifiers above.
 - A unit's scaled health and damage (`mulPct(base, 100 + P)`, see "Units")
   must not exceed `MAX_HEALTH` and `MAX_DAMAGE`; otherwise `unitStats` throws a
   `RangeError` naming the unit. For each side, `createArenaSim` checks every
@@ -853,7 +858,7 @@ and movement fields"), `aggroRangeCells` (3, the range within which a unit
 chases an enemy unit; see "One battle tick", step 3a2), `maxSourceSpeedPercent`
 (300) and `maxUnitStrengthPercent` (300), the global caps of the in-battle ramp
 (see "In-battle ramp (economy buildings)"), and the Overload constants
-`overloadStartTick` (2400), `overloadIntervalTicks` (100),
+`overloadStartTick` (1800, three minutes at 10 ticks a second), `overloadIntervalTicks` (100),
 `overloadDamageStepPercent` (20) and `overloadCoreDamageStep` (5) (see
 "Overload"), `maxBattleTicks` (12000, the hard cap on a battle, see "Battles")
 and `timelineSampleTicks` (50, the sampling interval of the battle summary
@@ -1186,7 +1191,10 @@ state at tick 0:
 - `ramps`: `{side, building, charge, steps}` for each living economy building
   (in-battle ramp), by side then building ID, all starting at `charge = 0`,
   `steps = 0` (CB-11);
-- `units`; and counters `spawned` and `unitsDied`, each a pair indexed by side;
+- `units`; and counters `spawned`, `unitsDied` and `buildingDamageDealt`, each a
+  pair indexed by side (`buildingDamageDealt[s]` is the damage the units of side
+  `s` have applied to the enemy's buildings, see step 4 and "Tiebreak
+  counters");
 - `sideOptions`: present **only** when a side was given options (PvE battles, see
   "Side options"); a ghost battle's state has no such field, so its hash is
   unchanged.
@@ -1327,7 +1335,13 @@ exactly like the original.
    this tick still receives every blow aimed at it). Each attacker's `attackCooldown` becomes
    `attackCooldownTicks`. A building's health stops at 0 (a Core's health
    value after all damage of the tick, which may be negative, is also kept for
-   the tiebreak, see "Battles"). Events
+   the tiebreak, see "Battles"). **Building damage dealt:** for each building
+   (a Core too) that took unit attacks this tick, let `A` be the saturating
+   sum of those attack hits on it (Overload Core decay is not part of `A`) and
+   `h` its health before this tick; side `1 - owner` gets `min(A, h)` added to
+   its `buildingDamageDealt` with `addInt`. Decay and any damage beyond the
+   building's remaining health (overkill) are never counted. (Turret shots
+   only hit units, so they add nothing.) Events
    (`unit_attacked`) are recorded in unit-`id` order. **Core decay**: on an
    Overload beat, each _living_ Core (side 0, then side 1) takes `level *
    overloadCoreDamageStep` damage, added to the damage of this step (so it is
@@ -1486,7 +1500,7 @@ exponentially can overtake a capped ramp.
 ### Overload (CB-12)
 
 Overload guarantees that battles end. Constants (`content/sim.json`):
-`overloadStartTick` (2400), `overloadIntervalTicks` (100),
+`overloadStartTick` (1800, three minutes at 10 ticks a second), `overloadIntervalTicks` (100),
 `overloadDamageStepPercent` (20), `overloadCoreDamageStep` (5).
 
 - **Level.** `level = 0` for `T < overloadStartTick`, and from then on `level =
@@ -1505,14 +1519,14 @@ Overload guarantees that battles end. Constants (`content/sim.json`):
   overloadStartTick) mod overloadIntervalTicks = 0`) both living Cores take `level *
   overloadCoreDamageStep` damage directly, together with that tick's other
   damage (step 4). Two walled boards with no units therefore still end: the
-  Cores take 5, 10, 15, ... on ticks 2400, 2500, 2600, ...; after `n` beats the
-  total is `5 * n * (n + 1) / 2`: 455 after 13 beats (last at 3600), 525 after
-  14 (last at 3700), so with the Core health of 500 both Cores are destroyed
-  at tick 3700 (level 14, damage 70). Both Cores may fall in the same tick; the
+  Cores take 5, 10, 15, ... on ticks 1800, 1900, 2000, ...; after `n` beats the
+  total is `5 * n * (n + 1) / 2`: 455 after 13 beats (last at 3000), 525 after
+  14 (last at 3100), so with the Core health of 500 both Cores are destroyed
+  at tick 3100 (level 14, damage 70). Both Cores may fall in the same tick; the
   simulation records `core_destroyed` for each; the battle-end rule and the
   tiebreak are in "Battles". With a Core health of 500 this bounds every
-  battle: whatever else happens, both Cores are gone at tick 3700 at the
-  latest, so a battle never lasts beyond 3701 ticks with the standard
+  battle: whatever else happens, both Cores are gone at tick 3100 at the
+  latest, so a battle never lasts beyond 3101 ticks with the standard
   constants.
 - **The deadline helper.** `overloadDeadline(simConfig, coreMaxHealth)`
   (`ramp.ts`) returns `{startTick, decayDestroysTick, decayDestroysLevel}`:
@@ -1523,7 +1537,8 @@ Overload guarantees that battles end. Constants (`content/sim.json`):
   `overloadCoreDamageStep` is 0). It counts the decay alone: any other damage
   to the Core makes the Core fall earlier. For a Core of 500 health, n = 14
   (13 beats take 455, 14 take 525), so with the standard constants it falls
-  at tick 3700 (start 2400).
+  at tick 3100 (start 1800), that is 3 minutes 10 seconds, and the battle
+  ends at `endTick` 3101 at the latest.
 - **PvE: the deadline is intended (CB-12, CB-29, #43).** In a PvE battle side
   1's Core is the stronghold's, whose health scales with the budget
   (`coreHealthPerBudget` times the budget, at least `minCoreHealth`) and is
@@ -1587,7 +1602,7 @@ unpowered, a gate that lets its owner out while holding the enemy, a funnel
 of a lake band and walls leaving one approach above eight turrets, an
 overclocker speeding up a source, an armory making later units stronger, an
 economy building reaching its cap, an overclocker destroyed mid-battle by a
-breach, two walled Cores ending by Overload at tick 3700, and a soldier on a
+breach, two walled Cores ending by Overload at tick 3100, and a soldier on a
 corner cell between a healthy and a damaged wall of equal maximum health that
 attacks the healthy one because the breach step prices buildings by maximum
 health).
@@ -1877,21 +1892,69 @@ that applies ends the battle.
    below zero, that is, the side that took less overkill) wins, `reason:
    "tiebreak_overkill"`. (The comparison is of `hp - damage`, not of the
    damages: when both damage sums saturated at `2^52`, the side with the higher
-   pre-tick Core health wins.) If they are equal, side 1 (the defender) wins,
-   `reason: "tiebreak_defender"`.
+   pre-tick Core health wins.) If they are equal, the **tiebreak ladder**
+   below decides.
 3. **Time limit**: `maxBattleTicks` (12000) ticks have been simulated with
    both Cores alive: the side with the higher Core health as a fraction of its
    Core's maximum health wins, compared exactly in integers without forming a product (the fractions
    `hp0 / max0` and `hp1 / max1` are compared by Euclid's algorithm: integer
    parts first, then the reciprocals of the remainders, see `compareFractions`
-   in `int.ts`); if equal, side 1 wins. `reason:
-   "time_limit"`. It is reached only if both Cores survive the Overload decay
-   to that tick. The decay alone destroys any Core with at most
-   `overloadCoreDamageStep * m * (m + 1) / 2` health, where `m` is the number
-   of beats before `maxBattleTicks` (96 with the standard constants, 23280
-   health), so for the Core of 500 health (before `core_health_percent`
-   modifiers) it cannot happen; it is a safety net for larger Cores (a
-   `coreHealth` option) and for tests with Overload effectively disabled.
+   in `int.ts`), `reason: "time_limit"`; if the fractions are equal, the
+   ladder below decides. The time limit is reached only if both Cores survive
+   the Overload decay to that tick. The decay alone destroys any Core with at
+   most `overloadCoreDamageStep * m * (m + 1) / 2` health, where `m` is the
+   number of Overload beats before `maxBattleTicks` (102 with the standard
+   constants, 26265 health), so for the Core of 500 health (before
+   `core_health_percent` modifiers) it cannot happen; it is a safety net for
+   larger Cores (a `coreHealth` option) and for tests with Overload
+   effectively disabled.
+
+**The tiebreak ladder** (after equal overkill, or equal Core health fractions
+at the time limit), first rung that differs wins:
+
+- (a) more **building damage dealt** than the other side
+  (`buildingDamageDealt`), `reason: "tiebreak_building_damage"`;
+- (b) more **units killed** (`unitsKilled`), `reason: "tiebreak_kills"`;
+- (c) otherwise the **attacker**, side 0, wins, `reason:
+  "tiebreak_attacker"`.
+
+The defender wins no tie. (The overkill rung is `tiebreak_overkill`; the same
+codes serve whichever condition led to the ladder.)
+
+### Tiebreak counters
+
+Two integers per side, both part of the saved state (`buildingDamageDealt` is
+a field of `ArenaSim`; the kills are derived from `unitsDied`):
+
+- **`buildingDamageDealt[s]`**: the damage that side `s`'s units have applied
+  to the other side's buildings, **the Core included**, over the whole battle,
+  summed tick by tick as in step 4 of "One battle tick": for each building and
+  tick, `min(A, h)` where `A` is the saturating sum of that tick's unit
+  attacks on the building and `h` the building's health before the tick. It
+  does **not** include Overload Core decay (the Core takes that whatever
+  happens), and it does not include overkill, i.e. damage beyond the health the
+  building had left (so a Core that had 10 health and was hit for 18 counts 10;
+  a building hit by two units in the same tick counts at most its remaining
+  health once). Turret shots hit units only. Damage to units is never counted
+  here. If a Core takes attack damage and decay in the same tick, the decay
+  does not reduce the credited attack damage (`min(A, h)` is computed with the
+  attacks alone).
+- **`unitsKilled[s]`**: the number of enemy units that died from side `s`'s
+  damage. A unit takes damage only from the other side's units and turrets (no
+  unit attacks its own side, Overload does not damage units), so every unit
+  death is the kill of exactly one side and the case of one unit killed by
+  both sides in the same tick cannot occur. Hence `unitsKilled[s] =
+  unitsDied[1 - s]` (units that died, whatever blow finished them; a unit that
+  took the blows of several enemies in its last tick is one kill).
+
+Bounds (see "Content bounds"): per building the credited total is at most its
+maximum health (every credit `min(A, h)` also takes at least that much from
+`h`), so at most `MAX_HEALTH = 1e12`; a side's total is at most the sum over
+the enemy's buildings, and there are at most `MAX_ARENA_CELLS = 8192` of them,
+so at most `8192 * 1e12 = 8.192e15 < 2^53 - 1 = 9.007e15`: the counter is
+always exact and needs no saturation (it is still summed with the checked
+`addInt`). `unitsDied` is at most the number of units ever spawned, far below
+any bound.
 
 Once a battle has ended nothing steps any more: `step()` does nothing and
 `simulateBattle` stops. The result is `{winner, reason, endTick}` with `winner`
@@ -1928,6 +1991,8 @@ vector's `eventLogHash`.
 | `coreMaxHealth` | The Core's maximum health.                                           |
 | `coreOverkill`  | See "Core health and overkill".                                      |
 | `rampSteps`     | `ramp_step` events of the side (steps of destroyed buildings count). |
+| `buildingDamageDealt` | Damage the side's units applied to the enemy's buildings, Core included; see "Tiebreak counters". |
+| `unitsKilled`   | Enemy units that died from the side's damage (`unitsDied` of the other side). |
 
 `timeline` is a list of samples `{tick, sides: [s0, s1]}` with `s = {units,
 unitHealth, buildings}`: units alive, the sum of their current health, and
@@ -1938,16 +2003,25 @@ the timeline out.
 
 ### Golden kind `battle`
 
-Input `{teamA, teamB, seed}`; each team is a `team-state-ops` script (`map` or
+Input `{teamA, teamB, seed}` and optionally `sideOptions` (`[side0, side1]`,
+each `null` or an object of the side options of "Side options": `scheduledWaves`,
+`freePower`, `unitStrengthPercent`, `coreHealth`; absent in the older vectors);
+each team is a `team-state-ops` script (`map` or
 `seed` and `partySize`, and `ops`). Result for a battle that ran: `{ok: true,
 result, summary (without timeline), zone, stateHash, events}` where
 `stateHash` is the hash of the final `ArenaSim` and `events` the length of the
 event log; the event log is the vector's `eventLogHash`. For a refused battle:
 `{ok: false, error: {code, message}}` (no event log). Vectors:
-`golden/battle.json`: a mirror match (it ends by the defender tiebreak: every
-soldier has died by then and Overload destroys both Cores at tick 3700);
+`golden/battle.json`: a mirror match (it ends by the attacker rung: every
+soldier has died by then, kills and building damage are equal, and Overload
+destroys both Cores at tick 3100);
 rush against fortify-and-ramp; a quick one-sided battle; a walled stalemate
-ended by Overload; party sizes 1 and 2 refused.
+ended by Overload (attacker rung); one vector for each rung of the ladder after
+equal overkill, `battle.tiebreak-building-damage` (a soldier wave hits a turret
+and dies: side 1 has the building damage although side 0 has the kill),
+`battle.tiebreak-kills` (free-power turrets kill a wave: side 1 wins on kills
+with no building damage on either side) and `battle.tiebreak-attacker` (two
+bare Cores); party sizes 1 and 2 refused.
 
 ### Decided simplifications
 
@@ -2006,7 +2080,7 @@ identically; with none the field is absent.
   from `createArenaSim`), see "Content bounds".
 
 Everything else (unit behaviour, aggro, breach logic, Overload, end conditions
-and the defender tiebreak) is unchanged.
+and the tiebreak ladder) is unchanged.
 
 ## PvE threats
 
@@ -2209,7 +2283,7 @@ type, level (easy 1, medium 2, hard and boss 3), totalUnits, firstWaveTick
 `startPveBattle({team, threat, seed}, content, {sim, mapgen})` and
 `simulatePveBattle(...)` extend `startBattle`/`simulateBattle` (they call
 `startBattle`; there is no second tick loop). Side 0 is the party, side 1 the
-threat (so it is the defender in the tiebreak). The stronghold is built as
+threat (so it is the defender, who wins no tie). The stronghold is built as
 above and becomes side 1's team state; side 1 gets the side options
 `scheduledWaves` = `profile.waves`, `freePower` = true, `unitStrengthPercent`
 = `profile.unitStrengthPercent` and `coreHealth` = `stronghold.coreHealth`.

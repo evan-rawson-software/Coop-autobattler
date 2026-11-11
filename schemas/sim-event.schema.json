@@ -497,7 +497,9 @@
           "enum": [
             "core_destroyed",
             "tiebreak_overkill",
-            "tiebreak_defender",
+            "tiebreak_building_damage",
+            "tiebreak_kills",
+            "tiebreak_attacker",
             "time_limit"
           ]
         },

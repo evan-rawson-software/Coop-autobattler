@@ -145,17 +145,17 @@ describe('overloadDeadline (#43)', () => {
 
 describe('Overload level (CB-12)', () => {
   test('level 0 before the start tick, then one more every interval', () => {
-    expect(simConfig.overloadStartTick).toBe(2400);
+    expect(simConfig.overloadStartTick).toBe(1800);
     expect(overloadLevel(0, simConfig)).toBe(0);
-    expect(overloadLevel(2399, simConfig)).toBe(0);
-    expect(overloadLevel(2400, simConfig)).toBe(1);
-    expect(overloadLevel(2499, simConfig)).toBe(1);
-    expect(overloadLevel(2500, simConfig)).toBe(2);
-    expect(overloadLevel(3700, simConfig)).toBe(14);
-    expect(isOverloadBeat(2399, simConfig)).toBe(false);
-    expect(isOverloadBeat(2400, simConfig)).toBe(true);
+    expect(overloadLevel(1799, simConfig)).toBe(0);
+    expect(overloadLevel(1800, simConfig)).toBe(1);
+    expect(overloadLevel(1899, simConfig)).toBe(1);
+    expect(overloadLevel(1900, simConfig)).toBe(2);
+    expect(overloadLevel(3100, simConfig)).toBe(14);
+    expect(isOverloadBeat(1799, simConfig)).toBe(false);
+    expect(isOverloadBeat(1800, simConfig)).toBe(true);
     expect(isOverloadBeat(2401, simConfig)).toBe(false);
-    expect(isOverloadBeat(2500, simConfig)).toBe(true);
+    expect(isOverloadBeat(1900, simConfig)).toBe(true);
   });
 
   test('events fire once per level, at the tick the level rises', () => {
@@ -166,17 +166,17 @@ describe('Overload level (CB-12)', () => {
       content,
       simConfig,
     );
-    sim.tick = 2395; // the state is plain JSON: a later tick is a valid state
+    sim.tick = 1795; // the state is plain JSON: a later tick is a valid state
     runArena(sim, ctx, 220);
     expect(ofType(events, 'overload_started').map((e) => e.tick)).toEqual([
-      2400,
+      1800,
     ]);
     expect(
       ofType(events, 'overload_level').map((e) => [e.tick, e.level]),
     ).toEqual([
-      [2400, 1],
-      [2500, 2],
-      [2600, 3],
+      [1800, 1],
+      [1900, 2],
+      [2000, 3],
     ]);
     // Core decay: level * 5 to both Cores, on the beats only.
     expect(
@@ -186,12 +186,12 @@ describe('Overload level (CB-12)', () => {
         e.damage,
       ]),
     ).toEqual([
-      [2400, 0, 5],
-      [2400, 1, 5],
-      [2500, 0, 10],
-      [2500, 1, 10],
-      [2600, 0, 15],
-      [2600, 1, 15],
+      [1800, 0, 5],
+      [1800, 1, 5],
+      [1900, 0, 10],
+      [1900, 1, 10],
+      [2000, 0, 15],
+      [2000, 1, 15],
     ]);
     expect(hpOf(sim, 0, 0)).toBe(500 - 30);
   });
@@ -802,7 +802,7 @@ describe('Overload damage (criterion 6)', () => {
       content,
       simConfig,
     );
-    before.sim.tick = 2399;
+    before.sim.tick = 1799;
     spawnUnitForTest(before.sim, before.ctx, {
       side: 0,
       def: 'unit_soldier',
@@ -895,11 +895,11 @@ describe('Overload ends walled stand-offs (criterion 5)', () => {
     return lab.state;
   }
 
-  test('both Cores are destroyed at tick 3700', () => {
-    // The Core has 500 health. On the beats 2400, 2500, ... (j = 0, 1, ...)
+  test('both Cores are destroyed at tick 3100', () => {
+    // The Core has 500 health. On the beats 1800, 1900, ... (j = 0, 1, ...)
     // each Core takes 5 * (j + 1). After n beats the total is 5 * n(n+1)/2:
-    //   13 beats (last at 3600): 5 * 91 = 455 -> 45 health left;
-    //   14 beats (last at 3700): 5 * 105 = 525 >= 500 -> destroyed.
+    //   13 beats (last at 3000): 5 * 91 = 455 -> 45 health left;
+    //   14 beats (last at 3100): 5 * 105 = 525 >= 500 -> destroyed.
     const team = walledCore();
     const { sim, ctx, events } = startArenaBattle(
       team,
@@ -908,16 +908,16 @@ describe('Overload ends walled stand-offs (criterion 5)', () => {
       content,
       simConfig,
     );
-    runArena(sim, ctx, 3700); // ticks 0..3699
+    runArena(sim, ctx, 3100); // ticks 0..3099
     expect(hpOf(sim, 0, 0)).toBe(45);
     expect(hpOf(sim, 1, 0)).toBe(45);
     expect(ofType(events, 'core_destroyed')).toHaveLength(0);
-    runArena(sim, ctx, 1); // tick 3700: level 14, damage 70
+    runArena(sim, ctx, 1); // tick 3100: level 14, damage 70
     expect(
       ofType(events, 'core_destroyed').map((e) => [e.tick, e.side]),
     ).toEqual([
-      [3700, 0],
-      [3700, 1],
+      [3100, 0],
+      [3100, 1],
     ]);
     expect(hpOf(sim, 0, 0)).toBe(0);
     expect(hpOf(sim, 1, 0)).toBe(0);
@@ -935,7 +935,7 @@ describe('Overload ends walled stand-offs (criterion 5)', () => {
       content,
       simConfig,
     );
-    runArena(sim, ctx, 3701);
+    runArena(sim, ctx, 3101);
     const mark = events.length;
     runArena(sim, ctx, 500);
     const later = events.slice(mark);
@@ -944,7 +944,7 @@ describe('Overload ends walled stand-offs (criterion 5)', () => {
       0,
     );
     expect(ofType(later, 'overload_level').length).toBe(5);
-    expect(sim.tick).toBe(4201);
+    expect(sim.tick).toBe(3601);
   });
 });
 

@@ -1,6 +1,9 @@
 /**
  * Golden-vector kind `battle`. Input `{ teamA, teamB, seed }` where each team
- * is a `team-state-ops` script. Result on success: `{ ok: true, result,
+ * is a `team-state-ops` script, plus an optional `sideOptions`: `[side0, side1]`
+ * where each is `null` or an object of the arena side options (`scheduledWaves`,
+ * `freePower`, `unitStrengthPercent`, `coreHealth`; see "Side options"), so a
+ * scenario can bring waves of units or turrets that need no supply. Result on success: `{ ok: true, result,
  * summary, zone, stateHash, events }` where `summary` has no timeline,
  * `stateHash` is the hash of the final `ArenaSim` and `events` the number of
  * events; the event log is the vector's event log. On a refused battle:
@@ -8,6 +11,7 @@
  */
 import { startBattle } from './battle.js';
 import type { ArenaContent } from './arena.js';
+import type { SideOptions } from './arena-sim.js';
 import { hashJson, type Json } from './hash.js';
 import type { SimulationFn } from './golden-kinds.js';
 import type { MapgenConfig } from './mapgen.js';
@@ -37,10 +41,36 @@ export function makeBattleKind(
     }
     const teamA = runTeamStateOps(a, content, mapgen).state;
     const teamB = runTeamStateOps(b, content, mapgen).state;
-    const started = startBattle({ teamA, teamB, seed }, content, {
-      sim: simConfig,
-      mapgen,
-    });
+    const given = field(input, 'sideOptions');
+    if (
+      given !== undefined &&
+      (!Array.isArray(given) ||
+        given.length !== 2 ||
+        given.some(
+          (o) => o !== null && (typeof o !== 'object' || Array.isArray(o)),
+        ))
+    ) {
+      throw new TypeError(
+        'battle: sideOptions must be a list of two objects or nulls',
+      );
+    }
+    const sideOptions =
+      given === undefined
+        ? {}
+        : {
+            sideOptions: given as unknown as readonly [
+              SideOptions | null,
+              SideOptions | null,
+            ],
+          };
+    const started = startBattle(
+      { teamA, teamB, seed, ...sideOptions },
+      content,
+      {
+        sim: simConfig,
+        mapgen,
+      },
+    );
     if (!started.ok) {
       return {
         result: {
