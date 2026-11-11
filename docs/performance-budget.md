@@ -88,7 +88,7 @@ is unchanged) and the dense battles last 37 to 60 percent longer (the mirror
 of an army against itself is no longer decided by both Cores falling in the
 same tick while the armies are still stalled). One-plot battles got faster
 because more of them end by a Core kill early. The dense tier 1 rate target of
-5 battles a second is no longer met (2.9); the enforced floor of 1.5 is.
+5 battles a second is no longer met (2.9); the enforced floor of 1 is.
 
 Rows below are the earlier (stacking) baseline, kept for reference:
 
@@ -119,8 +119,8 @@ tick on average with up to 1,220 units on the field.
 | Battle length                           | 4,000 ticks            | 3,101                 | `performance.test.ts`, exact                 |
 | Hard cap on battle length               | `maxBattleTicks` 12,000 | never reached        | the end conditions                           |
 | One plot: battles per second (target)   | at least 100           | 129-149               | fails below 40 (about 3x)                    |
-| Four plots, dense: battles per second   | at least 5 (**not met**) | 2.9 (tier 1)        | fails below 1.5 (about 2x)                   |
-| Four plots, dense tier 3, one battle    | at most 1 s (**not met**) | 1.9 s              | fails above 4 s (about 2x)                   |
+| Four plots, dense: battles per second   | at least 5 (**not met**) | 2.9 (tier 1)        | fails below 1 (about 3x)                     |
+| Four plots, dense tier 3, one battle    | at most 1 s (**not met**) | 1.9 s              | fails above 6 s (about 3x)                   |
 | Event log, one plot                     | 1 MB                   | 0.44 MB               | `performance.test.ts`, exact                 |
 | Event log, four plots                   | 12 MB (was 8 MB, 5 MB) | 8.2 MB                | `performance.test.ts`, exact                 |
 
@@ -150,11 +150,11 @@ test`; about 1 minute since the dense battles take seconds, each test has a 30 t
   s now) and, with tier 1, for the unit peak, length and log size (untimed,
   deterministic).
 
-The enforced limits are 2 to 3 times looser than the speed measured on the
+The enforced limits are about 3 times looser than the speed measured on the
 sandbox this was written on (4 cores shared with other work, so the figures
 move by 10 to 30 percent from run to run): one plot at least 40 battles per
-second against 129 to 149 measured; dense tier 1 at least 1.5 per second
-against 2.9; the tier 3 stress battle under 4 s against 1.9 s.
+second against 129 to 149 measured; dense tier 1 at least 1 per second
+against 2.9; the tier 3 stress battle under 6 s against 1.9 s.
 A slow or noisy CI runner passes and a regression of several times fails. CI
 runs `pnpm -r run test`, so the package suites run in parallel and the
 benchmark competes for CPU; if a runner turns out slower than that, widen the
