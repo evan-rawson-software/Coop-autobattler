@@ -39,7 +39,6 @@ import { verifyLastBattle } from './replay.js';
 import {
   content,
   gameConfigs,
-  mapgenConfig,
   makeGameDeps,
   newRun,
   ok,
@@ -60,10 +59,23 @@ async function playRounds(g: Game, round: number): Promise<RunState> {
   return playUntil(g, atPvpSummary(round));
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Loose = any;
+/** A mutable, loosely typed view of JSON data, for crafting bad input. */
+interface Loose {
+  team: {
+    stash: Record<string, unknown>[];
+    buildings: Record<string, unknown>[];
+    nextId: number;
+    map: { nodes: unknown[] };
+  };
+  owner: { id: string; label: string };
+  runId: string;
+  ghost: Loose;
+  battle: { detail: { source: { type: string; team: TeamState } } };
+  options: { id: string }[];
+  followUp: { perPlayer?: boolean; options: { id: string }[] };
+}
 function loose(v: unknown): Loose {
-  return JSON.parse(JSON.stringify(v));
+  return JSON.parse(JSON.stringify(v)) as Loose;
 }
 
 function clone<T>(v: T): T {
@@ -123,13 +135,13 @@ describe('taking snapshots', () => {
       else if (s.step === 'event_choice')
         intent = {
           type: 'vote',
-          choice: (loose(s.pending).options as { id: string }[])[0]?.id ?? '',
+          choice: loose(s.pending).options[0]?.id ?? '',
         };
       else if (s.step === 'event_resolve') {
         const fu = loose(s.pending).followUp;
         intent = {
           type: 'event_choose',
-          choice: fu.perPlayer === true ? 'skip' : fu.options[0].id,
+          choice: fu.perPlayer === true ? 'skip' : fu.options[0]?.id,
         };
       } else if (s.step === 'shop' && s.leg === 'pve')
         intent = { type: SELECT_GHOST, candidates: [] };
@@ -699,7 +711,7 @@ describe('replay and reload', () => {
           choice: fu.perPlayer === true ? 'skip' : fu.options[0]?.id,
         };
       } else intent = { type: 'ready' };
-      s = ok(s, 0, intent as never, deps).state;
+      s = ok(s, 0, intent, deps).state;
     }
     expect(s.pvpOpponent).toBeNull();
     // `ready` is refused until the opponent is fixed.
@@ -775,7 +787,7 @@ describe('failures of the pool never break a run', () => {
       list: () => Promise.reject(new Error('boom')),
     };
     const g = await begin(
-      { saves: rig.saves, ghosts: broken as never },
+      { saves: rig.saves, ghosts: broken },
       ghostDeps('dev-b'),
       { runId: 'run-b' },
     );
@@ -800,7 +812,7 @@ describe('run state validation of the ghost fields', () => {
       errs({ ...clone(s), step: 'event_choice', leg: 'pve' }).join(),
     ).toMatch(/pvpOpponent|pending|votes/);
     expect(errs({ ...clone(s), round: 2 }).join()).toMatch(/pvpOpponent/);
-    const o = loose(s.pvpOpponent) as NonNullable<RunState['pvpOpponent']>;
+    const o = clone(s.pvpOpponent) as NonNullable<RunState['pvpOpponent']>;
     expect(
       errs({ ...clone(s), pvpOpponent: { ...o, label: 'Other' } }).join(),
     ).toMatch(/label/);
@@ -833,6 +845,3 @@ describe('run state validation of the ghost fields', () => {
     );
   });
 });
-
-// Keep the config imports used.
-void mapgenConfig;

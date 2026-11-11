@@ -9,7 +9,7 @@
  * `validateGhostSnapshot` first. See docs/rules-reference.md, "Ghosts".
  */
 
-import { canonicalJson } from './hash.js';
+import { canonicalJson, sortedKeys } from './hash.js';
 import type { Content } from './content.js';
 import type { EconomyConfig } from './economy.js';
 import { findModifier, type EventsConfig } from './events.js';
@@ -267,7 +267,7 @@ function shapeInner(
     errors.push('snapshot: must be an object.');
     return undefined;
   }
-  for (const k of Object.keys(raw).sort()) {
+  for (const k of sortedKeys(raw)) {
     if (!KEYS.has(k)) errors.push(`snapshot: unknown field "${k}".`);
   }
   if (raw['formatVersion'] !== GHOST_SNAPSHOT_FORMAT_VERSION) {
@@ -302,7 +302,7 @@ function shapeInner(
   if (!isRecord(owner)) {
     errors.push('owner: must be { id, label }.');
   } else {
-    for (const k of Object.keys(owner)) {
+    for (const k of sortedKeys(owner)) {
       if (k !== 'id' && k !== 'label')
         errors.push(`owner: unknown field "${k}".`);
     }
@@ -329,7 +329,7 @@ function shapeInner(
   } else {
     wins = record['wins'];
     losses = record['losses'];
-    for (const k of Object.keys(record)) {
+    for (const k of sortedKeys(record)) {
       if (k !== 'wins' && k !== 'losses') {
         errors.push(`pvpRecord: unknown field "${k}".`);
       }
@@ -389,9 +389,7 @@ function shapeInner(
     errors.push('map: differs from the map generated from mapSeed.');
   }
   if (errors.length > 0) return undefined;
-  return team.ok
-    ? ({ ...(raw as object), team: t } as unknown as GhostSnapshot)
-    : undefined;
+  return { ...(raw as object), team: t } as unknown as GhostSnapshot;
 }
 
 /**
