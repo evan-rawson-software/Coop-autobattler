@@ -212,7 +212,7 @@ on purpose: PvE threats (below) are not limited by them in rounds 1 to
 | `CELL_UNITS`           | 240                 | sub-cell units per cell (positions, radii, reach)                         |
 | `MAX_UNIT_RADIUS`      | 480                 | `radius` and `collisionRadius` of a unit (two cells)                      |
 | `MAX_UNIT_REACH`       | 1 920               | `reach` of a unit (eight cells)                                           |
-| `MAX_SEPARATION_PASSES`| 16                  | `separationPasses` in `sim.json`                                          |
+| `MAX_SEPARATION_CAP`   | 480                 | `separationCap` in `sim.json` (`separationPercent` is 0 to 100)           |
 
 A loader reports a value above its cap like any other bad field (for example
 `"health" must be at most 1000000000000 (got 3000000000000)`), and the schemas
@@ -875,8 +875,10 @@ battle tick"; the only thing they add to this single-board flow is the optional
 the capacity of each consumer input buffer), `breachBaseCost` (10) and
 `breachHealthPerCost` (10), the last two used by the breach field (see "Goals
 and movement fields"), `aggroRangeCells` (3, the centre-to-centre range, in cells, within which a unit
-chases an enemy unit; see "One battle tick", step 3a2), `separationPasses` (4,
-the number of relaxation passes of step 5; 0 to 16), `maxSourceSpeedPercent`
+chases an enemy unit; see "One battle tick", step 3a2), `separationPercent` (75, the
+percent of an overlap that a pair of overlapping units resolves per tick; 0 to
+100) and `separationCap` (40, the most a pair is moved apart per tick, in
+sub-cell units; 0 to 480; see step 5), `maxSourceSpeedPercent`
 (300) and `maxUnitStrengthPercent` (300), the global caps of the in-battle ramp
 (see "In-battle ramp (economy buildings)"), and the Overload constants
 `overloadStartTick` (1800, three minutes at 10 ticks a second), `overloadIntervalTicks` (100),
@@ -1180,9 +1182,10 @@ the **centre of the unit's circle** in arena **sub-cell units** (see "Unit
 geometry"). `id` is a positive integer taken from one counter shared by both
 sides, in spawn order (the counter starts at 1, is never reused); the unit list
 is kept sorted by `id`. `hp` starts at the unit definition's `health`.
-`attackCooldown` counts down in ticks. **Units are circles that never
-overlap** (friend or foe): see "Unit geometry" and step 5 of the tick. There is
-no `moveCooldown`: movement is continuous, at the unit's `speed`.
+`attackCooldown` counts down in ticks. **Units are circles that may overlap
+each other a little for a while but never solid ground** (soft collision,
+issue #82): see "Unit geometry" and step 5 of the tick. There is no
+`moveCooldown`: movement is continuous, at the unit's `speed`.
 
 A unit also stores `damage`, its attack damage **fixed at spawn**. All reads
 of a unit's stats (health, damage, range, cooldowns) go through one function,
@@ -1223,14 +1226,16 @@ units unless noted):
 | Field | Meaning |
 | --- | --- |
 | `radius` | Radius of the unit's body: used for reach, aggro, turret range and drawing. 1 to 480. |
-| `collisionRadius` | Radius of the circle that may not overlap anything. 1 to 480. Equal to `radius` for every part-1 unit. |
+| `collisionRadius` | Radius of the circle that is pushed out of solid ground and pushed apart from other units' circles (soft). 1 to 480. About 65 percent of `radius` for the ground units of the first content. |
 | `reach` | Most the gap between the unit's circle and its target may be for it to attack (0 to 1920). |
 | `moveCooldownTicks` | Ticks the unit needs to walk one cell. `speed = floor(240 / moveCooldownTicks)` sub-cell units per tick (1 to 240; at least 1 results). Soldier 6 -> 40, raider 4 -> 60: the same crossing time per cell as the earlier one-cell-per-cooldown rule. |
 | `flying` | Boolean, `false` for every unit in part 1 (reserved: a `true` is rejected by the loader). |
 | `attackType` | `"melee"`, the only value in part 1 (reserved for ranged attacks). |
 
-Placeholder content: soldier `radius = collisionRadius = 72` (0.30 cell),
-`reach = 60`; raider `radius = collisionRadius = 60` (0.25 cell), `reach = 60`.
+Placeholder content: soldier `radius = 72` (0.30 cell), `collisionRadius = 47`,
+`reach = 60`; raider `radius = 60` (0.25 cell), `collisionRadius = 39`, `reach =
+60`. Reach, aggro and turret range use `radius` (the body); collision uses
+`collisionRadius`, so bodies pack tighter than they are drawn.
 
 **Helpers.**
 - `isqrtFloor(n)`: the largest integer `r` with `r * r <= n` (`n >= 0`);
@@ -1244,7 +1249,7 @@ Placeholder content: soldier `radius = collisionRadius = 72` (0.30 cell),
   likewise, `dx^2 + dy^2`. `buildingDist2(X, Y, building)` is the minimum over
   the building's cells.
 - Circles `a` and `b` **overlap** iff `dist^2 < (Ra + Rb)^2` (centre distance
-  squared, collision radii). Touching (equal) is allowed.
+  squared, collision radii). Touching (equal) is not an overlap.
 
 **Solid cells.** For a side, a cell is **solid** iff it is not open for that
 side (`openFor`: terrain, a blocked gap cell, a building that blocks the side;
@@ -1258,9 +1263,12 @@ its collision diameter, and no unit's circle ever intersects blocked ground.
 Conduits are not in the arena: units pass over them.
 
 **Invariant (holds at the end of every tick and at tick 0).** Every unit's
-collision circle fits for its side, and no two units' collision circles
-overlap. `stepArena` guarantees it by construction (the acceptance of
-step 5).
+collision circle fits for its side: it is inside the arena and clear of every
+solid cell. Two units' collision circles **may overlap** (soft collision, issue
+#82): overlap is resolved by the push pass of step 5 over the following ticks,
+it is not forbidden. `stepArena` guarantees the invariant by construction (the
+settling of step 5: a position that does not fit is replaced by one that
+does, and the unit's last fitting position is the fallback).
 
 **Push-out of solid ground** `pushOutSolid(side, R, (X, Y))`: visit the cells of
 the window above in row-major order (`y` then `x`, ascending) and, for each
@@ -1277,7 +1285,8 @@ or plus (`Rr`, `U`) `R` along that axis. Finally clamp `X` to `[R, 240 W - R]` a
 `Y` to `[R, 240 H - R]`. For side 1 the same rule is used in its own (rotated)
 frame: the cells are visited from the last to the first and the exit-face ties
 are taken in the order `Rr, L, U, D`. One call is one sweep: it can leave the
-result in another solid cell; the acceptance in step 5 deals with that.
+result in another solid cell; the settling in step 5 (`settle`, up to 4
+sweeps, then a fallback) deals with that.
 
 ### State (plain JSON)
 
@@ -1348,7 +1357,12 @@ exactly like the original.
       order below, the candidate position is the cell's centre
       `(240 cx + 120, 240 cy + 120)` plus the offset; the **first candidate at
       which the unit's collision circle fits for its side (see "Unit geometry")
-      and overlaps no living unit is the spawn position**. With
+      and is not **heavily blocked** is the spawn position**. A candidate
+      position `(x, y)` is heavily blocked iff some living unit with collision
+      radius `Ru` at `(ux, uy)` has `(x - ux)^2 + (y - uy)^2 < (R + Ru -
+      floor(R / 2))^2`, `R` the new unit's collision radius: the circles
+      overlap by more than half of `R` (rounded down). Lighter overlap does not
+      refuse the entry, it resolves itself in step 5. With
       `m = 120 - collisionRadius` (no offsets other than `(0, 0)` if `m <= 0`),
       the offsets in the side's own frame are `(0, 0)`, `(0, m)`, `(-m, 0)`,
       `(m, 0)`, `(0, -m)`, `(-m, m)`, `(m, m)`, `(-m, -m)`, `(m, -m)` (own
@@ -1434,7 +1448,9 @@ exactly like the original.
        unit at the building's face, where it is in reach).
    - **d. Wait.** No action (nothing to move towards).
 
-   A unit that chose (a) or (b) holds position: it does not move this tick
+   A unit that **attacks** this tick (it chose (a), (b), or, on a sealed
+   board, attacks the building covering the next breach cell under (c)) holds
+   position: it does not move this tick
    (even when its `attackCooldown` is above 0, in which case it also does not
    attack). A unit that chose to move but cannot get anywhere (blocked by other
    units or solid ground) simply ends the tick where step 5 leaves it.
@@ -1487,95 +1503,98 @@ exactly like the original.
    applied together with the unit attacks) and recorded as
    `overload_core_damage {side, damage}` after the `unit_attacked` events. A
    Core that is already destroyed takes nothing and records nothing.
-5. **Move and separate.** Every unit keeps its decision from step 3; the units
-   that were killed in step 4 still move (decisions were simultaneous). Let
-   `P` be `separationPasses` (`sim.json`, 4). The step works on arrays indexed
-   by position in the unit list (ascending `id`) and has no other input than
-   the state and the decisions, so it cannot depend on earlier ticks. Neighbour
-   searches may use any grid; the rules only say which pairs are compared.
-   1. **Desire.** A unit that chose to move has a target `(tx, ty)`, a speed
+5. **Move and separate** (soft collision, issue #82). Every unit keeps its
+   decision from step 3; the units that were killed in step 4 still move
+   (decisions were simultaneous). The step works on arrays indexed by position
+   in the unit list (ascending `id`) and has no other input than the state and
+   the decisions, so it cannot depend on earlier ticks. Neighbour searches may
+   use any grid; the rules only say which pairs are compared. **Nothing here
+   depends on the order of the unit list**: every push is an integer computed
+   from the positions at the start of the pass and the pushes are summed.
+   Let `P = separationPercent` (`sim.json`, 75; 0 to 100) and `C =
+   separationCap` (`sim.json`, 40; 0 to 480). Write `settle(X, Y; F)` for the
+   **settling** of a circle of the unit's collision radius `R` and side at
+   `(X, Y)` with the fallback position `F` (defined below), and `ceilDiv(a, b)
+   = floor((a + b - 1) / b)` for `a >= 0`, `b > 0`.
+   1. **Classes.** A unit is a **fighter** iff its action in step 3 is an
+      attack: it attacks a unit (a), the Core or goal building (b), or, on a
+      sealed board, the building covering the next breach cell (the attack
+      of rule c: "the unit attacks B (like rule b ...)"). A unit that chose to
+      move (c) without attacking and has a non-zero step `v` (below) is a
+      **mover**. Every other unit (it chose d, or to move with `v = (0, 0)`)
+      is **idle** (waiting).
+   2. **Desire.** A unit that chose to move has a target `(tx, ty)`, a speed
       `s = floor(240 / moveCooldownTicks)` and `(dx, dy) = (tx - px, ty - py)`.
       If `dx^2 + dy^2 <= s^2` the step is `v = (dx, dy)`; otherwise, with
       `L = isqrtCeil(dx^2 + dy^2)`, `v = (truncDiv(dx * s, L), truncDiv(dy * s,
-      L))` (length at most `s`). A unit with `v = (0, 0)`, and every unit that
-      did not choose to move, is **anchored** for this tick; the others are
-      **movers**. The tentative position `T` of a unit is `p + v` (anchored:
-      `p`). Every mover's `T` is then passed through `pushOutSolid` once, and
-      its **priority** is fixed: `prio = (tx - Tx)^2 + (ty - Ty)^2`, the squared
-      distance from that `T` to its target (smaller is better: a unit nearer to
-      where it is going wins).
-   2. **Relaxation**, up to `P` passes. Each pass looks at every pair of units
-      whose collision circles overlap at the current `T` and of which at least
-      one is a mover (two anchored units cannot overlap), with `(dx, dy)` the
-      vector from the first of the pair (the lower list position) to the
-      second, `R = Ri + Rj` (collision radii), `d = isqrtFloor(dx^2 + dy^2)`
-      and `o = R - d` (at least 1 for distinct centres):
-      - one mover and one anchored unit: the mover takes the whole push,
-        `awayDiv(dx * o, d)` and `awayDiv(dy * o, d)` along the line away from
-        the anchored unit;
-      - two movers with **unequal priority**: the one with the larger `prio`
-        (farther from its target, so it has less claim on the spot) takes the
-        whole push, away from the other;
-      - two movers with **equal priority**: they share it, each
-        `awayDiv(dx * o, 2 d)` and `awayDiv(dy * o, 2 d)` away from the other
-        (so no side decides: a mirrored battle stays symmetric);
-      - coinciding centres (`d = 0`): the **separation axis** is `x` when the
-        sum of the two unit `id`s is even and `y` when odd. Each unit that is
-        pushed (one for the whole `R`, or each of two movers of equal
-        priority `ceil(R / 2)`) is pushed along that axis **in the frame of
-        its own side** (the arena rotated by half a turn for side 1, both axes
-        negated): towards the positive direction of its frame if its `id` is
-        the higher of the two, towards the negative one if lower. In arena
-        coordinates that is `+` / `-` for a side 0 unit (higher / lower id)
-        and `-` / `+` for a side 1 unit. Only the two ids and the pushed
-        unit's own side decide, so a mirrored battle (the same ids and the
-        same order of ids for the mirrored pair) stays symmetric.
-      All pushes of the pass are summed per mover from the positions at the
-      start of the pass (so the order of pairs does not matter) and added to
-      the mover's `T`. A mover whose summed push this pass is `(0, 0)`, for
-      whatever reason (including being the un-pushed winner of an
-      unequal-priority pair, or pushes cancelling), **keeps its `T` unchanged
-      and skips `pushOutSolid`**; every mover with a nonzero summed push has the push
-      added and the result passed through `pushOutSolid` once. This is a
-      rule, not an optimisation: `pushOutSolid` is not idempotent, so applying
-      it to a mover that was not pushed can move it. The passes stop early
-      when a pass finds no overlapping pair. Examining, in the later passes,
-      only the movers whose 3x3 neighbourhood changed in the previous pass is
-      an optimisation with identical results (an unexamined mover has a zero
-      push and so keeps its `T`), not a rule.
-   3. **Acceptance (the safety net).** A mover ends the tick either at its
-      relaxed `T` or at its previous position `p`; an anchored unit stays at
-      `p`. A mover is **clear** when its `T` fits for its side and its circle
-      at `T` overlaps no other unit's circle at that unit's `T` and no other
-      mover's circle at its `p`: it is safe whatever the others do, and ends
-      at `T`. The remaining movers ("dirty") are decided in order of priority
-      (smaller `prio` first), a run of equal `prio` together. A dirty mover
-      ends at `T` iff `T` fits for its side and its circle at `T` overlaps no
-      anchored unit, no mover already accepted at its `T`, and no other mover
-      at its `p` (the movers of its own run and the ones decided later count
-      at `p`); of a run of equal priority, every accepted mover whose `T` overlaps the
-      `T` of another mover of the run (accepted or not) is sent back to `p`
-      (nobody in the run sees another's `T`, which keeps mirrored battles
-      symmetric). Everything else stays at
-      `p`. **Why the invariant holds** (every position at the start of the
-      tick satisfied it): a unit at `p` fits and a mover is accepted at `T`
-      only if `T` fits, which depends on nobody else; two units that both end
-      at `p` do not overlap; of any other pair at least one, `a`, ends at its
-      `T`. If `a` is clear, its `T` overlaps no other unit's `T` and no
-      other mover's `p`, so the other is fine wherever it ends. If `a` is
-      dirty and the other unit `b` is decided before it, `a` was checked
-      against `b`'s final place; if `b` is decided after `a` (a later run),
-      `a` was checked against `p_b` and `b`, if it ends at its `T`, is checked
-      against `a`'s final `T`. If both are in one run, each was checked
-      against the other's `p` (never against a tentative `T`, which the
-      overlap rule above can still revoke) and the revoking rule removes
-      every remaining `T` / `T` overlap; a mover sent back to `p` meets only
-      units that were checked against that `p`. The result does not depend
-      on the order of the unit list within a run.
-      The nearest-first order is what keeps a crowd moving: the unit that is
-      closest to where it wants to go gets the room first, and a jam clears
-      from the front instead of freezing as a whole.
-   The new `px, py` are stored. There is no event for movement (see Events).
+      L))` (length at most `s`). The tentative position `T` of a mover is
+      `settle(p + v; p)`; of every other unit `T = p`. (`p` fits, see the
+      invariant, so every `T` fits.)
+   3. **The push pass.** Consider every unordered pair of units `{i, j}` whose
+      collision circles overlap at their tentative positions, `d^2 < R^2`
+      with `(dx, dy) = T_i - T_j`, `d^2 = dx^2 + dy^2` and `R = Ri + Rj`
+      (collision radii). Each pair is handled once, with these steps:
+      1. **Weights** `(wi, wj)`, how the push is split (a unit takes
+         `w / (wi + wj)` of it). Units of **different sides**: a fighter has
+         weight 0 and any other unit weight 1 (so nobody pushes an enemy
+         fighter, two enemy fighters do not push each other, and any other
+         enemy pair shares equally). Units of the **same side** (allies): the
+         weight of the unit against the other is
+         `ALLY_WEIGHT[class of the unit][class of the other]` with rows and
+         columns in the order idle, mover, fighter:
+
+         | unit \ other | idle | mover | fighter |
+         | ------------ | ---- | ----- | ------- |
+         | idle         | 1    | 1     | 1       |
+         | mover        | 0    | 1     | 2       |
+         | fighter      | 0    | 1     | 1       |
+
+         So a waiting ally gives way completely to a moving or fighting ally
+         (it is no wall); a mover and a fighter split the push 2 : 1, the
+         fighter taking the reduced share; two units of one class share
+         equally. If `wi + wj = 0` the pair is skipped. **Exception:** two
+         allied fighters (weights 1 and 1) each take the **whole** total
+         instead of half, that is, the divisor `wi + wj` below is replaced by
+         1 for such a pair (so fighters at a target are not crushed together
+         by allied movers behind them). Call the divisor `W` (`W = wi + wj`,
+         or 1 in that case).
+      2. **Amount.** `d = isqrtFloor(d^2)` (0 when the centres coincide),
+         `o = R - d` (at least 1) and `total = min(C, ceilDiv(o * P, 100))`.
+         If `total = 0` the pair is skipped.
+      3. **Push.** With `d >= 1`, unit `i` is pushed by `(awayDiv(dx * total *
+         wi, d * W), awayDiv(dy * total * wi, d * W))` (away from `j`) and
+         unit `j` by `(awayDiv(-dx * total * wj, d * W), awayDiv(-dy * total *
+         wj, d * W))` (away from `i`).
+         (`awayDiv` rounds away from zero, so a unit that takes a non-zero
+         share of a non-zero push moves at least 1 on each axis along which
+         the centres differ.)
+      4. **Coinciding centres** (`d = 0`): unit `u` is pushed along **both**
+         axes by the same amount, `sign(u) * awayDiv(total * w_u, W)` added to
+         its `x` and to its `y` (so a wall in the way of one axis cannot hold
+         a coincident pair together). `sign(u)` is `+1` or `-1` **in arena
+         coordinates**: for two units of one side, `f` if `u` has the higher
+         `id` and `-f` if the lower, where `f = +1` for side 0 and `-1` for
+         side 1 (the frame of side 1 is the arena rotated by half a turn,
+         both axes negated); for two units of different sides, `f` whatever
+         the ids (side 0 goes up, side 1 down). Only the ids and the sides
+         decide, so a mirrored battle stays symmetric.
+      All pushes are **summed per unit** (`push_u`, integers) from the
+      tentative positions; no pair sees the pushes of another pair.
+   4. **Apply and push out of solid ground.** The new position of a unit is
+      `T` if its summed push is `(0, 0)`, else `settle(T + push; T)`. The new
+      `px, py` are stored. There is no event for movement (see Events).
+
+   **Settling** `settle(X, Y; F)` for a circle of radius `R` and a side: if the
+   circle **fits** at `(X, Y)` (see "Unit geometry") the result is `(X, Y)`.
+   Otherwise apply `pushOutSolid` (see "Unit geometry") to `(X, Y)` and, as
+   soon as the circle fits at the result, stop and return it; at most 4
+   sweeps in all (each starts from the result of the one before). If no sweep
+   ended where the circle fits, the result is the fallback `F`. Because the
+   result fits whenever `F` does, **applying `settle` to its own result
+   changes nothing** (idempotent): this is why a unit with a zero push needs no
+   special case. Units may therefore end the tick overlapping each other
+   (temporarily, see "Decided simplifications"), but never inside solid
+   ground or outside the arena.
 6. **Deaths and destruction.**
    - Units with `hp <= 0` are removed in `id` order (`unit_died`).
    - Then, side 0 then side 1, in the order of the `health` list (Core first,
@@ -1952,10 +1971,24 @@ to CB-8c): the zone format reserves a `pointsOfInterest` list for them.
 
 ### Decided simplifications
 
-- Units are rigid circles that never overlap; there is no mass, momentum or
-  facing. A crowd is resolved by the bounded relaxation of step 5 and its
-  acceptance step, which can leave a blocked unit standing still for a tick
-  (it never teleports or passes through another unit).
+- Units are circles that push each other apart softly (issue #82); there is
+  no mass, momentum or facing. A crowd is resolved by the single push pass of
+  step 5: overlap between units is allowed and temporary (a crowd that keeps
+  walking into a choke compresses until the cap of the push balances it; one
+  that stops is clear of overlap within about 10 ticks), and the hard
+  guarantee is only the ground one (never inside solid ground or outside the
+  arena). Measured with the placeholder content (`unit-motion.test.ts`): in
+  open ground a crowd of 60 soldiers has no pair overlapping by more than 20
+  percent of the sum of the radii after 40 ticks; in a crush at a one or
+  two-cell choke about 1.2 of 60 soldiers overlap by more than half on
+  average (at most 34 at once) and centres can coincide for a moment. Over
+  whole reference battles (`stacking.test.ts`) no pair stays deeper than half
+  for more than 3 ticks, and 0.19 percent of unit-ticks are that deep; in the
+  dense four-plot battle (tier 1) the longest run is 10 ticks and 3.4 percent
+  of unit-ticks are deeper than half. A unit
+  walks in a straight line to the centre of the next cell (see "Goals and
+  movement fields"), so a crowd converges on cell centres; changing that is
+  outside the collision rules.
 - The movement fields are cell based and ignore radii and other units; a unit
   whose collision diameter exceeds one cell is not routed around gaps it cannot
   pass (see "Goals and movement fields"), and a cell with no free standing room
@@ -2345,8 +2378,8 @@ identically; with none the field is absent.
   cell is **open for the side** (not blocked terrain, not covered by a building
   that blocks the side) the same **offsets** as for producers (step 2.2) are
   tried from the cell centre; the first position where the unit's collision
-  circle fits and overlaps no living unit (the units that entered earlier in this
-  walk included) is its spawn position. (The offsets are `120 - collisionRadius`
+  circle fits and is not heavily blocked by any living unit (rule of step 2.2;
+  the units that entered earlier in this walk included) is its spawn position. (The offsets are `120 - collisionRadius`
   times the offset table, so a unit of another collision radius tries other
   positions inside a cell: a larger unit can find room where a smaller one did
   not, and the other way round. An entry of the very same collision radius and
@@ -2733,12 +2766,12 @@ broken as follows:
   (equal distance): the lowest `y`, then the lowest `x`, in the board frame of
   the unit's own side (the tie key). Equal-length shortest paths are therefore
   resolved cell by cell by this rule, never by search order.
-- **Who yields when units collide:** a mover yields to an anchored unit; of
-  two movers the one farther from its target (equal distance: they share the
-  push); coinciding centres separate along an axis chosen by the parity of
-  the id sum, the lower id towards negative; in the acceptance of step 5 the
-  mover nearest to its target gets room first, a run of equal distance is
-  decided together.
+- **Who yields when units collide:** by the weights of step 5.3.1: nobody
+  pushes an enemy fighter; a waiting ally gives way completely to a moving or
+  fighting ally; a mover and a fighting ally split the push 2 : 1; two
+  allied fighters each take the whole push; anything else shares equally.
+  Coinciding centres separate along both axes, towards negative for the lower
+  id of one side and by side for units of different sides.
 - **Simultaneous attacks:** all damage (unit attacks and turret shots) is
   computed from the same snapshot and applied together; nobody's death during
   the tick changes another unit's or turret's action in that tick.
@@ -2957,7 +2990,7 @@ units could not reach the front row:
 
 **Fit approximation (issue #59).** The rule above is cell based: a one-cell gap is
 walkable. A unit "fits" a one-cell gap iff `2 * collisionRadius <= 240`, which
-holds for every unit of part 1 (soldier 144, raider 120), so for them the cell
+holds for every unit of part 1 (soldier 94, raider 78), so for them the cell
 rule is exact; for a hypothetical unit wider than a cell the check would say
 "not sealed" for a pocket whose only exit is too narrow for it. The check uses
 no unit radii at all (it does not know which unit a producer makes at this

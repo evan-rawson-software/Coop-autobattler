@@ -1033,7 +1033,8 @@ function gatherNear(
  * The first free position inside arena cell `(cx, cy)` for a unit of `side`
  * and type `def`: the cell's centre plus the offsets of `SPAWN_OFFSETS` times
  * `m = 120 - collisionRadius` (negated for side 1, the rotated frame), or null.
- * A position is free when the circle fits and overlaps no living unit. The
+ * A position is free when the circle fits and overlaps no living unit by more
+ * than half the new unit's collision radius (rounded down). The
  * `count` units of `ctx.near` (see `gatherNear`) must include every unit that
  * could overlap such a position; extra units do no harm.
  */
@@ -1047,6 +1048,7 @@ function firstFreeIn(
 ): { x: number; y: number } | null {
   const r = def.collisionRadius;
   const m = S / 2 - r;
+  const half = Math.floor(r / 2);
   const sign = side === 0 ? 1 : -1;
   // Keep the gathered units that can overlap a position of this cell: a
   // position is at most `max(m, 0)` from the cell's centre.
@@ -1078,7 +1080,9 @@ function firstFreeIn(
     for (let q = 0; q < kept && free; q++) {
       const dx = (near[3 * q] ?? 0) - x;
       const dy = (near[3 * q + 1] ?? 0) - y;
-      const rr = r + (near[3 * q + 2] ?? 0);
+      // Blocked only when heavily: overlap deeper than half the new unit's
+      // collision radius (rounded down); lighter overlap resolves itself.
+      const rr = r + (near[3 * q + 2] ?? 0) - half;
       if (dx * dx + dy * dy < rr * rr) free = false;
     }
     if (free) return { x, y };
@@ -2050,11 +2054,19 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     const u = units[i];
     if (u === undefined) continue;
     ctx.motion.rad[i] = ctx.crad[i] ?? 0;
+    ctx.motion.fight[i] =
+      ctx.action[i] === ACT_UNIT || ctx.action[i] === ACT_BUILDING ? 1 : 0;
     if (ctx.action[i] === ACT_MOVE) {
       ctx.motion.speed[i] = unitSpeed(defOf(ctx, u));
     }
   }
-  ctx.motion.resolve(units, ctx.world, cfg.separationPasses, ctx.maxRadius);
+  ctx.motion.resolve(
+    units,
+    ctx.world,
+    cfg.separationPercent,
+    cfg.separationCap,
+    ctx.maxRadius,
+  );
 
   // 6. Deaths and destruction.
   let died = false;

@@ -25,62 +25,41 @@ alive on one side at the end of any tick. The event log size is the length of
 
 ## Baseline
 
-**Units as circles (issue #59).** Since units became circles that cannot
-overlap, units queue in corridors and around the Cores instead of stacking, so
-many battles run into Overload (3101 ticks) that used to end in a few hundred
-ticks, and a tick with hundreds of units costs more (neighbour searches, the
-separation step). Measured on the same sandbox (single run, idle; the
-dense rows are `pnpm exec tsx packages/tools/src/sim/bench-report.ts`):
+**Soft unit collision (issue #82).** Until issue #82 units were circles that
+could never overlap (issue #59): four relaxation passes and an acceptance step
+that sent any mover that still overlapped back where it was. On a dense board
+that gridlocked (about 60 percent of the movers were held every tick) and made
+a tick with a thousand units cost 17 to 30 times as much as before the circles.
+Since #82 units are pushed apart in ONE pass per tick and may overlap for a
+while (see "Unit geometry" in the rules reference). Measured back to back on
+the same sandbox (single runs, the machine shared with other work, so 10 to 30
+percent noise; the dense rows are `pnpm exec tsx
+packages/tools/src/sim/bench-report.ts`):
 
-| Battle                                   | Before (stacking) | After (circles) |
-| ---------------------------------------- | ----------------- | --------------- |
-| One plot, 128 reference battles: speed   | 216 battles/s     | 104 battles/s   |
-| One plot: longest log (JSON)             | 739 KB            | 438 KB          |
-| One plot: longest battle                 | 3101 ticks        | 3101 ticks      |
-| One plot: peak units per side            | 22                | 32              |
-| Dense four plots, tier 1: wall time      | 195 ms            | 3.4 s           |
-| Dense four plots, tier 1: ticks / peak / log | 687 / 157 / 968 KB | 3101 / 699 / 2.73 MB |
-| Dense four plots, tier 3: wall time      | 240 ms            | 7.8 s           |
-| Dense four plots, tier 3: ticks / peak / log | 753 / 610 / 3.24 MB | 3101 / 976 / 2.39 MB |
-| Dense tier 1: battles per second         | 14.9              | 0.3             |
+| Battle                                       | Hard collision (#59) | Soft collision (#82) |
+| -------------------------------------------- | -------------------- | -------------------- |
+| One plot, 128 reference battles: speed       | 87 to 96 battles/s   | 123 to 138 battles/s |
+| One plot: longest log (JSON)                 | 438 KB               | 442 KB               |
+| One plot: longest battle                     | 3101 ticks           | 3101 ticks           |
+| One plot: peak units per side                | 32                   | 20                   |
+| Dense four plots, tier 1: wall time          | 3.5 to 4.8 s         | 0.47 to 1.0 s        |
+| Dense tier 1: ticks / peak / log             | 3101 / 699 / 2.73 MB | 1116 / 217 / 1.33 MB |
+| Dense four plots, tier 3: wall time          | 8.1 to 9.3 s         | 1.0 to 1.1 s         |
+| Dense tier 3: ticks / peak / log             | 3101 / 976 / 2.39 MB | 1575 / 568 / 5.09 MB |
+| Dense tier 1: battles per second             | 0.3                  | 5.0 to 5.6           |
 
-The dense stress battle no longer ends when a Core falls: 96 barracks in
-corridors two cells wide fill the ground between the bases and nobody gets
-through, so it lasts until Overload kills both Cores at tick 3100, costing
-about 1.1 to 2.5 ms a tick with 1,000 to 1,500 units on the field. The
-one-plot target (100 battles per second) is still met; the dense targets
-(5 battles per second, 1 s for the tier 3 battle) are **not** met, and the
-test floors were lowered to match (see the budget table). The log is smaller
-for one plot because there is no `unit_moved` event any more (the earlier log
-held one per unit per cell stepped), and larger for the dense tier 1 battle
-because it now runs 4.5 times as long.
+The dense stress battle (96 barracks in corridors two cells wide, mirrored
+against itself) used to run until Overload kills both Cores at tick 3100; now
+the units get through and both Cores fall to them at tick 1116 (tier 1) and
+1575 (tier 3), before Overload starts at tick 1800. Because the log records
+every fight, the tier 3 log is larger than before (5.1 MB against 2.4 MB: more
+fighting, shorter battle). Against a weaker opponent (tier 1 against tier 3)
+the stress battle ends with a Core kill at tick 376 instead of at the end of
+the Overload decay.
 
-**After the speed-up of part 1 (results unchanged).** The relaxation passes
-after the first only look at movers whose neighbourhood changed in the pass
-before, the candidate spawn cells of each producer are cached until a building
-is destroyed (like the movement fields), the units near a producer are
-gathered once per attempt and the acceptance step allocates nothing per tick.
-No state hash changed (the golden vectors and the log sizes above are the
-same). Measured back to back on the same sandbox (single runs, the machine
-shared with other work, so about 10 percent noise):
-
-| Battle                              | Before          | After           |
-| ----------------------------------- | --------------- | --------------- |
-| One plot: battles per second        | 99.6 to 104.4   | 107.5 to 117.5  |
-| Dense four plots, tier 1: wall time | 3.5 to 3.6 s    | 3.1 s           |
-| Dense four plots, tier 3: wall time | 7.4 to 8.4 s    | 7.0 s           |
-
-The original budget for the dense stress battle (1 s) is **not met**, and the
-gain from these optimisations is modest, because the cost is in the model and
-not in an inefficiency: a dense board gridlocks. In the stress battle there
-are about 1,600 units on the field on average (976 per side at the peak), about
-1,300 of them try to move in every tick and press against each other in the
-two-cell corridors, and 96 producers retry their exit every tick because the
-crowd leaves no free position. Nothing gets through, so the battle runs for
-3,101 ticks at about 2.3 ms each (until Overload) instead of the earlier 687 to
-753 ticks at 0.3 ms. About 30 percent of the time is the motion step
-(relaxation and acceptance) and 15 to 20 percent is the producers looking for
-room; the rest is decisions and neighbour searches.
+The cost of a tick is now in the neighbour search of the single push pass
+(each unit looks at the nine cells around it on a uniform grid, each pair once)
+and in the decisions, not in the retries of the old acceptance step.
 
 Rows below are the earlier (stacking) baseline, kept for reference:
 
@@ -107,17 +86,20 @@ tick on average with up to 1,220 units on the field.
 
 | Quantity                                | Budget                 | Measured (worst case) | Enforced by                                  |
 | --------------------------------------- | ---------------------- | --------------------- | -------------------------------------------- |
-| Units alive per side                    | 1,000                  | 976 (dense tier 3)    | `performance.test.ts`, exact                 |
+| Units alive per side                    | 1,000                  | 568 (dense tier 3)    | `performance.test.ts`, exact                 |
 | Battle length                           | 4,000 ticks            | 3,101                 | `performance.test.ts`, exact                 |
 | Hard cap on battle length               | `maxBattleTicks` 12,000 | never reached        | the end conditions                           |
-| One plot: battles per second (target)   | at least 100           | 104-117 (was 110-215) | fails below 35 (about 3x)                    |
-| Four plots, dense: battles per second   | at least 5 (**not met**) | 0.3 (tier 1)        | fails below 0.1 (about 3x)                   |
-| Four plots, dense tier 3, one battle    | at most 1 s (**not met**) | 7.0-8.5 s          | fails above 25 s (about 3x)                  |
+| One plot: battles per second (target)   | at least 100           | 123-138 (was 87-96)   | fails below 40 (about 3x)                    |
+| Four plots, dense: battles per second   | at least 5             | 5.0-5.6 (tier 1)    | fails below 1.5 (about 3x)                   |
+| Four plots, dense tier 3, one battle    | at most 1 s (**not met**) | 1.0-1.1 s          | fails above 4 s (about 3x)                   |
 | Event log, one plot                     | 1 MB                   | 0.44 MB               | `performance.test.ts`, exact                 |
-| Event log, four plots                   | 5 MB                   | 2.73 MB               | `performance.test.ts`, exact                 |
+| Event log, four plots                   | 8 MB (was 5 MB)        | 5.1 MB                | `performance.test.ts`, exact                 |
 
 Where the budget is written once more: the `BUDGET` constant at the top of
-`packages/tools/src/sim/performance.test.ts`. Keep the two in sync.
+`packages/tools/src/sim/performance.test.ts`. Keep the two in sync. The four
+plot log budget was raised from 5 MB to 8 MB because battles that used to stall
+for 3,101 ticks now end in under 2,000 with units fighting all the way (more
+events per tick, fewer ticks).
 
 **Benchmark.** `packages/tools/src/sim/performance.test.ts` (run by `pnpm
 test`; about 1 minute since the dense battles take seconds, each test has a 30 to 120 s timeout):
@@ -127,20 +109,22 @@ test`; about 1 minute since the dense battles take seconds, each test has a 30 t
   end by Overload at tick 3100. The rate is battles completed per second of
   wall time, best of three rounds (`performance.now()`, allowed in `tools`
   only). Measured on the sandbox this was written on: 110 to 215 battles per
-  second before the circle model and about 104 after (the best of three
-  128-battle rounds; the first round is slower while the engine warms up).
+  second before the circle model, 87 to 96 with hard circles and 120 to 138
+  with soft collision (the best of three 128-battle rounds; the first round is
+  slower while the engine warms up).
 - _Four plots_: the dense board below mirrored against itself, tier 1, four
   seeds, best of two rounds: 9 to 16 battles per second (60 to 110 ms each)
-  before the circle model, 0.3 after (3.4 s each; the test uses two seeds).
-  The tier 3 version runs twice for its time (about 210 ms before, 7.8 s
-  after) and, with tier 1, for the unit peak, length and log size (untimed,
+  before the circle model, 0.3 with hard circles and 5.0 to 5.6 with soft
+  collision (the test uses two seeds). The tier 3 version runs twice for its
+  time (about 210 ms before the circle model, 8 s with hard circles, 1.0 to 1.1
+  s now) and, with tier 1, for the unit peak, length and log size (untimed,
   deterministic).
 
 The enforced limits are about 3 times looser than the speed measured on the
 sandbox this was written on (4 cores shared with other work, so the figures
-move by 10 to 20 percent from run to run): one plot at least 35 battles per
-second against 104 to 117 measured; dense tier 1 at least 0.1 per second
-against 0.3 to 0.4; the tier 3 stress battle under 25 s against 7.0 to 8.5 s.
+move by 10 to 30 percent from run to run): one plot at least 40 battles per
+second against 123 to 138 measured; dense tier 1 at least 1.5 per second
+against 5.0 to 5.6; the tier 3 stress battle under 4 s against 1.0 to 1.1 s.
 A slow or noisy CI runner passes and a regression of several times fails. CI
 runs `pnpm -r run test`, so the package suites run in parallel and the
 benchmark competes for CPU; if a runner turns out slower than that, widen the

@@ -167,7 +167,8 @@ export function drawBattleOverlay(
   }
 
   // --- Units ----------------------------------------------------------------
-  // Units are circles at their real position and radius (they never overlap).
+  // Units are circles at their real position and body radius (the collision
+  // circle is smaller and soft, so neighbours may overlap on screen).
   const units = sim.units;
   if (idToIndex.length < sim.nextUnitId + 1) {
     idToIndex = new Int32Array(

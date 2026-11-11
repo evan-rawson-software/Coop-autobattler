@@ -10,7 +10,8 @@
     "breachBaseCost",
     "breachHealthPerCost",
     "aggroRangeCells",
-    "separationPasses",
+    "separationPercent",
+    "separationCap",
     "maxSourceSpeedPercent",
     "maxUnitStrengthPercent",
     "overloadStartTick",
@@ -51,11 +52,17 @@
       "minimum": 0,
       "maximum": 8192
     },
-    "separationPasses": {
-      "description": "Relaxation passes of the unit separation step (issue #59). 0 leaves separation to the validation step alone.",
+    "separationPercent": {
+      "description": "Percent of an overlap that a pair of overlapping units resolves per tick (issue #82), rounded up. 0 turns the push off.",
       "type": "integer",
       "minimum": 0,
-      "maximum": 16
+      "maximum": 100
+    },
+    "separationCap": {
+      "description": "Most, in sub-cell units, that a pair of overlapping units is moved apart in one tick (issue #82).",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 480
     },
     "maxSourceSpeedPercent": {
       "description": "Global cap, in percent, on the summed source_speed bonus of one side (SC-8). The source interval is floor(interval * 100 / (100 + bonus)), at least 1.",

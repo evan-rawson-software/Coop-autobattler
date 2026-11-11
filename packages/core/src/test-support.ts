@@ -19,6 +19,7 @@ import { addConduit } from './conduits.js';
 import { loadAllContentOrThrow } from './content.js';
 import { generateMap } from './generate-map.js';
 import { fits } from './geometry.js';
+import { isqrtCeil } from './int.js';
 import { listLegalCorePositions, type Cell, type GameMap } from './map.js';
 import { loadMapgenOrThrow } from './mapgen.js';
 import { Rng } from './rng.js';
@@ -299,42 +300,85 @@ export function bigBoard(): TeamState {
   return lab.state;
 }
 
+/** The collision radius of a unit, from the battle's own content (test-only units included). */
+function collisionRadiusOf(ctx: ArenaContext, u: UnitSim): number {
+  const def = ctx.content.units.get(u.def);
+  if (def === undefined) {
+    throw new Error(`groundViolations: unknown unit type "${u.def}".`);
+  }
+  return def.collisionRadius;
+}
+
 /**
- * The violations of the circle invariant in a battle state: a unit whose
+ * The violations of the ground invariant in a battle state: a unit whose
  * collision circle does not fit for its side (blocked ground, a building that
- * blocks it, outside the arena), or two units whose collision circles
- * overlap (radii from the battle's own content, test-only units included).
- * Throws on a unit of an unknown type.
- * Empty when the state is good.
+ * blocks it, outside the arena). Units may overlap each other (soft
+ * collision, issue #82): see `overlapStats`. Throws on a unit of an unknown
+ * type. Empty when the state is good.
  */
-export function circleViolations(sim: ArenaSim, ctx: ArenaContext): string[] {
+export function groundViolations(sim: ArenaSim, ctx: ArenaContext): string[] {
   const out: string[] = [];
-  const radius = (u: UnitSim): number => {
-    const def = ctx.content.units.get(u.def);
-    if (def === undefined) {
-      throw new Error(`circleViolations: unknown unit type "${u.def}".`);
-    }
-    return def.collisionRadius;
-  };
-  const units = sim.units;
-  for (let i = 0; i < units.length; i++) {
-    const u = got(units[i]);
-    if (!fits(ctx.world, u.side, radius(u), u.px, u.py)) {
+  for (const u of sim.units) {
+    if (!fits(ctx.world, u.side, collisionRadiusOf(ctx, u), u.px, u.py)) {
       out.push(
         `unit ${String(u.id)} does not fit at ${String(u.px)},${String(u.py)}`,
       );
     }
-    for (let j = i + 1; j < units.length; j++) {
-      const v = got(units[j]);
-      const r = radius(u) + radius(v);
-      const dx = u.px - v.px;
-      const dy = u.py - v.py;
-      if (dx * dx + dy * dy < r * r) {
-        out.push(`units ${String(u.id)} and ${String(v.id)} overlap`);
-      }
-    }
   }
   return out;
+}
+
+/** How much the collision circles of a battle state overlap. */
+export interface OverlapStats {
+  /** Number of overlapping pairs. */
+  readonly pairs: number;
+  /** Number of pairs overlapping by more than half the sum of their radii. */
+  readonly deep: number;
+  /** Deepest overlap: `Ra + Rb - ceil(distance)`, sub-cell units (0 if none). */
+  readonly maxDepth: number;
+  /** The deepest overlap as a percent of the sum of the two radii (rounded down). */
+  readonly maxPercent: number;
+}
+
+/** The overlaps in a battle state (every pair, found through a coarse grid). */
+export function overlapStats(sim: ArenaSim, ctx: ArenaContext): OverlapStats {
+  const units = sim.units;
+  const cell = 2 * ctx.maxRadius;
+  const buckets = new Map<number, number[]>();
+  const key = (gx: number, gy: number): number => gx * 65536 + gy;
+  const rad = units.map((u) => collisionRadiusOf(ctx, u));
+  units.forEach((u, i) => {
+    const k = key(Math.floor(u.px / cell), Math.floor(u.py / cell));
+    const list = buckets.get(k);
+    if (list === undefined) buckets.set(k, [i]);
+    else list.push(i);
+  });
+  let pairs = 0;
+  let deep = 0;
+  let maxDepth = 0;
+  let maxPercent = 0;
+  units.forEach((u, i) => {
+    const gx = Math.floor(u.px / cell);
+    const gy = Math.floor(u.py / cell);
+    for (let x = gx - 1; x <= gx + 1; x++) {
+      for (let y = gy - 1; y <= gy + 1; y++) {
+        for (const j of buckets.get(key(x, y)) ?? []) {
+          if (j <= i) continue;
+          const v = got(units[j]);
+          const r = got(rad[i]) + got(rad[j]);
+          const d2 = (u.px - v.px) ** 2 + (u.py - v.py) ** 2;
+          if (d2 >= r * r) continue;
+          pairs += 1;
+          const depth = r - isqrtCeil(d2);
+          if (2 * depth > r) deep += 1;
+          if (depth > maxDepth) maxDepth = depth;
+          const pct = Math.floor((100 * depth) / r);
+          if (pct > maxPercent) maxPercent = pct;
+        }
+      }
+    }
+  });
+  return { pairs, deep, maxDepth, maxPercent };
 }
 
 /** The centre coordinate of arena cell column or row `c`. */
@@ -387,6 +431,19 @@ export const postContent: ArenaContent = {
         moveCooldownTicks: 240,
         radius: 72,
         collisionRadius: 72,
+        reach: 0,
+        flying: false,
+        attackType: 'melee',
+      },
+      {
+        // Fills a cell: no unit finds a free spot inside the cell it stands on.
+        id: 'unit_boulder',
+        health: 1000,
+        damage: 0,
+        attackCooldownTicks: 1000,
+        moveCooldownTicks: 240,
+        radius: 120,
+        collisionRadius: 120,
         reach: 0,
         flying: false,
         attackType: 'melee',

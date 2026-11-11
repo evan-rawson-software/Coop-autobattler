@@ -8,7 +8,7 @@
       "attackCooldownTicks": 10,
       "moveCooldownTicks": 6,
       "radius": 72,
-      "collisionRadius": 72,
+      "collisionRadius": 47,
       "reach": 60,
       "flying": false,
       "attackType": "melee"
@@ -20,7 +20,7 @@
       "attackCooldownTicks": 8,
       "moveCooldownTicks": 4,
       "radius": 60,
-      "collisionRadius": 60,
+      "collisionRadius": 39,
       "reach": 60,
       "flying": false,
       "attackType": "melee"

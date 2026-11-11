@@ -142,11 +142,47 @@ export function fits(
   return true;
 }
 
+/** Most sweeps of `pushOutSolid` that `settleOutOfSolid` makes. */
+export const SETTLE_SWEEPS = 4;
+
+/**
+ * Put a circle at `(x, y)` where it fits (see the rules reference, "Push-out
+ * of solid ground"): the position itself if it fits; else the result of up to
+ * `SETTLE_SWEEPS` sweeps of `pushOutSolid`, stopping at the first one that
+ * fits; else the fallback `(fx, fy)`, which the caller knows fits. The result
+ * is written to `out[0], out[1]` and always fits when the fallback does, so
+ * applying the function to its own output changes nothing (idempotent).
+ */
+export function settleOutOfSolid(
+  world: World,
+  side: number,
+  r: number,
+  x: number,
+  y: number,
+  fx: number,
+  fy: number,
+  out: Int32Array,
+): void {
+  if (fits(world, side, r, x, y)) {
+    out[0] = x;
+    out[1] = y;
+    return;
+  }
+  for (let k = 0; k < SETTLE_SWEEPS; k++) {
+    pushOutSolid(world, side, r, x, y, out);
+    x = out[0] ?? 0;
+    y = out[1] ?? 0;
+    if (fits(world, side, r, x, y)) return;
+  }
+  out[0] = fx;
+  out[1] = fy;
+}
+
 /**
  * One sweep of push-out of solid ground (see the rules reference): returns
  * the new position in `out[0], out[1]`. The result is at least `r` from every
  * solid cell of the window that was pushed against, but a push can land in
- * another solid cell; callers check with `fits`.
+ * another solid cell; callers check with `fits` (or use `settleOutOfSolid`).
  */
 export function pushOutSolid(
   world: World,

@@ -89,5 +89,5 @@ export const MAX_UNIT_RADIUS = 2 * CELL_UNITS;
 /** Largest `reach` of a unit (eight cells). */
 export const MAX_UNIT_REACH = 8 * CELL_UNITS;
 
-/** Largest `separationPasses` in `sim.json`. */
-export const MAX_SEPARATION_PASSES = 16;
+/** Largest `separationCap` in `sim.json` (sub-cell units a pair moves apart per tick). */
+export const MAX_SEPARATION_CAP = 480;
