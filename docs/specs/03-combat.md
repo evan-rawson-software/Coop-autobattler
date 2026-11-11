@@ -234,6 +234,14 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   destroyed in a battle are back for the next one.
 - **CB-12** **Overload**: late in a battle, both sides' units and damage
   escalate, so that two fortified sides cannot stall forever.
+  - **[DECIDED] In PvE the Overload decay is an intended deadline** (CB-29,
+    #43). Overload also takes a flat amount from both Cores at every beat, and
+    the party's Core is usually much smaller than a stronghold's, so the party has to
+    destroy the stronghold before the decay alone destroys its own Core: a
+    Core of 500 health dies from the decay alone at the beat given by
+    `overloadDeadline` (see the rules reference, "Overload"). This is a
+    design choice, not a side effect: a party that cannot break the
+    stronghold in time loses. Screens can show the deadline with that helper.
 
 ## Units
 

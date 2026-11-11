@@ -1514,6 +1514,26 @@ Overload guarantees that battles end. Constants (`content/sim.json`):
   battle: whatever else happens, both Cores are gone at tick 3700 at the
   latest, so a battle never lasts beyond 3701 ticks with the standard
   constants.
+- **The deadline helper.** `overloadDeadline(simConfig, coreMaxHealth)`
+  (`ramp.ts`) returns `{startTick, decayDestroysTick, decayDestroysLevel}`:
+  `startTick = overloadStartTick`, and `decayDestroysTick` is the tick of the
+  first beat `n` (1, 2, ...) at which `overloadCoreDamageStep * n * (n + 1) /
+  2 >= coreMaxHealth`, namely `overloadStartTick + (n - 1) *
+  overloadIntervalTicks` (`decayDestroysLevel = n`; both `null` when
+  `overloadCoreDamageStep` is 0). It counts the decay alone: any other damage
+  to the Core makes the Core fall earlier. For a Core of 500 health, n = 14
+  (13 beats take 455, 14 take 525), so with the standard constants it falls
+  at tick 3700 (start 2400).
+- **PvE: the deadline is intended (CB-12, CB-29, #43).** In a PvE battle side
+  1's Core is the stronghold's, whose health scales with the budget
+  (`coreHealthPerBudget` times the budget, at least `minCoreHealth`) and is
+  usually much larger than the party's 500, so the decay kills the party's
+  Core at `overloadDeadline(simConfig, partyCoreMaxHealth).decayDestroysTick`
+  unless the stronghold has fallen before: the party must destroy the
+  stronghold by then. When the party's Core falls first the battle ends with
+  `reason: "core_destroyed"` and the threat as the winner. No rule is
+  special-cased for PvE: this is the ordinary Core decay acting on a small
+  Core, and it is by design.
 
 ### Events (arena log)
 
@@ -1865,8 +1885,13 @@ that applies ends the battle.
    `hp0 / max0` and `hp1 / max1` are compared by Euclid's algorithm: integer
    parts first, then the reciprocals of the remainders, see `compareFractions`
    in `int.ts`); if equal, side 1 wins. `reason:
-   "time_limit"`. With Overload this is unreachable (see the bound under
-   "Overload"); it is a safety net, tested with Overload effectively disabled.
+   "time_limit"`. It is reached only if both Cores survive the Overload decay
+   to that tick. The decay alone destroys any Core with at most
+   `overloadCoreDamageStep * m * (m + 1) / 2` health, where `m` is the number
+   of beats before `maxBattleTicks` (96 with the standard constants, 23280
+   health), so for the Core of 500 health (before `core_health_percent`
+   modifiers) it cannot happen; it is a safety net for larger Cores (a
+   `coreHealth` option) and for tests with Overload effectively disabled.
 
 Once a battle has ended nothing steps any more: `step()` does nothing and
 `simulateBattle` stops. The result is `{winner, reason, endTick}` with `winner`

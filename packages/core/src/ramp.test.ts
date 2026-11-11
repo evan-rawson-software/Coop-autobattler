@@ -20,7 +20,7 @@ import {
   type SimEvent,
 } from './flow-sim.js';
 import { hashJson } from './hash.js';
-import { isOverloadBeat, overloadLevel } from './ramp.js';
+import { isOverloadBeat, overloadDeadline, overloadLevel } from './ramp.js';
 import {
   coreOnlyTeam,
   crossoverTeam,
@@ -55,6 +55,93 @@ function kill(sim: ArenaSim, side: number, building: number): void {
 }
 
 // ---------------------------------------------------------------------------
+
+describe('overloadDeadline (#43)', () => {
+  const cfg = {
+    ...simConfig,
+    overloadStartTick: 1800,
+    overloadIntervalTicks: 100,
+    overloadCoreDamageStep: 5,
+  };
+
+  test('hand-computed deadlines for start 1800, interval 100, step 5', () => {
+    // After n beats the decay is 5 * n * (n + 1) / 2: 5, 15, 30, ..., 455
+    // (13 beats), 525 (14 beats). Beat n is at tick 1800 + 100 * (n - 1).
+    expect(overloadDeadline(cfg, 500)).toEqual({
+      startTick: 1800,
+      decayDestroysTick: 3100,
+      decayDestroysLevel: 14,
+    });
+    expect(overloadDeadline(cfg, 455)).toMatchObject({
+      decayDestroysTick: 3000, // 13 beats: exactly 455
+      decayDestroysLevel: 13,
+    });
+    expect(overloadDeadline(cfg, 456)).toMatchObject({
+      decayDestroysTick: 3100,
+    });
+    expect(overloadDeadline(cfg, 1)).toMatchObject({
+      decayDestroysTick: 1800,
+      decayDestroysLevel: 1,
+    });
+    expect(overloadDeadline(cfg, 5)).toMatchObject({ decayDestroysTick: 1800 });
+    expect(overloadDeadline(cfg, 6)).toMatchObject({ decayDestroysTick: 1900 });
+  });
+
+  test('agrees with a brute-force sum of the decay for every health to 3000', () => {
+    for (let h = 1; h <= 3000; h++) {
+      let total = 0;
+      let level = 0;
+      while (total < h) {
+        level += 1;
+        total += level * cfg.overloadCoreDamageStep;
+      }
+      const d = overloadDeadline(cfg, h);
+      expect(d.decayDestroysLevel).toBe(level);
+      expect(d.decayDestroysTick).toBe(
+        cfg.overloadStartTick + (level - 1) * cfg.overloadIntervalTicks,
+      );
+    }
+  });
+
+  test('matches the tick a walled Core really falls in a battle with no units', () => {
+    const team = coreOnlyTeam();
+    for (const hp of [500, 120, 7]) {
+      const { sim, ctx, events } = startArenaBattle(
+        team,
+        team,
+        GAP,
+        content,
+        simConfig,
+        { sideOptions: [{ coreHealth: hp }, { coreHealth: hp }] },
+      );
+      const d = overloadDeadline(simConfig, hp);
+      expect(d.startTick).toBe(simConfig.overloadStartTick);
+      const tick = d.decayDestroysTick ?? -1;
+      runArena(sim, ctx, tick);
+      expect(ofType(events, 'core_destroyed')).toHaveLength(0);
+      runArena(sim, ctx, 1);
+      expect(ofType(events, 'core_destroyed').map((e) => e.tick)).toEqual([
+        tick,
+        tick,
+      ]);
+    }
+  });
+
+  test('a zero decay step never destroys; bad health throws', () => {
+    expect(
+      overloadDeadline({ ...cfg, overloadCoreDamageStep: 0 }, 500),
+    ).toEqual({
+      startTick: 1800,
+      decayDestroysTick: null,
+      decayDestroysLevel: null,
+    });
+    expect(() => overloadDeadline(cfg, 0)).toThrow(RangeError);
+    expect(() => overloadDeadline(cfg, 1.5)).toThrow(RangeError);
+    // The largest Core health stays exact.
+    const big = overloadDeadline(cfg, 1_000_000_000_000);
+    expect(big.decayDestroysLevel).toBe(632456);
+  });
+});
 
 describe('Overload level (CB-12)', () => {
   test('level 0 before the start tick, then one more every interval', () => {
