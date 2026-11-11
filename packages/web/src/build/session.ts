@@ -24,6 +24,14 @@ import {
   type LayoutAction,
 } from './undo.js';
 
+/**
+ * Steps in which the layout can be edited: the first `build`, and the `shop`
+ * step, which is the same board seen from its other tab (RS-5f).
+ */
+export function isEditStep(step: string): boolean {
+  return step === 'build' || step === 'shop';
+}
+
 /** The player index of this (solo) prototype. */
 export const ME = 0;
 
@@ -43,17 +51,26 @@ export interface SessionView {
   readonly redoCount: number;
 }
 
-let clock = 1000;
+let clock = Date.now();
 let runCounter = 0;
 
 export class BuildSession {
   readonly stack = new UndoStack();
   readonly store: Store<SessionView>;
   private stepAnchor: string;
+  private lockedDetail: string | null = null;
 
-  private constructor(private readonly controller: RunController) {
+  private constructor(readonly controller: RunController) {
     this.stepAnchor = this.anchor();
     this.store = createStore<SessionView>(this.view());
+  }
+
+  /**
+   * Wrap an existing controller (the Shop route: one run shared by the Shop
+   * and Build tabs, saved in a browser store).
+   */
+  static fromController(controller: RunController): BuildSession {
+    return new BuildSession(controller);
   }
 
   /** Start a solo run with a fixed seed. */
@@ -98,9 +115,25 @@ export class BuildSession {
     this.store.set(this.view());
   }
 
+  /**
+   * Stop accepting intents (the saved run changed elsewhere). Every later
+   * dispatch is refused as `save_failed` with this text, and nothing is sent
+   * to the controller.
+   */
+  lock(detail: string): void {
+    this.lockedDetail = detail;
+  }
+
+  get locked(): boolean {
+    return this.lockedDetail !== null;
+  }
+
   /** Dispatch one intent. Clears the undo stack at a step change or on any
    * intent that is not a layout change (buying, selling, re-rolling). */
   async dispatch(intent: Intent): Promise<DispatchResult> {
+    if (this.lockedDetail !== null) {
+      return { ok: false, reason: 'save_failed', detail: this.lockedDetail };
+    }
     const r = await this.controller.dispatch(ME, intent, ++clock);
     if (r.ok) {
       if (

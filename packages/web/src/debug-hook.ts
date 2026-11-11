@@ -21,6 +21,7 @@ export interface DebugHook {
   /** Number of buildings and conduit cells in the own board. */
   counts?: () => { buildings: number; conduits: number; conduitCells: number };
   build?: BuildDebug;
+  shop?: ShopDebug;
   battle?: BattleDebug;
   /** Terrain cells of the neutral strip that are currently drawn. */
   neutralFeatureCount?: () => number;
@@ -80,6 +81,14 @@ export interface BuildDebug {
   dry: () => unknown;
 }
 
+/** Read-only view of the Shop tab for the smoke script. */
+export interface ShopDebug {
+  /** Which mount of the Shop tab this is (1, 2, ...): changes on every remount. */
+  mounts: () => number;
+  /** Plain data: step, gold, offers, stash, ready flag, action count, undo depth. */
+  state: () => unknown;
+}
+
 declare global {
   interface Window {
     __debug?: DebugHook;
@@ -94,10 +103,12 @@ export function registerDebug(patch: DebugHook): void {
   window.__debug = { ...window.__debug, ...patch };
 }
 
-/** Remove the hooks added under `key` (a screen unmounting). */
-export function unregisterDebug(key: keyof DebugHook): void {
+/** Remove hooks that belong to a screen that has gone away. */
+export function unregisterDebug(...keys: (keyof DebugHook)[]): void {
   if (!DEBUG_HOOK || window.__debug === undefined) return;
   window.__debug = Object.fromEntries(
-    Object.entries(window.__debug).filter(([k]) => k !== key),
+    Object.entries(window.__debug).filter(
+      ([k]) => !(keys as string[]).includes(k),
+    ),
   );
 }
