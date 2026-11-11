@@ -16,7 +16,7 @@ import type { TeamState } from './team-state.js';
 import {
   Lab,
   cellOfUnit,
-  circleViolations,
+  groundViolations,
   content,
   got,
   mid,
@@ -577,14 +577,14 @@ describe('funnelling', () => {
   test('the same turrets kill more of the same wave when the approach is funnelled', () => {
     const open = runWave(false);
     const funnel = runWave(true);
-    // Funnelling still helps the turrets, but units now queue in front of
-    // the Core in any case (they cannot stack), which keeps them in range
-    // longer on the open ground too.
+    // Funnelling still helps the turrets, but units now crowd in front of
+    // the Core in any case, which keeps them in range longer on the open
+    // ground too.
     expect(funnel.dead).toBeGreaterThan(open.dead);
     expect(funnel.leftHp).toBeLessThan(open.leftHp);
     expect({ open, funnel }).toEqual({
-      open: { dead: 9, leftHp: 95 },
-      funnel: { dead: 11, leftHp: 10 },
+      open: { dead: 5, leftHp: 210 },
+      funnel: { dead: 10, leftHp: 40 },
     });
   });
 });
@@ -714,7 +714,7 @@ describe('aggro', () => {
     expect(me.id).toBeGreaterThan(0);
     for (let t = 0; t < 40; t++) {
       stepArena(sim, ctx);
-      expect(circleViolations(sim, ctx)).toEqual([]);
+      expect(groundViolations(sim, ctx)).toEqual([]);
     }
   });
 });
@@ -883,7 +883,7 @@ describe('aggro convergence (Euclidean reach and range)', () => {
     spawnUnitForTest(sim, ctx, { side: 1, def: 'unit_post', x: 8, y: 18 });
     for (let t = 0; t < 60; t++) {
       stepArena(sim, ctx);
-      expect(circleViolations(sim, ctx)).toEqual([]);
+      expect(groundViolations(sim, ctx)).toEqual([]);
     }
   });
 });

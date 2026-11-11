@@ -70,8 +70,11 @@ for (let seed = 1; seed <= 8; seed++) {
 let maxBytes = 0;
 let maxTicks = 0;
 let maxPeak = 0;
+const reasons = new Map<string, number>();
 for (const [a, b, s] of pairs) {
   const m = shape(a, b, s);
+  const why = String(m.reason);
+  reasons.set(why, (reasons.get(why) ?? 0) + 1);
   maxBytes = Math.max(maxBytes, m.bytes);
   maxTicks = Math.max(maxTicks, m.ticks);
   maxPeak = Math.max(maxPeak, m.peak);
@@ -83,6 +86,15 @@ console.log(
   maxTicks,
   'peak',
   maxPeak,
+);
+console.log(
+  'one plot: how battles ended (of',
+  pairs.length,
+  ')',
+  [...reasons.entries()]
+    .sort((x, y) => (x[0] < y[0] ? -1 : 1))
+    .map(([k, v]) => `${k}=${String(v)}`)
+    .join(' '),
 );
 console.log('one plot battles/s', rate(pairs));
 const team = denseFourPlotTeam(ctx, 1);

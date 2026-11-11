@@ -1,6 +1,7 @@
 /**
- * Units as circles (issue #59): the invariant and the rules around it.
- * See docs/rules-reference.md, "Unit geometry" and "One battle tick" step 5.
+ * Units as circles (issue #59, soft collision since issue #82): the ground
+ * invariant, the spawn and wave-queue rules, save and restore. See
+ * docs/rules-reference.md, "Unit geometry" and "One battle tick" step 5.
  */
 import { describe, expect, test } from 'vitest';
 import type { ArenaContent } from './arena.js';
@@ -23,7 +24,6 @@ import {
   type World,
 } from './geometry.js';
 import { hashJson } from './hash.js';
-import { MotionScratch } from './unit-motion.js';
 import { awayDiv, isqrtCeil, isqrtFloor, truncDiv, divCeil } from './int.js';
 import { CELL_UNITS, MAX_ARENA_CELLS } from './limits.js';
 import type { GameMap } from './map.js';
@@ -34,7 +34,7 @@ import { generateThreat } from './threat-gen.js';
 import type { TeamState } from './team-state.js';
 import {
   Lab,
-  circleViolations,
+  groundViolations,
   content,
   got,
   mapgen,
@@ -216,7 +216,7 @@ describe('circle against solid ground', () => {
   });
 });
 
-describe('the invariant: no overlap, nothing inside blocked ground', () => {
+describe('the ground invariant: nothing inside blocked ground or outside the arena', () => {
   test('random one-plot battles keep it at every tick', () => {
     for (let seed = 1; seed <= 6; seed++) {
       const s = startBattle(
@@ -230,7 +230,7 @@ describe('the invariant: no overlap, nothing inside blocked ground', () => {
       while (!battle.isOver() && ticks < 1500) {
         battle.step();
         ticks += 1;
-        expect(circleViolations(battle.sim, battle.ctx)).toEqual([]);
+        expect(groundViolations(battle.sim, battle.ctx)).toEqual([]);
       }
     }
   }, 120_000);
@@ -268,7 +268,7 @@ describe('the invariant: no overlap, nothing inside blocked ground', () => {
       while (!battle.isOver() && ticks < 1200) {
         battle.step();
         ticks += 1;
-        expect(circleViolations(battle.sim, battle.ctx)).toEqual([]);
+        expect(groundViolations(battle.sim, battle.ctx)).toEqual([]);
       }
     }
   }, 120_000);
@@ -300,7 +300,7 @@ describe('the invariant: no overlap, nothing inside blocked ground', () => {
     expect(placed).toBeGreaterThan(40);
     for (let t = 0; t < 400; t++) {
       stepArena(sim, ctx);
-      expect(circleViolations(sim, ctx)).toEqual([]);
+      expect(groundViolations(sim, ctx)).toEqual([]);
     }
   });
 
@@ -325,7 +325,7 @@ describe('the invariant: no overlap, nothing inside blocked ground', () => {
         // Radius 60: the centre stays below the wall row's lower edge.
         expect(d.py + 60).toBeLessThanOrEqual(wallRowLow);
       }
-      expect(circleViolations(sim, ctx)).toEqual([]);
+      expect(groundViolations(sim, ctx)).toEqual([]);
     }
   });
 });
@@ -389,9 +389,9 @@ describe('save and restore at any tick', () => {
   }, 120_000);
 
   test('a battle with a waiting queue restores at any of several ticks', () => {
-    // A wave of 80 soldiers is larger than the 24 cells of the front row can
-    // hold at once (as in the `battle.wave-queue` golden vector): the
-    // rest waits in the `entering` queue while the row clears.
+    // A wave of 1200 soldiers is larger than the front row can hold at once
+    // (24 cells, nine positions each; as in the `battle.wave-queue` golden
+    // vector): the rest waits in the `entering` queue while the row clears.
     const wide: GameMap = { ...tiny(24), plotWidth: 24 };
     const lab = new Lab(wide);
     lab.core(11, 0);
@@ -400,7 +400,7 @@ describe('save and restore at any tick', () => {
         sideOptions: [
           null,
           {
-            scheduledWaves: [{ tick: 0, unit: 'unit_soldier', count: 80 }],
+            scheduledWaves: [{ tick: 0, unit: 'unit_soldier', count: 1200 }],
             coreHealth: 200000,
           },
         ],
@@ -439,7 +439,7 @@ describe('save and restore at any tick', () => {
   }, 120_000);
 
   test('held producers restore at any tick; the spawn cell cache is rebuilt identically, also after a destruction', () => {
-    // A barracks whose only exit is blocked by two frozen posts holds its
+    // A barracks whose only exit is blocked by two frozen boulders holds its
     // finished unit for the whole run; at tick 300 a wall is destroyed, which
     // opens another exit cell and drops the cached candidate cells.
     const lab = new Lab({
@@ -479,7 +479,7 @@ describe('save and restore at any tick', () => {
       ] as const) {
         const u = spawnUnitForTest(b.sim, b.ctx, {
           side,
-          def: 'unit_post',
+          def: 'unit_boulder',
           px,
           py,
           allowOverlap: true,
@@ -561,9 +561,10 @@ describe('save and restore at any tick', () => {
  * Wave queue with units of different collision radii. The front row of the
  * board has one open cell (arena column 5, row 15: lakes on both sides); the
  * offsets tried inside it scale with `120 - radius`, so the stout unit (radius
- * 90) and the bulky one (radius 100) try different positions. Three or two
- * posts (radius 72) are placed so that one of them has no free position and
- * the other has.
+ * 90) and the bulky one (radius 100) try different positions. Two posts
+ * (radius 72) are placed so that the bulky one has no free position and the
+ * stout one has (a unit enters only where it overlaps nothing by more than
+ * half its collision radius).
  */
 describe('wave queue with mixed collision radii', () => {
   const queueContent: ArenaContent = {
@@ -571,6 +572,18 @@ describe('wave queue with mixed collision radii', () => {
     units: loadUnitsOrThrow({
       units: [
         ...postContent.units.list(),
+        {
+          id: 'unit_wide',
+          health: 100,
+          damage: 1,
+          attackCooldownTicks: 10,
+          moveCooldownTicks: 240,
+          radius: 120,
+          collisionRadius: 120,
+          reach: 0,
+          flying: false,
+          attackType: 'melee' as const,
+        },
         ...(['unit_stout', 'unit_bulky'] as const).map((id) => ({
           id,
           health: 100,
@@ -623,42 +636,44 @@ describe('wave queue with mixed collision radii', () => {
     return { entered, waiting: sim.entering.map((e) => e.unit) };
   }
 
-  test('a larger unit enters where the smaller one in front of it found no room', () => {
-    const r = run(
-      ['unit_stout', 'unit_bulky'],
-      [
-        [1386, 3889],
-        [1241, 3902],
-        [1294, 3568],
-      ],
-    );
-    expect(r.entered).toEqual([['unit_bulky', 1300, 3740]]);
-    expect(r.waiting).toEqual(['unit_stout']);
-  });
-
   test('a smaller unit enters where the larger one in front of it found no room', () => {
     const r = run(
       ['unit_bulky', 'unit_stout'],
       [
-        [1391, 3896],
-        [1275, 3594],
+        [1331, 3831],
+        [1355, 3612],
       ],
     );
-    expect(r.entered).toEqual([['unit_stout', 1320, 3752]]);
+    expect(r.entered).toEqual([['unit_stout', 1292, 3716]]);
     expect(r.waiting).toEqual(['unit_bulky']);
   });
 
   test('units of the same radius behind a failed one wait, in order', () => {
     const r = run(
-      ['unit_stout', 'unit_stout', 'unit_bulky'],
+      ['unit_bulky', 'unit_bulky', 'unit_stout'],
       [
-        [1386, 3889],
-        [1241, 3902],
-        [1294, 3568],
+        [1331, 3831],
+        [1355, 3612],
       ],
     );
-    expect(r.entered).toEqual([['unit_bulky', 1300, 3740]]);
-    expect(r.waiting).toEqual(['unit_stout', 'unit_stout']);
+    expect(r.entered).toEqual([['unit_stout', 1292, 3716]]);
+    expect(r.waiting).toEqual(['unit_bulky', 'unit_bulky']);
+  });
+
+  test('an overlap deeper than half the new unit collision radius blocks the entry, a lighter one does not', () => {
+    // The wide unit (collision radius 120) has one position in the cell, its
+    // centre (1320, 3720). A post (72) at distance D overlaps it by
+    // 192 - D; half the radius is 60, so D = 132 is let in and D = 131 is not.
+    for (const [dist, enters] of [
+      [132, true],
+      [200, true],
+      [131, false],
+      [100, false],
+    ] as const) {
+      const r = run(['unit_wide'], [[1320, 3720 - dist]]);
+      expect(r.entered.length).toBe(enters ? 1 : 0);
+      expect(r.waiting.length).toBe(enters ? 0 : 1);
+    }
   });
 });
 
@@ -698,23 +713,22 @@ describe('producers hold, waves queue', () => {
       postContent,
       simConfig,
     );
-    // A post and an enemy post in contact stand on the only exit.
+    // A boulder and an enemy boulder stand on the only exit.
     const blocker = spawnUnitForTest(sim, ctx, {
       side: 0,
-      def: 'unit_post',
+      def: 'unit_boulder',
       x: 2,
       y: 4,
     });
     const keeper = spawnUnitForTest(sim, ctx, {
       side: 1,
-      def: 'unit_post',
+      def: 'unit_boulder',
       px: mid(2),
       py: mid(4) - 60,
       allowOverlap: true,
     });
     expect(blocker.id).toBeLessThan(keeper.id);
-    // Hold both in place: they are not in contact (reach 0), so freeze them
-    // by pinning their positions every tick.
+    // Hold both in place: freeze them by pinning their positions every tick.
     const pin = [
       [blocker, blocker.px, blocker.py],
       [keeper, keeper.px, keeper.py],
@@ -815,81 +829,15 @@ describe('producers hold, waves queue', () => {
     expect(out).toHaveLength(1);
     const e = got(out[0]);
     expect(e.building).toBe(bar);
-    // The spawn is in one of the two exit cells and does not overlap the post.
+    // The spawn is in one of the two exit cells and overlaps the post by no
+    // more than half the soldier's collision radius (23): at least
+    // 72 + 47 - 23 = 96 apart.
     const cell = { x: Math.floor(e.px / CU), y: Math.floor(e.py / CU) };
     expect([2, 3]).toContain(cell.x);
     expect(cell.y).toBe(4);
     const dx = e.px - first.px;
     const dy = e.py - first.py;
-    expect(dx * dx + dy * dy).toBeGreaterThanOrEqual(144 * 144);
-  });
-});
-
-describe('equal positions: a deterministic way apart', () => {
-  /**
-   * Two fast units (radius 60) whose steps end at the very same point, run
-   * through the motion step alone.
-   */
-  function meet(firstId: number, secondId: number) {
-    const grid = new Uint8Array(6 * 6);
-    const world: World = { width: 6, height: 6, solid: [grid, grid] };
-    const units = [
-      { id: firstId, side: 0, px: 990, py: 1000 },
-      { id: secondId, side: 0, px: 1274, py: 1000 },
-    ];
-    const m = new MotionScratch();
-    m.ensure(2);
-    for (let i = 0; i < 2; i++) {
-      m.want[i] = 1;
-      m.tx[i] = 1130;
-      m.ty[i] = 1000;
-      m.speed[i] = 240;
-      m.rad[i] = 60;
-    }
-    m.resolve(units, world, 4, 60);
-    return units;
-  }
-
-  test('an odd id sum separates them along y, an even one along x, the lower id first', () => {
-    const [a, b] = meet(1, 2);
-    // Both end at (1130, 1000); equal priority: they share the push.
-    expect([a?.px, a?.py]).toEqual([1130, 1000 - 60]);
-    expect([b?.px, b?.py]).toEqual([1130, 1000 + 60]);
-    const [c, d] = meet(1, 3);
-    expect([c?.px, c?.py]).toEqual([1130 - 60, 1000]);
-    expect([d?.px, d?.py]).toEqual([1130 + 60, 1000]);
-  });
-
-  test('the outcome is the same on every run', () => {
-    expect(meet(4, 7)).toEqual(meet(4, 7));
-  });
-
-  test('unequal priority: the unit farther from its target gives way, alone', () => {
-    const grid = new Uint8Array(6 * 6);
-    const world: World = { width: 6, height: 6, solid: [grid, grid] };
-    // Both steps end at (1130, 1000) but unit 1's target is farther away.
-    const units = [
-      { id: 1, side: 0, px: 990, py: 1000 },
-      { id: 2, side: 0, px: 1274, py: 1000 },
-    ];
-    const m = new MotionScratch();
-    m.ensure(2);
-    for (let i = 0; i < 2; i++) {
-      m.want[i] = 1;
-      m.speed[i] = 140 + 4 * i; // 990 + 140 = 1130 and 1274 - 144 = 1130
-      m.rad[i] = 60;
-    }
-    m.tx[0] = 1500;
-    m.ty[0] = 1000;
-    m.tx[1] = 1130;
-    m.ty[1] = 1000;
-    m.resolve(units, world, 4, 60);
-    const [a, b] = units;
-    // Unit 1 is farther from its target (370 against 0): it takes the push,
-    // unit 2 stays on the spot it was heading for.
-    expect([b?.px, b?.py]).toEqual([1130, 1000]);
-    expect(a?.px).toBe(1130);
-    expect(Math.abs((a?.py ?? 0) - 1000)).toBe(120);
+    expect(dx * dx + dy * dy).toBeGreaterThanOrEqual(96 * 96);
   });
 });
 
@@ -912,7 +860,7 @@ describe('movement is a function of the state', () => {
     const before = column.map((u) => u.py);
     for (let t = 0; t < 30; t++) {
       stepArena(sim, ctx);
-      expect(circleViolations(sim, ctx)).toEqual([]);
+      expect(groundViolations(sim, ctx)).toEqual([]);
     }
     const moved = column.map((u, i) => Math.abs(u.py - (before[i] ?? 0)));
     // 30 ticks at 40 a tick, all of them (up to the first turn).

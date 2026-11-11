@@ -31,7 +31,7 @@ import type { TeamState } from './team-state.js';
 import {
   Lab,
   bigBoard,
-  circleViolations,
+  groundViolations,
   cellOfUnit,
   content,
   got,
@@ -384,7 +384,7 @@ describe('movement', () => {
         stepArena(b.sim, b.ctx);
         for (const u of b.sim.units) {
           // No unit ever stands in a building or on blocked ground.
-          expect(fits(b.ctx.world, u.side, 72, u.px, u.py)).toBe(true);
+          expect(fits(b.ctx.world, u.side, 47, u.px, u.py)).toBe(true);
           trace.push([t, u.id, u.px, u.py, u.hp]);
           const c = cellOfUnit(u);
           visited.add(`${String(c.x)},${String(c.y)}`);
@@ -1825,7 +1825,7 @@ function checkTick(sim: ArenaSim, ctx: ArenaContext): void {
     expect(Number.isInteger(u.hp)).toBe(true);
     expect(u.hp).toBeGreaterThan(0);
   }
-  expect(circleViolations(sim, ctx)).toEqual([]);
+  expect(groundViolations(sim, ctx)).toEqual([]);
   for (const h of sim.health) {
     expect(Number.isInteger(h.hp)).toBe(true);
     expect(h.hp).toBeGreaterThanOrEqual(0);

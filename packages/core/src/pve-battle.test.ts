@@ -340,7 +340,7 @@ function sweep(): Row[] {
 /** The last round at which a board wins any threat in the sweep (pinned). */
 const LAST_WIN: Record<ReferenceBoardName, number> = {
   rush: 8,
-  fortify: 8,
+  fortify: 9,
   poor: 7,
 };
 

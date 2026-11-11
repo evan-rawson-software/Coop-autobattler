@@ -11,7 +11,7 @@ import { CELL_UNITS } from './limits.js';
 import {
   Lab,
   board,
-  circleViolations,
+  groundViolations,
   content,
   got,
   simConfig,
@@ -124,9 +124,10 @@ describe('side options: scheduled waves', () => {
   });
 
   test('units that do not fit wait and enter on later ticks in queue order; none is dropped', () => {
-    // 100 soldiers want the 24 columns of one row: a cell holds one circle
-    // (two adjacent ones touch), so the rest enter as the front clears.
-    const count = 100;
+    // 1200 soldiers want the 24 columns of one row: a cell holds nine circles
+    // (collision radius 47, positions 73 apart), so the rest enter as the
+    // front clears.
+    const count = 1200;
     const { sim, ctx, events } = start(empty(), {
       scheduledWaves: [{ tick: 0, unit: 'unit_soldier', count }],
     });
@@ -148,7 +149,7 @@ describe('side options: scheduled waves', () => {
     expect(at).toBe(waiting.length);
     for (let t = 0; t < 600 && sim.entering.length > 0; t++) {
       stepArena(sim, ctx);
-      expect(circleViolations(sim, ctx)).toEqual([]);
+      expect(groundViolations(sim, ctx)).toEqual([]);
     }
     expect(sim.entering).toHaveLength(0);
     expect(sim.spawned).toEqual([0, count]);
