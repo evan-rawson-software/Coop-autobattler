@@ -118,7 +118,7 @@ describe('the simulation worker client', () => {
     expect(client.workersStarted).toBe(2);
   });
 
-  test('a stale response for a cancelled id is dropped by a surviving worker', async () => {
+  test('a stale response for a cancelled id is dropped by a surviving worker', () => {
     const client = fresh();
     const a = client.simulate(desc);
     const w = FakeWorker.all[0];

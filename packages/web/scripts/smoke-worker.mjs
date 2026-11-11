@@ -4,8 +4,6 @@
 
 import { slow } from './smoke-timing.mjs';
 
-const STRESS = '#battle?p=rush&o=stress&s=1';
-
 async function newPage(browser, removeWorkers) {
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 },
