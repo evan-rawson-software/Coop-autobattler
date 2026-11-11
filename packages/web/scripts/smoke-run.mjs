@@ -193,11 +193,11 @@ export async function runRunSmoke({
   check(
     /Round 1/.test(bar0) &&
       /Lives 5 \/ 5/.test(bar0) &&
-      /Gold 0/.test(bar0) &&
+      !/Gold/.test(bar0) &&
       /Place the Core/.test(bar0) &&
       (await page.locator('#menu-button').count()) === 1 &&
       /saved after every action/i.test(bar0),
-    `top bar: round, lives, gold, step, Menu, and the saved note ("${bar0.replace(/\s+/g, ' ')}")`,
+    `top bar: round, lives, step (no gold before the kit), Menu, and the saved note ("${bar0.replace(/\s+/g, ' ')}")`,
   );
   check(
     await page.locator('#core-confirm').isDisabled(),
