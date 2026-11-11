@@ -3426,11 +3426,14 @@ empties the local pool, which refills as runs are played.
 A build ships a fixed file of ghosts (`packages/web/src/run/bundled-ghosts.json`)
 so a new install does not meet only bosses (MM-12). They are taken by the
 scripted bot with the pool on: `pnpm sim ghosts` (alias `pnpm ghosts:update`)
-plays four strategies on three seeds for party sizes 1 to 4, up to round 6.
+plays four strategies on eight seeds for party sizes 1 to 4, up to round 6.
 Each run fights the ghosts of the earlier runs of its bucket (the generated
 boss where none exist yet, which is all a party of three or four survives
-against for five rounds). The first four snapshots per bucket (party size,
-round) are kept, seeds before strategies, so they spread over the strategies.
+against for five rounds). Four snapshots are kept per bucket (party size,
+round), filled from round 6 down, seeds before strategies. No run supplies the
+buckets of two rounds of one party size: a ghost's run stays excluded for the
+rest of a player's run, so a fresh player always has a bundled candidate left
+in each of rounds 1 to 6.
 Owner ids are `bundled-<strategy>` and labels `Bundled <strategy> bot`. The
 output is deterministic, every snapshot is checked with `validateGhostSnapshot`
 and the selection-time shape and size bounds before it is written, and a test

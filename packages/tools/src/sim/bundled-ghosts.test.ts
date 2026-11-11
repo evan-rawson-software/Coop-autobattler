@@ -21,5 +21,5 @@ describe('the bundled ghost file', () => {
       onDisk === fresh,
       'packages/web/src/run/bundled-ghosts.json is out of date: run `pnpm ghosts:update` and commit it',
     ).toBe(true);
-  }, 180_000);
+  }, 300_000);
 });

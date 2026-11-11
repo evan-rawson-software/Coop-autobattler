@@ -35,7 +35,7 @@ export const BUNDLED_PARTY_SIZES = [1, 2, 3, 4] as const;
 /** The last PvP round covered (each run is stopped after it). */
 export const BUNDLED_LAST_ROUND = 6;
 /** Bot seeds played per strategy and party size. */
-export const BUNDLED_SEEDS = 3;
+export const BUNDLED_SEEDS = 8;
 /** The most ghosts kept per bucket (version, party size, round). */
 export const BUNDLED_PER_BUCKET = 4;
 /** Where the web build reads the file, relative to the repository root. */
@@ -138,16 +138,31 @@ export function buildBundledGhostFile(ctx: SimContext): BundledGhostFile {
       }
     }
   }
-  // Per bucket, the first BUNDLED_PER_BUCKET in generation order: seeds
-  // outer, strategies inner, so the kept ghosts spread over the strategies.
-  const kept = new Map<string, number>();
+  // A ghost's run stays excluded for the rest of a player's run, so no run
+  // may supply the bucket of two rounds (of one party size): a fresh player
+  // would otherwise run out of bundled ghosts after a few rounds. Rounds are
+  // filled from the deepest down (few runs reach it), each taking the first
+  // BUNDLED_PER_BUCKET runs not used yet, in generation order (seeds outer,
+  // strategies inner, so they spread over the strategies).
   const ghosts: GhostSnapshot[] = [];
-  for (const snapshot of all) {
-    const key = `${String(snapshot.partySize)}|${String(snapshot.round)}`;
-    const have = kept.get(key) ?? 0;
-    if (have >= BUNDLED_PER_BUCKET) continue;
-    kept.set(key, have + 1);
-    ghosts.push(snapshot);
+  const used = new Set<string>();
+  for (const party of BUNDLED_PARTY_SIZES) {
+    for (let round = BUNDLED_LAST_ROUND; round >= 1; round--) {
+      let have = 0;
+      for (const snapshot of all) {
+        if (have >= BUNDLED_PER_BUCKET) break;
+        if (snapshot.partySize !== party || snapshot.round !== round) continue;
+        if (used.has(snapshot.runId)) continue;
+        used.add(snapshot.runId);
+        ghosts.push(snapshot);
+        have++;
+      }
+      if (have < BUNDLED_PER_BUCKET) {
+        throw new Error(
+          `bundled ghosts: only ${String(have)} unused runs reach round ${String(round)} with party ${String(party)}; raise BUNDLED_SEEDS`,
+        );
+      }
+    }
   }
   ghosts.sort(
     (a, b) =>

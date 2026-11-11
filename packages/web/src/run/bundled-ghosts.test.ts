@@ -81,6 +81,43 @@ describe('the bundled ghost file', () => {
   });
 });
 
+describe('a fresh player over the first six PvP rounds', () => {
+  // A ghost's run stays excluded for the rest of the player's run, so the
+  // bundled runs of different rounds must differ, or the pool runs dry.
+  const all = snapshots as GhostSnapshot[];
+  const rows = (party: number, round: number): GhostSnapshot[] =>
+    all.filter((g) => g.partySize === party && g.round === round);
+
+  for (let party = 1; party <= 4; party++) {
+    for (const pick of ['first', 'last'] as const) {
+      test(`party of ${String(party)}, always fighting the ${pick} candidate: a bundled ghost is left at every round`, () => {
+        const fought = new Set<string>();
+        for (let round = 1; round <= 6; round++) {
+          const left = rows(party, round).filter(
+            (g) => !fought.has(JSON.stringify([g.owner.id, g.runId])),
+          );
+          expect(left.length, `round ${String(round)}`).toBeGreaterThan(0);
+          const g = pick === 'first' ? left[0] : left[left.length - 1];
+          if (g !== undefined) {
+            fought.add(JSON.stringify([g.owner.id, g.runId]));
+          }
+        }
+      });
+    }
+
+    test(`party of ${String(party)}: no run supplies the bucket of two rounds`, () => {
+      const seen = new Set<string>();
+      for (let round = 1; round <= 6; round++) {
+        for (const g of rows(party, round)) {
+          const key = JSON.stringify([g.owner.id, g.runId]);
+          expect(seen.has(key), key).toBe(false);
+          seen.add(key);
+        }
+      }
+    });
+  }
+});
+
 describe('the bundled source in the pool', () => {
   test('a fresh pool lists bundled ghosts; clearing the local pool keeps them', async () => {
     const { local, pool } = layered();
