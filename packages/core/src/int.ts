@@ -30,6 +30,19 @@ export function addInt(a: number, b: number): number {
   return sum;
 }
 
+/** a * b, throwing if either input or the product is not a safe integer. */
+export function mulInt(a: number, b: number): number {
+  assertInt(a, 'a');
+  assertInt(b, 'b');
+  const p = a * b;
+  if (!Number.isSafeInteger(p)) {
+    throw new RangeError(
+      `a * b overflows the safe range: ${String(a)} * ${String(b)}`,
+    );
+  }
+  return p === 0 ? 0 : p;
+}
+
 /** Normalises -0 to 0. */
 function noNegZero(n: number): number {
   return n === 0 ? 0 : n;

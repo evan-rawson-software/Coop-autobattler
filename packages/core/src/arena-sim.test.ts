@@ -790,6 +790,53 @@ describe('breaching sealed bases (CB-20)', () => {
   });
 });
 
+describe('breach step prices a building by its maximum health (CB-20)', () => {
+  test('a damaged neighbour is not preferred over an equal healthy one', () => {
+    // Core at board (5, 0) ringed by six tier 3 walls; the soldier stands on
+    // the corner cell (7, 2) beside walls A (6, 2) and B (7, 1). Both have
+    // the same maximum health, so the tie key decides (A). B has 20 of 240
+    // health; a step priced by current health would go for B instead.
+    const lab = new Lab(tiny());
+    lab.core(5, 0);
+    const ids = new Map<string, number>();
+    for (const [x, y] of [
+      [4, 0],
+      [4, 1],
+      [5, 2],
+      [6, 2],
+      [7, 1],
+      [7, 0],
+    ] as const) {
+      ids.set(`${String(x)},${String(y)}`, lab.put('bld_wall', x, y, 0, 3));
+    }
+    const a = got(ids.get('6,2'));
+    const b = got(ids.get('7,1'));
+    const { sim, ctx, events } = startArenaBattle(
+      coreOnly(),
+      lab.state,
+      GAP,
+      content,
+      simConfig,
+    );
+    got(sim.health.find((h) => h.side === 1 && h.building === b)).hp = 20;
+    const at = arenaCell(1, 7, 2);
+    spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: at.x,
+      y: at.y,
+    });
+    runArena(sim, ctx, 60);
+    const targets = ofType(events, 'unit_attacked').map((e) => e.target);
+    expect(targets.length).toBeGreaterThan(0);
+    for (const t of targets) {
+      expect(t).toEqual({ kind: 'building', side: 1, building: a });
+    }
+    expect(healthOf(sim, 1, b)).toBe(20);
+    expect(healthOf(sim, 1, a)).toBeLessThan(240);
+  });
+});
+
 describe('breach field is a pure function of the saved state (CB-20)', () => {
   /** Side 1's Core ringed by eight tier 1 walls (every Core edge cell). */
   function ringed(): TeamState {

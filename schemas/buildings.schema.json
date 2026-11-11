@@ -18,6 +18,18 @@
     "side": { "enum": ["north", "east", "south", "west"] },
     "positive": { "type": "integer", "minimum": 1 },
     "nonNegative": { "type": "integer", "minimum": 0 },
+    "health": {
+      "description": "Building health. At most 10000000 (MAX_HEALTH in the core): the breach field sums building health along routes and must stay exact (docs/rules-reference.md, \"Content bounds\").",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000000
+    },
+    "damage": {
+      "description": "Damage per shot. At most 10000000 (MAX_DAMAGE in the core), the same bound as health.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000000
+    },
     "input": {
       "description": "A side that accepts a resource. 'resource' is required on buildings that consume a specific resource and absent on route buildings, which carry whatever they are fed (CB-5b).",
       "type": "object",
@@ -33,7 +45,7 @@
       "required": ["health", "price"],
       "additionalProperties": false,
       "properties": {
-        "health": { "$ref": "#/$defs/positive" },
+        "health": { "$ref": "#/$defs/health" },
         "price": { "$ref": "#/$defs/nonNegative" }
       }
     },
@@ -42,7 +54,7 @@
       "required": ["health", "price", "intervalTicks"],
       "additionalProperties": false,
       "properties": {
-        "health": { "$ref": "#/$defs/positive" },
+        "health": { "$ref": "#/$defs/health" },
         "price": { "$ref": "#/$defs/nonNegative" },
         "intervalTicks": { "$ref": "#/$defs/positive" }
       }
@@ -52,7 +64,7 @@
       "required": ["health", "price", "costPerUnit"],
       "additionalProperties": false,
       "properties": {
-        "health": { "$ref": "#/$defs/positive" },
+        "health": { "$ref": "#/$defs/health" },
         "price": { "$ref": "#/$defs/nonNegative" },
         "costPerUnit": { "$ref": "#/$defs/positive" }
       }
@@ -69,9 +81,9 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "health": { "$ref": "#/$defs/positive" },
+        "health": { "$ref": "#/$defs/health" },
         "price": { "$ref": "#/$defs/nonNegative" },
-        "damage": { "$ref": "#/$defs/positive" },
+        "damage": { "$ref": "#/$defs/damage" },
         "rangeCells": { "$ref": "#/$defs/positive" },
         "cooldownTicks": { "$ref": "#/$defs/positive" },
         "costPerShot": { "$ref": "#/$defs/positive" }
@@ -82,7 +94,7 @@
       "required": ["health", "price", "costPerStep", "stepPercent", "maxSteps"],
       "additionalProperties": false,
       "properties": {
-        "health": { "$ref": "#/$defs/positive" },
+        "health": { "$ref": "#/$defs/health" },
         "price": { "$ref": "#/$defs/nonNegative" },
         "costPerStep": { "$ref": "#/$defs/positive" },
         "stepPercent": { "$ref": "#/$defs/positive" },
@@ -98,7 +110,7 @@
       "required": ["health"],
       "additionalProperties": false,
       "properties": {
-        "health": { "$ref": "#/$defs/positive" }
+        "health": { "$ref": "#/$defs/health" }
       }
     },
     "building": {

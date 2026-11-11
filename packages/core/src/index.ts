@@ -1,4 +1,11 @@
 export { add } from './add.js';
+export {
+  assertWithin,
+  MAX_ARENA_CELLS,
+  MAX_BREACH_BASE_COST,
+  MAX_DAMAGE,
+  MAX_HEALTH,
+} from './limits.js';
 export { loadResources, loadResourcesOrThrow } from './resources.js';
 export type {
   Rarity,
@@ -81,6 +88,7 @@ export {
   modFloor,
   mulBps,
   mulDiv,
+  mulInt,
   mulPct,
 } from './int.js';
 export {

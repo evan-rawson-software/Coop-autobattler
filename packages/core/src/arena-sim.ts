@@ -37,6 +37,7 @@ import {
 } from './flow-sim.js';
 import type { EconomyEffectType, Side } from './buildings.js';
 import { addInt, divFloor, modFloor, mulPct } from './int.js';
+import { assertWithin, MAX_DAMAGE, MAX_HEALTH } from './limits.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
 import type { Cell } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
@@ -311,10 +312,21 @@ export function unitStats(
   strengthPercent = 0,
 ): UnitDef {
   if (strengthPercent === 0) return def;
+  // Scaled stats are held to the content bound (limits.ts): a strength so
+  // large that a unit would exceed it is an error, not a wrapped number.
+  const scaled = (value: number, what: string, max: number): number => {
+    const v = mulPct(value, addInt(100, strengthPercent));
+    if (v > max) {
+      throw new RangeError(
+        `Unit ${def.id}: ${what} ${String(v)} (strength ${String(strengthPercent)} percent) exceeds the maximum ${String(max)}.`,
+      );
+    }
+    return v;
+  };
   return {
     ...def,
-    health: mulPct(def.health, 100 + strengthPercent),
-    damage: mulPct(def.damage, 100 + strengthPercent),
+    health: scaled(def.health, 'scaled health', MAX_HEALTH),
+    damage: scaled(def.damage, 'scaled damage', MAX_DAMAGE),
   };
 }
 
@@ -367,10 +379,10 @@ export interface ArenaContext {
    * field is built from this, never from current health (CB-20), so the
    * cached field is a pure function of which buildings exist.
    */
-  readonly maxHealth: Int32Array;
+  readonly maxHealth: Float64Array;
   /** Lazily computed, dropped whenever a building is destroyed. */
   fields: (Field | undefined)[];
-  breach: (Int32Array | undefined)[];
+  breach: (Float64Array | undefined)[];
   // Scratch buffers reused across ticks.
   heads: Int32Array[];
   next: Int32Array;
@@ -438,7 +450,9 @@ export function createArenaContext(
     if (i === undefined) throw new Error('Arena: building without health.');
     healthIndex[b.ref] = i;
   }
-  const maxHealth = new Int32Array(arena.buildings.length);
+  // Float64Array of integers, never Int32Array: a tier health of 2^31 or more
+  // would wrap. Content health is at most MAX_HEALTH (limits.ts).
+  const maxHealth = new Float64Array(arena.buildings.length);
   for (const b of arena.buildings) {
     maxHealth[b.ref] = maxHealthOf(sim.teams[b.side], b, content);
   }
@@ -505,7 +519,7 @@ export function createArenaContext(
     ramps,
     flowEvents,
     fields: new Array<Field | undefined>(2 * TARGETINGS.length).fill(undefined),
-    breach: [undefined, undefined] as (Int32Array | undefined)[],
+    breach: [undefined, undefined] as (Float64Array | undefined)[],
     heads: [new Int32Array(cells), new Int32Array(cells)],
     next: new Int32Array(0),
     action: new Uint8Array(0),
@@ -546,8 +560,22 @@ export function createArenaSim(
     let hp = maxHealthOf(teams[b.side], b, content);
     const coreOverride =
       options.sideOptions?.[b.side === 0 ? 0 : 1]?.coreHealth;
-    if (b.kind === 'core' && coreOverride !== undefined) hp = coreOverride;
+    if (b.kind === 'core' && coreOverride !== undefined) {
+      // Checked: the time-limit rule multiplies two Core healths.
+      assertWithin(coreOverride, 1, MAX_HEALTH, 'Side option coreHealth');
+      hp = coreOverride;
+    }
     health.push({ side: b.side, building: b.id, hp });
+  }
+  // Fail at the start, not mid-battle: with the side's base strength plus the
+  // largest ramp bonus, every unit type must stay within the stat bounds.
+  for (const o of options.sideOptions ?? []) {
+    const base = o?.unitStrengthPercent;
+    if (base === undefined) continue;
+    assertWithin(base, 0, Number.MAX_SAFE_INTEGER, 'unitStrengthPercent');
+    for (const def of content.units.list()) {
+      unitStats(0, def, addInt(base, simConfig.maxUnitStrengthPercent));
+    }
   }
   const producers: ProducerSim[] = [];
   for (const b of arena.buildings) {
@@ -611,7 +639,7 @@ function fieldFor(
   return f;
 }
 
-function breachFor(ctx: ArenaContext, side: number): Int32Array {
+function breachFor(ctx: ArenaContext, side: number): Float64Array {
   let f = ctx.breach[side];
   if (f === undefined) {
     f = computeBreach(

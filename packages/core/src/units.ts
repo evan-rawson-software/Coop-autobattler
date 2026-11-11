@@ -1,5 +1,6 @@
 /** Unit rules (CB-13..CB-15). All numbers are integers; times are in ticks. */
 
+import { MAX_DAMAGE, MAX_HEALTH } from './limits.js';
 import {
   isRecord,
   readId,
@@ -67,8 +68,8 @@ export function loadUnits(data: unknown): UnitLoadResult {
       if (seen.has(id)) errors.push(`${label}: duplicate id "${id}".`);
       seen.add(id);
     }
-    const health = readInt(entry, 'health', 1, label, errors);
-    const damage = readInt(entry, 'damage', 0, label, errors);
+    const health = readInt(entry, 'health', 1, label, errors, MAX_HEALTH);
+    const damage = readInt(entry, 'damage', 0, label, errors, MAX_DAMAGE);
     const attackCooldownTicks = readInt(
       entry,
       'attackCooldownTicks',

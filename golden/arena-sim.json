@@ -3783,5 +3783,165 @@
       },
       "eventLogHash": "ecbc0fe8"
     }
+  },
+  {
+    "id": "arena-sim.breach-step-uses-max-health",
+    "kind": "arena-sim",
+    "description": "A Core ringed by six tier 3 walls and a soldier standing on the corner cell beside two of them (buildings 4 and 5, equal in everything but current health: building 5 starts at 20 of 240). The breach step prices a building by its maximum health, so both cost the same and the tie goes to building 4; the soldier never touches the damaged building 5 (a rule that used current health would chew through it).",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 1,
+            "x": 4,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 2,
+            "x": 4,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 3,
+            "x": 5,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 4,
+            "x": 6,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 5,
+            "x": 7,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 6,
+            "x": 7,
+            "y": 0,
+            "rotation": 0
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 60,
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 4,
+          "y": 33
+        }
+      ],
+      "buildingHealth": [
+        {
+          "side": 1,
+          "building": 5,
+          "hp": 20
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 60,
+        "stateHash": "ed9a05fa",
+        "events": 6,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": 500
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": 500
+          }
+        ]
+      },
+      "eventLogHash": "9175cdb0"
+    }
   }
 ]

@@ -5,7 +5,8 @@
  * See docs/rules-reference.md, "Goals and movement fields".
  */
 
-import { divFloor } from './int.js';
+import { addInt, divFloor, mulInt } from './int.js';
+import { assertWithin, MAX_ARENA_CELLS } from './limits.js';
 import type { Arena, ArenaBuilding } from './arena.js';
 import type { Targeting } from './units.js';
 
@@ -128,7 +129,7 @@ export function fieldStep(
 export function breachStep(
   arena: Arena,
   side: number,
-  dist: Int32Array,
+  dist: Float64Array,
   here: number,
   hpOf: (ref: number) => number,
   base: number,
@@ -143,7 +144,7 @@ export function breachStep(
     (c) => {
       const v = dist[c] ?? -1;
       if (v < 0 || !breachPassable(arena, side, c)) return -1;
-      return v + breachCost(arena, side, c, hpOf, base, perCost);
+      return addInt(v, breachCost(arena, side, c, hpOf, base, perCost));
     },
   );
 }
@@ -230,7 +231,7 @@ export function breachCost(
 ): number {
   if (openFor(arena, side, cell)) return 1;
   const ref = arena.occupant[cell] ?? -1;
-  return base + divFloor(hpOf(ref) + perCost - 1, perCost);
+  return addInt(base, divFloor(addInt(hpOf(ref), perCost - 1), perCost));
 }
 
 /** Whether a cell can be on a breach route of `side` (open, or enemy building). */
@@ -259,10 +260,14 @@ export function computeBreach(
   hpOf: (ref: number) => number,
   base: number,
   perCost: number,
-): Int32Array {
+): Float64Array {
   const { width, height } = arena.geom;
   const n = width * height;
-  const dist = new Int32Array(n).fill(-1);
+  // Distances can exceed 2^31 (a wall may have health up to MAX_HEALTH), so
+  // they live in a Float64Array of integers. See limits.ts for why every
+  // distance and heap key below stays a safe integer.
+  assertWithin(n, 1, MAX_ARENA_CELLS, 'Breach: arena cell count');
+  const dist = new Float64Array(n).fill(-1);
   const core = arena.buildings[arena.coreRef[1 - side] ?? -1];
   if (core === undefined || !core.alive) return dist;
 
@@ -315,7 +320,7 @@ export function computeBreach(
     if (d !== dist[k]) continue; // stale entry
     const x = k % width;
     const y = divFloor(k, width);
-    const through = d + breachCost(arena, side, k, hpOf, base, perCost);
+    const through = addInt(d, breachCost(arena, side, k, hpOf, base, perCost));
     for (const [dx, dy] of NEIGHBORS) {
       const nx = x + dx;
       const ny = y + dy;
@@ -325,7 +330,7 @@ export function computeBreach(
       const cur = dist[nk] ?? -1;
       if (cur === -1 || through < cur) {
         dist[nk] = through;
-        push(through * n + nk);
+        push(addInt(mulInt(through, n), nk));
       }
     }
   }

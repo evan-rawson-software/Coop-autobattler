@@ -29,8 +29,18 @@
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" },
-        "health": { "type": "integer", "minimum": 1 },
-        "damage": { "type": "integer", "minimum": 0 },
+        "health": {
+          "description": "At most 10000000 (MAX_HEALTH in the core); see \"Content bounds\" in docs/rules-reference.md.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000000
+        },
+        "damage": {
+          "description": "At most 10000000 (MAX_DAMAGE in the core).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000
+        },
         "attackCooldownTicks": { "type": "integer", "minimum": 1 },
         "rangeCells": {
           "description": "0 means melee (adjacent).",

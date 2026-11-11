@@ -14,6 +14,7 @@
  */
 
 import { sortedKeys } from './hash.js';
+import { MAX_DAMAGE, MAX_HEALTH } from './limits.js';
 import type { ResourceConfig, ResourceId } from './resources.js';
 import type { UnitConfig, UnitId } from './units.js';
 import {
@@ -223,6 +224,12 @@ const KIND_FIELDS: Readonly<Record<string, string>> = {
   unit: 'unit_producer',
   defenseType: 'defense',
   effect: 'economy',
+};
+
+/** Upper bounds of per-tier fields (see `limits.ts`). */
+const TIER_MAX: Readonly<Record<string, number>> = {
+  health: MAX_HEALTH,
+  damage: MAX_DAMAGE,
 };
 
 /** Per-tier integer fields (name -> minimum) by kind, beyond the common ones. */
@@ -631,7 +638,8 @@ function parseBuilding(
         let ok = true;
         for (const key of sortedKeys(wantedFields)) {
           const min = wantedFields[key] ?? 0;
-          const value = readInt(raw, key, min, where, errors);
+          const max = TIER_MAX[key];
+          const value = readInt(raw, key, min, where, errors, max);
           if (value === undefined) ok = false;
           else rec[key] = value;
         }

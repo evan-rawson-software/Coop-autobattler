@@ -69,7 +69,7 @@ export function previewEnemyPaths(
   };
   const base = simConfig.breachBaseCost;
   const per = simConfig.breachHealthPerCost;
-  let breach: Int32Array | undefined;
+  let breach: Float64Array | undefined;
   const cellOf = (k: number): Cell => ({ x: k % width, y: divFloor(k, width) });
 
   const out: EnemyPath[] = [];

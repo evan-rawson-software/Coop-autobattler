@@ -26,6 +26,8 @@ import type { MapgenConfig } from './mapgen.js';
 import type { SimConfig } from './sim-config.js';
 import { runTeamStateOps } from './team-state-ops.js';
 
+const TAKE_SIDES: readonly string[] = ['north', 'east', 'south', 'west'];
+
 function field(input: Json, key: string): Json | undefined {
   if (input === null || typeof input !== 'object' || Array.isArray(input)) {
     throw new TypeError('flow-sim: input must be an object');
@@ -50,18 +52,25 @@ export function makeFlowSimKind(
     const take = field(input, 'take');
     let taker: { building: number; side: string; every: number } | undefined;
     if (take !== undefined) {
-      const t = take as Record<string, Json>;
-      const every = t['every'];
-      if (
-        typeof t['building'] !== 'number' ||
-        typeof t['side'] !== 'string' ||
-        typeof every !== 'number' ||
-        !Number.isInteger(every) ||
-        every < 1
-      ) {
-        throw new TypeError('flow-sim: take needs building, side and every');
+      if (take === null || typeof take !== 'object' || Array.isArray(take)) {
+        throw new TypeError('flow-sim: take must be an object');
       }
-      taker = { building: t['building'], side: t['side'], every };
+      const t = take as Record<string, Json>;
+      const building = t['building'];
+      const side = t['side'];
+      const every = t['every'];
+      if (typeof building !== 'number' || !Number.isInteger(building)) {
+        throw new TypeError('flow-sim: take.building must be an integer');
+      }
+      if (typeof side !== 'string' || !TAKE_SIDES.includes(side)) {
+        throw new TypeError(
+          `flow-sim: take.side must be one of ${TAKE_SIDES.join(', ')}`,
+        );
+      }
+      if (typeof every !== 'number' || !Number.isInteger(every) || every < 1) {
+        throw new TypeError('flow-sim: take.every must be an integer >= 1');
+      }
+      taker = { building, side, every };
     }
     const { state } = runTeamStateOps(input, content, mapgen);
     const events: SimEvent[] = [];

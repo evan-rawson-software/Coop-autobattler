@@ -120,6 +120,7 @@ generator that is only used to derive children.
   see "Resolve attacks simultaneously") use it term by term: they are exact up
   to 2^53 - 1 and an error beyond, never truncated to 32 bits. A 64-bit port
   gets the same results for every input that does not throw.
+- `mulInt(a, b)` is `a * b` and throws if the product leaves the safe range.
 - All helpers throw on non-integer or out-of-range input.
 - Basis points: 10000 = 100%. `mulBps(v, bps) = mulDiv(v, bps, 10000)`.
   `mulPct(v, p) = mulDiv(v, p, 100)`. Both floor.
@@ -158,6 +159,67 @@ the empty byte string hashes to `811c9dc5`; `null` to `77074ba4`;
 
 The hash of a simulation's event log is `eventLogHash`: the hash of the
 canonical JSON of the array of event objects.
+
+## Content bounds
+
+Health, damage and the breach constants are capped so that every sum below
+stays an exact integer (|x| <= 2^53 - 1) on the largest supported board.
+The core exports the constants (`limits.ts`); the loaders and the JSON
+schemas enforce the same numbers.
+
+| Constant               | Value      | Applies to                                                                 |
+| ---------------------- | ---------- | -------------------------------------------------------------------------- |
+| `MAX_HEALTH`           | 10 000 000 | `health` of every building tier (Core included) and unit; run-time health  |
+| `MAX_DAMAGE`           | 10 000 000 | `damage` of a unit and of a turret tier; run-time scaled unit damage       |
+| `MAX_BREACH_BASE_COST` | 1 000 000  | `breachBaseCost` and `breachHealthPerCost` in `sim.json`                   |
+| `MAX_ARENA_CELLS`      | 16 384     | arena cells (`width * height`) for which a breach field is computed        |
+
+A loader reports a value above its cap like any other bad field (for example
+`"health" must be at most 10000000 (got 3000000000)`), and the schemas carry
+the same `maximum`. The caps apply to the numbers as declared; they are not
+tier-by-tier relative.
+
+Derivation of the bound, for the largest supported board (four plots; the
+shipped content gives `4 * 24` columns and `2 * 16 + 7` rows, 3744 cells,
+well under `MAX_ARENA_CELLS`):
+
+- A cell on a breach route costs at most `breachBaseCost + ceil(health /
+  breachHealthPerCost)`, at most `1 000 000 + 10 000 000 = 1.1e7` (an open
+  cell costs 1).
+- A least-cost route enters each cell at most once, so every distance is at
+  most `16 384 * 1.1e7 < 1.81e11`.
+- The breach heap packs `distance * cells + cell` into one number, at most
+  `(1.81e11 + 1.1e7) * 16 384 + 16 383 < 2.97e15`, below `2^53 - 1 =
+  9.007e15`. The computation never rounds. Distances and each building's
+  maximum health are held in 64-bit float arrays that only ever contain
+  integers (never 32-bit integers, which would wrap at 2^31), and every sum
+  uses `addInt`/`mulInt`, so a value outside the safe range is an error
+  (`RangeError`), never a wrapped number. A board with more than
+  `MAX_ARENA_CELLS` cells is an error when its breach field is computed.
+- The time-limit rule multiplies two Core healths: at most `MAX_HEALTH^2 =
+  1e14`.
+
+Values that are scaled at run time are held to the same bound and checked,
+never wrapped:
+
+- A unit's scaled health and damage (`mulPct(base, 100 + P)`, see "Units")
+  must not exceed `MAX_HEALTH` and `MAX_DAMAGE`; otherwise `unitStats` throws a
+  `RangeError` naming the unit. `createArenaSim` makes the check for every
+  unit type up front, with the side's `unitStrengthPercent` option plus the
+  largest `unit_strength` bonus (`maxUnitStrengthPercent`), so a battle either
+  starts or fails at tick 0.
+- The `coreHealth` side option must be an integer from 1 to `MAX_HEALTH`;
+  otherwise `createArenaSim` throws a `RangeError`.
+- Consequence for PvE: a generated threat is not limited (the budget grows
+  until `maxThreatRound`, 63 with the shipped content), but a battle against
+  it can only start while its Core health and scaled unit stats are within the
+  bound. With the shipped content the Core is the limit: every threat is
+  within it up to round 29, the first to pass it is a hard or boss Fortress
+  for a party of four at round 30 (a Core of 13 million health), and from round
+  42 on every threat is past it; the scaled health of a shipped unit passes
+  the cap only at much higher rounds, near the clamp. Starting a PvE battle against such a threat throws the
+  `RangeError` above (it is not returned as a `BattleError`). Rounds that high
+  are far beyond any run that can be survived.
 
 ## Golden vectors
 
@@ -792,7 +854,10 @@ Input `i` is ready when its conduit exists and
   (it produces this tick if it can place the item).
 
 That input is the merger's _winner_ for this tick; if no input is ready the
-merger has no winner. This is decided before any item moves, so it does not
+merger has no winner. When several inputs are ready on the same tick, including
+two direct sources that both produce this tick, the winner is whichever is
+first from the merger's round-robin `pointer` (the one that comes first in the
+order `pointer, pointer + 1, ...`), not the one with the lower building ID. This is decided before any item moves, so it does not
 depend on the order in which anything is processed. A winner is only a
 reservation: if the winner does not (or cannot) deliver, the cell stays empty
 for the rest of the tick and the pointer does not move. A direct upstream
@@ -946,7 +1011,8 @@ last `w` ticks (so the cold start does not distort it; 0 when `w` is 0).
 
 Input: a `team-state-ops` script (`seed`, `partySize`, `ops`) plus `ticks` and
 `consumers` (`"hold"` or `"drain"`), and optionally `take`, `{building, side,
-every}`: before every tick `T` with `T mod every = every - 1` one unit is taken
+every}` (`building` an integer, `side` one of `north`, `east`, `south`, `west`,
+`every` an integer from 1; anything else is rejected): before every tick `T` with `T mod every = every - 1` one unit is taken
 from that consumer input with `takeFromBuffer` (if it holds one), which paces a
 slow consumer in `"hold"` mode. The script builds the board, then the flow
 simulation runs for `ticks` ticks from the cold start. Result:
@@ -956,7 +1022,10 @@ per-building counters (and, for consumers and routes, what they hold at the
 end). The event log of the run is the vector's event log (`eventLogHash`).
 Vectors: `golden/flow-sim.json` (a long conduit, a splitter, a merger, a
 crossover with two resources, a dead end, a full-buffer backpressure case, and a
-merger with a direct input and a conduit input behind a slow consumer).
+merger with a direct input and a conduit input behind a slow consumer, a
+merger fed directly by two sources behind a slow consumer, and a merger fed
+directly by one source and by a conduit behind a slow consumer: the last two
+pin the "direct source is ready when its `countdown` is at most 1" rule).
 
 ### Mid-battle removal
 
@@ -1029,9 +1098,12 @@ of a unit's stats (health, damage, range, cooldowns) go through one function,
 `unitStats(side, def, strengthPercent)`. With `strengthPercent = P` above 0 it
 returns the definition with `health = mulPct(health, 100 + P)` and
 `damage = mulPct(damage, 100 + P)` (rounded down); everything else is
-unchanged. A spawn passes the side's current `unit_strength` bonus (see "In-battle
-ramp"; plus the side's `unitStrengthPercent` option, see "Side options"), and the unit starts with `hp = health` and `damage` of the result; units
-already on the field are never changed afterwards.
+unchanged. A scaled `health` above `MAX_HEALTH` or `damage` above `MAX_DAMAGE`
+is an error (`RangeError`), see "Content bounds". A spawn passes the side's
+current `unit_strength` bonus (see "In-battle ramp"; plus the side's
+`unitStrengthPercent` option, see "Side options"), and the unit starts with
+`hp = health` and `damage` of the result; units already on the field are never
+changed afterwards.
 
 ### State (plain JSON)
 
@@ -1278,7 +1350,8 @@ A unit's **targeting** comes from its definition: `core`, `infrastructure`
   enemy building other than the Core; terrain, the unit's own side's blocking
   buildings and the Core's own cells are impassable. Entering an open cell
   costs 1; entering a cell covered by an enemy building costs
-  `breachBaseCost + ceil(maxHealth / breachHealthPerCost)`, where `maxHealth` is
+  `breachBaseCost + ceil(maxHealth / breachHealthPerCost)` (at most 1.1e7: see
+  "Content bounds" for why every distance stays exact), where `maxHealth` is
   that building's **maximum** health (its tier's health from the content, the
   health it starts the battle with), never its current health (`content/sim.json`:
   10 and 10). The
@@ -1410,7 +1483,10 @@ board's. Schema: `schemas/sim-event.schema.json`.
 Input: `{ teamA, teamB, gapRows, ticks }` where each team is a `team-state-ops`
 script (`seed`, `partySize`, `ops`) and the two boards must have the same size;
 optionally `units`, a list of `{side, def, x, y}` (arena coordinates, open
-cells) placed at tick 0 in list order, and `restoreAt`, a list of tick counts
+cells) placed at tick 0 in list order, `buildingHealth`, a list of `{side,
+building, hp}` that sets the current health of those buildings (`building` 0 is
+the Core; `hp` from 1 to the building's maximum) before the battle starts, and
+`restoreAt`, a list of tick counts
 after which the state is saved as JSON and restored (the context rebuilt from
 the state alone) before the run continues; the result must not depend on it. A battle starts and runs for `ticks`
 ticks. Result: `{ tick, stateHash, events, sides }` with `stateHash` the hash of
@@ -1425,7 +1501,10 @@ unpowered, a gate that lets its owner out while holding the enemy, a funnel
 of a lake band and walls leaving one approach above eight turrets, an
 overclocker speeding up a source, an armory making later units stronger, an
 economy building reaching its cap, an overclocker destroyed mid-battle by a
-breach, and two walled Cores ending by Overload at tick 3700).
+breach, two walled Cores ending by Overload at tick 3700, and a soldier on a
+corner cell between a healthy and a damaged wall of equal maximum health that
+attacks the healthy one because the breach step prices buildings by maximum
+health).
 
 The team scripts of this kind and of `team-state-ops` may give an explicit
 `map` (in the map format) instead of `seed` and `partySize`; the vectors that
@@ -1815,7 +1894,10 @@ identically; with none the field is absent.
   `maxUnitStrengthPercent`; the base is not).
 - **`coreHealth`**: the side's Core starts with this health (and it is the
   Core's maximum health in the summary and the time-limit rule) instead of the
-  definition's.
+  definition's. It must be an integer from 1 to `MAX_HEALTH`, and
+  `unitStrengthPercent` must keep every unit type within the stat bounds even
+  with the largest ramp bonus added; otherwise the battle does not start (a
+  `RangeError` from `createArenaSim`), see "Content bounds".
 
 Everything else (unit behaviour, aggro, breach logic, Overload, end conditions
 and the defender tiebreak) is unchanged.
@@ -2101,8 +2183,9 @@ of it is fixed by the tick order above and uses no random numbers:
   order of the flow graph (ties by building ID, then channel); sources by
   building ID.
 - A merger arbitrates between all its ready inputs, conduit and direct alike,
-  with its round-robin pointer (step 0); splitters and sources with several
-  outputs alternate with theirs.
+  with its round-robin pointer (step 0), so when two direct sources are ready
+  on the same tick the pointer decides, not the building ID; splitters and
+  sources with several outputs alternate with theirs.
 - When two things want the same space in one tick, the earlier step wins
   (conduits, then routes, then sources), and within a step the earlier one in
   the orders above.

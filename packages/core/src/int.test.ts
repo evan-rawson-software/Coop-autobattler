@@ -8,6 +8,7 @@ import {
   modFloor,
   mulBps,
   mulDiv,
+  mulInt,
   mulPct,
 } from './int.js';
 
@@ -60,5 +61,15 @@ describe('int helpers', () => {
     expect(maxInt(2, 3)).toBe(3);
     expect(() => minInt(1.2, 3)).toThrow(RangeError);
     expect(() => maxInt(NaN, 3)).toThrow(RangeError);
+  });
+});
+
+describe('mulInt', () => {
+  test('multiplies exactly and throws past the safe range', () => {
+    expect(mulInt(3_000_000_000, 3)).toBe(9_000_000_000);
+    expect(mulInt(-4, 0)).toBe(0);
+    expect(Object.is(mulInt(-4, 0), 0)).toBe(true);
+    expect(() => mulInt(2 ** 40, 2 ** 20)).toThrow(RangeError);
+    expect(() => mulInt(1.5, 2)).toThrow(RangeError);
   });
 });
