@@ -191,7 +191,12 @@ function kindSprite(kind: string): string | null {
   const defs = content.buildings.list().filter((b) => b.kind === kind);
   const def =
     (kind === 'defense'
-      ? defs.find((b) => b.defenseType === 'turret' && set?.atlas.sprites[b.id])
+      ? defs.find(
+          (b) =>
+            b.kind === 'defense' &&
+            b.defenseType === 'turret' &&
+            set?.atlas.sprites[b.id],
+        )
       : undefined) ?? defs.find((b) => set?.atlas.sprites[b.id]);
   return def?.id ?? null;
 }
@@ -201,7 +206,12 @@ function wallSprite(): string | null {
   const set = spriteSet();
   const def = content.buildings
     .list()
-    .find((b) => b.defenseType === 'wall' && set?.atlas.sprites[b.id]);
+    .find(
+      (b) =>
+        b.kind === 'defense' &&
+        b.defenseType === 'wall' &&
+        set?.atlas.sprites[b.id],
+    );
   return def?.id ?? null;
 }
 

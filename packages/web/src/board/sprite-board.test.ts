@@ -172,7 +172,7 @@ describe('building draw calls carry the rotation', () => {
       test(`turret base ${turned ? 'turned' : 'own'} board at ${String(rotation)}`, () => {
         expect(turret).toBeDefined();
         expect(wall).toBeDefined();
-        const at = (def: typeof turret, x: number) => ({
+        const at = (def: unknown, x: number) => ({
           def,
           instance: { rotation, tier: 1, owner: 0 },
           rect: { x, y: 0, w: 1, h: 1 },
@@ -190,7 +190,7 @@ describe('building draw calls carry the rotation', () => {
           buildings: [at(turret, 0), at(wall, 1)],
         } as unknown as BoardScene;
         drawBoardLayer(ctx as never, board, theme, 0, 0, 16, 32, 16);
-        const want = ((rotation / 90 + (turned ? 2 : 0)) % 4) as number;
+        const want = (rotation / 90 + (turned ? 2 : 0)) % 4;
         const base = drawn.find((d) => d.name === 'bld_turret_base');
         expect(base?.opts?.rot ?? 0).toBe(want);
         // Walls keep their light direction.
