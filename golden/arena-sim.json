@@ -690,6 +690,180 @@
     }
   },
   {
+    "id": "arena-sim.sealed-base-restore",
+    "kind": "arena-sim",
+    "description": "A Core ringed by eight tier 1 walls and two soldiers walking in from the gap: the battle is saved and restored (JSON round trip) after 50, 95, 130 and 200 ticks (before and after the first wall takes damage, and after it falls), and ends exactly like an uninterrupted run (the breach field depends only on the saved state).",
+    "input": {
+      "teamA": {
+        "seed": 1,
+        "partySize": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 7,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 1,
+            "x": 5,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 2,
+            "x": 6,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 3,
+            "x": 5,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 4,
+            "x": 6,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 5,
+            "x": 4,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 6,
+            "x": 4,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 7,
+            "x": 7,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "id": 8,
+            "x": 7,
+            "y": 4,
+            "rotation": 0
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 400,
+      "restoreAt": [50, 95, 130, 200],
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 20,
+          "y": 20
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 15,
+          "y": 24
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 400,
+        "stateHash": "cd608357",
+        "events": 91,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": 500
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingsDestroyed": 1,
+            "coreHealth": 272
+          }
+        ]
+      },
+      "eventLogHash": "ca2d2a60"
+    }
+  },
+  {
     "id": "arena-sim.raiders-cut-splitter",
     "kind": "arena-sim",
     "description": "Three raiders (placed at tick 0) hunt the infrastructure of a base: its extractor and splitter fall, the splitter's conduits go with it and the barracks downstream starve.",

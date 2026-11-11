@@ -362,6 +362,12 @@ export interface ArenaContext {
   readonly turrets: Map<number, TurretInfo>;
   readonly ramps: Map<number, RampInfo>;
   readonly flowEvents: SimEvent[][];
+  /**
+   * `ref` -> the building's maximum health (its tier's health). The breach
+   * field is built from this, never from current health (CB-20), so the
+   * cached field is a pure function of which buildings exist.
+   */
+  readonly maxHealth: Int32Array;
   /** Lazily computed, dropped whenever a building is destroyed. */
   fields: (Field | undefined)[];
   breach: (Int32Array | undefined)[];
@@ -395,6 +401,22 @@ export function arenaOf(sim: ArenaSim, content: ArenaContent): Arena {
   return arena;
 }
 
+/**
+ * A building's maximum health: its tier's health (the Core is tier 1).
+ * This is the health it starts the battle with, apart from a Core health
+ * override in the side options.
+ */
+function maxHealthOf(
+  team: TeamState | undefined,
+  b: ArenaBuilding,
+  content: ArenaContent,
+): number {
+  const def = content.buildings.get(b.def);
+  const placed = team?.buildings.find((p) => p.id === b.id);
+  const tier = b.kind === 'core' ? 0 : (placed?.tier ?? 1) - 1;
+  return def?.tiers[tier]?.health ?? 0;
+}
+
 /** Derive the context for a state (new or restored). */
 export function createArenaContext(
   sim: ArenaSim,
@@ -410,6 +432,10 @@ export function createArenaContext(
     const i = healthAt.get(bkey(b.side, b.id));
     if (i === undefined) throw new Error('Arena: building without health.');
     healthIndex[b.ref] = i;
+  }
+  const maxHealth = new Int32Array(arena.buildings.length);
+  for (const b of arena.buildings) {
+    maxHealth[b.ref] = maxHealthOf(sim.teams[b.side], b, content);
   }
   const producers = new Map<number, ProducerInfo>();
   const turrets = new Map<number, TurretInfo>();
@@ -467,6 +493,7 @@ export function createArenaContext(
     arena,
     flows,
     healthIndex,
+    maxHealth,
     coreRemaining,
     producers,
     turrets,
@@ -511,10 +538,7 @@ export function createArenaSim(
   const health: HealthSim[] = [];
   const teams = [teamA, teamB];
   for (const b of arena.buildings) {
-    const def = content.buildings.get(b.def);
-    const placed = teams[b.side]?.buildings.find((p) => p.id === b.id);
-    const tier = b.kind === 'core' ? 0 : (placed?.tier ?? 1) - 1;
-    let hp = def?.tiers[tier]?.health ?? 0;
+    let hp = maxHealthOf(teams[b.side], b, content);
     const coreOverride =
       options.sideOptions?.[b.side === 0 ? 0 : 1]?.coreHealth;
     if (b.kind === 'core' && coreOverride !== undefined) hp = coreOverride;
@@ -568,10 +592,6 @@ export function createArenaSim(
 // ---------------------------------------------------------------------------
 // Fields
 
-function hpOf(sim: ArenaSim, ctx: ArenaContext, ref: number): number {
-  return sim.health[ctx.healthIndex[ref] ?? 0]?.hp ?? 0;
-}
-
 function fieldFor(
   ctx: ArenaContext,
   side: number,
@@ -586,13 +606,13 @@ function fieldFor(
   return f;
 }
 
-function breachFor(sim: ArenaSim, ctx: ArenaContext, side: number): Int32Array {
+function breachFor(ctx: ArenaContext, side: number): Int32Array {
   let f = ctx.breach[side];
   if (f === undefined) {
     f = computeBreach(
       ctx.arena,
       side,
-      (ref) => hpOf(sim, ctx, ref),
+      (ref) => ctx.maxHealth[ref] ?? 0,
       ctx.simConfig.breachBaseCost,
       ctx.simConfig.breachHealthPerCost,
     );
@@ -638,7 +658,6 @@ function defOf(ctx: ArenaContext, unit: UnitSim): UnitDef {
 // Spawning
 
 function spawnCell(
-  sim: ArenaSim,
   ctx: ArenaContext,
   side: number,
   producer: ArenaBuilding,
@@ -662,7 +681,7 @@ function spawnCell(
       let d = field.dist[k] ?? -1;
       if (d < 0) {
         cls = 1;
-        d = breachFor(sim, ctx, side)[k] ?? -1;
+        d = breachFor(ctx, side)[k] ?? -1;
         if (d < 0) {
           cls = 2;
           d = 0;
@@ -704,7 +723,7 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (unitDef === undefined) throw new Error(`Unknown unit "${info.unit}".`);
     const producer = ctx.arena.buildings[info.ref];
     if (producer === undefined) continue;
-    const k = spawnCell(sim, ctx, p.side, producer, unitDef);
+    const k = spawnCell(ctx, p.side, producer, unitDef);
     if (k < 0) continue; // no free cell: the spawn waits, progress is kept
     p.progress -= info.cost;
     const { width } = ctx.arena.geom;
@@ -1144,7 +1163,7 @@ function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
   }
 
   // No route in the normal field: breach (CB-20).
-  const bd = breachFor(sim, ctx, u.side);
+  const bd = breachFor(ctx, u.side);
   const here0 = bd[here] ?? -1;
   if (here0 < 0) return; // wait
   if (here0 === 0) {
@@ -1162,7 +1181,7 @@ function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
     u.side,
     bd,
     here,
-    (r) => hpOf(sim, ctx, r),
+    (r) => ctx.maxHealth[r] ?? 0,
     base,
     per,
   );

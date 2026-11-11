@@ -790,6 +790,108 @@ describe('breaching sealed bases (CB-20)', () => {
   });
 });
 
+describe('breach field is a pure function of the saved state (CB-20)', () => {
+  /** Side 1's Core ringed by eight tier 1 walls (every Core edge cell). */
+  function ringed(): TeamState {
+    const lab = new Lab(tiny());
+    lab.core(5, 3);
+    for (const [x, y] of [
+      [5, 2],
+      [6, 2],
+      [5, 5],
+      [6, 5],
+      [4, 3],
+      [4, 4],
+      [7, 3],
+      [7, 4],
+    ] as const) {
+      lab.put('bld_wall', x, y, 0, 1);
+    }
+    return lab.state;
+  }
+
+  function start(): ReturnType<typeof startArenaBattle> {
+    const b = startArenaBattle(coreOnly(), ringed(), GAP, content, simConfig);
+    spawnUnitForTest(b.sim, b.ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: 8,
+      y: 20,
+    });
+    spawnUnitForTest(b.sim, b.ctx, {
+      side: 0,
+      def: 'unit_soldier',
+      x: 3,
+      y: 24,
+    });
+    return b;
+  }
+
+  function restore(sim: ArenaSim): { sim: ArenaSim; ctx: ArenaContext } {
+    const copy = JSON.parse(JSON.stringify(sim)) as ArenaSim;
+    return { sim: copy, ctx: createArenaContext(copy, content, simConfig) };
+  }
+
+  function wallHealth(sim: ArenaSim): number[] {
+    return sim.health
+      .filter((h) => h.side === 1 && h.building > 0)
+      .map((h) => h.hp);
+  }
+
+  const TOTAL = 400;
+
+  test('restoring at any tick continues exactly like a straight run', () => {
+    // Reference run: every tick's hash, and when a wall first takes damage
+    // and first falls.
+    const ref = start();
+    const hashes: string[] = [hashJson(ref.sim)];
+    let damaged = -1;
+    let fallen = -1;
+    const full = wallHealth(ref.sim);
+    for (let t = 0; t < TOTAL; t++) {
+      stepArena(ref.sim, ref.ctx);
+      hashes.push(hashJson(ref.sim));
+      const hp = wallHealth(ref.sim);
+      if (damaged < 0 && hp.some((v, i) => v < (full[i] ?? 0))) damaged = t + 1;
+      if (fallen < 0 && hp.some((v) => v <= 0)) fallen = t + 1;
+    }
+    expect(damaged).toBeGreaterThan(0);
+    expect(fallen).toBeGreaterThan(damaged);
+    const ticks = new Set([
+      0,
+      1,
+      2,
+      10,
+      50,
+      95,
+      damaged - 1,
+      damaged,
+      damaged + 1,
+      fallen - 1,
+      fallen,
+      fallen + 1,
+    ]);
+    for (const at of [...ticks].sort((a, b) => a - b)) {
+      const a = start();
+      runArena(a.sim, a.ctx, at);
+      const r = restore(a.sim);
+      for (let t = at; t < TOTAL; t++) {
+        stepArena(r.sim, r.ctx);
+        expect(
+          hashJson(r.sim),
+          `restored at ${String(at)}, tick ${String(t + 1)}`,
+        ).toBe(hashes[t + 1]);
+      }
+    }
+  });
+
+  test('a wall is damaged but still standing for a while (the scenario exercises the rule)', () => {
+    const a = start();
+    runArena(a.sim, a.ctx, TOTAL);
+    expect(wallHealth(a.sim).some((v) => v > 0 && v < 100)).toBe(true);
+  });
+});
+
 describe('destruction', () => {
   function network() {
     const lab = new Lab(

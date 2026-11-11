@@ -1244,8 +1244,10 @@ A unit's **targeting** comes from its definition: `core`, `infrastructure`
   enemy building other than the Core; terrain, the unit's own side's blocking
   buildings and the Core's own cells are impassable. Entering an open cell
   costs 1; entering a cell covered by an enemy building costs
-  `breachBaseCost + ceil(health / breachHealthPerCost)` using that building's
-  health when the field is computed (`content/sim.json`: 10 and 10). The
+  `breachBaseCost + ceil(maxHealth / breachHealthPerCost)`, where `maxHealth` is
+  that building's **maximum** health (its tier's health from the content, the
+  health it starts the battle with), never its current health (`content/sim.json`:
+  10 and 10). The
   distance of a cell is the cheapest total cost of the cells entered on the way
   from it to a passable cell 4-adjacent to the Core (distance 0). A unit in
   breach mode takes the neighbour that minimises (cost of entering it +
@@ -1257,8 +1259,13 @@ A unit's **targeting** comes from its definition: `core`, `infrastructure`
   field takes over (fields are dropped after every destruction).
 - Fields are computed lazily, cached per (side, targeting) and per side for the
   breach field, and dropped whenever a building is destroyed. They never
-  depend on unit positions. (The breach field is not refreshed when health
-  merely falls.)
+  depend on unit positions. The breach field and the breach step (the choice
+  of the next cell) use maximum health only, so a damaged building is no
+  cheaper to breach than a healthy one, and both depend only on which
+  buildings are alive: the cache is invisible. Because of this a saved state
+  restored at any tick (the context is rebuilt from the state alone) continues
+  exactly like the original. (An implementation must not use current health
+  here: it would make results depend on when a field was first computed.)
 
 ### In-battle ramp (economy buildings)
 
@@ -1369,14 +1376,16 @@ board's. Schema: `schemas/sim-event.schema.json`.
 Input: `{ teamA, teamB, gapRows, ticks }` where each team is a `team-state-ops`
 script (`seed`, `partySize`, `ops`) and the two boards must have the same size;
 optionally `units`, a list of `{side, def, x, y}` (arena coordinates, open
-cells) placed at tick 0 in list order. A battle starts and runs for `ticks`
+cells) placed at tick 0 in list order, and `restoreAt`, a list of tick counts
+after which the state is saved as JSON and restored (the context rebuilt from
+the state alone) before the run continues; the result must not depend on it. A battle starts and runs for `ticks`
 ticks. Result: `{ tick, stateHash, events, sides }` with `stateHash` the hash of
 the final `ArenaSim`, `events` the number of events, and `sides` a list of two
 summaries `{spawned, alive, unitsDied, buildingsDestroyed, coreHealth}`
 (`buildingsDestroyed` does not count the Core; `coreHealth` is 0 when it was
 destroyed). The event log is the vector's event log (`eventLogHash`). Vectors:
 `golden/arena-sim.json` (a mirror match, a rush against an almost empty base, a
-sealed base that is breached at its weakest wall, raiders cutting a splitter,
+sealed base that is breached at its weakest wall, a ringed Core battle saved and restored four times, raiders cutting a splitter,
 three turrets killing a wave that crosses the front edge, the same turrets
 unpowered, a gate that lets its owner out while holding the enemy, a funnel
 of a lake band and walls leaving one approach above eight turrets, an
@@ -2096,7 +2105,7 @@ broken as follows:
   relative order of IDs inside a side is the same on both sides, a mirrored
   battle (same team, 180-degree rotated) stays exactly symmetric.
 - **Breach routes:** least total cost; equal-cost neighbours by tie key. The
-  cost of a building depends on its health when the breach field was computed.
+  cost of a building uses its maximum (tier) health, not its current health.
 
 ## Shops and gold
 
