@@ -29,6 +29,9 @@ export async function runRunSmoke({
       ),
     ).buildings.map((b) => [b.id, b.footprint]),
   );
+  const income = JSON.parse(
+    readFileSync(path.resolve(webDir, '../../content/economy.json'), 'utf8'),
+  ).baseIncomePerShop;
   const errorsAtStart = consoleErrors.length;
 
   const R = {
@@ -54,6 +57,11 @@ export async function runRunSmoke({
       w,
     );
 
+  const mark2 = (set, b, fps) => {
+    for (let dx = 0; dx < fps[b.def].width; dx++)
+      for (let dy = 0; dy < fps[b.def].height; dy++)
+        set.add(`${b.x + dx},${b.y + dy}`);
+  };
   const goMenu = async (query = '') => {
     await page.goto(`${baseUrl}#/${query}`);
     // A hash-only change does not reload; make sure the menu has mounted.
@@ -150,6 +158,282 @@ export async function runRunSmoke({
       if (!placed) skipped.add(item.id);
     }
     return (await B.team()).stash.length;
+  };
+
+  // The Workshop follow-up: each option names a building, where it is, its
+  // tiers and price, and is disabled with a reason when it cannot be paid.
+  // Buy an upgrade when one is affordable (gold drops by the shown price, the
+  // tier rises, the shop says so); otherwise skip.
+  const runWorkshop = async (goldBefore) => {
+    const opts = await page
+      .locator('#event-resolve .event-card[data-option]')
+      .evaluateAll((els) =>
+        els.map((e) => ({
+          id: e.dataset.option,
+          affordable: e.dataset.affordable === 'true',
+          text: e.innerText,
+          disabled: e.querySelector('[data-action="choose-option"]').disabled,
+        })),
+      );
+    const parsed = opts.map((o) => ({
+      ...o,
+      price: Number(/Costs (\d+) gold/.exec(o.text)?.[1]),
+      from: Number(/Tier (\d) → tier (\d)/.exec(o.text)?.[1]),
+      to: Number(/Tier (\d) → tier (\d)/.exec(o.text)?.[2]),
+      name: o.text.split('\n')[0].trim(),
+    }));
+    check(
+      parsed.length > 0 &&
+        parsed.every(
+          (o) =>
+            o.to === o.from + 1 &&
+            o.affordable === o.price <= goldBefore &&
+            o.disabled === !o.affordable,
+        ) &&
+        parsed
+          .filter((o) => !o.affordable)
+          .every((o) => /Not enough gold/.test(o.text)),
+      `Workshop: ${parsed.length} of your buildings listed with tiers and prices; unaffordable ones are disabled with the reason (gold ${goldBefore})`,
+    );
+    check(
+      (await page.locator('#event-resolve [data-option="skip"]').count()) === 1,
+      'Workshop: a Skip button is always there',
+    );
+    const pickOpt = parsed.find((o) => o.affordable);
+    if (pickOpt !== undefined) {
+      await page.click(
+        `#event-resolve [data-action="choose-option"][data-option="${pickOpt.id}"]`,
+      );
+    } else {
+      await page.click('#event-resolve [data-option="skip"]');
+    }
+    await waitStep('shop');
+    await page.waitForSelector('#shop-screen');
+    await settle();
+    const goldAfter = Number(
+      await page.locator('#gold').getAttribute('data-gold'),
+    );
+    const notice = await page.locator('#shop-notice').innerText();
+    if (pickOpt !== undefined) {
+      check(
+        goldAfter === goldBefore - pickOpt.price + income &&
+          new RegExp(
+            `Upgraded .+ to tier ${pickOpt.to} for ${pickOpt.price} gold`,
+          ).test(notice),
+        `Workshop: bought "${pickOpt.name}" tier ${pickOpt.from} -> ${pickOpt.to}: gold ${goldBefore} -> ${goldAfter} (price ${pickOpt.price} + ${income} income), shop says "${notice.replace(/\s+/g, ' ').trim()}"`,
+      );
+      await shot('run-8b-workshop-notice');
+      await page.click('.topbar-tabs button:has-text("Build")');
+      await page.waitForFunction(
+        () => window.__debug?.build?.step() === 'shop',
+      );
+      await settle();
+      const id = Number(pickOpt.id.slice(1));
+      const t = await B.team();
+      const b = [...t.buildings, ...t.stash].find((x) => x.id === id);
+      check(
+        b !== undefined && b.tier === pickOpt.to,
+        `Workshop: building ${id} is now tier ${b?.tier} (was ${pickOpt.from})`,
+      );
+      await page.click('.topbar-tabs button:has-text("Shop")');
+      await page.waitForSelector('#shop-screen');
+    } else {
+      check(
+        goldAfter === goldBefore + income && /skipped/.test(notice),
+        `Workshop: nothing affordable, skipped: gold ${goldBefore} -> ${goldAfter}, shop says "${notice.replace(/\s+/g, ' ').trim()}"`,
+      );
+    }
+  };
+
+  // Wall a Barracks in on the Build tab: Ready must be disabled on both tabs
+  // with the reason, the building must carry the warning; then open a way out.
+  const sealedScenario = async () => {
+    const dragPlace = async (def, x, y) => {
+      const before = (await B.team()).buildings.length;
+      const box = await page
+        .locator(`[data-stash-def="${def}"]`)
+        .first()
+        .boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      const p = await at(x, y);
+      await page.mouse.move(p.x, p.y, { steps: 6 });
+      await page.mouse.up();
+      await page.waitForFunction(
+        (n) => window.__debug.build.team().buildings.length > n,
+        before,
+        { timeout: 3000 },
+      );
+    };
+    const toStash = async (b) => {
+      const before = (await B.team()).stash.length;
+      const p = await at(b.x, b.y);
+      await page.mouse.click(p.x, p.y);
+      await page.click('[data-action="to-stash"]');
+      await page.waitForFunction(
+        (n) => window.__debug.build.team().stash.length > n,
+        before,
+        { timeout: 3000 },
+      );
+    };
+    const t = await B.team();
+    const pieces = [
+      t.buildings.find((b) => b.def === 'bld_barracks'),
+      ...t.buildings.filter((b) => b.def === 'bld_wall').slice(0, 3),
+      t.buildings.find((b) => b.def === 'bld_turret'),
+    ];
+    check(
+      pieces.every((b) => b !== undefined) && pieces.length === 5,
+      'sealed: the board has a Barracks, three walls and a turret to work with',
+    );
+    const pieceIds = new Set(pieces.map((b) => b.id));
+    // Cells that stay blocked: terrain, the Core, other buildings.
+    const blocked = new Set();
+    const mark = (x, y, w, h) => {
+      for (let dx = 0; dx < w; dx++)
+        for (let dy = 0; dy < h; dy++) blocked.add(`${x + dx},${y + dy}`);
+    };
+    mark(t.core.x, t.core.y, 2, 2);
+    for (const b of t.buildings)
+      if (!pieceIds.has(b.id))
+        mark(b.x, b.y, footprints[b.def].width, footprints[b.def].height);
+    const terrain = new Set(t.features.map((f) => `${f.x},${f.y}`));
+    const nodes = new Set(t.nodes.map((n) => `${n.x},${n.y}`));
+    const fp = footprints.bld_barracks;
+    // A spot near the top-right corner whose open neighbours fit the pieces.
+    let plan = null;
+    for (let by = 0; by < t.height - 2 && plan === null; by++) {
+      for (let bx = t.width - fp.width; bx >= 0 && plan === null; bx--) {
+        const cells = [];
+        for (let dx = 0; dx < fp.width; dx++)
+          for (let dy = 0; dy < fp.height; dy++) cells.push([bx + dx, by + dy]);
+        if (
+          cells.some(
+            ([x, y]) =>
+              x >= t.width ||
+              y >= t.height - 1 ||
+              blocked.has(`${x},${y}`) ||
+              terrain.has(`${x},${y}`) ||
+              nodes.has(`${x},${y}`),
+          )
+        )
+          continue;
+        const inside = new Set(cells.map(([x, y]) => `${x},${y}`));
+        const ring = new Set();
+        for (const [x, y] of cells)
+          for (const [dx, dy] of [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+          ]) {
+            const k = `${x + dx},${y + dy}`;
+            const [nx, ny] = [x + dx, y + dy];
+            if (
+              inside.has(k) ||
+              nx < 0 ||
+              ny < 0 ||
+              nx >= t.width ||
+              ny >= t.height
+            )
+              continue;
+            ring.add(k);
+          }
+        const open = [...ring].filter(
+          (k) => !blocked.has(k) && !terrain.has(k),
+        );
+        if (open.length <= 4 && open.every((k) => !nodes.has(k))) {
+          plan = { bx, by, open: open.map((k) => k.split(',').map(Number)) };
+        }
+      }
+    }
+    check(
+      plan !== null,
+      `sealed: a spot to wall in was found (${JSON.stringify(plan)})`,
+    );
+    for (const b of pieces) await toStash(b);
+    await dragPlace('bld_barracks', plan.bx, plan.by);
+    const barracksId = (await B.team()).buildings.find(
+      (b) => b.def === 'bld_barracks',
+    ).id;
+    const fillers = ['bld_wall', 'bld_wall', 'bld_wall', 'bld_turret'];
+    check(
+      (await page.evaluate(() => window.__debug.build.sealed())).length === 0 &&
+        !(await page.locator('#ready-button').isDisabled()),
+      'sealed: before the walls are up Ready is enabled',
+    );
+    for (const [i, [x, y]] of plan.open.entries()) {
+      await dragPlace(fillers[i], x, y);
+    }
+    await page.waitForFunction(() => window.__debug.build.sealed().length > 0);
+    await settle();
+    const sealedIds = await page.evaluate(() => window.__debug.build.sealed());
+    const reason = await page
+      .locator('[data-field="ready-blocked"]')
+      .innerText();
+    check(
+      sealedIds.length === 1 &&
+        sealedIds[0] === barracksId &&
+        (await page.locator('#ready-button').isDisabled()) &&
+        /Ready is blocked: Barracks \(column \d+, row \d+\) is walled in\. Its units cannot reach the front/.test(
+          reason,
+        ) &&
+        (await page.locator('#sealed-warning').count()) === 1,
+      `sealed: Ready is disabled on the Build tab with the reason ("${reason}"), and the warning line is shown`,
+    );
+    // The inspector explains it for the selected building.
+    const bp = await at(plan.bx, plan.by);
+    await page.mouse.click(bp.x, bp.y);
+    await page.waitForSelector('[data-field="sealed"]');
+    check(
+      /Walled in\. Its units cannot reach the front — open a path or add a gate\./.test(
+        await page.locator('[data-field="sealed"]').innerText(),
+      ),
+      'sealed: the inspector explains the sealed Barracks',
+    );
+    await shot('run-12-sealed-build');
+    // The same on the Shop tab.
+    await page.click('.topbar-tabs button:has-text("Shop")');
+    await page.waitForSelector('#shop-screen');
+    await settle();
+    const shopReason = await page
+      .locator('[data-field="ready-state"]')
+      .innerText();
+    check(
+      (await page.locator('#shop-ready').isDisabled()) &&
+        /Ready is blocked: Barracks/.test(shopReason),
+      `sealed: Ready is disabled on the Shop tab too ("${shopReason}")`,
+    );
+    await shot('run-13-sealed-shop');
+    // Open a way out: the turret goes to the stash and back on the front row.
+    await page.click('.topbar-tabs button:has-text("Build")');
+    await page.waitForFunction(() => window.__debug?.build?.step() === 'shop');
+    await settle();
+    const tt = await B.team();
+    const turret = tt.buildings.find((b) => b.def === 'bld_turret');
+    await toStash(turret);
+    await page.waitForFunction(
+      () => window.__debug.build.sealed().length === 0,
+    );
+    await settle();
+    check(
+      !(await page.locator('#ready-button').isDisabled()) &&
+        (await page.locator('#sealed-warning').count()) === 0,
+      'sealed: with a way out Ready is enabled again and the warning is gone',
+    );
+    const occupied = new Set(blocked);
+    for (const b of (await B.team()).buildings) mark2(occupied, b, footprints);
+    let safe = null;
+    for (let x = 1; x < t.width - 1 && safe === null; x++) {
+      const k = `${x},${t.height - 1}`;
+      if (!occupied.has(k) && !terrain.has(k) && !nodes.has(k)) safe = x;
+    }
+    await dragPlace('bld_turret', safe, t.height - 1);
+    check(
+      (await page.evaluate(() => window.__debug.build.sealed())).length === 0 &&
+        (await B.team()).stash.length === 0,
+      'sealed: the turret is back on the board, nothing is sealed and the stash is empty',
+    );
   };
 
   // ---------------------------------------------------------------------
@@ -358,12 +642,20 @@ export async function runRunSmoke({
       ).every((d) => d.trim().length > 20),
     'PvE choice: archetype names and plain-language descriptions (no ids)',
   );
-  const deadline = await page.locator('[data-field="deadline"]').innerText();
+  const overloadLines = await page
+    .locator('.pve-card [data-field="overload"]')
+    .allInnerTexts();
   check(
-    /Destroy the stronghold before Overload begins \(at \d+:\d\d\)/.test(
-      deadline,
-    ),
-    `PvE choice: the Overload deadline is stated ("${deadline}")`,
+    overloadLines.length === 3 &&
+      overloadLines.every((t) =>
+        /^Overload at 3:00 would (destroy (the stronghold's Core first \(at \d+:\d\d\) — outlasting it wins|your Core first at \d+:\d\d — break the stronghold before then|both Cores at \d+:\d\d)|not destroy either Core)/.test(
+          t.trim(),
+        ),
+      ) &&
+      !(await page.locator('#pve-choice').innerText()).includes(
+        'Destroy the stronghold before Overload',
+      ),
+    `PvE choice: every card states which Core Overload destroys first ("${overloadLines[0]}")`,
   );
   check(
     /no life lost/.test(await page.locator('.choice-banner').innerText()),
@@ -525,15 +817,24 @@ export async function runRunSmoke({
         !/mod_|bld_/.test(resolveText) &&
         (withFollow.type === 'shrine'
           ? /\+\d+%/.test(resolveText)
-          : /Becomes tier \d/.test(resolveText)),
+          : /Tier \d → tier \d/.test(resolveText) &&
+            /Costs \d+ gold/.test(resolveText) &&
+            /On the board at column \d+, row \d+|In your stash/.test(
+              resolveText,
+            )),
       `event follow-up (${withFollow.type}): ${nOpts} option(s) with their effects spelled out`,
     );
     await shot('run-8-event-follow-up');
     await reloadSame('the event follow-up');
     const goldBefore = (await R.state()).gold;
-    await page.click('#event-resolve [data-action="choose-option"]');
-    await waitStep('shop');
-    void goldBefore;
+    if (withFollow.type === 'workshop') {
+      await runWorkshop(goldBefore);
+    } else {
+      await page.click(
+        '#event-resolve [data-action="choose-option"]:not([disabled])',
+      );
+      await waitStep('shop');
+    }
   } else {
     check(
       true,
@@ -579,6 +880,7 @@ export async function runRunSmoke({
     'shop step: the Build tab shows on the same run',
   );
   await placeKit();
+  await sealedScenario();
   await page.click('.topbar-tabs button:has-text("Shop")');
   await page.waitForSelector('#shop-screen');
   await shot('run-9-shop');
@@ -660,10 +962,18 @@ export async function runRunSmoke({
         await page.waitForSelector('[data-action="choose-event"]');
         await page.click('[data-action="choose-event"]');
         break;
-      case 'event_resolve':
+      case 'event_resolve': {
         await page.waitForSelector('[data-action="choose-option"]');
-        await page.click('[data-action="choose-option"]');
+        const skip = page.locator(
+          '[data-action="choose-option"][data-option="skip"]',
+        );
+        await page.click(
+          (await skip.count()) > 0
+            ? '[data-action="choose-option"][data-option="skip"]'
+            : '[data-action="choose-option"]:not([disabled])',
+        );
         break;
+      }
       case 'shop':
         await page.waitForSelector('#shop-ready');
         await page.click('#shop-ready');
