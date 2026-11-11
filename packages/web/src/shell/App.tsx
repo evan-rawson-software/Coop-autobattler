@@ -12,8 +12,11 @@ export function App() {
   const def = screens.find((s) => s.id === screen) ?? screens[0];
   if (!def) return null;
   const Screen = def.component;
+  // The switcher is for the developer screens; the menu and the run have
+  // their own way around.
+  const isDev = screen !== 'menu' && screen !== 'run';
   const switcher =
-    screens.length < 2 ? null : (
+    screens.length < 2 || !isDev ? null : (
       <select
         class="screen-switcher"
         aria-label="Screen"
@@ -22,11 +25,13 @@ export function App() {
           screenStore.set(e.currentTarget.value);
         }}
       >
-        {screens.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.name}
-          </option>
-        ))}
+        {screens
+          .filter((s) => s.id !== 'run')
+          .map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
       </select>
     );
   return (

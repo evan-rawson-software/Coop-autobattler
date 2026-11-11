@@ -13,6 +13,7 @@
  */
 
 import {
+  hashJson,
   startBattle,
   CELL_UNITS,
   startPveBattle,
@@ -55,6 +56,14 @@ export interface BattleRecord {
   readonly tickStart: Int32Array;
   /** Milliseconds the up-front simulation took (measurement only). */
   readonly simMs: number;
+}
+
+/** Whether a simulated battle is the one the run state recorded. */
+export function replayMatches(
+  record: Pick<BattleRecord, 'eventLog'>,
+  storedHash: string,
+): boolean {
+  return hashJson(record.eventLog) === storedHash;
 }
 
 export type RecordResult =

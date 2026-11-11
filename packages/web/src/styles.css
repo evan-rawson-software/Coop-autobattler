@@ -453,3 +453,23 @@ ul.plain {
   padding: 1rem;
   color: var(--select);
 }
+
+/* Notes about where saves live (another tab upgrading, fallback storage). */
+.storage-notes {
+  position: fixed;
+  top: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  width: min(60rem, calc(100vw - 2rem));
+  padding: 0.4rem 0.8rem;
+  background: var(--surface-2);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  font-size: 0.9rem;
+}
+
+.storage-notes p {
+  margin: 0.2rem 0;
+}

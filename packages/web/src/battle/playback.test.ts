@@ -468,8 +468,8 @@ describe('result reasons', () => {
 });
 
 describe('sample rewards', () => {
-  const win = { winner: 0, reason: 'core_destroyed', endTick: 1 } as const;
-  const loss = { winner: 1, reason: 'core_destroyed', endTick: 1 } as const;
+  const win = true;
+  const loss = false;
   test('a lost PvE battle costs and pays nothing; a lost PvP battle costs a life', () => {
     expect(sampleReward('pve', loss)).toBe('No reward');
     expect(sampleReward('pve', loss)).not.toMatch(/life/);

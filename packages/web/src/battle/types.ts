@@ -1,7 +1,7 @@
 /** Shared types of the battle screen. */
 
 import type { ComponentChildren } from 'preact';
-import type { BattleInput, BattleResult, PveBattleInput } from '@game/core';
+import type { BattleInput, PveBattleInput } from '@game/core';
 
 /**
  * What to play: a team-versus-team battle (a ghost or a boss board) or a PvE
@@ -33,10 +33,23 @@ export interface BattleViewProps {
   readonly opponent: OpponentInfo;
   /** Top bar title, e.g. "Round 4 · PvP battle". */
   readonly title: string;
-  /** The reward / cost line of the summary, from the result. */
-  readonly reward: (result: BattleResult) => string;
-  /** The Ready button of the summary. */
-  readonly onReady: () => void;
+  /** The reward / cost line of the summary, from whether the party won. */
+  readonly reward: (won: boolean) => string;
+  /**
+   * What the run state says happened. When set, the banner and the reward
+   * come from `won`, never from the re-simulation, and the simulated event
+   * log must hash to `eventLogHash` or the battle is not played (a panel
+   * with the stored result is shown instead).
+   */
+  readonly stored?: {
+    readonly won: boolean;
+    readonly eventLogHash: string;
+  };
+  /**
+   * The Ready button of the summary. Returns whether Ready was accepted; when
+   * it was not, the button is available again.
+   */
+  readonly onReady: () => Promise<boolean>;
   /**
    * Resume at this tick (the battle is re-simulated to it). Playback starts
    * revealed when above 0. Read once per battle, when `battle` is simulated:

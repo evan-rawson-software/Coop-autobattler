@@ -10,6 +10,7 @@ import type { RunState } from '@game/session';
 import { content } from '../content.js';
 import { Panel } from '../shell/AppShell.js';
 import type { BuildController, Model, Tool } from './build-controller.js';
+import { READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { simConfig } from './setup.js';
 import {
   buildingName,
@@ -58,8 +59,11 @@ export function StashPanel(props: {
   team: TeamState;
   model: Model;
   ctl: BuildController;
+  /** The player is Ready: no board changes until Unready. */
+  locked?: boolean;
 }) {
   const { team, model, ctl } = props;
+  const locked = props.locked === true;
   const groups = groupStash(team);
   const held = model.ui.held;
   return (
@@ -81,13 +85,16 @@ export function StashPanel(props: {
                   data-stash-def={g.def}
                   data-stash-tier={g.tier}
                   aria-pressed={active}
+                  disabled={locked}
                   title={
-                    content.presentation.get(g.def) === undefined
-                      ? name
-                      : formatText(
-                          content.presentation.get(g.def)?.description ?? '',
-                          content.resources,
-                        )
+                    locked
+                      ? READY_LOCK_TEXT
+                      : content.presentation.get(g.def) === undefined
+                        ? name
+                        : formatText(
+                            content.presentation.get(g.def)?.description ?? '',
+                            content.resources,
+                          )
                   }
                   onPointerDown={(e) => {
                     if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -128,8 +135,13 @@ export function StashPanel(props: {
 // ---------------------------------------------------------------------------
 // Tools
 
-export function ToolsPanel(props: { model: Model; ctl: BuildController }) {
+export function ToolsPanel(props: {
+  model: Model;
+  ctl: BuildController;
+  locked?: boolean;
+}) {
   const { model, ctl } = props;
+  const locked = props.locked === true;
   const { ui, view } = model;
   const tool = (id: Tool, label: string, key: string) => (
     <button
@@ -137,7 +149,8 @@ export function ToolsPanel(props: { model: Model; ctl: BuildController }) {
       class={ui.tool === id ? 'tool active' : 'tool'}
       data-tool={id}
       aria-pressed={ui.tool === id}
-      title={`${label} (${key})`}
+      disabled={locked && id !== 'select'}
+      title={locked && id !== 'select' ? READY_LOCK_TEXT : `${label} (${key})`}
       onClick={() => {
         ctl.setTool(id);
       }}
@@ -154,6 +167,7 @@ export function ToolsPanel(props: { model: Model; ctl: BuildController }) {
         <button
           type="button"
           data-action="rotate"
+          disabled={locked}
           title="Rotate (R). Rotating detaches the building's conduits."
           onClick={() => void ctl.rotate()}
         >
@@ -162,7 +176,7 @@ export function ToolsPanel(props: { model: Model; ctl: BuildController }) {
         <button
           type="button"
           data-action="to-stash"
-          disabled={ui.selection?.kind !== 'building'}
+          disabled={locked || ui.selection?.kind !== 'building'}
           onClick={() => void ctl.returnSelected()}
         >
           To stash
@@ -205,6 +219,8 @@ export function InspectorPanel(props: {
   model: Model;
   dry: DryRunResult | null;
   ctl: BuildController;
+  /** Ids of the unit producers with no route to the front row. */
+  sealed?: readonly number[];
 }) {
   const { run, model, dry, ctl } = props;
   const team = run.team;
@@ -283,6 +299,11 @@ export function InspectorPanel(props: {
               {humanize(def.kind)} · tier {b.tier} · bought by {owner}
             </span>
           </h3>
+          {props.sealed?.includes(b.id) === true ? (
+            <p class="notice sealed-note" data-field="sealed" role="alert">
+              Walled in. {SEALED_HINT}
+            </p>
+          ) : null}
           <p class="muted insp-desc">
             {entry === undefined
               ? ''
@@ -582,11 +603,16 @@ export function DryRunTable(props: {
 // ---------------------------------------------------------------------------
 // Party and ready
 
-export function PartyPanel(props: { run: RunState; ctl: BuildController }) {
+export function PartyPanel(props: {
+  run: RunState;
+  ctl: BuildController;
+  gate?: Gate | null;
+}) {
   const { run, ctl } = props;
   const me = run.perPlayer[0];
   const ready = me?.ready === true;
   const readyCount = run.perPlayer.filter((p) => p.ready).length;
+  const block = props.gate?.readyBlock ?? null;
   return (
     <Panel title="Party · solo" id="panel-party">
       <div class="party-row">
@@ -603,10 +629,21 @@ export function PartyPanel(props: { run: RunState; ctl: BuildController }) {
         class={ready ? 'ready-btn on' : 'ready-btn'}
         id="ready-button"
         data-action="ready"
+        disabled={block !== null}
+        title={block ?? undefined}
         onClick={() => void ctl.toggleReady()}
       >
         {ready ? 'Unready' : 'Ready'}
       </button>
+      {block !== null ? (
+        <p class="error" data-field="ready-blocked" role="alert">
+          {block}
+        </p>
+      ) : ready ? (
+        <p class="muted" data-field="ready-locked">
+          {READY_LOCK_TEXT}
+        </p>
+      ) : null}
     </Panel>
   );
 }

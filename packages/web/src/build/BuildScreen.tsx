@@ -19,9 +19,9 @@ import type { Selection } from '../board/render.js';
 import { content } from '../content.js';
 import { registerDebug } from '../debug-hook.js';
 import { NotSavedNote, RestartButton } from '../run/RunGate.js';
-import { type ShopRun } from '../run/shop-run.js';
+import type { RunHandle } from '../run/handle.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
-import { onStepTab, stepTabs } from '../shop/tabs.js';
+import { BUILD_TAB_SCREEN, onStepTab, stepTabs } from '../shop/tabs.js';
 import { readyLabel } from '../shop/view-model.js';
 import './build.css';
 import { BuildController } from './build-controller.js';
@@ -35,7 +35,8 @@ import {
   StashPanel,
   ToolsPanel,
 } from './panels.js';
-import { isEditStep } from './session.js';
+import { gateFor, READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
+import { ME, isEditStep } from './session.js';
 import { DEFAULT_SEED, simConfig } from './setup.js';
 import { layoutHash } from './undo.js';
 import {
@@ -68,7 +69,7 @@ export function BuildScreen() {
   return <BuildView shared={undefined} />;
 }
 
-export function BuildView(props: { shared: ShopRun | undefined }) {
+export function BuildView(props: { shared: RunHandle | undefined }) {
   const shared = props.shared;
   const model = useStore(ctl.model);
   const { ui, view } = model;
@@ -151,9 +152,22 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
     [team, step, flow],
   );
 
+  // What the session allows now: Ready lock and sealed unit producers. Only
+  // on the shared run (the dev route has no rules deps).
+  const gate: Gate | null = useMemo(
+    () =>
+      shared === undefined || run === null || !isEditStep(step)
+        ? null
+        : gateFor(run, ME, shared.deps, content),
+    [run, step, shared],
+  );
+  const sealedIds = gate?.sealed.ids ?? [];
+  const sealedKey = sealedIds.join(',');
+
   // Latest data for the overlay drawer and the debug hook.
-  const data = useRef({ ui, team, step, flow, paths });
-  data.current = { ui, team, step, flow, paths };
+  const data = useRef({ ui, team, step, flow, paths, sealed: sealedIds });
+  data.current = { ui, team, step, flow, paths, sealed: sealedIds };
+  const overlayKey = useMemo(() => ({ ui, sealedKey }), [ui, sealedKey]);
 
   const drawOverlay = useRef(
     (ctx: CanvasRenderingContext2D, o: OverlayContext) => {
@@ -165,6 +179,7 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
         step: d.step,
         flow: d.flow,
         paths: d.paths,
+        sealed: d.sealed,
         legalCore: ctl.legalCorePositions,
         content,
       });
@@ -245,6 +260,7 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
                 (p) => ({ id: p.id, kind: p.kind, text: p.text }),
               ),
         legalCore: () => [...ctl.legalCorePositions],
+        sealed: () => [...data.current.sealed],
         enemyPathCount: () => data.current.paths?.length ?? 0,
         dry: () => data.current.flow?.dry ?? null,
       },
@@ -324,8 +340,11 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
     </span>
   );
 
+  // The first Build (before the first battle) has no shop to go with it.
   const tabs = shared
-    ? stepTabs()
+    ? step === 'build'
+      ? [{ id: BUILD_TAB_SCREEN, label: 'Build' }]
+      : stepTabs()
     : [
         { id: 'shop', label: 'Shop', disabled: true, hint: 'Coming soon' },
         { id: 'build', label: 'Build' },
@@ -381,7 +400,7 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
             frontLabel="FRONT EDGE · enemy units enter here"
             cursor={cursor}
             drawOverlay={drawOverlay.current}
-            overlayKey={ui}
+            overlayKey={overlayKey}
             animate={ui.overlays.flow}
             onHover={(hit) => {
               ctl.hover(hit === null ? null : { x: hit.x, y: hit.y });
@@ -407,6 +426,17 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
             />
           ) : null}
         </div>
+        {gate?.sealed.reason == null ? null : (
+          <div class="status-line error" id="sealed-warning" role="alert">
+            <strong>{gate.sealed.labels.join(', ')}</strong> — {SEALED_HINT}{' '}
+            Ready is disabled until a route to the front is open.
+          </div>
+        )}
+        {gate?.ready === true ? (
+          <div class="status-line info" id="ready-lock" role="status">
+            {READY_LOCK_TEXT}
+          </div>
+        ) : null}
         <div
           class={`status-line ${ui.status.kind}`}
           id="status-line"
@@ -446,8 +476,13 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
     run === null || team === null ? null : (
       <>
         <div class="dock-col">
-          <StashPanel team={team} model={model} ctl={ctl} />
-          <ToolsPanel model={model} ctl={ctl} />
+          <StashPanel
+            team={team}
+            model={model}
+            ctl={ctl}
+            locked={gate?.ready === true}
+          />
+          <ToolsPanel model={model} ctl={ctl} locked={gate?.ready === true} />
         </div>
         <div class="dock-col">
           <InspectorPanel
@@ -455,6 +490,7 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
             model={model}
             dry={flow?.dry ?? null}
             ctl={ctl}
+            sealed={sealedIds}
           />
         </div>
         <div class="dock-col">
@@ -462,7 +498,7 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
           <ProblemsPanel problems={problems} onPick={onPick} />
         </div>
         <div class="dock-col">
-          <PartyPanel run={run} ctl={ctl} />
+          <PartyPanel run={run} ctl={ctl} gate={gate} />
         </div>
       </>
     );
@@ -470,7 +506,9 @@ export function BuildView(props: { shared: ShopRun | undefined }) {
   return (
     <AppShell
       title={
-        run === null ? 'Build' : `Round ${String(run.round)} · Shop + Build`
+        run === null
+          ? 'Build'
+          : `Round ${String(run.round)} · ${step === 'build' ? 'Build' : 'Shop + Build'}`
       }
       tabs={tabs}
       activeTab={shared ? 'shop-build' : 'build'}

@@ -54,6 +54,8 @@ export interface BoardViewProps {
   readonly own: TeamState;
   /** A second board drawn above ours, turned to face it. */
   readonly enemy?: TeamState | null;
+  /** Show the zoom / fit buttons over the board (default true). */
+  readonly controls?: boolean;
   /** Height in cells of the empty strip between the boards. */
   readonly neutralHeight?: number;
   /** Terrain of the neutral strip (battle screen); hidden until revealed. */
@@ -387,7 +389,9 @@ export function BoardView(props: BoardViewProps) {
           if (e.pointerType === 'mouse') setHover(null);
         }}
       />
-      <CameraControls controller={controller} />
+      {props.controls === false ? null : (
+        <CameraControls controller={controller} />
+      )}
     </div>
   );
 }
