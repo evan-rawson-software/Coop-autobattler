@@ -17,32 +17,31 @@ const text = (cs: readonly Cell[]): string =>
   cs.map((c) => `${String(c.x)},${String(c.y)}`).join(' ');
 
 describe('enemy path segments (pure)', () => {
-  test('adjacency is 4-adjacency', () => {
+  test('adjacency is 8-adjacency: an edge or a corner', () => {
     expect(areAdjacent({ x: 1, y: 1 }, { x: 1, y: 2 })).toBe(true);
-    expect(areAdjacent({ x: 1, y: 1 }, { x: 2, y: 2 })).toBe(false);
+    expect(areAdjacent({ x: 1, y: 1 }, { x: 2, y: 2 })).toBe(true);
+    expect(areAdjacent({ x: 1, y: 1 }, { x: 3, y: 2 })).toBe(false);
     expect(areAdjacent({ x: 1, y: 1 }, { x: 1, y: 1 })).toBe(false);
   });
 
   test('a contiguous path is one segment; an empty path none', () => {
-    const p = cells('5,15 5,14 5,13 4,13');
-    expect(pathSegments(p).map(text)).toEqual(['5,15 5,14 5,13 4,13']);
+    const p = cells('5,15 5,14 5,13 4,12');
+    expect(pathSegments(p).map(text)).toEqual(['5,15 5,14 5,13 4,12']);
     expect(pathStubs(p, [])).toEqual([]);
     expect(pathSegments([])).toEqual([]);
   });
 
   test('the detour layout of defense.test.ts (3,15 then 10,15) splits in two', () => {
     // From the "approach cells" test: the walk leaves the board after 3,15
-    // (row 16 is off-board) and re-enters at 10,15.
-    const p = cells('3,15 10,15 10,14 10,13 9,13 8,13');
+    // (row 16 is off-board) and re-enters at 7,15.
+    const p = cells('3,15 7,15 8,15 9,15 10,15 10,14');
     expect(pathSegments(p).map(text)).toEqual([
       '3,15',
-      '10,15 10,14 10,13 9,13 8,13',
+      '7,15 8,15 9,15 10,15 10,14',
     ]);
-    expect(
-      pathStubs(p, cells('3,16 4,16 5,16 6,16 7,16 8,16 9,16 10,16')),
-    ).toEqual([
+    expect(pathStubs(p, cells('4,16 5,16 6,16'))).toEqual([
       { cell: { x: 3, y: 15 }, kind: 'exit' },
-      { cell: { x: 10, y: 15 }, kind: 'reentry' },
+      { cell: { x: 7, y: 15 }, kind: 'reentry' },
     ]);
   });
 

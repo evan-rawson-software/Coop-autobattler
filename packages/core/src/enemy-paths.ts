@@ -3,6 +3,9 @@
  * Core) would take from each front-row entry cell to a board's Core. It runs the
  * same field and breach code as the battle simulation (`computeField`,
  * `computeBreach`, `fieldStep`, `breachStep`); there is no second pathfinder.
+ * The field has 8 directions (issue #82), so a route may step diagonally; a
+ * unit steers by the direction of each step and keeps its offset in the cell,
+ * so its trajectory stays within a cell of the route.
  * See docs/rules-reference.md, "Enemy-path preview".
  */
 
