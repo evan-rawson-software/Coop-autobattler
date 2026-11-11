@@ -204,8 +204,9 @@ export function buildingSpriteRot(
 
 /**
  * Tier pips for tier 2 and 3 (tier 1 has none): a small cluster of gold dots
- * in the top-left corner of the building, inside the trim bracket. Ports sit
- * in the middle of a side, so a corner never covers one.
+ * in the top-left of the building, inside the trim bracket: two across the
+ * top and the third below the first, so it sits on the left edge towards the
+ * middle. Placement and size are a pending design decision (#85).
  */
 function drawTierPips(
   lc: CanvasRenderingContext2D,
