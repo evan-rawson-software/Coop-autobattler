@@ -3388,6 +3388,36 @@ the shared Steam pool (identities, anti-tamper, abuse) are tracked in
 issue #79. The ghost database moved to version 2 for this change; the upgrade
 empties the local pool, which refills as runs are played.
 
+### Bundled ghosts
+
+A build ships a fixed file of ghosts (`packages/web/src/run/bundled-ghosts.json`)
+so a new install does not meet only bosses (MM-12). They are taken by the
+scripted bot with the pool on: `pnpm sim ghosts` (alias `pnpm ghosts:update`)
+plays four strategies on three seeds for party sizes 1 to 4, up to round 6.
+Each run fights the ghosts of the earlier runs of its bucket (the generated
+boss where none exist yet, which is all a party of three or four survives
+against for five rounds). The first four snapshots per bucket (party size,
+round) are kept, seeds before strategies, so they spread over the strategies.
+Owner ids are `bundled-<strategy>` and labels `Bundled <strategy> bot`. The
+output is deterministic, every snapshot is checked with `validateGhostSnapshot`
+and the selection-time shape and size bounds before it is written, and a test
+fails when the committed file differs from a new run (a sim or content change
+needs `pnpm ghosts:update` and a commit).
+
+In the web app the file is a second, read-only source behind the same store
+interface (`layerGhostStores`). It loads on the first read of the pool (the
+shop before a PvP battle), as its own chunk. A file that is missing, invalid
+or made for another game version (`major.minor`) is ignored: the pool is then
+the local one. `save` and "Clear ghost pool" act on the local pool only, and
+the per-owner cap and eviction never see a bundled row.
+
+Candidate order. A listing is the union of the local rows and the bundled rows
+of the bucket, one row per `(owner id, run id)` (a local row wins), in the
+canonical order `(owner id, run id)`, cut at 64 rows. It depends only on the
+contents of the two sources. The selection puts the eligible rows in the order
+of `hashJson([runId, round, key])` and logs only the draw, so reload and replay
+never read the pool: the logged opponent is replayed as it was.
+
 ### Fallback
 
 With no eligible valid snapshot, `pvpOpponent` is `{ round, kind: 'boss',
