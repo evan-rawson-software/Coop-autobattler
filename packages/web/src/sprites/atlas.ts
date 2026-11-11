@@ -1,15 +1,22 @@
 /**
- * The sprite atlas (assets/sprites/atlas.json) and sheets, plus the few
- * drawing helpers the preview needs. Asset URLs come from Vite imports, so
- * they follow the configured base path (GitHub Pages) without extra work.
+ * The shared sprite module: loads the atlas (assets/sprites/atlas.json) and
+ * the sheets once, lazily, and draws from them. Nothing here is imported into
+ * the first paint's work: the JSON and the PNGs are separate assets fetched on
+ * demand through `loadSprites()`, and every drawing helper returns quietly
+ * (false) until they have arrived, so callers keep a flat fallback.
+ *
+ * Asset URLs come from Vite `?url` imports, so they follow the configured
+ * base path (GitHub Pages) without extra work.
  */
 
-import atlasJson from '../../../../assets/sprites/atlas.json';
+import atlasUrl from '../../../../assets/sprites/atlas.json?url';
 import buildingsUrl from '../../../../assets/sprites/buildings.png?url';
 import effectsUrl from '../../../../assets/sprites/effects.png?url';
 import tilesUrl from '../../../../assets/sprites/tiles.png?url';
 import uiUrl from '../../../../assets/sprites/ui.png?url';
 import unitsUrl from '../../../../assets/sprites/units.png?url';
+
+export { BLOB_MASKS, blobFrame, blobMask, normalizeMask } from './autotile.js';
 
 export interface AtlasSprite {
   sheet: string;
@@ -47,7 +54,18 @@ export interface Atlas {
   planned: string[];
 }
 
-export const atlas = atlasJson as unknown as Atlas;
+export interface Sheets {
+  images: Record<string, HTMLImageElement>;
+  loaded: number;
+  failed: string[];
+}
+
+export interface SpriteSet {
+  atlas: Atlas;
+  sheets: Sheets;
+}
+
+export type SpritesState = 'idle' | 'loading' | 'ready' | 'failed';
 
 const SHEET_URLS: Record<string, string> = {
   tiles: tilesUrl,
@@ -57,41 +75,116 @@ const SHEET_URLS: Record<string, string> = {
   ui: uiUrl,
 };
 
-export interface Sheets {
-  images: Record<string, HTMLImageElement>;
-  loaded: number;
-  failed: string[];
+let state: SpritesState = 'idle';
+let current: SpriteSet | null = null;
+let shared: Promise<SpriteSet | null> | null = null;
+const listeners = new Set<() => void>();
+
+/** Counters the smoke script reads through the debug hook. */
+export const spriteStats = { drawn: 0 };
+
+export function spritesState(): SpritesState {
+  return state;
 }
 
+/** The loaded atlas and sheets, or null until they have arrived (or failed). */
+export function spriteSet(): SpriteSet | null {
+  return current;
+}
+
+/** The atlas; throws before it has loaded (callers check `spriteSet()`). */
+export function getAtlas(): Atlas {
+  if (!current) throw new Error('The sprite atlas is not loaded yet.');
+  return current.atlas;
+}
+
+/** Call `cb` whenever the load state changes. Returns the unsubscribe. */
+export function onSpritesChange(cb: () => void): () => void {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
+}
+
+function setState(next: SpritesState): void {
+  state = next;
+  for (const cb of [...listeners]) cb();
+}
+
+function loadImage(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      resolve(img);
+    };
+    img.onerror = () => {
+      resolve(null);
+    };
+    img.src = url;
+  });
+}
+
+async function fetchAtlas(): Promise<Atlas | null> {
+  try {
+    const res = await fetch(atlasUrl);
+    if (!res.ok) return null;
+    return (await res.json()) as Atlas;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Start loading (once; later calls share the same promise). Resolves with the
+ * sprites, or null when the atlas or a sheet the board needs failed.
+ */
+export function loadSprites(): Promise<SpriteSet | null> {
+  if (shared) return shared;
+  setState('loading');
+  shared = (async () => {
+    const names = Object.keys(SHEET_URLS);
+    const [atlas, imgs] = await Promise.all([
+      fetchAtlas(),
+      Promise.all(names.map((n) => loadImage(SHEET_URLS[n] ?? ''))),
+    ]);
+    const images: Record<string, HTMLImageElement> = {};
+    const failed: string[] = [];
+    names.forEach((n, i) => {
+      const img = imgs[i];
+      if (img) images[n] = img;
+      else failed.push(n);
+    });
+    if (!atlas || !images['tiles'] || !images['buildings']) {
+      setState('failed');
+      return null;
+    }
+    current = {
+      atlas,
+      sheets: { images, loaded: names.length - failed.length, failed },
+    };
+    setState('ready');
+    return current;
+  })();
+  return shared;
+}
+
+/** Old name used by the preview page: the sheets once everything loaded. */
 export function loadSheets(): Promise<Sheets> {
-  const names = Object.keys(SHEET_URLS);
-  const images: Record<string, HTMLImageElement> = {};
-  const failed: string[] = [];
-  let loaded = 0;
-  return Promise.all(
-    names.map(
-      (name) =>
-        new Promise<void>((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            loaded++;
-            images[name] = img;
-            resolve();
-          };
-          img.onerror = () => {
-            failed.push(name);
-            resolve();
-          };
-          img.src = SHEET_URLS[name] ?? '';
-        }),
-    ),
-  ).then(() => ({ images, loaded, failed }));
+  return loadSprites().then(
+    (s) =>
+      s?.sheets ?? { images: {}, loaded: 0, failed: Object.keys(SHEET_URLS) },
+  );
 }
 
 export function spriteOf(name: string): AtlasSprite {
-  const s = atlas.sprites[name];
+  const s = current?.atlas.sprites[name];
   if (!s) throw new Error(`no sprite named ${name}`);
   return s;
+}
+
+/** The sprite if the atlas has loaded and knows the name. */
+export function findSprite(name: string): AtlasSprite | undefined {
+  return current?.atlas.sprites[name];
 }
 
 /** Top-left of frame `f` of a sprite on its sheet. */
@@ -100,50 +193,78 @@ export function frameOrigin(sp: AtlasSprite, f: number): [number, number] {
   return [sp.x + (f % cols) * sp.w, sp.y + Math.floor(f / cols) * sp.h];
 }
 
-const BITS = { N: 1, NE: 2, E: 4, SE: 8, S: 16, SW: 32, W: 64, NW: 128 };
-
-/**
- * Frame index of a blob autotile for an 8-bit neighbour mask (N1 NE2 E4 SE8
- * S16 SW32 W64 NW128). A corner bit counts only with both of its sides.
- */
-export function blobFrame(mask: number): number {
-  let m = mask & 255;
-  if (!(m & BITS.N && m & BITS.E)) m &= ~BITS.NE;
-  if (!(m & BITS.S && m & BITS.E)) m &= ~BITS.SE;
-  if (!(m & BITS.S && m & BITS.W)) m &= ~BITS.SW;
-  if (!(m & BITS.N && m & BITS.W)) m &= ~BITS.NW;
-  return atlas.autotile.blob47.masks.indexOf(m);
+/** The frame of an animated sprite at `timeMs` (frame 0 when static). */
+export function animFrame(sp: AtlasSprite, timeMs: number): number {
+  if (sp.fps <= 0 || sp.frames <= 1) return 0;
+  return Math.floor((timeMs / 1000) * sp.fps) % sp.frames;
 }
 
 export type Ramp = readonly string[];
 
+// ---------------------------------------------------------------------------
+// Tinting: swap the three neutral greys for a ramp, once per variant, in an
+// offscreen canvas that is cached. Never any pixel work per frame.
+
+/** Cache key of one tinted frame. */
+export function tintKey(name: string, frame: number, ramp: Ramp): string {
+  return `${name}#${String(frame)}#${ramp.join(',')}`;
+}
+
+/** Look `key` up in `cache`, making and storing the value on a miss. */
+export function memo<V>(cache: Map<string, V>, key: string, make: () => V): V {
+  const hit = cache.get(key);
+  if (hit !== undefined) return hit;
+  const v = make();
+  cache.set(key, v);
+  return v;
+}
+
 const tintCache = new Map<string, HTMLCanvasElement>();
+const cropCache = new Map<string, HTMLCanvasElement>();
+
+/** Number of cached tinted frames (for tests and the debug hook). */
+export function tintCacheSize(): number {
+  return tintCache.size;
+}
 
 function rgbOf(hex: string): number {
   return parseInt(hex.slice(1), 16);
 }
 
-/** One frame with the neutral tint ramp swapped for `ramp` (cached). */
-function tintedFrame(
-  sheets: Sheets,
+function newCanvas(w: number, h: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  return c;
+}
+
+/** One frame cut out of its sheet, optionally tinted (cached). */
+export function frameCanvas(
+  set: SpriteSet,
   name: string,
   frame: number,
-  ramp: Ramp,
-): HTMLCanvasElement {
-  const key = `${name}#${String(frame)}#${ramp.join(',')}`;
-  const hit = tintCache.get(key);
-  if (hit) return hit;
-  const sp = spriteOf(name);
-  const c = document.createElement('canvas');
-  c.width = sp.w;
-  c.height = sp.h;
-  const ctx = c.getContext('2d');
-  const img = sheets.images[sp.sheet];
-  if (ctx && img) {
-    const [ox, oy] = frameOrigin(sp, frame);
+  ramp?: Ramp,
+): HTMLCanvasElement | null {
+  const sp = set.atlas.sprites[name];
+  const img = sp ? set.sheets.images[sp.sheet] : undefined;
+  if (!sp || !img) return null;
+  const f = ((frame % sp.frames) + sp.frames) % sp.frames;
+  if (!ramp) {
+    return memo(cropCache, `${name}#${String(f)}`, () => {
+      const c = newCanvas(sp.w, sp.h);
+      const [ox, oy] = frameOrigin(sp, f);
+      c.getContext('2d')?.drawImage(img, ox, oy, sp.w, sp.h, 0, 0, sp.w, sp.h);
+      return c;
+    });
+  }
+  return memo(tintCache, tintKey(name, f, ramp), () => {
+    const c = newCanvas(sp.w, sp.h);
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return c;
+    const [ox, oy] = frameOrigin(sp, f);
     ctx.drawImage(img, ox, oy, sp.w, sp.h, 0, 0, sp.w, sp.h);
     const data = ctx.getImageData(0, 0, sp.w, sp.h);
-    const from = atlas.tint.neutral.map(rgbOf);
+    const from = set.atlas.tint.neutral.map(rgbOf);
     const to = ramp.map(rgbOf);
     const px = data.data;
     for (let i = 0; i < px.length; i += 4) {
@@ -158,23 +279,74 @@ function tintedFrame(
       }
     }
     ctx.putImageData(data, 0, 0);
-  }
-  tintCache.set(key, c);
-  return c;
+    return c;
+  });
 }
 
 export interface DrawOpts {
+  /** Frame index (default 0; wrapped). */
+  frame?: number;
   /** Swap the tint ramp (needs a tintable sprite). */
   ramp?: Ramp;
   /** Quarter turns clockwise about the sprite centre. */
   rot?: 0 | 1 | 2 | 3;
+  /** Mirror top to bottom (before rotating). */
+  flipV?: boolean;
   alpha?: number;
 }
 
-/** Draw one frame with its top-left at (x, y), scaled by an integer. */
+function blit(
+  ctx: CanvasRenderingContext2D,
+  set: SpriteSet,
+  name: string,
+  x: number,
+  y: number,
+  scale: number,
+  opts: DrawOpts,
+): boolean {
+  const sp = set.atlas.sprites[name];
+  if (!sp) return false;
+  const src = frameCanvas(set, name, opts.frame ?? 0, opts.ramp);
+  if (!src) return false;
+  const w = sp.w * scale;
+  const h = sp.h * scale;
+  ctx.imageSmoothingEnabled = false;
+  const plain = !opts.rot && !opts.flipV && opts.alpha === undefined;
+  if (plain) {
+    ctx.drawImage(src, x, y, w, h);
+  } else {
+    ctx.save();
+    if (opts.alpha !== undefined) ctx.globalAlpha = opts.alpha;
+    ctx.translate(x + w / 2, y + h / 2);
+    if (opts.rot) ctx.rotate((opts.rot * Math.PI) / 2);
+    if (opts.flipV) ctx.scale(1, -1);
+    ctx.drawImage(src, -w / 2, -h / 2, w, h);
+    ctx.restore();
+  }
+  spriteStats.drawn += 1;
+  return true;
+}
+
+/**
+ * Draw one frame of a sprite with its top-left at (x, y); `scale` is
+ * destination pixels per sprite pixel. Returns false (drawing nothing) when
+ * the sprites are not loaded or the name or sheet is unknown.
+ */
+export function drawSprite(
+  ctx: CanvasRenderingContext2D,
+  name: string,
+  x: number,
+  y: number,
+  scale: number,
+  opts: DrawOpts = {},
+): boolean {
+  return current ? blit(ctx, current, name, x, y, scale, opts) : false;
+}
+
+/** The same with an explicit sheet set (the preview page passes its own). */
 export function drawFrame(
   ctx: CanvasRenderingContext2D,
-  sheets: Sheets,
+  _sheets: Sheets,
   name: string,
   frame: number,
   x: number,
@@ -182,36 +354,39 @@ export function drawFrame(
   scale: number,
   opts: DrawOpts = {},
 ): void {
-  const sp = spriteOf(name);
-  const f = ((frame % sp.frames) + sp.frames) % sp.frames;
-  const w = sp.w * scale;
-  const h = sp.h * scale;
-  ctx.imageSmoothingEnabled = false;
+  if (current) blit(ctx, current, name, x, y, scale, { ...opts, frame });
+}
+
+/** Fill a rectangle with a sprite repeated at `scale`, anchored at (x, y). */
+export function fillTiled(
+  ctx: CanvasRenderingContext2D,
+  name: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  scale: number,
+): boolean {
+  if (!current) return false;
+  const src = frameCanvas(current, name, 0);
+  if (!src) return false;
+  const pat = ctx.createPattern(src, 'repeat');
+  if (!pat) return false;
   ctx.save();
-  if (opts.alpha !== undefined) ctx.globalAlpha = opts.alpha;
-  if (opts.rot) {
-    ctx.translate(x + w / 2, y + h / 2);
-    ctx.rotate((opts.rot * Math.PI) / 2);
-    ctx.translate(-w / 2, -h / 2);
-  } else {
-    ctx.translate(x, y);
-  }
-  if (opts.ramp) {
-    ctx.drawImage(tintedFrame(sheets, name, f, opts.ramp), 0, 0, w, h);
-  } else {
-    const img = sheets.images[sp.sheet];
-    if (img) {
-      const [ox, oy] = frameOrigin(sp, f);
-      ctx.drawImage(img, ox, oy, sp.w, sp.h, 0, 0, w, h);
-    }
-  }
+  ctx.imageSmoothingEnabled = false;
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  ctx.fillStyle = pat;
+  ctx.fillRect(0, 0, w / scale, h / scale);
   ctx.restore();
+  spriteStats.drawn += 1;
+  return true;
 }
 
 /** Draw a 9-slice stretched to (dw x dh) destination pixels. */
 export function drawNine(
   ctx: CanvasRenderingContext2D,
-  sheets: Sheets,
+  _sheets: Sheets,
   name: string,
   x: number,
   y: number,
@@ -219,9 +394,10 @@ export function drawNine(
   dh: number,
   scale: number,
 ): void {
-  const sp = spriteOf(name);
-  const img = sheets.images[sp.sheet];
-  if (!img || !sp.nineSlice) return;
+  if (!current) return;
+  const sp = current.atlas.sprites[name];
+  const img = sp ? current.sheets.images[sp.sheet] : undefined;
+  if (!sp || !img || !sp.nineSlice) return;
   const [l, t, r, b] = sp.nineSlice;
   const sx = [0, l, sp.w - r, sp.w];
   const sy = [0, t, sp.h - b, sp.h];
@@ -251,4 +427,5 @@ export function drawNine(
         h,
       );
     }
+  spriteStats.drawn += 1;
 }

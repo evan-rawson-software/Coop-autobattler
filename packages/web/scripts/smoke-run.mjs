@@ -16,6 +16,7 @@ export async function runRunSmoke({
   baseUrl,
   check,
   shot,
+  shotDark,
   settle,
   webDir,
   context,
@@ -460,6 +461,7 @@ export async function runRunSmoke({
     'main menu: a Developer link reaches the sandbox screens',
   );
   await shot('run-1-main-menu');
+  await shotDark('art2-menu');
 
   // ---------------------------------------------------------------------
   // New run: Core placement
@@ -553,6 +555,7 @@ export async function runRunSmoke({
     `Core placement: choosing a legal position enables Confirm (${pick.x}, ${pick.y})`,
   );
   await shot('run-3-core-selected');
+  await shotDark('art2-core-placement');
   await reloadSame('Core placement');
 
   // Confirm: Core placed, cannot be moved.
@@ -605,7 +608,60 @@ export async function runRunSmoke({
     left === 0,
     `first build: the starting kit is placed on the board (${left} left in the stash)`,
   );
+  {
+    // The static sprite layer is rebuilt by an edit (place, rotate, undo) and
+    // never by hovering.
+    const builds = async () => {
+      await page.waitForTimeout(250);
+      return await page.evaluate(() => window.__debug.sprites().layerBuilds);
+    };
+    const t0 = await B.team();
+    const last = t0.buildings[t0.buildings.length - 1];
+    let n = await builds();
+    await page.click('[data-action="undo"]');
+    let m = await builds();
+    check(m > n, `layer: undo rebuilds the static layer (${n} -> ${m})`);
+    n = m;
+    const box = await page
+      .locator(`[data-stash-def="${last.def}"]`)
+      .first()
+      .boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    const dst = await at(last.x, last.y);
+    await page.mouse.move(dst.x, dst.y, { steps: 6 });
+    await page.mouse.up();
+    m = await builds();
+    check(m > n, `layer: placing rebuilds the static layer (${n} -> ${m})`);
+    n = m;
+    await page.mouse.click(dst.x, dst.y);
+    await page.click('[data-action="rotate"]');
+    m = await builds();
+    check(m > n, `layer: rotating rebuilds the static layer (${n} -> ${m})`);
+    n = m;
+    for (let i = 0; i < 6; i++) {
+      await page.mouse.move(dst.x + 40 + i * 9, dst.y + 30 + i * 7, {
+        steps: 3,
+      });
+    }
+    m = await builds();
+    check(
+      m === n,
+      `layer: hovering does not rebuild the static layer (${n} -> ${m})`,
+    );
+  }
   await reloadSame('the first Build screen');
+  await shotDark('art2-build-factory');
+  {
+    const art = await page.evaluate(() => window.__debug.sprites?.() ?? null);
+    check(
+      art !== null &&
+        art.state === 'ready' &&
+        art.spriteFrames > 0 &&
+        art.drawn > 0,
+      `first build: the board is drawn from the atlas (${JSON.stringify(art)})`,
+    );
+  }
   const placedCount = (await B.team()).buildings.length;
   check(placedCount >= 4, `placed buildings survive a reload (${placedCount})`);
 
@@ -662,6 +718,7 @@ export async function runRunSmoke({
     'PvE choice: the stakes of losing are stated',
   );
   await shot('run-5-pve-choice');
+  await shotDark('art2-pve-choice');
   await reloadSame('PvE choice');
   await page.click('[data-action="choose"][data-difficulty="easy"]');
   await waitStep('pve_summary');
@@ -790,6 +847,7 @@ export async function runRunSmoke({
     'event: every card says what it does in words',
   );
   await shot('run-7-event-choice');
+  await shotDark('art2-event');
   await reloadSame('the event choice');
   // Prefer an event with a follow-up.
   const offers = await page
@@ -884,6 +942,7 @@ export async function runRunSmoke({
   await page.click('.topbar-tabs button:has-text("Shop")');
   await page.waitForSelector('#shop-screen');
   await shot('run-9-shop');
+  await shotDark('art2-shop');
   await page.click('#shop-ready');
   await waitStep('pvp_summary');
 
@@ -924,6 +983,7 @@ export async function runRunSmoke({
   const sc = await noHScroll(1366);
   check(sc.ok, `event screen: no horizontal scroll at 1366x768 (${sc.sw})`);
   await shot('run-10-event-1366x768');
+  await shotDark('art2-event-1366x768');
   await page.setViewportSize({ width: 1920, height: 1080 });
   await settle();
 

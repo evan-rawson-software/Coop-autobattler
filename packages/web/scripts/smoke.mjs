@@ -14,6 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runShopSmoke } from './smoke-shop.mjs';
 import { runSpritesSmoke } from './smoke-sprites.mjs';
+import { runArtSmoke, spritesInfo } from './smoke-art.mjs';
 import { runRunSmoke } from './smoke-run.mjs';
 
 const require = createRequire(import.meta.url);
@@ -83,6 +84,16 @@ page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
 
 const shot = (name) =>
   page.screenshot({ path: path.join(outDir, `${name}.png`) });
+// A screenshot in the dark scheme, where the pixel skin applies (the page
+// itself is driven in the default light scheme).
+const shotDark = async (name) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await settle();
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: path.join(outDir, `${name}.png`) });
+  await page.emulateMedia({ colorScheme: 'light' });
+  await settle();
+};
 const camera = () => page.evaluate(() => window.__debug.camera());
 const viewport = () => page.evaluate(() => window.__debug.viewport());
 const settle = () =>
@@ -240,6 +251,7 @@ try {
   const selAfterDrag = await page.evaluate(() => window.__debug.selection());
   check(selAfterDrag === null, 'a drag is not a click (nothing selected)');
   await shot('4-zoomed-in');
+  await shotDark('art2-zoomed-in');
 
   // --- Hover and selection of a building
   await page.click('[data-camera="center"]');
@@ -982,6 +994,7 @@ try {
   );
   await page.waitForTimeout(300);
   await shot('build-4-factory-flow');
+  await shotDark('art2-build-conduits');
   await page.click('[data-overlay="dry"]');
   check(
     (await page.locator('[data-field="no-problems"]').count()) === 0 ||
@@ -1200,6 +1213,14 @@ try {
     );
     await page.waitForFunction(() => window.__debug.battle.tick() > 230);
     await shot('battle-1-playing');
+    await shotDark('art2-battle-mid-fight');
+    {
+      const art = await spritesInfo(page);
+      check(
+        art !== null && art.state === 'ready' && art.spriteFrames > 0,
+        `battle: the board is drawn from the atlas (${JSON.stringify(art)})`,
+      );
+    }
 
     // Reload mid-battle resumes the same battle.
     await page.waitForTimeout(700);
@@ -1500,8 +1521,9 @@ try {
   }
 
   // Shop + Build step (W2-7)
-  await runShopSmoke({ page, baseUrl, check, shot, settle, webDir });
+  await runShopSmoke({ page, baseUrl, check, shot, shotDark, settle, webDir });
   await runSpritesSmoke({ page, baseUrl, check, shot, settle, consoleErrors });
+  await runArtSmoke({ browser, baseUrl, check, outDir, page, settle });
 
   // Run flow: menu, Core placement, choices, run end (W2-9)
   await runRunSmoke({
@@ -1509,6 +1531,7 @@ try {
     baseUrl,
     check,
     shot,
+    shotDark,
     settle,
     webDir,
     context,

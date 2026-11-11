@@ -20,6 +20,7 @@ import type { RunHandle } from '../run/handle.js';
 import { ensureShopRun, optionsFromUrl } from '../run/shop-run.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import './shop.css';
+import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { performAction } from './actions.js';
 import { onStepTab, stepTabs } from './tabs.js';
 import {
@@ -73,7 +74,12 @@ function Card(props: { card: OfferCard; onBuy: (slot: number) => void }) {
         class="offer-art"
         style={{ background: `var(--kind-${o.kind.replace('_', '-')})` }}
         aria-hidden="true"
-      />
+      >
+        <SpriteIcon name={o.def} fit />
+        {card.canBuy ? null : (
+          <SpriteIcon name="ui_icon_lock" scale={1} class="offer-lock" />
+        )}
+      </div>
       <h3 class="offer-name">{o.name}</h3>
       <p class="offer-kind">
         {o.kindLabel} · tier {o.tier}
@@ -139,6 +145,7 @@ function StashList(props: {
             }}
           >
             <span class="stash-label">
+              <SpriteIcon name={r.def} size={32} class="stash-sprite" />
               {r.name} <span class="stash-tier">T{r.tier}</span> ×{' '}
               {r.ids.length}
             </span>
@@ -381,6 +388,7 @@ export function ShopTab(props: { run: RunHandle }) {
         <div class="shop-side">
           <Panel title="Gold" id="panel-gold">
             <div class="gold-row">
+              <SpriteIcon name="ui_icon_coin" scale={2} class="gold-icon" />
               <strong class="gold" id="gold" data-gold={sv.gold}>
                 {sv.gold}
               </strong>
@@ -482,6 +490,13 @@ export function ShopTab(props: { run: RunHandle }) {
                 title={sv.readyBlock ?? undefined}
                 onClick={onReady}
               >
+                {sv.ready ? (
+                  <SpriteIcon
+                    name="ui_icon_ready"
+                    scale={1}
+                    class="ready-icon"
+                  />
+                ) : null}
                 {sv.ready ? 'Unready' : 'Ready'}
               </button>
               <span

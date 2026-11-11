@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { AppShell } from '../shell/AppShell.js';
 import './sprites.css';
 import {
-  atlas,
+  getAtlas,
   drawFrame,
   drawNine,
   loadSheets,
@@ -153,9 +153,10 @@ function SpriteCard(props: { sheets: Sheets; name: string }) {
 }
 
 function namesOf(category: string, filter?: (n: string) => boolean): string[] {
-  return Object.keys(atlas.sprites).filter(
+  return Object.keys(getAtlas().sprites).filter(
     (n) =>
-      atlas.sprites[n]?.category === category && (filter ? filter(n) : true),
+      getAtlas().sprites[n]?.category === category &&
+      (filter ? filter(n) : true),
   );
 }
 
@@ -167,16 +168,16 @@ function UnitRow(props: { sheets: Sheets; id: string }) {
     {
       label: 'neutral, tinted A at draw time',
       suffix: '',
-      ramp: atlas.tint.teamA,
+      ramp: getAtlas().tint.teamA,
     },
     {
       label: 'neutral, tinted B at draw time',
       suffix: '',
-      ramp: atlas.tint.teamB,
+      ramp: getAtlas().tint.teamB,
     },
   ];
   const anims = ['', '.walk', '.attack'];
-  const planned = atlas.planned.includes(props.id);
+  const planned = getAtlas().planned.includes(props.id);
   return (
     <div class="unit-row" data-unit={props.id}>
       <h4>
@@ -363,13 +364,13 @@ function Grid(props: { sheets: Sheets; names: string[] }) {
 function Preview(props: { sheets: Sheets }) {
   const { sheets } = props;
   const unitIds = [
-    ...new Set(namesOf('unit').map((n) => atlas.sprites[n]?.id ?? n)),
+    ...new Set(namesOf('unit').map((n) => getAtlas().sprites[n]?.id ?? n)),
   ];
-  const total = Object.keys(atlas.sprites).length;
+  const total = Object.keys(getAtlas().sprites).length;
   return (
     <div class="sprites-page">
       <p class="note">
-        {total} sprites on {Object.keys(atlas.sheets).length} sheets.
+        {total} sprites on {Object.keys(getAtlas().sheets).length} sheets.
         Nearest-neighbour scaling. Sprites listed as planned are placeholders
         for content that does not exist yet.
       </p>
@@ -468,7 +469,7 @@ function Preview(props: { sheets: Sheets }) {
       >
         <Grid sheets={sheets} names={namesOf('conduit')} />
         <div class="sprite-grid">
-          {Object.keys(atlas.tint.resources).map((res) => (
+          {Object.keys(getAtlas().tint.resources).map((res) => (
             <figure key={res} class="sprite-card" data-tint={res}>
               <figcaption>
                 <code>{res}</code>
@@ -487,7 +488,7 @@ function Preview(props: { sheets: Sheets }) {
                     sheets={sheets}
                     name={n}
                     scale={3}
-                    ramp={atlas.tint.resources[res] ?? []}
+                    ramp={getAtlas().tint.resources[res] ?? []}
                   />
                 ))}
               </div>

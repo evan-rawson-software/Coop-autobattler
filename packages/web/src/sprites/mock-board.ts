@@ -1,6 +1,8 @@
 /** A mock 12x8 board patch composed from the sprites, to judge the style in context. */
 
-import { atlas, blobFrame, drawFrame, spriteOf, type Sheets } from './atlas.js';
+import { getAtlas, drawFrame, spriteOf, type Sheets } from './atlas.js';
+import { blobFrame } from './autotile.js';
+import { groundName, neutralName } from './variants.js';
 
 export const MOCK_COLS = 12;
 export const MOCK_ROWS = 8;
@@ -81,20 +83,8 @@ function mask(set: Set<string>, x: number, y: number): number {
   );
 }
 
-/** A small integer hash, for picking ground variants at random per cell. */
-export function cellHash(x: number, y: number, salt = 0): number {
-  let h = Math.imul(x + 1, 374761393) ^ Math.imul(y + 1, 668265263) ^ salt;
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return (h ^ (h >>> 16)) >>> 0;
-}
-
-// Variant choice per cell: the crack variant of neutral ground is rare.
-const GROUND_PICK = [1, 2, 3, 4, 5, 6, 1, 2];
-const NEUTRAL_PICK = [1, 2, 3, 1, 2, 3, 1, 4];
-export const pickGround = (x: number, y: number): string =>
-  `ground_${String(GROUND_PICK[cellHash(x, y) % 8])}`;
-export const pickNeutral = (x: number, y: number): string =>
-  `neutral_${String(NEUTRAL_PICK[cellHash(x, y, 7) % 8])}`;
+export const pickGround = (x: number, y: number): string => groundName(x, y);
+export const pickNeutral = (x: number, y: number): string => neutralName(x, y);
 
 /** The ground sprite for a cell: a random variant, neutral rows on top. */
 export function groundAt(x: number, y: number): string {
@@ -102,7 +92,7 @@ export function groundAt(x: number, y: number): string {
 }
 
 function ramp(res: string): readonly string[] | undefined {
-  return atlas.tint.resources[res];
+  return getAtlas().tint.resources[res];
 }
 
 /** Draw the patch at integer `scale` (pixels per sprite pixel); `t` in ms. */

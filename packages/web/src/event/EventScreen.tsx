@@ -14,6 +14,7 @@ import { content } from '../content.js';
 import type { RunHandle } from '../run/handle.js';
 import { AppShell } from '../shell/AppShell.js';
 import '../choice/choice.css';
+import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import {
   battleHeader,
   eventCards,
@@ -83,7 +84,11 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
             >
               <header class="event-card-head">
                 <span class="event-icon" aria-hidden="true">
-                  {c.icon}
+                  <SpriteIcon
+                    name={`ui_event_${c.type}`}
+                    scale={2}
+                    fallback={c.icon}
+                  />
                 </span>
                 <h2 data-field="title">{c.title}</h2>
               </header>
