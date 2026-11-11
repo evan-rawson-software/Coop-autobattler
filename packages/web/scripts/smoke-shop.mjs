@@ -13,6 +13,7 @@ export async function runShopSmoke({
   baseUrl,
   check,
   shot,
+  shotDark,
   settle,
   webDir,
 }) {
@@ -468,6 +469,7 @@ export async function runShopSmoke({
   });
   check(buyVisible, 'Buy buttons are fully visible at 1366x768');
   await shot('shop-6-1366x768');
+  await shotDark('art2-shop-1366x768');
   await page.setViewportSize({ width: 1920, height: 1080 });
   await settle();
 

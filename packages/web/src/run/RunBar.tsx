@@ -7,6 +7,7 @@ import { navigate } from '../app-state.js';
 import { NotSavedNote } from './RunGate.js';
 import type { RunHandle } from './handle.js';
 import { stepLabel } from './router.js';
+import { SpriteIcon } from '../sprites/SpriteIcon.js';
 
 export function RunBar(props: {
   state: RunState;
@@ -23,9 +24,15 @@ export function RunBar(props: {
     <span class="run-bar" id="run-bar">
       <span data-field="bar-round">Round {state.round}</span>
       <span data-field="bar-lives">
+        <SpriteIcon name="ui_icon_heart" scale={1} class="bar-icon" />
         Lives {state.lives} / {props.maxLives}
       </span>
-      {showGold ? <span data-field="bar-gold">Gold {gold}</span> : null}
+      {showGold ? (
+        <span data-field="bar-gold">
+          <SpriteIcon name="ui_icon_coin" scale={1} class="bar-icon" />
+          Gold {gold}
+        </span>
+      ) : null}
       <span data-field="bar-step" class="bar-step">
         {stepLabel(state.step)}
       </span>
