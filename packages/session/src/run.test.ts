@@ -483,6 +483,13 @@ describe('state, JSON and replay', () => {
         });
       }).join(),
     ).toMatch(/ready player needs a position/);
+    // Past core_placement every player's Core is placed.
+    expect(good.step).not.toBe('core_placement');
+    expect(
+      bad((o) => {
+        (o['team'] as { cores: unknown[] }).cores[0] = null;
+      }).join(),
+    ).toMatch(/every player's Core must be placed/);
     expect(
       bad((o) => (o['outcome'] = { reason: 'abandoned', round: 1 })).join(),
     ).toMatch(/outcome/);
