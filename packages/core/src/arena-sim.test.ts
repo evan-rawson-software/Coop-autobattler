@@ -1182,12 +1182,14 @@ describe('maximum health includes run modifiers (breach cost and start agree)', 
     const expected = computeBreach(
       mod.ctx.arena,
       0,
+      0,
       (ref) => mod.sim.health[mod.ctx.healthIndex[ref] ?? 0]?.hp ?? 0,
       baseCost,
       per,
     );
     const plainField = computeBreach(
       plain.ctx.arena,
+      0,
       0,
       (ref) => plain.ctx.maxHealth[ref] ?? 0,
       baseCost,
@@ -1196,6 +1198,7 @@ describe('maximum health includes run modifiers (breach cost and start agree)', 
     const actual = computeBreach(
       mod.ctx.arena,
       0,
+      0,
       (ref) => mod.ctx.maxHealth[ref] ?? 0,
       baseCost,
       per,
@@ -1203,7 +1206,7 @@ describe('maximum health includes run modifiers (breach cost and start agree)', 
     expect(Array.from(actual)).toEqual(Array.from(expected));
     expect(Math.max(...actual)).toBeGreaterThan(Math.max(...plainField));
     stepArena(mod.sim, mod.ctx);
-    const field = got(mod.ctx.breach[0]);
+    const field = got(mod.ctx.breach[0]?.[0]);
     expect(Array.from(field)).toEqual(Array.from(expected));
   });
 
@@ -1303,6 +1306,7 @@ describe('maximum health includes run modifiers (breach cost and start agree)', 
       const r = startArenaBattle(coreOnly(), team, GAP, content, simConfig);
       const f = computeBreach(
         r.ctx.arena,
+        0,
         0,
         (ref) => r.ctx.maxHealth[ref] ?? 0,
         simConfig.breachBaseCost,
