@@ -451,7 +451,7 @@ describe('live chart axes', () => {
 
 describe('result reasons', () => {
   test('every reason is worded after the rules of the core battle', () => {
-    expect(reasonText('time_limit', 'Core')).toMatch(/share of its maximum/);
+    expect(reasonText('time_limit', 'Core')).toMatch(/share of its total/);
     expect(reasonText('time_limit', 'Core')).not.toMatch(/defender/i);
     expect(reasonText('tiebreak_overkill', 'Core')).toMatch(/less overkill/);
     expect(reasonText('tiebreak_overkill', 'Core')).toMatch(/same tick/);

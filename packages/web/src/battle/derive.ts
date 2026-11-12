@@ -6,6 +6,7 @@
 
 import {
   occupancy,
+  isCoreHealth,
   type BattleSummary,
   type BuildingDef,
   type PlacedBuilding,
@@ -145,14 +146,23 @@ function buildingFocus(
   return { x: sx / n, y: sy / n };
 }
 
+/** How many Cores the side placed. */
+export function placed(record: BattleRecord, side: Side): number {
+  return record.initialTeams[side].cores.filter((c) => c !== null).length;
+}
+
 function coreFocus(
   record: BattleRecord,
   content: WebContent,
   g: Geometry,
   side: Side,
+  /** The player whose Core; the first placed Core when omitted. */
+  player?: number,
 ): { x: number; y: number } | null {
-  // The first placed Core; every player's Core comes with the web issue #142.
-  const core = record.initialTeams[side].cores.find((c) => c !== null) ?? null;
+  const cores = record.initialTeams[side].cores;
+  const core =
+    (player === undefined ? cores.find((c) => c !== null) : cores[player]) ??
+    null;
   if (core === null) return null;
   const def = content.buildings.list().find((d) => d.kind === 'core');
   const fp = def?.footprint ?? { width: 1, height: 1 };
@@ -244,8 +254,11 @@ export function deriveMoments(
         tick: e.tick + 1,
         kind: 'core_destroyed',
         side,
-        text: `${labels.side[side]} ${labels.coreName} destroyed`,
-        focus: coreFocus(record, content, g, side),
+        text:
+          placed(record, side) > 1
+            ? `${labels.side[side]} ${labels.coreName} ${String(e.core + 1)} fell`
+            : `${labels.side[side]} ${labels.coreName} destroyed`,
+        focus: coreFocus(record, content, g, side, e.core),
       });
     }
   }
@@ -291,9 +304,18 @@ export interface ProductionRate {
   readonly perSecond: number;
 }
 
+/** One Core's health at the playback position. */
+export interface CoreNow {
+  readonly player: number;
+  readonly hp: number;
+  readonly max: number;
+}
+
 export interface SideStats {
   readonly coreHp: number;
   readonly coreMax: number;
+  /** Each placed Core's health now, by player. */
+  readonly cores: readonly CoreNow[];
   readonly wallsStanding: number;
   readonly wallsTotal: number;
   readonly unitsAlive: number;
@@ -346,9 +368,21 @@ export function sideStats(
   const seconds = window / ticksPerSecond;
   const coreHp =
     rec.coreHp[side][Math.min(tick, rec.coreHp[side].length - 1)] ?? 0;
+  const cores: CoreNow[] = [];
+  sim.health.forEach((h, i) => {
+    if (isCoreHealth(h) && h.side === side) {
+      cores.push({
+        player: h.core,
+        hp: Math.max(0, h.hp),
+        max: rec.initialHealth[i]?.hp ?? 0,
+      });
+    }
+  });
+  cores.sort((a, b) => a.player - b.player);
   return {
     coreHp,
     coreMax: rec.coreMax[side],
+    cores,
     wallsStanding,
     wallsTotal,
     unitsAlive: alive,
@@ -516,20 +550,20 @@ export function buildingRows(
 export function destroyedOf(
   record: BattleRecord,
   side: Side,
-): { buildings: number[]; conduits: number[]; core: boolean } {
+): { buildings: number[]; conduits: number[]; cores: number[] } {
   const buildings: number[] = [];
   const conduits: number[] = [];
-  let core = false;
+  const cores: number[] = [];
   for (const e of record.eventLog) {
     if (e.type === 'building_destroyed' && e.side === side) {
       buildings.push(e.building);
     } else if (e.type === 'conduit_destroyed' && e.side === side) {
       conduits.push(e.conduit);
     } else if (e.type === 'core_destroyed' && e.side === side) {
-      core = true;
+      cores.push(e.core);
     }
   }
-  return { buildings, conduits, core };
+  return { buildings, conduits, cores };
 }
 
 // ---------------------------------------------------------------------------
@@ -687,4 +721,13 @@ export function coreNameOf(content: WebContent): string {
 export function clock(ticks: number, ticksPerSecond: number): string {
   const s = Math.floor(ticks / ticksPerSecond);
   return `${String(Math.floor(s / 60))}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/** The maximum health of each of a side's Cores. */
+export function coreMaxima(record: BattleRecord, side: Side): number[] {
+  const out: number[] = [];
+  record.initialHealth.forEach((h) => {
+    if (isCoreHealth(h) && h.side === side) out.push(h.hp);
+  });
+  return out;
 }

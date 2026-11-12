@@ -334,3 +334,11 @@ button:disabled {
 .btn-col button {
   padding: 0.55rem 0.8rem;
 }
+
+.core-sub {
+  margin-top: 4px;
+  padding-left: 8px;
+}
+.core-sub.fallen {
+  opacity: 0.55;
+}

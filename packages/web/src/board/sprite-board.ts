@@ -80,7 +80,7 @@ export function occupiedCells(board: BoardScene): Uint8Array {
       }
   };
   for (const b of board.buildings) mark(b.rect);
-  if (board.core) mark(board.core.rect);
+  for (const c of board.cores) if (c) mark(c.rect);
   for (const t of board.features) mark({ x: t.x, y: t.y, w: 1, h: 1 });
   occupiedCache.set(board, occ);
   return occ;
@@ -290,8 +290,9 @@ function drawBuildings(
       lc.strokeRect(px + 0.5, py + 0.5, pw - 1, ph - 1);
     }
   }
-  if (board.core) {
-    const r = board.core.rect;
+  for (const core of board.cores) {
+    if (core === null) continue;
+    const r = core.rect;
     const px = (r.x - f.ox) * T;
     const py = (r.y - f.oy) * T;
     if (!drawSprite(lc, 'bld_core', px, py, 1)) {

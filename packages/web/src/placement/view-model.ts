@@ -108,10 +108,13 @@ export function hintText(input: {
   readonly hover: Verdict | null;
   readonly selected: Cell | null;
   readonly message: string | null;
+  readonly ready?: boolean;
 }): string {
   if (input.hover !== null) {
     return input.hover.ok
-      ? 'The Core fits here. Click to choose this spot.'
+      ? input.ready === true
+        ? 'You are Ready. Unready to change your Core.'
+        : 'The Core fits here. Click to choose this spot.'
       : (input.hover.text ?? '');
   }
   if (input.message !== null) return input.message;
