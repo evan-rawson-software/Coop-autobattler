@@ -2131,7 +2131,7 @@ Implemented in `arena-sim.ts` (decisions, spawn) and `unit-motion.ts`
   any unit, so a unit's circle is hit at its `radius` whether it flies or not.
 - **Mirror symmetry and restore** hold as before: nothing above depends on
   unit order, and nothing new is stored.
-- Not done: flyers in PvE waves (`threats.json`) and shop entries for the Range and the Hangar (see the pull request).
+- PvE waves from round 4 contain archers and drones ("Generation", step 4, `rangedMix`); the bots buy and place the Range and the Hangar.
 
 ### State (plain JSON)
 
@@ -3575,7 +3575,8 @@ ramp and siege (late light waves, a big walled Core with turrets); Escalator
 tests speed (waves that grow fast, a wall line); Boss mixes all of it, its
 every-Nth-wave signature being all raiders (a fast swarm of small, weak units; since issue #66 raiders no longer prefer any building, they are ordinary units with different numbers: health 25, damage 8, radius 0.25 cell, move cooldown 4). Unit
 prices for spending wave budget are `unitCost` in `threats.json` (soldier 10,
-raider 8). Building prices for the stronghold are the **tier 1** prices of the
+raider 8, archer 14, drone 16; about 2 times the producer's tier 1 `costPerUnit`
+of 5, 4, 7 and 8, rounded). Building prices for the stronghold are the **tier 1** prices of the
 first building of defense type `wall` and of defense type `turret` in the
 building content (tier 1 only for now).
 
@@ -3599,7 +3600,16 @@ the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
    J`, `J = compositionJitterPercent` (20): one draw per entry, in wave order
    then composition order. (If all weights became 0 the template weights are
    used.)
-4. **Unit counts.** The budget of an entry is `floor(W_k * weight / weightSum)`
+4. **Ranged mix** (`rangedMix` in `threats.json`, optional: `{fromRound,
+   archerUnit, archerPercent, droneUnit, dronePercent}`, shipped 4, archer 25,
+   drone 15). In a round `>= fromRound`, each wave that is not a signature wave
+   first sets aside `A = floor(W_k * archerPercent / 100)` and `D = floor(W_k *
+   dronePercent / 100)`; the composition entries then share `W_k - A - D`, and
+   two more entries are appended after them: `floor(A / cost(archer))`
+   archers and `floor(D / cost(drone))` drones. Rounds before `fromRound` and
+   signature waves are exactly as without the mix. It draws no random numbers.
+   Wave units get no ramp bonus (CB-16c), so these are plain units.
+   **Unit counts.** The budget of an entry is `floor(W_k * weight / weightSum)`
    (same overflow-safe division) and its ideal count `n = floor(that / cost)`.
    If every entry of a wave has `n = 0`, the entry with the highest weight
    (first on ties) gets 1: every wave has at least one unit.

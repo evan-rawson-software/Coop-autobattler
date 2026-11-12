@@ -16,8 +16,17 @@
   "compositionJitterPercent": 20,
   "unitCost": [
     { "unit": "unit_soldier", "cost": 10 },
-    { "unit": "unit_raider", "cost": 8 }
+    { "unit": "unit_raider", "cost": 8 },
+    { "unit": "unit_archer", "cost": 14 },
+    { "unit": "unit_drone", "cost": 16 }
   ],
+  "rangedMix": {
+    "fromRound": 4,
+    "archerUnit": "unit_archer",
+    "archerPercent": 25,
+    "droneUnit": "unit_drone",
+    "dronePercent": 15
+  },
   "layouts": {
     "ring": {
       "coreRow": 4,

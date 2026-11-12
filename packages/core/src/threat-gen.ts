@@ -209,10 +209,22 @@ export function generateThreat(
       }
     }
     const weightSum = comp.reduce((a, c) => a + c.weight, 0);
+    const mix = threats.rangedMix;
+    const isSignature = sig !== undefined && (k + 1) % sig.everyNthWave === 0;
+    const mixed = mix !== undefined && round >= mix.fromRound && !isSignature;
+    const archerBudget = mixed ? mulPct(wb, mix.archerPercent) : 0;
+    const droneBudget = mixed ? mulPct(wb, mix.dronePercent) : 0;
+    const meleeBudget = wb - archerBudget - droneBudget;
     const entries = comp.map((c) => ({
       unit: c.unit,
-      n: divFloor(scaleShare(wb, c.weight, weightSum), costOf(c.unit)),
+      n: divFloor(scaleShare(meleeBudget, c.weight, weightSum), costOf(c.unit)),
     }));
+    if (mixed) {
+      entries.push(
+        { unit: mix.archerUnit, n: divFloor(archerBudget, costOf(mix.archerUnit)) },
+        { unit: mix.droneUnit, n: divFloor(droneBudget, costOf(mix.droneUnit)) },
+      );
+    }
     if (entries.every((e) => e.n === 0)) {
       // At least one unit per wave: the heaviest-weighted entry (first on ties).
       let best = 0;

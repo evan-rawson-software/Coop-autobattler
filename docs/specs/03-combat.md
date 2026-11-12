@@ -469,8 +469,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   walls, lakes and cliffs, and collides only with other flying units (by a
   much smaller collision circle than its drawn size). Walls and gates do
   nothing against it; turrets and ranged units are the defense. Placeholder:
-  the Drone, from the Hangar building. (Flyers in PvE waves and the shop
-  entries of the new buildings are not done yet.)
+  the Drone, from the Hangar building. PvE waves from round 4 on
+  spend about 25% of each scheduled wave's budget on archers and 15% on
+  drones (placeholders; signature waves stay as they are).
 - **CB-16a** **Production and room.** A unit appears next to the building that
   made it, at the nearest free spot. When there is none the finished unit is
   held, production stops drawing resources and the factory backs up like any

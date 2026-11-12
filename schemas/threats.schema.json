@@ -88,6 +88,25 @@
         }
       }
     },
+    "rangedMix": {
+      "description": "Optional. From fromRound on, scheduled waves (not signature waves) spend archerPercent and dronePercent of their budget on archers and drones.",
+      "type": "object",
+      "required": [
+        "fromRound",
+        "archerUnit",
+        "archerPercent",
+        "droneUnit",
+        "dronePercent"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "fromRound": { "type": "integer", "minimum": 1 },
+        "archerUnit": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" },
+        "archerPercent": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "droneUnit": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" },
+        "dronePercent": { "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    },
     "layouts": {
       "type": "object",
       "required": ["ring", "line", "open"],
