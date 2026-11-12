@@ -314,7 +314,7 @@ describe('rewards (EC-6, EC-7)', () => {
     const after = readyAll(s, deps);
     expect(
       after.perPlayer.map((p, i) => p.gold - (before[i] as number)),
-    ).toEqual([3, 3, 3]);
+    ).toEqual([rewards.pveWin.easy, rewards.pveWin.easy, rewards.pveWin.easy]);
   });
 
   test('a PvP win pays gold; a PvP loss pays the consolation and costs a life', () => {

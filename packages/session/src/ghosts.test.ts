@@ -630,13 +630,13 @@ describe('validation', () => {
       const b = ghostValueBound(round, 1, content, e, gameConfigs.events);
       return [round, b.goldPerPlayer, b.kitPerPlayer, b.limit];
     });
-    // startingGold 10, income 3 per shop, PvE hard 8, PvP win 6, Windfall 4.
-    // round 1: 10 + 3*1 + 8*1 + 6*0 + 4*1 = 25 gold.
-    expect(table[0]?.[1]).toBe(25);
-    // round 2: 10 + 3*3 + 8*2 + 6*1 + 4*3 = 53.
-    expect(table[1]?.[1]).toBe(53);
-    // No margin: the limit is players * (gold + kit) = 53 + 67.
-    expect(table[1]?.[3]).toBe(53 + 67);
+    // startingGold 10, income 5 per shop, PvE hard 13, PvP win 8, Windfall 4.
+    // round 1: 10 + 5*1 + 13*1 + 8*0 + 4*1 = 32 gold.
+    expect(table[0]?.[1]).toBe(32);
+    // round 2: 10 + 5*3 + 13*2 + 8*1 + 4*3 = 71.
+    expect(table[1]?.[1]).toBe(71);
+    // No margin: the limit is players * (gold + kit) = 71 + 67.
+    expect(table[1]?.[3]).toBe(71 + 67);
     // A party of two has twice the bound.
     const two = ghostValueBound(3, 2, content, e, gameConfigs.events);
     const one = ghostValueBound(3, 1, content, e, gameConfigs.events);
