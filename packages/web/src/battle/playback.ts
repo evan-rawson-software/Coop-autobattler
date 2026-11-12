@@ -28,6 +28,7 @@ import {
   type NeutralZone,
   type TeamState,
   type UnitSim,
+  isCoreHealth,
 } from '@game/core';
 import type { WebContent } from '../content.js';
 import type { BattleDescription } from './types.js';
@@ -103,14 +104,17 @@ export function simulateRecord(
     sim.teams[1],
   ];
   const initialHealth = sim.health.map((h) => ({ ...h }));
-  const coreAt: number[] = [-1, -1];
+  // The line of Core health is the total over a side's Cores (the summary's
+  // `coreHealth`); the Battle screen shows each Core with issue #143.
+  const coresAt: number[][] = [[], []];
   sim.health.forEach((h, i) => {
-    if (h.building === 0) coreAt[h.side === 0 ? 0 : 1] = i;
+    if (isCoreHealth(h)) coresAt[h.side === 0 ? 0 : 1]?.push(i);
   });
-  const hpOf = (side: 0 | 1): number => {
-    const i = coreAt[side] ?? -1;
-    return i < 0 ? 0 : Math.max(0, sim.health[i]?.hp ?? 0);
-  };
+  const hpOf = (side: 0 | 1): number =>
+    (coresAt[side] ?? []).reduce(
+      (t, i) => t + Math.max(0, sim.health[i]?.hp ?? 0),
+      0,
+    );
   const hp0: number[] = [hpOf(0)];
   const hp1: number[] = [hpOf(1)];
   while (!battle.isOver()) {

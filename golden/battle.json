@@ -260,6 +260,16 @@
               "unitsSpawned": 28,
               "unitsLost": 16,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 10,
+                  "destroyedTick": 600
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 10,
@@ -271,6 +281,16 @@
               "unitsSpawned": 28,
               "unitsLost": 16,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 10,
+                  "destroyedTick": 600
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 10,
@@ -312,7 +332,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "87d4aa29",
+        "stateHash": "251646f7",
         "events": 1028
       }
     }
@@ -1439,6 +1459,16 @@
               "unitsSpawned": 84,
               "unitsLost": 67,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
@@ -1450,6 +1480,16 @@
               "unitsSpawned": 28,
               "unitsLost": 15,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 4,
+                  "destroyedTick": 573
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 4,
@@ -1476,7 +1516,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "c0b59a30",
+        "stateHash": "d144cac6",
         "events": 2651
       }
     }
@@ -1791,6 +1831,16 @@
               "unitsSpawned": 32,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
@@ -1802,6 +1852,16 @@
               "unitsSpawned": 0,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 4,
+                  "destroyedTick": 331
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 4,
@@ -1843,7 +1903,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "370b04b5",
+        "stateHash": "1020371b",
         "events": 379
       }
     }
@@ -2241,6 +2301,16 @@
               "unitsSpawned": 0,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 25,
@@ -2252,6 +2322,16 @@
               "unitsSpawned": 0,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 25,
@@ -2293,9 +2373,2468 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "0f48a1be",
+        "stateHash": "06ac7e1e",
         "events": 47
       }
+    }
+  },
+  {
+    "id": "battle.two-plot-core-falls",
+    "kind": "battle",
+    "description": "Two players per side, Cores only. Side 1 player 0 has a Core of 20 health that Overload destroys at tick 2000; the battle goes on and ends at tick 3100, when the three other Cores fall together. Side 0 overkill is 25 + 25, side 1 only 25 (the Core that fell earlier adds nothing): the defender wins on the overkill rung.",
+    "input": {
+      "teamA": {
+        "seed": 1,
+        "partySize": 2,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          }
+        ],
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 2,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          }
+        ],
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "seed": 1,
+      "sideOptions": [
+        {
+          "coreHealths": [500, 500]
+        },
+        {
+          "coreHealths": [20, 500]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 1,
+          "reason": "tiebreak_overkill",
+          "endTick": 3101
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                },
+                {
+                  "player": 1,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 1000,
+              "coreOverkill": 50,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            },
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 20,
+                  "overkill": 10,
+                  "destroyedTick": 2000
+                },
+                {
+                  "player": 1,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 520,
+              "coreOverkill": 25,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            }
+          ]
+        },
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "888daacc",
+        "events": 66
+      },
+      "eventLogHash": "f11f1635"
+    }
+  },
+  {
+    "id": "battle.walled-four-cores-overload",
+    "kind": "battle",
+    "description": "Four players per side, every Core in a wall ring and no producers: Overload destroys all eight Cores at tick 3100 and the attacker (side 0) wins the tie.",
+    "input": {
+      "teamA": {
+        "seed": 1,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 4,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 4,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 5,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 5,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 6,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 6,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 7,
+            "x": 7,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 8,
+            "x": 7,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 9,
+            "x": 4,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 10,
+            "x": 7,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 11,
+            "x": 4,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 12,
+            "x": 7,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 13,
+            "x": 16,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 14,
+            "x": 16,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 15,
+            "x": 17,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 16,
+            "x": 17,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 17,
+            "x": 18,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 18,
+            "x": 18,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 19,
+            "x": 19,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 20,
+            "x": 19,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 21,
+            "x": 16,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 22,
+            "x": 19,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 23,
+            "x": 16,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 24,
+            "x": 19,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 29,
+            "y": 3
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 25,
+            "x": 28,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 26,
+            "x": 28,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 27,
+            "x": 29,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 28,
+            "x": 29,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 29,
+            "x": 30,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 30,
+            "x": 30,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 31,
+            "x": 31,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 32,
+            "x": 31,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 33,
+            "x": 28,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 34,
+            "x": 31,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 35,
+            "x": 28,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 36,
+            "x": 31,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 41,
+            "y": 3
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 37,
+            "x": 40,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 38,
+            "x": 40,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 39,
+            "x": 41,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 40,
+            "x": 41,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 41,
+            "x": 42,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 42,
+            "x": 42,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 43,
+            "x": 43,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 44,
+            "x": 43,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 45,
+            "x": 40,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 46,
+            "x": 43,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 47,
+            "x": 40,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 48,
+            "x": 43,
+            "y": 4,
+            "rotation": 0
+          }
+        ],
+        "map": {
+          "width": 48,
+          "height": 16,
+          "partySize": 4,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 4,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 4,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 5,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 5,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 6,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 6,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 7,
+            "x": 7,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 8,
+            "x": 7,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 9,
+            "x": 4,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 10,
+            "x": 7,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 11,
+            "x": 4,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 12,
+            "x": 7,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 13,
+            "x": 16,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 14,
+            "x": 16,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 15,
+            "x": 17,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 16,
+            "x": 17,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 17,
+            "x": 18,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 18,
+            "x": 18,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 19,
+            "x": 19,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 20,
+            "x": 19,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 21,
+            "x": 16,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 22,
+            "x": 19,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 23,
+            "x": 16,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 24,
+            "x": 19,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 29,
+            "y": 3
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 25,
+            "x": 28,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 26,
+            "x": 28,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 27,
+            "x": 29,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 28,
+            "x": 29,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 29,
+            "x": 30,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 30,
+            "x": 30,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 31,
+            "x": 31,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 32,
+            "x": 31,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 33,
+            "x": 28,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 34,
+            "x": 31,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 35,
+            "x": 28,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 36,
+            "x": 31,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 41,
+            "y": 3
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 37,
+            "x": 40,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 38,
+            "x": 40,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 39,
+            "x": 41,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 40,
+            "x": 41,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 41,
+            "x": 42,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 42,
+            "x": 42,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 43,
+            "x": 43,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 44,
+            "x": 43,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 45,
+            "x": 40,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 46,
+            "x": 43,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 47,
+            "x": 40,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 48,
+            "x": 43,
+            "y": 4,
+            "rotation": 0
+          }
+        ],
+        "map": {
+          "width": 48,
+          "height": 16,
+          "partySize": 4,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "seed": 1,
+      "sideOptions": [
+        {
+          "coreHealths": [500, 500, 500, 500]
+        },
+        {
+          "coreHealths": [500, 500, 500, 500]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "tiebreak_attacker",
+          "endTick": 3101
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                },
+                {
+                  "player": 1,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                },
+                {
+                  "player": 2,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                },
+                {
+                  "player": 3,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 2000,
+              "coreOverkill": 100,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            },
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                },
+                {
+                  "player": 1,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                },
+                {
+                  "player": 2,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                },
+                {
+                  "player": 3,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 2000,
+              "coreOverkill": 100,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            }
+          ]
+        },
+        "zone": {
+          "width": 48,
+          "depth": 7,
+          "features": [
+            {
+              "x": 4,
+              "y": 1,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 2,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 4,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 2,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 3,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 4,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 26,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 27,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 4,
+              "y": 4,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 4,
+              "y": 5,
+              "feature": "ter_cliff"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "2b17b637",
+        "events": 137
+      },
+      "eventLogHash": "78baef21"
+    }
+  },
+  {
+    "id": "battle.time-limit-cores-standing-side0",
+    "kind": "battle",
+    "description": "Two players per side. Side 1 loses a Core to Overload at the first beat; the other three have 30000 health and survive to the 12000-tick limit: side 0 has more Cores standing and wins (time_limit).",
+    "input": {
+      "teamA": {
+        "seed": 1,
+        "partySize": 2,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          }
+        ],
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 2,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          }
+        ],
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "seed": 1,
+      "sideOptions": [
+        {
+          "coreHealths": [30000, 30000]
+        },
+        {
+          "coreHealths": [30000, 1]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "time_limit",
+          "endTick": 12000
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                },
+                {
+                  "player": 1,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 2,
+              "coreHealth": 7470,
+              "coreMaxHealth": 60000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            },
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                },
+                {
+                  "player": 1,
+                  "health": 0,
+                  "maxHealth": 1,
+                  "overkill": 4,
+                  "destroyedTick": 1800
+                }
+              ],
+              "coresStanding": 1,
+              "coreHealth": 3735,
+              "coreMaxHealth": 30001,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            }
+          ]
+        },
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "a5d87243",
+        "events": 413
+      },
+      "eventLogHash": "834a7afa"
+    }
+  },
+  {
+    "id": "battle.time-limit-cores-standing-side1",
+    "kind": "battle",
+    "description": "As the Cores-standing vector but side 0 loses a Core: the defender (side 1) wins on Cores standing.",
+    "input": {
+      "teamA": {
+        "seed": 1,
+        "partySize": 2,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          }
+        ],
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 2,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          }
+        ],
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "seed": 1,
+      "sideOptions": [
+        {
+          "coreHealths": [1, 30000]
+        },
+        {
+          "coreHealths": [30000, 30000]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 1,
+          "reason": "time_limit",
+          "endTick": 12000
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 1,
+                  "overkill": 4,
+                  "destroyedTick": 1800
+                },
+                {
+                  "player": 1,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
+              "coreHealth": 3735,
+              "coreMaxHealth": 30001,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            },
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                },
+                {
+                  "player": 1,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 2,
+              "coreHealth": 7470,
+              "coreMaxHealth": 60000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            }
+          ]
+        },
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "5a2f7469",
+        "events": 413
+      },
+      "eventLogHash": "b2820a83"
+    }
+  },
+  {
+    "id": "battle.time-limit-core-share",
+    "kind": "battle",
+    "description": "Two players per side, all four Cores survive to the limit. Side 0 keeps 3735 + 3735 of 60000 Core health, side 1 3735 + 1735: side 0 wins on the share of total Core health (time_limit).",
+    "input": {
+      "teamA": {
+        "seed": 1,
+        "partySize": 2,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          }
+        ],
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 2,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          }
+        ],
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "seed": 1,
+      "sideOptions": [
+        {
+          "coreHealths": [30000, 30000]
+        },
+        {
+          "coreHealths": [30000, 28000]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "time_limit",
+          "endTick": 12000
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                },
+                {
+                  "player": 1,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 2,
+              "coreHealth": 7470,
+              "coreMaxHealth": 60000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            },
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                },
+                {
+                  "player": 1,
+                  "health": 1735,
+                  "maxHealth": 28000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 2,
+              "coreHealth": 5470,
+              "coreMaxHealth": 58000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            }
+          ]
+        },
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "fe3a858a",
+        "events": 513
+      },
+      "eventLogHash": "064f2445"
+    }
+  },
+  {
+    "id": "battle.overkill-two-cores",
+    "kind": "battle",
+    "description": "Two players per side. All four Cores fall at tick 3100. Side 0 overkill is 0 + 3, side 1 0 + 0: the lower overkill wins (tiebreak_overkill), so the defender wins.",
+    "input": {
+      "teamA": {
+        "seed": 1,
+        "partySize": 2,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          }
+        ],
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 2,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          }
+        ],
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "seed": 1,
+      "sideOptions": [
+        {
+          "coreHealths": [525, 522]
+        },
+        {
+          "coreHealths": [525, 525]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 1,
+          "reason": "tiebreak_overkill",
+          "endTick": 3101
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 525,
+                  "overkill": 0,
+                  "destroyedTick": 3100
+                },
+                {
+                  "player": 1,
+                  "health": 0,
+                  "maxHealth": 522,
+                  "overkill": 3,
+                  "destroyedTick": 3100
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 1047,
+              "coreOverkill": 3,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            },
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 525,
+                  "overkill": 0,
+                  "destroyedTick": 3100
+                },
+                {
+                  "player": 1,
+                  "health": 0,
+                  "maxHealth": 525,
+                  "overkill": 0,
+                  "destroyedTick": 3100
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 1050,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            }
+          ]
+        },
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [
+            {
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 17,
+              "y": 3,
+              "feature": "ter_lake"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "ab32acac",
+        "events": 77
+      },
+      "eventLogHash": "68884c00"
     }
   },
   {
@@ -2467,6 +5006,16 @@
               "unitsSpawned": 0,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 25,
@@ -2478,6 +5027,16 @@
               "unitsSpawned": 1,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 25,
@@ -2519,10 +5078,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "c78b1986",
+        "stateHash": "5df31d6c",
         "events": 59
       },
-      "eventLogHash": "90f370b5"
+      "eventLogHash": "48a4f1a7"
     }
   },
   {
@@ -2666,6 +5225,16 @@
               "unitsSpawned": 3,
               "unitsLost": 3,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 25,
@@ -2677,6 +5246,16 @@
               "unitsSpawned": 0,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 25,
@@ -2718,10 +5297,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "b2d5a0dd",
+        "stateHash": "9ca72057",
         "events": 65
       },
-      "eventLogHash": "1f37d2b7"
+      "eventLogHash": "1ddd2bc1"
     }
   },
   {
@@ -2781,6 +5360,16 @@
               "unitsSpawned": 0,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 25,
@@ -2792,6 +5381,16 @@
               "unitsSpawned": 0,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 25,
+                  "destroyedTick": 3100
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 25,
@@ -2833,10 +5432,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "700915f1",
+        "stateHash": "221d1bcf",
         "events": 47
       },
-      "eventLogHash": "2bd6670f"
+      "eventLogHash": "73a7daa5"
     }
   },
   {
@@ -2995,7 +5594,6 @@
       "seed": 1,
       "sideOptions": [
         {
-          "coreHealth": 30000,
           "freePower": true,
           "scheduledWaves": [
             {
@@ -3003,10 +5601,10 @@
               "unit": "unit_soldier",
               "count": 1
             }
-          ]
+          ],
+          "coreHealths": [30000]
         },
         {
-          "coreHealth": 30000,
           "freePower": true,
           "scheduledWaves": [
             {
@@ -3014,7 +5612,8 @@
               "unit": "unit_soldier",
               "count": 1
             }
-          ]
+          ],
+          "coreHealths": [30000]
         }
       ]
     },
@@ -3032,6 +5631,16 @@
               "unitsSpawned": 1,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 3735,
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
@@ -3043,6 +5652,16 @@
               "unitsSpawned": 1,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3729,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 3729,
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
@@ -3084,10 +5703,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "465c898a",
+        "stateHash": "c957359e",
         "events": 329
       },
-      "eventLogHash": "1cc736fc"
+      "eventLogHash": "9c868083"
     }
   },
   {
@@ -3246,7 +5865,6 @@
       "seed": 1,
       "sideOptions": [
         {
-          "coreHealth": 30000,
           "freePower": true,
           "scheduledWaves": [
             {
@@ -3254,10 +5872,10 @@
               "unit": "unit_soldier",
               "count": 1
             }
-          ]
+          ],
+          "coreHealths": [30000]
         },
         {
-          "coreHealth": 30000,
           "freePower": true,
           "scheduledWaves": [
             {
@@ -3265,7 +5883,8 @@
               "unit": "unit_soldier",
               "count": 1
             }
-          ]
+          ],
+          "coreHealths": [30000]
         }
       ]
     },
@@ -3283,6 +5902,16 @@
               "unitsSpawned": 1,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3729,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 3729,
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
@@ -3294,6 +5923,16 @@
               "unitsSpawned": 1,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 3735,
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
@@ -3335,10 +5974,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "32e38adc",
+        "stateHash": "18fa3a48",
         "events": 329
       },
-      "eventLogHash": "137efdab"
+      "eventLogHash": "ea06bff4"
     }
   },
   {
@@ -3483,18 +6122,18 @@
       "seed": 1,
       "sideOptions": [
         {
-          "coreHealth": 30000,
-          "freePower": true
+          "freePower": true,
+          "coreHealths": [30000]
         },
         {
-          "coreHealth": 30000,
           "scheduledWaves": [
             {
               "tick": 1,
               "unit": "unit_soldier",
               "count": 1
             }
-          ]
+          ],
+          "coreHealths": [30000]
         }
       ]
     },
@@ -3512,6 +6151,16 @@
               "unitsSpawned": 0,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 3735,
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
@@ -3523,6 +6172,16 @@
               "unitsSpawned": 1,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 3735,
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
@@ -3564,10 +6223,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "283517d0",
+        "stateHash": "cf540b64",
         "events": 321
       },
-      "eventLogHash": "8e624b77"
+      "eventLogHash": "1b70e2f7"
     }
   },
   {
@@ -3684,18 +6343,18 @@
       "seed": 1,
       "sideOptions": [
         {
-          "coreHealth": 30000,
           "scheduledWaves": [
             {
               "tick": 1,
               "unit": "unit_soldier",
               "count": 3
             }
-          ]
+          ],
+          "coreHealths": [30000]
         },
         {
-          "coreHealth": 30000,
-          "freePower": true
+          "freePower": true,
+          "coreHealths": [30000]
         }
       ]
     },
@@ -3713,6 +6372,16 @@
               "unitsSpawned": 3,
               "unitsLost": 3,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 3735,
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
@@ -3724,6 +6393,16 @@
               "unitsSpawned": 0,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 3735,
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
@@ -3765,10 +6444,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "05b52fd7",
+        "stateHash": "7b38dc23",
         "events": 327
       },
-      "eventLogHash": "eeae1f47"
+      "eventLogHash": "2486d9a7"
     }
   },
   {
@@ -3815,10 +6494,10 @@
       "seed": 1,
       "sideOptions": [
         {
-          "coreHealth": 30000
+          "coreHealths": [30000]
         },
         {
-          "coreHealth": 30000
+          "coreHealths": [30000]
         }
       ]
     },
@@ -3836,6 +6515,16 @@
               "unitsSpawned": 0,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 3735,
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
@@ -3847,6 +6536,16 @@
               "unitsSpawned": 0,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 3735,
+                  "maxHealth": 30000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 3735,
               "coreMaxHealth": 30000,
               "coreOverkill": 0,
@@ -3888,10 +6587,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "d3ea2404",
+        "stateHash": "81b0af94",
         "events": 309
       },
-      "eventLogHash": "aad2525d"
+      "eventLogHash": "b238c72d"
     }
   },
   {
@@ -3991,7 +6690,7 @@
       "seed": 1,
       "sideOptions": [
         {
-          "coreHealth": 200000
+          "coreHealths": [200000]
         },
         {
           "scheduledWaves": [
@@ -4001,7 +6700,7 @@
               "count": 1200
             }
           ],
-          "coreHealth": 200000
+          "coreHealths": [200000]
         }
       ]
     },
@@ -4019,6 +6718,16 @@
               "unitsSpawned": 0,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 200000,
+                  "overkill": 82,
+                  "destroyedTick": 947
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 200000,
               "coreOverkill": 82,
@@ -4030,6 +6739,16 @@
               "unitsSpawned": 1200,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 200000,
+                  "maxHealth": 200000,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 200000,
               "coreMaxHealth": 200000,
               "coreOverkill": 0,
@@ -4071,10 +6790,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "97c8f5f9",
+        "stateHash": "b4d0928f",
         "events": 34550
       },
-      "eventLogHash": "7aff60c2"
+      "eventLogHash": "c33e2a9e"
     }
   }
 ]

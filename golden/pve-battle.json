@@ -162,6 +162,16 @@
               "unitsSpawned": 9,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
@@ -173,6 +183,16 @@
               "unitsSpawned": 3,
               "unitsLost": 2,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 180,
+                  "overkill": 0,
+                  "destroyedTick": 396
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 180,
               "coreOverkill": 0,
@@ -215,10 +235,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "54c868b6",
+        "stateHash": "78384e57",
         "events": 186
       },
-      "eventLogHash": "ff218f3b"
+      "eventLogHash": "21d5f636"
     }
   },
   {
@@ -384,6 +404,16 @@
               "unitsSpawned": 12,
               "unitsLost": 7,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
@@ -395,6 +425,16 @@
               "unitsSpawned": 0,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 130,
+                  "overkill": 2,
+                  "destroyedTick": 549
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 130,
               "coreOverkill": 2,
@@ -437,10 +477,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "b3cedc49",
+        "stateHash": "ac5f8598",
         "events": 272
       },
-      "eventLogHash": "52bbaa62"
+      "eventLogHash": "5ccc8485"
     }
   },
   {
@@ -606,6 +646,16 @@
               "unitsSpawned": 6,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
@@ -617,6 +667,16 @@
               "unitsSpawned": 2,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 63,
+                  "overkill": 3,
+                  "destroyedTick": 335
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 63,
               "coreOverkill": 3,
@@ -659,10 +719,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "818bfd9f",
+        "stateHash": "1cf3843a",
         "events": 134
       },
-      "eventLogHash": "084e5c85"
+      "eventLogHash": "c50bf4b5"
     }
   },
   {
@@ -828,6 +888,16 @@
               "unitsSpawned": 9,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
@@ -839,6 +909,16 @@
               "unitsSpawned": 1,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 148,
+                  "overkill": 8,
+                  "destroyedTick": 374
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 148,
               "coreOverkill": 8,
@@ -881,10 +961,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "c1501842",
+        "stateHash": "35c5d77b",
         "events": 159
       },
-      "eventLogHash": "a64d1150"
+      "eventLogHash": "3434694f"
     }
   },
   {
@@ -1345,6 +1425,16 @@
               "unitsSpawned": 5,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
@@ -1356,6 +1446,16 @@
               "unitsSpawned": 5,
               "unitsLost": 4,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 180,
+                  "overkill": 0,
+                  "destroyedTick": 642
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 180,
               "coreOverkill": 0,
@@ -1398,10 +1498,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "0f23dae6",
+        "stateHash": "ebade6cd",
         "events": 318
       },
-      "eventLogHash": "1ffb1f51"
+      "eventLogHash": "5a977210"
     }
   },
   {
@@ -1862,6 +1962,16 @@
               "unitsSpawned": 14,
               "unitsLost": 12,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
@@ -1873,6 +1983,16 @@
               "unitsSpawned": 3,
               "unitsLost": 3,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 130,
+                  "overkill": 4,
+                  "destroyedTick": 1754
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 130,
               "coreOverkill": 4,
@@ -1915,10 +2035,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "d854f663",
+        "stateHash": "40059bbe",
         "events": 541
       },
-      "eventLogHash": "c27cf20d"
+      "eventLogHash": "42b10c9e"
     }
   },
   {
@@ -2379,6 +2499,16 @@
               "unitsSpawned": 3,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
@@ -2390,6 +2520,16 @@
               "unitsSpawned": 2,
               "unitsLost": 2,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 63,
+                  "overkill": 3,
+                  "destroyedTick": 413
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 63,
               "coreOverkill": 3,
@@ -2432,10 +2572,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "c03b5f3b",
+        "stateHash": "1ef206d0",
         "events": 197
       },
-      "eventLogHash": "1aeea5a7"
+      "eventLogHash": "48eccdd1"
     }
   },
   {
@@ -2896,6 +3036,16 @@
               "unitsSpawned": 4,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
@@ -2907,6 +3057,16 @@
               "unitsSpawned": 2,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 148,
+                  "overkill": 2,
+                  "destroyedTick": 487
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 148,
               "coreOverkill": 2,
@@ -2949,10 +3109,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "ec12db75",
+        "stateHash": "2704ccb8",
         "events": 217
       },
-      "eventLogHash": "c04b04b8"
+      "eventLogHash": "bc731c62"
     }
   },
   {
@@ -3175,6 +3335,16 @@
               "unitsSpawned": 3,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 236,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 236,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
@@ -3186,6 +3356,16 @@
               "unitsSpawned": 4,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 180,
+                  "overkill": 0,
+                  "destroyedTick": 472
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 180,
               "coreOverkill": 0,
@@ -3228,10 +3408,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "ecc2121e",
+        "stateHash": "a6befdc3",
         "events": 175
       },
-      "eventLogHash": "40aeee94"
+      "eventLogHash": "45122a85"
     }
   },
   {
@@ -3454,6 +3634,16 @@
               "unitsSpawned": 12,
               "unitsLost": 11,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 4,
+                  "destroyedTick": 1518
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 4,
@@ -3465,6 +3655,16 @@
               "unitsSpawned": 3,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 70,
+                  "maxHealth": 130,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 70,
               "coreMaxHealth": 130,
               "coreOverkill": 0,
@@ -3507,10 +3707,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "7e80a90d",
+        "stateHash": "d8a3c13e",
         "events": 518
       },
-      "eventLogHash": "60cfd76d"
+      "eventLogHash": "a0d8dee8"
     }
   },
   {
@@ -3733,6 +3933,16 @@
               "unitsSpawned": 2,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 422,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 422,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
@@ -3744,6 +3954,16 @@
               "unitsSpawned": 2,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 63,
+                  "overkill": 3,
+                  "destroyedTick": 370
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 63,
               "coreOverkill": 3,
@@ -3786,10 +4006,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "3cf28e8a",
+        "stateHash": "051a250f",
         "events": 118
       },
-      "eventLogHash": "ec700be9"
+      "eventLogHash": "0af94c5a"
     }
   },
   {
@@ -4012,6 +4232,16 @@
               "unitsSpawned": 3,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 410,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 410,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
@@ -4023,6 +4253,16 @@
               "unitsSpawned": 1,
               "unitsLost": 0,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 148,
+                  "overkill": 2,
+                  "destroyedTick": 444
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 148,
               "coreOverkill": 2,
@@ -4065,10 +4305,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "c1f3fc24",
+        "stateHash": "fb4047f7",
         "events": 134
       },
-      "eventLogHash": "ddb21c02"
+      "eventLogHash": "87df49b5"
     }
   },
   {
@@ -4529,6 +4769,16 @@
               "unitsSpawned": 3,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 4,
+                  "destroyedTick": 414
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 4,
@@ -4540,6 +4790,16 @@
               "unitsSpawned": 2,
               "unitsLost": 1,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 1686,
+                  "maxHealth": 1722,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 1686,
               "coreMaxHealth": 1722,
               "coreOverkill": 0,
@@ -4582,10 +4842,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "a860d8ac",
+        "stateHash": "d70e0283",
         "events": 332
       },
-      "eventLogHash": "b80c5209"
+      "eventLogHash": "d14d982d"
     }
   },
   {
@@ -4751,6 +5011,16 @@
               "unitsSpawned": 9,
               "unitsLost": 8,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": 404
+                }
+              ],
+              "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
@@ -4762,6 +5032,16 @@
               "unitsSpawned": 16,
               "unitsLost": 3,
               "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 1458,
+                  "maxHealth": 1458,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
               "coreHealth": 1458,
               "coreMaxHealth": 1458,
               "coreOverkill": 0,
@@ -4799,10 +5079,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "6782b3c9",
+        "stateHash": "369584c6",
         "events": 324
       },
-      "eventLogHash": "f302bb63"
+      "eventLogHash": "3d859b50"
     }
   }
 ]

@@ -250,7 +250,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "d3c0f6a9",
+        "stateHash": "b2aa4c83",
         "events": 1306,
         "sides": [
           {
@@ -259,7 +259,7 @@
             "unitsDied": 18,
             "buildingDamageDealt": 500,
             "buildingsDestroyed": 0,
-            "coreHealth": 0
+            "coreHealth": [0]
           },
           {
             "spawned": 44,
@@ -267,11 +267,11 @@
             "unitsDied": 18,
             "buildingDamageDealt": 500,
             "buildingsDestroyed": 0,
-            "coreHealth": 0
+            "coreHealth": [0]
           }
         ]
       },
-      "eventLogHash": "d7ebf031"
+      "eventLogHash": "e8394787"
     }
   },
   {
@@ -431,7 +431,7 @@
     "expected": {
       "result": {
         "tick": 1800,
-        "stateHash": "80a86278",
+        "stateHash": "b107e41e",
         "events": 892,
         "sides": [
           {
@@ -440,7 +440,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 500,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 0,
@@ -448,11 +448,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 0
+            "coreHealth": [0]
           }
         ]
       },
-      "eventLogHash": "7a24c2d9"
+      "eventLogHash": "edd67853"
     }
   },
   {
@@ -710,7 +710,7 @@
     "expected": {
       "result": {
         "tick": 2200,
-        "stateHash": "c27e737b",
+        "stateHash": "9eb30ff5",
         "events": 1099,
         "sides": [
           {
@@ -719,7 +719,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 600,
             "buildingsDestroyed": 0,
-            "coreHealth": 450
+            "coreHealth": [450]
           },
           {
             "spawned": 0,
@@ -727,11 +727,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 1,
-            "coreHealth": 0
+            "coreHealth": [0]
           }
         ]
       },
-      "eventLogHash": "5dda5b02"
+      "eventLogHash": "84286f3d"
     }
   },
   {
@@ -896,7 +896,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "67bf3415",
+        "stateHash": "af7e5073",
         "events": 69,
         "sides": [
           {
@@ -905,7 +905,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 406,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 0,
@@ -913,11 +913,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 1,
-            "coreHealth": 278
+            "coreHealth": [278]
           }
         ]
       },
-      "eventLogHash": "3884ef64"
+      "eventLogHash": "60ca61f7"
     }
   },
   {
@@ -1102,7 +1102,7 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "0f99af15",
+        "stateHash": "7337c1f7",
         "events": 256,
         "sides": [
           {
@@ -1111,7 +1111,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 500,
             "buildingsDestroyed": 0,
-            "coreHealth": 0
+            "coreHealth": [0]
           },
           {
             "spawned": 8,
@@ -1119,11 +1119,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 500,
             "buildingsDestroyed": 0,
-            "coreHealth": 0
+            "coreHealth": [0]
           }
         ]
       },
-      "eventLogHash": "20f0db60"
+      "eventLogHash": "a80b3e3f"
     }
   },
   {
@@ -1467,7 +1467,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "83b6f7b0",
+        "stateHash": "2391d1e2",
         "events": 114,
         "sides": [
           {
@@ -1476,7 +1476,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 3,
@@ -1484,7 +1484,7 @@
             "unitsDied": 3,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           }
         ]
       },
@@ -1820,7 +1820,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "91c02111",
+        "stateHash": "a12efce1",
         "events": 93,
         "sides": [
           {
@@ -1829,7 +1829,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 1,
@@ -1837,7 +1837,7 @@
             "unitsDied": 1,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           }
         ]
       },
@@ -1953,7 +1953,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "4e077186",
+        "stateHash": "e4882f3a",
         "events": 75,
         "sides": [
           {
@@ -1962,7 +1962,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 50
+            "coreHealth": [50]
           },
           {
             "spawned": 3,
@@ -1970,11 +1970,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 450,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           }
         ]
       },
-      "eventLogHash": "6af47240"
+      "eventLogHash": "25dfc835"
     }
   },
   {
@@ -2206,7 +2206,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "176142ac",
+        "stateHash": "df023662",
         "events": 40,
         "sides": [
           {
@@ -2215,7 +2215,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 150,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 1,
@@ -2223,11 +2223,11 @@
             "unitsDied": 1,
             "buildingDamageDealt": 6,
             "buildingsDestroyed": 0,
-            "coreHealth": 350
+            "coreHealth": [350]
           }
         ]
       },
-      "eventLogHash": "8ae0b382"
+      "eventLogHash": "d2c99677"
     }
   },
   {
@@ -3103,7 +3103,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "78f76614",
+        "stateHash": "dadaabee",
         "events": 458,
         "sides": [
           {
@@ -3112,7 +3112,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 0
+            "coreHealth": [0]
           },
           {
             "spawned": 12,
@@ -3120,11 +3120,11 @@
             "unitsDied": 7,
             "buildingDamageDealt": 500,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           }
         ]
       },
-      "eventLogHash": "711c06c6"
+      "eventLogHash": "5f0210f1"
     }
   },
   {
@@ -3267,7 +3267,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "03f50a0a",
+        "stateHash": "77d2e508",
         "events": 221,
         "sides": [
           {
@@ -3276,7 +3276,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 468,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 0,
@@ -3284,11 +3284,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 32
+            "coreHealth": [32]
           }
         ]
       },
-      "eventLogHash": "af220d97"
+      "eventLogHash": "ec8c1b57"
     }
   },
   {
@@ -3431,7 +3431,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "50f11326",
+        "stateHash": "5d736350",
         "events": 142,
         "sides": [
           {
@@ -3440,7 +3440,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 204,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 0,
@@ -3448,11 +3448,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 296
+            "coreHealth": [296]
           }
         ]
       },
-      "eventLogHash": "267eca91"
+      "eventLogHash": "469d2e79"
     }
   },
   {
@@ -3549,7 +3549,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "e35b09bc",
+        "stateHash": "b353470a",
         "events": 63,
         "sides": [
           {
@@ -3558,7 +3558,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 0,
@@ -3566,7 +3566,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           }
         ]
       },
@@ -3926,7 +3926,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "226cc39c",
+        "stateHash": "885edfbe",
         "events": 630,
         "sides": [
           {
@@ -3935,7 +3935,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 540,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 0,
@@ -3943,11 +3943,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 1,
-            "coreHealth": 0
+            "coreHealth": [0]
           }
         ]
       },
-      "eventLogHash": "668f43cf"
+      "eventLogHash": "a255d36d"
     }
   },
   {
@@ -4333,7 +4333,7 @@
     "expected": {
       "result": {
         "tick": 3800,
-        "stateHash": "6e265d15",
+        "stateHash": "2707ee35",
         "events": 51,
         "sides": [
           {
@@ -4342,7 +4342,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 0
+            "coreHealth": [0]
           },
           {
             "spawned": 0,
@@ -4350,11 +4350,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 0
+            "coreHealth": [0]
           }
         ]
       },
-      "eventLogHash": "886406be"
+      "eventLogHash": "acf75e38"
     }
   },
   {
@@ -4503,7 +4503,7 @@
     "expected": {
       "result": {
         "tick": 60,
-        "stateHash": "1c22a2e4",
+        "stateHash": "cd5a358e",
         "events": 7,
         "sides": [
           {
@@ -4512,7 +4512,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 32,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 0,
@@ -4520,11 +4520,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 1,
-            "coreHealth": 488
+            "coreHealth": [488]
           }
         ]
       },
-      "eventLogHash": "2953d5db"
+      "eventLogHash": "cbb88f69"
     }
   },
   {
@@ -4621,7 +4621,7 @@
     "expected": {
       "result": {
         "tick": 60,
-        "stateHash": "427a9621",
+        "stateHash": "d28dc237",
         "events": 21,
         "sides": [
           {
@@ -4630,7 +4630,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 1,
@@ -4638,7 +4638,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           }
         ],
         "positions": [
@@ -5096,7 +5096,7 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "53d39386",
+        "stateHash": "fb9092d8",
         "events": 86,
         "sides": [
           {
@@ -5105,7 +5105,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 500,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 0,
@@ -5113,7 +5113,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 0
+            "coreHealth": [0]
           }
         ],
         "positions": [
@@ -5131,7 +5131,7 @@
           [12, 3188, 8533]
         ]
       },
-      "eventLogHash": "9f68babb"
+      "eventLogHash": "8ca82cb7"
     }
   },
   {
@@ -5364,7 +5364,7 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "2302db09",
+        "stateHash": "22ba654b",
         "events": 244,
         "sides": [
           {
@@ -5373,7 +5373,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 1,
@@ -5381,7 +5381,7 @@
             "unitsDied": 1,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           }
         ],
         "positions": [
@@ -5794,7 +5794,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "3d29b313",
+        "stateHash": "ddc396f9",
         "events": 41,
         "sides": [
           {
@@ -5803,7 +5803,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 246,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 0,
@@ -5811,7 +5811,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 254
+            "coreHealth": [254]
           }
         ],
         "positions": [
@@ -5819,7 +5819,7 @@
           [2, 3000, 8520]
         ]
       },
-      "eventLogHash": "c4cc71f0"
+      "eventLogHash": "f0cda273"
     }
   },
   {
@@ -6078,7 +6078,7 @@
     "expected": {
       "result": {
         "tick": 1,
-        "stateHash": "23535aa3",
+        "stateHash": "a8928a61",
         "events": 9,
         "sides": [
           {
@@ -6087,7 +6087,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           },
           {
             "spawned": 13,
@@ -6095,7 +6095,7 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": 500
+            "coreHealth": [500]
           }
         ],
         "positions": [

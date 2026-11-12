@@ -35,6 +35,7 @@ import {
   cellOfUnit,
   content,
   got,
+  healthEntry,
   mid,
   randomNetwork,
   simConfig,
@@ -96,7 +97,7 @@ function ofType<T extends ArenaEvent['type']>(
 }
 
 function healthOf(sim: ArenaSim, side: number, building: number): number {
-  const h = sim.health.find((x) => x.side === side && x.building === building);
+  const h = healthEntry(sim, side, building);
   return got(h).hp;
 }
 
@@ -208,7 +209,7 @@ describe('arena geometry', () => {
     expect(arena.occupant[idx({ x: 2, y: 4 })]).toBe(-1);
     expect(arena.buildings.filter((b) => b.side === 0)).toHaveLength(3);
     // Side 1's Core (board (5, 0)) is rotated to the top of the arena.
-    const core1 = got(arena.buildings[got(arena.coreRef[1])]);
+    const core1 = got(arena.buildings[got(arena.coreRef[1]?.[0])]);
     expect(core1.cells).toEqual([
       { x: 5, y: 34 },
       { x: 6, y: 34 },
@@ -254,7 +255,7 @@ describe('movement', () => {
       def: 'unit_soldier',
       ...start,
     });
-    const core1 = got(ctx.arena.buildings[got(ctx.arena.coreRef[1])]);
+    const core1 = got(ctx.arena.buildings[got(ctx.arena.coreRef[1]?.[0])]);
     const dist = bfs(ctx.arena, core1.cells);
     const expected = got(dist[start.y * 12 + start.x]);
     expect(expected).toBeGreaterThan(25); // the straight way is 21
@@ -798,10 +799,10 @@ describe('targeting (#66: every unit heads for the Core)', () => {
       x: 5,
       y: 20,
     });
-    const core = got(ctx.arena.buildings[got(ctx.arena.coreRef[1])]);
+    const core = got(ctx.arena.buildings[got(ctx.arena.coreRef[1]?.[0])]);
     runArena(sim, ctx, 40);
     const first = got(ofType(events, 'unit_attacked')[0]);
-    expect(first.target).toEqual({ kind: 'core', side: 1 });
+    expect(first.target).toEqual({ kind: 'core', side: 1, core: 0 });
     // It stopped as soon as the gap to the Core was at most 480: the squared
     // distance to the nearest cell is within (480 + 72)^2 and, because it
     // walks 120 per tick, more than 120 closer-than-that is not needed.
@@ -818,7 +819,9 @@ describe('targeting (#66: every unit heads for the Core)', () => {
       content,
       simConfig,
     );
-    const h = sim.health.find((x) => x.side === 1 && x.building === 0);
+    const h = sim.health.find(
+      (x) => x.side === 1 && 'core' in x && x.core === 0,
+    );
     got(h).hp = 0;
     const a = spawnUnitForTest(sim, ctx, {
       side: 0,
@@ -837,7 +840,7 @@ describe('targeting (#66: every unit heads for the Core)', () => {
     const at = [a.px, a.py, b.px, b.py];
     runArena(sim, ctx, 49);
     expect(ofType(events, 'core_destroyed')).toEqual([
-      { tick: 0, type: 'core_destroyed', side: 1 },
+      { tick: 0, type: 'core_destroyed', side: 1, core: 0 },
     ]);
     expect([a.px, a.py, b.px, b.py]).toEqual(at);
     expect(ofType(events, 'unit_attacked')).toHaveLength(0);
@@ -964,7 +967,11 @@ describe('breach step prices a building by its maximum health (CB-20)', () => {
       content,
       simConfig,
     );
-    got(sim.health.find((h) => h.side === 1 && h.building === b)).hp = 20;
+    got(
+      sim.health.find(
+        (h) => h.side === 1 && 'building' in h && h.building === b,
+      ),
+    ).hp = 20;
     const at = arenaCell(1, 7, 2);
     spawnUnitForTest(sim, ctx, {
       side: 0,
@@ -1027,7 +1034,7 @@ describe('breach field is a pure function of the saved state (CB-20)', () => {
 
   function wallHealth(sim: ArenaSim): number[] {
     return sim.health
-      .filter((h) => h.side === 1 && h.building > 0)
+      .filter((h) => h.side === 1 && 'building' in h)
       .map((h) => h.hp);
   }
 
@@ -1128,7 +1135,7 @@ describe('maximum health includes run modifiers (breach cost and start agree)', 
 
   function begin(a: TeamState, b: TeamState) {
     const r = startArenaBattle(a, b, GAP, content, simConfig, {
-      sideOptions: [{}, { coreHealth: 500 }],
+      sideOptions: [{}, { coreHealths: [500] }],
     });
     spawnUnitForTest(r.sim, r.ctx, {
       side: 0,
@@ -1151,9 +1158,10 @@ describe('maximum health includes run modifiers (breach cost and start agree)', 
     const mod = begin(a, b);
     let walls = 0;
     for (const bld of mod.ctx.arena.buildings) {
-      const h = mod.sim.health.find(
-        (x) => x.side === bld.side && x.building === bld.id,
-      );
+      const h =
+        bld.kind === 'core'
+          ? healthEntry(mod.sim, bld.side, 0, bld.player)
+          : healthEntry(mod.sim, bld.side, bld.id);
       // At tick 0 a building is at full health, which is its maximum.
       expect(h?.hp).toBe(mod.ctx.maxHealth[bld.ref]);
       if (bld.side === 1 && bld.kind === 'core') {
@@ -1234,18 +1242,18 @@ describe('maximum health includes run modifiers (breach cost and start agree)', 
     const half = MAX_HEALTH / 2;
     expect(() =>
       createArenaSim(core, coreOnly(), GAP, content, simConfig, {
-        sideOptions: [{ coreHealth: half + 1000 }, {}],
+        sideOptions: [{ coreHealths: [half + 1000] }, {}],
       }),
     ).toThrow(/maximum health 1000000002000 with modifiers exceeds/);
     // Fine without the modifier, and at exactly the cap with it.
     expect(() =>
       createArenaSim(coreOnly(), coreOnly(), GAP, content, simConfig, {
-        sideOptions: [{ coreHealth: half + 1000 }, {}],
+        sideOptions: [{ coreHealths: [half + 1000] }, {}],
       }),
     ).not.toThrow();
     expect(() =>
       createArenaSim(core, coreOnly(), GAP, content, simConfig, {
-        sideOptions: [{ coreHealth: half }, {}],
+        sideOptions: [{ coreHealths: [half] }, {}],
       }),
     ).not.toThrow();
     // Unit strength: base option plus modifier must keep every unit in bounds.
@@ -1360,7 +1368,11 @@ describe('destruction', () => {
     const before = flowTotals(got(sim.boards[1]));
     expect(before.inConduits).toBeGreaterThan(0);
     // The splitter falls on the next tick.
-    got(sim.health.find((h) => h.side === 1 && h.building === n.sp)).hp = 0;
+    got(
+      sim.health.find(
+        (h) => h.side === 1 && 'building' in h && h.building === n.sp,
+      ),
+    ).hp = 0;
     for (let t = 0; t < 600; t++) {
       stepArena(sim, ctx);
       conserved(sim);
@@ -1429,7 +1441,11 @@ describe('destruction', () => {
     runArena(sim, ctx, 100);
     const produced = flowTotals(got(sim.boards[1])).produced;
     expect(produced).toBeGreaterThan(5);
-    got(sim.health.find((h) => h.side === 1 && h.building === n.e1)).hp = 0;
+    got(
+      sim.health.find(
+        (h) => h.side === 1 && 'building' in h && h.building === n.e1,
+      ),
+    ).hp = 0;
     for (let t = 0; t < 200; t++) {
       stepArena(sim, ctx);
       conserved(sim);
@@ -1623,9 +1639,13 @@ describe('determinism and symmetry', () => {
       expect(mirrorKey(sim, 1)).toEqual(mirrorKey(sim, 0));
       expect(hashJson(sim.boards[0])).toBe(hashJson(sim.boards[1]));
       expect(
-        sim.health.filter((h) => h.side === 0).map((h) => [h.building, h.hp]),
+        sim.health
+          .filter((h) => h.side === 0)
+          .map((h) => ['building' in h ? h.building : 0, h.hp]),
       ).toEqual(
-        sim.health.filter((h) => h.side === 1).map((h) => [h.building, h.hp]),
+        sim.health
+          .filter((h) => h.side === 1)
+          .map((h) => ['building' in h ? h.building : 0, h.hp]),
       );
       expect(hashJson(sim.teams[0])).toBe(hashJson(sim.teams[1]));
       expect(
@@ -1742,7 +1762,9 @@ describe('damage sums beyond 32 bits (int.ts contract)', () => {
       u.damage = damage;
       u.attackCooldown = 0;
     }
-    got(b.sim.health.find((h) => h.side === 1 && h.building === 0)).hp = coreHp;
+    got(
+      b.sim.health.find((h) => h.side === 1 && 'core' in h && h.core === 0),
+    ).hp = coreHp;
     return b;
   }
 
@@ -1750,7 +1772,9 @@ describe('damage sums beyond 32 bits (int.ts contract)', () => {
     const { sim, ctx } = pile(12, 200_000_000, 1_000_000_000_000);
     stepArena(sim, ctx);
     expect(healthOf(sim, 1, 0)).toBe(1_000_000_000_000 - 12 * 200_000_000);
-    expect(ctx.coreRemaining[1]).toBe(1_000_000_000_000 - 12 * 200_000_000);
+    expect(ctx.coreRemaining[1]?.[0]).toBe(
+      1_000_000_000_000 - 12 * 200_000_000,
+    );
   });
 
   test('twelve hits of 2e8 on a unit sum to 2.4e9 exactly (no wrap)', () => {
@@ -1782,10 +1806,10 @@ describe('damage sums beyond 32 bits (int.ts contract)', () => {
     const { sim, ctx } = pile(101, 90_000_000_000_000, 2 ** 52);
     stepArena(sim, ctx);
     expect(healthOf(sim, 1, 0)).toBe(0);
-    expect(ctx.coreRemaining[1]).toBe(2 ** 52 - MAX_TICK_DAMAGE);
+    expect(ctx.coreRemaining[1]?.[0]).toBe(2 ** 52 - MAX_TICK_DAMAGE);
     const more = pile(120, 90_000_000_000_000, 5);
     stepArena(more.sim, more.ctx);
-    expect(more.ctx.coreRemaining[1]).toBe(5 - MAX_TICK_DAMAGE);
+    expect(more.ctx.coreRemaining[1]?.[0]).toBe(5 - MAX_TICK_DAMAGE);
   });
 
   test('Overload that would push a hit past MAX_HIT fails at setup', () => {
@@ -1864,9 +1888,9 @@ function checkTick(sim: ArenaSim, ctx: ArenaContext): void {
   // No destroyed building is left in a team state or a flow plan.
   for (const side of [0, 1] as const) {
     const alive = new Set(
-      sim.health
-        .filter((h) => h.side === side && h.building > 0 && h.hp > 0)
-        .map((h) => h.building),
+      sim.health.flatMap((h) =>
+        h.side === side && 'building' in h && h.hp > 0 ? [h.building] : [],
+      ),
     );
     const team = got(sim.teams[side]);
     expect(team.buildings.map((x) => x.id).sort((p, q) => p - q)).toEqual(

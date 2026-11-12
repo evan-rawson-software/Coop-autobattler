@@ -132,7 +132,9 @@ describe('side options: scheduled waves', () => {
       scheduledWaves: [{ tick: 0, unit: 'unit_soldier', count }],
     });
     // A Core that does not fall keeps the units busy (queueing in front of it).
-    got(sim.health.find((h) => h.side === 0 && h.building === 0)).hp = 10 ** 12;
+    got(
+      sim.health.find((h) => h.side === 0 && 'core' in h && h.core === 0),
+    ).hp = 10 ** 12;
     const wanted: number[] = [];
     for (let i = 0; i < count; i++) {
       wanted.push(Math.floor(((2 * i + 1) * W) / (2 * count)));
@@ -161,8 +163,9 @@ describe('side options: scheduled waves', () => {
       const { sim, ctx } = start(empty(), {
         scheduledWaves: [{ tick: 0, unit: 'unit_soldier', count: 80 }],
       });
-      got(sim.health.find((h) => h.side === 0 && h.building === 0)).hp =
-        10 ** 12;
+      got(
+        sim.health.find((h) => h.side === 0 && 'core' in h && h.core === 0),
+      ).hp = 10 ** 12;
       let s = sim;
       let c = ctx;
       for (let t = 0; t < 40; t++) {
@@ -193,9 +196,10 @@ describe('side options: strength, free power, Core health', () => {
   });
 
   test('the Core health override applies to that side only', () => {
-    const { sim } = start(empty(), { coreHealth: 77 });
+    const { sim } = start(empty(), { coreHealths: [77] });
     const core = (side: number) =>
-      sim.health.find((h) => h.side === side && h.building === 0)?.hp;
+      sim.health.find((h) => h.side === side && 'core' in h && h.core === 0)
+        ?.hp;
     expect(core(0)).toBe(500);
     expect(core(1)).toBe(77);
   });

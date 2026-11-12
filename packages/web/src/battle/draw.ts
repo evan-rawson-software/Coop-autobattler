@@ -5,7 +5,7 @@
  * between frames except scratch buffers, so there is no per-unit allocation.
  */
 
-import { CELL_UNITS, type UnitSim } from '@game/core';
+import { CELL_UNITS, isCoreHealth, type UnitSim } from '@game/core';
 import type { OverlayContext } from '../board/BoardView.js';
 import type { Scene, ViewRect } from '../board/scene.js';
 import type { WebContent } from '../content.js';
@@ -145,15 +145,20 @@ export function drawBattleOverlay(
   // --- Health bars of damaged buildings and the Cores ---------------------
   if (z >= 6) {
     const initial = pb.record.initialHealth;
+    const shownCore = [false, false];
     for (let i = 0; i < sim.health.length; i++) {
       const h = sim.health[i];
       const max = initial[i]?.hp ?? 0;
       if (h === undefined || max <= 0 || h.hp <= 0) continue;
-      const isCore = h.building === 0;
+      const isCore = isCoreHealth(h);
+      if (isCore && (shownCore[h.side === 0 ? 0 : 1] ?? false)) continue;
+      if (isCore) shownCore[h.side === 0 ? 0 : 1] = true;
       if (!isCore && h.hp >= max) continue;
       const side = h.side === 0 ? 0 : 1;
+      // One Core is drawn per side until the Battle screen shows several
+      // (issue #143): the first one.
       const r = isCore
-        ? index.coreRects[side]
+        ? (index.coreRects[side] ?? null)
         : index.rects[side].get(h.building);
       if (r === null || r === undefined) continue;
       const bw = r.w * z;

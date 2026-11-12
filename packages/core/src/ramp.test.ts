@@ -33,7 +33,7 @@ import {
   overclockerSpeedTeam,
   tinyMap,
 } from './ramp-scenarios.js';
-import { content, got, Lab, simConfig } from './test-support.js';
+import { content, got, healthEntry, Lab, simConfig } from './test-support.js';
 import type { TeamState } from './team-state.js';
 
 const GAP = 4;
@@ -48,14 +48,11 @@ function ofType<T extends ArenaEvent['type']>(
 }
 
 function hpOf(sim: ArenaSim, side: number, building: number): number {
-  return got(sim.health.find((h) => h.side === side && h.building === building))
-    .hp;
+  return got(healthEntry(sim, side, building)).hp;
 }
 
 function kill(sim: ArenaSim, side: number, building: number): void {
-  const h = got(
-    sim.health.find((x) => x.side === side && x.building === building),
-  );
+  const h = got(healthEntry(sim, side, building));
   h.hp = 0;
 }
 
@@ -117,7 +114,7 @@ describe('overloadDeadline (#43)', () => {
         GAP,
         content,
         simConfig,
-        { sideOptions: [{ coreHealth: hp }, { coreHealth: hp }] },
+        { sideOptions: [{ coreHealths: [hp] }, { coreHealths: [hp] }] },
       );
       const d = overloadDeadline(simConfig, hp);
       expect(d.startTick).toBe(simConfig.overloadStartTick);
@@ -164,33 +161,42 @@ describe('overloadOutcome (#75)', () => {
     overloadCoreDamageStep: 5,
   };
   test('the smaller Core falls first, equal ticks fall together', () => {
-    expect(overloadOutcome(cfg, 500, 315)).toEqual({ first: 'b', tick: 2800 });
-    expect(overloadOutcome(cfg, 42, 500)).toEqual({ first: 'a', tick: 2100 });
-    expect(overloadOutcome(cfg, 500, 456)).toEqual({
+    expect(overloadOutcome(cfg, [500], [315])).toEqual({
+      first: 'b',
+      tick: 2800,
+    });
+    expect(overloadOutcome(cfg, [42], [500])).toEqual({
+      first: 'a',
+      tick: 2100,
+    });
+    expect(overloadOutcome(cfg, [500], [456])).toEqual({
       first: 'both',
       tick: 3100,
     });
-    expect(overloadOutcome(cfg, 500, 455)).toEqual({ first: 'b', tick: 3000 });
+    expect(overloadOutcome(cfg, [500], [455])).toEqual({
+      first: 'b',
+      tick: 3000,
+    });
   });
   test('a Core the decay does not destroy within the battle never falls first', () => {
     const short = { ...cfg, maxBattleTicks: 3000 };
     // 455 falls at tick 3000 (not before the limit 3000), 315 at 2800.
-    expect(overloadOutcome(short, 500, 315)).toEqual({
+    expect(overloadOutcome(short, [500], [315])).toEqual({
       first: 'b',
       tick: 2800,
     });
-    expect(overloadOutcome(short, 315, 500)).toEqual({
+    expect(overloadOutcome(short, [315], [500])).toEqual({
       first: 'a',
       tick: 2800,
     });
-    expect(overloadOutcome(short, 500, 455)).toEqual({
+    expect(overloadOutcome(short, [500], [455])).toEqual({
       first: null,
       tick: null,
     });
   });
   test('no decay: nothing falls', () => {
     expect(
-      overloadOutcome({ ...cfg, overloadCoreDamageStep: 0 }, 500, 315),
+      overloadOutcome({ ...cfg, overloadCoreDamageStep: 0 }, [500], [315]),
     ).toEqual({ first: null, tick: null });
   });
 });

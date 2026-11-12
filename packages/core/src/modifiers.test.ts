@@ -110,10 +110,12 @@ describe('modifiers travel in team state and change battles', () => {
       const b = before[i];
       const a = after[i];
       if (b === undefined || a === undefined) throw new Error('missing');
-      const placed = base.buildings.find((p) => p.id === b.building);
+      const placed = base.buildings.find(
+        (p) => 'building' in b && p.id === b.building,
+      );
       const def =
         placed === undefined ? undefined : content.buildings.get(placed.def);
-      if (b.building === 0) {
+      if ('core' in b) {
         expect(a.hp).toBe(Math.floor((b.hp * 120) / 100));
       } else if (def?.kind === 'defense' && def.defenseType === 'wall') {
         expect(a.hp).toBe(Math.floor((b.hp * 125) / 100));

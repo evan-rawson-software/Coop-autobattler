@@ -11,12 +11,7 @@
 
 import type { BuildingKind, DefenseType } from './buildings.js';
 import { coreFootprint, type Cell } from './map.js';
-import {
-  occupancy,
-  soleCore,
-  type TeamContent,
-  type TeamState,
-} from './team-state.js';
+import { occupancy, type TeamContent, type TeamState } from './team-state.js';
 import type { UnitConfig } from './units.js';
 
 /** What the arena code needs from the loaded content. */
@@ -49,8 +44,10 @@ export interface ArenaBuilding {
   /** Index into `Arena.buildings`. */
   readonly ref: number;
   readonly side: number;
-  /** Instance ID, or 0 for the side's Core. */
+  /** Instance ID, or 0 for a Core (then `player` tells which). */
   readonly id: number;
+  /** The player index of a Core (PP-9); -1 for any other building. */
+  readonly player: number;
   readonly kind: BuildingKind;
   readonly defenseType: DefenseType | null;
   readonly def: string;
@@ -69,8 +66,11 @@ export interface Arena {
   readonly buildings: ArenaBuilding[];
   /** Per side: instance ID -> `ref`. */
   readonly byId: readonly Map<number, number>[];
-  /** Per side: `ref` of the Core, or -1 when none was placed. */
-  readonly coreRef: number[];
+  /**
+   * Per side, per player index: `ref` of that player's Core, or -1 when none
+   * was placed (PP-9).
+   */
+  readonly coreRef: number[][];
 }
 
 /** Cell index `y * width + x`. */
@@ -110,13 +110,13 @@ export function createArena(
   const blocked = new Uint8Array(n);
   const occupant = new Int32Array(n).fill(-1);
   const buildings: ArenaBuilding[] = [];
+  const teams = [teamA, teamB];
   const byId: Map<number, number>[] = [
     new Map<number, number>(),
     new Map<number, number>(),
   ];
-  const coreRef = [-1, -1];
+  const coreRef: number[][] = teams.map((t) => t.cores.map(() => -1));
 
-  const teams = [teamA, teamB];
   teams.forEach((team, side) => {
     for (const f of team.map.features) {
       const def = content.terrain.get(f.feature);
@@ -149,6 +149,7 @@ export function createArena(
     defenseType: DefenseType | null,
     def: string,
     boardCells: readonly Cell[],
+    player = -1,
   ): void => {
     const ref = buildings.length;
     const cells = boardCells
@@ -158,6 +159,7 @@ export function createArena(
       ref,
       side,
       id,
+      player,
       kind,
       defenseType,
       def,
@@ -165,23 +167,25 @@ export function createArena(
       alive: true,
     });
     for (const c of cells) occupant[cellIndex(geom, c.x, c.y)] = ref;
-    if (kind === 'core') coreRef[side] = ref;
-    else byId[side]?.set(id, ref);
+    if (kind === 'core') {
+      const refs = coreRef[side];
+      if (refs !== undefined) refs[player] = ref;
+    } else byId[side]?.set(id, ref);
   };
 
   teams.forEach((team, side) => {
-    const core = soleCore(team);
-    if (core !== null) {
-      const fp = coreFootprint(content.buildings);
-      const coreDef = content.buildings.list().find((d) => d.kind === 'core');
+    const fp = coreFootprint(content.buildings);
+    const coreDef = content.buildings.list().find((d) => d.kind === 'core');
+    team.cores.forEach((core, player) => {
+      if (core === null) return;
       const cells: Cell[] = [];
       for (let dy = 0; dy < fp.height; dy++) {
         for (let dx = 0; dx < fp.width; dx++) {
           cells.push({ x: core.x + dx, y: core.y + dy });
         }
       }
-      add(side, 0, 'core', null, coreDef?.id ?? 'core', cells);
-    }
+      add(side, 0, 'core', null, coreDef?.id ?? 'core', cells, player);
+    });
     const occ = occupancy(team, content);
     for (const p of team.buildings) {
       const def = content.buildings.get(p.def);
@@ -207,4 +211,17 @@ export function removeFromArena(arena: Arena, ref: number): void {
   for (const c of b.cells) {
     arena.occupant[cellIndex(arena.geom, c.x, c.y)] = -1;
   }
+}
+
+/**
+ * The Core a side's units head for while issue #133 (targeting) is not in:
+ * the lowest-indexed living Core of `side` (the enemy of the units), or -1
+ * when none stands. #133 replaces this with the opposite Core first, then the
+ * nearest.
+ */
+export function goalCoreRef(arena: Arena, side: number): number {
+  for (const ref of arena.coreRef[side] ?? []) {
+    if (ref >= 0 && arena.buildings[ref]?.alive === true) return ref;
+  }
+  return -1;
 }
