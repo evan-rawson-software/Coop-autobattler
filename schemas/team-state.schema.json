@@ -130,7 +130,7 @@
       }
     },
     "conduits": {
-      "description": "Conduits, sorted by ascending id. Each runs from a side of one placed building to a side of another building of the same owner; cells is the ordered path from the cell just outside the from side to the cell just outside the to side, empty for a direct connection.",
+      "description": "Conduits, sorted by ascending id. Each runs from a side of one placed building to a side of another building of the same owner; cells is the ordered path from the cell just outside the from side to the cell just outside the to side, empty for a direct connection. A half of a border link (PP-4) has a border spot in place of one building end: a sending half ends at a border spot, a receiving half starts at one, and its path ends (starts) on the owner's border cell of the spot.",
       "type": "array",
       "items": {
         "type": "object",
@@ -147,10 +147,16 @@
             "minimum": 0
           },
           "from": {
-            "$ref": "#/$defs/conduitEnd"
+            "oneOf": [
+              { "$ref": "#/$defs/conduitEnd" },
+              { "$ref": "#/$defs/borderEnd" }
+            ]
           },
           "to": {
-            "$ref": "#/$defs/conduitEnd"
+            "oneOf": [
+              { "$ref": "#/$defs/conduitEnd" },
+              { "$ref": "#/$defs/borderEnd" }
+            ]
           },
           "cells": {
             "type": "array",
@@ -175,6 +181,22 @@
     }
   },
   "$defs": {
+    "borderEnd": {
+      "description": "A border spot (PP-4): row y of border b, the line between plot b and plot b + 1.",
+      "type": "object",
+      "required": ["border", "y"],
+      "additionalProperties": false,
+      "properties": {
+        "border": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
     "conduitEnd": {
       "type": "object",
       "required": ["building", "side"],

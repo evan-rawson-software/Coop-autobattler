@@ -11,6 +11,8 @@ import {
   ghostTierBound,
   ghostValueBound,
   hashJson,
+  listLegalCorePositions,
+  placeCore,
   tierPrice,
   validateGhostSnapshot,
   workshopPrice,
@@ -39,7 +41,12 @@ import { startRun, openRun } from './run-controller.js';
 import { buildSaveRecord } from './save.js';
 import { createMemorySaveStore } from './save-store-memory.js';
 import { allowedIntents } from './selectors.js';
-import { content, gameConfigs, makeGameDeps } from './test-support.js';
+import {
+  content,
+  gameConfigs,
+  makeGameDeps,
+  mapgenConfig,
+} from './test-support.js';
 import type {
   CreateRunArgs,
   Intent,
@@ -415,6 +422,49 @@ describe('item 2: the controller validates the next state before every save', ()
     }
     expect(rows).toHaveLength(4);
   }, 60_000);
+});
+
+describe('format 3 and one Core (issue #139, #135)', () => {
+  const ctx = ctxOf();
+
+  test('a format-2 snapshot (before border links) is rejected, and so is any other format', () => {
+    const good = goodSnapshot(2);
+    expect(good.formatVersion).toBe(3);
+    for (const v of [1, 2, 4, 0, '3']) {
+      const r = validateGhostSnapshot(
+        { ...clone(good), formatVersion: v },
+        ctx,
+      );
+      expect(r.ok, String(v)).toBe(false);
+      expect(r.ok ? '' : r.errors.join()).toMatch(/unsupported/);
+    }
+  });
+
+  test('a snapshot or save with two Cores placed is rejected (until #132)', () => {
+    const deps = botDeps('two');
+    const run = botRun(deps, argsFor('two', 7, ['A', 'B']), 2, atRound(2));
+    const snap = run.snapshots.find((s) => s.round === 2);
+    if (snap === undefined) throw new Error('no snapshot');
+    expect(validateGhostSnapshot(clone(snap), ctxOf(deps)).ok).toBe(true);
+    const cores = snap.team.cores;
+    const empty = cores.findIndex((c) => c === null);
+    // Both players have a Core placed: put one more in the empty slot.
+    const pos = listLegalCorePositions(
+      snap.team.map,
+      content,
+      mapgenConfig,
+      empty,
+    )[0];
+    if (empty < 0 || pos === undefined) throw new Error('no free Core slot');
+    const placed = placeCore(snap.team, content, mapgenConfig, empty, pos);
+    if (!placed.ok) throw new Error(placed.reason);
+    const two = { ...clone(snap), team: clone(placed.state) };
+    const r = validateGhostSnapshot(two, ctxOf(deps));
+    expect(r.ok ? '' : r.errors.join()).toMatch(/only one Core/);
+    const state = { ...clone(run.state), team: clone(placed.state) };
+    const s = validateRunState(state, deps);
+    expect(s.ok ? '' : s.errors.join()).toMatch(/only one Core/);
+  });
 });
 
 describe('item 2b: found by the validation before save', () => {

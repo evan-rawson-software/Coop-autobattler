@@ -59,10 +59,10 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-1 | Ownership and plot checks on every board operation; conduits have an owner | **implemented** (issue #129) |
 | PP-2 | One Core per player: team state, positions, `placeCore`, health | **implemented** (issues #128 and #132); `core_not_placed` still names only the side, and only for a side with no Core at all: the per-player check comes with issues #131 and #138 |
 | PP-3 | Core placement step: each player places their own Core, no vote | not yet implemented (issue #131) |
-| PP-4 | Border links | not yet implemented (issues #135 and #136) |
+| PP-4 | Border links | **implemented** for halves, joining, validation, the flow graph and the flow simulation (issue #135); "In battle", undo and session intents are still issue #136 |
 | PP-5 | Collector flow rate by tier | **implemented** (issue #130; "One tick: `stepFlow`", step 3, and "Collector rate") |
 | PP-6 | Minimum time between productions, need, store | **implemented** (issue #130; "One battle tick", step 2 and step 7, "In-battle ramp", "Dry run (CB-43)") |
-| PP-7 | Splitting, with back-up | **implemented** ("One tick: `stepFlow`", step 2; vectors against consumers with a top speed since issue #130). An open border half (PP-4) is still issue #135 |
+| PP-7 | Splitting, with back-up | **implemented** ("One tick: `stepFlow`", step 2; vectors against consumers with a top speed since issue #130). An open border half (PP-4) is a connected output that never accepts (issue #135) |
 | PP-8 | Economy buildings act for their owner only; lower collector speed-up cap | not yet implemented (issue #137) |
 | PP-9 | Several Cores per side in the arena; Overload per Core; a destroyed Core switches nothing off | **implemented** (issue #132; "The arena", "One battle tick", "Overload", "Side options") |
 | PP-10 | End conditions and the tiebreak ladder with several Cores | **implemented** (issue #132; "Battles") |
@@ -71,7 +71,7 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-14 | PvE strongholds and bosses with one Core per player | not yet implemented (issue #138) |
 | PP-15 | Sealed-producer check per owner; map rule per plot | map rule **implemented** (issue #129); sealed check per owner: not yet implemented (issue #131) |
 | PP-16 | Party votes and run streams without the Core vote | not yet implemented (issue #131) |
-| PP-17 | Formats, version, ghost validation | not yet implemented (issue #139) |
+| PP-17 | Formats, version, ghost validation | partly implemented (issue #139): major version 1.0, snapshot format 3 (2 before border links, issue #135), run-state format 6 (5 before), bundled ghosts regenerated, and at most one placed Core in snapshots and saves. Not yet: the per-owner value bound (waits for #131); border-link legality is checked by `validateTeamState` (issue #135) |
 
 ### Numbers to be set in the rebalance
 
@@ -676,8 +676,8 @@ unaffected by this rule.
   emptied, as for any major release (TA-8). There is no migration.
 - **Team state**: `cores` in place of `core` (PP-2); `owner` on every conduit
   (PP-1); conduit ends may be border spots (PP-4).
-- **Ghost snapshot**: `formatVersion` 2 (today 1). **Run state**: format 5
-  (today 4). Older values are rejected.
+- **Ghost snapshot**: `formatVersion` 3 (2 before border links, issue #135).
+  **Run state**: format 6 (5 before border links). Older values are rejected.
 - **Ghost validation** (`validateGhostSnapshot`) adds, through
   `validateTeamState`: every Core placed and inside its player's plot; every
   building inside its owner's plot; every conduit and half owned and placed
@@ -1210,7 +1210,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-4 | Conduit ends may be border spots (halves of a border link). | not yet implemented (issue #135) |
+| PP-4 | Conduit ends may be border spots (halves of a border link). | **implemented** (issue #135) |
 
 Implemented in `packages/core/src/team-state.ts` (golden kind `team-state-ops`:
 `team-state-ops.ts`). The party's whole state for combat is one board (CP-6,
@@ -1410,7 +1410,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-4 | Border links: a half ends at a border spot; two matching halves are one conduit in the flow graph (`linkedConduit` on the edge); an open half carries nothing and loses nothing (a connected output that never accepts). | not yet implemented (issues #135 and #136) |
+| PP-4 | Border links: a half ends at a border spot; two matching halves are one conduit in the flow graph (`linkedConduit` on the edge); an open half carries nothing and loses nothing (a connected output that never accepts). | **implemented** (issue #135) |
 
 Implemented in `packages/core/src/conduits.ts` (golden kinds `team-state-ops`
 and `flow-graph`: `team-state-ops.ts`). Conduits carry resources between
@@ -1617,7 +1617,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-7 | With PP-4 an output whose half is open is a connected output that never accepts (the item is held and the line backs up; it is not a dead end and nothing is lost). | not yet implemented (issue #135) |
+| PP-7 | With PP-4 an output whose half is open is a connected output that never accepts (the item is held and the line backs up; it is not a dead end and nothing is lost). | **implemented** (issue #135) |
 | PP-8 | The source interval modifier becomes one value per owning player. | not yet implemented (issue #137) |
 | PP-4 | `rebuildFlow` removes both halves of a link when either end building is destroyed. | not yet implemented (issue #136) |
 
@@ -4293,7 +4293,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-17 | Snapshot `formatVersion` 2, run-state format 5, a new major version (saves and the local pool are wiped). Validation adds plot and ownership checks, one Core per player, legal border links, and a value bound per owner. Bundled ghosts are regenerated. | not yet implemented (issue #139) |
+| PP-17 | Snapshot `formatVersion` 3, run-state format 6, a new major version (saves and the local pool are wiped). Validation adds plot and ownership checks, one Core per player, legal border links, and a value bound per owner. Bundled ghosts are regenerated. | partly implemented (issue #139): version, formats, bundled ghosts, at most one placed Core; the other validation waits for #129, #135, #131 |
 
 A ghost is another run's party, frozen at the start of one of its PvP battles
 and fought by a later run (MM-1..MM-17, W3-1). Everything below is implemented
@@ -4305,7 +4305,7 @@ Ghosts are switched on by giving the run's deps `ghosts` (`createGameDeps(...,
 
 ### Format (`schemas/ghost-snapshot.schema.json`)
 
-`formatVersion` (1), `gameVersion` (`major.minor`, the run's `runVersion`),
+`formatVersion` (3), `gameVersion` (`major.minor`, the run's `runVersion`),
 `partySize`, `round`, `mapSeed` and `team` (the whole team state: map, Core,
 buildings, stash, conduits, modifiers), `owner` (`{id, label}`; the id is a
 stable install identifier, the label is shown to opponents), `runId`, `lives`
@@ -4422,7 +4422,7 @@ Measured: a 10-round solo run beside 16 owners went from 264,717 bytes to about
 Every candidate, and a ghost inside a loaded run state, must pass all of:
 
 1. **Shape and size**: no unknown fields at any level (`runSeed` and
-   `actionLog` are reserved and rejected), `formatVersion` 1, `gameVersion` as
+   `actionLog` are reserved and rejected), `formatVersion` 3, `gameVersion` as
    `major.minor`, sizes and ids within their limits (labels printable, at most
    40 characters). Checked first, on the raw value, stopping at the first
    violation: plain JSON only, every number a safe integer (and not `-0`), no string or key with a lone

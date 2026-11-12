@@ -2693,5 +2693,984 @@
       },
       "eventLogHash": "ed35bbce"
     }
+  },
+  {
+    "id": "flow-sim.border-link",
+    "kind": "flow-sim",
+    "description": "Resources cross a border through a link of 15 cells; nothing is lost.",
+    "input": {
+      "seed": 1,
+      "partySize": 2,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 2,
+        "plotWidth": 12,
+        "features": [],
+        "nodes": [
+          {
+            "x": 2,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 2,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 1
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 1,
+          "id": 2,
+          "x": 14,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "border": 0,
+            "y": 3
+          },
+          "cells": [
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 11,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 1,
+          "from": {
+            "border": 0,
+            "y": 3
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 12,
+              "y": 3
+            },
+            {
+              "x": 13,
+              "y": 3
+            },
+            {
+              "x": 14,
+              "y": 3
+            },
+            {
+              "x": 14,
+              "y": 4
+            },
+            {
+              "x": 14,
+              "y": 5
+            }
+          ]
+        }
+      ],
+      "ticks": 400,
+      "consumers": "drain"
+    },
+    "expected": {
+      "result": {
+        "tick": 400,
+        "stateHash": "bec3164a",
+        "flow": {
+          "produced": 20,
+          "inConduits": 1,
+          "held": 0,
+          "inBuffers": 0,
+          "consumed": 19,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 20,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [],
+        "consumers": [
+          {
+            "building": 2,
+            "side": "south",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 19,
+            "consumed": 19
+          }
+        ]
+      },
+      "eventLogHash": "05079e59"
+    }
+  },
+  {
+    "id": "flow-sim.border-link-reverse",
+    "kind": "flow-sim",
+    "description": "A link carries from the higher plot to the lower one.",
+    "input": {
+      "seed": 1,
+      "partySize": 2,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 2,
+        "plotWidth": 12,
+        "features": [],
+        "nodes": [
+          {
+            "x": 14,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 1
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 1,
+          "id": 1,
+          "x": 14,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 2,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 1,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "border": 0,
+            "y": 3
+          },
+          "cells": [
+            {
+              "x": 14,
+              "y": 3
+            },
+            {
+              "x": 13,
+              "y": 3
+            },
+            {
+              "x": 12,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "border": 0,
+            "y": 3
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 11,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 2,
+              "y": 4
+            },
+            {
+              "x": 2,
+              "y": 5
+            }
+          ]
+        }
+      ],
+      "ticks": 300,
+      "consumers": "drain"
+    },
+    "expected": {
+      "result": {
+        "tick": 300,
+        "stateHash": "8f1c2e77",
+        "flow": {
+          "produced": 15,
+          "inConduits": 1,
+          "held": 0,
+          "inBuffers": 0,
+          "consumed": 14,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 15,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [],
+        "consumers": [
+          {
+            "building": 2,
+            "side": "south",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 14,
+            "consumed": 14
+          }
+        ]
+      },
+      "eventLogHash": "c7cae86b"
+    }
+  },
+  {
+    "id": "flow-sim.border-link-splitter-shares",
+    "kind": "flow-sim",
+    "description": "A splitter shares evenly between the owner own barracks and a link to the neighbour barracks.",
+    "input": {
+      "seed": 1,
+      "partySize": 2,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 2,
+        "plotWidth": 12,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_splitter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 3,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 1,
+          "y": 3,
+          "rotation": 270
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 1
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 1,
+          "id": 4,
+          "x": 14,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "west"
+          },
+          "to": {
+            "building": 3,
+            "side": "east"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "east"
+          },
+          "to": {
+            "border": 0,
+            "y": 3
+          },
+          "cells": [
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 11,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 1,
+          "from": {
+            "border": 0,
+            "y": 3
+          },
+          "to": {
+            "building": 4,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 12,
+              "y": 3
+            },
+            {
+              "x": 13,
+              "y": 3
+            },
+            {
+              "x": 14,
+              "y": 3
+            },
+            {
+              "x": 14,
+              "y": 4
+            },
+            {
+              "x": 14,
+              "y": 5
+            }
+          ]
+        }
+      ],
+      "ticks": 600,
+      "consumers": "drain"
+    },
+    "expected": {
+      "result": {
+        "tick": 600,
+        "stateHash": "e823dec8",
+        "flow": {
+          "produced": 60,
+          "inConduits": 1,
+          "held": 1,
+          "inBuffers": 0,
+          "consumed": 58,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 60,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [
+          {
+            "building": 2,
+            "key": "2",
+            "lost": 0,
+            "held": "res_a"
+          }
+        ],
+        "consumers": [
+          {
+            "building": 3,
+            "side": "east",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 29,
+            "consumed": 29
+          },
+          {
+            "building": 4,
+            "side": "south",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 29,
+            "consumed": 29
+          }
+        ]
+      },
+      "eventLogHash": "47eddc33"
+    }
+  },
+  {
+    "id": "flow-sim.splitter-only-open-halves",
+    "kind": "flow-sim",
+    "description": "A collector feeds a splitter whose only connected outputs are two open sending halves: the splitter holds its item, the collector stalls, nothing is lost.",
+    "input": {
+      "seed": 1,
+      "partySize": 2,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 2,
+        "plotWidth": 12,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_splitter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 3,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "east"
+          },
+          "to": {
+            "border": 0,
+            "y": 3
+          },
+          "cells": [
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 11,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "border": 0,
+            "y": 5
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 4
+            },
+            {
+              "x": 3,
+              "y": 5
+            },
+            {
+              "x": 4,
+              "y": 5
+            },
+            {
+              "x": 5,
+              "y": 5
+            },
+            {
+              "x": 6,
+              "y": 5
+            },
+            {
+              "x": 7,
+              "y": 5
+            },
+            {
+              "x": 8,
+              "y": 5
+            },
+            {
+              "x": 9,
+              "y": 5
+            },
+            {
+              "x": 10,
+              "y": 5
+            },
+            {
+              "x": 11,
+              "y": 5
+            }
+          ]
+        }
+      ],
+      "ticks": 300,
+      "consumers": "drain"
+    },
+    "expected": {
+      "result": {
+        "tick": 300,
+        "stateHash": "ba5b469b",
+        "flow": {
+          "produced": 1,
+          "inConduits": 0,
+          "held": 1,
+          "inBuffers": 0,
+          "consumed": 0,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 1,
+            "lost": 0,
+            "stalledTicks": 261
+          }
+        ],
+        "routes": [
+          {
+            "building": 2,
+            "key": "2",
+            "lost": 0,
+            "held": "res_a"
+          }
+        ],
+        "consumers": []
+      },
+      "eventLogHash": "c97c2bc4"
+    }
+  },
+  {
+    "id": "flow-sim.splitter-open-half-and-consumer",
+    "kind": "flow-sim",
+    "description": "A splitter with one open half and one consumer: the consumer receives every item and nothing is lost.",
+    "input": {
+      "seed": 1,
+      "partySize": 2,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 2,
+        "plotWidth": 12,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_splitter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 3,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 1,
+          "y": 3,
+          "rotation": 270
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "west"
+          },
+          "to": {
+            "building": 3,
+            "side": "east"
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "east"
+          },
+          "to": {
+            "border": 0,
+            "y": 3
+          },
+          "cells": [
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 11,
+              "y": 3
+            }
+          ]
+        }
+      ],
+      "ticks": 300,
+      "consumers": "drain"
+    },
+    "expected": {
+      "result": {
+        "tick": 300,
+        "stateHash": "818e2855",
+        "flow": {
+          "produced": 15,
+          "inConduits": 0,
+          "held": 1,
+          "inBuffers": 0,
+          "consumed": 14,
+          "lost": 0
+        },
+        "sources": [
+          {
+            "building": 1,
+            "resource": "res_a",
+            "produced": 15,
+            "lost": 0,
+            "stalledTicks": 0
+          }
+        ],
+        "routes": [
+          {
+            "building": 2,
+            "key": "2",
+            "lost": 0,
+            "held": "res_a"
+          }
+        ],
+        "consumers": [
+          {
+            "building": 3,
+            "side": "east",
+            "resource": "res_a",
+            "count": 0,
+            "delivered": 14,
+            "consumed": 14
+          }
+        ]
+      },
+      "eventLogHash": "dc7bb357"
+    }
   }
 ]

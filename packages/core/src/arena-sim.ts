@@ -70,7 +70,7 @@ import type { Cell } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
 import type { ResourceId } from './resources.js';
 import type { SimConfig } from './sim-config.js';
-import type { TeamState } from './team-state.js';
+import { conduitTouches, type TeamState } from './team-state.js';
 import { unitSpeed, type UnitDef, type UnitId } from './units.js';
 
 // ---------------------------------------------------------------------------
@@ -2289,9 +2289,7 @@ function destroyBuilding(
     building: b.id,
   });
   const team = sim.teams[b.side === 0 ? 0 : 1];
-  const attached = team.conduits.filter(
-    (c) => c.from.building === b.id || c.to.building === b.id,
-  );
+  const attached = team.conduits.filter((c) => conduitTouches(c, b.id));
   for (const c of attached) {
     ctx.events?.push({
       tick,
@@ -2303,9 +2301,7 @@ function destroyBuilding(
   const newTeam: TeamState = {
     ...team,
     buildings: team.buildings.filter((p) => p.id !== b.id),
-    conduits: team.conduits.filter(
-      (c) => c.from.building !== b.id && c.to.building !== b.id,
-    ),
+    conduits: team.conduits.filter((c) => !conduitTouches(c, b.id)),
   };
   sim.teams[b.side === 0 ? 0 : 1] = newTeam;
   sim.producers = sim.producers.filter(

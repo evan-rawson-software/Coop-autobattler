@@ -5,6 +5,7 @@ import {
   formatText,
   type DryRunResult,
   type TeamState,
+  conduitTouches,
 } from '@game/core';
 import type { RunState } from '@game/session';
 import { content } from '../content.js';
@@ -291,9 +292,7 @@ export function InspectorPanel(props: {
       const figs = inspectorFigures(team, content, simConfig, dry, b);
       const owner =
         run.players[b.owner]?.name ?? `Player ${String(b.owner + 1)}`;
-      const attached = team.conduits.filter(
-        (c) => c.from.building === b.id || c.to.building === b.id,
-      );
+      const attached = team.conduits.filter((c) => conduitTouches(c, b.id));
       body = (
         <div data-inspector="building">
           <h3 class="insp-name">

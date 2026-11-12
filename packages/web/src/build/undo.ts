@@ -15,6 +15,9 @@ import {
   type Cell,
   type ConduitEnd,
   type TeamState,
+  conduitTouches,
+  isBorderEnd,
+  type BorderEnd,
 } from '@game/core';
 import type { BoardIntent } from '@game/session';
 
@@ -35,17 +38,18 @@ export type LayoutAction =
     };
 
 export interface ConduitSig {
-  readonly from: ConduitEnd;
-  readonly to: ConduitEnd;
+  readonly from: ConduitEnd | BorderEnd;
+  readonly to: ConduitEnd | BorderEnd;
   readonly cells: readonly Cell[];
 }
 
+const endSig = (e: ConduitEnd | BorderEnd): (number | string)[] =>
+  isBorderEnd(e) ? [e.border, e.y] : [e.building, e.side];
+
 const sigKey = (c: ConduitSig): string =>
   JSON.stringify([
-    c.from.building,
-    c.from.side,
-    c.to.building,
-    c.to.side,
+    ...endSig(c.from),
+    ...endSig(c.to),
     c.cells.map((p) => [p.x, p.y]),
   ]);
 
@@ -89,14 +93,15 @@ export function toIntent(
 }
 
 function attached(before: TeamState, id: number): LayoutAction[] {
-  return before.conduits
-    .filter((c) => c.from.building === id || c.to.building === id)
-    .map((c) => ({
-      t: 'add' as const,
-      from: c.from,
-      to: c.to,
-      cells: c.cells,
-    }));
+  // Halves of border links (PP-4) have no session intent yet (issue #136);
+  // only ordinary conduits are re-added.
+  const out: LayoutAction[] = [];
+  for (const c of before.conduits) {
+    if (!conduitTouches(c, id) || isBorderEnd(c.from) || isBorderEnd(c.to))
+      continue;
+    out.push({ t: 'add', from: c.from, to: c.to, cells: c.cells });
+  }
+  return out;
 }
 
 /** Actions that undo `action`, given the state it was applied to. */

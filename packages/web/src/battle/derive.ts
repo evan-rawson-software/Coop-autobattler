@@ -10,6 +10,7 @@ import {
   type BattleSummary,
   type BuildingDef,
   type PlacedBuilding,
+  conduitTouches,
 } from '@game/core';
 import type { WebContent } from '../content.js';
 import type { Playback, BattleRecord } from './playback.js';
@@ -398,9 +399,7 @@ function idleNote(
   id: number,
 ): string | null {
   if (!isProducer || t.trained > 0 || t.lostTick !== null) return null;
-  const wired = team.conduits.some(
-    (c) => c.from.building === id || c.to.building === id,
-  );
+  const wired = team.conduits.some((c) => conduitTouches(c, id));
   if (!wired) return 'produced no units: no conduit was connected to it';
   if (t.delivered === 0) {
     return 'produced no units: it never received its input resource';

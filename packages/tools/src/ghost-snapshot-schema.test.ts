@@ -102,6 +102,7 @@ describe('ghost-snapshot.schema.json', () => {
       ).toBe(false);
     }
     expect(bad((o) => (o['extra'] = 1))).toBe(false);
+    expect(bad((o) => (o['formatVersion'] = 1))).toBe(false);
     expect(bad((o) => (o['formatVersion'] = 2))).toBe(false);
     expect(bad((o) => (o['gameVersion'] = '0.1.0'))).toBe(false);
     expect(bad((o) => (o['gameVersion'] = '01.1'))).toBe(false);

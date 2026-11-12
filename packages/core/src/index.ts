@@ -163,6 +163,8 @@ export {
   ROTATIONS,
   addToStash,
   createTeamState,
+  buildingEnd,
+  conduitTouches,
   detachConduits,
   eraseConduit,
   moveBuilding,
@@ -172,6 +174,7 @@ export {
   placeFromStash,
   removeFromStash,
   renderTeamStateAscii,
+  isBorderEnd,
   returnToStash,
   validateTeamState,
 } from './team-state.js';
@@ -179,6 +182,7 @@ export type {
   AddToStashResult,
   AnyReason,
   Conduit,
+  BorderEnd,
   ConduitEnd,
   CoreReason,
   Occupancy,
@@ -200,6 +204,7 @@ export {
 } from './conduits.js';
 export type {
   AddConduitResult,
+  ConduitEndArg,
   ConduitReason,
   FlowEdge,
   FlowGraph,

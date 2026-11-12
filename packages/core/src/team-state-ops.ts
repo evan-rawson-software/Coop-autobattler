@@ -19,7 +19,7 @@ import { hashJson, type Json } from './hash.js';
 import type { SimulationFn } from './golden-kinds.js';
 import { loadMapOrThrow, type MapContent } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
-import { addConduit, buildFlowGraph } from './conduits.js';
+import { addConduit, buildFlowGraph, type ConduitEndArg } from './conduits.js';
 import {
   addToStash,
   createTeamState,
@@ -65,14 +65,9 @@ function cellList(v: Json | undefined): { x: number; y: number }[] {
   });
 }
 
-function endOf(
-  v: Json | undefined,
-  what: string,
-): {
-  building: number;
-  side: string;
-} {
+function endOf(v: Json | undefined, what: string): ConduitEndArg {
   const r = rec(v, what);
+  if ('border' in r) return { border: int(r, 'border'), y: int(r, 'y') };
   const side = r['side'];
   if (typeof side !== 'string') {
     throw new TypeError(`team-state-ops: ${what}.side must be a string`);
