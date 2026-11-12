@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@game/content": "workspace:*",
-    "@game/core": "workspace:*"
+    "@game/core": "workspace:*",
+    "@game/session": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "22.20.5",

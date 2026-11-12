@@ -1,0 +1,368 @@
+[
+  {
+    "id": "shop-roll.01-p1-r1-pve",
+    "kind": "shop-roll",
+    "description": "Solo, first shop of round 1.",
+    "input": {
+      "seed": 1,
+      "before": ["kit", "pve_options:r1"],
+      "round": 1,
+      "leg": "pve",
+      "players": 1,
+      "rerolls": 0
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r1:pve",
+        "runState": [349718507, 994214946, 909573048, 1282378361],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_barracks t1 20", "1 bld_barracks t1 20", "2 bld_merger t1 5", "3 bld_barracks t1 20", "4 bld_turret t1 15"]
+            ],
+            "stream": [1270937713, 1349908313, 2239668247, 3700870493]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.02-p1-r1-pve",
+    "kind": "shop-roll",
+    "description": "Solo, three re-rolls continue the same stream.",
+    "input": {
+      "seed": 2,
+      "before": ["kit", "pve_options:r1"],
+      "round": 1,
+      "leg": "pve",
+      "players": 1,
+      "rerolls": 3
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r1:pve",
+        "runState": [2621383165, 2045025003, 2195565915, 1885642560],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_merger t1 5", "1 bld_wall t1 4", "2 bld_wall t1 4", "3 bld_armory t1 30", "4 bld_extractor t1 10"],
+              ["0 bld_barracks t1 20", "1 bld_barracks t1 20", "2 bld_extractor t1 10", "3 bld_barracks t1 20", "4 bld_range t1 24"],
+              ["0 bld_wall t1 4", "1 bld_armory t1 30", "2 bld_gate t1 8", "3 bld_turret t1 15", "4 bld_range t1 24"],
+              ["0 bld_barracks t1 20", "1 bld_splitter t1 5", "2 bld_barracks t1 20", "3 bld_splitter t1 5", "4 bld_armory t1 30"]
+            ],
+            "stream": [2325993749, 1913672888, 892550834, 3907574456]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.03-p2-r1-pve",
+    "kind": "shop-roll",
+    "description": "Two players, one re-roll each.",
+    "input": {
+      "seed": 3,
+      "before": ["kit", "pve_options:r1", "battle:pve:r1", "event_offers:r1:pve", "event_resolve:r1:pve"],
+      "round": 1,
+      "leg": "pve",
+      "players": 2,
+      "rerolls": 1
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r1:pve",
+        "runState": [3701361286, 191288308, 2585310728, 347012957],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_merger t1 5", "1 bld_merger t1 5", "2 bld_barracks t1 20", "3 bld_wall t1 4", "4 bld_extractor t1 10"],
+              ["0 bld_turret t1 15", "1 bld_extractor t1 10", "2 bld_turret t1 15", "3 bld_turret t1 15", "4 bld_turret t1 15"]
+            ],
+            "stream": [881401161, 4062250805, 1106079493, 3740598569]
+          },
+          {
+            "rolls": [
+              ["0 bld_merger t1 5", "1 bld_merger t1 5", "2 bld_overclocker t1 30", "3 bld_extractor t1 10", "4 bld_wall t1 4"],
+              ["0 bld_barracks t1 20", "1 bld_turret t1 15", "2 bld_barracks t1 20", "3 bld_extractor t1 10", "4 bld_gate t1 8"]
+            ],
+            "stream": [3177861261, 1124493327, 2306967310, 3923925590]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.04-p4-r1-pve",
+    "kind": "shop-roll",
+    "description": "Four players: each player has its own child stream.",
+    "input": {
+      "seed": 4,
+      "before": ["kit", "pve_options:r1"],
+      "round": 1,
+      "leg": "pve",
+      "players": 4,
+      "rerolls": 0
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r1:pve",
+        "runState": [2313332914, 3639397500, 1525080342, 247233788],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_extractor t1 10", "1 bld_turret t1 15", "2 bld_splitter t1 5", "3 bld_wall t1 4", "4 bld_crossover t1 8"]
+            ],
+            "stream": [1710433063, 611572700, 3922961087, 2048148259]
+          },
+          {
+            "rolls": [
+              ["0 bld_barracks t1 20", "1 bld_gate t1 8", "2 bld_range t1 24", "3 bld_merger t1 5", "4 bld_wall t1 4"]
+            ],
+            "stream": [3823743355, 2373946275, 250548629, 796955230]
+          },
+          {
+            "rolls": [
+              ["0 bld_gate t1 8", "1 bld_turret t1 15", "2 bld_merger t1 5", "3 bld_turret t1 15", "4 bld_merger t1 5"]
+            ],
+            "stream": [981282020, 1138975495, 733878055, 1346842229]
+          },
+          {
+            "rolls": [
+              ["0 bld_turret t1 15", "1 bld_barracks t1 20", "2 bld_turret t1 15", "3 bld_armory t1 30", "4 bld_crossover t1 8"]
+            ],
+            "stream": [1982222233, 2018113350, 3132720720, 389699613]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.05-p1-r1-pvp",
+    "kind": "shop-roll",
+    "description": "Solo, the shop that ends round 1.",
+    "input": {
+      "seed": 5,
+      "before": ["kit", "pve_options:r1", "battle:pve:r1", "event_offers:r1:pve", "event_resolve:r1:pve", "ghost:r1", "battle:pvp:r1"],
+      "round": 1,
+      "leg": "pvp",
+      "players": 1,
+      "rerolls": 0
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r1:pvp",
+        "runState": [2401453780, 1660996482, 2716312277, 2780469515],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_gate t1 8", "1 bld_wall t1 4", "2 bld_splitter t1 5", "3 bld_extractor t1 10", "4 bld_gate t1 8"]
+            ],
+            "stream": [2910254320, 1497439793, 608290343, 2298078492]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.06-p3-r2-pve",
+    "kind": "shop-roll",
+    "description": "Three players, round 2.",
+    "input": {
+      "seed": 6,
+      "before": ["kit", "pve_options:r1"],
+      "round": 2,
+      "leg": "pve",
+      "players": 3,
+      "rerolls": 2
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r2:pve",
+        "runState": [1515022919, 451001550, 3975657994, 1379274164],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_barracks t1 20", "1 bld_gate t1 8", "2 bld_extractor t1 10", "3 bld_hangar t1 30", "4 bld_wall t1 4"],
+              ["0 bld_barracks t1 20", "1 bld_crossover t1 8", "2 bld_splitter t1 5", "3 bld_wall t1 4", "4 bld_hangar t1 30"],
+              ["0 bld_turret t1 15", "1 bld_gate t1 8", "2 bld_crossover t1 8", "3 bld_barracks t1 20", "4 bld_wall t1 4"]
+            ],
+            "stream": [4082284504, 1246615528, 2421326979, 222664747]
+          },
+          {
+            "rolls": [
+              ["0 bld_splitter t1 5", "1 bld_range t1 24", "2 bld_hangar t1 30", "3 bld_gate t1 8", "4 bld_range t1 24"],
+              ["0 bld_extractor t1 10", "1 bld_wall t1 4", "2 bld_barracks t1 20", "3 bld_splitter t1 5", "4 bld_overclocker t1 30"],
+              ["0 bld_turret t1 15", "1 bld_barracks t1 20", "2 bld_splitter t1 5", "3 bld_gate t1 8", "4 bld_range t1 24"]
+            ],
+            "stream": [1377751922, 1363642561, 3308590562, 2812818089]
+          },
+          {
+            "rolls": [
+              ["0 bld_extractor t1 10", "1 bld_barracks t1 20", "2 bld_armory t1 30", "3 bld_turret t1 15", "4 bld_turret t1 15"],
+              ["0 bld_gate t1 8", "1 bld_gate t1 8", "2 bld_crossover t1 8", "3 bld_range t1 24", "4 bld_turret t1 15"],
+              ["0 bld_gate t1 8", "1 bld_hangar t1 30", "2 bld_splitter t1 5", "3 bld_turret t1 15", "4 bld_wall t1 4"]
+            ],
+            "stream": [794474622, 2427705164, 4230207860, 2611801790]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.07-p1-r4-pvp",
+    "kind": "shop-roll",
+    "description": "Solo, round 4.",
+    "input": {
+      "seed": 7,
+      "before": ["kit", "pve_options:r1"],
+      "round": 4,
+      "leg": "pvp",
+      "players": 1,
+      "rerolls": 1
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r4:pvp",
+        "runState": [3121487315, 894543807, 1667372046, 1314676741],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_hangar t2 60", "1 bld_gate t1 8", "2 bld_splitter t2 12", "3 bld_extractor t1 10", "4 bld_wall t1 4"],
+              ["0 bld_overclocker t1 30", "1 bld_extractor t2 25", "2 bld_barracks t1 20", "3 bld_overclocker t2 60", "4 bld_wall t2 9"]
+            ],
+            "stream": [716291332, 230979304, 1034140873, 1201362969]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.08-p2-r8-pve",
+    "kind": "shop-roll",
+    "description": "Two players, round 8.",
+    "input": {
+      "seed": 8,
+      "before": ["kit", "pve_options:r1"],
+      "round": 8,
+      "leg": "pve",
+      "players": 2,
+      "rerolls": 0
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r8:pve",
+        "runState": [2471804161, 677210326, 137515052, 2760422413],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_range t1 24", "1 bld_barracks t3 80", "2 bld_range t3 90", "3 bld_barracks t2 45", "4 bld_barracks t1 20"]
+            ],
+            "stream": [3155416046, 449040429, 1627471564, 3228596691]
+          },
+          {
+            "rolls": [
+              ["0 bld_wall t1 4", "1 bld_merger t2 12", "2 bld_turret t1 15", "3 bld_wall t1 4", "4 bld_turret t2 35"]
+            ],
+            "stream": [2689204891, 1823835324, 3184180384, 1462441704]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.09-p3-r12-pvp",
+    "kind": "shop-roll",
+    "description": "Three players, round 12.",
+    "input": {
+      "seed": 9,
+      "before": ["kit", "pve_options:r1"],
+      "round": 12,
+      "leg": "pvp",
+      "players": 3,
+      "rerolls": 1
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r12:pvp",
+        "runState": [2491563190, 3940902057, 1743330492, 2016117637],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_gate t2 16", "1 bld_splitter t2 12", "2 bld_gate t1 8", "3 bld_barracks t3 80", "4 bld_extractor t1 10"],
+              ["0 bld_merger t3 25", "1 bld_extractor t2 25", "2 bld_wall t2 9", "3 bld_extractor t1 10", "4 bld_barracks t1 20"]
+            ],
+            "stream": [3023572215, 3480116702, 2107910352, 4165149210]
+          },
+          {
+            "rolls": [
+              ["0 bld_turret t3 65", "1 bld_overclocker t1 30", "2 bld_gate t2 16", "3 bld_range t3 90", "4 bld_wall t1 4"],
+              ["0 bld_extractor t2 25", "1 bld_barracks t3 80", "2 bld_overclocker t2 60", "3 bld_wall t3 18", "4 bld_wall t3 18"]
+            ],
+            "stream": [2467628782, 562568050, 3992507445, 3751745097]
+          },
+          {
+            "rolls": [
+              ["0 bld_armory t3 100", "1 bld_turret t2 35", "2 bld_extractor t3 50", "3 bld_extractor t1 10", "4 bld_extractor t3 50"],
+              ["0 bld_gate t2 16", "1 bld_wall t2 9", "2 bld_gate t2 16", "3 bld_barracks t2 45", "4 bld_armory t3 100"]
+            ],
+            "stream": [263490785, 2863029878, 1326267165, 3761374636]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.10-p1-r1-pve",
+    "kind": "shop-roll",
+    "description": "No earlier draws: the shop stream is the first one drawn.",
+    "input": {
+      "seed": 10,
+      "before": [],
+      "round": 1,
+      "leg": "pve",
+      "players": 1,
+      "rerolls": 0
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r1:pve",
+        "runState": [3148134638, 1694609379, 3192528307, 2653324021],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_overclocker t1 30", "1 bld_wall t1 4", "2 bld_crossover t1 8", "3 bld_extractor t1 10", "4 bld_crossover t1 8"]
+            ],
+            "stream": [2579631144, 632324840, 1820094549, 3766616066]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.11-p1-r1-pve",
+    "kind": "shop-roll",
+    "description": "The same shop label after one earlier draw gives a different stream.",
+    "input": {
+      "seed": 11,
+      "before": ["kit"],
+      "round": 1,
+      "leg": "pve",
+      "players": 1,
+      "rerolls": 0
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r1:pve",
+        "runState": [252824300, 873164883, 177045302, 4097135917],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_barracks t1 20", "1 bld_gate t1 8", "2 bld_extractor t1 10", "3 bld_wall t1 4", "4 bld_hangar t1 30"]
+            ],
+            "stream": [428748656, 1272761018, 4116320486, 3052182135]
+          }
+        ]
+      }
+    }
+  }
+]
