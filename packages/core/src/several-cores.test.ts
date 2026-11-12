@@ -1,6 +1,15 @@
 /** Battles with several Cores per side (PP-9, PP-10, issue #132). */
 import { describe, expect, test } from 'vitest';
-import { isCoreHealth, type ArenaEvent } from './arena-sim.js';
+import {
+  createArenaContext,
+  isCoreHealth,
+  stepArena,
+  type ArenaEvent,
+  type ArenaSim,
+  type UnitSim,
+} from './arena-sim.js';
+import { hashJson } from './hash.js';
+import { CELL_UNITS } from './limits.js';
 import {
   startBattle,
   simulateBattle,
@@ -329,5 +338,75 @@ describe('summary and helpers', () => {
         { zone: zoneOf(24) },
       ).ok,
     ).toBe(true);
+  });
+});
+
+describe('mirror and restore with several Cores per side', () => {
+  const opts = (): [SideOptions, SideOptions] => [
+    { coreHealths: [500, 20], freePower: true },
+    { coreHealths: [500, 20], freePower: true },
+  ];
+  const A = 16 * 2 + mapgen.neutralZone.depth;
+  const mirrorKey = (units: readonly UnitSim[], side: number): string[] =>
+    units
+      .filter((u) => u.side === side)
+      .map((u) => {
+        const x = side === 0 ? u.px : 24 * CELL_UNITS - u.px;
+        const y = side === 0 ? u.py : A * CELL_UNITS - u.py;
+        return `${u.def} ${String(x)},${String(y)} hp${String(u.hp)} o${String(u.owner)} t${String(u.target)}`;
+      })
+      .sort();
+
+  test('equal teams stay mirror images tick by tick while a Core of each side falls', () => {
+    const b = start(team2(true, true), team2(true, true), opts());
+    let fell = -1;
+    for (let t = 0; t < 3000 && !b.isOver(); t++) {
+      b.step();
+      expect(mirrorKey(b.sim.units, 1), `tick ${String(t)}`).toEqual(
+        mirrorKey(b.sim.units, 0),
+      );
+      const hp = (s: number) =>
+        b.sim.health.filter((h) => h.side === s).map((h) => h.hp);
+      expect(hp(1)).toEqual(hp(0));
+      if (fell < 0 && events(b, 'core_destroyed').length > 0) fell = t;
+    }
+    // The Cores 1 fell first, then the units retargeted: the check ran across both.
+    expect(fell).toBeGreaterThan(0);
+    expect(
+      events(b, 'core_destroyed')
+        .slice(0, 2)
+        .map((e) => [e.side, e.core]),
+    ).toEqual([
+      [0, 1],
+      [1, 1],
+    ]);
+  });
+
+  test('restoring the arena at any sampled tick around the first fall continues like the straight run', () => {
+    const make = (): Battle =>
+      start(team2(true, true), team2(true), [opts()[0], null]);
+    const ref = make();
+    const hashes = [hashJson(ref.sim)];
+    let fell = -1;
+    for (let t = 0; t < 1500 && !ref.isOver(); t++) {
+      ref.step();
+      hashes.push(hashJson(ref.sim));
+      if (fell < 0 && events(ref, 'core_destroyed').length > 0) fell = t + 1;
+    }
+    expect(fell).toBeGreaterThan(5);
+    const total = hashes.length - 1;
+    for (const at of [0, 1, fell - 2, fell - 1, fell, fell + 1, fell + 40]) {
+      const a = make();
+      for (let t = 0; t < at; t++) a.step();
+      const copy = JSON.parse(JSON.stringify(a.sim)) as ArenaSim;
+      const ctx = createArenaContext(copy, content, simConfig);
+      for (let t = at; t < total; t++) {
+        stepArena(copy, ctx);
+        expect(
+          hashJson(copy),
+          `restored at ${String(at)}, tick ${String(t + 1)}`,
+        ).toBe(hashes[t + 1]);
+      }
+    }
   });
 });
