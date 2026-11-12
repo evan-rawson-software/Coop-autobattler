@@ -173,23 +173,21 @@ export function CoreScreen(props: { run: RunHandle }) {
     }
     if (busy) return;
     setBusy(true);
-    void session.dispatch({ type: 'place_core', x: cell.x, y: cell.y }).then(
-      (r) => {
+    void session
+      .dispatch({ type: 'place_core', x: cell.x, y: cell.y })
+      .then((r) => {
         setBusy(false);
         setProblem(r.ok ? null : reasonMessage(r.reason, r.detail));
-      },
-    );
+      });
   };
 
   const setReady = (ready: boolean): void => {
     if (busy || (ready && selected === null)) return;
     setBusy(true);
-    void session
-      .dispatch({ type: ready ? 'ready' : 'unready' })
-      .then((r) => {
-        setBusy(false);
-        setProblem(r.ok ? null : reasonMessage(r.reason, r.detail));
-      });
+    void session.dispatch({ type: ready ? 'ready' : 'unready' }).then((r) => {
+      setBusy(false);
+      setProblem(r.ok ? null : reasonMessage(r.reason, r.detail));
+    });
   };
 
   const kit = kitRows(economy, content);

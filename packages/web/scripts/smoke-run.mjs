@@ -1565,10 +1565,7 @@ export async function runRunSmoke({
     const foreign = await page.evaluate(
       ([n]) => {
         const w = window.__debug.placement.plotWidth();
-        return window.__debug.placement.cellToScreen(
-          (n === 0 ? w : 0) + 2,
-          8,
-        );
+        return window.__debug.placement.cellToScreen((n === 0 ? w : 0) + 2, 8);
       },
       [p],
     );
