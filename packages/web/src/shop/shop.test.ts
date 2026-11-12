@@ -36,6 +36,18 @@ describe('effect text', () => {
     }
   });
 
+  test('every shop offer has a name and effect text; Range and Hangar are offered', () => {
+    const offered = economy.offerWeights.map((w) => w.def);
+    expect(offered).toContain('bld_range');
+    expect(offered).toContain('bld_hangar');
+    for (const id of offered) {
+      const def = content.buildings.get(id);
+      if (def === undefined) throw new Error(id);
+      expect(content.presentation.get(id)?.name, id).toBeTruthy();
+      expect(effectText(content, simConfig, def, 1).trim(), id).not.toBe('');
+    }
+  });
+
   test('every building kind maps to an existing template', () => {
     for (const def of content.buildings.list()) {
       expect(

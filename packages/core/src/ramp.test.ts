@@ -727,6 +727,34 @@ describe('unit_strength (armory)', () => {
     expect([u.hp, u.damage]).toEqual([50, 7]);
   });
 
+  test("scheduled wave units get no ramp bonus; the same side's producer units do (PP-8)", () => {
+    const { team } = armoryBoard();
+    const { sim, ctx, events } = startArenaBattle(
+      team,
+      coreOnlyTeam(),
+      GAP,
+      content,
+      simConfig,
+      {
+        sideOptions: [
+          { scheduledWaves: [{ tick: 250, unit: 'unit_soldier', count: 1 }] },
+          null,
+        ],
+      },
+    );
+    runArena(sim, ctx, 300);
+    // Three armory steps by tick 239 (+15 percent): the barracks unit of 299
+    // has 46 health, the wave unit that entered at 250 has the base 40.
+    expect(rampBonus(sim, ctx, 0, 'unit_strength', 0)).toBe(15);
+    const spawned = ofType(events, 'unit_spawned');
+    const hpAt = (tick: number): number[] =>
+      spawned
+        .filter((e) => e.tick === tick)
+        .map((e) => got(sim.units.find((u) => u.id === e.unit)).hp);
+    expect(hpAt(250)).toEqual([40]);
+    expect(hpAt(299)).toEqual([46]);
+  });
+
   test('unitStats applies mulPct to health and damage only', () => {
     const soldier = got(content.units.get('unit_soldier'));
     const s = unitStats(0, soldier, 50);

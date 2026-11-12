@@ -93,7 +93,7 @@ player grows by raising tiers, by economy buildings or through a border link.
 | Core health | `buildings.json` | 500 (decided) | per Core |
 | `nodesPerPlot` | `mapgen.json` | 3 common, 1 rare (unchanged) | the same for every plot |
 | Gold | `economy.json` | `baseIncomePerShop` 5; `rewards.pveWin` easy / medium / hard 6 / 9 / 13; `pvpWin` 8; `pvpLoss` 4 (9 to 26 gold per round) | strictly increasing `pveWin` |
-| Shop | `economy.json` | `bld_armory` in `offerWeights` at weight 3, like the Overclocker | |
+| Shop | `economy.json` | `bld_armory` in `offerWeights` at weight 3, like the Overclocker; `bld_range` at 5 and `bld_hangar` at 3 (issue #59; placeholder unit numbers kept by owner decision) | |
 | Threat growth | `threats.json` | `growthPercent` 125 (+25 percent per round) | above 100 |
 | Stronghold caps | `threats.json` | `maxTurretsPerPlot` 6 (was 16); Fortress `turretSharePercent` 25 (was 40) and `coreHealthPerBudget` 300 (was 500); Boss `turretSharePercent` 20 (was 30) | the rest of a stronghold's budget becomes Core health |
 | `minCoreHealth` (per Core) | `threats.json` | 30 (unchanged; never reached in rounds 1 to 12 at any party size) | |
@@ -2042,7 +2042,7 @@ units unless noted):
 | `flying` | Boolean. A flying unit ignores walls, lakes and cliffs and collides only with other flying units ("Ranged units and flyers"). A flying unit must be `ranged` (the loader rejects a melee flyer). |
 | `attackType` | `"melee"` or `"ranged"`. A melee unit cannot hit a flying unit; a ranged unit can. For a ranged unit `reach` is its range (edge to edge, as for melee). |
 
-Placeholder content (units added with part 2, all numbers placeholders to tune: archer `health 30, damage 5, cooldown 10, radius 66, collisionRadius 43, reach 720` (three cells), ranged; drone `health 20, damage 4, cooldown 8, moveCooldownTicks 4, radius 66, collisionRadius 16, reach 600`, flying, ranged; producers `bld_range` (archer, `res_a`) and `bld_hangar` (drone, `res_b`), both 2x2 like the Barracks, not yet in the shop): soldier `radius = 72` (0.30 cell), `collisionRadius = 47`,
+Placeholder content (units added with part 2, all numbers placeholders to tune: archer `health 30, damage 5, cooldown 10, radius 66, collisionRadius 43, reach 720` (three cells), ranged; drone `health 20, damage 4, cooldown 8, moveCooldownTicks 4, radius 66, collisionRadius 16, reach 600`, flying, ranged; producers `bld_range` (archer, `res_a`) and `bld_hangar` (drone, `res_b`), both 2x2 like the Barracks, offered in the shop at weights 5 and 3): soldier `radius = 72` (0.30 cell), `collisionRadius = 47`,
 `reach = 60`; raider `radius = 60` (0.25 cell), `collisionRadius = 39`, `reach =
 60`. Reach, aggro and turret range use `radius` (the body); collision uses
 `collisionRadius`, so bodies pack tighter than they are drawn.
@@ -2761,6 +2761,9 @@ the sum the moment it is destroyed (destroying ramp buildings weakens the enemy'
 what it already did stays: running source countdowns and units already
 spawned keep their values. Each building is also limited by its own
 `maxSteps`, so the ramp has two limits: per building and per owner and effect.
+A unit of a scheduled PvE wave has no producer and so **no ramp bonus** (owner
+decision, issue #175): it gets only the side-wide `unitStrengthPercent` and run
+modifiers; pinned by a test in `ramp.test.ts`.
 
 **`source_speed`.** Before each tick's flow step the arena sets the board's
 source interval modifiers to one value per player index: each owner's

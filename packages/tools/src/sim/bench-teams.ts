@@ -17,9 +17,14 @@ import type { SimContext } from './context.js';
 
 /**
  * 48 modules of an extractor, a splitter and two barracks each (96 barracks,
- * 48 sources), a Core per plot at (24 p + 16, 6); every building but the splitters has `tier`.
+ * 48 sources), a Core per plot at (24 p + 16, 6); every building but the splitters has `tier`. `producer` swaps the
+ * Barracks for another 2x2 unit producer (for example `bld_range`).
  */
-export function denseFourPlotTeam(ctx: SimContext, tier: number): TeamState {
+export function denseFourPlotTeam(
+  ctx: SimContext,
+  tier: number,
+  producer = 'bld_barracks',
+): TeamState {
   const nodes: { x: number; y: number; resource: string }[] = [];
   for (let col = 0; col < 24; col++) {
     for (const y0 of [0, 8])
@@ -75,8 +80,8 @@ export function denseFourPlotTeam(ctx: SimContext, tier: number): TeamState {
       const x0 = col * 4;
       const src = put('bld_extractor', x0, y0);
       const sp = put('bld_splitter', x0, y0 + 3);
-      const a = put('bld_barracks', x0, y0 + 4);
-      const b = put('bld_barracks', x0 + 2, y0 + 2, 90);
+      const a = put(producer, x0, y0 + 4);
+      const b = put(producer, x0 + 2, y0 + 2, 90);
       link(src, 'north', sp, 'south', [
         [x0, y0 + 1],
         [x0, y0 + 2],
