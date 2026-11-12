@@ -14,8 +14,7 @@ The specs are the source of truth. Where a wireframe and a spec disagree,
 the spec wins and the wireframe should be corrected.
 
 **The images predate the per-player design (issue #124).** They still show
-one shared board, one Core per side, a vote on the Core position and a
-"Give gold" button. The text below has been updated to the current design
+one shared board, one Core per side and a vote on the Core position. The text below has been updated to the current design
 (each player has their own plot and Core, builds only there, and can link to
 a neighbour across the plot border; there is no giving); the images and
 `screens.html` are redrawn with the screens themselves.
@@ -76,7 +75,7 @@ The shop always follows the event. Each player has their own offers and their ow
 2. Your offers. A card shows the kind, what it needs (which resource and how much per second), what it does, and its price.
 3. Gold buys buildings and re-rolls, nothing else.
 4. Your stash: buildings you own that are not on the board. Drag here to sell.
-5. Teammates' gold and stash. You do not see their offers, and gold and buildings cannot be given (CP-29). Hidden in solo. (The image still shows a "Give gold" button from the earlier design; it is to be redrawn.)
+5. Teammates' gold and stash. You do not see their offers, and gold and buildings cannot be given (CP-29). Hidden in solo.
 6. What comes next. PvE options are shown ahead of time; a PvP opponent never is.
 7. A small live view of the board that jumps to the Build tab.
 8. Ready is available on both tabs.
