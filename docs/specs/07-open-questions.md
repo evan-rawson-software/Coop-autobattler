@@ -34,6 +34,11 @@ Open, for the owner to confirm:
 To be revisited when online play exists: nobody can move a disconnected
 player's buildings (CP-21i).
 
+Implementation status: none of this design is in the code yet. What is
+specified but not yet implemented, and the issue for each part (#128 to
+#145), is listed in `docs/rules-reference.md`, "Per-player design (issue
+#124)".
+
 ## Q2. Factory and battlefield rules
 
 Decided (CB-2 to CB-3e): a factory of one plot per player; economy is

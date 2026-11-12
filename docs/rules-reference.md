@@ -20,6 +20,769 @@ operation is taken modulo 2^32. Where it says "i64", a signed 64-bit integer
 is enough (the reference implementation additionally throws when a value
 leaves +/- (2^53 - 1), so ported code never needs more than i64).
 
+**What this document describes.** Every section describes the code on
+`main` and is pinned by the golden vectors, with one exception: the section
+"Per-player design (issue #124)" below holds rules that are specified but
+**not yet implemented**. A section those rules will change starts with a
+**Status (#124)** table. Nothing marked "not yet implemented" is behaviour
+of the current code.
+
+## Per-player design (issue #124): specified, not yet implemented
+
+The specs (Draft v5.0) describe a design decided in issue #124: every player
+has their own **plot** and their own **Core**, builds only what they own and
+only in their own plot, and can link to a neighbour with conduits across the
+plot border; a side loses a battle when **all** of its Cores are destroyed;
+collectors have a flow rate by tier and every consumer has a top speed.
+
+**The code on `main` does not implement this yet.** Every other section of
+this document describes the code as it is today, and the golden vectors pin
+that behaviour. This section holds the new rules, written so that they can be
+implemented from the text alone. A section that a rule here will change
+starts with a short **Status (#124)** table that names the rule and its
+issue. When an issue lands, its rule moves from here into the section it
+changes, the golden vectors are re-pinned in the same pull request, and its
+row is removed. Until then: **a port implements the other sections, not this
+one.**
+
+Terms. A **plot** is one player's own area of the board (see "Coordinates":
+plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
+`plotOf(x) = floor(x / plotWidth)`). **Player `p`** (0-based) owns plot `p`.
+`N` is the party size. A **collector** is a building of kind `source`. A
+**consumer** is a unit producer, a turret or an economy building. A
+**production** is one unit spawned, one turret shot, or one ramp step.
+
+### Status of every rule
+
+| Rule | What it specifies | Status |
+| ---- | ----------------- | ------ |
+| PP-1 | Ownership and plot checks on every board operation; conduits have an owner | not yet implemented (issue #129) |
+| PP-2 | One Core per player in the team state | not yet implemented (issue #128) |
+| PP-3 | Core placement step: each player places their own Core, no vote | not yet implemented (issue #131) |
+| PP-4 | Border links | not yet implemented (issues #135 and #136) |
+| PP-5 | Collector flow rate by tier | **implemented today** ("One tick: `stepFlow`", step 3); the display value and the one-output content rule are not (issue #130) |
+| PP-6 | Minimum time between productions, need, store | not yet implemented (issue #130); turrets already have it (`cooldownTicks`) |
+| PP-7 | Splitting, with back-up | **implemented today** ("One tick: `stepFlow`", step 2); vectors that pin it against consumers with a top speed are not (issue #130) |
+| PP-8 | Economy buildings act for their owner only; lower collector speed-up cap | not yet implemented (issue #137). **OPEN — owner to confirm** |
+| PP-9 | Several Cores per side in the arena; Overload per Core; a destroyed Core switches nothing off | not yet implemented (issue #132) |
+| PP-10 | End conditions and the tiebreak ladder with several Cores | not yet implemented (issue #132) |
+| PP-11 | A unit's owner and target Core; one movement field per target Core | not yet implemented (issue #133). One detail **OPEN — owner to confirm** |
+| PP-12 | Enemy-path preview per Core | not yet implemented (issue #133) |
+| PP-13 | Turrets can shoot units in the neutral zone | not yet implemented (issue #134) |
+| PP-14 | PvE strongholds and bosses with one Core per player | not yet implemented (issue #138) |
+| PP-15 | Sealed-producer check per owner; map rule per plot | not yet implemented (issues #131 and #129) |
+| PP-16 | Party votes and run streams without the Core vote | not yet implemented (issue #131) |
+| PP-17 | Formats, version, ghost validation | not yet implemented (issue #139) |
+| PP-18 | No giving | nothing to implement: the code has no way to give gold or buildings. The wireframes are corrected in issue #144 |
+
+### Numbers to be set in the rebalance
+
+The rules below fix the **shape** of each computation. These numbers are
+placeholders or do not exist yet; all are set in the rebalance
+(issue #145). Until then no balance result is meaningful.
+
+| Number | Where | Today | Constraint |
+| ------ | ----- | ----- | ---------- |
+| Collector `intervalTicks` per tier | `buildings.json` | 20 / 14 / 10 | integer >= 1; a higher tier is never slower |
+| `productionIntervalTicks` per unit producer and tier | `buildings.json` (new) | does not exist | integer >= 1 |
+| `stepIntervalTicks` per economy building and tier | `buildings.json` (new) | does not exist | integer >= 1 |
+| `costPerUnit`, `costPerShot`, `costPerStep`, `cooldownTicks` | `buildings.json` | as shipped | integers >= 1; a stronger building should have a higher need |
+| `inputBufferUnits` (items waiting at each input) | `sim.json` | 4 | integer >= 1, small: "a little waiting in the pipe" |
+| `maxSourceSpeedPercent` (collector speed-up cap) | `sim.json` | 300 | to be set in rebalance; much lower than 300. Target: a fully boosted collector of one tier stays slower than an unboosted collector of the next tier (SC-12) |
+| Core health | `buildings.json` | 500 | decided: 500 per Core. Not a rebalance number unless the owner changes it |
+| `nodesPerPlot` | `mapgen.json` | 3 common, 1 rare | the same for every plot |
+| Threat budgets, `coreHealthPerBudget`, `minCoreHealth`, wall and turret caps | `threats.json` | as shipped | re-tuned for one Core per plot |
+
+### PP-1. Ownership and plots
+
+Every placed or stashed building has an `owner` (already in the format). The
+new rules:
+
+- **Every board operation names its `actor`**, the player index of the player
+  performing it. An `actor` that is not an integer from 0 to `N - 1` is
+  `invalid_owner`.
+- **A building's cells lie in its owner's plot**: every cell `(x, y)` of the
+  rotated footprint has `plotOf(x) = owner`.
+- **Only the owner acts on a building.**
+
+`placeFromStash(actor, id, x, y, rotation)` and `moveBuilding(actor, id, x,
+y, rotation)` check, in this order (new rules in bold; the others are today's,
+in today's order):
+
+1. `unknown_building`;
+2. **`not_owner`**: `actor` is not the building's `owner`;
+3. `invalid_rotation`;
+4. `out_of_bounds`;
+5. **`outside_own_plot`**: a footprint cell has `plotOf(x) != owner`;
+6. `blocked_by_feature`;
+7. `overlaps_core` (any placed Core, PP-2);
+8. `overlaps_building`;
+9. `overlaps_conduit`;
+10. the node rules (`source_needs_node`, `node_reserved`).
+
+`returnToStash(actor, id)` and `removeFromStash(actor, id)`: `unknown_building`,
+then `not_owner`. `addToStash(def, tier, owner)` is unchanged (the session
+calls it for the buyer and for the starting kit). `raiseTier` (Workshop) is
+already limited to the acting player's own buildings by the session.
+
+**Conduits have an owner.** A conduit is `{ id, owner, from, to, cells }`;
+`owner` is the `actor` of the `addConduit` that made it. `addConduit(state,
+content, actor, { from, to, cells })` checks, in this order:
+
+1. `unknown_building`;
+2. **`not_owner`**: an end building is not owned by `actor` (`from` checked
+   before `to`);
+3. `not_an_output`, then `not_an_input`;
+4. `side_in_use`;
+5. `invalid_path`;
+6. **`outside_own_plot`**: a path cell has `plotOf(x) != actor`;
+7. `blocked_by_feature`;
+8. `overlaps_core`;
+9. `overlaps_building`;
+10. `crosses_conduit`;
+11. `resource_mismatch`;
+12. `would_loop`.
+
+`eraseConduit(state, actor, { id })`: `unknown_conduit`, then `not_owner`
+(`actor` is not the conduit's `owner`). `detachConduits` is unchanged: every
+conduit attached to a moved or returned building belongs to that building's
+owner. A conduit end that is a border spot is PP-4.
+
+`validateTeamState` additionally checks, for every placed building, that all
+its cells are in its owner's plot, and for every conduit that `owner` is in
+range, that each end building is owned by `owner` and that every path cell is
+in the owner's plot.
+
+Resource nodes need no rule of their own: a source must stand on a node and
+inside its owner's plot, so only the plot's player can use a plot's nodes
+(CP-14). With one player, plot 0 is the whole board and none of the new
+reasons can occur.
+
+Golden kind `team-state-ops`: every op that changes the board gains `actor`.
+
+### PP-2. One Core per player
+
+- **Format.** The team state's `core` field is replaced by `cores`: a list of
+  exactly `N` entries, entry `p` being player `p`'s Core position `{ x, y }`
+  (the footprint's lowest-x, lowest-y cell) or `null` before it is placed. A
+  Core is still not an entry of `buildings` or `stash` and has no instance ID;
+  it is addressed by its player index.
+- **Legal positions.** `validateCorePosition(map, p, x, y)` returns the first
+  of: `out_of_bounds`; **`outside_own_plot`** (`plotOf(x) != p` or
+  `plotOf(x + w - 1) != p`); `blocked`; `on_node`; `too_far_forward`. The
+  other four are today's rules. `listLegalCorePositions(map, p)` lists the ok
+  positions of plot `p` by `(y, x)`. Map generation already guarantees at
+  least one per plot.
+- **`placeCore(actor, x, y)`**: `core_already_placed` if `cores[actor]` is not
+  `null`; then the reasons of `validateCorePosition(map, actor, x, y)`; then
+  `overlaps_building`; then `overlaps_conduit`. It works once per player.
+  Nothing can move or remove a Core.
+- **`overlaps_core`** in every rule means: the cell is in the footprint of
+  any placed Core. `buildingAt` returns `{ core: p }` for a Core cell.
+- **Health.** Every Core has the maximum health of the Core definition's
+  tier 1 (500), raised by the team's `core_health_percent` modifiers. All
+  Cores of a side therefore have the same maximum health (a PvE stronghold
+  is the exception, PP-14).
+- **A battle needs every Core placed**: `core_not_placed` carries the `side`
+  and the lowest `player` index without a Core.
+- `renderTeamStateAscii` draws every Core as `C`.
+
+### PP-3. The Core placement step
+
+Before the first build step the run is in the step `core_placement`.
+
+- Player `p` sends `place_core { x, y }`. It is rejected with the reason of
+  `validateCorePosition(map, p, x, y)` if that position is not legal;
+  otherwise it is stored as `p`'s **pending position**, replacing any earlier
+  one. A player can send it again for as long as they are not ready (Ready
+  locks it, reason `locked_ready`, like any edit).
+- `ready` is rejected with `core_not_placed` while the player has no pending
+  position.
+- When the last player readies, `placeCore(p, x, y)` is applied for
+  `p = 0 .. N - 1` in that order (none can be rejected: positions of
+  different players are in different plots and nothing else is on the board),
+  and the run enters the first `build` step, where gold and the starting kit
+  are granted as today.
+- There is no vote and no random draw in this step.
+
+### PP-4. Border links
+
+**Border spots.** Border `b` (an integer from 0 to `N - 2`) is the line
+between plot `b` and plot `b + 1`: between the columns `xL = (b + 1) *
+plotWidth - 1` and `xR = xL + 1`. A **border spot** is `(b, y)` with `0 <= y <
+height`. A spot is not a cell. The **border cell** of a spot for player `b` is
+`(xL, y)` and for player `b + 1` it is `(xR, y)`. With `N = 1` there are no
+borders.
+
+**Halves.** A **half** is a conduit one of whose ends is a border spot
+`{ border: b, y }` in place of `{ building, side }`:
+
+- a **sending half** has `from: { building, side }` (an output side) and
+  `to: { border, y }`;
+- a **receiving half** has `from: { border, y }` and `to: { building, side }`
+  (an input side).
+
+Its `owner` must be `b` or `b + 1`. `cells` is ordered from the `from` end to
+the `to` end, as for every conduit: a sending half's path starts at a cell
+outside its building side and **ends on the owner's border cell** of the
+spot; a receiving half's path **starts on the owner's border cell** and ends
+at a cell outside its building side. The path rules are otherwise those of
+"Sides, edges and directions". `cells` is empty in exactly one case, a
+**direct half**: an edge of the named side of the building lies on border `b`
+in row `y` (the building has a footprint cell on the owner's border cell and
+the side faces the neighbour: `east` for owner `b`, `west` for owner
+`b + 1`). In that case a non-empty `cells` is `invalid_path`, and in every
+other case an empty `cells` is `invalid_path`.
+
+**Adding a half.** `addConduit` with a border end checks, in this order:
+
+1. `unknown_building` (the building end);
+2. `not_owner` (the building is not the actor's);
+3. `invalid_border`: `b` is not an integer from 0 to `N - 2`, `y` is not an
+   integer from 0 to `height - 1`, or `actor` is neither `b` nor `b + 1`;
+4. `not_an_output` (sending half) or `not_an_input` (receiving half) for the
+   building side;
+5. `side_in_use` (the building side already holds a conduit or a half); then
+   `border_spot_in_use`: the actor already has a half at spot `(b, y)`;
+6. `invalid_path`;
+7. `outside_own_plot`;
+8. `blocked_by_feature`;
+9. `overlaps_core`;
+10. `overlaps_building`;
+11. `crosses_conduit`;
+12. `resource_mismatch`;
+13. `would_loop`.
+
+**Joining is derived, never stored.** For a spot `(b, y)`: if player `b` has a
+half there and player `b + 1` has a half there, and one of the two is a
+sending half and the other a receiving half, the two halves form a **link**.
+In every other case (one half only, or two halves of the same kind) each half
+at the spot is **open**. Because the join is computed from the halves each
+time, erasing, moving or undoing never leaves a stale link.
+
+**A link is one conduit.** In the flow graph a link is one edge:
+
+- `conduitId` is the sending half's `id`; a new field `linkedConduit` is the
+  receiving half's `id` (`null` on the edge of an ordinary conduit);
+- `from` and `fromSide` are the sending half's building end, `to` and
+  `toSide` the receiving half's;
+- `length` is the number of cells of the sending half plus the number of
+  cells of the receiving half; the slots are numbered along the sending half
+  first, then the receiving half, so slot 0 is nearest the sending building;
+- `resource` is determined as for a conduit leaving the sending building.
+
+The flow simulation, resource typing, the loop check, back-up and
+"Accepting" treat the edge exactly as a conduit of that length. A link of two
+direct halves has length 0 and is a direct connection across the border.
+
+**An open half carries nothing.** It has no edge. In the flow graph its
+building side has `conduit: null`, so a splitter or source skips it, and a
+building whose only conduits are open halves is not a flow node. For
+`side_in_use` (an edit-time rule) the side is occupied all the same.
+`conduitResource` of a receiving half is that of its link's sending half, and
+`null` while it is open.
+
+**Checks cover the whole board.** `resource_mismatch` and `would_loop` are
+evaluated on the network with every link joined. Adding a conduit or a half
+is therefore rejected when it would cause a mismatch or a loop anywhere,
+including in the neighbour's plot (for example: a new conduit in plot 0 sends
+a second resource, through a link, into a merger in plot 1). The reason is
+the same and `detail` names the building where the problem appears. No other
+operation adds an edge, so no other operation needs the check.
+
+**Removing.** `eraseConduit` removes one half (owner only, PP-1);
+`detachConduits` removes the halves attached to a moved or returned building.
+The other player's half is untouched and becomes open. Undo and redo are per
+player and layout only (RS-5g): undoing the removal of a half adds it again
+with the checks above, and if that is now rejected the undo is refused with
+the same reason and the player's history is left as it was.
+
+**Validation.** `validateTeamState` checks every half with the rules above,
+at most one half per player per spot, and no mismatch or loop on the joined
+network.
+
+**In battle.** `BoardSim.conduits` has one entry per flow edge, so one per
+link, under the sending half's id. When the building at either end of a link
+is destroyed, both halves are removed, each recorded as `conduit_destroyed`
+(in conduit-ID order), and the items in the link are lost as for any conduit.
+An open half attached to a destroyed building is removed with one event. A
+destroyed Core removes nothing (PP-9).
+
+**Direction and distance.** A link carries from its sending half to its
+receiving half; which neighbour sends is free, and two neighbours may have
+links both ways at different spots. A half cannot reach a border that is not
+its owner's, so links join neighbouring plots only. To pass resources on to
+a third plot, the player in between needs a route building of their own
+between a receiving half and a sending half.
+
+Golden kinds: `team-state-ops` accepts border ends in `addConduit`;
+`flow-graph` gains vectors with a link, an open half, a link of two direct
+halves, and a mismatch and a loop that only appear across a link.
+
+### PP-5. Collector flow rate
+
+Implemented today: a collector produces one item every `intervalTicks` ticks
+(its tier's value; "One tick: `stepFlow`", step 3) and stalls, without
+losing the item, when its conduit is full.
+
+Specified, not yet implemented:
+
+- **Display value.** `ratePer1000 = floor(1000 / scaledInterval)` items per
+  1000 ticks, with `scaledInterval` as in step 3 (the plain `intervalTicks`
+  when there is no speed-up). Screens show items per second with two
+  decimals, rounded down: `floor(100 * ticksPerSecond / scaledInterval)`
+  hundredths (tier 1 at 20 ticks: 0.50/s).
+- **Content rule.** A building of kind `source` has exactly one output side
+  (true of the shipped extractor; the loader does not check it yet). With it
+  the splitter is the only thing that divides a flow (CB-9e).
+
+### PP-6. Minimum time between productions, need and store
+
+**Content.** Per tier:
+
+| Kind | Cost of one production | Minimum time between productions |
+| ---- | ---------------------- | -------------------------------- |
+| Unit producer | `costPerUnit` (exists) | `productionIntervalTicks` (new) |
+| Turret | `costPerShot` (exists) | `cooldownTicks` (exists) |
+| Economy building | `costPerStep` (exists) | `stepIntervalTicks` (new) |
+
+All are integers of at least 1. Walls, gates, route buildings and the Core
+have no inputs and consume nothing (CB-10c).
+
+**State.** Each `producers` entry becomes `{side, building, progress,
+cooldown}` and each `ramps` entry `{side, building, charge, steps,
+cooldown}`; `cooldown` starts at 0. Turret entries are unchanged.
+
+**The production step** ("One battle tick", step 2) becomes, for each living
+unit producer in today's order:
+
+1. **Intake.** If `progress < costPerUnit`: go through its inputs clockwise
+   from north and, for each, take `min(input buffer count, costPerUnit -
+   progress)` items (`takeFromBuffer`) and add them to `progress`. So
+   `progress` never exceeds `costPerUnit` (today the whole buffer is drained
+   and the surplus kept; that ends). All resources count alike, as today.
+2. **Produce.** At most once per tick: if `progress = costPerUnit` and
+   `cooldown = 0` and the unit finds a spawn position (today's rule), spawn
+   it, set `progress = 0` and `cooldown = productionIntervalTicks`. If there
+   is no spawn position the unit is held as today: `progress` stays at
+   `costPerUnit` and `cooldown` stays 0.
+
+Economy buildings: intake is today's (only while `steps < maxSteps`, at most
+`costPerStep - charge`). A step is taken when `charge = costPerStep` **and
+`cooldown = 0`**: `steps += 1`, `charge = 0`, `cooldown = stepIntervalTicks`,
+`ramp_step` recorded. Intake continues while the cooldown runs, up to
+`costPerStep`. Turrets are unchanged: they already charge up to `costPerShot`
+and fire at most once per `cooldownTicks`.
+
+**Cooldowns** of producers and economy buildings decrease by 1 in step 7,
+together with the turret and unit cooldowns, when non-zero. So a building
+that produces in tick `t` with an interval of `k` can produce again in tick
+`t + k` at the earliest, exactly like a turret.
+
+**What follows from these rules.**
+
+- **Top speed.** A fully fed building makes one production every interval,
+  never more.
+- **Need.** `needPer1000 = floor(1000 * cost / interval)` items per 1000
+  ticks; screens show items per second with two decimals, rounded down:
+  `floor(100 * cost * ticksPerSecond / interval)` hundredths. A turret has
+  this need only while it fires; a charged, idle turret takes nothing. An
+  economy building at `maxSteps` takes nothing.
+- **Under-supplied buildings wait** (CB-10d): `progress` or `charge` keeps
+  what has arrived, the production happens when the full cost is there, and
+  it is a full production (same unit, same shot, same step). Nothing is ever
+  produced at reduced strength and no building switches off.
+- **Store** (CB-10b). A building holds at most `cost` in `progress` or
+  `charge`, plus `inputBufferUnits` in each input buffer. When both are full
+  it refuses items ("Accepting"), its conduit fills and the flow backs up
+  (PP-7).
+- **Cold start** (CB-11): `progress`, `charge`, `cooldown` and every buffer
+  are 0 at tick 0 of every battle. The first production needs no waiting
+  beyond collecting its cost.
+
+**Dry run.** `dryRunFlow` gains the consumer mode `"need"`, used by the build
+screen: each consumer runs the intake and produce rules above on its own,
+with no arena (a unit producer always finds a spawn position; a turret is
+taken to fire whenever it is charged and off cooldown, the upper bound of
+its need; an economy building stops at `maxSteps`). Per consumer it reports
+`needPer1000`, `productions`, and per input `delivered` and `ratePer1000`
+(today's definition). The modes `"hold"` and `"drain"` stay for tests.
+
+Golden kind `flow-sim` gains `"need"` vectors; `arena-sim` and `battle`
+vectors are re-pinned.
+
+### PP-7. Splitting, with back-up
+
+Implemented today, and unchanged ("One tick: `stepFlow`", step 2). Stated
+here as the rule the design relies on:
+
+- A splitter holds at most one item. Each tick, if it holds an item, it
+  tries its outputs in the order `pointer, pointer + 1, ...` (clockwise from
+  north, modulo the number of output sides), skipping sides with no conduit
+  (and, with PP-4, sides whose half is open). The first output that
+  **accepts** takes the item and `pointer` becomes the index after it. If
+  none accepts, the item stays and `pointer` does not move.
+- An output accepts when the first slot of its conduit is empty, or, for a
+  direct connection, when the building behind it accepts ("Accepting").
+- `pointer` starts at 0 at the start of every battle.
+
+Consequences: while every connected output accepts, the items go to the
+outputs in strict rotation, so after any number of items the counts of two
+outputs differ by at most 1 (an **even split**; the odd item goes to the
+output next in rotation). An output whose path is full **backs up** and is
+skipped, so its share goes to the outputs that still accept (**the remainder
+goes to the other paths**). When no path accepts, the splitter holds its
+item, its input conduit fills, and the collector stalls: production is
+delayed, not lost. No division is performed anywhere and no item is ever
+split.
+
+What PP-6 adds is the reason a path stops accepting: a consumer at top speed
+with a full store. The vectors to add (issue #130): a splitter feeding
+two unit producers of equal need from a collector that supplies less than
+both need (even split, both under-supplied); one that supplies more than one
+of them needs (that path backs up, the other gets the remainder); one that
+supplies more than both need (everything backs up, the collector stalls);
+and a three-way splitter with one open output.
+
+### PP-8. Economy buildings act for their owner (OPEN — owner to confirm)
+
+Today a side's economy buildings add up to one bonus per effect for the whole
+side ("In-battle ramp"). Written here as the conservative reading of "border
+links are the only way to help a partner" (CP-29, CB-24a); the owner has not
+confirmed it:
+
+- The raw total and the capped **bonus are computed per side, per owner and
+  per effect**: the sum over that owner's living economy buildings with that
+  effect, capped by `maxSourceSpeedPercent` or `maxUnitStrengthPercent`.
+- `source_speed` of owner `p` applies to the sources owned by `p`: `stepFlow`
+  takes one source interval modifier per player index, not one per board.
+- `unit_strength` of owner `p` applies to units spawned by `p`'s unit
+  producers. The side option `unitStrengthPercent` and the team's
+  `unit_strength_percent` modifiers stay side-wide.
+- `maxSourceSpeedPercent` is lowered (see "Numbers to be set in the
+  rebalance").
+
+If the owner decides the effect stays side-wide, only the lower cap remains
+of this rule.
+
+### PP-9. Several Cores per side in the arena
+
+- **Arena.** Each side has `N` Cores, indexed by player. A Core covers its
+  footprint cells (side 1's through the usual 180-degree transform).
+- **State.** The `health` list has, per side, first the Cores in player
+  order as `{side, core: p, hp}`, then the placed buildings by instance ID as
+  `{side, building, hp}` (today's `building = 0` entry for the Core goes).
+  Each Core starts at its maximum health (PP-2, or the side option below).
+- **Damage.** A Core takes unit attacks like today. `buildingDamageDealt`
+  credits `min(A, h)` per Core and tick, as for any building.
+- **Overload decay** (step 4). On an Overload beat **every living Core**
+  takes `level * overloadCoreDamageStep`, in the order side 0 then side 1 and
+  ascending player index within a side, each recorded as
+  `overload_core_damage {side, core, damage}`. The amount is the full amount
+  for each Core; it is not divided between a side's Cores. A destroyed Core
+  takes nothing and records nothing.
+- **Destruction** (step 6). Buildings with health 0 are destroyed in the
+  order of the `health` list (side, then Cores by player index, then
+  buildings by instance ID). A Core is recorded as `core_destroyed {side,
+  core}` and its cells become open ground.
+- **A destroyed Core switches nothing off** (CB-17a). Nothing else changes:
+  the owner's buildings stay in the team state, the producer, turret and ramp
+  lists and the flow plan; their sources keep producing; their conduits and
+  links stay; their units stay. A Core is never a conduit end, so no conduit
+  is removed. Movement fields are dropped as after any destruction, and
+  units whose target it was choose a new one (PP-11).
+- **Unit attack targets** in events become `{kind: "core", side, core}`.
+- **Side option.** `coreHealth` is replaced by `coreHealths`, a list of `N`
+  integers from 1 to `MAX_HEALTH`, the starting and maximum health of each
+  Core by player index (before `core_health_percent`).
+- **Overload helpers.** `overloadDeadline(simConfig, coreMaxHealth)` is
+  unchanged and is asked per Core. `overloadOutcome(simConfig, coresA,
+  coresB)` takes two lists of maximum health. A side's **last-Core tick** is
+  the largest `decayDestroysTick` of its Cores, or `null` if the decay does
+  not destroy one of them within the battle. It returns `{first, tick}`:
+  `first` is `'a'` or `'b'` for the side whose last-Core tick is smaller,
+  `'both'` when the two are equal, with that tick; a side whose last-Core
+  tick is `null` never comes first, and `first` is `null` when neither side
+  loses its last Core to the decay. With every Core at 500 both sides have the
+  last-Core tick 3100 at every party size, so a battle still ends at
+  `endTick` 3101 at the latest.
+- Golden kind `arena-sim`: `buildingHealth` entries may be `{side, core,
+  hp}`; the per-side summary's `coreHealth` becomes the list of Core health
+  by player.
+
+### PP-10. End conditions and the tiebreak ladder
+
+Checked at the end of each tick, after `stepArena`. Let `standing[s]` be the
+number of living Cores of side `s`.
+
+1. **One side has no Core left**: `standing[s] = 0` and `standing[1 - s] >
+   0`. Side `1 - s` wins, `reason: "core_destroyed"`.
+2. **Both sides lost their last Core in this tick**: `standing[0] =
+   standing[1] = 0`. The ladder decides, starting at rung 3 (rungs 1 and 2
+   are equal by definition).
+3. **Time limit**: `maxBattleTicks` ticks have been simulated and both sides
+   have a living Core. The ladder decides, starting at rung 1.
+
+Otherwise the battle continues. Losing some but not all Cores ends nothing.
+
+**The ladder.** The first rung on which the sides differ decides.
+
+| Rung | The winner has | `reason` |
+| ---- | -------------- | -------- |
+| 1 | more Cores standing (`standing`) | `time_limit` |
+| 2 | the larger share of total Core health: `sumHp[s] / sumMax[s]`, where `sumHp` adds the current health of all of the side's Cores (0 for a destroyed one) and `sumMax` their maximum health; compared exactly with `compareFractions` | `time_limit` |
+| 3 | less **overkill** (below) | `tiebreak_overkill` |
+| 4 | more building damage dealt (`buildingDamageDealt`, Cores included) | `tiebreak_building_damage` |
+| 5 | more units killed (`unitsKilled`) | `tiebreak_kills` |
+| 6 | the attacker: side 0 wins | `tiebreak_attacker` |
+
+- **Overkill with several Cores.** For a Core destroyed in tick `t`,
+  `remaining` is its health after all of that tick's damage, unclamped
+  ("Core health and overkill", unchanged per Core), and its overkill is
+  `-remaining` (0 or more). A side's overkill for rung 3 is the sum of the
+  overkill of **its Cores that were destroyed in the final tick** of the
+  battle; Cores that fell earlier add nothing. The sum is formed with
+  `addSaturating(sum, o, 2^53 - 1)`, in player order (each term is at most
+  `2^52`; with up to four terms the exact sum can pass the safe range, and
+  two sides that both saturate are equal on this rung). At the time limit no
+  Core need have fallen in the final tick; a side with none has overkill 0.
+- **The attacker is unchanged**: side 0 is always the party and side 1 the
+  ghost or the PvE threat, so the defender wins no tie.
+- `sumHp` and `sumMax` are at most `maxPartySize * MAX_HEALTH = 4e12` and
+  are added with `addInt`.
+- Rungs 1 and 2 can only differ at the time limit, which is reached only if
+  a Core on each side survives the Overload decay to `maxBattleTicks` (a Core
+  of more than 26,265 health with the standard constants, or Overload
+  disabled in a test).
+
+**Result and summary.** The result stays `{winner, reason, endTick}`. Per
+side the summary's `coreHealth`, `coreMaxHealth` and `coreOverkill` become
+`cores`, a list by player of `{health, maxHealth, overkill, destroyedTick}`
+(`health` clamped at 0; `overkill` and `destroyedTick` are 0 and `null` for a
+living Core), plus `coresStanding`, `coreHealth` (`sumHp`), `coreMaxHealth`
+(`sumMax`) and `coreOverkill` (the rung-3 sum). The other fields are
+unchanged.
+
+**Lives.** A lost PvP battle costs `pvpLossLifeCost` lives once, whatever
+`coresStanding` was on either side (RS-5). That is today's rule; it reads the
+`winner` only.
+
+### PP-11. A unit's owner and target Core
+
+**Fields.** A unit gains `owner`, a player index of its own side, and
+`target`, a player index of the enemy side (the Core it heads for) or `-1`
+when the enemy has no Core left. Both are part of the saved state.
+
+**Owner.** A unit spawned by a unit producer has that building's `owner`. A
+unit of a scheduled wave has `owner = plotOf(c)`, where `c` is the column, in
+its side's own frame, of the front-row cell it enters on (the column actually
+used, not the wanted `col`). `spawnUnitForTest` uses the plot of the unit's
+cell in its own frame unless an owner is given.
+
+**The opposite plot.** `opposite(p) = N - 1 - p`. Side 1's board is rotated by
+180 degrees, so side 1's plot `q` occupies the arena columns of side 0's plot
+`N - 1 - q`: the plots face each other one to one (CB-8b), and `opposite` is
+the same function for both sides.
+
+**Fields per target.** For each side and each living enemy Core `q` there is
+one movement field and one breach field, defined exactly as today's ("Goals
+and movement fields") with Core `q` in the place of "the Core": distance 0
+for the open cells that share an edge with a cell of Core `q`. They are
+computed lazily, cached per (side, `q`) and dropped after every destruction.
+
+**Other Cores (OPEN — owner to confirm, CB-15c).** For a unit, an enemy Core
+that is not its target is an enemy building like any other: it blocks
+movement, it is not a goal, the unit does not attack it when it is merely
+within reach, and in the breach field its cells cost `breachBaseCost +
+ceil(maxHealth / breachHealthPerCost)` to enter, so it can be attacked as a
+breach building (it then takes damage and can be destroyed like any Core).
+Cores of the unit's own side are impassable, like its own buildings.
+
+**Choosing a target**, `chooseTarget(owner, c)` for a unit of side `s` at
+cell `c`:
+
+1. If the enemy Core `opposite(owner)` is alive, that is the target.
+2. Otherwise, among the living enemy Cores `q`, the one with the smallest key
+   `(class, distance, |q - opposite(owner)|, -q)`, compared left to right:
+   - `class` 0 and `distance` the cell's distance in the movement field for
+     `q`, if it has one; else `class` 1 and `distance` its distance in the
+     breach field for `q`, if it has one; else `class` 2 and `distance` 0;
+   - then the Core whose plot index is nearer to `opposite(owner)`;
+   - then the **larger** `q`. In the unit's own frame the enemy plot `q`
+     lies in the columns of plot `N - 1 - q`, so this is the Core with the
+     lower own-frame `x`, the same preference as the tie key of "Goals and
+     movement fields".
+3. With no living enemy Core the target is `-1` and the unit waits (the
+   battle ends at the end of this tick).
+
+Everything in the key is stated in the unit's own side's terms, and
+`opposite` is symmetric, so a mirrored battle stays exactly symmetric.
+
+**When it is chosen.**
+
+- **At spawn from a producer** (step 2). If the Core `opposite(owner)` is
+  alive it is the target and the spawn cells are ordered by its fields, as
+  today. Otherwise, for each living enemy Core `q`, order the producer's
+  spawn cells by `q`'s fields as today and take the key `(class, distance)`
+  of the first cell; the target is the `q` with the smallest `(class,
+  distance, |q - opposite(owner)|, -q)`, and the spawn uses that `q`'s
+  ordering. A held unit has no target yet; the choice is made again on the
+  tick it spawns.
+- **At entry of a wave unit**: `chooseTarget(owner, entry cell)`, after the
+  entry position is found.
+- **When its target Core is destroyed.** At the end of step 6, after all
+  destructions of the tick and after the fields are dropped, every living
+  unit whose target Core now has health 0, in unit-`id` order, gets `target
+  = chooseTarget(owner, c)` with `c` the cell that holds its centre, and
+  `unit_retargeted {unit, target}` is recorded after the destruction events.
+- A unit never changes target at any other time: not when another Core
+  falls, and not when another Core becomes nearer.
+
+**Uses.** Wherever "One battle tick" and "Goals and movement fields" say "the
+enemy Core", "the movement field" or "the breach field", read: the unit's
+target Core and its fields. That is: the spawn-cell ordering (step 2), the
+goal building of rule b, the headings of rule c (including the press against
+the Core at distance 0), and the breach rule. Rules a and a2 are unchanged:
+a unit fights any enemy unit it meets, whoever owns it. Turrets shoot any
+enemy unit in range and gates let every unit of their side through, whoever
+owns them (`blocksUnit` is by side, unchanged).
+
+**Events.** `unit_spawned` gains `owner` and `target`; `unit_retargeted
+{unit, target}` is new.
+
+### PP-12. Enemy-path preview per Core
+
+`previewEnemyPaths` answers, for every `x` whose front-row cell is open for
+the enemy and whose plot's Core is placed (`cores[plotOf(x)]` is not `null`),
+with the path of an enemy unit that enters there and heads for the Core of
+plot `plotOf(x)`: today's walk, on the fields of that Core (PP-11). Each
+entry gains `core: plotOf(x)`. Columns of a plot without a Core give no
+entry; the function no longer throws for a board with some Cores unplaced.
+What a unit does after that Core has fallen is not previewed.
+
+### PP-13. Turrets can shoot units in the neutral zone
+
+Owner decision (CB-3j, CB-18a). Today a turret's target must stand on the
+arena rows of the turret owner's own board ("One battle tick", "Turret
+fire"; `arena-sim.ts`, the `rowLo`/`rowHi` test). The rule becomes: the
+unit's cell row, taken in the frame of the turret's side exactly as today,
+must be inside **the owner's board rows or the gap rows**:
+
+- side 0: rows `0 .. h + gapRows - 1`;
+- side 1: rows `h .. H - 1`.
+
+Rows of the enemy's board never qualify. Range, target choice, ties, damage
+and events are unchanged. The boundary cases follow from the same row
+formula: for a side 0 turret a unit with `py = 240 (h + gapRows)` exactly is
+on the enemy's first row and is not a target. `freePower` turrets of a PvE
+stronghold follow the same rule. The statement under "Battles", "no building
+acts in the zone", is replaced by: nothing can be built in the zone and no
+flow or production happens there; turrets may shoot into it.
+
+### PP-14. PvE strongholds and bosses with one Core per player
+
+A PvE opponent has `N` plots and one Core in each, bosses included, and the
+battle runs under the same rules as any other (PP-9 to PP-11).
+
+**Profile.** `stronghold` becomes `{ cores: [{ x, y, health }], buildings }`:
+`cores[p]` is the Core of plot `p` (position in the stronghold's board
+coordinates, and its health). `coreHealth` and `corePosition` go.
+
+**Generation**, replacing step 7 of `generateThreat` (steps 1 to 6 and 8 are
+unchanged; `S` is the stronghold budget):
+
+1. `wallsTotal = min(floor(floor(S * wallSharePercent / 100) / wallPrice),
+   maxWallsPerPlot * N)`; `turretsTotal` likewise.
+2. **Shares.** `share(total, p) = floor(total / N) + (1 if p < total mod N
+   else 0)`. Plot `p` may place up to `share(wallsTotal, p)` walls and
+   `share(turretsTotal, p)` turrets.
+3. **Layout per plot**, for `p = 0 .. N - 1` in order, with the random stream
+   `holdRng.child(p)` (an integer label; nothing is drawn from `holdRng`
+   itself): the archetype's layout is computed as today on a board that is
+   one plot (`plotWidth` by `plotDepth`), so the Core is at local `x =
+   floor((plotWidth - 2) / 2)`, `y = coreRow`; cells outside the plot are
+   skipped as cells outside the board are today; then every position is
+   moved by `p * plotWidth`. A `line` layout has its one gap per plot as
+   today; `ring` and `open` are now one set per plot around that plot's
+   Core.
+4. `spent` is the price of everything placed, over all plots.
+5. **Core health, split evenly.** `total = max(minCoreHealth * N,
+   floor((S - spent) * coreHealthPerBudget / 100))` and `cores[p].health =
+   min(MAX_HEALTH, share(total, p))`. The remainder of the division goes one
+   point each to the lowest plot indices.
+
+`buildStronghold` places every Core with `placeCore(p, x, y)` and every
+building with its plot as owner (each lies inside that plot by
+construction). The battle passes `coreHealths = [cores[p].health]`.
+
+**Waves** are scheduled and enter as today (`count` is the total for the
+whole board, spread over the full width). Each unit's owner and first target
+follow PP-11: it enters in a column of some party plot, and its target is
+that plot's Core. This is "each wave heads for the Core of the area it
+enters".
+
+`threatSummary`: `coreHealth` is the total over the Cores and `cores` is
+their number. Golden kinds `threat-gen` and `pve-battle` are re-pinned; with
+one player the profile has one Core and differs from today's only in format
+and in the random stream used for the layout.
+
+### PP-15. Sealed producers per owner; map rule per plot
+
+- **Map generation** gains one fairness constraint: for every plot, every
+  walkable cell of the plot is reachable from a walkable front-row cell of
+  **that plot** by 4-way moves through cells of that plot only. (Today's
+  constraint, reachability from the front row over the whole board, stays.)
+  With it, terrain alone never closes off part of a plot from that plot's
+  own front, so a unit producer can be sealed only when its owner's own
+  buildings are part of what closes it in. Generated maps change; `map-gen`
+  vectors are re-pinned.
+- **Ready.** `sealedProducers(team, content)` is unchanged and still reads
+  the whole board. `ready` from player `p` is rejected with `sealed_producer`
+  only while the list contains a producer **owned by `p`**; `detail` lists
+  those ids only. Another player's sealed producer does not block `p`.
+
+### PP-16. Party votes and run streams
+
+The vote topics are `pve`, `event` and `event_follow_up`. The topic `core` and
+its stream `vote:core:...` no longer exist: Core placement draws nothing
+(PP-3). The vote rules themselves are unchanged. Because one draw fewer
+advances the run generator, every later stream of a multi-player run differs
+from today's for the same seed; a solo run draws no vote stream today and is
+unaffected by this rule.
+
+### PP-17. Formats, version and ghost validation
+
+- **Major version.** The game's major version is raised. At first start,
+  saves of older major versions are deleted and the local ghost pool is
+  emptied, as for any major release (TA-8). There is no migration.
+- **Team state**: `cores` in place of `core` (PP-2); `owner` on every conduit
+  (PP-1); conduit ends may be border spots (PP-4).
+- **Ghost snapshot**: `formatVersion` 2 (today 1). **Run state**: format 5
+  (today 4). Older values are rejected.
+- **Ghost validation** (`validateGhostSnapshot`) adds, through
+  `validateTeamState`: every Core placed and inside its player's plot; every
+  building inside its owner's plot; every conduit and half owned and placed
+  as PP-1 and PP-4 require; no mismatch or loop on the joined network.
+- **Value bound per owner.** Gold cannot be given (CP-29), so the bound is
+  applied to each owner: the shop value of an owner's buildings, placed or
+  stashed, is at most `per player gold + kit` (the per-player term of today's
+  formula; today's bound is that term times `N` for the whole team). The
+  tier bound is already per owner.
+- **Size limit.** `ghostMaxSerializedSize` keeps its form; its entry sizes
+  are measured again on the new format (an `owner` on conduits, `N` Cores).
+  The conduit-count bound is unchanged: every conduit or half occupies one
+  building side.
+- **Matching** is unchanged: version, party size, round. A ghost party's
+  plots face the party's one to one (PP-11).
+- **Bundled ghosts** are regenerated with the new rules by the bots; until
+  then the bundled file is ignored because its game version differs.
+
+### PP-18. No giving
+
+Players cannot give each other gold or buildings (CP-29). The session has no
+intent that moves gold or a building between players, so there is nothing to
+remove; the rule is that none is added. A building's `owner` never changes.
+
 ## The PRNG
 
 Algorithm: **xoshiro128\*\*** (state of four u32 words), seeded with
@@ -341,6 +1104,16 @@ like any other change.
 
 ## Map generation
 
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-15 | One more fairness constraint: every walkable cell of a plot is reachable from that plot's own front row inside the plot. Generated maps change. | not yet implemented (issue #129) |
+| PP-2 | `validateCorePosition` and `listLegalCorePositions` take the player and reject a footprint outside that player's plot. | not yet implemented (issue #128) |
+
 Implemented by `generateMap` in `packages/core/src/generate-map.ts`. Parameters
 come from `content/mapgen.json` (loader: `packages/core/src/mapgen.ts`), the
 terrain flags from `content/terrain.json`, and resources and the Core footprint
@@ -471,6 +1244,15 @@ throws an error.
 
 ### Core positions
 
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-2 | One Core per player. A position is legal for player `p` only if the whole footprint is in plot `p` (`outside_own_plot`). The last sentence below (a footprint spanning two plots is not rejected) no longer holds. | not yet implemented (issue #128) |
+
 The Core is the building of kind `core`; its footprint `(w, h)` comes from the
 building content. A position `(x, y)` is the footprint's lowest-x, lowest-y cell
 and the footprint covers `x .. x + w - 1`, `y .. y + h - 1` (no rotation is
@@ -501,6 +1283,17 @@ content and `content/mapgen.json`. Result `{ "map": <map>, "hash": <8 hex
 digits, hash of the map>, "attempts": <number> }`. Vectors: `golden/map-gen.json`.
 
 ## Team state and placement
+
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-1 | Every operation names its `actor`; only the owner places, moves, returns or removes a building; every footprint cell must be in the owner's plot. New reasons `not_owner`, `outside_own_plot`. "Anyone may move any building" and "a building may go anywhere on the board" no longer hold. | not yet implemented (issue #129) |
+| PP-2 | `core` becomes `cores`, one entry per player; `placeCore(actor, x, y)` works once per player. | not yet implemented (issue #128) |
+| PP-4 | Conduit ends may be border spots (halves of a border link). | not yet implemented (issue #135) |
 
 Implemented in `packages/core/src/team-state.ts` (golden kind `team-state-ops`:
 `team-state-ops.ts`). The party's whole state for combat is one board (CP-6,
@@ -669,6 +1462,17 @@ per op: `{ "op", "ok": true }` (plus `"id"` for `addToStash` and `addConduit`) o
 "ok": false, "reason" }`. Vectors: `golden/team-state-ops.json`.
 
 ## Conduits
+
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-1 | A conduit has an `owner`, joins two buildings of that owner and lies in that owner's plot; only the owner erases it. "Conduits have no owner" no longer holds. | not yet implemented (issue #129) |
+| PP-4 | Border links: a half ends at a border spot; two matching halves are one conduit in the flow graph (`linkedConduit` on the edge); an open half carries nothing. | not yet implemented (issues #135 and #136) |
+| PP-5 | Content rule: a source has exactly one output side. | not yet implemented (issue #130) |
 
 Implemented in `packages/core/src/conduits.ts` (golden kinds `team-state-ops`
 and `flow-graph`: `team-state-ops.ts`). Conduits carry resources between
@@ -860,6 +1664,19 @@ an upstream source is connected last, and a loop are covered by vectors in
 `golden/team-state-ops.json`.
 
 ## Tick order
+
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-5 | Collector flow rate by tier. | **implemented today** (step 3). The display value `ratePer1000` for a source is not yet implemented (issue #130) |
+| PP-7 | Splitting evenly, with back-up. | **implemented today** (step 2), unchanged. With PP-4 an output whose half is open is skipped like an output with no conduit: not yet implemented (issue #135) |
+| PP-6 | A dry-run consumer mode `"need"` that paces each consumer at its top speed and reports its need. | not yet implemented (issue #130) |
+| PP-8 | The source interval modifier becomes one value per owning player. **OPEN — owner to confirm.** | not yet implemented (issue #137) |
+| PP-4 | `rebuildFlow` removes both halves of a link when either end building is destroyed. | not yet implemented (issue #136) |
 
 Implemented in `packages/core/src/flow-sim.ts` (golden kind `flow-sim`:
 `flow-sim-kind.ts`). This is the resource flow of **one board on its own**
@@ -1139,6 +1956,17 @@ that conservation still holds:
 
 ## The arena
 
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-9 | Each side has one Core per player; the `health` list holds them as `{side, core, hp}`; each Core starts at its own maximum health. | not yet implemented (issue #132) |
+| PP-11 | A unit gains `owner` and `target` (the enemy Core it heads for). | not yet implemented (issue #133) |
+| PP-6 | `producers` and `ramps` entries gain `cooldown`. | not yet implemented (issue #130) |
+
 Implemented in `packages/core/src/arena.ts` (geometry) and `arena-sim.ts`
 (state and tick), `arena-paths.ts` (fields). Units live in an **arena**: one
 grid holding both sides. Each side's `BoardSim` keeps running in its own
@@ -1322,6 +2150,19 @@ state can be saved, restored and continued; a restored battle continues
 exactly like the original.
 
 ## One battle tick
+
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-6 | Step 2: a unit producer takes at most `costPerUnit - progress` and spawns only when its `cooldown` is 0; an economy building steps only when its `cooldown` is 0; step 7 counts both cooldowns down. Today a producer has no top speed. | not yet implemented (issue #130) |
+| PP-11 | Steps 2 and 3: "the enemy Core" and "the movement field" become the unit's target Core and its fields; step 6 ends with retargeting. | not yet implemented (issue #133) |
+| PP-13 | Step 3, turret fire: a target may also stand in the neutral zone (gap rows). Today only the owner's own board rows qualify. | not yet implemented (issue #134) |
+| PP-9 | Step 4: Overload decay hits every living Core, each for the full amount. Step 6: `core_destroyed {side, core}`; a destroyed Core switches nothing else off. | not yet implemented (issue #132) |
+| PP-8 | The ramp bonus is per owner. **OPEN — owner to confirm.** | not yet implemented (issue #137) |
 
 `stepArena(sim, ctx)` changes the state in place, in exactly this order. Let
 `T` be `sim.tick` at the start; every event of the step has `tick = T`.
@@ -1644,6 +2485,15 @@ exactly like the original.
 
 ### Goals and movement fields
 
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-11 | A unit heads for its **target Core**: the Core of the plot opposite its owner's plot, then the nearest remaining enemy Core. One movement field and one breach field per side and per living enemy Core. An enemy Core that is not the unit's target is treated as an ordinary enemy building (**OPEN — owner to confirm**). | not yet implemented (issue #133) |
+
 **Every unit heads for the enemy Core** (issue #66: there is no target
 preference; a unit never goes for sources, routes or defenses). It fights the
 enemy units it meets (rules a and a2) and attacks a building only when that
@@ -1819,6 +2669,16 @@ leading band (8 cells deep) of a side spans 11.4 [7.0] columns.
 
 ### In-battle ramp (economy buildings)
 
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-6 | A step also needs the building's `cooldown` to be 0 (`stepIntervalTicks` between steps). | not yet implemented (issue #130) |
+| PP-8 | Totals and caps are per owner, and `maxSourceSpeedPercent` is lowered (number to be set in rebalance). **OPEN — owner to confirm** (per owner or per side). | not yet implemented (issue #137) |
+
 "Economy" means buildings that make the factory stronger the longer a battle
 lasts (SC-8 to SC-10); it has nothing to do with gold. Each is a building of
 kind `economy` with `effect.type` `source_speed` or `unit_strength` and, per
@@ -1861,6 +2721,15 @@ Overload (below) caps how long a battle can last, so an opponent that scales
 exponentially can overtake a capped ramp.
 
 ### Overload (CB-12)
+
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-9 | Core decay takes the full amount from **every** living Core of both sides on each beat. `overloadOutcome` takes a list of Core health per side and compares each side's last-Core tick. The PvE sample below (one stronghold Core) no longer applies once PP-14 lands. | not yet implemented (issue #132) |
 
 Overload guarantees that battles end. Constants (`content/sim.json`):
 `overloadStartTick` (1800, three minutes at 10 ticks a second), `overloadIntervalTicks` (100),
@@ -2025,6 +2894,15 @@ terrain is `~` lake, `#` cliff, `?` other, `%` a blocked gap cell; `.` is open.
 The last line is a legend.
 
 ### Enemy-path preview
+
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-12 | A path per front-row column to the Core of the plot that column is in; each entry gains `core`. | not yet implemented (issue #133) |
 
 `previewEnemyPaths(teamState, content, simConfig)` (`enemy-paths.ts`) is the
 build-screen helper (CB-43). For a single board whose Core is placed (otherwise
@@ -2266,6 +3144,17 @@ Four plots (seed 3, first attempt):
 
 ## Battles
 
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-10 | A side loses when **all** of its Cores are destroyed. Ties and the time limit: Cores standing, then share of total Core health, then overkill summed over the Cores that fell in the final tick, then building damage, kills, attacker. The summary lists every Core. | not yet implemented (issue #132) |
+| PP-2 | `core_not_placed` when any player's Core is missing. | not yet implemented (issue #128) |
+| PP-13 | "No building acts in the zone" becomes: turrets may shoot units in the zone. | not yet implemented (issue #134) |
+
 Implemented in `packages/core/src/battle.ts` (golden kind `battle`:
 `battle-kind.ts`). **Side 0 is always the party and side 1 the opponent** (the
 defender, also called the ghost when the opponent is a recorded team). A
@@ -2472,6 +3361,17 @@ bare Cores), `battle.wave-queue` (a wave of 80 soldiers larger than the front ro
 
 ## Side options
 
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-9 | `coreHealth` becomes `coreHealths`, one value per Core. | not yet implemented (issue #132) |
+| PP-11 | A wave unit's owner is the plot of the column it enters on; its target is the Core of the party plot it enters. | not yet implemented (issue #133) |
+| PP-13 | `freePower` turrets may also shoot units in the zone. | not yet implemented (issue #134) |
+
 A small, general mechanism of the arena simulation (`createArenaSim(...,
 options)`, `ArenaOptions.sideOptions`, also `BattleInput.sideOptions`): per side,
 an optional object with any of the fields below. Ghost battles do not use it.
@@ -2539,6 +3439,16 @@ Everything else (unit behaviour, aggro, breach logic, Overload, end conditions
 and the tiebreak ladder) is unchanged.
 
 ## PvE threats
+
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-14 | A stronghold has one Core per player, bosses included; its total Core health is split evenly; walls and turrets are laid out per plot around each Core; the profile's `stronghold` holds `cores`. "Because the stronghold has one Core" below no longer holds. | not yet implemented (issue #138) |
+| PP-11 | Each wave unit heads first for the Core of the party plot it enters. | not yet implemented (issue #133) |
 
 Implemented in `threats.ts` (configuration and the budget), `threat-gen.ts`
 (the generator), `threat-layouts.ts` (stronghold layouts), `pve-battle.ts`
@@ -2855,6 +3765,16 @@ battle length, battles per second at one and four plots, event log size).
 
 ## Resolution order
 
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-9 | Cores are destroyed in side, then player-index order, before buildings; Overload decay is applied in the same order. | not yet implemented (issue #132) |
+| PP-11 | Target choice: the opposite Core, then the nearest by field distance; ties by nearness of plot index to the opposite plot, then the larger enemy player index (the lower column in the unit's own frame). | not yet implemented (issue #133) |
+
 What exists so far is the order in which simultaneous flow events resolve; all
 of it is fixed by the tick order above and uses no random numbers:
 
@@ -2913,6 +3833,15 @@ broken as follows:
 
 ## Run random streams
 
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-16 | The stream `vote:core:...` is no longer drawn (there is no Core vote). | not yet implemented (issue #131) |
+
 Code: `packages/session/src/streams.ts`, `machine.ts`.
 
 A run keeps one generator, saved in the run state. Its root is
@@ -2947,6 +3876,16 @@ Golden vectors for run streams do not exist yet (`prng-child` covers the
 derivation of a child stream only).
 
 ## Shops and gold
+
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-3 | Gold and the starting kit are granted when the Core placement step ends (every player has placed a Core), on entering the first `build` step. | not yet implemented (issue #131) |
+| PP-18 | No giving: no intent moves gold or a building between players. | holds today (no such intent exists) |
 
 Placeholder numbers live in `content/economy.json`; the rules below are what
 the code does. Code: `packages/core/src/shop.ts`, `weighted.ts`, `economy.ts`
@@ -3078,6 +4017,16 @@ none. An extractor-speed kind is not implemented.
 
 ### Party votes (CP-16)
 
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-16 | Core placement is no longer a party decision: the topic `core` goes. The topics are `pve`, `event`, `event_follow_up`. | not yet implemented (issue #131) |
+| PP-3 | The Core placement step: each player places their own Core and readies up. | not yet implemented (issue #131) |
+
 Every party decision (Core placement, PvE difficulty, event choice, event
 follow-up choice) is one vote per player, changeable until the last player has
 voted. It resolves when the last vote arrives:
@@ -3120,6 +4069,15 @@ moment the last player readies, an unready is always possible while the flag
 is set. The summary steps have nothing to edit and are not locked.
 
 ### Sealed unit producers (issue #37, part 3a)
+
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-15 | `ready` from a player is rejected only for sealed producers that player owns. "The check is on the whole shared board, whoever sent `ready`" no longer holds for who is blocked; the board is still read whole. | not yet implemented (issue #131) |
 
 `ready` in `build` or `shop` is rejected with `sealed_producer`, with the
 building ids in `detail` (ascending, comma separated, such as `"12,15"`), while
@@ -3292,6 +4250,15 @@ so the team cannot change between a battle and the end of its summary step;
 if it differs.
 
 ## Ghosts
+
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet unless the
+row says so.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-17 | Snapshot `formatVersion` 2, run-state format 5, a new major version (saves and the local pool are wiped). Validation adds plot and ownership checks, one Core per player, legal border links, and a value bound per owner. Bundled ghosts are regenerated. | not yet implemented (issue #139) |
 
 A ghost is another run's party, frozen at the start of one of its PvP battles
 and fought by a later run (MM-1..MM-17, W3-1). Everything below is implemented

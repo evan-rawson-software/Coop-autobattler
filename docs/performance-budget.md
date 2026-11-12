@@ -7,6 +7,17 @@ the end, event log recorded) and the budget derived from them. The rules are in
 by `packages/core/src/battle.test.ts` ("performance (CB-36)"). Both fail only
 on a large regression, not on a slow machine.
 
+**Status under the per-player design (issue #124).** Everything below was
+measured on the rules as implemented today: one Core per side and no limit on
+how fast a building consumes. Under the new design (specified in
+`rules-reference.md`, "Per-player design", not yet implemented) the dense
+four-plot board used here is no longer legal as a player-built board (a plot
+has 4 resource nodes, so a four-plot board has 16 sources, not 48), unit
+counts fall with scarcity, and each side needs one movement field and one
+breach field per living enemy Core, not one of each. The budget is measured
+again as part of the rebalance (issue #145); until then these
+numbers describe the current code only.
+
 ## Method
 
 Wall time is `Date.now()` around the tick loop (including the per-tick count of
