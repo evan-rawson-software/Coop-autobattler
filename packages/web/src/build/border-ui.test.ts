@@ -282,6 +282,43 @@ describe('supplied against need', () => {
   });
 });
 
+describe('a consumer whose need legitimately stopped', () => {
+  test('an economy building that used all its steps is not under-supplied', async () => {
+    const { s } = await start();
+    const base = s.run.team;
+    const oc = {
+      id: 9001,
+      def: 'bld_overclocker',
+      tier: 1,
+      x: 1,
+      y: 1,
+      rotation: 0,
+      owner: 0,
+    };
+    const team = { ...base, buildings: [...base.buildings, oc] } as never;
+    const max = (
+      content.buildings.get('bld_overclocker')?.tiers[0] as
+        { maxSteps?: number } | undefined
+    )?.maxSteps;
+    if (max === undefined) throw new Error('content');
+    const run = (productions: number) =>
+      supplyOf(
+        team,
+        content,
+        {
+          ticks: 600,
+          needs: [{ building: 9001, needPer1000: 100, productions }],
+          // The pacer stopped taking items at the limit: nothing arrives
+          // in the second half of the run.
+          consumers: [{ building: 9001, side: 'south', ratePer1000: 0 }],
+        } as never,
+        simConfig.ticksPerSecond,
+      )[0]?.state;
+    expect(run(max)).toBe('full');
+    expect(run(max - 1)).toBe('under');
+  });
+});
+
 describe('Backspace while drawing a border half', () => {
   test('on a receiving draft it cancels instead of leaving a stuck draft', async () => {
     const { s, ctl } = await start();

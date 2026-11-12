@@ -101,12 +101,19 @@ export function supplyOf(
     );
     const def = b === undefined ? undefined : content.buildings.get(b.def);
     if (b === undefined || def === undefined || n.needPer1000 === 0) continue;
+    // An economy building that has taken all its steps stops asking for items
+    // (the pacer closes at `maxSteps`), so nothing arrives afterwards: that is
+    // a finished need, not a shortage.
+    const limit = (def.tiers[b.tier - 1] as { maxSteps?: number } | undefined)
+      ?.maxSteps;
+    const finished =
+      limit !== undefined && limit >= 0 && n.productions >= limit;
     const got = needRun.consumers
       .filter((c) => c.building === n.building)
       .reduce((sum, c) => sum + c.ratePer1000, 0);
     out.push({
       building: n.building,
-      state: got + slack >= n.needPer1000 ? 'full' : 'under',
+      state: finished || got + slack >= n.needPer1000 ? 'full' : 'under',
       needs: needHundredthsPerSecond(def, b.tier, ticksPerSecond),
       gets: Math.floor((got * ticksPerSecond) / 10),
     });

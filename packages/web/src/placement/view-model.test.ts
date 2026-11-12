@@ -7,6 +7,8 @@ import {
   clipPaths,
   coreCells,
   hintText,
+  isRepeatClick,
+  visibleProblem,
   kitRows,
   legalSet,
   problemText,
@@ -141,6 +143,20 @@ describe('starting kit', () => {
     expect(rows.length).toBe(economy.startingKit.length + 1);
     for (const r of rows.slice(0, -1)) expect(r.text).toMatch(/ × \d+$/);
     expect(rows.map((r) => r.text).join(' ')).not.toMatch(/bld_/);
+  });
+});
+
+describe('repeat click and refusal ownership', () => {
+  test('a repeat click on the chosen spot sends nothing', () => {
+    expect(isRepeatClick({ x: 3, y: 4 }, { x: 3, y: 4 })).toBe(true);
+    expect(isRepeatClick({ x: 3, y: 4 }, { x: 3, y: 5 })).toBe(false);
+    expect(isRepeatClick(null, { x: 3, y: 4 })).toBe(false);
+  });
+  test('a refusal is not shown after the acting player changes', () => {
+    const stored = { acting: 0, text: 'No.' };
+    expect(visibleProblem(stored, 0)).toBe('No.');
+    expect(visibleProblem(stored, 1)).toBeNull();
+    expect(visibleProblem(null, 0)).toBeNull();
   });
 });
 

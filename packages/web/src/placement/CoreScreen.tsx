@@ -24,6 +24,9 @@ import { AppShell, Panel } from '../shell/AppShell.js';
 import { drawCoreOverlay, type Candidate } from './overlay.js';
 import {
   hintText,
+  isRepeatClick,
+  visibleProblem,
+  type StoredProblem,
   kitRows,
   coreCells,
   legalSet,
@@ -43,7 +46,11 @@ export function CoreScreen(props: { run: RunHandle }) {
   const team = view.run.team;
   const acting = view.acting;
   const [hover, setHover] = useState<Cell | null>(null);
-  const [problem, setProblem] = useState<string | null>(null);
+  const [stored, setStored] = useState<StoredProblem | null>(null);
+  const problem = visibleProblem(stored, acting);
+  const setProblem = (text: string | null): void => {
+    setStored(text === null ? null : { acting, text });
+  };
   const [busy, setBusy] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
   // The acting player's chosen spot is the one the run holds for them.
@@ -165,13 +172,9 @@ export function CoreScreen(props: { run: RunHandle }) {
       unregisterDebug('placement');
     };
   }, []);
-  // Another player's refusal is not this player's.
-  useEffect(() => {
-    setProblem(null);
-  }, [acting]);
   const onSelect = (cell: Cell): void => {
     // A repeat click on the chosen spot changes nothing: send nothing.
-    if (selectedRef.current?.x === cell.x && selectedRef.current.y === cell.y) {
+    if (isRepeatClick(selectedRef.current, cell)) {
       setProblem(isReady ? reasonMessage('locked_ready') : null);
       return;
     }

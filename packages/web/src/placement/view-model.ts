@@ -124,6 +124,25 @@ export function hintText(input: {
     : `Chosen: column ${String(input.selected.x)}, row ${String(input.selected.y)}.`;
 }
 
+/** A click on the spot that is already chosen: nothing to send. */
+export function isRepeatClick(selected: Cell | null, cell: Cell): boolean {
+  return selected !== null && selected.x === cell.x && selected.y === cell.y;
+}
+
+/** A refusal message and the player it was shown to. */
+export interface StoredProblem {
+  readonly acting: number;
+  readonly text: string;
+}
+
+/** A refusal belongs to one player: after a switch it is not shown. */
+export function visibleProblem(
+  stored: StoredProblem | null,
+  acting: number,
+): string | null {
+  return stored !== null && stored.acting === acting ? stored.text : null;
+}
+
 /** Every legal position in the player's own plot, as a lookup by `y * width + x`. */
 export function legalSet(
   team: TeamState,
