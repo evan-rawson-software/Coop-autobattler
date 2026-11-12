@@ -277,7 +277,7 @@ describe('source interval modifier (flow)', () => {
       events,
     });
     for (let t = 0; t < ticks; t++) {
-      ctx.sourceSpeedPercent = percentAt(t);
+      ctx.sourceSpeedPercent = [percentAt(t)];
       stepFlow(sim, ctx);
     }
     return events.filter((e) => e.type === 'produced').map((e) => e.tick);
@@ -381,7 +381,7 @@ describe('economy buildings: charging and steps (CB-11)', () => {
     expect(ofType(events, 'ramp_step').map((e) => e.steps)).toEqual([
       1, 2, 3, 4, 5, 6,
     ]);
-    expect(rampBonus(sim, ctx, 0, 'source_speed')).toBe(30);
+    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(30);
     // 300 more ticks: nothing changes, the buffer is full, the source stalls.
     runArena(sim, ctx, 300);
     expect(got(sim.ramps[0])).toMatchObject({ steps: 6, charge: 0 });
@@ -390,7 +390,7 @@ describe('economy buildings: charging and steps (CB-11)', () => {
     expect(input.count).toBe(sim.boards[0].bufferCapacity);
     expect(got(sim.boards[0].sources[0]).stalled).toBe(1);
     expect(ofType(events, 'ramp_step')).toHaveLength(6);
-    expect(rampBonus(sim, ctx, 0, 'source_speed')).toBe(30);
+    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(30);
   });
 
   test('the global maximum clamps the total (source_speed)', () => {
@@ -407,11 +407,93 @@ describe('economy buildings: charging and steps (CB-11)', () => {
     );
     expect(sim.ramps).toHaveLength(4);
     for (const r of sim.ramps) r.steps = 10;
-    expect(rampBonus(sim, ctx, 0, 'source_speed')).toBe(300);
+    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(300);
     got(sim.ramps[3]).steps = 0;
-    expect(rampBonus(sim, ctx, 0, 'source_speed')).toBe(240); // below the cap
-    expect(rampBonus(sim, ctx, 1, 'source_speed')).toBe(0);
-    expect(rampBonus(sim, ctx, 0, 'unit_strength')).toBe(0);
+    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(240); // below the cap
+    expect(rampBonus(sim, ctx, 1, 'source_speed', 0)).toBe(0);
+    expect(rampBonus(sim, ctx, 0, 'unit_strength', 0)).toBe(0);
+  });
+
+  describe('economy buildings act for their owner only (PP-8)', () => {
+    /** Two plots: player 0 at x 0..11, player 1 at x 12..23. */
+    function twoPlots(
+      put: (lab: Lab) => void,
+    ): ReturnType<typeof startArenaBattle> {
+      const lab = new Lab({ ...tinyMap(), width: 24, partySize: 2 });
+      lab.core(5, 6, 0);
+      lab.core(17, 6, 1);
+      put(lab);
+      const foe = new Lab({ ...tinyMap(), width: 24, partySize: 2 });
+      foe.core(5, 6, 0);
+      foe.core(17, 6, 1);
+      return startArenaBattle(lab.state, foe.state, GAP, content, simConfig);
+    }
+
+    test('an Overclocker speeds up only its owner and each owner is capped alone (source_speed)', () => {
+      // Owner 0: four tier 3 (4 * 80 = 320, capped at the maximum). Owner 1:
+      // two tier 3 (160 below the cap, so it is not clamped to a shared one).
+      const { sim, ctx } = twoPlots((lab) => {
+        for (const x of [0, 2, 4, 6]) lab.put('bld_overclocker', x, 0, 0, 3);
+        for (const x of [12, 14]) lab.put('bld_overclocker', x, 0, 0, 3);
+      });
+      for (const r of sim.ramps) r.steps = 10;
+      const cap = simConfig.maxSourceSpeedPercent;
+      expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(
+        Math.min(320, cap),
+      );
+      expect(rampBonus(sim, ctx, 0, 'source_speed', 1)).toBe(
+        Math.min(160, cap),
+      );
+      // The other owner's buildings never add to a total: remove owner 1's.
+      sim.ramps = sim.ramps.filter((r) => r.building <= 4 || r.building > 6);
+      expect(rampBonus(sim, ctx, 0, 'source_speed', 1)).toBe(0);
+      expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(
+        Math.min(320, cap),
+      );
+    });
+
+    test('stepFlow receives one modifier per player; the other owner collectors stay unchanged', () => {
+      const { sim, ctx } = twoPlots((lab) => {
+        lab.put('bld_overclocker', 0, 0, 0, 3);
+      });
+      for (const r of sim.ramps) r.steps = 10;
+      stepArena(sim, ctx);
+      expect(ctx.flows[0]?.sourceSpeedPercent).toEqual([
+        rampBonus(sim, ctx, 0, 'source_speed', 0),
+        0,
+      ]);
+      expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBeGreaterThan(0);
+    });
+
+    test('a unit-strength building strengthens only units of its owner producers', () => {
+      const { sim, ctx } = twoPlots((lab) => {
+        lab.put('bld_armory', 0, 0, 0, 3);
+      });
+      for (const r of sim.ramps) r.steps = 10;
+      const bonus = rampBonus(sim, ctx, 0, 'unit_strength', 0);
+      expect(bonus).toBeGreaterThan(0);
+      const mine = spawnUnitForTest(sim, ctx, {
+        side: 0,
+        def: 'unit_soldier',
+        owner: 0,
+        x: 3,
+        y: 12,
+      });
+      const partner = spawnUnitForTest(sim, ctx, {
+        side: 0,
+        def: 'unit_soldier',
+        owner: 1,
+        x: 15,
+        y: 12,
+      });
+      expect(mine.damage).toBe(
+        unitStats(0, got(content.units.get('unit_soldier')), bonus).damage,
+      );
+      expect(partner.damage).toBe(
+        unitStats(0, got(content.units.get('unit_soldier')), 0).damage,
+      );
+      expect(mine.hp).toBeGreaterThan(partner.hp);
+    });
   });
 
   test('the global maximum clamps the total (unit_strength)', () => {
@@ -428,9 +510,10 @@ describe('economy buildings: charging and steps (CB-11)', () => {
       simConfig,
     );
     for (const r of sim.ramps) r.steps = 10;
-    expect(rampBonus(sim, ctx, 0, 'unit_strength')).toBe(300);
+    expect(rampBonus(sim, ctx, 0, 'unit_strength', 0)).toBe(300);
     const u = spawnUnitForTest(sim, ctx, {
       side: 0,
+      owner: 0,
       def: 'unit_soldier',
       x: 11,
       y: 12,
@@ -622,13 +705,14 @@ describe('unit_strength (armory)', () => {
     // The earlier units were not changed by the later steps.
     const first = got(sim.units[0]);
     expect(first.hp).toBe(40);
-    expect(rampBonus(sim, ctx, 0, 'unit_strength')).toBe(12);
-    expect(rampBonus(sim, ctx, 0, 'source_speed')).toBe(0);
-    expect(rampBonus(sim, ctx, 1, 'unit_strength')).toBe(0);
+    expect(rampBonus(sim, ctx, 0, 'unit_strength', 0)).toBe(12);
+    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(0);
+    expect(rampBonus(sim, ctx, 1, 'unit_strength', 0)).toBe(0);
     // Damage rounding: 5 steps = +20 percent -> mulPct(6, 120) = 7.
     got(sim.ramps.find((r) => r.building === armory)).steps = 5;
     const u = spawnUnitForTest(sim, ctx, {
       side: 0,
+      owner: 0,
       def: 'unit_soldier',
       x: 11,
       y: 12,
@@ -660,6 +744,7 @@ describe('unit_strength (armory)', () => {
     // 204 apart (circle radius 72 each, reach 60): in contact.
     const strong = spawnUnitForTest(sim, ctx, {
       side: 0,
+      owner: 0,
       def: 'unit_soldier',
       px: 5 * 240 + 120,
       py: 18 * 240 + 120,
@@ -694,13 +779,13 @@ describe('destroying an economy building removes its bonus (criterion 4)', () =>
     const oc = got(sim.ramps[0]).building;
     runArena(sim, ctx, 200);
     expect(got(sim.ramps[0]).steps).toBeGreaterThanOrEqual(2);
-    expect(rampBonus(sim, ctx, 0, 'source_speed')).toBeGreaterThan(0);
+    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBeGreaterThan(0);
     const mark = events.length;
     kill(sim, 0, oc);
     stepArena(sim, ctx);
     // Gone from the state at once, and the total with it.
     expect(sim.ramps).toHaveLength(0);
-    expect(rampBonus(sim, ctx, 0, 'source_speed')).toBe(0);
+    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(0);
     expect(
       ofType(events.slice(mark), 'building_destroyed').map((e) => e.building),
     ).toEqual([oc]);
@@ -749,12 +834,12 @@ describe('destroying an economy building removes its bonus (criterion 4)', () =>
     const early = sim.units.filter((u) => u.hp > 40);
     expect(early.length).toBeGreaterThan(0);
     const earlyHp = early.map((u) => [u.id, u.hp, u.damage]);
-    const bonus = rampBonus(sim, ctx, 0, 'unit_strength');
+    const bonus = rampBonus(sim, ctx, 0, 'unit_strength', 0);
     expect(bonus).toBeGreaterThan(0);
     kill(sim, 0, a);
     runArena(sim, ctx, 200);
     expect(sim.ramps).toHaveLength(0);
-    expect(rampBonus(sim, ctx, 0, 'unit_strength')).toBe(0);
+    expect(rampBonus(sim, ctx, 0, 'unit_strength', 0)).toBe(0);
     const lastEarly = Math.max(...early.map((u) => u.id));
     const later = ofType(events, 'unit_spawned').filter(
       (e) => e.unit > lastEarly && e.tick > 301,
@@ -808,7 +893,7 @@ describe('no upgrade state survives into a second battle (criterion 3)', () => {
       simConfig,
     );
     expect(hashJson(second)).toBe(hashJson(fresh));
-    expect(rampBonus(second, first.ctx, 0, 'source_speed')).toBe(0);
+    expect(rampBonus(second, first.ctx, 0, 'source_speed', 0)).toBe(0);
   });
 });
 
@@ -829,6 +914,7 @@ describe('Overload damage (criterion 6)', () => {
     b.sim.tick = levelTick(level);
     const a0 = spawnUnitForTest(b.sim, b.ctx, {
       side: 0,
+      owner: 0,
       def: 'unit_soldier',
       px: 2 * 240 + 120,
       py: 17 * 240 + 120,
@@ -869,6 +955,7 @@ describe('Overload damage (criterion 6)', () => {
     before.sim.tick = 1799;
     spawnUnitForTest(before.sim, before.ctx, {
       side: 0,
+      owner: 0,
       def: 'unit_soldier',
       px: 2 * 240 + 120,
       py: 17 * 240 + 120,

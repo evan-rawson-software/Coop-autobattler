@@ -816,7 +816,8 @@ describe('property: conservation', () => {
         const r = start(state, mode);
         // Each run uses a different source interval modifier (0, 75,
         // 150 or 300 percent), so conservation is checked with it active.
-        r.ctx.sourceSpeedPercent = [0, 75, 150, 300][seed % 4] ?? 0;
+        const pct = [0, 75, 150, 300][seed % 4] ?? 0;
+        r.ctx.sourceSpeedPercent = [pct, pct, pct, pct];
         for (let t = 0; t < 300; t++) {
           stepFlow(r.sim, r.ctx);
           const f = flowTotals(r.sim);
