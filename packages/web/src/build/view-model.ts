@@ -20,6 +20,7 @@ import {
 } from '@game/core';
 import type { WebContent } from '../content.js';
 import { count } from '../plural.js';
+import { formatHundredths, supplyOf, type Supply } from './rates.js';
 
 // ---------------------------------------------------------------------------
 // Names
@@ -41,6 +42,10 @@ export interface FlowView {
   readonly activeConduits: ReadonlySet<number>;
   /** Buildings with a connected input that received nothing in the dry run. */
   readonly starved: ReadonlySet<number>;
+  /** Consumers against their need at top speed (`'need'` dry run, PP-6). */
+  readonly supply: readonly Supply[];
+  /** Buildings that receive less than their need. */
+  readonly underSupplied: ReadonlySet<number>;
 }
 
 /** Whether `side` of a building has a conduit ending on it. */
@@ -63,9 +68,16 @@ export function computeFlowView(
   ticks: number,
 ): FlowView | null {
   let dry: DryRunResult;
+  let supply: Supply[];
   const active = new Set<number>();
   try {
     dry = dryRunFlow(state, content, sim, ticks);
+    supply = supplyOf(
+      state,
+      content,
+      dryRunFlow(state, content, sim, ticks, 'need'),
+      sim.ticksPerSecond,
+    );
     const graph = buildFlowGraph(state, content);
     const producing = new Set(
       dry.sources.filter((s) => s.produced > 0).map((s) => String(s.building)),
@@ -91,7 +103,10 @@ export function computeFlowView(
       starved.add(c.building);
     }
   }
-  return { dry, activeConduits: active, starved };
+  const underSupplied = new Set(
+    supply.filter((x) => x.state === 'under').map((x) => x.building),
+  );
+  return { dry, activeConduits: active, starved, supply, underSupplied };
 }
 
 // ---------------------------------------------------------------------------
@@ -252,7 +267,12 @@ function deriveRate(
 // Problems
 
 export type ProblemKind =
-  'missing_input' | 'starved' | 'lost_output' | 'stash' | 'free_nodes';
+  | 'missing_input'
+  | 'starved'
+  | 'under_supplied'
+  | 'lost_output'
+  | 'stash'
+  | 'free_nodes';
 
 export interface Problem {
   readonly id: string;
@@ -336,6 +356,22 @@ export function deriveProblems(
         id: `starved:${String(b.id)}:${c.side}`,
         kind: 'starved',
         text: `${name(b)} receives no ${resourceName(content, c.resource)} in the dry run.`,
+        focus: occ.cellsOf(b)[0] ?? { x: b.x, y: b.y },
+        building: b.id,
+      });
+    }
+  }
+
+  if (flow !== null) {
+    for (const u of flow.supply) {
+      // Nothing at all is reported as "starved" above.
+      if (u.state !== 'under' || flow.starved.has(u.building)) continue;
+      const b = state.buildings.find((x) => x.id === u.building);
+      if (b === undefined) continue;
+      out.push({
+        id: `under:${String(b.id)}`,
+        kind: 'under_supplied',
+        text: `${name(b)} gets ${formatHundredths(u.gets)}/s of the ${formatHundredths(u.needs)}/s it needs.`,
         focus: occ.cellsOf(b)[0] ?? { x: b.x, y: b.y },
         building: b.id,
       });

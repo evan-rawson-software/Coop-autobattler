@@ -8,7 +8,9 @@
  */
 
 import {
+  isBorderEnd,
   occupancy,
+  type BorderEnd,
   type Cell,
   type ConduitEnd,
   type TeamState,
@@ -113,14 +115,18 @@ export function routeBetween(
 export function proposePath(
   state: TeamState,
   content: WebContent,
-  from: ConduitEnd,
+  from: ConduitEnd | BorderEnd,
   to: ConduitEnd,
   existing: readonly Cell[],
   actor: number,
 ): Cell[] | null {
-  const a = state.buildings.find((b) => b.id === from.building);
+  const a = isBorderEnd(from)
+    ? undefined
+    : state.buildings.find((b) => b.id === from.building);
   const b = state.buildings.find((x) => x.id === to.building);
-  if (a === undefined || b === undefined) return null;
+  // A receiving half starts at its border cell, which is already drawn.
+  if (b === undefined || (a === undefined && !isBorderEnd(from))) return null;
+  if (a === undefined && existing.length === 0) return null;
   if (existing.length === 0) {
     // Let core say whether the sides face each other: any answer but
     // invalid_path means the empty path was understood as a direct link.
@@ -131,7 +137,11 @@ export function proposePath(
   const goals = outsideCells(occ.cellsOf(b), to.side);
   const last = existing[existing.length - 1];
   const starts =
-    last === undefined ? outsideCells(occ.cellsOf(a), from.side) : [last];
+    last !== undefined
+      ? [last]
+      : a === undefined
+        ? []
+        : outsideCells(occ.cellsOf(a), (from as ConduitEnd).side);
   const avoid = existing.slice(0, -1);
   const found = routeBetween(state, content, starts, goals, avoid);
   if (found === null) return null;
@@ -142,17 +152,23 @@ export function proposePath(
 export function extendPath(
   state: TeamState,
   content: WebContent,
-  from: ConduitEnd,
+  from: ConduitEnd | BorderEnd,
   existing: readonly Cell[],
   target: Cell,
 ): Cell[] | null {
-  const a = state.buildings.find((b) => b.id === from.building);
-  if (a === undefined) return null;
+  const a = isBorderEnd(from)
+    ? undefined
+    : state.buildings.find((b) => b.id === from.building);
+  if (a === undefined && existing.length === 0) return null;
   const last = existing[existing.length - 1];
   if (last !== undefined && sameCell(last, target)) return [...existing];
   const occ = occupancy(state, content);
   const starts =
-    last === undefined ? outsideCells(occ.cellsOf(a), from.side) : [last];
+    last !== undefined
+      ? [last]
+      : a === undefined
+        ? []
+        : outsideCells(occ.cellsOf(a), (from as ConduitEnd).side);
   const avoid = existing.slice(0, -1);
   const found = routeBetween(state, content, starts, [target], avoid);
   if (found === null) return null;

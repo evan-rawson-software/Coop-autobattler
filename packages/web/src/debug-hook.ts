@@ -138,6 +138,13 @@ export interface BuildDebug {
   problems: () => readonly { id: string; kind: string; text: string }[];
   legalCore: () => readonly { x: number; y: number }[];
   acting: () => number;
+  /** Border link halves with their state (joined, open, same_kind). */
+  links: () => readonly {
+    conduit: number;
+    owner: number;
+    kind: string;
+    state: string;
+  }[];
   partnerCores: () => readonly { player: number; x: number; y: number }[];
   /** Ids of the placed unit producers sealed off from the front row. */
   sealed: () => readonly number[];

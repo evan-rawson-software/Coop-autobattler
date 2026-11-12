@@ -1629,6 +1629,66 @@ export async function runRunSmoke({
     await waitStep(step);
   };
   await page.waitForFunction(() => window.__debug?.build?.step() === 'build');
+
+  // One border link: player 1 draws a sending half from an extractor to the
+  // border, player 2 a receiving half into a Barracks; they join.
+  {
+    const t0 = await B.team();
+    const w = t0.width / 2;
+    const node = t0.nodes
+      .filter((n) => n.resource === 'res_a' && n.x < w)
+      .sort((a, b) => b.x - a.x)[0];
+    const dragFromStash = async (def, x, y) => {
+      const before = (await B.team()).buildings.length;
+      const box = await page
+        .locator(`[data-stash-def="${def}"]`)
+        .first()
+        .boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      const p = await at(x, y);
+      await page.mouse.move(p.x, p.y, { steps: 6 });
+      await page.mouse.up();
+      await page.waitForFunction(
+        (n) => window.__debug.build.team().buildings.length > n,
+        before,
+        { timeout: slow(3000) },
+      );
+    };
+    const clickCell = async (x, y) => {
+      const p = await at(x, y);
+      await page.mouse.click(p.x, p.y);
+    };
+    const links = () => page.evaluate(() => window.__debug.build.links());
+    await actAs(0);
+    await dragFromStash('bld_extractor', node.x, node.y);
+    await page.click('[data-tool="conduit"]');
+    await clickCell(node.x, node.y + 1);
+    await clickCell(w - 1, node.y + 1);
+    await page.waitForFunction(() => window.__debug.build.links().length === 1);
+    const first = await links();
+    check(
+      first[0].owner === 0 &&
+        first[0].kind === 'send' &&
+        first[0].state === 'open',
+      'border link: a half with no neighbour half is shown as not connected',
+    );
+    await actAs(1);
+    await dragFromStash('bld_barracks', w + 2, node.y + 2);
+    await page.click('[data-tool="conduit"]');
+    await clickCell(w, node.y + 1);
+    await clickCell(w + 2, node.y + 2);
+    await page.waitForFunction(() => window.__debug.build.links().length === 2);
+    await page.waitForFunction(() =>
+      window.__debug.build.links().every((h) => h.state === 'joined'),
+    );
+    check(
+      (await links()).map((h) => h.kind).join() === 'send,receive',
+      'border link: the two halves of different players are joined',
+    );
+    await page.click('[data-tool="select"]');
+  }
+
   await bothReady('pve_choice', async () => {
     await page.waitForSelector('#ready-button:not([disabled])');
     await page.click('#ready-button');
