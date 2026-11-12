@@ -12,7 +12,8 @@ import {
 } from '@game/core';
 import { describe, expect, test } from 'vitest';
 import { content } from '../content.js';
-import { linkMap } from '../battle/draw.js';
+import { linkMap, makeDrawIndex } from '../battle/draw.js';
+import { buildScene } from '../board/scene.js';
 import {
   UndoStack,
   inverseOf,
@@ -212,5 +213,56 @@ describe('link drawing and flow view', () => {
     if (!r.ok) throw new Error(`${r.reason} ${r.detail ?? ''}`);
     const send = team.conduits[0]?.id ?? -1;
     expect([...linkMap(r.state, content)]).toEqual([[send, r.id]]);
+  });
+
+  test('the draw index runs a joined link along both halves, in order', () => {
+    const { team } = rig();
+    const b = addToStash(team, content, {
+      def: 'bld_barracks',
+      tier: 1,
+      owner: 1,
+    });
+    if (!b.ok) throw new Error(b.reason);
+    const p = placeFromStash(b.state, content, {
+      actor: 1,
+      id: b.id,
+      x: 14,
+      y: 6,
+      rotation: 0,
+    });
+    if (!p.ok) throw new Error(p.reason);
+    const r = addConduit(p.state, content, {
+      actor: 1,
+      from: { border: 0, y: 3 },
+      to: { building: b.id, side: 'south' },
+      cells: [
+        { x: 12, y: 3 },
+        { x: 13, y: 3 },
+        { x: 14, y: 3 },
+        { x: 14, y: 4 },
+        { x: 14, y: 5 },
+      ],
+    });
+    if (!r.ok) throw new Error(`${r.reason} ${r.detail ?? ''}`);
+    const send = team.conduits[0]?.id ?? -1;
+    const scene = buildScene(r.state, r.state, 4, content);
+    const labels = { own: 'a', enemy: 'b' };
+    const lm = linkMap(r.state, content);
+    const joined = makeDrawIndex(scene, labels, [lm, lm]);
+    const apart = makeDrawIndex(scene, labels);
+    const sendCells = apart.conduitCells[0].get(send) ?? [];
+    const recvCells = apart.conduitCells[0].get(r.id) ?? [];
+    expect(sendCells).toHaveLength(10);
+    expect(recvCells).toHaveLength(5);
+    // Without the link map each half keeps only its own cells.
+    expect(apart.conduitCells[0].get(send)).toEqual(sendCells);
+    // With it, the sending half's id runs along both halves.
+    expect(joined.conduitCells[0].get(send)).toEqual([
+      ...sendCells,
+      ...recvCells,
+    ]);
+    expect(joined.conduitCells[1].get(send)).toHaveLength(15);
+    // The receiving half's own entry is not changed.
+    expect(joined.conduitCells[0].get(r.id)).toEqual(recvCells);
   });
 });
