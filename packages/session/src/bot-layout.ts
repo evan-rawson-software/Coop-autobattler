@@ -15,6 +15,7 @@ import {
   occupancy,
   placeFromStash,
   queryMap,
+  returnToStash,
   rotateBuilding,
   sealedProducers,
   type BuildingDef,
@@ -522,8 +523,58 @@ export function feeds(
 const SPLIT_SIDES: readonly Side[] = ['north', 'east', 'west'];
 
 /**
- * One collector on a free node feeds two consumers through a Splitter placed
- * directly after it (CB-9e). Nothing is planned unless both fit.
+ * Where a pair can start: a collector already on the board that feeds
+ * nothing yet (the Splitter goes on the cell after its output), or a new
+ * collector from the stash on a free node of the resource. Each start is the
+ * plan with the collector and the Splitter placed and joined (CB-9e).
+ */
+function splitterStarts(
+  env: Env,
+  plan: Plan,
+  resource: string,
+  splitterId: number,
+): Plan[] {
+  const t = plan.team;
+  const taken = attached(t);
+  const starts: Plan[] = [];
+  const after = (p: Plan, sourceId: number): Plan | null => {
+    const src = p.team.buildings.find((b) => b.id === sourceId);
+    if (src === undefined) return null;
+    const side = occupancy(p.team, env.content).absoluteSides(src).outputs[0];
+    if (side !== 'north') return null;
+    const box = boxOf(env, src);
+    const cell = outsideCell(src, box.w, box.h, side, 0);
+    const s2 = withPlace(env, p, splitterId, cell.x, cell.y);
+    return s2 && withConduit(env, s2, sourceId, splitterId);
+  };
+  for (const b of t.buildings) {
+    if (
+      b.owner !== env.player ||
+      defOf(env, b.def)?.kind !== 'source' ||
+      taken.has(b.id) ||
+      resourceOf(env, t, b) !== resource
+    ) {
+      continue;
+    }
+    const next = after(plan, b.id);
+    if (next !== null) starts.push(next);
+  }
+  const source = t.stash.find(
+    (b) => b.owner === env.player && defOf(env, b.def)?.kind === 'source',
+  );
+  if (source === undefined) return starts;
+  for (const node of shuffle(freeNodes(env, t, resource), env.rng)) {
+    const s1 = withPlace(env, plan, source.id, node.x, node.y);
+    const next = s1 && after(s1, source.id);
+    if (next !== null) starts.push(next);
+  }
+  return starts;
+}
+
+/**
+ * One collector feeds two consumers through a Splitter placed directly after
+ * it (CB-9e): a collector already on the board with a free output, or a new
+ * one on a free node. Nothing is planned unless both consumers fit.
  */
 function connectPair(
   env: Env,
@@ -532,23 +583,15 @@ function connectPair(
   second: number,
   resource: string,
 ): Plan | null {
-  const t = plan.team;
-  const source = t.stash.find(
-    (b) => b.owner === env.player && defOf(env, b.def)?.kind === 'source',
-  );
-  const splitter = t.stash.find(
+  const splitter = plan.team.stash.find(
     (b) =>
       b.owner === env.player &&
       (defOf(env, b.def) as { routeType?: string } | undefined)?.routeType ===
         'splitter',
   );
-  if (source === undefined || splitter === undefined) return null;
-  for (const node of shuffle(freeNodes(env, t, resource), env.rng)) {
-    const s1 = withPlace(env, plan, source.id, node.x, node.y);
-    const s2 = s1 && withPlace(env, s1, splitter.id, node.x, node.y + 1);
-    const s3 = s2 && withConduit(env, s2, source.id, splitter.id);
-    if (s3 === null) continue;
-    let cur: Plan | null = s3;
+  if (splitter === undefined) return null;
+  for (const start of splitterStarts(env, plan, resource, splitter.id)) {
+    let cur: Plan | null = start;
     const used = new Set<Side>();
     for (const id of [first, second]) {
       const base: Plan = cur;
@@ -562,6 +605,98 @@ function connectPair(
         if (tried !== null && sealsNothingNew(env, tried.team)) {
           done = tried;
           used.add(side);
+          break;
+        }
+      }
+      if (done === null) {
+        cur = null;
+        break;
+      }
+      cur = done;
+    }
+    if (cur !== null) return cur;
+  }
+  return null;
+}
+
+/**
+ * A collector already on the board that feeds one consumer directly shares
+ * with a second: the old consumer is taken back (free, its conduit goes with
+ * it), a Splitter goes after the collector and both consumers are placed
+ * behind it again (CB-9e). Used when no free node is left for a collector.
+ */
+function connectShare(
+  env: Env,
+  plan: Plan,
+  newId: number,
+  resource: string,
+): Plan | null {
+  const t = plan.team;
+  const splitter = t.stash.find(
+    (b) =>
+      b.owner === env.player &&
+      (defOf(env, b.def) as { routeType?: string } | undefined)?.routeType ===
+        'splitter',
+  );
+  const fresh = t.stash.find((b) => b.id === newId);
+  if (splitter === undefined || fresh === undefined) return null;
+  if (!feeds(env, t, fresh, 2)) return null;
+  for (const src of t.buildings) {
+    if (
+      src.owner !== env.player ||
+      defOf(env, src.def)?.kind !== 'source' ||
+      resourceOf(env, t, src) !== resource
+    ) {
+      continue;
+    }
+    const out = t.conduits.filter(
+      (c) => !isBorderEnd(c.from) && c.from.building === src.id,
+    );
+    const only = out[0];
+    if (out.length !== 1 || only === undefined || isBorderEnd(only.to)) {
+      continue;
+    }
+    const user = t.buildings.find(
+      (b) => b.id === (only.to as { building: number }).building,
+    );
+    if (
+      user === undefined ||
+      defOf(env, user.def)?.kind === 'route' ||
+      !feeds(env, t, user, 2)
+    ) {
+      continue;
+    }
+    const taken = returnToStash(t, env.content, {
+      actor: env.player,
+      id: user.id,
+    });
+    if (!taken.ok) continue;
+    const base: Plan = {
+      team: taken.state,
+      out: [...plan.out, { type: 'return_building', id: user.id }],
+    };
+    const box = boxOf(env, src);
+    const side = occupancy(base.team, env.content).absoluteSides(src)
+      .outputs[0];
+    if (side !== 'north') continue;
+    const cell = outsideCell(src, box.w, box.h, side, 0);
+    const s1 = withPlace(env, base, splitter.id, cell.x, cell.y);
+    const s2 = s1 && withConduit(env, s1, src.id, splitter.id);
+    if (s2 === null) continue;
+    const used = new Set<Side>();
+    let cur: Plan | null = s2;
+    for (const id of [user.id, newId]) {
+      const from: Plan = cur;
+      const isPlaced = from.team.buildings.some((b) => b.id === id);
+      let done: Plan | null = null;
+      for (const sd of SPLIT_SIDES) {
+        if (used.has(sd)) continue;
+        const tried: Plan | null = isPlaced
+          ? withConduit(env, from, splitter.id, id, sd)
+          : placeConsumerNear(env, from, splitter.id, id, sd);
+        if (tried !== null && sealsNothingNew(env, tried.team)) {
+          done = tried;
+          used.add(sd);
           break;
         }
       }
@@ -636,7 +771,9 @@ export function planLayout(
           continue;
         }
       }
-      const done = connectConsumer(env, plan, c.id, resource);
+      const done =
+        connectConsumer(env, plan, c.id, resource) ??
+        connectShare(env, plan, c.id, resource);
       if (done !== null) plan = done;
     }
   }

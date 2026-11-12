@@ -188,14 +188,13 @@ describe('bots build per player', () => {
     }
   });
 
-  // Known gap, see #178: since the rebalance (#145) every tier-1 consumer
-  // needs exactly what one tier-1 collector gives, so the bot fills its
-  // collector nodes first and rarely places a Splitter. This pins the measured
-  // rate, it is not a goal: over 20 fixed seeds at most MAX_SPLITTER_SEEDS
-  // solo rush runs hold a Splitter with two outputs. When #178 is fixed the
-  // count rises and this test fails: replace it with a lower bound.
-  const MAX_SPLITTER_SEEDS = 5; // measured: 3
-  test('few solo rush runs share a collector through a two-output Splitter (#178)', () => {
+  // Since the rebalance (#145) every tier-1 consumer needs what one tier-1
+  // collector gives and a plot has few nodes, so sharing a collector through
+  // a Splitter is how the bot gets past the node count (#178). Over 20 fixed
+  // seeds, at least MIN_SPLITTER_SEEDS solo rush runs hold a Splitter with
+  // two outputs.
+  const MIN_SPLITTER_SEEDS = 15; // measured: 18 (3 before #178)
+  test('most solo rush runs share a collector through a two-output Splitter (#178)', () => {
     let seeds = 0;
     for (let seed = 1; seed <= 20; seed++) {
       const team = play('rush', 1, seed).state.team;
@@ -208,7 +207,7 @@ describe('bots build per player', () => {
       );
       if (shares) seeds++;
     }
-    expect(seeds).toBeLessThanOrEqual(MAX_SPLITTER_SEEDS);
+    expect(seeds).toBeGreaterThanOrEqual(MIN_SPLITTER_SEEDS);
   }, 600_000);
 
   const style = {

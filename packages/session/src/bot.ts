@@ -64,6 +64,12 @@ interface Strategy {
   /** Shrine modifiers in order of preference. */
   readonly modifiers: readonly string[];
   readonly layout: LayoutStyle;
+  /**
+   * Split a party into donors and receivers (even players buy more
+   * collectors, odd players more consumers). Only for a strategy whose
+   * links actually form, and only with a neighbour (issue #178).
+   */
+  readonly roles?: boolean;
 }
 
 const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
@@ -99,6 +105,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       ],
       links: true,
     },
+    roles: true,
   },
   fortify: {
     description: 'Turrets and walls around the Core, then a slow ramp.',
@@ -170,6 +177,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       ],
       links: true,
     },
+    // Siege draws no border links in any bundled ghost, so no roles.
   },
   weak: {
     description: 'Buys one thing at random and scatters it unconnected.',
@@ -392,9 +400,16 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       const users = owned.filter((b) => CONSUMERS.includes(b.def)).length;
       const splitters = owned.filter((b) => b.def === 'bld_splitter').length;
       const supply = bestOwnedSupply(d.state.team, p, d.deps.content);
-      // With links, even players are donors (more collectors) and odd players
-      // receivers (more consumers); everyone else balances their own.
-      const role = s.layout.links === true ? (p % 2 === 0 ? 1 : 2) : 0;
+      const consumersWaiting = d.state.team.stash.filter(
+        (b) => b.owner === p && CONSUMERS.includes(b.def),
+      ).length;
+      const splittersWaiting = d.state.team.stash.filter(
+        (b) => b.owner === p && b.def === 'bld_splitter',
+      ).length;
+      // With links and a neighbour, even players are donors (more collectors)
+      // and odd players receivers (more consumers); everyone else balances
+      // their own.
+      const role = s.roles === true && n >= 2 ? (p % 2 === 0 ? 1 : 2) : 0;
       const slack = role === 0 ? 1 : 3;
       let best = -1;
       let bestScore = 0;
@@ -406,8 +421,18 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
           const more = role === 2 ? slack : 1;
           if (o.def === 'bld_extractor' && sources >= users + extra) score = 0;
           if (CONSUMERS.includes(o.def) && users >= sources + more) score = 0;
-          // One Splitter per two consumers, no more.
-          if (o.def === 'bld_splitter' && splitters * 2 >= users) score = 0;
+          // One Splitter per two consumers, no more, and only while a
+          // consumer waits in the stash for it: a Splitter only shares a
+          // collector between a consumer on the board and one still to place,
+          // and a Splitter that found no place stays unbought (issue #178).
+          if (
+            o.def === 'bld_splitter' &&
+            (splitters * 2 >= users ||
+              splittersWaiting > 0 ||
+              consumersWaiting === 0)
+          ) {
+            score = 0;
+          }
           // Never buy a consumer the collectors cannot feed (CB-10a). The
           // supply is the player's own best collectors (`bestOwnedSupply`);
           // a neighbour's collectors are not counted.
