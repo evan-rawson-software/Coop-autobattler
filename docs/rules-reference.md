@@ -3191,6 +3191,17 @@ most `2^52 - hp`, and two Cores whose sums both saturated differ only by their
 the sum of the overkill of its Cores that were destroyed in the **latest**
 tick, in player order, saturating at `2^52` (`sumOverkill`).
 
+**Not part of the saved state (issue #157).** `remaining` lives in the context,
+not in `ArenaSim`, and the tick at which a Core fell is kept only by the
+`Battle` object. A context rebuilt from a saved state therefore starts with
+`remaining` equal to the clamped health: a Core that had fallen before the
+restore point has overkill 0 and a restored `Battle` summary shows `null` for
+its `destroyedTick`. This changes no outcome of `stepArena` (rung 3 reads only
+Cores that fell in the latest tick, and a saved `Battle` is not restored); the
+state hash and the events are the same with or without a restore. Carrying
+these values in `ArenaSim` would change every pinned `stateHash` of a battle
+in which a Core falls, so it waits for a format change.
+
 ### End conditions (CB-33, PP-10)
 
 Checked at the end of each tick, after `stepArena`. Let `standing[s]` be the
