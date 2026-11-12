@@ -2033,10 +2033,10 @@ units unless noted):
 | `collisionRadius` | Radius of the circle that is pushed out of solid ground and pushed apart from other units' circles (soft). 1 to 480. About 65 percent of `radius` for the ground units of the first content. |
 | `reach` | Most the gap between the unit's circle and its target may be for it to attack (0 to 1920). |
 | `moveCooldownTicks` | Ticks the unit needs to walk one cell. `speed = floor(240 / moveCooldownTicks)` sub-cell units per tick (1 to 240; at least 1 results). Soldier 6 -> 40, raider 4 -> 60: the same crossing time per cell as the earlier one-cell-per-cooldown rule. |
-| `flying` | Boolean, `false` for every unit in part 1 (reserved: a `true` is rejected by the loader). |
-| `attackType` | `"melee"`, the only value in part 1 (reserved for ranged attacks). |
+| `flying` | Boolean. A flying unit ignores walls, lakes and cliffs and collides only with other flying units ("Ranged units and flyers"). A flying unit must be `ranged` (the loader rejects a melee flyer). |
+| `attackType` | `"melee"` or `"ranged"`. A melee unit cannot hit a flying unit; a ranged unit can. For a ranged unit `reach` is its range (edge to edge, as for melee). |
 
-Placeholder content: soldier `radius = 72` (0.30 cell), `collisionRadius = 47`,
+Placeholder content (units added with part 2, all numbers placeholders to tune: archer `health 30, damage 5, cooldown 10, radius 66, collisionRadius 43, reach 720` (three cells), ranged; drone `health 20, damage 4, cooldown 8, moveCooldownTicks 4, radius 66, collisionRadius 16, reach 600`, flying, ranged; producers `bld_range` (archer, `res_a`) and `bld_hangar` (drone, `res_b`), both 2x2 like the Barracks, not yet in the shop): soldier `radius = 72` (0.30 cell), `collisionRadius = 47`,
 `reach = 60`; raider `radius = 60` (0.25 cell), `collisionRadius = 39`, `reach =
 60`. Reach, aggro and turret range use `radius` (the body); collision uses
 `collisionRadius`, so bodies pack tighter than they are drawn.
@@ -2091,6 +2091,41 @@ frame: the cells are visited from the last to the first and the exit-face ties
 are taken in the order `Rr, L, U, D`. One call is one sweep: it can leave the
 result in another solid cell; the settling in step 5 (`settle`, up to 4
 sweeps, then a fallback) deals with that.
+
+### Ranged units and flyers (issue #59 part 2; CB-16b, CB-16c)
+
+Implemented in `arena-sim.ts` (decisions, spawn) and `unit-motion.ts`
+(layers); no new state: whether a unit flies is a function of its definition.
+
+- **Who can hit a flyer.** Only ranged attackers: a ranged ground unit, a flying
+  unit (always ranged) and a turret. A melee unit never targets a flyer and
+  never chases one (rules a and a2 skip it), so a melee unit whose only
+  remaining enemies are flyers walks on to its goal. Every unit can hit a
+  ground unit, and every unit can hit a Core (rule b is unchanged). Turret fire
+  ("Turret fire") already targets every enemy unit in the allowed rows, flyers
+  included, with the same distance test.
+- **Ranged units** use the same rules as melee units with a larger `reach`:
+  rule a (the nearest enemy in reach, ties by lowest id), a2, then b (the
+  target Core if in reach, else the nearest, same tie key). A unit that attacks
+  holds its place, so an archer stops where its range first covers something
+  and fires until that target is gone, then moves on. There is no line of
+  sight for an attack: archers shoot over walls and over allies. An archer
+  behind a soldier in a corridor can block the units behind it only while it
+  fires (the others slide round a holder when they can, step 3 "Steering").
+- **Flying units** fly in a separate layer. They are not solid for anything
+  except the arena rectangle: `fits` and the push-out use a copy of the world
+  in which no cell is solid (`ctx.air`), so walls, buildings, lakes and
+  cliffs never stop or push one. In the push pass of step 5 a pair only
+  pushes if both units are in the same layer, so flyers push only flyers (by
+  their small `collisionRadius`) and ground units push only ground units. The
+  steering of rule c ("Steering") considers only allies of the same layer.
+  Spawning places a flyer by the same exit cells as a ground unit but checks
+  `fits` against the empty world and the overlap test against flyers only;
+  `spawnUnitForTest` the same. A flyer's reach and body are measured as for
+  any unit, so a unit's circle is hit at its `radius` whether it flies or not.
+- **Mirror symmetry and restore** hold as before: nothing above depends on
+  unit order, and nothing new is stored.
+- Not done: flyers in PvE waves (`threats.json`) and shop entries for the Range and the Hangar (see the pull request).
 
 ### State (plain JSON)
 
@@ -2238,8 +2273,15 @@ exactly like the original.
    is at most `reach`. The **nearest** enemy unit in a set is the one with the
    smallest `d^2`, ties by lowest unit `id`.
    - **a. Attack a unit.** If any enemy unit is in contact, target the nearest.
+     A **flying** enemy counts only for a **ranged** unit: a melee unit does not
+     see it here, in a2, or anywhere else in the decision ("Ranged units and
+     flyers"). Everything else is the same for ranged units, with their larger
+     `reach`: the shot needs no line of sight, and a unit that attacks holds
+     its place.
    - **a2. Aggro (CB-16).** Otherwise, the candidates are the enemy units with
-     `d^2 <= (aggroRangeCells * 240)^2` (centre to centre) that are **visible**:
+     `d^2 <= (aggroRangeCells * 240)^2` (centre to centre) that are **visible**
+     (a flying unit sees past solid cells: its line of sight is not tested) and
+     that the unit can hit (a):
      with `n = max(1, ceil(max(|dx|, |dy|) / 120))` and `(dx, dy)` the vector
      to the enemy's centre, every sample point `(px + trunc(dx * k / n),
      py + trunc(dy * k / n))` (division rounded toward zero) for `k = 0 .. n` lies in a cell (of the unit's side frame) that is not solid
@@ -2259,6 +2301,11 @@ exactly like the original.
      (CB-15c); with several in reach: the unit's target Core if it is one of
      them, else the one with the smallest `buildingDist2`, ties by `(|q -
      opposite(owner)|, -q)`. The unit's `target` does not change.
+   - **c0. Fly.** A flying unit that reaches c ignores the movement and breach
+     fields: its heading is the vector to the centre of the cell of its target
+     Core nearest to it (the same cell as in "Goals and movement fields", "at
+     the Core"), steered as in "Steering" (only flying allies count as
+     blockers), and it never breaches. With no enemy Core standing it waits.
    - **c. Move.** Otherwise the unit chooses a **heading** or a **target
      point** as follows (field details in "Goals and movement fields"); the
      move itself is resolved in step 5. Let `d` be the unit's cell's distance
@@ -2887,7 +2934,7 @@ corner cell between a healthy and a damaged wall of equal maximum health that
 attacks the healthy one because the breach step prices buildings by maximum
 health).
 
-Vectors added with the circle model (issue #59): `arena-sim.separation-converging-soldiers` (four soldiers converging on one target: equal and unequal priority in the separation pass), `arena-sim.choke-point` (twelve soldiers through a wall line with a one-cell gap), `arena-sim.producer-held-at-blocked-exit` (a barracks whose only exit is occupied holds its unit, stops drawing, the source stalls) and `arena-sim.wide-unit-blocked-by-gap` (an ogre with a collision diameter of 320 waits in front of a one-cell gap that a soldier passes). Two optional inputs make them possible: `extraUnits`, a list of unit definitions in the format of `content/units.json` added to the content for the run, and `report: "positions"`, which adds `positions` (`[[id, px, py], ...]` of the living units) to the result.
+Vectors added with the circle model (issue #59): `arena-sim.separation-converging-soldiers` (four soldiers converging on one target: equal and unequal priority in the separation pass), `arena-sim.choke-point` (twelve soldiers through a wall line with a one-cell gap), `arena-sim.producer-held-at-blocked-exit` (a barracks whose only exit is occupied holds its unit, stops drawing, the source stalls) and `arena-sim.wide-unit-blocked-by-gap` (an ogre with a collision diameter of 320 waits in front of a one-cell gap that a soldier passes). Vectors added with ranged units and flyers (issue #59 part 2): `arena-sim.ranged-fires-from-range-and-holds`, `arena-sim.flyer-crosses-lake-line`, `arena-sim.melee-cannot-hit-flyer` and `arena-sim.ranged-and-flyers-mirror-restore` (mirrored rosters with all four unit types, saved and restored three times). Two optional inputs make them possible: `extraUnits`, a list of unit definitions in the format of `content/units.json` added to the content for the run, and `report: "positions"`, which adds `positions` (`[[id, px, py], ...]` of the living units) to the result.
 
 The team scripts of this kind and of `team-state-ops` may give an explicit
 `map` (in the map format) instead of `seed` and `partySize`; the vectors that

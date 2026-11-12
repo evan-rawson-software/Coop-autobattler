@@ -81,6 +81,8 @@ export class MotionScratch {
   speed = new Int32Array(0);
   /** Per unit: the collision radius. */
   rad = new Int32Array(0);
+  /** Per unit: 1 for a flying unit (own layer, no solid ground). */
+  fly = new Uint8Array(0);
   /** Per unit: the tentative position (start of the tick plus the step). */
   private cx = new Int32Array(0);
   private cy = new Int32Array(0);
@@ -114,6 +116,7 @@ export class MotionScratch {
     this.ty = i32(this.ty);
     this.speed = i32(this.speed);
     this.rad = i32(this.rad);
+    this.fly = u8(this.fly);
     this.cx = i32(this.cx);
     this.cy = i32(this.cy);
     this.ax = i32(this.ax);
@@ -135,6 +138,7 @@ export class MotionScratch {
     percent: number,
     pushCap: number,
     maxRadius: number,
+    air: World = world,
   ): void {
     const n = units.length;
     this.ensure(n);
@@ -161,7 +165,7 @@ export class MotionScratch {
       if (vx === 0 && vy === 0) continue;
       cls[i] = CLASS_MOVER;
       settleOutOfSolid(
-        world,
+        this.fly[i] === 1 ? air : world,
         u.side,
         rad[i] ?? 0,
         u.px + vx,
@@ -211,7 +215,8 @@ export class MotionScratch {
           for (let x = x0; x <= x1; x++) {
             let j = heads[y * gw + x] ?? -1;
             while (j !== -1) {
-              if (j > i) {
+              // Flying and ground units do not collide (issue #59).
+              if (j > i && this.fly[j] === this.fly[i]) {
                 const dx = xi - (cx[j] ?? 0);
                 const dy = yi - (cy[j] ?? 0);
                 const r = ri + (rad[j] ?? 0);
@@ -261,7 +266,16 @@ export class MotionScratch {
         u.py = y;
         continue;
       }
-      settleOutOfSolid(world, u.side, rad[i] ?? 0, x + px, y + py, x, y, tmp);
+      settleOutOfSolid(
+        this.fly[i] === 1 ? air : world,
+        u.side,
+        rad[i] ?? 0,
+        x + px,
+        y + py,
+        x,
+        y,
+        tmp,
+      );
       u.px = tmp[0] ?? x;
       u.py = tmp[1] ?? y;
     }

@@ -24,6 +24,30 @@
       "reach": 60,
       "flying": false,
       "attackType": "melee"
+    },
+    {
+      "id": "unit_archer",
+      "health": 30,
+      "damage": 5,
+      "attackCooldownTicks": 10,
+      "moveCooldownTicks": 6,
+      "radius": 66,
+      "collisionRadius": 43,
+      "reach": 720,
+      "flying": false,
+      "attackType": "ranged"
+    },
+    {
+      "id": "unit_drone",
+      "health": 20,
+      "damage": 4,
+      "attackCooldownTicks": 8,
+      "moveCooldownTicks": 4,
+      "radius": 66,
+      "collisionRadius": 16,
+      "reach": 600,
+      "flying": true,
+      "attackType": "ranged"
     }
   ]
 }

@@ -488,6 +488,8 @@ export interface ArenaContext {
   readonly maxHealth: Float64Array;
   /** The arena as the circle geometry sees it (solid cells per side). */
   readonly world: World;
+  /** The same arena for flying units: nothing is solid (issue #59). */
+  readonly air: World;
   /** Largest collision radius and largest body radius among the unit types. */
   readonly maxRadius: number;
   readonly maxBody: number;
@@ -509,6 +511,8 @@ export interface ArenaContext {
   /** Per unit index: collision radius and body radius. */
   crad: Int32Array;
   brad: Int32Array;
+  /** Per unit index: 1 for a flying unit, else 0. */
+  fly: Uint8Array;
   motion: MotionScratch;
   /**
    * Per side, per target Core, per cell: cached `fieldStep` (-1 none, -2 not
@@ -706,6 +710,11 @@ export function createArenaContext(
     ramps,
     flowEvents,
     world: { width: arena.geom.width, height: arena.geom.height, solid },
+    air: {
+      width: arena.geom.width,
+      height: arena.geom.height,
+      solid: [new Uint8Array(cells), new Uint8Array(cells)] as const,
+    },
     maxRadius: Math.max(
       1,
       ...content.units.list().map((d) => d.collisionRadius),
@@ -718,6 +727,7 @@ export function createArenaContext(
     next: new Int32Array(0),
     crad: new Int32Array(0),
     brad: new Int32Array(0),
+    fly: new Uint8Array(0),
     motion: new MotionScratch(),
     steps: [[], []] as (Int32Array | undefined)[][],
     present: [
@@ -1128,6 +1138,9 @@ function ensureUnitCapacity(ctx: ArenaContext, n: number): void {
   ctx.crad = g32(ctx.crad);
   ctx.brad = g32(ctx.brad);
   ctx.arg = g32(ctx.arg);
+  const fly = new Uint8Array(size);
+  fly.set(ctx.fly);
+  ctx.fly = fly;
   const action = new Uint8Array(size);
   action.set(ctx.action);
   ctx.action = action;
@@ -1155,6 +1168,7 @@ function linkUnit(
   heads[k] = i;
   ctx.crad[i] = def.collisionRadius;
   ctx.brad[i] = def.radius;
+  ctx.fly[i] = def.flying ? 1 : 0;
   const list = ctx.bySide[u.side];
   if (list !== undefined) {
     list[ctx.sideCount[u.side === 0 ? 0 : 1]] = i;
@@ -1191,11 +1205,13 @@ const SPAWN_OFFSETS: readonly (readonly [number, number])[] = [
  * Gather into `ctx.near` (x, y, radius triples) the living units whose centre
  * is in arena cells `x0 .. x1` x `y0 .. y1` widened by what a unit of
  * collision radius `r` can reach: every unit that could overlap a circle of
- * that radius centred anywhere inside the window. Returns how many.
+ * that radius centred anywhere inside the window, in the layer `fly` (flying
+ * units and ground units do not collide). Returns how many.
  */
 function gatherNear(
   sim: ArenaSim,
   ctx: ArenaContext,
+  fly: number,
   r: number,
   x0: number,
   y0: number,
@@ -1215,7 +1231,7 @@ function gatherNear(
         let j = heads[y * width + x] ?? -1;
         while (j !== -1) {
           const e = sim.units[j];
-          if (e !== undefined) {
+          if (e !== undefined && ctx.fly[j] === fly) {
             if (3 * count + 3 > ctx.near.length) {
               const bigger = new Int32Array(2 * ctx.near.length);
               bigger.set(ctx.near);
@@ -1280,7 +1296,7 @@ function firstFreeIn(
     if (m <= 0 && (ox !== 0 || oy !== 0)) continue;
     const x = mx + sign * ox * m;
     const y = my + sign * oy * m;
-    if (!fits(ctx.world, side, r, x, y)) continue;
+    if (!fits(def.flying ? ctx.air : ctx.world, side, r, x, y)) continue;
     let free = true;
     for (let q = 0; q < kept && free; q++) {
       const dx = (near[3 * q] ?? 0) - x;
@@ -1304,7 +1320,16 @@ function freeInCell(
   cx: number,
   cy: number,
 ): { x: number; y: number } | null {
-  const count = gatherNear(sim, ctx, def.collisionRadius, cx, cy, cx, cy);
+  const count = gatherNear(
+    sim,
+    ctx,
+    def.flying ? 1 : 0,
+    def.collisionRadius,
+    cx,
+    cy,
+    cx,
+    cy,
+  );
   return firstFreeIn(ctx, side, def, count, cx, cy);
 }
 
@@ -1383,7 +1408,16 @@ function spawnPosition(
     if (y < y0) y0 = y;
     if (y > y1) y1 = y;
   }
-  const count = gatherNear(sim, ctx, unitDef.collisionRadius, x0, y0, x1, y1);
+  const count = gatherNear(
+    sim,
+    ctx,
+    unitDef.flying ? 1 : 0,
+    unitDef.collisionRadius,
+    x0,
+    y0,
+    x1,
+    y1,
+  );
   for (const k of cells) {
     const pos = firstFreeIn(
       ctx,
@@ -1789,14 +1823,23 @@ export function spawnUnitForTest(
   if (px === undefined || py === undefined) {
     throw new Error('spawnUnitForTest: give x and y or px and py.');
   }
-  if (!fits(ctx.world, args.side, def.collisionRadius, px, py)) {
+  if (
+    !fits(
+      def.flying ? ctx.air : ctx.world,
+      args.side,
+      def.collisionRadius,
+      px,
+      py,
+    )
+  ) {
     throw new Error(
       `spawnUnitForTest: (${String(px)}, ${String(py)}) is not open.`,
     );
   }
   for (const e of args.allowOverlap === true ? [] : sim.units) {
     const other = ctx.content.units.get(e.def);
-    const rr = def.collisionRadius + (other?.collisionRadius ?? 0);
+    if (other?.flying !== def.flying) continue;
+    const rr = def.collisionRadius + other.collisionRadius;
     const dx = e.px - px;
     const dy = e.py - py;
     if (dx * dx + dy * dy < rr * rr) {
@@ -1853,6 +1896,14 @@ const ACT_AGGRO = 4;
 const FEW_UNITS = 24;
 
 /**
+ * Whether a unit of type `def` can hit enemy unit index `j`: only ranged
+ * attackers can hit a flying unit (issue #59, CB-16b).
+ */
+function canHit(ctx: ArenaContext, def: UnitDef, j: number): boolean {
+  return ctx.fly[j] !== 1 || def.attackType === 'ranged';
+}
+
+/**
  * Index of the enemy unit in contact with `u` (the gap between the circles is
  * at most `reach`) that is nearest by squared centre distance, ties by lowest
  * unit ID; -1 if none.
@@ -1890,7 +1941,8 @@ function nearestContact(
       const lim = def.reach + def.radius + (ctx.brad[j] ?? 0);
       if (
         d2 <= lim * lim &&
-        (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId))
+        (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId)) &&
+        canHit(ctx, def, j)
       ) {
         best = j;
         bestD = d2;
@@ -1912,7 +1964,8 @@ function nearestContact(
           const lim = def.reach + def.radius + (ctx.brad[j] ?? 0);
           if (
             d2 <= lim * lim &&
-            (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId))
+            (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId)) &&
+            canHit(ctx, def, j)
           ) {
             best = j;
             bestD = d2;
@@ -1963,7 +2016,12 @@ function lineClear(
  * Index of the nearest visible enemy unit within the aggro range (squared
  * centre distance, ties by lowest unit ID); -1 if none.
  */
-function nearestVisible(sim: ArenaSim, ctx: ArenaContext, u: UnitSim): number {
+function nearestVisible(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  u: UnitSim,
+  def: UnitDef,
+): number {
   const { width, height } = ctx.arena.geom;
   const heads = ctx.heads[1 - u.side];
   if (heads === undefined) return -1;
@@ -1992,7 +2050,8 @@ function nearestVisible(sim: ArenaSim, ctx: ArenaContext, u: UnitSim): number {
       if (
         d2 <= range2 &&
         (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId)) &&
-        lineClear(ctx, u.side, u.px, u.py, e.px, e.py)
+        canHit(ctx, def, j) &&
+        (def.flying || lineClear(ctx, u.side, u.px, u.py, e.px, e.py))
       ) {
         best = j;
         bestD = d2;
@@ -2014,7 +2073,8 @@ function nearestVisible(sim: ArenaSim, ctx: ArenaContext, u: UnitSim): number {
           if (
             d2 <= range2 &&
             (best < 0 || d2 < bestD || (d2 === bestD && e.id < bestId)) &&
-            lineClear(ctx, u.side, u.px, u.py, e.px, e.py)
+            canHit(ctx, def, j) &&
+            (def.flying || lineClear(ctx, u.side, u.px, u.py, e.px, e.py))
           ) {
             best = j;
             bestD = d2;
@@ -2072,7 +2132,7 @@ function decideAim(
   const def = defOf(ctx, u);
   const reachR = def.reach + def.radius;
   if (ctx.simConfig.aggroRangeCells > 0) {
-    const a = nearestVisible(sim, ctx, u);
+    const a = nearestVisible(sim, ctx, u, def);
     if (a >= 0) {
       ctx.action[i] = ACT_AGGRO;
       ctx.arg[i] = a;
@@ -2154,7 +2214,8 @@ function moveAlong(
       for (let x = gx0; x <= gx1; x++) {
         let j = heads[y * width + x] ?? -1;
         while (j !== -1) {
-          const f = j !== i ? sim.units[j] : undefined;
+          const f =
+            j !== i && ctx.fly[j] === ctx.fly[i] ? sim.units[j] : undefined;
           if (f !== undefined) {
             const rx = f.px - u.px;
             const ry = f.py - u.py;
@@ -2259,7 +2320,12 @@ function decideMove(
   }
   if (act !== ACT_NONE) return;
 
-  // c. Move.
+  // c. Move. A flying unit ignores the fields: it flies straight at its
+  // target Core and never breaches (CB-16b).
+  if (def.flying) {
+    moveToCore(sim, ctx, i, u);
+    return;
+  }
   const cell =
     ownCellCoord(u.side, u.py, height) * width +
     ownCellCoord(u.side, u.px, width);
@@ -2553,6 +2619,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     const u = units[i];
     if (u === undefined) continue;
     ctx.motion.rad[i] = ctx.crad[i] ?? 0;
+    ctx.motion.fly[i] = ctx.fly[i] ?? 0;
     ctx.motion.fight[i] =
       ctx.action[i] === ACT_UNIT || ctx.action[i] === ACT_BUILDING ? 1 : 0;
     if (ctx.action[i] === ACT_MOVE) {
@@ -2565,6 +2632,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     cfg.separationPercent,
     cfg.separationCap,
     ctx.maxRadius,
+    ctx.air,
   );
 
   // 6. Deaths and destruction.

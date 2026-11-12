@@ -70,8 +70,8 @@ function errorsOf(...defs: Record<string, unknown>[]): string {
 describe('real content', () => {
   test('loads everything through loadAllContent', () => {
     const content = loadAllContentOrThrow(raw);
-    expect(content.buildings.list().length).toBe(11);
-    expect(content.units.list().length).toBe(2);
+    expect(content.buildings.list().length).toBe(13);
+    expect(content.units.list().length).toBe(4);
     expect(content.terrain.list().length).toBe(2);
     const turret = content.buildings.get('bld_turret');
     expect(turret?.kind).toBe('defense');
@@ -139,7 +139,7 @@ describe('loadTerrain', () => {
 });
 
 describe('loadUnits', () => {
-  test('rejects bad numbers, the removed fields and unsupported flying', () => {
+  test('rejects bad numbers, the removed fields and a melee flyer', () => {
     const base = clone((unitsJson as { units: object[] }).units[0]);
     const result = loadUnits({
       units: [
@@ -154,7 +154,7 @@ describe('loadUnits', () => {
           reach: 1921,
           moveCooldownTicks: 241,
           flying: true,
-          attackType: 'ranged',
+          attackType: 'melee',
         },
         { ...base, id: 'soldier' },
         base,
@@ -171,8 +171,10 @@ describe('loadUnits', () => {
     expect(text).toMatch(/"collisionRadius" must be at most 480/);
     expect(text).toMatch(/"reach" must be at most 1920/);
     expect(text).toMatch(/"moveCooldownTicks" must be at most 240/);
-    expect(text).toMatch(/"flying" units are not supported yet/);
-    expect(text).toMatch(/unknown attackType "ranged"/);
+    expect(text).toMatch(/a "flying" unit must have attackType "ranged"/);
+    const odd = loadUnits({ units: [{ ...base, attackType: 'beam' }] });
+    if (odd.ok) throw new Error('expected failure');
+    expect(odd.errors.join('\n')).toMatch(/unknown attackType "beam"/);
     expect(text).toMatch(/id must match/);
     expect(text).toMatch(/duplicate id/);
   });

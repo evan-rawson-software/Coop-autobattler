@@ -9194,5 +9194,717 @@
       },
       "eventLogHash": "cc89a169"
     }
+  },
+  {
+    "id": "arena-sim.ranged-fires-from-range-and-holds",
+    "kind": "arena-sim",
+    "description": "An archer and a soldier of side 0 start in the same row, five cells apart, and walk at the enemy Core. The archer stops short of it (the gap to the Core is about three cells) and shoots (reach 720 is edge to edge) and holds its place for the rest of the run; the soldier walks up against the Core. Positions after 300 ticks are pinned.",
+    "input": {
+      "gapRows": 4,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 300,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_archer",
+          "x": 3,
+          "y": 22
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 8,
+          "y": 22
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 300,
+        "stateHash": "a3253cb6",
+        "events": 48,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 263,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [237]
+          }
+        ],
+        "positions": [
+          [1, 868, 7468],
+          [2, 1640, 8035]
+        ]
+      },
+      "eventLogHash": "7a217b02"
+    }
+  },
+  {
+    "id": "arena-sim.flyer-crosses-lake-line",
+    "kind": "arena-sim",
+    "description": "A lake line spans the whole enemy board (board row 8). A soldier and a drone of side 0 start in front of it: the soldier cannot cross and stays in front of the lake; the drone flies over it, never needs a breach, and attacks the Core (flyers ignore walls and lakes). Positions after 400 ticks are pinned.",
+    "input": {
+      "gapRows": 4,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [
+            {
+              "x": 0,
+              "y": 8,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 1,
+              "y": 8,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 2,
+              "y": 8,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 3,
+              "y": 8,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 4,
+              "y": 8,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 5,
+              "y": 8,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 8,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 7,
+              "y": 8,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 8,
+              "y": 8,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 9,
+              "y": 8,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 10,
+              "y": 8,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 11,
+              "y": 8,
+              "feature": "ter_lake"
+            }
+          ],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 400,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 3,
+          "y": 22
+        },
+        {
+          "side": 0,
+          "def": "unit_drone",
+          "x": 8,
+          "y": 22
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 400,
+        "stateHash": "1e12735e",
+        "events": 46,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 184,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [316]
+          }
+        ],
+        "positions": [
+          [1, 840, 5400],
+          [2, 1688, 7524]
+        ]
+      },
+      "eventLogHash": "ad9c2cbc"
+    }
+  },
+  {
+    "id": "arena-sim.melee-cannot-hit-flyer",
+    "kind": "arena-sim",
+    "description": "A soldier and an archer of side 0 meet a drone and a soldier of side 1 in the middle of the field. Melee units cannot hit a flyer, so the soldiers fight each other while the archer and the drone shoot at each other and at the soldiers; by tick 200 both units of side 1 and one of side 0 are dead. Positions are pinned.",
+    "input": {
+      "gapRows": 4,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 200,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 4,
+          "y": 19
+        },
+        {
+          "side": 0,
+          "def": "unit_archer",
+          "x": 7,
+          "y": 17
+        },
+        {
+          "side": 1,
+          "def": "unit_drone",
+          "x": 6,
+          "y": 21
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 3,
+          "y": 22
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 200,
+        "stateHash": "bca9d9ba",
+        "events": 32,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 1,
+            "unitsDied": 1,
+            "buildingDamageDealt": 30,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 2,
+            "alive": 0,
+            "unitsDied": 2,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [470]
+          }
+        ],
+        "positions": [
+          [2, 1660, 7380]
+        ]
+      },
+      "eventLogHash": "fd42bd85"
+    }
+  },
+  {
+    "id": "arena-sim.ranged-and-flyers-mirror-restore",
+    "kind": "arena-sim",
+    "description": "Soldiers, archers, drones and a raider on both sides, mirrored half a turn, behind two lake lines with gaps: the battle is saved and restored (JSON round trip) after 7, 111 and 250 ticks and ends exactly like an uninterrupted run; the sides stay mirror images (checked tick by tick in ranged-flyers.test.ts).",
+    "input": {
+      "gapRows": 4,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [
+            {
+              "x": 0,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 1,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 2,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 4,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 5,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 7,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 9,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 10,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 11,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 0,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 1,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 2,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 3,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 4,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 7,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 8,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 9,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 10,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 11,
+              "y": 9,
+              "feature": "ter_lake"
+            }
+          ],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [
+            {
+              "x": 0,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 1,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 2,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 4,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 5,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 7,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 9,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 10,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 11,
+              "y": 5,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 0,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 1,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 2,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 3,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 4,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 7,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 8,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 9,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 10,
+              "y": 9,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 11,
+              "y": 9,
+              "feature": "ter_lake"
+            }
+          ],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 500,
+      "restoreAt": [7, 111, 250],
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 3,
+          "y": 20
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 8,
+          "y": 21
+        },
+        {
+          "side": 0,
+          "def": "unit_archer",
+          "x": 4,
+          "y": 19
+        },
+        {
+          "side": 0,
+          "def": "unit_archer",
+          "x": 7,
+          "y": 18
+        },
+        {
+          "side": 0,
+          "def": "unit_drone",
+          "x": 2,
+          "y": 17
+        },
+        {
+          "side": 0,
+          "def": "unit_drone",
+          "x": 9,
+          "y": 16
+        },
+        {
+          "side": 0,
+          "def": "unit_raider",
+          "x": 5,
+          "y": 22
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 8,
+          "y": 15
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 3,
+          "y": 14
+        },
+        {
+          "side": 1,
+          "def": "unit_archer",
+          "x": 7,
+          "y": 16
+        },
+        {
+          "side": 1,
+          "def": "unit_archer",
+          "x": 4,
+          "y": 17
+        },
+        {
+          "side": 1,
+          "def": "unit_drone",
+          "x": 9,
+          "y": 18
+        },
+        {
+          "side": 1,
+          "def": "unit_drone",
+          "x": 2,
+          "y": 19
+        },
+        {
+          "side": 1,
+          "def": "unit_raider",
+          "x": 6,
+          "y": 13
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 500,
+        "stateHash": "71e1bba1",
+        "events": 224,
+        "sides": [
+          {
+            "spawned": 7,
+            "alive": 4,
+            "unitsDied": 3,
+            "buildingDamageDealt": 500,
+            "buildingsDestroyed": 0,
+            "coreHealth": [0]
+          },
+          {
+            "spawned": 7,
+            "alive": 4,
+            "unitsDied": 3,
+            "buildingDamageDealt": 500,
+            "buildingsDestroyed": 0,
+            "coreHealth": [0]
+          }
+        ]
+      },
+      "eventLogHash": "882313a9"
+    }
   }
 ]

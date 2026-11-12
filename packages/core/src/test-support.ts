@@ -336,6 +336,10 @@ export function bigBoard(): TeamState {
   return lab.state;
 }
 
+function isFlying(ctx: ArenaContext, u: UnitSim): boolean {
+  return ctx.content.units.get(u.def)?.flying === true;
+}
+
 /** The collision radius of a unit, from the battle's own content (test-only units included). */
 function collisionRadiusOf(ctx: ArenaContext, u: UnitSim): number {
   const def = ctx.content.units.get(u.def);
@@ -355,7 +359,8 @@ function collisionRadiusOf(ctx: ArenaContext, u: UnitSim): number {
 export function groundViolations(sim: ArenaSim, ctx: ArenaContext): string[] {
   const out: string[] = [];
   for (const u of sim.units) {
-    if (!fits(ctx.world, u.side, collisionRadiusOf(ctx, u), u.px, u.py)) {
+    const world = isFlying(ctx, u) ? ctx.air : ctx.world;
+    if (!fits(world, u.side, collisionRadiusOf(ctx, u), u.px, u.py)) {
       out.push(
         `unit ${String(u.id)} does not fit at ${String(u.px)},${String(u.py)}`,
       );
@@ -401,6 +406,8 @@ export function overlapStats(sim: ArenaSim, ctx: ArenaContext): OverlapStats {
         for (const j of buckets.get(key(x, y)) ?? []) {
           if (j <= i) continue;
           const v = got(units[j]);
+          // Flying and ground units do not collide (issue #59).
+          if (isFlying(ctx, u) !== isFlying(ctx, v)) continue;
           const r = got(rad[i]) + got(rad[j]);
           const d2 = (u.px - v.px) ** 2 + (u.py - v.py) ** 2;
           if (d2 >= r * r) continue;
