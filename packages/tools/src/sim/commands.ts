@@ -6,7 +6,7 @@ import {
   generateMap,
   generateThreat,
   hashJson,
-  listLegalCorePositions,
+  listLegalCorePositionsAnyPlot,
   maxThreatRound,
   renderArenaAscii,
   renderMapAscii,
@@ -53,7 +53,7 @@ export function mapCommand(
   args: { seed: number; party: number },
 ): CommandOutput {
   const map = generateMap(args.seed, args.party, ctx.content, ctx.mapgen);
-  const cores = listLegalCorePositions(map, ctx.content, ctx.mapgen);
+  const cores = listLegalCorePositionsAnyPlot(map, ctx.content, ctx.mapgen);
   const lines = [
     `Map: seed ${String(args.seed)}, party size ${String(args.party)}, ${String(map.width)} x ${String(map.height)} cells`,
     renderMapAscii(map, ctx.content),

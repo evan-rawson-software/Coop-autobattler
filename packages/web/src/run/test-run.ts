@@ -3,7 +3,7 @@
  * rules (`createGameDeps`, real battles) and the same intents the screens
  * send. Not part of the app.
  */
-import { listLegalCorePositions } from '@game/core';
+import { listLegalCorePositionsAnyPlot } from '@game/core';
 import {
   applyIntent,
   createRun,
@@ -45,7 +45,7 @@ export function send(state: RunState, intent: Intent): RunState {
 
 /** The legal Core positions of a run in `core_placement`. */
 export function legalCore(state: RunState): { x: number; y: number }[] {
-  return listLegalCorePositions(state.team.map, content, content.mapgen);
+  return listLegalCorePositionsAnyPlot(state.team.map, content, content.mapgen);
 }
 
 /**

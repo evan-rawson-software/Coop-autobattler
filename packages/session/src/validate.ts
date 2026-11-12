@@ -234,10 +234,10 @@ function check(
       err('team: map party size does not match the number of players.');
     }
     const coreRequired = st !== 'core_placement' && st !== 'run_over';
-    if (coreRequired && team.state.core === null) {
+    if (coreRequired && team.state.cores.every((c) => c === null)) {
       err(`team: the Core must be placed in step "${st}".`);
     }
-    if (st === 'core_placement' && team.state.core !== null) {
+    if (st === 'core_placement' && team.state.cores.some((c) => c !== null)) {
       err('team: the Core is already placed in step "core_placement".');
     }
   }

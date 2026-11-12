@@ -39,7 +39,7 @@ export const ALL_REFERENCE_BOARDS: readonly AnyReferenceBoardName[] = [
 function siegeScript(): TeamScript {
   const ops: Json[] = [];
   let nextId = 1;
-  ops.push({ op: 'placeCore', x: 11, y: 5 });
+  ops.push({ op: 'placeCore', actor: 0, x: 11, y: 5 });
   const put = (def: string, x: number, y: number, tier: number): number => {
     const id = nextId++;
     ops.push({ op: 'addToStash', def, tier, owner: 0 });

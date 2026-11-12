@@ -307,7 +307,7 @@ describe('rejections, one per reason', () => {
 
   test('not_an_output for the Core: it is not a building instance', () => {
     const { l, b } = base();
-    const c = placeCore(l.state, content, config, { x: 8, y: 4 });
+    const c = placeCore(l.state, content, config, 0, { x: 8, y: 4 });
     if (!c.ok) throw new Error(c.reason);
     l.state = c.state;
     expect(l.why(0, 'north', b, 'south', column)).toBe('unknown_building');
@@ -438,7 +438,7 @@ describe('rejections, one per reason', () => {
       rotation: 0,
     });
     if (!m.ok) throw new Error(m.reason);
-    const c = placeCore(m.state, content, config, { x: 2, y: 4 });
+    const c = placeCore(m.state, content, config, 0, { x: 2, y: 4 });
     if (!c.ok) throw new Error(c.reason);
     l.state = c.state;
     expect(l.why(s, 'north', b, 'south', column)).toBe('overlaps_core');
@@ -800,11 +800,15 @@ describe('placement and detaching', () => {
 
   test('placeCore refuses a conduit cell', () => {
     const { lab: l } = sampleBoard();
-    expect(placeCore(l.state, content, config, { x: 4, y: 2 })).toMatchObject({
+    expect(
+      placeCore(l.state, content, config, 0, { x: 4, y: 2 }),
+    ).toMatchObject({
       ok: false,
       reason: 'overlaps_conduit',
     });
-    expect(placeCore(l.state, content, config, { x: 8, y: 4 }).ok).toBe(true);
+    expect(placeCore(l.state, content, config, 0, { x: 8, y: 4 }).ok).toBe(
+      true,
+    );
   });
 
   test('a building may move onto cells of its own, detached, conduits', () => {
@@ -1462,11 +1466,12 @@ describe('property: random operations', () => {
         const m = generateMap(seed, partySize, content, config);
         const rng = Rng.fromSeed(seed * 104729);
         let s = deepFreeze(createTeamState(m));
-        const legal = listLegalCorePositions(m, content, config);
+        const legal = listLegalCorePositions(m, content, config, 0);
         const core = placeCore(
           s,
           content,
           config,
+          0,
           legal[rng.nextInt(legal.length)] as Cell,
         );
         if (!core.ok) throw new Error(core.reason);

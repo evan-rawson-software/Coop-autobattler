@@ -57,9 +57,9 @@ describe('team-state.schema.json', () => {
   function sampleState(): TeamState {
     const map = generateMap(5, 2, content, config);
     let s = createTeamState(map);
-    const core = listLegalCorePositions(map, content, config)[0];
+    const core = listLegalCorePositions(map, content, config, 0)[0];
     if (core === undefined) throw new Error('no core position');
-    const placedCore = placeCore(s, content, config, core);
+    const placedCore = placeCore(s, content, config, 0, core);
     if (!placedCore.ok) throw new Error(placedCore.reason);
     s = placedCore.state;
     const node = map.nodes[0];

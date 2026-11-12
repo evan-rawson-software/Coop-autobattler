@@ -12,7 +12,7 @@ const bare = {
     features: [],
     nodes: [],
   },
-  ops: [{ op: 'placeCore', x: 11, y: 0 }],
+  ops: [{ op: 'placeCore', actor: 0, x: 11, y: 0 }],
 };
 
 const kind = makeBattleKind(content, mapgen, simConfig);

@@ -10,7 +10,8 @@ import {
   addConduit,
   addToStash,
   createTeamState,
-  listLegalCorePositions,
+  listLegalCorePositionsAnyPlot,
+  corePlayerAt,
   placeCore,
   placeFromStash,
   startBattle,
@@ -72,7 +73,7 @@ export function variedBoards(
             },
           );
           const team = r.state.team;
-          if (team.core === null) continue;
+          if (team.cores.every((c) => c === null)) continue;
           out.push({
             label: `${strategy}/s${String(seed)}/r${String(round)}/p${String(party)}`,
             party,
@@ -182,11 +183,21 @@ export function denseVariant(
       link(sp, 'east', b, 'west', [[x0 + 1, y0 + 3]]);
     }
   }
-  const legal = listLegalCorePositions(state.map, ctx.content, ctx.mapgen);
+  const legal = listLegalCorePositionsAnyPlot(
+    state.map,
+    ctx.content,
+    ctx.mapgen,
+  );
   for (let t = 0; t < legal.length; t++) {
     const pos = legal[(corePick + t) % legal.length];
     if (pos === undefined) break;
-    const c = placeCore(state, ctx.content, ctx.mapgen, pos);
+    const c = placeCore(
+      state,
+      ctx.content,
+      ctx.mapgen,
+      corePlayerAt(state.map, ctx.content, pos.x),
+      pos,
+    );
     if (c.ok) return c.state;
   }
   return fail('core', 'no legal position');

@@ -1,7 +1,6 @@
 /** Random but working teams for battle tests and benchmarks. */
 import { addConduit } from './conduits.js';
 import { generateMap } from './generate-map.js';
-import { listLegalCorePositions } from './map.js';
 import { Rng } from './rng.js';
 import {
   addToStash,
@@ -11,7 +10,14 @@ import {
   placeFromStash,
   type TeamState,
 } from './team-state.js';
-import { content, got, mapgen, outside, route } from './test-support.js';
+import {
+  content,
+  got,
+  legalCoresAnyPlot,
+  mapgen,
+  outside,
+  route,
+} from './test-support.js';
 
 /**
  * A random team: a generated board with the Core placed, and for every
@@ -24,10 +30,10 @@ export function randomTeam(seed: number, partySize: number): TeamState {
   const m = generateMap(seed, partySize, content, mapgen);
   const rng = Rng.fromSeed(seed * 104729 + 17);
   let s = createTeamState(m);
-  const cores = listLegalCorePositions(m, content, mapgen);
+  const cores = legalCoresAnyPlot(m);
   const at = cores[rng.nextInt(cores.length)];
   if (at !== undefined) {
-    const c = placeCore(s, content, mapgen, at);
+    const c = placeCore(s, content, mapgen, at.player, at);
     if (c.ok) s = c.state;
   }
   const place = (

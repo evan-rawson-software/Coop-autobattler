@@ -1813,7 +1813,7 @@ describe('stress', () => {
         const state = bigBoard();
         const lab = new Lab(state.map);
         lab.state = state;
-        lab.core(40, 6);
+        lab.core(40, 6, 1);
         return lab.state;
       })();
       const { sim, ctx } = startArenaBattle(team, team, 8, content, simConfig);

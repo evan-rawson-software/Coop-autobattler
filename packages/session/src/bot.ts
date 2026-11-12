@@ -12,7 +12,11 @@
  * reads the clock or `Math.random`. The same strategy, seed and run
  * arguments give the same run.
  */
-import { Rng, listLegalCorePositions, sealedProducers } from '@game/core';
+import {
+  Rng,
+  listLegalCorePositionsAnyPlot,
+  sealedProducers,
+} from '@game/core';
 import { planLayout, type LayoutStyle } from './bot-layout.js';
 import { applyIntent, createRun } from './machine.js';
 import { readShop } from './economy.js';
@@ -389,7 +393,7 @@ function playStep(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
     case 'core_placement': {
       const pos = pickCore(
         s,
-        listLegalCorePositions(
+        listLegalCorePositionsAnyPlot(
           st.team.map,
           d.deps.content,
           d.deps.mapgenConfig,

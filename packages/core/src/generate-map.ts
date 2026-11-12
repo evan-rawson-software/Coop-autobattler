@@ -7,7 +7,6 @@ import type { Json } from './hash.js';
 import { hashJson } from './hash.js';
 import {
   compareCells,
-  coreFootprint,
   listLegalCorePositions,
   queryMap,
   type FeatureCell,
@@ -291,14 +290,11 @@ function checkFairness(
   }
   if (reached !== walkable) return 'a walkable cell is cut off from the front';
   // A legal Core position inside every plot.
-  const fp = coreFootprint(content.buildings);
-  const hasCore = new Array<boolean>(map.partySize).fill(false);
-  for (const pos of listLegalCorePositions(map, content, config)) {
-    const p = q.plotOf(pos.x);
-    if (p === q.plotOf(pos.x + fp.width - 1)) hasCore[p] = true;
+  for (let p = 0; p < map.partySize; p++) {
+    if (listLegalCorePositions(map, content, config, p).length === 0) {
+      return `plot ${String(p)} has no legal Core position`;
+    }
   }
-  const missing = hasCore.indexOf(false);
-  if (missing >= 0) return `plot ${String(missing)} has no legal Core position`;
   return undefined;
 }
 

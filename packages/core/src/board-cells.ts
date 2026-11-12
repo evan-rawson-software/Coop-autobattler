@@ -43,6 +43,18 @@ export function coreCells(
   return boxCells(core.x, core.y, fp.width, fp.height);
 }
 
+/** Cells of every placed Core (PP-2), in player order. */
+export function allCoreCells(
+  cores: readonly (Cell | null)[],
+  content: Pick<TeamContent, 'buildings'>,
+): Cell[] {
+  const out: Cell[] = [];
+  for (const core of cores) {
+    if (core !== null) out.push(...coreCells(core, content));
+  }
+  return out;
+}
+
 export function cellKey(map: GameMap, x: number, y: number): number {
   return y * map.width + x;
 }

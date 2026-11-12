@@ -10,6 +10,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 1
           },
@@ -123,6 +124,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 1
           },
@@ -236,7 +238,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "aac67307",
+        "stateHash": "fb7c43b1",
         "events": 1306,
         "sides": [
           {
@@ -271,6 +273,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 7,
             "y": 0
           },
@@ -384,6 +387,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 7,
             "y": 0
           },
@@ -408,7 +412,7 @@
     "expected": {
       "result": {
         "tick": 1800,
-        "stateHash": "2a9da042",
+        "stateHash": "ff1cca58",
         "events": 892,
         "sides": [
           {
@@ -443,6 +447,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 7,
             "y": 0
           },
@@ -556,6 +561,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 14,
             "y": 0
           },
@@ -671,7 +677,7 @@
     "expected": {
       "result": {
         "tick": 2200,
-        "stateHash": "e2ad3ca9",
+        "stateHash": "b948180b",
         "events": 1099,
         "sides": [
           {
@@ -706,6 +712,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 7,
             "y": 0
           }
@@ -717,6 +724,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 3
           },
@@ -847,7 +855,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "721704e5",
+        "stateHash": "67bf3415",
         "events": 69,
         "sides": [
           {
@@ -882,6 +890,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 7,
             "y": 0
           }
@@ -893,6 +902,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 14,
             "y": 0
           },
@@ -1043,7 +1053,7 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "46abdfe2",
+        "stateHash": "5ead38ba",
         "events": 256,
         "sides": [
           {
@@ -1100,6 +1110,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 6,
             "y": 0
           },
@@ -1366,6 +1377,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 0
           }
@@ -1397,7 +1409,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "a7928ac3",
+        "stateHash": "03d7699d",
         "events": 114,
         "sides": [
           {
@@ -1454,6 +1466,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 6,
             "y": 0
           },
@@ -1720,6 +1733,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 0
           }
@@ -1739,7 +1753,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "4d18dd56",
+        "stateHash": "7bbf303c",
         "events": 93,
         "sides": [
           {
@@ -1780,6 +1794,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 6,
             "y": 0
           },
@@ -1836,6 +1851,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 0
           }
@@ -1867,7 +1883,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "4e07f7a4",
+        "stateHash": "4e077186",
         "events": 75,
         "sides": [
           {
@@ -1908,6 +1924,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 0
           },
@@ -2081,6 +2098,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 0
           }
@@ -2106,7 +2124,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "9eb4a588",
+        "stateHash": "176142ac",
         "events": 40,
         "sides": [
           {
@@ -2309,6 +2327,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 1,
             "y": 0
           },
@@ -2883,6 +2902,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 0
           }
@@ -2968,7 +2988,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "5386e0a2",
+        "stateHash": "bd74caa0",
         "events": 458,
         "sides": [
           {
@@ -3020,6 +3040,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 6
           },
@@ -3113,6 +3134,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 6
           }
@@ -3124,7 +3146,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "3e9a95c4",
+        "stateHash": "64a3dac2",
         "events": 221,
         "sides": [
           {
@@ -3176,6 +3198,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 6
           },
@@ -3269,6 +3292,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 6
           }
@@ -3280,7 +3304,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "34f0a120",
+        "stateHash": "517b6876",
         "events": 142,
         "sides": [
           {
@@ -3327,6 +3351,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 6
           },
@@ -3382,6 +3407,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 6
           }
@@ -3393,7 +3419,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "93c8b40d",
+        "stateHash": "62417561",
         "events": 63,
         "sides": [
           {
@@ -3445,6 +3471,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 0
           },
@@ -3570,6 +3597,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 3
           },
@@ -3749,7 +3777,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "135b336c",
+        "stateHash": "b69596a4",
         "events": 630,
         "sides": [
           {
@@ -3790,6 +3818,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 3
           },
@@ -3963,6 +3992,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 3
           },
@@ -4130,7 +4160,7 @@
     "expected": {
       "result": {
         "tick": 3800,
-        "stateHash": "a8e27075",
+        "stateHash": "6e265d15",
         "events": 51,
         "sides": [
           {
@@ -4171,6 +4201,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 0
           }
@@ -4188,6 +4219,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 0
           },
@@ -4292,7 +4324,7 @@
     "expected": {
       "result": {
         "tick": 60,
-        "stateHash": "9fb25b3c",
+        "stateHash": "1c22a2e4",
         "events": 7,
         "sides": [
           {
@@ -4333,6 +4365,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 0
           }
@@ -4350,6 +4383,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 0
           }
@@ -4408,7 +4442,7 @@
     "expected": {
       "result": {
         "tick": 60,
-        "stateHash": "babd85e1",
+        "stateHash": "427a9621",
         "events": 21,
         "sides": [
           {
@@ -4456,6 +4490,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 0
           }
@@ -4473,6 +4508,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 0
           },
@@ -4858,7 +4894,7 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "e6fe99b2",
+        "stateHash": "53d39386",
         "events": 86,
         "sides": [
           {
@@ -4919,6 +4955,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 8,
             "y": 0
           },
@@ -5074,6 +5111,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 8,
             "y": 0
           }
@@ -5114,7 +5152,7 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "c325ae7c",
+        "stateHash": "53385dc0",
         "events": 244,
         "sides": [
           {
@@ -5163,6 +5201,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 0
           }
@@ -5180,6 +5219,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 0
           },
@@ -5519,7 +5559,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "c7d38667",
+        "stateHash": "3d29b313",
         "events": 41,
         "sides": [
           {
@@ -5564,6 +5604,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 0
           }
@@ -5581,6 +5622,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 0
           }
@@ -5801,7 +5843,7 @@
     "expected": {
       "result": {
         "tick": 1,
-        "stateHash": "1f1e68fb",
+        "stateHash": "23535aa3",
         "events": 9,
         "sides": [
           {

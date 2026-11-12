@@ -10,6 +10,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -283,7 +284,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "dc206c9f",
+        "stateHash": "fe56b023",
         "events": 275
       },
       "eventLogHash": "9c7e8dbb"
@@ -300,6 +301,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -573,7 +575,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "205ffb6a",
+        "stateHash": "b8b2575e",
         "events": 256
       },
       "eventLogHash": "f4cd2a55"
@@ -590,6 +592,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -863,7 +866,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "467b645b",
+        "stateHash": "119a7c6b",
         "events": 215
       },
       "eventLogHash": "f32c0a70"
@@ -880,6 +883,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -1153,7 +1157,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "571f063c",
+        "stateHash": "c797c598",
         "events": 242
       },
       "eventLogHash": "aeca971a"
@@ -1170,6 +1174,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -1355,7 +1360,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "e529f590",
+        "stateHash": "78866b3c",
         "events": 460
       },
       "eventLogHash": "488662a2"
@@ -1372,6 +1377,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -1587,7 +1593,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "cd6c08d3",
+        "stateHash": "9d6c8e3b",
         "events": 132
       },
       "eventLogHash": "48998f8e"
@@ -1604,6 +1610,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -1789,7 +1796,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "465eec78",
+        "stateHash": "5ef9efe2",
         "events": 1723
       },
       "eventLogHash": "2f02d3b5"
@@ -1806,6 +1813,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -2021,7 +2029,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "39d77ecf",
+        "stateHash": "4ae842e5",
         "events": 508
       },
       "eventLogHash": "7f062e7c"
@@ -2038,6 +2046,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -2223,7 +2232,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "92b29822",
+        "stateHash": "6f5c5c6a",
         "events": 196
       },
       "eventLogHash": "a1cc9dc3"
@@ -2240,6 +2249,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -2455,7 +2465,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "c699c3fa",
+        "stateHash": "0a02253a",
         "events": 209
       },
       "eventLogHash": "b8451b59"
@@ -2472,6 +2482,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -2657,7 +2668,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "2be124c2",
+        "stateHash": "c25832d4",
         "events": 842
       },
       "eventLogHash": "02fd3238"
@@ -2674,6 +2685,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -2889,7 +2901,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "72729f9f",
+        "stateHash": "37b899bf",
         "events": 284
       },
       "eventLogHash": "822081a3"
@@ -2906,6 +2918,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -3373,7 +3386,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "8bcb0449",
+        "stateHash": "a0d80001",
         "events": 574
       },
       "eventLogHash": "0d0d4d02"
@@ -3390,6 +3403,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -3887,7 +3901,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "8294b72a",
+        "stateHash": "d4e59242",
         "events": 312
       },
       "eventLogHash": "06d87e17"
@@ -3904,6 +3918,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -4371,7 +4386,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "d6f012bb",
+        "stateHash": "6f3b9d01",
         "events": 884
       },
       "eventLogHash": "39331130"
@@ -4388,6 +4403,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -4885,7 +4901,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "47b72191",
+        "stateHash": "c2fd27bb",
         "events": 986
       },
       "eventLogHash": "87bc8e70"
@@ -4902,6 +4918,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -5369,7 +5386,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "70af494b",
+        "stateHash": "d8dfa1e7",
         "events": 275
       },
       "eventLogHash": "21a6829d"
@@ -5386,6 +5403,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -5883,7 +5901,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "5a6ca4db",
+        "stateHash": "a2de28bf",
         "events": 946
       },
       "eventLogHash": "30ecb41f"
@@ -5900,6 +5918,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -6367,7 +6386,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "d4d266bb",
+        "stateHash": "498a091d",
         "events": 943
       },
       "eventLogHash": "1319cf75"
@@ -6384,6 +6403,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -6881,7 +6901,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "a5ef7d3c",
+        "stateHash": "7792d610",
         "events": 555
       },
       "eventLogHash": "b1bd7d09"
@@ -6898,6 +6918,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -7161,7 +7182,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "70a7d89e",
+        "stateHash": "e45588ea",
         "events": 463
       },
       "eventLogHash": "3d489b51"
@@ -7178,6 +7199,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -7471,7 +7493,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "901cb9b7",
+        "stateHash": "4e4e2ceb",
         "events": 260
       },
       "eventLogHash": "98559ddd"
@@ -7488,6 +7510,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -7751,7 +7774,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "3a59804b",
+        "stateHash": "bdb02e45",
         "events": 2542
       },
       "eventLogHash": "7b7501e6"
@@ -7768,6 +7791,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -8061,7 +8085,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "9de5f402",
+        "stateHash": "88858478",
         "events": 1587
       },
       "eventLogHash": "0b2fb019"
@@ -8078,6 +8102,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -8341,7 +8366,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "12e56a2a",
+        "stateHash": "19671ee2",
         "events": 268
       },
       "eventLogHash": "4117ea09"
@@ -8358,6 +8383,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -8651,7 +8677,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "8e14c32d",
+        "stateHash": "331c6081",
         "events": 450
       },
       "eventLogHash": "e009bea2"
@@ -8668,6 +8694,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -8931,7 +8958,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "99217807",
+        "stateHash": "3c4cf85d",
         "events": 428
       },
       "eventLogHash": "2df0690d"
@@ -8948,6 +8975,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -9241,7 +9269,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "f30ce6aa",
+        "stateHash": "cb0cee86",
         "events": 848
       },
       "eventLogHash": "317f2d25"
@@ -9258,6 +9286,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -9501,7 +9530,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "30b7230f",
+        "stateHash": "47944a7d",
         "events": 176
       },
       "eventLogHash": "9a6fe354"
@@ -9518,6 +9547,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -9791,7 +9821,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "cc14eb38",
+        "stateHash": "3b42624a",
         "events": 83
       },
       "eventLogHash": "30e8e207"
@@ -9808,6 +9838,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -10051,7 +10082,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "8898d4f9",
+        "stateHash": "1b00ad39",
         "events": 428
       },
       "eventLogHash": "e66876b7"
@@ -10068,6 +10099,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -10341,7 +10373,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "eb11833c",
+        "stateHash": "bc3830c0",
         "events": 288
       },
       "eventLogHash": "fc1fa70e"
@@ -10358,6 +10390,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -10601,7 +10634,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "37517aaf",
+        "stateHash": "4173dead",
         "events": 195
       },
       "eventLogHash": "fa955da2"
@@ -10618,6 +10651,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -10891,7 +10925,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "b04b7c92",
+        "stateHash": "28683500",
         "events": 110
       },
       "eventLogHash": "bdab2cbe"
@@ -10908,6 +10942,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -11151,7 +11186,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "157995dc",
+        "stateHash": "3304a5b4",
         "events": 300
       },
       "eventLogHash": "a15012fa"
@@ -11168,6 +11203,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 11,
             "y": 5
           },
@@ -11441,7 +11477,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "61a3054e",
+        "stateHash": "abd79bf8",
         "events": 138
       },
       "eventLogHash": "c86644a7"

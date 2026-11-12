@@ -618,9 +618,9 @@ try {
   await settle();
   const fresh = await B.team();
   check(
-    fresh.core !== null &&
-      fresh.core.x === corePos.x &&
-      fresh.core.y === corePos.y,
+    fresh.cores[0] !== null &&
+      fresh.cores[0].x === corePos.x &&
+      fresh.cores[0].y === corePos.y,
     `Core placed at (${corePos.x}, ${corePos.y}) and the run entered build`,
   );
   check(
@@ -1083,7 +1083,7 @@ try {
   await clickCell(BUILD_PLAN.ex1.x, BUILD_PLAN.ex1.y);
   const exInsp = await page.locator('#panel-inspector').innerText();
   check(/Mines/.test(exInsp), 'inspector shows what an extractor mines');
-  const core = (await B.team()).core;
+  const core = (await B.team()).cores[0];
   await clickCell(core.x, core.y);
   check(
     /cannot be moved/.test(await page.locator('#panel-inspector').innerText()),

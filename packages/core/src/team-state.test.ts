@@ -112,7 +112,7 @@ describe('createTeamState and addToStash', () => {
     const s = createTeamState(map);
     expect(s).toEqual({
       map,
-      core: null,
+      cores: [null, null],
       buildings: [],
       stash: [],
       nextId: 1,
@@ -171,35 +171,41 @@ describe('createTeamState and addToStash', () => {
 
 describe('placeCore', () => {
   const s0 = deepFreeze(createTeamState(map));
-  const legal = listLegalCorePositions(map, content, config);
+  const legal = listLegalCorePositions(map, content, config, 0);
   const pos = legal[0] as Cell;
 
   test('accepts a legal position, once', () => {
-    const s1 = must(placeCore(s0, content, config, pos));
-    expect(s1.core).toEqual(pos);
-    expect(s0.core).toBeNull();
+    const s1 = must(placeCore(s0, content, config, 0, pos));
+    expect(s1.cores[0]).toEqual(pos);
+    expect(s0.cores[0]).toBeNull();
     expect(valid(s1)).toEqual([]);
-    expect(placeCore(deepFreeze(s1), content, config, pos)).toMatchObject({
+    expect(placeCore(deepFreeze(s1), content, config, 0, pos)).toMatchObject({
       ok: false,
       reason: 'core_already_placed',
     });
   });
 
   test('forwards the validateCorePosition reasons', () => {
-    expect(placeCore(s0, content, config, { x: -1, y: 0 })).toMatchObject({
+    expect(placeCore(s0, content, config, 0, { x: -1, y: 0 })).toMatchObject({
       reason: 'out_of_bounds',
     });
     expect(
-      placeCore(s0, content, config, { x: lake.x, y: lake.y }),
+      placeCore(s0, content, config, q.plotOf(lake.x), {
+        x: lake.x,
+        y: lake.y,
+      }),
     ).toMatchObject({ reason: 'blocked' });
     expect(
-      placeCore(s0, content, config, { x: node.x, y: node.y }),
+      placeCore(s0, content, config, q.plotOf(node.x), {
+        x: node.x,
+        y: node.y,
+      }),
     ).toMatchObject({ reason: 'on_node' });
     expect(
-      placeCore(s0, content, config, { x: 0, y: map.height - 1 }),
+      placeCore(s0, content, config, 0, { x: 0, y: map.height - 1 }),
     ).toMatchObject({ reason: 'out_of_bounds' });
     expect(
-      placeCore(s0, content, config, { x: 0, y: map.height - 2 }),
+      placeCore(s0, content, config, 0, { x: 0, y: map.height - 2 }),
     ).toMatchObject({ reason: 'too_far_forward' });
   });
 
@@ -213,21 +219,23 @@ describe('placeCore', () => {
         rotation: 0,
       }),
     );
-    expect(placeCore(deepFreeze(placed), content, config, pos)).toMatchObject({
+    expect(
+      placeCore(deepFreeze(placed), content, config, 0, pos),
+    ).toMatchObject({
       ok: false,
       reason: 'overlaps_building',
     });
     const far = legal.find((c) => c.x >= pos.x + coreFp.width) as Cell;
-    expect(placeCore(placed, content, config, far).ok).toBe(true);
+    expect(placeCore(placed, content, config, 0, far).ok).toBe(true);
   });
 });
 
 describe('placeFromStash and moveBuilding rules', () => {
   const base = deepFreeze(
-    must(placeCore(createTeamState(map), content, config, openCore())),
+    must(placeCore(createTeamState(map), content, config, 0, openCore())),
   );
   function openCore(): Cell {
-    return listLegalCorePositions(map, content, config)[0] as Cell;
+    return listLegalCorePositions(map, content, config, 0)[0] as Cell;
   }
   const open = openRect(1, 1, 20);
   const place = (
@@ -320,7 +328,7 @@ describe('placeFromStash and moveBuilding rules', () => {
   });
 
   test('overlaps_core', () => {
-    const c = base.core as Cell;
+    const c = base.cores[0] as Cell;
     expect(place(base, WALL, c.x + 1, c.y + 1).result).toMatchObject({
       reason: 'overlaps_core',
     });
@@ -370,7 +378,7 @@ describe('placeFromStash and moveBuilding rules', () => {
       reason: 'blocked_by_feature',
     });
     // a source on the Core: overlaps_core, not source_needs_node
-    const c = base.core as Cell;
+    const c = base.cores[0] as Cell;
     expect(place(base, SOURCE, c.x, c.y).result).toMatchObject({
       reason: 'overlaps_core',
     });
@@ -491,19 +499,22 @@ describe('occupancy and geometry', () => {
         createTeamState(map),
         content,
         config,
-        listLegalCorePositions(map, content, config)[0] as Cell,
+        0,
+        listLegalCorePositions(map, content, config, 0)[0] as Cell,
       ),
     );
-    const c = s.core as Cell;
+    const c = s.cores[0] as Cell;
     const occ = occupancy(s, content);
-    expect(occ.buildingAt(c.x, c.y)).toBe('core');
+    expect(occ.buildingAt(c.x, c.y)).toEqual({ core: 0 });
     expect(occ.buildingAt(c.x + coreFp.width, c.y)).toBeNull();
   });
 });
 
 describe('validateTeamState rejects illegal states', () => {
-  const legalCore = listLegalCorePositions(map, content, config)[0] as Cell;
-  let good = must(placeCore(createTeamState(map), content, config, legalCore));
+  const legalCore = listLegalCorePositions(map, content, config, 0)[0] as Cell;
+  let good = must(
+    placeCore(createTeamState(map), content, config, 0, legalCore),
+  );
   const w = stashed(good, WALL);
   const o = openRect(1, 1, 40);
   good = must(
@@ -634,11 +645,11 @@ describe('validateTeamState rejects illegal states', () => {
       [],
       {},
       { map: null },
-      { map: 5, core: 1, buildings: 'x', stash: {}, nextId: 'y', conduits: 3 },
+      { map: 5, cores: 1, buildings: 'x', stash: {}, nextId: 'y', conduits: 3 },
       { ...clone(goodJson), buildings: [null, 5, 'x', []] },
       { ...clone(goodJson), stash: [null, {}] },
-      { ...clone(goodJson), core: { x: 'a' } },
-      { ...clone(goodJson), core: 7 },
+      { ...clone(goodJson), cores: [{ x: 'a' }] },
+      { ...clone(goodJson), cores: 7 },
       { ...clone(goodJson), nextId: Number.NaN },
       { ...clone(goodJson), nextId: 1e300 },
       {
@@ -663,8 +674,8 @@ describe('renderTeamStateAscii', () => {
     const small = generateMap(3, 1, content, config);
     let s = createTeamState(small);
     const sq = queryMap(small, content.terrain);
-    const core = listLegalCorePositions(small, content, config)[0] as Cell;
-    s = must(placeCore(s, content, config, core));
+    const core = listLegalCorePositions(small, content, config, 0)[0] as Cell;
+    s = must(placeCore(s, content, config, 0, core));
     const src = small.nodes[0] as { x: number; y: number };
     const a = stashed(s, SOURCE);
     s = must(
@@ -688,9 +699,9 @@ describe('renderTeamStateAscii', () => {
 
 describe('purity and properties', () => {
   test('operations never mutate frozen inputs', () => {
-    const legal = listLegalCorePositions(map, content, config)[0] as Cell;
+    const legal = listLegalCorePositions(map, content, config, 0)[0] as Cell;
     let s = deepFreeze(createTeamState(map));
-    s = deepFreeze(must(placeCore(s, content, config, legal)));
+    s = deepFreeze(must(placeCore(s, content, config, 0, legal)));
     const a = stashed(s, WALL);
     s = deepFreeze(a.state);
     const o = openRect(1, 1, 50);
@@ -707,7 +718,7 @@ describe('purity and properties', () => {
     s = deepFreeze(must(returnToStash(s, content, { id: a.id })));
     s = deepFreeze(must(removeFromStash(s, { id: a.id })));
     expect(s.stash).toEqual([]);
-    expect(placeCore(s, content, config, legal).ok).toBe(false);
+    expect(placeCore(s, content, config, 0, legal).ok).toBe(false);
   });
 
   test(
@@ -725,13 +736,14 @@ describe('purity and properties', () => {
         const m = generateMap(seed, partySize, content, config);
         const rng = Rng.fromSeed(seed * 7919);
         let s = deepFreeze(createTeamState(m));
-        const legal = listLegalCorePositions(m, content, config);
+        const legal = listLegalCorePositions(m, content, config, 0);
         s = deepFreeze(
           must(
             placeCore(
               s,
               content,
               config,
+              0,
               legal[rng.nextInt(legal.length)] as Cell,
             ),
           ),

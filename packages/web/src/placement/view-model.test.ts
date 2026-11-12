@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import type { EnemyPath } from '@game/core';
+import { soleCore, type EnemyPath } from '@game/core';
 import { economy, simConfig } from '../build/setup.js';
 import { content } from '../content.js';
 import { legalCore, newRun, send } from '../run/test-run.js';
@@ -99,7 +99,7 @@ describe('routes to a position', () => {
     expect(
       routesFor(team, content, simConfig, { x: width - 1, y: height - 1 }),
     ).toBeNull();
-    expect(team.core).toBeNull();
+    expect(soleCore(team)).toBeNull();
   });
 
   test('cells beyond the front row are clipped away (core issue 32)', () => {

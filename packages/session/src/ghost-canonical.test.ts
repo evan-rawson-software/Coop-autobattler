@@ -145,7 +145,7 @@ describe('the validator accepts only what canonical JSON can write', () => {
       [['owner', 'label'], 'Ann\ud800x'],
       [['runId'], 'r\udc00'],
       [['pvpRecord', 'losses'], -0],
-      [['team', 'core', 'x'], -0],
+      [['team', 'cores', 0, 'x'], -0],
     ];
     for (const [path, value] of cases) {
       const s = clone(snap);

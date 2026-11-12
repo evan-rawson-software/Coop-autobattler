@@ -123,7 +123,11 @@ export function queryMap(map: GameMap, terrain: TerrainConfig): MapQuery {
 // Core placement
 
 export type CorePositionProblem =
-  'out_of_bounds' | 'blocked' | 'on_node' | 'too_far_forward';
+  | 'out_of_bounds'
+  | 'outside_own_plot'
+  | 'blocked'
+  | 'on_node'
+  | 'too_far_forward';
 
 export type CorePositionResult =
   | { readonly ok: true }
@@ -140,6 +144,7 @@ function checkCore(
   q: MapQuery,
   fp: Footprint,
   config: MapgenConfig,
+  player: number,
   x: number,
   y: number,
 ): CorePositionResult {
@@ -153,6 +158,9 @@ function checkCore(
     y + fp.height > height
   ) {
     return { ok: false, reason: 'out_of_bounds' };
+  }
+  if (q.plotOf(x) !== player || q.plotOf(x + fp.width - 1) !== player) {
+    return { ok: false, reason: 'outside_own_plot' };
   }
   for (let dy = 0; dy < fp.height; dy++) {
     for (let dx = 0; dx < fp.width; dx++) {
@@ -174,27 +182,66 @@ function checkCore(
 }
 
 /**
- * Whether the Core may stand with its lowest-x, lowest-y footprint cell at
- * `position`. Checks in this order: out_of_bounds, blocked, on_node,
- * too_far_forward.
+ * Whether player `player`'s Core may stand with its lowest-x, lowest-y
+ * footprint cell at `position` (PP-2). Checks in this order: out_of_bounds,
+ * outside_own_plot, blocked, on_node, too_far_forward.
  */
 export function validateCorePosition(
   map: GameMap,
   content: MapContent,
   config: MapgenConfig,
+  player: number,
   position: Cell,
 ): CorePositionResult {
   return checkCore(
     queryMap(map, content.terrain),
     coreFootprint(content.buildings),
     config,
+    player,
     position.x,
     position.y,
   );
 }
 
-/** Every legal Core position on the board, sorted by `(y, x)`. */
+/** Every legal Core position in player `player`'s plot, sorted by `(y, x)`. */
 export function listLegalCorePositions(
+  map: GameMap,
+  content: MapContent,
+  config: MapgenConfig,
+  player: number,
+): Cell[] {
+  const q = queryMap(map, content.terrain);
+  const fp = coreFootprint(content.buildings);
+  const out: Cell[] = [];
+  for (let y = 0; y < map.height; y++) {
+    for (let x = 0; x < map.width; x++) {
+      if (checkCore(q, fp, config, player, x, y).ok) out.push({ x, y });
+    }
+  }
+  return out;
+}
+
+/**
+ * The player whose plot holds column `x`; player 0 for a column outside the
+ * board, so that the position checks then report `out_of_bounds`. Transitional,
+ * with `listLegalCorePositionsAnyPlot` (issue #131 removes both).
+ */
+export function corePlayerAt(
+  map: GameMap,
+  content: MapContent,
+  x: number,
+): number {
+  const p = queryMap(map, content.terrain).plotOf(x);
+  return p >= 0 && p < map.partySize ? p : 0;
+}
+
+/**
+ * Every position that is legal for the player whose plot holds its lowest-x
+ * cell, over all plots, sorted by `(y, x)`. Transitional: it serves the party
+ * vote for a single shared Core, which issue #131 replaces by a Core per
+ * player; remove it then.
+ */
+export function listLegalCorePositionsAnyPlot(
   map: GameMap,
   content: MapContent,
   config: MapgenConfig,
@@ -204,7 +251,7 @@ export function listLegalCorePositions(
   const out: Cell[] = [];
   for (let y = 0; y < map.height; y++) {
     for (let x = 0; x < map.width; x++) {
-      if (checkCore(q, fp, config, x, y).ok) out.push({ x, y });
+      if (checkCore(q, fp, config, q.plotOf(x), x, y).ok) out.push({ x, y });
     }
   }
   return out;

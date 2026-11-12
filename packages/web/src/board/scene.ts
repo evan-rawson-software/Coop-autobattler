@@ -7,6 +7,7 @@
 import {
   conduitResource,
   occupancy,
+  soleCore,
   type BuildingDef,
   type FeatureCell,
   type Occupancy,
@@ -70,6 +71,13 @@ export interface SceneConduit {
   readonly pattern: number;
   /** The resource id it carries, or null while undetermined. */
   readonly resource: string | null;
+}
+
+/** The scene's name for what `buildingAt` found: a building, or `'core'`. */
+function hitOf(
+  hit: PlacedBuilding | { readonly core: number } | null,
+): PlacedBuilding | 'core' | null {
+  return hit !== null && 'core' in hit ? 'core' : hit;
 }
 
 export interface SceneNode {
@@ -248,17 +256,18 @@ function buildBoard(
   });
 
   let core: BoardScene['core'] = null;
-  if (state.core !== null) {
+  const stateCore = soleCore(state);
+  if (stateCore !== null) {
     const coreDef = content.buildings.list().find((d) => d.kind === 'core');
     if (coreDef !== undefined) {
       const fp = coreDef.footprint;
       core = {
         rect: boxToView(
           frame,
-          state.core.x,
-          state.core.y,
-          state.core.x + fp.width - 1,
-          state.core.y + fp.height - 1,
+          stateCore.x,
+          stateCore.y,
+          stateCore.x + fp.width - 1,
+          stateCore.y + fp.height - 1,
         ),
         label: (
           content.presentation.get(coreDef.id)?.name ?? coreDef.id
@@ -382,7 +391,7 @@ export function hitTest(scene: Scene, vx: number, vy: number): Hit | null {
         board: b.frame.id,
         x: c.x,
         y: c.y,
-        building: b.occ.buildingAt(c.x, c.y),
+        building: hitOf(b.occ.buildingAt(c.x, c.y)),
       };
     }
   }

@@ -12,7 +12,7 @@ import { overloadDeadline, overloadOutcome } from './ramp.js';
 import type { GameMap } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
 import type { SimConfig } from './sim-config.js';
-import type { TeamState } from './team-state.js';
+import { createTeamState, type TeamState } from './team-state.js';
 import {
   Lab,
   TIMING,
@@ -93,7 +93,7 @@ describe('refused battles', () => {
   test('different party sizes are rejected first, with a typed error', () => {
     const one = randomTeam(3, 1);
     const two = randomTeam(4, 2);
-    const noCore: TeamState = { ...one, core: null };
+    const noCore: TeamState = { ...one, cores: one.cores.map(() => null) };
     for (const [a, b] of [
       [one, two],
       [two, one],
@@ -110,6 +110,26 @@ describe('refused battles', () => {
         expect(r.error.message).toMatch(/same party size/);
       }
     }
+  });
+
+  test('a side with several Cores placed is refused until battles can fight them', () => {
+    const two = bigBoard();
+    const lab = new Lab(two.map);
+    lab.state = two;
+    lab.core(2, 6, 0);
+    lab.core(40, 6, 1);
+    const r = simulateBattle(
+      { teamA: lab.state, teamB: lab.state, seed: 1 },
+      content,
+      config,
+    );
+    expect(r.ok ? null : r.error.code).toBe('several_cores');
+    const none = simulateBattle(
+      { teamA: createTeamState(two.map), teamB: lab.state, seed: 1 },
+      content,
+      config,
+    );
+    expect(none.ok ? null : none.error.code).toBe('core_not_placed');
   });
 
   test('a different board height is rejected', () => {
@@ -938,7 +958,7 @@ describe('performance (CB-36)', () => {
   function dense(tier: number): TeamState {
     const lab = new Lab(bigBoard().map);
     lab.state = bigBoard();
-    lab.core(40, 6);
+    lab.core(40, 6, 1);
     if (tier === 1) return lab.state;
     const heavy = new Lab(bigBoard().map);
     heavy.state = {

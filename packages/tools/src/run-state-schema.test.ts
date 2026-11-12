@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { describe, expect, test } from 'vitest';
 import {
-  listLegalCorePositions,
+  listLegalCorePositionsAnyPlot,
   loadAllContentOrThrow,
   loadMapgenOrThrow,
 } from '@game/core';
@@ -92,7 +92,11 @@ describe('run-state.schema.json', () => {
       s = r.state;
       states.push(s);
     };
-    const pos = listLegalCorePositions(s.team.map, content, mapgenConfig)[0];
+    const pos = listLegalCorePositionsAnyPlot(
+      s.team.map,
+      content,
+      mapgenConfig,
+    )[0];
     if (pos === undefined) throw new Error('no core position');
     send(0, { type: 'propose_core', ...pos });
     send(1, { type: 'vote', choice: { x: pos.x, y: pos.y } });

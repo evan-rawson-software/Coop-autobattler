@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { describe, expect, test } from 'vitest';
 import {
-  listLegalCorePositions,
+  listLegalCorePositionsAnyPlot,
   loadAllContentOrThrow,
   loadEconomyOrThrow,
   loadEventsOrThrow,
@@ -87,7 +87,7 @@ describe('run-state.schema.json with options, events and modifiers', () => {
       s = r.state;
       states.push(s);
     };
-    const pos = listLegalCorePositions(s.team.map, content, mapgen)[0];
+    const pos = listLegalCorePositionsAnyPlot(s.team.map, content, mapgen)[0];
     if (pos === undefined) throw new Error('no Core position');
     send({ type: 'propose_core', ...pos });
     send({ type: 'ready' });

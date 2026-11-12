@@ -55,9 +55,10 @@ describe('ghost-snapshot.schema.json', () => {
     created.state.team.map,
     content,
     mapgen,
+    0,
   )[0];
   if (pos === undefined) throw new Error('no Core position');
-  const placed = placeCore(created.state.team, content, mapgen, pos);
+  const placed = placeCore(created.state.team, content, mapgen, 0, pos);
   if (!placed.ok) throw new Error(placed.reason);
   const snapshot: GhostSnapshot = snapshotOf(
     { ...created.state, team: placed.state },

@@ -49,7 +49,7 @@ class Script {
   private nextId = 1;
 
   core(x: number, y: number): void {
-    this.ops.push({ op: 'placeCore', x, y });
+    this.ops.push({ op: 'placeCore', actor: 0, x, y });
   }
 
   /** Stash and place a building; returns its instance ID. */

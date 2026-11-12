@@ -1,6 +1,6 @@
 /** Helpers for tests only. */
 import {
-  listLegalCorePositions,
+  listLegalCorePositionsAnyPlot,
   loadAllContentOrThrow,
   loadEconomyOrThrow,
   loadEventsOrThrow,
@@ -86,7 +86,11 @@ export function ok(
 }
 
 export function corePosition(state: RunState): { x: number; y: number } {
-  const pos = listLegalCorePositions(state.team.map, content, mapgenConfig)[0];
+  const pos = listLegalCorePositionsAnyPlot(
+    state.team.map,
+    content,
+    mapgenConfig,
+  )[0];
   if (pos === undefined) throw new Error('no legal Core position');
   return pos;
 }
