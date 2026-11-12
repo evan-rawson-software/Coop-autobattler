@@ -89,6 +89,7 @@ function tryPlace(
   const stashed = addToStash(state, content, { def: def.id, tier, owner });
   if (!stashed.ok) return state;
   const placed = placeFromStash(stashed.state, content, {
+    actor: owner,
     id: stashed.id,
     x,
     y,
@@ -158,7 +159,12 @@ export function buildSampleTeam(
       );
       if (!wanted) continue;
       for (let t = 0; t < 40; t++) {
-        const x = node.x + rng.nextInt(9) - 4;
+        // Clamped into the node's own plot: buildings stay with their owner.
+        const plot = q.plotOf(node.x);
+        const x = Math.min(
+          (plot + 1) * map.plotWidth - 1,
+          Math.max(plot * map.plotWidth, node.x + rng.nextInt(9) - 4),
+        );
         const y = node.y + 2 + rng.nextInt(6);
         const before = state;
         state = tryPlace(
@@ -225,6 +231,7 @@ export function buildSampleTeam(
           : candidatePaths(o, i).filter((p) => p.length <= maxLen);
         for (const cells of paths) {
           const r = addConduit(state, content, {
+            actor: from.b.owner,
             from: { building: from.b.id, side: out },
             to: { building: to.b.id, side: inSide },
             cells,
@@ -239,7 +246,12 @@ export function buildSampleTeam(
   for (const from of info) {
     if (from.sides.outputs.length === 0) continue;
     const targets = info
-      .filter((t) => t.b.id !== from.b.id && t.sides.inputs.length > 0)
+      .filter(
+        (t) =>
+          t.b.id !== from.b.id &&
+          t.b.owner === from.b.owner &&
+          t.sides.inputs.length > 0,
+      )
       .sort((a, b) => dist(from.b, a.b) - dist(from.b, b.b))
       .slice(0, nearest);
     for (const out of from.sides.outputs) {

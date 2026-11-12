@@ -308,27 +308,19 @@ describe('no giving (CP-29, CP-21i)', () => {
     }
   });
 
-  // Known gap, owned by issue #129 (CP-28): the board intents do not check
-  // who owns the building yet, so a player can place, move or return a
-  // partner's building. Remove `.fails` when #129 lands.
-  test.fails(
-    "board intents on another player's buildings change nothing (needs #129)",
-    () => {
-      const s = byStep.get('build') as RunState;
-      for (const type of [
-        'place_building',
-        'move_building',
-        'return_building',
-      ]) {
-        for (const actor of [0, 1]) {
-          for (const intent of (MAKERS[type] as Maker)(s, actor, 'foreign')) {
-            const r = applyIntent(s, actor, intent, deps);
-            if (r.ok) expect(violations(s, r.state, actor)).toEqual([]);
-          }
+  // PP-1 (issue #129): the board intents check who owns the building, so a
+  // player cannot place, move or return a partner's building.
+  test("board intents on another player's buildings change nothing", () => {
+    const s = byStep.get('build') as RunState;
+    for (const type of ['place_building', 'move_building', 'return_building']) {
+      for (const actor of [0, 1]) {
+        for (const intent of (MAKERS[type] as Maker)(s, actor, 'foreign')) {
+          const r = applyIntent(s, actor, intent, deps);
+          if (r.ok) expect(violations(s, r.state, actor)).toEqual([]);
         }
       }
-    },
-  );
+    }
+  });
 
   test('the checker can fail: it flags gold, stash, building and owner changes', () => {
     const s = byStep.get('shop') as RunState;

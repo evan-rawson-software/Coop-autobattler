@@ -192,7 +192,14 @@ describe('a run saved before the per-player design (issue #139)', () => {
   /** What a save looked like before `core` became `cores`, format 4. */
   function preChange(version: VersionKind): SaveRecord {
     const rec = makeRecord(version, 'none', false);
-    const team = { ...rec.state.team, core: null } as Record<string, unknown>;
+    // Also without the `owner` that conduits carry since the ownership rules.
+    const team = {
+      ...rec.state.team,
+      core: null,
+      conduits: [
+        { id: 1, from: { x: 0, y: 0 }, to: { x: 1, y: 0 }, cells: [] },
+      ],
+    } as Record<string, unknown>;
     delete team['cores'];
     return {
       ...rec,

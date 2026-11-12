@@ -19,7 +19,7 @@
   "additionalProperties": false,
   "properties": {
     "formatVersion": {
-      "description": "The snapshot format. Version 2 is the per-player design (issue #124); version 1 snapshots are rejected.",
+      "description": "The snapshot format. Version 2 is the per-player design (issue #124: `cores` and an `owner` on every conduit); version 1 snapshots are rejected.",
       "const": 2
     },
     "gameVersion": {

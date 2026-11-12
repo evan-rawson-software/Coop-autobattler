@@ -314,6 +314,7 @@ describe('buy, sell, reroll', () => {
     for (let y = 0; y < map.height && placed === null; y++) {
       for (let x = 0; x < map.width && placed === null; x++) {
         const p = placeFromStash(a.state, content, {
+          actor: 0,
           id: a.id,
           x,
           y,

@@ -43,13 +43,14 @@ function siegeScript(): TeamScript {
   const put = (def: string, x: number, y: number, tier: number): number => {
     const id = nextId++;
     ops.push({ op: 'addToStash', def, tier, owner: 0 });
-    ops.push({ op: 'placeFromStash', id, x, y, rotation: 0 });
+    ops.push({ op: 'placeFromStash', actor: 0, id, x, y, rotation: 0 });
     return id;
   };
   const feed = (from: number, to: number): void => {
     nextId += 1;
     ops.push({
       op: 'addConduit',
+      actor: 0,
       from: { building: from, side: 'north' },
       to: { building: to, side: 'south' },
       cells: [],

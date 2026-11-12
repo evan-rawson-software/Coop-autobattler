@@ -56,6 +56,7 @@ describe('undo stack (pure)', () => {
       conduits: [
         {
           id: 51,
+          owner: 0,
           from: { building: 50, side: 'north' },
           to: { building: 52, side: 'south' },
           cells: [{ x: 2, y: 3 }],

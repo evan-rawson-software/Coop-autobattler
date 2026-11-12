@@ -179,7 +179,13 @@ function withPlace(
   x: number,
   y: number,
 ): Plan | null {
-  const r = placeFromStash(plan.team, env.content, { id, x, y, rotation: 0 });
+  const r = placeFromStash(plan.team, env.content, {
+    actor: env.player,
+    id,
+    x,
+    y,
+    rotation: 0,
+  });
   if (!r.ok) return null;
   return {
     team: r.state,
@@ -211,7 +217,12 @@ function withConduit(
   const from = { building: s.id, side: outSide };
   const to = { building: c.id, side: input.side };
   const add = (cells: readonly Cell[]): Plan | null => {
-    const r = addConduit(t, env.content, { from, to, cells });
+    const r = addConduit(t, env.content, {
+      actor: env.player,
+      from,
+      to,
+      cells,
+    });
     if (!r.ok) return null;
     return {
       team: r.state,
