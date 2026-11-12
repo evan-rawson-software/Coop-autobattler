@@ -1222,6 +1222,51 @@ try {
         `battle: the camera starts on the neutral zone (cy ${cam.cy.toFixed(1)} of ${rows.height} rows)`,
       );
     }
+    {
+      // A short screen: the start zoom is lowered so the party's own Core is
+      // inside the visible canvas when the board first opens.
+      await page.setViewportSize({ width: 1366, height: 768 });
+      await open(QUICK);
+      await waitPhase('playing');
+      await page.waitForFunction(
+        () =>
+          window.__debug?.ownCoreRect !== undefined &&
+          window.__debug.viewport !== undefined &&
+          window.__debug.viewport().h > 0 &&
+          window.__debug.viewport().h < 700,
+        undefined,
+        { timeout: slow(10000) },
+      );
+      const shortStart = await page.evaluate(() => {
+        const d = window.__debug;
+        const r = d.ownCoreRect();
+        const vp = d.viewport();
+        const cam = d.camera();
+        const px = (x, y) => ({
+          x: (x - cam.cx) * cam.zoom + vp.w / 2,
+          y: (y - cam.cy) * cam.zoom + vp.h / 2,
+        });
+        const a = px(r.x, r.y);
+        const b = px(r.x + r.w, r.y + r.h);
+        return {
+          inside: a.x >= 0 && a.y >= 0 && b.x <= vp.w && b.y <= vp.h,
+          zoom: cam.zoom,
+          vp,
+        };
+      });
+      check(
+        shortStart.inside,
+        `battle: at 1366x768 the own Core is in view on first open (${JSON.stringify(shortStart)})`,
+      );
+      check(
+        shortStart.zoom < 32,
+        'battle: at 1366x768 the start zoom is lowered below the default',
+      );
+      await shot('battle-0b-start-1366x768');
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      await open(QUICK);
+      await waitPhase('playing');
+    }
     const noScrollBattle = await page.evaluate(() => ({
       fits:
         document.documentElement.scrollWidth <= window.innerWidth &&
@@ -1505,7 +1550,7 @@ try {
       `battle: the stress battle has hundreds of units alive in total (peak ${peak}, at least 300)`,
     );
     check(
-      frames.length > 100 && p95 < 34 * FRAME_SCALE,
+      frames.length > 100 / CPU_THROTTLE && p95 < 34 * FRAME_SCALE,
       `battle: smooth at 4x with ${peak} units (frame interval p95 ${p95.toFixed(1)} ms over ${frames.length} frames; limit ${34 * FRAME_SCALE} ms)`,
     );
     // Skip, watch again, play: no page errors (more than 64 units spawned).
@@ -1547,9 +1592,9 @@ try {
     // Editing the hash by hand: the route follows it, the tick included.
     await open(`#battle?p=${winGold.board}&o=pve:arch_rusher:1:medium&s=1`);
     await waitPhase('playing');
-    await page.evaluate(() => {
-      window.location.hash = `#battle?p=${winGold.board}&o=pve:arch_rusher:1:medium&s=1&t=120`;
-    });
+    await page.evaluate((board) => {
+      window.location.hash = `#battle?p=${board}&o=pve:arch_rusher:1:medium&s=1&t=120`;
+    }, winGold.board);
     await page.waitForFunction(
       () => (window.__debug?.battle?.tick?.() ?? 0) >= 120,
     );

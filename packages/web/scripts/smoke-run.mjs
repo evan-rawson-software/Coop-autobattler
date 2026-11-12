@@ -714,7 +714,7 @@ export async function runRunSmoke({
   check(
     overloadLines.length === 3 &&
       overloadLines.every((t) =>
-        /^Overload at 3:00 would (destroy (the stronghold's Core first \(at \d+:\d\d\) — outlasting it wins|your Core first at \d+:\d\d — break the stronghold before then|both Cores at \d+:\d\d)|not destroy either Core)/.test(
+        /^Overload at 3:00 would (destroy (the stronghold's Core first at \d+:\d\d — outlasting it wins|your Core first at \d+:\d\d — break the stronghold before then|both Cores at \d+:\d\d)|not destroy either Core)/.test(
           t.trim(),
         ),
       ) &&
