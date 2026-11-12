@@ -149,6 +149,8 @@ function maximalBoard(round: number): GhostSnapshot {
       for (const [dx, dy] of DIRS) {
         const nx = c.x + dx;
         const ny = c.y + dy;
+        // A conduit stays in its owner's plot (PP-1).
+        if (q.plotOf(nx) !== q.plotOf(node.x)) continue;
         if (!free(nx, ny) || dist.has(key(nx, ny))) continue;
         dist.set(key(nx, ny), (dist.get(key(c.x, c.y)) ?? 0) + 1);
         from.set(key(nx, ny), key(c.x, c.y));
@@ -170,9 +172,9 @@ function maximalBoard(round: number): GhostSnapshot {
       ) {
         path.unshift({ x: k % width, y: Math.floor(k / width) });
       }
+      const before = team;
       const trial = put('bld_armory', armory.x, armory.y);
       if (trial === null) break;
-      const before = team;
       const added = addConduit(team, content, {
         actor: team.buildings.find((b) => b.id === ex)?.owner ?? 0,
         from: { building: ex, side: 'north' },
