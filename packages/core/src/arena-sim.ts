@@ -1798,7 +1798,13 @@ export function spawnUnitForTest(
     }
   }
   const k = cellAt(ctx, args.side, { x: px, y: py });
-  const ownCol = ownCellCoord(args.side, px, ctx.arena.geom.width);
+  // The column in the unit's own frame; `ownCellCoord` returns the arena column
+  // with the boundary rule of the own frame, so a side-1 column is mirrored back.
+  const width = ctx.arena.geom.width;
+  const ownCol =
+    args.side === 0
+      ? ownCellCoord(0, px, width)
+      : width - 1 - ownCellCoord(args.side, px, width);
   const owner =
     args.owner ??
     divFloor(ownCol, sim.teams[args.side === 0 ? 0 : 1].map.plotWidth);
