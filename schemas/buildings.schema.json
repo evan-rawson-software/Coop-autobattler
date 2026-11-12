@@ -61,12 +61,16 @@
     },
     "tierUnitProducer": {
       "type": "object",
-      "required": ["health", "price", "costPerUnit"],
+      "required": ["health", "price", "costPerUnit", "productionIntervalTicks"],
       "additionalProperties": false,
       "properties": {
         "health": { "$ref": "#/$defs/health" },
         "price": { "$ref": "#/$defs/nonNegative" },
-        "costPerUnit": { "$ref": "#/$defs/positive" }
+        "costPerUnit": { "$ref": "#/$defs/positive" },
+        "productionIntervalTicks": {
+          "description": "Minimum ticks between two units made by this producer (PP-6).",
+          "$ref": "#/$defs/positive"
+        }
       }
     },
     "tierTurret": {
@@ -91,12 +95,23 @@
     },
     "tierEconomy": {
       "type": "object",
-      "required": ["health", "price", "costPerStep", "stepPercent", "maxSteps"],
+      "required": [
+        "health",
+        "price",
+        "costPerStep",
+        "stepPercent",
+        "maxSteps",
+        "stepIntervalTicks"
+      ],
       "additionalProperties": false,
       "properties": {
         "health": { "$ref": "#/$defs/health" },
         "price": { "$ref": "#/$defs/nonNegative" },
         "costPerStep": { "$ref": "#/$defs/positive" },
+        "stepIntervalTicks": {
+          "description": "Minimum ticks between two upgrade steps of this building (PP-6).",
+          "$ref": "#/$defs/positive"
+        },
         "stepPercent": { "$ref": "#/$defs/positive" },
         "maxSteps": {
           "description": "The cap on upgrade steps (SC-8): every in-battle economy effect is capped.",
@@ -174,6 +189,11 @@
           "then": {
             "type": "object",
             "properties": {
+              "outputs": {
+                "description": "A collector has exactly one output side (PP-5, CB-9e).",
+                "minItems": 1,
+                "maxItems": 1
+              },
               "tiers": {
                 "type": "array",
                 "minItems": 3,

@@ -9,8 +9,8 @@
  */
 
 import { buildFlowGraph, SIDE_ORDER } from './conduits.js';
-import type { Side } from './buildings.js';
-import { rotateBuilding } from './buildings.js';
+import type { Side, SourceBuildingDef } from './buildings.js';
+import { needPer1000, productionOf, rotateBuilding } from './buildings.js';
 import { divFloor, mulDiv } from './int.js';
 import { queryMap } from './map.js';
 import type { ResourceId } from './resources.js';
@@ -174,7 +174,28 @@ export interface FlowPlan {
   readonly sources: readonly PlanSource[];
 }
 
-export type ConsumerMode = 'hold' | 'drain';
+export type ConsumerMode = 'hold' | 'drain' | 'need';
+
+/**
+ * A consumer paced at its top speed in `'need'` mode (PP-6): the intake and
+ * produce rules of the arena without an arena. It is run state of the run,
+ * not part of `BoardSim`.
+ */
+export interface ConsumerPacer {
+  readonly building: number;
+  /** Cost of one production (`costPerUnit`, `costPerShot`, `costPerStep`). */
+  readonly cost: number;
+  /** Minimum ticks between productions. */
+  readonly interval: number;
+  /** Productions allowed in all (an economy building's `maxSteps`), or -1. */
+  readonly limit: number;
+  /** Items collected towards the next production (0 .. cost). */
+  progress: number;
+  /** Ticks until the next production is allowed. */
+  cooldown: number;
+  /** Productions so far. */
+  productions: number;
+}
 
 export interface FlowContext {
   readonly plan: FlowPlan;
@@ -189,11 +210,42 @@ export interface FlowContext {
    * tick from the side's `source_speed` total; a dry run leaves it at 0.
    */
   sourceSpeedPercent?: number;
+  /** Present in `'need'` mode: one pacer per consumer, in `sim.consumers` order. */
+  readonly pacers?: ConsumerPacer[];
 }
 
 /** A source's interval under a speed bonus (rounded down, at least 1). */
 export function scaledInterval(interval: number, percent: number): number {
   return Math.max(1, mulDiv(interval, 100, 100 + percent));
+}
+
+/**
+ * A collector's rate in items per 1000 ticks, `floor(1000 / scaledInterval)`
+ * (PP-5), for a tier (1..3) and an optional speed-up percent.
+ */
+export function collectorRatePer1000(
+  def: SourceBuildingDef,
+  tier: number,
+  percent = 0,
+): number {
+  const t = def.tiers[tier - 1];
+  if (t === undefined) throw new RangeError(`Invalid tier ${String(tier)}.`);
+  return divFloor(1000, scaledInterval(t.intervalTicks, percent));
+}
+
+/**
+ * The same rate in hundredths of an item per second, rounded down:
+ * `floor(100 * ticksPerSecond / scaledInterval)` (PP-5).
+ */
+export function collectorHundredthsPerSecond(
+  def: SourceBuildingDef,
+  tier: number,
+  ticksPerSecond: number,
+  percent = 0,
+): number {
+  const t = def.tiers[tier - 1];
+  if (t === undefined) throw new RangeError(`Invalid tier ${String(tier)}.`);
+  return mulDiv(100, ticksPerSecond, scaledInterval(t.intervalTicks, percent));
 }
 
 function at<T>(list: readonly T[], i: number): T {
@@ -420,6 +472,31 @@ export function createBoardSim(
   return compile(state, content, simConfig).sim;
 }
 
+function makePacers(
+  state: TeamState,
+  content: TeamContent,
+  simConfig: SimConfig,
+): ConsumerPacer[] {
+  const pacers: ConsumerPacer[] = [];
+  for (const c of createBoardSim(state, content, simConfig).consumers) {
+    const b = state.buildings.find((x) => x.id === c.building);
+    const def = b && content.buildings.get(b.def);
+    const p = b && def && productionOf(def, b.tier);
+    if (b === undefined || def === undefined || p === undefined) continue;
+    const tier = def.kind === 'economy' ? def.tiers[b.tier - 1] : undefined;
+    pacers.push({
+      building: c.building,
+      cost: p.cost,
+      interval: p.interval,
+      limit: tier === undefined ? -1 : tier.maxSteps,
+      progress: 0,
+      cooldown: 0,
+      productions: 0,
+    });
+  }
+  return pacers;
+}
+
 /** The compiled wiring plus the run options for `stepFlow`. */
 export function createFlowContext(
   state: TeamState,
@@ -428,7 +505,14 @@ export function createFlowContext(
   options: { consumers?: ConsumerMode; events?: SimEvent[] } = {},
 ): FlowContext {
   const { plan } = compile(state, content, simConfig);
-  const base = { plan, consumers: options.consumers ?? 'hold' };
+  const mode = options.consumers ?? 'hold';
+  const base = {
+    plan,
+    consumers: mode,
+    ...(mode === 'need'
+      ? { pacers: makePacers(state, content, simConfig) }
+      : {}),
+  };
   return options.events === undefined
     ? base
     : { ...base, events: options.events };
@@ -730,6 +814,9 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
   }
 
   // Consumers (test and dry-run mode only).
+  if (ctx.consumers === 'need' && ctx.pacers !== undefined) {
+    for (const pacer of ctx.pacers) paceConsumer(sim, pacer);
+  }
   if (ctx.consumers === 'drain') {
     for (const c of sim.consumers) {
       for (const input of c.inputs) {
@@ -741,6 +828,30 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
 
   // 4. The tick counter.
   sim.tick += 1;
+}
+
+/**
+ * One tick of a paced consumer (`'need'` mode, PP-6): intake of at most
+ * `cost - progress` items, one production when `progress = cost` and the
+ * cooldown is 0, then the cooldown counts down (as in step 7 of a battle tick).
+ */
+function paceConsumer(sim: BoardSim, p: ConsumerPacer): void {
+  const consumer = sim.consumers.find((c) => c.building === p.building);
+  const open = p.limit < 0 || p.productions < p.limit;
+  if (consumer !== undefined && open && p.progress < p.cost) {
+    for (const input of consumer.inputs) {
+      const n = Math.min(input.count, p.cost - p.progress);
+      if (n > 0 && takeFromBuffer(sim, p.building, input.side, n)) {
+        p.progress += n;
+      }
+    }
+  }
+  if (open && p.progress === p.cost && p.cooldown === 0) {
+    p.progress = 0;
+    p.cooldown = p.interval;
+    p.productions += 1;
+  }
+  if (p.cooldown > 0) p.cooldown -= 1;
 }
 
 function lose(
@@ -866,31 +977,45 @@ export interface DryRunConsumerInput {
   readonly ratePer1000: number;
 }
 
+/** A consumer's need and productions in a `'need'` dry run (PP-6). */
+export interface DryRunNeed {
+  readonly building: number;
+  /** Items per 1000 ticks at top speed (`needPer1000`). */
+  readonly needPer1000: number;
+  /** Productions made during the run. */
+  readonly productions: number;
+}
+
 export interface DryRunResult {
   readonly ticks: number;
   readonly sources: readonly DryRunSource[];
   readonly routes: readonly DryRunRoute[];
   readonly consumers: readonly DryRunConsumerInput[];
+  /** Only in `'need'` mode: one entry per consumer, in building order. */
+  readonly needs?: readonly DryRunNeed[];
 }
 
 /**
  * Simulate the board alone for `ticks` ticks with every consumer buffer
  * drained each tick, and report totals and delivery rates. The rate counts
  * deliveries in ticks `floor(ticks / 2)` to `ticks - 1`, so the cold start
- * does not distort it.
+ * does not distort it. With `mode` `'need'` each consumer is instead paced at
+ * its top speed (PP-6: intake of at most `cost - progress`, one production per
+ * interval) and `needs` reports its need and productions.
  */
 export function dryRunFlow(
   state: TeamState,
   content: TeamContent,
   simConfig: SimConfig,
   ticks: number,
+  mode: 'drain' | 'need' = 'drain',
 ): DryRunResult {
   if (!Number.isSafeInteger(ticks) || ticks < 0) {
     throw new RangeError('dryRunFlow: ticks must be a non-negative integer.');
   }
   const sim = createBoardSim(state, content, simConfig);
   const ctx = createFlowContext(state, content, simConfig, {
-    consumers: 'drain',
+    consumers: mode,
   });
   const half = divFloor(ticks, 2);
   for (let t = 0; t < half; t++) stepFlow(sim, ctx);
@@ -910,6 +1035,15 @@ export function dryRunFlow(
       });
     });
   });
+  const needs: DryRunNeed[] = (ctx.pacers ?? []).map((p) => {
+    const b = state.buildings.find((x) => x.id === p.building);
+    const def = b && content.buildings.get(b.def);
+    return {
+      building: p.building,
+      needPer1000: b && def ? needPer1000(def, b.tier) : 0,
+      productions: p.productions,
+    };
+  });
   return {
     ticks,
     sources: sim.sources.map((s) => ({
@@ -925,5 +1059,6 @@ export function dryRunFlow(
       lost: r.lost,
     })),
     consumers,
+    ...(mode === 'need' ? { needs } : {}),
   };
 }

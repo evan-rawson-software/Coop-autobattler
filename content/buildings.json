@@ -60,9 +60,24 @@
       "inputs": [{ "resource": "res_a", "side": "south" }],
       "outputs": [],
       "tiers": [
-        { "health": 60, "price": 20, "costPerUnit": 6 },
-        { "health": 90, "price": 45, "costPerUnit": 5 },
-        { "health": 120, "price": 80, "costPerUnit": 4 }
+        {
+          "health": 60,
+          "price": 20,
+          "costPerUnit": 6,
+          "productionIntervalTicks": 40
+        },
+        {
+          "health": 90,
+          "price": 45,
+          "costPerUnit": 5,
+          "productionIntervalTicks": 32
+        },
+        {
+          "health": 120,
+          "price": 80,
+          "costPerUnit": 4,
+          "productionIntervalTicks": 25
+        }
       ]
     },
     {
@@ -138,21 +153,24 @@
           "price": 30,
           "costPerStep": 4,
           "stepPercent": 5,
-          "maxSteps": 6
+          "maxSteps": 6,
+          "stepIntervalTicks": 10
         },
         {
           "health": 60,
           "price": 60,
           "costPerStep": 4,
           "stepPercent": 6,
-          "maxSteps": 8
+          "maxSteps": 8,
+          "stepIntervalTicks": 8
         },
         {
           "health": 80,
           "price": 100,
           "costPerStep": 3,
           "stepPercent": 8,
-          "maxSteps": 10
+          "maxSteps": 10,
+          "stepIntervalTicks": 6
         }
       ]
     },
@@ -169,21 +187,24 @@
           "price": 30,
           "costPerStep": 6,
           "stepPercent": 4,
-          "maxSteps": 6
+          "maxSteps": 6,
+          "stepIntervalTicks": 10
         },
         {
           "health": 60,
           "price": 60,
           "costPerStep": 6,
           "stepPercent": 5,
-          "maxSteps": 8
+          "maxSteps": 8,
+          "stepIntervalTicks": 8
         },
         {
           "health": 80,
           "price": 100,
           "costPerStep": 5,
           "stepPercent": 6,
-          "maxSteps": 10
+          "maxSteps": 10,
+          "stepIntervalTicks": 6
         }
       ]
     },
