@@ -50,6 +50,20 @@ interface Job {
   reject(e: unknown): void;
 }
 
+/** A short text for an error, an error event or whatever a worker raised. */
+function reasonOf(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'object' && e !== null) {
+    const o = e as { message?: unknown; filename?: unknown };
+    if (typeof o.message === 'string' && o.message !== '') {
+      return typeof o.filename === 'string' && o.filename !== ''
+        ? `${o.message} at ${o.filename}`
+        : o.message;
+    }
+  }
+  return 'unknown error';
+}
+
 function toOutcome(res: SimResponse): RecordOutcome | Error {
   if (res.kind === 'error') return new Error(res.message);
   return res.result.ok
@@ -111,8 +125,8 @@ export class SimClient {
       try {
         this.ensureWorker().postMessage(job.req);
         return;
-      } catch {
-        this.fallBack();
+      } catch (e) {
+        this.fallBack(reasonOf(e));
       }
     }
     setTimeout(() => {
@@ -134,25 +148,25 @@ export class SimClient {
       this.settle(job, ev.data);
     };
     // A response that cannot be deserialised is as good as a broken worker.
-    w.onmessageerror = () => {
+    w.onmessageerror = (ev) => {
       if (this.worker !== w) return;
-      this.fallBack();
+      this.fallBack(`a response could not be read (${reasonOf(ev)})`);
       for (const job of [...this.jobs.values()]) this.dispatch(job);
     };
-    w.onerror = () => {
+    w.onerror = (ev) => {
       // The script failed to load or crashed: use the main thread from now on.
       if (this.worker !== w) return;
-      this.fallBack();
+      this.fallBack(reasonOf(ev));
       for (const job of [...this.jobs.values()]) this.dispatch(job);
     };
     this.worker = w;
     return w;
   }
 
-  private fallBack(): void {
+  private fallBack(reason: string): void {
     if (!this.sync) {
-      console.info(
-        'Simulation worker unavailable; simulating on the main thread.',
+      console.warn(
+        `Simulation worker unavailable (${reason}); simulating on the main thread.`,
       );
     }
     this.sync = true;

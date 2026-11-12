@@ -18,6 +18,9 @@
 import {
   bestDepthFromHistory,
   compareListItems,
+  isStaleWrite,
+  StaleSaveError,
+  STALE_MESSAGE,
   summarizeStored,
   type HistoryEntry,
   type SaveListItem,
@@ -36,15 +39,7 @@ export interface StorageLike {
 
 export const DEFAULT_PREFIX = 'coop:';
 
-/** The text of a refused stale write (shown to the player). */
-export const STALE_MESSAGE = 'This run changed in another tab.';
-
-export class StaleSaveError extends Error {
-  constructor() {
-    super(STALE_MESSAGE);
-    this.name = 'StaleSaveError';
-  }
-}
+export { StaleSaveError, STALE_MESSAGE };
 
 export interface LocalStoreOptions {
   /** Refuse a `put` whose `actionCounter` is not above the stored one. */
@@ -120,11 +115,7 @@ export function createLocalStorageSaveStore(
         const have = (stored as { actionCounter?: unknown } | null)
           ?.actionCounter;
         const next = (record as { actionCounter?: unknown }).actionCounter;
-        if (
-          typeof have === 'number' &&
-          typeof next === 'number' &&
-          have >= next
-        ) {
+        if (isStaleWrite(have, next)) {
           options.onStale?.();
           throw new StaleSaveError();
         }

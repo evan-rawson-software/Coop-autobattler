@@ -11,7 +11,12 @@ import {
 import { BuildController, conduitAt } from './build-controller.js';
 import { BuildSession } from './session.js';
 import { simConfig } from './setup.js';
-import { computeFlowView, deriveProblems } from './view-model.js';
+import {
+  computeFlowView,
+  deriveProblems,
+  type FlowView,
+  type ProblemScope,
+} from './view-model.js';
 import { buildingRate, formatHundredths, supplyOf } from './rates.js';
 import { dryRunFlow } from '@game/core';
 
@@ -344,5 +349,50 @@ describe('Backspace while drawing a border half', () => {
     };
     expect(ctl.key(key)).toBe(true);
     expect(ctl.model.get().ui.draft).toBeNull();
+  });
+});
+
+describe('under-supplied problems in a party', () => {
+  test('own buildings one by one, one summary line per partner, none in solo', async () => {
+    const { s } = await start();
+    const t = s.run.team;
+    const mk = (id: number, owner: number, x: number) => ({
+      id,
+      def: 'bld_barracks',
+      owner,
+      x,
+      y: 0,
+      rotation: 0,
+      tier: 1,
+    });
+    const team = {
+      ...t,
+      stash: [],
+      buildings: [mk(1, 0, 0), mk(2, 1, 4), mk(3, 1, 8), mk(4, 1, 12)],
+    } as unknown as typeof t;
+    const flow = {
+      dry: { consumers: [], sources: [] },
+      starved: new Set<number>(),
+      supply: [1, 2, 3, 4].map((building) => ({
+        building,
+        state: 'under',
+        gets: 10,
+        needs: 50,
+      })),
+    } as unknown as FlowView;
+    const under = (scope?: ProblemScope) =>
+      deriveProblems(team, content, flow, scope).filter(
+        (p) => p.kind === 'under_supplied',
+      );
+    const scope = { acting: 0, names: ['Ann', 'Bo'] };
+    const mine = under(scope);
+    expect(mine.map((p) => p.building)).toEqual([1, null]);
+    expect(mine[1]?.text).toBe('Bo has 3 under-supplied buildings.');
+    // From the other seat the roles swap.
+    const theirs = under({ acting: 1, names: scope.names });
+    expect(theirs.map((p) => p.building)).toEqual([2, 3, 4, null]);
+    expect(theirs[3]?.text).toBe('Ann has 1 under-supplied building.');
+    // Solo (no scope): every building is the player's own.
+    expect(under().map((p) => p.building)).toEqual([1, 2, 3, 4]);
   });
 });

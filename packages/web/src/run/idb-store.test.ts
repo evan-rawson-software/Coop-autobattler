@@ -5,10 +5,19 @@ import { runSaveStoreConformance } from '@game/session/testing';
 import { openDb, openIndexedDbStores } from './idb-store.js';
 import { StaleSaveError } from './local-storage-store.js';
 
-runSaveStoreConformance('IndexedDB store', async () => {
-  const stores = await openIndexedDbStores(new IDBFactory());
-  return stores.saves;
-});
+runSaveStoreConformance(
+  'IndexedDB store',
+  async () => {
+    const stores = await openIndexedDbStores(new IDBFactory());
+    return stores.saves;
+  },
+  async () => {
+    const stores = await openIndexedDbStores(new IDBFactory(), {
+      rejectStale: true,
+    });
+    return stores.saves;
+  },
+);
 
 function record(runId: string, counter: number, round = 1): SaveRecord {
   return {

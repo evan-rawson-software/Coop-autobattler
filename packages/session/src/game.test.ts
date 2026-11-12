@@ -55,9 +55,9 @@ function offersOf(s: RunState): Record<string, Json>[] {
   return pending(s)['options'] as Record<string, Json>[];
 }
 
-function optionsOf(list: readonly Json[]): PveOption[] {
+function optionsOf(list: readonly Json[], partySize = 1): PveOption[] {
   return list.map((o) => {
-    const opt = readPveOption(o);
+    const opt = readPveOption(o, partySize);
     if (opt === null) throw new Error('not a PvE option');
     return opt;
   });
@@ -184,7 +184,7 @@ describe('PvE options (RS-3, RS-3b, RS-6a)', () => {
               x.step === 'shop' && x.leg === 'pvp' && x.round === round - 1,
           );
         }
-        const options = optionsOf(s.upcomingPve?.options ?? []);
+        const options = optionsOf(s.upcomingPve?.options ?? [], players.length);
         const [easy, medium, hard] = options;
         if (!easy || !medium || !hard) throw new Error('missing option');
         expect(easy.budget).toBeLessThan(medium.budget);
@@ -196,6 +196,25 @@ describe('PvE options (RS-3, RS-3b, RS-6a)', () => {
         expect(easy.threat.partySize).toBe(players.length);
         expect(easy.threat.round).toBe(round);
       }
+    }
+  });
+
+  test('readPveOption refuses an option whose Cores do not match the party size', () => {
+    const s = start(deps);
+    const raw = s.upcomingPve?.options ?? [];
+    expect(raw.length).toBe(3);
+    expect(optionsOf(raw)).toHaveLength(3);
+    for (const o of raw) {
+      expect(readPveOption(o, 2)).toBeNull();
+      const t = clone(o) as unknown as {
+        threat: { stronghold: { cores: unknown } };
+      };
+      t.threat.stronghold.cores = [];
+      expect(readPveOption(t, 1)).toBeNull();
+      t.threat.stronghold.cores = 'x';
+      expect(readPveOption(t, 1)).toBeNull();
+      delete (t.threat as { stronghold?: unknown }).stronghold;
+      expect(readPveOption(t, 1)).toBeNull();
     }
   });
 

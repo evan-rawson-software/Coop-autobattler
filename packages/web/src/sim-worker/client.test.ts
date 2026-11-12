@@ -1,5 +1,5 @@
 import { hashJson } from '@game/core';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { simulateRecord } from '../battle/playback.js';
 import {
   buildSample,
@@ -99,6 +99,24 @@ describe('the simulation worker client', () => {
     expect(client.usesWorker).toBe(false);
     expect((await client.simulate(other).promise).ok).toBe(true);
     expect(client.workersStarted).toBe(1);
+  });
+
+  test('the fallback warns once with the reason', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      class Broken extends FakeWorker {
+        override postMessage(): void {
+          setTimeout(() => this.onerror?.({ message: 'load failed' }), 0);
+        }
+      }
+      const client = new SimClient(() => new Broken());
+      await client.simulate(desc).promise;
+      await client.simulate(other).promise;
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]?.[0])).toContain('load failed');
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   test('a malformed response (messageerror) falls back instead of hanging', async () => {
