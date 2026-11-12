@@ -40,12 +40,7 @@ import { startRun, openRun } from './run-controller.js';
 import { buildSaveRecord } from './save.js';
 import { createMemorySaveStore } from './save-store-memory.js';
 import { allowedIntents } from './selectors.js';
-import {
-  content,
-  gameConfigs,
-  makeGameDeps,
-  mapgenConfig,
-} from './test-support.js';
+import { content, gameConfigs, makeGameDeps } from './test-support.js';
 import type {
   CreateRunArgs,
   Intent,
