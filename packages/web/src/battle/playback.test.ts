@@ -178,6 +178,26 @@ describe('playback engine', () => {
     expect(pb.frac).toBeLessThan(1);
   });
 
+  test('units face their movement (octants) and rest facing their side', () => {
+    const pb = fresh();
+    pb.start();
+    // Before any step, side A faces north (0) and side B south (4).
+    for (const u of pb.sim.units) {
+      expect(pb.facing(u)).toBe(u.side === 0 ? 0 : 4);
+      expect(pb.isMoving(u)).toBe(false);
+    }
+    let moved = 0;
+    for (let i = 0; i < 600 && moved === 0 && !pb.finished; i++) {
+      pb.advance(100);
+      for (const u of pb.sim.units) if (pb.isMoving(u)) moved++;
+    }
+    expect(moved).toBeGreaterThan(0);
+    for (const u of pb.sim.units) {
+      const f = pb.facing(u);
+      expect(Number.isInteger(f) && f >= 0 && f < 8).toBe(true);
+    }
+  });
+
   test('pausing stops it; resuming continues', () => {
     const pb = fresh();
     pb.start();

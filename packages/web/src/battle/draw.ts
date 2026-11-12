@@ -17,6 +17,13 @@ import type { OverlayContext } from '../board/BoardView.js';
 import type { Scene, ViewRect } from '../board/scene.js';
 import type { WebContent } from '../content.js';
 import type { Geometry } from './derive.js';
+import {
+  findSprite,
+  frameCanvas,
+  spriteSet,
+  spriteStats,
+  type SpriteSet,
+} from '../sprites/atlas.js';
 import type { Playback } from './playback.js';
 
 type Pt = { x: number; y: number };
@@ -97,6 +104,115 @@ const FONT = '600 {s}px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
 let idToIndex = new Int32Array(0);
 const tmp: Pt = { x: 0, y: 0 };
 const tmp2: Pt = { x: 0, y: 0 };
+
+/** One unit type on one side: the cut-out frames of its three animations. */
+interface UnitArt {
+  readonly idle: readonly HTMLCanvasElement[];
+  readonly walk: readonly HTMLCanvasElement[];
+  readonly attack: readonly HTMLCanvasElement[];
+  readonly walkFps: number;
+  readonly attackFps: number;
+}
+
+let artSet: SpriteSet | null = null;
+const artCache = new Map<string, readonly [UnitArt | null, UnitArt | null]>();
+/** Per unit ID: 1 + the tick of its latest attack event. */
+let attackedAt = new Int32Array(0);
+
+function framesOf(set: SpriteSet, name: string): HTMLCanvasElement[] | null {
+  const sp = findSprite(name);
+  if (sp === undefined) return null;
+  const out: HTMLCanvasElement[] = [];
+  for (let f = 0; f < sp.frames; f++) {
+    const c = frameCanvas(set, name, f);
+    if (c === null) return null;
+    out.push(c);
+  }
+  return out;
+}
+
+/**
+ * The side's pre-tinted, side-shaped sprites of a unit type (`unit_x@a`,
+ * `@b`, with `.walk` and `.attack`), or null to draw the flat circle. Built
+ * once per type; the per-frame lookup allocates nothing.
+ */
+function unitArt(def: string, side: number): UnitArt | null {
+  const set = spriteSet();
+  if (set === null) return null;
+  if (set !== artSet) {
+    artCache.clear();
+    artSet = set;
+  }
+  let pair = artCache.get(def);
+  if (pair === undefined) {
+    const make = (tag: string): UnitArt | null => {
+      const idle = framesOf(set, `${def}@${tag}`);
+      const walk = framesOf(set, `${def}@${tag}.walk`);
+      const attack = framesOf(set, `${def}@${tag}.attack`);
+      if (!idle || !walk || !attack) return null;
+      return {
+        idle,
+        walk,
+        attack,
+        walkFps: findSprite(`${def}@${tag}.walk`)?.fps ?? 0,
+        attackFps: findSprite(`${def}@${tag}.attack`)?.fps ?? 0,
+      };
+    };
+    pair = [make('a'), make('b')];
+    artCache.set(def, pair);
+  }
+  return side === 0 ? pair[0] : pair[1];
+}
+
+const OCTANT = Math.PI / 4;
+
+/**
+ * The fallback: units without a sprite are filled circles of their real
+ * radius; side B carries a small diamond in the middle (shape as well as colour).
+ */
+function drawFlatUnits(
+  ctx: CanvasRenderingContext2D,
+  units: readonly UnitSim[],
+  pxOf: (u: UnitSim, out: Pt) => void,
+  radiusOf: (u: UnitSim) => number,
+  own: string,
+  foe: string,
+  outline: string,
+  bg: string,
+): void {
+  for (const side of [0, 1] as const) {
+    ctx.beginPath();
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i];
+      if (u === undefined || (u.side === 0 ? 0 : 1) !== side) continue;
+      if (unitArt(u.def, u.side) !== null) continue;
+      pxOf(u, tmp);
+      const ur = radiusOf(u);
+      ctx.moveTo(tmp.x + ur, tmp.y);
+      ctx.arc(tmp.x, tmp.y, ur, 0, Math.PI * 2);
+    }
+    ctx.fillStyle = side === 0 ? own : foe;
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = outline;
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  for (let i = 0; i < units.length; i++) {
+    const u = units[i];
+    if (u === undefined || u.side === 0) continue;
+    if (unitArt(u.def, u.side) !== null) continue;
+    pxOf(u, tmp);
+    const dd = radiusOf(u) * 0.5;
+    ctx.moveTo(tmp.x, tmp.y - dd);
+    ctx.lineTo(tmp.x + dd, tmp.y);
+    ctx.lineTo(tmp.x, tmp.y + dd);
+    ctx.lineTo(tmp.x - dd, tmp.y);
+    ctx.closePath();
+  }
+  ctx.fillStyle = bg;
+  ctx.fill();
+}
 
 function rectCentre(r: ViewRect | null | undefined, out: Pt): boolean {
   if (r === null || r === undefined) return false;
@@ -232,48 +348,73 @@ export function drawBattleOverlay(
     out.x = ox + out.x * z;
     out.y = oy + (geo.height - out.y) * z;
   };
-  // Both sides are filled circles of their real radius; side 1 carries a
-  // small diamond in the middle: shape as well as colour.
-  ctx.beginPath();
+  // Units with a sprite are drawn from the atlas, facing their movement
+  // (the art faces north for side A and south for side B at rest); the rest
+  // fall back to circles. Side B also carries a diamond: shape as well as
+  // colour (the sprites differ in shape too).
+  if (attackedAt.length < idToIndex.length) {
+    attackedAt = new Int32Array(idToIndex.length);
+  }
+  {
+    const [af, at] = pb.eventRange(tick - LIFE_ATTACK - 1, tick);
+    for (let i = af; i < at; i++) {
+      const e = pb.record.eventLog[i];
+      if (e !== undefined && e.type === 'unit_attacked') {
+        attackedAt[e.unit] = e.tick + 1;
+      }
+    }
+  }
+  const base = ctx.getTransform();
+  const clock = (tick + frac) / pb.ticksPerSecond;
+  ctx.imageSmoothingEnabled = false;
+  let flat = 0;
   for (let i = 0; i < units.length; i++) {
     const u = units[i];
-    if (u === undefined || u.side !== 0) continue;
+    if (u === undefined) continue;
+    const art = unitArt(u.def, u.side);
+    if (art === null) {
+      flat++;
+      continue;
+    }
     pxOf(u, tmp);
     const ur = radiusOf(u);
-    ctx.moveTo(tmp.x + ur, tmp.y);
-    ctx.arc(tmp.x, tmp.y, ur, 0, Math.PI * 2);
+    const attacking = (attackedAt[u.id] ?? 0) >= tick - LIFE_ATTACK;
+    const frames = attacking
+      ? art.attack
+      : pb.isMoving(u)
+        ? art.walk
+        : art.idle;
+    const fps = attacking ? art.attackFps : art.walkFps;
+    const n = frames.length;
+    const img =
+      frames[n > 1 ? (Math.floor(clock * fps) + u.id) % n : 0] ?? frames[0];
+    if (img === undefined) continue;
+    // Pre-rotated for side B (it faces south at rest).
+    const k = (pb.facing(u) - (u.side === 0 ? 0 : 4)) & 7;
+    if (k === 0) {
+      ctx.drawImage(img, tmp.x - ur, tmp.y - ur, ur * 2, ur * 2);
+    } else {
+      ctx.setTransform(base);
+      ctx.translate(tmp.x, tmp.y);
+      ctx.rotate(k * OCTANT);
+      ctx.drawImage(img, -ur, -ur, ur * 2, ur * 2);
+    }
+    if (k !== 0) ctx.setTransform(base);
   }
-  ctx.fillStyle = own;
-  ctx.fill();
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = theme.outline;
-  ctx.stroke();
-  ctx.beginPath();
-  for (let i = 0; i < units.length; i++) {
-    const u = units[i];
-    if (u === undefined || u.side === 0) continue;
-    pxOf(u, tmp);
-    const ur = radiusOf(u);
-    ctx.moveTo(tmp.x + ur, tmp.y);
-    ctx.arc(tmp.x, tmp.y, ur, 0, Math.PI * 2);
+  spriteStats.drawn += units.length - flat;
+  spriteStats.units += units.length - flat;
+  if (flat > 0) {
+    drawFlatUnits(
+      ctx,
+      units,
+      pxOf,
+      radiusOf,
+      own,
+      foe,
+      theme.outline,
+      theme.boardBg,
+    );
   }
-  ctx.fillStyle = foe;
-  ctx.fill();
-  ctx.stroke();
-  ctx.beginPath();
-  for (let i = 0; i < units.length; i++) {
-    const u = units[i];
-    if (u === undefined || u.side === 0) continue;
-    pxOf(u, tmp);
-    const dd = radiusOf(u) * 0.5;
-    ctx.moveTo(tmp.x, tmp.y - dd);
-    ctx.lineTo(tmp.x + dd, tmp.y);
-    ctx.lineTo(tmp.x, tmp.y + dd);
-    ctx.lineTo(tmp.x - dd, tmp.y);
-    ctx.closePath();
-  }
-  ctx.fillStyle = theme.boardBg;
-  ctx.fill();
 
   // Health bars of damaged units, when zoomed in.
   if (z >= 18) {
