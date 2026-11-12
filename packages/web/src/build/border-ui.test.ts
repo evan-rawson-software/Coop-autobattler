@@ -243,7 +243,7 @@ describe('rates', () => {
     expect(flow.underSupplied.has(b.id)).toBe(true);
     // The label does not depend on the dry-run length setting.
     for (const ticks of [0, 1, 100, 5000]) {
-      const f = computeFlowView(s.run.team, content, simConfig, ticks);
+      const f = computeFlowView(team, content, simConfig, ticks);
       expect(f?.supply, `at ${String(ticks)} ticks`).toEqual(flow.supply);
     }
     expect(
