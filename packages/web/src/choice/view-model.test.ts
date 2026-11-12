@@ -90,7 +90,7 @@ describe('the Overload line', () => {
   test('a smaller stronghold Core falls first: outlasting it wins', () => {
     // The small (stronghold) Core falls at 3:30; the larger one would fall later.
     expect(overloadLine(simConfig, 500, 42)).toBe(
-      "Overload at 3:00 would destroy the stronghold's Core first (at 3:30) — outlasting it wins.",
+      "Overload at 3:00 would destroy the stronghold's Core first at 3:30 — outlasting it wins.",
     );
   });
   test('a larger stronghold Core: the party Core falls first', () => {
