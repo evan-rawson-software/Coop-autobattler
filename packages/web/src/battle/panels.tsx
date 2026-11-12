@@ -6,6 +6,7 @@ import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
 import { Panel } from '../shell/AppShell.js';
 import type { WebContent } from '../content.js';
+import { bossLabel } from '../run/display-text.js';
 import { ChartLegend, LineChart, type ChartMarker } from './charts.js';
 import {
   breachEntries,
@@ -27,7 +28,7 @@ import type { OpponentInfo } from './types.js';
 
 export const KIND_LABEL: Readonly<Record<OpponentInfo['kind'], string>> = {
   ghost: 'Ghost',
-  boss: 'Boss',
+  boss: bossLabel(),
   pve: 'PvE threat',
 };
 

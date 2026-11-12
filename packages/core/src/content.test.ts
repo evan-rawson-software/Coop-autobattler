@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import buildingsJson from '../../../content/buildings.json';
+import eventsJson from '../../../content/events.json';
+import threatsJson from '../../../content/threats.json';
 import presentationJson from '../../../content/presentation.en.json';
 import resourcesJson from '../../../content/resources.json';
 import terrainJson from '../../../content/terrain.json';
@@ -538,6 +540,46 @@ describe('loadPresentation', () => {
     expect(presentationErrors({ buildings: {}, units: {} })).toMatch(
       /"terrain" must be an object/,
     );
+  });
+
+  test('rejects a template with an unknown placeholder', () => {
+    const data = clone(raw.presentation) as {
+      templates: { effects: Record<string, string> };
+    };
+    data.templates.effects['wall'] = 'Blocks {nothing} · {health} health';
+    data.templates.effects['core'] = 'Uses {res_nope} · {health} health';
+    const text = presentationErrors(data);
+    expect(text).toMatch(/\["wall"\]: unknown placeholder \{nothing\}/);
+    expect(text).toMatch(/\["core"\]: placeholder \{res_nope\} is not a known/);
+  });
+
+  test('every archetype, event type and modifier has display text', () => {
+    const threats = threatsJson as { archetypes: { id: string }[] };
+    const events = eventsJson as {
+      events: { type: string }[];
+      modifiers: { id: string }[];
+    };
+    const full = {
+      ...context,
+      archetypeIds: threats.archetypes.map((a) => a.id),
+      eventTypes: events.events.map((e) => e.type),
+      modifierIds: events.modifiers.map((m) => m.id),
+    };
+    expect(loadPresentation(raw.presentation, full).ok).toBe(true);
+    const data = clone(raw.presentation) as {
+      archetypes: Record<string, unknown>;
+      events: Record<string, unknown>;
+      modifiers: Record<string, unknown>;
+    };
+    delete data.archetypes['arch_rusher'];
+    delete data.events['shrine'];
+    delete data.modifiers['mod_stout_walls'];
+    const result = loadPresentation(data, full);
+    if (result.ok) throw new Error('expected failure');
+    const text = result.errors.join('\n');
+    expect(text).toMatch(/archetypes: missing entry for "arch_rusher"/);
+    expect(text).toMatch(/events: missing entry for "shrine"/);
+    expect(text).toMatch(/modifiers: missing entry for "mod_stout_walls"/);
   });
 });
 

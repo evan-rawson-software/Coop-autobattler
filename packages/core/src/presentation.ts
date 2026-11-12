@@ -1,7 +1,9 @@
 /**
  * Presentation text for one language: a display name and a short description
- * per building, unit, and terrain feature. Rules never live here. Descriptions
- * may mention a resource as `{res_x}` (see `formatText`).
+ * per building, unit, and terrain feature, plus display text for archetypes,
+ * event types and run modifiers, and the sentence templates the screens fill
+ * in. Rules never live here. Texts may mention a resource as `{res_x}` (see
+ * `formatText`).
  */
 
 import { sortedKeys } from './hash.js';
@@ -23,10 +25,66 @@ export interface PresentationEntry {
   readonly description: string;
 }
 
+export interface ArchetypeEntry extends PresentationEntry {
+  /** What the archetype tests of the player's factory. */
+  readonly tests: string;
+}
+
+export interface EventEntry {
+  readonly name: string;
+  readonly icon: string;
+  /** One line of flavour; may be empty. */
+  readonly flavour: string;
+}
+
+/** Sentence templates with `{slot}` placeholders (see `TEMPLATE_SLOTS`). */
+export interface PresentationTemplates {
+  /** Building effect lines, by template key. */
+  readonly effects: Readonly<Record<string, string>>;
+  /** Building kind labels, by building kind. */
+  readonly kinds: Readonly<Record<string, string>>;
+  /** The words after `Needs:` when a building takes no named resource. */
+  readonly needs: { readonly nothing: string; readonly any: string };
+}
+
 export interface PresentationConfig {
   /** Entry for a building, unit, or terrain ID; undefined if unknown. */
   get(id: string): PresentationEntry | undefined;
+  /** Display text of a PvE archetype ID. */
+  archetype(id: string): ArchetypeEntry | undefined;
+  /** Display text of an event TYPE (`workshop`, ...). */
+  event(type: string): EventEntry | undefined;
+  /** Display name of a run modifier ID. */
+  modifier(id: string): { readonly name: string } | undefined;
+  readonly templates: PresentationTemplates;
 }
+
+/**
+ * The slots each effect template may use, besides `{res_x}` resource IDs.
+ * The web fills them from the building's rules numbers.
+ */
+export const TEMPLATE_SLOTS: Readonly<Record<string, readonly string[]>> = {
+  source: ['seconds', 'health'],
+  splitter: ['outs', 'health'],
+  merger: ['ins', 'health'],
+  crossover: ['health'],
+  unit_producer: ['unit', 'cost', 'resource', 'health'],
+  wall: ['health'],
+  gate: ['health'],
+  turret: ['damage', 'range', 'seconds', 'cost', 'resource', 'health'],
+  source_speed: ['step', 'cost', 'resource', 'max', 'health'],
+  unit_strength: ['step', 'cost', 'resource', 'max', 'health'],
+  core: ['health'],
+};
+
+const KIND_LABEL_KEYS = [
+  'source',
+  'route',
+  'unit_producer',
+  'defense',
+  'economy',
+  'core',
+] as const;
 
 export interface PresentationLoadContext {
   readonly buildings: BuildingConfig;
@@ -34,6 +92,14 @@ export interface PresentationLoadContext {
   readonly terrain: TerrainConfig;
   /** When given, `{res_x}` placeholders are checked against it. */
   readonly resources?: ResourceConfig;
+  /**
+   * When given, every one of these must have display text and no other ID
+   * may (archetypes and modifiers by ID, events by type). They come from
+   * threats.json and events.json, which load after the files above.
+   */
+  readonly archetypeIds?: readonly string[];
+  readonly eventTypes?: readonly string[];
+  readonly modifierIds?: readonly string[];
 }
 
 export type PresentationLoadResult = LoadResult<PresentationConfig>;
@@ -65,7 +131,14 @@ export function loadPresentation(
   const errors: string[] = [];
   rejectUnknownKeys(
     data,
-    new Set<string>([...GROUPS, '$schema']),
+    new Set<string>([
+      ...GROUPS,
+      'archetypes',
+      'events',
+      'modifiers',
+      'templates',
+      '$schema',
+    ]),
     'presentation',
     errors,
   );
@@ -114,25 +187,211 @@ export function loadPresentation(
         typeof name === 'string' &&
         typeof description === 'string'
       ) {
-        if (context.resources) {
-          for (const ref of [
-            ...placeholderIds(name),
-            ...placeholderIds(description),
-          ]) {
-            if (context.resources.get(ref) === undefined) {
-              errors.push(
-                `${at}: placeholder {${ref}} is not a known resource.`,
-              );
-            }
-          }
-        }
+        checkResources(name, `${at}.name`, context.resources, errors);
+        checkResources(
+          description,
+          `${at}.description`,
+          context.resources,
+          errors,
+        );
         entries.set(id, { name, description });
       }
     }
   }
 
-  if (errors.length > 0) return { ok: false, errors };
-  return { ok: true, config: { get: (id) => entries.get(id) } };
+  const archetypes = readGroup(
+    data,
+    'archetypes',
+    /^arch_[a-z0-9_]+$/,
+    ['name', 'description', 'tests'],
+    context.archetypeIds,
+    context.resources,
+    errors,
+  );
+  const events = readGroup(
+    data,
+    'events',
+    /^[a-z][a-z0-9_]*$/,
+    ['name', 'icon', 'flavour'],
+    context.eventTypes,
+    context.resources,
+    errors,
+  );
+  const modifiers = readGroup(
+    data,
+    'modifiers',
+    /^mod_[a-z0-9_]+$/,
+    ['name'],
+    context.modifierIds,
+    context.resources,
+    errors,
+  );
+  const templates = readTemplates(data['templates'], context.resources, errors);
+
+  if (errors.length > 0 || templates === undefined) {
+    return { ok: false, errors };
+  }
+  return {
+    ok: true,
+    config: {
+      get: (id) => entries.get(id),
+      archetype: (id) => archetypes.get(id) as ArchetypeEntry | undefined,
+      event: (type) => events.get(type) as EventEntry | undefined,
+      modifier: (id) => modifiers.get(id) as { name: string } | undefined,
+      templates,
+    },
+  };
+}
+
+type Fields = Record<string, string>;
+
+function checkResources(
+  text: string,
+  at: string,
+  resources: ResourceConfig | undefined,
+  errors: string[],
+): void {
+  if (resources === undefined) return;
+  for (const ref of placeholderIds(text)) {
+    if (resources.get(ref) === undefined) {
+      errors.push(`${at}: placeholder {${ref}} is not a known resource.`);
+    }
+  }
+}
+
+/** Read a group of flat string-field entries keyed by ID. */
+function readGroup(
+  data: Record<string, unknown>,
+  group: string,
+  idPattern: RegExp,
+  fields: readonly string[],
+  expectedIds: readonly string[] | undefined,
+  resources: ResourceConfig | undefined,
+  errors: string[],
+): Map<string, Fields> {
+  const out = new Map<string, Fields>();
+  const raw = data[group];
+  if (!isRecord(raw)) {
+    errors.push(`presentation: "${group}" must be an object keyed by ID.`);
+    return out;
+  }
+  if (expectedIds !== undefined) {
+    for (const id of expectedIds) {
+      if (!(id in raw)) {
+        errors.push(`presentation.${group}: missing entry for "${id}".`);
+      }
+    }
+  }
+  const allowed = new Set(fields);
+  for (const id of sortedKeys(raw)) {
+    const at = `presentation.${group}["${id}"]`;
+    const value = raw[id];
+    if (!idPattern.test(id)) {
+      errors.push(`${at}: not a valid ID.`);
+      continue;
+    }
+    if (expectedIds !== undefined && !expectedIds.includes(id)) {
+      errors.push(`${at}: not a defined ID.`);
+      continue;
+    }
+    if (!isRecord(value)) {
+      errors.push(`${at}: must be an object.`);
+      continue;
+    }
+    rejectUnknownKeys(value, allowed, at, errors);
+    const entry: Fields = {};
+    let usable = true;
+    for (const f of fields) {
+      const v = value[f];
+      // Only an event's flavour line may be empty.
+      const mayBeEmpty = f === 'flavour';
+      if (typeof v !== 'string' || (!mayBeEmpty && v.trim() === '')) {
+        errors.push(`${at}: missing or empty "${f}".`);
+        usable = false;
+        continue;
+      }
+      checkResources(v, `${at}.${f}`, resources, errors);
+      entry[f] = v;
+    }
+    if (usable) out.set(id, entry);
+  }
+  return out;
+}
+
+/** Slot names (`{seconds}`) in a template; resource IDs are not slots. */
+function slotsOf(template: string): string[] {
+  return [...template.matchAll(/\{([a-z]+)\}/g)].map((m) => m[1] as string);
+}
+
+function readTemplates(
+  raw: unknown,
+  resources: ResourceConfig | undefined,
+  errors: string[],
+): PresentationTemplates | undefined {
+  if (!isRecord(raw)) {
+    errors.push(
+      'presentation: "templates" must be an object with "effects", "kinds" and "needs".',
+    );
+    return undefined;
+  }
+  rejectUnknownKeys(
+    raw,
+    new Set(['effects', 'kinds', 'needs']),
+    'presentation.templates',
+    errors,
+  );
+  const before = errors.length;
+  const text = (v: unknown, at: string, slots: readonly string[]): string => {
+    if (typeof v !== 'string' || v.trim() === '') {
+      errors.push(`${at}: missing or empty text.`);
+      return '';
+    }
+    checkResources(v, at, resources, errors);
+    for (const slot of slotsOf(v)) {
+      if (!slots.includes(slot)) {
+        errors.push(`${at}: unknown placeholder {${slot}}.`);
+      }
+    }
+    return v;
+  };
+  const exact = (
+    group: string,
+    keys: readonly string[],
+    slotsFor: (key: string) => readonly string[],
+  ): Record<string, string> => {
+    const obj = raw[group];
+    const out: Record<string, string> = {};
+    if (!isRecord(obj)) {
+      errors.push(`presentation.templates: "${group}" must be an object.`);
+      return out;
+    }
+    for (const key of sortedKeys(obj)) {
+      if (!keys.includes(key)) {
+        errors.push(`presentation.templates.${group}["${key}"]: unknown key.`);
+      }
+    }
+    for (const key of keys) {
+      out[key] = text(
+        obj[key],
+        `presentation.templates.${group}["${key}"]`,
+        slotsFor(key),
+      );
+    }
+    return out;
+  };
+  const effects = exact(
+    'effects',
+    sortedKeys(TEMPLATE_SLOTS),
+    (k) => TEMPLATE_SLOTS[k] ?? [],
+  );
+  const kinds = exact('kinds', KIND_LABEL_KEYS, () => []);
+  const needs = exact('needs', ['any', 'nothing'], () => []);
+  if (errors.length > before) return undefined;
+  return {
+    effects,
+    kinds,
+    needs: { nothing: needs['nothing'] as string, any: needs['any'] as string },
+  };
 }
 
 /** Like loadPresentation, but throws one Error listing every problem. */

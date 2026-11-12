@@ -23,7 +23,8 @@ import {
 import type { WebContent } from '../content.js';
 import { isEditStep } from '../build/session.js';
 import { buildingName } from '../build/view-model.js';
-import { effectText, KIND_LABELS, needsText } from './effect-text.js';
+import { effectText, kindLabel, needsText } from './effect-text.js';
+import { archetypeText } from '../run/display-text.js';
 import { count } from '../plural.js';
 import { gateFor, type Gate, type LockDeps } from '../build/lock.js';
 
@@ -157,9 +158,9 @@ export function buildShopView(
         def: o.def,
         name: buildingName(ctx.content, o.def),
         kind: def?.kind ?? 'core',
-        kindLabel: KIND_LABELS[def?.kind ?? 'core'],
+        kindLabel: kindLabel(ctx.content, def?.kind ?? 'core'),
         tier: o.tier,
-        needs: def === undefined ? '' : needsText(def, ctx.content.resources),
+        needs: def === undefined ? '' : needsText(def, ctx.content),
         effect:
           def === undefined
             ? ''
@@ -254,12 +255,6 @@ export interface NextBattleView {
   } | null;
 }
 
-/** "arch_rusher" to "Rusher": archetypes have no display names in content yet. */
-export function archetypeName(id: string): string {
-  const s = id.replace(/^arch_/, '').replace(/_/g, ' ');
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 export function threatLine(o: PveOptionView): string {
   const s = o.summary;
   const parts = [count(s.totalUnits, 'unit')];
@@ -283,7 +278,7 @@ export function nextBattleView(
       options: info.options.map((o) => ({
         id: o.id,
         difficulty: o.difficulty,
-        archetype: archetypeName(o.archetype),
+        archetype: archetypeText(o.archetype).name,
         threat: threatLine(o),
         rewardGold: o.reward.gold,
       })),

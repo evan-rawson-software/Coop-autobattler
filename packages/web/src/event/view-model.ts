@@ -23,7 +23,7 @@ import {
   effectLine,
   eventText,
   modifierName,
-} from '../run/temporary-text.js';
+} from '../run/display-text.js';
 import { count, plural } from '../plural.js';
 
 function isRecord(v: unknown): v is Record<string, Json> {
