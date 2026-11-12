@@ -1,13 +1,13 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v4.5
+Status: Draft v5.0
 
 ## Encounter types
 
 | Type | Opponent | When | Stakes |
 |------|----------|------|--------|
-| PvE battle (easy / medium / hard) | Scripted waves plus a stronghold, scaled to round, difficulty, and party size | First battle of each round | Reward on win; no reward and no life loss on defeat |
-| PvP battle — ghost | Snapshot of another real party's factory | Second battle of each round | Gold on win; on defeat, lose 1 life and receive a small consolation payout |
+| PvE battle (easy / medium / hard) | Scripted waves plus a stronghold with one Core per player, scaled to round, difficulty, and party size | First battle of each round | Reward on win; no reward and no life loss on defeat |
+| PvP battle — ghost | Snapshot of another real party's board | Second battle of each round | Gold on win; on defeat, lose 1 life and receive a small consolation payout |
 | PvP battle — boss | Generated boss threat | Second battle of each round, when no ghost matches | Same as ghost |
 
 The loop is defined in `01-run-structure.md` RS-1.
@@ -21,8 +21,9 @@ The loop is defined in `01-run-structure.md` RS-1.
   - the run version (`major.minor`; see TA-8) and a snapshot format version
   - party size
   - round number
-  - full team state: the party's map, Core position, buildings, conduits,
-    and run modifiers (CB-32, CP-6)
+  - full team state: the party's map, every player's Core position,
+    buildings and conduits with their owners (border links included), and
+    run modifiers (CB-32, CP-6)
   - the run's ID and seed, and a signature (TA-22a)
   - party members' Steam IDs (display names are looked up from Steam)
   - metadata: lives remaining and PvP record at that point (for optional
@@ -55,9 +56,12 @@ The loop is defined in `01-run-structure.md` RS-1.
   depends on what the Steam storage mechanism can query (TA-17).
 - **MM-5 [DECIDED]** If no eligible snapshot exists, a **PvE boss** is
   generated instead, based on the party's progress (see below).
-- **MM-6 [PROPOSED]** The ghost's factory runs in the standard simulation
+- **MM-6 [PROPOSED]** The ghost's board runs in the standard simulation
   against the party's, the two boards facing each other across a freshly generated neutral zone
-  (CB-8, CB-28).
+  (CB-8, CB-28). **The ghost party's plots face the party's plots one to
+  one** [DECIDED]: each player's plot has exactly one enemy plot directly
+  opposite, and that plot's Core is the first target of the player's units
+  (CB-15b).
   The original ghost party is not notified and is not affected by the result.
   (Optional later: "your ghost won N fights" stat.)
 - **MM-7 [PROPOSED]** Opponent selection and the combat seed are chosen
@@ -96,7 +100,9 @@ rows. See `docs/rules-reference.md`, "Bundled ghosts".
   2. Pick a **boss template** valid for that depth band: a threat profile
      (CB-29): a wave schedule and a stronghold with a signature mechanic.
   3. Spend the budget on wave size and composition over time and on the
-     stronghold's health and defenses, multiplied by party size (CP-7).
+     stronghold's health and defenses, multiplied by party size (CP-7). The
+     stronghold has one Core per player, and its total Core health is split
+     evenly between them (CB-29).
   4. Emit a threat profile (CB-34). Bosses are scripted threats, not
      factories.
 - **MM-10 [PROPOSED]** A boss should be tuned to be roughly as dangerous as
@@ -135,7 +141,9 @@ rows. See `docs/rules-reference.md`, "Bundled ghosts".
   accepted risk with limited damage; see "Trust model" (TA-21 to TA-24).
 - **MM-17 [PROPOSED]** Every downloaded snapshot is validated before use: its signature (TA-22a),
   schema, legal placement on its own map (sources on nodes, nothing on
-  natural features, a valid Core position), a map that the generator could
+  natural features, every building and conduit inside its owner's plot, one
+  valid Core position per player inside that player's plot, legal border
+  links), a map that the generator could
   have produced, and a plausibility bound on total power for its round
   (TA-22). The generator and the numbers used for these checks are the
   installed version's; a snapshot from a run that spanned an update is
@@ -148,6 +156,11 @@ rows. See `docs/rules-reference.md`, "Bundled ghosts".
   from templates and scaled by the same budget function as bosses, with a
   multiplier per difficulty (easy < medium < hard; see SC-1) and by party
   size (CP-7).
+- **MM-18a [DECIDED]** **PvE and PvP follow the same rules.** Every PvE
+  opponent, bosses included, has one Core per player. The opponent's total
+  Core health is split evenly between its Cores, and each wave unit heads
+  first for the Core of the plot it enters (CB-29). The party wins when all
+  of the opponent's Cores are destroyed.
 - **MM-19 [DECIDED/PROPOSED detail]** The party is offered easy, medium, and
   hard each round (RS-3). Each option shows the enemy archetype (rusher,
   fortress, escalator, …) and the reward; the party votes (CP-16). The three options may be different

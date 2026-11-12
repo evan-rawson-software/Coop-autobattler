@@ -1,6 +1,6 @@
 # 06 — Technical Architecture
 
-Status: Draft v4.5
+Status: Draft v5.0
 
 ## Direction
 
@@ -48,9 +48,10 @@ tune them, as cheaply as possible. It is a prototype, not the product.
   boss-fallback rules for real, minus the online part.
 - **TA-43 [PROPOSED]** **Larger boards can be tried offline.** The
   simulation supports boards of 1–4 plots from the start, and a debug mode
-  lets one person build on a multi-plot board to see how the factory plays
-  at co-op sizes before any networking exists. Shared editing itself cannot
-  be tested until co-op is built.
+  lets one person build every plot of a multi-plot board, acting as each
+  player in turn, to see how the factories and their border links play at
+  co-op sizes before any networking exists. Simultaneous editing itself
+  cannot be tested until co-op is built.
 - **TA-44 [PROPOSED]** Delivered as a **static site** (no server), so a
   playtest build is just a link and works on any device. Progress is stored
   in the browser.
@@ -212,7 +213,11 @@ Everything from here down describes the Godot game.
       progress keep their original version and their original pool.
     - **Major** — anything that old saves or snapshots cannot survive
       (format changes, removed buildings, reworked rules). Wipes saves and
-      old ghost data.
+      old ghost data. **The per-player design (issue #124: one Core per
+      player, own-plot building, production intervals, border links) is a
+      major version** [DECIDED]: the team-state, ghost-snapshot and
+      run-state formats all change, old saves and ghosts are wiped, and
+      there is no migration.
   - Two versions are distinguished wherever it matters:
     - the **installed version** — the full `major.minor.patch` of the game
       a player is running;
@@ -333,7 +338,7 @@ The async PvP pool needs: store a snapshot, look up snapshots by
   naturally and stops one prolific player from flooding a bucket.
 - **TA-19 [PROPOSED]** The snapshot needed to fight a ghost is kept small
   (target: tens of kilobytes at most for a four-player board): the map,
-  Core position, buildings, conduits, modifiers, and the run's ID and seed
+  Core positions, buildings, conduits, modifiers, and the run's ID and seed
   (MM-1). The run's action log, which can be much larger, is a separate
   file fetched only when a snapshot is being verified by replay (MM-1d). Ghost lookup and download
   happen during the preceding shop step so the PvP battle starts without a wait; a
@@ -602,7 +607,8 @@ Still unconfirmed:
 
 - **S0 — Steamworks spike** (TA-30). Can run any time; do it early.
 - **S1 — Co-op (local):** host-authoritative session, 2–4 players over
-  loopback/LAN, simultaneous editing of the shared board, giving, votes,
+  loopback/LAN, simultaneous editing (each player in their own plot),
+  border links between players, votes,
   disconnect and re-host.
 - **S2 — Steam:** lobbies, relay networking, leaderboard ghost store,
   Cloud saves, rich presence.
