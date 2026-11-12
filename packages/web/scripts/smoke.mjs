@@ -23,6 +23,7 @@ import { runShopSmoke } from './smoke-shop.mjs';
 import { runSpritesSmoke } from './smoke-sprites.mjs';
 import { runArtSmoke, spritesInfo } from './smoke-art.mjs';
 import { runRunSmoke } from './smoke-run.mjs';
+import { runWorkerSmoke } from './smoke-worker.mjs';
 import {
   CPU_THROTTLE,
   TIMING,
@@ -52,9 +53,19 @@ const MIME = {
   '.png': 'image/png',
 };
 
+// SMOKE_BASE_PATH=/Coop-autobattler/ serves the app under that prefix, like
+// GitHub Pages does, to check that relative asset and worker URLs resolve.
+const basePath = process.env.SMOKE_BASE_PATH ?? '/';
 const server = createServer((req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
-  let file = path.join(distDir, decodeURIComponent(url.pathname));
+  if (!url.pathname.startsWith(basePath)) {
+    res.writeHead(404).end('not found');
+    return;
+  }
+  let file = path.join(
+    distDir,
+    decodeURIComponent(url.pathname.slice(basePath.length)),
+  );
   if (!file.startsWith(distDir)) {
     res.writeHead(403).end();
     return;
@@ -71,7 +82,7 @@ const server = createServer((req, res) => {
   }
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-const baseUrl = `http://127.0.0.1:${server.address().port}/`;
+const baseUrl = `http://127.0.0.1:${server.address().port}${basePath}`;
 
 const failures = [];
 function check(ok, message) {
@@ -1229,7 +1240,7 @@ try {
     }));
     check(noScrollBattle.fits, 'battle: screen fits 1920x1080 without scroll');
     await page.waitForFunction(
-      () => window.__debug.battle.revealed(),
+      () => window.__debug?.battle?.revealed(),
       undefined,
       {
         timeout: slow(10000),
@@ -1250,7 +1261,7 @@ try {
       (await bd('speed')) === 4,
       'battle: the 4x button sets the speed to 4',
     );
-    await page.waitForFunction(() => window.__debug.battle.tick() > 80);
+    await page.waitForFunction(() => window.__debug?.battle?.tick() > 80);
     await page.click('#pause');
     const pausedAt = await bd('tick');
     await waitFrames(page, 24);
@@ -1260,10 +1271,10 @@ try {
     );
     await page.click('#pause');
     await page.waitForFunction(
-      (t) => window.__debug.battle.tick() > t + 20,
+      (t) => window.__debug?.battle?.tick() > t + 20,
       pausedAt,
     );
-    await page.waitForFunction(() => window.__debug.battle.tick() > 230);
+    await page.waitForFunction(() => window.__debug?.battle?.tick() > 230);
     await shot('battle-1-playing');
     await shotDark('art2-battle-mid-fight');
     {
@@ -1402,14 +1413,14 @@ try {
     await open('#battle?p=fortify&o=pve:arch_fortress:3:medium&s=2');
     await waitPhase('playing');
     await page.waitForFunction(
-      () => window.__debug.battle.revealed(),
+      () => window.__debug?.battle?.revealed(),
       undefined,
       {
         timeout: slow(10000),
       },
     );
     await page.click('#speed-4');
-    await page.waitForFunction(() => window.__debug.battle.tick() > 250);
+    await page.waitForFunction(() => window.__debug?.battle?.tick() > 250);
     {
       const pveScene = await page.evaluate(() => window.__debug.battle.scene());
       const enemyKinds = Object.keys(pveScene[1].kinds).filter(
@@ -1469,14 +1480,14 @@ try {
     await open('#battle?p=rush&o=stress&s=1');
     await waitPhase('playing');
     await page.waitForFunction(
-      () => window.__debug.battle.revealed(),
+      () => window.__debug?.battle?.revealed(),
       undefined,
       {
         timeout: slow(10000),
       },
     );
     await page.click('#speed-4');
-    await page.waitForFunction(() => window.__debug.battle.tick() > 250);
+    await page.waitForFunction(() => window.__debug?.battle?.tick() > 250);
     await page.evaluate(() => window.__debug.resetDrawStats());
     await page.evaluate(() => window.__debug.battle.frameTimes(true));
     let peak = 0;
@@ -1526,14 +1537,14 @@ try {
       await page.click('#watch-again');
       await waitPhase('playing');
       await page.waitForFunction(
-        () => window.__debug.battle.revealed(),
+        () => window.__debug?.battle?.revealed(),
         undefined,
         {
           timeout: slow(10000),
         },
       );
       await page.click('#speed-4');
-      await page.waitForFunction(() => window.__debug.battle.tick() > 100);
+      await page.waitForFunction(() => window.__debug?.battle?.tick() > 100);
       await page.click('#skip');
       await waitPhase('summary');
       check(
@@ -1580,6 +1591,8 @@ try {
       'battle: the debug hooks are removed when the screen unmounts',
     );
   }
+
+  await runWorkerSmoke({ browser, baseUrl, check });
 
   // Shop + Build step (W2-7)
   await runShopSmoke({ page, baseUrl, check, shot, shotDark, settle, webDir });

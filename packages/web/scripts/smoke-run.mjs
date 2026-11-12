@@ -769,7 +769,7 @@ export async function runRunSmoke({
     { timeout: slow(40000) },
   );
   await page.click('#pause');
-  await page.waitForFunction(() => window.__debug.battle.paused());
+  await page.waitForFunction(() => window.__debug?.battle?.paused());
   const tickBefore = await page.evaluate(() => window.__debug.battle.tick());
   // Pausing stores the position; wait for the stored value to match it.
   await page.waitForFunction(
@@ -805,7 +805,9 @@ export async function runRunSmoke({
     'battle: the run bar is on the battle screen too',
   );
   await page.click('#skip');
-  await page.waitForFunction(() => window.__debug.battle.phase() === 'summary');
+  await page.waitForFunction(
+    () => window.__debug?.battle?.phase() === 'summary',
+  );
   check(
     await page.evaluate(
       () =>
@@ -825,7 +827,9 @@ export async function runRunSmoke({
   );
   await shot('run-6-battle-summary');
   await reloadSame('the battle summary');
-  await page.waitForFunction(() => window.__debug.battle.phase() === 'summary');
+  await page.waitForFunction(
+    () => window.__debug?.battle?.phase() === 'summary',
+  );
   const goldBeforeReady = (await R.state()).gold;
   await page.click('#battle-ready');
   await waitStep('event_choice');
@@ -985,7 +989,9 @@ export async function runRunSmoke({
     );
   }
   await page.click('#skip');
-  await page.waitForFunction(() => window.__debug.battle.phase() === 'summary');
+  await page.waitForFunction(
+    () => window.__debug?.battle?.phase() === 'summary',
+  );
   const pvpReward = await page.locator('[data-field="reward"]').innerText();
   const pvpWon =
     (await page.locator('[data-field="result-word"]').innerText()) ===
@@ -1045,7 +1051,7 @@ export async function runRunSmoke({
           await page.click('#skip');
         }
         await page.waitForFunction(
-          () => window.__debug.battle.phase() === 'summary',
+          () => window.__debug?.battle?.phase() === 'summary',
         );
         await page.click('#battle-ready');
         break;

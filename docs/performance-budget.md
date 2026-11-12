@@ -204,3 +204,38 @@ its own Core in 12 of them) and none reached `maxBattleTicks`.
 - The numbers do not include the neutral zone generation (one attempt in
   practice, microseconds), the summary timeline (a sample every 50 ticks) or
   any rendering.
+
+## Simulating off the main thread (issue #53)
+
+The Battle screen no longer runs `simulateRecord` on the main thread: it asks a
+module Worker (`packages/web/src/sim-worker/`) and shows "Preparing the
+battle" meanwhile. Browser smoke test, Chromium headless, the dense `stress`
+sample (917 units alive at peak; run with `pnpm smoke`, single runs, shared
+machine):
+
+| Measure                                   | Main thread (fallback) | Worker             |
+| ----------------------------------------- | ---------------------- | ------------------ |
+| Longest main-thread task while preparing  | 408 ms (70 ms + 408)   | 53 to 122 ms (*)   |
+| Simulation time                           | 371 ms                 | 319 to 426 ms      |
+| Animation frames while preparing          | 4                      | 26 to 32           |
+| Request to result (clone and transfer)    | -                      | simulation + 27 to 36 ms |
+| Main-thread setup of playback (`prepare`) | -                      | 24 to 27 ms        |
+
+(*) The remaining long task is the page receiving the message (structured
+clone of the event log into the page's heap) and drawing the first frames of
+the screen. It varied between runs (53, 63, 79 and 122 ms); the smoke check
+limits it to 100 ms (scaled by the CI timing factor).
+
+Transfer: the event log (plain objects) is copied by structured clone, about 30
+ms for the stress battle's log (about 1 to 1.5 MB as JSON). The three typed
+arrays of the record (`coreHp`, `tickStart`) are transferred, not copied. The
+clone cost is roughly linear in the log size, so the largest log in this
+document (5.1 MB, dense tier 3) should take about 100 to 150 ms in total, split
+between the worker (serialising) and the page (deserialising, which is the
+part that blocks); this was estimated, not measured. If it ever matters, send
+the log in chunks of a few thousand events.
+
+Still on the main thread (not measured here, only known to exist): generating
+a four-plot map, ghost validation, enemy path previews, and the playback
+engine re-stepping a battle to the saved tick after a mid-battle reload
+(`Playback.seekTo`).
