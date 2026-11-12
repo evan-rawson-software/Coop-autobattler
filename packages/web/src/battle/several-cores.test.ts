@@ -82,21 +82,43 @@ describe('several Cores per side', () => {
     );
   }, 120_000);
 
-  test('two Cores against four', () => {
+  test('four Cores against four, with different health; two against four is refused', () => {
     const d: BattleDescription = {
       kind: 'versus',
-      input: { teamA: cores(3, 4, 2), teamB: cores(5, 4), seed: 5 },
+      input: {
+        teamA: cores(3, 4),
+        teamB: cores(5, 4),
+        seed: 5,
+        sideOptions: [{ coreHealths: [900, 800, 700, 600] }, {}],
+      },
     };
     const r = simulateRecord(d, content, battleConfig);
     if (!r.ok) throw new Error(r.error.message);
     const pb = new Playback(d, content, battleConfig, r.record);
-    expect(sideStats(pb, content, 0, 10).cores).toHaveLength(2);
+    expect(sideStats(pb, content, 0, 10).cores.map((c) => c.max)).toEqual([
+      900, 800, 700, 600,
+    ]);
     expect(sideStats(pb, content, 1, 10).cores).toHaveLength(4);
     expect(coreMaxima(r.record, 1)).toHaveLength(4);
     pb.skip();
     const sides = r.record.summary.sides;
-    expect(sides[0].cores).toHaveLength(2);
+    expect(sides[0].cores).toHaveLength(4);
     expect(sides[1].cores).toHaveLength(4);
+    // A side with a player without a Core no longer fights (PP-2).
+    const partial = {
+      ...cores(3, 4),
+      cores: cores(3, 4).cores.map((c, p) => (p < 2 ? c : null)),
+    };
+    const bad = simulateRecord(
+      {
+        kind: 'versus',
+        input: { teamA: partial, teamB: cores(5, 4), seed: 5 },
+      },
+      content,
+      battleConfig,
+    );
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.error.code).toBe('core_not_placed');
   }, 120_000);
 
   test('the time-limit text names the ladder', () => {

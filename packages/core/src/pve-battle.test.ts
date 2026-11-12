@@ -58,7 +58,7 @@ function fight(board: ReferenceBoardName, t: ThreatProfile) {
 function denseParty(): TeamState {
   const lab = new Lab(bigBoard().map);
   lab.state = bigBoard();
-  lab.core(40, 6, 1);
+  lab.allCores(6);
   return lab.state;
 }
 
@@ -128,13 +128,13 @@ describe('running a PvE battle', () => {
     const sim = r.battle.sim;
     expect(
       sim.health.find((h) => h.side === 1 && 'core' in h && h.core === 0)?.hp,
-    ).toBe(t.stronghold.coreHealth);
+    ).toBe(got(t.stronghold.cores[0]).health);
     expect(sim.teams[1].buildings).toHaveLength(t.stronghold.buildings.length);
     expect(sim.teams[1].map.features).toHaveLength(0);
     expect(sim.teams[1].map.nodes).toHaveLength(0);
     expect(sim.boards[1].sources).toHaveLength(0);
     expect(r.battle.summary().sides[1].coreMaxHealth).toBe(
-      t.stronghold.coreHealth,
+      t.stronghold.cores.reduce((a, c) => a + c.health, 0),
     );
   });
 
@@ -342,7 +342,7 @@ function sweep(): Row[] {
 const LAST_WIN: Record<ReferenceBoardName, number> = {
   rush: 8,
   fortify: 11,
-  poor: 7,
+  poor: 6,
 };
 
 describe('sweep of reference boards against every threat', () => {
@@ -383,8 +383,9 @@ describe('sweep of reference boards against every threat', () => {
     expect(blocks[3]).toBe(0);
     // Since the wide-front pathing (issue #82) the fortify board wins exactly
     // one threat in rounds 11 to 15 (Escalator, medium, round 11); before it
-    // there was none.
-    expect(blocks[2]).toBe(1);
+    // there was none. With the per-player stronghold layouts (issue #138) it
+    // wins two.
+    expect(blocks[2]).toBe(2);
   }, 300_000);
 
   test('archetypes test what they should (criterion 3)', () => {

@@ -20,7 +20,7 @@ import { tierPrice } from './shop.js';
 import { validateTeamState, type TeamState } from './team-state.js';
 
 /** The snapshot format. Bump when a field changes meaning. */
-export const GHOST_SNAPSHOT_FORMAT_VERSION = 4;
+export const GHOST_SNAPSHOT_FORMAT_VERSION = 5;
 
 /** Longest owner id, owner label and run id accepted. */
 export const GHOST_MAX_ID_LENGTH = 128;
@@ -185,7 +185,7 @@ export interface GhostPvpRecord {
 }
 
 export interface GhostSnapshot {
-  readonly formatVersion: 4;
+  readonly formatVersion: 5;
   /** The game version (`major.minor`) the run was played on. */
   readonly gameVersion: string;
   readonly partySize: number;

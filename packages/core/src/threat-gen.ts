@@ -24,6 +24,7 @@ import {
 import {
   addToStash,
   createTeamState,
+  placeCore,
   placeFromStash,
   type TeamState,
 } from './team-state.js';
@@ -46,10 +47,17 @@ export interface StrongholdBuilding {
   readonly rotation: number;
 }
 
+/** One Core of a stronghold: its position (lowest cell) and health. */
+export interface StrongholdCore {
+  readonly x: number;
+  readonly y: number;
+  readonly health: number;
+}
+
 export interface Stronghold {
-  readonly coreHealth: number;
+  /** `cores[p]` is the Core of plot `p` (PP-14). */
+  readonly cores: readonly StrongholdCore[];
   readonly buildings: readonly StrongholdBuilding[];
-  readonly corePosition: { readonly x: number; readonly y: number };
 }
 
 export interface ThreatProfile {
@@ -93,6 +101,12 @@ export function scaleShare(total: number, part: number, whole: number): number {
   return q * part + divFloor(r * part, whole);
 }
 
+/** `share(total, p)` for `n` plots: floor(total / n), plus 1 for p < total mod n. */
+export function shareOf(total: number, p: number, n: number): number {
+  const q = divFloor(total, n);
+  return q + (p < total - q * n ? 1 : 0);
+}
+
 function ceilDiv(a: number, b: number): number {
   return -divFloor(-a, b);
 }
@@ -125,8 +139,8 @@ function defenseOf(
  * 3. Waves: sizes, composition (one `wavesRng.nextInt(2J + 1)` per
  *    composition entry of each non-signature wave, in wave then entry order),
  *    unit counts and the strength conversion.
- * 4. Stronghold: wall and turret counts, layout (turret and gap positions
- *    from `holdRng`), Core health.
+ * 4. Stronghold: wall and turret totals shared between the plots, one layout
+ *    per plot (stream `holdRng.child(p)`), Core health split evenly.
  * 5. Content bounds (a safety net): `unitStrengthPercent` is clamped to the
  *    largest value that keeps every unit type within MAX_HEALTH / MAX_DAMAGE,
  *    and the Core health to MAX_HEALTH. With the shipped content no threat of
@@ -251,53 +265,56 @@ export function generateThreat(
   const wall = defenseOf(content.buildings, 'wall');
   const turret = defenseOf(content.buildings, 'turret');
   const fp = coreFootprint(content.buildings);
-  const idealWalls = Math.min(
+  const wallsTotal = Math.min(
     divFloor(mulPct(strongholdBudget, sh.wallSharePercent), wall.price),
     threats.maxWallsPerPlot * partySize,
   );
-  const idealTurrets = Math.min(
+  const turretsTotal = Math.min(
     divFloor(mulPct(strongholdBudget, sh.turretSharePercent), turret.price),
     threats.maxTurretsPerPlot * partySize,
   );
-  const plan = layoutStronghold(
-    sh.layout,
-    threats.layouts,
-    {
-      width: partySize * mapgen.plotWidth,
-      height: mapgen.plotDepth,
-      plotWidth: mapgen.plotWidth,
-      coreWidth: fp.width,
-      coreHeight: fp.height,
-    },
-    partySize,
-    idealWalls,
-    idealTurrets,
-    holdRng,
-  );
-  const buildings: StrongholdBuilding[] = [
-    ...plan.walls.map((c) => ({
-      def: wall.id,
-      tier: 1,
-      x: c.x,
-      y: c.y,
-      rotation: 0,
-    })),
-    ...plan.turrets.map((c) => ({
-      def: turret.id,
-      tier: 1,
-      x: c.x,
-      y: c.y,
-      rotation: 0,
-    })),
-  ].sort((a, b) => a.y - b.y || a.x - b.x);
-  const spent =
-    plan.walls.length * wall.price + plan.turrets.length * turret.price;
-  const coreHealth = Math.min(
-    MAX_HEALTH,
-    Math.max(
-      threats.minCoreHealth,
-      mulPct(strongholdBudget - spent, sh.coreHealthPerBudget),
-    ),
+  // One layout per plot, around that plot's Core, from its own stream.
+  const plotBoard = {
+    width: mapgen.plotWidth,
+    height: mapgen.plotDepth,
+    plotWidth: mapgen.plotWidth,
+    coreWidth: fp.width,
+    coreHeight: fp.height,
+  };
+  const cores: { x: number; y: number }[] = [];
+  const placed: StrongholdBuilding[] = [];
+  let spent = 0;
+  for (let p = 0; p < partySize; p++) {
+    const plan = layoutStronghold(
+      sh.layout,
+      threats.layouts,
+      plotBoard,
+      1,
+      shareOf(wallsTotal, p, partySize),
+      shareOf(turretsTotal, p, partySize),
+      holdRng.child(p),
+    );
+    const dx = p * mapgen.plotWidth;
+    cores.push({ x: plan.core.x + dx, y: plan.core.y });
+    for (const c of plan.walls) {
+      placed.push({ def: wall.id, tier: 1, x: c.x + dx, y: c.y, rotation: 0 });
+    }
+    for (const c of plan.turrets) {
+      placed.push({
+        def: turret.id,
+        tier: 1,
+        x: c.x + dx,
+        y: c.y,
+        rotation: 0,
+      });
+    }
+    spent +=
+      plan.walls.length * wall.price + plan.turrets.length * turret.price;
+  }
+  const buildings = placed.sort((a, b) => a.y - b.y || a.x - b.x);
+  const coreTotal = Math.max(
+    threats.minCoreHealth * partySize,
+    mulPct(strongholdBudget - spent, sh.coreHealthPerBudget),
   );
 
   return {
@@ -308,7 +325,13 @@ export function generateThreat(
     budget,
     unitStrengthPercent,
     waves,
-    stronghold: { coreHealth, buildings, corePosition: plan.core },
+    stronghold: {
+      cores: cores.map((c, p) => ({
+        ...c,
+        health: Math.min(MAX_HEALTH, shareOf(coreTotal, p, partySize)),
+      })),
+      buildings,
+    },
   };
 }
 
@@ -318,7 +341,7 @@ export function generateThreat(
 /**
  * The stronghold of a profile as a team state: a board of the party's size
  * (`partySize * plotWidth` by `plotDepth`) with no features and no nodes, the
- * Core at `corePosition` and the listed buildings placed, built with the
+ * Cores placed (one per plot) and the listed buildings placed, built with the
  * ordinary team-state operations (so every placement rule is checked). The
  * buildings get instance IDs 1, 2, ... in list order and owner = the plot
  * they stand in. Throws if anything is rejected: that is a generator bug.
@@ -337,20 +360,15 @@ export function buildStronghold(
     features: [],
     nodes: [],
   });
-  // The stronghold's single Core stands mid-board, which is not inside one
-  // player's plot, so it is stored directly instead of through `placeCore`
-  // (PP-2). PvE strongholds get one Core per player in issue #138.
-  state = {
-    ...state,
-    cores: state.cores.map((c, p) =>
-      p === 0
-        ? {
-            x: profile.stronghold.corePosition.x,
-            y: profile.stronghold.corePosition.y,
-          }
-        : c,
-    ),
-  };
+  for (const [p, core] of profile.stronghold.cores.entries()) {
+    const placed = placeCore(state, content, mapgen, p, core);
+    if (!placed.ok) {
+      throw new Error(
+        `Threat stronghold: the Core of plot ${String(p)} was rejected (${placed.reason}).`,
+      );
+    }
+    state = placed.state;
+  }
   for (const b of profile.stronghold.buildings) {
     const owner = Math.min(
       size - 1,
@@ -424,7 +442,10 @@ export interface ThreatSummary {
   readonly totalUnits: number;
   /** Tick of the first wave, or null when there are no waves. */
   readonly firstWaveTick: number | null;
+  /** Total health over all Cores. */
   readonly coreHealth: number;
+  /** The number of Cores. */
+  readonly cores: number;
   readonly walls: number;
   readonly turrets: number;
 }
@@ -451,7 +472,8 @@ export function threatSummary(
       (a, w) => (a === null || w.tick < a ? w.tick : a),
       null,
     ),
-    coreHealth: profile.stronghold.coreHealth,
+    coreHealth: profile.stronghold.cores.reduce((a, c) => a + c.health, 0),
+    cores: profile.stronghold.cores.length,
     walls,
     turrets,
   };

@@ -177,7 +177,7 @@ describe('taking snapshots', () => {
     expect(canonicalJson(JSON.parse(JSON.stringify(snap)))).toBe(
       canonicalJson(snap),
     );
-    expect(snap.formatVersion).toBe(4);
+    expect(snap.formatVersion).toBe(5);
     expect(snap.gameVersion).toBe('0.1');
     expect(snap.partySize).toBe(1);
     expect(snap.mapSeed).toBe(7);

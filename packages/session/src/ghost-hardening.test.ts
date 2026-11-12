@@ -424,8 +424,8 @@ describe('format 3 and one Core (issue #139, #135)', () => {
 
   test('a format-2 snapshot (before border links) is rejected, and so is any other format', () => {
     const good = goodSnapshot(2);
-    expect(good.formatVersion).toBe(4);
-    for (const v of [1, 2, 3, 5, 0, '4']) {
+    expect(good.formatVersion).toBe(5);
+    for (const v of [1, 2, 3, 4, 0, '5']) {
       const r = validateGhostSnapshot(
         { ...clone(good), formatVersion: v },
         ctx,

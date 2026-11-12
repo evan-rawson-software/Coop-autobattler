@@ -29,7 +29,7 @@ function fakeRecord(
   const state = {
     runId,
     runVersion: '0.1',
-    formatVersion: 7,
+    formatVersion: 8,
     seed: 5,
     actionCounter: 0,
     actionLog: [],

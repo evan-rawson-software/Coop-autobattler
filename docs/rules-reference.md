@@ -57,7 +57,7 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | Rule | What it specifies | Status |
 | ---- | ----------------- | ------ |
 | PP-1 | Ownership and plot checks on every board operation; conduits have an owner | **implemented** (issue #129) |
-| PP-2 | One Core per player: team state, positions, `placeCore`, health | **implemented** (issues #128 and #132); `core_not_placed` names the side and the lowest player without a Core, and fires only for a side with no Core at all: the per-player check comes with issue #138 (PvE strongholds have one Core until then) |
+| PP-2 | One Core per player: team state, positions, `placeCore`, health | **implemented** (issues #128, #132 and #138); `core_not_placed` names the side and the lowest player without a Core |
 | PP-3 | Core placement step: each player places their own Core, no vote | **implemented** (issue #131) |
 | PP-4 | Border links | **implemented** (issues #135 and #136; "Conduits", "Mid-battle removal", "One battle tick" step 6) |
 | PP-5 | Collector flow rate by tier | **implemented** (issue #130; "One tick: `stepFlow`", step 3, and "Collector rate") |
@@ -68,10 +68,10 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-10 | End conditions and the tiebreak ladder with several Cores | **implemented** (issue #132; "Battles") |
 | PP-11 | A unit's owner and target Core; one movement field per target Core; a unit also attacks any enemy Core within reach, target or not | **implemented** (issue #133; "The arena", "One battle tick", "Goals and movement fields", "Side options", "Resolution order") |
 | PP-12 | Enemy-path preview per Core | **implemented** (issue #133; "Enemy-path preview") |
-| PP-14 | PvE strongholds and bosses with one Core per player | not yet implemented (issue #138) |
+| PP-14 | PvE strongholds and bosses with one Core per player | **implemented** (issue #138; "PvE threats", "Side options") |
 | PP-15 | Sealed-producer check per owner; map rule per plot | map rule **implemented** (issue #129); sealed check per owner **implemented** (issue #131) |
 | PP-16 | Party votes and run streams without the Core vote | **implemented** (issue #131) |
-| PP-17 | Formats, version, ghost validation | partly implemented (issues #139, #160, #131, #135): major version 1.0, snapshot format 4 (3 added border links, 2 before), run-state format 7 (6 added border links, 5 before), bundled ghosts regenerated, one placed Core per player inside its player's plot (a missing Core is rejected too), border-link legality (`validateTeamState`). Not yet: plot and ownership checks of buildings and the per-owner value bound |
+| PP-17 | Formats, version, ghost validation | partly implemented (issues #139, #160, #131, #135): major version 1.0, snapshot format 5 (4 had one Core per player, 3 added border links, 2 before), run-state format 8 (7 had no Core vote, 6 added border links, 5 before; 8 stores PvE threats with `stronghold.cores`), bundled ghosts regenerated, one placed Core per player inside its player's plot (a missing Core is rejected too), border-link legality (`validateTeamState`). Not yet: plot and ownership checks of buildings and the per-owner value bound |
 
 ### Numbers to be set in the rebalance
 
@@ -167,15 +167,13 @@ positions" and "Team state and placement", and the Core health (issue #132):
 - **Health.** Every Core has the maximum health of the Core definition's
   tier 1 (500), raised by the team's `core_health_percent` modifiers. All
   Cores of a side therefore have the same maximum health (a PvE stronghold
-  is the exception, PP-14).
+  is the exception, PP-14: its Cores share the stronghold's total health).
 - **A battle needs every Core placed**: `core_not_placed` carries the `side`
-  and the lowest `player` index without a Core. **Implemented so far:** a side
-  with no Core placed at all gives `core_not_placed` with the `side` and the
-  `player` (the lowest index, so 0); a side with some Cores placed fights with
-  those (a PvE stronghold still has one Core, until issue #138). The check
-  that every player of a side has a Core follows with issue #138; PvP boards
-  are complete by construction, since a run cannot leave `core_placement`
-  until every player has placed (PP-3).
+  and the lowest `player` index without a Core (**implemented**, issues #131
+  and #138): a side with any player without a Core is refused, side 0 checked
+  first. PvP boards are complete by construction, since a run cannot leave
+  `core_placement` until every player has placed (PP-3), and a PvE stronghold
+  has one Core per plot (PP-14).
 
 ### PP-3. The Core placement step
 
@@ -2817,8 +2815,11 @@ Overload guarantees that battles end. Constants (`content/sim.json`):
   at tick 3100 (start 1800), that is 3 minutes 10 seconds, and the battle
   ends at `endTick` 3101 at the latest.
 - **PvE: the deadline is intended (CB-12, CB-29, #43).**
-  In a PvE battle side 1's Core is the stronghold's, whose health is
-  `coreHealthPerBudget` times the budget, at least `minCoreHealth`. The decay
+  In a PvE battle side 1's Cores are the stronghold's, whose total health is
+  `coreHealthPerBudget` times the budget, at least `minCoreHealth` per Core,
+  split evenly over the party's plots (PP-14; the figures below are the
+  total, from the time when the stronghold had one Core, and each Core of a
+  larger party now has its share only). The decay
   applies equally to both Cores, a flat amount per beat (5, 10, 15, ...), so
   with no other damage the Core with less maximum health falls first, at
   `overloadDeadline(simConfig, coreMaxHealth).decayDestroysTick` for that
@@ -3181,7 +3182,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-2 | `core_not_placed` names the lowest player without a Core. Today it fires only for a side with no Core at all (and names only the side); a side with some Cores fights with those. | `player` named: **implemented** (issue #131); per-player check: not yet implemented (issue #138) |
+| PP-2 | `core_not_placed` names the lowest player without a Core, for any side with a player without a Core. | **implemented** (issues #131, #138) |
 
 Implemented in `packages/core/src/battle.ts` (golden kind `battle`:
 `battle-kind.ts`). **Side 0 is always the party and side 1 the opponent** (the
@@ -3443,7 +3444,7 @@ identically; with none the field is absent.
   spawning producer owner's `unit_strength` ramp bonus (which is capped separately by
   `maxUnitStrengthPercent`; the base is not) and its `unit_strength_percent`
   modifiers.
-- **`coreHealths`**: a list by player index: that player's Core starts with this health (and it is its maximum health in the summary and the time-limit rule) instead of the
+- **`coreHealths`**: a list by player index (a PvE stronghold: one entry per plot, PP-14): that player's Core starts with this health (and it is its maximum health in the summary and the time-limit rule) instead of the
   definition's (before the team's `core_health_percent`); a player without an entry has the definition's. Each entry must be an integer
   from 1 to `MAX_HEALTH`, and `unitStrengthPercent` must keep every unit type
   within the stat bounds even with the modifiers and the largest ramp bonus the
@@ -3455,21 +3456,14 @@ and the tiebreak ladder) is unchanged.
 
 ## PvE threats
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-14 | A stronghold has one Core per player, bosses included; its total Core health is split evenly; walls and turrets are laid out per plot around each Core; the profile's `stronghold` holds `cores`. "Because the stronghold has one Core" below no longer holds. | not yet implemented (issue #138) |
+One Core per player in the stronghold, bosses included (PP-14, issue #138): **implemented**.
 
 Implemented in `threats.ts` (configuration and the budget), `threat-gen.ts`
 (the generator), `threat-layouts.ts` (stronghold layouts), `pve-battle.ts`
 (battles) and `reference-boards.ts` (test boards); golden kinds `threat-gen`
 and `pve-battle`: `threat-kind.ts`. A PvE enemy or boss is a scripted threat,
 not a factory: a schedule of unit **waves** that arrive at the front edge of its
-side, plus a **stronghold** (a Core, walls and turrets) for the party to attack.
+side, plus a **stronghold** (one Core per party plot, walls and turrets) for the party to attack.
 Its strength grows exponentially with the round (SC-1 to SC-7) so that every
 run eventually ends. All numbers are placeholders in `content/threats.json`
 (schema `schemas/threats.schema.json`, loader `loadThreats(data, {units,
@@ -3502,9 +3496,13 @@ player, rounds 1 to 15: 100, 135, 182, 245, 330, 445, 600, 810, 1093, 1475,
 ```
 { archetype, type, round, partySize, budget, unitStrengthPercent,
   waves: [{ tick, unit, count }],
-  stronghold: { coreHealth, buildings: [{ def, tier, x, y, rotation }],
-                corePosition: { x, y } } }
+  stronghold: { cores: [{ x, y, health }],
+                buildings: [{ def, tier, x, y, rotation }] } }
 ```
+
+`cores[p]` is the Core of plot `p`: the position of its lowest cell, in the
+stronghold's board coordinates, and its health. There are exactly `partySize`
+Cores.
 
 It is everything the battle needs; there are no hidden inputs. `waves` are in
 tick order (the units of one wave share a tick, one entry per unit type);
@@ -3573,24 +3571,39 @@ the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
    as in `unitStats`.
 6. Waves are listed per wave tick (`firstTick + k * intervalTicks`), one entry
    per composition entry with a non-zero count.
-7. **Stronghold.** `idealWalls = min(floor(floor(S * wallSharePercent / 100) /
-   wallPrice), maxWallsPerPlot * partySize)`; `idealTurrets` likewise with the
-   turret price and `maxTurretsPerPlot`. The layout (below) places at most
-   those; `spent` is the price of what was placed. `coreHealth =
-   max(minCoreHealth, floor((S - spent) * coreHealthPerBudget / 100))`: every
-   unspent point of the stronghold budget, including what a full layout or the
-   building caps could not absorb, becomes Core health.
-8. **Content bounds.** After steps 1 to 7: `coreHealth = min(MAX_HEALTH,
-   coreHealth)` and `unitStrengthPercent = min(unitStrengthPercent, L)`, where
-   `L` is the smallest `maxStrengthPercent` over all unit types (see "Content
-   bounds"). The unit counts are not changed; the excess strength or health
-   budget is lost. This is only a safety net: with the shipped content neither
-   clamp is reached in rounds 1 to `maxThreatRound` (see "Content bounds").
+7. **Stronghold** (`N = partySize`, `share(total, p) = floor(total / N) + (1 if
+   p < total mod N else 0)`).
+   - `wallsTotal = min(floor(floor(S * wallSharePercent / 100) / wallPrice),
+     maxWallsPerPlot * N)`; `turretsTotal` likewise with the turret price and
+     `maxTurretsPerPlot`. Plot `p` may place up to `share(wallsTotal, p)`
+     walls and `share(turretsTotal, p)` turrets.
+   - For `p = 0 .. N - 1` in order, with the random stream `holdRng.child(p)`
+     (an integer label; nothing is drawn from `holdRng` itself), the
+     archetype's layout (below) is computed on a board that is one plot
+     (`plotWidth` by `plotDepth`) around that plot's Core, then every position
+     is moved by `p * plotWidth`. So `ring` and `open` are one set per plot,
+     and `line` has its one gap per plot, drawn from that plot's stream.
+   - `spent` is the price of everything placed, over all plots. `total =
+     max(minCoreHealth * N, floor((S - spent) * coreHealthPerBudget / 100))`:
+     every unspent point of the stronghold budget, including what a full
+     layout or the building caps could not absorb, becomes Core health. It is
+     split evenly: `cores[p].health = share(total, p)`, so the shares differ by
+     at most 1, the extra points go to the lowest plot indices, and they add
+     up to `total` exactly. The total is the same formula as with one Core, but it has a floor of `minCoreHealth * N`, so it is the old total only when that floor is not reached.
+8. **Content bounds.** After steps 1 to 7: each `cores[p].health =
+   min(MAX_HEALTH, cores[p].health)` and `unitStrengthPercent =
+   min(unitStrengthPercent, L)`, where `L` is the smallest
+   `maxStrengthPercent` over all unit types (see "Content bounds"). The unit
+   counts are not changed; the excess strength or health budget is lost (when
+   a Core is clamped the Cores no longer add up to `total`). This is only a
+   safety net: with the shipped content neither clamp is reached in rounds 1
+   to `maxThreatRound` (see "Content bounds").
 
 ### Layouts (in `threat-layouts.ts`; parameters in `threats.json`)
 
-All in the stronghold's board coordinates. The Core footprint is 2 x 2; the
-Core's `x` is `floor((width - 2) / 2)` (the middle of the board), its `y` the
+All in the board coordinates of one plot, which `generateThreat` shifts by
+`p * plotWidth` for plot `p` (step 7). The Core footprint is 2 x 2; the Core's
+`x` is `floor((plotWidth - 2) / 2)` (the middle of the plot), its `y` the
 layout's `coreRow`. No building uses the front row. "Turrets" are picked by
 `pickTurrets`: candidates are grouped by an ascending key, each group is listed
 by `(y, x)`, and while turrets are still needed the next group is shuffled
@@ -3615,8 +3628,9 @@ with `holdRng.shuffle` and its cells taken from the front.
   column, not on a wall, at Chebyshev distance at least `turretMinDistance`
   from the Core; key = `lineRow - y`.
 
-Because the stronghold has one Core, a `ring` on a wide board is still a
-single ring set around the middle; only the `line` layout is tiled per plot.
+Every layout is computed once per plot around that plot's own Core, so a
+`ring` on a wide board is one ring set per plot (cells outside the plot are
+skipped, as cells outside the board are).
 
 Snapshot of a Fortress stronghold (round 8, medium, party size 1; `D` walls and
 turrets, `C` the Core, the front row on top):
@@ -3644,7 +3658,8 @@ turrets, `C` the Core, the front row on top):
 
 `buildStronghold(profile, content, mapgen)`: a board of `partySize * plotWidth`
 by `plotDepth` with no features and no nodes (`createTeamState`), the Core
-placed with `placeCore` at `corePosition`, then each building with
+with every Core placed with `placeCore(p, x, y)` (each lies inside its plot),
+then each building with
 `addToStash` (owner = the plot it stands in) and `placeFromStash`. Any rejection
 throws: a threat whose stronghold cannot be built is a generator bug.
 
@@ -3656,7 +3671,8 @@ are not `bossOnly`, in file order; `rng = Rng.fromSeed(seed).child("archetypes")
 positions 0, 1, 2 (wrapping around if there are fewer than three; with three or
 more they are distinct). `threatSummary(profile, content)` returns `{archetype,
 type, level (easy 1, medium 2, hard and boss 3), totalUnits, firstWaveTick
-(null if no waves), coreHealth, walls, turrets}`.
+(null if no waves), coreHealth (the total over the Cores), cores (their
+number), walls, turrets}`.
 
 ### PvE battles
 
@@ -3666,10 +3682,16 @@ type, level (easy 1, medium 2, hard and boss 3), totalUnits, firstWaveTick
 threat (so it is the defender, who wins no tie). The stronghold is built as
 above and becomes side 1's team state; side 1 gets the side options
 `scheduledWaves` = `profile.waves`, `freePower` = true, `unitStrengthPercent`
-= `profile.unitStrengthPercent` and `coreHealth` = `stronghold.coreHealth`.
+= `profile.unitStrengthPercent` and `coreHealths` = the Cores' `health` values
+in plot order.
 The neutral zone is generated from the battle seed exactly as for any battle.
 A party whose board width differs from the threat's gives `party_size_mismatch`.
-The result, summary and event log have the shape of a ghost battle; the handle
+The party wins only when every stronghold Core is destroyed (or by the
+tiebreak ladder, Overload and the time limit, as in any battle). Wave units
+follow the unit targeting rule (PP-11): a unit's owner is the plot of the
+column it enters and its first target is the Core opposite that plot (the Core
+of the party plot it faces), so each wave heads for the Core of the area it
+enters. The result, summary and event log have the shape of a ghost battle; the handle
 and the simulation result also carry the `threat`. Wave spawns are
 `unit_spawned` events with `building = 0`.
 
@@ -4247,7 +4269,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-17 | A new major version (saves and the local pool are wiped); snapshot and run-state format numbers are raised by every #124 issue that changes a saved shape (now snapshot `formatVersion` 4, run-state format 7: issue #131 removed the Core vote and added `pending.positions`, and a snapshot needs every player's Core placed). Validation adds plot and ownership checks, one Core per player, legal border links, and a value bound per owner. Bundled ghosts are regenerated. | partly implemented (issues #139, #160, #131): version, formats, bundled ghosts, one placed Core per player inside its own plot (a missing Core is rejected too); the other validation (plot and ownership of buildings, per-owner value) is not yet implemented |
+| PP-17 | A new major version (saves and the local pool are wiped); snapshot and run-state format numbers are raised by every #124 issue that changes a saved shape (now snapshot `formatVersion` 5, run-state format 8: issue #138 changed the stored PvE threat; issue #131 removed the Core vote and added `pending.positions`, and a snapshot needs every player's Core placed). Validation adds plot and ownership checks, one Core per player, legal border links, and a value bound per owner. Bundled ghosts are regenerated. | partly implemented (issues #139, #160, #131): version, formats, bundled ghosts, one placed Core per player inside its own plot (a missing Core is rejected too); the other validation (plot and ownership of buildings, per-owner value) is not yet implemented |
 
 A ghost is another run's party, frozen at the start of one of its PvP battles
 and fought by a later run (MM-1..MM-17, W3-1). Everything below is implemented
