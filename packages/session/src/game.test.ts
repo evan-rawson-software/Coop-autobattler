@@ -917,9 +917,9 @@ describe('the upcomingPve invariant (validateRunState)', () => {
 describe('the run-state format version', () => {
   const deps = fixedDeps(true, true);
 
-  test('a new run has version 4; version 1 and other versions are rejected clearly', () => {
+  test('a new run has version 5; version 1 and other versions are rejected clearly', () => {
     const s = start(deps);
-    expect(s.formatVersion).toBe(4);
+    expect(s.formatVersion).toBe(5);
     expect(validateRunState(clone(s), deps).ok).toBe(true);
     // A version-1 state: the old version, and no upcomingPve field.
     const old = clone(s) as unknown as Record<string, unknown>;
@@ -930,7 +930,7 @@ describe('the run-state format version', () => {
     if (r.ok) return;
     expect(r.errors).toHaveLength(1);
     expect(r.errors[0]).toMatch(/unsupported format version 1/);
-    for (const v of [2, 3, 5, '4', null, 0]) {
+    for (const v of [2, 3, 4, 6, '5', null, 0]) {
       const o = clone(s) as unknown as Record<string, unknown>;
       o['formatVersion'] = v;
       const x = validateRunState(o, deps);

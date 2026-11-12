@@ -60,7 +60,7 @@ export function variedBoards(
             deps,
             {
               runId: `varied-${strategy}-${String(seed)}`,
-              runVersion: '0.1',
+              runVersion: '1.0',
               seed,
               players: NAMES.slice(0, party),
               host: 0,

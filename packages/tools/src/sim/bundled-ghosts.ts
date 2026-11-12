@@ -29,7 +29,7 @@ import {
 import type { SimContext } from './context.js';
 
 /** The game version the bundled snapshots are taken on (`major.minor`). */
-export const BUNDLED_GAME_VERSION = '0.1';
+export const BUNDLED_GAME_VERSION = '1.0';
 /** Party sizes covered. */
 export const BUNDLED_PARTY_SIZES = [1, 2, 3, 4] as const;
 /** The last PvP round covered (each run is stopped after it). */

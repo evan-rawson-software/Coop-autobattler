@@ -237,6 +237,10 @@ function check(
     if (coreRequired && team.state.cores.every((c) => c === null)) {
       err(`team: the Core must be placed in step "${st}".`);
     }
+    if (team.state.cores.filter((c) => c !== null).length > 1) {
+      // A battle supports one Core per side until issue #132.
+      err('team: only one Core may be placed.');
+    }
     if (st === 'core_placement' && team.state.cores.some((c) => c !== null)) {
       err('team: the Core is already placed in step "core_placement".');
     }

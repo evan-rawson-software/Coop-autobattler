@@ -80,7 +80,7 @@ function playOne(
 ): Played {
   const run = {
     runId: `bot-${strategy}-${String(seed)}`,
-    runVersion: '0.1',
+    runVersion: '1.0',
     seed,
     players: NAMES.slice(0, args.party),
     host: 0,

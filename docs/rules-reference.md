@@ -71,7 +71,7 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-14 | PvE strongholds and bosses with one Core per player | not yet implemented (issue #138) |
 | PP-15 | Sealed-producer check per owner; map rule per plot | map rule **implemented** (issue #129); sealed check per owner: not yet implemented (issue #131) |
 | PP-16 | Party votes and run streams without the Core vote | not yet implemented (issue #131) |
-| PP-17 | Formats, version, ghost validation | not yet implemented (issue #139) |
+| PP-17 | Formats, version, ghost validation | partly implemented (issue #139): major version 1.0, snapshot format 2, run-state format 5, bundled ghosts regenerated, and at most one placed Core in snapshots and saves. Not yet: plot, ownership, border-link and per-owner value checks (they wait for #129, #135, #131) |
 
 ### Numbers to be set in the rebalance
 
@@ -675,8 +675,8 @@ unaffected by this rule.
   emptied, as for any major release (TA-8). There is no migration.
 - **Team state**: `cores` in place of `core` (PP-2); `owner` on every conduit
   (PP-1); conduit ends may be border spots (PP-4).
-- **Ghost snapshot**: `formatVersion` 2 (today 1). **Run state**: format 5
-  (today 4). Older values are rejected.
+- **Ghost snapshot**: `formatVersion` 2 (1 before). **Run state**: format 5
+  (4 before). Older values are rejected.
 - **Ghost validation** (`validateGhostSnapshot`) adds, through
   `validateTeamState`: every Core placed and inside its player's plot; every
   building inside its owner's plot; every conduit and half owned and placed
@@ -4300,7 +4300,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-17 | Snapshot `formatVersion` 2, run-state format 5, a new major version (saves and the local pool are wiped). Validation adds plot and ownership checks, one Core per player, legal border links, and a value bound per owner. Bundled ghosts are regenerated. | not yet implemented (issue #139) |
+| PP-17 | Snapshot `formatVersion` 2, run-state format 5, a new major version (saves and the local pool are wiped). Validation adds plot and ownership checks, one Core per player, legal border links, and a value bound per owner. Bundled ghosts are regenerated. | partly implemented (issue #139): version, formats, bundled ghosts, at most one placed Core; the other validation waits for #129, #135, #131 |
 
 A ghost is another run's party, frozen at the start of one of its PvP battles
 and fought by a later run (MM-1..MM-17, W3-1). Everything below is implemented
@@ -4312,7 +4312,7 @@ Ghosts are switched on by giving the run's deps `ghosts` (`createGameDeps(...,
 
 ### Format (`schemas/ghost-snapshot.schema.json`)
 
-`formatVersion` (1), `gameVersion` (`major.minor`, the run's `runVersion`),
+`formatVersion` (2), `gameVersion` (`major.minor`, the run's `runVersion`),
 `partySize`, `round`, `mapSeed` and `team` (the whole team state: map, Core,
 buildings, stash, conduits, modifiers), `owner` (`{id, label}`; the id is a
 stable install identifier, the label is shown to opponents), `runId`, `lives`
@@ -4429,7 +4429,7 @@ Measured: a 10-round solo run beside 16 owners went from 264,717 bytes to about
 Every candidate, and a ghost inside a loaded run state, must pass all of:
 
 1. **Shape and size**: no unknown fields at any level (`runSeed` and
-   `actionLog` are reserved and rejected), `formatVersion` 1, `gameVersion` as
+   `actionLog` are reserved and rejected), `formatVersion` 2, `gameVersion` as
    `major.minor`, sizes and ids within their limits (labels printable, at most
    40 characters). Checked first, on the raw value, stopping at the first
    violation: plain JSON only, every number a safe integer (and not `-0`), no string or key with a lone
