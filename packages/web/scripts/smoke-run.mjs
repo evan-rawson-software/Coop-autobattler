@@ -1190,7 +1190,7 @@ export async function runRunSmoke({
   );
   await shot('run-11-main-menu-two-runs');
 
-  // A save from an older version and a damaged one.
+  // A save from an older major version and a damaged one.
   await page.evaluate(
     async ([from, to]) => {
       const db = await new Promise((res, rej) => {
@@ -1204,11 +1204,11 @@ export async function runRunSmoke({
       });
       const old = JSON.parse(JSON.stringify(rec));
       old.runId = to;
-      old.runVersion = '0.0';
+      old.runVersion = '0.9';
       old.createArgs.runId = to;
-      old.createArgs.runVersion = '0.0';
+      old.createArgs.runVersion = '0.9';
       old.state.runId = to;
-      old.state.runVersion = '0.0';
+      old.state.runVersion = '0.9';
       await new Promise((res) => {
         const tx = db.transaction('saves', 'readwrite');
         tx.objectStore('saves').put(old, to);
@@ -1221,41 +1221,16 @@ export async function runRunSmoke({
   );
   await page.reload();
   await page.waitForSelector('#main-menu');
-  await page.waitForFunction(() => window.__debug?.menu?.runIds().length === 4);
-  const oldRow = await page.locator('[data-run="old-version-run"]').innerText();
-  check(
-    /older version: some things may have changed/i.test(oldRow),
-    'main menu: a run saved by an older version says so',
-  );
-  await page.click('[data-run="old-version-run"] [data-action="resume"]');
-  await page.waitForSelector('#version-prompt');
-  check(
-    /some things may have changed/i.test(
-      await page.locator('#version-prompt').innerText(),
-    ),
-    'resuming an older-version run shows the "some things may have changed" prompt',
-  );
-  await shot('run-12-older-version-prompt');
-  await page.click('#version-continue');
-  await page.waitForSelector('#version-prompt', { state: 'detached' });
-  await waitStep('pve_choice');
-  check(
-    (await R.state()).runId === 'old-version-run' &&
-      (await R.state()).step === 'pve_choice',
-    'continuing from the prompt opens the run at its step',
-  );
-  await page.click('#menu-button');
-  await page.waitForSelector('#main-menu');
-  await page.waitForFunction(() => window.__debug?.menu?.runIds().length === 4);
-  // Abandon the old-version copy; discard the damaged one.
-  await page.click('[data-run="old-version-run"] [data-action="abandon"]');
-  await page.click(
-    '[data-run="old-version-run"] [data-action="abandon-confirm"]',
-  );
-  await page.waitForSelector('#run-over');
-  await page.click('#over-menu');
-  await page.waitForSelector('#main-menu');
+  // The save of the older major version is wiped at start-up, with a notice;
+  // the damaged one (no readable version) stays and is listed.
   await page.waitForFunction(() => window.__debug?.menu?.runIds().length === 3);
+  check(
+    (await page.locator('#main-menu').innerText()).match(
+      /from an older version of the game was removed/i,
+    ) !== null &&
+      (await page.locator('[data-run="old-version-run"]').count()) === 0,
+    'main menu: a run saved by an older major version was removed at start-up, with a notice',
+  );
   const damaged = await page.locator('[data-run="broken"]').innerText();
   check(
     /damaged/i.test(damaged),
