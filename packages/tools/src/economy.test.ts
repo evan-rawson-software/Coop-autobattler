@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { describe, expect, test } from 'vitest';
 import {
-  listLegalCorePositionsAnyPlot,
+  listLegalCorePositions,
   loadAllContentOrThrow,
   loadEconomyOrThrow,
   loadMapgenOrThrow,
@@ -81,10 +81,11 @@ describe('run-state.schema.json with shop data', () => {
       deps,
     );
     if (!created.ok) throw new Error(created.detail);
-    const pos = listLegalCorePositionsAnyPlot(
+    const pos = listLegalCorePositions(
       created.state.team.map,
       content,
       mapgenConfig,
+      0,
     )[0];
     if (pos === undefined) throw new Error('no position');
     const go = (s: RunState, intent: Intent): RunState => {

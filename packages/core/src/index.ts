@@ -133,9 +133,7 @@ export type {
 export {
   compareCells,
   coreFootprint,
-  corePlayerAt,
   listLegalCorePositions,
-  listLegalCorePositionsAnyPlot,
   loadMap,
   loadMapOrThrow,
   queryMap,
@@ -170,7 +168,6 @@ export {
   moveBuilding,
   occupancy,
   placeCore,
-  soleCore,
   placeFromStash,
   removeFromStash,
   renderTeamStateAscii,

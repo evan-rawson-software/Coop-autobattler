@@ -1,10 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import {
-  addToStash,
-  listLegalCorePositions,
-  placeFromStash,
-  soleCore,
-} from '@game/core';
+import { addToStash, listLegalCorePositions, placeFromStash } from '@game/core';
 import { createDeps, fixedBattle } from './defaults.js';
 import { applyIntent, createRun, replayRun } from './machine.js';
 import { allowedIntents, openVote, whoIsReady } from './selectors.js';
@@ -369,7 +364,7 @@ describe('bookkeeping', () => {
     });
     const s = placeCoreAll(newRun(deps), deps);
     expect(s.step).toBe('build');
-    expect(soleCore(s.team)).not.toBeNull();
+    expect(s.team.cores.every((c) => c !== null)).toBe(true);
     expect(kit).toBe(1);
     expect(s.perPlayer[0]?.gold).toBe(10);
   });

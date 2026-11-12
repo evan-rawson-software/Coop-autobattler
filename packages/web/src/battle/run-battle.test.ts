@@ -1,4 +1,4 @@
-import { hashJson, soleCore } from '@game/core';
+import { hashJson } from '@game/core';
 import type { BattleDetail, RunState } from '@game/session';
 import { describe, expect, test } from 'vitest';
 import { content } from '../content.js';
@@ -128,7 +128,7 @@ describe('the battle of a run', () => {
 
   test('a changed factory refuses the replay', () => {
     const run = reachStep('pve_summary');
-    const core = soleCore(run.team) as { x: number; y: number };
+    const core = run.team.cores[0] as { x: number; y: number };
     const changed: RunState = {
       ...run,
       team: {
@@ -206,7 +206,7 @@ describe('a battle that cannot be shown', () => {
 
   test('a replay that fails still reports the recorded outcome', () => {
     const run = reachStep('pve_summary');
-    const core = soleCore(run.team) as { x: number; y: number };
+    const core = run.team.cores[0] as { x: number; y: number };
     const changed: RunState = {
       ...run,
       team: {
