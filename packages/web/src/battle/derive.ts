@@ -328,7 +328,42 @@ export interface SideStats {
 /** Ticks the production rate is averaged over (10 seconds at 10 ticks/s). */
 const RATE_WINDOW_TICKS = 100;
 
+const statsCache = new WeakMap<
+  Playback,
+  Map<Side, { sim: unknown; tick: number; tps: number; stats: SideStats }>
+>();
+
+/**
+ * A side's figures at the playback tick. Renders are more frequent than ticks,
+ * so the last result per side is kept while the tick and the sim state stay
+ * the same (the figures depend on nothing else).
+ */
 export function sideStats(
+  pb: Playback,
+  content: WebContent,
+  side: Side,
+  ticksPerSecond: number,
+): SideStats {
+  let bySide = statsCache.get(pb);
+  if (bySide === undefined) {
+    bySide = new Map();
+    statsCache.set(pb, bySide);
+  }
+  const hit = bySide.get(side);
+  if (
+    hit !== undefined &&
+    hit.sim === pb.sim &&
+    hit.tick === pb.tick &&
+    hit.tps === ticksPerSecond
+  ) {
+    return hit.stats;
+  }
+  const stats = computeSideStats(pb, content, side, ticksPerSecond);
+  bySide.set(side, { sim: pb.sim, tick: pb.tick, tps: ticksPerSecond, stats });
+  return stats;
+}
+
+function computeSideStats(
   pb: Playback,
   content: WebContent,
   side: Side,
