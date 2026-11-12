@@ -1,25 +1,45 @@
 # 07 — Open Questions
 
-Status: Draft v4.5
+Status: Draft v5.0
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
-## Q1. Co-op model — decided
+## Q1. Co-op model — decided (issue #124)
 
-One large shared factory board for the whole party (CP-4, V-9). This replaced
-one-board-per-player and removed the question of how separate boards fight
-together. Remaining details:
+Each player has their own plot and their own Core on one continuous
+battlefield (V-13, CP-25). This replaced the one large shared board (V-9,
+CP-4, now superseded), which had itself replaced one separate board per
+player. Decided with it:
 
-- **Ownership.** Proposed: personal gold, shops, and stashes; shared space;
-  anyone can move any building, only the owner can sell (CP-10 to CP-13).
-  Alternative: everything pooled.
+- **Ownership.** Personal gold, shops, and stashes; a player places only
+  buildings they own, only in their own plot; only the owner acts on a
+  building (CP-10, CP-27, CP-28).
+- **No giving** of gold or buildings (CP-29). Border links are the only way
+  to help a partner directly (CP-30, CB-9d).
+- **Losing a battle** takes all of a side's Cores; a destroyed Core switches
+  nothing off (CB-17, CB-17a).
+- **Unit targets:** the opposite Core first, then the nearest (CB-15b).
+- **Resources:** collectors have a flow rate by tier, buildings have a need
+  and a top speed, stores are small, only the Splitter splits (CB-9e,
+  CB-10 to CB-10d).
+
+Open, for the owner to confirm:
+
+- **CB-15c.** Does a unit attack an enemy Core that is not its target when
+  it comes within reach? Written as: no, only when it blocks the way.
+- **CB-24a.** Does an economy building (Overclocker, unit-strength
+  buildings) help only its owner's buildings or the whole party's? Written
+  as: only its owner's.
+
+To be revisited when online play exists: nobody can move a disconnected
+player's buildings (CP-21i).
 
 ## Q2. Factory and battlefield rules
 
-Decided (CB-2 to CB-3e): shared factory; economy is in-battle ramp; defense
-buys time; random resource nodes and natural features; buildings that
-produce units which march on the enemy base; Core fixed for the run,
-everything else movable. Open:
+Decided (CB-2 to CB-3e): a factory of one plot per player; economy is
+in-battle ramp; defense buys time; random resource nodes and natural
+features; buildings that produce units which march on the enemy base; each
+player's Core fixed for the run, everything else movable by its owner. Open:
 
 - Decided: units fight each other when they meet (CB-16); route buildings
   can be destroyed (CB-9a).
@@ -48,8 +68,16 @@ everything else movable. Open:
 - Decided: PvE enemies are scripted waves plus a stronghold (CB-29).
 - Decided: the board never expands; it starts fairly large and its size
   is an endgame constraint (CB-25).
-- Decided: no long-range buildings; defenses only target enemy units on
-  the party's own side (CB-3j).
+- Decided: no long-range buildings; defenses target enemy units on the
+  party's own side and in the neutral zone, never on the enemy's board
+  (CB-3j, CB-18a).
+- Decided: resources are the main limiter, space the second (CB-24). The
+  Overclocker stays with a much lower cap, set in the rebalance (SC-12).
+- Decided: every PvE opponent has one Core per player, its health split
+  evenly; waves head for the Core of the plot they enter (CB-29).
+- Decided: ties and the time limit are judged by Cores standing, then share
+  of total Core health, then overkill, building damage, kills, attacker
+  (CB-33).
 
 ## Q3. Screens
 
@@ -68,8 +96,9 @@ Decided:
 - Battles continue while at least one player remains (CP-21).
 - A disconnected player must return before the run continues; the event
   waits for every player's vote, including theirs (CP-21a, CP-21h).
-- During the shop, the others can shop and move buildings, including the
-  absent player's, but cannot continue past it (CP-21f).
+- During the shop, the others can shop and build in their own plots, but
+  cannot continue past it, and nobody can move the absent player's
+  buildings (CP-21i, which replaces CP-21f).
 - Players can leave at any time; the host can save to resume later; only
   the host can fully abandon a run (CP-21d).
 - The host carries the save; other players hold none (CP-23c).

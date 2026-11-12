@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v4.5
+Status: Draft v5.0
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.
@@ -21,7 +21,9 @@ the specification.
     separately, see SC-5)
 
   The budget is **per plot**: it is multiplied by party size (CP-7), so PvE
-  threat scales linearly with the size of the party's board.
+  threat scales linearly with the size of the party's board. The stronghold
+  has one Core per plot and its total Core health is split evenly between
+  them (CB-29).
 
 - **SC-2 [PROPOSED]** "Budget" is an abstract power currency spent by the
   encounter generator on a threat's wave size and composition over time, its stronghold's
@@ -32,6 +34,9 @@ the specification.
   run (roughly polynomial once the team is full and upgraded), so that the
   curves are guaranteed to cross. Any mechanic that could give unbounded
   multiplicative player scaling must be capped or have diminishing returns.
+  Under V-15 the first cap is supply: a plot has a fixed number of resource
+  nodes and collectors top out at tier 3, so the number of buildings a
+  player can keep running is bounded however much gold they earn.
 - **SC-4 [PROPOSED]** Tuning targets (to be validated by simulation):
   - Early rounds: a competent party can beat hard; easy is close to free.
   - The difficulty a strong party can reliably beat steps down over the run:
@@ -73,18 +78,39 @@ the missed reward (RS-3a). The exponential curve still ends every run:
 first. Gold (next section) is never produced by the factory.
 
 - **SC-8 [PROPOSED]** In-battle ramp (CB-3) must not let the party outgrow
-  PvE indefinitely. Limits, in order of importance: a fixed board size that
-  the factory eventually fills (CB-24, CB-25); caps or diminishing returns on each
-  economy building's in-battle effect; PvE threats whose early pressure grows
-  with depth, leaving less time to ramp. The balance harness must chart
-  party power **over battle time** as well as over rounds.
+  PvE indefinitely. Limits, in order of importance: resource supply, which
+  is fixed by the plot's nodes and the collectors' tiers and which every
+  running building draws on (CB-24, V-15); caps on each economy building's
+  in-battle effect, with a low cap on collector speed-up in particular
+  (SC-12); a fixed board size (CB-25); PvE threats whose early pressure
+  grows with depth, leaving less time to ramp. The balance harness must
+  chart party power **over battle time** as well as over rounds.
+- **SC-12 [DECIDED]** **Collector-boosting buildings (the Overclocker) stay,
+  with a much lower cap** than the current +300%. The number is **to be set
+  in the rebalance**. Constraint: supply must stay the binding limit, so the
+  cap has to be low enough that a boosted collector does not replace buying
+  a higher-tier collector. Proposed target for the rebalance: a fully
+  boosted collector of one tier produces less than an unboosted collector
+  of the next tier.
+- **SC-13 [PROPOSED]** **Balance levers under scarcity.** The numbers that
+  set the game's balance are now, in order: each collector tier's flow
+  rate; the number of nodes per plot; each building's cost per production
+  and shortest time between productions (together its need, CB-10a); store
+  sizes (CB-10b); Core health; the collector speed-up cap (SC-12). A
+  stronger building should mostly cost more supply to run, not only more
+  gold to buy. All of them are placeholders until the rebalance, and every
+  balance finding made before this design (reference boards, bot results,
+  bundled ghosts) is void.
 - **SC-9 [PROPOSED]** The three strategies (CB-21) should each have PvE
   archetypes they are good and bad against, so no single routing is correct
   for a whole run.
 - **SC-11 [PROPOSED]** **Terrain fairness.** Map generation is constrained
-  so that every map has a comparable number of resource nodes per plot,
-  comparable buildable area, and at least one defensible approach, while
-  still differing enough to matter. The balance harness should measure how
+  so that every plot has the same number of resource nodes of each rarity,
+  comparable buildable area, at least one legal Core position, open ground
+  that reaches the plot's own front row without leaving the plot, and at
+  least one defensible approach, while still differing enough to matter.
+  Because a player builds only in their own plot (CP-27), fairness is
+  judged per plot, not per board. The balance harness should measure how
   much win rate varies by map seed.
 - **SC-10 [PROPOSED]** Economy buildings should be clearly worse than attack or
   defense buildings of the same price in a short battle and clearly better in a
@@ -108,8 +134,9 @@ first. Gold (next section) is never produced by the factory.
   at every party size. PvE threats scale by the same
   factor, so no discount curve is needed. Battle
   rewards are paid per player.
-- **EC-4a [PROPOSED]** Giving (CP-11) lets a party pool gold for one
-  player's purchase. With a shared board this is normal play, not a problem.
+- **EC-4a [SUPERSEDED by CP-29, issue #124]** Earlier proposal: giving lets
+  a party pool gold for one player's purchase. No longer in force: gold
+  cannot be given.
 - **EC-5 [PROPOSED]** No interest/banking mechanic in the first playable; add
   only if the economy needs a saving-vs-spending tension.
 - **EC-6 [DECIDED]** A party that loses a PvP battle receives a small

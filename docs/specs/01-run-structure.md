@@ -1,11 +1,12 @@
 # 01 — Run Structure
 
-Status: Draft v4.5
+Status: Draft v5.0
 
 ## Core loop
 
-Before the first round, the party's map is generated and revealed and the
-team places its Core, which then stays put for the whole run (CB-3e, CB-7).
+Before the first round, the party's map is generated and revealed and each
+player places their own Core in their own plot; the Cores then stay put for
+the whole run (CB-3e, CB-7, CP-26).
 
 ```
 Lobby -> Map + Core placement ->
@@ -83,9 +84,10 @@ Lobby -> Map + Core placement ->
 - **RS-5e [PROPOSED]** In the shop each player sees their own offers and
   spends their own gold on buildings and re-rolls (EC-2, CP-10), and can
   sell buildings back.
-- **RS-5f [PROPOSED]** The shop step is also the **build phase**: the whole
-  board is open for placing, moving, rotating, and re-routing, and it is the
-  last stop before the next battle.
+- **RS-5f [PROPOSED]** The shop step is also the **build phase**: each
+  player's own plot is open to that player for placing, moving, rotating,
+  and re-routing (CP-27, CP-28), border links can be drawn and removed
+  (CP-30), and it is the last stop before the next battle.
 - **RS-5g [DECIDED]** **Undo covers layout changes only**: placing, moving,
   rotating, and drawing or erasing conduits can be undone and redone within
   the current shop step, since they are free anyway. Buying, selling, and
@@ -93,7 +95,11 @@ Lobby -> Map + Core placement ->
 
 ## PvP battle
 
-- **RS-5 [DECIDED]** Losing a PvP battle costs **one life**.
+- **RS-5 [DECIDED]** Losing a PvP battle costs **one life** from the party's
+  shared pool, however many of the party's Cores fell. A battle is lost when
+  all of the party's Cores are destroyed (CB-17). Cores destroyed in a
+  battle the party went on to win cost nothing; like all battle damage they
+  are restored for the next battle (CB-11).
 - **RS-5a [PROPOSED]** A boss that replaces a ghost (V-4) is the PvP battle
   for that round and has the same stakes: losing costs one life.
 - **RS-5b [PROPOSED]** There is one PvP battle per round.
@@ -104,8 +110,8 @@ Lobby -> Map + Core placement ->
 - **RS-6 [DECIDED]** **Battle rewards are gold. Buildings are acquired in
   the shop.** The only buildings that do not come from a shop are the
   starting kit (RS-2a). **Arranging** the factory — placing, moving, rotating, and
-  re-routing buildings, drawing conduits, giving to
-  teammates — happens during the shop step (RS-5f), which always comes
+  re-routing buildings, drawing conduits and border links — happens
+  during the shop step (RS-5f), which always comes
   immediately before a battle. No separate prep phase is needed.
 - **RS-6a [PROPOSED]** The next PvE options (archetype and reward) are
   visible during the shop before the PvE battle, so the party can build for
@@ -153,8 +159,10 @@ the party's income to a trickle, so it falls behind the ghosts it meets. See
   every player is ready (CP-17). There are no session-length targets to
   hit; a run takes as long as the party wants to spend thinking.
 - **RS-12b [PROPOSED]** How each step ends:
-  - **Core placement** (start of run) — the party votes on a position; it
-    is fixed once every player has confirmed.
+  - **Core placement** (start of run) — every player places their own Core
+    in their own plot (CP-26) and readies up. A player can change their
+    choice until the step ends; the step ends when every player has placed
+    a Core and is ready. There is no vote.
   - **PvE difficulty choice** — every player votes; the battle starts when
     all have voted.
   - **Battle** — playback ends at a summary; the party moves on when every

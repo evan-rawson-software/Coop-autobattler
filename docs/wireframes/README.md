@@ -13,6 +13,13 @@ starting kit, threat pips, "an even chance to double it", "overload begins
 The specs are the source of truth. Where a wireframe and a spec disagree,
 the spec wins and the wireframe should be corrected.
 
+**The images predate the per-player design (issue #124).** They still show
+one shared board, one Core per side, a vote on the Core position and a
+"Give gold" button. The text below has been updated to the current design
+(each player has their own plot and Core, builds only there, and can link to
+a neighbour across the plot border; there is no giving); the images and
+`screens.html` are redrawn with the screens themselves.
+
 Order in a run: 5 main menu → 6 Core placement → 4 build → then each round:
 7 PvE choice → 1 battle → 8 summary → 2 event → 3 shop + 4 build → PvP
 battle (1, 8) → 2 event → 3 shop + 4 build → … → 9 run over.
@@ -38,10 +45,10 @@ Nobody gives orders here. The party watches its factory start cold, ramp up, and
 
 1. Who you are fighting and what kind of battle it is. A ghost shows the other party's names; a boss says so.
 2. Your board, at the bottom, exactly as you built it. Conduits light up as resources flow.
-3. The neutral zone. Its lakes and cliffs are generated for this battle and revealed when it starts. Buildings do nothing here; only units fight.
-4. The enemy board, at the top. Your units attack buildings in their way and finally the Core.
+3. The neutral zone. Its lakes and cliffs are generated for this battle and revealed when it starts. Nothing can be built here. Turrets can shoot enemy units in it; otherwise only units fight here.
+4. The enemy board, at the top. Your units attack buildings in their way and finally the enemy Cores: first the one opposite their owner's plot, then the nearest still standing.
 5. Units from both sides meet and form a front line.
-6. Your Core's health and how many walls still stand. The enemy's is in the matching panel on the right.
+6. The health of every Core on your side, one bar per player, and how many walls still stand. The enemy's is in the matching panel on the right. A side loses when all of its Cores are destroyed. (The image shows one Core bar per side; it is to be redrawn.)
 7. Live production and army counts, so you can see the ramp.
 8. Army strength over time for both sides. Useful afterwards for seeing when you fell behind.
 9. Speed controls. In co-op, a change applies once everyone agrees.
@@ -66,31 +73,31 @@ The shop always follows the event. Each player has their own offers and their ow
 ![Shop screen wireframe](3-shop.png)
 
 1. Tabs for the two halves of this step.
-2. Your offers. A card shows the kind, what it needs, what it does, and its price.
+2. Your offers. A card shows the kind, what it needs (which resource and how much per second), what it does, and its price.
 3. Gold buys buildings and re-rolls, nothing else.
 4. Your stash: buildings you own that are not on the board. Drag here to sell.
-5. Teammates' gold and stash, with a way to give gold. You do not see their offers. Hidden in solo.
+5. Teammates' gold and stash. You do not see their offers, and gold and buildings cannot be given (CP-29). Hidden in solo. (The image still shows a "Give gold" button from the earlier design; it is to be redrawn.)
 6. What comes next. PvE options are shown ahead of time; a PvP opponent never is.
 7. A small live view of the board that jumps to the Build tab.
 8. Ready is available on both tabs.
 
 ## 4. Build
 
-Where the factory is laid out. Everything except the Core can be moved, and conduits are free. In co-op every player edits this same board at once.
+Where the factory is laid out. Everything of yours except your Core can be moved, and conduits are free. In co-op every player edits at the same time, each in their own plot; the other plots are shown but cannot be edited. (The image shows the earlier design, one shared board with one Core; it is to be redrawn.)
 
 ![Build screen wireframe](4-build.png)
 
-1. Stash. Drag a building onto the board to place it; placing is free.
+1. Stash. Drag a building into your own plot to place it; placing is free.
 2. Tools. Conduit is always available and unlimited. Rotate turns the selected building. Undo covers layout changes only, never buying, selling, or re-rolling.
 3. The board. Lakes and cliffs cannot be built on. Extractors only go on resource nodes.
-4. Conduits, one resource each, coloured by resource. They cannot cross; the splitter is what lets one line feed two buildings.
-5. The Core. Placed once at the start of the run; it has no move handle.
+4. Conduits, one resource each, coloured by resource. They cannot cross; the splitter is what lets one line feed two buildings. A conduit drawn to the border of a neighbour's plot joins the neighbour's conduit at the same spot into a border link; either player can remove their own half.
+5. Your Core. Placed once at the start of the run; it has no move handle. Every player has one.
 6. The front edge, along the top. Enemy units enter along it.
-7. Preview of the routes enemy units would take to the Core with this layout.
-8. Inspector for the selected building: what it needs, what it is getting, what it produces.
+7. Preview of the routes enemy units would take with this layout, each to the Core of the plot it enters.
+8. Inspector for the selected building: what it needs per second, what it is getting, what it produces. For a collector: its flow rate.
 9. Overlays and problems: a dry run of resource flow, the enemy-path preview, and anything unconnected.
 10. Party panel: who is editing where, pings, and the Ready button. The party moves on when everyone is ready.
-11. In co-op each extra player adds a plot to the side. A four-player board still fits the width of a 1080p screen, and everything below the board stays free for panels.
+11. In co-op each extra player adds a plot of their own to the side. A four-player board still fits the width of a 1080p screen, and everything below the board stays free for panels.
 
 ## 5. Main menu
 
@@ -107,15 +114,15 @@ Where a run starts or resumes. Saved runs are listed without limit. The host of 
 
 ## 6. Core placement
 
-The first decision of a run. The whole map is shown, and the party chooses where the Core goes. It cannot be moved afterwards.
+The first decision of a run. The whole map is shown, and every player chooses where their own Core goes, in their own plot. A Core cannot be moved afterwards. (The image shows the earlier design, one Core chosen by vote; it is to be redrawn.)
 
 ![Core placement screen wireframe](6-core-placement.png)
 
 1. The whole map, visible and buildable from the start. It never expands.
 2. The front edge, where enemy units will enter.
-3. The proposed Core position, with the routes enemy units would take to reach it.
+3. Your chosen Core position, with the routes enemy units would take to reach it. You can change it until the step ends.
 4. Resource nodes. Where the rare one sits is a big part of the choice.
-5. In co-op any player can propose a spot and the party confirms it by vote. Solo just confirms.
+5. In co-op every player places their own Core and readies up; there is no vote. The step ends when everyone has placed a Core and is ready. Solo just confirms.
 6. The starting kit, waiting in the stash for the first build.
 
 ## 7. PvE difficulty choice
