@@ -23,9 +23,9 @@ describe('legal and illegal Core positions', () => {
 
   test('the legal set is the one core lists', () => {
     expect(legal.length).toBeGreaterThan(10);
-    expect(legalSet(team, content).size).toBe(legal.length);
+    expect(legalSet(team, content, 0).size).toBe(legal.length);
     for (const c of legal) {
-      expect(verdictAt(team, content, c)).toMatchObject({
+      expect(verdictAt(team, content, c, 0)).toMatchObject({
         ok: true,
         problem: null,
         text: null,
@@ -37,7 +37,7 @@ describe('legal and illegal Core positions', () => {
     const seen = new Set<string>();
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        const v = verdictAt(team, content, { x, y });
+        const v = verdictAt(team, content, { x, y }, 0);
         if (v.ok) continue;
         expect(v.problem).not.toBeNull();
         expect(v.text?.length).toBeGreaterThan(20);
@@ -52,7 +52,7 @@ describe('legal and illegal Core positions', () => {
 
   test('the Core cannot be sent to an illegal cell', () => {
     const bad = { x: width - 1, y: height - 1 };
-    const v = verdictAt(team, content, bad);
+    const v = verdictAt(team, content, bad, 0);
     expect(v.ok).toBe(false);
     const r = (() => {
       try {
@@ -82,7 +82,7 @@ describe('routes to a position', () => {
   const at = legalCore(run)[0] as { x: number; y: number };
 
   test('a legal position has routes, all inside the board', () => {
-    const paths = routesFor(team, content, simConfig, at);
+    const paths = routesFor(team, content, simConfig, at, 0);
     expect(paths).not.toBeNull();
     expect(paths?.length).toBeGreaterThan(0);
     for (const p of paths ?? []) {
@@ -97,7 +97,7 @@ describe('routes to a position', () => {
 
   test('an illegal position has none, and the run is not touched', () => {
     expect(
-      routesFor(team, content, simConfig, { x: width - 1, y: height - 1 }),
+      routesFor(team, content, simConfig, { x: width - 1, y: height - 1 }, 0),
     ).toBeNull();
     expect(soleCore(team)).toBeNull();
   });
@@ -146,8 +146,8 @@ describe('starting kit', () => {
 
 describe('hint line', () => {
   const legalCell = legalCore(run)[0] ?? { x: 0, y: 0 };
-  const good = verdictAt(team, content, legalCell);
-  const bad = verdictAt(team, content, { x: width - 1, y: 0 });
+  const good = verdictAt(team, content, legalCell, 0);
+  const bad = verdictAt(team, content, { x: width - 1, y: 0 }, 0);
   const stale = 'The Core is 2 × 2 and would hang over the edge of the board.';
 
   test('hovering a legal cell after an illegal click shows the legal text', () => {

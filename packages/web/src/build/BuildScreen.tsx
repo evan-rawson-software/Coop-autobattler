@@ -30,6 +30,7 @@ import {
   DryRunTable,
   InspectorPanel,
   OverlaysPanel,
+  ActingSwitch,
   PartyPanel,
   ProblemsPanel,
   StashPanel,
@@ -76,6 +77,7 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
   const run = view?.run ?? null;
   const team = run?.team ?? null;
   const step = run?.step ?? 'none';
+  const acting = view?.acting ?? ME;
   const canvasWrap = useRef<HTMLDivElement>(null);
   const [seedText, setSeedText] = useState(String(DEFAULT_SEED));
 
@@ -163,16 +165,27 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
     () =>
       shared === undefined || run === null || !isEditStep(step)
         ? null
-        : gateFor(run, ME, shared.deps, content),
-    [run, step, shared],
+        : gateFor(run, acting, shared.deps, content),
+    [run, step, shared, acting],
   );
   const sealedIds = gate?.sealed.ids ?? [];
   const sealedKey = sealedIds.join(',');
 
   // Latest data for the overlay drawer and the debug hook.
-  const data = useRef({ ui, team, step, flow, paths, sealed: sealedIds });
-  data.current = { ui, team, step, flow, paths, sealed: sealedIds };
-  const overlayKey = useMemo(() => ({ ui, sealedKey }), [ui, sealedKey]);
+  const data = useRef({
+    ui,
+    team,
+    step,
+    flow,
+    paths,
+    sealed: sealedIds,
+    acting,
+  });
+  data.current = { ui, team, step, flow, paths, sealed: sealedIds, acting };
+  const overlayKey = useMemo(
+    () => ({ ui, sealedKey, acting, run }),
+    [ui, sealedKey, acting, run],
+  );
 
   const drawOverlay = useRef(
     (ctx: CanvasRenderingContext2D, o: OverlayContext) => {
@@ -186,6 +199,8 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
         paths: d.paths,
         sealed: d.sealed,
         legalCore: ctl.legalCorePositions,
+        acting: d.acting,
+        partnerCores: ctl.partnerCores(),
         content,
       });
     },
@@ -265,6 +280,8 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
                 (p) => ({ id: p.id, kind: p.kind, text: p.text }),
               ),
         legalCore: () => [...ctl.legalCorePositions],
+        acting: () => data.current.acting,
+        partnerCores: () => [...ctl.partnerCores()],
         sealed: () => [...data.current.sealed],
         enemyPathCount: () => data.current.paths?.length ?? 0,
         dry: () => data.current.flow?.dry ?? null,
@@ -462,13 +479,21 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
         bottom={
           <Panel title="Core placement" id="panel-core">
             <p>
-              Click a green-dotted cell to place the Core (its lowest-left
-              cell). Your starting kit then appears in the stash.{' '}
+              Click a green-dotted cell in your own area to place the Core (its
+              lowest-left cell). Your starting kit then appears in the stash.{' '}
               {ctl.legalCorePositions.length} legal positions.
             </p>
             <p class="muted">
-              Solo: proposing a position confirms it. In co-op the party votes.
+              Every player places their own Core in their own area. Choosing a
+              position confirms it.
             </p>
+            {run === null ? null : (
+              <ActingSwitch
+                run={run}
+                acting={acting}
+                onActing={(p) => ctl.session?.setActing(p)}
+              />
+            )}
           </Panel>
         }
       >
@@ -485,6 +510,7 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
             team={team}
             model={model}
             ctl={ctl}
+            player={acting}
             locked={gate?.ready === true}
           />
           <ToolsPanel model={model} ctl={ctl} locked={gate?.ready === true} />
@@ -503,7 +529,13 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
           <ProblemsPanel problems={problems} onPick={onPick} />
         </div>
         <div class="dock-col">
-          <PartyPanel run={run} ctl={ctl} gate={gate} />
+          <PartyPanel
+            run={run}
+            ctl={ctl}
+            gate={gate}
+            acting={acting}
+            onActing={(p) => ctl.session?.setActing(p)}
+          />
         </div>
       </>
     );

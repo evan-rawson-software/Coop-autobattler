@@ -73,14 +73,14 @@ describe('sealed producers', () => {
   const shop = reachStep('shop');
 
   test('the reason is set exactly when something is sealed', () => {
-    const info = sealedInfo(shop, realDeps(), content);
+    const info = sealedInfo(shop, realDeps(), content, 0);
     expect(info.ids).toEqual(sealedProducers(shop, realDeps()));
     expect(info.reason === null).toBe(info.ids.length === 0);
   });
 
   test('a walled-in barracks is named, with its place and the way out', () => {
     const { run, barracks } = walledIn(shop);
-    const info = sealedInfo(run, realDeps(), content);
+    const info = sealedInfo(run, realDeps(), content, 0);
     expect(info.ids).toContain(barracks);
     expect(info.reason).toContain('Ready is blocked');
     expect(info.reason).toMatch(/Barracks \(column \d+, row 0\)/);

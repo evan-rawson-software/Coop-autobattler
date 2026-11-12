@@ -373,3 +373,23 @@ export function deriveProblems(
   }
   return out;
 }
+
+/**
+ * The Core spots the players have proposed so far in the Core placement step
+ * (`pending.positions`, one entry per player, null until proposed). Read-only
+ * view of existing session state.
+ */
+export function pendingCoreSpots(
+  pending: unknown,
+): { player: number; x: number; y: number }[] {
+  const list = (pending as { positions?: unknown } | null)?.positions;
+  if (!Array.isArray(list)) return [];
+  const out: { player: number; x: number; y: number }[] = [];
+  list.forEach((p: unknown, player) => {
+    const c = p as { x?: unknown; y?: unknown } | null;
+    if (c !== null && typeof c?.x === 'number' && typeof c.y === 'number') {
+      out.push({ player, x: c.x, y: c.y });
+    }
+  });
+  return out;
+}
