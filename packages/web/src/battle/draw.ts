@@ -24,7 +24,11 @@ type Pt = { x: number; y: number };
 /** Geometry of the initial scene, for things that have since been destroyed. */
 export interface DrawIndex {
   readonly rects: readonly [Map<number, ViewRect>, Map<number, ViewRect>];
-  readonly coreRects: readonly [ViewRect | null, ViewRect | null];
+  /** Each side's Core rectangles, by player index. */
+  readonly coreRects: readonly [
+    readonly (ViewRect | null)[],
+    readonly (ViewRect | null)[],
+  ];
   readonly conduitCells: readonly [
     Map<number, readonly Pt[]>,
     Map<number, readonly Pt[]>,
@@ -45,7 +49,7 @@ export function makeDrawIndex(
     new Map<number, ViewRect>(),
     new Map<number, ViewRect>(),
   ];
-  const cores: [ViewRect | null, ViewRect | null] = [null, null];
+  const cores: [(ViewRect | null)[], (ViewRect | null)[]] = [[], []];
   const conduits: [Map<number, readonly Pt[]>, Map<number, readonly Pt[]>] = [
     new Map<number, readonly Pt[]>(),
     new Map<number, readonly Pt[]>(),
@@ -54,7 +58,7 @@ export function makeDrawIndex(
   for (const b of initial.boards) {
     const side = b.frame.id === 'own' ? 0 : 1;
     for (const s of b.buildings) rects[side].set(s.instance.id, s.rect);
-    cores[side] = b.core?.rect ?? null;
+    cores[side] = b.cores.map((c) => c?.rect ?? null);
     for (const c of b.conduits) conduits[side].set(c.id, c.cells);
     // A link is one flow edge under its sending half's id; its slots run
     // along the sending half and then the receiving half (PP-4).
@@ -165,20 +169,15 @@ export function drawBattleOverlay(
   // --- Health bars of damaged buildings and the Cores ---------------------
   if (z >= 6) {
     const initial = pb.record.initialHealth;
-    const shownCore = [false, false];
     for (let i = 0; i < sim.health.length; i++) {
       const h = sim.health[i];
       const max = initial[i]?.hp ?? 0;
       if (h === undefined || max <= 0 || h.hp <= 0) continue;
       const isCore = isCoreHealth(h);
-      if (isCore && (shownCore[h.side === 0 ? 0 : 1] ?? false)) continue;
-      if (isCore) shownCore[h.side === 0 ? 0 : 1] = true;
       if (!isCore && h.hp >= max) continue;
       const side = h.side === 0 ? 0 : 1;
-      // One Core is drawn per side until the Battle screen shows several
-      // (issue #143): the first one.
       const r = isCore
-        ? (index.coreRects[side] ?? null)
+        ? (index.coreRects[side][h.core] ?? null)
         : index.rects[side].get(h.building);
       if (r === null || r === undefined) continue;
       const bw = r.w * z;
@@ -301,7 +300,7 @@ export function drawBattleOverlay(
           }
         } else {
           const side = e.target.side === 0 ? 0 : 1;
-          have = rectCentre(index.coreRects[side], tmp2);
+          have = rectCentre(index.coreRects[side][e.target.core], tmp2);
           if (have) {
             tmp2.x = ox + tmp2.x * z;
             tmp2.y = oy + tmp2.y * z;
@@ -365,7 +364,7 @@ export function drawBattleOverlay(
         if (e.type === 'building_destroyed') {
           have = rectCentre(index.rects[side].get(e.building), tmp);
         } else if (e.type === 'core_destroyed') {
-          have = rectCentre(index.coreRects[side], tmp);
+          have = rectCentre(index.coreRects[side][e.core], tmp);
         } else {
           const cells = index.conduitCells[side].get(e.conduit);
           const mid = cells?.[Math.floor((cells.length - 1) / 2)];
@@ -425,8 +424,13 @@ export function linkMap(
   content: TeamContent,
 ): ReadonlyMap<number, number> {
   const m = new Map<number, number>();
-  for (const e of buildFlowGraph(team, content).edges) {
-    if (e.linkedConduit !== null) m.set(e.conduitId, e.linkedConduit);
+  try {
+    for (const e of buildFlowGraph(team, content).edges) {
+      if (e.linkedConduit !== null) m.set(e.conduitId, e.linkedConduit);
+    }
+  } catch {
+    // A layout the flow graph cannot read draws every half as unconnected.
+    m.clear();
   }
   return m;
 }

@@ -106,6 +106,8 @@ export interface BoardScene {
   readonly nodes: readonly SceneNode[];
   readonly buildings: readonly SceneBuilding[];
   readonly core: { rect: ViewRect; label: string } | null;
+  /** Every placed Core, by player index (null where not placed). */
+  readonly cores: readonly ({ rect: ViewRect; label: string } | null)[];
   readonly conduits: readonly SceneConduit[];
   /** Per-map salt for picking sprite variants (deterministic). */
   readonly salt: number;
@@ -255,27 +257,19 @@ function buildBoard(
     };
   });
 
-  let core: BoardScene['core'] = null;
-  // The first placed Core; drawing every player's Core is the web issue #142.
-  const stateCore = state.cores.find((c) => c !== null) ?? null;
-  if (stateCore !== null) {
-    const coreDef = content.buildings.list().find((d) => d.kind === 'core');
-    if (coreDef !== undefined) {
-      const fp = coreDef.footprint;
-      core = {
-        rect: boxToView(
-          frame,
-          stateCore.x,
-          stateCore.y,
-          stateCore.x + fp.width - 1,
-          stateCore.y + fp.height - 1,
-        ),
-        label: (
-          content.presentation.get(coreDef.id)?.name ?? coreDef.id
-        ).toUpperCase(),
-      };
-    }
-  }
+  const coreDef = content.buildings.list().find((d) => d.kind === 'core');
+  const cores: BoardScene['cores'] = state.cores.map((c) => {
+    if (c === null || coreDef === undefined) return null;
+    const fp = coreDef.footprint;
+    return {
+      rect: boxToView(frame, c.x, c.y, c.x + fp.width - 1, c.y + fp.height - 1),
+      label: (
+        content.presentation.get(coreDef.id)?.name ?? coreDef.id
+      ).toUpperCase(),
+    };
+  });
+  // The first placed Core; the Battle screen uses `cores`.
+  const core = cores.find((c) => c !== null) ?? null;
 
   const resourceOrder = new Map(
     content.resources.list().map((r, i) => [r.id, i] as const),
@@ -337,6 +331,7 @@ function buildBoard(
     nodes,
     buildings,
     core,
+    cores,
     conduits,
     salt,
   };
@@ -399,12 +394,26 @@ export function hitTest(scene: Scene, vx: number, vy: number): Hit | null {
   return null;
 }
 
-/** View-space centre of the enemy board's Core, if there is one. */
+/**
+ * View-space centre of the enemy board's Cores (the middle of the box that
+ * holds all of them), if there is one.
+ */
 export function enemyCoreCentre(scene: Scene): { x: number; y: number } | null {
   const enemy = scene.boards.find((b) => b.frame.id === 'enemy');
-  if (!enemy?.core) return null;
-  const r = enemy.core.rect;
-  return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+  if (!enemy) return null;
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  for (const c of enemy.cores) {
+    if (c === null) continue;
+    x0 = Math.min(x0, c.rect.x);
+    y0 = Math.min(y0, c.rect.y);
+    x1 = Math.max(x1, c.rect.x + c.rect.w);
+    y1 = Math.max(y1, c.rect.y + c.rect.h);
+  }
+  if (x0 === Infinity) return null;
+  return { x: (x0 + x1) / 2, y: (y0 + y1) / 2 };
 }
 
 /** View-space centre of the own board's Core, if placed. */

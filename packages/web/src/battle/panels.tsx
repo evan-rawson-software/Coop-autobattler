@@ -21,6 +21,7 @@ import {
   type Moment,
   type Side,
   type SideStats,
+  type CoreNow,
 } from './derive.js';
 import type { Playback, PlaybackSpeed } from './playback.js';
 import { SPEEDS } from './playback.js';
@@ -35,11 +36,63 @@ export const KIND_LABEL: Readonly<Record<OpponentInfo['kind'], string>> = {
 export const opponentKindLabel = (o: OpponentInfo): string =>
   o.label ?? KIND_LABEL[o.kind];
 
+/**
+ * A side's Core health: one bar for a lone Core, as before; with several, one
+ * bar per player (a fallen Core reads as fallen) under the total.
+ */
+export function CoreBars(props: {
+  readonly label: string;
+  readonly cores: readonly CoreNow[];
+  readonly hp: number;
+  readonly max: number;
+  readonly side: Side;
+}) {
+  const { cores } = props;
+  if (cores.length <= 1) {
+    return (
+      <CoreBar
+        label={props.label}
+        hp={props.hp}
+        max={props.max}
+        side={props.side}
+      />
+    );
+  }
+  const standing = cores.filter((c) => c.hp > 0).length;
+  return (
+    <div class="core-group" data-field={`cores-${String(props.side)}`}>
+      <CoreBar
+        label={`${props.label}s ${String(standing)}/${String(cores.length)}`}
+        hp={props.hp}
+        max={props.max}
+        side={props.side}
+      />
+      {cores.map((c) => (
+        <div
+          class={c.hp > 0 ? 'core-sub' : 'core-sub fallen'}
+          key={c.player}
+          data-field={`core-${String(props.side)}-${String(c.player)}`}
+        >
+          <CoreBar
+            label={`${props.label} ${String(c.player + 1)}${c.hp > 0 ? '' : ' (fallen)'}`}
+            hp={c.hp}
+            max={c.max}
+            side={props.side}
+            field={`core-hp-${String(props.side)}-${String(c.player)}`}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function CoreBar(props: {
   readonly label: string;
   readonly hp: number;
   readonly max: number;
   readonly side: Side;
+  /** The `data-field` of the number; per side by default. */
+  readonly field?: string;
 }) {
   const pct = props.max <= 0 ? 0 : Math.round((props.hp / props.max) * 100);
   return (
@@ -58,7 +111,10 @@ export function CoreBar(props: {
           style={{ width: `${String(pct)}%` }}
         />
       </div>
-      <span class="core-num" data-field={`core-hp-${String(props.side)}`}>
+      <span
+        class="core-num"
+        data-field={props.field ?? `core-hp-${String(props.side)}`}
+      >
         {props.hp} / {props.max}
       </span>
     </div>
@@ -100,8 +156,9 @@ export function LeftPanels(props: {
   return (
     <>
       <Panel title="Your side" id="panel-your-side">
-        <CoreBar
+        <CoreBars
           label={coreName}
+          cores={mine.cores}
           hp={mine.coreHp}
           max={mine.coreMax}
           side={0}
@@ -223,8 +280,9 @@ export function RightPanels(props: {
             {opponentKindLabel(opponent)}
           </span>
         </p>
-        <CoreBar
+        <CoreBars
           label={coreName}
+          cores={theirs.cores}
           hp={theirs.coreHp}
           max={theirs.coreMax}
           side={1}
@@ -337,23 +395,24 @@ export function RightPanels(props: {
  * check: a destroyed Core ends it; Cores destroyed in the same tick are
  * decided by the smaller overkill, then by more damage dealt to the enemy's
  * buildings, then by more enemy units killed, then for the attacker (the
- * party); at the time limit the larger share of maximum health left wins and
+ * party); at the time limit more Cores standing, then the larger share of total
+ * Core health left, wins and
  * a tie there goes down the same last three steps. The defender wins no tie.
  */
 export function reasonText(reason: BattleReason, coreName: string): string {
   switch (reason) {
     case 'core_destroyed':
-      return `One side's ${coreName} was destroyed; the other side wins.`;
+      return `One side lost its last ${coreName}; the other side wins.`;
     case 'tiebreak_overkill':
-      return `Both ${coreName}s were destroyed in the same tick; the side whose ${coreName} took less overkill damage wins.`;
+      return `Both sides lost their last ${coreName} in the same tick; the side whose ${coreName}s took less overkill damage wins.`;
     case 'tiebreak_building_damage':
-      return `A tie on ${coreName} health (both ${coreName}s destroyed in the same tick with equal overkill damage, or equal shares of maximum health at the time limit); the side that dealt more damage to the enemy's buildings wins.`;
+      return `A tie on ${coreName} health (both ${coreName}s destroyed in the same tick with equal overkill damage, or equal ${coreName}s standing and equal shares of total health at the time limit); the side that dealt more damage to the enemy's buildings wins.`;
     case 'tiebreak_kills':
       return `A tie on ${coreName} health and on damage dealt to the enemy's buildings; the side that killed more enemy units wins.`;
     case 'tiebreak_attacker':
       return `A tie on ${coreName} health, on damage dealt to the enemy's buildings and on enemy units killed; the attacker (the party) wins.`;
     case 'time_limit':
-      return `Time ran out; the side whose ${coreName} has the larger share of its maximum health left wins.`;
+      return `Time ran out; the side with more ${coreName}s standing wins, then the side with the larger share of its total ${coreName} health left.`;
   }
 }
 
@@ -428,8 +487,9 @@ export function BattleSummaryView(props: SummaryProps) {
           b.rect.h * z + 4,
         );
       }
-      if (destroyed.core && board.core) {
-        const r = board.core.rect;
+      for (const player of destroyed.cores) {
+        const r = board.cores[player]?.rect;
+        if (r === undefined) continue;
         ctx.globalAlpha = 0.3;
         ctx.fillRect(ox + r.x * z, oy + r.y * z, r.w * z, r.h * z);
         ctx.globalAlpha = 1;
@@ -492,6 +552,29 @@ export function BattleSummaryView(props: SummaryProps) {
           </strong>
           .
         </p>
+        {own.cores.length + foe.cores.length > 2 ? (
+          <p class="result-detail" data-field="cores-standing">
+            {coreName}s standing: yours{' '}
+            <strong data-field="standing-own">
+              {own.coresStanding} / {own.cores.length}
+            </strong>
+            , theirs{' '}
+            <strong data-field="standing-foe">
+              {foe.coresStanding} / {foe.cores.length}
+            </strong>
+            .{' '}
+            {[
+              ...own.cores.map((c) => ['Your', c] as const),
+              ...foe.cores.map((c) => ['Their', c] as const),
+            ]
+              .filter(([, c]) => c.destroyedTick !== null)
+              .map(
+                ([who, c]) =>
+                  `${who} ${coreName} ${String(c.player + 1)} fell at ${clock(c.destroyedTick ?? 0, props.tps)}.`,
+              )
+              .join(' ')}
+          </p>
+        ) : null}
         <p class="muted" data-field="tiebreak-counters">
           Damage to buildings: yours {own.buildingDamageDealt}, theirs{' '}
           {foe.buildingDamageDealt}. Units killed: yours {own.unitsKilled},
