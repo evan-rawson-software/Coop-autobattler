@@ -19,7 +19,7 @@ const cores = (seed: number, players: number, count = players) => {
     const placed = spots
       .map((pos) => placeCore(state, content, content.mapgen, p, pos))
       .find((r) => r.ok);
-    if (placed === undefined || !placed.ok) throw new Error('no Core spot');
+    if (!placed?.ok) throw new Error('no Core spot');
     state = placed.state;
   }
   return state;
