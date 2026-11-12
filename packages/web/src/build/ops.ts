@@ -10,6 +10,7 @@ import {
   addConduit,
   moveBuilding,
   placeFromStash,
+  type BorderEnd,
   type Cell,
   type ConduitEnd,
   type TeamState,
@@ -59,8 +60,8 @@ export function previewMove(
 export function previewConduit(
   state: TeamState,
   content: WebContent,
-  from: ConduitEnd,
-  to: ConduitEnd,
+  from: ConduitEnd | BorderEnd,
+  to: ConduitEnd | BorderEnd,
   cells: readonly Cell[],
   actor: number,
 ): Verdict {

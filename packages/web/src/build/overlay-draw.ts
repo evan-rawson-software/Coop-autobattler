@@ -10,6 +10,7 @@ import type { OverlayContext } from '../board/BoardView.js';
 import { cellToView } from '../board/layout.js';
 import type { WebContent } from '../content.js';
 import type { Ui } from './build-controller.js';
+import { halfStatuses, ownSpots, type LinkState } from './border-links.js';
 import { pathSegments, pathStubs } from './path-segments.js';
 import { isEditStep } from './session.js';
 import { sideMarkers, type SideMarker } from './sides.js';
@@ -208,6 +209,8 @@ export function drawBuildOverlay(
   }
   if (!isEditStep(d.step)) return;
 
+  const halves = halfStatuses(d.team);
+
   // ---- Enemy paths ---------------------------------------------------------
   if (d.ui.overlays.paths && d.paths !== null) {
     ctx.save();
@@ -357,13 +360,127 @@ export function drawBuildOverlay(
     }
   }
 
+  // ---- Owner of each building (not colour only) ----------------------------
+  if (board !== undefined && partySize > 1) {
+    ctx.save();
+    ctx.font = `700 ${String(Math.max(9, Math.min(12, z * 0.34)))}px ui-monospace, monospace`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    for (const b of board.buildings) {
+      const text = `P${String(b.instance.owner + 1)}`;
+      const w = ctx.measureText(text).width + 6;
+      const x = sx(b.rect.x) + 1;
+      const y = sy(b.rect.y) + b.rect.h * z - 14;
+      ctx.fillStyle = col.surface;
+      ctx.globalAlpha = 0.85;
+      ctx.fillRect(x, y, w, 13);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = col.ink;
+      ctx.fillText(text, x + 3, y + 7);
+    }
+    ctx.restore();
+  }
+
+  // ---- Border links: joined, open (unconnected) or cannot join ------------
+  if (partySize > 1) {
+    const marks: Record<LinkState, { glyph: string; text: string }> = {
+      joined: { glyph: '=', text: 'Linked' },
+      open: { glyph: '?', text: 'Not connected' },
+      same_kind: { glyph: '!', text: 'Cannot join' },
+    };
+    const mine = ownSpots(d.team, d.acting);
+    if (d.ui.tool === 'conduit') {
+      // Free spots on the player's own border columns.
+      for (const sp of mine) {
+        if (
+          halves.some(
+            (h) =>
+              h.owner === d.acting &&
+              h.spot.border === sp.spot.border &&
+              h.spot.y === sp.spot.y,
+          )
+        )
+          continue;
+        const p = centre(sp.cell);
+        ctx.strokeStyle = col.accent;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 3]);
+        ctx.strokeRect(p.x - z * 0.25, p.y - z * 0.25, z * 0.5, z * 0.5);
+        ctx.setLineDash([]);
+      }
+    }
+    for (const h of halves) {
+      if (h.owner !== d.acting) continue;
+      const cell = mine.find(
+        (m) => m.spot.border === h.spot.border && m.spot.y === h.spot.y,
+      )?.cell;
+      if (cell === undefined) continue;
+      const m = marks[h.state];
+      const color =
+        h.state === 'joined'
+          ? col.ok
+          : h.state === 'open'
+            ? col.accent
+            : col.warn;
+      const p = centre(cell);
+      const r = Math.max(7, z * 0.34);
+      ctx.save();
+      ctx.fillStyle = col.surface;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      // Joined: solid ring. Open: dashed ring. Cannot join: square.
+      ctx.setLineDash(h.state === 'open' ? [4, 3] : []);
+      ctx.beginPath();
+      if (h.state === 'same_kind') ctx.rect(p.x - r, p.y - r, 2 * r, 2 * r);
+      else ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = color;
+      ctx.font = `800 ${String(Math.max(10, r * 1.3))}px ui-monospace, monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(m.glyph, p.x, p.y + 0.5);
+      ctx.restore();
+      label(
+        cell,
+        `${m.text} (${h.kind === 'send' ? 'sending' : 'receiving'})`,
+        color,
+      );
+    }
+  }
+
+  // ---- Under-supplied consumers --------------------------------------------
+  if (d.ui.overlays.flow && d.flow !== null && board !== undefined) {
+    for (const b of board.buildings) {
+      if (!d.flow.underSupplied.has(b.instance.id)) continue;
+      if (d.flow.starved.has(b.instance.id)) continue;
+      const x = sx(b.rect.x);
+      const y = sy(b.rect.y);
+      ctx.save();
+      ctx.strokeStyle = col.warn;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([2, 3]);
+      ctx.strokeRect(x - 2, y - 2, b.rect.w * z + 4, b.rect.h * z + 4);
+      ctx.setLineDash([]);
+      ctx.fillStyle = col.warn;
+      ctx.font = font;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('LOW', x + b.rect.w * z - 3, y + 9);
+      ctx.restore();
+    }
+  }
+
   // ---- Selected conduit, erase hover ---------------------------------------
   const sel = d.ui.selection;
   const hov = d.ui.hover;
   const hotConduit =
     d.ui.tool === 'erase' && hov !== null
-      ? d.team.conduits.find((c) =>
-          c.cells.some((p) => p.x === hov.x && p.y === hov.y),
+      ? d.team.conduits.find(
+          (c) =>
+            c.owner === d.acting &&
+            c.cells.some((p) => p.x === hov.x && p.y === hov.y),
         )?.id
       : undefined;
   const highlight = (id: number, color: string): void => {
