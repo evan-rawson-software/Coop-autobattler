@@ -164,7 +164,10 @@ export function sellFromStash(
   const entry = team.stash.find((s) => s.id === args.id);
   if (entry === undefined) return { ok: false, reason: 'not_in_stash' };
   if (entry.owner !== args.owner) return { ok: false, reason: 'not_owner' };
-  const removed = removeFromStash(team, { id: args.id });
+  const removed = removeFromStash(team, {
+    actor: args.owner,
+    id: args.id,
+  });
   if (!removed.ok) return { ok: false, reason: 'not_in_stash' };
   return {
     ok: true,

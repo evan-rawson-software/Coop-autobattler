@@ -102,9 +102,17 @@ export class Lab {
     this.state = createTeamState(map);
   }
   put(def: string, x: number, y: number, rotation = 0, tier = 1): number {
-    const s = addToStash(this.state, this.with_, { def, tier, owner: 0 });
+    // The building belongs to the player whose plot column `x` is in.
+    const owner = Math.floor(x / this.state.map.plotWidth);
+    const s = addToStash(this.state, this.with_, { def, tier, owner });
     if (!s.ok) throw new Error(s.reason);
-    const p = placeFromStash(s.state, this.with_, { id: s.id, x, y, rotation });
+    const p = placeFromStash(s.state, this.with_, {
+      actor: owner,
+      id: s.id,
+      x,
+      y,
+      rotation,
+    });
     if (!p.ok) throw new Error(`${def}: ${p.reason}`);
     this.state = p.state;
     return s.id;
@@ -122,7 +130,9 @@ export class Lab {
     toSide: Side,
     cells: Pairs = [],
   ): number {
+    const actor = this.state.buildings.find((b) => b.id === from)?.owner ?? 0;
     const r = addConduit(this.state, this.with_, {
+      actor,
       from: { building: from, side: fromSide },
       to: { building: to, side: toSide },
       cells: cells.map(([x, y]) => ({ x, y })),
@@ -250,6 +260,7 @@ export function randomNetwork(
         ? { x: n.x, y: n.y }
         : { x: rng.nextInt(m.width), y: rng.nextInt(m.height) };
       const placed = placeFromStash(a.state, content, {
+        actor: a.state.stash.find((e) => e.id === a.id)?.owner ?? 0,
         id: a.id,
         x: p.x,
         y: p.y,
@@ -277,6 +288,7 @@ export function randomNetwork(
         used,
       );
       const r = addConduit(s, content, {
+        actor: a.owner,
         from: { building: a.id, side: fromSide },
         to: { building: b.id, side: toSide },
         cells: cells ?? [],

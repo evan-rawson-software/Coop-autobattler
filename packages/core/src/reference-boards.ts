@@ -56,7 +56,7 @@ class Script {
   put(def: string, x: number, y: number, tier = 1): number {
     const id = this.nextId++;
     this.ops.push({ op: 'addToStash', def, tier, owner: 0 });
-    this.ops.push({ op: 'placeFromStash', id, x, y, rotation: 0 });
+    this.ops.push({ op: 'placeFromStash', actor: 0, id, x, y, rotation: 0 });
     return id;
   }
 
@@ -85,6 +85,7 @@ class Script {
     this.nextId += 1;
     this.ops.push({
       op: 'addConduit',
+      actor: 0,
       from: { building: from, side: fromSide },
       to: { building: to, side: toSide },
       cells,

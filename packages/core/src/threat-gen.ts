@@ -367,6 +367,7 @@ export function buildStronghold(
       );
     }
     const placed = placeFromStash(stash.state, content, {
+      actor: owner,
       id: stash.id,
       x: b.x,
       y: b.y,
