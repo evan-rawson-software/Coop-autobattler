@@ -64,8 +64,8 @@
       "pattern": "^[0-9]+\\.[0-9]+$"
     },
     "formatVersion": {
-      "description": "The run-state format. Version 2 added upcomingPve and changed the battle detail; version 3 made the Workshop per-player and gold-dependent; version 4 added pvpOpponent and ghostsFought (W3-1); version 5 is the per-player design (issue #124: `cores`, and an `owner` on every conduit). Older saves are not readable.",
-      "const": 5
+      "description": "The run-state format. Version 2 added upcomingPve and changed the battle detail; version 3 made the Workshop per-player and gold-dependent; version 4 added pvpOpponent and ghostsFought (W3-1); version 5 is the per-player design (issue #124: `cores`, and an `owner` on every conduit); version 6 lets a conduit end be a border spot (PP-4). Older saves are not readable.",
+      "const": 6
     },
     "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
     "rng": {

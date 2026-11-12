@@ -19,8 +19,8 @@
   "additionalProperties": false,
   "properties": {
     "formatVersion": {
-      "description": "The snapshot format. Version 2 is the per-player design (issue #124: `cores` and an `owner` on every conduit); version 1 snapshots are rejected.",
-      "const": 2
+      "description": "The snapshot format. Version 2 is the per-player design (issue #124: `cores` and an `owner` on every conduit); version 3 lets a conduit end be a border spot (PP-4); older snapshots are rejected.",
+      "const": 3
     },
     "gameVersion": {
       "description": "The game version the run was played on, as major.minor. Only snapshots of the same version meet.",
