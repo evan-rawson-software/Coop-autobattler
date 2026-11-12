@@ -1695,14 +1695,14 @@ describe('determinism and symmetry', () => {
         if (e.type !== 'turret_fired') continue;
         const y = got(rows.get(e.unit));
         if (y >= boardHeight && y < boardHeight + gapRows) {
-          inGap[e.side === 0 ? 0 : 1] += 1;
+          inGap[e.side === 0 ? 0 : 1] = (inGap[e.side === 0 ? 0 : 1] ?? 0) + 1;
         }
       }
       expect(mirrorKey(sim, 1)).toEqual(mirrorKey(sim, 0));
       expect(hashJson(sim.boards[0])).toBe(hashJson(sim.boards[1]));
-      expect(
-        sim.health.filter((h) => h.side === 0).map((h) => h.hp),
-      ).toEqual(sim.health.filter((h) => h.side === 1).map((h) => h.hp));
+      expect(sim.health.filter((h) => h.side === 0).map((h) => h.hp)).toEqual(
+        sim.health.filter((h) => h.side === 1).map((h) => h.hp),
+      );
     }
     // Shots land in the gap, and the same number for both sides.
     expect(inGap[0]).toBeGreaterThan(0);

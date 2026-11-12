@@ -112,7 +112,12 @@ describe('acting player', () => {
       }
     }
     if (cell === null) throw new Error('no legal cell');
-    const placed = await s.act({ t: 'place', id: item.id, ...cell, rotation: 0 });
+    const placed = await s.act({
+      t: 'place',
+      id: item.id,
+      ...cell,
+      rotation: 0,
+    });
     expect(placed).toEqual({ ok: true });
     expect(s.run.team.buildings.some((b) => b.id === item.id)).toBe(true);
     // Preview as player 0 would refuse (not_owner); the session uses player 1.
