@@ -29,10 +29,12 @@ import type {
 
 export type ConduitReason =
   | 'unknown_building'
+  | 'not_owner'
   | 'not_an_output'
   | 'not_an_input'
   | 'side_in_use'
   | 'invalid_path'
+  | 'outside_own_plot'
   | 'blocked_by_feature'
   | 'overlaps_core'
   | 'overlaps_building'
@@ -224,6 +226,13 @@ function checkConduit(
       detail: String(a === undefined ? c.from.building : c.to.building),
     };
   }
+  if (a.b.owner !== c.owner || b.b.owner !== c.owner) {
+    return {
+      ok: false,
+      reason: 'not_owner',
+      detail: String(a.b.owner !== c.owner ? c.from.building : c.to.building),
+    };
+  }
   if (!a.outputs.includes(c.from.side)) {
     return { ok: false, reason: 'not_an_output', detail: c.from.side };
   }
@@ -292,6 +301,11 @@ function checkConduit(
     }
   }
 
+  for (const cell of cells) {
+    if (view.q.plotOf(cell.x) !== c.owner) {
+      return { ok: false, reason: 'outside_own_plot', detail: pt(cell) };
+    }
+  }
   for (const cell of cells) {
     if (!view.q.isBuildable(cell.x, cell.y)) {
       return { ok: false, reason: 'blocked_by_feature', detail: pt(cell) };
@@ -549,14 +563,17 @@ function findMismatch(
 
 /**
  * Add a conduit. The new conduit's ID is `state.nextId`. Rules, in this
- * fixed order, the first failure reported: unknown_building, not_an_output,
- * not_an_input, side_in_use, invalid_path, blocked_by_feature, overlaps_core,
- * overlaps_building, crosses_conduit, resource_mismatch, would_loop.
+ * fixed order, the first failure reported: unknown_building, not_owner,
+ * not_an_output, not_an_input, side_in_use, invalid_path, outside_own_plot,
+ * blocked_by_feature, overlaps_core, overlaps_building, crosses_conduit,
+ * resource_mismatch, would_loop. An `actor` that is no player index owns no
+ * building and so gives not_owner.
  */
 export function addConduit(
   state: TeamState,
   content: TeamContent,
   args: {
+    actor: number;
     from: { building: number; side: string };
     to: { building: number; side: string };
     cells: readonly Cell[];
@@ -580,6 +597,8 @@ export function addConduit(
     : [{ x: Number.NaN, y: Number.NaN }];
   const candidate: Conduit = {
     id: state.nextId,
+    // Not a real player when malformed: fails the owner check.
+    owner: isInt(args.actor) ? args.actor : -1,
     from: end((args as { from?: unknown }).from),
     to: end((args as { to?: unknown }).to),
     cells,
@@ -776,7 +795,7 @@ export function buildFlowGraph(
 // ---------------------------------------------------------------------------
 // Validation support (used by validateTeamState)
 
-const CONDUIT_KEYS = new Set(['id', 'from', 'to', 'cells']);
+const CONDUIT_KEYS = new Set(['id', 'owner', 'from', 'to', 'cells']);
 const END_KEYS = new Set(['building', 'side']);
 const CELL_KEYS = new Set(['x', 'y']);
 
@@ -812,6 +831,11 @@ export function parseConduits(raw: unknown, errors: string[]): Conduit[] {
     const id = entry['id'];
     if (!isInt(id) || id < 1) {
       errors.push(`${at}: "id" must be a positive integer.`);
+      ok = false;
+    }
+    const owner = entry['owner'];
+    if (!isInt(owner) || owner < 0) {
+      errors.push(`${at}: "owner" must be a non-negative integer.`);
       ok = false;
     }
     const ends: { building: number; side: Side }[] = [];
@@ -854,8 +878,14 @@ export function parseConduits(raw: unknown, errors: string[]): Conduit[] {
     }
     const from = ends[0];
     const to = ends[1];
-    if (ok && isInt(id) && from !== undefined && to !== undefined) {
-      out.push({ id, from, to, cells });
+    if (
+      ok &&
+      isInt(id) &&
+      isInt(owner) &&
+      from !== undefined &&
+      to !== undefined
+    ) {
+      out.push({ id, owner, from, to, cells });
     }
   });
   return out;
@@ -874,6 +904,11 @@ export function checkConduitList(
   const view = makeView(state, content);
   const occ = occupancyOf(state.map, state.conduits);
   state.conduits.forEach((c, i) => {
+    if (c.owner >= state.map.partySize) {
+      errors.push(
+        `conduits[${String(i)}] (id ${String(c.id)}): "owner" must be an integer from 0 to ${String(state.map.partySize - 1)}.`,
+      );
+    }
     const failure = checkConduit(view, c, occ, true);
     if (failure !== null) {
       errors.push(

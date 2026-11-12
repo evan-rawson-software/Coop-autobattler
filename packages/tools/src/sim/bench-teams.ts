@@ -40,9 +40,12 @@ export function denseFourPlotTeam(ctx: SimContext, tier: number): TeamState {
   };
   const put = (def: string, x: number, y: number, rotation = 0): number => {
     const t = def === 'bld_splitter' ? 1 : tier;
-    const s = addToStash(state, ctx.content, { def, tier: t, owner: 0 });
+    // The board's four plots are 24 columns wide; owner = plot of the cell.
+    const owner = Math.floor(x / 24);
+    const s = addToStash(state, ctx.content, { def, tier: t, owner });
     if (!s.ok) return fail(def, s.reason);
     const p = placeFromStash(s.state, ctx.content, {
+      actor: owner,
       id: s.id,
       x,
       y,
@@ -60,6 +63,7 @@ export function denseFourPlotTeam(ctx: SimContext, tier: number): TeamState {
     cells: readonly (readonly [number, number])[] = [],
   ): void => {
     const r = addConduit(state, ctx.content, {
+      actor: state.buildings.find((b) => b.id === from)?.owner ?? 0,
       from: { building: from, side: fromSide },
       to: { building: to, side: toSide },
       cells: cells.map(([x, y]) => ({ x, y })),

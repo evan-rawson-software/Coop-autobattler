@@ -310,6 +310,7 @@
     "conduits": [
       {
         "id": 10,
+        "owner": 0,
         "from": {
           "building": 9,
           "side": "north"
@@ -351,6 +352,7 @@
       },
       {
         "id": 13,
+        "owner": 0,
         "from": {
           "building": 12,
           "side": "north"
@@ -396,6 +398,7 @@
       },
       {
         "id": 16,
+        "owner": 0,
         "from": {
           "building": 15,
           "side": "north"
@@ -461,6 +464,7 @@
       },
       {
         "id": 19,
+        "owner": 0,
         "from": {
           "building": 17,
           "side": "north"
@@ -473,6 +477,7 @@
       },
       {
         "id": 22,
+        "owner": 0,
         "from": {
           "building": 20,
           "side": "north"

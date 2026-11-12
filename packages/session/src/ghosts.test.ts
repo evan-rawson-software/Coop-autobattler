@@ -435,6 +435,7 @@ describe('validation', () => {
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const p = placeFromStash(stashed.state, content, {
+          actor: 0,
           id,
           x,
           y,

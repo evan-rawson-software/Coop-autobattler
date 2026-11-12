@@ -2,13 +2,13 @@
  * Golden-vector kind `team-state-ops`. Input `{ seed, partySize, ops }` (or
  * `{ map, ops }` with an explicit map in the map format) where
  * each op is `{ op, ...args }` (`addToStash` {def, tier, owner}; `placeCore`
- * {actor, x, y}; `placeFromStash` and `moveBuilding` {id, x, y, rotation};
- * `returnToStash` and `removeFromStash` {id}). The map is `generateMap(seed,
+ * {actor, x, y}; `placeFromStash` and `moveBuilding` {actor, id, x, y,
+ * rotation}; `returnToStash` and `removeFromStash` {actor, id}). The map is `generateMap(seed,
  * partySize)`. Result: `{ results, state, hash }` with one result per op
  * (`{ op, ok: true }` plus `id` for addToStash and addConduit, or
  * `{ op, ok: false, reason }`) and `hash = hashJson(state)`. Conduit ops:
- * `addConduit` {from: {building, side}, to: {building, side}, cells: [{x, y}]}
- * and `eraseConduit` {id}.
+ * `addConduit` {actor, from: {building, side}, to: {building, side}, cells:
+ * [{x, y}]} and `eraseConduit` {actor, id}.
  *
  * Golden-vector kind `flow-graph`: the same input; the result is
  * `{ graph, hash }` with `graph = buildFlowGraph(final state)` and
@@ -126,6 +126,7 @@ export function runTeamStateOps(
           break;
         case 'placeFromStash':
           outcome = placeFromStash(state, content, {
+            actor: int(a, 'actor'),
             id: int(a, 'id'),
             x: int(a, 'x'),
             y: int(a, 'y'),
@@ -134,6 +135,7 @@ export function runTeamStateOps(
           break;
         case 'moveBuilding':
           outcome = moveBuilding(state, content, {
+            actor: int(a, 'actor'),
             id: int(a, 'id'),
             x: int(a, 'x'),
             y: int(a, 'y'),
@@ -141,20 +143,30 @@ export function runTeamStateOps(
           });
           break;
         case 'returnToStash':
-          outcome = returnToStash(state, content, { id: int(a, 'id') });
+          outcome = returnToStash(state, content, {
+            actor: int(a, 'actor'),
+            id: int(a, 'id'),
+          });
           break;
         case 'removeFromStash':
-          outcome = removeFromStash(state, { id: int(a, 'id') });
+          outcome = removeFromStash(state, {
+            actor: int(a, 'actor'),
+            id: int(a, 'id'),
+          });
           break;
         case 'addConduit':
           outcome = addConduit(state, content, {
+            actor: int(a, 'actor'),
             from: endOf(a['from'], 'from'),
             to: endOf(a['to'], 'to'),
             cells: cellList(a['cells']),
           });
           break;
         case 'eraseConduit':
-          outcome = eraseConduit(state, { id: int(a, 'id') });
+          outcome = eraseConduit(state, {
+            actor: int(a, 'actor'),
+            id: int(a, 'id'),
+          });
           break;
         default:
           throw new TypeError('team-state-ops: unknown op');

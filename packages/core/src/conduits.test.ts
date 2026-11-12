@@ -101,7 +101,13 @@ class Lab {
   put(def: string, x: number, y: number, rotation = 0): number {
     const s = addToStash(this.state, content, { def, tier: 1, owner: 0 });
     if (!s.ok) throw new Error(s.reason);
-    const p = placeFromStash(s.state, content, { id: s.id, x, y, rotation });
+    const p = placeFromStash(s.state, content, {
+      actor: 0,
+      id: s.id,
+      x,
+      y,
+      rotation,
+    });
     if (!p.ok)
       throw new Error(`${def} at ${String(x)},${String(y)}: ${p.reason}`);
     this.state = p.state;
@@ -116,6 +122,7 @@ class Lab {
   ): ReturnType<typeof addConduit> {
     const before = this.state;
     const r = addConduit(this.state, content, {
+      actor: 0,
       from: { building: from, side: fromSide },
       to: { building: to, side: toSide },
       cells: cellsOf(cells),
@@ -186,6 +193,7 @@ describe('accepted connections', () => {
     expect(l.state.conduits).toEqual([
       {
         id,
+        owner: 0,
         from: { building: s, side: 'north' },
         to: { building: b, side: 'south' },
         cells: [],
@@ -220,6 +228,7 @@ describe('accepted connections', () => {
     });
     if (!s.ok) throw new Error('stash');
     const p = placeFromStash(s.state, content, {
+      actor: 0,
       id: s.id,
       x: 12,
       y: 2,
@@ -386,6 +395,7 @@ describe('rejections, one per reason', () => {
     // Raw, malformed cells.
     for (const cells of [[{ x: 1.5, y: 3 }], 'nope', null, [{ x: 2 }]]) {
       const r = addConduit(l.state, content, {
+        actor: 0,
         from: { building: s, side: 'north' },
         to: { building: b, side: 'south' },
         cells: cells as unknown as Cell[],
@@ -432,6 +442,7 @@ describe('rejections, one per reason', () => {
     expect(l.why(s, 'north', b, 'south', column)).toBe('overlaps_building');
     // The wall moves away; the Core takes that spot instead.
     const m = moveBuilding(l.state, content, {
+      actor: 0,
       id: w,
       x: 8,
       y: 8,
@@ -765,6 +776,7 @@ describe('placement and detaching', () => {
     if (!wall.ok) throw new Error('stash');
     expect(
       placeFromStash(wall.state, content, {
+        actor: 0,
         id: wall.id,
         x: 4,
         y: 3,
@@ -776,6 +788,7 @@ describe('placement and detaching', () => {
     });
     expect(
       placeFromStash(wall.state, content, {
+        actor: 0,
         id: wall.id,
         x: 4,
         y: 7,
@@ -785,6 +798,7 @@ describe('placement and detaching', () => {
     // b1 (not attached to conduit 12) cannot move onto it.
     expect(
       moveBuilding(l.state, content, {
+        actor: 0,
         id: b1 as number,
         x: 4,
         y: 2,
@@ -815,6 +829,7 @@ describe('placement and detaching', () => {
     const { lab: l, ids } = sampleBoard();
     const b2 = ids[3] as number;
     const r = moveBuilding(l.state, content, {
+      actor: 0,
       id: b2,
       x: 4,
       y: 3,
@@ -833,6 +848,7 @@ describe('placement and detaching', () => {
     const { lab: l, ids } = sampleBoard();
     const x = ids[6] as number;
     const r = moveBuilding(l.state, content, {
+      actor: 0,
       id: x,
       x: 15,
       y: 12,
@@ -845,6 +861,7 @@ describe('placement and detaching', () => {
     const p = ids[1] as number;
     const pb = l.state.buildings.find((b) => b.id === p);
     const rot = moveBuilding(l.state, content, {
+      actor: 0,
       id: p,
       x: pb?.x ?? 0,
       y: pb?.y ?? 0,
@@ -857,7 +874,7 @@ describe('placement and detaching', () => {
   test('returning to the stash removes exactly the conduits attached to the building', () => {
     const { lab: l, ids } = sampleBoard();
     const p = ids[1] as number;
-    const r = returnToStash(l.state, content, { id: p });
+    const r = returnToStash(l.state, content, { actor: 0, id: p });
     if (!r.ok) throw new Error(r.reason);
     expect(r.state.conduits.map((c) => c.id)).toEqual([13, 14, 15, 16]);
     expect(r.state.stash.map((s) => s.id)).toEqual([p]);
@@ -871,16 +888,17 @@ describe('placement and detaching', () => {
     expect(detachConduits(l.state, sa1).conduits.map((c) => c.id)).toEqual([
       11, 12, 13, 14, 15, 16,
     ]);
-    const e = eraseConduit(l.state, { id: 12 });
+    const e = eraseConduit(l.state, { actor: 0, id: 12 });
     if (!e.ok) throw new Error(e.reason);
     expect(e.state.conduits.map((c) => c.id)).toEqual([10, 11, 13, 14, 15, 16]);
     expect(e.state.nextId).toBe(l.state.nextId);
-    expect(eraseConduit(e.state, { id: 12 })).toEqual({
+    expect(eraseConduit(e.state, { actor: 0, id: 12 })).toEqual({
       ok: false,
       reason: 'unknown_conduit',
     });
     // The ID is never reused.
     const again = addConduit(e.state, content, {
+      actor: 0,
       from: { building: ids[1] as number, side: 'east' },
       to: { building: ids[3] as number, side: 'south' },
       cells: cellsOf([
@@ -1134,6 +1152,7 @@ describe('validateTeamState and conduits', () => {
     buildings: { id: number; def: string }[];
     conduits: {
       id: number;
+      owner: number;
       from: { building: number; side: string };
       to: { building: number; side: string };
       cells: { x: number; y: number }[];
@@ -1224,6 +1243,7 @@ describe('validateTeamState and conduits', () => {
     const j = clone(l.state) as unknown as J;
     j.conduits.push({
       id: j.nextId,
+      owner: 0,
       from: { building: p0, side: 'east' },
       to: { building: t0, side: 'west' },
       cells: [
@@ -1294,6 +1314,7 @@ describe('validateTeamState and conduits', () => {
     const j = clone(l.state) as unknown as J;
     j.conduits.push({
       id: j.nextId,
+      owner: 0,
       from: { building: p2, side: 'south' },
       to: { building: m, side: 'east' },
       cells: [
@@ -1373,21 +1394,23 @@ describe('purity', () => {
     const s = deepFreeze(clone(l.state));
     expect(() => {
       addConduit(s, content, {
+        actor: 0,
         from: { building: ids[1] as number, side: 'west' },
         to: { building: ids[2] as number, side: 'south' },
         cells: [],
       });
-      eraseConduit(s, { id: 12 });
+      eraseConduit(s, { actor: 0, id: 12 });
       detachConduits(s, ids[1] as number);
       buildFlowGraph(s, content);
       conduitResource(s, content, 10);
       moveBuilding(s, content, {
+        actor: 0,
         id: ids[6] as number,
         x: 15,
         y: 12,
         rotation: 0,
       });
-      returnToStash(s, content, { id: ids[1] as number });
+      returnToStash(s, content, { actor: 0, id: ids[1] as number });
       renderTeamStateAscii(s, content);
     }).not.toThrow();
   });
@@ -1522,6 +1545,7 @@ describe('property: random operations', () => {
             const p = rng.nextInt(2) === 0 ? nodePos() : anyPos();
             accept(
               placeFromStash(s, content, {
+                actor: 0,
                 id: e?.id ?? 0,
                 x: p.x,
                 y: p.y,
@@ -1534,6 +1558,7 @@ describe('property: random operations', () => {
             const p = anyPos();
             accept(
               moveBuilding(s, content, {
+                actor: 0,
                 id: e?.id ?? 0,
                 x: p.x,
                 y: p.y,
@@ -1543,13 +1568,16 @@ describe('property: random operations', () => {
             );
           } else if (pick === 6 && s.buildings.length > 0) {
             const e = s.buildings[rng.nextInt(s.buildings.length)];
-            accept(returnToStash(s, content, { id: e?.id ?? 0 }), before);
+            accept(
+              returnToStash(s, content, { actor: 0, id: e?.id ?? 0 }),
+              before,
+            );
           } else if (pick === 7 && s.conduits.length > 0) {
             const c = s.conduits[rng.nextInt(s.conduits.length)];
-            accept(eraseConduit(s, { id: c?.id ?? 0 }), before);
+            accept(eraseConduit(s, { actor: 0, id: c?.id ?? 0 }), before);
           } else if (pick === 8) {
             accept(
-              eraseConduit(s, { id: 1 + rng.nextInt(s.nextId + 2) }),
+              eraseConduit(s, { actor: 0, id: 1 + rng.nextInt(s.nextId + 2) }),
               before,
             );
           } else if (s.buildings.length >= 2) {
@@ -1599,6 +1627,7 @@ describe('property: random operations', () => {
               },
             );
             const r = addConduit(s, content, {
+              actor: 0,
               from: {
                 building: a.id,
                 side: rng.nextInt(20) === 0 ? 'nowhere' : fromSide,
@@ -1642,6 +1671,7 @@ describe('analysis order on looped and half-built networks', () => {
         ...l.state.conduits,
         {
           id,
+          owner: 0,
           from: { building: from, side: fromSide },
           to: { building: to, side: toSide },
           cells: cellsOf(cells),
