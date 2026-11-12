@@ -188,6 +188,82 @@ describe('initSaves classifies like openRun (issue #68)', () => {
   });
 });
 
+describe('a run saved before the per-player design (issue #139)', () => {
+  /** What a save looked like before `core` became `cores`, format 4. */
+  function preChange(version: VersionKind): SaveRecord {
+    const rec = makeRecord(version, 'none', false);
+    // Also without the `owner` that conduits carry since the ownership rules.
+    const team = {
+      ...rec.state.team,
+      core: null,
+      conduits: [
+        { id: 1, from: { x: 0, y: 0 }, to: { x: 1, y: 0 }, cells: [] },
+      ],
+    } as Record<string, unknown>;
+    delete team['cores'];
+    return {
+      ...rec,
+      state: { ...rec.state, formatVersion: 4, team },
+    } as unknown as SaveRecord;
+  }
+
+  test('an old-major save is wiped at start-up, never reported as damaged', async () => {
+    const rec = preChange('older_major');
+    const open = await openRun(KEY, deps, freshStore(rec), INSTALLED);
+    expect(open.ok ? 'ok' : open.reason).toBe('older_major');
+    expect(classifySave(rec, KEY, INSTALLED, deps).kind).toBe('older_major');
+    const store = freshStore(rec);
+    const res = await initSaves(store, INSTALLED, 99, deps);
+    expect(res.wipedUnreadable.map((w) => w.runId)).toEqual([KEY]);
+    expect(res.corrupt).toEqual([]);
+    expect(await store.get(KEY)).toBeNull();
+  });
+
+  test('a pre-change state under the current major is unsupported, not corrupt', async () => {
+    const rec = preChange('same');
+    const open = await openRun(KEY, deps, freshStore(rec), INSTALLED);
+    expect(open.ok ? 'ok' : open.reason).toBe('unsupported_format');
+  });
+});
+
+describe('a run saved with the Core vote (run-state format 5, issue #131)', () => {
+  /** A core_placement save as format 5 wrote it: a Core vote and proposals. */
+  function withVote(version: VersionKind): SaveRecord {
+    const rec = makeRecord(version, 'none', false);
+    return {
+      ...rec,
+      state: {
+        ...rec.state,
+        formatVersion: 5,
+        step: 'core_placement',
+        votes: { topic: 'core', choices: [null] },
+        pending: { proposals: [] },
+      },
+    } as unknown as SaveRecord;
+  }
+
+  test('under the current major it is unsupported, not corrupt', async () => {
+    const rec = withVote('same');
+    expect(classifySave(rec, KEY, INSTALLED, deps).kind).toBe(
+      'unsupported_format',
+    );
+    const open = await openRun(KEY, deps, freshStore(rec), INSTALLED);
+    expect(open.ok ? 'ok' : open.reason).toBe('unsupported_format');
+    const store = freshStore(rec);
+    const res = await initSaves(store, INSTALLED, 99, deps);
+    expect(res.corrupt).toEqual([]);
+  });
+
+  test('under an older major it is wiped at start-up', async () => {
+    const rec = withVote('older_major');
+    const store = freshStore(rec);
+    const res = await initSaves(store, INSTALLED, 99, deps);
+    expect(res.wipedUnreadable.map((w) => w.runId)).toEqual([KEY]);
+    expect(res.corrupt).toEqual([]);
+    expect(await store.get(KEY)).toBeNull();
+  });
+});
+
 /** A store whose chosen method rejects (a fake for a failing disk). */
 function failing(
   inner: ReturnType<typeof createMemorySaveStore>,

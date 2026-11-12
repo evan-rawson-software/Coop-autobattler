@@ -1,6 +1,6 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, test } from 'vitest';
-import type { SaveRecord } from '@game/session';
+import { RUN_STATE_FORMAT_VERSION, type SaveRecord } from '@game/session';
 import { runSaveStoreConformance } from '@game/session/testing';
 import { openDb, openIndexedDbStores } from './idb-store.js';
 import { StaleSaveError } from './local-storage-store.js';
@@ -14,14 +14,14 @@ function record(runId: string, counter: number, round = 1): SaveRecord {
   return {
     saveFormatVersion: 1,
     runId,
-    runVersion: '0.1',
-    installedVersionAtSave: '0.1.0',
+    runVersion: '1.0',
+    installedVersionAtSave: '1.0.0',
     actionCounter: counter,
     hostName: 'Ann',
     playerNames: ['Ann'],
     createArgs: {
       runId,
-      runVersion: '0.1',
+      runVersion: '1.0',
       seed: 1,
       players: ['Ann'],
       host: 0,
@@ -106,7 +106,11 @@ describe('IndexedDB store: finished runs', () => {
   test('keeps a final state by run id', async () => {
     const stores = await openIndexedDbStores(new IDBFactory());
     expect(await stores.finished.get('r')).toBeNull();
-    const state = { runId: 'r', round: 3 } as unknown as SaveRecord['state'];
+    const state = {
+      runId: 'r',
+      round: 3,
+      formatVersion: RUN_STATE_FORMAT_VERSION,
+    } as unknown as SaveRecord['state'];
     await stores.finished.put({ runId: 'r', state, finishedAt: 5 });
     expect((await stores.finished.get('r'))?.state).toEqual(state);
   });

@@ -193,6 +193,7 @@ describe('run-state.schema.json', () => {
     expect(bad(() => undefined)).toBe(true);
     expect(bad((o) => delete o['seed'])).toBe(false);
     expect(bad((o) => (o['formatVersion'] = 1))).toBe(false);
+    expect(bad((o) => (o['formatVersion'] = 4))).toBe(false);
     expect(bad((o) => (o['formatVersion'] = 5))).toBe(false);
     expect(bad((o) => (o['step'] = 'pve_battle'))).toBe(false);
     expect(bad((o) => (o['rng'] = [1, 2, 3]))).toBe(false);

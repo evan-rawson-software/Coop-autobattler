@@ -11,6 +11,7 @@ import {
   ghostTierBound,
   ghostValueBound,
   hashJson,
+  type Cell,
   tierPrice,
   validateGhostSnapshot,
   workshopPrice,
@@ -39,7 +40,12 @@ import { startRun, openRun } from './run-controller.js';
 import { buildSaveRecord } from './save.js';
 import { createMemorySaveStore } from './save-store-memory.js';
 import { allowedIntents } from './selectors.js';
-import { content, gameConfigs, makeGameDeps } from './test-support.js';
+import {
+  content,
+  gameConfigs,
+  makeGameDeps,
+  mapgenConfig,
+} from './test-support.js';
 import type {
   CreateRunArgs,
   Intent,
@@ -416,6 +422,54 @@ describe('item 2: the controller validates the next state before every save', ()
     }
     expect(rows).toHaveLength(4);
   }, 60_000);
+});
+
+describe('format 2 and one Core (issue #139)', () => {
+  const ctx = ctxOf();
+
+  test('a format-1 snapshot is rejected, and so is any other format', () => {
+    const good = goodSnapshot(2);
+    expect(good.formatVersion).toBe(2);
+    for (const v of [1, 3, 0, '2']) {
+      const r = validateGhostSnapshot(
+        { ...clone(good), formatVersion: v },
+        ctx,
+      );
+      expect(r.ok, String(v)).toBe(false);
+      expect(r.ok ? '' : r.errors.join()).toMatch(/unsupported/);
+    }
+  });
+
+  test('one Core per player is accepted; a Core outside its own plot or a missing Core is rejected (issue #160)', () => {
+    const deps = botDeps('two');
+    const run = botRun(deps, argsFor('two', 7, ['A', 'B']), 2, atRound(2));
+    const snap = run.snapshots.find((s) => s.round === 2);
+    if (snap === undefined) throw new Error('no snapshot');
+    const cores = snap.team.cores;
+    expect(cores.every((c) => c !== null)).toBe(true);
+    expect(validateGhostSnapshot(clone(snap), ctxOf(deps)).ok).toBe(true);
+    expect(validateRunState(clone(run.state), deps).ok).toBe(true);
+    const withCores = (list: typeof cores) => ({
+      ...clone(snap),
+      team: { ...clone(snap.team), cores: clone(list) },
+    });
+    const stateWith = (list: typeof cores) => ({
+      ...clone(run.state),
+      team: { ...clone(run.state.team), cores: clone(list) },
+    });
+    // Player 0's Core stands in player 1's plot.
+    const swapped = [cores[1] as Cell, cores[1] as Cell];
+    const r = validateGhostSnapshot(withCores(swapped), ctxOf(deps));
+    expect(r.ok ? '' : r.errors.join()).toMatch(/cores\[0\].*outside_own_plot/);
+    const t = validateRunState(stateWith(swapped), deps);
+    expect(t.ok ? '' : t.errors.join()).toMatch(/cores\[0\].*outside_own_plot/);
+    // A player without a Core in a battle step.
+    const missing = [cores[0] as Cell, null];
+    const m = validateGhostSnapshot(withCores(missing), ctxOf(deps));
+    expect(m.ok ? '' : m.errors.join()).toMatch(/Core must be placed/);
+    const n = validateRunState(stateWith(missing), deps);
+    expect(n.ok ? '' : n.errors.join()).toMatch(/Core must be placed/);
+  });
 });
 
 describe('item 2b: found by the validation before save', () => {

@@ -20,7 +20,7 @@ import { tierPrice } from './shop.js';
 import { validateTeamState, type TeamState } from './team-state.js';
 
 /** The snapshot format. Bump when a field changes meaning. */
-export const GHOST_SNAPSHOT_FORMAT_VERSION = 1;
+export const GHOST_SNAPSHOT_FORMAT_VERSION = 3;
 
 /** Longest owner id, owner label and run id accepted. */
 export const GHOST_MAX_ID_LENGTH = 128;
@@ -185,7 +185,7 @@ export interface GhostPvpRecord {
 }
 
 export interface GhostSnapshot {
-  readonly formatVersion: 1;
+  readonly formatVersion: 3;
   /** The game version (`major.minor`) the run was played on. */
   readonly gameVersion: string;
   readonly partySize: number;
@@ -746,8 +746,12 @@ function shapeInner(
     return undefined;
   }
   const t = team.state;
-  if (t.cores.every((c) => c === null))
-    errors.push('team: the Core must be placed.');
+  // One Core per player (PP-2): `validateTeamState` has checked that each
+  // placed Core is legal in its own player's plot; a snapshot is taken in a
+  // battle step, so every player's Core must be there.
+  if (t.cores.some((c) => c === null)) {
+    errors.push("team: every player's Core must be placed.");
+  }
   if (t.map.partySize !== size) {
     errors.push('team: map party size does not match partySize.');
   }

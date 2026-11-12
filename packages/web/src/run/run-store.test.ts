@@ -225,7 +225,7 @@ describe('abandoning and removing saves, by kind of row', () => {
   async function seed(
     runId: string,
     change: (s: RunState) => Record<string, unknown>,
-    version = '0.1',
+    version = '1.0',
   ): Promise<void> {
     const { getServices } = await import('./services.js');
     const services = await getServices();
@@ -263,9 +263,9 @@ describe('abandoning and removing saves, by kind of row', () => {
   });
 
   test.each([
-    ['an unsupported format', 'unsupported', { formatVersion: 1 }, '0.1'],
+    ['an unsupported format', 'unsupported', { formatVersion: 1 }, '1.0'],
     ['a newer version', 'newer', { runVersion: '9.0' }, '9.0'],
-    ['a damaged save', 'damaged', { actionCounter: 'x' }, '0.1'],
+    ['a damaged save', 'damaged', { actionCounter: 'x' }, '1.0'],
   ])(
     '%s cannot be abandoned, and "Remove save" deletes it with no record',
     async (_name, runId, change, version) => {
