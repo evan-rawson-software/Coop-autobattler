@@ -101,7 +101,7 @@ describe('round by round', () => {
         round: 1,
         pve: 'Hard · Rusher',
         pveResult: 'won',
-        pvp: 'Kai, Lin, Mo',
+        pvp: 'Ghost · Kai, Lin, Mo',
         pvpResult: 'won',
       },
       {

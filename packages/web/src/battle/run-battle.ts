@@ -18,7 +18,7 @@ import {
   type RunState,
 } from '@game/session';
 import type { StorageLike } from '../run/local-storage-store.js';
-import { archetypeText, bossName } from '../run/temporary-text.js';
+import { archetypeText, bossLabel, bossName } from '../run/display-text.js';
 import type { BattleDescription, OpponentInfo } from './types.js';
 import { count } from '../plural.js';
 
@@ -145,7 +145,7 @@ export function describeRunBattle(
     opponent = {
       name: bossName(archetypeText(label).name),
       kind: 'boss',
-      label: 'Boss',
+      label: bossLabel(),
     };
   } else {
     const arch = archetypeText(label).name;

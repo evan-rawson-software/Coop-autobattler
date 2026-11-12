@@ -151,7 +151,7 @@ export const contentRegistry: readonly ContentEntry[] = [
     key: 'presentation',
     contentFile: 'presentation.en.json',
     schemaFile: 'presentation.schema.json',
-    needs: ['resources', 'terrain', 'units', 'buildings'],
+    needs: ['resources', 'terrain', 'units', 'buildings', 'events', 'threats'],
     load: (data, loaded) =>
       wrap(
         loadPresentation(data, {
@@ -159,6 +159,11 @@ export const contentRegistry: readonly ContentEntry[] = [
           terrain: need(loaded, 'terrain'),
           units: need(loaded, 'units'),
           buildings: need(loaded, 'buildings'),
+          archetypeIds: need(loaded, 'threats').archetypes.map((a) => a.id),
+          eventTypes: [
+            ...new Set(need(loaded, 'events').events.map((e) => e.type)),
+          ],
+          modifierIds: need(loaded, 'events').modifiers.map((m) => m.id),
         }),
       ),
   },

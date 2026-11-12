@@ -318,7 +318,7 @@ Files: `golden/*.json`. Each file is a JSON array of vectors, validated by
 | `input`       | Plain JSON passed to the function. Integers and strings only.        |
 | `expected`    | `result` (plain JSON, compared structurally) and/or `eventLogHash`.  |
 
-Kinds currently defined: `placeholder-duel` (pipeline check only, not a rule),
+Kinds currently defined:
 `prng-u32` (first `count` outputs for `seed`), `prng-sample` (`count` calls of
 `nextInt(bound)`, then `shuffle` of `0..shuffleLength-1`, then `pick` of the
 same list, and the final state), `prng-child` (the parent state and the first
@@ -2910,6 +2910,41 @@ broken as follows:
   battle (same team, 180-degree rotated) stays exactly symmetric.
 - **Breach routes:** least total cost; equal-cost neighbours by tie key. The
   cost of a building uses its maximum health (tier health raised by the team's health modifiers), not its current health.
+
+## Run random streams
+
+Code: `packages/session/src/streams.ts`, `machine.ts`.
+
+A run keeps one generator, saved in the run state. Its root is
+`rootRng(seed) = Rng.fromSeed(seed).child('run')` (see "Child streams").
+Every random purpose gets its own stream, found by a label:
+`drawStream(state, label)` takes the run generator `g`, derives
+`stream = g.child(label)`, then advances `g` by one `nextU32()` and stores
+`g`'s state back. So the stream depends on the label and on how many streams
+were drawn before it; two draws with the same label differ. Replaying the
+same actions from the seed draws the same labels in the same order and gets
+the same streams, which is what lets a port reproduce offers, options and
+events. The code that uses a stream receives only the child, never `g`.
+
+`r` is the round number and `leg` is `pve` or `pvp`. Labels, in the order the
+step machine draws them in a round:
+
+| Label                      | Drawn                                                                   | Used for                                  |
+| -------------------------- | ----------------------------------------------------------------------- | ----------------------------------------- |
+| `kit`                      | once, entering the first `build`                                            | starting kit                              |
+| `pve_options:r<r>`         | on entering the first `build` of round `r`, and on entering the shop that ends round `r - 1` | the PvE options for the battle of round `r` |
+| `battle:pve:r<r>`          | when the PvE battle starts                                              | the PvE battle                            |
+| `event_offers:r<r>:<leg>`  | on entering `event_choice`                                              | the event offers                          |
+| `event_resolve:r<r>:<leg>` | when the chosen event is applied                                        | event outcomes                            |
+| `vote:<topic>:r<r>:<leg>`  | each party vote resolution with two or more players (none for one player) | the pick used only when the votes differ |
+| `shop:r<r>:<leg>`          | on entering a shop                                                      | shop offers (see "Shops and gold")        |
+| `ghost:r<r>`               | when the PvP opponent is selected                                       | the ghost draw (see "Ghost snapshots")    |
+| `battle:pvp:r<r>`          | when the PvP battle starts                                              | the PvP battle                            |
+
+The order of draws matters because each draw advances `g`. A shop re-roll
+does not draw a new run stream: it continues the player's stored shop stream.
+Golden vectors for run streams do not exist yet (`prng-child` covers the
+derivation of a child stream only).
 
 ## Shops and gold
 

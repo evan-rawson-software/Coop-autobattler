@@ -12,7 +12,7 @@ import {
   type RunState,
 } from '@game/session';
 import { clock } from '../battle/derive.js';
-import { archetypeText } from '../run/temporary-text.js';
+import { archetypeText } from '../run/display-text.js';
 import { count } from '../plural.js';
 import { overloadLine, partyCoreMax } from './overload.js';
 

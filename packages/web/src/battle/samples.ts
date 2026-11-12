@@ -18,6 +18,7 @@ import {
 } from '@game/core';
 import { content } from '../content.js';
 import { buildSampleTeam } from '../sample-team.js';
+import { archetypeText, bossLabel } from '../run/display-text.js';
 import { threatsConfig } from './setup.js';
 import type { BattleDescription, OpponentInfo } from './types.js';
 
@@ -37,16 +38,6 @@ export interface OpponentOption {
   readonly label: string;
 }
 
-/** `arch_rusher` -> `Rusher`. */
-export function archetypeLabel(id: string): string {
-  const words = id
-    .replace(/^arch_/, '')
-    .split('_')
-    .filter((w) => w.length > 0);
-  const text = words.join(' ');
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
 const PVE_ROUNDS: readonly number[] = [1, 3, 8];
 
 /** Every opponent the picker offers: ghosts of the reference boards, then threats. */
@@ -60,7 +51,7 @@ export function opponentOptions(): readonly OpponentOption[] {
     for (const round of PVE_ROUNDS) {
       out.push({
         id: `pve:${a.id}:${String(round)}:${type}`,
-        label: `${archetypeLabel(a.id)} (${type}), round ${String(round)}`,
+        label: `${archetypeText(a.id).name} (${type}), round ${String(round)}`,
       });
     }
   }
@@ -151,9 +142,9 @@ export function buildSample(sel: SampleSelection): Sample {
     return {
       battle: { kind: 'pve', input: { team, threat, seed: sel.seed } },
       opponent: {
-        name: `${archetypeLabel(a)} threat, round ${String(round)}`,
+        name: `${archetypeText(a).name} threat, round ${String(round)}`,
         kind: boss ? 'boss' : 'pve',
-        label: boss ? 'Boss' : archetypeLabel(a),
+        label: boss ? bossLabel() : archetypeText(a).name,
       },
       title: `Round ${String(round)} · PvE battle`,
       reward: (w) => sampleReward('pve', w),

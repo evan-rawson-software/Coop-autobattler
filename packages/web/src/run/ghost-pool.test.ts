@@ -106,7 +106,18 @@ describe('browser ghost pool', () => {
         round: 1,
         pvpOpponent: { round: 1, kind: 'boss', label: 'the boss', ghost: null },
       }),
-    ).toBe('Opponent: the boss (no ghost available)');
+    ).toBe('Opponent: the boss');
+    expect(
+      opponentText({
+        round: 1,
+        pvpOpponent: {
+          round: 1,
+          kind: 'ghost',
+          label: 'Bundled Rusher bot',
+          ghost: null,
+        },
+      }),
+    ).toBe('Opponent: a ghost of Bundled Rusher bot (shipped with the game)');
   });
 });
 
