@@ -60,10 +60,10 @@ export interface GhostStore {
   /** Remove every snapshot of every bucket. Resolves for an empty store. */
   clear(): Promise<void>;
   /**
-   * Remove every snapshot whose bucket has another game version than
+   * Remove every snapshot whose bucket has a lower game version than
    * `keepVersion` (TA-8, PP-17: a new major version empties the pool); the
-   * snapshots of `keepVersion` and the save counter are left alone. Resolves
-   * when none of the other versions remains.
+   * snapshots of `keepVersion` or a newer version and the save counter are
+   * left alone, and a malformed `keepVersion` removes nothing.
    */
   removeOtherVersions(keepVersion: string): Promise<void>;
 }
@@ -72,6 +72,28 @@ export interface GhostStore {
 export function bucketKeyVersion(bucketKey: string): string {
   const i = bucketKey.indexOf('|');
   return i === -1 ? bucketKey : bucketKey.slice(0, i);
+}
+
+/**
+ * Whether a bucket's game version is lower than `keepVersion` (numeric parts,
+ * `major.minor`). A bucket version that cannot be read counts as lower; a
+ * newer one (a stale tab or a downgraded build) is never lower. A malformed
+ * `keepVersion` makes nothing lower, so a purge with it removes nothing.
+ */
+export function isLowerBucketVersion(
+  bucket: string,
+  keepVersion: string,
+): boolean {
+  if (!/^\d+(\.\d+)*$/.test(keepVersion)) return false;
+  const version = bucketKeyVersion(bucket);
+  if (!/^\d+(\.\d+)*$/.test(version)) return true;
+  const a = version.split('.').map(Number);
+  const b = keepVersion.split('.').map(Number);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const d = (a[i] ?? 0) - (b[i] ?? 0);
+    if (d !== 0) return d < 0;
+  }
+  return false;
 }
 
 /** The key under which a snapshot is stored: its bucket and its owner. */
@@ -207,7 +229,7 @@ export function createMemoryGhostStore(
     },
     removeOtherVersions(keepVersion) {
       for (const [key, i] of [...items]) {
-        if (bucketKeyVersion(i.bucket) !== keepVersion) items.delete(key);
+        if (isLowerBucketVersion(i.bucket, keepVersion)) items.delete(key);
       }
       return Promise.resolve();
     },

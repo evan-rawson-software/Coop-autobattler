@@ -141,6 +141,7 @@ export {
 } from './bundled-ghosts.js';
 export {
   bucketKeyVersion,
+  isLowerBucketVersion,
   createMemoryGhostStore,
   evictionKeys,
   ghostStoreKey,

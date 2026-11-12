@@ -26,7 +26,7 @@
  * caller validates everything it reads.
  */
 import {
-  bucketKeyVersion,
+  isLowerBucketVersion,
   createMemoryGhostStore,
   evictionKeys,
   ghostStoreKey,
@@ -75,28 +75,6 @@ function sizeBound(
     // fall back to the fixed bound
   }
   return GHOST_STORE_DEFAULT_MAX_SIZE;
-}
-
-/**
- * Whether a bucket's game version is lower than `keepVersion` (numeric parts,
- * `major.minor`). A version that cannot be read counts as lower; a newer one
- * (a stale tab or a downgraded build) is never removed.
- */
-function isLowerVersion(bucket: string, keepVersion: string): boolean {
-  const parts = (v: string): number[] => v.split('.').map(Number);
-  const a = parts(bucketKeyVersion(bucket));
-  const b = parts(keepVersion);
-  if (
-    a.some((n) => !Number.isFinite(n)) ||
-    b.some((n) => !Number.isFinite(n))
-  ) {
-    return bucketKeyVersion(bucket) !== keepVersion;
-  }
-  for (let i = 0; i < Math.max(a.length, b.length); i++) {
-    const d = (a[i] ?? 0) - (b[i] ?? 0);
-    if (d !== 0) return d < 0;
-  }
-  return false;
 }
 
 function compareStored(a: unknown, b: unknown): number {
@@ -264,7 +242,7 @@ export function createIdbGhostStore(
           }
           if (
             typeof bucket === 'string' &&
-            isLowerVersion(bucket, keepVersion)
+            isLowerBucketVersion(bucket, keepVersion)
           ) {
             os.delete(k);
           }
@@ -456,7 +434,7 @@ export function createLocalStorageGhostStore(
           }
           if (
             typeof bucket === 'string' &&
-            isLowerVersion(bucket, keepVersion)
+            isLowerBucketVersion(bucket, keepVersion)
           ) {
             ls.removeItem(k);
             ls.removeItem(metaHead + rest);
@@ -474,7 +452,7 @@ export function createLocalStorageGhostStore(
           }
           if (
             typeof bucket === 'string' &&
-            isLowerVersion(bucket, keepVersion)
+            isLowerBucketVersion(bucket, keepVersion)
           ) {
             ls.removeItem(k);
           }

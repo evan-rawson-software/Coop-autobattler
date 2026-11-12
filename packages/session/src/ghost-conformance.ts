@@ -199,6 +199,26 @@ export function runGhostStoreConformance(
       await s.removeOtherVersions('1.0');
     });
 
+    test('removeOtherVersions removes lower versions only and nothing for a malformed keepVersion', async () => {
+      const s = await makeStore();
+      const old: GhostBucket = { gameVersion: '0.1', partySize: 2, round: 3 };
+      const cur: GhostBucket = { gameVersion: '1.0', partySize: 2, round: 3 };
+      const newer: GhostBucket = { gameVersion: '2.0', partySize: 2, round: 3 };
+      await s.save(fake('ann', 'old-a', old));
+      await s.save(fake('ann', 'cur-a', cur));
+      await s.save(fake('ann', 'new-a', newer));
+      for (const bad of ['', 'abc', '1.x', '1..0', 'NaN']) {
+        await s.removeOtherVersions(bad);
+      }
+      expect(await s.list(old)).toHaveLength(1);
+      expect(await s.list(cur)).toHaveLength(1);
+      expect(await s.list(newer)).toHaveLength(1);
+      await s.removeOtherVersions('1.0');
+      expect(await s.list(old)).toEqual([]);
+      expect(await s.list(cur)).toHaveLength(1);
+      expect(await s.list(newer)).toHaveLength(1);
+    });
+
     test('owner ids with odd characters do not collide', async () => {
       const s = await makeStore();
       await s.save(fake('a|b', 'r1', B));
