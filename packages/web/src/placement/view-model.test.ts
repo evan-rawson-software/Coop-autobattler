@@ -104,9 +104,9 @@ describe('routes to a position', () => {
 
   test('cells beyond the front row are clipped away (core issue 32)', () => {
     const paths: EnemyPath[] = [
+      {
         entry: { x: 1, y: height - 1 },
         core: 0,
-        entry: { x: 1, y: height - 1 },
         cells: [
           { x: 1, y: height - 1 },
           { x: 1, y: height },
