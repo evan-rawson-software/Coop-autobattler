@@ -23,13 +23,13 @@ player. Decided with it:
   and a top speed, stores are small, only the Splitter splits (CB-9e,
   CB-10 to CB-10d).
 
-Open, for the owner to confirm:
+- **Unit attacks** (CB-15c): a unit attacks whatever enemy is in range,
+  including enemy Cores that are not its target. Where it walks is
+  unchanged.
+- **Economy buildings** (CB-24a): they help only their owner; the cap is
+  per player.
 
-- **CB-15c.** Does a unit attack an enemy Core that is not its target when
-  it comes within reach? Written as: no, only when it blocks the way.
-- **CB-24a.** Does an economy building (Overclocker, unit-strength
-  buildings) help only its owner's buildings or the whole party's? Written
-  as: only its owner's.
+No design item of this change is open.
 
 To be revisited when online play exists: nobody can move a disconnected
 player's buildings (CP-21i).

@@ -405,9 +405,10 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-15** **Targeting.** Every unit heads for one enemy Core, its **target
   Core** (CB-15b), by the shortest open path and attacks what blocks it. No
   unit type prefers buildings: destroying a source or a junction cripples
-  the enemy's ramp for the rest of the battle, but a building other than
-  the unit's target Core is only attacked when it blocks the way (a
-  breach), never because a unit chose it. Conduits themselves are never
+  the enemy's ramp for the rest of the battle, but an enemy building that
+  is not a Core is only attacked when it blocks the way (a breach), never
+  because a unit chose it. An enemy Core within reach is always attacked
+  (CB-15c). Conduits themselves are never
   targets (CB-3h). (Issue #66 removed the earlier per-type preferences.)
 - **CB-15a [DECIDED]** **A unit's owner** is the owner of the building that
   produced it. A PvE wave unit, which no building produced, counts as owned
@@ -434,12 +435,19 @@ Everything below is [PROPOSED] detail unless marked otherwise.
      symmetric.
   5. With no enemy Core standing the battle is over (CB-17).
   Units still fight any enemy unit they meet, whoever owns it (CB-16).
-- **CB-15c [OPEN — owner to confirm]** **Other enemy Cores on the way.** A
-  unit attacks only its own target Core. An enemy Core that is not its
-  target is treated like any other enemy building: the unit walks around
-  it and attacks it only when it blocks the way (a breach). This is the
-  most conservative reading of CB-15; the alternative is that a unit
-  attacks any enemy Core that comes within its reach.
+- **CB-15c [DECIDED]** **A unit attacks whatever enemy is in range,
+  including enemy Cores that are not its target.** Where a unit walks does
+  not change: it heads for its target Core (CB-15b). What it attacks
+  follows the order it has today (CB-16): an enemy unit in reach first;
+  otherwise an enemy Core within reach, and a non-target Core stands exactly
+  where the target Core stands in that order. While an enemy Core is within
+  reach the unit stands and attacks it, as it does its target Core, and it
+  does not walk towards a Core it has not yet reached. When that Core is
+  destroyed the unit resumes its walk to its own target, which has not
+  changed. A unit may therefore stay at a non-target Core on its way until
+  it falls. Other enemy buildings are still attacked only when they block
+  the way (CB-20). (Owner decision 18 on issue #124. Not yet implemented,
+  issue #133.)
 - **CB-16 [DECIDED]** **Units fight units.** Opposing units that meet engage
   each other, so a front line forms between the bases and moves with the
   balance of production. A melee unit attacks when the gap between its circle
@@ -518,14 +526,12 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   for ground, and because conduits cannot cross (CB-3g) a tidy layout fits
   far more factory into the same plot than a tangled one; buildings also
   shape where units can walk. (Replaces "space is the limiter".)
-- **CB-24a [OPEN — owner to confirm]** **Whose buildings an economy
-  building helps.** An economy building strengthens only its owner's own
-  buildings: an Overclocker speeds up only its owner's collectors (up to
-  the cap, SC-12), and a building that makes units stronger affects only
-  units from its owner's unit producers. This is the conservative reading
-  of "border links are the only way to help a partner" (CP-29). The
-  alternative is today's behaviour, where the effect covers the whole
-  party's side.
+- **CB-24a [DECIDED]** **Economy buildings help only their owner.** A
+  player's Overclocker, unit-strength building and similar affect only that
+  player's collectors and units, and the cap applies per player (SC-12). To
+  help a partner, a player sends resources over a border link (CP-29,
+  CP-30). (Owner decision 19 on issue #124. Not yet implemented, issue
+  #137.)
 - **CB-25 [DECIDED]** **The board never expands.** It starts fairly large and
   stays that size for the whole run. Running out of room is intended to be
   one of the constraints on long endgame play.

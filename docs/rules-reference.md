@@ -63,10 +63,10 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-5 | Collector flow rate by tier | **implemented** (issue #130; "One tick: `stepFlow`", step 3, and "Collector rate") |
 | PP-6 | Minimum time between productions, need, store | **implemented** (issue #130; "One battle tick", step 2 and step 7, "In-battle ramp", "Dry run (CB-43)") |
 | PP-7 | Splitting, with back-up | **implemented** ("One tick: `stepFlow`", step 2; vectors against consumers with a top speed since issue #130). An open border half (PP-4) is still issue #135 |
-| PP-8 | Economy buildings act for their owner only; lower collector speed-up cap | not yet implemented (issue #137). **OPEN — owner to confirm** |
+| PP-8 | Economy buildings act for their owner only; lower collector speed-up cap | not yet implemented (issue #137) |
 | PP-9 | Several Cores per side in the arena; Overload per Core; a destroyed Core switches nothing off | not yet implemented (issue #132) |
 | PP-10 | End conditions and the tiebreak ladder with several Cores | not yet implemented (issue #132) |
-| PP-11 | A unit's owner and target Core; one movement field per target Core | not yet implemented (issue #133). One detail **OPEN — owner to confirm** |
+| PP-11 | A unit's owner and target Core; one movement field per target Core | not yet implemented (issue #133). A unit also attacks any enemy Core within reach, target or not |
 | PP-12 | Enemy-path preview per Core | not yet implemented (issue #133) |
 | PP-13 | Turrets can shoot units in the neutral zone | not yet implemented (issue #134) |
 | PP-14 | PvE strongholds and bosses with one Core per player | not yet implemented (issue #138) |
@@ -363,12 +363,12 @@ Implemented. The rule is in "Tick order": "One tick: `stepFlow`", step 2,
 and "Splitting with back-up". The vectors of issue #130 pin it against
 consumers with a top speed (golden kind `flow-sim`, mode `"need"`).
 
-### PP-8. Economy buildings act for their owner (OPEN — owner to confirm)
+### PP-8. Economy buildings act for their owner
 
 Today a side's economy buildings add up to one bonus per effect for the whole
-side ("In-battle ramp"). Written here as the conservative reading of "border
-links are the only way to help a partner" (CP-29, CB-24a); the owner has not
-confirmed it:
+side ("In-battle ramp"). Decided (owner decision 19 on issue #124, CB-24a):
+economy buildings help only their owner, and border links are the only way to
+help a partner (CP-29):
 
 - The raw total and the capped **bonus are computed per side, per owner and
   per effect**: the sum over that owner's living economy buildings with that
@@ -380,9 +380,6 @@ confirmed it:
   `unit_strength_percent` modifiers stay side-wide.
 - `maxSourceSpeedPercent` is lowered (see "Numbers to be set in the
   rebalance").
-
-If the owner decides the effect stays side-wide, only the lower cap remains
-of this rule.
 
 ### PP-9. Several Cores per side in the arena
 
@@ -509,12 +506,34 @@ and movement fields") with Core `q` in the place of "the Core": distance 0
 for the open cells that share an edge with a cell of Core `q`. They are
 computed lazily, cached per (side, `q`) and dropped after every destruction.
 
-**Other Cores (OPEN — owner to confirm, CB-15c).** For a unit, an enemy Core
-that is not its target is an enemy building like any other: it blocks
-movement, it is not a goal, the unit does not attack it when it is merely
-within reach, and in the breach field its cells cost `breachBaseCost +
-ceil(maxHealth / breachHealthPerCost)` to enter, so it can be attacked as a
-breach building (it then takes damage and can be destroyed like any Core).
+**Other Cores (CB-15c, decided: owner decision 18 on issue #124).** A unit
+attacks whatever enemy is in range, including an enemy Core that is not its
+target; where it walks is unchanged. For a unit, an enemy Core that is not
+its target:
+
+- blocks movement and is not a goal: no field leads to it and the unit never
+  walks towards it, so it meets one only on its way;
+- is attacked by **rule b whenever it is within reach**, exactly where the
+  target Core is attacked today: after rule a (an enemy unit in contact) and
+  rule a2 (aggro), before the move (rule c). An enemy unit therefore still
+  comes first, and a Core in reach comes before walking on. Reach is
+  measured as for the target Core, `buildingDist2(px, py, core) <= (reach +
+  R)^2`, edge to edge;
+- when several enemy Cores are within reach, rule b takes the unit's target
+  Core if it is one of them; otherwise the one with the smallest
+  `buildingDist2`, ties by the later parts of the target key, `(|q -
+  opposite(owner)|, -q)` (the existing order, no new priority);
+- does not change the unit's `target`, which changes only when the target
+  Core is destroyed (below). A unit that attacks holds its place (step 3),
+  so it stands and attacks the Core in reach **until that Core is
+  destroyed** (an enemy unit in contact takes precedence meanwhile); it does
+  not step on towards its target. That is how it treats its target Core and
+  any other building it attacks. After the Core falls, rule b no longer
+  fires for it and the unit resumes its walk to its own target Core;
+- in the breach field costs `breachBaseCost + ceil(maxHealth /
+  breachHealthPerCost)` to enter, as before, so a sealed unit can also
+  attack it as a breach building (rule c).
+
 Cores of the unit's own side are impassable, like its own buildings.
 
 **Choosing a target**, `chooseTarget(owner, c)` for a unit of side `s` at
@@ -561,7 +580,9 @@ Everything in the key is stated in the unit's own side's terms, and
 enemy Core", "the movement field" or "the breach field", read: the unit's
 target Core and its fields. That is: the spawn-cell ordering (step 2), the
 goal building of rule b, the headings of rule c (including the press against
-the Core at distance 0), and the breach rule. Rules a and a2 are unchanged:
+the Core at distance 0), and the breach rule. Rule b is the exception: it
+reads "any living enemy Core within reach" ("Other Cores" above), not only
+the target Core. Rules a and a2 are unchanged:
 a unit fights any enemy unit it meets, whoever owns it. Turrets shoot any
 enemy unit in range and gates let every unit of their side through, whoever
 owns them (`blocksUnit` is by side, unchanged).
@@ -1596,7 +1617,7 @@ row says so.
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
 | PP-7 | With PP-4 an output whose half is open is a connected output that never accepts (the item is held and the line backs up; it is not a dead end and nothing is lost). | not yet implemented (issue #135) |
-| PP-8 | The source interval modifier becomes one value per owning player. **OPEN — owner to confirm.** | not yet implemented (issue #137) |
+| PP-8 | The source interval modifier becomes one value per owning player. | not yet implemented (issue #137) |
 | PP-4 | `rebuildFlow` removes both halves of a link when either end building is destroyed. | not yet implemented (issue #136) |
 
 Implemented in `packages/core/src/flow-sim.ts` (golden kind `flow-sim`:
@@ -2137,7 +2158,7 @@ row says so.
 | PP-11 | Steps 2 and 3: "the enemy Core" and "the movement field" become the unit's target Core and its fields; step 6 ends with retargeting. | not yet implemented (issue #133) |
 | PP-13 | Step 3, turret fire: a target may also stand in the neutral zone (gap rows). Today only the owner's own board rows qualify. | not yet implemented (issue #134) |
 | PP-9 | Step 4: Overload decay hits every living Core, each for the full amount. Step 6: `core_destroyed {side, core}`; a destroyed Core switches nothing else off. | not yet implemented (issue #132) |
-| PP-8 | The ramp bonus is per owner. **OPEN — owner to confirm.** | not yet implemented (issue #137) |
+| PP-8 | The ramp bonus is per owner. | not yet implemented (issue #137) |
 
 `stepArena(sim, ctx)` changes the state in place, in exactly this order. Let
 `T` be `sim.tick` at the start; every event of the step has `tick = T`.
@@ -2501,12 +2522,15 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-11 | A unit heads for its **target Core**: the Core of the plot opposite its owner's plot, then the nearest remaining enemy Core. One movement field and one breach field per side and per living enemy Core. An enemy Core that is not the unit's target is treated as an ordinary enemy building (**OPEN — owner to confirm**). | not yet implemented (issue #133) |
+| PP-11 | A unit heads for its **target Core**: the Core of the plot opposite its owner's plot, then the nearest remaining enemy Core. One movement field and one breach field per side and per living enemy Core. A unit attacks any enemy Core within its reach, target or not (rule b, CB-15c); where it walks is unchanged. | not yet implemented (issue #133) |
 
 **Every unit heads for the enemy Core** (issue #66: there is no target
 preference; a unit never goes for sources, routes or defenses). It fights the
 enemy units it meets (rules a and a2) and attacks a building only when that
-building is the Core within reach or blocks the way (the breach rule below).
+building is an enemy Core within reach or blocks the way (the breach rule
+below). The code on `main` has one enemy Core, so "an enemy Core within
+reach" is "the Core"; with several Cores (PP-11) a Core that is not the
+unit's target is attacked when in reach too.
 
 - The **goal set** of a side is the enemy Core. A destroyed Core is not a goal;
   with no goal the unit waits. The goal building is the Core.
@@ -2552,7 +2576,8 @@ building is the Core within reach or blocks the way (the breach rule below).
   through gaps it cannot enter and waits at them (the circle rules, not the
   field, stop it).
 - The unit's **goal building** (rule b) is the Core, when the gap from the
-  unit's circle to the Core's nearest cell is at most `reach`.
+  unit's circle to the Core's nearest cell is at most `reach`. (With PP-11 it
+  is any enemy Core within reach, the target Core first.)
 - **Tie key.** Wherever two cells tie (equal score in `fieldStep`, equal
   cost in `breachStep`, equal distance among spawn cells), the preferred one
   is the most **forward** one, then the lowest `x`, **in the board frame of
@@ -2685,7 +2710,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-8 | Totals and caps are per owner, and `maxSourceSpeedPercent` is lowered (number to be set in rebalance). **OPEN — owner to confirm** (per owner or per side). | not yet implemented (issue #137) |
+| PP-8 | Totals and caps are per owner, and `maxSourceSpeedPercent` is lowered (number to be set in rebalance). | not yet implemented (issue #137) |
 
 "Economy" means buildings that make the factory stronger the longer a battle
 lasts (SC-8 to SC-10); it has nothing to do with gold. Each is a building of
@@ -3827,7 +3852,8 @@ broken as follows:
   then the lowest unit `id`. A turret picks its target by the squared distance
   from the unit's centre to its nearest cell (ties: lowest unit `id`), only
   among units on its owner's board rows.
-- **Which building to hit:** the Core when it is within reach; in breach mode
+- **Which building to hit:** an enemy Core when it is within reach (with
+  several: the unit's target Core, else the nearest, PP-11); in breach mode
   the building covering the next breach cell.
 - **Which way to step** (equal distance or equal cost) and **where to spawn**
   (equal distance): the lowest `y`, then the lowest `x`, in the board frame of
