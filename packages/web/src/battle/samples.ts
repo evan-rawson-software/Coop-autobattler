@@ -38,7 +38,7 @@ export interface OpponentOption {
   readonly label: string;
 }
 
-const PVE_ROUNDS: readonly number[] = [1, 3, 8];
+const PVE_ROUNDS: readonly number[] = [1, 3, 9];
 
 /** Every opponent the picker offers: ghosts of the reference boards, then threats. */
 export function opponentOptions(): readonly OpponentOption[] {

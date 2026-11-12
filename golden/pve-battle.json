@@ -4849,9 +4849,9 @@
     }
   },
   {
-    "id": "pve-battle.rush-vs-rusher-r8-loses",
+    "id": "pve-battle.rush-vs-rusher-r9-loses",
     "kind": "pve-battle",
-    "description": "A round 8 medium Rusher: the undefended rush board loses.",
+    "description": "A round 9 medium Rusher: the undefended rush board loses.",
     "input": {
       "team": {
         "seed": 5,
@@ -4989,8 +4989,8 @@
         ]
       },
       "threat": {
-        "seed": 108,
-        "round": 8,
+        "seed": 109,
+        "round": 9,
         "type": "medium",
         "partySize": 1,
         "archetype": "arch_rusher"
@@ -5001,57 +5001,57 @@
       "result": {
         "ok": true,
         "result": {
-          "winner": 0,
+          "winner": 1,
           "reason": "core_destroyed",
-          "endTick": 586
+          "endTick": 535
         },
         "summary": {
           "sides": [
             {
               "unitsSpawned": 15,
-              "unitsLost": 8,
-              "buildingsLost": 0,
-              "cores": [
-                {
-                  "player": 0,
-                  "health": 351,
-                  "maxHealth": 500,
-                  "overkill": 0,
-                  "destroyedTick": null
-                }
-              ],
-              "coresStanding": 1,
-              "coreHealth": 351,
-              "coreMaxHealth": 500,
-              "coreOverkill": 0,
-              "rampSteps": 0,
-              "buildingDamageDealt": 852,
-              "unitsKilled": 8
-            },
-            {
-              "unitsSpawned": 18,
-              "unitsLost": 8,
+              "unitsLost": 11,
               "buildingsLost": 0,
               "cores": [
                 {
                   "player": 0,
                   "health": 0,
-                  "maxHealth": 852,
-                  "overkill": 0,
-                  "destroyedTick": 585
+                  "maxHealth": 500,
+                  "overkill": 5,
+                  "destroyedTick": 534
                 }
               ],
               "coresStanding": 0,
               "coreHealth": 0,
-              "coreMaxHealth": 852,
+              "coreMaxHealth": 500,
+              "coreOverkill": 5,
+              "rampSteps": 0,
+              "buildingDamageDealt": 246,
+              "unitsKilled": 5
+            },
+            {
+              "unitsSpawned": 17,
+              "unitsLost": 5,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 816,
+                  "maxHealth": 1062,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
+              "coreHealth": 816,
+              "coreMaxHealth": 1062,
               "coreOverkill": 0,
               "rampSteps": 0,
-              "buildingDamageDealt": 149,
-              "unitsKilled": 8
+              "buildingDamageDealt": 500,
+              "unitsKilled": 11
             }
           ]
         },
-        "threatHash": "88656bee",
+        "threatHash": "a8cab04e",
         "zone": {
           "width": 24,
           "depth": 7,
@@ -5079,10 +5079,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "28b0c492",
-        "events": 541
+        "stateHash": "d2b1aa16",
+        "events": 468
       },
-      "eventLogHash": "f6c6c7a8"
+      "eventLogHash": "3e62653e"
     }
   },
   {
