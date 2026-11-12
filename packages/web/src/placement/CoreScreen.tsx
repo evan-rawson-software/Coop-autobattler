@@ -67,13 +67,16 @@ export function CoreScreen(props: { run: RunHandle }) {
   const isReady = view.run.perPlayer[acting]?.ready === true;
   const fp = useMemo(() => coreFootprint(content.buildings), []);
 
-  const legal = useMemo(() => legalSet(team, content, acting), [team, acting]);
+  const legal = useMemo(
+    () => legalSet(team, content, acting, isReady),
+    [team, acting, isReady],
+  );
   const hoverCand: Candidate | null = useMemo(
     () =>
-      hover === null
+      hover === null || isReady
         ? null
         : { pos: hover, verdict: verdictAt(team, content, hover, acting) },
-    [team, hover, acting],
+    [team, hover, acting, isReady],
   );
   const selectedCand: Candidate | null = useMemo(
     () =>

@@ -1734,6 +1734,13 @@ export async function runRunSmoke({
       listed.length === 1 && listed[0].startsWith('Linked with'),
       'border link: the Border links list shows only my half, as linked',
     );
+    // The neighbour's half is on the board but offers no Remove button.
+    check(
+      (await links()).length === 2 &&
+        (await page.$$('#panel-links [data-action="remove-link"]')).length ===
+          1,
+      "border link: a neighbour's half offers no Remove button",
+    );
     // A neighbour's half cannot be erased; removing your own half returns the
     // other to "open".
     await page.click('[data-tool="erase"]');
