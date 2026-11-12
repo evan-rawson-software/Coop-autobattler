@@ -112,18 +112,11 @@ describe('refused battles', () => {
     }
   });
 
-  test('a side with several Cores placed is refused until battles can fight them', () => {
+  test('a side with no Core placed at all is refused', () => {
     const two = bigBoard();
     const lab = new Lab(two.map);
     lab.state = two;
     lab.core(2, 6, 0);
-    lab.core(40, 6, 1);
-    const r = simulateBattle(
-      { teamA: lab.state, teamB: lab.state, seed: 1 },
-      content,
-      config,
-    );
-    expect(r.ok ? null : r.error.code).toBe('several_cores');
     const none = simulateBattle(
       { teamA: createTeamState(two.map), teamB: lab.state, seed: 1 },
       content,

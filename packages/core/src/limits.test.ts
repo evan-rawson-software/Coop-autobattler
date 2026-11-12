@@ -376,7 +376,7 @@ describe('bounds: run-time scaling is checked', () => {
     };
     expect(() => {
       mk(MAX_HEALTH + 1);
-    }).toThrow(/coreHealth must be an integer from 1 to 1000000000000/);
+    }).toThrow(/coreHealths must be an integer from 1 to 1000000000000/);
     expect(() => {
       mk(0);
     }).toThrow(RangeError);

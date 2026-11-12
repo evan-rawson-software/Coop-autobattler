@@ -185,6 +185,17 @@ export type SimulateBattleResult =
     }
   | { readonly ok: false; readonly error: BattleError };
 
+/**
+ * The overkill of several Cores added in player order, saturating at
+ * `MAX_TICK_DAMAGE` (2^52): each term is below it, and two sides that both
+ * saturate are equal on the overkill rung (PP-10).
+ */
+export function sumOverkill(terms: readonly number[]): number {
+  let sum = 0;
+  for (const t of terms) sum = addSaturating(sum, t, MAX_TICK_DAMAGE);
+  return sum;
+}
+
 function fail(error: BattleError): { ok: false; error: BattleError } {
   return { ok: false, error };
 }
@@ -307,15 +318,12 @@ export function startBattle(
    * A side's overkill: the sum, in player order and saturating, of the
    * overkill of its Cores destroyed in the latest tick (PP-10).
    */
-  const overkillSum = (s: 0 | 1): number => {
-    let sum = 0;
-    for (const c of coreMax[s]) {
-      if (fellTick(s, c.player) !== sim.tick - 1) continue;
-      const remaining = ctx.coreRemaining[s]?.[c.player] ?? 0;
-      sum = addSaturating(sum, 0 - remaining, MAX_TICK_DAMAGE);
-    }
-    return sum;
-  };
+  const overkillSum = (s: 0 | 1): number =>
+    sumOverkill(
+      coreMax[s]
+        .filter((c) => fellTick(s, c.player) === sim.tick - 1)
+        .map((c) => 0 - (ctx.coreRemaining[s]?.[c.player] ?? 0)),
+    );
 
   /**
    * The ladder of PP-10 from rung `from` on; the first rung on which the

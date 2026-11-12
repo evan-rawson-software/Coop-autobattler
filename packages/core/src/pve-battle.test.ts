@@ -182,11 +182,8 @@ describe('waves along the whole front', () => {
       const { battle } = s;
       const lastWave = Math.max(...t.waves.map((w) => w.tick));
       // A party Core that does not fall keeps the wave units busy.
-      got(
-        battle.sim.health.find(
-          (h) => h.side === 0 && 'core' in h && h.core === 0,
-        ),
-      ).hp = 10 ** 12;
+      got(battle.sim.health.find((h) => h.side === 0 && 'core' in h)).hp =
+        10 ** 12;
       // `stepArena` never ends a battle, so every wave is queued whatever
       // happens to the Cores; units that find no room enter a little later.
       while (

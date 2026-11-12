@@ -48,15 +48,11 @@ function ofType<T extends ArenaEvent['type']>(
 }
 
 function hpOf(sim: ArenaSim, side: number, building: number): number {
-  return got(
-    healthEntry(sim, side, building),
-  ).hp;
+  return got(healthEntry(sim, side, building)).hp;
 }
 
 function kill(sim: ArenaSim, side: number, building: number): void {
-  const h = got(
-    healthEntry(sim, side, building),
-  );
+  const h = got(healthEntry(sim, side, building));
   h.hp = 0;
 }
 

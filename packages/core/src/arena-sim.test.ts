@@ -35,6 +35,7 @@ import {
   cellOfUnit,
   content,
   got,
+  healthEntry,
   mid,
   randomNetwork,
   simConfig,
@@ -801,7 +802,7 @@ describe('targeting (#66: every unit heads for the Core)', () => {
     const core = got(ctx.arena.buildings[got(ctx.arena.coreRef[1]?.[0])]);
     runArena(sim, ctx, 40);
     const first = got(ofType(events, 'unit_attacked')[0]);
-    expect(first.target).toEqual({ kind: 'core', side: 1 });
+    expect(first.target).toEqual({ kind: 'core', side: 1, core: 0 });
     // It stopped as soon as the gap to the Core was at most 480: the squared
     // distance to the nearest cell is within (480 + 72)^2 and, because it
     // walks 120 per tick, more than 120 closer-than-that is not needed.
@@ -839,7 +840,7 @@ describe('targeting (#66: every unit heads for the Core)', () => {
     const at = [a.px, a.py, b.px, b.py];
     runArena(sim, ctx, 49);
     expect(ofType(events, 'core_destroyed')).toEqual([
-      { tick: 0, type: 'core_destroyed', side: 1 },
+      { tick: 0, type: 'core_destroyed', side: 1, core: 0 },
     ]);
     expect([a.px, a.py, b.px, b.py]).toEqual(at);
     expect(ofType(events, 'unit_attacked')).toHaveLength(0);
@@ -1157,9 +1158,10 @@ describe('maximum health includes run modifiers (breach cost and start agree)', 
     const mod = begin(a, b);
     let walls = 0;
     for (const bld of mod.ctx.arena.buildings) {
-      const h = mod.sim.health.find(
-        (x) => x.side === bld.side && 'building' in x && x.building === bld.id,
-      );
+      const h =
+        bld.kind === 'core'
+          ? healthEntry(mod.sim, bld.side, 0, bld.player)
+          : healthEntry(mod.sim, bld.side, bld.id);
       // At tick 0 a building is at full health, which is its maximum.
       expect(h?.hp).toBe(mod.ctx.maxHealth[bld.ref]);
       if (bld.side === 1 && bld.kind === 'core') {
@@ -1770,7 +1772,9 @@ describe('damage sums beyond 32 bits (int.ts contract)', () => {
     const { sim, ctx } = pile(12, 200_000_000, 1_000_000_000_000);
     stepArena(sim, ctx);
     expect(healthOf(sim, 1, 0)).toBe(1_000_000_000_000 - 12 * 200_000_000);
-    expect(ctx.coreRemaining[1]).toBe(1_000_000_000_000 - 12 * 200_000_000);
+    expect(ctx.coreRemaining[1]?.[0]).toBe(
+      1_000_000_000_000 - 12 * 200_000_000,
+    );
   });
 
   test('twelve hits of 2e8 on a unit sum to 2.4e9 exactly (no wrap)', () => {
@@ -1802,10 +1806,10 @@ describe('damage sums beyond 32 bits (int.ts contract)', () => {
     const { sim, ctx } = pile(101, 90_000_000_000_000, 2 ** 52);
     stepArena(sim, ctx);
     expect(healthOf(sim, 1, 0)).toBe(0);
-    expect(ctx.coreRemaining[1]).toBe(2 ** 52 - MAX_TICK_DAMAGE);
+    expect(ctx.coreRemaining[1]?.[0]).toBe(2 ** 52 - MAX_TICK_DAMAGE);
     const more = pile(120, 90_000_000_000_000, 5);
     stepArena(more.sim, more.ctx);
-    expect(more.ctx.coreRemaining[1]).toBe(5 - MAX_TICK_DAMAGE);
+    expect(more.ctx.coreRemaining[1]?.[0]).toBe(5 - MAX_TICK_DAMAGE);
   });
 
   test('Overload that would push a hit past MAX_HIT fails at setup', () => {
