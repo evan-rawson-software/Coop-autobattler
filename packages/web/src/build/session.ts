@@ -20,6 +20,7 @@ import { content } from '../content.js';
 import { economy } from './setup.js';
 import {
   UndoStack,
+  previewActions,
   toIntent,
   type ApplyResult,
   type LayoutAction,
@@ -235,13 +236,19 @@ export class BuildSession {
   }
 
   async undo(): Promise<ApplyResult | null> {
-    const r = await this.stack.undo((a) => this.applyAll(a));
+    const r = await this.stack.undo(
+      (a) => this.applyAll(a),
+      (a) => previewActions(this.run.team, content, a),
+    );
     this.publish();
     return r;
   }
 
   async redo(): Promise<ApplyResult | null> {
-    const r = await this.stack.redo((a) => this.applyAll(a));
+    const r = await this.stack.redo(
+      (a) => this.applyAll(a),
+      (a) => previewActions(this.run.team, content, a),
+    );
     this.publish();
     return r;
   }

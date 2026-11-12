@@ -243,11 +243,16 @@ export type BoardIntent =
   | { readonly type: 'return_building'; readonly id: number }
   | {
       readonly type: 'add_conduit';
-      readonly from: { readonly building: number; readonly side: string };
-      readonly to: { readonly building: number; readonly side: string };
+      readonly from: IntentConduitEnd;
+      readonly to: IntentConduitEnd;
       readonly cells: readonly Cell[];
     }
   | { readonly type: 'erase_conduit'; readonly id: number };
+
+/** A conduit end in an intent: a building side, or a border spot (PP-4). */
+export type IntentConduitEnd =
+  | { readonly building: number; readonly side: string }
+  | { readonly border: number; readonly y: number };
 
 export type BuiltinIntent =
   | { readonly type: 'propose_core'; readonly x: number; readonly y: number }

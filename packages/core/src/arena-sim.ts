@@ -71,7 +71,8 @@ import type { Cell } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
 import type { ResourceId } from './resources.js';
 import type { SimConfig } from './sim-config.js';
-import { conduitTouches, type TeamState } from './team-state.js';
+import { conduitsLostWith } from './conduits.js';
+import type { TeamState } from './team-state.js';
 import { unitSpeed, type UnitDef, type UnitId } from './units.js';
 
 // ---------------------------------------------------------------------------
@@ -2094,19 +2095,19 @@ function destroyBuilding(
     building: b.id,
   });
   const team = sim.teams[b.side === 0 ? 0 : 1];
-  const attached = team.conduits.filter((c) => conduitTouches(c, b.id));
-  for (const c of attached) {
+  const lost = new Set(conduitsLostWith(team.conduits, b.id));
+  for (const id of [...lost].sort((x, y) => x - y)) {
     ctx.events?.push({
       tick,
       type: 'conduit_destroyed',
       side: b.side,
-      conduit: c.id,
+      conduit: id,
     });
   }
   const newTeam: TeamState = {
     ...team,
     buildings: team.buildings.filter((p) => p.id !== b.id),
-    conduits: team.conduits.filter((c) => !conduitTouches(c, b.id)),
+    conduits: team.conduits.filter((c) => !lost.has(c.id)),
   };
   sim.teams[b.side === 0 ? 0 : 1] = newTeam;
   sim.producers = sim.producers.filter(

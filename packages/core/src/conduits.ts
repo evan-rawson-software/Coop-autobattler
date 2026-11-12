@@ -18,6 +18,7 @@ import { queryMap, type Cell, type GameMap, type MapQuery } from './map.js';
 import type { ResourceId } from './resources.js';
 import {
   buildingEnd,
+  conduitTouches,
   isBorderEnd,
   type BorderEnd,
   type Conduit,
@@ -495,6 +496,28 @@ function joinEdges(conduits: readonly Conduit[]): Edge[] {
     });
   }
   return out;
+}
+
+/**
+ * The IDs (ascending) of the conduits and halves that go when `building` is
+ * destroyed in battle (PP-4, CB-9a): everything attached to it, and the other
+ * half of every joined link that loses one half. An open half attached to it
+ * goes alone.
+ */
+export function conduitsLostWith(
+  conduits: readonly Conduit[],
+  building: number,
+): number[] {
+  const gone = new Set<number>();
+  for (const c of conduits) if (conduitTouches(c, building)) gone.add(c.id);
+  for (const e of joinEdges(conduits)) {
+    if (e.linked === null) continue;
+    if (gone.has(e.id) || gone.has(e.linked)) {
+      gone.add(e.id);
+      gone.add(e.linked);
+    }
+  }
+  return [...gone].sort((a, b) => a - b);
 }
 
 // ---------------------------------------------------------------------------

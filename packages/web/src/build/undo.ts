@@ -11,9 +11,15 @@
  */
 
 import {
+  addConduit,
+  eraseConduit,
   hashJson,
+  moveBuilding,
+  placeFromStash,
+  returnToStash,
   type Cell,
   type ConduitEnd,
+  type TeamContent,
   type TeamState,
   conduitTouches,
   isBorderEnd,
@@ -32,8 +38,8 @@ export type LayoutAction =
   | { readonly t: 'return'; readonly id: number }
   | {
       readonly t: 'add' | 'erase';
-      readonly from: ConduitEnd;
-      readonly to: ConduitEnd;
+      readonly from: ConduitEnd | BorderEnd;
+      readonly to: ConduitEnd | BorderEnd;
       readonly cells: readonly Cell[];
     };
 
@@ -93,12 +99,10 @@ export function toIntent(
 }
 
 function attached(before: TeamState, id: number): LayoutAction[] {
-  // Halves of border links (PP-4) have no session intent yet (issue #136);
-  // only ordinary conduits are re-added.
+  // Halves of border links (PP-4) are re-added like any conduit.
   const out: LayoutAction[] = [];
   for (const c of before.conduits) {
-    if (!conduitTouches(c, id) || isBorderEnd(c.from) || isBorderEnd(c.to))
-      continue;
+    if (!conduitTouches(c, id)) continue;
     out.push({ t: 'add', from: c.from, to: c.to, cells: c.cells });
   }
   return out;
@@ -141,7 +145,71 @@ export function inverseOf(
 
 export type ApplyResult =
   | { readonly ok: true }
-  | { readonly ok: false; readonly reason: string; readonly detail?: string };
+  | {
+      readonly ok: false;
+      readonly reason: string;
+      readonly detail?: string;
+      /** The refusal changed nothing and the history is as it was. */
+      readonly kept?: true;
+    };
+
+/**
+ * Whether the actions would all be accepted, in order, on this team (pure,
+ * through the core operations). Undo and redo check this first, so a refusal
+ * (a half that the board no longer allows, PP-4) changes nothing.
+ */
+export function previewActions(
+  team: TeamState,
+  content: TeamContent,
+  actions: readonly LayoutAction[],
+): ApplyResult {
+  let state = team;
+  const owner = (id: number): number =>
+    state.buildings.find((b) => b.id === id)?.owner ??
+    state.stash.find((b) => b.id === id)?.owner ??
+    0;
+  for (const a of actions) {
+    let r:
+      | { ok: true; state: TeamState }
+      | { ok: false; reason: string; detail?: string };
+    switch (a.t) {
+      case 'place':
+        r = placeFromStash(state, content, { ...a, actor: owner(a.id) });
+        break;
+      case 'move':
+        r = moveBuilding(state, content, { ...a, actor: owner(a.id) });
+        break;
+      case 'return':
+        r = returnToStash(state, content, { id: a.id, actor: owner(a.id) });
+        break;
+      case 'add': {
+        const end = 'building' in a.from ? a.from : a.to;
+        r = addConduit(state, content, {
+          actor: 'building' in end ? owner(end.building) : 0,
+          from: a.from,
+          to: a.to,
+          cells: a.cells,
+        });
+        break;
+      }
+      case 'erase': {
+        const c = findConduit(state, a);
+        r =
+          c === undefined
+            ? { ok: false, reason: 'unknown_conduit' }
+            : eraseConduit(state, { actor: c.owner, id: c.id });
+        break;
+      }
+    }
+    if (!r.ok) {
+      return r.detail === undefined
+        ? { ok: false, reason: r.reason, kept: true }
+        : { ok: false, reason: r.reason, detail: r.detail, kept: true };
+    }
+    state = r.state;
+  }
+  return { ok: true };
+}
 
 export interface UndoEntry {
   readonly redo: LayoutAction;
@@ -173,15 +241,22 @@ export class UndoStack {
   }
 
   /**
-   * Undo the latest layout change by applying its inverse. If an inverse is
-   * rejected (should not happen) the stack is cleared, since the history can no
+   * Undo the latest layout change by applying its inverse. If `check` refuses
+   * it, nothing changes and the history is kept. If an inverse is
+   * rejected anyway (should not happen) the stack is cleared, since the history can no
    * longer be trusted, and the rejection is returned.
    */
   async undo(
     apply: (actions: readonly LayoutAction[]) => Promise<ApplyResult>,
+    check?: (actions: readonly LayoutAction[]) => ApplyResult,
   ): Promise<ApplyResult | null> {
     const entry = this.undoList.pop();
     if (entry === undefined) return null;
+    const pre = check?.(entry.undo);
+    if (pre !== undefined && !pre.ok) {
+      this.undoList.push(entry);
+      return pre;
+    }
     const r = await apply(entry.undo);
     if (!r.ok) {
       this.clear();
@@ -193,9 +268,15 @@ export class UndoStack {
 
   async redo(
     apply: (actions: readonly LayoutAction[]) => Promise<ApplyResult>,
+    check?: (actions: readonly LayoutAction[]) => ApplyResult,
   ): Promise<ApplyResult | null> {
     const entry = this.redoList.pop();
     if (entry === undefined) return null;
+    const pre = check?.([entry.redo]);
+    if (pre !== undefined && !pre.ok) {
+      this.redoList.push(entry);
+      return pre;
+    }
     const r = await apply([entry.redo]);
     if (!r.ok) {
       this.clear();

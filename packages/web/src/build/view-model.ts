@@ -75,7 +75,12 @@ export function computeFlowView(
         producing.has(key) ||
         graph.edges.some((e) => e.to === key && active.has(e.conduitId));
       if (!on) continue;
-      for (const e of graph.edges) if (e.from === key) active.add(e.conduitId);
+      for (const e of graph.edges) {
+        if (e.from !== key) continue;
+        active.add(e.conduitId);
+        // Both halves of a link carry (PP-4).
+        if (e.linkedConduit !== null) active.add(e.linkedConduit);
+      }
     }
   } catch {
     return null;
