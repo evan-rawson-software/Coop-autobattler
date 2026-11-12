@@ -10,8 +10,7 @@ import {
   addConduit,
   addToStash,
   createTeamState,
-  corePlayerAt,
-  listLegalCorePositionsAnyPlot,
+  listLegalCorePositions,
   occupancy,
   placeCore,
   placeFromStash,
@@ -110,14 +109,21 @@ export function buildSampleTeam(
   const q = queryMap(map, content.terrain);
   let state = createTeamState(map);
 
-  const legal = listLegalCorePositionsAnyPlot(map, content, content.mapgen);
+  const legal = Array.from({ length: map.partySize }, (_, player) =>
+    listLegalCorePositions(map, content, content.mapgen, player).map((pos) => ({
+      ...pos,
+      player,
+    })),
+  )
+    .flat()
+    .sort((a, b) => a.y - b.y || a.x - b.x);
   const corePos = legal[0];
   if (corePos) {
     const r = placeCore(
       state,
       content,
       content.mapgen,
-      corePlayerAt(map, content, corePos.x),
+      corePos.player,
       corePos,
     );
     if (r.ok) state = r.state;
@@ -272,7 +278,7 @@ export function buildSampleTeam(
   // A battle needs one Core per player: place the others last, on the first
   // legal spot of their plot, so the rest of the sample is unchanged.
   for (const spot of legal) {
-    const player = corePlayerAt(map, content, spot.x);
+    const player = spot.player;
     if (state.cores[player] !== null) continue;
     const r = placeCore(state, content, content.mapgen, player, spot);
     if (r.ok) state = r.state;

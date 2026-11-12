@@ -82,6 +82,7 @@ function holdings(s: RunState, p: number): string {
     gold: s.perPlayer[p]?.gold,
     stash: s.team.stash.filter(mine),
     placed: s.team.buildings.filter(mine),
+    conduits: s.team.conduits.filter(mine),
   });
 }
 
@@ -325,6 +326,48 @@ describe('no giving (CP-29, CP-21i)', () => {
         }
       }
     }
+  });
+
+  // PP-1 for conduits: erase and add intents aimed at a partner's conduits or
+  // buildings are refused, and each other player's conduits stay as they were.
+  test("conduit intents on a partner's buildings change nothing", () => {
+    const base = laidOut(laidOut(byStep.get('build') as RunState, 0).s, 1).s;
+    const theirs = (actor: number) =>
+      base.team.conduits.filter((c) => c.owner !== actor);
+    expect(theirs(0).length).toBeGreaterThan(0);
+    expect(theirs(1).length).toBeGreaterThan(0);
+    let tried = 0;
+    for (const actor of [0, 1]) {
+      const intents: Intent[] = [];
+      for (const c of theirs(actor)) {
+        intents.push({ type: 'erase_conduit', id: c.id });
+        // The partner's own conduit, drawn again as the actor.
+        intents.push({
+          type: 'add_conduit',
+          from: c.from,
+          to: c.to,
+          cells: c.cells,
+        });
+      }
+      // From an own building to a partner's building.
+      const mine = base.team.conduits.find((c) => c.owner === actor);
+      const other = theirs(actor)[0];
+      if (mine !== undefined && other !== undefined) {
+        intents.push({
+          type: 'add_conduit',
+          from: mine.from,
+          to: other.to,
+          cells: [],
+        });
+      }
+      for (const intent of intents) {
+        const r = applyIntent(base, actor, intent, deps);
+        tried += 1;
+        expect(r.ok, JSON.stringify(intent)).toBe(false);
+        if (r.ok) expect(violations(base, r.state, actor)).toEqual([]);
+      }
+    }
+    expect(tried).toBeGreaterThan(4);
   });
 
   test('the checker can fail: it flags gold, stash, building and owner changes', () => {

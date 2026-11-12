@@ -516,19 +516,6 @@ export function placeCore(
   return { ok: true, state: { ...state, cores } };
 }
 
-/**
- * The Core of a board that the battle code can handle today: the only placed
- * one, of whichever player, or null if none is placed. Throws if more than one
- * Core is placed; fighting with several Cores comes with issue #132.
- */
-export function soleCore(state: TeamState): Cell | null {
-  const placed = state.cores.filter((c): c is Cell => c !== null);
-  if (placed.length > 1) {
-    throw new RangeError('More than one Core is placed; not supported yet.');
-  }
-  return placed[0] ?? null;
-}
-
 /** invalid_owner, then not_owner, for an `actor` acting on `owner`'s building. */
 function checkActor(
   state: TeamState,

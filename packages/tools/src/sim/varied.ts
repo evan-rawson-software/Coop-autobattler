@@ -10,8 +10,7 @@ import {
   addConduit,
   addToStash,
   createTeamState,
-  listLegalCorePositionsAnyPlot,
-  corePlayerAt,
+  listLegalCorePositions,
   placeCore,
   placeFromStash,
   startBattle,
@@ -187,21 +186,17 @@ export function denseVariant(
       link(sp, 'east', b, 'west', [[x0 + 1, y0 + 3]]);
     }
   }
-  const legal = listLegalCorePositionsAnyPlot(
-    state.map,
-    ctx.content,
-    ctx.mapgen,
-  );
+  const legal = Array.from({ length: state.map.partySize }, (_, player) =>
+    listLegalCorePositions(state.map, ctx.content, ctx.mapgen, player).map(
+      (pos) => ({ ...pos, player }),
+    ),
+  )
+    .flat()
+    .sort((a, b) => a.y - b.y || a.x - b.x);
   for (let t = 0; t < legal.length; t++) {
     const pos = legal[(corePick + t) % legal.length];
     if (pos === undefined) break;
-    const c = placeCore(
-      state,
-      ctx.content,
-      ctx.mapgen,
-      corePlayerAt(state.map, ctx.content, pos.x),
-      pos,
-    );
+    const c = placeCore(state, ctx.content, ctx.mapgen, pos.player, pos);
     if (c.ok) return c.state;
   }
   return fail('core', 'no legal position');

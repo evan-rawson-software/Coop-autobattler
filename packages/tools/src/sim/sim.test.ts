@@ -16,7 +16,6 @@ import {
   buildAnyReferenceBoard,
   generateMap,
   hashJson,
-  soleCore,
   validateTeamState,
   type Json,
 } from '@game/core';
@@ -98,7 +97,7 @@ describe('reference board files', () => {
         expect(result).toMatchObject({ ok: true });
         if (result.ok) expect(result.state).toEqual(built);
         expect(validateSchema(data.team)).toBe(true);
-        expect(soleCore(built)).not.toBeNull();
+        expect(built.cores.every((c) => c !== null)).toBe(true);
         expect(built.map).toEqual(
           generateMap(data.mapSeed, data.partySize, ctx.content, ctx.mapgen),
         );

@@ -1,6 +1,12 @@
 /** Border links in battle (issue #136, PP-4 "In battle"): CB-9a, CB-17a. */
 import { describe, expect, test } from 'vitest';
-import type { ArenaEvent } from './arena-sim.js';
+import {
+  createArenaContext,
+  stepArena,
+  type ArenaEvent,
+  type ArenaSim,
+} from './arena-sim.js';
+import { hashJson } from './hash.js';
 import { startBattle, type Battle } from './battle.js';
 import {
   addConduit,
@@ -9,7 +15,7 @@ import {
 } from './conduits.js';
 import { flowTotals } from './flow-sim.js';
 import type { GameMap } from './map.js';
-import type { TeamState } from './team-state.js';
+import type { Conduit, TeamState } from './team-state.js';
 import { Lab, content, mapgen, simConfig } from './test-support.js';
 
 const map2 = (): GameMap => ({
@@ -170,6 +176,81 @@ describe('destroying one end of a link', () => {
   });
 });
 
+describe('both ends of a link fall in one tick', () => {
+  test('exactly two conduit_destroyed events, one per half', () => {
+    const r = rig();
+    const b = start(r.state);
+    for (let t = 0; t < 60; t++) b.step();
+    for (const id of [r.src, r.cons]) {
+      const h = b.sim.health.find(
+        (x) => 'building' in x && x.side === 0 && x.building === id,
+      );
+      if (h === undefined) throw new Error('no health entry');
+      h.hp = 0;
+    }
+    for (let t = 0; t < 5; t++) {
+      b.step();
+      conserved(b);
+    }
+    expect(
+      ofType(b, 'conduit_destroyed').map((e) => [e.side, e.conduit]),
+    ).toEqual([
+      [0, r.send],
+      [0, r.recv],
+    ]);
+    expect(b.sim.teams[0].buildings.map((x) => x.id)).not.toContain(r.src);
+    expect(b.sim.teams[0].buildings.map((x) => x.id)).not.toContain(r.cons);
+    expect(b.sim.teams[0].conduits).toEqual([]);
+  });
+});
+
+describe('restore around the cut of a link', () => {
+  test('restoring before and after the destruction continues like the straight run', () => {
+    const cut = 60;
+    const total = 140;
+    const SRC = rig().src;
+    const make = (): Battle => start(rig().state);
+    const killSource = (b: Battle): void => {
+      const h = b.sim.health.find(
+        (x) => 'building' in x && x.side === 0 && x.building === SRC,
+      );
+      if (h === undefined) throw new Error('no health entry');
+      h.hp = 0;
+    };
+    const ref = make();
+    const hashes = [hashJson(ref.sim)];
+    for (let t = 0; t < total; t++) {
+      if (t === cut) killSource(ref);
+      ref.step();
+      hashes.push(hashJson(ref.sim));
+    }
+    expect(ref.sim.teams[0].conduits).toEqual([]);
+    for (const at of [10, cut - 1, cut + 1, cut + 30]) {
+      const a = make();
+      for (let t = 0; t < at; t++) {
+        if (t === cut) killSource(a);
+        a.step();
+      }
+      const copy = JSON.parse(JSON.stringify(a.sim)) as ArenaSim;
+      const ctx = createArenaContext(copy, content, simConfig);
+      for (let t = at; t < total; t++) {
+        if (t === cut) {
+          const h = copy.health.find(
+            (x) => 'building' in x && x.side === 0 && x.building === SRC,
+          );
+          if (h === undefined) throw new Error('no health entry');
+          h.hp = 0;
+        }
+        stepArena(copy, ctx);
+        expect(
+          hashJson(copy),
+          `restored at ${String(at)}, tick ${String(t + 1)}`,
+        ).toBe(hashes[t + 1]);
+      }
+    }
+  });
+});
+
 describe('a fallen Core removes no link', () => {
   test('the link keeps carrying after its owner Core falls', () => {
     const r = rig();
@@ -202,5 +283,32 @@ describe('conduitsLostWith', () => {
       r.recv,
     ]);
     expect(conduitsLostWith(r.state.conduits, 999)).toEqual([]);
+  });
+
+  test('a building with several links; a route building of the partner is left out', () => {
+    const end = (building: number, side: 'north' | 'east' | 'south') => ({
+      building,
+      side,
+    });
+    const c = (
+      id: number,
+      owner: number,
+      from: Conduit['from'],
+      to: Conduit['to'],
+    ): Conduit => ({ id, owner, from, to, cells: [] });
+    const conduits: Conduit[] = [
+      c(21, 0, end(1, 'east'), { border: 0, y: 3 }),
+      c(22, 1, { border: 0, y: 3 }, end(11, 'south')),
+      c(23, 0, end(1, 'north'), { border: 0, y: 5 }),
+      c(24, 1, { border: 0, y: 5 }, end(12, 'south')),
+      // The partner's route beyond its receiving building 11.
+      c(25, 1, end(11, 'north'), end(14, 'south')),
+      c(26, 0, end(2, 'north'), end(3, 'south')),
+    ];
+    expect(conduitsLostWith(conduits, 1)).toEqual([21, 22, 23, 24]);
+    expect(conduitsLostWith(conduits, 12)).toEqual([23, 24]);
+    expect(conduitsLostWith(conduits, 11)).toEqual([21, 22, 25]);
+    expect(conduitsLostWith(conduits, 14)).toEqual([25]);
+    expect(conduitsLostWith(conduits, 2)).toEqual([26]);
   });
 });

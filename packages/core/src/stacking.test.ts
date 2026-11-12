@@ -162,3 +162,8 @@ const SHARE90_REFERENCE = 0.0005;
 const LONGEST_DENSE = 14;
 const SHARE50_DENSE = 0.025;
 const SHARE90_DENSE = 0.0006;
+// Measured with one Core per player (#138): reference battles 0 / 0 / 0;
+// dense tier 1: longest 14, 2.05 percent over 50, 0.039 over 90 (limits 14,
+// 2.5, 0.06); tier 3: longest 30, 5.83 over 50, 0.41 over 90; tier 1 against
+// tier 3: longest 6, 0.78 over 50, 0.0078 over 90. Judge a change against
+// these, not against the limits.

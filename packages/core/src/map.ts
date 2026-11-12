@@ -221,42 +221,6 @@ export function listLegalCorePositions(
   return out;
 }
 
-/**
- * The player whose plot holds column `x`; player 0 for a column outside the
- * board, so that the position checks then report `out_of_bounds`. Transitional,
- * with `listLegalCorePositionsAnyPlot` (issue #131 removes both).
- */
-export function corePlayerAt(
-  map: GameMap,
-  content: MapContent,
-  x: number,
-): number {
-  const p = queryMap(map, content.terrain).plotOf(x);
-  return p >= 0 && p < map.partySize ? p : 0;
-}
-
-/**
- * Every position that is legal for the player whose plot holds its lowest-x
- * cell, over all plots, sorted by `(y, x)`. Transitional: it serves the party
- * vote for a single shared Core, which issue #131 replaces by a Core per
- * player; remove it then.
- */
-export function listLegalCorePositionsAnyPlot(
-  map: GameMap,
-  content: MapContent,
-  config: MapgenConfig,
-): Cell[] {
-  const q = queryMap(map, content.terrain);
-  const fp = coreFootprint(content.buildings);
-  const out: Cell[] = [];
-  for (let y = 0; y < map.height; y++) {
-    for (let x = 0; x < map.width; x++) {
-      if (checkCore(q, fp, config, q.plotOf(x), x, y).ok) out.push({ x, y });
-    }
-  }
-  return out;
-}
-
 // ---------------------------------------------------------------------------
 // Loader
 
