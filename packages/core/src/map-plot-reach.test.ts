@@ -50,9 +50,10 @@ describe('PP-15: per-plot reachability', () => {
       for (let seed = 1; seed <= 60; seed++) {
         for (let p = 0; p < size; p++) {
           const r = reachedInPlot(seed, size, p);
-          expect(r.reached, `seed ${seed} size ${size} plot ${p}`).toBe(
-            r.walkable,
-          );
+          expect(
+            r.reached,
+            `seed ${String(seed)} size ${String(size)} plot ${String(p)}`,
+          ).toBe(r.walkable);
         }
       }
     }
