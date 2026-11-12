@@ -1,12 +1,12 @@
 /**
  * The Core placement screen (wireframe 6): the whole map, the positions where
  * the Core fits, the reason it does not fit elsewhere, the routes enemy units
- * would take to the chosen position, and Confirm. After Confirm the Core
- * cannot be moved: the machine leaves `core_placement` and no later step
- * accepts a Core move.
- *
- * Solo: confirming sends `place_core` and then `ready`, which ends the step
- * at once (the per-player screen is issue #142). The legal positions and the reasons come from `core`.
+ * would take to the chosen position, and Ready. Each player places their own
+ * Core in their own plot (other plots are dimmed). A click on a legal cell
+ * sends `place_core`; the choice can be changed until the player is Ready
+ * (Unready reopens it). The step ends when every player has placed and is
+ * Ready; after that the Core cannot be moved. Legal positions and reasons
+ * come from `core`.
  */
 import type { Cell } from '@game/core';
 import { coreFootprint } from '@game/core';
@@ -43,12 +43,20 @@ export function CoreScreen(props: { run: RunHandle }) {
   const team = view.run.team;
   const acting = view.acting;
   const [hover, setHover] = useState<Cell | null>(null);
-  const [selected, setSelected] = useState<Cell | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
+  // The acting player's chosen spot is the one the run holds for them.
+  const mine = useMemo(() => {
+    const c = pendingCoreSpots(view.run.pending).find(
+      (c) => c.player === acting,
+    );
+    return c === undefined ? null : { x: c.x, y: c.y };
+  }, [view.run.pending, acting]);
+  const selected = mine;
   const selectedRef = useRef<Cell | null>(null);
   selectedRef.current = selected;
+  const isReady = view.run.perPlayer[acting]?.ready === true;
   const fp = useMemo(() => coreFootprint(content.buildings), []);
 
   const legal = useMemo(() => legalSet(team, content, acting), [team, acting]);
@@ -94,8 +102,17 @@ export function CoreScreen(props: { run: RunHandle }) {
     paths,
     team,
     partners,
+    acting,
   });
-  data.current = { legal, hoverCand, selectedCand, paths, team, partners };
+  data.current = {
+    legal,
+    hoverCand,
+    selectedCand,
+    paths,
+    team,
+    partners,
+    acting,
+  };
   const drawOverlay = useRef(
     (ctx: CanvasRenderingContext2D, o: OverlayContext) => {
       const d = data.current;
@@ -106,6 +123,7 @@ export function CoreScreen(props: { run: RunHandle }) {
         selected: d.selectedCand,
         paths: d.paths,
         partners: d.partners,
+        acting: d.acting,
       });
     },
   );
@@ -149,23 +167,28 @@ export function CoreScreen(props: { run: RunHandle }) {
   }, []);
   const onSelect = (cell: Cell): void => {
     const v = verdictAt(team, content, cell, acting);
-    if (v.ok) {
-      setSelected(cell);
-      setProblem(null);
-    } else {
+    if (!v.ok) {
       setProblem(v.text);
+      return;
     }
+    if (busy) return;
+    setBusy(true);
+    void session.dispatch({ type: 'place_core', x: cell.x, y: cell.y }).then(
+      (r) => {
+        setBusy(false);
+        setProblem(r.ok ? null : reasonMessage(r.reason, r.detail));
+      },
+    );
   };
 
-  const confirm = (): void => {
-    if (selected === null || busy) return;
+  const setReady = (ready: boolean): void => {
+    if (busy || (ready && selected === null)) return;
     setBusy(true);
     void session
-      .dispatch({ type: 'place_core', x: selected.x, y: selected.y })
-      .then((r) => (r.ok ? session.dispatch({ type: 'ready' }) : r))
+      .dispatch({ type: ready ? 'ready' : 'unready' })
       .then((r) => {
         setBusy(false);
-        if (!r.ok) setProblem(reasonMessage(r.reason, r.detail));
+        setProblem(r.ok ? null : reasonMessage(r.reason, r.detail));
       });
   };
 
@@ -178,8 +201,9 @@ export function CoreScreen(props: { run: RunHandle }) {
       right={
         <Panel title="The Core" id="panel-core">
           <p>
-            Pick a {fp.width} × {fp.height} spot for your Core. It cannot be
-            moved for the rest of the run.
+            Pick a {fp.width} × {fp.height} spot for your Core in your own area.
+            You can change it until you are Ready; once everyone is Ready it
+            cannot be moved for the rest of the run.
           </p>
           <p class="muted">
             Deep is safer. Forward shortens your supply lines.
@@ -206,19 +230,30 @@ export function CoreScreen(props: { run: RunHandle }) {
                 : `${count(routeCount, 'enemy route')} shown for this position.`}
             </p>
           )}
-          <button
-            type="button"
-            id="core-confirm"
-            class="primary"
-            disabled={
-              selected === null ||
-              busy ||
-              view.run.perPlayer[acting]?.ready === true
-            }
-            onClick={confirm}
-          >
-            Confirm Core position
-          </button>
+          {isReady ? (
+            <button
+              type="button"
+              id="core-unready"
+              disabled={busy}
+              onClick={() => {
+                setReady(false);
+              }}
+            >
+              Unready (change the Core)
+            </button>
+          ) : (
+            <button
+              type="button"
+              id="core-confirm"
+              class="primary"
+              disabled={selected === null || busy}
+              onClick={() => {
+                setReady(true);
+              }}
+            >
+              Ready
+            </button>
+          )}
         </Panel>
       }
       bottom={
@@ -229,7 +264,7 @@ export function CoreScreen(props: { run: RunHandle }) {
             ))}
           </ul>
           <p class="muted">
-            After the Core is confirmed you go to the Build screen, then to the
+            When every player is Ready you go to the Build screen, then to the
             first PvE battle.
           </p>
         </Panel>
@@ -250,6 +285,7 @@ export function CoreScreen(props: { run: RunHandle }) {
             hover: hoverCand?.verdict ?? null,
             selected,
             message: problem,
+            ready: isReady,
           })}
         </p>
 

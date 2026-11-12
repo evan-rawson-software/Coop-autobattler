@@ -1561,10 +1561,47 @@ export async function runRunSmoke({
       ([x, y]) => window.__debug.placement.cellToScreen(x, y),
       [spot.x, spot.y],
     );
+    // A click in the other player's plot is refused, in words.
+    const foreign = await page.evaluate(
+      ([n]) => {
+        const w = window.__debug.placement.plotWidth();
+        return window.__debug.placement.cellToScreen(
+          (n === 0 ? w : 0) + 2,
+          8,
+        );
+      },
+      [p],
+    );
+    await page.mouse.click(foreign.x, foreign.y);
+    await settle();
+    check(
+      /own area/i.test(await page.locator('#core-hint').innerText()) &&
+        (await page.evaluate(() => window.__debug.placement.selected())) ===
+          null,
+      `two players: player ${p + 1} cannot place the Core in another player's area (the reason is shown)`,
+    );
     await page.mouse.click(at2.x, at2.y);
     await page.waitForFunction(
       () => !document.querySelector('#core-confirm').disabled,
     );
+    if (p === 0) {
+      // Ready locks the choice; Unready reopens it; no vote panel exists.
+      check(
+        (await page.locator('#panel-core').innerText()).search(/vote/i) < 0,
+        'two players: no vote UI on the Core placement screen',
+      );
+      await page.click('#core-confirm');
+      await page.waitForSelector('#core-unready');
+      await page.mouse.click(foreign.x, foreign.y);
+      await page.click('#core-unready');
+      await page.waitForSelector('#core-confirm:not([disabled])');
+      check(
+        JSON.stringify(
+          await page.evaluate(() => window.__debug.placement.selected()),
+        ) === JSON.stringify(spot),
+        'two players: Unready reopens the choice, the chosen spot is kept',
+      );
+    }
     await page.click('#core-confirm');
     await page.waitForFunction(
       (n) =>
