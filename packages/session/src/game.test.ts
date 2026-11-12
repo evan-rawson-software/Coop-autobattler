@@ -930,7 +930,7 @@ describe('the run-state format version', () => {
     if (r.ok) return;
     expect(r.errors).toHaveLength(1);
     expect(r.errors[0]).toMatch(/unsupported format version 1/);
-    for (const v of [2, 3, 4, 6, '5', null, 0]) {
+    for (const v of [2, 3, 4, 5, 7, '6', null, 0]) {
       const o = clone(s) as unknown as Record<string, unknown>;
       o['formatVersion'] = v;
       const x = validateRunState(o, deps);
