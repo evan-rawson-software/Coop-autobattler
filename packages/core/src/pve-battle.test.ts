@@ -126,9 +126,9 @@ describe('running a PvE battle', () => {
     );
     if (!r.ok) throw new Error('refused');
     const sim = r.battle.sim;
-    expect(sim.health.find((h) => h.side === 1 && h.building === 0)?.hp).toBe(
-      t.stronghold.coreHealth,
-    );
+    expect(
+      sim.health.find((h) => h.side === 1 && 'core' in h && h.core === 0)?.hp,
+    ).toBe(t.stronghold.coreHealth);
     expect(sim.teams[1].buildings).toHaveLength(t.stronghold.buildings.length);
     expect(sim.teams[1].map.features).toHaveLength(0);
     expect(sim.teams[1].map.nodes).toHaveLength(0);
@@ -182,7 +182,7 @@ describe('waves along the whole front', () => {
       const { battle } = s;
       const lastWave = Math.max(...t.waves.map((w) => w.tick));
       // A party Core that does not fall keeps the wave units busy.
-      got(battle.sim.health.find((h) => h.side === 0 && h.building === 0)).hp =
+      got(battle.sim.health.find((h) => h.side === 0 && 'core' in h)).hp =
         10 ** 12;
       // `stepArena` never ends a battle, so every wave is queued whatever
       // happens to the Cores; units that find no room enter a little later.

@@ -9,8 +9,10 @@ import threatsJson from '../../../content/threats.json';
 import unitsJson from '../../../content/units.json';
 import type { Side } from './buildings.js';
 import {
+  isCoreHealth,
   stepArena,
   type ArenaContext,
+  type HealthSim,
   type ArenaSim,
   type UnitSim,
 } from './arena-sim.js';
@@ -478,3 +480,20 @@ export const TIMING =
     .process?.env['CI_RELAXED_TIMING'] === '1'
     ? 3
     : 1;
+
+/**
+ * The health entry of a building by instance ID; `building` 0 means the
+ * side's Core of player `core` (default 0).
+ */
+export function healthEntry(
+  sim: ArenaSim,
+  side: number,
+  building: number,
+  core = 0,
+): HealthSim | undefined {
+  return sim.health.find((h) =>
+    building === 0
+      ? isCoreHealth(h) && h.side === side && h.core === core
+      : !isCoreHealth(h) && h.side === side && h.building === building,
+  );
+}

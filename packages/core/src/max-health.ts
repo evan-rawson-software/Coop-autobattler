@@ -32,7 +32,7 @@ export function maxHealthOf(
   let hp = def?.tiers[tier]?.health ?? 0;
   if (b.kind === 'core' && coreHealthOverride !== undefined) {
     // Checked: the Core health stays within the content bound.
-    assertWithin(coreHealthOverride, 1, MAX_HEALTH, 'Side option coreHealth');
+    assertWithin(coreHealthOverride, 1, MAX_HEALTH, 'Side option coreHealths');
     hp = coreHealthOverride;
   }
   if (team !== undefined) {

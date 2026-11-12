@@ -241,7 +241,7 @@
             },
             {
               "type": "object",
-              "required": ["kind", "side"],
+              "required": ["kind", "side", "core"],
               "additionalProperties": false,
               "properties": {
                 "kind": {
@@ -250,6 +250,10 @@
                 "side": {
                   "type": "integer",
                   "enum": [0, 1]
+                },
+                "core": {
+                  "type": "integer",
+                  "minimum": 0
                 }
               }
             }
@@ -363,9 +367,9 @@
     },
     {
       "title": "core_destroyed",
-      "description": "A side's Core was destroyed (ending the battle is not the simulation's job yet).",
+      "description": "One of a side's Cores (by player index) was destroyed; the battle ends when a side has none left.",
       "type": "object",
-      "required": ["tick", "type", "side"],
+      "required": ["tick", "type", "side", "core"],
       "additionalProperties": false,
       "properties": {
         "type": {
@@ -374,6 +378,10 @@
         "side": {
           "type": "integer",
           "enum": [0, 1]
+        },
+        "core": {
+          "type": "integer",
+          "minimum": 0
         },
         "tick": {
           "type": "integer",
@@ -450,9 +458,9 @@
     },
     {
       "title": "overload_core_damage",
-      "description": "Overload Core decay hit a side's living Core.",
+      "description": "Overload Core decay hit one of a side's living Cores (by player index).",
       "type": "object",
-      "required": ["tick", "type", "side", "damage"],
+      "required": ["tick", "type", "side", "core", "damage"],
       "additionalProperties": false,
       "properties": {
         "type": {
@@ -461,6 +469,10 @@
         "side": {
           "type": "integer",
           "enum": [0, 1]
+        },
+        "core": {
+          "type": "integer",
+          "minimum": 0
         },
         "damage": {
           "type": "integer",

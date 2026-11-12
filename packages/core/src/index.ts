@@ -1,4 +1,6 @@
 export { add } from './add.js';
+export { isCoreHealth } from './arena-sim.js';
+export { sumOverkill } from './battle.js';
 export {
   assertWithin,
   MAX_ARENA_CELLS,
@@ -282,6 +284,8 @@ export type {
   ArenaSim,
   EnteringSim,
   HealthSim,
+  CoreHealthSim,
+  BuildingHealthSim,
   ProducerSim,
   TurretSim,
   UnitSim,
@@ -387,6 +391,7 @@ export type {
   BattleReason,
   BattleResult,
   BattleSideSummary,
+  CoreSummary,
   BattleSummary,
   SimulateBattleResult,
   StartBattleResult,

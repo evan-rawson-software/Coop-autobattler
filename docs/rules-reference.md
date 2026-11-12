@@ -57,15 +57,15 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | Rule | What it specifies | Status |
 | ---- | ----------------- | ------ |
 | PP-1 | Ownership and plot checks on every board operation; conduits have an owner | not yet implemented (issue #129) |
-| PP-2 | One Core per player: team state, positions, `placeCore` | **implemented** (issue #128); health of every Core and `core_not_placed` with the player index remain: not yet implemented (issue #132) |
+| PP-2 | One Core per player: team state, positions, `placeCore`, health | **implemented** (issues #128 and #132); `core_not_placed` still names only the side, and only for a side with no Core at all: the per-player check comes with issues #131 and #138 |
 | PP-3 | Core placement step: each player places their own Core, no vote | not yet implemented (issue #131) |
 | PP-4 | Border links | not yet implemented (issues #135 and #136) |
 | PP-5 | Collector flow rate by tier | **implemented** (issue #130; "One tick: `stepFlow`", step 3, and "Collector rate") |
 | PP-6 | Minimum time between productions, need, store | **implemented** (issue #130; "One battle tick", step 2 and step 7, "In-battle ramp", "Dry run (CB-43)") |
 | PP-7 | Splitting, with back-up | **implemented** ("One tick: `stepFlow`", step 2; vectors against consumers with a top speed since issue #130). An open border half (PP-4) is still issue #135 |
 | PP-8 | Economy buildings act for their owner only; lower collector speed-up cap | not yet implemented (issue #137) |
-| PP-9 | Several Cores per side in the arena; Overload per Core; a destroyed Core switches nothing off | not yet implemented (issue #132) |
-| PP-10 | End conditions and the tiebreak ladder with several Cores | not yet implemented (issue #132) |
+| PP-9 | Several Cores per side in the arena; Overload per Core; a destroyed Core switches nothing off | **implemented** (issue #132; "The arena", "One battle tick", "Overload", "Side options") |
+| PP-10 | End conditions and the tiebreak ladder with several Cores | **implemented** (issue #132; "Battles") |
 | PP-11 | A unit's owner and target Core; one movement field per target Core | not yet implemented (issue #133). A unit also attacks any enemy Core within reach, target or not |
 | PP-12 | Enemy-path preview per Core | not yet implemented (issue #133) |
 | PP-14 | PvE strongholds and bosses with one Core per player | not yet implemented (issue #138) |
@@ -162,18 +162,18 @@ Golden kind `team-state-ops`: every op that changes the board gains `actor`.
 
 The format, the legal positions, `placeCore(actor, x, y)`, `overlaps_core`,
 `buildingAt` and the ASCII picture are **implemented** (issue #128): see "Core
-positions" and "Team state and placement". Two parts of PP-2 are still
-specified only here, and are implemented with battles that have several Cores
-(issue #132):
+positions" and "Team state and placement", and the Core health (issue #132):
 
 - **Health.** Every Core has the maximum health of the Core definition's
   tier 1 (500), raised by the team's `core_health_percent` modifiers. All
   Cores of a side therefore have the same maximum health (a PvE stronghold
   is the exception, PP-14).
 - **A battle needs every Core placed**: `core_not_placed` carries the `side`
-  and the lowest `player` index without a Core. (Today a side with no Core
-  placed gives `core_not_placed` without a player, and a side with more than
-  one placed gives `several_cores`.)
+  and the lowest `player` index without a Core. **Implemented so far:** a side
+  with no Core placed at all gives `core_not_placed` with the `side`; a side
+  with some Cores placed fights with those (a PvE stronghold still has one
+  Core, until issue #138). The per-player check follows with issues #131 and
+  #138.
 
 ### PP-3. The Core placement step
 
@@ -410,6 +410,9 @@ help a partner (CP-29):
   loses its last Core to the decay. With every Core at 500 both sides have the
   last-Core tick 3100 at every party size, so a battle still ends at
   `endTick` 3101 at the latest.
+- **Implemented** (issue #132). Until issue #133 lands every unit's goal is the
+  lowest-indexed living enemy Core, and a unit attacks that Core only when it
+  is in reach (`goalCoreRef`).
 - Golden kind `arena-sim`: `buildingHealth` entries may be `{side, core,
   hp}`; the per-side summary's `coreHealth` becomes the list of Core health
   by player.
@@ -446,9 +449,10 @@ Otherwise the battle continues. Losing some but not all Cores ends nothing.
   `-remaining` (0 or more). A side's overkill for rung 3 is the sum of the
   overkill of **its Cores that were destroyed in the final tick** of the
   battle; Cores that fell earlier add nothing. The sum is formed with
-  `addSaturating(sum, o, 2^53 - 1)`, in player order (each term is at most
-  `2^52`; with up to four terms the exact sum can pass the safe range, and
-  two sides that both saturate are equal on this rung). At the time limit no
+  `addSaturating(sum, o, 2^52)`, in player order (each term is below `2^52`;
+  with up to four terms the exact sum can pass the safe range, and two sides
+  that both saturate are equal on this rung; the cap is `2^52` and not
+  `2^53 - 1` because `addSaturating` needs `o <= 2^53 - 1 - cap`). At the time limit no
   Core need have fallen in the final tick; a side with none has overkill 0.
 - **The attacker is unchanged**: side 0 is always the party and side 1 the
   ghost or the PvE threat, so the defender wins no tie.
@@ -461,7 +465,7 @@ Otherwise the battle continues. Losing some but not all Cores ends nothing.
 
 **Result and summary.** The result stays `{winner, reason, endTick}`. Per
 side the summary's `coreHealth`, `coreMaxHealth` and `coreOverkill` become
-`cores`, a list by player of `{health, maxHealth, overkill, destroyedTick}`
+`cores`, a list of the placed Cores by player of `{player, health, maxHealth, overkill, destroyedTick}`
 (`health` clamped at 0; `overkill` and `destroyedTick` are 0 and `null` for a
 living Core), plus `coresStanding`, `coreHealth` (`sumHp`), `coreMaxHealth`
 (`sumMax`) and `coreOverkill` (the rung-3 sum). The other fields are
@@ -951,14 +955,14 @@ middle:
 
 - **Maximum health** of a building is computed in one place (`maxHealthOf` in
   `max-health.ts`) and used for the health it starts with, its breach cost in
-  the simulation, and its breach cost in the enemy-path preview: the tier's health (the Core is tier 1), or the `coreHealth` side
-  option for the Core, then raised by the team's `core_health_percent` (Core)
+  the simulation, and its breach cost in the enemy-path preview: the tier's health (the Core is tier 1), or the `coreHealths` side
+  option entry of its player for the Core, then raised by the team's `core_health_percent` (Core)
   or matching `building_health_percent` effects (any other building), as
   `floor(value * (100 + sum) / 100)`. The percent sum is accumulated with
   `addInt`; a sum beyond 2^53 - 1, or one for which `value * (100 + sum)`
   would leave the safe range, is a `RangeError` naming the modifier kind. The
   result must not exceed `MAX_HEALTH`;
-  the `coreHealth` option must be an integer from 1 to `MAX_HEALTH`.
+  each `coreHealths` entry must be an integer from 1 to `MAX_HEALTH`.
 - **Turret damage** (`floor(tier damage * (100 + sum) / 100)` with the team's
   `turret_damage_percent`) must not exceed `MAX_DAMAGE`. The percent sum is
   accumulated with `addInt`, and a sum for which `damage * (100 + sum)` would
@@ -1944,8 +1948,9 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-9 | Each side has one Core per player; the `health` list holds them as `{side, core, hp}`; each Core starts at its own maximum health. | not yet implemented (issue #132) |
 | PP-11 | A unit gains `owner` and `target` (the enemy Core it heads for). | not yet implemented (issue #133) |
+
+**Cores (PP-9).** Each side has one Core per placed player Core: `Arena.coreRef[side][player]` is its building `ref` (-1 if none was placed). The `health` list holds, per side, the Cores in player order as `{side, core, hp}` and then the buildings by instance ID as `{side, building, hp}`. Each Core starts at its own maximum health (`maxHealthOf`, with the side option `coreHealths[player]`). A destroyed Core's cells become open ground and **nothing else changes** (CB-17a): its owner's buildings, sources, conduits and units carry on.
 
 Implemented in `packages/core/src/arena.ts` (geometry) and `arena-sim.ts`
 (state and tick), `arena-paths.ts` (fields). Units live in an **arena**: one
@@ -2140,7 +2145,6 @@ row says so.
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
 | PP-11 | Steps 2 and 3: "the enemy Core" and "the movement field" become the unit's target Core and its fields; step 6 ends with retargeting. | not yet implemented (issue #133) |
-| PP-9 | Step 4: Overload decay hits every living Core, each for the full amount. Step 6: `core_destroyed {side, core}`; a destroyed Core switches nothing else off. | not yet implemented (issue #132) |
 | PP-8 | The ramp bonus is per owner. | not yet implemented (issue #137) |
 
 `stepArena(sim, ctx)` changes the state in place, in exactly this order. Let
@@ -2344,7 +2348,7 @@ row says so.
    Overload beat, each _living_ Core (side 0, then side 1) takes `level *
    overloadCoreDamageStep` damage, added to the damage of this step (so it is
    applied together with the unit attacks) and recorded as
-   `overload_core_damage {side, damage}` after the `unit_attacked` events. A
+   `overload_core_damage {side, core, damage}` after the `unit_attacked` events, for **every** living Core in the order side 0 then side 1, ascending player index (each takes the full amount; a destroyed Core takes nothing). A
    Core that is already destroyed takes nothing and records nothing.
 5. **Move and separate** (soft collision, issue #82). Every unit keeps its
    decision from step 3; the units that were killed in step 4 still move
@@ -2584,7 +2588,7 @@ unit's target is attacked when in reach too.
   `breachBaseCost + ceil(maxHealth / breachHealthPerCost)` (at most 1.000001e12: see
   "Content bounds" for why every distance stays exact), where `maxHealth` is
   that building's **maximum** health (the tier's health from the content, or
-  the `coreHealth` option, raised by the team's health modifiers, see "Content
+  the `coreHealths` entry, raised by the team's health modifiers, see "Content
   bounds": the health it starts the battle with), never its current health (`content/sim.json`:
   10 and 10). The
   distance of a cell is the cheapest total cost of the cells entered on the way
@@ -2739,15 +2743,6 @@ exponentially can overtake a capped ramp.
 
 ### Overload (CB-12)
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-9 | Core decay takes the full amount from **every** living Core of both sides on each beat. `overloadOutcome` takes a list of Core health per side and compares each side's last-Core tick. The PvE sample below (one stronghold Core) no longer applies once PP-14 lands. | not yet implemented (issue #132) |
-
 Overload guarantees that battles end. Constants (`content/sim.json`):
 `overloadStartTick` (1800, three minutes at 10 ticks a second), `overloadIntervalTicks` (100),
 `overloadDamageStepPercent` (20), `overloadCoreDamageStep` (5).
@@ -2840,11 +2835,11 @@ shot is recorded in step 3, before the step 4 attack events):
 | `unit_died`          | `unit`                                                          |
 | `building_destroyed` | `side`, `building`                                              |
 | `conduit_destroyed`  | `side`, `conduit`                                               |
-| `core_destroyed`     | `side`                                                          |
+| `core_destroyed`     | `side`, `core`                                                  |
 | `ramp_step`          | `side`, `building`, `effect`, `steps` (the new step count)      |
 | `overload_started`   | (none)                                                          |
 | `overload_level`     | `level` (the new level)                                         |
-| `overload_core_damage` | `side`, `damage`                                              |
+| `overload_core_damage` | `side`, `core`, `damage`                                      |
 | `zone_revealed`      | `zone` (the neutral zone); recorded by a battle at tick 0, first in the log |
 | `battle_ended`       | `winner`, `reason`; recorded by a battle as its last event, `tick` is the last tick that ran |
 
@@ -2871,18 +2866,17 @@ Input: `{ teamA, teamB, gapRows, ticks }` where each team is a `team-state-ops`
 script (`seed`, `partySize`, `ops`) and the two boards must have the same size;
 optionally `units`, a list of `{side, def, x, y}` (arena cell; the unit is placed at the
 cell's centre) or `{side, def, px, py}` (an exact position in sub-cell units) placed at tick 0 in list order (a position where the unit does not fit, or that overlaps a unit placed earlier, is an error), `buildingHealth`, a list of `{side,
-building, hp}` that sets the current health of those buildings (`building` 0 is
-the Core; `hp` from 1 to the building's maximum) before the battle starts, and
+building, hp}` (or `{side, core, hp}` for a Core, `core` the player index) that sets the current health of those buildings (`hp` from 1 to the maximum) before the battle starts, and
 `restoreAt`, a list of tick counts
 after which the state is saved as JSON and restored (the context rebuilt from
 the state alone) before the run continues; the result must not depend on it. A battle starts and runs for `ticks`
 ticks. Result: `{ tick, stateHash, events, sides }` with `stateHash` the hash of
 the final `ArenaSim`, `events` the number of events, and `sides` a list of two
 summaries `{spawned, alive, unitsDied, buildingDamageDealt,
-buildingsDestroyed, coreHealth}` (`buildingDamageDealt` is the health the
+buildingsDestroyed, coreHealth}` (`coreHealth` is the list of Core health by player; `buildingDamageDealt` is the health the
 side's units and turrets took from the enemy's buildings, the Core included,
 Overload decay not; `buildingsDestroyed` does not count the Core;
-`coreHealth` is 0 when it was destroyed). The event log is the vector's event log (`eventLogHash`). Vectors:
+a destroyed Core has 0). The event log is the vector's event log (`eventLogHash`). Vectors:
 `golden/arena-sim.json` (a mirror match, a rush against an almost empty base, a
 sealed base that is breached at its weakest wall, a ringed Core battle saved and restored four times, raiders that walk past a splitter to the Core (issue #66),
 three turrets killing a wave that crosses the front edge, the same turrets
@@ -3168,8 +3162,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-10 | A side loses when **all** of its Cores are destroyed. Ties and the time limit: Cores standing, then share of total Core health, then overkill summed over the Cores that fell in the final tick, then building damage, kills, attacker. The summary lists every Core. | not yet implemented (issue #132) |
-| PP-2 | `core_not_placed` when any player's Core is missing. Today `simulateBattle` (and the arena) take the one Core a side has placed, of whichever player, and reject a side with more than one Core (`several_cores`); with none placed it is `core_not_placed`. | partly implemented (issue #128 as above; the rest is issue #132) |
+| PP-2 | `core_not_placed` names the lowest player without a Core. Today it fires only for a side with no Core at all (and names only the side); a side with some Cores fights with those. | per-player check: not yet implemented (issues #131 and #138) |
 
 Implemented in `packages/core/src/battle.ts` (golden kind `battle`:
 `battle-kind.ts`). **Side 0 is always the party and side 1 the opponent** (the
@@ -3187,8 +3180,8 @@ order and the first failure is reported:
    4) run; different ones never do. This is checked before anything else.
 2. `board_size_mismatch`: the boards differ in height (not reachable with
    generated boards).
-3. `core_not_placed` (with the `side`): a side's Core is not placed, side 0
-   checked first.
+3. `core_not_placed` (with the `side`): a side has no Core placed at all,
+   side 0 checked first.
 4. `invalid_zone`: only with the test-only option below.
 
 Then the neutral zone is generated from `seed` and the width (above), the
@@ -3212,54 +3205,49 @@ zone constraints, otherwise `invalid_zone`.
 Core health is clamped at 0 for display. In the tick where damage takes a
 Core to 0 or below, the health value after **all** of that tick's damage (unit
 attacks and Overload decay) is also kept unclamped, so it may be negative
-(`remaining`); for a living Core it equals its health. The summary reports
-`coreOverkill = -remaining` for a destroyed Core (0 if the Core ended exactly
-at 0) and 0 for a living one. The damage of the tick is the per-target sum
-with the saturation rule of "Integer math conventions": `remaining = hp -
-min(2^52, exact sum)`, with `hp` the Core's health before that tick's damage.
-So a Core's overkill is at most `2^52 - hp`, and two Cores whose sums both
-saturated differ only by their `hp`: the one with the higher pre-tick health
-has the higher `remaining`.
+(`remaining`, `ctx.coreRemaining[side][player]`); for a living Core it equals
+its health. A destroyed Core's overkill is `-remaining` (0 if it ended exactly
+at 0). The damage of the tick is the per-target sum with the saturation rule
+of "Integer math conventions": `remaining = hp - min(2^52, exact sum)`, with
+`hp` the Core's health before that tick's damage. So a Core's overkill is at
+most `2^52 - hp`, and two Cores whose sums both saturated differ only by their
+`hp`. A side's overkill (the summary's `coreOverkill`, the ladder's rung 3) is
+the sum of the overkill of its Cores that were destroyed in the **latest**
+tick, in player order, saturating at `2^52` (`sumOverkill`).
 
-### End conditions (CB-33)
+### End conditions (CB-33, PP-10)
 
-Checked at the end of each tick, after `stepArena`, in this order. The first
-that applies ends the battle.
+Checked at the end of each tick, after `stepArena`. Let `standing[s]` be the
+number of living Cores of side `s`.
 
-1. **One Core destroyed**: the other side wins, `reason: "core_destroyed"`.
-2. **Both Cores destroyed in the same tick**: compare each side's `remaining`.
-   The side with the **higher** value (the Core that ended the tick less far
-   below zero, that is, the side that took less overkill) wins, `reason:
-   "tiebreak_overkill"`. (The comparison is of `hp - damage`, not of the
-   damages: when both damage sums saturated at `2^52`, the side with the higher
-   pre-tick Core health wins.) If they are equal, the **tiebreak ladder**
-   below decides.
-3. **Time limit**: `maxBattleTicks` (12000) ticks have been simulated with
-   both Cores alive: the side with the higher Core health as a fraction of its
-   Core's maximum health wins, compared exactly in integers without forming a product (the fractions
-   `hp0 / max0` and `hp1 / max1` are compared by Euclid's algorithm: integer
-   parts first, then the reciprocals of the remainders, see `compareFractions`
-   in `int.ts`), `reason: "time_limit"`; if the fractions are equal, the
-   ladder below decides. The time limit is reached only if both Cores survive
-   the Overload decay to that tick. The decay alone destroys any Core with at
-   most `overloadCoreDamageStep * m * (m + 1) / 2` health, where `m` is the
-   number of Overload beats before `maxBattleTicks` (102 with the standard
-   constants, 26265 health), so for the Core of 500 health (before
-   `core_health_percent` modifiers) it cannot happen; it is a safety net for
-   larger Cores (a `coreHealth` option) and for tests with Overload
-   effectively disabled.
+1. **One side has no Core left** (`standing[s] = 0`, the other has some): the
+   other side wins, `reason: "core_destroyed"`. Losing some but not all Cores
+   ends nothing.
+2. **Both sides lost their last Core in this tick**: the ladder decides,
+   starting at rung 3.
+3. **Time limit**: `maxBattleTicks` (12000) ticks have been simulated and
+   both sides have a living Core: the ladder decides, starting at rung 1. The
+   decay alone destroys any Core with at most `overloadCoreDamageStep * m * (m
+   + 1) / 2` health, where `m` is the number of Overload beats before
+   `maxBattleTicks` (102 with the standard constants, 26265 health), so with
+   every Core at 500 health (before `core_health_percent` modifiers) all
+   Cores of both sides fall at tick 3100 at every party size and the time
+   limit is a safety net for larger Cores (`coreHealths`) and tests.
 
-**The tiebreak ladder** (after equal overkill, or equal Core health fractions
-at the time limit), first rung that differs wins:
+**The ladder.** The first rung on which the sides differ decides; the
+defender wins no tie.
 
-- (a) more **building damage dealt** than the other side
-  (`buildingDamageDealt`), `reason: "tiebreak_building_damage"`;
-- (b) more **units killed** (`unitsKilled`), `reason: "tiebreak_kills"`;
-- (c) otherwise the **attacker**, side 0, wins, `reason:
-  "tiebreak_attacker"`.
+| Rung | The winner has | `reason` |
+| ---- | -------------- | -------- |
+| 1 | more Cores standing | `time_limit` |
+| 2 | the larger share of total Core health, `sumHp / sumMax`, compared exactly with `compareFractions` | `time_limit` |
+| 3 | less overkill (above) | `tiebreak_overkill` |
+| 4 | more building damage dealt (`buildingDamageDealt`) | `tiebreak_building_damage` |
+| 5 | more units killed (`unitsKilled`) | `tiebreak_kills` |
+| 6 | otherwise the attacker, side 0 | `tiebreak_attacker` |
 
-The defender wins no tie. (The overkill rung is `tiebreak_overkill`; the same
-codes serve whichever condition led to the ladder.)
+With one Core per side this is exactly the earlier rule set. Rungs 1 and 2
+can only differ at the time limit.
 
 ### Tiebreak counters
 
@@ -3327,9 +3315,11 @@ vector's `eventLogHash`.
 | `unitsSpawned`  | Units spawned over the battle.                                       |
 | `unitsLost`     | Units that died.                                                     |
 | `buildingsLost` | Buildings destroyed (the Core is not counted).                       |
-| `coreHealth`    | Core health at the end, clamped at 0.                                |
-| `coreMaxHealth` | The Core's maximum health.                                           |
-| `coreOverkill`  | See "Core health and overkill".                                      |
+| `cores`         | Per placed Core, by player: `{player, health, maxHealth, overkill, destroyedTick}` (`health` clamped at 0; `overkill` 0 and `destroyedTick` null while it stands). |
+| `coresStanding` | Cores alive at the end.                                              |
+| `coreHealth`    | Total Core health at the end (`sumHp`, Cores clamped at 0).          |
+| `coreMaxHealth` | Total maximum Core health (`sumMax`).                                |
+| `coreOverkill`  | The overkill of the Cores destroyed in the latest tick, summed with saturation; see "Core health and overkill". |
 | `rampSteps`     | `ramp_step` events of the side (steps of destroyed buildings count). |
 | `buildingDamageDealt` | Damage the side's units applied to the enemy's buildings, Core included; see "Tiebreak counters". |
 | `unitsKilled`   | Enemy units that died from the side's damage (`unitsDied` of the other side). |
@@ -3345,7 +3335,7 @@ the timeline out.
 
 Input `{teamA, teamB, seed}` and optionally `sideOptions` (`[side0, side1]`,
 each `null` or an object of the side options of "Side options": `scheduledWaves`,
-`freePower`, `unitStrengthPercent`, `coreHealth`; absent in the older vectors);
+`freePower`, `unitStrengthPercent`, `coreHealths`; absent in the older vectors);
 each team is a `team-state-ops` script (`map` or
 `seed` and `partySize`, and `ops`). Result for a battle that ran: `{ok: true,
 result, summary (without timeline), zone, stateHash, events}` where
@@ -3362,7 +3352,7 @@ equal overkill, `battle.tiebreak-building-damage` (a soldier wave hits a turret
 and dies: side 1 has the building damage although side 0 has the kill),
 `battle.tiebreak-kills` (free-power turrets kill a wave: side 1 wins on kills
 with no building damage on either side) and `battle.tiebreak-attacker` (two
-bare Cores), `battle.wave-queue` (a wave of 80 soldiers larger than the front row: the units that find no room wait in the `entering` queue and come in later); party sizes 1 and 2 refused.
+bare Cores), `battle.wave-queue` (a wave of 80 soldiers larger than the front row: the units that find no room wait in the `entering` queue and come in later); party sizes 1 and 2 refused; for several Cores (issue #132) `battle.two-plot-core-falls` (one Core falls at tick 2000 and the battle goes on; an earlier fall adds no overkill), `battle.walled-four-cores-overload` (eight walled Cores fall at tick 3100), `battle.time-limit-cores-standing-side0` and `-side1` (rung 1, the defender can win), `battle.time-limit-core-share` (rung 2) and `battle.overkill-two-cores` (rung 3).
 
 ### Decided simplifications
 
@@ -3383,7 +3373,6 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-9 | `coreHealth` becomes `coreHealths`, one value per Core. | not yet implemented (issue #132) |
 | PP-11 | A wave unit's owner is the plot of the column it enters on; its target is the Core of the party plot it enters. | not yet implemented (issue #133) |
 
 A small, general mechanism of the arena simulation (`createArenaSim(...,
@@ -3441,9 +3430,8 @@ identically; with none the field is absent.
   side's `unit_strength` ramp bonus (which is capped separately by
   `maxUnitStrengthPercent`; the base is not) and its `unit_strength_percent`
   modifiers.
-- **`coreHealth`**: the side's Core starts with this health (and it is the
-  Core's maximum health in the summary and the time-limit rule) instead of the
-  definition's (before the team's `core_health_percent`). It must be an integer
+- **`coreHealths`**: a list by player index: that player's Core starts with this health (and it is its maximum health in the summary and the time-limit rule) instead of the
+  definition's (before the team's `core_health_percent`); a player without an entry has the definition's. Each entry must be an integer
   from 1 to `MAX_HEALTH`, and `unitStrengthPercent` must keep every unit type
   within the stat bounds even with the modifiers and the largest ramp bonus the
   side can reach added; otherwise the battle does not start (a `RangeError`
@@ -3802,7 +3790,6 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-9 | Cores are destroyed in side, then player-index order, before buildings; Overload decay is applied in the same order. | not yet implemented (issue #132) |
 | PP-11 | Target choice: the opposite Core, then the nearest by field distance; ties by nearness of plot index to the opposite plot, then the larger enemy player index (the lower column in the unit's own frame). | not yet implemented (issue #133) |
 
 What exists so far is the order in which simultaneous flow events resolve; all
