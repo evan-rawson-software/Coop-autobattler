@@ -100,10 +100,15 @@ describe('run-state.schema.json', () => {
     if (pos === undefined) throw new Error('no core position');
     send(0, { type: 'propose_core', ...pos });
     send(1, { type: 'vote', choice: { x: pos.x, y: pos.y } });
-    const node = s.team.map.nodes[0];
     const stashed = s.team.stash[0];
-    if (node === undefined || stashed === undefined) throw new Error('setup');
-    send(1, {
+    if (stashed === undefined) throw new Error('setup');
+    // A node in the plot of the building's owner, sent by that owner (PP-1).
+    const plotWidth = s.team.map.plotWidth;
+    const node = s.team.map.nodes.find(
+      (n) => Math.floor(n.x / plotWidth) === stashed.owner,
+    );
+    if (node === undefined) throw new Error('setup');
+    send(stashed.owner, {
       type: 'place_building',
       id: stashed.id,
       x: node.x,
