@@ -342,3 +342,17 @@ button:disabled {
 .core-sub.fallen {
   opacity: 0.55;
 }
+
+/* Several Cores per side on a narrow screen: the label takes its own line. */
+@media (max-width: 480px) {
+  .core-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .core-label {
+    grid-column: 1 / -1;
+    overflow-wrap: anywhere;
+  }
+  .core-sub {
+    padding-left: 4px;
+  }
+}
