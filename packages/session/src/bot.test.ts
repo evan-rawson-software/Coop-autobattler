@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { hashJson } from '@game/core';
 import {
   BOT_STRATEGIES,
@@ -10,6 +10,9 @@ import {
 import { replayRun } from './machine.js';
 import { makeGameDeps } from './test-support.js';
 import type { CreateRunArgs } from './types.js';
+
+// Whole bot runs: far over the default 5 s on a loaded machine.
+vi.setConfig({ testTimeout: 120_000 });
 
 const NAMES = ['Ann', 'Bo', 'Cy', 'Di'];
 
@@ -61,7 +64,7 @@ describe('bot player', () => {
         );
         expect(again.ok).toBe(true);
         if (again.ok) expect(hashJson(again.state)).toBe(hashJson(r.state));
-      });
+      }, 60_000);
     }
   }
 

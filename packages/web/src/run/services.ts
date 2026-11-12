@@ -263,6 +263,13 @@ export async function createServices(
         }),
   });
   const init = await initSaves(saves, INSTALLED_VERSION, env.now(), runDeps);
+  // Pool rows of older game versions are never listed again; drop them so
+  // they stop using quota (TA-8, PP-17). A failed clean-up is not an error.
+  try {
+    await ghostPool.store.removeOtherVersions(RUN_VERSION);
+  } catch {
+    // the rows only cost quota
+  }
   const localPool = ghostPool.store;
   registerDebug({
     ghostPool: {

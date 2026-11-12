@@ -13,12 +13,21 @@
  * arguments give the same run.
  */
 import { Rng, listLegalCorePositions, sealedProducers } from '@game/core';
-import { planLayout, type LayoutStyle } from './bot-layout.js';
+import {
+  MIN_COVERAGE_PERCENT,
+  bestOwnedSupply,
+  consumerNeed,
+  coveragePercent,
+  planLayout,
+  type LayoutStyle,
+} from './bot-layout.js';
+import { planLinks } from './bot-links.js';
 import { applyIntent, createRun } from './machine.js';
 import { readShop } from './economy.js';
 import { SKIP_CHOICE } from './events.js';
 import { SELECT_GHOST } from './ghosts.js';
 import { eventFollowUp, openVote } from './selectors.js';
+import { replayLastBattle } from './replay.js';
 import type { GhostSnapshot } from '@game/core';
 import type {
   CreateRunArgs,
@@ -67,6 +76,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       bld_armory: 4,
       bld_overclocker: 3,
       bld_turret: 1,
+      bld_splitter: 6,
     },
     tierBonus: 1,
     maxBuys: 8,
@@ -80,6 +90,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       walls: false,
       placeLeftovers: true,
       priority: ['bld_barracks', 'bld_armory', 'bld_overclocker', 'bld_turret'],
+      links: true,
     },
   },
   fortify: {
@@ -122,6 +133,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       bld_wall: 5,
       bld_turret: 3,
       bld_overclocker: 2,
+      bld_splitter: 5,
     },
     tierBonus: 6,
     maxBuys: 5,
@@ -135,6 +147,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       walls: true,
       placeLeftovers: true,
       priority: ['bld_barracks', 'bld_armory', 'bld_turret', 'bld_overclocker'],
+      links: true,
     },
   },
   weak: {
@@ -180,6 +193,23 @@ export interface BotOptions {
   readonly candidates?: (state: RunState) => Json;
   /** Safety bound on accepted intents (default 20000). */
   readonly maxIntents?: number;
+  /**
+   * Record the length and the Cores left standing of every battle
+   * (`BotRunResult.battles`). Replays each battle once, so it costs time.
+   */
+  readonly trackBattles?: boolean;
+}
+
+/** What the harness reads off one battle (issue #140). */
+export interface BattleStat {
+  readonly round: number;
+  readonly kind: 'pve' | 'pvp';
+  readonly partySize: number;
+  readonly won: boolean;
+  /** Tick on which the battle ended. */
+  readonly endTick: number;
+  /** Cores standing at the end, [party, opponent]. */
+  readonly coresStanding: readonly [number, number];
 }
 
 export interface Rejection {
@@ -202,6 +232,10 @@ export interface BotRunResult {
    */
   readonly snapshots: readonly GhostSnapshot[];
   readonly strategy: BotStrategyName;
+  /** Border-link halves the bot drew over the run (accepted ones). */
+  readonly linkHalves: number;
+  /** Per battle; empty unless `trackBattles` was set. */
+  readonly battles: readonly BattleStat[];
 }
 
 function isObj(v: unknown): v is Record<string, unknown> {
@@ -211,6 +245,10 @@ function isObj(v: unknown): v is Record<string, unknown> {
 class Driver {
   state: RunState;
   accepted = 0;
+  /** Border-link halves the bot has drawn. */
+  linkHalves = 0;
+  readonly battles: BattleStat[] = [];
+  trackBattles = false;
   readonly rejected: Rejection[] = [];
   readonly snapshots: GhostSnapshot[] = [];
   constructor(
@@ -223,8 +261,10 @@ class Driver {
   send(player: number, intent: Intent): boolean {
     const r = applyIntent(this.state, player, intent, this.deps);
     if (r.ok) {
+      const before = this.state.step;
       this.state = r.state;
       this.accepted++;
+      if (this.trackBattles && r.state.step !== before) this.recordBattle();
       for (const fx of r.effects) {
         if (fx.type === 'ghost_snapshot') this.snapshots.push(fx.snapshot);
       }
@@ -239,6 +279,26 @@ class Driver {
       detail: r.detail ?? '',
     });
     return false;
+  }
+
+  /** Replay the battle that was just resolved and note how it ended. */
+  private recordBattle(): void {
+    const st = this.state;
+    if (st.step !== 'pve_summary' && st.step !== 'pvp_summary') return;
+    const rep = replayLastBattle(st, this.deps);
+    if (!rep.ok) return;
+    while (!rep.battle.isOver()) rep.battle.step();
+    const result = rep.battle.result();
+    if (result === null) return;
+    const [a, b] = rep.battle.summary().sides;
+    this.battles.push({
+      round: st.round,
+      kind: st.step === 'pve_summary' ? 'pve' : 'pvp',
+      partySize: st.players.length,
+      won: result.winner === 0,
+      endTick: result.endTick,
+      coresStanding: [a.coresStanding, b.coresStanding],
+    });
   }
 }
 
@@ -307,14 +367,35 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       );
       const sources = owned.filter((b) => b.def === 'bld_extractor').length;
       const users = owned.filter((b) => CONSUMERS.includes(b.def)).length;
+      const splitters = owned.filter((b) => b.def === 'bld_splitter').length;
+      const supply = bestOwnedSupply(d.state.team, p, d.deps.content);
+      // With links, even players are donors (more collectors) and odd players
+      // receivers (more consumers); everyone else balances their own.
+      const role = s.layout.links === true ? (p % 2 === 0 ? 1 : 2) : 0;
+      const slack = role === 0 ? 1 : 3;
       let best = -1;
       let bestScore = 0;
       data.offers.forEach((o, slot) => {
         if (o === null || o.price > me.gold) return;
         let score = buildScore(s, o.def, o.tier, rng);
         if (!s.random) {
-          if (o.def === 'bld_extractor' && sources >= users + 1) score = 0;
-          if (CONSUMERS.includes(o.def) && users >= sources + 1) score = 0;
+          const extra = role === 1 ? slack : 1;
+          const more = role === 2 ? slack : 1;
+          if (o.def === 'bld_extractor' && sources >= users + extra) score = 0;
+          if (CONSUMERS.includes(o.def) && users >= sources + more) score = 0;
+          // One Splitter per two consumers, no more.
+          if (o.def === 'bld_splitter' && splitters * 2 >= users) score = 0;
+          // Never buy a consumer the collectors cannot feed (CB-10a); a
+          // receiver counts on its neighbour's collectors too.
+          if (
+            CONSUMERS.includes(o.def) &&
+            coveragePercent(
+              supply,
+              consumerNeed(d.deps.content, o.def, o.tier),
+            ) < MIN_COVERAGE_PERCENT
+          ) {
+            score = 0;
+          }
         }
         if (score > bestScore) {
           bestScore = score;
@@ -355,6 +436,23 @@ function layout(d: Driver, s: Strategy, rng: Rng): void {
       rng,
     );
     for (const intent of intents) d.send(p, intent);
+  }
+  if (s.layout.links === true) {
+    const steps = planLinks(
+      d.state.team,
+      d.deps.content,
+      plotWidth,
+      s.layout,
+      rng,
+    );
+    for (const step of steps) {
+      if (
+        d.send(step.player, step.intent) &&
+        step.intent.type === 'add_conduit'
+      ) {
+        d.linkHalves++;
+      }
+    }
   }
   for (let guard = 0; guard < 20; guard++) {
     const sealed = sealedProducers(d.state.team, d.deps.content);
@@ -491,6 +589,7 @@ export function playBotRun(
   const strategy = STRATEGIES[options.strategy];
   const rng = Rng.fromSeed(options.seed).child(options.strategy);
   const d = new Driver(created.state, deps);
+  d.trackBattles = options.trackBattles === true;
   const cap = options.maxIntents ?? 20000;
   let stuck = 0;
   while (d.state.step !== 'run_over') {
@@ -520,5 +619,7 @@ export function playBotRun(
     rejected: d.rejected,
     snapshots: d.snapshots,
     strategy: options.strategy,
+    linkHalves: d.linkHalves,
+    battles: d.battles,
   };
 }
