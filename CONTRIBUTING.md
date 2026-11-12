@@ -122,7 +122,11 @@ install chromium`). CI installs it and runs it on every push.
 `pnpm check` runs the whole CI chain in order and stops at the first failure:
 typecheck, lint, format check, test, build, content validation, smoke, then
 `golden:update`, failing if that leaves any changed file. Run it before
-pushing. CI sets `CI_RELAXED_TIMING=1`, which multiplies wall-time limits
+pushing. It ends with `CHECK PASSED` or `CHECK FAILED at step <name>` and its
+exit status is non-zero on any failure. Do not pipe it through other commands
+(`pnpm check | tail` reports `tail`'s status, so `&& git push` still runs); if
+you must, use `set -o pipefail`. (`CHECK_STEPS`, a JSON array of argv arrays,
+is a test-only hook that replaces the chain.) CI sets `CI_RELAXED_TIMING=1`, which multiplies wall-time limits
 (smoke frame intervals, battles per second, ms bounds in tests) by 3; unset,
 the strict limits apply.
 
