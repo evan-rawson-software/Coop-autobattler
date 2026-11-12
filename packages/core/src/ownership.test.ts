@@ -16,8 +16,8 @@ import { board, content, mapgen } from './test-support.js';
 
 // Two plots of 12 columns: plot 0 is x 0..11, plot 1 is x 12..23.
 const NODES: [number, number, string][] = [
-  [11, 2, 'res_a'],
   [3, 2, 'res_a'],
+  [11, 2, 'res_a'],
   [14, 2, 'res_a'],
 ];
 
@@ -82,9 +82,9 @@ describe('buildings: not_owner', () => {
         }),
       ).toMatchObject({ ok: false, reason: 'not_owner' });
     }
-    expect(returnToStash(p.state, content, { actor: 1, id: p.id })).toMatchObject(
-      { ok: false, reason: 'not_owner' },
-    );
+    expect(
+      returnToStash(p.state, content, { actor: 1, id: p.id }),
+    ).toMatchObject({ ok: false, reason: 'not_owner' });
     // The owner still can.
     must(
       moveBuilding(p.state, content, {
@@ -101,9 +101,9 @@ describe('buildings: not_owner', () => {
 
   test('unknown_building comes first, then invalid_owner, then not_owner', () => {
     const a = stash(empty(), 'bld_wall', 0);
-    expect(
-      returnToStash(a.state, content, { actor: 5, id: 99 }),
-    ).toMatchObject({ reason: 'unknown_building' });
+    expect(returnToStash(a.state, content, { actor: 5, id: 99 })).toMatchObject(
+      { reason: 'unknown_building' },
+    );
     for (const actor of [-1, 2, 0.5, Number.NaN]) {
       expect(removeFromStash(a.state, { actor, id: a.id })).toMatchObject({
         reason: 'invalid_owner',
@@ -116,9 +116,10 @@ describe('buildings: outside_own_plot', () => {
   test('a footprint cell in a neighbour plot is rejected, also on a move', () => {
     const a = stash(empty(), 'bld_wall', 0);
     const args = { actor: 0, id: a.id, y: 5, rotation: 0 };
-    expect(
-      placeFromStash(a.state, content, { ...args, x: 12 }),
-    ).toMatchObject({ ok: false, reason: 'outside_own_plot' });
+    expect(placeFromStash(a.state, content, { ...args, x: 12 })).toMatchObject({
+      ok: false,
+      reason: 'outside_own_plot',
+    });
     must(placeFromStash(a.state, content, { ...args, x: 11 }));
     // Barracks is 2x2: x = 11 puts its right column in plot 1.
     const b = stash(empty(), 'bld_barracks', 0);
@@ -243,9 +244,9 @@ describe('conduits: owner and plot', () => {
       reason: 'not_owner',
       detail: String(e),
     });
-    expect(
-      addConduit(state, content, { actor: 7, ...args }),
-    ).toMatchObject({ reason: 'not_owner' });
+    expect(addConduit(state, content, { actor: 7, ...args })).toMatchObject({
+      reason: 'not_owner',
+    });
     // Mixed owners: the end owned by someone else is named.
     const other = put(state, 'bld_barracks', 1, 14, 6);
     expect(
@@ -261,27 +262,27 @@ describe('conduits: owner and plot', () => {
     });
   });
 
-  test('the conduit records its owner and only the owner erases it', () => {
-    let { state, e, b } = setup();
-    state = must(
-      addConduit(state, content, {
+  test('a conduit inside the own plot is accepted and records its owner', () => {
+    const e = put(empty(), 'bld_extractor', 0, 11, 2);
+    const b = put(e.state, 'bld_barracks', 0, 10, 6);
+    const r = must(
+      addConduit(b.state, content, {
         actor: 0,
-        from: { building: e, side: 'east' },
-        to: { building: b, side: 'south' },
+        from: { building: e.id, side: 'north' },
+        to: { building: b.id, side: 'south' },
         cells: [
           { x: 11, y: 3 },
           { x: 11, y: 4 },
           { x: 11, y: 5 },
         ],
       }),
-    ).state;
-    // Starting east of the extractor needs (12, 2): use a rotation-0 route.
-    expect(state.conduits).toHaveLength(1);
+    );
+    expect(r.state.conduits[0]?.owner).toBe(0);
   });
 });
 
 describe('validateTeamState: ownership and plots', () => {
-  const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+  const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
   const errorsOf = (data: unknown): string[] => {
     const r = validateTeamState(data, content, mapgen);
     return r.ok ? [] : [...r.errors];
@@ -342,7 +343,8 @@ describe('eraseConduit', () => {
     expect(eraseConduit(c.state, { actor: 1, id: c.id })).toMatchObject({
       reason: 'not_owner',
     });
-    expect(must(eraseConduit(c.state, { actor: 0, id: c.id })).state.conduits)
-      .toEqual([]);
+    expect(
+      must(eraseConduit(c.state, { actor: 0, id: c.id })).state.conduits,
+    ).toEqual([]);
   });
 });
