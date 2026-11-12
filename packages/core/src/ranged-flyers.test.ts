@@ -123,7 +123,7 @@ describe('a ranged unit fires from its range and holds its place (CB-16b)', () =
         px: 1500,
         py: 7000,
       });
-      const spots = [
+      const spots: [number, number][] = [
         [1200, 7300],
         [1800, 7300],
       ];

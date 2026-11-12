@@ -1831,7 +1831,7 @@ export function spawnUnitForTest(
   for (const e of args.allowOverlap === true ? [] : sim.units) {
     const other = ctx.content.units.get(e.def);
     if (other?.flying !== def.flying) continue;
-    const rr = def.collisionRadius + (other?.collisionRadius ?? 0);
+    const rr = def.collisionRadius + other.collisionRadius;
     const dx = e.px - px;
     const dy = e.py - py;
     if (dx * dx + dy * dy < rr * rr) {
