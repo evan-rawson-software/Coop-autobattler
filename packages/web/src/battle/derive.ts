@@ -6,7 +6,6 @@
 
 import {
   occupancy,
-  soleCore,
   type BattleSummary,
   type BuildingDef,
   type PlacedBuilding,
@@ -151,7 +150,8 @@ function coreFocus(
   g: Geometry,
   side: Side,
 ): { x: number; y: number } | null {
-  const core = soleCore(record.initialTeams[side]);
+  // The first placed Core; every player's Core comes with the web issue #142.
+  const core = record.initialTeams[side].cores.find((c) => c !== null) ?? null;
   if (core === null) return null;
   const def = content.buildings.list().find((d) => d.kind === 'core');
   const fp = def?.footprint ?? { width: 1, height: 1 };
