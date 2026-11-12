@@ -72,6 +72,8 @@ export interface BoardViewProps {
   /** Changing this puts the camera back at Center (new map, new screen). */
   readonly resetKey?: unknown;
   readonly selection?: Selection | null;
+  /** The player whose Core "My base" centres on (default: the first Core). */
+  readonly basePlayer?: number | null | undefined;
   readonly onHover?: (hit: Hit | null) => void;
   readonly onSelect?: (selection: Selection | null) => void;
   readonly neutralLabel?: string;
@@ -202,11 +204,11 @@ export function BoardView(props: BoardViewProps) {
   useEffect(() => {
     controller.setLayout(
       scene.layout.bounds,
-      ownCoreCentre(scene),
+      ownCoreCentre(scene, props.basePlayer),
       resetKey ?? JSON.stringify(scene.layout.bounds),
     );
     requestDraw.current();
-  }, [scene, resetKey, controller]);
+  }, [scene, resetKey, controller, props.basePlayer]);
 
   // Redraw on selection change, or when an overlay's inputs change.
   useEffect(() => {

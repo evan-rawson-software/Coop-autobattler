@@ -416,10 +416,18 @@ export function enemyCoreCentre(scene: Scene): { x: number; y: number } | null {
   return { x: (x0 + x1) / 2, y: (y0 + y1) / 2 };
 }
 
-/** View-space centre of the own board's Core, if placed. */
-export function ownCoreCentre(scene: Scene): { x: number; y: number } | null {
+/**
+ * View-space centre of the own board's Core, if placed: the Core of `player`
+ * when given and placed (a fallen Core keeps its position), else the first.
+ */
+export function ownCoreCentre(
+  scene: Scene,
+  player?: number | null,
+): { x: number; y: number } | null {
   const own = scene.boards.find((b) => b.frame.id === 'own');
-  if (!own?.core) return null;
-  const r = own.core.rect;
+  const chosen = player == null ? null : (own?.cores[player] ?? null);
+  const core = chosen ?? own?.core ?? null;
+  if (!core) return null;
+  const r = core.rect;
   return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
 }

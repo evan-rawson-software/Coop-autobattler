@@ -60,6 +60,11 @@ export interface BattleViewProps {
   readonly initialTick?: number;
   /** Called about twice a second while playing, and when playback stops. */
   readonly onTick?: (tick: number) => void;
+  /**
+   * The acting player of a run (the top bar's switcher): "My base" centres on
+   * this player's Core. Absent in sample battles: the first Core is used.
+   */
+  readonly acting?: number;
   /** Extra controls for the top bar (the sample picker). */
   readonly topBarExtra?: ComponentChildren;
 }
