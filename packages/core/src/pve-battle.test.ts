@@ -341,7 +341,7 @@ function sweep(): Row[] {
 /** The last round at which a board wins any threat in the sweep (pinned). */
 const LAST_WIN: Record<ReferenceBoardName, number> = {
   rush: 8,
-  fortify: 9,
+  fortify: 11,
   poor: 7,
 };
 
@@ -381,7 +381,10 @@ describe('sweep of reference boards against every threat', () => {
     expect(blocks[0]).toBeGreaterThan(blocks[1] ?? 0);
     expect(blocks[1]).toBeGreaterThan(blocks[2] ?? 0);
     expect(blocks[3]).toBe(0);
-    expect(blocks[2]).toBe(0);
+    // Since the wide-front pathing (issue #82) the fortify board wins exactly
+    // one threat in rounds 11 to 15 (Escalator, medium, round 11); before it
+    // there was none.
+    expect(blocks[2]).toBe(1);
   }, 300_000);
 
   test('archetypes test what they should (criterion 3)', () => {

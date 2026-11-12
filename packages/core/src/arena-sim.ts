@@ -461,6 +461,8 @@ export interface ArenaContext {
   nearCell: Int32Array;
   action: Uint8Array;
   arg: Int32Array;
+  /** Per unit: 1 if it attacks this tick (decided before any unit moves). */
+  holds: Uint8Array;
   /**
    * Damage accumulated this tick. Float64Array holding integers, summed with
    * `addDamage` (saturating at MAX_TICK_DAMAGE, each hit at most MAX_HIT, so
@@ -640,6 +642,7 @@ export function createArenaContext(
     nearCell: new Int32Array(192),
     action: new Uint8Array(0),
     arg: new Int32Array(0),
+    holds: new Uint8Array(0),
     unitDamage: new Float64Array(0),
     buildingDamage: new Float64Array(arena.buildings.length),
     attackDamage: new Float64Array(arena.buildings.length),
@@ -929,6 +932,9 @@ function ensureUnitCapacity(ctx: ArenaContext, n: number): void {
   const action = new Uint8Array(size);
   action.set(ctx.action);
   ctx.action = action;
+  const holds = new Uint8Array(size);
+  holds.set(ctx.holds);
+  ctx.holds = holds;
   const damage = new Float64Array(size);
   damage.set(ctx.unitDamage);
   ctx.unitDamage = damage;
@@ -1541,6 +1547,8 @@ const ACT_NONE = 0;
 const ACT_UNIT = 1;
 const ACT_BUILDING = 2;
 const ACT_MOVE = 3;
+/** Transient (between decision passes): chase the unit at index `arg`. */
+const ACT_AGGRO = 4;
 
 /** Below this many enemy units the searches look at every one of them. */
 const FEW_UNITS = 24;
@@ -1729,8 +1737,153 @@ function moveTo(ctx: ArenaContext, i: number, tx: number, ty: number): void {
   ctx.motion.ty[i] = ty;
 }
 
+/**
+ * Decision pass 1 (rule a): attack the nearest enemy unit in contact. Every
+ * decision pass reads only the state and the results of the earlier passes.
+ */
+function decideContact(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  i: number,
+  u: UnitSim,
+): void {
+  ctx.action[i] = ACT_NONE;
+  ctx.holds[i] = 0;
+  ctx.motion.want[i] = 0;
+  const j = nearestContact(sim, ctx, u, defOf(ctx, u));
+  if (j >= 0) {
+    ctx.action[i] = ACT_UNIT;
+    ctx.arg[i] = j;
+    ctx.holds[i] = 1;
+  }
+}
+
+/**
+ * Decision pass 2 (rules a2 and b): chase the nearest visible enemy unit in
+ * aggro range, else attack the Core when it is within reach.
+ */
+function decideAim(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  i: number,
+  u: UnitSim,
+): void {
+  if (ctx.action[i] !== ACT_NONE) return;
+  const arena = ctx.arena;
+  const def = defOf(ctx, u);
+  const reachR = def.reach + def.radius;
+  if (ctx.simConfig.aggroRangeCells > 0) {
+    const a = nearestVisible(sim, ctx, u);
+    if (a >= 0) {
+      ctx.action[i] = ACT_AGGRO;
+      ctx.arg[i] = a;
+      return;
+    }
+  }
+  const coreRef = arena.coreRef[1 - u.side] ?? -1;
+  const core = coreRef >= 0 ? arena.buildings[coreRef] : undefined;
+  if (
+    core !== undefined &&
+    core.alive &&
+    buildingDist2(u.px, u.py, core) <= reachR * reachR
+  ) {
+    ctx.action[i] = ACT_BUILDING;
+    ctx.arg[i] = coreRef;
+    ctx.holds[i] = 1;
+  }
+}
+
+/**
+ * Move along the heading `(hx, hy)` (not zero; its length is the distance of
+ * the aim point). If an ally that holds its place (it attacks this tick) is
+ * ahead and within the combined collision radii of the line, slide past it:
+ * the heading becomes `H + sigma * perp(H)` (45 degrees), `sigma` towards the
+ * side away from the ally, or, on the line, towards the positive x of the
+ * unit's own frame (then the positive y). See "Steering".
+ */
+function moveAlong(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  i: number,
+  u: UnitSim,
+  hx: number,
+  hy: number,
+): void {
+  const { width, height } = ctx.arena.geom;
+  const heads = ctx.heads[u.side];
+  let vx = hx;
+  let vy = hy;
+  if (heads !== undefined) {
+    const l2 = hx * hx + hy * hy;
+    // Candidates: allies whose centre is closer than `reach` (below), found
+    // in the cells that hold the square of that half-width around the unit,
+    // so the set does not depend on the alignment of the grid.
+    const reach = 4 * ctx.maxRadius;
+    const gx0 = cellCoord(u.px - reach, width);
+    const gx1 = cellCoord(u.px + reach, width);
+    const gy0 = cellCoord(u.py - reach, height);
+    const gy1 = cellCoord(u.py + reach, height);
+    const cr = ctx.crad[i] ?? 0;
+    let best = -1;
+    let bestD = 0;
+    let bestCross = 0;
+    for (let y = gy0; y <= gy1; y++) {
+      for (let x = gx0; x <= gx1; x++) {
+        let j = heads[y * width + x] ?? -1;
+        while (j !== -1) {
+          const f = j !== i ? sim.units[j] : undefined;
+          if (f !== undefined) {
+            const rx = f.px - u.px;
+            const ry = f.py - u.py;
+            const d = rx * rx + ry * ry;
+            const rc = cr + (ctx.crad[j] ?? 0);
+            // A holder blocks within two collision diameters, an ally that
+            // moves only when its circle already overlaps ours.
+            const lim = ctx.holds[j] === 1 ? 4 * rc * rc : rc * rc;
+            if (d < lim) {
+              const dot = rx * hx + ry * hy;
+              const cross = rx * hy - ry * hx;
+              if (dot > 0 && dot < l2 && cross * cross <= rc * rc * l2) {
+                if (
+                  best < 0 ||
+                  d < bestD ||
+                  (d === bestD &&
+                    (cross > bestCross ||
+                      (cross === bestCross &&
+                        f.id < (sim.units[best]?.id ?? 0))))
+                ) {
+                  best = j;
+                  bestD = d;
+                  bestCross = cross;
+                }
+              }
+            }
+          }
+          j = ctx.next[j] ?? -1;
+        }
+      }
+    }
+    if (best >= 0) {
+      const frame = u.side === 0 ? 1 : -1;
+      let sigma = bestCross > 0 ? 1 : bestCross < 0 ? -1 : 0;
+      if (sigma === 0) {
+        // On the line: towards positive x (then y) of the unit's own frame.
+        sigma = hy !== 0 ? (-hy * frame > 0 ? 1 : -1) : hx * frame > 0 ? 1 : -1;
+      }
+      vx = hx - sigma * hy;
+      vy = hy + sigma * hx;
+    }
+  }
+  moveTo(ctx, i, u.px + vx, u.py + vy);
+}
+
 /** Move towards the centre of the Core cell nearest to the unit. */
-function moveToCore(ctx: ArenaContext, i: number, u: UnitSim): void {
+function moveToCore(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  i: number,
+  u: UnitSim,
+): void {
   const core = ctx.arena.coreRef[1 - u.side] ?? -1;
   const b = core >= 0 ? ctx.arena.buildings[core] : undefined;
   if (b === undefined || !b.alive) return;
@@ -1750,47 +1903,38 @@ function moveToCore(ctx: ArenaContext, i: number, u: UnitSim): void {
       by = c.y;
     }
   }
-  moveTo(ctx, i, bx * S + S / 2, by * S + S / 2);
+  const hx = bx * S + S / 2 - u.px;
+  const hy = by * S + S / 2 - u.py;
+  if (hx === 0 && hy === 0) return;
+  moveAlong(sim, ctx, i, u, hx, hy);
 }
 
-function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
+/**
+ * Decision pass 3 (rule c and the chase of rule a2): where the units that
+ * neither attack nor wait move to.
+ */
+function decideMove(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  i: number,
+  u: UnitSim,
+): void {
   const arena = ctx.arena;
   const { width, height } = arena.geom;
   const def = defOf(ctx, u);
   const reachR = def.reach + def.radius;
-  ctx.action[i] = ACT_NONE;
-  ctx.motion.want[i] = 0;
-
-  // a. Attack the nearest enemy unit in contact.
-  const j = nearestContact(sim, ctx, u, def);
-  if (j >= 0) {
-    ctx.action[i] = ACT_UNIT;
-    ctx.arg[i] = j;
+  const act = ctx.action[i];
+  if (act === ACT_AGGRO) {
+    const e = sim.units[ctx.arg[i] ?? -1];
+    ctx.action[i] = ACT_NONE;
+    if (e === undefined) return;
+    const hx = e.px - u.px;
+    const hy = e.py - u.py;
+    if (hx === 0 && hy === 0) moveTo(ctx, i, e.px, e.py);
+    else moveAlong(sim, ctx, i, u, hx, hy);
     return;
   }
-
-  // a2. Aggro (CB-16): move towards the nearest visible enemy unit in range.
-  if (ctx.simConfig.aggroRangeCells > 0) {
-    const a = nearestVisible(sim, ctx, u);
-    const e = a >= 0 ? sim.units[a] : undefined;
-    if (e !== undefined) {
-      moveTo(ctx, i, e.px, e.py);
-      return;
-    }
-  }
-
-  // b. Attack the Core when it is within reach.
-  const coreRef = arena.coreRef[1 - u.side] ?? -1;
-  const core = coreRef >= 0 ? arena.buildings[coreRef] : undefined;
-  if (
-    core !== undefined &&
-    core.alive &&
-    buildingDist2(u.px, u.py, core) <= reachR * reachR
-  ) {
-    ctx.action[i] = ACT_BUILDING;
-    ctx.arg[i] = coreRef;
-    return;
-  }
+  if (act !== ACT_NONE) return;
 
   // c. Move.
   const cell =
@@ -1801,17 +1945,20 @@ function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
   if (d > 0) {
     const k = stepFor(ctx, u.side, field, cell);
     if (k >= 0) {
-      moveTo(
+      // Steer by the direction of the step, not at the next cell's centre.
+      moveAlong(
+        sim,
         ctx,
         i,
-        (k % width) * S + S / 2,
-        Math.floor(k / width) * S + S / 2,
+        u,
+        ((k % width) - (cell % width)) * S,
+        (Math.floor(k / width) - Math.floor(cell / width)) * S,
       );
     }
     return;
   }
   if (d === 0) {
-    moveToCore(ctx, i, u);
+    moveToCore(sim, ctx, i, u);
     return;
   }
 
@@ -1820,7 +1967,7 @@ function decide(sim: ArenaSim, ctx: ArenaContext, i: number, u: UnitSim): void {
   const here0 = bd[cell] ?? -1;
   if (here0 < 0) return; // wait
   if (here0 === 0) {
-    moveToCore(ctx, i, u);
+    moveToCore(sim, ctx, i, u);
     return;
   }
   const k = breachStep(
@@ -1971,7 +2118,15 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   buildPresence(sim, ctx);
   for (let i = 0; i < n; i++) {
     const u = units[i];
-    if (u !== undefined) decide(sim, ctx, i, u);
+    if (u !== undefined) decideContact(sim, ctx, i, u);
+  }
+  for (let i = 0; i < n; i++) {
+    const u = units[i];
+    if (u !== undefined) decideAim(sim, ctx, i, u);
+  }
+  for (let i = 0; i < n; i++) {
+    const u = units[i];
+    if (u !== undefined) decideMove(sim, ctx, i, u);
   }
   fireTurrets(sim, ctx, tick);
 

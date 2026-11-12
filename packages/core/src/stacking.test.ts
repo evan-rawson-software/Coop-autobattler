@@ -139,20 +139,26 @@ describe('stacking duration, tier 3 and mixed', () => {
     const t3 = heavy.state;
     const a = stacking(t3, t3, 1);
     const b = stacking(t1, t3, 1);
-    expect(a.longest).toBeLessThanOrEqual(20);
-    expect(a.over50 / a.unitTicks).toBeLessThanOrEqual(0.1);
-    expect(a.over90 / a.unitTicks).toBeLessThanOrEqual(0.008);
-    expect(b.longest).toBeLessThanOrEqual(14);
-    expect(b.over50 / b.unitTicks).toBeLessThanOrEqual(0.015);
-    expect(b.over90 / b.unitTicks).toBeLessThanOrEqual(0.001);
+    expect(a.longest).toBeLessThanOrEqual(34);
+    expect(a.over50 / a.unitTicks).toBeLessThanOrEqual(0.075);
+    expect(a.over90 / a.unitTicks).toBeLessThanOrEqual(0.005);
+    expect(b.longest).toBeLessThanOrEqual(6);
+    expect(b.over50 / b.unitTicks).toBeLessThanOrEqual(0.003);
+    expect(b.over90 / b.unitTicks).toBeLessThanOrEqual(0.0002);
   }, 120_000);
 });
 
-// Pinned from measurements (tier 3: longest 17, 8.6 over 50, 0.6 over 90; tier 1 vs 3: 11, 1.1, 0.015; reference: longest 3 ticks, 0.19 percent of unit-ticks
-// over 50, under 0.2 over 90; dense tier 1: longest 10, 3.4 over 50, 0.15 over 90).
-const LONGEST_REFERENCE = 3;
-const SHARE50_REFERENCE = 0.0025;
-const SHARE90_REFERENCE = 0.002;
-const LONGEST_DENSE = 10;
-const SHARE50_DENSE = 0.04;
-const SHARE90_DENSE = 0.002;
+// Pinned from measurements (after the wide-front pathing of #82 part 2; before it, in brackets).
+// reference: longest 0 [3] ticks, 0 [0.19] percent of unit-ticks over 50, 0 over 90;
+// dense tier 1: longest 12 [10], 1.04 [3.4] over 50, 0.008 [0.15] over 90;
+// tier 3: longest 30 [17], 6.5 [8.6] over 50, 0.34 [0.6] over 90;
+// tier 1 against tier 3: longest 5 [11], 0.22 [1.1] over 50, 0.005 [0.015] over 90.
+// The longest run of a pair is one worst case and rises where armies press on
+// the Core from every side (crowd density in the field is deferred, #86); the
+// shares of unit-ticks, which count the whole battle, all fall.
+const LONGEST_REFERENCE = 2;
+const SHARE50_REFERENCE = 0.0005;
+const SHARE90_REFERENCE = 0.0005;
+const LONGEST_DENSE = 14;
+const SHARE50_DENSE = 0.012;
+const SHARE90_DENSE = 0.0002;

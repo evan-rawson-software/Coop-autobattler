@@ -415,10 +415,11 @@ describe('save and restore at any tick', () => {
         waitingAt.push(t);
       }
     }
-    // The queue is non-empty for many ticks and has emptied by the end.
-    expect(waitingTicks).toBeGreaterThanOrEqual(100);
+    // The queue is non-empty for many ticks (about 50: the units spread
+    // along the front instead of queueing in file) and has emptied by the end.
+    expect(waitingTicks).toBeGreaterThanOrEqual(40);
     expect(waitingAt[0]).toBe(0);
-    const ats = [0, 40, 90, 150].map(
+    const ats = [0, 15, 30, 45].map(
       (k) => (waitingAt[Math.min(k, waitingTicks - 1)] ?? 0) + 1,
     );
     for (const at of ats) {
@@ -644,7 +645,7 @@ describe('wave queue with mixed collision radii', () => {
         [1355, 3612],
       ],
     );
-    expect(r.entered).toEqual([['unit_stout', 1292, 3716]]);
+    expect(r.entered).toEqual([['unit_stout', 1292, 3700]]);
     expect(r.waiting).toEqual(['unit_bulky']);
   });
 
@@ -656,7 +657,7 @@ describe('wave queue with mixed collision radii', () => {
         [1355, 3612],
       ],
     );
-    expect(r.entered).toEqual([['unit_stout', 1292, 3716]]);
+    expect(r.entered).toEqual([['unit_stout', 1292, 3700]]);
     expect(r.waiting).toEqual(['unit_bulky', 'unit_bulky']);
   });
 

@@ -583,8 +583,8 @@ describe('funnelling', () => {
     expect(funnel.dead).toBeGreaterThan(open.dead);
     expect(funnel.leftHp).toBeLessThan(open.leftHp);
     expect({ open, funnel }).toEqual({
-      open: { dead: 2, leftHp: 295 },
-      funnel: { dead: 10, leftHp: 40 },
+      open: { dead: 2, leftHp: 265 },
+      funnel: { dead: 7, leftHp: 105 },
     });
   });
 });
@@ -950,10 +950,11 @@ describe('enemy-path preview', () => {
     };
     // Straight down column 5 to the cell above the Core (5,2).
     expect(pathCells(got(paths[5]))).toBe(col(5, 15, 2).join(' '));
-    // From the west edge the enemy (whose tie key prefers the higher arena
-    // row, i.e. sideways before down) walks along the front row to column 5.
+    // From the west edge the enemy walks the diagonal (cost 14 per step, which
+    // beats 20 for a sideways and a forward step) until it is in column 5, then
+    // straight down: forward is preferred whenever steps tie.
     expect(pathCells(got(paths[0]))).toBe(
-      ['0,15', '1,15', '2,15', '3,15', '4,15', '5,15', ...col(5, 14, 2)].join(
+      ['0,15', '1,14', '2,13', '3,12', '4,11', '5,10', ...col(5, 9, 2)].join(
         ' ',
       ),
     );
@@ -988,13 +989,12 @@ describe('enemy-path preview', () => {
     const at = (x: number) => got(paths.find((q) => q.entry.x === x));
     const text = (cs: readonly Cell[]): string =>
       cs.map((c) => `${String(c.x)},${String(c.y)}`).join(' ');
-    expect(text(at(3).approach)).toBe(
-      '3,16 4,16 5,16 6,16 7,16 8,16 9,16 10,16',
-    );
-    // The on-board cells are the entry and the walk from (10, 15) on.
-    expect(text(at(3).cells).startsWith('3,15 10,15 10,14 10,13 9,13')).toBe(
-      true,
-    );
+    expect(text(at(3).approach)).toBe('4,16 5,16 6,16');
+    // The on-board cells are the entry and the walk from (7, 15) on: the
+    // detour across row 16 is one diagonal up, two steps along, one down.
+    expect(
+      text(at(3).cells).startsWith('3,15 7,15 8,15 9,15 10,15 10,14'),
+    ).toBe(true);
     expect(text(at(7).approach)).toBe('');
     for (const p of paths) {
       for (const c of p.cells) {
@@ -1068,7 +1068,22 @@ describe('enemy-path preview', () => {
       });
       const walked = walk(sim, ctx, u, 6 * p.cells.length + 12);
       expect(events.length).toBeGreaterThanOrEqual(0);
-      expect(walked.slice(0, p.cells.length)).toEqual(p.cells);
+      // The preview is the route of cells; a soldier steers by the direction
+      // of each step and keeps its offset in the cell, so it may cut across
+      // a neighbouring cell. It starts in the entry cell, stays within one
+      // cell of the route, and passes by every cell of the route.
+      const near = (a: Cell, b: Cell): boolean =>
+        Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) <= 1;
+      expect(walked[0]).toEqual(p.cells[0]);
+      const len = Math.min(walked.length, p.cells.length + 4);
+      for (const c of walked.slice(0, len)) {
+        expect(
+          p.cells.some((r) => near(r, c)) || p.approach.some((r) => near(r, c)),
+        ).toBe(true);
+      }
+      for (const r of p.cells.slice(0, Math.max(0, walked.length - 4))) {
+        expect(walked.some((c) => near(r, c))).toBe(true);
+      }
     }
   });
 

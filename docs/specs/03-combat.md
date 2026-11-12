@@ -269,11 +269,21 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   hold their place against enemies, and waiting allies give way to units that
   are moving. Units walk over open ground: around natural features,
   around buildings, across the front edge into the enemy board, and over
-  conduits. Routing is grid-based and deterministic (CB-30): the shortest
-  path of cells towards the Core says where a unit heads; the circles then
-  decide how far it gets (it slides along walls and other units and waits
-  when it is boxed in). The exact rules are in the rules reference ("Unit
-  geometry" and the battle tick).
+  conduits. Routing is grid-based and deterministic (CB-30): the cheapest
+  path of cells towards the Core (eight directions, a diagonal step costing
+  1.4 times a straight one, and no cutting corners through solid cells) says
+  in which direction a unit heads, and where paths tie the unit goes
+  **forward**, not sideways, so an army advances on a wide front instead of
+  sliding along its row to the Core's column and marching in single file. A
+  unit steers by the direction of its step and keeps its sideways position
+  within the cell and the corridor; it does not aim at cell centres. A mover
+  whose way is blocked by an ally that holds its place (one that is fighting)
+  steps around it, to the side away from the ally; walls correct any drift.
+  The circles decide how far a unit gets (it slides along walls and other
+  units and waits when it is boxed in). The field is static: it does not
+  know where the crowds are (routing around crowds is a later change,
+  issue #86). The exact rules are in the rules reference ("Unit geometry",
+  the battle tick and "Goals and movement fields").
 - **CB-15** **Targeting.** Every unit heads for the enemy Core by the
   shortest open path and attacks what blocks it. No unit type prefers
   buildings: destroying a source or a junction cripples the enemy's ramp for
@@ -286,8 +296,11 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   balance of production. A melee unit attacks when the gap between its circle
   and its target (a unit's circle, or the nearest point of a building) is
   within its reach; a unit with an enemy unit in sight within three cells
-  walks towards it instead of along its route. Because units occupy space,
-  only so many can reach a target at once: bodies form the front line.
+  walks towards it instead of along its route (stepping around an ally that
+  already fights the same target, so followers reach the enemy too). Because
+  units occupy space, only so many can reach a target at once: bodies form
+  the front line. Two enemies that both fight share the push that separates
+  them (issue #103).
 - **CB-16a** **Production and room.** A unit appears next to the building that
   made it, at the nearest free spot. When there is none the finished unit is
   held, production stops drawing resources and the factory backs up like any

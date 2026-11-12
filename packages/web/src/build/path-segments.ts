@@ -7,13 +7,16 @@
 
 import type { Cell } from '@game/core';
 
-/** True if the two cells share an edge (4-adjacent). */
+/**
+ * True if the two cells share an edge or a corner (8-adjacent): the movement
+ * field steps diagonally (issue #82), so a previewed path does too.
+ */
 export function areAdjacent(a: Cell, b: Cell): boolean {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y) === 1;
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) === 1;
 }
 
 /**
- * The maximal runs of consecutive 4-adjacent cells, in order. A new run starts
+ * The maximal runs of consecutive 8-adjacent cells, in order. A new run starts
  * wherever two consecutive cells are not adjacent. An empty list gives no run.
  */
 export function pathSegments(cells: readonly Cell[]): Cell[][] {
@@ -43,7 +46,7 @@ export interface PathStub {
  * The stubs of a previewed path: one `exit` at every cell where the walk
  * leaves the board and one `reentry` at every cell where it returns, in walk
  * order. `cells` and `approach` are those of an `EnemyPath`: `approach` holds
- * the off-board cells in walk order, each detour a run of 4-adjacent cells,
+ * the off-board cells in walk order, each detour a run of adjacent cells,
  * and every detour sits between two on-board runs (`pathSegments(cells)`) or,
  * for the last one, ends the walk. So the i-th detour leaves at the last cell
  * of run i and returns at the first cell of run i + 1; the final detour has

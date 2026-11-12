@@ -172,12 +172,25 @@ describe('the push of one overlapping pair (percent 75, cap 40, radii 47 + 47)',
     ]);
   });
 
-  test('two enemy fighters do not push each other', () => {
+  test('two enemy fighters share the push, so a pressed-together pair separates (#103)', () => {
+    // Overlap 34, 75 percent = 26 (rounded up), each takes half: 13.
     const out = step([
       { id: 1, side: 0, at: A, kind: 'fighter' },
       { id: 2, side: 1, at: B, kind: 'fighter' },
     ]);
-    expect(out).toEqual([[...A], [...B]]);
+    expect(out).toEqual([
+      [987, 1000],
+      [1073, 1000],
+    ]);
+  });
+
+  test('an enemy mover does not push a fighter: it gives way alone', () => {
+    const out = step([
+      { id: 1, side: 0, at: A, kind: 'fighter' },
+      { id: 2, side: 1, at: B, kind: 'idle' },
+    ]);
+    expect(out[0]).toEqual([...A]);
+    expect(out[1]?.[0]).toBeGreaterThan(B[0]);
   });
 
   test('the total is capped: a deep overlap moves a pair apart by the cap, not more', () => {
@@ -968,9 +981,9 @@ describe('overlap is bounded', () => {
     }
     expect(deepMax).toBeLessThanOrEqual(40);
     expect(deepMean / runs).toBeLessThanOrEqual(1.5);
-    // Centres do coincide now and then (how long pairs stay stacked is pinned
-    // on whole battles in stacking.test.ts).
-    expect(worstPct).toBe(100);
+    // Centres come (almost) together now and then (how long pairs stay stacked
+    // is pinned on whole battles in stacking.test.ts).
+    expect(worstPct).toBeGreaterThanOrEqual(90);
   });
 
   test('overlap is temporary: a crowd whose target is gone is clear of overlap within 20 ticks', () => {
