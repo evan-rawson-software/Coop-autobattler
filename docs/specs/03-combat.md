@@ -458,6 +458,19 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   units occupy space, only so many can reach a target at once: bodies form
   the front line. Two enemies that both fight share the push that separates
   them (issue #103).
+- **CB-16b [DECIDED]** **Ranged units.** A unit is melee or ranged. A ranged
+  unit attacks from a distance (its reach is its range, edge to edge) and
+  stops to fire while it has a target in range. Placeholder: the Archer, from
+  the Range building. Only ranged attackers can hit flying units: ranged
+  ground units, flying units (always ranged) and turrets. A melee unit whose
+  only remaining enemies are flyers ignores them and goes on to its goal.
+- **CB-16c [DECIDED]** **Flying units.** A flying unit is always ranged, can
+  attack air and ground targets, flies straight at its target Core over
+  walls, lakes and cliffs, and collides only with other flying units (by a
+  much smaller collision circle than its drawn size). Walls and gates do
+  nothing against it; turrets and ranged units are the defense. Placeholder:
+  the Drone, from the Hangar building. (Flyers in PvE waves and the shop
+  entries of the new buildings are not done yet.)
 - **CB-16a** **Production and room.** A unit appears next to the building that
   made it, at the nearest free spot. When there is none the finished unit is
   held, production stops drawing resources and the factory backs up like any
@@ -481,10 +494,10 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   range, in its owner's plot or a teammate's. **Gates** block enemies but
   let all of the party's units through, whoever owns the gate or the unit.
 - **CB-18a [DECIDED]** **Where a turret can shoot.** A turret can target an
-  enemy unit that is on the party's own board or in the neutral zone, and
-  is in range. It can never target a unit on the enemy's board, however
-  close to the far edge of the zone the turret's range reaches. (Owner
-  decision; replaces "a turret's range never reaches across the front
+  enemy unit, flying or not, that is on the party's own board or in the
+  neutral zone, and is in range. It can never target a unit on the enemy's
+  board, however close to the far edge of the zone the turret's range
+  reaches. (Owner decision; replaces "a turret's range never reaches across the front
   edge". Not yet implemented: the prototype's turrets still stop at their
   own front edge. See the rules reference.)
 - **CB-19** **Funnelling.** Lakes, cliffs, and walls together determine the

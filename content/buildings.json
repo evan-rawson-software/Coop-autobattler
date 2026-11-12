@@ -81,6 +81,62 @@
       ]
     },
     {
+      "id": "bld_range",
+      "kind": "unit_producer",
+      "unit": "unit_archer",
+      "footprint": { "width": 2, "height": 2 },
+      "inputs": [{ "resource": "res_a", "side": "south" }],
+      "outputs": [],
+      "tiers": [
+        {
+          "health": 50,
+          "price": 24,
+          "costPerUnit": 7,
+          "productionIntervalTicks": 100
+        },
+        {
+          "health": 75,
+          "price": 50,
+          "costPerUnit": 6,
+          "productionIntervalTicks": 75
+        },
+        {
+          "health": 100,
+          "price": 90,
+          "costPerUnit": 5,
+          "productionIntervalTicks": 50
+        }
+      ]
+    },
+    {
+      "id": "bld_hangar",
+      "kind": "unit_producer",
+      "unit": "unit_drone",
+      "footprint": { "width": 2, "height": 2 },
+      "inputs": [{ "resource": "res_b", "side": "south" }],
+      "outputs": [],
+      "tiers": [
+        {
+          "health": 50,
+          "price": 30,
+          "costPerUnit": 8,
+          "productionIntervalTicks": 120
+        },
+        {
+          "health": 75,
+          "price": 60,
+          "costPerUnit": 7,
+          "productionIntervalTicks": 90
+        },
+        {
+          "health": 100,
+          "price": 100,
+          "costPerUnit": 6,
+          "productionIntervalTicks": 60
+        }
+      ]
+    },
+    {
       "id": "bld_wall",
       "kind": "defense",
       "defenseType": "wall",

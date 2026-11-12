@@ -274,6 +274,24 @@ export function drawBattleOverlay(
   }
   ctx.fillStyle = theme.boardBg;
   ctx.fill();
+  // Ranged units carry a dot, flying units an outer ring (issue #59).
+  ctx.beginPath();
+  for (let i = 0; i < units.length; i++) {
+    const u = units[i];
+    const d = u === undefined ? undefined : content.units.get(u.def);
+    if (u === undefined || d === undefined) continue;
+    if (d.attackType !== 'ranged' && !d.flying) continue;
+    pxOf(u, tmp);
+    const ur = radiusOf(u);
+    if (d.flying) {
+      ctx.moveTo(tmp.x + ur * 1.4, tmp.y);
+      ctx.arc(tmp.x, tmp.y, ur * 1.4, 0, Math.PI * 2);
+    } else {
+      ctx.moveTo(tmp.x + ur * 0.3, tmp.y);
+      ctx.arc(tmp.x, tmp.y, ur * 0.3, 0, Math.PI * 2);
+    }
+  }
+  ctx.stroke();
 
   // Health bars of damaged units, when zoomed in.
   if (z >= 18) {

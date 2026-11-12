@@ -140,8 +140,9 @@ planned unit or building to content removes the flag by itself (tested).
 | `fx_*`                     | Effects: `fx_hit_spark` (3 frames), `fx_explosion` (4 frames, 32x32), `fx_spawn_puff` (3), `fx_turret_shot` (points north), `fx_shadow`. |
 | `ui_*`                     | `ui_panel` (32x32) and `ui_bg` (64x64) tileable, `ui_button_normal/hover/disabled`, `ui_card` (9-slice), `ui_icon_coin/heart/lock/ready`, `ui_event_<type>` for each event type in `content/events.json`. |
 
-Planned content (`unit_archer`, `unit_drone`, `bld_range`, `bld_hangar`) has
-sprites already and is listed under `planned` in the atlas.
+The Archer, Drone, Range and Hangar (`unit_archer`, `unit_drone`, `bld_range`,
+`bld_hangar`) were drawn before the content existed; they are in `content/` now,
+so the atlas no longer lists them under `planned`.
 
 ## Autotiles (lake and cliff)
 

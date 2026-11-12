@@ -516,9 +516,11 @@ describe('planned content', () => {
   });
 
   test('art without content is planned, with content it is not, and nothing breaks', () => {
+    // The content now has these four; take them out to see the planned case.
+    const planned = ['unit_archer', 'unit_drone', 'bld_range', 'bld_hangar'];
     const base = {
-      units: loadUnitIds(),
-      buildings: loadBuildings(),
+      units: loadUnitIds().filter((id) => !planned.includes(id)),
+      buildings: loadBuildings().filter((b) => !planned.includes(b.id)),
     };
     const without = buildAll(base).built.atlas;
     expect(without.planned).toEqual(
@@ -645,11 +647,10 @@ describe('content coverage', () => {
     expect(committed.sprites['fx_spawn_puff']?.frames).toBe(3);
   });
 
-  test('planned sprites exist and are listed as planned', () => {
+  test('the former planned art is in the content and no longer planned', () => {
     for (const n of ['unit_archer', 'unit_drone', 'bld_range', 'bld_hangar']) {
       expect(has(n), n).toBe(true);
-      expect(committed.planned).toContain(n);
     }
-    expect(committed.planned).toHaveLength(4);
+    expect(committed.planned).toEqual([]);
   });
 });

@@ -20,7 +20,7 @@ import {
 } from './load-util.js';
 
 export type UnitId = string;
-export type AttackType = 'melee';
+export type AttackType = 'melee' | 'ranged';
 
 export interface UnitDef {
   readonly id: UnitId;
@@ -42,9 +42,15 @@ export interface UnitDef {
    * units.
    */
   readonly reach: number;
-  /** Reserved for part 2: always false for now. */
+  /**
+   * A flying unit ignores walls, lakes and cliffs and collides only with
+   * other flying units (issue #59, "Ranged units and flyers"). Always ranged.
+   */
   readonly flying: boolean;
-  /** Reserved for part 2: always 'melee' for now. */
+  /**
+   * `melee` units cannot hit flying units; `ranged` units can (a ranged
+   * unit's `reach` is its range).
+   */
   readonly attackType: AttackType;
 }
 
@@ -140,14 +146,13 @@ export function loadUnits(data: unknown): UnitLoadResult {
     );
     const reach = readInt(entry, 'reach', 0, label, errors, MAX_UNIT_REACH);
     const flying = readBool(entry, 'flying', label, errors);
-    if (flying === true) {
-      errors.push(`${label}: "flying" units are not supported yet.`);
-    }
     const attackType = entry['attackType'];
-    if (attackType !== 'melee') {
+    if (attackType !== 'melee' && attackType !== 'ranged') {
       errors.push(
-        `${label}: unknown attackType ${JSON.stringify(attackType)}; expected "melee".`,
+        `${label}: unknown attackType ${JSON.stringify(attackType)}; expected "melee" or "ranged".`,
       );
+    } else if (flying === true && attackType !== 'ranged') {
+      errors.push(`${label}: a "flying" unit must have attackType "ranged".`);
     }
     rejectUnknownKeys(entry, KNOWN_KEYS, label, errors);
     if (
@@ -160,7 +165,8 @@ export function loadUnits(data: unknown): UnitLoadResult {
       radius !== undefined &&
       collisionRadius !== undefined &&
       reach !== undefined &&
-      flying === false
+      flying !== undefined &&
+      (attackType === 'melee' || attackType === 'ranged')
     ) {
       defs.push({
         id,
@@ -172,7 +178,7 @@ export function loadUnits(data: unknown): UnitLoadResult {
         collisionRadius,
         reach,
         flying,
-        attackType: 'melee',
+        attackType,
       });
     }
   });

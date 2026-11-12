@@ -70,12 +70,12 @@
           "maximum": 1920
         },
         "flying": {
-          "description": "Reserved: false for every unit for now.",
-          "const": false
+          "description": "A flying unit ignores walls, lakes and cliffs and collides only with other flying units. It must be ranged.",
+          "type": "boolean"
         },
         "attackType": {
-          "description": "Reserved: melee is the only attack type for now.",
-          "enum": ["melee"]
+          "description": "melee units cannot hit flying units; ranged units can. For a ranged unit, reach is its range.",
+          "enum": ["melee", "ranged"]
         }
       }
     }
