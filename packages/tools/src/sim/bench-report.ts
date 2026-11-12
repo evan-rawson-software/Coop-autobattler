@@ -121,3 +121,17 @@ console.log(
     [1, 2, 3, 4].map((s) => [team, team, s] as [TeamState, TeamState, number]),
   ),
 );
+{
+  // Archer-heavy: the same dense board with Ranges instead of Barracks.
+  for (const producer of ['bld_barracks', 'bld_range']) {
+    const t = denseFourPlotTeam(ctx, 1, producer);
+    console.log(
+      `dense tier 1 ${producer}`,
+      JSON.stringify(shape(t, t, 1)),
+      'battles/s',
+      rate(
+        [1, 2, 3, 4].map((s) => [t, t, s] as [TeamState, TeamState, number]),
+      ),
+    );
+  }
+}

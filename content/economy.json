@@ -26,7 +26,9 @@
     { "def": "bld_gate", "weight": 5 },
     { "def": "bld_turret", "weight": 8 },
     { "def": "bld_overclocker", "weight": 3 },
-    { "def": "bld_armory", "weight": 3 }
+    { "def": "bld_armory", "weight": 3 },
+    { "def": "bld_range", "weight": 5 },
+    { "def": "bld_hangar", "weight": 3 }
   ],
   "tierOdds": [
     { "fromRound": 1, "weights": [100, 0, 0] },

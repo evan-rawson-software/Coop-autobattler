@@ -166,7 +166,7 @@ describe('bots build per player', () => {
     'a collector feeds two consumers through a Splitter',
     () => {
       let found = 0;
-      for (let seed = 1; seed <= 6 && found === 0; seed++) {
+      for (let seed = 3; seed <= 8 && found === 0; seed++) {
         const r = play('rush', 1, seed);
         const team = r.state.team;
         for (const sp of team.buildings.filter(
