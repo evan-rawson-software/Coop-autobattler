@@ -71,7 +71,7 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-14 | PvE strongholds and bosses with one Core per player | **implemented** (issue #138; "PvE threats", "Side options") |
 | PP-15 | Sealed-producer check per owner; map rule per plot | map rule **implemented** (issue #129); sealed check per owner **implemented** (issue #131) |
 | PP-16 | Party votes and run streams without the Core vote | **implemented** (issue #131) |
-| PP-17 | Formats, version, ghost validation | partly implemented (issues #139, #160, #131, #135): major version 1.0, snapshot format 4 (3 added border links, 2 before), run-state format 7 (6 added border links, 5 before), bundled ghosts regenerated, one placed Core per player inside its player's plot (a missing Core is rejected too), border-link legality (`validateTeamState`). Not yet: plot and ownership checks of buildings and the per-owner value bound |
+| PP-17 | Formats, version, ghost validation | partly implemented (issues #139, #160, #131, #135): major version 1.0, snapshot format 5 (4 had one Core per player, 3 added border links, 2 before), run-state format 8 (7 had no Core vote, 6 added border links, 5 before; 8 stores PvE threats with `stronghold.cores`), bundled ghosts regenerated, one placed Core per player inside its player's plot (a missing Core is rejected too), border-link legality (`validateTeamState`). Not yet: plot and ownership checks of buildings and the per-owner value bound |
 
 ### Numbers to be set in the rebalance
 
@@ -3589,7 +3589,7 @@ the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
      layout or the building caps could not absorb, becomes Core health. It is
      split evenly: `cores[p].health = share(total, p)`, so the shares differ by
      at most 1, the extra points go to the lowest plot indices, and they add
-     up to `total` exactly. The total is the same as it was with one Core.
+     up to `total` exactly. The total is the same formula as with one Core, but it has a floor of `minCoreHealth * N`, so it is the old total only when that floor is not reached.
 8. **Content bounds.** After steps 1 to 7: each `cores[p].health =
    min(MAX_HEALTH, cores[p].health)` and `unitStrengthPercent =
    min(unitStrengthPercent, L)`, where `L` is the smallest
@@ -4269,7 +4269,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-17 | A new major version (saves and the local pool are wiped); snapshot and run-state format numbers are raised by every #124 issue that changes a saved shape (now snapshot `formatVersion` 4, run-state format 7: issue #131 removed the Core vote and added `pending.positions`, and a snapshot needs every player's Core placed). Validation adds plot and ownership checks, one Core per player, legal border links, and a value bound per owner. Bundled ghosts are regenerated. | partly implemented (issues #139, #160, #131): version, formats, bundled ghosts, one placed Core per player inside its own plot (a missing Core is rejected too); the other validation (plot and ownership of buildings, per-owner value) is not yet implemented |
+| PP-17 | A new major version (saves and the local pool are wiped); snapshot and run-state format numbers are raised by every #124 issue that changes a saved shape (now snapshot `formatVersion` 5, run-state format 8: issue #138 changed the stored PvE threat; issue #131 removed the Core vote and added `pending.positions`, and a snapshot needs every player's Core placed). Validation adds plot and ownership checks, one Core per player, legal border links, and a value bound per owner. Bundled ghosts are regenerated. | partly implemented (issues #139, #160, #131): version, formats, bundled ghosts, one placed Core per player inside its own plot (a missing Core is rejected too); the other validation (plot and ownership of buildings, per-owner value) is not yet implemented |
 
 A ghost is another run's party, frozen at the start of one of its PvP battles
 and fought by a later run (MM-1..MM-17, W3-1). Everything below is implemented

@@ -143,7 +143,7 @@ the bundled ghosts use the same `major.minor`, `BUNDLED_GAME_VERSION`). The
 run state, the ghost snapshot and the save record each carry a format number
 (`RUN_STATE_FORMAT_VERSION`, `GHOST_SNAPSHOT_FORMAT_VERSION`,
 `SAVE_FORMAT_VERSION`). The per-player design (issue #124) is major version 1
-(run state format 7, ghost snapshot format 4; format 6 / 3 added border links, issue #135); everything older is wiped at
+(run state format 8, ghost snapshot format 5; 7 / 4 had one Core per player, 6 / 3 added border links, issue #135); everything older is wiped at
 start-up with a notice, with no migration (TA-8).
 
 The rule for a change that makes saved data unreadable:

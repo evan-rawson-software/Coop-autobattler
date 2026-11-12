@@ -59,6 +59,19 @@ export interface GhostStore {
   get(bucket: GhostBucket, ownerId: string, runId: string): Promise<unknown>;
   /** Remove every snapshot of every bucket. Resolves for an empty store. */
   clear(): Promise<void>;
+  /**
+   * Remove every snapshot whose bucket has another game version than
+   * `keepVersion` (TA-8, PP-17: a new major version empties the pool); the
+   * snapshots of `keepVersion` and the save counter are left alone. Resolves
+   * when none of the other versions remains.
+   */
+  removeOtherVersions(keepVersion: string): Promise<void>;
+}
+
+/** The game version of a bucket key (`version|partySize|round`). */
+export function bucketKeyVersion(bucketKey: string): string {
+  const i = bucketKey.indexOf('|');
+  return i === -1 ? bucketKey : bucketKey.slice(0, i);
 }
 
 /** The key under which a snapshot is stored: its bucket and its owner. */
@@ -190,6 +203,12 @@ export function createMemoryGhostStore(
     clear() {
       items.clear();
       counter = 0;
+      return Promise.resolve();
+    },
+    removeOtherVersions(keepVersion) {
+      for (const [key, i] of [...items]) {
+        if (bucketKeyVersion(i.bucket) !== keepVersion) items.delete(key);
+      }
       return Promise.resolve();
     },
     failNextSave(message = 'the ghost could not be written') {

@@ -342,3 +342,47 @@ describe('a run-state format 2 save in a Workshop (format 3 change)', () => {
     expect(await store.listHistory()).toEqual([]);
   });
 });
+
+describe('a run-state format 7 save with a PvE threat of the old shape (issue #138)', () => {
+  /** Format 7 stored `stronghold.coreHealth` and `corePosition`, no `cores`. */
+  const oldShape = (version: VersionKind): SaveRecord => {
+    const rec = makeRecord(version, 'none', false);
+    return {
+      ...rec,
+      state: {
+        ...rec.state,
+        formatVersion: 7,
+        upcomingPve: {
+          options: [
+            {
+              threat: {
+                stronghold: {
+                  coreHealth: 500,
+                  corePosition: { x: 11, y: 5 },
+                  buildings: [],
+                },
+              },
+            },
+          ],
+        },
+      },
+    } as unknown as SaveRecord;
+  };
+
+  test('under the current major it is unsupported_format, never damaged and never a crash', async () => {
+    const rec = oldShape('same');
+    const open = await openRun(KEY, deps, freshStore(rec), INSTALLED);
+    expect(open.ok ? 'ok' : open.reason).toBe('unsupported_format');
+    const res = await initSaves(freshStore(rec), INSTALLED, 99, deps);
+    expect(res.corrupt).toEqual([]);
+    expect(res.unsupported.map((u) => u.runId)).toEqual([KEY]);
+  });
+
+  test('under an older major it is wiped at start-up', async () => {
+    const store = freshStore(oldShape('older_major'));
+    const res = await initSaves(store, INSTALLED, 99, deps);
+    expect(res.wipedUnreadable.map((w) => w.runId)).toEqual([KEY]);
+    expect(res.corrupt).toEqual([]);
+    expect(await store.get(KEY)).toBeNull();
+  });
+});

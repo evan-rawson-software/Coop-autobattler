@@ -55,5 +55,6 @@ export function withForcedOpponent(
       mode() === 'boss' ? Promise.resolve([]) : inner.list(bucket),
     get: (b, o, r) => inner.get(b, o, r),
     clear: () => inner.clear(),
+    removeOtherVersions: (v) => inner.removeOtherVersions(v),
   };
 }

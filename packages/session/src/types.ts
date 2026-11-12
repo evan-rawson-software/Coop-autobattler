@@ -49,9 +49,10 @@ export type Step = (typeof STEPS)[number];
  * version 4 added the ghost fields `pvpOpponent` and `ghostsFought` (W3-1);
  * version 5 is the per-player design (issue #124: `cores` in place of `core`, and an
  * `owner` on every conduit); version 6 lets a conduit end in the team state be a
- * border spot (halves of border links, PP-4). Older states are not readable.
+ * border spot (halves of border links, PP-4); version 7 has no Core vote; version 8
+ * stores PvE threats with one Core per plot (`stronghold.cores`, PP-14). Older states are not readable.
  */
-export const RUN_STATE_FORMAT_VERSION = 7;
+export const RUN_STATE_FORMAT_VERSION = 8;
 
 /**
  * Steps a saved state can never be in. `pve_battle` and `pvp_battle` are
@@ -178,7 +179,7 @@ export interface RunState {
   readonly runId: string;
   readonly runVersion: string;
   /** `RUN_STATE_FORMAT_VERSION`; a state of another version is rejected. */
-  readonly formatVersion: 7;
+  readonly formatVersion: 8;
   readonly seed: number;
   /** The saved state of the run's `Rng`. */
   readonly rng: readonly [number, number, number, number];

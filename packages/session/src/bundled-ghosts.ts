@@ -120,6 +120,9 @@ export function createBundledGhostStore(rows: readonly unknown[]): GhostStore {
     clear() {
       return Promise.resolve();
     },
+    removeOtherVersions() {
+      return Promise.resolve();
+    },
   };
 }
 
@@ -145,6 +148,7 @@ export function layerGhostStores(
   return {
     save: (snapshot) => local.save(snapshot),
     clear: () => local.clear(),
+    removeOtherVersions: (v) => local.removeOtherVersions(v),
     async list(bucket) {
       const [own, shipped] = await Promise.all([
         local.list(bucket).then(
