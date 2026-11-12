@@ -82,6 +82,23 @@ describe('one Core per player (PP-14)', () => {
               expect(got(hs[i - 1]), where).toBeGreaterThanOrEqual(got(hs[i]));
             }
             const total = hs.reduce((a, h) => a + h, 0);
+            // The expected total, worked out on its own from the budget, the
+            // price of the placed walls and turrets and the archetype.
+            const stronghold =
+              p.budget - Math.floor((p.budget * arch.waveSharePercent) / 100);
+            const spent = p.stronghold.buildings.reduce(
+              (a, b) =>
+                a + got(got(content.buildings.get(b.def)).tiers[0]).price,
+              0,
+            );
+            const expected = Math.max(
+              threats.minCoreHealth * size,
+              Math.floor(
+                ((stronghold - spent) * arch.stronghold.coreHealthPerBudget) /
+                  100,
+              ),
+            );
+            expect(total, where).toBe(expected);
             expect(threatSummary(p, content), where).toMatchObject({
               coreHealth: total,
               cores: size,

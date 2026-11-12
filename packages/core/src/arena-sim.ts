@@ -1798,10 +1798,7 @@ export function spawnUnitForTest(
     }
   }
   const k = cellAt(ctx, args.side, { x: px, y: py });
-  const ownCol =
-    args.side === 0
-      ? cellCoord(px, ctx.arena.geom.width)
-      : ctx.arena.geom.width - 1 - cellCoord(px, ctx.arena.geom.width);
+  const ownCol = ownCellCoord(args.side, px, ctx.arena.geom.width);
   const owner =
     args.owner ??
     divFloor(ownCol, sim.teams[args.side === 0 ? 0 : 1].map.plotWidth);

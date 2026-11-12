@@ -27,7 +27,7 @@ leaves +/- (2^53 - 1), so ported code never needs more than i64).
 **Status (#124)** table. Nothing marked "not yet implemented" is behaviour
 of the current code.
 
-## Per-player design (issue #124): specified, not yet implemented
+## Per-player design (issue #124)
 
 The specs (Draft v5.0) describe a design decided in issue #124: every player
 has their own **plot** and their own **Core**, builds only what they own and
@@ -35,15 +35,10 @@ only in their own plot, and can link to a neighbour with conduits across the
 plot border; a side loses a battle when **all** of its Cores are destroyed;
 collectors have a flow rate by tier and every consumer has a top speed.
 
-**The code on `main` does not implement this yet.** Every other section of
-this document describes the code as it is today, and the golden vectors pin
-that behaviour. This section holds the new rules, written so that they can be
-implemented from the text alone. A section that a rule here will change
-starts with a short **Status (#124)** table that names the rule and its
-issue. When an issue lands, its rule moves from here into the section it
-changes, the golden vectors are re-pinned in the same pull request, and its
-row is removed. Until then: **a port implements the other sections, not this
-one.**
+Almost all of it is implemented; the Status table below names, for each rule,
+the issue that implemented it and what is still open. The rules themselves
+are written in the sections they change, and the golden vectors pin them.
+Where a rule below is still open, a port does not implement it yet.
 
 Terms. A **plot** is one player's own area of the board (see "Coordinates":
 plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
@@ -93,70 +88,38 @@ placeholders or do not exist yet; all are set in the rebalance
 
 ### PP-1. Ownership and plots
 
-Every placed or stashed building has an `owner` (already in the format). The
-new rules:
+Implemented (issue #129). The rules live in the sections they change, which
+are the only statement of them:
 
-- **Every board operation names its `actor`**, the player index of the player
-  performing it. An `actor` that is not an integer from 0 to `N - 1` is
-  `invalid_owner`.
-- **A building's cells lie in its owner's plot**: every cell `(x, y)` of the
-  rotated footprint has `plotOf(x) = owner`.
-- **Only the owner acts on a building.**
+- Every placed or stashed building has an `owner`; every board operation
+  names its `actor`; only the owner acts on a building; a building's cells
+  lie in its owner's plot; a conduit has an `owner`. See "Team state and
+  placement", "Operations" and its "Rule order for `placeFromStash` and
+  `moveBuilding`" (`unknown_building`, `invalid_owner`, `not_owner`, then the
+  placement rules, `outside_own_plot` among them).
+- `returnToStash` and `removeFromStash` check `unknown_building`,
+  `invalid_owner`, `not_owner`, in that order.
+- Conduits: see "`addConduit` rules and their order" (`unknown_building`,
+  `not_owner` for an end building that `actor` does not own, an `actor` that
+  is no player included, then the geometry rules, `outside_own_plot` among
+  them) and `eraseConduit` (`unknown_conduit`, `invalid_owner`, `not_owner`).
+  `detachConduits` is unchanged: every conduit attached to a moved or returned
+  building belongs to that building's owner.
+- `validateTeamState` checks that every placed building lies in its owner's
+  plot, and for every conduit that `owner` is in range, that each end building
+  is owned by `owner` and that every path cell is in the owner's plot.
+- Resource nodes need no rule of their own: a source must stand on a node and
+  inside its owner's plot, so only the plot's player can use a plot's nodes
+  (CP-14). With one player, plot 0 is the whole board and none of the
+  ownership or plot reasons can occur.
+- Golden kind `team-state-ops`: every op that changes the board has `actor`.
 
-`placeFromStash(actor, id, x, y, rotation)` and `moveBuilding(actor, id, x,
-y, rotation)` check, in this order (new rules in bold; the others are today's,
-in today's order):
-
-1. `unknown_building`;
-2. **`not_owner`**: `actor` is not the building's `owner`;
-3. `invalid_rotation`;
-4. `out_of_bounds`;
-5. **`outside_own_plot`**: a footprint cell has `plotOf(x) != owner`;
-6. `blocked_by_feature`;
-7. `overlaps_core` (any placed Core, PP-2);
-8. `overlaps_building`;
-9. `overlaps_conduit`;
-10. the node rules (`source_needs_node`, `node_reserved`).
-
-`returnToStash(actor, id)` and `removeFromStash(actor, id)`: `unknown_building`,
-then `not_owner`. `addToStash(def, tier, owner)` is unchanged (the session
-calls it for the buyer and for the starting kit). `raiseTier` (Workshop) is
-already limited to the acting player's own buildings by the session.
-
-**Conduits have an owner.** A conduit is `{ id, owner, from, to, cells }`;
-`owner` is the `actor` of the `addConduit` that made it. `addConduit(state,
-content, actor, { from, to, cells })` checks, in this order:
-
-1. `unknown_building`;
-2. **`not_owner`**: an end building is not owned by `actor` (`from` checked
-   before `to`);
-3. `not_an_output`, then `not_an_input`;
-4. `side_in_use`;
-5. `invalid_path`;
-6. **`outside_own_plot`**: a path cell has `plotOf(x) != actor`;
-7. `blocked_by_feature`;
-8. `overlaps_core`;
-9. `overlaps_building`;
-10. `crosses_conduit`;
-11. `resource_mismatch`;
-12. `would_loop`.
-
-`eraseConduit(state, actor, { id })`: `unknown_conduit`, then `not_owner`
-(`actor` is not the conduit's `owner`). `detachConduits` is unchanged: every
-conduit attached to a moved or returned building belongs to that building's
-owner. A conduit end that is a border spot is PP-4.
-
-`validateTeamState` additionally checks, for every placed building, that all
-its cells are in its owner's plot, and for every conduit that `owner` is in
-range, that each end building is owned by `owner` and that every path cell is
-in the owner's plot.
-
-Resource nodes need no rule of their own: a source must stand on a node and
-inside its owner's plot, so only the plot's player can use a plot's nodes
-(CP-14). With one player, plot 0 is the whole board and none of the new
-reasons can occur.
-
-Golden kind `team-state-ops`: every op that changes the board gains `actor`.
+Signatures, as in the code: every operation after `addToStash` and `placeCore`
+takes its `actor` in the argument object: `placeFromStash(state, content, {
+actor, id, x, y, rotation })`, `moveBuilding(state, content, { actor, id, x, y,
+rotation })`, `returnToStash(state, content, { actor, id })`,
+`removeFromStash(state, { actor, id })`, `addConduit(state, content, { actor,
+from, to, cells })`, `eraseConduit(state, { actor, id })`.
 
 ### PP-2. One Core per player
 
@@ -1307,16 +1270,16 @@ Each returns `{ ok: true, state }` (`addToStash` also the new `id`) or
   `placeFromStash`, `moveBuilding` and `addConduit` means the footprint of any
   placed Core. `validateTeamState` requires every placed Core to be legal for
   its player, and `renderTeamStateAscii` draws every Core as `C`.
-- `placeFromStash(actor, id, x, y, rotation)`: `id` must be in `stash`. Moves
+- `placeFromStash({ actor, id, x, y, rotation })`: `id` must be in `stash`. Moves
   the entry to `buildings` (same ID, tier, owner).
-- `moveBuilding(actor, id, x, y, rotation)`: `id` must be in `buildings`. Sets
+- `moveBuilding({ actor, id, x, y, rotation })`: `id` must be in `buildings`. Sets
   position and rotation in one step; moving to the same position with a new
   rotation is a rotate in place. The building's own current cells never count
   as overlap.
-- `returnToStash(actor, id)`: `id` must be in `buildings`; the entry goes back
+- `returnToStash({ actor, id })`: `id` must be in `buildings`; the entry goes back
   to `stash` (sorted by ID). Rejects with `unknown_building`, `invalid_owner`
   or `not_owner`.
-- `removeFromStash(actor, id)`: `id` must be in `stash`; the entry is deleted
+- `removeFromStash({ actor, id })`: `id` must be in `stash`; the entry is deleted
   (selling and refunds come later). Rejects with `unknown_building`,
   `invalid_owner` or `not_owner`.
 
@@ -1333,8 +1296,8 @@ in this order is the reported reason:
 1. `unknown_building`: no such instance ID where expected (stash for place,
    buildings for move).
 2. `invalid_owner` (`actor` is not a player index), then `not_owner` (`actor`
-   is not the building's `owner`). (`invalid_owner` is not in the PP-1 list;
-   it is checked here so that a malformed `actor` is told apart.)
+   is not the building's `owner`). (A malformed `actor` is told apart from a
+   wrong one.)
 3. `invalid_rotation`: not 0, 90, 180 or 270.
 4. `out_of_bounds`: a non-integer position, or any cell of the rotated
    footprint outside `0 <= x < width`, `0 <= y < height`.
@@ -1420,7 +1383,8 @@ A conduit is `{ id, owner, from: { building, side }, to: { building, side },
 cells }` (`schemas/team-state.schema.json`):
 
 - `owner`: the player who drew it, the `actor` of the `addConduit` that made it
-  (PP-1). It joins two buildings of its owner and every path cell lies in its
+  (PP-1). An ordinary conduit joins two buildings of its owner; a border half
+  (PP-4) has one building end, of its owner. Every path cell lies in its
   owner's plot. Only the owner erases it.
 - `id`: a unique positive integer taken from `nextId`, the same counter as
   buildings, and never reused. `addConduit` assigns it and increments `nextId`.
@@ -2148,15 +2112,6 @@ exactly like the original.
 
 ## One battle tick
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-11 | Steps 2 and 3: "the enemy Core" and "the movement field" become the unit's target Core and its fields; step 6 ends with retargeting. | not yet implemented (issue #133) |
-
 `stepArena(sim, ctx)` changes the state in place, in exactly this order. Let
 `T` be `sim.tick` at the start; every event of the step has `tick = T`.
 
@@ -2719,7 +2674,7 @@ leading band (8 cells deep) of a side spans 11.4 [7.0] columns.
 lasts (SC-8 to SC-10); it has nothing to do with gold. Each is a building of
 kind `economy` with `effect.type` `source_speed` or `unit_strength` and, per
 tier, `costPerStep`, `stepPercent` and `maxSteps`. Its battle state is the
-`ramps` entry `{side, building, charge, steps, cooldown}` (the owner is read from the team state) (all 0 at the start of every
+`ramps` entry `{side, building, charge, steps, cooldown}` (the owner is read from the team state; all 0 at the start of every
 battle: the state is built from the team state and `sim.json` only, so no
 upgrade carries from one battle to the next, CB-11). Charging, and the
 `cooldown` of `stepIntervalTicks` between two steps, are described in "One
@@ -3589,7 +3544,7 @@ the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
      layout or the building caps could not absorb, becomes Core health. It is
      split evenly: `cores[p].health = share(total, p)`, so the shares differ by
      at most 1, the extra points go to the lowest plot indices, and they add
-     up to `total` exactly. The total is the same formula as with one Core, but it has a floor of `minCoreHealth * N`, so it is the old total only when that floor is not reached.
+     up to `total` exactly. The total is computed by the same formula as with one Core, but its floor is `minCoreHealth * N` (the minimum is per Core, not for the whole stronghold) and `spent` now comes from the per-plot layouts, so it is not the old total.
 8. **Content bounds.** After steps 1 to 7: each `cores[p].health =
    min(MAX_HEALTH, cores[p].health)` and `unitStrengthPercent =
    min(unitStrengthPercent, L)`, where `L` is the smallest

@@ -1005,6 +1005,7 @@ describe('performance (CB-36)', () => {
     expect(m.ticks).toBeLessThan(simConfig.maxBattleTicks);
     expect(m.peakPerSide).toBeLessThan(2_000);
     // Four Cores per side now (one per player): a few more events than with one.
+    // Measured: 10 048 517 bytes, 3101 ticks, 700 units at most per side.
     expect(m.bytes).toBeLessThan(11_000_000);
   }, 240_000);
 });
