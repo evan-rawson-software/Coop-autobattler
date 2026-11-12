@@ -6,7 +6,9 @@ import { linkText, type HalfStatus } from './border-links.js';
 import { BuildSession } from './session.js';
 import { ProblemsPanel } from './panels.js';
 import { rateText } from './rates.js';
-import { playerName, screenText, screenTexts } from './texts.js';
+import { REASON_TEXT_CODES } from '@game/core';
+import { KNOWN_REASONS, reasonMessage, selectionNote } from './reasons.js';
+import { coreLabel, playerName, screenText, screenTexts } from './texts.js';
 import { deriveProblems, type FlowView } from './view-model.js';
 
 // Rate, supply and link texts come from the presentation file (issue #142).
@@ -48,7 +50,7 @@ describe('texts come from the presentation file', () => {
     expect(playerName({ playerFallback: 'Seat {number}' }, [], 2)).toBe(
       'Seat 3',
     );
-    expect(screenText({}, 'missing')).toBe('');
+    expect(() => screenText({}, 'missing')).toThrow(/missing/);
   });
 
   test('the problems list reads supply and partner lines from the file', async () => {
@@ -93,6 +95,40 @@ describe('texts come from the presentation file', () => {
     );
     expect(edited[0]).toMatch(/: 0\.10 of 0\.50$/);
     expect(edited[1]).toBe('Player 2 is short by one.');
+  });
+});
+
+describe('reason and Core texts come from the presentation file', () => {
+  const screens = content.presentation.templates.screens;
+
+  test('every reason code has its message in the file, wording unchanged', () => {
+    expect([...KNOWN_REASONS].sort()).toEqual([...REASON_TEXT_CODES].sort());
+    for (const code of KNOWN_REASONS) {
+      expect(reasonMessage(code)).toBe(screens[`reason_${code}`]);
+    }
+    expect(reasonMessage('outside_own_plot')).toBe(
+      "Everything has to stand wholly inside its player's own area.",
+    );
+  });
+
+  test('the composed reason texts follow their templates', () => {
+    expect(reasonMessage('made_up')).toBe('Not allowed (made_up).');
+    expect(reasonMessage('crosses_conduit', '(3, 4)')).toBe(
+      `${screens['reason_crosses_conduit'] as string} At (3, 4).`,
+    );
+    expect(reasonMessage('core_not_placed', 'player 1')).toMatch(
+      /Player 2 has to pick a spot\.$/,
+    );
+    expect(selectionNote({ reason: 'wrong_step' })).toBe(
+      'Your next opponent could not be chosen yet: Not possible in this step. It is tried again on your next action.',
+    );
+  });
+
+  test('the Core label is a template over the fallback name', () => {
+    expect(coreLabel(1)).toBe("Player 2's Core");
+    expect(coreLabel(0, { ...screenTexts, coreLabel: 'Core of {name}' })).toBe(
+      'Core of Player 1',
+    );
   });
 });
 

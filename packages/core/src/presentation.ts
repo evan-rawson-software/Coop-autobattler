@@ -79,6 +79,55 @@ export const TEMPLATE_SLOTS: Readonly<Record<string, readonly string[]>> = {
   core: ['health'],
 };
 
+/** Rejection reason codes that have a message (`reason_<code>`). */
+export const REASON_TEXT_CODES: readonly string[] = [
+  'unknown_building',
+  'invalid_rotation',
+  'not_owner',
+  'outside_own_plot',
+  'out_of_bounds',
+  'blocked_by_feature',
+  'overlaps_core',
+  'overlaps_building',
+  'overlaps_conduit',
+  'invalid_border',
+  'border_spot_in_use',
+  'source_needs_node',
+  'node_reserved',
+  'core_already_placed',
+  'core_not_placed',
+  'blocked',
+  'on_node',
+  'too_far_forward',
+  'unknown_definition',
+  'core_not_allowed',
+  'invalid_tier',
+  'invalid_owner',
+  'not_an_output',
+  'not_an_input',
+  'side_in_use',
+  'invalid_path',
+  'crosses_conduit',
+  'resource_mismatch',
+  'would_loop',
+  'unknown_conduit',
+  'wrong_step',
+  'not_a_player',
+  'not_host',
+  'already_ready',
+  'not_ready',
+  'locked_ready',
+  'sealed_producer',
+  'invalid_intent',
+  'invalid_choice',
+  'unknown_intent',
+  'save_failed',
+  'invalid_state',
+  'ghost_selection_pending',
+  'already_selected',
+  'replay_mismatch',
+];
+
 /**
  * The slots each Build and Shop screen text may use. The web fills them in:
  * rates are hundredths already formatted (`1.25`), `{name}` and `{player}`
@@ -106,6 +155,15 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   linkSending: [],
   linkReceiving: [],
   playerFallback: ['number'],
+  coreLabel: ['name'],
+  reasonUnknown: ['reason'],
+  reasonWithCause: ['text', 'cause'],
+  reasonPlayerToAct: ['text', 'number'],
+  reasonAtCell: ['text', 'x', 'y'],
+  selectionNote: ['cause'],
+  ...Object.fromEntries(
+    REASON_TEXT_CODES.map((code) => [`reason_${code}`, [] as string[]]),
+  ),
 };
 
 const KIND_LABEL_KEYS = [

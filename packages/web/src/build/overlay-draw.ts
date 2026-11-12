@@ -20,6 +20,7 @@ import {
 import { pathSegments, pathStubs } from './path-segments.js';
 import { isEditStep } from './session.js';
 import { sideMarkers, type SideMarker } from './sides.js';
+import { coreLabel } from './texts.js';
 import type { FlowView } from './view-model.js';
 
 export interface OverlayData {
@@ -195,11 +196,7 @@ export function drawBuildOverlay(
         }
       }
       ring(cells, col.accent, 2.5);
-      label(
-        { x: pc.x, y: pc.y },
-        `Player ${String(pc.player + 1)}'s Core`,
-        col.accent,
-      );
+      label({ x: pc.x, y: pc.y }, coreLabel(pc.player), col.accent);
     }
     for (const c of d.legalCore) {
       const p = centre(c);

@@ -7,6 +7,7 @@
  */
 
 import type { BuiltinReason } from '@game/session';
+import { screenText, screenTexts } from './texts.js';
 
 export type KnownReason =
   | BuiltinReason
@@ -17,63 +18,62 @@ export type KnownReason =
   | 'replay_mismatch'
   | 'core_not_placed';
 
+/** The message of a reason code, from the presentation file. */
+const reason = (code: KnownReason): string =>
+  screenText(screenTexts, `reason_${code}`);
+
 export const REASON_MESSAGES: Readonly<Record<KnownReason, string>> = {
   // Placement
-  unknown_building: 'That building does not exist.',
-  invalid_rotation: 'That rotation is not allowed.',
-  not_owner: 'That belongs to another player.',
-  outside_own_plot:
-    "Everything has to stand wholly inside its player's own area.",
-  out_of_bounds: 'Outside the board.',
-  blocked_by_feature: 'Water and cliffs cannot be built on.',
-  overlaps_core: 'The Core is in the way.',
-  overlaps_building: 'Another building is in the way.',
-  overlaps_conduit: 'A conduit is in the way.',
-  invalid_border: 'That is not a border you can connect to.',
-  border_spot_in_use: 'You already have a conduit at that border spot.',
-  source_needs_node: 'Extractors only go on a resource node.',
-  node_reserved: 'Resource nodes are kept for extractors.',
+  unknown_building: reason('unknown_building'),
+  invalid_rotation: reason('invalid_rotation'),
+  not_owner: reason('not_owner'),
+  outside_own_plot: reason('outside_own_plot'),
+  out_of_bounds: reason('out_of_bounds'),
+  blocked_by_feature: reason('blocked_by_feature'),
+  overlaps_core: reason('overlaps_core'),
+  overlaps_building: reason('overlaps_building'),
+  overlaps_conduit: reason('overlaps_conduit'),
+  invalid_border: reason('invalid_border'),
+  border_spot_in_use: reason('border_spot_in_use'),
+  source_needs_node: reason('source_needs_node'),
+  node_reserved: reason('node_reserved'),
   // Core placement
-  core_already_placed: 'The Core is already placed.',
-  core_not_placed: 'Choose a spot for the Core first.',
-  blocked: 'The Core cannot sit on water or cliffs.',
-  on_node: 'The Core cannot sit on a resource node.',
-  too_far_forward: 'Too close to the front edge for the Core.',
+  core_already_placed: reason('core_already_placed'),
+  core_not_placed: reason('core_not_placed'),
+  blocked: reason('blocked'),
+  on_node: reason('on_node'),
+  too_far_forward: reason('too_far_forward'),
   // Stash
-  unknown_definition: 'Unknown building type.',
-  core_not_allowed: 'The Core cannot be bought or stashed.',
-  invalid_tier: 'That tier does not exist.',
-  invalid_owner: 'That owner does not exist.',
+  unknown_definition: reason('unknown_definition'),
+  core_not_allowed: reason('core_not_allowed'),
+  invalid_tier: reason('invalid_tier'),
+  invalid_owner: reason('invalid_owner'),
   // Conduits
-  not_an_output: 'That side does not send anything out.',
-  not_an_input: 'That side does not take anything in.',
-  side_in_use: 'That side already has a conduit.',
-  invalid_path: 'The path is not a valid line of free cells.',
-  crosses_conduit: 'Conduits cannot cross another conduit.',
-  resource_mismatch:
-    "Mixed resources: this input needs a different one. With a border link the clash can be on your neighbour's side.",
-  would_loop:
-    "That would make the flow loop back on itself. With a border link the loop can run through your neighbour's area.",
-  unknown_conduit: 'That conduit does not exist.',
+  not_an_output: reason('not_an_output'),
+  not_an_input: reason('not_an_input'),
+  side_in_use: reason('side_in_use'),
+  invalid_path: reason('invalid_path'),
+  crosses_conduit: reason('crosses_conduit'),
+  resource_mismatch: reason('resource_mismatch'),
+  would_loop: reason('would_loop'),
+  unknown_conduit: reason('unknown_conduit'),
   // Session
-  wrong_step: 'Not possible in this step.',
-  not_a_player: 'Not a player of this run.',
-  not_host: 'Only the host can do that.',
-  already_ready: 'Already ready.',
-  not_ready: 'Not ready yet.',
-  locked_ready: 'You are Ready. Unready to change anything.',
-  sealed_producer: 'A unit producer is walled in. Open a way out first.',
-  invalid_intent: 'That action is not valid.',
-  invalid_choice: 'That choice is not valid.',
-  unknown_intent: 'Unknown action.',
-  save_failed: 'The run could not be saved. Try again.',
+  wrong_step: reason('wrong_step'),
+  not_a_player: reason('not_a_player'),
+  not_host: reason('not_host'),
+  already_ready: reason('already_ready'),
+  not_ready: reason('not_ready'),
+  locked_ready: reason('locked_ready'),
+  sealed_producer: reason('sealed_producer'),
+  invalid_intent: reason('invalid_intent'),
+  invalid_choice: reason('invalid_choice'),
+  unknown_intent: reason('unknown_intent'),
+  save_failed: reason('save_failed'),
   // Run controller and opponent selection
-  invalid_state:
-    'The game hit an internal error and did not save this action. Reload and try again.',
-  ghost_selection_pending: 'Still choosing your next opponent…',
-  already_selected: 'Your next opponent is already chosen.',
-  replay_mismatch:
-    'This run could not be replayed: its record does not match the rules.',
+  invalid_state: reason('invalid_state'),
+  ghost_selection_pending: reason('ghost_selection_pending'),
+  already_selected: reason('already_selected'),
+  replay_mismatch: reason('replay_mismatch'),
 };
 
 export const KNOWN_REASONS = Object.keys(REASON_MESSAGES) as KnownReason[];
@@ -97,29 +97,42 @@ export interface SelectionCause {
  * failed) is added.
  */
 export function reasonMessage(
-  reason: string,
+  code: string,
   detail?: string,
   cause?: SelectionCause,
 ): string {
   const base: string | undefined = (
     REASON_MESSAGES as Readonly<Record<string, string>>
-  )[reason];
-  const text = base ?? `Not allowed (${reason}).`;
-  if (reason === 'ghost_selection_pending' && cause !== undefined) {
-    return `${text} It could not be chosen yet: ${reasonMessage(cause.reason, cause.detail)}`;
+  )[code];
+  const text =
+    base ?? screenText(screenTexts, 'reasonUnknown', { reason: code });
+  if (code === 'ghost_selection_pending' && cause !== undefined) {
+    return screenText(screenTexts, 'reasonWithCause', {
+      text,
+      cause: reasonMessage(cause.reason, cause.detail),
+    });
   }
   // A refused Ready names the player who has to act (`detail` "player N").
   const who = detail === undefined ? null : /^player (\d+)$/.exec(detail);
   if (who !== null) {
-    return `${text} Player ${String(Number(who[1]) + 1)} has to pick a spot.`;
+    return screenText(screenTexts, 'reasonPlayerToAct', {
+      text,
+      number: String(Number(who[1]) + 1),
+    });
   }
   const cell = detail === undefined ? null : parseCell(detail);
   return cell === null
     ? text
-    : `${text} At (${String(cell.x)}, ${String(cell.y)}).`;
+    : screenText(screenTexts, 'reasonAtCell', {
+        text,
+        x: String(cell.x),
+        y: String(cell.y),
+      });
 }
 
 /** A note for a dispatch that succeeded but left the opponent unchosen. */
 export function selectionNote(cause: SelectionCause): string {
-  return `Your next opponent could not be chosen yet: ${reasonMessage(cause.reason, cause.detail)} It is tried again on your next action.`;
+  return screenText(screenTexts, 'selectionNote', {
+    cause: reasonMessage(cause.reason, cause.detail),
+  });
 }
