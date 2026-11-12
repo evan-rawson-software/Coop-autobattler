@@ -253,8 +253,8 @@ describe('supplied against need', () => {
     const bk = s.run.team.stash.find(
       (b) => b.owner === 0 && b.def === 'bld_barracks',
     );
-    const core = s.run.team.cores[0];
-    if (bk === undefined || core === undefined) throw new Error('setup');
+    const core = s.run.team.cores[0] ?? null;
+    if (bk === undefined || core === null) throw new Error('setup');
     const placed = await s.dispatch({
       type: 'place_building',
       id: bk.id,
@@ -289,8 +289,8 @@ describe('Backspace while drawing a border half', () => {
     s.setActing(1);
     ctl.setTool('conduit');
     click(ctl, { x: w, y: 6 }); // the border spot starts a receiving draft
-    expect(ctl.ui.draft?.building).toBe(-1);
-    expect(ctl.ui.draft?.cells).toHaveLength(1);
+    expect(ctl.model.get().ui.draft?.building).toBe(-1);
+    expect(ctl.model.get().ui.draft?.cells).toHaveLength(1);
     const key = {
       key: 'Backspace',
       ctrlKey: false,
@@ -298,6 +298,6 @@ describe('Backspace while drawing a border half', () => {
       metaKey: false,
     };
     expect(ctl.key(key)).toBe(true);
-    expect(ctl.ui.draft).toBeNull();
+    expect(ctl.model.get().ui.draft).toBeNull();
   });
 });
