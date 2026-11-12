@@ -32,8 +32,12 @@ export function sealedInfo(
   run: RunState,
   deps: Pick<RunDeps, 'content'>,
   content: WebContent,
+  player: number,
 ): SealedInfo {
-  const ids = sealedProducers(run, deps);
+  // Only the player's own sealed producers count (PP-15), as in `ready`.
+  const ids = sealedProducers(run, deps).filter(
+    (id) => run.team.buildings.find((b) => b.id === id)?.owner === player,
+  );
   const labels = ids.map((id) => {
     const b = run.team.buildings.find((x) => x.id === id);
     return b === undefined
@@ -70,7 +74,7 @@ export function gateFor(
 ): Gate {
   const allowed = new Set(allowedIntents(run, player, deps));
   const ready = run.perPlayer[player]?.ready === true;
-  const sealed = sealedInfo(run, deps, content);
+  const sealed = sealedInfo(run, deps, content, player);
   return {
     ready,
     allowed,

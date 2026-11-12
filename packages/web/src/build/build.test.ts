@@ -71,7 +71,7 @@ function ends(team: TeamState, ex: number, bk: number) {
 
 async function connect(s: BuildSession, ex: number, bk: number) {
   const { from, to } = ends(s.run.team, ex, bk);
-  const cells = proposePath(s.run.team, content, from, to);
+  const cells = proposePath(s.run.team, content, from, to, [], 0);
   expect(cells).not.toBeNull();
   const r = await s.act({ t: 'add', from, to, cells: cells as Cell[] });
   expect(r).toEqual({ ok: true });
@@ -149,8 +149,10 @@ describe('auto-route', () => {
   test('proposes a path core accepts, never through occupied cells', async () => {
     const { s, ex, bk } = await factory();
     const { from, to } = ends(s.run.team, ex, bk);
-    const cells = proposePath(s.run.team, content, from, to) as Cell[];
-    expect(previewConduit(s.run.team, content, from, to, cells).ok).toBe(true);
+    const cells = proposePath(s.run.team, content, from, to, [], 0) as Cell[];
+    expect(previewConduit(s.run.team, content, from, to, cells, 0).ok).toBe(
+      true,
+    );
     for (let i = 1; i < cells.length; i++) {
       const a = cells[i - 1] as Cell;
       const b = cells[i] as Cell;
@@ -175,17 +177,17 @@ describe('auto-route', () => {
     });
     if (!r.ok) return; // the node is against a wall of the map; nothing to test
     const { from, to } = ends(s.run.team, ex, bk);
-    expect(proposePath(s.run.team, content, from, to)).toEqual([]);
-    expect(previewConduit(s.run.team, content, from, to, []).ok).toBe(true);
+    expect(proposePath(s.run.team, content, from, to, [], 0)).toEqual([]);
+    expect(previewConduit(s.run.team, content, from, to, [], 0).ok).toBe(true);
   });
 
   test('a blocked board still gets a proposal for core to judge', async () => {
     const { s, ex, bk } = await factory();
     const { from, to } = ends(s.run.team, ex, bk);
     // Whatever is proposed, core has the final word and says why or accepts.
-    const cells = proposePath(s.run.team, content, from, to);
+    const cells = proposePath(s.run.team, content, from, to, [], 0);
     expect(cells).not.toBeNull();
-    const v = previewConduit(s.run.team, content, from, to, cells as Cell[]);
+    const v = previewConduit(s.run.team, content, from, to, cells as Cell[], 0);
     expect(typeof v.ok).toBe('boolean');
   });
 

@@ -12,7 +12,7 @@ import {
   createNewRun,
   discardSavedRun,
 } from '../run/run-store.js';
-import { runHash, seedFromHash } from '../run/router.js';
+import { playersFromHash, runHash, seedFromHash } from '../run/router.js';
 import { getServices, type GameServices } from '../run/services.js';
 import { registerDebug, unregisterDebug } from '../debug-hook.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
@@ -156,7 +156,7 @@ export function MainMenuScreen() {
     if (starting) return;
     setStarting(true);
     setNotice(null);
-    void createNewRun(seed ?? undefined).then((r) => {
+    void createNewRun(seed ?? undefined, playersFromHash(hash)).then((r) => {
       setStarting(false);
       if (r.ok) navigate(runHash(r.runId));
       else setNotice(r.message);

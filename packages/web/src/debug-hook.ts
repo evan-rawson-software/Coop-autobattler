@@ -67,6 +67,7 @@ export interface PlacementDebug {
   cellToScreen: (x: number, y: number) => { x: number; y: number } | null;
   selected: () => { x: number; y: number } | null;
   pathCount: () => number;
+  plotWidth: () => number;
 }
 
 /** Read-only view of the main menu for the smoke script. */
@@ -136,6 +137,8 @@ export interface BuildDebug {
   cellToScreen: (x: number, y: number) => { x: number; y: number } | null;
   problems: () => readonly { id: string; kind: string; text: string }[];
   legalCore: () => readonly { x: number; y: number }[];
+  acting: () => number;
+  partnerCores: () => readonly { player: number; x: number; y: number }[];
   /** Ids of the placed unit producers sealed off from the front row. */
   sealed: () => readonly number[];
   enemyPathCount: () => number;

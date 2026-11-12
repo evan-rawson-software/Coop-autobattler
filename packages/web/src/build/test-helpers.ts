@@ -1,10 +1,6 @@
 /** Helpers shared by the Build screen's unit tests. Not part of the app. */
 
-import {
-  listLegalCorePositionsAnyPlot,
-  type Cell,
-  type TeamState,
-} from '@game/core';
+import { listLegalCorePositions, type Cell, type TeamState } from '@game/core';
 import { content } from '../content.js';
 import { previewPlace } from './ops.js';
 import { BuildSession } from './session.js';
@@ -12,10 +8,11 @@ import { BuildSession } from './session.js';
 /** A solo run past Core placement, in the `build` step. */
 export async function buildRun(seed = 7): Promise<BuildSession> {
   const s = await BuildSession.start(seed);
-  const pos = listLegalCorePositionsAnyPlot(
+  const pos = listLegalCorePositions(
     s.run.team.map,
     content,
     content.mapgen,
+    0,
   )[0] as Cell;
   const r = await s.dispatch({ type: 'place_core', x: pos.x, y: pos.y });
   if (!r.ok) throw new Error(`core: ${r.reason}`);
@@ -40,7 +37,7 @@ export function firstFit(
   for (let y = 0; y < team.map.height; y++) {
     for (let x = 0; x < team.map.width; x++) {
       if (skip({ x, y })) continue;
-      if (previewPlace(team, content, { id, x, y, rotation }).ok) {
+      if (previewPlace(team, content, { id, x, y, rotation }, 0).ok) {
         return { x, y };
       }
     }

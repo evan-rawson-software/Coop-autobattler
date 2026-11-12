@@ -57,6 +57,11 @@ export interface SessionView {
    * dismissed or when the player presses Ready.
    */
   readonly notice: string | null;
+  /**
+   * The player this device acts as (this prototype is played locally: one
+   * person may control every player of a party; solo it is always 0).
+   */
+  readonly acting: number;
 }
 
 let runCounter = 0;
@@ -69,6 +74,7 @@ export class BuildSession {
   private notice: string | null = null;
 
   private lastStamp = 0;
+  private actingPlayer = ME;
 
   /**
    * The time stamped on the next saved action: the current time, but always
@@ -99,10 +105,11 @@ export class BuildSession {
     return new BuildSession(controller, now);
   }
 
-  /** Start a solo run with a fixed seed. */
+  /** Start a run (solo unless `players` names more) with a fixed seed. */
   static async start(
     seed: number,
     now: () => number = Date.now,
+    players: readonly string[] = ['You'],
   ): Promise<BuildSession> {
     runCounter += 1;
     const deps = createEconomyDeps(content, content.mapgen, economy);
@@ -111,7 +118,7 @@ export class BuildSession {
         runId: `dev-${String(seed)}-${String(runCounter)}`,
         runVersion: '1.0',
         seed,
-        players: ['You'],
+        players,
         host: 0,
       },
       deps,
@@ -138,7 +145,30 @@ export class BuildSession {
       undoCount: this.stack.undoCount,
       redoCount: this.stack.redoCount,
       notice: this.notice,
+      acting: this.actingPlayer,
     };
+  }
+
+  /** The player this device acts as now. */
+  get acting(): number {
+    return this.actingPlayer;
+  }
+
+  /**
+   * Switch the acting player (a multi-player party played from one browser).
+   * The layout history belongs to one player's edits, so it is cleared.
+   */
+  setActing(player: number): void {
+    if (
+      player === this.actingPlayer ||
+      player < 0 ||
+      player >= this.controller.state.players.length
+    ) {
+      return;
+    }
+    this.actingPlayer = player;
+    this.stack.clear();
+    this.publish();
   }
 
   private publish(): void {
@@ -164,14 +194,19 @@ export class BuildSession {
     if (this.lockedDetail !== null) {
       return { ok: false, reason: 'save_failed', detail: this.lockedDetail };
     }
-    const r = await this.controller.dispatch(ME, intent, this.stamp());
+    const r = await this.controller.dispatch(
+      this.actingPlayer,
+      intent,
+      this.stamp(),
+    );
     if (r.ok) {
       if (intent.type === 'ready') this.notice = null;
       for (const e of r.effects) {
         if (e.type === 'custom' && e.name === 'event_resolved') {
           const applied = (e.data as { applied?: unknown }).applied;
           if (Array.isArray(applied)) {
-            this.notice = appliedNotice(applied, ME, content) ?? this.notice;
+            this.notice =
+              appliedNotice(applied, this.actingPlayer, content) ?? this.notice;
           }
         }
       }
@@ -238,7 +273,7 @@ export class BuildSession {
   async undo(): Promise<ApplyResult | null> {
     const r = await this.stack.undo(
       (a) => this.applyAll(a),
-      (a) => previewActions(this.run.team, content, a),
+      (a) => previewActions(this.run.team, content, a, this.actingPlayer),
     );
     this.publish();
     return r;
@@ -247,7 +282,7 @@ export class BuildSession {
   async redo(): Promise<ApplyResult | null> {
     const r = await this.stack.redo(
       (a) => this.applyAll(a),
-      (a) => previewActions(this.run.team, content, a),
+      (a) => previewActions(this.run.team, content, a, this.actingPlayer),
     );
     this.publish();
     return r;

@@ -7,8 +7,7 @@
 
 import {
   coreFootprint,
-  corePlayerAt,
-  listLegalCorePositionsAnyPlot,
+  listLegalCorePositions,
   occupancy,
   validateCorePosition,
   type Cell,
@@ -41,7 +40,8 @@ import {
   selectionNote,
   type SelectionCause,
 } from './reasons.js';
-import { BuildSession, isEditStep, type SessionView } from './session.js';
+import { pendingCoreSpots } from './view-model.js';
+import { BuildSession, ME, isEditStep, type SessionView } from './session.js';
 import {
   chooseInput,
   freeOutputSides,
@@ -240,10 +240,7 @@ export class BuildController {
     this.unsub?.();
     this.shared = shared;
     this.session = s;
-    this.legalCore =
-      s.run.step === 'core_placement'
-        ? listLegalCorePositionsAnyPlot(s.run.team.map, content, content.mapgen)
-        : [];
+    this.refreshLegalCore();
     this.unsub = s.store.subscribe(() => {
       this.afterState();
     });
@@ -260,12 +257,45 @@ export class BuildController {
     this.afterState();
   }
 
+  /**
+   * The acting player's legal Core spots (their own plot only, PP-2); none
+   * once they have confirmed theirs.
+   */
+  private refreshLegalCore(): void {
+    const s = this.session;
+    this.legalCore =
+      s !== null &&
+      s.run.step === 'core_placement' &&
+      s.run.perPlayer[s.acting]?.ready !== true
+        ? listLegalCorePositions(
+            s.run.team.map,
+            content,
+            content.mapgen,
+            s.acting,
+          )
+        : [];
+  }
+
+  /** Partners' proposed Core spots, shown during Core placement. */
+  partnerCores(): readonly { player: number; x: number; y: number }[] {
+    const s = this.session;
+    if (s === null || s.run.step !== 'core_placement') return [];
+    return pendingCoreSpots(s.run.pending).filter((c) => c.player !== s.acting);
+  }
+
   get legalCorePositions(): readonly Cell[] {
     return this.legalCore;
   }
 
   team(): TeamState | null {
     return this.session?.run.team ?? null;
+  }
+
+  /** The player this device acts as (the session's acting player). */
+  private lastActing = ME;
+
+  private actor(): number {
+    return this.session?.acting ?? ME;
   }
 
   private step(): string {
@@ -290,6 +320,19 @@ export class BuildController {
 
   /** The team changed (or the session did): drop stale selections, redo previews. */
   private afterState(): void {
+    this.refreshLegalCore();
+    const acting = this.actor();
+    if (acting !== this.lastActing) {
+      // A held piece, selection or draft belongs to the previous player.
+      this.lastActing = acting;
+      this.ui = {
+        ...this.ui,
+        selection: null,
+        held: null,
+        moving: null,
+        draft: null,
+      };
+    }
     const team = this.team();
     let sel = this.ui.selection;
     if (team !== null && sel !== null) {
@@ -336,7 +379,7 @@ export class BuildController {
       team.map,
       content,
       content.mapgen,
-      corePlayerAt(team.map, content, hover.x),
+      this.actor(),
       hover,
     );
     return {
@@ -357,12 +400,17 @@ export class BuildController {
         item === undefined ? undefined : content.buildings.get(item.def);
       if (item === undefined || def === undefined) return null;
       const a = anchorUnderCursor(def, ui.held.rotation, hover);
-      const v = previewPlace(team, content, {
-        id: item.id,
-        x: a.x,
-        y: a.y,
-        rotation: ui.held.rotation,
-      });
+      const v = previewPlace(
+        team,
+        content,
+        {
+          id: item.id,
+          x: a.x,
+          y: a.y,
+          rotation: ui.held.rotation,
+        },
+        this.actor(),
+      );
       return {
         defId: def.id,
         cells: footprintCells(def, a.x, a.y, ui.held.rotation),
@@ -378,12 +426,17 @@ export class BuildController {
       if (b === undefined || def === undefined) return null;
       const x = hover.x - m.offset.x;
       const y = hover.y - m.offset.y;
-      const v = previewMove(team, content, {
-        id: b.id,
-        x,
-        y,
-        rotation: m.rotation,
-      });
+      const v = previewMove(
+        team,
+        content,
+        {
+          id: b.id,
+          x,
+          y,
+          rotation: m.rotation,
+        },
+        this.actor(),
+      );
       const n = attachedCount(team, b.id);
       return {
         defId: def.id,
@@ -413,14 +466,21 @@ export class BuildController {
       const last = draft.cells[draft.cells.length - 1];
       const edge = outsideCells(occ.cellsOf(b), target.side);
       if (last === undefined || !edge.some((c) => sameCell(c, last))) {
-        cells = proposePath(team, content, from, target, draft.cells);
+        cells = proposePath(
+          team,
+          content,
+          from,
+          target,
+          draft.cells,
+          this.actor(),
+        );
       }
     }
     if (cells === null) return { to: target, cells: null, verdict: null };
     return {
       to: target,
       cells,
-      verdict: previewConduit(team, content, from, target, cells),
+      verdict: previewConduit(team, content, from, target, cells, this.actor()),
     };
   }
 
@@ -683,12 +743,17 @@ export class BuildController {
     const b = s.run.team.buildings.find((x) => x.id === sel.id);
     if (b === undefined) return;
     const rotation = nextRotation(b.rotation);
-    const v = previewMove(s.run.team, content, {
-      id: b.id,
-      x: b.x,
-      y: b.y,
-      rotation,
-    });
+    const v = previewMove(
+      s.run.team,
+      content,
+      {
+        id: b.id,
+        x: b.x,
+        y: b.y,
+        rotation,
+      },
+      this.actor(),
+    );
     if (!v.ok) {
       this.refuse(v.reason, v.detail);
       return;
@@ -759,7 +824,7 @@ export class BuildController {
 
   /** The viewing player has pressed Ready: edits (and undo) are locked. */
   private isReady(): boolean {
-    return this.session?.run.perPlayer[0]?.ready === true;
+    return this.session?.run.perPlayer[this.actor()]?.ready === true;
   }
 
   async undo(): Promise<void> {
@@ -799,7 +864,7 @@ export class BuildController {
   async toggleReady(): Promise<void> {
     const s = this.session;
     if (s === null) return;
-    const readyNow = s.run.perPlayer[0]?.ready === true;
+    const readyNow = s.run.perPlayer[s.acting]?.ready === true;
     const before = s.run.step;
     const r = await s.dispatch({ type: readyNow ? 'unready' : 'ready' });
     if (!r.ok) {
@@ -863,7 +928,6 @@ export class BuildController {
     let r = await s.dispatch({ type: 'place_core', x: cell.x, y: cell.y });
     if (r.ok) r = await s.dispatch({ type: 'ready' });
     if (r.ok) {
-      this.legalCore = [];
       this.set({
         hover: null,
         status: {

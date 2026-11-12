@@ -115,7 +115,8 @@ export function proposePath(
   content: WebContent,
   from: ConduitEnd,
   to: ConduitEnd,
-  existing: readonly Cell[] = [],
+  existing: readonly Cell[],
+  actor: number,
 ): Cell[] | null {
   const a = state.buildings.find((b) => b.id === from.building);
   const b = state.buildings.find((x) => x.id === to.building);
@@ -123,7 +124,7 @@ export function proposePath(
   if (existing.length === 0) {
     // Let core say whether the sides face each other: any answer but
     // invalid_path means the empty path was understood as a direct link.
-    const direct = previewConduit(state, content, from, to, []);
+    const direct = previewConduit(state, content, from, to, [], actor);
     if (direct.ok || direct.reason !== 'invalid_path') return [];
   }
   const occ = occupancy(state, content);
