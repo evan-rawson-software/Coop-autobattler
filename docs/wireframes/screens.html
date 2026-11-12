@@ -181,14 +181,14 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
 
   <section>
     <h2>6. Core placement</h2>
-    <p>The first decision of a run. The whole map is shown, and the party chooses where the Core goes. It cannot be moved afterwards.</p>
-    <div class="sheet"><svg id="s-core" viewBox="0 0 960 540" role="img" aria-label="Core placement wireframe: the empty generated map with a proposed Core position, instructions and votes on the right, and the starting kit below."></svg></div>
+    <p>The first decision of a run. The whole map is shown, and every player chooses where their own Core goes, in their own plot; other plots are dimmed. A Core cannot be moved once everyone is ready.</p>
+    <div class="sheet"><svg id="s-core" viewBox="0 0 960 540" role="img" aria-label="Core placement wireframe: the empty generated map with a proposed Core position, instructions and a Ready button on the right, and the starting kit below."></svg></div>
     <ol class="notes">
       <li>The whole map, visible and buildable from the start. It never expands.</li>
       <li>The front edge, where enemy units will enter.</li>
       <li>The proposed Core position, with the routes enemy units would take to reach it.</li>
       <li>Resource nodes. Where the rare one sits is a big part of the choice.</li>
-      <li>In co-op any player can propose a spot and the party confirms it by vote. Solo just confirms.</li>
+      <li>In co-op every player places their own Core and readies up; there is no vote. You can change yours until you are ready (Unready reopens it). The step ends when everyone has placed a Core and is ready. Solo just readies.</li>
       <li>The starting kit, waiting in the stash for the first build.</li>
     </ol>
   </section>
@@ -521,13 +521,13 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     path([[16,2],[12.5,2],[12.5,8.5],[4.5,8.5],[4.5,11],[4,11]]);
     R(s, bx + 11 * S - 3, by + 12 * S - 3, 2 * S + 6, 2 * S + 6, "sel");
     R(s, 640, 68, 304, 320, "panel"); T(s, 654, 88, "THE CORE", "ts tm");
-    lines(s, 654, 114, ["Pick a 2 × 2 spot. It cannot be", "moved for the rest of the run.", "", "Deep is safer. Forward shortens", "your supply lines."], "t", 20);
-    T(s, 654, 246, "VOTES (co-op)", "ts tm");
-    lines(s, 654, 268, ["You   proposed this spot", "Ana   agrees", "Bo    not yet"], "ts", 18);
-    btn(s, 654, 340, 276, 34, "Confirm", true);
+    lines(s, 654, 114, ["Pick a 2 × 2 spot in your own area.", "Change it until you are Ready.", "", "Deep is safer. Forward shortens", "your supply lines."], "t", 20);
+    T(s, 654, 246, "READY (co-op)", "ts tm");
+    lines(s, 654, 268, ["You   placed, ready", "Ana   placed, not ready", "Bo    not placed"], "ts", 18);
+    btn(s, 654, 340, 276, 34, "Ready", true);
     R(s, 16, 402, 928, 122, "panel"); T(s, 28, 422, "STARTING KIT · in your stash when the run begins", "ts tm");
     ["Extractor × 2", "Barracks × 1", "Wall × 3", "Turret × 1", "10 gold"].forEach(function (k, i) { R(s, 28 + i * 180, 434, 168, 38, "box"); T(s, 28 + i * 180 + 84, 458, k, "t", "middle"); });
-    T(s, 28, 502, "After the Core is confirmed you go to the Build screen, then to the first PvE battle.", "ts tm");
+    T(s, 28, 502, "When every player is Ready you go to the Build screen, then to the first PvE battle.", "ts tm");
     mark(s, bx + 450, by + 296, 1); mark(s, bx + bw / 2 + 150, by - 11, 2); mark(s, bx + 284, by + 262, 3); mark(s, bx + 420, by + 100, 4); mark(s, 930, 242, 5); mark(s, 930, 418, 6);
   })();
 

@@ -113,7 +113,7 @@ Where a run starts or resumes. Saved runs are listed without limit. The host of 
 
 ## 6. Core placement
 
-The first decision of a run. The whole map is shown, and every player chooses where their own Core goes, in their own plot. A Core cannot be moved afterwards. (The image shows the earlier design, one Core chosen by vote; it is to be redrawn.)
+The first decision of a run. The whole map is shown, and every player chooses where their own Core goes, in their own plot. A Core cannot be moved once everyone is ready. Other plots are dimmed. (The PNG still shows the earlier design, one Core chosen by vote; `screens.html` is current and the PNG is to be redrawn.)
 
 ![Core placement screen wireframe](6-core-placement.png)
 
