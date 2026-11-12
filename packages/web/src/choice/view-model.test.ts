@@ -106,6 +106,18 @@ describe('the Overload line', () => {
       /would not destroy either Core/,
     );
   });
+  test('a side falls with its last Core: several Cores per side', () => {
+    // Each side's last-Core tick is its largest deadline, so the strongest Core counts.
+    expect(overloadLine(simConfig, [500, 42, 42], [500, 500, 42, 42])).toMatch(
+      /both Cores at/,
+    );
+    expect(overloadLine(simConfig, [500, 500, 500], [42, 42])).toBe(
+      "Overload at 3:00 would destroy the stronghold's Core first at 3:30 — outlasting it wins.",
+    );
+    expect(overloadLine(simConfig, [42], [500, 42, 42, 42])).toMatch(
+      /would destroy your Core first/,
+    );
+  });
   test('the party Core is read from content', () => {
     const run = reachStep('pve_choice');
     expect(partyCoreMax(run.team, realDeps().content.buildings)).toBe(500);

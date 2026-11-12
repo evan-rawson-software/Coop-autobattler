@@ -121,6 +121,41 @@ describe('several Cores per side', () => {
     if (!bad.ok) expect(bad.error.code).toBe('core_not_placed');
   }, 120_000);
 
+  test('three Cores against three: bars, fall and seek follow the tick', () => {
+    const d: BattleDescription = {
+      kind: 'versus',
+      input: {
+        teamA: cores(3, 3),
+        teamB: cores(4, 3),
+        seed: 7,
+        sideOptions: [{}, { coreHealths: [1, 1, 1] }],
+      },
+    };
+    const r = simulateRecord(d, content, battleConfig);
+    if (!r.ok) throw new Error(r.error.message);
+    const pb = new Playback(d, content, battleConfig, r.record);
+    expect(sideStats(pb, content, 0, 10).cores).toHaveLength(3);
+    expect(sideStats(pb, content, 1, 10).cores).toHaveLength(3);
+    const fell = r.record.eventLog.find((e) => e.type === 'core_destroyed');
+    if (fell === undefined) throw new Error('no Core fell');
+    pb.seekTo(fell.tick + 1);
+    const mid = sideStats(pb, content, 1, 10);
+    expect(mid.cores.some((c) => c.hp === 0)).toBe(true);
+    pb.seekTo(0);
+    expect(sideStats(pb, content, 1, 10).cores.every((c) => c.hp > 0)).toBe(
+      true,
+    );
+    const scene = buildScene(
+      r.record.initialTeams[0],
+      r.record.initialTeams[1],
+      r.record.zone.depth,
+      content,
+    );
+    const idx = makeDrawIndex(scene, { own: 'a', enemy: 'b' });
+    expect(idx.coreRects[0].filter((x) => x !== null)).toHaveLength(3);
+    expect(idx.coreRects[1].filter((x) => x !== null)).toHaveLength(3);
+  }, 120_000);
+
   test('the time-limit text names the ladder', () => {
     expect(reasonText('time_limit', 'Core')).toMatch(/more Cores standing/);
     expect(reasonText('time_limit', 'Core')).toMatch(/total Core health/);
