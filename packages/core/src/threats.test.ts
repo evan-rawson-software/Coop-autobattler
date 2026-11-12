@@ -249,9 +249,10 @@ describe('generateThreat', () => {
             for (const n of perTick.values())
               expect(n).toBeLessThanOrEqual(cap(party));
             expect(p.unitStrengthPercent).toBeGreaterThanOrEqual(0);
-            expect(p.stronghold.coreHealth).toBeGreaterThanOrEqual(
-              threats.minCoreHealth,
-            );
+            expect(p.stronghold.cores).toHaveLength(party);
+            expect(
+              p.stronghold.cores.reduce((a, c) => a + c.health, 0),
+            ).toBeGreaterThanOrEqual(threats.minCoreHealth * party);
           }
         }
       }
@@ -383,18 +384,19 @@ describe('layouts', () => {
     for (const a of threats.archetypes) {
       const p = gen(a.id, 2, 14);
       const seen = new Set<string>();
-      const core = p.stronghold.corePosition;
       for (const b of p.stronghold.buildings) {
         const k = `${String(b.x)},${String(b.y)}`;
         expect(seen.has(k)).toBe(false);
         seen.add(k);
         expect(b.y).toBeLessThan(mapgen.plotDepth - 1);
-        expect(
-          b.x >= core.x &&
-            b.x < core.x + 2 &&
-            b.y >= core.y &&
-            b.y < core.y + 2,
-        ).toBe(false);
+        for (const core of p.stronghold.cores) {
+          expect(
+            b.x >= core.x &&
+              b.x < core.x + 2 &&
+              b.y >= core.y &&
+              b.y < core.y + 2,
+          ).toBe(false);
+        }
       }
     }
   });
@@ -448,7 +450,8 @@ describe('pickArchetypes and threatSummary', () => {
     expect(s.level).toBe(3);
     expect(s.totalUnits).toBe(p.waves.reduce((a, w) => a + w.count, 0));
     expect(s.firstWaveTick).toBe(got(p.waves[0]).tick);
-    expect(s.coreHealth).toBe(p.stronghold.coreHealth);
+    expect(s.coreHealth).toBe(got(p.stronghold.cores[0]).health);
+    expect(s.cores).toBe(1);
     expect(s.walls + s.turrets).toBe(p.stronghold.buildings.length);
     expect(
       threatSummary({ ...p, type: 'easy', waves: [] }, content),

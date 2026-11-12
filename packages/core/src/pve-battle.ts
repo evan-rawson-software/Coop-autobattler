@@ -58,7 +58,7 @@ export function threatSideOptions(threat: ThreatProfile): SideOptions {
     })),
     freePower: true,
     unitStrengthPercent: threat.unitStrengthPercent,
-    coreHealths: [threat.stronghold.coreHealth],
+    coreHealths: threat.stronghold.cores.map((c) => c.health),
   };
 }
 

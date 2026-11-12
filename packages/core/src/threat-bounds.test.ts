@@ -71,10 +71,13 @@ describe('generated threats stay within the content bounds', () => {
             const t = profile(arch.id, type, size, round);
             const where = `${arch.id} ${type} party ${String(size)} round ${String(round)}`;
             // Strictly below the clamps: a clamped value would equal them.
-            expect(t.stronghold.coreHealth, where).toBeLessThan(MAX_HEALTH);
+            const coreMax = Math.max(
+              ...t.stronghold.cores.map((c) => c.health),
+            );
+            expect(coreMax, where).toBeLessThan(MAX_HEALTH);
             expect(t.unitStrengthPercent, where).toBeLessThan(strengthLimit);
             if (round === ROUNDS) {
-              maxCore = Math.max(maxCore, t.stronghold.coreHealth);
+              maxCore = Math.max(maxCore, coreMax);
               maxStrength = Math.max(maxStrength, t.unitStrengthPercent);
             }
             const r = startPveBattle(

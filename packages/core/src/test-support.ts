@@ -125,6 +125,12 @@ export class Lab {
     if (!r.ok) throw new Error(`core: ${r.reason}`);
     this.state = r.state;
   }
+  /** Place every unplaced player's Core at the same spot of their own plot, row `y`. */
+  allCores(y = 6): void {
+    this.state.cores.forEach((c, p) => {
+      if (c === null) this.core(p * mapgen.plotWidth + 16, y, p);
+    });
+  }
   link(
     from: number,
     fromSide: Side,

@@ -206,7 +206,8 @@ function fail(error: BattleError): { ok: false; error: BattleError } {
  * Set a battle up at tick 0: validate the boards, generate the zone, build the
  * arena and record `zone_revealed`. Typed errors, in this order: the boards
  * differ in width (`party_size_mismatch`) or height (`board_size_mismatch`);
- * a Core is not placed (`core_not_placed`, side 0 checked first); a handed-in
+ * a player has no Core (`core_not_placed`, side 0 checked first, carrying the
+ * lowest player index without a Core); a handed-in
  * zone is unusable (`invalid_zone`).
  */
 export function startBattle(
@@ -230,21 +231,17 @@ export function startBattle(
       message: `Both boards must have the same height: ${String(a.height)} and ${String(b.height)}.`,
     });
   }
-  if (teamA.cores.every((c) => c === null)) {
-    return fail({
-      code: 'core_not_placed',
-      message: 'Side 0 has not placed its Core.',
-      side: 0,
-      player: 0, // no Core at all, so the lowest index is 0
-    });
-  }
-  if (teamB.cores.every((c) => c === null)) {
-    return fail({
-      code: 'core_not_placed',
-      message: 'Side 1 has not placed its Core.',
-      side: 1,
-      player: 0, // no Core at all, so the lowest index is 0
-    });
+  for (const side of [0, 1] as const) {
+    const cores = (side === 0 ? teamA : teamB).cores;
+    const missing = cores.findIndex((c) => c === null);
+    if (missing !== -1) {
+      return fail({
+        code: 'core_not_placed',
+        message: `Side ${String(side)}: player ${String(missing)} has not placed their Core.`,
+        side,
+        player: missing,
+      });
+    }
   }
   let zone: NeutralZone;
   if (options.zone !== undefined) {

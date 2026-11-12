@@ -269,5 +269,13 @@ export function buildSampleTeam(
       }
     }
   }
+  // A battle needs one Core per player: place the others last, on the first
+  // legal spot of their plot, so the rest of the sample is unchanged.
+  for (const spot of legal) {
+    const player = corePlayerAt(map, content, spot.x);
+    if (state.cores[player] !== null) continue;
+    const r = placeCore(state, content, content.mapgen, player, spot);
+    if (r.ok) state = r.state;
+  }
   return state;
 }

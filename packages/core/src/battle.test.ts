@@ -125,6 +125,24 @@ describe('refused battles', () => {
     expect(none.ok ? null : none.error.code).toBe('core_not_placed');
   });
 
+  test('core_not_placed carries the lowest player index without a Core', () => {
+    const full = randomTeam(7, 3);
+    expect(full.cores.every((c) => c !== null)).toBe(true);
+    const missing = (...gone: number[]): TeamState => ({
+      ...full,
+      cores: full.cores.map((c, p) => (gone.includes(p) ? null : c)),
+    });
+    const err = (a: TeamState, b: TeamState) => {
+      const r = startBattle({ teamA: a, teamB: b, seed: 1 }, content, config);
+      return r.ok ? null : [r.error.code, r.error.side, r.error.player];
+    };
+    expect(err(missing(1, 2), full)).toEqual(['core_not_placed', 0, 1]);
+    expect(err(full, missing(2))).toEqual(['core_not_placed', 1, 2]);
+    expect(err(full, missing(0, 2))).toEqual(['core_not_placed', 1, 0]);
+    // Side 0 is checked first.
+    expect(err(missing(2), missing(0))).toEqual(['core_not_placed', 0, 2]);
+  });
+
   test('a different board height is rejected', () => {
     const lab = new Lab(tiny([], 14));
     lab.core(5, 0);
@@ -237,7 +255,7 @@ describe('events, summary and the incremental API', () => {
       expect(s.unitsSpawned).toBe(count('unit_spawned', side));
       expect(s.buildingsLost).toBe(count('building_destroyed', side));
       expect(s.rampSteps).toBe(count('ramp_step', side));
-      expect(s.coreMaxHealth).toBe(500);
+      expect(s.coreMaxHealth).toBe(500 * 3);
       expect(s.coreHealth).toBeGreaterThanOrEqual(0);
       expect(s.coreHealth > 0).toBe(s.coreOverkill === 0);
     }
@@ -952,7 +970,7 @@ describe('performance (CB-36)', () => {
   function dense(tier: number): TeamState {
     const lab = new Lab(bigBoard().map);
     lab.state = bigBoard();
-    lab.core(40, 6, 1);
+    lab.allCores(6);
     if (tier === 1) return lab.state;
     const heavy = new Lab(bigBoard().map);
     heavy.state = {
@@ -986,6 +1004,7 @@ describe('performance (CB-36)', () => {
     expect(m.ms).toBeLessThan(20_000 * TIMING);
     expect(m.ticks).toBeLessThan(simConfig.maxBattleTicks);
     expect(m.peakPerSide).toBeLessThan(2_000);
-    expect(m.bytes).toBeLessThan(10_000_000);
+    // Four Cores per side now (one per player): a few more events than with one.
+    expect(m.bytes).toBeLessThan(11_000_000);
   }, 240_000);
 });

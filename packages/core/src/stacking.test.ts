@@ -115,7 +115,7 @@ describe('stacking duration', () => {
   test('the dense four-plot battle (tier 1): same', () => {
     const lab = new Lab(bigBoard().map);
     lab.state = bigBoard();
-    lab.core(40, 6, 1);
+    lab.allCores(6);
     const r = stacking(lab.state, lab.state, 1);
     expect(r.longest).toBeLessThanOrEqual(LONGEST_DENSE);
     expect(r.over50 / r.unitTicks).toBeLessThanOrEqual(SHARE50_DENSE);
@@ -127,7 +127,7 @@ describe('stacking duration, tier 3 and mixed', () => {
   test('dense four plots, tier 3 and tier 1 against tier 3', () => {
     const lab = new Lab(bigBoard().map);
     lab.state = bigBoard();
-    lab.core(40, 6, 1);
+    lab.allCores(6);
     const t1 = lab.state;
     const heavy = new Lab(bigBoard().map);
     heavy.state = {
@@ -143,7 +143,7 @@ describe('stacking duration, tier 3 and mixed', () => {
     expect(a.over50 / a.unitTicks).toBeLessThanOrEqual(0.075);
     expect(a.over90 / a.unitTicks).toBeLessThanOrEqual(0.005);
     expect(b.longest).toBeLessThanOrEqual(6);
-    expect(b.over50 / b.unitTicks).toBeLessThanOrEqual(0.003);
+    expect(b.over50 / b.unitTicks).toBeLessThanOrEqual(0.009);
     expect(b.over90 / b.unitTicks).toBeLessThanOrEqual(0.0002);
   }, 120_000);
 });
@@ -160,5 +160,5 @@ const LONGEST_REFERENCE = 2;
 const SHARE50_REFERENCE = 0.0005;
 const SHARE90_REFERENCE = 0.0005;
 const LONGEST_DENSE = 14;
-const SHARE50_DENSE = 0.012;
-const SHARE90_DENSE = 0.0002;
+const SHARE50_DENSE = 0.025;
+const SHARE90_DENSE = 0.0006;

@@ -108,5 +108,12 @@ export function randomTeam(seed: number, partySize: number): TeamState {
       m.height - 3 + rng.nextInt(2),
     );
   }
+  // Battles need one Core per player: the first legal spot of each player
+  // that has none yet (no random draw, so the rest of the team is unchanged).
+  for (const spot of cores) {
+    if (s.cores[spot.player] !== null) continue;
+    const c = placeCore(s, content, mapgen, spot.player, spot);
+    if (c.ok) s = c.state;
+  }
   return s;
 }
