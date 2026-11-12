@@ -92,6 +92,22 @@ export interface HistoryEntry {
   readonly finishedAt: number;
 }
 
+/** The text of a refused stale write (shown to the player). */
+export const STALE_MESSAGE = 'This run changed in another tab.';
+
+/** What `put` rejects with when the record is older than the stored one. */
+export class StaleSaveError extends Error {
+  constructor() {
+    super(STALE_MESSAGE);
+    this.name = 'StaleSaveError';
+  }
+}
+
+/** True if a write at `next` must be refused over a stored `have`. */
+export function isStaleWrite(have: unknown, next: unknown): boolean {
+  return typeof have === 'number' && typeof next === 'number' && have >= next;
+}
+
 /**
  * Where saved runs live. See the README for what an implementation must
  * guarantee; `runSaveStoreConformance` (save-conformance.ts) tests it.
@@ -104,7 +120,16 @@ export interface SaveStore {
   list(): Promise<readonly SaveListItem[]>;
   /** The stored value, or null if there is none. */
   get(runId: string): Promise<unknown>;
-  /** Atomic: on resolve the record is stored; on reject the old one is intact. */
+  /**
+   * Atomic: on resolve the record is stored; on reject the old one is intact.
+   *
+   * Stale writes: a store that enforces the compare-and-swap rule refuses a
+   * record whose `actionCounter` is not greater than the stored record's
+   * (same run opened elsewhere, e.g. in two tabs) by rejecting with a
+   * `StaleSaveError`, leaving the stored record unchanged. A first write for
+   * a `runId` always succeeds. Stores that enforce it take a `rejectStale`
+   * option; the plain store accepts any record.
+   */
   put(record: SaveRecord): Promise<void>;
   /** Removes the record; resolves also when there is none. */
   remove(runId: string): Promise<void>;

@@ -339,6 +339,12 @@ new ID. Do not add one.
   and no partial record exists. Writes to one `runId` end with one complete
   record. Stored values are copies (later changes to the object passed in do
   not alter the store).
+- Stale writes (compare-and-swap on the action counter): a store with
+  `rejectStale` refuses a `put` whose `actionCounter` is not greater than the
+  stored record's by rejecting with `StaleSaveError`; the stored record stays
+  as it was, and a first write for a `runId` always succeeds. The plain store
+  accepts any record, so a conformance suite that rewrites one counter still
+  passes; the browser stores enforce the rule in the Shop.
 - `list()` returns every stored run (no limit), sorted by `updatedAt`
   descending, then `runId`. A stored value that does not parse is still listed,
   as `{corrupt: true, runId, updatedAt, errors}` (use `summarizeStored`). A
@@ -351,8 +357,9 @@ new ID. Do not add one.
   already in history; `bestDepthByPartySize` is the highest `round` per party
   size over the history (`bestDepthFromHistory`).
 
-`runSaveStoreConformance(name, makeStore)` from `@game/session/testing`
+`runSaveStoreConformance(name, makeStore, makeStaleStore?)` from `@game/session/testing`
 checks all of this; `makeStore` must return a fresh, empty store. The browser
-store must pass it. `createMemorySaveStore` is the reference, with fault
+store must pass it; pass `makeStaleStore` (an empty store with `rejectStale`
+on) to also run the stale-write cases. `createMemorySaveStore` is the reference, with fault
 injection (`failNextPut`, `failNextRemove`, `beforePut`, `beforeRemove`,
 `injectRaw`).

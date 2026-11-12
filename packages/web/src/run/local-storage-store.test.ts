@@ -10,8 +10,13 @@ import {
   watchSaveKey,
 } from './local-storage-store.js';
 
-runSaveStoreConformance('localStorage store (in-memory shim)', () =>
-  createLocalStorageSaveStore(createMemoryStorage()),
+runSaveStoreConformance(
+  'localStorage store (in-memory shim)',
+  () => createLocalStorageSaveStore(createMemoryStorage()),
+  () =>
+    createLocalStorageSaveStore(createMemoryStorage(), undefined, {
+      rejectStale: true,
+    }),
 );
 
 describe('localStorage store details', () => {

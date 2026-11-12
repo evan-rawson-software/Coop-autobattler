@@ -408,8 +408,9 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
           if (CONSUMERS.includes(o.def) && users >= sources + more) score = 0;
           // One Splitter per two consumers, no more.
           if (o.def === 'bld_splitter' && splitters * 2 >= users) score = 0;
-          // Never buy a consumer the collectors cannot feed (CB-10a); a
-          // receiver counts on its neighbour's collectors too.
+          // Never buy a consumer the collectors cannot feed (CB-10a). The
+          // supply is the player's own best collectors (`bestOwnedSupply`);
+          // a neighbour's collectors are not counted.
           if (
             CONSUMERS.includes(o.def) &&
             coveragePercent(
