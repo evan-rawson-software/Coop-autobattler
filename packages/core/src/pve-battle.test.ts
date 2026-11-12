@@ -266,7 +266,13 @@ describe('late rounds stay inside the performance budget', () => {
         ['boss', 20],
       ] as const) {
         for (const arch of ARCHETYPES) {
-          const t = threat(arch, type, round, party);
+          // Sample moved (waves mix in archers and drones from round 4, which
+          // cost more per unit, so fewer units per wave): Fortress hard at
+          // round 15 now has unitStrengthPercent 100 (party 1) and 96
+          // (party 4), no longer over the cap; round 16 has 142 and 144.
+          const sampleRound =
+            arch === 'arch_fortress' && type === 'hard' ? round + 1 : round;
+          const t = threat(arch, type, sampleRound, party);
           const s = startPveBattle(
             {
               team: party === 1 ? boards.rush : denseParty(),
