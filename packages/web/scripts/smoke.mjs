@@ -1186,7 +1186,7 @@ try {
       };
     };
     const winGold = golden('pve-battle.rush-vs-rusher-r1');
-    const lossGold = golden('pve-battle.rush-vs-rusher-r8-loses');
+    const lossGold = golden('pve-battle.rush-vs-rusher-r9-loses');
     const QUICK = winGold.hash(winGold.threatSeed, winGold.battleSeed);
     const coreText = () =>
       page.evaluate(() => [

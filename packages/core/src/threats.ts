@@ -80,6 +80,19 @@ export interface OpenLayoutConfig {
   readonly turretMinDistance: number;
 }
 
+/**
+ * From `fromRound` on, scheduled waves (not signature waves) set aside
+ * `archerPercent` and `dronePercent` of each wave's budget for archers and
+ * drones; the rest follows the archetype's composition.
+ */
+export interface RangedMixConfig {
+  readonly fromRound: number;
+  readonly archerUnit: UnitId;
+  readonly archerPercent: number;
+  readonly droneUnit: UnitId;
+  readonly dronePercent: number;
+}
+
 export interface ThreatsConfig {
   readonly baseBudget: number;
   readonly growthPercent: number;
@@ -91,6 +104,7 @@ export interface ThreatsConfig {
   readonly minCoreHealth: number;
   readonly compositionJitterPercent: number;
   readonly unitCost: readonly UnitCost[];
+  readonly rangedMix?: RangedMixConfig;
   readonly layouts: {
     readonly ring: RingLayoutConfig;
     readonly line: LineLayoutConfig;
@@ -198,6 +212,7 @@ const KEYS = new Set([
   'minCoreHealth',
   'compositionJitterPercent',
   'unitCost',
+  'rangedMix',
   'layouts',
   'archetypes',
 ]);
@@ -343,6 +358,63 @@ export function loadThreats(
   });
   if (unitCost.length === 0) errors.push('threats: "unitCost" is empty.');
   const priced = (u: UnitId): boolean => unitCost.some((c) => c.unit === u);
+
+  let rangedMix: RangedMixConfig | undefined;
+  if (data['rangedMix'] !== undefined) {
+    const rm = data['rangedMix'];
+    const rat = 'threats.rangedMix';
+    if (!isRecord(rm)) {
+      errors.push(`${rat}: must be an object.`);
+    } else {
+      rejectUnknownKeys(
+        rm,
+        new Set([
+          'fromRound',
+          'archerUnit',
+          'archerPercent',
+          'droneUnit',
+          'dronePercent',
+        ]),
+        rat,
+        errors,
+      );
+      const fromRound = readInt(rm, 'fromRound', 1, rat, errors);
+      const archerPercent = readInt(rm, 'archerPercent', 0, rat, errors);
+      const dronePercent = readInt(rm, 'dronePercent', 0, rat, errors);
+      const units: string[] = [];
+      for (const k of ['archerUnit', 'droneUnit']) {
+        const u = rm[k];
+        if (typeof u !== 'string' || context.units.get(u) === undefined) {
+          errors.push(`${rat}: "${k}" is not a known unit.`);
+        } else if (!priced(u)) {
+          errors.push(`${rat}: unit "${u}" has no unitCost.`);
+        } else {
+          units.push(u);
+        }
+      }
+      if (
+        archerPercent !== undefined &&
+        dronePercent !== undefined &&
+        archerPercent + dronePercent > 100
+      ) {
+        errors.push(`${rat}: the two percents must sum to at most 100.`);
+      }
+      if (
+        fromRound !== undefined &&
+        archerPercent !== undefined &&
+        dronePercent !== undefined &&
+        units.length === 2
+      ) {
+        rangedMix = {
+          fromRound,
+          archerUnit: units[0] ?? '',
+          archerPercent,
+          droneUnit: units[1] ?? '',
+          dronePercent,
+        };
+      }
+    }
+  }
 
   let layouts: ThreatsConfig['layouts'] | undefined;
   const lay = readRecord(data, 'layouts', 'threats', errors);
@@ -614,6 +686,7 @@ export function loadThreats(
     minCoreHealth,
     compositionJitterPercent,
     unitCost,
+    ...(rangedMix === undefined ? {} : { rangedMix }),
     layouts,
     archetypes,
   };

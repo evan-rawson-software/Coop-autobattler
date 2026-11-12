@@ -75,9 +75,9 @@ describe('modifiers travel in team state and change battles', () => {
   });
 
   test('a unit strength modifier turns a lost battle into a won one', () => {
-    expect(fight('rush', 'arch_fortress', 'hard', 7, [])).toBe(1);
+    expect(fight('poor', 'arch_rusher', 'medium', 5, [])).toBe(1);
     expect(
-      fight('rush', 'arch_fortress', 'hard', 7, ['mod_drilled_troops']),
+      fight('poor', 'arch_rusher', 'medium', 5, ['mod_drilled_troops']),
     ).toBe(0);
   });
 

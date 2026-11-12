@@ -103,33 +103,43 @@
               "count": 1
             },
             {
-              "tick": 460,
-              "unit": "unit_soldier",
+              "tick": 340,
+              "unit": "unit_archer",
               "count": 1
             },
             {
               "tick": 460,
-              "unit": "unit_raider",
+              "unit": "unit_soldier",
               "count": 1
             },
             {
               "tick": 580,
               "unit": "unit_soldier",
-              "count": 2
+              "count": 1
             },
             {
               "tick": 580,
-              "unit": "unit_raider",
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 580,
+              "unit": "unit_drone",
               "count": 1
             },
             {
               "tick": 700,
               "unit": "unit_soldier",
-              "count": 2
+              "count": 1
             },
             {
               "tick": 700,
               "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 700,
+              "unit": "unit_archer",
               "count": 1
             }
           ],
@@ -144,7 +154,7 @@
             "buildings": []
           }
         },
-        "hash": "787097c7"
+        "hash": "39d127ad"
       }
     }
   },
@@ -172,62 +182,112 @@
             {
               "tick": 100,
               "unit": "unit_soldier",
-              "count": 4
+              "count": 2
             },
             {
               "tick": 100,
               "unit": "unit_raider",
-              "count": 2
+              "count": 1
+            },
+            {
+              "tick": 100,
+              "unit": "unit_archer",
+              "count": 1
             },
             {
               "tick": 220,
               "unit": "unit_soldier",
-              "count": 4
+              "count": 2
             },
             {
               "tick": 220,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 220,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 220,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 340,
+              "unit": "unit_soldier",
+              "count": 3
+            },
+            {
+              "tick": 340,
               "unit": "unit_raider",
               "count": 2
             },
             {
               "tick": 340,
-              "unit": "unit_soldier",
-              "count": 5
-            },
-            {
-              "tick": 340,
-              "unit": "unit_raider",
-              "count": 3
+              "unit": "unit_archer",
+              "count": 1
             },
             {
               "tick": 460,
               "unit": "unit_soldier",
-              "count": 6
+              "count": 3
             },
             {
               "tick": 460,
               "unit": "unit_raider",
-              "count": 3
+              "count": 1
+            },
+            {
+              "tick": 460,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 460,
+              "unit": "unit_drone",
+              "count": 1
             },
             {
               "tick": 580,
               "unit": "unit_soldier",
-              "count": 6
+              "count": 3
             },
             {
               "tick": 580,
               "unit": "unit_raider",
+              "count": 2
+            },
+            {
+              "tick": 580,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 580,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 700,
+              "unit": "unit_soldier",
               "count": 4
             },
             {
               "tick": 700,
-              "unit": "unit_soldier",
-              "count": 7
+              "unit": "unit_raider",
+              "count": 3
             },
             {
               "tick": 700,
-              "unit": "unit_raider",
-              "count": 5
+              "unit": "unit_archer",
+              "count": 3
+            },
+            {
+              "tick": 700,
+              "unit": "unit_drone",
+              "count": 2
             }
           ],
           "stronghold": {
@@ -241,7 +301,7 @@
             "buildings": []
           }
         },
-        "hash": "7e590899"
+        "hash": "f27f545f"
       }
     }
   },
@@ -390,12 +450,22 @@
             {
               "tick": 1000,
               "unit": "unit_soldier",
-              "count": 2
+              "count": 1
             },
             {
               "tick": 1400,
               "unit": "unit_soldier",
-              "count": 2
+              "count": 1
+            },
+            {
+              "tick": 1400,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 1400,
+              "unit": "unit_drone",
+              "count": 1
             }
           ],
           "stronghold": {
@@ -578,7 +648,7 @@
             ]
           }
         },
-        "hash": "2313d925"
+        "hash": "4b19d0c6"
       }
     }
   },
@@ -606,17 +676,37 @@
             {
               "tick": 600,
               "unit": "unit_soldier",
-              "count": 5
+              "count": 3
             },
             {
               "tick": 1000,
               "unit": "unit_soldier",
-              "count": 6
+              "count": 4
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_drone",
+              "count": 1
             },
             {
               "tick": 1400,
               "unit": "unit_soldier",
-              "count": 8
+              "count": 5
+            },
+            {
+              "tick": 1400,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 1400,
+              "unit": "unit_drone",
+              "count": 1
             }
           ],
           "stronghold": {
@@ -1093,7 +1183,7 @@
             ]
           }
         },
-        "hash": "76e38632"
+        "hash": "6d4eb38d"
       }
     }
   },
@@ -1234,23 +1324,33 @@
               "count": 1
             },
             {
+              "tick": 900,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
               "tick": 1050,
+              "unit": "unit_soldier",
+              "count": 2
+            },
+            {
+              "tick": 1200,
               "unit": "unit_soldier",
               "count": 3
             },
             {
-              "tick": 1050,
+              "tick": 1200,
               "unit": "unit_raider",
               "count": 1
             },
             {
               "tick": 1200,
-              "unit": "unit_soldier",
-              "count": 5
+              "unit": "unit_archer",
+              "count": 2
             },
             {
               "tick": 1200,
-              "unit": "unit_raider",
+              "unit": "unit_drone",
               "count": 1
             }
           ],
@@ -1287,7 +1387,7 @@
             ]
           }
         },
-        "hash": "d02ac5a2"
+        "hash": "58a3cece"
       }
     }
   },
@@ -1329,7 +1429,7 @@
             },
             {
               "tick": 600,
-              "unit": "unit_soldier",
+              "unit": "unit_archer",
               "count": 1
             },
             {
@@ -1338,34 +1438,64 @@
               "count": 1
             },
             {
-              "tick": 900,
-              "unit": "unit_soldier",
-              "count": 2
+              "tick": 750,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 750,
+              "unit": "unit_drone",
+              "count": 1
             },
             {
               "tick": 900,
-              "unit": "unit_raider",
+              "unit": "unit_soldier",
+              "count": 1
+            },
+            {
+              "tick": 900,
+              "unit": "unit_archer",
               "count": 1
             },
             {
               "tick": 1050,
               "unit": "unit_soldier",
-              "count": 5
+              "count": 2
             },
             {
               "tick": 1050,
+              "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 1050,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 1050,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_soldier",
+              "count": 5
+            },
+            {
+              "tick": 1200,
               "unit": "unit_raider",
               "count": 2
             },
             {
               "tick": 1200,
-              "unit": "unit_soldier",
-              "count": 8
+              "unit": "unit_archer",
+              "count": 2
             },
             {
               "tick": 1200,
-              "unit": "unit_raider",
-              "count": 3
+              "unit": "unit_drone",
+              "count": 1
             }
           ],
           "stronghold": {
@@ -1464,7 +1594,7 @@
             ]
           }
         },
-        "hash": "1b1a7569"
+        "hash": "f382a059"
       }
     }
   },
@@ -1589,16 +1719,21 @@
             {
               "tick": 950,
               "unit": "unit_soldier",
-              "count": 2
+              "count": 1
             },
             {
               "tick": 1200,
               "unit": "unit_soldier",
+              "count": 1
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_archer",
               "count": 2
             },
             {
               "tick": 1200,
-              "unit": "unit_raider",
+              "unit": "unit_drone",
               "count": 1
             },
             {
@@ -1668,7 +1803,7 @@
             ]
           }
         },
-        "hash": "45723fe9"
+        "hash": "9bb56c0b"
       }
     }
   },
@@ -1696,12 +1831,17 @@
             {
               "tick": 200,
               "unit": "unit_soldier",
-              "count": 2
+              "count": 1
             },
             {
               "tick": 450,
               "unit": "unit_soldier",
-              "count": 3
+              "count": 1
+            },
+            {
+              "tick": 450,
+              "unit": "unit_archer",
+              "count": 1
             },
             {
               "tick": 700,
@@ -1711,21 +1851,31 @@
             {
               "tick": 950,
               "unit": "unit_soldier",
-              "count": 4
+              "count": 2
             },
             {
               "tick": 950,
-              "unit": "unit_raider",
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 950,
+              "unit": "unit_drone",
               "count": 1
             },
             {
               "tick": 1200,
               "unit": "unit_soldier",
-              "count": 6
+              "count": 3
             },
             {
               "tick": 1200,
-              "unit": "unit_raider",
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_drone",
               "count": 1
             },
             {
@@ -1914,7 +2064,7 @@
             ]
           }
         },
-        "hash": "b9c7252e"
+        "hash": "6f0b36b3"
       }
     }
   },
@@ -1937,7 +2087,7 @@
           "round": 10,
           "partySize": 4,
           "budget": 4124,
-          "unitStrengthPercent": 161,
+          "unitStrengthPercent": 128,
           "waves": [
             {
               "tick": 150,
@@ -1950,64 +2100,129 @@
               "count": 1
             },
             {
+              "tick": 300,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 300,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
               "tick": 450,
+              "unit": "unit_soldier",
+              "count": 2
+            },
+            {
+              "tick": 450,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 450,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 600,
               "unit": "unit_soldier",
               "count": 3
             },
             {
-              "tick": 450,
+              "tick": 600,
               "unit": "unit_raider",
               "count": 1
             },
             {
               "tick": 600,
-              "unit": "unit_soldier",
-              "count": 4
+              "unit": "unit_archer",
+              "count": 1
             },
             {
               "tick": 600,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 750,
+              "unit": "unit_soldier",
+              "count": 5
+            },
+            {
+              "tick": 750,
               "unit": "unit_raider",
               "count": 1
             },
             {
               "tick": 750,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 750,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 900,
               "unit": "unit_soldier",
               "count": 8
             },
             {
-              "tick": 750,
+              "tick": 900,
               "unit": "unit_raider",
-              "count": 2
+              "count": 3
             },
             {
               "tick": 900,
+              "unit": "unit_archer",
+              "count": 3
+            },
+            {
+              "tick": 900,
+              "unit": "unit_drone",
+              "count": 1
+            },
+            {
+              "tick": 1050,
               "unit": "unit_soldier",
-              "count": 12
+              "count": 15
             },
             {
-              "tick": 900,
+              "tick": 1050,
               "unit": "unit_raider",
+              "count": 4
+            },
+            {
+              "tick": 1050,
+              "unit": "unit_archer",
               "count": 5
             },
             {
               "tick": 1050,
+              "unit": "unit_drone",
+              "count": 3
+            },
+            {
+              "tick": 1200,
               "unit": "unit_soldier",
               "count": 22
             },
             {
-              "tick": 1050,
+              "tick": 1200,
               "unit": "unit_raider",
-              "count": 6
+              "count": 10
             },
             {
               "tick": 1200,
-              "unit": "unit_soldier",
-              "count": 33
+              "unit": "unit_archer",
+              "count": 9
             },
             {
               "tick": 1200,
-              "unit": "unit_raider",
-              "count": 14
+              "unit": "unit_drone",
+              "count": 5
             }
           ],
           "stronghold": {
@@ -2555,7 +2770,7 @@
             ]
           }
         },
-        "hash": "a9c3ea98"
+        "hash": "017da682"
       }
     }
   },
@@ -2578,22 +2793,52 @@
           "round": 200,
           "partySize": 2,
           "budget": 27275607912,
-          "unitStrengthPercent": 962735434,
+          "unitStrengthPercent": 839814734,
           "waves": [
             {
               "tick": 600,
               "unit": "unit_soldier",
-              "count": 14
+              "count": 9
+            },
+            {
+              "tick": 600,
+              "unit": "unit_archer",
+              "count": 2
+            },
+            {
+              "tick": 600,
+              "unit": "unit_drone",
+              "count": 1
             },
             {
               "tick": 1000,
               "unit": "unit_soldier",
-              "count": 18
+              "count": 12
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_archer",
+              "count": 3
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_drone",
+              "count": 1
             },
             {
               "tick": 1400,
               "unit": "unit_soldier",
-              "count": 24
+              "count": 16
+            },
+            {
+              "tick": 1400,
+              "unit": "unit_archer",
+              "count": 4
+            },
+            {
+              "tick": 1400,
+              "unit": "unit_drone",
+              "count": 2
             }
           ],
           "stronghold": {
@@ -3537,7 +3782,7 @@
             ]
           }
         },
-        "hash": "ced247bc"
+        "hash": "3331d0a5"
       }
     }
   },
@@ -3565,17 +3810,42 @@
             {
               "tick": 600,
               "unit": "unit_soldier",
-              "count": 6
+              "count": 4
+            },
+            {
+              "tick": 600,
+              "unit": "unit_archer",
+              "count": 1
             },
             {
               "tick": 1000,
               "unit": "unit_soldier",
-              "count": 8
+              "count": 5
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 1000,
+              "unit": "unit_drone",
+              "count": 1
             },
             {
               "tick": 1400,
               "unit": "unit_soldier",
-              "count": 11
+              "count": 7
+            },
+            {
+              "tick": 1400,
+              "unit": "unit_archer",
+              "count": 3
+            },
+            {
+              "tick": 1400,
+              "unit": "unit_drone",
+              "count": 2
             }
           ],
           "stronghold": {
@@ -4298,7 +4568,7 @@
             ]
           }
         },
-        "hash": "8f4dcff4"
+        "hash": "e4e06a2a"
       }
     }
   },
@@ -4326,7 +4596,7 @@
             {
               "tick": 200,
               "unit": "unit_soldier",
-              "count": 4
+              "count": 2
             },
             {
               "tick": 200,
@@ -4334,14 +4604,29 @@
               "count": 1
             },
             {
+              "tick": 200,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
               "tick": 450,
               "unit": "unit_soldier",
-              "count": 5
+              "count": 3
             },
             {
               "tick": 450,
               "unit": "unit_raider",
-              "count": 2
+              "count": 1
+            },
+            {
+              "tick": 450,
+              "unit": "unit_archer",
+              "count": 1
+            },
+            {
+              "tick": 450,
+              "unit": "unit_drone",
+              "count": 1
             },
             {
               "tick": 700,
@@ -4351,22 +4636,42 @@
             {
               "tick": 950,
               "unit": "unit_soldier",
-              "count": 8
+              "count": 5
             },
             {
               "tick": 950,
               "unit": "unit_raider",
+              "count": 1
+            },
+            {
+              "tick": 950,
+              "unit": "unit_archer",
               "count": 2
+            },
+            {
+              "tick": 950,
+              "unit": "unit_drone",
+              "count": 1
             },
             {
               "tick": 1200,
               "unit": "unit_soldier",
-              "count": 9
+              "count": 5
             },
             {
               "tick": 1200,
               "unit": "unit_raider",
-              "count": 5
+              "count": 3
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_archer",
+              "count": 3
+            },
+            {
+              "tick": 1200,
+              "unit": "unit_drone",
+              "count": 1
             },
             {
               "tick": 1450,
@@ -4625,7 +4930,7 @@
             ]
           }
         },
-        "hash": "d88f28b8"
+        "hash": "5867d740"
       }
     }
   }

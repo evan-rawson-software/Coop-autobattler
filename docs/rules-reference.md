@@ -2127,7 +2127,9 @@ Implemented in `arena-sim.ts` (decisions, spawn) and `unit-motion.ts`
   steering of rule c ("Steering") considers only allies of the same layer.
   Spawning places a flyer on the **spawn cells** below, which for a flyer are
   **every** in-board cell 4-adjacent to the producer's footprint, open or not
-  (a wall, a building or a lake cell included), ordered by the straight-line
+  (a wall, a building or a lake cell included; the cells of the producer's own
+  footprint count too, since each footprint cell is 4-adjacent to the others
+  of a 2x2 footprint, so a drone may appear on top of its Hangar), ordered by the straight-line
   key `(0, buildingDist2(cell centre, target Core), tie key)`; it checks `fits`
   against the empty world and the overlap test against flyers only, so a
   Hangar walled in on every side still spawns its drones.
@@ -2145,7 +2147,7 @@ Implemented in `arena-sim.ts` (decisions, spawn) and `unit-motion.ts`
   ("Sealed unit producers"), so it never blocks Ready.
 - **Mirror symmetry and restore** hold as before: nothing above depends on
   unit order, and nothing new is stored.
-- Not done: flyers in PvE waves (`threats.json`) and bot use of the Range and the Hangar.
+- PvE waves from round 4 contain archers and drones ("Generation", step 4, `rangedMix`); the bots buy and place the Range and the Hangar.
 
 ### State (plain JSON)
 
@@ -3595,7 +3597,8 @@ ramp and siege (late light waves, a big walled Core with turrets); Escalator
 tests speed (waves that grow fast, a wall line); Boss mixes all of it, its
 every-Nth-wave signature being all raiders (a fast swarm of small, weak units; since issue #66 raiders no longer prefer any building, they are ordinary units with different numbers: health 25, damage 8, radius 0.25 cell, move cooldown 4). Unit
 prices for spending wave budget are `unitCost` in `threats.json` (soldier 10,
-raider 8). Building prices for the stronghold are the **tier 1** prices of the
+raider 8, archer 14, drone 16; about 2 times the producer's tier 1 `costPerUnit`
+of 5, 4, 7 and 8, rounded). Building prices for the stronghold are the **tier 1** prices of the
 first building of defense type `wall` and of defense type `turret` in the
 building content (tier 1 only for now).
 
@@ -3619,7 +3622,24 @@ the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
    J`, `J = compositionJitterPercent` (20): one draw per entry, in wave order
    then composition order. (If all weights became 0 the template weights are
    used.)
-4. **Unit counts.** The budget of an entry is `floor(W_k * weight / weightSum)`
+4. **Ranged mix** (`rangedMix` in `threats.json`, optional: `{fromRound,
+   archerUnit, archerPercent, droneUnit, dronePercent}`, shipped 4, archer 25,
+   drone 15). In a round `>= fromRound`, each wave that is not a signature wave
+   sets aside `A = floor(W_k * archerPercent / 100)` and `D = floor(W_k *
+   dronePercent / 100)`; the composition entries then share `W_k - A - D`. A
+   running pool per kind starts at 0 for the threat; each such wave adds its
+   `A` (`D`) to the pool and takes `floor(pool / cost)` whole archers
+   (drones) out of it (the pool keeps the rest). The last non-signature wave
+   instead takes `floor((pool + floor(cost / 2)) / cost)`, i.e. rounds to the
+   nearest unit, and the pool may go slightly negative; so the mix can spend
+   up to half a unit's price more than was set aside, and the total wave cost
+   can exceed the wave budget slightly (by up to about one archer plus one
+   drone). Two entries are appended after the composition entries (archer,
+   then drone), also when their count is 0. Rounds before `fromRound` and
+   signature waves are exactly as without the mix. It draws no random numbers.
+   Wave units get no ramp bonus (the ramp rule "A unit of a scheduled PvE wave has no producer"), so these are
+   plain units.
+   **Unit counts.** The budget of an entry is `floor(W_k * weight / weightSum)`
    (same overflow-safe division) and its ideal count `n = floor(that / cost)`.
    If every entry of a wave has `n = 0`, the entry with the highest weight
    (first on ties) gets 1: every wave has at least one unit.
@@ -3627,14 +3647,17 @@ the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
    plot). Let `m` be the largest wave (sum of `n` over a wave's entries). If `m
    <= cap`, `unitStrengthPercent = 0`. Otherwise `unitStrengthPercent =
    ceil(100 * m / cap) - 100`, and every `n` becomes `floor(n * cap / m)`; a
-   wave left with no unit gets 1 of its first entry. So the largest wave has
-   at most `cap` units, each `(100 + P) / 100` times as strong, and total wave
+   wave left with no unit gets 1 of its first entry. A ranged entry (archer or
+   drone unit of `rangedMix`) that had `n > 0` before scaling and is `0` after
+   it gets 1, but only while the wave's total stays below `cap`. So the largest
+   wave has at most `cap` units, each `(100 + P) / 100` times as strong, and total wave
    power (units times strength) stays within a few percent of the wave
    budget (rounding, the one-unit minimum), while the unit count stays small
    however high the budget grows. The strength is applied to health and damage
    as in `unitStats`.
 6. Waves are listed per wave tick (`firstTick + k * intervalTicks`), one entry
-   per composition entry with a non-zero count.
+   per composition entry (and per appended archer or drone entry) with a
+   non-zero count.
 7. **Stronghold** (`N = partySize`, `share(total, p) = floor(total / N) + (1 if
    p < total mod N else 0)`).
    - `wallsTotal = min(floor(floor(S * wallSharePercent / 100) / wallPrice),

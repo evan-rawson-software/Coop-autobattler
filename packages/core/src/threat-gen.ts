@@ -193,6 +193,15 @@ export function generateThreat(
     entries: { unit: UnitId; n: number }[];
   }
   const planned: PlannedWave[] = [];
+  const lastMixed = sizes.reduce(
+    (m, _s, k) =>
+      tpl.signature !== undefined && (k + 1) % tpl.signature.everyNthWave === 0
+        ? m
+        : k,
+    -1,
+  );
+  let archerPool = 0;
+  let dronePool = 0;
   sizes.forEach((size, k) => {
     const wb = scaleShare(waveBudget, size, sizeSum);
     const sig = tpl.signature;
@@ -209,10 +218,40 @@ export function generateThreat(
       }
     }
     const weightSum = comp.reduce((a, c) => a + c.weight, 0);
+    const mix = threats.rangedMix;
+    const isSignature = sig !== undefined && (k + 1) % sig.everyNthWave === 0;
+    const mixed = mix !== undefined && round >= mix.fromRound && !isSignature;
+    // Ranged units: each wave adds its percent of budget to a running pool per
+    // kind, and a unit leaves the pool whole (small waves could otherwise
+    // never afford one). The melee entries share the rest of the wave.
+    let archers = 0;
+    let drones = 0;
+    let meleeBudget = wb;
+    if (mixed) {
+      const a = mulPct(wb, mix.archerPercent);
+      const d = mulPct(wb, mix.dronePercent);
+      meleeBudget = wb - a - d;
+      archerPool += a;
+      dronePool += d;
+      // The last such wave rounds to the nearest unit instead of down.
+      const ca = costOf(mix.archerUnit);
+      const cd = costOf(mix.droneUnit);
+      const last = k === lastMixed;
+      archers = divFloor(archerPool + (last ? divFloor(ca, 2) : 0), ca);
+      drones = divFloor(dronePool + (last ? divFloor(cd, 2) : 0), cd);
+      archerPool -= archers * costOf(mix.archerUnit);
+      dronePool -= drones * costOf(mix.droneUnit);
+    }
     const entries = comp.map((c) => ({
       unit: c.unit,
-      n: divFloor(scaleShare(wb, c.weight, weightSum), costOf(c.unit)),
+      n: divFloor(scaleShare(meleeBudget, c.weight, weightSum), costOf(c.unit)),
     }));
+    if (mixed) {
+      entries.push(
+        { unit: mix.archerUnit, n: archers },
+        { unit: mix.droneUnit, n: drones },
+      );
+    }
     if (entries.every((e) => e.n === 0)) {
       // At least one unit per wave: the heaviest-weighted entry (first on ties).
       let best = 0;
@@ -234,7 +273,19 @@ export function generateThreat(
   if (largest > cap) {
     unitStrengthPercent = ceilDiv(100 * largest, cap) - 100;
     for (const w of planned) {
+      const before = w.entries.map((e) => e.n);
       for (const e of w.entries) e.n = divFloor(e.n * cap, largest);
+      // The few ranged units of a mixed wave are not scaled away, as long as
+      // the wave stays within the cap.
+      w.entries.forEach((e, i) => {
+        const ranged =
+          e.unit === threats.rangedMix?.archerUnit ||
+          e.unit === threats.rangedMix?.droneUnit;
+        const total = w.entries.reduce((a, x) => a + x.n, 0);
+        if (ranged && (before[i] ?? 0) > 0 && e.n === 0 && total < cap) {
+          e.n = 1;
+        }
+      });
       if (w.entries.every((e) => e.n === 0)) {
         // Keep at least one unit: the entry with the most units before
         // scaling is not known any more, so use the first entry.
