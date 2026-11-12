@@ -421,31 +421,52 @@ function applyRewards(
   };
 }
 
+/**
+ * Place every pending Core position on the team, in player order; players
+ * without a position are skipped. Fails with the first position `placeCore`
+ * refuses (the same legality as `place_core`), naming the player.
+ */
+function placePending(
+  s: RunState,
+  deps: RunDeps,
+):
+  | {
+      readonly ok: true;
+      readonly team: RunState['team'];
+      readonly placed: { player: number; x: number; y: number }[];
+    }
+  | { readonly ok: false; readonly reason: string; readonly detail: string } {
+  let team = s.team;
+  const placed: { player: number; x: number; y: number }[] = [];
+  const positions = pendingList(s, 'positions');
+  for (let p = 0; p < s.players.length; p++) {
+    const pos = positions[p];
+    if (!isRecord(pos) || !isInt(pos['x']) || !isInt(pos['y'])) continue;
+    const r = placeCore(team, deps.content, deps.mapgenConfig, p, {
+      x: pos['x'],
+      y: pos['y'],
+    });
+    if (!r.ok) {
+      return { ok: false, reason: r.reason, detail: `player ${String(p)}` };
+    }
+    team = r.state;
+    placed.push({ player: p, x: pos['x'], y: pos['y'] });
+  }
+  return { ok: true, team, placed };
+}
+
 /** The step has met its condition: apply what it owes and move on. */
 function completeStep(s: RunState, deps: RunDeps, fx: Effect[]): RunState {
   switch (s.step) {
     case 'core_placement': {
-      // Every player is ready, so every player has a position (PP-3). The
-      // positions are in different plots, so none can be rejected.
-      let team = s.team;
-      const positions = pendingList(s, 'positions');
-      for (let p = 0; p < s.players.length; p++) {
-        const pos = positions[p];
-        if (!isRecord(pos) || !isInt(pos['x']) || !isInt(pos['y'])) {
-          throw new Error(
-            `core_placement: player ${String(p)} has no position.`,
-          );
-        }
-        const placed = placeCore(team, deps.content, deps.mapgenConfig, p, {
-          x: pos['x'],
-          y: pos['y'],
-        });
-        if (!placed.ok) {
-          throw new Error(`core_placement: ${placed.reason}.`);
-        }
-        team = placed.state;
-        fx.push({ type: 'core_placed', player: p, x: pos['x'], y: pos['y'] });
+      // Every player is ready, so every player has a position (PP-3); `ready`
+      // has already refused positions that cannot be placed.
+      const all = placePending(s, deps);
+      if (!all.ok) {
+        throw new Error(`core_placement: ${all.reason} (${all.detail}).`);
       }
+      const team = all.team;
+      for (const c of all.placed) fx.push({ type: 'core_placed', ...c });
       return enter({ ...s, team }, 'build', deps, fx);
     }
     case 'build':
@@ -674,6 +695,10 @@ function applyBuiltin(
       if (s.step === 'core_placement') {
         const pos = pendingList(s, 'positions')[player];
         if (!isRecord(pos)) return fail('core_not_placed');
+        // A saved position that can no longer be placed must not end the
+        // step: refuse, naming the player who has to pick another spot.
+        const all = placePending(s, deps);
+        if (!all.ok) return fail(all.reason, all.detail);
       }
       // A sealed-in unit producer cannot be left behind (issue #37, 3a);
       // only the player's own producers block them (PP-15).

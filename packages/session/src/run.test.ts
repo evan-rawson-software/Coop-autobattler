@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest';
-import { listLegalCorePositions, soleCore } from '@game/core';
+import {
+  addToStash,
+  listLegalCorePositions,
+  placeFromStash,
+  soleCore,
+} from '@game/core';
 import { createDeps, fixedBattle } from './defaults.js';
 import { applyIntent, createRun, replayRun } from './machine.js';
 import { allowedIntents, openVote, whoIsReady } from './selectors.js';
@@ -699,6 +704,42 @@ describe('three players', () => {
     const t = ok(s, 0, { type: 'place_core', ...corePosition(s, 0) }).state;
     expect(applyIntent(t, 1, { type: 'ready' }, baseDeps)).toMatchObject({
       reason: 'core_not_placed',
+    });
+  });
+
+  test('a pending position that cannot be placed (tampered save) is refused, never thrown', () => {
+    let s = newRun(baseDeps, ['A', 'B']);
+    const pos = corePosition(s, 0);
+    s = ok(s, 0, { type: 'place_core', ...pos }).state;
+    s = ok(s, 1, coreMove(s, 1)).state;
+    s = ok(s, 0, { type: 'ready' }).state;
+    // A building stands on player 0's pending spot.
+    const a = addToStash(s.team, baseDeps.content, {
+      def: 'bld_wall',
+      tier: 1,
+      owner: 0,
+    });
+    if (!a.ok) throw new Error(a.reason);
+    const put = placeFromStash(a.state, baseDeps.content, {
+      actor: 0,
+      id: a.id,
+      x: pos.x,
+      y: pos.y,
+      rotation: 0,
+    });
+    if (!put.ok) throw new Error(put.reason);
+    const bad = { ...s, team: put.state };
+    // The validator rejects the saved state.
+    const v = validateRunState(JSON.parse(JSON.stringify(bad)), baseDeps);
+    expect(v.ok ? '' : v.errors.join()).toMatch(
+      /positions\[0\].*legal.*overlaps_building/,
+    );
+    // And the last Ready is refused, naming the player; nothing is thrown.
+    const r = applyIntent(bad, 1, { type: 'ready' }, baseDeps);
+    expect(r).toMatchObject({
+      ok: false,
+      reason: 'overlaps_building',
+      detail: 'player 0',
     });
   });
 

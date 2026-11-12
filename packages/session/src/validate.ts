@@ -7,7 +7,7 @@
 import {
   checkGhostSnapshotShape,
   ghostKey,
-  validateCorePosition,
+  placeCore,
   validateGhostSnapshot,
   validateTeamState,
 } from '@game/core';
@@ -339,6 +339,22 @@ function check(
       );
     } else if (team.ok) {
       const ready = data['perPlayer'];
+      // Every position must be placeable (the legality of `placeCore`:
+      // terrain, plot, buildings and conduits), or the step could not end.
+      let board = team.state;
+      positions.forEach((pos, i) => {
+        if (!isRec(pos) || !isInt(pos['x']) || !isInt(pos['y'])) return;
+        const r = placeCore(board, deps.content, deps.mapgenConfig, i, {
+          x: pos['x'],
+          y: pos['y'],
+        });
+        if (r.ok) board = r.state;
+        else {
+          err(
+            `pending.positions[${String(i)}]: not a legal Core position (${r.reason}).`,
+          );
+        }
+      });
       positions.forEach((pos, i) => {
         if (pos === null) {
           const row = Array.isArray(ready) ? (ready[i] as unknown) : null;
@@ -349,16 +365,6 @@ function check(
           }
         } else if (!isRec(pos) || !isInt(pos['x']) || !isInt(pos['y'])) {
           err(`pending.positions[${String(i)}]: must be null or {x, y}.`);
-        } else if (
-          !validateCorePosition(
-            team.state.map,
-            deps.content,
-            deps.mapgenConfig,
-            i,
-            { x: pos['x'], y: pos['y'] },
-          ).ok
-        ) {
-          err(`pending.positions[${String(i)}]: not a legal Core position.`);
         }
       });
     }
