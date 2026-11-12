@@ -101,12 +101,35 @@ export async function runWorkerSmoke({ browser, baseUrl, check }) {
         !r.info.usesWorker && r.info.ranOnMainThread,
         'sim worker: without Workers the same screen simulates on the main thread',
       );
-      // Positive control: the same observer sees the main-thread run block, so
-      // the worker run's "no long task" check above can fail when it should.
-      const fallbackWorst = Math.max(0, ...r.longTasks);
+      // Positive control: the same observer sees a task that blocks the main
+      // thread, so the worker run's "no long task" check above can fail when
+      // it should. The task spins by wall clock for well over the 100 ms
+      // bound, so a fast runner cannot finish it under the bound.
+      const controlMs = 300;
+      const control = await page.evaluate(async (ms) => {
+        const probe = window.__probe;
+        const before = probe.longTasks.length;
+        // A timer task of the page itself: the observer does not report a
+        // task that the automation's own evaluate call runs.
+        await new Promise((resolve) =>
+          setTimeout(() => {
+            const t0 = performance.now();
+            while (performance.now() - t0 < ms) {
+              // busy loop
+            }
+            resolve();
+          }, 0),
+        );
+        // Long-task entries are delivered asynchronously after the task.
+        for (let i = 0; i < 50 && probe.longTasks.length === before; i++) {
+          await new Promise((r) => setTimeout(r, 20));
+        }
+        return probe.longTasks.slice(before);
+      }, controlMs);
+      const fallbackWorst = Math.max(0, ...control);
       check(
-        r.longTasks.length >= 1 && fallbackWorst > 100,
-        `sim worker (fallback): the long-task observer sees the blocking run (worst ${fallbackWorst.toFixed(0)} ms)`,
+        control.length >= 1 && fallbackWorst > 100,
+        `sim worker (fallback): the long-task observer sees a ${controlMs} ms blocking task (worst ${fallbackWorst.toFixed(0)} ms)`,
       );
       check(
         errors.length === 0,
