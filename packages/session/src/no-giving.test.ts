@@ -68,12 +68,12 @@ function violations(
   const out: string[] = [];
   for (let p = 0; p < before.players.length; p++) {
     if (p !== actor && holdings(before, p) !== holdings(after, p))
-      out.push(`player ${p}'s gold, stash or buildings changed`);
+      out.push(`player ${String(p)}'s gold, stash or buildings changed`);
   }
   const was = ownersById(before);
   for (const [id, owner] of ownersById(after))
     if (was.has(id) && was.get(id) !== owner)
-      out.push(`building ${id} changed owner`);
+      out.push(`building ${String(id)} changed owner`);
   return out;
 }
 
