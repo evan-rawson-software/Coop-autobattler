@@ -9257,7 +9257,7 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "1d6d1317",
+        "stateHash": "a3253cb6",
         "events": 48,
         "sides": [
           {
@@ -9408,7 +9408,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "4eb2eaf9",
+        "stateHash": "1e12735e",
         "events": 46,
         "sides": [
           {
@@ -9510,7 +9510,7 @@
     "expected": {
       "result": {
         "tick": 200,
-        "stateHash": "3a05af9e",
+        "stateHash": "bca9d9ba",
         "events": 32,
         "sides": [
           {
@@ -9883,7 +9883,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "c87023c3",
+        "stateHash": "71e1bba1",
         "events": 224,
         "sides": [
           {
