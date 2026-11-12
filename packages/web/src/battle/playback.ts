@@ -28,6 +28,7 @@ import {
   type NeutralZone,
   type TeamState,
   type UnitSim,
+  isCoreHealth,
 } from '@game/core';
 import type { WebContent } from '../content.js';
 import type { BattleDescription } from './types.js';
@@ -105,7 +106,10 @@ export function simulateRecord(
   const initialHealth = sim.health.map((h) => ({ ...h }));
   const coreAt: number[] = [-1, -1];
   sim.health.forEach((h, i) => {
-    if (h.building === 0) coreAt[h.side === 0 ? 0 : 1] = i;
+    // The first Core of each side stands for it until issue #143.
+    if (isCoreHealth(h) && coreAt[h.side === 0 ? 0 : 1] === -1) {
+      coreAt[h.side === 0 ? 0 : 1] = i;
+    }
   });
   const hpOf = (side: 0 | 1): number => {
     const i = coreAt[side] ?? -1;

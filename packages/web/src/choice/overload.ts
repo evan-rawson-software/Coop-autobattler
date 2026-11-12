@@ -32,7 +32,7 @@ export function overloadLine(
   strongholdMax: number,
 ): string {
   const at = clock(sim.overloadStartTick, sim.ticksPerSecond);
-  const out = overloadOutcome(sim, partyMax, strongholdMax);
+  const out = overloadOutcome(sim, [partyMax], [strongholdMax]);
   const when = out.tick === null ? '' : clock(out.tick, sim.ticksPerSecond);
   switch (out.first) {
     case 'b':
