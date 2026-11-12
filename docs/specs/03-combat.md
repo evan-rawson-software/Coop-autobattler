@@ -254,9 +254,13 @@ Everything below is [PROPOSED] detail unless marked otherwise.
     link behaves exactly like a single conduit from the sending building to
     the receiving building: same speed, same one-resource rule (CB-5b), same
     no-loop rule (CB-9c), same back-up behaviour.
-  - A half with no partner, or two halves of the same kind at one spot,
-    carry nothing. A half that carries nothing behaves as if it were not
-    drawn: a Splitter skips it.
+  - A half with no partner, or two halves of the same kind at one spot, is
+    **open**: it carries nothing and loses nothing. An open sending half is
+    a connected output that never accepts an item, like a conduit that is
+    already full. A Splitter treats it like any backed-up path, so its share
+    goes to the Splitter's other paths (CB-9e); if nothing else accepts, the
+    items are held and the line backs up to the collector, which pauses. An
+    open half is never a dead end: nothing sent towards it is lost.
   - **Either direction.** Which way a link carries is set by which player
     drew the sending half. Either neighbour can be the sender, and two
     neighbours can have links in both directions at different spots.
@@ -326,7 +330,10 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 - **CB-10c [DECIDED]** **Which buildings need resources.** Only buildings
   that do something: unit producers, turrets, and economy buildings. Walls,
   gates, Splitters and other route buildings, and the Core need nothing.
-  There is no cap on the number of walls for now.
+  There is no cap on the number of walls for now. Refineries and modifiers
+  (CB-9), which are not in the content yet, consume resources by their
+  nature: when they are added they get a cost and a minimum time between
+  productions like any consumer (CB-10a).
 - **CB-10d [DECIDED]** **Under-supplied buildings wait.** A building that
   gets less than its need collects what arrives until it has the full cost
   of one production, then produces at full strength. It is slower, never
@@ -412,7 +419,10 @@ Everything below is [PROPOSED] detail unless marked otherwise.
      party plot it enters.
   2. **Then the nearest.** Once that Core is destroyed, the unit's target is
      the nearest enemy Core still standing, measured by walking distance
-     from where the unit is at that moment. A unit produced after its
+     from where the unit is at that moment. If no open path leads to a
+     Core, its distance is the cost of the cheapest route through enemy
+     buildings (CB-20), and any Core with an open path counts as nearer
+     than one without; the exact order is in the rules reference (PP-11). A unit produced after its
      opposite Core has fallen picks the nearest from where it appears.
   3. **It keeps its target.** A unit changes target only when its target
      Core is destroyed. It then picks again by rule 2.
@@ -707,7 +717,13 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   increased later as a tuning change, not a redesign.
 - **CB-47a [DECIDED]** The camera **starts at the center of the map**.
   Proposed reading: when building, the center of the player's own plot; in
-  a battle, the center of the whole battlefield.
+  a battle, the center of the whole battlefield. (The building half of this
+  reading changed with the per-player design, issue #124: it was "the
+  center of the party's board". A player now builds only in their own plot
+  (CP-27), so that is where their camera starts. Solo is unchanged, since
+  the one plot is the whole board. The decision itself, "starts at the
+  center", is not changed; this reading stays [PROPOSED] and is for the
+  owner to accept or reverse.)
 - **CB-48 [PROPOSED]** Shop and Build are two tabs of the same step
   (RS-5f), so players can buy, place, and return to the shop.
 

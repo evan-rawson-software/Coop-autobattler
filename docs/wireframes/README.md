@@ -120,7 +120,7 @@ The first decision of a run. The whole map is shown, and every player chooses wh
 
 1. The whole map, visible and buildable from the start. It never expands.
 2. The front edge, where enemy units will enter.
-3. Your chosen Core position, with the routes enemy units would take to reach it. You can change it until the step ends.
+3. Your chosen Core position, with the routes enemy units would take to reach it. You can change it until the step ends: while you are not ready, or after un-readying.
 4. Resource nodes. Where the rare one sits is a big part of the choice.
 5. In co-op every player places their own Core and readies up; there is no vote. The step ends when everyone has placed a Core and is ready. Solo just confirms.
 6. The starting kit, waiting in the stash for the first build.

@@ -161,8 +161,9 @@ the party's income to a trickle, so it falls behind the ghosts it meets. See
 - **RS-12b [PROPOSED]** How each step ends:
   - **Core placement** (start of run) — every player places their own Core
     in their own plot (CP-26) and readies up. A player can change their
-    choice until the step ends; the step ends when every player has placed
-    a Core and is ready. There is no vote.
+    choice until the step ends: freely while they are not ready, and after
+    un-readying otherwise (Ready locks it like any edit, CP-17a). The step
+    ends when every player has placed a Core and is ready. There is no vote.
   - **PvE difficulty choice** — every player votes; the battle starts when
     all have voted.
   - **Battle** — playback ends at a summary; the party moves on when every

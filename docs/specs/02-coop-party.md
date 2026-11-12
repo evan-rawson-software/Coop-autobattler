@@ -54,7 +54,8 @@ Status: Draft v5.0
 - **CP-26 [DECIDED]** **Each player places their own Core**, anywhere legal
   in their own plot (CB-7), at the start of the run. There is no party vote.
   The Core's footprint must lie wholly inside the player's plot. During the
-  Core placement step a player can change their choice; when the step ends
+  Core placement step a player can change their choice (while not ready, or
+  after un-readying; Ready locks it, CP-17a); when the step ends
   (every player has placed a Core and readied up, RS-12b) every Core is
   fixed for the run. (Replaces CP-9a.)
 
@@ -313,7 +314,7 @@ it follows from CP-25 to CP-30.
 | Leaning on a partner | A player builds only consumers and waits to be fed. | Nothing forces a neighbour to draw their half. Each plot has its own resource nodes (SC-11), so every player can supply themselves. |
 | A partner with nothing to do | A player's own supply is used up and nothing they could buy would run. | A neighbour with a surplus can feed them over a link. Otherwise their choices are collector tier, a Splitter, or buildings with a lower need; shop offers show the need of each building (CB-43). To be checked in the first party playtest. |
 | Blocking a neighbour's layout | A conduit at a border spot blocks the neighbour's own conduit there. | A border spot is on the border line, not in either plot. Each player's half occupies only cells of their own plot, so no half can block a cell the neighbour could build on (CB-9d). |
-| Breaking a neighbour's link by mistake | Moving a building ends a link the neighbour relied on. | Allowed, because a player always controls their own plot. The neighbour's half stays in place, unjoined, and the dry run shows it as carrying nothing (CB-43). The link joins again when the other half is redrawn. |
+| Breaking a neighbour's link by mistake | Moving a building ends a link the neighbour relied on. | Allowed, because a player always controls their own plot. The neighbour's half stays in place, unjoined; nothing sent towards it is lost (the items back up, and a Splitter sends them down its other paths, CB-9d), and the dry run shows it as carrying nothing (CB-43). The link joins again when the other half is redrawn. |
 | A link that makes a neighbour's change illegal | One player's new conduit would mix two resources, or close a loop, further along in the neighbour's plot. | The change that would cause it is refused and the reason shown (CB-9d). The player can always undo by erasing their own half. |
 | Sealing in a neighbour's unit producer | A wall line across a neighbour's exits. | A player's walls stand only in their own plot (CP-27), and every plot's open ground reaches its own front row inside the plot (SC-11). A producer can therefore be sealed only by its owner's own buildings, and the sealed-producer check blocks only that owner (CP-17a). |
 | Holding the party at a step | One player never readies up. | Unchanged: every player must ready up (CP-17). This is a game among friends; there is no timer and no kick. |

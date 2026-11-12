@@ -196,6 +196,12 @@ Before the first build step the run is in the step `core_placement`.
   otherwise it is stored as `p`'s **pending position**, replacing any earlier
   one. A player can send it again for as long as they are not ready (Ready
   locks it, reason `locked_ready`, like any edit).
+- `ready` and `unready` are legal in `core_placement`, with the rules of
+  "Ready": a ready player can `unready` for as long as at least one other
+  player is not ready, and can then send `place_core` again. So a player can
+  change their position until the step ends: freely while not ready, and
+  after an `unready` otherwise. With one player, `ready` ends the step at
+  once.
 - `ready` is rejected with `core_not_placed` while the player has no pending
   position.
 - When the last player readies, `placeCore(p, x, y)` is applied for
@@ -275,12 +281,28 @@ The flow simulation, resource typing, the loop check, back-up and
 "Accepting" treat the edge exactly as a conduit of that length. A link of two
 direct halves has length 0 and is a direct connection across the border.
 
-**An open half carries nothing.** It has no edge. In the flow graph its
-building side has `conduit: null`, so a splitter or source skips it, and a
-building whose only conduits are open halves is not a flow node. For
-`side_in_use` (an edit-time rule) the side is occupied all the same.
-`conduitResource` of a receiving half is that of its link's sending half, and
-`null` while it is open.
+**An open half carries nothing and loses nothing.** It has no edge and no
+slots, and it never holds an item.
+
+- An open **sending** half is a **connected output that never accepts**. In
+  the flow graph the output entry of its building side is `{ side, conduit:
+  <the half's id>, open: true }` (`open` is `false` or absent on every other
+  output). A push onto it (steps 2 and 3 of "One tick: `stepFlow`") is
+  always refused, exactly as a push onto a conduit whose first slot is full.
+  So a splitter treats it like any backed-up path: the item goes to the next
+  output in rotation that accepts, and if none accepts the item is held, the
+  line backs up and the collector stalls. A source whose output is an open
+  half stalls. **For the dead-end rule ("if no output has a conduit, the item
+  is lost") an open half counts as a conduit**: nothing sent towards an
+  unjoined half is ever lost.
+- An open **receiving** half delivers nothing: the input entry of its
+  building side has `conduit: null`.
+- A building counts as having a conduit attached (and so is a flow node) when
+  it has a conduit or a half of either kind.
+
+For `side_in_use` (an edit-time rule) the side is occupied. `conduitResource`
+of a receiving half is that of its link's sending half, and `null` while it
+is open.
 
 **Checks cover the whole board.** `resource_mismatch` and `would_loop` are
 evaluated on the network with every link joined. Adding a conduit or a half
@@ -316,6 +338,11 @@ a third plot, the player in between needs a route building of their own
 between a receiving half and a sending half.
 
 Golden kinds: `team-state-ops` accepts border ends in `addConduit`;
+`flow-sim` gains `flow-sim.splitter-only-open-halves` (a collector feeding a
+splitter whose only connected outputs are open sending halves: the splitter
+holds its item, the collector stalls, `lost` stays 0 everywhere) and
+`flow-sim.splitter-open-half-and-consumer` (one open half and one consumer:
+the consumer gets every item);
 `flow-graph` gains vectors with a link, an open half, a link of two direct
 halves, and a mismatch and a loop that only appear across a link.
 
@@ -418,8 +445,9 @@ here as the rule the design relies on:
 
 - A splitter holds at most one item. Each tick, if it holds an item, it
   tries its outputs in the order `pointer, pointer + 1, ...` (clockwise from
-  north, modulo the number of output sides), skipping sides with no conduit
-  (and, with PP-4, sides whose half is open). The first output that
+  north, modulo the number of output sides), skipping sides with no conduit.
+  (With PP-4, a side whose half is open is not skipped: it is tried and
+  always refuses, like a full conduit.) The first output that
   **accepts** takes the item and `pointer` becomes the index after it. If
   none accepts, the item stays and `pointer` does not move.
 - An output accepts when the first slot of its conduit is empty, or, for a
@@ -442,7 +470,7 @@ two unit producers of equal need from a collector that supplies less than
 both need (even split, both under-supplied); one that supplies more than one
 of them needs (that path backs up, the other gets the remainder); one that
 supplies more than both need (everything backs up, the collector stalls);
-and a three-way splitter with one open output.
+and a three-way splitter with one unconnected output.
 
 ### PP-8. Economy buildings act for their owner (OPEN — owner to confirm)
 
@@ -707,9 +735,14 @@ unchanged; `S` is the stronghold budget):
    Core.
 4. `spent` is the price of everything placed, over all plots.
 5. **Core health, split evenly.** `total = max(minCoreHealth * N,
-   floor((S - spent) * coreHealthPerBudget / 100))` and `cores[p].health =
-   min(MAX_HEALTH, share(total, p))`. The remainder of the division goes one
-   point each to the lowest plot indices.
+   floor((S - spent) * coreHealthPerBudget / 100))`. The even split is
+   `share(total, p)`: every Core gets `floor(total / N)` and the Cores of
+   plots `0 .. (total mod N) - 1` get 1 more, so the shares differ by at most
+   1 and add up to `total` exactly. Then the content bound of step 8 is
+   applied per Core: `cores[p].health = min(MAX_HEALTH, share(total, p))`.
+   Like the clamps of step 8 this is only a safety net: when it is reached
+   the excess health is lost and the Cores no longer add up to `total`. With
+   the shipped content it is not reached in rounds 1 to `maxThreatRound`.
 
 `buildStronghold` places every Core with `placeCore(p, x, y)` and every
 building with its plot as owner (each lies inside that plot by
@@ -1471,7 +1504,7 @@ row says so.
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
 | PP-1 | A conduit has an `owner`, joins two buildings of that owner and lies in that owner's plot; only the owner erases it. "Conduits have no owner" no longer holds. | not yet implemented (issue #129) |
-| PP-4 | Border links: a half ends at a border spot; two matching halves are one conduit in the flow graph (`linkedConduit` on the edge); an open half carries nothing. | not yet implemented (issues #135 and #136) |
+| PP-4 | Border links: a half ends at a border spot; two matching halves are one conduit in the flow graph (`linkedConduit` on the edge); an open half carries nothing and loses nothing (a connected output that never accepts). | not yet implemented (issues #135 and #136) |
 | PP-5 | Content rule: a source has exactly one output side. | not yet implemented (issue #130) |
 
 Implemented in `packages/core/src/conduits.ts` (golden kinds `team-state-ops`
@@ -1673,7 +1706,7 @@ row says so.
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
 | PP-5 | Collector flow rate by tier. | **implemented today** (step 3). The display value `ratePer1000` for a source is not yet implemented (issue #130) |
-| PP-7 | Splitting evenly, with back-up. | **implemented today** (step 2), unchanged. With PP-4 an output whose half is open is skipped like an output with no conduit: not yet implemented (issue #135) |
+| PP-7 | Splitting evenly, with back-up. | **implemented today** (step 2), unchanged. With PP-4 an output whose half is open is a connected output that never accepts (the item is held and the line backs up; it is not a dead end and nothing is lost): not yet implemented (issue #135) |
 | PP-6 | A dry-run consumer mode `"need"` that paces each consumer at its top speed and reports its need. | not yet implemented (issue #130) |
 | PP-8 | The source interval modifier becomes one value per owning player. **OPEN — owner to confirm.** | not yet implemented (issue #137) |
 | PP-4 | `rebuildFlow` removes both halves of a link when either end building is destroyed. | not yet implemented (issue #136) |
@@ -3689,6 +3722,15 @@ width on the threat's front row, which is arena row 23; the threat is on top,
 
 ### Reference boards
 
+**Status (#124).** This section describes the code on `main`. The rules
+below are specified in "Per-player design (issue #124)" and change this
+section when their issue lands; none of them is in the code yet.
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-1, PP-2 | The board scripts gain `actor` on every op and place the Core as player 0; a multi-plot board must keep every building in its owner's plot. | not yet implemented (issues #128 and #129) |
+| PP-6 | The boards are rebuilt as supply-limited boards (each building's need against its collectors' rates); the descriptions below, and every result measured on them, are void until then. | not yet implemented (issues #130 and #145) |
+
 `reference-boards.ts` and `reference-boards-siege.ts` (importable by later
 tools; not test modules): four solo boards as `team-state-ops` scripts on the
 map of seed 5 (party size 1), Core at (11, 5): **rush** (three tier 1
@@ -3758,6 +3800,13 @@ archetype at round 5 (medium) and round 10 (hard)).
 - A wave unit that finds no open front-row cell is not spawned.
 
 ## Performance budget
+
+**Status (#124).** The budget document describes the code on `main`. Its
+dense four-plot board is not a legal player-built board under PP-1 and the
+plot's node count, unit counts fall under PP-6, and PP-11 adds one movement
+field and one breach field per living enemy Core. The budget is measured
+again in issue #145; see the status note at the top of
+`docs/performance-budget.md`. Not yet implemented.
 
 See `docs/performance-budget.md` (CB-36, W1-10): baseline measurements of
 whole battles and the budget the benchmark test enforces (units per side,
@@ -4053,6 +4102,13 @@ of the action log reproduces it. The `vote_resolved` effect lists `tickets`
 true }`.
 
 ### Ready (CP-17, CP-17a)
+
+**Status (#124).** This section describes the code on `main`. Specified in
+"Per-player design (issue #124)", not yet in the code:
+
+| Rule | Change to this section | Status |
+| ---- | ---------------------- | ------ |
+| PP-3 | `ready` and `unready` are also legal in `core_placement`; Ready locks `place_core`; `ready` there is rejected with `core_not_placed` without a pending position. | not yet implemented (issue #131) |
 
 `ready` and `unready` are legal in `build`, `shop`, `pve_summary` and
 `pvp_summary`. A step ends when every player is ready (a solo player's `ready`
