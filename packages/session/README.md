@@ -13,7 +13,7 @@ const r = applyIntent(state, playerIndex, { type: 'ready' }, deps);
 Every change is one intent from one player. An accepted intent bumps
 `actionCounter` and is appended to `actionLog`; a rejected one changes
 nothing. `replayRun(args, actionLog, deps)` rebuilds a state from the seed.
-`RunState.formatVersion` is `RUN_STATE_FORMAT_VERSION` (5: the per-player design of issue #124, `cores` and an `owner` on every conduit, on top of 4's ghost fields
+`RunState.formatVersion` is `RUN_STATE_FORMAT_VERSION` (6: conduit ends may be border spots, PP-4, on top of 5's per-player design of issue #124, `cores` and an `owner` on every conduit, on top of 4's ghost fields
 `pvpOpponent` and `ghostsFought`, on top of 3's per-player Workshop and 2's
 `upcomingPve` and new battle detail; an older save is `unsupported_format`); `validateRunState` rejects any other version with an
 "unsupported format version" error before anything else. The save record's

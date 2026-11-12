@@ -28,6 +28,8 @@ export const REASON_MESSAGES: Readonly<Record<KnownReason, string>> = {
   overlaps_core: 'The Core is in the way.',
   overlaps_building: 'Another building is in the way.',
   overlaps_conduit: 'A conduit is in the way.',
+  invalid_border: 'That is not a border you can connect to.',
+  border_spot_in_use: 'You already have a conduit at that border spot.',
   source_needs_node: 'Extractors only go on a resource node.',
   node_reserved: 'Resource nodes are kept for extractors.',
   // Core placement

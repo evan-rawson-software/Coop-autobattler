@@ -5681,5 +5681,1308 @@
         "hash": "a6631666"
       }
     }
+  },
+  {
+    "id": "team-state-ops.border-links",
+    "kind": "team-state-ops",
+    "description": "Halves at a border spot: each new refusal, a join, a mismatch that only appears across the link, an erase that leaves an open half and the rejoin refused.",
+    "input": {
+      "seed": 1,
+      "partySize": 2,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 2,
+        "plotWidth": 12,
+        "features": [],
+        "nodes": [
+          {
+            "x": 2,
+            "y": 2,
+            "resource": "res_a"
+          },
+          {
+            "x": 4,
+            "y": 2,
+            "resource": "res_a"
+          },
+          {
+            "x": 16,
+            "y": 2,
+            "resource": "res_b"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 2,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 4,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 1
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 1,
+          "id": 3,
+          "x": 16,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_merger",
+          "tier": 1,
+          "owner": 1
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 1,
+          "id": 4,
+          "x": 14,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "border": 1,
+            "y": 3
+          },
+          "cells": [
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 11,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "border": 0,
+            "y": 16
+          },
+          "cells": [
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 11,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 1,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "border": 0,
+            "y": 3
+          },
+          "cells": [
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 11,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "border": 0,
+            "y": 3
+          },
+          "cells": [
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "border": 0,
+            "y": 3
+          },
+          "cells": [
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 11,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "border": 0,
+            "y": 3
+          },
+          "cells": [
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 11,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 1,
+          "from": {
+            "border": 0,
+            "y": 3
+          },
+          "to": {
+            "building": 4,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 12,
+              "y": 3
+            },
+            {
+              "x": 13,
+              "y": 3
+            },
+            {
+              "x": 14,
+              "y": 3
+            },
+            {
+              "x": 14,
+              "y": 4
+            },
+            {
+              "x": 14,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 1,
+          "from": {
+            "building": 3,
+            "side": "north"
+          },
+          "to": {
+            "building": 4,
+            "side": "east"
+          },
+          "cells": [
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 4
+            },
+            {
+              "x": 16,
+              "y": 5
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 15,
+              "y": 6
+            }
+          ]
+        },
+        {
+          "op": "eraseConduit",
+          "actor": 0,
+          "id": 6
+        },
+        {
+          "op": "eraseConduit",
+          "actor": 1,
+          "id": 6
+        },
+        {
+          "op": "addConduit",
+          "actor": 1,
+          "from": {
+            "building": 3,
+            "side": "north"
+          },
+          "to": {
+            "building": 4,
+            "side": "east"
+          },
+          "cells": [
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 4
+            },
+            {
+              "x": 16,
+              "y": 5
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 15,
+              "y": 6
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 1,
+          "from": {
+            "border": 0,
+            "y": 3
+          },
+          "to": {
+            "building": 4,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 12,
+              "y": 3
+            },
+            {
+              "x": 13,
+              "y": 3
+            },
+            {
+              "x": 14,
+              "y": 3
+            },
+            {
+              "x": 14,
+              "y": 4
+            },
+            {
+              "x": 14,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "op": "eraseConduit",
+          "actor": 0,
+          "id": 5
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 4
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "invalid_border"
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "invalid_border"
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "not_owner"
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "invalid_path"
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 5
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "border_spot_in_use"
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 6
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "resource_mismatch"
+          },
+          {
+            "op": "eraseConduit",
+            "ok": false,
+            "reason": "not_owner"
+          },
+          {
+            "op": "eraseConduit",
+            "ok": true
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 7
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "resource_mismatch"
+          },
+          {
+            "op": "eraseConduit",
+            "ok": true
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 24,
+            "height": 16,
+            "partySize": 2,
+            "plotWidth": 12,
+            "features": [],
+            "nodes": [
+              {
+                "x": 2,
+                "y": 2,
+                "resource": "res_a"
+              },
+              {
+                "x": 4,
+                "y": 2,
+                "resource": "res_a"
+              },
+              {
+                "x": 16,
+                "y": 2,
+                "resource": "res_b"
+              }
+            ]
+          },
+          "cores": [null, null],
+          "buildings": [
+            {
+              "id": 1,
+              "def": "bld_extractor",
+              "tier": 1,
+              "x": 2,
+              "y": 2,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 2,
+              "def": "bld_extractor",
+              "tier": 1,
+              "x": 4,
+              "y": 2,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 3,
+              "def": "bld_extractor",
+              "tier": 1,
+              "x": 16,
+              "y": 2,
+              "rotation": 0,
+              "owner": 1
+            },
+            {
+              "id": 4,
+              "def": "bld_merger",
+              "tier": 1,
+              "x": 14,
+              "y": 6,
+              "rotation": 0,
+              "owner": 1
+            }
+          ],
+          "stash": [],
+          "nextId": 8,
+          "conduits": [
+            {
+              "id": 7,
+              "owner": 1,
+              "from": {
+                "building": 3,
+                "side": "north"
+              },
+              "to": {
+                "building": 4,
+                "side": "east"
+              },
+              "cells": [
+                {
+                  "x": 16,
+                  "y": 3
+                },
+                {
+                  "x": 16,
+                  "y": 4
+                },
+                {
+                  "x": 16,
+                  "y": 5
+                },
+                {
+                  "x": 16,
+                  "y": 6
+                },
+                {
+                  "x": 15,
+                  "y": 6
+                }
+              ]
+            }
+          ]
+        },
+        "hash": "8e21f96a"
+      }
+    }
+  },
+  {
+    "id": "team-state-ops.border-loop-and-direct",
+    "kind": "team-state-ops",
+    "description": "A loop closed through two links is refused; direct halves (no cells) join as a link of length 0.",
+    "input": {
+      "seed": 1,
+      "partySize": 2,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 2,
+        "plotWidth": 12,
+        "features": [],
+        "nodes": []
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_merger",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 9,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_splitter",
+          "tier": 1,
+          "owner": 1
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 1,
+          "id": 2,
+          "x": 14,
+          "y": 10,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_splitter",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 11,
+          "y": 8,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 1
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 1,
+          "id": 4,
+          "x": 12,
+          "y": 7,
+          "rotation": 90
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "border": 0,
+            "y": 9
+          },
+          "cells": [
+            {
+              "x": 9,
+              "y": 6
+            },
+            {
+              "x": 9,
+              "y": 7
+            },
+            {
+              "x": 9,
+              "y": 8
+            },
+            {
+              "x": 9,
+              "y": 9
+            },
+            {
+              "x": 10,
+              "y": 9
+            },
+            {
+              "x": 11,
+              "y": 9
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 1,
+          "from": {
+            "border": 0,
+            "y": 9
+          },
+          "to": {
+            "building": 2,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 12,
+              "y": 9
+            },
+            {
+              "x": 13,
+              "y": 9
+            },
+            {
+              "x": 14,
+              "y": 9
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 1,
+          "from": {
+            "building": 2,
+            "side": "west"
+          },
+          "to": {
+            "border": 0,
+            "y": 12
+          },
+          "cells": [
+            {
+              "x": 13,
+              "y": 10
+            },
+            {
+              "x": 13,
+              "y": 11
+            },
+            {
+              "x": 13,
+              "y": 12
+            },
+            {
+              "x": 12,
+              "y": 12
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "border": 0,
+            "y": 12
+          },
+          "to": {
+            "building": 1,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 11,
+              "y": 12
+            },
+            {
+              "x": 10,
+              "y": 12
+            },
+            {
+              "x": 9,
+              "y": 12
+            },
+            {
+              "x": 8,
+              "y": 12
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 10
+            },
+            {
+              "x": 8,
+              "y": 9
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 7
+            },
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 3,
+            "side": "east"
+          },
+          "to": {
+            "border": 0,
+            "y": 8
+          },
+          "cells": [
+            {
+              "x": 11,
+              "y": 9
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 3,
+            "side": "west"
+          },
+          "to": {
+            "border": 0,
+            "y": 8
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 3,
+            "side": "east"
+          },
+          "to": {
+            "border": 0,
+            "y": 8
+          },
+          "cells": []
+        },
+        {
+          "op": "addConduit",
+          "actor": 1,
+          "from": {
+            "border": 0,
+            "y": 8
+          },
+          "to": {
+            "building": 4,
+            "side": "west"
+          },
+          "cells": []
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 4
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 5
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 6
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 7
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "would_loop"
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "invalid_path"
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "invalid_path"
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 8
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 9
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 24,
+            "height": 16,
+            "partySize": 2,
+            "plotWidth": 12,
+            "features": [],
+            "nodes": []
+          },
+          "cores": [null, null],
+          "buildings": [
+            {
+              "id": 1,
+              "def": "bld_merger",
+              "tier": 1,
+              "x": 9,
+              "y": 5,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 2,
+              "def": "bld_splitter",
+              "tier": 1,
+              "x": 14,
+              "y": 10,
+              "rotation": 0,
+              "owner": 1
+            },
+            {
+              "id": 3,
+              "def": "bld_splitter",
+              "tier": 1,
+              "x": 11,
+              "y": 8,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 4,
+              "def": "bld_barracks",
+              "tier": 1,
+              "x": 12,
+              "y": 7,
+              "rotation": 90,
+              "owner": 1
+            }
+          ],
+          "stash": [],
+          "nextId": 10,
+          "conduits": [
+            {
+              "id": 5,
+              "owner": 0,
+              "from": {
+                "building": 1,
+                "side": "north"
+              },
+              "to": {
+                "border": 0,
+                "y": 9
+              },
+              "cells": [
+                {
+                  "x": 9,
+                  "y": 6
+                },
+                {
+                  "x": 9,
+                  "y": 7
+                },
+                {
+                  "x": 9,
+                  "y": 8
+                },
+                {
+                  "x": 9,
+                  "y": 9
+                },
+                {
+                  "x": 10,
+                  "y": 9
+                },
+                {
+                  "x": 11,
+                  "y": 9
+                }
+              ]
+            },
+            {
+              "id": 6,
+              "owner": 1,
+              "from": {
+                "border": 0,
+                "y": 9
+              },
+              "to": {
+                "building": 2,
+                "side": "south"
+              },
+              "cells": [
+                {
+                  "x": 12,
+                  "y": 9
+                },
+                {
+                  "x": 13,
+                  "y": 9
+                },
+                {
+                  "x": 14,
+                  "y": 9
+                }
+              ]
+            },
+            {
+              "id": 7,
+              "owner": 1,
+              "from": {
+                "building": 2,
+                "side": "west"
+              },
+              "to": {
+                "border": 0,
+                "y": 12
+              },
+              "cells": [
+                {
+                  "x": 13,
+                  "y": 10
+                },
+                {
+                  "x": 13,
+                  "y": 11
+                },
+                {
+                  "x": 13,
+                  "y": 12
+                },
+                {
+                  "x": 12,
+                  "y": 12
+                }
+              ]
+            },
+            {
+              "id": 8,
+              "owner": 0,
+              "from": {
+                "building": 3,
+                "side": "east"
+              },
+              "to": {
+                "border": 0,
+                "y": 8
+              },
+              "cells": []
+            },
+            {
+              "id": 9,
+              "owner": 1,
+              "from": {
+                "border": 0,
+                "y": 8
+              },
+              "to": {
+                "building": 4,
+                "side": "west"
+              },
+              "cells": []
+            }
+          ]
+        },
+        "hash": "ea25bbf5"
+      }
+    }
   }
 ]

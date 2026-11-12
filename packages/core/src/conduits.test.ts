@@ -631,7 +631,9 @@ describe('resource typing', () => {
         [7, 9],
       ]),
     ).toBe('ACCEPTED');
-    const out = l.state.conduits.find((c) => c.from.building === m);
+    const out = l.state.conduits.find(
+      (c) => 'building' in c.from && c.from.building === m,
+    );
     expect(out).toBeUndefined(); // merger output not connected yet
   });
 
@@ -646,7 +648,10 @@ describe('resource typing', () => {
     const x = ids[6];
     const byFrom = (building: number, side: string): number => {
       const c = l.state.conduits.find(
-        (k) => k.from.building === building && k.from.side === side,
+        (k) =>
+          'building' in k.from &&
+          k.from.building === building &&
+          k.from.side === side,
       );
       if (c === undefined) throw new Error('no conduit');
       return c.id;
@@ -1022,6 +1027,7 @@ describe('flow graph', () => {
     edges: [
       {
         conduitId: 10,
+        linkedConduit: null,
         from: '1',
         to: '2',
         fromSide: 'north',
@@ -1031,6 +1037,7 @@ describe('flow graph', () => {
       },
       {
         conduitId: 11,
+        linkedConduit: null,
         from: '2',
         to: '3',
         fromSide: 'north',
@@ -1040,6 +1047,7 @@ describe('flow graph', () => {
       },
       {
         conduitId: 12,
+        linkedConduit: null,
         from: '2',
         to: '4',
         fromSide: 'east',
@@ -1049,6 +1057,7 @@ describe('flow graph', () => {
       },
       {
         conduitId: 13,
+        linkedConduit: null,
         from: '5',
         to: '7.south',
         fromSide: 'north',
@@ -1058,6 +1067,7 @@ describe('flow graph', () => {
       },
       {
         conduitId: 14,
+        linkedConduit: null,
         from: '6',
         to: '7.west',
         fromSide: 'east',
@@ -1067,6 +1077,7 @@ describe('flow graph', () => {
       },
       {
         conduitId: 15,
+        linkedConduit: null,
         from: '7.south',
         to: '8',
         fromSide: 'north',
@@ -1076,6 +1087,7 @@ describe('flow graph', () => {
       },
       {
         conduitId: 16,
+        linkedConduit: null,
         from: '7.west',
         to: '9',
         fromSide: 'east',

@@ -1908,8 +1908,8 @@ function checkTick(sim: ArenaSim, ctx: ArenaContext): void {
     const conduitIds = team.conduits.map((c) => c.id);
     expect(board.conduits.map((c) => c.id)).toEqual(conduitIds);
     for (const c of team.conduits) {
-      expect(alive.has(c.from.building)).toBe(true);
-      expect(alive.has(c.to.building)).toBe(true);
+      expect(alive.has((c.from as { building: number }).building)).toBe(true);
+      expect(alive.has((c.to as { building: number }).building)).toBe(true);
     }
   }
   conserved(sim);

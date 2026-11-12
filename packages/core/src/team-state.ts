@@ -62,7 +62,34 @@ export interface ConduitEnd {
 }
 
 /**
- * A conduit (W1-3). `cells` is the ordered path from the cell just outside
+ * A border spot (PP-4): row `y` of border `border` (between plots `border`
+ * and `border + 1`). A conduit with a border end is a half of a link.
+ */
+export interface BorderEnd {
+  readonly border: number;
+  readonly y: number;
+}
+
+export function isBorderEnd(e: ConduitEnd | BorderEnd): e is BorderEnd {
+  return 'border' in e;
+}
+
+/** The building end of a conduit end, or null for a border spot. */
+export function buildingEnd(e: ConduitEnd | BorderEnd): ConduitEnd | null {
+  return isBorderEnd(e) ? null : e;
+}
+
+/** Whether a conduit (or half) is attached to the building. */
+export function conduitTouches(c: Conduit, building: number): boolean {
+  return (
+    (buildingEnd(c.from)?.building ?? -1) === building ||
+    (buildingEnd(c.to)?.building ?? -1) === building
+  );
+}
+
+/**
+ * A conduit (W1-3), or a half of a border link (PP-4) when one end is a
+ * border spot. `cells` is the ordered path from the cell just outside
  * the `from` side to the cell just outside the `to` side; it is empty for a
  * direct connection. `id` comes from the same counter as building IDs.
  */
@@ -70,8 +97,8 @@ export interface Conduit {
   readonly id: number;
   /** The player who drew it (PP-1); joins two buildings of this player. */
   readonly owner: number;
-  readonly from: ConduitEnd;
-  readonly to: ConduitEnd;
+  readonly from: ConduitEnd | BorderEnd;
+  readonly to: ConduitEnd | BorderEnd;
   readonly cells: readonly Cell[];
 }
 
@@ -381,10 +408,7 @@ function conduitCellKeys(
 ): Set<number> {
   const keys = new Set<number>();
   for (const c of conduits) {
-    if (
-      skipBuilding !== undefined &&
-      (c.from.building === skipBuilding || c.to.building === skipBuilding)
-    ) {
+    if (skipBuilding !== undefined && conduitTouches(c, skipBuilding)) {
       continue;
     }
     for (const cell of c.cells) {
@@ -410,9 +434,7 @@ export function detachConduits(
   state: TeamState,
   buildingId: number,
 ): TeamState {
-  const kept = state.conduits.filter(
-    (c) => c.from.building !== buildingId && c.to.building !== buildingId,
-  );
+  const kept = state.conduits.filter((c) => !conduitTouches(c, buildingId));
   return kept.length === state.conduits.length
     ? state
     : { ...state, conduits: kept };
