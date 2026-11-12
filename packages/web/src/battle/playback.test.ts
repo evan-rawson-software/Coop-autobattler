@@ -22,7 +22,13 @@ import {
   strengthSeries,
 } from './derive.js';
 import { reasonText } from './panels.js';
-import { Playback, simulateRecord, type BattleRecord } from './playback.js';
+import { attackShows, isAttacking } from './draw.js';
+import {
+  octantOf,
+  Playback,
+  simulateRecord,
+  type BattleRecord,
+} from './playback.js';
 import { battleConfig, threatsConfig } from './setup.js';
 import {
   buildSample,
@@ -178,24 +184,87 @@ describe('playback engine', () => {
     expect(pb.frac).toBeLessThan(1);
   });
 
-  test('units face their movement (octants) and rest facing their side', () => {
+  test('facing octants point where the unit steps (0 north, clockwise)', () => {
+    // Sim y runs up the screen.
+    expect(octantOf(0, 1, 0)).toBe(0);
+    expect(octantOf(1, 1, 0)).toBe(1);
+    expect(octantOf(1, 0, 0)).toBe(2);
+    expect(octantOf(1, -1, 0)).toBe(3);
+    expect(octantOf(0, -1, 0)).toBe(4);
+    expect(octantOf(-1, -1, 1)).toBe(5);
+    expect(octantOf(-1, 0, 1)).toBe(6);
+    expect(octantOf(-1, 1, 1)).toBe(7);
+    // A nudge smaller than the jitter threshold keeps the rest facing.
+    expect(octantOf(0.001, -0.002, 0)).toBe(0);
+    expect(octantOf(0.001, 0.002, 1)).toBe(4);
+    // Near a boundary the rest facing wins; clearly past it, it does not.
+    const at = (oct: number, side: number) =>
+      octantOf(
+        Math.sin((oct * Math.PI) / 4) * 0.1,
+        Math.cos((oct * Math.PI) / 4) * 0.1,
+        side,
+      );
+    expect(at(0.45, 0)).toBe(0);
+    expect(at(0.7, 0)).toBe(1);
+    expect(at(-0.45, 0)).toBe(0);
+    expect(at(3.55, 1)).toBe(4);
+    expect(at(3.3, 1)).toBe(3);
+  });
+
+  test('facing, motion, position and attack frame at a tick do not depend on how it was reached', () => {
+    const snap = (pb: Playback) =>
+      pb.sim.units.map((u) => {
+        const p = { x: 0, y: 0 };
+        pb.displayPos(u, p);
+        return [
+          u.id,
+          pb.facing(u),
+          pb.isMoving(u),
+          isAttacking(pb, u.id),
+          p.x,
+          p.y,
+        ];
+      });
+    const played = fresh();
+    played.start();
+    const at: Record<number, unknown> = {};
+    const targets = [60, 61, 100, 150];
+    let sawMoving = false;
+    let sawAttack = false;
+    while (!played.finished && played.tick < 150) {
+      played.advance(100);
+      if (targets.includes(played.tick)) at[played.tick] = snap(played);
+      for (const u of played.sim.units) {
+        sawMoving ||= played.isMoving(u);
+        sawAttack ||= isAttacking(played, u.id);
+      }
+    }
+    expect(sawMoving).toBe(true);
+    expect(sawAttack).toBe(true);
+    const scrubbed = fresh();
+    for (const t of [150, 61, 100, 60]) {
+      // Forward jumps and rewinds alike.
+      scrubbed.seekTo(t);
+      expect(snap(scrubbed)).toEqual(at[t]);
+    }
+    scrubbed.restart();
+    scrubbed.seekTo(100);
+    expect(snap(scrubbed)).toEqual(at[100]);
+  });
+
+  test('tick 0 shows no attack frame and every unit rests facing its side', () => {
     const pb = fresh();
     pb.start();
-    // Before any step, side A faces north (0) and side B south (4).
-    for (const u of pb.sim.units) {
-      expect(pb.facing(u)).toBe(u.side === 0 ? 0 : 4);
-      expect(pb.isMoving(u)).toBe(false);
+    for (const t of [0, 1, 2]) {
+      pb.seekTo(t);
+      for (const u of pb.sim.units) {
+        expect(isAttacking(pb, u.id)).toBe(false);
+        if (t === 0) expect(pb.facing(u)).toBe(u.side === 0 ? 0 : 4);
+      }
     }
-    let moved = 0;
-    for (let i = 0; i < 600 && moved === 0 && !pb.finished; i++) {
-      pb.advance(100);
-      for (const u of pb.sim.units) if (pb.isMoving(u)) moved++;
-    }
-    expect(moved).toBeGreaterThan(0);
-    for (const u of pb.sim.units) {
-      const f = pb.facing(u);
-      expect(Number.isInteger(f) && f >= 0 && f < 8).toBe(true);
-    }
+    expect(attackShows(0, 0)).toBe(false);
+    expect(attackShows(5, 6)).toBe(true);
+    expect(attackShows(5, 8)).toBe(false);
   });
 
   test('pausing stops it; resuming continues', () => {

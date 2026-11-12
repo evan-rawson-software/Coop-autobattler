@@ -10,6 +10,7 @@ import {
   buildFlowGraph,
   isCoreHealth,
   type TeamContent,
+  type ArenaEvent,
   type TeamState,
   type UnitSim,
 } from '@game/core';
@@ -24,7 +25,7 @@ import {
   spriteStats,
   type SpriteSet,
 } from '../sprites/atlas.js';
-import type { Playback } from './playback.js';
+import { restFacing, type Playback } from './playback.js';
 
 type Pt = { x: number; y: number };
 
@@ -116,8 +117,35 @@ interface UnitArt {
 
 let artSet: SpriteSet | null = null;
 const artCache = new Map<string, readonly [UnitArt | null, UnitArt | null]>();
-/** Per unit ID: 1 + the tick of its latest attack event. */
-let attackedAt = new Int32Array(0);
+// Per unit ID, valid only when `attackGen` equals the current draw's
+// generation: the index of its attack event in the log. Nothing outlives a
+// frame, so the picture depends only on the playback state at the shown tick.
+let attackGen = new Int32Array(0);
+let attackEv = new Int32Array(0);
+let generation = 0;
+
+/**
+ * How the units face: along their last step (`movement`) or always as their
+ * side rests (`side`: A north, B south). The owner has not chosen yet.
+ */
+export const FACING_MODE: 'movement' | 'side' = 'movement';
+
+/** Whether an attack event of tick `eventTick` still shows at tick `tick`. */
+export function attackShows(eventTick: number, tick: number): boolean {
+  return eventTick >= tick - LIFE_ATTACK && eventTick < tick;
+}
+
+/** Whether unit `id` shows its attack frame at the playback's tick (pure). */
+export function isAttacking(pb: Playback, id: number): boolean {
+  const [from, to] = pb.eventRange(pb.tick - LIFE_ATTACK, pb.tick);
+  for (let i = from; i < to; i++) {
+    const e = pb.record.eventLog[i];
+    if (e?.type === 'unit_attacked' && e.unit === id) {
+      if (attackShows(e.tick, pb.tick)) return true;
+    }
+  }
+  return false;
+}
 
 function framesOf(set: SpriteSet, name: string): HTMLCanvasElement[] | null {
   const sp = findSprite(name);
@@ -352,18 +380,48 @@ export function drawBattleOverlay(
   // (the art faces north for side A and south for side B at rest); the rest
   // fall back to circles. Side B also carries a diamond: shape as well as
   // colour (the sprites differ in shape too).
-  if (attackedAt.length < idToIndex.length) {
-    attackedAt = new Int32Array(idToIndex.length);
+  if (attackGen.length < idToIndex.length) {
+    attackGen = new Int32Array(idToIndex.length);
+    attackEv = new Int32Array(idToIndex.length);
   }
+  generation++;
   {
-    const [af, at] = pb.eventRange(tick - LIFE_ATTACK - 1, tick);
+    const [af, at] = pb.eventRange(tick - LIFE_ATTACK, tick);
+    const log = pb.record.eventLog;
     for (let i = af; i < at; i++) {
-      const e = pb.record.eventLog[i];
-      if (e !== undefined && e.type === 'unit_attacked') {
-        attackedAt[e.unit] = e.tick + 1;
+      const e = log[i];
+      if (
+        e !== undefined &&
+        e.type === 'unit_attacked' &&
+        attackShows(e.tick, tick)
+      ) {
+        attackGen[e.unit] = generation;
+        attackEv[e.unit] = i;
       }
     }
   }
+  // The screen point of an attack's target; false when it is not available.
+  const targetPoint = (
+    e: Extract<ArenaEvent, { type: 'unit_attacked' }>,
+    out: Pt,
+  ) => {
+    if (e.target.kind === 'unit') {
+      const ti = idToIndex[e.target.unit] ?? -1;
+      const t = ti >= 0 ? units[ti] : undefined;
+      if (t === undefined || t.id !== e.target.unit) return false;
+      pxOf(t, out);
+      return true;
+    }
+    const side = e.target.side === 0 ? 0 : 1;
+    const r =
+      e.target.kind === 'building'
+        ? index.rects[side].get(e.target.building)
+        : index.coreRects[side][e.target.core];
+    if (!rectCentre(r, out)) return false;
+    out.x = ox + out.x * z;
+    out.y = oy + out.y * z;
+    return true;
+  };
   const base = ctx.getTransform();
   const clock = (tick + frac) / pb.ticksPerSecond;
   ctx.imageSmoothingEnabled = false;
@@ -378,7 +436,7 @@ export function drawBattleOverlay(
     }
     pxOf(u, tmp);
     const ur = radiusOf(u);
-    const attacking = (attackedAt[u.id] ?? 0) >= tick - LIFE_ATTACK;
+    const attacking = attackGen[u.id] === generation;
     const frames = attacking
       ? art.attack
       : pb.isMoving(u)
@@ -389,17 +447,30 @@ export function drawBattleOverlay(
     const img =
       frames[n > 1 ? (Math.floor(clock * fps) + u.id) % n : 0] ?? frames[0];
     if (img === undefined) continue;
-    // Pre-rotated for side B (it faces south at rest).
-    const k = (pb.facing(u) - (u.side === 0 ? 0 : 4)) & 7;
+    // The art is drawn facing the side's rest direction (B is pre-flipped).
+    let face = FACING_MODE === 'movement' ? pb.facing(u) : restFacing(u.side);
+    if (attacking && FACING_MODE === 'movement') {
+      const e = pb.record.eventLog[attackEv[u.id] ?? 0];
+      if (e?.type === 'unit_attacked' && targetPoint(e, tmp2)) {
+        const dx = tmp2.x - tmp.x;
+        const dy = tmp2.y - tmp.y;
+        if (dx * dx + dy * dy > 1) {
+          face = Math.round(Math.atan2(dx, -dy) / OCTANT) & 7;
+        }
+      }
+    }
+    const k = (face - restFacing(u.side)) & 7;
     if (k === 0) {
       ctx.drawImage(img, tmp.x - ur, tmp.y - ur, ur * 2, ur * 2);
     } else {
+      // A turned square pokes out of the circle: keep it inside the diameter.
+      const h = k & 1 ? ur * Math.SQRT1_2 : ur;
       ctx.setTransform(base);
       ctx.translate(tmp.x, tmp.y);
       ctx.rotate(k * OCTANT);
-      ctx.drawImage(img, -ur, -ur, ur * 2, ur * 2);
+      ctx.drawImage(img, -h, -h, h * 2, h * 2);
+      ctx.setTransform(base);
     }
-    if (k !== 0) ctx.setTransform(base);
   }
   spriteStats.drawn += units.length - flat;
   spriteStats.units += units.length - flat;
@@ -445,29 +516,7 @@ export function drawBattleOverlay(
         const ai = idToIndex[e.unit] ?? -1;
         const a = ai >= 0 ? units[ai] : undefined;
         if (a === undefined || a.id !== e.unit) break;
-        let have = false;
-        if (e.target.kind === 'unit') {
-          const ti = idToIndex[e.target.unit] ?? -1;
-          const t = ti >= 0 ? units[ti] : undefined;
-          if (t !== undefined && t.id === e.target.unit) {
-            pxOf(t, tmp2);
-            have = true;
-          }
-        } else if (e.target.kind === 'building') {
-          const side = e.target.side === 0 ? 0 : 1;
-          have = rectCentre(index.rects[side].get(e.target.building), tmp2);
-          if (have) {
-            tmp2.x = ox + tmp2.x * z;
-            tmp2.y = oy + tmp2.y * z;
-          }
-        } else {
-          const side = e.target.side === 0 ? 0 : 1;
-          have = rectCentre(index.coreRects[side][e.target.core], tmp2);
-          if (have) {
-            tmp2.x = ox + tmp2.x * z;
-            tmp2.y = oy + tmp2.y * z;
-          }
-        }
+        const have = targetPoint(e, tmp2);
         if (!have) break;
         pxOf(a, tmp);
         ctx.globalAlpha = 1 - age / LIFE_ATTACK;

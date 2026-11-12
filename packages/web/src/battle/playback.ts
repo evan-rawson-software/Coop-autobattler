@@ -158,6 +158,32 @@ const MAX_FRAME_MS = 100;
 /** Smallest step per tick (cells) that turns a unit; below it is jitter. */
 const MIN_STEP = 0.01;
 const OCTANT = Math.PI / 4;
+/** Within this fraction of an octant from a boundary, the side's rest facing wins. */
+const STICKY = 0.12;
+
+/** Rest facing of a side: A north (0), B south (4). */
+export function restFacing(side: number): number {
+  return side === 0 ? 0 : 4;
+}
+
+/**
+ * Facing octant (0 north, clockwise; sim y runs up the screen) of a step
+ * `(dx, dy)` in cells, a pure function of the step: the side's rest facing
+ * when the step is jitter, and near an octant boundary the rest facing is
+ * preferred, so a unit nudged by collision does not flicker.
+ */
+export function octantOf(dx: number, dy: number, side: number): number {
+  const rest = restFacing(side);
+  if (dx * dx + dy * dy <= MIN_STEP * MIN_STEP) return rest;
+  const a = Math.atan2(dx, dy) / OCTANT;
+  const r = Math.round(a);
+  const frac = Math.abs(a - r);
+  if (frac > 0.5 - STICKY) {
+    const other = a > r ? r + 1 : r - 1;
+    if (((other % 8) + 8) % 8 === rest) return rest;
+  }
+  return ((r % 8) + 8) % 8;
+}
 
 export class Playback {
   readonly record: BattleRecord;
@@ -299,16 +325,19 @@ export class Playback {
   private stepTicks(n: number): void {
     if (n <= 0) return;
     const b = this.battle;
-    // Positions are tracked after every step during real-time playback and
-    // only after the last one when jumping.
+    // Positions are tracked after every step during real-time playback. When
+    // jumping, only the last two ticks are tracked, so the eased position and
+    // the facing (which come from the last step) are the same as when the
+    // tick was reached by playing.
     const every = n <= MAX_STEPS_PER_ADVANCE;
     let left = n;
     while (left > 0 && !b.isOver()) {
+      if (!every && left === 1) this.updateTracks(true);
       b.step();
       left -= 1;
-      if (every) this.updateTracks();
+      if (every || left === 0) this.updateTracks();
     }
-    if (!every) this.updateTracks(true);
+    if (!every && left > 0) this.updateTracks(true);
   }
 
   private grow(size: number): void {
@@ -346,7 +375,7 @@ export class Playback {
         this.seen[id] = 1;
         this.cx[id] = this.px[id] = x;
         this.cy[id] = this.py[id] = y;
-        this.face[id] = u.side === 0 ? 0 : 4;
+        this.face[id] = restFacing(u.side);
         this.stepped[id] = 0;
       } else {
         const ox = this.cx[id] ?? x;
@@ -357,10 +386,8 @@ export class Playback {
         this.cy[id] = y;
         const dx = x - ox;
         const dy = y - oy;
-        const moved = dx * dx + dy * dy > MIN_STEP * MIN_STEP;
-        this.stepped[id] = moved ? 1 : 0;
-        // Sim y runs up the screen: octant 0 is north, clockwise.
-        if (moved) this.face[id] = Math.round(Math.atan2(dx, dy) / OCTANT) & 7;
+        this.stepped[id] = dx * dx + dy * dy > MIN_STEP * MIN_STEP ? 1 : 0;
+        this.face[id] = octantOf(dx, dy, u.side);
       }
     }
   }
