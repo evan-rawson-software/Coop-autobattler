@@ -452,7 +452,7 @@ describe('turrets', () => {
   });
 
   test('a turret with no target keeps its charge and cooldown ticks down', () => {
-    const { state } = turretBoard(true, 3); // tier 3: cost 2, cooldown 6
+    const { state } = turretBoard(true, 3); // tier 3: cost 1, cooldown 5
     const { sim, ctx, events } = startArenaBattle(
       state,
       coreOnly(),
@@ -461,15 +461,15 @@ describe('turrets', () => {
       simConfig,
     );
     for (let t = 0; t < 100; t++) stepArena(sim, ctx);
-    expect(got(sim.turrets[0]).charge).toBe(2);
+    expect(got(sim.turrets[0]).charge).toBe(1);
     expect(got(sim.turrets[0]).cooldown).toBe(0);
     const foe = park(sim, ctx, 6, 14);
     stepArena(sim, ctx);
     const shot = got(ofType(events, 'turret_fired')[0]);
-    expect(shot.damage).toBe(12);
+    expect(shot.damage).toBe(10);
     expect(shot.unit).toBe(foe.id);
     expect(got(sim.turrets[0]).charge).toBe(0);
-    expect(got(sim.turrets[0]).cooldown).toBe(5); // 6, minus this tick's decrement
+    expect(got(sim.turrets[0]).cooldown).toBe(4); // 5, minus this tick's decrement
   });
 
   test('targets the unit nearest by distance to its cells, ties to the lowest ID', () => {
@@ -621,8 +621,8 @@ describe('funnelling', () => {
     expect(funnel.dead).toBeGreaterThan(open.dead);
     expect(funnel.leftHp).toBeLessThan(open.leftHp);
     expect({ open, funnel }).toEqual({
-      open: { dead: 2, leftHp: 265 },
-      funnel: { dead: 7, leftHp: 105 },
+      open: { dead: 2, leftHp: 295 },
+      funnel: { dead: 6, leftHp: 155 },
     });
   });
 });

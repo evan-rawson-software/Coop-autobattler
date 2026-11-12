@@ -518,7 +518,7 @@ describe('save and restore at any tick', () => {
       if (t === 299) {
         // Held: the finished unit waits, nothing was spawned yet.
         const p = got(ref.sim.producers.find((x) => x.building === bar));
-        expect(p.progress).toBeGreaterThanOrEqual(6);
+        expect(p.progress).toBeGreaterThanOrEqual(5);
         expect(ref.sim.units).toHaveLength(2);
       }
     }
@@ -747,7 +747,7 @@ describe('producers hold, waves queue', () => {
     }
     const p = got(sim.producers.find((x) => x.building === bar));
     expect(ofType(events, 'unit_spawned')).toHaveLength(0);
-    expect(p.progress).toBeGreaterThanOrEqual(6); // cost of a tier 1 barracks
+    expect(p.progress).toBeGreaterThanOrEqual(5); // cost of a tier 1 barracks
     expect(got(sim.boards[0].sources[0]).stalled).toBe(1);
     const consumer = got(sim.boards[0].consumers[0]);
     expect(got(consumer.inputs[0]).count).toBe(4);
@@ -766,12 +766,12 @@ describe('producers hold, waves queue', () => {
     const out = ofType(events, 'unit_spawned');
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ building: bar, px: mid(2), py: mid(4) });
-    expect(p.progress).toBe(progress - 6 + 0);
+    expect(p.progress).toBe(progress - 5 + 0);
   });
 
   test('a held producer keeps its cost while the cooldown runs down; it spawns one unit on release and waits the interval again (PP-6)', () => {
-    // A tier 3 extractor (a unit's cost every 60 ticks) feeds a tier 1
-    // barracks whose interval is 80: the second unit is finished while the
+    // A tier 3 extractor (a unit's cost every 50 ticks) feeds a tier 1
+    // barracks whose interval is 100: the second unit is finished while the
     // cooldown of the first still runs.
     const { lab, bar } = walledBarracks(3);
     const { sim, ctx, events } = startArenaBattle(
@@ -783,7 +783,7 @@ describe('producers hold, waves queue', () => {
     );
     const p = got(sim.producers.find((x) => x.building === bar));
     while (ofType(events, 'unit_spawned').length === 0) stepArena(sim, ctx);
-    expect(p.cooldown).toBe(79);
+    expect(p.cooldown).toBe(99);
     // Now block the exit and freeze the blockers.
     sim.units.length = 0;
     const blocker = spawnUnitForTest(sim, ctx, {
@@ -813,11 +813,11 @@ describe('producers hold, waves queue', () => {
     let finishedWithCooldown = false;
     for (let t = 0; t < 300; t++) {
       step();
-      if (p.progress === 6 && p.cooldown > 0) finishedWithCooldown = true;
+      if (p.progress === 5 && p.cooldown > 0) finishedWithCooldown = true;
     }
     expect(finishedWithCooldown).toBe(true);
     // Held: the full cost, the cooldown has run out, nothing more was made.
-    expect(p.progress).toBe(6);
+    expect(p.progress).toBe(5);
     expect(p.cooldown).toBe(0);
     expect(ofType(events, 'unit_spawned')).toHaveLength(1);
     // Release: exactly one unit this tick (no catch-up), and a fresh cooldown.
@@ -826,11 +826,11 @@ describe('producers hold, waves queue', () => {
     const spawns = ofType(events, 'unit_spawned');
     expect(spawns).toHaveLength(2);
     expect(p.progress).toBe(0);
-    expect(p.cooldown).toBe(79);
+    expect(p.cooldown).toBe(99);
     const releaseTick = got(spawns[1]).tick;
     // The next unit comes no earlier than the interval later.
     while (ofType(events, 'unit_spawned').length < 3) stepArena(sim, ctx);
-    expect(got(ofType(events, 'unit_spawned')[2]).tick - releaseTick).toBe(80);
+    expect(got(ofType(events, 'unit_spawned')[2]).tick - releaseTick).toBe(100);
   });
 
   test('without a blocker the same barracks spawns on the first free position of its exit', () => {

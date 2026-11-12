@@ -1,7 +1,7 @@
 {
   "$schema": "../schemas/threats.schema.json",
   "baseBudget": 100,
-  "growthPercent": 135,
+  "growthPercent": 125,
   "typeMultiplierPercent": {
     "easy": 70,
     "medium": 100,
@@ -11,7 +11,7 @@
   "maxPartySize": 4,
   "maxUnitsPerWavePerPlot": 12,
   "maxWallsPerPlot": 60,
-  "maxTurretsPerPlot": 16,
+  "maxTurretsPerPlot": 6,
   "minCoreHealth": 30,
   "compositionJitterPercent": 20,
   "unitCost": [
@@ -70,9 +70,9 @@
         "composition": [{ "unit": "unit_soldier", "weight": 1 }]
       },
       "stronghold": {
-        "coreHealthPerBudget": 500,
+        "coreHealthPerBudget": 300,
         "wallSharePercent": 30,
-        "turretSharePercent": 40,
+        "turretSharePercent": 25,
         "layout": "ring"
       }
     },
@@ -115,7 +115,7 @@
       "stronghold": {
         "coreHealthPerBudget": 400,
         "wallSharePercent": 20,
-        "turretSharePercent": 30,
+        "turretSharePercent": 20,
         "layout": "ring"
       }
     }

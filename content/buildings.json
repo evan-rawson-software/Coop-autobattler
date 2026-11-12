@@ -63,20 +63,20 @@
         {
           "health": 60,
           "price": 20,
-          "costPerUnit": 6,
-          "productionIntervalTicks": 80
+          "costPerUnit": 5,
+          "productionIntervalTicks": 100
         },
         {
           "health": 90,
           "price": 45,
           "costPerUnit": 5,
-          "productionIntervalTicks": 60
+          "productionIntervalTicks": 70
         },
         {
           "health": 120,
           "price": 80,
-          "costPerUnit": 4,
-          "productionIntervalTicks": 40
+          "costPerUnit": 5,
+          "productionIntervalTicks": 50
         }
       ]
     },
@@ -119,7 +119,7 @@
           "price": 15,
           "damage": 5,
           "rangeCells": 4,
-          "cooldownTicks": 8,
+          "cooldownTicks": 10,
           "costPerShot": 1
         },
         {
@@ -133,10 +133,10 @@
         {
           "health": 100,
           "price": 65,
-          "damage": 12,
+          "damage": 10,
           "rangeCells": 6,
-          "cooldownTicks": 6,
-          "costPerShot": 2
+          "cooldownTicks": 5,
+          "costPerShot": 1
         }
       ]
     },
@@ -151,26 +151,26 @@
         {
           "health": 40,
           "price": 30,
-          "costPerStep": 4,
-          "stepPercent": 5,
-          "maxSteps": 6,
-          "stepIntervalTicks": 10
+          "costPerStep": 2,
+          "stepPercent": 2,
+          "maxSteps": 5,
+          "stepIntervalTicks": 40
         },
         {
           "health": 60,
           "price": 60,
-          "costPerStep": 4,
-          "stepPercent": 6,
-          "maxSteps": 8,
-          "stepIntervalTicks": 8
+          "costPerStep": 3,
+          "stepPercent": 3,
+          "maxSteps": 5,
+          "stepIntervalTicks": 42
         },
         {
           "health": 80,
           "price": 100,
-          "costPerStep": 3,
-          "stepPercent": 8,
-          "maxSteps": 10,
-          "stepIntervalTicks": 6
+          "costPerStep": 4,
+          "stepPercent": 5,
+          "maxSteps": 5,
+          "stepIntervalTicks": 40
         }
       ]
     },
@@ -185,26 +185,26 @@
         {
           "health": 40,
           "price": 30,
-          "costPerStep": 6,
-          "stepPercent": 4,
-          "maxSteps": 6,
-          "stepIntervalTicks": 10
+          "costPerStep": 4,
+          "stepPercent": 5,
+          "maxSteps": 5,
+          "stepIntervalTicks": 80
         },
         {
           "health": 60,
           "price": 60,
-          "costPerStep": 6,
-          "stepPercent": 5,
-          "maxSteps": 8,
-          "stepIntervalTicks": 8
+          "costPerStep": 5,
+          "stepPercent": 7,
+          "maxSteps": 5,
+          "stepIntervalTicks": 70
         },
         {
           "health": 80,
           "price": 100,
-          "costPerStep": 5,
-          "stepPercent": 6,
-          "maxSteps": 10,
-          "stepIntervalTicks": 6
+          "costPerStep": 6,
+          "stepPercent": 10,
+          "maxSteps": 5,
+          "stepIntervalTicks": 60
         }
       ]
     },

@@ -302,7 +302,7 @@ describe('late rounds stay inside the performance budget', () => {
 // ---------------------------------------------------------------------------
 // The sweep (acceptance criteria 2, 3 and 9)
 
-const MAX_ROUND = 20;
+const MAX_ROUND = 25;
 
 interface Row {
   board: ReferenceBoardName;
@@ -340,9 +340,9 @@ function sweep(): Row[] {
 
 /** The last round at which a board wins any threat in the sweep (pinned). */
 const LAST_WIN: Record<ReferenceBoardName, number> = {
-  rush: 8,
-  fortify: 11,
-  poor: 6,
+  rush: 12,
+  fortify: 16,
+  poor: 11,
 };
 
 describe('sweep of reference boards against every threat', () => {
@@ -377,15 +377,16 @@ describe('sweep of reference boards against every threat', () => {
       winsIn(6, 10),
       winsIn(11, 15),
       winsIn(16, 20),
+      winsIn(21, 25),
     ];
     expect(blocks[0]).toBeGreaterThan(blocks[1] ?? 0);
     expect(blocks[1]).toBeGreaterThan(blocks[2] ?? 0);
-    expect(blocks[3]).toBe(0);
-    // Since the wide-front pathing (issue #82) the fortify board wins exactly
-    // one threat in rounds 11 to 15 (Escalator, medium, round 11); before it
-    // there was none. With the per-player stronghold layouts (issue #138) it
-    // wins two.
-    expect(blocks[2]).toBe(2);
+    expect(blocks[2]).toBeGreaterThan(blocks[3] ?? 0);
+    expect(blocks[4]).toBe(0);
+    // With threats growing 25 percent per round (issue #145) the wins fall
+    // off slowly: 214, 113, 21, 1 and none from round 21 on (the last win is
+    // the fortify board's, in round 16).
+    expect(blocks).toEqual([214, 113, 21, 1, 0]);
   }, 300_000);
 
   test('archetypes test what they should (criterion 3)', () => {
@@ -407,11 +408,12 @@ describe('sweep of reference boards against every threat', () => {
       );
     // The undefended rush board loses to a Rusher that the fortify board beats.
     for (const type of ['medium', 'hard'] as const) {
-      expect(get('rush', 'arch_rusher', type, 6).won).toBe(false);
-      expect(get('fortify', 'arch_rusher', type, 6).won).toBe(true);
+      expect(get('rush', 'arch_rusher', type, 8).won).toBe(false);
+      expect(get('fortify', 'arch_rusher', type, 8).won).toBe(true);
     }
     // The fortify board takes longer against the Fortress in the early
-    // rounds, where both win: 2.6 times as long in easy round 1 and never
+    // rounds, where both win: 1.35 times as long in easy round 1 (it was 2.6
+    // before the Fortress got fewer turrets, issue #145) and never
     // shorter. (The factors are smaller than they were with stacking units,
     // because the units now queue at the Core and the fortify board's turrets
     // are in range for as long as the rush board's units are, and because the
@@ -433,9 +435,9 @@ describe('sweep of reference boards against every threat', () => {
       }
     }
     expect(
-      get('fortify', 'arch_fortress', 'easy', 1).endTick,
+      10 * get('fortify', 'arch_fortress', 'easy', 1).endTick,
     ).toBeGreaterThanOrEqual(
-      2 * get('rush', 'arch_fortress', 'easy', 1).endTick,
+      13 * get('rush', 'arch_fortress', 'easy', 1).endTick,
     );
     expect(ratioSum / cases).toBeGreaterThan(1.4);
   }, 300_000);

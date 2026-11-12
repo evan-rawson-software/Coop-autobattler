@@ -46,12 +46,12 @@ describe('budget (SC-1)', () => {
         }
       }
     }
-    // A few absolute values: 100 * 1.35^(r-1) with a floor after each step.
+    // A few absolute values: 100 * 1.25^(r-1) with a floor after each step.
     expect(threatBudget(threats, 1, 'medium', 1)).toBe(100);
-    expect(threatBudget(threats, 2, 'medium', 1)).toBe(135);
-    expect(threatBudget(threats, 3, 'medium', 1)).toBe(182);
+    expect(threatBudget(threats, 2, 'medium', 1)).toBe(125);
+    expect(threatBudget(threats, 3, 'medium', 1)).toBe(156);
     expect(threatBudget(threats, 3, 'hard', 2)).toBe(
-      2 * Math.floor((182 * 140) / 100),
+      2 * Math.floor((156 * 140) / 100),
     );
     expect(threatBudget(threats, 1, 'easy', 1)).toBe(70);
   });
@@ -366,7 +366,7 @@ describe('layouts', () => {
     expect(threatSummary(open, content).walls).toBe(0);
     const ring = gen('arch_fortress');
     expect(threatSummary(ring, content).walls).toBeGreaterThan(8);
-    const line = gen('arch_escalator', 4, 12);
+    const line = gen('arch_escalator', 4, 16);
     const walls = line.stronghold.buildings.filter((b) => b.def === 'bld_wall');
     const rows = new Set(walls.map((w) => w.y));
     expect(rows.has(threats.layouts.line.lineRow)).toBe(true);
