@@ -36,6 +36,8 @@ export interface DebugHook {
     state: string;
     drawn: number;
     spriteFrames: number;
+    /** Units drawn from the atlas so far (not as circles). */
+    unitSprites: number;
     flatFrames: number;
     layerBuilds: number;
     tintCache: number;
