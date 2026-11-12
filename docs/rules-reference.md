@@ -68,7 +68,6 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-10 | End conditions and the tiebreak ladder with several Cores | not yet implemented (issue #132) |
 | PP-11 | A unit's owner and target Core; one movement field per target Core | not yet implemented (issue #133). One detail **OPEN — owner to confirm** |
 | PP-12 | Enemy-path preview per Core | not yet implemented (issue #133) |
-| PP-13 | Turrets can shoot units in the neutral zone | not yet implemented (issue #134) |
 | PP-14 | PvE strongholds and bosses with one Core per player | not yet implemented (issue #138) |
 | PP-15 | Sealed-producer check per owner; map rule per plot | not yet implemented (issues #131 and #129) |
 | PP-16 | Party votes and run streams without the Core vote | not yet implemented (issue #131) |
@@ -687,25 +686,6 @@ plot `plotOf(x)`: today's walk, on the fields of that Core (PP-11). Each
 entry gains `core: plotOf(x)`. Columns of a plot without a Core give no
 entry; the function no longer throws for a board with some Cores unplaced.
 What a unit does after that Core has fallen is not previewed.
-
-### PP-13. Turrets can shoot units in the neutral zone
-
-Owner decision (CB-3j, CB-18a). Today a turret's target must stand on the
-arena rows of the turret owner's own board ("One battle tick", "Turret
-fire"; `arena-sim.ts`, the `rowLo`/`rowHi` test). The rule becomes: the
-unit's cell row, taken in the frame of the turret's side exactly as today,
-must be inside **the owner's board rows or the gap rows**:
-
-- side 0: rows `0 .. h + gapRows - 1`;
-- side 1: rows `h .. H - 1`.
-
-Rows of the enemy's board never qualify. Range, target choice, ties, damage
-and events are unchanged. The boundary cases follow from the same row
-formula: for a side 0 turret a unit with `py = 240 (h + gapRows)` exactly is
-on the enemy's first row and is not a target. `freePower` turrets of a PvE
-stronghold follow the same rule. The statement under "Battles", "no building
-acts in the zone", is replaced by: nothing can be built in the zone and no
-flow or production happens there; turrets may shoot into it.
 
 ### PP-14. PvE strongholds and bosses with one Core per player
 
@@ -2193,7 +2173,6 @@ row says so.
 | ---- | ---------------------- | ------ |
 | PP-6 | Step 2: a unit producer takes at most `costPerUnit - progress` and spawns only when its `cooldown` is 0; an economy building steps only when its `cooldown` is 0; step 7 counts both cooldowns down. Today a producer has no top speed. | not yet implemented (issue #130) |
 | PP-11 | Steps 2 and 3: "the enemy Core" and "the movement field" become the unit's target Core and its fields; step 6 ends with retargeting. | not yet implemented (issue #133) |
-| PP-13 | Step 3, turret fire: a target may also stand in the neutral zone (gap rows). Today only the owner's own board rows qualify. | not yet implemented (issue #134) |
 | PP-9 | Step 4: Overload decay hits every living Core, each for the full amount. Step 6: `core_destroyed {side, core}`; a destroyed Core switches nothing else off. | not yet implemented (issue #132) |
 | PP-8 | The ramp bonus is per owner. **OPEN — owner to confirm.** | not yet implemented (issue #137) |
 
@@ -2352,8 +2331,8 @@ row says so.
    and `charge = costPerShot`, looks for a target: an enemy unit whose **cell
    row**, taken **in the frame of the turret's owner** (side 0: `floor(py /
    240)`; side 1: `H - 1 - floor((240 H - py) / 240)`, "Unit geometry"), is
-   inside the arena rows of the **turret owner's own board** (side 0: rows `0 .. h - 1`; side 1: rows `H - h .. H - 1`; the
-   gap and the enemy board never qualify; so a unit with `py = 240 h` exactly is in the gap row for a side 0 turret, and one with `py = 240 (H - h)` exactly is in the gap row for a side 1 turret, whatever its own side) and that is **in range**:
+   inside the arena rows of the **turret owner's own board or the gap** (side 0: rows `0 .. h + gapRows - 1`; side 1: rows `h .. H - 1`; the
+   enemy's board never qualifies (PP-13, CB-3j, CB-18a); so a unit with `py = 240 (h + gapRows)` exactly is on the enemy's first row for a side 0 turret, and one with `py = 240 h` exactly is on the enemy's last row for a side 1 turret, whatever its own side) and that is **in range**:
    `buildingDist2(px, py, turret) <= (rangeCells * 240 + R)^2` with `R` the
    unit's `radius` and `rangeCells` the turret tier's range, that is, the gap
    from the unit's circle to the nearest point of the turret's cells is at
@@ -3186,7 +3165,6 @@ row says so.
 | ---- | ---------------------- | ------ |
 | PP-10 | A side loses when **all** of its Cores are destroyed. Ties and the time limit: Cores standing, then share of total Core health, then overkill summed over the Cores that fell in the final tick, then building damage, kills, attacker. The summary lists every Core. | not yet implemented (issue #132) |
 | PP-2 | `core_not_placed` when any player's Core is missing. | not yet implemented (issue #128) |
-| PP-13 | "No building acts in the zone" becomes: turrets may shoot units in the zone. | not yet implemented (issue #134) |
 
 Implemented in `packages/core/src/battle.ts` (golden kind `battle`:
 `battle-kind.ts`). **Side 0 is always the party and side 1 the opponent** (the
@@ -3215,9 +3193,8 @@ at tick 0.
 
 These follow from the arena rules and are checked by tests: nothing can be
 built in the zone (a board is exactly its own `h` rows); no building has cells
-or conduits in a zone row; no building acts in the zone (turrets only shoot
-units standing in their owner's own rows; production and flow stay on the
-boards); only units fight there. A unit producer on a front row may spawn a
+or conduits in a zone row; no building produces or flows in the zone (production and flow stay on the
+boards; turrets may shoot units standing in the zone, never units on the enemy's board); only units fight there. A unit producer on a front row may spawn a
 unit onto the first zone row.
 
 The only test-only switch is `options.zone`: a zone to use instead of the
@@ -3403,7 +3380,6 @@ row says so.
 | ---- | ---------------------- | ------ |
 | PP-9 | `coreHealth` becomes `coreHealths`, one value per Core. | not yet implemented (issue #132) |
 | PP-11 | A wave unit's owner is the plot of the column it enters on; its target is the Core of the party plot it enters. | not yet implemented (issue #133) |
-| PP-13 | `freePower` turrets may also shoot units in the zone. | not yet implemented (issue #134) |
 
 A small, general mechanism of the arena simulation (`createArenaSim(...,
 options)`, `ArenaOptions.sideOptions`, also `BattleInput.sideOptions`): per side,
@@ -3454,7 +3430,7 @@ identically; with none the field is absent.
   the turret charging step, `charge` is set to `costPerShot` without touching
   the input buffers. No flow is needed (the PvE threat has no sources,
   conduits or producers). The turrets still obey the normal firing rules,
-  including that they only shoot units standing on their owner's board rows.
+  including that they only shoot units standing on their owner's board rows or in the neutral zone (PP-13).
 - **`unitStrengthPercent`**: a base strength percent for every unit the side
   spawns (producers and waves). `unitStats` receives the sum of this and the
   side's `unit_strength` ramp bonus (which is capped separately by

@@ -429,7 +429,7 @@ describe('buildings never act in or reach into the zone', () => {
   /**
    * Steps a battle, checking each turret shot's target: the unit stood, at
    * the start of the tick (the snapshot the turrets decide on), in the arena
-   * rows of the turret owner's board.
+   * rows of the turret owner's board or the zone.
    */
   function checkTurretShots(a: TeamState, b: TeamState, seed: number): number {
     const s = startBattle({ teamA: a, teamB: b, seed }, content, config);
@@ -447,9 +447,9 @@ describe('buildings never act in or reach into the zone', () => {
         if (e.type !== 'turret_fired') continue;
         const row = rows.get(e.unit);
         expect(row).toBeDefined();
-        const lo = e.side === 0 ? 0 : total - H;
+        const lo = e.side === 0 ? 0 : H;
         expect(row).toBeGreaterThanOrEqual(lo);
-        expect(row).toBeLessThanOrEqual(lo + H - 1);
+        expect(row).toBeLessThanOrEqual(lo + total - H - 1);
         shots++;
       }
     }
