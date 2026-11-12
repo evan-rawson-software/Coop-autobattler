@@ -696,13 +696,13 @@ export function BorderLinksPanel(props: {
   const mine = halfStatuses(team).filter((h) => h.owner === acting);
   return (
     <Panel title="Border links" id="panel-links">
-      {mine.length === 0 ? (
-        <p class="muted" data-field="links-empty">
-          No border links yet. Draw a conduit to a border cell of your area.
-        </p>
-      ) : (
-        <ul class="link-list" data-field="links" aria-live="polite">
-          {mine.map((h) => {
+      <ul class="link-list" data-field="links" aria-live="polite">
+        {mine.length === 0 ? (
+          <li class="muted" data-field="links-empty">
+            No border links yet. Draw a conduit to a border cell of your area.
+          </li>
+        ) : (
+          mine.map((h) => {
             const res = conduitResource(team, content, h.conduit);
             return (
               <li key={h.conduit} data-link-state={h.state}>
@@ -722,9 +722,9 @@ export function BorderLinksPanel(props: {
                 </button>
               </li>
             );
-          })}
-        </ul>
-      )}
+          })
+        )}
+      </ul>
     </Panel>
   );
 }
