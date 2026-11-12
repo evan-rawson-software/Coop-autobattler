@@ -10,6 +10,7 @@ import {
   type Cell,
   type EnemyPath,
 } from '@game/core';
+import type { RunState } from '@game/session';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { useStore } from '../app-state.js';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
@@ -47,6 +48,7 @@ import {
   deriveProblems,
   type FlowView,
   type Problem,
+  type ProblemScope,
 } from './view-model.js';
 
 const camera = new CameraController();
@@ -68,6 +70,18 @@ function isTyping(t: EventTarget | null): boolean {
  * `shared` run (the Build tab of the Shop step) it works on that run, so the
  * Shop and Build tabs see the same stash, gold, offers and board.
  */
+/** The problems list is scoped to the acting player only in a party. */
+function problemScope(
+  run: RunState | null,
+  acting: number,
+): ProblemScope | undefined {
+  if (run === null || run.players.length < 2) return undefined;
+  return {
+    acting,
+    names: run.players.map((p) => p.name),
+  };
+}
+
 export function BuildScreen() {
   return <BuildView shared={undefined} />;
 }
@@ -156,9 +170,9 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
   const problems: Problem[] = useMemo(
     () =>
       team !== null && isEditStep(step)
-        ? deriveProblems(team, content, flow)
+        ? deriveProblems(team, content, flow, problemScope(run, acting))
         : [],
-    [team, step, flow],
+    [team, step, flow, run, acting],
   );
 
   // What the session allows now: Ready lock and sealed unit producers. Only
@@ -290,9 +304,12 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
         problems: () =>
           data.current.team === null
             ? []
-            : deriveProblems(data.current.team, content, data.current.flow).map(
-                (p) => ({ id: p.id, kind: p.kind, text: p.text }),
-              ),
+            : deriveProblems(
+                data.current.team,
+                content,
+                data.current.flow,
+                problemScope(ctl.session?.run ?? null, data.current.acting),
+              ).map((p) => ({ id: p.id, kind: p.kind, text: p.text })),
         legalCore: () => [...ctl.legalCorePositions],
         acting: () => data.current.acting,
         partnerCores: () => [...ctl.partnerCores()],
