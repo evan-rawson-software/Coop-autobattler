@@ -2127,7 +2127,9 @@ Implemented in `arena-sim.ts` (decisions, spawn) and `unit-motion.ts`
   steering of rule c ("Steering") considers only allies of the same layer.
   Spawning places a flyer on the **spawn cells** below, which for a flyer are
   **every** in-board cell 4-adjacent to the producer's footprint, open or not
-  (a wall, a building or a lake cell included), ordered by the straight-line
+  (a wall, a building or a lake cell included; the cells of the producer's own
+  footprint count too, since each footprint cell is 4-adjacent to the others
+  of a 2x2 footprint, so a drone may appear on top of its Hangar), ordered by the straight-line
   key `(0, buildingDist2(cell centre, target Core), tie key)`; it checks `fits`
   against the empty world and the overlap test against flyers only, so a
   Hangar walled in on every side still spawns its drones.

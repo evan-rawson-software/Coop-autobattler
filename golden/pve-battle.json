@@ -4767,28 +4767,28 @@
           "sides": [
             {
               "unitsSpawned": 7,
-              "unitsLost": 0,
+              "unitsLost": 1,
               "buildingsLost": 0,
               "cores": [
                 {
                   "player": 0,
-                  "health": 356,
+                  "health": 387,
                   "maxHealth": 500,
                   "overkill": 0,
                   "destroyedTick": null
                 }
               ],
               "coresStanding": 1,
-              "coreHealth": 356,
+              "coreHealth": 387,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
               "rampSteps": 5,
               "buildingDamageDealt": 729,
-              "unitsKilled": 4
+              "unitsKilled": 5
             },
             {
-              "unitsSpawned": 6,
-              "unitsLost": 4,
+              "unitsSpawned": 8,
+              "unitsLost": 5,
               "buildingsLost": 0,
               "cores": [
                 {
@@ -4804,12 +4804,12 @@
               "coreMaxHealth": 729,
               "coreOverkill": 1,
               "rampSteps": 0,
-              "buildingDamageDealt": 144,
-              "unitsKilled": 0
+              "buildingDamageDealt": 113,
+              "unitsKilled": 1
             }
           ]
         },
-        "threatHash": "78f5a450",
+        "threatHash": "5ae53c3b",
         "zone": {
           "width": 24,
           "depth": 7,
@@ -4842,10 +4842,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "cfa312bc",
-        "events": 592
+        "stateHash": "9bd13c44",
+        "events": 566
       },
-      "eventLogHash": "c9c68458"
+      "eventLogHash": "9d97cd94"
     }
   },
   {
@@ -5001,57 +5001,57 @@
       "result": {
         "ok": true,
         "result": {
-          "winner": 1,
+          "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 555
+          "endTick": 586
         },
         "summary": {
           "sides": [
             {
               "unitsSpawned": 15,
-              "unitsLost": 10,
+              "unitsLost": 8,
               "buildingsLost": 0,
               "cores": [
                 {
                   "player": 0,
-                  "health": 0,
+                  "health": 351,
                   "maxHealth": 500,
-                  "overkill": 2,
-                  "destroyedTick": 554
-                }
-              ],
-              "coresStanding": 0,
-              "coreHealth": 0,
-              "coreMaxHealth": 500,
-              "coreOverkill": 2,
-              "rampSteps": 0,
-              "buildingDamageDealt": 252,
-              "unitsKilled": 7
-            },
-            {
-              "unitsSpawned": 17,
-              "unitsLost": 7,
-              "buildingsLost": 0,
-              "cores": [
-                {
-                  "player": 0,
-                  "health": 600,
-                  "maxHealth": 852,
                   "overkill": 0,
                   "destroyedTick": null
                 }
               ],
               "coresStanding": 1,
-              "coreHealth": 600,
+              "coreHealth": 351,
+              "coreMaxHealth": 500,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 852,
+              "unitsKilled": 8
+            },
+            {
+              "unitsSpawned": 18,
+              "unitsLost": 8,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 852,
+                  "overkill": 0,
+                  "destroyedTick": 585
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
               "coreMaxHealth": 852,
               "coreOverkill": 0,
               "rampSteps": 0,
-              "buildingDamageDealt": 500,
-              "unitsKilled": 10
+              "buildingDamageDealt": 149,
+              "unitsKilled": 8
             }
           ]
         },
-        "threatHash": "eb592573",
+        "threatHash": "88656bee",
         "zone": {
           "width": 24,
           "depth": 7,
@@ -5079,10 +5079,10 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "6f50a3a9",
-        "events": 479
+        "stateHash": "28b0c492",
+        "events": 541
       },
-      "eventLogHash": "4c8579e6"
+      "eventLogHash": "f6c6c7a8"
     }
   },
   {

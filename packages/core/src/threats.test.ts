@@ -277,11 +277,14 @@ describe('generateThreat', () => {
       expect(count(10, arch, 'unit_drone'), arch).toBeGreaterThan(0);
     }
     // Switching the mix off gives back the melee-only waves.
-    const off = { ...threats, rangedMix: undefined };
+    const off = { ...threats } as {
+      -readonly [K in keyof typeof threats]: (typeof threats)[K];
+    };
+    delete off.rangedMix;
     const p = generateThreat(
       {
         seed: 7,
-        round: 8,
+        round: 10,
         type: 'medium',
         partySize: 1,
         archetype: 'arch_rusher',
@@ -469,7 +472,7 @@ describe('pickArchetypes and threatSummary', () => {
     const p = generateThreat(
       {
         seed: 2,
-        round: 8,
+        round: 10,
         type: 'hard',
         partySize: 1,
         archetype: 'arch_fortress',

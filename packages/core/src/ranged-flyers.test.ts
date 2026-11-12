@@ -553,6 +553,43 @@ describe('Hangar spawning, flyer targeting by distance, test-only units (issue #
     ).toHaveLength(1);
   });
 
+  test('a Hangar whose spawn cells are all held by drones holds the next one and sticks nothing', () => {
+    // Drones that practically stand still and fill a cell each.
+    const slow: ArenaContent = {
+      ...content,
+      units: loadUnitsOrThrow({
+        units: content.units.list().map((u) =>
+          u.id === 'unit_drone'
+            ? {
+                ...u,
+                moveCooldownTicks: 240,
+                collisionRadius: 120,
+                reach: 60,
+              }
+            : u,
+        ),
+      }),
+    };
+    const b = startArenaBattle(
+      walledProducer('bld_hangar', 'res_b'),
+      coreTeam(map1([], 24)),
+      GAP,
+      slow,
+      simConfig,
+    );
+    const spawns = (): number =>
+      b.events.filter((e) => e.type === 'unit_spawned').length;
+    run(b.sim, b.ctx, 3000);
+    const full = spawns();
+    expect(full).toBeGreaterThan(5);
+    run(b.sim, b.ctx, 1000);
+    // Production backed up: nothing more appears, nothing overlaps.
+    expect(spawns()).toBe(full);
+    expect(overlapStats(b.sim, b.ctx).deep).toBe(0);
+    const held = b.sim.producers.filter((p) => p.side === 0);
+    expect(held.length).toBe(1);
+  });
+
   test('a walled-in Hangar spawns drones on the cells next to it; they fly out', () => {
     const { sim, ctx, events } = start(
       walledProducer('bld_hangar', 'res_b'),

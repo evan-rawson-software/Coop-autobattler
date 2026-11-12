@@ -472,7 +472,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   the Drone, from the Hangar building. A flyer picks its next Core by
   straight-line distance, and a Hangar walled in on every side still sends
   its drones out (it is never "sealed"). PvE waves from round 4 on spend
-  yet.)
+  about 25% of the wave budget on archers and 15% on drones (placeholders).
 - **CB-16a** **Production and room.** A unit appears next to the building that
   made it, at the nearest free spot. When there is none the finished unit is
   held, production stops drawing resources and the factory backs up like any
