@@ -14,7 +14,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
   padding: 0.8rem 1.1rem;
   flex: none;
 }
@@ -80,6 +81,7 @@
 .rounds td {
   padding: 0.2rem 0.5rem;
   text-align: left;
+  overflow-wrap: anywhere;
   border-bottom: 1px solid var(--border);
 }
 
@@ -98,6 +100,7 @@
 
 .over-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.7rem;
   margin-bottom: 0.5rem;
 }
@@ -115,4 +118,9 @@
   .over-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.run-over .topbar-status,
+.run-over .over-head p {
+  overflow-wrap: anywhere;
 }

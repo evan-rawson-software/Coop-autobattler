@@ -158,6 +158,8 @@ export function headline(state: RunState): {
     reason:
       state.outcome?.reason === 'abandoned'
         ? 'You abandoned this run.'
-        : 'Your last life was lost in a PvP battle.',
+        : state.players.length > 1
+          ? "Your party's last life was lost in a PvP battle."
+          : 'Your last life was lost in a PvP battle.',
   };
 }
