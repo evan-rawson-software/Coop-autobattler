@@ -246,16 +246,16 @@ describe('choosing a target when the opposite Core is gone', () => {
 
   test('the nearest Core is by movement distance', () => {
     const { sim, ctx } = without(team(spread), team(spread), [3]);
-    const near = (x: number, want: number) =>
-      expect(
-        spawnUnitForTest(sim, ctx, {
-          side: 0,
-          def: 'unit_soldier',
-          x,
-          y: 14,
-          owner: 0,
-        }).target,
-      ).toBe(want);
+    const near = (x: number, want: number): void => {
+      const u = spawnUnitForTest(sim, ctx, {
+        side: 0,
+        def: 'unit_soldier',
+        x,
+        y: 14,
+        owner: 0,
+      });
+      expect(u.target).toBe(want);
+    };
     near(4, 2); // Core 2 (columns 17, 18) is nearer than Core 1 and Core 0
     near(26, 1);
     near(40, 0);
@@ -343,13 +343,8 @@ describe('retargeting (PP-11)', () => {
     const first = events.findIndex((e) => e.type === 'unit_retargeted');
     expect(fell).toBeGreaterThanOrEqual(0);
     expect(first).toBeGreaterThan(fell); // after the destruction events
-    expect(retargets(events)).toEqual([
-      {
-        tick: expect.any(Number),
-        type: 'unit_retargeted',
-        unit: a.id,
-        target: 2,
-      },
+    expect(retargets(events).map((e) => [e.unit, e.target])).toEqual([
+      [a.id, 2],
     ]);
     expect(b.target).toBe(0);
     // Core 2 falls too: from the walk to it, Core 1 is the nearest.
