@@ -84,7 +84,7 @@ placeholders or do not exist yet; all are set in the rebalance
 | Number | Where | Today | Constraint |
 | ------ | ----- | ----- | ---------- |
 | Collector `intervalTicks` per tier | `buildings.json` | 20 / 14 / 10 | integer >= 1; a higher tier is never slower |
-| `productionIntervalTicks` per unit producer and tier | `buildings.json` | placeholder 40 / 32 / 25 (barracks) | integer >= 1 |
+| `productionIntervalTicks` per unit producer and tier | `buildings.json` | placeholder 80 / 60 / 40 (barracks) | integer >= 1 |
 | `stepIntervalTicks` per economy building and tier | `buildings.json` | placeholder 10 / 8 / 6 | integer >= 1 |
 | `costPerUnit`, `costPerShot`, `costPerStep`, `cooldownTicks` | `buildings.json` | as shipped | integers >= 1; a stronger building should have a higher need |
 | `inputBufferUnits` (items waiting at each input) | `sim.json` | 4 | integer >= 1, small: "a little waiting in the pipe" |
@@ -1925,12 +1925,19 @@ merger with a direct input and a conduit input behind a slow consumer, a
 merger fed directly by two sources behind a slow consumer, and a merger fed
 directly by one source and by a conduit behind a slow consumer: the last two
 pin the "direct source is ready when its `countdown` is at most 1" rule). Four
-`"need"` vectors (2000 ticks, a tier 3 collector into a splitter) pin PP-7
-against consumers with a top speed: `need-even-split` (two tier 1 barracks,
-both under-supplied: 100 and 99 items), `need-one-path-backs-up` (a barracks
-and an armory that fills after 6 steps: the barracks takes the remainder),
-`need-all-backs-up` (two armories: the collector stalls, nothing is lost) and
-`need-three-way-unconnected` (one of the three outputs has no conduit).
+`"need"` vectors (2000 ticks) pin PP-7 against consumers with a top speed
+(the barracks needs 75, 83 and 100 items per 1000 ticks at tiers 1 to 3):
+`need-even-split` (a tier 3 collector, 100 per 1000 ticks, into a splitter with
+two tier 1 barracks: both under-supplied, 100 and 99 items),
+`need-top-speed-one-path-backs-up` (a tier 3 and a tier 2 collector, 171 per
+1000 ticks, through a merger and a splitter into a tier 1 and a tier 3
+barracks: the even share, 85, is above the tier 1 barracks' top speed, so its
+production interval makes that path back up and the tier 3 barracks takes the
+remainder), `need-top-speed-all-backs-up` (the same supply into two tier 1
+barracks: both reach their top speed, the collectors stall, nothing is lost)
+and `need-three-way-unconnected` (one of the three outputs has no conduit).
+Without the cooldown rule of the production step the two `top-speed` vectors
+change.
 
 ### Mid-battle removal
 

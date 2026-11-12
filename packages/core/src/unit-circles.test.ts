@@ -679,13 +679,13 @@ describe('wave queue with mixed collision radii', () => {
 });
 
 describe('producers hold, waves queue', () => {
-  function walledBarracks(): { lab: Lab; bar: number } {
+  function walledBarracks(extractorTier = 1): { lab: Lab; bar: number } {
     const lab = new Lab({
       ...tiny(),
       nodes: [{ x: 2, y: 2, resource: 'res_a' }],
     });
     lab.core(8, 0);
-    const src = lab.put('bld_extractor', 2, 2, 0, 1);
+    const src = lab.put('bld_extractor', 2, 2, 0, extractorTier);
     const bar = lab.put('bld_barracks', 2, 5, 0, 1);
     lab.link(src, 'north', bar, 'south', [
       [2, 3],
@@ -763,6 +763,70 @@ describe('producers hold, waves queue', () => {
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ building: bar, px: mid(2), py: mid(4) });
     expect(p.progress).toBe(progress - 6 + 0);
+  });
+
+  test('a held producer keeps its cost while the cooldown runs down; it spawns one unit on release and waits the interval again (PP-6)', () => {
+    // A tier 3 extractor (a unit's cost every 60 ticks) feeds a tier 1
+    // barracks whose interval is 80: the second unit is finished while the
+    // cooldown of the first still runs.
+    const { lab, bar } = walledBarracks(3);
+    const { sim, ctx, events } = startArenaBattle(
+      lab.state,
+      coreOnly(),
+      4,
+      postContent,
+      simConfig,
+    );
+    const p = got(sim.producers.find((x) => x.building === bar));
+    while (ofType(events, 'unit_spawned').length === 0) stepArena(sim, ctx);
+    expect(p.cooldown).toBe(79);
+    // Now block the exit and freeze the blockers.
+    sim.units.length = 0;
+    const blocker = spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_boulder',
+      x: 2,
+      y: 4,
+    });
+    const keeper = spawnUnitForTest(sim, ctx, {
+      side: 1,
+      def: 'unit_boulder',
+      px: mid(2),
+      py: mid(4) - 60,
+      allowOverlap: true,
+    });
+    const pin = [
+      [blocker, blocker.px, blocker.py],
+      [keeper, keeper.px, keeper.py],
+    ] as const;
+    const step = (): void => {
+      stepArena(sim, ctx);
+      for (const [u, x, y] of pin) {
+        u.px = x;
+        u.py = y;
+      }
+    };
+    let finishedWithCooldown = false;
+    for (let t = 0; t < 300; t++) {
+      step();
+      if (p.progress === 6 && p.cooldown > 0) finishedWithCooldown = true;
+    }
+    expect(finishedWithCooldown).toBe(true);
+    // Held: the full cost, the cooldown has run out, nothing more was made.
+    expect(p.progress).toBe(6);
+    expect(p.cooldown).toBe(0);
+    expect(ofType(events, 'unit_spawned')).toHaveLength(1);
+    // Release: exactly one unit this tick (no catch-up), and a fresh cooldown.
+    sim.units.length = 0;
+    stepArena(sim, ctx);
+    const spawns = ofType(events, 'unit_spawned');
+    expect(spawns).toHaveLength(2);
+    expect(p.progress).toBe(0);
+    expect(p.cooldown).toBe(79);
+    const releaseTick = got(spawns[1]).tick;
+    // The next unit comes no earlier than the interval later.
+    while (ofType(events, 'unit_spawned').length < 3) stepArena(sim, ctx);
+    expect(got(ofType(events, 'unit_spawned')[2]).tick - releaseTick).toBe(80);
   });
 
   test('without a blocker the same barracks spawns on the first free position of its exit', () => {

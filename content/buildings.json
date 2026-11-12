@@ -64,19 +64,19 @@
           "health": 60,
           "price": 20,
           "costPerUnit": 6,
-          "productionIntervalTicks": 40
+          "productionIntervalTicks": 80
         },
         {
           "health": 90,
           "price": 45,
           "costPerUnit": 5,
-          "productionIntervalTicks": 32
+          "productionIntervalTicks": 60
         },
         {
           "health": 120,
           "price": 80,
           "costPerUnit": 4,
-          "productionIntervalTicks": 25
+          "productionIntervalTicks": 40
         }
       ]
     },

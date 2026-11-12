@@ -236,7 +236,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "4fd26889",
+        "stateHash": "aac67307",
         "events": 1306,
         "sides": [
           {
@@ -408,7 +408,7 @@
     "expected": {
       "result": {
         "tick": 1800,
-        "stateHash": "c7ba0736",
+        "stateHash": "2a9da042",
         "events": 892,
         "sides": [
           {
@@ -671,7 +671,7 @@
     "expected": {
       "result": {
         "tick": 2200,
-        "stateHash": "c446da1d",
+        "stateHash": "e2ad3ca9",
         "events": 1099,
         "sides": [
           {
@@ -1043,7 +1043,7 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "32ecad46",
+        "stateHash": "46abdfe2",
         "events": 256,
         "sides": [
           {
@@ -2782,7 +2782,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "141cf578",
+        "stateHash": "3e9a95c4",
         "events": 221,
         "sides": [
           {
@@ -2938,7 +2938,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "b1aef86c",
+        "stateHash": "34f0a120",
         "events": 142,
         "sides": [
           {
@@ -3407,7 +3407,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "4be2ccaa",
+        "stateHash": "135b336c",
         "events": 630,
         "sides": [
           {
