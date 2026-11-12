@@ -10,17 +10,20 @@ import {
   listLegalCorePositions,
   occupancy,
   validateCorePosition,
+  type BorderEnd,
   type Cell,
   type ConduitEnd,
   type PlacedBuilding,
   type Rotation,
   type TeamState,
   conduitTouches,
+  isBorderEnd,
 } from '@game/core';
 import { createStore, type Store } from '../app-state.js';
 import type { BoardPointerEvent } from '../board/BoardView.js';
 import { content } from '../content.js';
 import { extendPath, proposePath } from './autoroute.js';
+import { ownHalfAt, ownSpotAt } from './border-links.js';
 import {
   anchorUnderCursor,
   footprintCells,
@@ -83,8 +86,10 @@ export interface Moving {
 }
 
 export interface Draft {
+  /** The building the draft starts at; -1 for a half that starts at the border. */
   readonly building: number;
-  readonly from: ConduitEnd | null;
+  /** A building output, or a border spot (a receiving half); null until picked. */
+  readonly from: ConduitEnd | BorderEnd | null;
   readonly cells: readonly Cell[];
   readonly pressed: boolean;
   readonly dragged: boolean;
@@ -162,8 +167,16 @@ const INITIAL_UI: Ui = {
   coreGhost: null,
 };
 
-export function conduitAt(team: TeamState, cell: Cell) {
-  return team.conduits.find((c) => c.cells.some((p) => sameCell(p, cell)));
+/**
+ * The conduit on a cell. With `actor` only that player's conduits count: a
+ * neighbour's half cannot be selected or erased (PP-1).
+ */
+export function conduitAt(team: TeamState, cell: Cell, actor?: number) {
+  return team.conduits.find(
+    (c) =>
+      (actor === undefined || c.owner === actor) &&
+      c.cells.some((p) => sameCell(p, cell)),
+  );
 }
 
 function attachedCount(team: TeamState, id: number): number {
@@ -458,7 +471,7 @@ export class BuildController {
     draft: Draft,
     target: ConduitEnd,
   ): { to: ConduitEnd; cells: Cell[] | null; verdict: Verdict | null } {
-    const from = draft.from as ConduitEnd;
+    const from = draft.from as ConduitEnd | BorderEnd;
     const b = team.buildings.find((x) => x.id === target.building);
     let cells: Cell[] | null = [...draft.cells];
     if (b !== undefined) {
@@ -508,6 +521,18 @@ export class BuildController {
     return null;
   }
 
+  /**
+   * The own border spot a draft from a building output is aimed at, or null.
+   * A cell with a building on it is never a spot to end on.
+   */
+  private sendingSpot(team: TeamState, d: Draft, cell: Cell): BorderEnd | null {
+    if (d.from === null || isBorderEnd(d.from)) return null;
+    if (occupancy(team, content).buildingAt(cell.x, cell.y) !== null) {
+      return null;
+    }
+    return ownSpotAt(team, this.actor(), cell);
+  }
+
   private computeDraftView(team: TeamState, ui: Ui): DraftView | null {
     const d = ui.draft;
     if (ui.tool !== 'conduit' || d === null || d.from === null) return null;
@@ -518,6 +543,34 @@ export class BuildController {
         ok: null,
         message: null,
         offending: null,
+        target: null,
+      };
+    }
+    const spot = this.sendingSpot(team, d, hover);
+    if (spot !== null) {
+      const cells = extendPath(team, content, d.from, d.cells, hover);
+      if (cells === null) {
+        return {
+          cells: d.cells,
+          ok: false,
+          message: 'No route to that border spot.',
+          offending: null,
+          target: null,
+        };
+      }
+      const v = previewConduit(
+        team,
+        content,
+        d.from,
+        spot,
+        cells,
+        this.actor(),
+      );
+      return {
+        cells,
+        ok: v.ok,
+        message: v.ok ? null : reasonMessage(v.reason, v.detail),
+        offending: !v.ok && v.detail !== undefined ? parseCell(v.detail) : null,
         target: null,
       };
     }
@@ -972,7 +1025,7 @@ export class BuildController {
         });
         return true;
       }
-      const c = conduitAt(team, cell);
+      const c = conduitAt(team, cell, this.actor());
       if (c !== undefined) {
         this.set({ selection: { kind: 'conduit', id: c.id } });
         return true;
@@ -981,7 +1034,7 @@ export class BuildController {
     }
     if (u.tool === 'erase') {
       if (cell === null) return false;
-      const c = conduitAt(team, cell);
+      const c = conduitAt(team, cell, this.actor());
       if (c === undefined) return false;
       void this.eraseConduit(c.id);
       return true;
@@ -1026,6 +1079,28 @@ export class BuildController {
         this.say('The Core has no output side.', 'error');
         return true;
       }
+      const spot = ownSpotAt(team, this.actor(), cell);
+      if (spot !== null) {
+        if (ownHalfAt(team, this.actor(), spot) !== undefined) {
+          this.refuse('border_spot_in_use');
+          return true;
+        }
+        this.set({
+          draft: {
+            building: -1,
+            from: spot,
+            cells: [cell],
+            pressed: false,
+            dragged: false,
+          },
+          attempt: null,
+          status: {
+            text: 'Receiving from your neighbour: click an input side of a building. Esc cancels.',
+            kind: 'info',
+          },
+        });
+        return true;
+      }
       return false;
     }
     // A draft is under way.
@@ -1040,6 +1115,11 @@ export class BuildController {
     }
     if (building === 'core') {
       this.say('The Core has no input side.', 'error');
+      return true;
+    }
+    const spot = this.sendingSpot(team, d, cell);
+    if (spot !== null) {
+      void this.finishAtBorder(d, spot, cell);
       return true;
     }
     const target = this.draftTarget(team, d, cell);
@@ -1177,6 +1257,44 @@ export class BuildController {
         'ok',
       );
     } else this.refuse(r.reason, r.detail);
+  }
+
+  /** Finish a draft from a building output on one of the player's border spots. */
+  private async finishAtBorder(
+    d: Draft,
+    spot: BorderEnd,
+    cell: Cell,
+  ): Promise<void> {
+    const s = this.session;
+    if (s === null || d.from === null) return;
+    const team = s.run.team;
+    const cells = extendPath(team, content, d.from, d.cells, cell);
+    if (cells === null) {
+      this.say('No route to that border spot.', 'error');
+      return;
+    }
+    const v = previewConduit(team, content, d.from, spot, cells, this.actor());
+    if (!v.ok) {
+      this.set({
+        attempt: {
+          cells,
+          offending: v.detail === undefined ? null : parseCell(v.detail),
+        },
+        status: { text: reasonMessage(v.reason, v.detail), kind: 'error' },
+      });
+      return;
+    }
+    const res = await s.act({ t: 'add', from: d.from, to: spot, cells });
+    if (res.ok) {
+      this.set({
+        draft: null,
+        attempt: null,
+        status: {
+          text: 'Border half added: it is not connected until your neighbour draws theirs.',
+          kind: 'ok',
+        },
+      });
+    } else this.refuse(res.reason, res.detail);
   }
 
   private async finishDraft(

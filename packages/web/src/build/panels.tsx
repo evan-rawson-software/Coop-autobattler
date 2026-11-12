@@ -12,6 +12,8 @@ import { content } from '../content.js';
 import { Panel } from '../shell/AppShell.js';
 import { ActingSwitch } from '../shell/ActingSwitch.js';
 import type { BuildController, Model, Tool } from './build-controller.js';
+import { halfStatuses, linkText } from './border-links.js';
+import { buildingRate, formatHundredths, topSpeedWord } from './rates.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { simConfig } from './setup.js';
@@ -227,6 +229,8 @@ export function InspectorPanel(props: {
   run: RunState;
   model: Model;
   dry: DryRunResult | null;
+  /** For the supplied / under-supplied line of a consumer. */
+  flow?: FlowView | null;
   ctl: BuildController;
   /** Ids of the unit producers with no route to the front row. */
   sealed?: readonly number[];
@@ -271,6 +275,19 @@ export function InspectorPanel(props: {
             <dd>
               {res === null ? 'Not determined yet' : resourceName(content, res)}
             </dd>
+            {halfStatuses(team)
+              .filter((h) => h.conduit === c.id)
+              .map((h) => (
+                <>
+                  <dt>Border link</dt>
+                  <dd data-field="link-state">
+                    {linkText(
+                      h,
+                      (p) => run.players[p]?.name ?? `Player ${String(p + 1)}`,
+                    )}
+                  </dd>
+                </>
+              ))}
             <dt>Length</dt>
             <dd>
               {c.cells.length} {c.cells.length === 1 ? 'cell' : 'cells'}
@@ -298,6 +315,8 @@ export function InspectorPanel(props: {
       const owner =
         run.players[b.owner]?.name ?? `Player ${String(b.owner + 1)}`;
       const attached = team.conduits.filter((c) => conduitTouches(c, b.id));
+      const rate = buildingRate(def, b.tier, simConfig.ticksPerSecond);
+      const supply = props.flow?.supply.find((x) => x.building === b.id);
       body = (
         <div data-inspector="building">
           <h3 class="insp-name">
@@ -317,15 +336,35 @@ export function InspectorPanel(props: {
               : formatText(entry.description, content.resources)}
           </p>
           <dl class="props">
+            {rate.collects !== null ? (
+              <>
+                <dt>Collects</dt>
+                <dd data-field="collects">
+                  {formatHundredths(rate.collects)} / s
+                </dd>
+              </>
+            ) : null}
+            {rate.needs !== null && rate.topSpeed !== null ? (
+              <>
+                <dt>Top speed</dt>
+                <dd data-field="top-speed">
+                  {formatHundredths(rate.topSpeed)} {topSpeedWord(def)} / s
+                </dd>
+                <dt>Needs</dt>
+                <dd data-field="needs-rate">
+                  {formatHundredths(rate.needs)} / s at top speed
+                  {supply === undefined
+                    ? ''
+                    : supply.state === 'full'
+                      ? ` · supplied (gets ${formatHundredths(supply.gets)} / s)`
+                      : ` · UNDER-SUPPLIED: gets ${formatHundredths(supply.gets)} / s`}
+                </dd>
+              </>
+            ) : null}
             {figs?.inputs.map((i) => (
               <>
-                <dt>Needs</dt>
-                <dd>
-                  {resourceName(content, i.resource)}
-                  {i.needsPerSec === null
-                    ? ''
-                    : ` ${fmt(i.needsPerSec)} / sec at full fire`}
-                </dd>
+                <dt>Input</dt>
+                <dd>{resourceName(content, i.resource)}</dd>
                 <dt>Receiving</dt>
                 <dd data-field="receiving">
                   {i.connected
@@ -545,24 +584,37 @@ export function DryRunTable(props: {
             <th>Resource</th>
             <th>Produced</th>
             <th>Lost</th>
+            <th>Rate / s</th>
           </tr>
         </thead>
         <tbody>
           {dry.sources.length === 0 ? (
             <tr>
-              <td colSpan={4} class="muted">
+              <td colSpan={5} class="muted">
                 No sources placed.
               </td>
             </tr>
           ) : (
-            dry.sources.map((s) => (
-              <tr key={s.building}>
-                <td>{name(s.building)}</td>
-                <td>{resourceName(content, s.resource)}</td>
-                <td data-field="produced">{s.produced}</td>
-                <td>{s.lost}</td>
-              </tr>
-            ))
+            dry.sources.map((s) => {
+              const sb = team.buildings.find((x) => x.id === s.building);
+              const sd =
+                sb === undefined ? undefined : content.buildings.get(sb.def);
+              const r =
+                sb === undefined || sd === undefined
+                  ? null
+                  : buildingRate(sd, sb.tier, simConfig.ticksPerSecond);
+              return (
+                <tr key={s.building}>
+                  <td>{name(s.building)}</td>
+                  <td>{resourceName(content, s.resource)}</td>
+                  <td data-field="produced">{s.produced}</td>
+                  <td>{s.lost}</td>
+                  <td data-field="collect-rate">
+                    {r?.collects == null ? '-' : formatHundredths(r.collects)}
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>
@@ -570,36 +622,51 @@ export function DryRunTable(props: {
         <thead>
           <tr>
             <th>Consumer</th>
-            <th>Needs</th>
+            <th>Resource</th>
             <th>Delivered</th>
             <th>Per sec</th>
+            <th>Need / s</th>
+            <th>Supply</th>
           </tr>
         </thead>
         <tbody>
           {dry.consumers.length === 0 ? (
             <tr>
-              <td colSpan={4} class="muted">
+              <td colSpan={6} class="muted">
                 No consumers placed.
               </td>
             </tr>
           ) : (
-            dry.consumers.map((c) => (
-              <tr
-                key={`${String(c.building)}${c.side}`}
-                class={c.delivered === 0 ? 'bad' : ''}
-              >
-                <td>{name(c.building)}</td>
-                <td>{resourceName(content, c.resource)}</td>
-                <td data-field="delivered">{c.delivered}</td>
-                <td>
-                  {fmt(
-                    Math.round(
-                      (c.ratePer1000 * simConfig.ticksPerSecond) / 100,
-                    ) / 10,
-                  )}
-                </td>
-              </tr>
-            ))
+            dry.consumers.map((c) => {
+              const sup = flow.supply.find((x) => x.building === c.building);
+              return (
+                <tr
+                  key={`${String(c.building)}${c.side}`}
+                  class={c.delivered === 0 ? 'bad' : ''}
+                >
+                  <td>{name(c.building)}</td>
+                  <td>{resourceName(content, c.resource)}</td>
+                  <td data-field="delivered">{c.delivered}</td>
+                  <td>
+                    {fmt(
+                      Math.round(
+                        (c.ratePer1000 * simConfig.ticksPerSecond) / 100,
+                      ) / 10,
+                    )}
+                  </td>
+                  <td data-field="need-rate">
+                    {sup === undefined ? '-' : formatHundredths(sup.needs)}
+                  </td>
+                  <td data-field="supply">
+                    {sup === undefined
+                      ? '-'
+                      : sup.state === 'full'
+                        ? 'supplied'
+                        : 'UNDER-SUPPLIED'}
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>

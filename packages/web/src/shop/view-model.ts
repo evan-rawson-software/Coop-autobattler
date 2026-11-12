@@ -23,6 +23,7 @@ import {
 import type { WebContent } from '../content.js';
 import { isEditStep } from '../build/session.js';
 import { buildingName } from '../build/view-model.js';
+import { rateText } from '../build/rates.js';
 import { effectText, kindLabel, needsText } from './effect-text.js';
 import { archetypeText } from '../run/display-text.js';
 import { count } from '../plural.js';
@@ -38,6 +39,8 @@ export interface OfferCard {
     readonly kindLabel: string;
     readonly tier: number;
     readonly needs: string;
+    /** Need per second at top speed, or collector rate; '' for neither. */
+    readonly rate: string;
     readonly effect: string;
     readonly price: number;
   } | null;
@@ -161,6 +164,10 @@ export function buildShopView(
         kindLabel: kindLabel(ctx.content, def?.kind ?? 'core'),
         tier: o.tier,
         needs: def === undefined ? '' : needsText(def, ctx.content),
+        rate:
+          def === undefined
+            ? ''
+            : rateText(def, o.tier, ctx.sim.ticksPerSecond),
         effect:
           def === undefined
             ? ''

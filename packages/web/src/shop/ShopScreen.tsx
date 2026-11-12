@@ -85,6 +85,11 @@ function Card(props: { card: OfferCard; onBuy: (slot: number) => void }) {
         {o.kindLabel} · tier {o.tier}
       </p>
       <p class="offer-needs">Needs: {o.needs}</p>
+      {o.rate === '' ? null : (
+        <p class="offer-rate" data-field="rate">
+          {o.rate}
+        </p>
+      )}
       <p class="offer-effect" data-field="effect">
         {o.effect}
       </p>
