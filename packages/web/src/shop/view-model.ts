@@ -167,7 +167,12 @@ export function buildShopView(
         rate:
           def === undefined
             ? ''
-            : rateText(def, o.tier, ctx.sim.ticksPerSecond),
+            : rateText(
+                def,
+                o.tier,
+                ctx.sim.ticksPerSecond,
+                ctx.content.presentation.templates.screens,
+              ),
         effect:
           def === undefined
             ? ''

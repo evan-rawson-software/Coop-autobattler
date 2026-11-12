@@ -45,6 +45,8 @@ export interface PresentationTemplates {
   readonly kinds: Readonly<Record<string, string>>;
   /** The words after `Needs:` when a building takes no named resource. */
   readonly needs: { readonly nothing: string; readonly any: string };
+  /** Build and Shop screen texts (rates, supply, border links), by key. */
+  readonly screens: Readonly<Record<string, string>>;
 }
 
 export interface PresentationConfig {
@@ -75,6 +77,35 @@ export const TEMPLATE_SLOTS: Readonly<Record<string, readonly string[]>> = {
   source_speed: ['step', 'cost', 'resource', 'max', 'health'],
   unit_strength: ['step', 'cost', 'resource', 'max', 'health'],
   core: ['health'],
+};
+
+/**
+ * The slots each Build and Shop screen text may use. The web fills them in:
+ * rates are hundredths already formatted (`1.25`), `{name}` and `{player}`
+ * are player names, `{count}` a whole number.
+ */
+export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
+  collects: ['rate'],
+  needsTopSpeed: ['rate', 'speed', 'unit'],
+  unitsWord: [],
+  stepsWord: [],
+  shotsWord: [],
+  inspectorCollects: ['rate'],
+  inspectorTopSpeed: ['speed', 'unit'],
+  inspectorNeeds: ['rate'],
+  inspectorSupplied: ['gets'],
+  inspectorUnderSupplied: ['gets'],
+  tableSupplied: [],
+  tableUnderSupplied: [],
+  problemUnderSupplied: ['name', 'gets', 'needs'],
+  partnerUnderSuppliedOne: ['player'],
+  partnerUnderSuppliedMany: ['player', 'count'],
+  linkJoined: ['name', 'verb'],
+  linkSameKind: ['name', 'verb'],
+  linkOpen: ['verb'],
+  linkSending: [],
+  linkReceiving: [],
+  playerFallback: ['number'],
 };
 
 const KIND_LABEL_KEYS = [
@@ -330,13 +361,13 @@ function readTemplates(
 ): PresentationTemplates | undefined {
   if (!isRecord(raw)) {
     errors.push(
-      'presentation: "templates" must be an object with "effects", "kinds" and "needs".',
+      'presentation: "templates" must be an object with "effects", "kinds", "needs" and "screens".',
     );
     return undefined;
   }
   rejectUnknownKeys(
     raw,
-    new Set(['effects', 'kinds', 'needs']),
+    new Set(['effects', 'kinds', 'needs', 'screens']),
     'presentation.templates',
     errors,
   );
@@ -386,8 +417,14 @@ function readTemplates(
   );
   const kinds = exact('kinds', KIND_LABEL_KEYS, () => []);
   const needs = exact('needs', ['any', 'nothing'], () => []);
+  const screens = exact(
+    'screens',
+    sortedKeys(SCREEN_TEXT_SLOTS),
+    (k) => SCREEN_TEXT_SLOTS[k] ?? [],
+  );
   if (errors.length > before) return undefined;
   return {
+    screens,
     effects,
     kinds,
     needs: { nothing: needs['nothing'] as string, any: needs['any'] as string },

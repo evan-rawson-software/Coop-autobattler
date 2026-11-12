@@ -56,7 +56,7 @@
     },
     "templates": {
       "type": "object",
-      "required": ["effects", "kinds", "needs"],
+      "required": ["effects", "kinds", "needs", "screens"],
       "additionalProperties": false,
       "properties": {
         "effects": {
@@ -68,6 +68,14 @@
           }
         },
         "kinds": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          }
+        },
+        "screens": {
           "type": "object",
           "additionalProperties": {
             "type": "string",

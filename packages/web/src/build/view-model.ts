@@ -21,6 +21,7 @@ import {
 import type { WebContent } from '../content.js';
 import { count } from '../plural.js';
 import { formatHundredths, needSupply, type Supply } from './rates.js';
+import { playerName, screenText } from './texts.js';
 
 // ---------------------------------------------------------------------------
 // Names
@@ -296,6 +297,7 @@ export function deriveProblems(
   flow: FlowView | null,
   scope?: ProblemScope,
 ): Problem[] {
+  const texts = content.presentation.templates.screens;
   const out: Problem[] = [];
   const occ = occupancy(state, content);
   const name = (b: PlacedBuilding): string => buildingName(content, b.def);
@@ -383,7 +385,11 @@ export function deriveProblems(
       out.push({
         id: `under:${String(b.id)}`,
         kind: 'under_supplied',
-        text: `${name(b)} gets ${formatHundredths(u.gets)}/s of the ${formatHundredths(u.needs)}/s it needs.`,
+        text: screenText(texts, 'problemUnderSupplied', {
+          name: name(b),
+          gets: formatHundredths(u.gets),
+          needs: formatHundredths(u.needs),
+        }),
         focus: occ.cellsOf(b)[0] ?? { x: b.x, y: b.y },
         building: b.id,
       });
@@ -392,7 +398,14 @@ export function deriveProblems(
       out.push({
         id: `under-partner:${String(owner)}`,
         kind: 'under_supplied',
-        text: `${scope?.names[owner] ?? `Player ${String(owner + 1)}`} has ${count(n, 'under-supplied building')}.`,
+        text: screenText(
+          texts,
+          n === 1 ? 'partnerUnderSuppliedOne' : 'partnerUnderSuppliedMany',
+          {
+            player: playerName(texts, scope?.names ?? [], owner),
+            count: String(n),
+          },
+        ),
         focus: null,
         building: null,
       });

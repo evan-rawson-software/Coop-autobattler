@@ -22,7 +22,7 @@ export function kindLabel(
   return content.presentation.templates.kinds[kind] ?? kind;
 }
 
-function fill(template: string, values: Record<string, string>): string {
+export function fill(template: string, values: Record<string, string>): string {
   return template.replace(/\{([a-z]+)\}/g, (whole, key: string) =>
     key in values ? (values[key] as string) : whole,
   );
