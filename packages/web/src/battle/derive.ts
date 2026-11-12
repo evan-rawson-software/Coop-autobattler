@@ -6,6 +6,7 @@
 
 import {
   occupancy,
+  soleCore,
   type BattleSummary,
   type BuildingDef,
   type PlacedBuilding,
@@ -150,7 +151,7 @@ function coreFocus(
   g: Geometry,
   side: Side,
 ): { x: number; y: number } | null {
-  const core = record.initialTeams[side].core;
+  const core = soleCore(record.initialTeams[side]);
   if (core === null) return null;
   const def = content.buildings.list().find((d) => d.kind === 'core');
   const fp = def?.footprint ?? { width: 1, height: 1 };

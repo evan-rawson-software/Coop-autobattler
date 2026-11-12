@@ -211,7 +211,7 @@ export function layoutHash(team: TeamState): string {
     .map((c) => sigKey(c))
     .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   return hashJson({
-    core: team.core,
+    cores: team.cores,
     buildings: team.buildings,
     stash: team.stash,
     conduits,

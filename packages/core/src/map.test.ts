@@ -161,19 +161,17 @@ describe('generateMap properties', () => {
           }
           check(seen.size === walkable, 'walkable cell cut off');
           // Core positions.
-          const legal = listLegalCorePositions(map, content, config);
-          for (const pos of legal) {
-            const r = validateCorePosition(map, content, config, pos);
-            check(r.ok, 'listed core position fails validation');
-          }
           for (let p = 0; p < partySize; p++) {
-            check(
-              legal.some(
-                (pos) =>
-                  q.plotOf(pos.x) === p && q.plotOf(pos.x + fpWidth - 1) === p,
-              ),
-              `plot ${String(p)} has no core position`,
-            );
+            const legal = listLegalCorePositions(map, content, config, p);
+            for (const pos of legal) {
+              const r = validateCorePosition(map, content, config, p, pos);
+              check(r.ok, 'listed core position fails validation');
+              check(
+                q.plotOf(pos.x) === p && q.plotOf(pos.x + fpWidth - 1) === p,
+                'listed core position is outside its plot',
+              );
+            }
+            check(legal.length > 0, `plot ${String(p)} has no core position`);
           }
           // Round trip through the loader.
           check(
@@ -285,7 +283,7 @@ describe('core positions', () => {
     nodes: [{ x: 8, y: 2, resource: 'res_a' }],
   };
   const reason = (x: number, y: number): unknown =>
-    validateCorePosition(empty, content, config, { x, y });
+    validateCorePosition(empty, content, config, 0, { x, y });
 
   test('typed reasons', () => {
     expect(reason(0, 0)).toEqual({ ok: true });
@@ -298,7 +296,7 @@ describe('core positions', () => {
   });
 
   test('back half only', () => {
-    for (const pos of listLegalCorePositions(empty, content, config)) {
+    for (const pos of listLegalCorePositions(empty, content, config, 0)) {
       expect(pos.y + 2).toBeLessThanOrEqual(8);
     }
   });

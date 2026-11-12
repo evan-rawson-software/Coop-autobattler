@@ -6,7 +6,8 @@
  */
 import {
   coreFootprint,
-  listLegalCorePositions,
+  corePlayerAt,
+  listLegalCorePositionsAnyPlot,
   placeCore,
   previewEnemyPaths,
   validateCorePosition,
@@ -37,6 +38,8 @@ export function problemText(
   switch (problem) {
     case 'out_of_bounds':
       return `The Core is ${dims} and would hang over the edge of the board.`;
+    case 'outside_own_plot':
+      return "The Core has to stand wholly inside its player's own area.";
     case 'blocked':
       return 'Water and cliffs cannot be built on, so the Core cannot sit on them.';
     case 'on_node':
@@ -51,6 +54,8 @@ export function shortProblem(problem: CorePositionProblem): string {
   switch (problem) {
     case 'out_of_bounds':
       return 'Off the board';
+    case 'outside_own_plot':
+      return 'Outside own area';
     case 'blocked':
       return 'Water or cliff';
     case 'on_node':
@@ -79,7 +84,13 @@ export function verdictAt(
   pos: Cell,
 ): Verdict {
   const fp = coreFootprint(content.buildings);
-  const r = validateCorePosition(team.map, content, content.mapgen, pos);
+  const r = validateCorePosition(
+    team.map,
+    content,
+    content.mapgen,
+    corePlayerAt(team.map, content, pos.x),
+    pos,
+  );
   return {
     ok: r.ok,
     problem: r.ok ? null : r.reason,
@@ -113,7 +124,7 @@ export function hintText(input: {
 export function legalSet(team: TeamState, content: WebContent): Set<number> {
   const w = team.map.width;
   return new Set(
-    listLegalCorePositions(team.map, content, content.mapgen).map(
+    listLegalCorePositionsAnyPlot(team.map, content, content.mapgen).map(
       (c) => c.y * w + c.x,
     ),
   );
@@ -152,7 +163,13 @@ export function routesFor(
   sim: SimConfig,
   pos: Cell,
 ): EnemyPath[] | null {
-  const placed = placeCore(team, content, content.mapgen, pos);
+  const placed = placeCore(
+    team,
+    content,
+    content.mapgen,
+    corePlayerAt(team.map, content, pos.x),
+    pos,
+  );
   if (!placed.ok) return null;
   try {
     return clipPaths(

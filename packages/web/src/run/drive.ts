@@ -7,7 +7,7 @@
  * It only reads the run state and sends intents; it decides nothing about the
  * rules.
  */
-import { listLegalCorePositions } from '@game/core';
+import { listLegalCorePositionsAnyPlot } from '@game/core';
 import {
   SKIP_CHOICE,
   type DispatchResult,
@@ -45,7 +45,7 @@ export function nextIntent(state: RunState): Intent | null {
   const pending = isRecord(state.pending) ? state.pending : {};
   switch (state.step) {
     case 'core_placement': {
-      const pos = listLegalCorePositions(
+      const pos = listLegalCorePositionsAnyPlot(
         state.team.map,
         content,
         content.mapgen,

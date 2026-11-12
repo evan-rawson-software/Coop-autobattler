@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { describe, expect, test } from 'vitest';
 import {
-  listLegalCorePositions,
+  listLegalCorePositionsAnyPlot,
   loadAllContentOrThrow,
   loadEconomyOrThrow,
   loadMapgenOrThrow,
@@ -81,7 +81,7 @@ describe('run-state.schema.json with shop data', () => {
       deps,
     );
     if (!created.ok) throw new Error(created.detail);
-    const pos = listLegalCorePositions(
+    const pos = listLegalCorePositionsAnyPlot(
       created.state.team.map,
       content,
       mapgenConfig,

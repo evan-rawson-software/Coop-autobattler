@@ -16,6 +16,7 @@ import {
   buildAnyReferenceBoard,
   generateMap,
   hashJson,
+  soleCore,
   validateTeamState,
   type Json,
 } from '@game/core';
@@ -97,7 +98,7 @@ describe('reference board files', () => {
         expect(result).toMatchObject({ ok: true });
         if (result.ok) expect(result.state).toEqual(built);
         expect(validateSchema(data.team)).toBe(true);
-        expect(built.core).not.toBeNull();
+        expect(soleCore(built)).not.toBeNull();
         expect(built.map).toEqual(
           generateMap(data.mapSeed, data.partySize, ctx.content, ctx.mapgen),
         );
@@ -208,7 +209,7 @@ describe('board loading', () => {
     );
     const notes: string[] = [];
     expect(
-      parseBoardText(bare, 'bare', ctx, (t) => notes.push(t)).team.core,
+      parseBoardText(bare, 'bare', ctx, (t) => notes.push(t)).team.cores[0],
     ).toEqual({
       x: 11,
       y: 5,

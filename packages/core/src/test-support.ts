@@ -53,6 +53,22 @@ export const threats = loadThreatsOrThrow(threatsJson, {
 // ---------------------------------------------------------------------------
 // Helpers
 
+/**
+ * Every legal Core position of every player, sorted by `(y, x)`, with the
+ * player whose plot it lies in. For tests that want one Core anywhere.
+ */
+export function legalCoresAnyPlot(
+  m: GameMap,
+): { player: number; x: number; y: number }[] {
+  const out: { player: number; x: number; y: number }[] = [];
+  for (let player = 0; player < m.partySize; player++) {
+    for (const c of listLegalCorePositions(m, content, mapgen, player)) {
+      out.push({ player, x: c.x, y: c.y });
+    }
+  }
+  return out.sort((a, b) => a.y - b.y || a.x - b.x);
+}
+
 export function got<T>(v: T | undefined): T {
   if (v === undefined) throw new Error('missing value');
   return v;
@@ -93,9 +109,9 @@ export class Lab {
     this.state = p.state;
     return s.id;
   }
-  /** Place the Core with its lowest-x, lowest-y cell at `(x, y)`. */
-  core(x: number, y: number): void {
-    const r = placeCore(this.state, this.with_, mapgen, { x, y });
+  /** Place player `player`'s Core with its lowest-x, lowest-y cell at `(x, y)`. */
+  core(x: number, y: number, player = 0): void {
+    const r = placeCore(this.state, this.with_, mapgen, player, { x, y });
     if (!r.ok) throw new Error(`core: ${r.reason}`);
     this.state = r.state;
   }
@@ -202,9 +218,9 @@ export function randomNetwork(
   const rng = Rng.fromSeed(seed * 7919);
   let s = createTeamState(m);
   if (options.core === true) {
-    const at = listLegalCorePositions(m, content, mapgen)[0];
+    const at = legalCoresAnyPlot(m)[0];
     if (at !== undefined) {
-      const c = placeCore(s, content, mapgen, at);
+      const c = placeCore(s, content, mapgen, at.player, at);
       if (c.ok) s = c.state;
     }
   }

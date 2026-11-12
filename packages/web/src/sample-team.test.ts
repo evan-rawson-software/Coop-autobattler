@@ -1,4 +1,9 @@
-import { generateMap, validateTeamState, type TeamState } from '@game/core';
+import {
+  generateMap,
+  soleCore,
+  validateTeamState,
+  type TeamState,
+} from '@game/core';
 import { describe, expect, test } from 'vitest';
 import { content } from './content.js';
 import { buildScene, firstLetter, hitTest, shortLabel } from './board/scene.js';
@@ -12,7 +17,7 @@ function sample(seed: number, party: number, dense = false): TeamState {
 describe('sample team', () => {
   test.each([1, 2, 3, 4])('party of %i: Core, buildings and conduits', (n) => {
     const s = sample(7, n);
-    expect(s.core).not.toBeNull();
+    expect(soleCore(s)).not.toBeNull();
     expect(s.buildings.length).toBeGreaterThan(5);
     expect(s.conduits.length).toBeGreaterThan(0);
   });

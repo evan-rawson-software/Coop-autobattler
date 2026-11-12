@@ -58,7 +58,7 @@ function fight(board: ReferenceBoardName, t: ThreatProfile) {
 function denseParty(): TeamState {
   const lab = new Lab(bigBoard().map);
   lab.state = bigBoard();
-  lab.core(40, 6);
+  lab.core(40, 6, 1);
   return lab.state;
 }
 
@@ -66,7 +66,7 @@ describe('reference boards', () => {
   test('build, with the Core placed', () => {
     for (const n of REFERENCE_BOARDS) {
       const b = boards[n];
-      expect(b.core).toEqual({ x: 11, y: 5 });
+      expect(b.cores[0]).toEqual({ x: 11, y: 5 });
       expect(b.map.width).toBe(24);
     }
     expect(boards.rush.buildings.map((p) => p.def).sort()).toEqual([

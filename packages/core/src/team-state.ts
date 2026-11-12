@@ -7,7 +7,7 @@
  * docs/rules-reference.md, "Team state and placement".
  */
 
-import { cellKey, coreCells, defCells } from './board-cells.js';
+import { allCoreCells, cellKey, coreCells, defCells } from './board-cells.js';
 import {
   rotateBuilding,
   type BuildingDef,
@@ -75,8 +75,11 @@ export interface Conduit {
 
 export interface TeamState {
   readonly map: GameMap;
-  /** The Core's lowest-x, lowest-y cell, or null before it is placed. */
-  readonly core: Cell | null;
+  /**
+   * One entry per player (`map.partySize`): that player's Core, as its
+   * lowest-x, lowest-y cell, or null before it is placed (PP-2).
+   */
+  readonly cores: readonly (Cell | null)[];
   /** Placed buildings, sorted by `id`. Never holds the Core. */
   readonly buildings: readonly PlacedBuilding[];
   /** Owned buildings not on the board, sorted by `id`. */
@@ -108,6 +111,7 @@ export type PlacementReason =
   | 'node_reserved';
 
 export type CoreReason =
+  | 'invalid_owner'
   | 'core_already_placed'
   | CorePositionProblem
   | 'overlaps_building'
@@ -137,7 +141,14 @@ export const ROTATIONS: readonly Rotation[] = [0, 90, 180, 270];
 
 /** An empty state: no Core, no buildings, `nextId` 1. */
 export function createTeamState(map: GameMap): TeamState {
-  return { map, core: null, buildings: [], stash: [], nextId: 1, conduits: [] };
+  return {
+    map,
+    cores: new Array<null>(map.partySize).fill(null),
+    buildings: [],
+    stash: [],
+    nextId: 1,
+    conduits: [],
+  };
 }
 
 function isRotation(value: unknown): value is Rotation {
@@ -213,10 +224,8 @@ function makeContext(
 ): RuleContext {
   const q = queryMap(state.map, content.terrain);
   const coreKeys = new Set<number>();
-  if (state.core !== null) {
-    for (const c of coreCells(state.core, content)) {
-      coreKeys.add(cellKey(state.map, c.x, c.y));
-    }
+  for (const c of allCoreCells(state.cores, content)) {
+    coreKeys.add(cellKey(state.map, c.x, c.y));
   }
   return { q, content, coreKeys, occupiedByOther, conduitKeys };
 }
@@ -414,18 +423,25 @@ export function eraseConduit(
 // Operations
 
 /**
- * Place the Core once. Reasons, in order: core_already_placed, then those of
- * `validateCorePosition` (out_of_bounds, blocked, on_node, too_far_forward),
- * then overlaps_building.
+ * Place player `actor`'s Core. It works once per player (PP-2). Reasons, in
+ * order: invalid_owner, core_already_placed, then those of
+ * `validateCorePosition` (out_of_bounds, outside_own_plot, blocked, on_node,
+ * too_far_forward), then overlaps_building, overlaps_conduit.
  */
 export function placeCore(
   state: TeamState,
   content: TeamContent,
   config: MapgenConfig,
+  actor: number,
   pos: { x: number; y: number },
 ): OpResult<CoreReason> {
-  if (state.core !== null) return { ok: false, reason: 'core_already_placed' };
-  const check = validateCorePosition(state.map, content, config, pos);
+  if (!Number.isInteger(actor) || actor < 0 || actor >= state.cores.length) {
+    return { ok: false, reason: 'invalid_owner' };
+  }
+  if (state.cores[actor] !== null) {
+    return { ok: false, reason: 'core_already_placed' };
+  }
+  const check = validateCorePosition(state.map, content, config, actor, pos);
   if (!check.ok) return { ok: false, reason: check.reason };
   const mine = new Set(
     coreCells(pos, content).map((c) => cellKey(state.map, c.x, c.y)),
@@ -438,7 +454,23 @@ export function placeCore(
   for (const k of mine) {
     if (onConduit.has(k)) return { ok: false, reason: 'overlaps_conduit' };
   }
-  return { ok: true, state: { ...state, core: { x: pos.x, y: pos.y } } };
+  const cores = state.cores.map((c, p) =>
+    p === actor ? { x: pos.x, y: pos.y } : c,
+  );
+  return { ok: true, state: { ...state, cores } };
+}
+
+/**
+ * The Core of a board that the battle code can handle today: the only placed
+ * one, of whichever player, or null if none is placed. Throws if more than one
+ * Core is placed; fighting with several Cores comes with issue #132.
+ */
+export function soleCore(state: TeamState): Cell | null {
+  const placed = state.cores.filter((c): c is Cell => c !== null);
+  if (placed.length > 1) {
+    throw new RangeError('More than one Core is placed; not supported yet.');
+  }
+  return placed[0] ?? null;
 }
 
 /** Place a stashed building on the board. Free. */
@@ -599,7 +631,10 @@ export function removeFromStash(
 
 export interface Occupancy {
   /** The placed building on a cell, `'core'` for the Core, else null. */
-  buildingAt(x: number, y: number): PlacedBuilding | 'core' | null;
+  buildingAt(
+    x: number,
+    y: number,
+  ): PlacedBuilding | { readonly core: number } | null;
   /** The absolute cells a placed building covers, in `(y, x)` order. */
   cellsOf(instance: PlacedBuilding): Cell[];
   /** Absolute input sides (with resources) and output sides at its rotation. */
@@ -628,17 +663,21 @@ export function occupancy(state: TeamState, content: TeamContent): Occupancy {
   for (const b of state.buildings) {
     for (const c of cellsOf(b)) byCell.set(cellKey(state.map, c.x, c.y), b);
   }
-  const coreKeys = new Set<number>();
-  if (state.core !== null) {
-    for (const c of coreCells(state.core, content)) {
-      coreKeys.add(cellKey(state.map, c.x, c.y));
+  const coreAt = new Map<number, number>(); // cell -> player
+  state.cores.forEach((core, p) => {
+    if (core === null) return;
+    for (const c of coreCells(core, content)) {
+      coreAt.set(cellKey(state.map, c.x, c.y), p);
     }
-  }
+  });
   return {
     buildingAt: (x, y) => {
       if (!q.isInBounds(x, y)) return null;
       const k = cellKey(state.map, x, y);
-      return byCell.get(k) ?? (coreKeys.has(k) ? 'core' : null);
+      const b = byCell.get(k);
+      if (b !== undefined) return b;
+      const p = coreAt.get(k);
+      return p === undefined ? null : { core: p };
     },
     cellsOf,
     absoluteSides: (b) => {
@@ -661,7 +700,7 @@ export type ValidateTeamStateResult =
 
 const STATE_KEYS = new Set([
   'map',
-  'core',
+  'cores',
   'buildings',
   'stash',
   'nextId',
@@ -768,22 +807,38 @@ function validateInner(
   const map = mapResult.config;
   const q = queryMap(map, content.terrain);
 
-  // Core
-  let core: Cell | null = null;
-  const rawCore = data['core'];
-  if (rawCore !== null) {
-    if (!isRecord(rawCore) || !isInt(rawCore['x']) || !isInt(rawCore['y'])) {
-      errors.push('core: must be null or an object { x, y } of integers.');
-    } else {
-      unknownKeys(rawCore, new Set(['x', 'y']), 'core', errors);
-      core = { x: rawCore['x'], y: rawCore['y'] };
-      const check = validateCorePosition(map, content, config, core);
-      if (!check.ok) {
+  // Cores
+  const cores: (Cell | null)[] = [];
+  let coresOk = true;
+  const rawCores = data['cores'];
+  if (!Array.isArray(rawCores) || rawCores.length !== map.partySize) {
+    errors.push(
+      `cores: must be a list of ${String(map.partySize)} entries (one per player).`,
+    );
+    coresOk = false;
+  } else {
+    rawCores.forEach((raw: unknown, p) => {
+      if (raw === null) {
+        cores.push(null);
+      } else if (!isRecord(raw) || !isInt(raw['x']) || !isInt(raw['y'])) {
         errors.push(
-          `core: illegal position (${String(core.x)}, ${String(core.y)}): ${check.reason}.`,
+          `cores[${String(p)}]: must be null or { x, y } of integers.`,
         );
+        cores.push(null);
+        coresOk = false;
+      } else {
+        unknownKeys(raw, new Set(['x', 'y']), `cores[${String(p)}]`, errors);
+        const core = { x: raw['x'], y: raw['y'] };
+        cores.push(core);
+        const check = validateCorePosition(map, content, config, p, core);
+        if (!check.ok) {
+          errors.push(
+            `cores[${String(p)}]: illegal position (${String(core.x)}, ${String(core.y)}): ${check.reason}.`,
+          );
+          coresOk = false;
+        }
       }
-    }
+    });
   }
 
   // Lists
@@ -897,8 +952,8 @@ function validateInner(
 
   // Placement rules for every building, against the others and the Core.
   const coreKeys = new Set<number>();
-  if (core !== null && errors.every((e) => !e.startsWith('core:'))) {
-    for (const c of coreCells(core, content)) {
+  if (coresOk) {
+    for (const c of allCoreCells(cores, content)) {
       coreKeys.add(cellKey(map, c.x, c.y));
     }
   }
@@ -959,7 +1014,7 @@ function validateInner(
   }
   const partial: TeamState = {
     map,
-    core: errors.some((e) => e.startsWith('core:')) ? null : core,
+    cores: coresOk ? cores : cores.map(() => null),
     buildings: placed,
     stash,
     nextId: isInt(nextId) ? nextId : 1,
@@ -970,7 +1025,7 @@ function validateInner(
   if (errors.length > 0 || !isInt(nextId)) return undefined;
   return {
     map,
-    core,
+    cores,
     buildings: placed,
     stash,
     nextId,
@@ -1017,9 +1072,7 @@ export function renderTeamStateAscii(
   for (const conduit of state.conduits) {
     for (const c of conduit.cells) paint(c, '*');
   }
-  if (state.core !== null) {
-    for (const c of coreCells(state.core, content)) paint(c, 'C');
-  }
+  for (const c of allCoreCells(state.cores, content)) paint(c, 'C');
   return [
     ...grid.map((r) => r.join('')),
     `${legend} | S=source R=route U=unit_producer D=defense E=economy C=core *=conduit`,

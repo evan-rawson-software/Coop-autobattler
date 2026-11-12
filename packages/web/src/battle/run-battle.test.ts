@@ -1,4 +1,4 @@
-import { hashJson } from '@game/core';
+import { hashJson, soleCore } from '@game/core';
 import type { BattleDetail, RunState } from '@game/session';
 import { describe, expect, test } from 'vitest';
 import { content } from '../content.js';
@@ -128,10 +128,15 @@ describe('the battle of a run', () => {
 
   test('a changed factory refuses the replay', () => {
     const run = reachStep('pve_summary');
-    const core = run.team.core as { x: number; y: number };
+    const core = soleCore(run.team) as { x: number; y: number };
     const changed: RunState = {
       ...run,
-      team: { ...run.team, core: { x: core.x + 1, y: core.y } },
+      team: {
+        ...run.team,
+        cores: run.team.cores.map((c) =>
+          c === null ? null : { x: core.x + 1, y: core.y },
+        ),
+      },
     };
     expect(describeRunBattle(changed, realDeps())).toMatchObject({
       ok: false,
@@ -201,10 +206,15 @@ describe('a battle that cannot be shown', () => {
 
   test('a replay that fails still reports the recorded outcome', () => {
     const run = reachStep('pve_summary');
-    const core = run.team.core as { x: number; y: number };
+    const core = soleCore(run.team) as { x: number; y: number };
     const changed: RunState = {
       ...run,
-      team: { ...run.team, core: { x: core.x + 1, y: core.y } },
+      team: {
+        ...run.team,
+        cores: run.team.cores.map((c) =>
+          c === null ? null : { x: core.x + 1, y: core.y },
+        ),
+      },
     };
     const r = describeRunBattle(changed, realDeps());
     expect(r.ok).toBe(false);

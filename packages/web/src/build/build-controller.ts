@@ -7,7 +7,8 @@
 
 import {
   coreFootprint,
-  listLegalCorePositions,
+  corePlayerAt,
+  listLegalCorePositionsAnyPlot,
   occupancy,
   validateCorePosition,
   type Cell,
@@ -242,7 +243,7 @@ export class BuildController {
     this.session = s;
     this.legalCore =
       s.run.step === 'core_placement'
-        ? listLegalCorePositions(s.run.team.map, content, content.mapgen)
+        ? listLegalCorePositionsAnyPlot(s.run.team.map, content, content.mapgen)
         : [];
     this.unsub = s.store.subscribe(() => {
       this.afterState();
@@ -299,7 +300,7 @@ export class BuildController {
           ? !team.buildings.some((b) => b.id === id)
           : sel.kind === 'conduit'
             ? !team.conduits.some((c) => c.id === id)
-            : team.core === null;
+            : team.cores.every((c) => c === null);
       if (gone) sel = null;
     }
     this.ui = { ...this.ui, selection: sel };
@@ -332,7 +333,13 @@ export class BuildController {
         cells.push({ x: hover.x + dx, y: hover.y + dy });
       }
     }
-    const r = validateCorePosition(team.map, content, content.mapgen, hover);
+    const r = validateCorePosition(
+      team.map,
+      content,
+      content.mapgen,
+      corePlayerAt(team.map, content, hover.x),
+      hover,
+    );
     return {
       defId: null,
       cells,
@@ -431,7 +438,7 @@ export class BuildController {
     if (inMarker !== null)
       return { building: inMarker.building, side: inMarker.side };
     const hit = occupancy(team, content).buildingAt(cell.x, cell.y);
-    if (hit !== null && hit !== 'core' && hit.id !== draft.building) {
+    if (hit !== null && !('core' in hit) && hit.id !== draft.building) {
       return chooseInput(
         team,
         content,
@@ -1084,7 +1091,7 @@ export class BuildController {
       this.set({ draft: { ...d, pressed: false } });
       if (d.dragged && cell !== null && d.from !== null) {
         const hit = occupancy(s.run.team, content).buildingAt(cell.x, cell.y);
-        if (hit !== null && hit !== 'core' && hit.id !== d.building) {
+        if (hit !== null && !('core' in hit) && hit.id !== d.building) {
           void this.finishDraft(hit);
         }
       }

@@ -301,8 +301,8 @@ describe('buy, sell, reroll', () => {
 
   test('a placed building cannot be sold', () => {
     const map = generateMap(5, 1, content, mapgen);
-    const pos = at(listLegalCorePositions(map, content, mapgen), 0);
-    const c = placeCore(createTeamState(map), content, mapgen, pos);
+    const pos = at(listLegalCorePositions(map, content, mapgen, 0), 0);
+    const c = placeCore(createTeamState(map), content, mapgen, 0, pos);
     if (!c.ok) throw new Error(c.reason);
     const a = addToStash(c.state, content, {
       def: 'bld_wall',

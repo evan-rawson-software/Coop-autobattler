@@ -2,7 +2,7 @@
  * Golden-vector kind `team-state-ops`. Input `{ seed, partySize, ops }` (or
  * `{ map, ops }` with an explicit map in the map format) where
  * each op is `{ op, ...args }` (`addToStash` {def, tier, owner}; `placeCore`
- * {x, y}; `placeFromStash` and `moveBuilding` {id, x, y, rotation};
+ * {actor, x, y}; `placeFromStash` and `moveBuilding` {id, x, y, rotation};
  * `returnToStash` and `removeFromStash` {id}). The map is `generateMap(seed,
  * partySize)`. Result: `{ results, state, hash }` with one result per op
  * (`{ op, ok: true }` plus `id` for addToStash and addConduit, or
@@ -119,7 +119,7 @@ export function runTeamStateOps(
           break;
         }
         case 'placeCore':
-          outcome = placeCore(state, content, config, {
+          outcome = placeCore(state, content, config, int(a, 'actor'), {
             x: int(a, 'x'),
             y: int(a, 'y'),
           });

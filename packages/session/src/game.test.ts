@@ -6,6 +6,7 @@ import {
   loadEventsOrThrow,
   pickWeightedIndex,
   Rng,
+  soleCore,
   withModifier,
   type TeamState,
 } from '@game/core';
@@ -1344,7 +1345,7 @@ describe('a Shrine modifier changes the outcome of a real battle', () => {
   /** Place every stash building on the free cells nearest the Core. */
   function layout(s0: RunState): RunState {
     let s = s0;
-    const core = s.team.core;
+    const core = soleCore(s.team);
     if (core === null) throw new Error('no core');
     const cells: { x: number; y: number }[] = [];
     for (let x = 0; x < s.team.map.width; x++) {

@@ -137,7 +137,12 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
     [team, step, ui.dryTicks],
   );
   const paths: EnemyPath[] | null = useMemo(() => {
-    if (team === null || team.core === null || !isEditStep(step)) return null;
+    if (
+      team === null ||
+      team.cores.every((c) => c === null) ||
+      !isEditStep(step)
+    )
+      return null;
     try {
       return previewEnemyPaths(team, content, simConfig);
     } catch {
@@ -199,7 +204,7 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
           return t === null
             ? null
             : plain({
-                core: t.core,
+                cores: t.cores,
                 buildings: t.buildings,
                 stash: t.stash,
                 conduits: t.conduits,

@@ -10,7 +10,8 @@ import {
   addConduit,
   addToStash,
   createTeamState,
-  listLegalCorePositions,
+  corePlayerAt,
+  listLegalCorePositionsAnyPlot,
   occupancy,
   placeCore,
   placeFromStash,
@@ -108,10 +109,16 @@ export function buildSampleTeam(
   const q = queryMap(map, content.terrain);
   let state = createTeamState(map);
 
-  const legal = listLegalCorePositions(map, content, content.mapgen);
+  const legal = listLegalCorePositionsAnyPlot(map, content, content.mapgen);
   const corePos = legal[0];
   if (corePos) {
-    const r = placeCore(state, content, content.mapgen, corePos);
+    const r = placeCore(
+      state,
+      content,
+      content.mapgen,
+      corePlayerAt(map, content, corePos.x),
+      corePos,
+    );
     if (r.ok) state = r.state;
   }
 

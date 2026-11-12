@@ -24,7 +24,6 @@ import {
 import {
   addToStash,
   createTeamState,
-  placeCore,
   placeFromStash,
   type TeamState,
 } from './team-state.js';
@@ -338,18 +337,20 @@ export function buildStronghold(
     features: [],
     nodes: [],
   });
-  const core = placeCore(
-    state,
-    content,
-    mapgen,
-    profile.stronghold.corePosition,
-  );
-  if (!core.ok) {
-    throw new Error(
-      `Threat stronghold: the Core was rejected (${core.reason}).`,
-    );
-  }
-  state = core.state;
+  // The stronghold's single Core stands mid-board, which is not inside one
+  // player's plot, so it is stored directly instead of through `placeCore`
+  // (PP-2). PvE strongholds get one Core per player in issue #138.
+  state = {
+    ...state,
+    cores: state.cores.map((c, p) =>
+      p === 0
+        ? {
+            x: profile.stronghold.corePosition.x,
+            y: profile.stronghold.corePosition.y,
+          }
+        : c,
+    ),
+  };
   for (const b of profile.stronghold.buildings) {
     const owner = Math.min(
       size - 1,

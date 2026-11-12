@@ -46,12 +46,13 @@ export type BattleErrorCode =
   | 'party_size_mismatch'
   | 'board_size_mismatch'
   | 'core_not_placed'
+  | 'several_cores'
   | 'invalid_zone';
 
 export interface BattleError {
   readonly code: BattleErrorCode;
   readonly message: string;
-  /** The side at fault, for `core_not_placed`. */
+  /** The side at fault, for `core_not_placed` and `several_cores`. */
   readonly side?: 0 | 1;
 }
 
@@ -190,19 +191,30 @@ export function startBattle(
       message: `Both boards must have the same height: ${String(a.height)} and ${String(b.height)}.`,
     });
   }
-  if (teamA.core === null) {
+  if (teamA.cores.every((c) => c === null)) {
     return fail({
       code: 'core_not_placed',
       message: 'Side 0 has not placed its Core.',
       side: 0,
     });
   }
-  if (teamB.core === null) {
+  if (teamB.cores.every((c) => c === null)) {
     return fail({
       code: 'core_not_placed',
       message: 'Side 1 has not placed its Core.',
       side: 1,
     });
+  }
+  // Fighting with several Cores per side comes with issue #132.
+  for (const side of [0, 1] as const) {
+    const team = side === 0 ? teamA : teamB;
+    if (team.cores.filter((c) => c !== null).length > 1) {
+      return fail({
+        code: 'several_cores',
+        message: `Side ${String(side)} has more than one Core placed; a battle supports one Core per side for now.`,
+        side,
+      });
+    }
   }
   let zone: NeutralZone;
   if (options.zone !== undefined) {

@@ -9,6 +9,7 @@ import {
   createTeamState,
   placeCore,
   placeFromStash,
+  corePlayerAt,
   type GameMap,
   type Side,
   type TeamState,
@@ -81,7 +82,13 @@ export function denseFourPlotTeam(ctx: SimContext, tier: number): TeamState {
       link(sp, 'east', b, 'west', [[x0 + 1, y0 + 3]]);
     }
   }
-  const c = placeCore(state, ctx.content, ctx.mapgen, { x: 40, y: 6 });
+  const c = placeCore(
+    state,
+    ctx.content,
+    ctx.mapgen,
+    corePlayerAt(state.map, ctx.content, 40),
+    { x: 40, y: 6 },
+  );
   if (!c.ok) return fail('core', c.reason);
   return c.state;
 }

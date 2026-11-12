@@ -4,7 +4,7 @@
  * All functions are pure. See docs/rules-reference.md, "Conduits".
  */
 
-import { cellKey, coreCells, defCells } from './board-cells.js';
+import { allCoreCells, cellKey, defCells } from './board-cells.js';
 import {
   oppositeSide,
   rotateBuilding,
@@ -97,10 +97,8 @@ function makeView(state: TeamState, content: TeamContent): View {
     }
   }
   const coreKeys = new Set<number>();
-  if (state.core !== null) {
-    for (const c of coreCells(state.core, content)) {
-      coreKeys.add(cellKey(map, c.x, c.y));
-    }
+  for (const c of allCoreCells(state.cores, content)) {
+    coreKeys.add(cellKey(map, c.x, c.y));
   }
   return {
     state,

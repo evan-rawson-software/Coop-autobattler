@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { soleCore } from '@game/core';
 import { createDeps, fixedBattle } from './defaults.js';
 import { applyIntent, createRun, replayRun } from './machine.js';
 import { allowedIntents, openVote, whoIsReady } from './selectors.js';
@@ -362,7 +363,7 @@ describe('bookkeeping', () => {
     });
     const s = placeCoreAll(newRun(deps), deps);
     expect(s.step).toBe('build');
-    expect(s.team.core).not.toBeNull();
+    expect(soleCore(s.team)).not.toBeNull();
     expect(kit).toBe(1);
     expect(s.perPlayer[0]?.gold).toBe(10);
   });
@@ -586,7 +587,7 @@ describe('three players', () => {
     s = ok(s, 0, { type: 'propose_core', ...pos }).state;
     s = ok(s, 1, { type: 'vote', choice: pos }).state;
     expect(s.step).toBe('core_placement');
-    expect(s.team.core).toBeNull();
+    expect(soleCore(s.team)).toBeNull();
     // A vote for an unproposed position is refused.
     expect(
       applyIntent(s, 2, { type: 'vote', choice: { x: 99, y: 99 } }, baseDeps),
@@ -596,7 +597,9 @@ describe('three players', () => {
     expect(openVote(s)?.options).toHaveLength(1);
     const r = ok(s, 2, { type: 'propose_core', ...other });
     expect(r.state.step).toBe('build');
-    expect(pickedBy(r.effects, [pos, pos, other])).toEqual(r.state.team.core);
+    expect(pickedBy(r.effects, [pos, pos, other])).toEqual(
+      soleCore(r.state.team),
+    );
   });
 
   test('a vote can change until the last player has voted', () => {
@@ -611,7 +614,7 @@ describe('three players', () => {
     const r = ok(s, 2, { type: 'vote', choice: other });
     // Unanimous: no random pick.
     expect(r.state.step).toBe('build');
-    expect(r.state.team.core).toEqual(other);
+    expect(soleCore(r.state.team)).toEqual(other);
     expect(
       r.effects.find((e) => e.type === 'vote_resolved'),
     ).not.toHaveProperty('picked');
@@ -640,7 +643,7 @@ describe('three players', () => {
     const r = ok(s, 0, { type: 'propose_core', ...pos });
     s = r.state;
     expect(s.step).toBe('build');
-    expect(pickedBy(r.effects, [pos, other])).toEqual(s.team.core);
+    expect(pickedBy(r.effects, [pos, other])).toEqual(soleCore(s.team));
     const replayed = replayRun(runArgs(['Ann', 'Bo']), s.actionLog, baseDeps);
     expect(replayed.ok).toBe(true);
     if (replayed.ok) expect(replayed.state).toEqual(s);

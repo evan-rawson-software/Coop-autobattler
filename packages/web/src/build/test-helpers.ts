@@ -1,6 +1,10 @@
 /** Helpers shared by the Build screen's unit tests. Not part of the app. */
 
-import { listLegalCorePositions, type Cell, type TeamState } from '@game/core';
+import {
+  listLegalCorePositionsAnyPlot,
+  type Cell,
+  type TeamState,
+} from '@game/core';
 import { content } from '../content.js';
 import { previewPlace } from './ops.js';
 import { BuildSession } from './session.js';
@@ -8,7 +12,7 @@ import { BuildSession } from './session.js';
 /** A solo run past Core placement, in the `build` step. */
 export async function buildRun(seed = 7): Promise<BuildSession> {
   const s = await BuildSession.start(seed);
-  const pos = listLegalCorePositions(
+  const pos = listLegalCorePositionsAnyPlot(
     s.run.team.map,
     content,
     content.mapgen,

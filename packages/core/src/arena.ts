@@ -11,7 +11,12 @@
 
 import type { BuildingKind, DefenseType } from './buildings.js';
 import { coreFootprint, type Cell } from './map.js';
-import { occupancy, type TeamContent, type TeamState } from './team-state.js';
+import {
+  occupancy,
+  soleCore,
+  type TeamContent,
+  type TeamState,
+} from './team-state.js';
 import type { UnitConfig } from './units.js';
 
 /** What the arena code needs from the loaded content. */
@@ -165,13 +170,14 @@ export function createArena(
   };
 
   teams.forEach((team, side) => {
-    if (team.core !== null) {
+    const core = soleCore(team);
+    if (core !== null) {
       const fp = coreFootprint(content.buildings);
       const coreDef = content.buildings.list().find((d) => d.kind === 'core');
       const cells: Cell[] = [];
       for (let dy = 0; dy < fp.height; dy++) {
         for (let dx = 0; dx < fp.width; dx++) {
-          cells.push({ x: team.core.x + dx, y: team.core.y + dy });
+          cells.push({ x: core.x + dx, y: core.y + dy });
         }
       }
       add(side, 0, 'core', null, coreDef?.id ?? 'core', cells);

@@ -51,31 +51,37 @@
         },
         {
           "op": "placeCore",
+          "actor": 0,
           "x": 14,
           "y": 6
         },
         {
           "op": "placeCore",
+          "actor": 0,
           "x": 0,
           "y": 15
         },
         {
           "op": "placeCore",
+          "actor": 0,
           "x": 0,
           "y": 7
         },
         {
           "op": "placeCore",
+          "actor": 0,
           "x": 1,
           "y": 1
         },
         {
           "op": "placeCore",
+          "actor": 0,
           "x": 0,
           "y": 0
         },
         {
           "op": "placeCore",
+          "actor": 0,
           "x": 5,
           "y": 5
         },
@@ -88,6 +94,7 @@
         },
         {
           "op": "placeCore",
+          "actor": 0,
           "x": 20,
           "y": 0
         }
@@ -302,10 +309,12 @@
               }
             ]
           },
-          "core": {
-            "x": 0,
-            "y": 0
-          },
+          "cores": [
+            {
+              "x": 0,
+              "y": 0
+            }
+          ],
           "buildings": [],
           "stash": [
             {
@@ -330,7 +339,7 @@
           "nextId": 4,
           "conduits": []
         },
-        "hash": "32ac942b"
+        "hash": "4949607c"
       }
     }
   },
@@ -362,6 +371,7 @@
         },
         {
           "op": "placeCore",
+          "actor": 0,
           "x": 0,
           "y": 0
         },
@@ -662,10 +672,12 @@
               }
             ]
           },
-          "core": {
-            "x": 0,
-            "y": 0
-          },
+          "cores": [
+            {
+              "x": 0,
+              "y": 0
+            }
+          ],
           "buildings": [
             {
               "id": 1,
@@ -699,7 +711,7 @@
           "nextId": 4,
           "conduits": []
         },
-        "hash": "8dcb6892"
+        "hash": "2385dc63"
       }
     }
   },
@@ -731,6 +743,7 @@
         },
         {
           "op": "placeCore",
+          "actor": 0,
           "x": 0,
           "y": 0
         },
@@ -1091,10 +1104,12 @@
               }
             ]
           },
-          "core": {
-            "x": 0,
-            "y": 0
-          },
+          "cores": [
+            {
+              "x": 0,
+              "y": 0
+            }
+          ],
           "buildings": [
             {
               "id": 1,
@@ -1119,7 +1134,7 @@
           "nextId": 4,
           "conduits": []
         },
-        "hash": "c8d5566f"
+        "hash": "78cd6450"
       }
     }
   },
@@ -1492,7 +1507,7 @@
               }
             ]
           },
-          "core": null,
+          "cores": [null, null],
           "buildings": [],
           "stash": [
             {
@@ -1511,7 +1526,7 @@
           "nextId": 3,
           "conduits": []
         },
-        "hash": "5276f4d5"
+        "hash": "a45178af"
       }
     }
   },
@@ -2064,6 +2079,7 @@
         },
         {
           "op": "placeCore",
+          "actor": 0,
           "x": 10,
           "y": 4
         },
@@ -2169,6 +2185,7 @@
         },
         {
           "op": "placeCore",
+          "actor": 0,
           "x": 18,
           "y": 3
         },
@@ -2680,10 +2697,12 @@
               }
             ]
           },
-          "core": {
-            "x": 18,
-            "y": 3
-          },
+          "cores": [
+            {
+              "x": 18,
+              "y": 3
+            }
+          ],
           "buildings": [
             {
               "id": 2,
@@ -2818,7 +2837,7 @@
             }
           ]
         },
-        "hash": "144021f8"
+        "hash": "03e4d80f"
       }
     }
   },
@@ -3491,7 +3510,7 @@
               }
             ]
           },
-          "core": null,
+          "cores": [null],
           "buildings": [
             {
               "id": 1,
@@ -3804,7 +3823,7 @@
             }
           ]
         },
-        "hash": "0d8fdff7"
+        "hash": "aa8ae346"
       }
     }
   },
@@ -4325,7 +4344,7 @@
               }
             ]
           },
-          "core": null,
+          "cores": [null],
           "buildings": [
             {
               "id": 1,
@@ -4474,7 +4493,440 @@
             }
           ]
         },
-        "hash": "04c3dd5a"
+        "hash": "ea2aab71"
+      }
+    }
+  },
+  {
+    "id": "team-state-ops.per-player-cores",
+    "kind": "team-state-ops",
+    "description": "One Core per player: outside_own_plot, a second player's Core, core_already_placed per player, overlaps_core with any Core.",
+    "input": {
+      "seed": 1,
+      "partySize": 2,
+      "ops": [
+        {
+          "op": "placeCore",
+          "actor": 0,
+          "x": 30,
+          "y": 0
+        },
+        {
+          "op": "placeCore",
+          "actor": 0,
+          "x": 23,
+          "y": 0
+        },
+        {
+          "op": "placeCore",
+          "actor": 1,
+          "x": 30,
+          "y": 0
+        },
+        {
+          "op": "placeCore",
+          "actor": 1,
+          "x": 36,
+          "y": 0
+        },
+        {
+          "op": "placeCore",
+          "actor": 0,
+          "x": 2,
+          "y": 0
+        },
+        {
+          "op": "placeCore",
+          "actor": 0,
+          "x": 8,
+          "y": 0
+        },
+        {
+          "op": "placeCore",
+          "actor": 2,
+          "x": 8,
+          "y": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall",
+          "tier": 1,
+          "owner": 1
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 31,
+          "y": 1,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "id": 1,
+          "x": 33,
+          "y": 1,
+          "rotation": 0
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "placeCore",
+            "ok": false,
+            "reason": "outside_own_plot"
+          },
+          {
+            "op": "placeCore",
+            "ok": false,
+            "reason": "outside_own_plot"
+          },
+          {
+            "op": "placeCore",
+            "ok": true
+          },
+          {
+            "op": "placeCore",
+            "ok": false,
+            "reason": "core_already_placed"
+          },
+          {
+            "op": "placeCore",
+            "ok": true
+          },
+          {
+            "op": "placeCore",
+            "ok": false,
+            "reason": "core_already_placed"
+          },
+          {
+            "op": "placeCore",
+            "ok": false,
+            "reason": "invalid_owner"
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "overlaps_core"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 48,
+            "height": 16,
+            "partySize": 2,
+            "plotWidth": 24,
+            "features": [
+              {
+                "x": 2,
+                "y": 3,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 2,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 2,
+                "y": 5,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 2,
+                "y": 6,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 13,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 14,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 26,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 2,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 14,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 15,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 12,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 13,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 14,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 15,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 28,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 42,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 43,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 44,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 45,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 15,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 28,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 9,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 15,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 26,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 28,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 29,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 30,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 10,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 27,
+                "y": 11,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 11,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 27,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 12,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 40,
+                "y": 13,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 40,
+                "y": 14,
+                "feature": "ter_cliff"
+              }
+            ],
+            "nodes": [
+              {
+                "x": 4,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 11,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 34,
+                "y": 1,
+                "resource": "res_a"
+              },
+              {
+                "x": 1,
+                "y": 2,
+                "resource": "res_c"
+              },
+              {
+                "x": 4,
+                "y": 3,
+                "resource": "res_b"
+              },
+              {
+                "x": 11,
+                "y": 3,
+                "resource": "res_a"
+              },
+              {
+                "x": 46,
+                "y": 5,
+                "resource": "res_b"
+              },
+              {
+                "x": 21,
+                "y": 6,
+                "resource": "res_a"
+              },
+              {
+                "x": 38,
+                "y": 9,
+                "resource": "res_a"
+              },
+              {
+                "x": 43,
+                "y": 9,
+                "resource": "res_a"
+              },
+              {
+                "x": 22,
+                "y": 10,
+                "resource": "res_a"
+              },
+              {
+                "x": 34,
+                "y": 10,
+                "resource": "res_b"
+              },
+              {
+                "x": 47,
+                "y": 12,
+                "resource": "res_b"
+              },
+              {
+                "x": 34,
+                "y": 15,
+                "resource": "res_c"
+              }
+            ]
+          },
+          "cores": [
+            {
+              "x": 2,
+              "y": 0
+            },
+            {
+              "x": 30,
+              "y": 0
+            }
+          ],
+          "buildings": [
+            {
+              "id": 1,
+              "def": "bld_wall",
+              "tier": 1,
+              "x": 33,
+              "y": 1,
+              "rotation": 0,
+              "owner": 1
+            }
+          ],
+          "stash": [],
+          "nextId": 2,
+          "conduits": []
+        },
+        "hash": "a6631666"
       }
     }
   }

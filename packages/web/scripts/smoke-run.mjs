@@ -112,7 +112,7 @@ export async function runRunSmoke({
         for (let dx = 0; dx < w; dx++)
           for (let dy = 0; dy < h; dy++) blocked.add(`${x + dx},${y + dy}`);
       };
-      mark(t.core.x, t.core.y, 2, 2);
+      mark(t.cores[0].x, t.cores[0].y, 2, 2);
       for (const b of t.buildings)
         mark(b.x, b.y, footprints[b.def].width, footprints[b.def].height);
       for (const f of t.features) mark(f.x, f.y, 1, 1);
@@ -304,7 +304,7 @@ export async function runRunSmoke({
       for (let dx = 0; dx < w; dx++)
         for (let dy = 0; dy < h; dy++) blocked.add(`${x + dx},${y + dy}`);
     };
-    mark(t.core.x, t.core.y, 2, 2);
+    mark(t.cores[0].x, t.cores[0].y, 2, 2);
     for (const b of t.buildings)
       if (!pieceIds.has(b.id))
         mark(b.x, b.y, footprints[b.def].width, footprints[b.def].height);
@@ -583,7 +583,7 @@ export async function runRunSmoke({
   await settle();
   const t1 = await B.team();
   check(
-    t1.core.x === pick.x && t1.core.y === pick.y,
+    t1.cores[0].x === pick.x && t1.cores[0].y === pick.y,
     `Core confirmed at (${pick.x}, ${pick.y}); the first build opens`,
   );
   check(
@@ -592,8 +592,8 @@ export async function runRunSmoke({
   );
   // The Core cannot be moved: drag it somewhere else.
   const actions0 = (await R.state()).actions;
-  const pc = await at(t1.core.x, t1.core.y);
-  const pTo = await at(t1.core.x + 3, Math.max(0, t1.core.y - 2));
+  const pc = await at(t1.cores[0].x, t1.cores[0].y);
+  const pTo = await at(t1.cores[0].x + 3, Math.max(0, t1.cores[0].y - 2));
   await page.mouse.move(pc.x, pc.y);
   await page.mouse.down();
   await page.mouse.move(pTo.x, pTo.y, { steps: 6 });
@@ -602,8 +602,8 @@ export async function runRunSmoke({
   await page.keyboard.press('Escape');
   const t1b = await B.team();
   check(
-    t1b.core.x === pick.x &&
-      t1b.core.y === pick.y &&
+    t1b.cores[0].x === pick.x &&
+      t1b.cores[0].y === pick.y &&
       (await R.state()).actions === actions0,
     'the Core cannot be moved after it is confirmed (a drag changes nothing)',
   );

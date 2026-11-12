@@ -57,7 +57,6 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | Rule | What it specifies | Status |
 | ---- | ----------------- | ------ |
 | PP-1 | Ownership and plot checks on every board operation; conduits have an owner | not yet implemented (issue #129) |
-| PP-2 | One Core per player in the team state | not yet implemented (issue #128) |
 | PP-3 | Core placement step: each player places their own Core, no vote | not yet implemented (issue #131) |
 | PP-4 | Border links | not yet implemented (issues #135 and #136) |
 | PP-5 | Collector flow rate by tier | **implemented today** ("One tick: `stepFlow`", step 3); the display value and the one-output content rule are not (issue #130) |
@@ -161,30 +160,9 @@ Golden kind `team-state-ops`: every op that changes the board gains `actor`.
 
 ### PP-2. One Core per player
 
-- **Format.** The team state's `core` field is replaced by `cores`: a list of
-  exactly `N` entries, entry `p` being player `p`'s Core position `{ x, y }`
-  (the footprint's lowest-x, lowest-y cell) or `null` before it is placed. A
-  Core is still not an entry of `buildings` or `stash` and has no instance ID;
-  it is addressed by its player index.
-- **Legal positions.** `validateCorePosition(map, p, x, y)` returns the first
-  of: `out_of_bounds`; **`outside_own_plot`** (`plotOf(x) != p` or
-  `plotOf(x + w - 1) != p`); `blocked`; `on_node`; `too_far_forward`. The
-  other four are today's rules. `listLegalCorePositions(map, p)` lists the ok
-  positions of plot `p` by `(y, x)`. Map generation already guarantees at
-  least one per plot.
-- **`placeCore(actor, x, y)`**: `core_already_placed` if `cores[actor]` is not
-  `null`; then the reasons of `validateCorePosition(map, actor, x, y)`; then
-  `overlaps_building`; then `overlaps_conduit`. It works once per player.
-  Nothing can move or remove a Core.
-- **`overlaps_core`** in every rule means: the cell is in the footprint of
-  any placed Core. `buildingAt` returns `{ core: p }` for a Core cell.
-- **Health.** Every Core has the maximum health of the Core definition's
-  tier 1 (500), raised by the team's `core_health_percent` modifiers. All
-  Cores of a side therefore have the same maximum health (a PvE stronghold
-  is the exception, PP-14).
-- **A battle needs every Core placed**: `core_not_placed` carries the `side`
-  and the lowest `player` index without a Core.
-- `renderTeamStateAscii` draws every Core as `C`.
+Implemented; the rule text is in "Core positions" and "Team state and
+placement". What the battle code does with several Cores (`core_not_placed`
+for any missing Core, health, Overload) stays specified under PP-9 and PP-10.
 
 ### PP-3. The Core placement step
 
@@ -1146,7 +1124,6 @@ row says so.
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
 | PP-15 | One more fairness constraint: every walkable cell of a plot is reachable from that plot's own front row inside the plot. Generated maps change. | not yet implemented (issue #129) |
-| PP-2 | `validateCorePosition` and `listLegalCorePositions` take the player and reject a footprint outside that player's plot. | not yet implemented (issue #128) |
 
 Implemented by `generateMap` in `packages/core/src/generate-map.ts`. Parameters
 come from `content/mapgen.json` (loader: `packages/core/src/mapgen.ts`), the
@@ -1278,29 +1255,23 @@ throws an error.
 
 ### Core positions
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-2 | One Core per player. A position is legal for player `p` only if the whole footprint is in plot `p` (`outside_own_plot`). The last sentence below (a footprint spanning two plots is not rejected) no longer holds. | not yet implemented (issue #128) |
-
 The Core is the building of kind `core`; its footprint `(w, h)` comes from the
 building content. A position `(x, y)` is the footprint's lowest-x, lowest-y cell
 and the footprint covers `x .. x + w - 1`, `y .. y + h - 1` (no rotation is
-considered). `validateCorePosition` returns the first of these that applies:
+considered). Every player has one Core, which must lie wholly in their own
+plot (PP-2). `validateCorePosition(map, p, x, y)` (in the code the player comes
+before the position) returns the first of these that applies:
 
 1. `out_of_bounds` if `x < 0`, `y < 0`, `x + w > width` or `y + h > height`;
-2. `blocked` if any footprint cell is not buildable;
-3. `on_node` if any footprint cell holds a resource node;
-4. `too_far_forward` if `y + h > height - coreFrontClearance` (the starting
+2. `outside_own_plot` if `plotOf(x) != p` or `plotOf(x + w - 1) != p`;
+3. `blocked` if any footprint cell is not buildable;
+4. `on_node` if any footprint cell holds a resource node;
+5. `too_far_forward` if `y + h > height - coreFrontClearance` (the starting
    value 8 puts the whole footprint in the back half of a 16-row board).
 
-Otherwise it is ok. `listLegalCorePositions` returns every ok position, sorted
-by `(y, x)`. A footprint spanning two plots is not rejected here (placement of
-the Core is not part of generation).
+Otherwise it is ok. `listLegalCorePositions(map, p)` returns every ok position
+of plot `p`, sorted by `(y, x)`; map generation guarantees at least one per
+plot. A footprint spanning two plots is therefore never legal.
 
 ### ASCII rendering
 
@@ -1326,7 +1297,6 @@ row says so.
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
 | PP-1 | Every operation names its `actor`; only the owner places, moves, returns or removes a building; every footprint cell must be in the owner's plot. New reasons `not_owner`, `outside_own_plot`. "Anyone may move any building" and "a building may go anywhere on the board" no longer hold. | not yet implemented (issue #129) |
-| PP-2 | `core` becomes `cores`, one entry per player; `placeCore(actor, x, y)` works once per player. | not yet implemented (issue #128) |
 | PP-4 | Conduit ends may be border spots (halves of a border link). | not yet implemented (issue #135) |
 
 Implemented in `packages/core/src/team-state.ts` (golden kind `team-state-ops`:
@@ -1337,15 +1307,18 @@ never changes its input.
 ### Format (plain JSON, `schemas/team-state.schema.json`)
 
 ```
-{ map, core, buildings, stash, nextId, conduits, modifiers? }
+{ map, cores, buildings, stash, nextId, conduits, modifiers? }
 ```
 
 - `map`: the map format above.
-- `core`: `{ x, y }`, the Core footprint's lowest-x, lowest-y cell, or `null`
-  before it is placed. The Core is **not** an entry in `buildings` or `stash`;
+- `cores`: a list of exactly `partySize` entries, entry `p` being player `p`'s
+  Core as `{ x, y }`, the footprint's lowest-x, lowest-y cell, or `null` before
+  it is placed (PP-2). A Core is **not** an entry in `buildings` or `stash`;
   its definition is the content building of kind `core` (found by kind) and it
-  can never be moved, returned or sold: no instance ID addresses it.
-  `placeCore` is the only operation that touches `core`, and works once.
+  can never be moved, returned or sold: no instance ID addresses it; it is
+  addressed by its player index. `placeCore` is the only operation that
+  touches `cores`, and works once per player. All Cores of a side have the same
+  maximum health (see the battle sections).
 - `buildings`: placed buildings `{ id, def, tier, x, y, rotation, owner }`.
   `id` is a unique positive integer instance ID, `def` a building definition
   ID, `tier` 1 to 3, `rotation` 0, 90, 180 or 270, `owner` a 0-based player
@@ -1387,12 +1360,13 @@ clockwise as drawn with the front row on top: north to east to south to west.
   lowest-x, lowest-y cell; rotating in place keeps `(x, y)` and so can change
   which cells are covered. All footprints are full rectangles, so there is no
   finer mapping of "which cell is which".
-- The Core is never rotated: it covers `core.x .. core.x + w - 1` by
-  `core.y .. core.y + h - 1`.
+- A Core is never rotated: Core `p` covers `cores[p].x .. cores[p].x + w - 1`
+  by `cores[p].y .. cores[p].y + h - 1`.
 - `cellsOf` lists a building's cells in `(y, x)` order. `absoluteSides` gives
   its input sides (with resources) and output sides at its rotation.
   `sourceResource` is the resource of the node under a source. `buildingAt`
-  returns the placed building, the string `core`, or `null`.
+  returns the placed building, `{ core: p }` for a cell of player `p`'s Core,
+  or `null`.
 
 ### Operations
 
@@ -1404,10 +1378,17 @@ Each returns `{ ok: true, state }` (`addToStash` also the new `id`) or
   integer 1 to 3), `invalid_owner` (not an integer from 0 to `partySize - 1`),
   checked in that order. Appends `{ id: nextId, def, tier, owner }` and
   increments `nextId`.
-- `placeCore(x, y)`: reasons in order: `core_already_placed`; then those of
-  `validateCorePosition` (`out_of_bounds`, `blocked`, `on_node`,
+- `placeCore(actor, x, y)`: reasons in order: `invalid_owner` (`actor` is not
+  an integer from 0 to `partySize - 1`; the specification leaves this case
+  open and it uses the same reason as `addToStash`); `core_already_placed` if
+  `cores[actor]` is not `null`; then those of `validateCorePosition(map,
+  actor, x, y)` (`out_of_bounds`, `outside_own_plot`, `blocked`, `on_node`,
   `too_far_forward`); then `overlaps_building` if the footprint covers a placed
-  building; then `overlaps_conduit` if it covers a conduit cell.
+  building; then `overlaps_conduit` if it covers a conduit cell. It works once
+  per player; nothing can move or remove a Core. `overlaps_core` in
+  `placeFromStash`, `moveBuilding` and `addConduit` means the footprint of any
+  placed Core. `validateTeamState` requires every placed Core to be legal for
+  its player, and `renderTeamStateAscii` draws every Core as `C`.
 - `placeFromStash(id, x, y, rotation)`: `id` must be in `stash`. Moves the entry
   to `buildings` (same ID, tier, owner).
 - `moveBuilding(id, x, y, rotation)`: `id` must be in `buildings`. Sets position
@@ -3189,7 +3170,7 @@ row says so.
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
 | PP-10 | A side loses when **all** of its Cores are destroyed. Ties and the time limit: Cores standing, then share of total Core health, then overkill summed over the Cores that fell in the final tick, then building damage, kills, attacker. The summary lists every Core. | not yet implemented (issue #132) |
-| PP-2 | `core_not_placed` when any player's Core is missing. | not yet implemented (issue #128) |
+| PP-2 | `core_not_placed` when any player's Core is missing. Today `simulateBattle` (and the arena) take the one Core a side has placed, of whichever player, and reject a side with more than one Core (`several_cores`); with none placed it is `core_not_placed`. | partly implemented (issue #128 as above; the rest is issue #132) |
 
 Implemented in `packages/core/src/battle.ts` (golden kind `battle`:
 `battle-kind.ts`). **Side 0 is always the party and side 1 the opponent** (the
@@ -3729,7 +3710,7 @@ section when their issue lands; none of them is in the code yet.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-1, PP-2 | The board scripts gain `actor` on every op and place the Core as player 0; a multi-plot board must keep every building in its owner's plot. | not yet implemented (issues #128 and #129) |
+| PP-1 | The board scripts gain `actor` on every op (`placeCore` has it already, as player 0); a multi-plot board must keep every building in its owner's plot. | not yet implemented (issue #129) |
 | PP-6 | The boards are rebuilt as supply-limited boards (each building's need against its collectors' rates); the descriptions below, and every result measured on them, are void until then. | not yet implemented (issues #130 and #145) |
 
 `reference-boards.ts` and `reference-boards-siege.ts` (importable by later
@@ -4496,8 +4477,9 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
    output sides for the shipped splitter; the loader allows up to 4).
 2. **Whole team state** (`validateTeamState`): legal placement on its own map
    (extractors on nodes, nothing on natural features, a legal Core position,
-   known buildings, tiers 1 to 3, conduits), plus the Core must be placed and
-   the map's party size equal `partySize`.
+   known buildings, tiers 1 to 3, conduits), plus a Core must be placed (until each player places their own, issue
+   #131, at least one; the snapshot's `team.cores` has one entry per player)
+   and the map's party size equal `partySize`.
 3. **Map**: `team.map` equals `generateMap(mapSeed, partySize)`.
 4. **Numbers**: `wins + losses = round - 1`, `lives <= startingLives` and
    `losses * pvpLossLifeCost = startingLives - lives`.

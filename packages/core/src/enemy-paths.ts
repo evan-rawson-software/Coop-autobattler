@@ -22,7 +22,7 @@ import { divFloor } from './int.js';
 import { maxHealthOf } from './max-health.js';
 import type { Cell } from './map.js';
 import type { SimConfig } from './sim-config.js';
-import { createTeamState, type TeamState } from './team-state.js';
+import { createTeamState, soleCore, type TeamState } from './team-state.js';
 
 export interface EnemyPath {
   /** The front-row board cell where the enemy unit starts. */
@@ -59,7 +59,7 @@ export function previewEnemyPaths(
   content: ArenaContent,
   simConfig: SimConfig,
 ): EnemyPath[] {
-  if (team.core === null) {
+  if (soleCore(team) === null) {
     throw new Error('previewEnemyPaths: the Core is not placed.');
   }
   // The preview board is side 0 (arena = board coordinates); the enemy is side

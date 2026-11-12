@@ -746,7 +746,8 @@ function shapeInner(
     return undefined;
   }
   const t = team.state;
-  if (t.core === null) errors.push('team: the Core must be placed.');
+  if (t.cores.every((c) => c === null))
+    errors.push('team: the Core must be placed.');
   if (t.map.partySize !== size) {
     errors.push('team: map party size does not match partySize.');
   }

@@ -33,7 +33,8 @@ function looksOccupied(state: TeamState, content: WebContent): Set<string> {
   }
   for (let y = 0; y < state.map.height; y++) {
     for (let x = 0; x < state.map.width; x++) {
-      if (occ.buildingAt(x, y) === 'core') out.add(cellKeyOf({ x, y }));
+      const hit = occ.buildingAt(x, y);
+      if (hit !== null && 'core' in hit) out.add(cellKeyOf({ x, y }));
     }
   }
   for (const c of state.conduits) {

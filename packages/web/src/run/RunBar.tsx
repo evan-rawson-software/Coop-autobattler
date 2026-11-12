@@ -19,7 +19,7 @@ export function RunBar(props: {
   // The starting gold is granted with the kit when the Core is placed. A run
   // that has no Core (still placing it, or abandoned while placing it) never
   // had the kit: the figure would read 0 for gold it never got.
-  const showGold = state.team.core !== null;
+  const showGold = state.team.cores.some((c) => c !== null);
   return (
     <span class="run-bar" id="run-bar">
       <span data-field="bar-round">Round {state.round}</span>

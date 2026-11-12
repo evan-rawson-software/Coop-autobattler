@@ -307,7 +307,7 @@ export async function runShopSmoke({
     for (let dx = 0; dx < w; dx++)
       for (let dy = 0; dy < h; dy++) blocked.add(`${x + dx},${y + dy}`);
   };
-  mark(t0.core.x, t0.core.y, 2, 2);
+  mark(t0.cores[0].x, t0.cores[0].y, 2, 2);
   for (const b of t0.buildings)
     mark(b.x, b.y, footprints[b.def].width, footprints[b.def].height);
   for (const f of t0.features) mark(f.x, f.y, 1, 1);

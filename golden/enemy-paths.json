@@ -51,6 +51,7 @@
       "ops": [
         {
           "op": "placeCore",
+          "actor": 0,
           "x": 5,
           "y": 0
         },
@@ -371,6 +372,7 @@
       "ops": [
         {
           "op": "placeCore",
+          "actor": 0,
           "x": 5,
           "y": 0
         },

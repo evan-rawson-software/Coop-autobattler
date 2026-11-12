@@ -14,6 +14,7 @@ import {
   moveBuilding,
   placeCore,
   placeFromStash,
+  corePlayerAt,
   returnToStash,
   sealedProducers,
   type Json,
@@ -567,7 +568,13 @@ function resolveVotes(s: RunState, deps: RunDeps, fx: Effect[]): Next {
     const t = tally(s, all, streamLabels.vote('core', s.round, s.leg));
     const first = t.winner;
     const pos = first as { x: number; y: number };
-    const placed = placeCore(s.team, deps.content, deps.mapgenConfig, pos);
+    const placed = placeCore(
+      s.team,
+      deps.content,
+      deps.mapgenConfig,
+      corePlayerAt(s.team.map, deps.content, pos.x),
+      pos,
+    );
     if (!placed.ok) return fail(placed.reason, placed.detail);
     fx.push(voteResolvedEffect('core', all, t));
     fx.push({ type: 'core_placed', x: pos.x, y: pos.y });
@@ -703,7 +710,13 @@ function applyBuiltin(
     case 'propose_core': {
       if (!isInt(intent.x) || !isInt(intent.y)) return fail('invalid_intent');
       const pos = { x: intent.x, y: intent.y };
-      const check = placeCore(s.team, content, mapgenConfig, pos);
+      const check = placeCore(
+        s.team,
+        content,
+        mapgenConfig,
+        corePlayerAt(s.team.map, deps.content, pos.x),
+        pos,
+      );
       if (!check.ok) return fail(check.reason, check.detail);
       const proposals = pendingList(s, 'proposals');
       const known = proposals.some(

@@ -14,6 +14,7 @@ import {
   hashJson,
   placeFromStash,
   queryMap,
+  soleCore,
   validateGhostSnapshot,
   validateTeamState,
   type Cell,
@@ -78,17 +79,18 @@ function maximalBoard(round: number): GhostSnapshot {
   const partySize = 4;
   let team: TeamState = {
     ...createTeamState(snap.team.map),
-    core: snap.team.core,
+    cores: snap.team.cores,
   };
   const q = queryMap(team.map, content.terrain);
   const { width, height } = team.map;
   const taken = new Set<number>();
   const key = (x: number, y: number): number => y * width + x;
   const core = content.buildings.get('bld_core');
-  if (core === undefined || team.core === null) throw new Error('no core');
+  const coreAt = soleCore(team);
+  if (core === undefined || coreAt === null) throw new Error('no core');
   for (let dy = 0; dy < core.footprint.height; dy++) {
     for (let dx = 0; dx < core.footprint.width; dx++) {
-      taken.add(key(team.core.x + dx, team.core.y + dy));
+      taken.add(key(coreAt.x + dx, coreAt.y + dy));
     }
   }
   const budget = ghostValueBound(

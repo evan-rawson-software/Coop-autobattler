@@ -115,7 +115,7 @@ describe('stacking duration', () => {
   test('the dense four-plot battle (tier 1): same', () => {
     const lab = new Lab(bigBoard().map);
     lab.state = bigBoard();
-    lab.core(40, 6);
+    lab.core(40, 6, 1);
     const r = stacking(lab.state, lab.state, 1);
     expect(r.longest).toBeLessThanOrEqual(LONGEST_DENSE);
     expect(r.over50 / r.unitTicks).toBeLessThanOrEqual(SHARE50_DENSE);
@@ -127,7 +127,7 @@ describe('stacking duration, tier 3 and mixed', () => {
   test('dense four plots, tier 3 and tier 1 against tier 3', () => {
     const lab = new Lab(bigBoard().map);
     lab.state = bigBoard();
-    lab.core(40, 6);
+    lab.core(40, 6, 1);
     const t1 = lab.state;
     const heavy = new Lab(bigBoard().map);
     heavy.state = {

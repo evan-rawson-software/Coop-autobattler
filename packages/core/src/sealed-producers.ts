@@ -36,7 +36,13 @@ export function sealedProducers(
   // Side 0 is this team; the other side is the same board with nothing on it.
   const arena = createArena(
     team,
-    { ...team, core: null, buildings: [], conduits: [], stash: [] },
+    {
+      ...team,
+      cores: team.cores.map(() => null),
+      buildings: [],
+      conduits: [],
+      stash: [],
+    },
     0,
     content,
   );
