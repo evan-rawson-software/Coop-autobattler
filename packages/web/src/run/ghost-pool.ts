@@ -26,6 +26,7 @@
  * caller validates everything it reads.
  */
 import {
+  bucketKeyVersion,
   createMemoryGhostStore,
   evictionKeys,
   ghostStoreKey,
@@ -224,6 +225,35 @@ export function createIdbGhostStore(
       tx.objectStore(STORE).clear();
       await done(tx);
     },
+    async removeOtherVersions(keepVersion) {
+      const tx = db.transaction(STORE, 'readwrite');
+      const os = tx.objectStore(STORE);
+      const finished = done(tx);
+      try {
+        // Keys only: a row of the current version is never read.
+        const keys = await request(os.getAllKeys());
+        for (const k of keys) {
+          if (typeof k !== 'string' || k === SEQ_KEY) continue;
+          let bucket: unknown;
+          try {
+            bucket = (JSON.parse(k) as unknown[])[0];
+          } catch {
+            continue;
+          }
+          if (
+            typeof bucket === 'string' &&
+            bucketKeyVersion(bucket) !== keepVersion
+          ) {
+            os.delete(k);
+          }
+        }
+      } catch (e) {
+        tx.abort();
+        await finished.catch(() => undefined);
+        throw e;
+      }
+      await finished;
+    },
   };
 }
 
@@ -391,6 +421,29 @@ export function createLocalStorageGhostStore(
         ls.getItem(head + ghostStoreKey(bucket, ownerId, runId)),
       );
       return Promise.resolve(row === null ? null : row.value);
+    },
+    removeOtherVersions(keepVersion) {
+      try {
+        for (const k of keysWith(head)) {
+          const rest = k.slice(head.length);
+          let bucket: unknown;
+          try {
+            bucket = (JSON.parse(rest) as unknown[])[0];
+          } catch {
+            continue;
+          }
+          if (
+            typeof bucket === 'string' &&
+            bucketKeyVersion(bucket) !== keepVersion
+          ) {
+            ls.removeItem(k);
+            ls.removeItem(metaHead + rest);
+          }
+        }
+        return Promise.resolve();
+      } catch (e) {
+        return Promise.reject(e instanceof Error ? e : new Error(String(e)));
+      }
     },
     clear() {
       for (const k of keysWith(head)) ls.removeItem(k);

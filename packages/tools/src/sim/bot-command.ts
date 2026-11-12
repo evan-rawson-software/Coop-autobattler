@@ -4,7 +4,7 @@
  * on any rejected intent, crash, or a run that differs when played again
  * with the same seed (`verify`).
  */
-import { hashJson } from '@game/core';
+import { hashJson, isBorderEnd } from '@game/core';
 import {
   createGameDeps,
   playBotRun,
@@ -37,6 +37,27 @@ export function botDeps(ctx: SimContext): RunDeps {
     threats: ctx.threats,
     sim: ctx.sim,
   });
+}
+
+/** Border links that are joined (a sending and a receiving half at a spot). */
+export function joinedLinks(state: RunState): number {
+  const sending = new Set<string>();
+  const receiving = new Set<string>();
+  for (const c of state.team.conduits) {
+    if (isBorderEnd(c.to))
+      sending.add(`${String(c.to.border)}:${String(c.to.y)}`);
+    if (isBorderEnd(c.from))
+      receiving.add(`${String(c.from.border)}:${String(c.from.y)}`);
+  }
+  let n = 0;
+  for (const k of sending) if (receiving.has(k)) n++;
+  return n;
+}
+
+function meanOf(values: readonly number[]): string {
+  if (values.length === 0) return '-';
+  const sum = values.reduce((a, b) => a + b, 0);
+  return (sum / values.length).toFixed(1);
 }
 
 function pad(s: string, n: number): string {
@@ -88,6 +109,7 @@ function playOne(
   const options = {
     strategy,
     seed,
+    trackBattles: true,
     rerollCost: ctx.economy.rerollCost,
     ...(args.maxRounds === null ? {} : { maxRounds: args.maxRounds }),
   };
@@ -177,7 +199,16 @@ export function botCommand(
         `  ${pad(String(round), 7)}${pad(pct(pveWon, pve), 10)}${pad(pct(pvpWon, pvp), 10)}${String(reached)}`,
       );
     }
-    lines.push('  Runs:');
+    const battles = done.flatMap((r) => (r.result as BotRunResult).battles);
+    const links = done.map((r) =>
+      joinedLinks((r.result as BotRunResult).state),
+    );
+    lines.push(
+      `  Battle length (ticks) by party size ${String(args.party)}: pve mean ${meanOf(battles.filter((b) => b.kind === 'pve').map((b) => b.endTick))}, pvp mean ${meanOf(battles.filter((b) => b.kind === 'pvp').map((b) => b.endTick))} (${String(battles.length)} battles)`,
+      `  Cores standing at the end: party mean ${meanOf(battles.map((b) => b.coresStanding[0]))}, opponent mean ${meanOf(battles.map((b) => b.coresStanding[1]))}`,
+      `  Border links joined at the end of the run: mean ${meanOf(links)}`,
+      '  Runs:',
+    );
     for (const r of runs) {
       if (r.result === null) {
         lines.push(`    seed ${String(r.seed)}: did not finish`);
