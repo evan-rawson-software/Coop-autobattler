@@ -150,7 +150,9 @@
         "def",
         "px",
         "py",
-        "building"
+        "building",
+        "owner",
+        "target"
       ],
       "additionalProperties": false,
       "properties": {
@@ -182,6 +184,41 @@
           "description": "Centre, arena sub-cell units (CELL_UNITS = 240 per cell)."
         },
         "py": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "owner": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The unit's owner: the producing building's owner, or for a wave unit the plot of the column it enters on."
+        },
+        "target": {
+          "type": "integer",
+          "minimum": -1,
+          "description": "The player index of the enemy Core the unit heads for, or -1 when none stands."
+        }
+      }
+    },
+    {
+      "title": "unit_retargeted",
+      "description": "A unit's target Core was destroyed and it chose a new one (the nearest remaining enemy Core), recorded after the destruction events of the tick.",
+      "type": "object",
+      "required": ["tick", "type", "unit", "target"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "unit_retargeted"
+        },
+        "unit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "target": {
+          "type": "integer",
+          "minimum": -1,
+          "description": "The player index of the new target Core, or -1 when no enemy Core stands."
+        },
+        "tick": {
           "type": "integer",
           "minimum": 0
         }

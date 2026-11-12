@@ -193,6 +193,7 @@ describe('bounds: breach costs with health near the cap', () => {
     const f = computeBreach(
       ctx.arena,
       0,
+      0,
       (r) => ctx.maxHealth[r] ?? 0,
       simConfig.breachBaseCost,
       per,
@@ -214,7 +215,7 @@ describe('bounds: breach costs with health near the cap', () => {
       simConfig,
     );
     const huge = 3_000_000_000; // above the content cap: only reachable here
-    const f = computeBreach(ctx.arena, 0, () => huge, 10, 1);
+    const f = computeBreach(ctx.arena, 0, 0, () => huge, 10, 1);
     const outside = toArena(geom, 1, { x: 11, y: 3 });
     expect(f[outside.y * 24 + outside.x]).toBe(10 + huge);
     expect(f.every((v) => v >= -1)).toBe(true);
@@ -232,7 +233,7 @@ describe('bounds: breach costs with health near the cap', () => {
       simConfig,
     );
     expect(() =>
-      computeBreach(ctx.arena, 0, () => Number.MAX_SAFE_INTEGER, 10, 1),
+      computeBreach(ctx.arena, 0, 0, () => Number.MAX_SAFE_INTEGER, 10, 1),
     ).toThrow(RangeError);
   });
 });
@@ -249,14 +250,15 @@ describe('bounds: the (distance, cell) heap', () => {
     const n = width * height;
     const dist: number[] = new Array<number>(n).fill(-1);
     const done: boolean[] = new Array<boolean>(n).fill(false);
-    const core = got(ctx.arena.buildings[ctx.arena.coreRef[1]?.[0] ?? -1]);
+    const goalRef = ctx.arena.coreRef[1]?.[0] ?? -1;
+    const core = got(ctx.arena.buildings[goalRef]);
     for (const c of core.cells) {
       for (const [dx, dy] of NEIGHBORS) {
         const x = c.x + dx;
         const y = c.y + dy;
         if (x < 0 || y < 0 || x >= width || y >= height) continue;
         const k = y * width + x;
-        if (breachPassable(ctx.arena, 0, k)) dist[k] = 0;
+        if (breachPassable(ctx.arena, 0, k, goalRef)) dist[k] = 0;
       }
     }
     for (;;) {
@@ -277,7 +279,7 @@ describe('bounds: the (distance, cell) heap', () => {
         const ny = y + dy;
         if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
         const nk = ny * width + nx;
-        if (!breachPassable(ctx.arena, 0, nk)) continue;
+        if (!breachPassable(ctx.arena, 0, nk, goalRef)) continue;
         const cur = dist[nk] ?? -1;
         if (cur === -1 || through < cur) dist[nk] = through;
       }
@@ -320,7 +322,7 @@ describe('bounds: the (distance, cell) heap', () => {
       const hpOf = (r: number): number => hp[r] ?? 0;
       const per = round % 2 === 0 ? 1 : 3;
       const base = round % 3 === 0 ? 0 : 5;
-      const f = computeBreach(ctx.arena, 0, hpOf, base, per);
+      const f = computeBreach(ctx.arena, 0, 0, hpOf, base, per);
       expect(Array.from(f)).toEqual(reference(ctx, hpOf, base, per));
     }
   });
@@ -341,6 +343,7 @@ describe('bounds: the (distance, cell) heap', () => {
     const cell = MAX_BREACH_BASE_COST + MAX_HEALTH;
     const f = computeBreach(
       ctx.arena,
+      0,
       0,
       () => MAX_HEALTH,
       MAX_BREACH_BASE_COST,

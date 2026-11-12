@@ -101,6 +101,31 @@ same tick while the armies are still stalled). One-plot battles got faster
 because more of them end by a Core kill early. The dense tier 1 rate target of
 5 battles a second is no longer met (2.9); the enforced floor of 0.7 is.
 
+**One field per target Core (issue #133, PP-11).** A side now has a movement
+field and a breach field for each living enemy Core, computed on first use and
+dropped after every destruction, and every unit carries its own target. The
+cost was measured on the dense four-plot board of the bench (tier 1 and
+tier 3, mirrored against itself, single runs, machine shared with other work,
+so 20 to 30 percent noise) with one Core per side (one field) and with four
+Cores per side (a Core in every plot, owners by plot, so all four fields are
+used):
+
+| Dense four plots                      | One Core per side | Four Cores per side |
+| ------------------------------------- | ----------------- | ------------------- |
+| Tier 1: ticks / events                | 1528 / 23,808     | 2459 / 38,235       |
+| Tier 1: wall time per tick            | 0.23 ms           | 0.28 ms             |
+| Tier 3: ticks / events                | 2514 / 94,492     | 3101 / 113,884      |
+| Tier 3: wall time per tick            | 0.68 ms           | 0.87 to 1.04 ms     |
+
+The four-Core battles are different battles (units spread over four targets,
+so they last longer), so compare the time per tick: 20 to 50 percent more with
+four Cores, of which the fields are a small part (a field is one Dijkstra
+over the arena, computed once per Core between two
+destructions) and the rest is the longer fights. Rule b now looks at every
+living enemy Core for each unit that is not busy, a loop of at most the party
+size. The enforced floors are unchanged and still met; the budget is measured
+again with the rebalance (issue #145).
+
 Rows below are the earlier (stacking) baseline, kept for reference:
 
 | Battle                                   | Wall time | Ticks | Peak units per side | Events | Event log (JSON) |

@@ -538,7 +538,9 @@ describe('save and restore at any tick', () => {
       // The cache holds the same candidate cells (destroyed buildings are not
       // in a restored arena, so compare what is cached, not the indices).
       const cached = (c: typeof ctx) =>
-        c.spawnCells.filter((x) => x !== undefined).map((x) => [...x]);
+        [...c.spawnCells.entries()]
+          .sort((p, q) => p[0] - q[0])
+          .map(([, x]) => [...x]);
       // (Rebuilt on demand, so only when the producer still had to place its
       // unit after the restore.)
       if (at <= 301) {
