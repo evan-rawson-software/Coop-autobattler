@@ -24,6 +24,9 @@ import { AppShell, Panel } from '../shell/AppShell.js';
 import { drawCoreOverlay, type Candidate } from './overlay.js';
 import {
   hintText,
+  isRepeatClick,
+  visibleProblem,
+  type StoredProblem,
   kitRows,
   coreCells,
   legalSet,
@@ -43,7 +46,11 @@ export function CoreScreen(props: { run: RunHandle }) {
   const team = view.run.team;
   const acting = view.acting;
   const [hover, setHover] = useState<Cell | null>(null);
-  const [problem, setProblem] = useState<string | null>(null);
+  const [stored, setStored] = useState<StoredProblem | null>(null);
+  const problem = visibleProblem(stored, acting);
+  const setProblem = (text: string | null): void => {
+    setStored(text === null ? null : { acting, text });
+  };
   const [busy, setBusy] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
   // The acting player's chosen spot is the one the run holds for them.
@@ -166,6 +173,11 @@ export function CoreScreen(props: { run: RunHandle }) {
     };
   }, []);
   const onSelect = (cell: Cell): void => {
+    // A repeat click on the chosen spot changes nothing: send nothing.
+    if (isRepeatClick(selectedRef.current, cell)) {
+      setProblem(isReady ? reasonMessage('locked_ready') : null);
+      return;
+    }
     const v = verdictAt(team, content, cell, acting);
     if (!v.ok) {
       setProblem(v.text);
@@ -190,6 +202,8 @@ export function CoreScreen(props: { run: RunHandle }) {
     });
   };
 
+  const solo = view.run.players.length === 1;
+  const readyWho = solo ? 'you are Ready' : 'everyone is Ready';
   const kit = kitRows(economy, content);
   const routeCount = paths?.length ?? 0;
 
@@ -200,8 +214,8 @@ export function CoreScreen(props: { run: RunHandle }) {
         <Panel title="The Core" id="panel-core">
           <p>
             Pick a {fp.width} × {fp.height} spot for your Core in your own area.
-            You can change it until you are Ready; once everyone is Ready it
-            cannot be moved for the rest of the run.
+            You can change it until you are Ready; once {readyWho} it cannot be
+            moved for the rest of the run.
           </p>
           <p class="muted">
             Deep is safer. Forward shortens your supply lines.
@@ -262,8 +276,8 @@ export function CoreScreen(props: { run: RunHandle }) {
             ))}
           </ul>
           <p class="muted">
-            When every player is Ready you go to the Build screen, then to the
-            first PvE battle.
+            {solo ? 'When you are Ready' : 'When every player is Ready'} you go
+            to the Build screen, then to the first PvE battle.
           </p>
         </Panel>
       }

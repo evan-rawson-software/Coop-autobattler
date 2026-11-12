@@ -465,6 +465,38 @@ describe('result reasons', () => {
     expect(reasonText('tiebreak_attacker', 'Core')).toMatch(/attacker/);
     expect(reasonText('core_destroyed', 'Heart')).toMatch(/Heart/);
   });
+
+  const side = (standing: number, hp: number, max = 100) => ({
+    coresStanding: standing,
+    coreHealth: hp,
+    coreMaxHealth: max,
+  });
+  test('the result line names the deciding step of a time limit', () => {
+    const byCount = reasonText('time_limit', 'Core', [
+      side(2, 10),
+      side(1, 90),
+    ]);
+    expect(byCount).toMatch(/more Cores standing wins: yours 2, theirs 1/);
+    const byHealth = reasonText('time_limit', 'Core', [
+      side(1, 80),
+      side(1, 30),
+    ]);
+    expect(byHealth).toMatch(/equal Cores standing/);
+    expect(byHealth).toMatch(/yours 80 \/ 100, theirs 30 \/ 100/);
+  });
+  test('a tie says whether it came from a double fall or the time limit', () => {
+    const fall = reasonText('tiebreak_kills', 'Core', [side(0, 0), side(0, 0)]);
+    expect(fall).toMatch(/same tick/);
+    const limit = reasonText('tiebreak_kills', 'Core', [
+      side(1, 50),
+      side(1, 50),
+    ]);
+    expect(limit).toMatch(/Time ran out with equal Cores standing/);
+    expect(limit).not.toMatch(/same tick/);
+    expect(
+      reasonText('tiebreak_overkill', 'Core', [side(0, 0), side(0, 0)]),
+    ).toMatch(/less overkill/);
+  });
 });
 
 describe('sample rewards', () => {

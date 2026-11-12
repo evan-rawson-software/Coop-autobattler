@@ -14,7 +14,8 @@ export type KnownReason =
   | 'invalid_state'
   | 'ghost_selection_pending'
   | 'already_selected'
-  | 'replay_mismatch';
+  | 'replay_mismatch'
+  | 'core_not_placed';
 
 export const REASON_MESSAGES: Readonly<Record<KnownReason, string>> = {
   // Placement
@@ -34,6 +35,7 @@ export const REASON_MESSAGES: Readonly<Record<KnownReason, string>> = {
   node_reserved: 'Resource nodes are kept for extractors.',
   // Core placement
   core_already_placed: 'The Core is already placed.',
+  core_not_placed: 'Choose a spot for the Core first.',
   blocked: 'The Core cannot sit on water or cliffs.',
   on_node: 'The Core cannot sit on a resource node.',
   too_far_forward: 'Too close to the front edge for the Core.',
@@ -103,6 +105,11 @@ export function reasonMessage(
   const text = base ?? `Not allowed (${reason}).`;
   if (reason === 'ghost_selection_pending' && cause !== undefined) {
     return `${text} It could not be chosen yet: ${reasonMessage(cause.reason, cause.detail)}`;
+  }
+  // A refused Ready names the player who has to act (`detail` "player N").
+  const who = detail === undefined ? null : /^player (\d+)$/.exec(detail);
+  if (who !== null) {
+    return `${text} Player ${String(Number(who[1]) + 1)} has to pick a spot.`;
   }
   const cell = detail === undefined ? null : parseCell(detail);
   return cell === null
