@@ -256,6 +256,11 @@ function at<T>(list: readonly T[], i: number): T {
 
 const cmp = (a: number, b: number): number => a - b;
 
+/** Plan output value: nothing attached (an item sent here is lost). */
+const NO_OUTPUT = -1;
+/** Plan output value: an open sending half, connected but never accepting. */
+const OPEN_HALF = -2;
+
 interface Compiled {
   readonly sim: BoardSim;
   readonly plan: FlowPlan;
@@ -274,10 +279,21 @@ function compile(
     return def;
   };
 
-  // Conduits, by ID.
-  const conduitIndex = new Map<number, number>();
-  state.conduits.forEach((c, i) => conduitIndex.set(c.id, i));
+  // Conduits, by ID: one per flow edge, so one per link (under the sending
+  // half's id; the receiving half's id points at the same entry). Open
+  // halves have no entry (PP-4).
   const edgeOf = new Map(graph.edges.map((e) => [e.conduitId, e]));
+  const edgeOfAny = new Map(graph.edges.map((e) => [e.conduitId, e]));
+  for (const e of graph.edges) {
+    if (e.linkedConduit !== null) edgeOfAny.set(e.linkedConduit, e);
+  }
+  const simConduits = state.conduits.filter((c) => edgeOf.has(c.id));
+  const conduitIndex = new Map<number, number>();
+  simConduits.forEach((c, i) => {
+    conduitIndex.set(c.id, i);
+    const linked = edgeOf.get(c.id)?.linkedConduit ?? null;
+    if (linked !== null) conduitIndex.set(linked, i);
+  });
   const orderPos = new Map<string, number>();
   graph.order.forEach((k, i) => orderPos.set(k, i));
 
@@ -323,7 +339,9 @@ function compile(
       return {
         toRoute: true,
         index: ri,
-        input: node.inputs.findIndex((i) => i.conduit === conduitId),
+        input: node.inputs.findIndex(
+          (i) => i.conduit === (e.linkedConduit ?? conduitId),
+        ),
       };
     }
     const building = Number(e.to);
@@ -337,25 +355,26 @@ function compile(
     };
   };
 
-  const planConduits: PlanConduit[] = state.conduits.map((c) => ({
+  const planConduits: PlanConduit[] = simConduits.map((c) => ({
     id: c.id,
-    length: c.cells.length,
+    length: edgeOf.get(c.id)?.length ?? 0,
     to: targetOf(c.id),
   }));
-  const conduitOrder = state.conduits
+  const conduitOrder = simConduits
     .map((_c, i) => i)
     .sort((a, b) => {
-      const ea = edgeOf.get(at(state.conduits, a).id);
-      const eb = edgeOf.get(at(state.conduits, b).id);
+      const ea = edgeOf.get(at(simConduits, a).id);
+      const eb = edgeOf.get(at(simConduits, b).id);
       const pa = orderPos.get(ea?.from ?? '') ?? 0;
       const pb = orderPos.get(eb?.from ?? '') ?? 0;
-      return (
-        cmp(pb, pa) || cmp(at(state.conduits, a).id, at(state.conduits, b).id)
-      );
+      return cmp(pb, pa) || cmp(at(simConduits, a).id, at(simConduits, b).id);
     });
 
   const idxOf = (id: number | null): number =>
     id === null ? -1 : (conduitIndex.get(id) ?? -1);
+  /** A plan output: -1 none, `OPEN_HALF` an open sending half, else a conduit. */
+  const outIdx = (o: { conduit: number | null; open?: true }): number =>
+    o.open === true ? OPEN_HALF : idxOf(o.conduit);
   // Source index (in sim.sources order) by building ID.
   const sourceIndex = new Map<number, number>();
   for (const b of state.buildings) {
@@ -364,11 +383,8 @@ function compile(
   /** The route or source behind a direct (zero-length) input conduit. */
   const directOrigin = (conduit: number | null): [number, number] => {
     if (conduit === null) return [-1, -1];
-    const c = state.conduits[conduitIndex.get(conduit) ?? -1];
-    const e = edgeOf.get(conduit);
-    if (c === undefined || e === undefined || c.cells.length > 0) {
-      return [-1, -1];
-    }
+    const e = edgeOfAny.get(conduit);
+    if (e === undefined || e.length > 0) return [-1, -1];
     return [
       routeIndex.get(e.from) ?? -1,
       sourceIndex.get(Number(e.from)) ?? -1,
@@ -380,7 +396,7 @@ function compile(
     inputs: n.inputs.map((i) => idxOf(i.conduit)),
     inputRoute: n.inputs.map((i) => directOrigin(i.conduit)[0]),
     inputSource: n.inputs.map((i) => directOrigin(i.conduit)[1]),
-    outputs: n.outputs.map((o) => idxOf(o.conduit)),
+    outputs: n.outputs.map(outIdx),
   }));
   const routeOrder: number[] = [];
   for (const k of graph.order) {
@@ -393,10 +409,7 @@ function compile(
   });
 
   // Sources: every placed source, connected or not.
-  const bySide = new Map<string, number>();
-  state.conduits.forEach((c, i) =>
-    bySide.set(`${String(c.from.building)}:${c.from.side}`, i),
-  );
+  const nodeOfBuilding = new Map(graph.nodes.map((n) => [n.key, n]));
   const sourceSims: SourceSim[] = [];
   const planSources: PlanSource[] = [];
   for (const b of state.buildings) {
@@ -410,9 +423,12 @@ function compile(
       throw new Error(`Source ${String(b.id)} has an invalid tier.`);
     const outs = rotateBuilding(def, b.rotation).outputs;
     planSources.push({
-      outputs: SIDE_ORDER.filter((s) => outs.includes(s)).map(
-        (s) => bySide.get(`${String(b.id)}:${s}`) ?? -1,
-      ),
+      outputs: SIDE_ORDER.filter((s) => outs.includes(s)).map((s) => {
+        const o = nodeOfBuilding
+          .get(String(b.id))
+          ?.outputs.find((x) => x.side === s);
+        return o === undefined ? -1 : outIdx(o);
+      }),
       interval: tier.intervalTicks,
     });
     sourceSims.push({
@@ -431,9 +447,9 @@ function compile(
     tick: 0,
     bufferCapacity: simConfig.inputBufferUnits,
     sources: sourceSims,
-    conduits: state.conduits.map((c) => ({
+    conduits: simConduits.map((c) => ({
       id: c.id,
-      slots: c.cells.map(() => null),
+      slots: Array.from({ length: edgeOf.get(c.id)?.length ?? 0 }, () => null),
     })),
     routes: routeNodes.map((n) => ({
       key: n.key,
@@ -748,8 +764,10 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
       for (let k = 0; k < n; k++) {
         const o = (route.pointer + k) % n;
         const c = at(pr.outputs, o);
-        if (c < 0) continue;
+        if (c === NO_OUTPUT) continue;
         connected = true;
+        // An open half is connected but never accepts.
+        if (c === OPEN_HALF) continue;
         if (pushOnto(sim, ctx, winners, c, item)) {
           route.held = null;
           route.pointer = (o + 1) % n;
@@ -760,7 +778,8 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
       if (!placed && !connected) lose(sim, ctx, route, item);
     } else {
       const c = at(pr.outputs, 0);
-      if (c < 0) lose(sim, ctx, route, item);
+      if (c === NO_OUTPUT) lose(sim, ctx, route, item);
+      else if (c === OPEN_HALF) continue;
       else if (pushOnto(sim, ctx, winners, c, item)) route.held = null;
     }
   }
@@ -777,8 +796,9 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
     for (let k = 0; k < n; k++) {
       const o = (s.pointer + k) % n;
       const c = at(ps.outputs, o);
-      if (c < 0) continue;
+      if (c === NO_OUTPUT) continue;
       connected = true;
+      if (c === OPEN_HALF) continue;
       if (pushOnto(sim, ctx, winners, c, s.resource)) {
         s.pointer = (o + 1) % n;
         placed = true;

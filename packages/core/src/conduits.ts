@@ -16,12 +16,16 @@ import { sortedKeys } from './hash.js';
 import { isRecord } from './load-util.js';
 import { queryMap, type Cell, type GameMap, type MapQuery } from './map.js';
 import type { ResourceId } from './resources.js';
-import type {
-  Conduit,
-  OpFailure,
-  PlacedBuilding,
-  TeamContent,
-  TeamState,
+import {
+  buildingEnd,
+  isBorderEnd,
+  type BorderEnd,
+  type Conduit,
+  type ConduitEnd,
+  type OpFailure,
+  type PlacedBuilding,
+  type TeamContent,
+  type TeamState,
 } from './team-state.js';
 
 // ---------------------------------------------------------------------------
@@ -30,9 +34,11 @@ import type {
 export type ConduitReason =
   | 'unknown_building'
   | 'not_owner'
+  | 'invalid_border'
   | 'not_an_output'
   | 'not_an_input'
   | 'side_in_use'
+  | 'border_spot_in_use'
   | 'invalid_path'
   | 'outside_own_plot'
   | 'blocked_by_feature'
@@ -179,6 +185,19 @@ interface Occupancy {
   readonly outs: Map<string, number>;
   readonly ins: Map<string, number>;
   readonly cells: Map<number, number>;
+  /** Halves per `owner:border:y` spot. */
+  readonly spots: Map<string, number>;
+}
+
+/** The border spot of a half, or null for an ordinary conduit. */
+function spotOf(c: Conduit): BorderEnd | null {
+  if (isBorderEnd(c.from)) return c.from;
+  if (isBorderEnd(c.to)) return c.to;
+  return null;
+}
+
+function spotKey(owner: number, sp: BorderEnd): string {
+  return `${String(owner)}:${String(sp.border)}:${String(sp.y)}`;
 }
 
 function endKey(e: { building: number; side: Side }): string {
@@ -189,26 +208,42 @@ function occupancyOf(map: GameMap, conduits: readonly Conduit[]): Occupancy {
   const outs = new Map<string, number>();
   const ins = new Map<string, number>();
   const cells = new Map<number, number>();
+  const spots = new Map<string, number>();
   const bump = <K>(m: Map<K, number>, k: K): void => {
     m.set(k, (m.get(k) ?? 0) + 1);
   };
   for (const o of conduits) {
-    bump(outs, endKey(o.from));
-    bump(ins, endKey(o.to));
+    const f = buildingEnd(o.from);
+    const t = buildingEnd(o.to);
+    if (f !== null) bump(outs, endKey(f));
+    if (t !== null) bump(ins, endKey(t));
+    const sp = spotOf(o);
+    if (sp !== null) bump(spots, spotKey(o.owner, sp));
     for (const cell of o.cells) {
       if (isInt(cell.x) && isInt(cell.y))
         bump(cells, cellKey(map, cell.x, cell.y));
     }
   }
-  return { outs, ins, cells };
+  return { outs, ins, cells, spots };
 }
 
 /**
- * Check one conduit against the board and the other conduits. Rules in this
- * order, the first failure reported: unknown_building, not_an_output,
- * not_an_input, side_in_use, invalid_path, blocked_by_feature, overlaps_core,
- * overlaps_building, crosses_conduit. (resource_mismatch and would_loop need
- * the whole network and are checked after these, by the caller.)
+ * The owner's border cell of a spot (PP-4): `(xL, y)` for player `border`,
+ * `(xR, y)` for player `border + 1`.
+ */
+function ownBorderCell(map: GameMap, owner: number, sp: BorderEnd): Cell {
+  const xL = (sp.border + 1) * map.plotWidth - 1;
+  return { x: owner === sp.border ? xL : xL + 1, y: sp.y };
+}
+
+/**
+ * Check one conduit (or half) against the board and the other conduits.
+ * Rules in this order, the first failure reported: unknown_building,
+ * not_owner, invalid_border, not_an_output, not_an_input, side_in_use,
+ * border_spot_in_use, invalid_path, outside_own_plot, blocked_by_feature,
+ * overlaps_core, overlaps_building, crosses_conduit. (resource_mismatch and
+ * would_loop need the whole network and are checked after these, by the
+ * caller.)
  */
 function checkConduit(
   view: View,
@@ -217,34 +252,69 @@ function checkConduit(
   self: boolean,
 ): Failure | null {
   const map = view.state.map;
-  const a = view.byId.get(c.from.building);
-  const b = view.byId.get(c.to.building);
-  if (a === undefined || b === undefined) {
+  const fe = buildingEnd(c.from);
+  const te = buildingEnd(c.to);
+  if (fe === null && te === null) {
+    return {
+      ok: false,
+      reason: 'invalid_border',
+      detail: 'a conduit needs a building end',
+    };
+  }
+  const a = fe === null ? undefined : view.byId.get(fe.building);
+  const b = te === null ? undefined : view.byId.get(te.building);
+  if ((fe !== null && a === undefined) || (te !== null && b === undefined)) {
     return {
       ok: false,
       reason: 'unknown_building',
-      detail: String(a === undefined ? c.from.building : c.to.building),
+      detail: String(
+        fe !== null && a === undefined ? fe.building : te?.building,
+      ),
     };
   }
-  if (a.b.owner !== c.owner || b.b.owner !== c.owner) {
-    return {
-      ok: false,
-      reason: 'not_owner',
-      detail: String(a.b.owner !== c.owner ? c.from.building : c.to.building),
-    };
+  if (a !== undefined && a.b.owner !== c.owner) {
+    return { ok: false, reason: 'not_owner', detail: String(a.b.id) };
   }
-  if (!a.outputs.includes(c.from.side)) {
-    return { ok: false, reason: 'not_an_output', detail: c.from.side };
+  if (b !== undefined && b.b.owner !== c.owner) {
+    return { ok: false, reason: 'not_owner', detail: String(b.b.id) };
   }
-  if (!b.inputs.some((i) => i.side === c.to.side)) {
-    return { ok: false, reason: 'not_an_input', detail: c.to.side };
+  const sp = spotOf(c);
+  if (sp !== null) {
+    const ok =
+      isInt(sp.border) &&
+      isInt(sp.y) &&
+      sp.border >= 0 &&
+      sp.border <= map.partySize - 2 &&
+      sp.y >= 0 &&
+      sp.y < map.height &&
+      (c.owner === sp.border || c.owner === sp.border + 1);
+    if (!ok) {
+      return {
+        ok: false,
+        reason: 'invalid_border',
+        detail: `${String(sp.border)}, ${String(sp.y)}`,
+      };
+    }
+  }
+  if (fe !== null && a !== undefined && !a.outputs.includes(fe.side)) {
+    return { ok: false, reason: 'not_an_output', detail: fe.side };
+  }
+  if (
+    te !== null &&
+    b !== undefined &&
+    !b.inputs.some((i) => i.side === te.side)
+  ) {
+    return { ok: false, reason: 'not_an_input', detail: te.side };
   }
   const own = self ? 1 : 0;
-  if ((occ.outs.get(endKey(c.from)) ?? 0) > own) {
+  if (fe !== null && (occ.outs.get(endKey(fe)) ?? 0) > own) {
     return { ok: false, reason: 'side_in_use', detail: 'output' };
   }
-  if ((occ.ins.get(endKey(c.to)) ?? 0) > own) {
+  if (te !== null && (occ.ins.get(endKey(te)) ?? 0) > own) {
     return { ok: false, reason: 'side_in_use', detail: 'input' };
+  }
+  if (sp !== null && (occ.spots.get(spotKey(c.owner, sp)) ?? 0) > own) {
+    return { ok: false, reason: 'border_spot_in_use' };
   }
 
   // invalid_path
@@ -254,7 +324,38 @@ function checkConduit(
     detail,
   });
   const cells = c.cells;
-  if (directlyFaces(a, c.from.side, b, c.to.side)) {
+  // Where the path must start and end: a cell outside a building side, or
+  // the owner's border cell of the spot.
+  const outsideOf = (e: Entry, side: Side) => (cell: Cell) =>
+    outsideCells(e.box, side).some((o) => o.x === cell.x && o.y === cell.y);
+  let direct: boolean;
+  let startOk: (cell: Cell) => boolean;
+  let endOk: (cell: Cell) => boolean;
+  if (sp === null) {
+    const ea = a as Entry;
+    const eb = b as Entry;
+    const fs = (fe as ConduitEnd).side;
+    const ts = (te as ConduitEnd).side;
+    direct = directlyFaces(ea, fs, eb, ts);
+    startOk = outsideOf(ea, fs);
+    endOk = outsideOf(eb, ts);
+  } else {
+    const border = ownBorderCell(map, c.owner, sp);
+    const onBorder = (cell: Cell): boolean =>
+      cell.x === border.x && cell.y === border.y;
+    const e = (a ?? b) as Entry;
+    const side = ((fe ?? te) as ConduitEnd).side;
+    const facing: Side = c.owner === sp.border ? 'east' : 'west';
+    direct = inBox(e.box, border) && side === facing;
+    if (fe !== null) {
+      startOk = outsideOf(e, side);
+      endOk = onBorder;
+    } else {
+      startOk = onBorder;
+      endOk = outsideOf(e, side);
+    }
+  }
+  if (direct) {
     if (cells.length !== 0) return bad('a direct connection has no cells');
   } else {
     if (cells.length === 0) return bad('sides do not face; cells are needed');
@@ -283,21 +384,19 @@ function checkConduit(
         return bad(`cells ${String(i - 1)} and ${String(i)} are not adjacent`);
       }
     }
-    const first = cells[0] as Cell;
-    const last = cells[cells.length - 1] as Cell;
-    if (
-      !outsideCells(a.box, c.from.side).some(
-        (o) => o.x === first.x && o.y === first.y,
-      )
-    ) {
-      return bad('the first cell is not outside the from side');
+    if (!startOk(cells[0] as Cell)) {
+      return bad(
+        fe !== null || sp === null
+          ? 'the first cell is not outside the from side'
+          : 'the first cell is not on the border cell',
+      );
     }
-    if (
-      !outsideCells(b.box, c.to.side).some(
-        (o) => o.x === last.x && o.y === last.y,
-      )
-    ) {
-      return bad('the last cell is not outside the to side');
+    if (!endOk(cells[cells.length - 1] as Cell)) {
+      return bad(
+        fe === null || sp === null
+          ? 'the last cell is not outside the to side'
+          : 'the last cell is not on the border cell',
+      );
     }
   }
 
@@ -329,6 +428,73 @@ function checkConduit(
     }
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// The joined network (PP-4)
+
+/** A building end of a flow edge. */
+interface BEnd {
+  readonly building: number;
+  readonly side: Side;
+}
+
+/**
+ * One edge of the joined network: an ordinary conduit, a link (a sending half
+ * joined to a receiving half) or an open sending half (`to` is null). Open
+ * receiving halves have no edge. `id` is the conduit's, or the sending
+ * half's; `linked` is the receiving half's id for a link.
+ */
+interface Edge {
+  readonly id: number;
+  readonly linked: number | null;
+  readonly from: BEnd;
+  readonly to: BEnd | null;
+  readonly length: number;
+}
+
+/** Joining is derived from the halves every time, never stored. */
+function joinEdges(conduits: readonly Conduit[]): Edge[] {
+  const halves = new Map<string, Conduit>();
+  for (const c of conduits) {
+    const sp = spotOf(c);
+    if (sp === null) continue;
+    const k = spotKey(c.owner, sp);
+    if (!halves.has(k)) halves.set(k, c);
+  }
+  const out: Edge[] = [];
+  for (const c of conduits) {
+    const fe = buildingEnd(c.from);
+    const te = buildingEnd(c.to);
+    const sp = spotOf(c);
+    if (sp === null) {
+      if (fe !== null && te !== null) {
+        out.push({
+          id: c.id,
+          linked: null,
+          from: fe,
+          to: te,
+          length: c.cells.length,
+        });
+      }
+      continue;
+    }
+    if (fe === null) continue; // a receiving half: part of its link, or open
+    const other = halves.get(
+      spotKey(c.owner === sp.border ? sp.border + 1 : sp.border, sp),
+    );
+    const ote = other === undefined ? null : buildingEnd(other.to);
+    const joined =
+      other !== undefined && ote !== null && isBorderEnd(other.from);
+    out.push({
+      id: c.id,
+      linked: joined ? other.id : null,
+      from: fe,
+      to: joined ? ote : null,
+      length: c.cells.length + (joined ? other.cells.length : 0),
+    });
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -452,43 +618,52 @@ function nodeRefOf(key: string): NodeRef {
   };
 }
 
-/** The usable conduits: both ends are known buildings. */
-function usable(view: View, conduits: readonly Conduit[]): Conduit[] {
-  return conduits.filter(
-    (c) => view.byId.has(c.from.building) && view.byId.has(c.to.building),
+/** The usable edges: both ends (when there is one) are known buildings. */
+function usable(view: View, edges: readonly Edge[]): Edge[] {
+  return edges.filter(
+    (c) =>
+      view.byId.has(c.from.building) &&
+      (c.to === null || view.byId.has(c.to.building)),
   );
 }
 
-function hasLoop(view: View, conduits: readonly Conduit[]): boolean {
-  const edges = usable(view, conduits).map((c) => ({
-    from: nodeKey(view, c.from, 'out'),
-    to: nodeKey(view, c.to, 'in'),
-  }));
+function hasLoop(view: View, edges: readonly Edge[]): boolean {
+  const list: { from: string; to: string }[] = [];
+  for (const c of usable(view, edges)) {
+    if (c.to === null) continue;
+    list.push({
+      from: nodeKey(view, c.from, 'out'),
+      to: nodeKey(view, c.to, 'in'),
+    });
+  }
   const keys = new Set<string>();
-  for (const e of edges) {
+  for (const e of list) {
     keys.add(e.from);
     keys.add(e.to);
   }
   const nodes = [...keys].map(nodeRefOf);
-  return topoOrder(nodes, edges).length < nodes.length;
+  return topoOrder(nodes, list).length < nodes.length;
 }
 
 /**
- * The resource each conduit carries (null when not determined), safe on
- * cyclic or half-built networks: a conduit that depends on itself is null.
+ * The resource each edge carries, by edge id (null when not determined),
+ * safe on cyclic or half-built networks: an edge that depends on itself is
+ * null.
  */
 function computeResources(
   view: View,
-  conduits: readonly Conduit[],
+  edges: readonly Edge[],
 ): Map<number, ResourceId | null> {
-  const list = usable(view, conduits);
-  const byTo = new Map<string, Conduit>();
-  for (const c of list) byTo.set(`${String(c.to.building)}:${c.to.side}`, c);
+  const list = usable(view, edges);
+  const byTo = new Map<string, Edge>();
+  for (const c of list) {
+    if (c.to !== null) byTo.set(`${String(c.to.building)}:${c.to.side}`, c);
+  }
   const memo = new Map<number, ResourceId | null>();
   const visiting = new Set<number>();
-  const upstream = (building: number, side: Side): Conduit | undefined =>
+  const upstream = (building: number, side: Side): Edge | undefined =>
     byTo.get(`${String(building)}:${side}`);
-  const carry = (c: Conduit): ResourceId | null => {
+  const carry = (c: Edge): ResourceId | null => {
     const known = memo.get(c.id);
     if (known !== undefined) return known;
     if (visiting.has(c.id)) return null;
@@ -523,23 +698,25 @@ function computeResources(
 /** A description of the first resource mismatch in the network, or null. */
 function findMismatch(
   view: View,
-  conduits: readonly Conduit[],
+  edges: readonly Edge[],
   res: ReadonlyMap<number, ResourceId | null>,
 ): string | null {
-  const list = usable(view, conduits);
+  const list = usable(view, edges).filter((c) => c.to !== null);
   for (const c of list) {
-    const e = view.byId.get(c.to.building);
+    const to = c.to as BEnd;
+    const e = view.byId.get(to.building);
     if (e === undefined || e.def.kind === 'route') continue;
-    const need = e.inputs.find((i) => i.side === c.to.side)?.resource;
+    const need = e.inputs.find((i) => i.side === to.side)?.resource;
     const got = res.get(c.id) ?? null;
     if (need !== undefined && got !== null && got !== need) {
       return `conduit ${String(c.id)} carries ${got} into building ${String(e.b.id)}, which takes ${need}`;
     }
   }
-  // The first conduit (in list order) into each building side.
-  const firstInto = new Map<string, Conduit>();
+  // The first edge (in list order) into each building side.
+  const firstInto = new Map<string, Edge>();
   for (const x of list) {
-    const k = `${String(x.to.building)}:${x.to.side}`;
+    const to = x.to as BEnd;
+    const k = `${String(to.building)}:${to.side}`;
     if (!firstInto.has(k)) firstInto.set(k, x);
   }
   for (const e of view.byId.values()) {
@@ -561,10 +738,15 @@ function findMismatch(
 // ---------------------------------------------------------------------------
 // Public operations
 
+/** A conduit end as given by a caller: a building side or a border spot. */
+export type ConduitEndArg =
+  { building: number; side: string } | { border: number; y: number };
+
 /**
- * Add a conduit. The new conduit's ID is `state.nextId`. Rules, in this
- * fixed order, the first failure reported: unknown_building, not_owner,
- * not_an_output, not_an_input, side_in_use, invalid_path, outside_own_plot,
+ * Add a conduit, or a half of a border link (PP-4). The new conduit's ID is
+ * `state.nextId`. Rules, in this fixed order, the first failure reported:
+ * unknown_building, not_owner, invalid_border, not_an_output, not_an_input,
+ * side_in_use, border_spot_in_use, invalid_path, outside_own_plot,
  * blocked_by_feature, overlaps_core, overlaps_building, crosses_conduit,
  * resource_mismatch, would_loop. An `actor` that is no player index owns no
  * building and so gives not_owner.
@@ -574,13 +756,20 @@ export function addConduit(
   content: TeamContent,
   args: {
     actor: number;
-    from: { building: number; side: string };
-    to: { building: number; side: string };
+    from: ConduitEndArg;
+    to: ConduitEndArg;
     cells: readonly Cell[];
   },
 ): AddConduitResult {
-  const end = (e: unknown): { building: number; side: Side } => {
+  const end = (e: unknown): ConduitEnd | BorderEnd => {
     const r = isRecord(e) ? e : {};
+    if ('border' in r) {
+      // Not integers when malformed: fails the border check.
+      return {
+        border: isInt(r['border']) ? r['border'] : Number.NaN,
+        y: isInt(r['y']) ? r['y'] : Number.NaN,
+      };
+    }
     return {
       building: isInt(r['building']) ? r['building'] : 0,
       // Not a real side: fails the output/input check.
@@ -612,15 +801,12 @@ export function addConduit(
   );
   if (failure !== null) return failure;
   const conduits = [...state.conduits, candidate];
-  const mismatch = findMismatch(
-    view,
-    conduits,
-    computeResources(view, conduits),
-  );
+  const edges = joinEdges(conduits);
+  const mismatch = findMismatch(view, edges, computeResources(view, edges));
   if (mismatch !== null) {
     return { ok: false, reason: 'resource_mismatch', detail: mismatch };
   }
-  if (hasLoop(view, conduits)) return { ok: false, reason: 'would_loop' };
+  if (hasLoop(view, edges)) return { ok: false, reason: 'would_loop' };
   return {
     ok: true,
     id: candidate.id,
@@ -630,7 +816,8 @@ export function addConduit(
 
 /**
  * The resource a conduit carries, or null when it is not determined yet (or
- * the ID is unknown). See "Resource typing" in the rules reference.
+ * the ID is unknown). A receiving half has the resource of its link, and
+ * null while it is open. See "Resource typing" in the rules reference.
  */
 export function conduitResource(
   state: TeamState,
@@ -638,7 +825,10 @@ export function conduitResource(
   conduitId: number,
 ): ResourceId | null {
   const view = makeView(state, content);
-  return computeResources(view, state.conduits).get(conduitId) ?? null;
+  const edges = joinEdges(state.conduits);
+  const edge = edges.find((e) => e.id === conduitId || e.linked === conduitId);
+  if (edge === undefined) return null;
+  return computeResources(view, edges).get(edge.id) ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -649,7 +839,10 @@ export type FlowNodeKind =
 
 export interface FlowInput {
   readonly side: Side;
-  /** ID of the conduit attached to this input side, or null. */
+  /**
+   * ID of the conduit attached to this input side, or null (also null for a
+   * receiving half that is open). For a link it is the receiving half's id.
+   */
   readonly conduit: number | null;
   /** The resource this input requires (consumers only), else null. */
   readonly requires: ResourceId | null;
@@ -658,6 +851,11 @@ export interface FlowInput {
 export interface FlowOutput {
   readonly side: Side;
   readonly conduit: number | null;
+  /**
+   * Present (and true) only for an open sending half: a connected output
+   * that never accepts (PP-4).
+   */
+  readonly open?: true;
 }
 
 export interface FlowNode {
@@ -677,13 +875,16 @@ export interface FlowNode {
 }
 
 export interface FlowEdge {
+  /** The conduit's id; for a link the sending half's id. */
   readonly conduitId: number;
+  /** The receiving half's id for a link, else null. */
+  readonly linkedConduit: number | null;
   /** Node keys. */
   readonly from: string;
   readonly to: string;
   readonly fromSide: Side;
   readonly toSide: Side;
-  /** Number of path cells; 0 for a direct connection. */
+  /** Number of path cells (both halves for a link); 0 for a direct connection. */
   readonly length: number;
   readonly resource: ResourceId | null;
 }
@@ -700,41 +901,53 @@ export interface FlowGraph {
 /**
  * The flow graph of a valid state (no loops; it throws otherwise, and on
  * unknown building definitions). Plain data, deterministic, safe to hash.
+ * Links are joined: one edge per link; an open sending half is an output
+ * with `open: true` and has no edge; an open receiving half is an input
+ * with `conduit: null`.
  */
 export function buildFlowGraph(
   state: TeamState,
   content: TeamContent,
 ): FlowGraph {
   const view = makeView(state, content);
-  const res = computeResources(view, state.conduits);
-  const byFrom = new Map<string, Conduit>();
-  const byTo = new Map<string, Conduit>();
-  for (const c of state.conduits) {
-    byFrom.set(`${String(c.from.building)}:${c.from.side}`, c);
-    byTo.set(`${String(c.to.building)}:${c.to.side}`, c);
+  const joined = joinEdges(state.conduits);
+  const res = computeResources(view, joined);
+  const byFrom = new Map<string, Edge>();
+  const byTo = new Map<string, Edge>();
+  for (const e of joined) {
+    byFrom.set(`${String(e.from.building)}:${e.from.side}`, e);
+    if (e.to !== null) byTo.set(`${String(e.to.building)}:${e.to.side}`, e);
   }
   const attached = new Set<number>();
   for (const c of state.conduits) {
-    attached.add(c.from.building);
-    attached.add(c.to.building);
+    const f = buildingEnd(c.from);
+    const t = buildingEnd(c.to);
+    if (f !== null) attached.add(f.building);
+    if (t !== null) attached.add(t.building);
   }
   const nodes: FlowNode[] = [];
   for (const b of state.buildings) {
     if (!attached.has(b.id)) continue;
     const e = view.byId.get(b.id);
     if (e === undefined) throw new Error(`Unknown building "${b.def}".`);
-    const inputOf = (side: Side): FlowInput => ({
-      side,
-      conduit: byTo.get(`${String(b.id)}:${side}`)?.id ?? null,
-      requires:
-        e.def.kind === 'route'
-          ? null
-          : (e.inputs.find((i) => i.side === side)?.resource ?? null),
-    });
-    const outputOf = (side: Side): FlowOutput => ({
-      side,
-      conduit: byFrom.get(`${String(b.id)}:${side}`)?.id ?? null,
-    });
+    const inputOf = (side: Side): FlowInput => {
+      const edge = byTo.get(`${String(b.id)}:${side}`);
+      return {
+        side,
+        conduit: edge === undefined ? null : (edge.linked ?? edge.id),
+        requires:
+          e.def.kind === 'route'
+            ? null
+            : (e.inputs.find((i) => i.side === side)?.resource ?? null),
+      };
+    };
+    const outputOf = (side: Side): FlowOutput => {
+      const edge = byFrom.get(`${String(b.id)}:${side}`);
+      if (edge === undefined) return { side, conduit: null };
+      return edge.to === null
+        ? { side, conduit: edge.id, open: true }
+        : { side, conduit: edge.id };
+    };
     if (e.def.kind === 'route' && e.def.routeType === 'crossover') {
       for (const side of SIDE_ORDER) {
         if (!e.inputs.some((i) => i.side === side)) continue;
@@ -773,15 +986,20 @@ export function buildFlowGraph(
       outputs: SIDE_ORDER.filter((s) => e.outputs.includes(s)).map(outputOf),
     });
   }
-  const edges: FlowEdge[] = state.conduits.map((c) => ({
-    conduitId: c.id,
-    from: nodeKey(view, c.from, 'out'),
-    to: nodeKey(view, c.to, 'in'),
-    fromSide: c.from.side,
-    toSide: c.to.side,
-    length: c.cells.length,
-    resource: res.get(c.id) ?? null,
-  }));
+  const edges: FlowEdge[] = [];
+  for (const c of joined) {
+    if (c.to === null) continue;
+    edges.push({
+      conduitId: c.id,
+      linkedConduit: c.linked,
+      from: nodeKey(view, c.from, 'out'),
+      to: nodeKey(view, c.to, 'in'),
+      fromSide: c.from.side,
+      toSide: c.to.side,
+      length: c.length,
+      resource: res.get(c.id) ?? null,
+    });
+  }
   const order = topoOrder(
     nodes.map((n) => nodeRefOf(n.key)),
     edges,
@@ -797,6 +1015,7 @@ export function buildFlowGraph(
 
 const CONDUIT_KEYS = new Set(['id', 'owner', 'from', 'to', 'cells']);
 const END_KEYS = new Set(['building', 'side']);
+const BORDER_KEYS = new Set(['border', 'y']);
 const CELL_KEYS = new Set(['x', 'y']);
 
 function extraKeys(
@@ -838,12 +1057,26 @@ export function parseConduits(raw: unknown, errors: string[]): Conduit[] {
       errors.push(`${at}: "owner" must be a non-negative integer.`);
       ok = false;
     }
-    const ends: { building: number; side: Side }[] = [];
+    const ends: (ConduitEnd | BorderEnd)[] = [];
     for (const name of ['from', 'to']) {
       const e = entry[name];
       if (!isRecord(e)) {
-        errors.push(`${at}: "${name}" must be an object { building, side }.`);
+        errors.push(
+          `${at}: "${name}" must be an object { building, side } or { border, y }.`,
+        );
         ok = false;
+        continue;
+      }
+      if ('border' in e) {
+        extraKeys(e, BORDER_KEYS, `${at}.${name}`, errors);
+        const border = e['border'];
+        const y = e['y'];
+        if (!isInt(border) || !isInt(y)) {
+          errors.push(`${at}: "${name}" needs integer "border" and "y".`);
+          ok = false;
+          continue;
+        }
+        ends.push({ border, y });
         continue;
       }
       extraKeys(e, END_KEYS, `${at}.${name}`, errors);
@@ -894,7 +1127,7 @@ export function parseConduits(raw: unknown, errors: string[]): Conduit[] {
 /**
  * Re-check every conduit of `state` independently (the per-conduit rules
  * against all the other conduits, then loops and resource mismatches over
- * the whole network) and push readable errors. Never throws.
+ * the whole joined network) and push readable errors. Never throws.
  */
 export function checkConduitList(
   state: TeamState,
@@ -918,19 +1151,22 @@ export function checkConduitList(
   });
   // Only conduits whose sides exist are analysed as a network.
   const sound = state.conduits.filter((c) => {
-    const a = view.byId.get(c.from.building);
-    const b = view.byId.get(c.to.building);
+    const f = buildingEnd(c.from);
+    const t = buildingEnd(c.to);
+    const a = f === null ? undefined : view.byId.get(f.building);
+    const b = t === null ? undefined : view.byId.get(t.building);
     return (
-      a !== undefined &&
-      b !== undefined &&
-      a.outputs.includes(c.from.side) &&
-      b.inputs.some((x) => x.side === c.to.side)
+      (f === null || (a !== undefined && a.outputs.includes(f.side))) &&
+      (t === null ||
+        (b !== undefined && b.inputs.some((x) => x.side === t.side))) &&
+      (f !== null || t !== null)
     );
   });
-  const mismatch = findMismatch(view, sound, computeResources(view, sound));
+  const edges = joinEdges(sound);
+  const mismatch = findMismatch(view, edges, computeResources(view, edges));
   if (mismatch !== null) {
     errors.push(`conduits: resource_mismatch (${mismatch}).`);
   }
-  if (hasLoop(view, sound))
+  if (hasLoop(view, edges))
     errors.push('conduits: would_loop (the network has a loop).');
 }

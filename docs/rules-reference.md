@@ -59,10 +59,10 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-1 | Ownership and plot checks on every board operation; conduits have an owner | **implemented** (issue #129) |
 | PP-2 | One Core per player: team state, positions, `placeCore`, health | **implemented** (issues #128 and #132); `core_not_placed` still names only the side, and only for a side with no Core at all: the per-player check comes with issues #131 and #138 |
 | PP-3 | Core placement step: each player places their own Core, no vote | not yet implemented (issue #131) |
-| PP-4 | Border links | not yet implemented (issues #135 and #136) |
+| PP-4 | Border links | **implemented** for halves, joining, validation, the flow graph and the flow simulation (issue #135); "In battle", undo and session intents are still issue #136 |
 | PP-5 | Collector flow rate by tier | **implemented** (issue #130; "One tick: `stepFlow`", step 3, and "Collector rate") |
 | PP-6 | Minimum time between productions, need, store | **implemented** (issue #130; "One battle tick", step 2 and step 7, "In-battle ramp", "Dry run (CB-43)") |
-| PP-7 | Splitting, with back-up | **implemented** ("One tick: `stepFlow`", step 2; vectors against consumers with a top speed since issue #130). An open border half (PP-4) is still issue #135 |
+| PP-7 | Splitting, with back-up | **implemented** ("One tick: `stepFlow`", step 2; vectors against consumers with a top speed since issue #130). An open border half (PP-4) is a connected output that never accepts (issue #135) |
 | PP-8 | Economy buildings act for their owner only; lower collector speed-up cap | not yet implemented (issue #137) |
 | PP-9 | Several Cores per side in the arena; Overload per Core; a destroyed Core switches nothing off | **implemented** (issue #132; "The arena", "One battle tick", "Overload", "Side options") |
 | PP-10 | End conditions and the tiebreak ladder with several Cores | **implemented** (issue #132; "Battles") |
@@ -1209,7 +1209,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-4 | Conduit ends may be border spots (halves of a border link). | not yet implemented (issue #135) |
+| PP-4 | Conduit ends may be border spots (halves of a border link). | **implemented** (issue #135) |
 
 Implemented in `packages/core/src/team-state.ts` (golden kind `team-state-ops`:
 `team-state-ops.ts`). The party's whole state for combat is one board (CP-6,
@@ -1409,7 +1409,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-4 | Border links: a half ends at a border spot; two matching halves are one conduit in the flow graph (`linkedConduit` on the edge); an open half carries nothing and loses nothing (a connected output that never accepts). | not yet implemented (issues #135 and #136) |
+| PP-4 | Border links: a half ends at a border spot; two matching halves are one conduit in the flow graph (`linkedConduit` on the edge); an open half carries nothing and loses nothing (a connected output that never accepts). | **implemented** (issue #135) |
 
 Implemented in `packages/core/src/conduits.ts` (golden kinds `team-state-ops`
 and `flow-graph`: `team-state-ops.ts`). Conduits carry resources between
@@ -1616,7 +1616,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-7 | With PP-4 an output whose half is open is a connected output that never accepts (the item is held and the line backs up; it is not a dead end and nothing is lost). | not yet implemented (issue #135) |
+| PP-7 | With PP-4 an output whose half is open is a connected output that never accepts (the item is held and the line backs up; it is not a dead end and nothing is lost). | **implemented** (issue #135) |
 | PP-8 | The source interval modifier becomes one value per owning player. | not yet implemented (issue #137) |
 | PP-4 | `rebuildFlow` removes both halves of a link when either end building is destroyed. | not yet implemented (issue #136) |
 

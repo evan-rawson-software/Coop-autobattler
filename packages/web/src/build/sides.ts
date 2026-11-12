@@ -11,6 +11,7 @@ import {
   type PlacedBuilding,
   type Side,
   type TeamState,
+  buildingEnd,
 } from '@game/core';
 import type { WebContent } from '../content.js';
 import { manhattan, outsideCells, sameCell } from './geometry.js';
@@ -28,14 +29,13 @@ export function freeOutputSides(
   b: PlacedBuilding,
 ): Side[] {
   const occ = occupancy(team, content);
-  return occ
-    .absoluteSides(b)
-    .outputs.filter(
-      (side) =>
-        !team.conduits.some(
-          (c) => c.from.building === b.id && c.from.side === side,
-        ),
-    );
+  return occ.absoluteSides(b).outputs.filter(
+    (side) =>
+      !team.conduits.some((c) => {
+        const f = buildingEnd(c.from);
+        return f !== null && f.building === b.id && f.side === side;
+      }),
+  );
 }
 
 export function freeInputSides(
@@ -49,9 +49,10 @@ export function freeInputSides(
     .inputs.map((i) => i.side)
     .filter(
       (side) =>
-        !team.conduits.some(
-          (c) => c.to.building === b.id && c.to.side === side,
-        ),
+        !team.conduits.some((c) => {
+          const t = buildingEnd(c.to);
+          return t !== null && t.building === b.id && t.side === side;
+        }),
     );
 }
 

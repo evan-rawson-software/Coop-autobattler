@@ -16,6 +16,7 @@ import {
   type Side,
   type SimConfig,
   type TeamState,
+  buildingEnd,
 } from '@game/core';
 import type { WebContent } from '../content.js';
 import { count } from '../plural.js';
@@ -48,9 +49,10 @@ export function inputConnected(
   building: number,
   side: Side,
 ): boolean {
-  return state.conduits.some(
-    (c) => c.to.building === building && c.to.side === side,
-  );
+  return state.conduits.some((c) => {
+    const t = buildingEnd(c.to);
+    return t !== null && t.building === building && t.side === side;
+  });
 }
 
 /** Run `dryRunFlow` and derive which conduits carry something. */
@@ -299,7 +301,9 @@ export function deriveProblems(
       }
     }
     if (def.kind === 'source') {
-      const hasOut = state.conduits.some((c) => c.from.building === b.id);
+      const hasOut = state.conduits.some(
+        (c) => buildingEnd(c.from)?.building === b.id,
+      );
       if (!hasOut) {
         const res = occ.sourceResource(b);
         out.push({
