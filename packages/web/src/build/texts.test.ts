@@ -9,6 +9,7 @@ import { rateText } from './rates.js';
 import { REASON_TEXT_CODES } from '@game/core';
 import { KNOWN_REASONS, reasonMessage, selectionNote } from './reasons.js';
 import { coreLabel, playerName, screenText, screenTexts } from './texts.js';
+import { BuildController } from './build-controller.js';
 import { deriveProblems, type FlowView } from './view-model.js';
 
 // Rate, supply and link texts come from the presentation file (issue #142).
@@ -129,6 +130,49 @@ describe('reason and Core texts come from the presentation file', () => {
     expect(coreLabel(0, { ...screenTexts, coreLabel: 'Core of {name}' })).toBe(
       'Core of Player 1',
     );
+  });
+});
+
+describe('status texts come from the presentation file', () => {
+  const screens = content.presentation.templates.screens;
+  const keys = Object.keys(screens).filter((k) => k.startsWith('status'));
+
+  test('the file carries the status texts and their plurals as pairs', () => {
+    expect(keys.length).toBeGreaterThan(40);
+    for (const k of keys.filter((x) => x.endsWith('One'))) {
+      expect(keys).toContain(`${k.slice(0, -3)}Many`);
+    }
+  });
+
+  test('the wording is what players saw before', () => {
+    expect(screens['statusStarting']).toBe('Starting a run.');
+    expect(screens['statusFromSide']).toBe(
+      "From {name}'s {side} side: click an input side or a building.",
+    );
+    expect(screens['statusBorderHalf']).toBe(
+      'Border half added: it is not connected until your neighbour draws theirs.',
+    );
+    expect(screens['statusConduitAddedOne']).toBe(
+      'Conduit added ({count} cell).',
+    );
+    expect(screens['statusMovedDetachedMany']).toBe(
+      'Moved. {count} conduits were detached.',
+    );
+  });
+
+  test('the controller shows them, filled', () => {
+    const ctl = new BuildController();
+    expect(ctl.model.get().ui.status.text).toBe('Starting a run.');
+    ctl.setTool('erase');
+    expect(ctl.model.get().ui.status.text).toBe(
+      'Erase conduit: click a conduit.',
+    );
+    expect(
+      screenText(screenTexts, 'statusUndoRefused', {
+        cause: 'Nope.',
+        history: screenText(screenTexts, 'statusHistoryCleared'),
+      }),
+    ).toBe('Undo refused: Nope. History cleared.');
   });
 });
 
