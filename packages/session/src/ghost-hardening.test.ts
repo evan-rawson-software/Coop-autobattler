@@ -424,8 +424,8 @@ describe('format 2 and one Core (issue #139)', () => {
 
   test('a format-1 snapshot is rejected, and so is any other format', () => {
     const good = goodSnapshot(2);
-    expect(good.formatVersion).toBe(2);
-    for (const v of [1, 3, 0, '2']) {
+    expect(good.formatVersion).toBe(3);
+    for (const v of [1, 2, 4, 0, '3']) {
       const r = validateGhostSnapshot(
         { ...clone(good), formatVersion: v },
         ctx,
