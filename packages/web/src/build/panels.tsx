@@ -10,6 +10,7 @@ import {
 import type { RunState } from '@game/session';
 import { content } from '../content.js';
 import { Panel } from '../shell/AppShell.js';
+import { ActingSwitch } from '../shell/ActingSwitch.js';
 import type { BuildController, Model, Tool } from './build-controller.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
@@ -39,13 +40,15 @@ interface StashGroup {
   readonly ids: readonly number[];
 }
 
-export function groupStash(team: TeamState): StashGroup[] {
+/** The acting player's stash only: other players' buildings are not shown. */
+export function groupStash(team: TeamState, player: number): StashGroup[] {
   const order = new Map(content.buildings.list().map((d, i) => [d.id, i]));
   const groups = new Map<
     string,
     { def: string; tier: number; ids: number[] }
   >();
   for (const s of team.stash) {
+    if (s.owner !== player) continue;
     const k = `${s.def}:${String(s.tier)}`;
     const g = groups.get(k) ?? { def: s.def, tier: s.tier, ids: [] };
     g.ids.push(s.id);
@@ -61,12 +64,14 @@ export function StashPanel(props: {
   team: TeamState;
   model: Model;
   ctl: BuildController;
+  /** The player whose stash this is. */
+  player: number;
   /** The player is Ready: no board changes until Unready. */
   locked?: boolean;
 }) {
   const { team, model, ctl } = props;
   const locked = props.locked === true;
-  const groups = groupStash(team);
+  const groups = groupStash(team, props.player);
   const held = model.ui.held;
   return (
     <Panel title="Stash · drag onto the board" id="panel-stash">
@@ -609,16 +614,22 @@ export function PartyPanel(props: {
   run: RunState;
   ctl: BuildController;
   gate?: Gate | null;
+  /** The player this device acts as. */
+  acting: number;
+  /** Switch the acting player (party played from one browser). */
+  onActing?: ((player: number) => void) | undefined;
 }) {
-  const { run, ctl } = props;
-  const me = run.perPlayer[0];
+  const { run, ctl, acting } = props;
+  const me = run.perPlayer[acting];
+  const multi = run.players.length > 1;
   const ready = me?.ready === true;
   const readyCount = run.perPlayer.filter((p) => p.ready).length;
   const block = props.gate?.readyBlock ?? null;
   return (
-    <Panel title="Party · solo" id="panel-party">
+    <Panel title={multi ? 'Party' : 'Party · solo'} id="panel-party">
+      <ActingSwitch run={run} acting={acting} onActing={props.onActing} />
       <div class="party-row">
-        <span>{run.players[0]?.name ?? 'You'}</span>
+        <span>{run.players[acting]?.name ?? 'You'}</span>
         <span class="muted">editing the board</span>
         <span data-field="ready-state">ready: {ready ? 'yes' : 'no'}</span>
       </div>

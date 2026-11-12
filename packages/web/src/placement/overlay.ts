@@ -22,6 +22,11 @@ export interface CoreOverlayData {
   readonly hover: Candidate | null;
   readonly selected: Candidate | null;
   readonly paths: readonly EnemyPath[] | null;
+  /** Partners' proposed Core spots: footprint cells and the player. */
+  readonly partners: readonly {
+    readonly player: number;
+    readonly cells: readonly Cell[];
+  }[];
 }
 
 interface Colors {
@@ -181,6 +186,11 @@ export function drawCoreOverlay(
     ctx.fillStyle = col.ink;
     ctx.fillText(text, x + 7, y + 0.5);
   };
+
+  for (const pc of d.partners) {
+    ring(pc.cells, col.accent, 2.5);
+    label(pc.cells, `Player ${String(pc.player + 1)}'s Core`, col.accent);
+  }
 
   // The chosen position, then the one under the pointer.
   if (d.selected !== null) {

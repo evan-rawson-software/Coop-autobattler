@@ -1,7 +1,9 @@
 /**
  * Previews: call the pure `core` operations on the current team state to learn
  * whether an action would be accepted and why not. Nothing here changes
- * anything and nothing here decides legality; `core` answers.
+ * anything and nothing here decides legality; `core` answers. `actor` is the
+ * player who acts (never guessed from a building's owner, so another player's
+ * building is refused as `not_owner`).
  */
 
 import {
@@ -36,11 +38,9 @@ export function previewPlace(
   state: TeamState,
   content: WebContent,
   args: PlaceArgs,
+  actor: number,
 ): Verdict {
-  // The build screen only offers a player's own buildings; the session names
-  // the acting player and enforces ownership (PP-1).
-  const owner = state.stash.find((s) => s.id === args.id)?.owner ?? 0;
-  const r = placeFromStash(state, content, { ...args, actor: owner });
+  const r = placeFromStash(state, content, { ...args, actor });
   return r.ok ? { ok: true, state: r.state } : fail(r);
 }
 
@@ -49,9 +49,9 @@ export function previewMove(
   state: TeamState,
   content: WebContent,
   args: PlaceArgs,
+  actor: number,
 ): Verdict {
-  const owner = state.buildings.find((b) => b.id === args.id)?.owner ?? 0;
-  const r = moveBuilding(state, content, { ...args, actor: owner });
+  const r = moveBuilding(state, content, { ...args, actor });
   return r.ok ? { ok: true, state: r.state } : fail(r);
 }
 
@@ -62,8 +62,8 @@ export function previewConduit(
   from: ConduitEnd,
   to: ConduitEnd,
   cells: readonly Cell[],
+  actor: number,
 ): Verdict {
-  const actor = state.buildings.find((b) => b.id === from.building)?.owner ?? 0;
   const r = addConduit(state, content, { actor, from, to, cells });
   return r.ok ? { ok: true, state: r.state } : fail(r);
 }

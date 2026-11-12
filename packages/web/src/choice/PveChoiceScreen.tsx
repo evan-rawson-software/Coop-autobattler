@@ -8,17 +8,21 @@ import { useStore } from '../app-state.js';
 import { reasonMessage } from '../build/reasons.js';
 import { simConfig } from '../build/setup.js';
 import type { RunHandle } from '../run/handle.js';
-import { ME } from '../build/session.js';
 import { AppShell } from '../shell/AppShell.js';
 import { pveChoiceView } from './view-model.js';
 import './choice.css';
 
 export function PveChoiceScreen(props: { run: RunHandle }) {
   const { session, deps } = props.run;
-  const run = useStore(session.store).run;
+  const view = useStore(session.store);
+  const run = view.run;
+  const acting = view.acting;
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const v = useMemo(() => pveChoiceView(run, deps, simConfig, ME), [run, deps]);
+  const v = useMemo(
+    () => pveChoiceView(run, deps, simConfig, acting),
+    [run, acting, deps],
+  );
 
   const choose = (id: string): void => {
     if (busy) return;

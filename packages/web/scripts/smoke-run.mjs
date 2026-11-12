@@ -1519,6 +1519,139 @@ export async function runRunSmoke({
   await page.goto(`${baseUrl}#/`);
   await page.waitForSelector('#main-menu');
 
+  // ---------------------------------------------------------------------
+  // A local party of two (?players=2): one browser, the acting player is
+  // switched from the top bar. Every step needs both players to act.
+  await goMenu(`?seed=${SEED}&players=2`);
+  await page.click('#new-run-button');
+  await page.waitForSelector('#core-confirm');
+  await page.waitForFunction(() => window.__debug?.placement?.legal);
+  const actAs = async (p) => {
+    await page.click(
+      `#acting-switch [data-action="act-as"][data-player="${p}"]`,
+    );
+    await page.waitForFunction(
+      (n) => window.__debug?.run?.state().acting === n,
+      p,
+    );
+  };
+  check(
+    (await page.locator('#acting-switch [data-action="act-as"]').count()) ===
+      2 &&
+      /Waiting for: You, Player 2/.test(
+        await page.locator('[data-field="waiting-for"]').innerText(),
+      ),
+    'two players: the top bar names who still has to act, in words',
+  );
+  for (const p of [0, 1]) {
+    await actAs(p);
+    await page.waitForFunction(
+      (n) =>
+        window.__debug?.placement?.legal().length > 0 &&
+        window.__debug.placement
+          .legal()
+          .every(
+            (c) => (n === 0) === c.x < window.__debug.placement.plotWidth(),
+          ),
+      p,
+    );
+    const spots = await page.evaluate(() => window.__debug.placement.legal());
+    const spot = spots[Math.floor(spots.length / 2)];
+    const at2 = await page.evaluate(
+      ([x, y]) => window.__debug.placement.cellToScreen(x, y),
+      [spot.x, spot.y],
+    );
+    await page.mouse.click(at2.x, at2.y);
+    await page.waitForFunction(
+      () => !document.querySelector('#core-confirm').disabled,
+    );
+    await page.click('#core-confirm');
+    await page.waitForFunction(
+      (n) =>
+        window.__debug?.run?.state().ready[n] === true ||
+        window.__debug?.run?.state().step === 'build',
+      p,
+    );
+  }
+  check(
+    (await R.state()).step === 'build' &&
+      (await page.locator('[data-field="waiting-for"]').innerText()).includes(
+        'Waiting',
+      ),
+    'two players: both Cores placed (each in its own area), the first build opens',
+  );
+  const bothReady = async (step, click) => {
+    for (const p of [0, 1]) {
+      await actAs(p);
+      await click();
+      if (p === 0) {
+        await page.waitForFunction(
+          () =>
+            window.__debug?.run?.state().ready[0] === true ||
+            window.__debug?.run?.state().voted?.[0] === true,
+        );
+      }
+    }
+    await waitStep(step);
+  };
+  await page.waitForFunction(() => window.__debug?.build?.step() === 'build');
+  await bothReady('pve_choice', async () => {
+    await page.waitForSelector('#ready-button:not([disabled])');
+    await page.click('#ready-button');
+  });
+  await page.waitForSelector('#pve-choice');
+  await bothReady('pve_summary', async () => {
+    await page.waitForSelector(
+      '[data-action="choose"][data-difficulty="easy"]',
+    );
+    await page.click('[data-action="choose"][data-difficulty="easy"]');
+  });
+  check(
+    (await R.screen()) === 'battle',
+    'two players: both PvE votes reach the battle',
+  );
+  await page.waitForFunction(() => window.__debug?.battle?.phase);
+  await page.click('#skip');
+  await page.waitForFunction(
+    () => window.__debug?.battle?.phase() === 'summary',
+  );
+  await bothReady('event_choice', async () => {
+    // The screen may replay for the other player: skip, then continue.
+    await page.waitForFunction(
+      () =>
+        window.__debug?.battle?.phase() === 'summary' ||
+        document.querySelector('#skip') !== null,
+    );
+    if (
+      (await page.evaluate(() => window.__debug.battle.phase())) !== 'summary'
+    ) {
+      await page.click('#skip');
+      await page.waitForFunction(
+        () => window.__debug?.battle?.phase() === 'summary',
+      );
+    }
+    await page.click('#battle-ready');
+  });
+  await page.waitForSelector('#event-choice');
+  for (const p of [0, 1]) {
+    await actAs(p);
+    await page.waitForSelector('[data-action="choose-event"]');
+    await page.click('[data-action="choose-event"]');
+    if (p === 0) {
+      await page.waitForFunction(
+        () => window.__debug?.run?.state().voted?.[0] === true,
+      );
+    }
+  }
+  await page.waitForFunction(
+    () => window.__debug?.run?.state().step !== 'event_choice',
+  );
+  check(
+    (await R.state()).step !== 'event_choice',
+    `two players: both event votes done (now "${(await R.state()).step}")`,
+  );
+  await goMenu();
+
   const newErrors = consoleErrors.slice(errorsAtStart);
   check(
     newErrors.length === 0,

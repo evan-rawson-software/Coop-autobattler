@@ -144,7 +144,10 @@ function ReadyRun(props: { run: ActiveRun }) {
           round: state.round,
           leg: state.leg,
           lives: state.lives,
-          gold: state.perPlayer[0]?.gold ?? 0,
+          gold: state.perPlayer[run.session.acting]?.gold ?? 0,
+          acting: run.session.acting,
+          ready: state.perPlayer.map((p) => p.ready),
+          voted: state.votes?.choices.map((c) => c !== null) ?? null,
           actions: state.actionCounter,
           history: state.history.length,
           pvpOpponent:
@@ -166,7 +169,14 @@ function ReadyRun(props: { run: ActiveRun }) {
   }, [screen, state, run.storage]);
 
   const bar = useMemo(
-    () => <RunBar state={state} maxLives={maxLives} storage={run.storage} />,
+    () => (
+      <RunBar
+        state={state}
+        maxLives={maxLives}
+        storage={run.storage}
+        session={run.session}
+      />
+    ),
     [state, maxLives, run.storage],
   );
 

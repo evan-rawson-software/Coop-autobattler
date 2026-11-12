@@ -25,10 +25,12 @@ import { drawCoreOverlay, type Candidate } from './overlay.js';
 import {
   hintText,
   kitRows,
+  coreCells,
   legalSet,
   routesFor,
   verdictAt,
 } from './view-model.js';
+import { pendingCoreSpots } from '../build/view-model.js';
 import { count } from '../plural.js';
 
 const camera = new CameraController();
@@ -39,6 +41,7 @@ export function CoreScreen(props: { run: RunHandle }) {
   const { session } = props.run;
   const view = useStore(session.store);
   const team = view.run.team;
+  const acting = view.acting;
   const [hover, setHover] = useState<Cell | null>(null);
   const [selected, setSelected] = useState<Cell | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -48,20 +51,23 @@ export function CoreScreen(props: { run: RunHandle }) {
   selectedRef.current = selected;
   const fp = useMemo(() => coreFootprint(content.buildings), []);
 
-  const legal = useMemo(() => legalSet(team, content), [team]);
+  const legal = useMemo(() => legalSet(team, content, acting), [team, acting]);
   const hoverCand: Candidate | null = useMemo(
     () =>
       hover === null
         ? null
-        : { pos: hover, verdict: verdictAt(team, content, hover) },
-    [team, hover],
+        : { pos: hover, verdict: verdictAt(team, content, hover, acting) },
+    [team, hover, acting],
   );
   const selectedCand: Candidate | null = useMemo(
     () =>
       selected === null
         ? null
-        : { pos: selected, verdict: verdictAt(team, content, selected) },
-    [team, selected],
+        : {
+            pos: selected,
+            verdict: verdictAt(team, content, selected, acting),
+          },
+    [team, selected, acting],
   );
   // Routes follow the pointer while it is over a legal position, else the choice.
   const previewPos =
@@ -70,12 +76,26 @@ export function CoreScreen(props: { run: RunHandle }) {
     () =>
       previewPos === null
         ? null
-        : routesFor(team, content, simConfig, previewPos),
-    [team, previewPos],
+        : routesFor(team, content, simConfig, previewPos, acting),
+    [team, previewPos, acting],
   );
 
-  const data = useRef({ legal, hoverCand, selectedCand, paths, team });
-  data.current = { legal, hoverCand, selectedCand, paths, team };
+  const partners = useMemo(
+    () =>
+      pendingCoreSpots(view.run.pending)
+        .filter((c) => c.player !== acting)
+        .map((c) => ({ player: c.player, cells: coreCells(content, c) })),
+    [view.run.pending, acting],
+  );
+  const data = useRef({
+    legal,
+    hoverCand,
+    selectedCand,
+    paths,
+    team,
+    partners,
+  });
+  data.current = { legal, hoverCand, selectedCand, paths, team, partners };
   const drawOverlay = useRef(
     (ctx: CanvasRenderingContext2D, o: OverlayContext) => {
       const d = data.current;
@@ -85,6 +105,7 @@ export function CoreScreen(props: { run: RunHandle }) {
         hover: d.hoverCand,
         selected: d.selectedCand,
         paths: d.paths,
+        partners: d.partners,
       });
     },
   );
@@ -119,6 +140,7 @@ export function CoreScreen(props: { run: RunHandle }) {
         },
         selected: () => selectedRef.current,
         pathCount: () => data.current.paths?.length ?? 0,
+        plotWidth: () => data.current.team.map.plotWidth,
       },
     });
     return () => {
@@ -126,7 +148,7 @@ export function CoreScreen(props: { run: RunHandle }) {
     };
   }, []);
   const onSelect = (cell: Cell): void => {
-    const v = verdictAt(team, content, cell);
+    const v = verdictAt(team, content, cell, acting);
     if (v.ok) {
       setSelected(cell);
       setProblem(null);
@@ -188,7 +210,11 @@ export function CoreScreen(props: { run: RunHandle }) {
             type="button"
             id="core-confirm"
             class="primary"
-            disabled={selected === null || busy}
+            disabled={
+              selected === null ||
+              busy ||
+              view.run.perPlayer[acting]?.ready === true
+            }
             onClick={confirm}
           >
             Confirm Core position
@@ -235,7 +261,7 @@ export function CoreScreen(props: { run: RunHandle }) {
           frontLabel="FRONT EDGE · enemy units enter here"
           cursor="crosshair"
           drawOverlay={drawOverlay.current}
-          overlayKey={`${String(hover?.x)},${String(hover?.y)}|${String(selected?.x)},${String(selected?.y)}|${String(paths?.length)}`}
+          overlayKey={`${String(acting)}:${String(partners.length)}:${String(hover?.x)},${String(hover?.y)}|${String(selected?.x)},${String(selected?.y)}|${String(paths?.length)}`}
           onHover={(hit) => {
             const next =
               hit === null || hit.board !== 'own'

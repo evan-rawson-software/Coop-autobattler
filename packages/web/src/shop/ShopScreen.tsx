@@ -12,7 +12,7 @@ import { useStore } from '../app-state.js';
 import { BoardView } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
 import { economy, simConfig } from '../build/setup.js';
-import { ME, type SessionView } from '../build/session.js';
+import { type SessionView } from '../build/session.js';
 import { content } from '../content.js';
 import { registerDebug, unregisterDebug } from '../debug-hook.js';
 import { NotSavedNote, RestartButton, RunGate } from '../run/RunGate.js';
@@ -222,8 +222,8 @@ export function ShopTab(props: { run: RunHandle }) {
   const view: SessionView = useStore(session.store);
   const run = view.run;
   const sv: ShopView = useMemo(
-    () => buildShopView(run, ME, ctx, deps),
-    [run, deps],
+    () => buildShopView(run, view.acting, ctx, deps),
+    [run, view.acting, deps],
   );
   const next = useMemo(() => nextBattleView(run, deps), [run, deps]);
   const [pending, setPending] = useState<StashRow | null>(null);
