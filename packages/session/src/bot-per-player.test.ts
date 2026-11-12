@@ -3,7 +3,7 @@
  * its own plot with its own buildings, feeds only what its collectors can
  * feed, shares one collector through a Splitter, and draws border links.
  */
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import {
   isBorderEnd,
   validateGhostSnapshot,
@@ -27,6 +27,9 @@ import {
   placeCoreAll,
 } from './test-support.js';
 import type { CreateRunArgs } from './types.js';
+
+// Whole bot runs: far over the default 5 s on a loaded machine.
+vi.setConfig({ testTimeout: 120_000 });
 
 const NAMES = ['Ann', 'Bo', 'Cy', 'Di'];
 const deps = makeGameDeps({ ghosts: { ownerId: 'bot-test' } });
