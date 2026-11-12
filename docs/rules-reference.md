@@ -58,7 +58,7 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-5 | Collector flow rate by tier | **implemented** (issue #130; "One tick: `stepFlow`", step 3, and "Collector rate") |
 | PP-6 | Minimum time between productions, need, store | **implemented** (issue #130; "One battle tick", step 2 and step 7, "In-battle ramp", "Dry run (CB-43)") |
 | PP-7 | Splitting, with back-up | **implemented** ("One tick: `stepFlow`", step 2; vectors against consumers with a top speed since issue #130). An open border half (PP-4) is a connected output that never accepts (issue #135) |
-| PP-8 | Economy buildings act for their owner only; lower collector speed-up cap | **implemented** (issue #137) for the per-owner bonus, cap and modifiers ("In-battle ramp"); the lower `maxSourceSpeedPercent` value comes with the rebalance (issue #145) |
+| PP-8 | Economy buildings act for their owner only; lower collector speed-up cap | **implemented** (issue #137) for the per-owner bonus, cap and modifiers ("In-battle ramp"); `maxSourceSpeedPercent` is 25 and `maxUnitStrengthPercent` 100 (issue #145, "Numbers set in the rebalance") |
 | PP-9 | Several Cores per side in the arena; Overload per Core; a destroyed Core switches nothing off | **implemented** (issue #132; "The arena", "One battle tick", "Overload", "Side options") |
 | PP-10 | End conditions and the tiebreak ladder with several Cores | **implemented** (issue #132; "Battles") |
 | PP-11 | A unit's owner and target Core; one movement field per target Core; a unit also attacks any enemy Core within reach, target or not | **implemented** (issue #133; "The arena", "One battle tick", "Goals and movement fields", "Side options", "Resolution order") |
@@ -68,23 +68,38 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-16 | Party votes and run streams without the Core vote | **implemented** (issue #131) |
 | PP-17 | Formats, version, ghost validation | partly implemented (issues #139, #160, #131, #135): major version 1.0, snapshot format 5 (4 had one Core per player, 3 added border links, 2 before), run-state format 8 (7 had no Core vote, 6 added border links, 5 before; 8 stores PvE threats with `stronghold.cores`), bundled ghosts regenerated, one placed Core per player inside its player's plot (a missing Core is rejected too), border-link legality (`validateTeamState`). Not yet: plot and ownership checks of buildings and the per-owner value bound |
 
-### Numbers to be set in the rebalance
+### Numbers set in the rebalance
 
-The rules below fix the **shape** of each computation. These numbers are
-placeholders or do not exist yet; all are set in the rebalance
-(issue #145). Until then no balance result is meaningful.
+Issue #145, part 1 (owner decisions 1 to 6). The rules below fix the **shape**
+of each computation; these are the shipped numbers. The principle: **a
+collector fully feeds exactly one producer of its own tier.** Collectors give
+0.50 / 0.71 / 1.00 items per second at tiers 1 / 2 / 3, and the need of a
+building at the same tier is the same, so a higher tier needs more per second
+and is never cheaper per production. A plot has 3 Ore, 3 Power and 1 Flux
+node, so it runs three Barracks-type buildings at full speed and no more; a
+player grows by raising tiers, by economy buildings or through a border link.
 
-| Number | Where | Today | Constraint |
-| ------ | ----- | ----- | ---------- |
-| Collector `intervalTicks` per tier | `buildings.json` | 20 / 14 / 10 | integer >= 1; a higher tier is never slower |
-| `productionIntervalTicks` per unit producer and tier | `buildings.json` | placeholder 80 / 60 / 40 (barracks) | integer >= 1 |
-| `stepIntervalTicks` per economy building and tier | `buildings.json` | placeholder 10 / 8 / 6 | integer >= 1 |
-| `costPerUnit`, `costPerShot`, `costPerStep`, `cooldownTicks` | `buildings.json` | as shipped | integers >= 1; a stronger building should have a higher need |
-| `inputBufferUnits` (items waiting at each input) | `sim.json` | 4 | integer >= 1, small: "a little waiting in the pipe" |
-| `maxSourceSpeedPercent` (collector speed-up cap) | `sim.json` | 300 | to be set in rebalance; much lower than 300. Target: a fully boosted collector of one tier stays slower than an unboosted collector of the next tier (SC-12) |
-| Core health | `buildings.json` | 500 | decided: 500 per Core. Not a rebalance number unless the owner changes it |
-| `nodesPerPlot` | `mapgen.json` | 3 common, 1 rare | the same for every plot |
-| Threat budgets, `coreHealthPerBudget`, `minCoreHealth`, wall and turret caps | `threats.json` | as shipped | re-tuned for one Core per plot |
+| Number | Where | Shipped (tier 1 / 2 / 3) | Constraint |
+| ------ | ----- | ------------------------ | ---------- |
+| Collector `intervalTicks` | `buildings.json` | 20 / 14 / 10 (unchanged) | integer >= 1; a higher tier is never slower |
+| Barracks `costPerUnit` / `productionIntervalTicks` | `buildings.json` | 5 / 5 / 5 items per 100 / 70 / 50 ticks (need 0.50 / 0.71 / 1.00 per second) | integers >= 1 |
+| Turret `cooldownTicks` / `costPerShot` / `damage` | `buildings.json` | 10 / 7 / 5 ticks, 1 item per shot, damage 5 / 8 / 10 (need 1.00 / 1.42 / 2.00 while firing: two collectors of its tier) | integers >= 1 |
+| Overclocker `costPerStep` / `stepIntervalTicks` / `stepPercent` x `maxSteps` | `buildings.json` | 2 / 3 / 4 items per step, a step per 40 / 42 / 40 ticks, 2x5 / 3x5 / 5x5 = +10 / +15 / +25 percent | fits under `maxSourceSpeedPercent` |
+| Armory `costPerStep` / `stepIntervalTicks` / `stepPercent` x `maxSteps` | `buildings.json` | 4 / 5 / 6 items per step, a step per 80 / 70 / 60 ticks, 5x5 / 7x5 / 10x5 = +25 / +35 / +50 percent | fits under `maxUnitStrengthPercent` |
+| `inputBufferUnits` (items waiting at each input) | `sim.json` | 4 (unchanged) | integer >= 1, small |
+| `maxSourceSpeedPercent` (collector speed-up cap) | `sim.json` | 25 | SC-12: a tier 1 collector boosted to 0.62 per second stays below an unboosted tier 2 (0.71), tier 2 boosted to 0.91 below tier 3 (1.00) |
+| `maxUnitStrengthPercent` (Armory cap per player) | `sim.json` | 100 | an Armory costs supply only while it charges, so it has its own limit |
+| Core health | `buildings.json` | 500 (decided) | per Core |
+| `nodesPerPlot` | `mapgen.json` | 3 common, 1 rare (unchanged) | the same for every plot |
+| Gold | `economy.json` | `baseIncomePerShop` 5; `rewards.pveWin` easy / medium / hard 6 / 9 / 13; `pvpWin` 8; `pvpLoss` 4 (9 to 26 gold per round) | strictly increasing `pveWin` |
+| Shop | `economy.json` | `bld_armory` in `offerWeights` at weight 3, like the Overclocker | |
+| Threat growth | `threats.json` | `growthPercent` 125 (+25 percent per round) | above 100 |
+| Stronghold caps | `threats.json` | `maxTurretsPerPlot` 6 (was 16); Fortress `turretSharePercent` 25 (was 40) and `coreHealthPerBudget` 300 (was 500); Boss `turretSharePercent` 20 (was 30) | the rest of a stronghold's budget becomes Core health |
+| `minCoreHealth` (per Core) | `threats.json` | 30 (unchanged; never reached in rounds 1 to 12 at any party size) | |
+
+Not part of this table: Overload timing, shop prices and tier odds, wave sizes
+and `baseBudget` (all unchanged). The reference boards are not rebuilt yet
+(see "Reference boards").
 
 ### PP-1. Ownership and plots
 
@@ -342,8 +357,8 @@ and border links are the only way to help a partner (CP-29):
   from run modifiers (`TeamState.modifiers`), never from an economy building,
   so decision 19 does not touch them. A scheduled-wave unit has no producer
   and no owner, so it gets no ramp bonus (only the side-wide parts).
-- `maxSourceSpeedPercent` is lowered (see "Numbers to be set in the
-  rebalance"); the lowering is not part of issue #137.
+- `maxSourceSpeedPercent` is 25 (see "Numbers set in the rebalance"); the
+  lowering was not part of issue #137.
 
 ### PP-9. Several Cores per side in the arena
 
@@ -1887,15 +1902,16 @@ merger fed directly by two sources behind a slow consumer, and a merger fed
 directly by one source and by a conduit behind a slow consumer: the last two
 pin the "direct source is ready when its `countdown` is at most 1" rule). Four
 `"need"` vectors (2000 ticks) pin PP-7 against consumers with a top speed
-(the barracks needs 75, 83 and 100 items per 1000 ticks at tiers 1 to 3):
-`need-even-split` (a tier 3 collector, 100 per 1000 ticks, into a splitter with
-two tier 1 barracks: both under-supplied, 100 and 99 items),
-`need-top-speed-one-path-backs-up` (a tier 3 and a tier 2 collector, 171 per
-1000 ticks, through a merger and a splitter into a tier 1 and a tier 3
-barracks: the even share, 85, is above the tier 1 barracks' top speed, so its
+(the barracks needs 50, 71 and 100 items per 1000 ticks at tiers 1 to 3):
+`need-even-split` (a tier 1 collector, 50 per 1000 ticks, into a splitter with
+two tier 1 barracks: both under-supplied, 25 per 1000 ticks each),
+`need-top-speed-one-path-backs-up` (two tier 2 collectors, 142 per 1000
+ticks, through a merger and a splitter into a tier 1 and a tier 3
+barracks: the even share, 71, is above the tier 1 barracks' top speed, so its
 production interval makes that path back up and the tier 3 barracks takes the
-remainder), `need-top-speed-all-backs-up` (the same supply into two tier 1
-barracks: both reach their top speed, the collectors stall, nothing is lost)
+remainder (about 90 per 1000 ticks)), `need-top-speed-all-backs-up` (a tier 3 and a tier 2
+collector, 171 per 1000 ticks, into two tier 1 barracks: both reach their top
+speed, the collectors stall, nothing is lost)
 and `need-three-way-unconnected` (one of the three outputs has no conduit).
 Without the cooldown rule of the production step the two `top-speed` vectors
 change.
@@ -1922,7 +1938,7 @@ that conservation still holds:
 
 ## The arena
 
-**Cores (PP-9).** Each side has one Core per placed player Core: `Arena.coreRef[side][player]` is its building `ref` (-1 if none was placed). The `health` list holds, per side, the Cores in player order as `{side, core, hp}` and then the buildings by instance ID as `{side, building, hp}`. Each Core starts at its own maximum health (`maxHealthOf`, with the side option `coreHealths[player]`). A destroyed Core's cells become open ground and **nothing else changes** (CB-17a): its owner's buildings, sources, conduits and units carry on.
+**Cores (PP-9).** Each side has one Core per placed player Core: `Arena.coreRef[side][player]` is its building `ref` (-1 if none was placed). The `health` list holds, per side, the Cores in player order as `{side, core, hp, remaining, fellTick}` and then the buildings by instance ID as `{side, building, hp}`. Each Core starts at its own maximum health (`maxHealthOf`, with the side option `coreHealths[player]`). A destroyed Core's cells become open ground and **nothing else changes** (CB-17a): its owner's buildings, sources, conduits and units carry on.
 
 Implemented in `packages/core/src/arena.ts` (geometry) and `arena-sim.ts`
 (state and tick), `arena-paths.ts` (fields). Units live in an **arena**: one
@@ -2686,8 +2702,8 @@ that owner's **living** economy buildings on that side with that effect, of
 `steps * stepPercent` (the building's tier value). Buildings of a partner add
 nothing. The owner's **bonus** `P` is the raw total capped, each owner on their
 own (`rampBonus(sim, ctx, side, effect, owner)`): `P = min(raw, cap)` with `cap = maxSourceSpeedPercent` for
-`source_speed` and `maxUnitStrengthPercent` for `unit_strength` (both 300 at
-the moment). The total is recomputed whenever it is read. A building leaves
+`source_speed` and `maxUnitStrengthPercent` for `unit_strength` (25 and 100
+since the rebalance, issue #145). The total is recomputed whenever it is read. A building leaves
 the sum the moment it is destroyed (destroying ramp buildings weakens the enemy's ramp for the rest of the battle);
 what it already did stays: running source countdowns and units already
 spawned keep their values. Each building is also limited by its own
@@ -2699,8 +2715,8 @@ source interval modifiers to one value per player index: each owner's
 bonus `P` of its owner, so a player's Overclocker leaves a partner's collectors
 unchanged: `max(1, floor(intervalTicks * 100 /
 (100 + P)))` (integer division rounds down; at least 1, so at most one item
-per tick). With the maximum 300 a tier 1 extractor (20) drops to 5, a tier 3
-(10) to 2. The first countdown of a battle and any countdown already running
+per tick). With the maximum 25 a tier 1 extractor (20) drops to 16, a tier 2
+(14) to 11 and a tier 3 (10) to 8. The first countdown of a battle and any countdown already running
 are not changed when the bonus changes, only the next reset sees it.
 
 **`unit_strength`.** A unit spawned by a unit producer (or placed with
@@ -2782,18 +2798,20 @@ Overload guarantees that battles end. Constants (`content/sim.json`):
   500 health and falls at tick 3100 (14 beats take 525). A stronghold's Core
   is often smaller than that. In the sample of 96 shipped threats (all four
   archetypes, types easy, medium and hard, rounds 1 to 8, party size 1,
-  seed `100 + round`, from `generateThreat`) the stronghold's Core health has
-  a median of 313.5, a minimum of 42 and a maximum of 2140, and is under 500
-  in 68 of the 96 (none is exactly 500). A Core of 315 falls at tick 2800
-  (11 beats take 330, 10 take 275) and one of 42 at tick 2100 (4 beats take
-  50, 3 take 30), so against those the decay destroys the stronghold's Core
-  first and the party wins by outlasting it: this is a legitimate way to win,
-  and turtling is an intended strategy. The other 28 have more than 500 Core
-  health (Rusher 12, Fortress 9, Boss 6, Escalator 1; all in round 4 or
-  later) and outlast the party's Core: against those the party must destroy
-  the stronghold before tick 3100 or the threat wins. Larger parties meet
-  larger strongholds (party size 2: median 584.5, size 4: median 1137.5, same
-  grid), so the share of such threats rises with the party size. Damage from
+  seed `100 + round`, from `generateThreat`, with threats growing 25 percent
+  per round, issue #145) the stronghold's Core health has a median of 241,
+  a minimum of 42 and a maximum of 1188, and is under 500 in 81 of the 96
+  (one is exactly 500). A Core of 241 falls at tick 2700 (10 beats take 275,
+  9 take 225) and one of 42 at tick 2100 (4 beats take 50, 3 take 30), so
+  against those the decay destroys the stronghold's Core first and the party
+  wins by outlasting it: this is a legitimate way to win, and turtling is an
+  intended strategy. The other 14 have more than 500 Core health (Rusher 8,
+  Fortress 3, Boss 3; all in round 5 or later) and outlast the party's Core:
+  against those the party must destroy the stronghold before tick 3100 or the
+  threat wins. Larger parties meet larger strongholds (total health, party
+  size 2: median 453, size 4: median 896, same grid; the smallest single Core
+  in the whole grid is 40), so the share of such threats rises with the party
+  size (14 of 96 at size 1, 44 at size 2 and 76 at size 4). Damage from
   units or turrets moves either deadline earlier. This is decided and
   intended, and no rule is special-cased for PvE: the decay applies equally
   to both Cores and the smaller falls first. Screens should compute the
@@ -3191,16 +3209,17 @@ most `2^52 - hp`, and two Cores whose sums both saturated differ only by their
 the sum of the overkill of its Cores that were destroyed in the **latest**
 tick, in player order, saturating at `2^52` (`sumOverkill`).
 
-**Not part of the saved state (issue #157).** `remaining` lives in the context,
-not in `ArenaSim`, and the tick at which a Core fell is kept only by the
-`Battle` object. A context rebuilt from a saved state therefore starts with
-`remaining` equal to the clamped health: a Core that had fallen before the
-restore point has overkill 0 and a restored `Battle` summary shows `null` for
-its `destroyedTick`. This changes no outcome of `stepArena` (rung 3 reads only
-Cores that fell in the latest tick, and a saved `Battle` is not restored); the
-state hash and the events are the same with or without a restore. Carrying
-these values in `ArenaSim` would change every pinned `stateHash` of a battle
-in which a Core falls, so it waits for a format change.
+**Part of the saved state (issue #157).** Each Core entry of the `health`
+list carries `remaining` (the unclamped health after the latest tick that
+damaged it; equal to `hp` while the Core stands, so the value starts as the
+maximum health) and `fellTick` (the tick in which the Core was destroyed, or
+`null`). `ctx.coreRemaining` is derived from them when a context is built, and
+the `Battle` reads the fall tick from `fellTick`, so a Core that fell before a
+restore point keeps its overkill and its `destroyedTick`: restoring at any tick
+gives the same summary as a straight run. `ArenaSim` is not a saved format (a
+`Battle` is not saved), so no format number changes; the entries are part of
+the state hash, which is why this change regenerated the pinned `stateHash`es
+of every battle.
 
 ### End conditions (CB-33, PP-10)
 
@@ -3431,13 +3450,13 @@ and `pve-battle`: `threat-kind.ts`. A PvE enemy or boss is a scripted threat,
 not a factory: a schedule of unit **waves** that arrive at the front edge of its
 side, plus a **stronghold** (one Core per party plot, walls and turrets) for the party to attack.
 Its strength grows exponentially with the round (SC-1 to SC-7) so that every
-run eventually ends. All numbers are placeholders in `content/threats.json`
+run eventually ends. The numbers are in `content/threats.json`
 (schema `schemas/threats.schema.json`, loader `loadThreats(data, {units,
 buildings})`, raw export `rawThreats` from `@game/content`).
 
 ### The budget (SC-1)
 
-`baseBudget` (B0, 100), `growthPercent` (g, 135: a factor 1.35 per round) and
+`baseBudget` (B0, 100), `growthPercent` (g, 125: a factor 1.25 per round) and
 `typeMultiplierPercent` (`easy` 70, `medium` 100, `hard` 140, `boss` 120).
 `budget(round, type, partySize)` is computed in exactly this order:
 
@@ -3454,8 +3473,8 @@ that percent arithmetic on any budget (up to 1000 percent) stays in the safe
 range. Later rounds are clamped to `maxRound` (the budget stops growing there,
 far beyond any run that can be survived). `growthPercent` must be above 100 and
 the loader rejects a `baseBudget` above the limit. Medium budgets for one
-player, rounds 1 to 15: 100, 135, 182, 245, 330, 445, 600, 810, 1093, 1475,
-1991, 2687, 3627, 4896, 6609.
+player, rounds 1 to 15: 100, 125, 156, 195, 243, 303, 378, 472, 590, 737, 921,
+1151, 1438, 1797, 2246.
 
 ### The profile (plain JSON, `schemas/threat-profile.schema.json`)
 
@@ -3483,14 +3502,14 @@ An archetype has `waveSharePercent` (the rest of the budget goes to the
 stronghold), `waves` `{firstTick, intervalTicks, count, growthPercent,
 composition: [{unit, weight}], signature?}` and `stronghold`
 `{coreHealthPerBudget, wallSharePercent, turretSharePercent, layout}`.
-`bossOnly` archetypes are never offered by `pickArchetypes`. Placeholder values:
+`bossOnly` archetypes are never offered by `pickArchetypes`. Shipped values:
 
 | Archetype | Wave share | Waves (first tick, interval, count, growth) | Composition | Stronghold (Core per budget, walls, turrets, layout) |
 | --- | --- | --- | --- | --- |
 | Rusher | 70 | 100, 120, 6, 115 | soldier 2 : raider 1 | 600, 0, 0, `open` |
-| Fortress | 20 | 600, 400, 3, 130 | soldier | 500, 30, 40, `ring` |
+| Fortress | 20 | 600, 400, 3, 130 | soldier | 300, 30, 25, `ring` |
 | Escalator | 75 | 150, 150, 8, 160 | soldier 3 : raider 1 | 300, 25, 15, `line` |
-| Boss | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 30, `ring` |
+| Boss | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 
 Rusher tests defence (early frequent waves, a small open Core); Fortress tests
 ramp and siege (late light waves, a big walled Core with turrets); Escalator
@@ -3697,7 +3716,7 @@ section when their issue lands; none of them is in the code yet.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-6 | The boards are rebuilt as supply-limited boards (each building's need against its collectors' rates); the descriptions below, and every result measured on them, are void until then. Since issue #130 the production step caps every producer at its top speed (placeholder intervals), so the pinned results changed. | not yet implemented (issue #145) |
+| PP-6 | The boards are rebuilt as supply-limited boards (each building's need against its collectors' rates); the descriptions below, and every result measured on them, are void until then. Since issue #130 the production step caps every producer at its top speed, so the pinned results changed. | **not yet implemented** (issue #145): the numbers of the rebalance are shipped (part 1) but the boards are unchanged. With them, rush loses to fortify (0 of 20) and to siege (0 of 20) and siege beats fortify (20 of 20): no circle yet |
 
 `reference-boards.ts` and `reference-boards-siege.ts` (importable by later
 tools; not test modules): four solo boards as `team-state-ops` scripts on the
@@ -4460,17 +4479,17 @@ manufacture value. (An earlier version added 25% for "Workshop upgrades that
 turn gold into slightly more value"; that was wrong and the margin was
 removed. A fuzz of seeded runs that buy, re-roll and upgrade shows no false
 rejection and a highest value-to-limit ratio of at most 1.) With the current content
-(starting gold 10, income 3, hard win 8, PvP win 6, Windfall 4, kit worth 67):
+(starting gold 10, income 5, hard win 13, PvP win 8, Windfall 4, kit worth 67):
 
 | Party | Round | Gold per player | Limit |
 | ----- | ----- | --------------- | ----- |
-| 1     | 1     | 25              | 92    |
-| 1     | 2     | 53              | 120   |
-| 1     | 3     | 81              | 148   |
-| 1     | 5     | 137             | 204   |
-| 1     | 8     | 221             | 288   |
-| 1     | 12    | 333             | 400   |
-| 2     | 3     | 81              | 296   |
+| 1     | 1     | 32              | 99    |
+| 1     | 2     | 71              | 138   |
+| 1     | 3     | 110             | 177   |
+| 1     | 5     | 188             | 255   |
+| 1     | 8     | 305             | 372   |
+| 1     | 12    | 461             | 528   |
+| 2     | 3     | 110             | 354   |
 
 The bound is the installed version's, which is also the ghost's version
 (MM-15), so no tolerance for runs that spanned an update is needed yet (MM-17).

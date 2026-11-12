@@ -53,7 +53,7 @@ describe('content fields and loader rules', () => {
     expect(
       barracks.kind === 'unit_producer' &&
         barracks.tiers.map((t) => t.productionIntervalTicks),
-    ).toEqual([80, 60, 40]);
+    ).toEqual([100, 70, 50]);
   });
 
   test('a unit producer tier needs productionIntervalTicks >= 1', () => {
@@ -94,13 +94,13 @@ describe('content fields and loader rules', () => {
 
 describe('helpers (PP-5, PP-6)', () => {
   test('needPer1000 is floor(1000 * cost / interval)', () => {
-    // Barracks costs 6 / 5 / 4 per 80 / 60 / 40 ticks.
+    // Barracks costs 5 / 5 / 5 per 100 / 70 / 50 ticks.
     expect([1, 2, 3].map((t) => needPer1000(bld('bld_barracks'), t))).toEqual([
-      75, 83, 100,
+      50, 71, 100,
     ]);
-    // Armory tier 1: 6 per 10 ticks.
-    expect(needPer1000(bld('bld_armory'), 1)).toBe(600);
-    // Turret tier 1: costPerShot per cooldownTicks 8.
+    // Armory tier 1: 4 per 80 ticks.
+    expect(needPer1000(bld('bld_armory'), 1)).toBe(50);
+    // Turret tier 1: costPerShot per cooldownTicks 10.
     const turret = bld('bld_turret');
     const shot =
       turret.kind === 'defense' && turret.defenseType === 'turret'
@@ -118,14 +118,14 @@ describe('helpers (PP-5, PP-6)', () => {
   test('screens show hundredths per second, rounded down', () => {
     const ticksPerSecond = simConfig.ticksPerSecond;
     expect(ticksPerSecond).toBe(10);
-    // 100 * 6 * 10 / 80 = 75: 0.75 items per second.
+    // 100 * 5 * 10 / 100 = 50: 0.50 items per second.
     expect(
       needHundredthsPerSecond(bld('bld_barracks'), 1, ticksPerSecond),
-    ).toBe(75);
-    // 100 * 5 * 10 / 60 = 83.3 -> 83.
+    ).toBe(50);
+    // 100 * 5 * 10 / 70 = 71.4 -> 71.
     expect(
       needHundredthsPerSecond(bld('bld_barracks'), 2, ticksPerSecond),
-    ).toBe(83);
+    ).toBe(71);
   });
 
   test('a collector shows floor(1000 / scaledInterval)', () => {
@@ -144,10 +144,11 @@ describe('helpers (PP-5, PP-6)', () => {
 
 /**
  * Two tier 3 extractors (res_a, one item per 10 ticks each) -> merger ->
- * tier-1 barracks (6 per 80 ticks = 75 per 1000 ticks): supply 200 per 1000
- * ticks is above the need.
+ * a barracks (tier 1: 5 per 100 ticks = 50 per 1000 ticks): supply 200 per
+ * 1000 ticks is above the need. With one tier 1 extractor (50) the supply
+ * meets a tier 1 barracks exactly and falls short of a tier 2 one (71).
  */
-function mergedFarm(extractors: number) {
+function mergedFarm(extractors: number, barracksTier = 1) {
   const lab = new Lab(
     tinyMap([
       [2, 2, 'res_a'],
@@ -157,7 +158,7 @@ function mergedFarm(extractors: number) {
   lab.core(8, 0);
   const west = lab.put('bld_extractor', 2, 2, 0, extractors === 2 ? 3 : 1);
   const merger = lab.put('bld_merger', 3, 4);
-  const bar = lab.put('bld_barracks', 3, 5);
+  const bar = lab.put('bld_barracks', 3, 5, 0, barracksTier);
   lab.link(west, 'north', merger, 'west', [
     [2, 3],
     [2, 4],
@@ -216,12 +217,12 @@ describe('the production step (PP-6)', () => {
     }
     const spawns = spawnTicks(events);
     expect(spawns.length).toBeGreaterThanOrEqual(8);
-    // After the first unit, exactly one per productionIntervalTicks (80).
+    // After the first unit, exactly one per productionIntervalTicks (100).
     spawns.slice(1).forEach((tick, i) => {
-      expect(tick - got(spawns[i])).toBe(80);
+      expect(tick - got(spawns[i])).toBe(100);
     });
     // A building never holds more than one production plus the buffer.
-    expect(maxProgress).toBe(6);
+    expect(maxProgress).toBe(5);
     expect(maxBuffer).toBeLessThanOrEqual(simConfig.inputBufferUnits);
     // The surplus backs up to the collectors, which stall; nothing is lost.
     const board = sim.boards[1];
@@ -248,23 +249,24 @@ describe('the production step (PP-6)', () => {
     );
     const p = got(sim.producers.find((x) => x.building === bar));
     const input = got(got(sim.boards[1].consumers[0]).inputs[0]);
-    p.progress = 5;
+    p.progress = 4;
     p.cooldown = 10;
     input.count = 4;
     runArena(sim, ctx, 1);
-    expect(p.progress).toBe(6);
+    expect(p.progress).toBe(5);
     expect(input.count).toBeGreaterThanOrEqual(3);
     // Full progress and a running cooldown: it takes nothing more.
     const before = input.count;
     runArena(sim, ctx, 3);
-    expect(p.progress).toBe(6);
+    expect(p.progress).toBe(5);
     expect(input.count).toBeGreaterThanOrEqual(before);
   });
 
   test('an under-supplied producer makes full units at the rate of its supply', () => {
-    // One tier 1 extractor: 50 per 1000 ticks, below the need of 75. A unit
-    // is made whenever 6 items are in: every 120 ticks, never weaker.
-    const { lab } = mergedFarm(1);
+    // One tier 1 extractor: 50 per 1000 ticks, below the need of 71 of a
+    // tier 2 barracks. A unit is made whenever 5 items are in: every 100
+    // ticks, never weaker.
+    const { lab } = mergedFarm(1, 2);
     const { sim, ctx, events } = startArenaBattle(
       coreOnlyTeam(),
       lab.state,
@@ -276,7 +278,7 @@ describe('the production step (PP-6)', () => {
     const spawns = spawnTicks(events);
     expect(spawns.length).toBeGreaterThanOrEqual(5);
     spawns.slice(1).forEach((tick, i) => {
-      expect(tick - got(spawns[i])).toBe(120);
+      expect(tick - got(spawns[i])).toBe(100);
     });
     expect(sim.boards[1].sources.every((s) => s.stalledTicks === 0)).toBe(true);
     expect(sim.units.every((u) => u.def === 'unit_soldier')).toBe(true);
@@ -297,16 +299,16 @@ describe('the production step (PP-6)', () => {
     );
     const ramp = got(sim.ramps[0]);
     // A full charge but a running cooldown: the step waits for tick 3.
-    ramp.charge = 4;
+    ramp.charge = 2;
     ramp.cooldown = 3;
     runArena(sim, ctx, 3);
     expect(ramp.steps).toBe(0);
     runArena(sim, ctx, 1);
     expect(ramp.steps).toBe(1);
     expect(events.filter((e) => e.type === 'ramp_step')[0]?.tick).toBe(3);
-    // The cooldown is the tier's stepIntervalTicks (10), counted down once in
+    // The cooldown is the tier's stepIntervalTicks (40), counted down once in
     // the same tick.
-    expect(ramp.cooldown).toBe(9);
+    expect(ramp.cooldown).toBe(39);
   });
 });
 
@@ -316,9 +318,9 @@ describe('the need dry run (PP-6, PP-7)', () => {
     // 2400 ticks: the rate window of 1200 ticks is 15 whole intervals.
     const d = dryRunFlow(lab.state, content, simConfig, 2400, 'need');
     const need = needPer1000(bld('bld_barracks'), 1);
-    expect(need).toBe(75);
+    expect(need).toBe(50);
     expect(d.needs).toEqual([
-      { building: bar, needPer1000: 75, productions: 30 },
+      { building: bar, needPer1000: 50, productions: 24 },
     ]);
     expect(d.consumers).toEqual([
       expect.objectContaining({ building: bar, ratePer1000: need }),
@@ -328,13 +330,13 @@ describe('the need dry run (PP-6, PP-7)', () => {
   });
 
   test('an under-supplied consumer shows the rate of its supply', () => {
-    const { lab, bar } = mergedFarm(1);
+    const { lab, bar } = mergedFarm(1, 2);
     const d = dryRunFlow(lab.state, content, simConfig, 2000, 'need');
     expect(d.consumers).toEqual([
       expect.objectContaining({ building: bar, ratePer1000: 50 }),
     ]);
-    expect(got(d.needs?.[0]).needPer1000).toBe(75);
-    expect(got(d.needs?.[0]).productions).toBe(16);
+    expect(got(d.needs?.[0]).needPer1000).toBe(71);
+    expect(got(d.needs?.[0]).productions).toBe(19);
   });
 
   test('the default mode reports no needs', () => {
@@ -347,10 +349,11 @@ describe('the need dry run (PP-6, PP-7)', () => {
 
 describe('splitting with back-up against a top speed (PP-7)', () => {
   /**
-   * Tier 3 + tier 2 collectors (100 + 71 = 171 per 1000 ticks) -> merger ->
-   * splitter -> `north` (direct) and `east` barracks. The even share is 85.
+   * Two collectors -> merger -> splitter -> `north` (direct) and `east`
+   * barracks. By default tier 3 + tier 2 (100 + 71 = 171 per 1000 ticks, even
+   * share 85).
    */
-  function split(northTier: number, eastTier: number) {
+  function split(northTier: number, eastTier: number, tiers = [3, 2]) {
     const lab = new Lab(
       tinyMap([
         [2, 2, 'res_a'],
@@ -358,8 +361,8 @@ describe('splitting with back-up against a top speed (PP-7)', () => {
       ]),
     );
     lab.core(8, 0);
-    const a = lab.put('bld_extractor', 2, 2, 0, 3);
-    const b = lab.put('bld_extractor', 6, 2, 0, 2);
+    const a = lab.put('bld_extractor', 2, 2, 0, got(tiers[0]));
+    const b = lab.put('bld_extractor', 6, 2, 0, got(tiers[1]));
     const m = lab.put('bld_merger', 3, 5);
     const sp = lab.put('bld_splitter', 3, 6);
     const n = lab.put('bld_barracks', 3, 7, 0, northTier);
@@ -388,27 +391,27 @@ describe('splitting with back-up against a top speed (PP-7)', () => {
     got(d.consumers.find((c) => c.building === building)).ratePer1000;
 
   test('a path that reaches its top speed backs up; the other gets the remainder', () => {
-    const { lab, n, e } = split(1, 3);
+    // Two tier 2 collectors: 142 per 1000 ticks, even share 71.
+    const { lab, n, e } = split(1, 3, [2, 2]);
     const d = dryRunFlow(lab.state, content, simConfig, 4000, 'need');
-    // The tier 1 barracks takes exactly its need (75), less than the even
-    // share (85); the tier 3 barracks (needs 100) gets the rest.
+    // The tier 1 barracks takes exactly its need (50), less than the even
+    // share (71); the tier 3 barracks (needs 100) gets the rest.
     expect(rate(d, n)).toBe(needPer1000(bld('bld_barracks'), 1));
-    expect(rate(d, e)).toBeGreaterThan(85);
+    expect(rate(d, e)).toBeGreaterThan(71);
     expect(rate(d, e)).toBeLessThan(100);
-    expect(rate(d, n) + rate(d, e)).toBeGreaterThanOrEqual(168);
+    expect(rate(d, n) + rate(d, e)).toBeGreaterThanOrEqual(138);
     expect(d.sources.every((s) => s.stalledTicks === 0)).toBe(true);
     expect(d.routes.every((r) => r.lost === 0)).toBe(true);
   });
 
   test('two equal consumers get counts that differ by at most 1 while both accept', () => {
-    // One tier 1 collector (50): the share is 25 each, far under the need.
     const { lab, n, e } = split(1, 1);
     const d = dryRunFlow(lab.state, content, simConfig, 4000, 'need');
     const dn = got(d.consumers.find((c) => c.building === n)).delivered;
     const de = got(d.consumers.find((c) => c.building === e)).delivered;
     expect(dn + de).toBeGreaterThan(300);
-    // Supply 171: the share 85 is above the need 75, so both are at top speed.
-    expect(rate(d, n)).toBe(75);
+    // Supply 171: the share 85 is above the need 50, so both are at top speed.
+    expect(rate(d, n)).toBe(50);
     expect(Math.abs(rate(d, n) - rate(d, e))).toBeLessThanOrEqual(1);
   });
 

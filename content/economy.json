@@ -7,14 +7,14 @@
     { "def": "bld_wall", "tier": 1, "count": 3 },
     { "def": "bld_turret", "tier": 1, "count": 1 }
   ],
-  "baseIncomePerShop": 3,
+  "baseIncomePerShop": 5,
   "shopOfferCount": 5,
   "rerollCost": 1,
   "sellRefundPercent": 50,
   "rewards": {
-    "pveWin": { "easy": 3, "medium": 5, "hard": 8 },
-    "pvpWin": 6,
-    "pvpLoss": 2
+    "pveWin": { "easy": 6, "medium": 9, "hard": 13 },
+    "pvpWin": 8,
+    "pvpLoss": 4
   },
   "offerWeights": [
     { "def": "bld_extractor", "weight": 10 },
@@ -25,7 +25,8 @@
     { "def": "bld_wall", "weight": 8 },
     { "def": "bld_gate", "weight": 5 },
     { "def": "bld_turret", "weight": 8 },
-    { "def": "bld_overclocker", "weight": 3 }
+    { "def": "bld_overclocker", "weight": 3 },
+    { "def": "bld_armory", "weight": 3 }
   ],
   "tierOdds": [
     { "fromRound": 1, "weights": [100, 0, 0] },

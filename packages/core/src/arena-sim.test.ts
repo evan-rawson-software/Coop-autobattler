@@ -1410,12 +1410,12 @@ describe('destruction', () => {
     expect(spawnedBy(n.b1)).toBe(0);
     expect(spawnedBy(n.b2)).toBe(0);
     // Production at B3: first item delivered at tick 19 + 2 = 21, then every
-    // 20 ticks; the sixth is delivered (and the unit spawned) in tick 121.
+    // 20 ticks; the fifth is delivered (and the unit spawned) in tick 101.
     expect(
       ofType(events, 'unit_spawned')
         .filter((e) => e.building === n.b3)
         .map((e) => e.tick),
-    ).toEqual([121, 241, 361, 481, 601]);
+    ).toEqual([101, 201, 301, 401, 501, 601]);
     expect(
       ofType(events, 'delivered').filter(
         (e) => e.side === 1 && e.building === n.b1,
@@ -1517,10 +1517,10 @@ describe('production', () => {
   }
 
   test('a cost larger than the input buffer is met by accumulating progress', () => {
-    // Tier 1 barracks costs 6, the buffer holds 4. Extractor tier 1: one item
+    // Tier 1 barracks costs 5, the buffer holds 4. Extractor tier 1: one item
     // per 20 ticks, first made in tick 19. Over a 2-cell conduit the k-th item
-    // is delivered in tick 19 + 2 + 20 (k - 1); the sixth, in tick 121,
-    // completes the first unit in that same tick. Then every 120 ticks.
+    // is delivered in tick 19 + 2 + 20 (k - 1); the fifth, in tick 101,
+    // completes the first unit in that same tick. Then every 100 ticks.
     const { lab, bar } = farm(1, 2);
     const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
@@ -1531,19 +1531,19 @@ describe('production', () => {
     );
     runArena(sim, ctx, 600);
     const spawns = ofType(events, 'unit_spawned');
-    expect(spawns.map((e) => e.tick)).toEqual([121, 241, 361, 481]);
+    expect(spawns.map((e) => e.tick)).toEqual([101, 201, 301, 401, 501]);
     expect(
       spawns.every(
         (e) => e.building === bar && e.side === 1 && e.def === 'unit_soldier',
       ),
     ).toBe(true);
-    expect(sim.spawned).toEqual([0, 4]);
+    expect(sim.spawned).toEqual([0, 5]);
     // 600 ticks: items 1..30 delivered (the 30th in tick 599 is not yet); the
     // leftover progress is what has not made a unit.
     const p = got(sim.producers.find((x) => x.building === bar));
     const delivered = ofType(events, 'delivered').length;
     expect(delivered).toBe(29);
-    expect(p.progress + 4 * 6).toBe(delivered);
+    expect(p.progress + 5 * 5).toBe(delivered);
     expect(sim.boards[1].consumers[0]?.inputs[0]?.count).toBe(0);
   });
 

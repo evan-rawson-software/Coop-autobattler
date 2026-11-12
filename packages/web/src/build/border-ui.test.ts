@@ -184,9 +184,9 @@ describe('rates', () => {
     expect(buildingRate(ex, 1, tps).collects).toBe(
       Math.floor((100 * tps) / 20),
     );
-    // 6 per 80 ticks.
-    expect(buildingRate(bk, 1, tps).needs).toBe(Math.floor((600 * tps) / 80));
-    expect(buildingRate(bk, 1, tps).needPer1000).toBe(75);
+    // 5 per 100 ticks.
+    expect(buildingRate(bk, 1, tps).needs).toBe(Math.floor((500 * tps) / 100));
+    expect(buildingRate(bk, 1, tps).needPer1000).toBe(50);
     expect(formatHundredths(125)).toBe('1.25');
     expect(formatHundredths(5)).toBe('0.05');
   });
@@ -222,24 +222,32 @@ describe('rates', () => {
       cells: [{ x: node.x, y: node.y + 1 }],
     });
     expect(r.ok).toBe(true);
-    const flow = computeFlowView(s.run.team, content, simConfig, 600);
+    // A tier 1 barracks needs what one tier 1 extractor gives (one collector
+    // feeds one producer of its tier, #145); a tier 2 barracks needs more.
+    const team = {
+      ...s.run.team,
+      buildings: s.run.team.buildings.map((x) =>
+        x.id === b.id ? { ...x, tier: 2 } : x,
+      ),
+    };
+    const flow = computeFlowView(team, content, simConfig, 600);
     if (flow === null) throw new Error('no flow');
     const sup = flow.supply.find((x) => x.building === b.id);
     expect(sup).toBeDefined();
-    const need = dryRunFlow(s.run.team, content, simConfig, 600, 'need');
-    expect(
-      supplyOf(s.run.team, content, need, simConfig.ticksPerSecond),
-    ).toEqual(flow.supply);
-    // The extractor makes 1 per 20 ticks (50 per 1000); the barracks needs 75.
+    const need = dryRunFlow(team, content, simConfig, 600, 'need');
+    expect(supplyOf(team, content, need, simConfig.ticksPerSecond)).toEqual(
+      flow.supply,
+    );
+    // The extractor makes 1 per 20 ticks (50 per 1000); the barracks needs 71.
     expect(sup?.state).toBe('under');
     expect(flow.underSupplied.has(b.id)).toBe(true);
     // The label does not depend on the dry-run length setting.
     for (const ticks of [0, 1, 100, 5000]) {
-      const f = computeFlowView(s.run.team, content, simConfig, ticks);
+      const f = computeFlowView(team, content, simConfig, ticks);
       expect(f?.supply, `at ${String(ticks)} ticks`).toEqual(flow.supply);
     }
     expect(
-      deriveProblems(s.run.team, content, flow).some(
+      deriveProblems(team, content, flow).some(
         (p) => p.kind === 'under_supplied' && p.building === b.id,
       ),
     ).toBe(true);

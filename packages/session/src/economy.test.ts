@@ -111,7 +111,7 @@ describe('shop step', () => {
   test('income and offers arrive on entering; offers are in the state', () => {
     const deps = depsFor();
     const s = toShop(start(deps), deps);
-    expect(s.perPlayer[0]?.gold).toBe(13);
+    expect(s.perPlayer[0]?.gold).toBe(15);
     const data = shopOf(s);
     expect(data.offers).toHaveLength(5);
     expect(data.offers.every((o) => o !== null && o.tier === 1)).toBe(true);
@@ -168,10 +168,10 @@ describe('shop step', () => {
   test('buying twice from one slot fails; bought slot stays empty', () => {
     const deps = depsFor();
     let s = toShop(start(deps), deps);
-    const slot = shopOf(s).offers.findIndex((o) => o !== null && o.price <= 13);
+    const slot = shopOf(s).offers.findIndex((o) => o !== null && o.price <= 15);
     const price = shopOf(s).offers[slot]?.price ?? 0;
     s = ok(s, 0, { type: 'buy', slot }, deps).state;
-    expect(s.perPlayer[0]?.gold).toBe(13 - price);
+    expect(s.perPlayer[0]?.gold).toBe(15 - price);
     expect(shopOf(s).offers[slot]).toBeNull();
     expect(reject(s, 0, { type: 'buy', slot }, deps)).toBe('no_such_offer');
     const bought = s.team.stash.at(-1);
@@ -184,7 +184,7 @@ describe('shop step', () => {
     const s0 = toShop(start(deps), deps);
     const s1 = ok(s0, 0, { type: 'reroll' }, deps).state;
     const s2 = ok(s1, 0, { type: 'reroll' }, deps).state;
-    expect(s2.perPlayer[0]?.gold).toBe(11);
+    expect(s2.perPlayer[0]?.gold).toBe(13);
     const a = shopOf(s0).offers;
     const b = shopOf(s1).offers;
     const c = shopOf(s2).offers;
@@ -296,8 +296,8 @@ describe('a scripted solo run', () => {
       for (const p of s.perPlayer) expect(p.gold).toBeGreaterThanOrEqual(0);
     }
     expect(shops).toBe(4);
-    // Income is paid on entering each shop: entering gold is previous + 3.
-    expect(golds[0]).toBe(13);
+    // Income is paid on entering each shop: entering gold is previous + 5.
+    expect(golds[0]).toBe(15);
     expect(validateRunState(clone(s), deps).ok).toBe(true);
   });
 });

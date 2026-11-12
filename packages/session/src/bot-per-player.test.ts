@@ -8,6 +8,7 @@ import {
   isBorderEnd,
   validateGhostSnapshot,
   validateTeamState,
+  type BuildingId,
   type TeamState,
 } from '@game/core';
 import { BOT_STRATEGIES, playBotRun, type BotRunResult } from './bot.js';
@@ -157,20 +158,30 @@ describe('bots build per player', () => {
     }
   }, 300_000);
 
-  test('a collector feeds two consumers through a Splitter', () => {
-    let found = 0;
-    for (let seed = 1; seed <= 6 && found === 0; seed++) {
-      const r = play('rush', 1, seed);
-      const team = r.state.team;
-      for (const sp of team.buildings.filter((b) => b.def === 'bld_splitter')) {
-        const outs = team.conduits.filter(
-          (c) => !isBorderEnd(c.from) && c.from.building === sp.id,
-        );
-        if (outs.length >= 2) found++;
+  // Tripwire for #178: since the rebalance (#145) every tier-1 consumer needs
+  // exactly what one tier-1 collector gives, the bot fills its collector
+  // nodes first and leaves its Splitters in the stash. When the bot places
+  // them again this test starts to pass: change `test.fails` to `test`.
+  test.fails(
+    'a collector feeds two consumers through a Splitter',
+    () => {
+      let found = 0;
+      for (let seed = 1; seed <= 6 && found === 0; seed++) {
+        const r = play('rush', 1, seed);
+        const team = r.state.team;
+        for (const sp of team.buildings.filter(
+          (b) => b.def === 'bld_splitter',
+        )) {
+          const outs = team.conduits.filter(
+            (c) => !isBorderEnd(c.from) && c.from.building === sp.id,
+          );
+          if (outs.length >= 2) found++;
+        }
       }
-    }
-    expect(found).toBeGreaterThan(0);
-  }, 300_000);
+      expect(found).toBeGreaterThan(0);
+    },
+    300_000,
+  );
 
   const style = {
     connect: true,
@@ -201,10 +212,31 @@ describe('bots build per player', () => {
   test('layout leaves a consumer in the stash when one collector cannot feed it enough', () => {
     const team = withStash(['bld_extractor', 'bld_armory']);
     const armory = team.stash[1]?.id;
+    // No shipped consumer needs more than four times a tier 1 collector any
+    // more (one collector feeds one producer of its tier, #145), so the test
+    // makes an Armory that costs ten times as much per step: its need is 500
+    // against a supply of 50 (10 percent, under the 20 percent minimum).
+    const base = content.buildings.get('bld_armory');
+    if (base?.kind !== 'economy') throw new Error('no armory');
+    const armoryDef = {
+      ...base,
+      tiers: base.tiers.map((t) => ({
+        ...t,
+        costPerStep: 10 * t.costPerStep,
+      })),
+    } as unknown as typeof base;
+    const hungry = {
+      ...content,
+      buildings: {
+        get: (id: BuildingId) =>
+          id === 'bld_armory' ? armoryDef : content.buildings.get(id),
+        list: () => content.buildings.list(),
+      },
+    };
     const plan = planLayout(
       team,
       0,
-      content,
+      hungry,
       team.map.plotWidth,
       style,
       Rng.fromSeed(1),

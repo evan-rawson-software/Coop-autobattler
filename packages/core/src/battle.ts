@@ -276,7 +276,6 @@ export function startBattle(
       coreMax[h.side === 0 ? 0 : 1].push({ player: h.core, max: h.hp });
     }
   }
-  const fellAt: Map<string, number> = new Map();
   const rampSteps: [number, number] = [0, 0];
   const timeline: TimelineSample[] = [];
   let scanned = eventLog.length;
@@ -313,8 +312,13 @@ export function startBattle(
     coreMax[s].reduce((t, c) => addInt(t, coreHpOf(s, c.player)), 0);
   const sumMax = (s: 0 | 1): number =>
     coreMax[s].reduce((t, c) => addInt(t, c.max), 0);
-  const fellTick = (s: number, player: number): number | null =>
-    fellAt.get(`${String(s)}:${String(player)}`) ?? null;
+  // Read from the state, so a restored battle knows when its Cores fell.
+  const fellTick = (s: number, player: number): number | null => {
+    const h = sim.health.find(
+      (x) => isCoreHealth(x) && x.side === s && x.core === player,
+    );
+    return h !== undefined && isCoreHealth(h) ? h.fellTick : null;
+  };
   /**
    * A side's overkill: the sum, in player order and saturating, of the
    * overkill of its Cores destroyed in the latest tick (PP-10).
@@ -422,9 +426,6 @@ export function startBattle(
       for (; scanned < eventLog.length; scanned++) {
         const e = eventLog[scanned];
         if (e?.type === 'ramp_step') rampSteps[e.side === 0 ? 0 : 1] += 1;
-        if (e?.type === 'core_destroyed') {
-          fellAt.set(`${String(e.side)}:${String(e.core)}`, e.tick);
-        }
       }
       const ended = decide();
       if (ended !== null) {

@@ -111,8 +111,8 @@ describe('several Cores per side', () => {
   test('the health list holds the Cores by player before the buildings', () => {
     const b = start(team2(true), team2(true));
     expect(b.sim.health.slice(0, 2)).toEqual([
-      { side: 0, core: 0, hp: 500 },
-      { side: 0, core: 1, hp: 500 },
+      { side: 0, core: 0, hp: 500, remaining: 500, fellTick: null },
+      { side: 0, core: 1, hp: 500, remaining: 500, fellTick: null },
     ]);
     expect(b.sim.health.filter(isCoreHealth)).toHaveLength(4);
     expect(b.sim.health[2]).toHaveProperty('building');
@@ -408,6 +408,38 @@ describe('mirror and restore with several Cores per side', () => {
         ).toBe(hashes[t + 1]);
       }
     }
+  });
+});
+
+describe('Core overkill and fall tick survive a restore (issue #157)', () => {
+  test('a Core that fell before the restore point keeps its overkill and fall tick', () => {
+    const make = (): Battle =>
+      start(team2(true, true), team2(true), [
+        { coreHealths: [500, 20], freePower: true },
+        null,
+      ]);
+    const ref = make();
+    let fellEvent = -1;
+    for (let t = 0; t < 1500 && !ref.isOver() && fellEvent < 0; t++) {
+      ref.step();
+      const e = events(ref, 'core_destroyed')[0];
+      if (e !== undefined) fellEvent = e.tick;
+    }
+    expect(fellEvent).toBeGreaterThan(0);
+    // Run on, so the restore point is well after the fall.
+    for (let t = 0; t < 30 && !ref.isOver(); t++) ref.step();
+    const overkill = ref.ctx.coreRemaining.map((row) => row.slice());
+    // The dead Core really had overkill, or the test would pass vacuously.
+    expect(overkill[0]?.[1]).toBeLessThan(0);
+    const copy = JSON.parse(JSON.stringify(ref.sim)) as ArenaSim;
+    const ctx = createArenaContext(copy, content, simConfig);
+    expect(ctx.coreRemaining).toEqual(overkill);
+    const dead = copy.health.find(
+      (h) => isCoreHealth(h) && h.side === 0 && h.core === 1,
+    );
+    expect(dead !== undefined && isCoreHealth(dead) && dead.fellTick).toBe(
+      fellEvent,
+    );
   });
 });
 

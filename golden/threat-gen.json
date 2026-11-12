@@ -84,7 +84,7 @@
           "type": "medium",
           "round": 5,
           "partySize": 1,
-          "budget": 330,
+          "budget": 243,
           "unitStrengthPercent": 0,
           "waves": [
             {
@@ -93,34 +93,19 @@
               "count": 1
             },
             {
-              "tick": 100,
-              "unit": "unit_raider",
-              "count": 1
-            },
-            {
               "tick": 220,
               "unit": "unit_soldier",
-              "count": 2
-            },
-            {
-              "tick": 220,
-              "unit": "unit_raider",
               "count": 1
             },
             {
               "tick": 340,
               "unit": "unit_soldier",
-              "count": 2
-            },
-            {
-              "tick": 340,
-              "unit": "unit_raider",
               "count": 1
             },
             {
               "tick": 460,
               "unit": "unit_soldier",
-              "count": 2
+              "count": 1
             },
             {
               "tick": 460,
@@ -140,12 +125,12 @@
             {
               "tick": 700,
               "unit": "unit_soldier",
-              "count": 3
+              "count": 2
             },
             {
               "tick": 700,
               "unit": "unit_raider",
-              "count": 2
+              "count": 1
             }
           ],
           "stronghold": {
@@ -153,13 +138,13 @@
               {
                 "x": 11,
                 "y": 3,
-                "health": 594
+                "health": 438
               }
             ],
             "buildings": []
           }
         },
-        "hash": "1f3a7bb1"
+        "hash": "787097c7"
       }
     }
   },
@@ -181,48 +166,48 @@
           "type": "medium",
           "round": 10,
           "partySize": 1,
-          "budget": 1475,
-          "unitStrengthPercent": 109,
+          "budget": 737,
+          "unitStrengthPercent": 0,
           "waves": [
             {
               "tick": 100,
               "unit": "unit_soldier",
-              "count": 3
+              "count": 4
             },
             {
               "tick": 100,
               "unit": "unit_raider",
-              "count": 1
-            },
-            {
-              "tick": 220,
-              "unit": "unit_soldier",
-              "count": 3
-            },
-            {
-              "tick": 220,
-              "unit": "unit_raider",
               "count": 2
             },
             {
-              "tick": 340,
+              "tick": 220,
               "unit": "unit_soldier",
               "count": 4
             },
             {
-              "tick": 340,
+              "tick": 220,
               "unit": "unit_raider",
               "count": 2
             },
             {
-              "tick": 460,
+              "tick": 340,
               "unit": "unit_soldier",
               "count": 5
             },
             {
+              "tick": 340,
+              "unit": "unit_raider",
+              "count": 3
+            },
+            {
+              "tick": 460,
+              "unit": "unit_soldier",
+              "count": 6
+            },
+            {
               "tick": 460,
               "unit": "unit_raider",
-              "count": 2
+              "count": 3
             },
             {
               "tick": 580,
@@ -237,7 +222,7 @@
             {
               "tick": 700,
               "unit": "unit_soldier",
-              "count": 6
+              "count": 7
             },
             {
               "tick": 700,
@@ -250,13 +235,13 @@
               {
                 "x": 11,
                 "y": 3,
-                "health": 2658
+                "health": 1332
               }
             ],
             "buildings": []
           }
         },
-        "hash": "693e6ef9"
+        "hash": "7e590899"
       }
     }
   },
@@ -302,17 +287,10 @@
               {
                 "x": 11,
                 "y": 4,
-                "health": 250
+                "health": 195
               }
             ],
             "buildings": [
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 11,
-                "y": 2,
-                "rotation": 0
-              },
               {
                 "def": "bld_wall",
                 "tier": 1,
@@ -379,7 +357,7 @@
             ]
           }
         },
-        "hash": "1e9c2a89"
+        "hash": "35701225"
       }
     }
   },
@@ -401,13 +379,13 @@
           "type": "hard",
           "round": 5,
           "partySize": 1,
-          "budget": 462,
+          "budget": 340,
           "unitStrengthPercent": 0,
           "waves": [
             {
               "tick": 600,
               "unit": "unit_soldier",
-              "count": 2
+              "count": 1
             },
             {
               "tick": 1000,
@@ -417,7 +395,7 @@
             {
               "tick": 1400,
               "unit": "unit_soldier",
-              "count": 3
+              "count": 2
             }
           ],
           "stronghold": {
@@ -425,7 +403,7 @@
               {
                 "x": 11,
                 "y": 4,
-                "health": 635
+                "health": 396
               }
             ],
             "buildings": [
@@ -486,34 +464,6 @@
                 "rotation": 0
               },
               {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 11,
-                "y": 2,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 12,
-                "y": 2,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 13,
-                "y": 2,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 14,
-                "y": 2,
-                "rotation": 0
-              },
-              {
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 15,
@@ -556,13 +506,6 @@
                 "rotation": 0
               },
               {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 14,
-                "y": 6,
-                "rotation": 0
-              },
-              {
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 15,
@@ -630,61 +573,12 @@
                 "tier": 1,
                 "x": 15,
                 "y": 8,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 7,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 8,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 9,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 10,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 13,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 14,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 15,
-                "y": 11,
                 "rotation": 0
               }
             ]
           }
         },
-        "hash": "b2341cc3"
+        "hash": "2313d925"
       }
     }
   },
@@ -706,23 +600,23 @@
           "type": "hard",
           "round": 10,
           "partySize": 1,
-          "budget": 2065,
-          "unitStrengthPercent": 42,
+          "budget": 1031,
+          "unitStrengthPercent": 0,
           "waves": [
             {
               "tick": 600,
               "unit": "unit_soldier",
-              "count": 7
+              "count": 5
             },
             {
               "tick": 1000,
               "unit": "unit_soldier",
-              "count": 9
+              "count": 6
             },
             {
               "tick": 1400,
               "unit": "unit_soldier",
-              "count": 12
+              "count": 8
             }
           ],
           "stronghold": {
@@ -730,7 +624,7 @@
               {
                 "x": 11,
                 "y": 4,
-                "health": 5860
+                "health": 1485
               }
             ],
             "buildings": [
@@ -835,27 +729,6 @@
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 11,
-                "y": 2,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 12,
-                "y": 2,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 13,
-                "y": 2,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
                 "x": 14,
                 "y": 2,
                 "rotation": 0
@@ -885,20 +758,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 8,
-                "y": 3,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 9,
-                "y": 3,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 14,
                 "y": 3,
                 "rotation": 0
               },
@@ -933,13 +792,6 @@
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 9,
-                "y": 5,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
                 "x": 14,
                 "y": 5,
                 "rotation": 0
@@ -955,13 +807,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 8,
-                "y": 6,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 14,
                 "y": 6,
                 "rotation": 0
               },
@@ -990,27 +835,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 8,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 9,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 10,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 13,
                 "y": 7,
                 "rotation": 0
               },
@@ -1269,7 +1093,7 @@
             ]
           }
         },
-        "hash": "5dac4fd8"
+        "hash": "76e38632"
       }
     }
   },
@@ -1376,7 +1200,7 @@
           "type": "medium",
           "round": 5,
           "partySize": 1,
-          "budget": 330,
+          "budget": 243,
           "unitStrengthPercent": 0,
           "waves": [
             {
@@ -1407,17 +1231,12 @@
             {
               "tick": 900,
               "unit": "unit_soldier",
-              "count": 2
-            },
-            {
-              "tick": 900,
-              "unit": "unit_raider",
               "count": 1
             },
             {
               "tick": 1050,
               "unit": "unit_soldier",
-              "count": 4
+              "count": 3
             },
             {
               "tick": 1050,
@@ -1427,12 +1246,12 @@
             {
               "tick": 1200,
               "unit": "unit_soldier",
-              "count": 7
+              "count": 5
             },
             {
               "tick": 1200,
               "unit": "unit_raider",
-              "count": 2
+              "count": 1
             }
           ],
           "stronghold": {
@@ -1440,17 +1259,10 @@
               {
                 "x": 11,
                 "y": 3,
-                "health": 189
+                "health": 147
               }
             ],
             "buildings": [
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 2,
-                "y": 10,
-                "rotation": 0
-              },
               {
                 "def": "bld_wall",
                 "tier": 1,
@@ -1471,18 +1283,11 @@
                 "x": 7,
                 "y": 10,
                 "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 8,
-                "y": 10,
-                "rotation": 0
               }
             ]
           }
         },
-        "hash": "56097fb6"
+        "hash": "d02ac5a2"
       }
     }
   },
@@ -1504,8 +1309,8 @@
           "type": "medium",
           "round": 10,
           "partySize": 1,
-          "budget": 1475,
-          "unitStrengthPercent": 267,
+          "budget": 737,
+          "unitStrengthPercent": 75,
           "waves": [
             {
               "tick": 150,
@@ -1535,7 +1340,7 @@
             {
               "tick": 900,
               "unit": "unit_soldier",
-              "count": 3
+              "count": 2
             },
             {
               "tick": 900,
@@ -1545,7 +1350,7 @@
             {
               "tick": 1050,
               "unit": "unit_soldier",
-              "count": 4
+              "count": 5
             },
             {
               "tick": 1050,
@@ -1568,43 +1373,15 @@
               {
                 "x": 11,
                 "y": 3,
-                "health": 696
+                "health": 378
               }
             ],
             "buildings": [
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 2,
+                "x": 9,
                 "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 6,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 10,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 22,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 0,
-                "y": 10,
                 "rotation": 0
               },
               {
@@ -1683,81 +1460,11 @@
                 "x": 13,
                 "y": 10,
                 "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 14,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 15,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 16,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 17,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 18,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 19,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 20,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 21,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 22,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 23,
-                "y": 10,
-                "rotation": 0
               }
             ]
           }
         },
-        "hash": "e4affe94"
+        "hash": "1b1a7569"
       }
     }
   },
@@ -1818,17 +1525,10 @@
               {
                 "x": 11,
                 "y": 4,
-                "health": 124
+                "health": 184
               }
             ],
             "buildings": [
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 12,
-                "y": 7,
-                "rotation": 0
-              },
               {
                 "def": "bld_wall",
                 "tier": 1,
@@ -1846,7 +1546,7 @@
             ]
           }
         },
-        "hash": "a2eb0632"
+        "hash": "c0dbf848"
       }
     }
   },
@@ -1868,7 +1568,7 @@
           "type": "boss",
           "round": 5,
           "partySize": 1,
-          "budget": 396,
+          "budget": 291,
           "unitStrengthPercent": 0,
           "waves": [
             {
@@ -1884,7 +1584,7 @@
             {
               "tick": 700,
               "unit": "unit_raider",
-              "count": 3
+              "count": 2
             },
             {
               "tick": 950,
@@ -1892,14 +1592,9 @@
               "count": 2
             },
             {
-              "tick": 950,
-              "unit": "unit_raider",
-              "count": 1
-            },
-            {
               "tick": 1200,
               "unit": "unit_soldier",
-              "count": 3
+              "count": 2
             },
             {
               "tick": 1200,
@@ -1909,7 +1604,7 @@
             {
               "tick": 1450,
               "unit": "unit_raider",
-              "count": 7
+              "count": 5
             }
           ],
           "stronghold": {
@@ -1917,43 +1612,15 @@
               {
                 "x": 11,
                 "y": 4,
-                "health": 408
+                "health": 368
               }
             ],
             "buildings": [
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 9,
-                "y": 4,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
                 "x": 14,
                 "y": 5,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 8,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 9,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 15,
-                "y": 7,
                 "rotation": 0
               },
               {
@@ -2001,7 +1668,7 @@
             ]
           }
         },
-        "hash": "608c4bb2"
+        "hash": "45723fe9"
       }
     }
   },
@@ -2023,8 +1690,8 @@
           "type": "boss",
           "round": 10,
           "partySize": 1,
-          "budget": 1770,
-          "unitStrengthPercent": 167,
+          "budget": 884,
+          "unitStrengthPercent": 34,
           "waves": [
             {
               "tick": 200,
@@ -2035,11 +1702,6 @@
               "tick": 450,
               "unit": "unit_soldier",
               "count": 3
-            },
-            {
-              "tick": 450,
-              "unit": "unit_raider",
-              "count": 1
             },
             {
               "tick": 700,
@@ -2077,7 +1739,7 @@
               {
                 "x": 11,
                 "y": 4,
-                "health": 1664
+                "health": 988
               }
             ],
             "buildings": [
@@ -2119,21 +1781,7 @@
               {
                 "def": "bld_wall",
                 "tier": 1,
-                "x": 15,
-                "y": 1,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
                 "x": 8,
-                "y": 2,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 9,
                 "y": 2,
                 "rotation": 0
               },
@@ -2147,20 +1795,6 @@
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 11,
-                "y": 2,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 13,
-                "y": 2,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
                 "x": 14,
                 "y": 2,
                 "rotation": 0
@@ -2176,20 +1810,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 8,
-                "y": 3,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 9,
-                "y": 3,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 14,
                 "y": 3,
                 "rotation": 0
               },
@@ -2217,13 +1837,6 @@
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 9,
-                "y": 5,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
                 "x": 14,
                 "y": 5,
                 "rotation": 0
@@ -2236,13 +1849,6 @@
                 "rotation": 0
               },
               {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 14,
-                "y": 6,
-                "rotation": 0
-              },
-              {
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 15,
@@ -2252,35 +1858,7 @@
               {
                 "def": "bld_wall",
                 "tier": 1,
-                "x": 5,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
                 "x": 8,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 9,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 10,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 13,
                 "y": 7,
                 "rotation": 0
               },
@@ -2289,13 +1867,6 @@
                 "tier": 1,
                 "x": 15,
                 "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 5,
-                "y": 8,
                 "rotation": 0
               },
               {
@@ -2338,131 +1909,12 @@
                 "tier": 1,
                 "x": 15,
                 "y": 8,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 18,
-                "y": 8,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 5,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 18,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 5,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 18,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 5,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 6,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 7,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 8,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 9,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 10,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 13,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 14,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 15,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 16,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 17,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 18,
-                "y": 11,
                 "rotation": 0
               }
             ]
           }
         },
-        "hash": "9a6de85d"
+        "hash": "b9c7252e"
       }
     }
   },
@@ -2484,8 +1936,8 @@
           "type": "hard",
           "round": 10,
           "partySize": 4,
-          "budget": 8260,
-          "unitStrengthPercent": 425,
+          "budget": 4124,
+          "unitStrengthPercent": 161,
           "waves": [
             {
               "tick": 150,
@@ -2510,7 +1962,7 @@
             {
               "tick": 600,
               "unit": "unit_soldier",
-              "count": 5
+              "count": 4
             },
             {
               "tick": 600,
@@ -2563,120 +2015,36 @@
               {
                 "x": 11,
                 "y": 3,
-                "health": 937
+                "health": 469
               },
               {
                 "x": 35,
                 "y": 3,
-                "health": 937
+                "health": 469
               },
               {
                 "x": 59,
                 "y": 3,
-                "health": 937
+                "health": 469
               },
               {
                 "x": 83,
                 "y": 3,
-                "health": 936
+                "health": 468
               }
             ],
             "buildings": [
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 0,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
                 "x": 3,
                 "y": 9,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 4,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 5,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 6,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 7,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 8,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 11,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 12,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 13,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 14,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
+                "def": "bld_turret",
                 "tier": 1,
                 "x": 15,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 16,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 18,
                 "y": 9,
                 "rotation": 0
               },
@@ -2690,82 +2058,12 @@
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 23,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 24,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 26,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 27,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
                 "x": 28,
                 "y": 9,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 29,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 30,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 33,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 34,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 35,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 36,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
+                "def": "bld_turret",
                 "tier": 1,
                 "x": 37,
                 "y": 9,
@@ -2774,246 +2072,36 @@
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 39,
+                "x": 40,
                 "y": 9,
                 "rotation": 0
               },
               {
                 "def": "bld_turret",
-                "tier": 1,
-                "x": 44,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 46,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 47,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 50,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 51,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 54,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 55,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 56,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 57,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 58,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 59,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
                 "tier": 1,
                 "x": 62,
                 "y": 9,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_turret",
                 "tier": 1,
-                "x": 63,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 64,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 65,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 66,
+                "x": 69,
                 "y": 9,
                 "rotation": 0
               },
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 67,
+                "x": 72,
                 "y": 9,
                 "rotation": 0
               },
               {
                 "def": "bld_turret",
-                "tier": 1,
-                "x": 68,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 74,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 75,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 76,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 77,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 78,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 79,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 82,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 83,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 84,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
                 "tier": 1,
                 "x": 85,
                 "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 86,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 87,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 90,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 91,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 94,
-                "y": 9,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 0,
-                "y": 10,
                 "rotation": 0
               },
               {
@@ -3125,41 +2213,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 18,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 19,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 20,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 21,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 22,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 23,
                 "y": 10,
                 "rotation": 0
               },
@@ -3278,76 +2331,6 @@
               {
                 "def": "bld_wall",
                 "tier": 1,
-                "x": 42,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 43,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 44,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 45,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 46,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 47,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 48,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 49,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 50,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 51,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
                 "x": 52,
                 "y": 10,
                 "rotation": 0
@@ -3454,20 +2437,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 69,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 70,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 71,
                 "y": 10,
                 "rotation": 0
               },
@@ -3582,53 +2551,11 @@
                 "x": 89,
                 "y": 10,
                 "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 90,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 91,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 92,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 93,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 94,
-                "y": 10,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 95,
-                "y": 10,
-                "rotation": 0
               }
             ]
           }
         },
-        "hash": "aaa114c0"
+        "hash": "a9c3ea98"
       }
     }
   },
@@ -3650,8 +2577,8 @@
           "type": "medium",
           "round": 200,
           "partySize": 2,
-          "budget": 23829062156,
-          "unitStrengthPercent": 841084171,
+          "budget": 27275607912,
+          "unitStrengthPercent": 962735434,
           "waves": [
             {
               "tick": 600,
@@ -3674,12 +2601,12 @@
               {
                 "x": 11,
                 "y": 4,
-                "health": 47658121913
+                "health": 32730728505
               },
               {
                 "x": 35,
                 "y": 4,
-                "health": 47658121912
+                "health": 32730728505
               }
             ],
             "buildings": [
@@ -3845,20 +2772,6 @@
                 "rotation": 0
               },
               {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 10,
-                "y": 2,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 11,
-                "y": 2,
-                "rotation": 0
-              },
-              {
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 15,
@@ -3883,13 +2796,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 32,
-                "y": 2,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 33,
                 "y": 2,
                 "rotation": 0
               },
@@ -3903,25 +2809,11 @@
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 36,
-                "y": 2,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
                 "x": 37,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 38,
-                "y": 2,
-                "rotation": 0
-              },
-              {
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 39,
@@ -3946,20 +2838,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 8,
-                "y": 3,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 9,
-                "y": 3,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 14,
                 "y": 3,
                 "rotation": 0
               },
@@ -4023,41 +2901,6 @@
                 "def": "bld_turret",
                 "tier": 1,
                 "x": 14,
-                "y": 4,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 33,
-                "y": 4,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 38,
-                "y": 4,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 14,
-                "y": 5,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 33,
-                "y": 5,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 38,
                 "y": 5,
                 "rotation": 0
               },
@@ -4072,13 +2915,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 8,
-                "y": 6,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 9,
                 "y": 6,
                 "rotation": 0
               },
@@ -4149,34 +2985,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 8,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 9,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 10,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 11,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 12,
                 "y": 7,
                 "rotation": 0
               },
@@ -4232,28 +3040,7 @@
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 34,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
                 "x": 36,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 37,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 38,
                 "y": 7,
                 "rotation": 0
               },
@@ -4750,7 +3537,7 @@
             ]
           }
         },
-        "hash": "602137ad"
+        "hash": "ced247bc"
       }
     }
   },
@@ -4772,23 +3559,23 @@
           "type": "hard",
           "round": 5,
           "partySize": 4,
-          "budget": 1848,
+          "budget": 1360,
           "unitStrengthPercent": 0,
           "waves": [
             {
               "tick": 600,
               "unit": "unit_soldier",
-              "count": 9
+              "count": 6
             },
             {
               "tick": 1000,
               "unit": "unit_soldier",
-              "count": 12
+              "count": 8
             },
             {
               "tick": 1400,
               "unit": "unit_soldier",
-              "count": 15
+              "count": 11
             }
           ],
           "stronghold": {
@@ -4796,22 +3583,22 @@
               {
                 "x": 11,
                 "y": 4,
-                "health": 568
+                "health": 371
               },
               {
                 "x": 35,
                 "y": 4,
-                "health": 568
+                "health": 371
               },
               {
                 "x": 59,
                 "y": 4,
-                "health": 567
+                "health": 370
               },
               {
                 "x": 83,
                 "y": 4,
-                "health": 567
+                "health": 370
               }
             ],
             "buildings": [
@@ -4991,13 +3778,6 @@
                 "rotation": 0
               },
               {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 14,
-                "y": 2,
-                "rotation": 0
-              },
-              {
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 15,
@@ -5040,20 +3820,6 @@
                 "rotation": 0
               },
               {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 61,
-                "y": 2,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 62,
-                "y": 2,
-                "rotation": 0
-              },
-              {
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 63,
@@ -5089,13 +3855,6 @@
                 "rotation": 0
               },
               {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 9,
-                "y": 3,
-                "rotation": 0
-              },
-              {
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 15,
@@ -5106,13 +3865,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 32,
-                "y": 3,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 38,
                 "y": 3,
                 "rotation": 0
               },
@@ -5148,20 +3900,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 80,
-                "y": 3,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 81,
-                "y": 3,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 86,
                 "y": 3,
                 "rotation": 0
               },
@@ -5196,13 +3934,6 @@
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 38,
-                "y": 4,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
                 "x": 9,
                 "y": 5,
                 "rotation": 0
@@ -5210,35 +3941,7 @@
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 14,
-                "y": 5,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
                 "x": 38,
-                "y": 5,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 57,
-                "y": 5,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 62,
-                "y": 5,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 86,
                 "y": 5,
                 "rotation": 0
               },
@@ -5246,13 +3949,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 8,
-                "y": 6,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 14,
                 "y": 6,
                 "rotation": 0
               },
@@ -5308,13 +4004,6 @@
               {
                 "def": "bld_turret",
                 "tier": 1,
-                "x": 81,
-                "y": 6,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
                 "x": 86,
                 "y": 6,
                 "rotation": 0
@@ -5330,13 +4019,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 8,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 9,
                 "y": 7,
                 "rotation": 0
               },
@@ -5376,27 +4058,6 @@
                 "rotation": 0
               },
               {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 34,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 35,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 37,
-                "y": 7,
-                "rotation": 0
-              },
-              {
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 39,
@@ -5414,20 +4075,6 @@
                 "def": "bld_turret",
                 "tier": 1,
                 "x": 58,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 59,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 60,
                 "y": 7,
                 "rotation": 0
               },
@@ -5467,13 +4114,6 @@
                 "rotation": 0
               },
               {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 85,
-                "y": 7,
-                "rotation": 0
-              },
-              {
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 87,
@@ -5651,217 +4291,14 @@
               {
                 "def": "bld_wall",
                 "tier": 1,
-                "x": 7,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 8,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 9,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
                 "x": 10,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 13,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 14,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 15,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 16,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 31,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 32,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 33,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 34,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 37,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 38,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 39,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 40,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 55,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 56,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 57,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 58,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 61,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 62,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 63,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 79,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 80,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 81,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 82,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 85,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 86,
-                "y": 11,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 87,
                 "y": 11,
                 "rotation": 0
               }
             ]
           }
         },
-        "hash": "27636b50"
+        "hash": "8f4dcff4"
       }
     }
   },
@@ -5883,58 +4320,58 @@
           "type": "boss",
           "round": 5,
           "partySize": 4,
-          "budget": 1584,
+          "budget": 1164,
           "unitStrengthPercent": 0,
           "waves": [
             {
               "tick": 200,
               "unit": "unit_soldier",
-              "count": 5
+              "count": 4
             },
             {
               "tick": 200,
               "unit": "unit_raider",
-              "count": 2
+              "count": 1
             },
             {
               "tick": 450,
               "unit": "unit_soldier",
-              "count": 7
+              "count": 5
             },
             {
               "tick": 450,
               "unit": "unit_raider",
-              "count": 3
+              "count": 2
             },
             {
               "tick": 700,
               "unit": "unit_raider",
-              "count": 15
-            },
-            {
-              "tick": 950,
-              "unit": "unit_soldier",
               "count": 11
             },
             {
               "tick": 950,
+              "unit": "unit_soldier",
+              "count": 8
+            },
+            {
+              "tick": 950,
               "unit": "unit_raider",
-              "count": 3
+              "count": 2
             },
             {
               "tick": 1200,
               "unit": "unit_soldier",
-              "count": 13
+              "count": 9
             },
             {
               "tick": 1200,
               "unit": "unit_raider",
-              "count": 6
+              "count": 5
             },
             {
               "tick": 1450,
               "unit": "unit_raider",
-              "count": 29
+              "count": 21
             }
           ],
           "stronghold": {
@@ -5942,39 +4379,25 @@
               {
                 "x": 11,
                 "y": 4,
-                "health": 363
+                "health": 330
               },
               {
                 "x": 35,
                 "y": 4,
-                "health": 363
+                "health": 330
               },
               {
                 "x": 59,
                 "y": 4,
-                "health": 363
+                "health": 330
               },
               {
                 "x": 83,
                 "y": 4,
-                "health": 363
+                "health": 330
               }
             ],
             "buildings": [
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 35,
-                "y": 2,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 37,
-                "y": 2,
-                "rotation": 0
-              },
               {
                 "def": "bld_turret",
                 "tier": 1,
@@ -6007,62 +4430,6 @@
                 "def": "bld_wall",
                 "tier": 1,
                 "x": 8,
-                "y": 6,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 32,
-                "y": 6,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 56,
-                "y": 6,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 62,
-                "y": 6,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 86,
-                "y": 6,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 8,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 12,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 14,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 15,
                 "y": 7,
                 "rotation": 0
               },
@@ -6081,58 +4448,9 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 39,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 56,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 61,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 63,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 80,
-                "y": 7,
-                "rotation": 0
-              },
-              {
                 "def": "bld_turret",
                 "tier": 1,
                 "x": 83,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_turret",
-                "tier": 1,
-                "x": 84,
-                "y": 7,
-                "rotation": 0
-              },
-              {
-                "def": "bld_wall",
-                "tier": 1,
-                "x": 87,
                 "y": 7,
                 "rotation": 0
               },
@@ -6307,7 +4625,7 @@
             ]
           }
         },
-        "hash": "32208a18"
+        "hash": "d88f28b8"
       }
     }
   }

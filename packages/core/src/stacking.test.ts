@@ -140,7 +140,7 @@ describe('stacking duration, tier 3 and mixed', () => {
     const a = stacking(t3, t3, 1);
     const b = stacking(t1, t3, 1);
     expect(a.longest).toBeLessThanOrEqual(34);
-    expect(a.over50 / a.unitTicks).toBeLessThanOrEqual(0.075);
+    expect(a.over50 / a.unitTicks).toBeLessThanOrEqual(0.09);
     expect(a.over90 / a.unitTicks).toBeLessThanOrEqual(0.005);
     expect(b.longest).toBeLessThanOrEqual(6);
     expect(b.over50 / b.unitTicks).toBeLessThanOrEqual(0.009);
@@ -159,11 +159,17 @@ describe('stacking duration, tier 3 and mixed', () => {
 const LONGEST_REFERENCE = 2;
 const SHARE50_REFERENCE = 0.0005;
 const SHARE90_REFERENCE = 0.0005;
-const LONGEST_DENSE = 14;
-const SHARE50_DENSE = 0.025;
-const SHARE90_DENSE = 0.0006;
+const LONGEST_DENSE = 24;
+const SHARE50_DENSE = 0.06;
+const SHARE90_DENSE = 0.0015;
 // Measured with one Core per player (#138): reference battles 0 / 0 / 0;
 // dense tier 1: longest 14, 2.05 percent over 50, 0.039 over 90 (limits 14,
 // 2.5, 0.06); tier 3: longest 30, 5.83 over 50, 0.41 over 90; tier 1 against
 // tier 3: longest 6, 0.78 over 50, 0.0078 over 90. Judge a change against
 // these, not against the limits.
+// Measured after the rebalance (#145; units come out at their top speed and
+// the boards are no longer legal, 48 collectors on 4 areas): reference
+// battles 0 / 0 / 0; dense tier 1: longest 23, 5.64 percent over 50, 0.135
+// over 90 (limits 24, 6, 0.15); tier 3: longest 29, 8.33 over 50, 0.39 over
+// 90 (limits 34, 9, 0.5); tier 1 against tier 3: longest 5, 0.39 over 50,
+// 0.0086 over 90. The dense boards are replaced by legal ones in #164.
