@@ -81,7 +81,7 @@ let shared: Promise<SpriteSet | null> | null = null;
 const listeners = new Set<() => void>();
 
 /** Counters the smoke script reads through the debug hook. */
-export const spriteStats = { drawn: 0 };
+export const spriteStats = { drawn: 0, units: 0 };
 
 export function spritesState(): SpritesState {
   return state;

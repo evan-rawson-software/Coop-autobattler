@@ -1535,6 +1535,9 @@ try {
     await page.waitForFunction(() => window.__debug?.battle?.tick() > 250);
     await page.evaluate(() => window.__debug.resetDrawStats());
     await page.evaluate(() => window.__debug.battle.frameTimes(true));
+    const unitSpritesBefore = await page.evaluate(
+      () => window.__debug?.sprites?.()?.unitSprites ?? 0,
+    );
     let peak = 0;
     for (let i = 0; i < 40; i++) {
       await page.waitForTimeout(200);
@@ -1553,6 +1556,13 @@ try {
     const frameMax = frames[frames.length - 1] ?? 0;
     console.log(
       `battle perf: 4x, peak ${peak} units alive, ${frames.length} animation frames, interval p50 ${p50.toFixed(1)} ms, p95 ${p95.toFixed(1)} ms, max ${frameMax.toFixed(1)} ms; canvas draw mean ${draw.meanMs.toFixed(2)} ms max ${draw.maxMs.toFixed(1)} ms; simulate-up-front ${(await bd('simMs')).toFixed(0)} ms`,
+    );
+    const unitSpritesAfter = await page.evaluate(
+      () => window.__debug?.sprites?.()?.unitSprites ?? 0,
+    );
+    check(
+      unitSpritesAfter - unitSpritesBefore > 1000,
+      `battle: units are drawn from the atlas (${unitSpritesAfter - unitSpritesBefore} unit sprites in the stress window)`,
     );
     // `unitsAlive` counts both sides. The stress sample is a four-plot board
     // on both sides with a steady stream of units: a few hundred alive at once.

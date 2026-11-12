@@ -155,6 +155,36 @@ export function simulateRecord(
 const MAX_STEPS_PER_ADVANCE = 40;
 /** The longest frame time that counts as real time, in milliseconds. */
 const MAX_FRAME_MS = 100;
+/** Smallest step per tick (cells) that turns a unit; below it is jitter. */
+const MIN_STEP = 0.01;
+const OCTANT = Math.PI / 4;
+/** Within this fraction of an octant from a boundary, the side's rest facing wins. */
+const STICKY = 0.12;
+
+/** Rest facing of a side: A north (0), B south (4). */
+export function restFacing(side: number): number {
+  return side === 0 ? 0 : 4;
+}
+
+/**
+ * Facing octant (0 north, clockwise; sim y runs up the screen) of a step
+ * `(dx, dy)` in cells, a pure function of the step: the side's rest facing
+ * when the step is jitter, and near an octant boundary the rest facing is
+ * preferred, so a unit nudged by collision does not flicker.
+ */
+export function octantOf(dx: number, dy: number, side: number): number {
+  const rest = restFacing(side);
+  if (dx * dx + dy * dy <= MIN_STEP * MIN_STEP) return rest;
+  const a = Math.atan2(dx, dy) / OCTANT;
+  const r = Math.round(a);
+  const frac = Math.abs(a - r);
+  if (frac > 0.5 - STICKY) {
+    const other = a > r ? r + 1 : r - 1;
+    if (((other % 8) + 8) % 8 === rest) return rest;
+  }
+  return ((r % 8) + 8) % 8;
+}
+
 export class Playback {
   readonly record: BattleRecord;
   speed: PlaybackSpeed = 1;
@@ -174,6 +204,9 @@ export class Playback {
   private cy = new Float32Array(0);
   private px = new Float32Array(0);
   private py = new Float32Array(0);
+  /** Per unit ID: facing as an octant (0 north, clockwise, 4 south) and whether it stepped. */
+  private face = new Uint8Array(0);
+  private stepped = new Uint8Array(0);
 
   constructor(
     private readonly desc: BattleDescription,
@@ -284,22 +317,27 @@ export class Playback {
     this.cx = new Float32Array(0);
     this.cy = new Float32Array(0);
     this.px = new Float32Array(0);
+    this.face = new Uint8Array(0);
+    this.stepped = new Uint8Array(0);
     this.py = new Float32Array(0);
   }
 
   private stepTicks(n: number): void {
     if (n <= 0) return;
     const b = this.battle;
-    // Positions are tracked after every step during real-time playback and
-    // only after the last one when jumping.
+    // Positions are tracked after every step during real-time playback. When
+    // jumping, only the last two ticks are tracked, so the eased position and
+    // the facing (which come from the last step) are the same as when the
+    // tick was reached by playing.
     const every = n <= MAX_STEPS_PER_ADVANCE;
     let left = n;
     while (left > 0 && !b.isOver()) {
+      if (!every && left === 1) this.updateTracks(true);
       b.step();
       left -= 1;
-      if (every) this.updateTracks();
+      if (every || left === 0) this.updateTracks();
     }
-    if (!every) this.updateTracks(true);
+    if (!every && left > 0) this.updateTracks(true);
   }
 
   private grow(size: number): void {
@@ -316,6 +354,8 @@ export class Playback {
     this.cx = g(this.cx, (n) => new Float32Array(n));
     this.cy = g(this.cy, (n) => new Float32Array(n));
     this.px = g(this.px, (n) => new Float32Array(n));
+    this.face = g(this.face, (n) => new Uint8Array(n));
+    this.stepped = g(this.stepped, (n) => new Uint8Array(n));
     this.py = g(this.py, (n) => new Float32Array(n));
   }
 
@@ -335,11 +375,19 @@ export class Playback {
         this.seen[id] = 1;
         this.cx[id] = this.px[id] = x;
         this.cy[id] = this.py[id] = y;
+        this.face[id] = restFacing(u.side);
+        this.stepped[id] = 0;
       } else {
-        this.px[id] = this.cx[id] ?? x;
-        this.py[id] = this.cy[id] ?? y;
+        const ox = this.cx[id] ?? x;
+        const oy = this.cy[id] ?? y;
+        this.px[id] = ox;
+        this.py[id] = oy;
         this.cx[id] = x;
         this.cy[id] = y;
+        const dx = x - ox;
+        const dy = y - oy;
+        this.stepped[id] = dx * dx + dy * dy > MIN_STEP * MIN_STEP ? 1 : 0;
+        this.face[id] = octantOf(dx, dy, u.side);
       }
     }
   }
@@ -361,6 +409,21 @@ export class Playback {
     const a = Math.min(1, this.acc);
     out.x = (this.px[id] ?? x) + ((this.cx[id] ?? x) - (this.px[id] ?? x)) * a;
     out.y = (this.py[id] ?? y) + ((this.cy[id] ?? y) - (this.py[id] ?? y)) * a;
+  }
+
+  /** Simulation ticks per second (for animation timing). */
+  get ticksPerSecond(): number {
+    return this.tps;
+  }
+
+  /** The unit's facing as an octant: 0 north, 1 north-east, .. 4 south (screen). */
+  facing(u: UnitSim): number {
+    return this.face[u.id] ?? 0;
+  }
+
+  /** True when the unit moved during the latest tick. */
+  isMoving(u: UnitSim): boolean {
+    return this.stepped[u.id] === 1;
   }
 
   /** Index range of the events of ticks `from .. to - 1` in the record. */
