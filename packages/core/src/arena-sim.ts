@@ -242,6 +242,14 @@ export interface CoreHealthSim {
   readonly core: number;
   /** 0 once destroyed. */
   hp: number;
+  /**
+   * The health after all damage of the latest tick that damaged this Core,
+   * NOT clamped at 0 (so a destroyed Core's overkill is known, CB-33).
+   * Equals `hp` while alive. Part of the state so a restore keeps it.
+   */
+  remaining: number;
+  /** The tick the Core was destroyed in, or null while it stands. */
+  fellTick: number | null;
 }
 
 /** A placed building in the `health` list. */
@@ -678,7 +686,7 @@ export function createArenaContext(
   const coreRemaining: number[][] = sim.teams.map((t) => t.cores.map(() => 0));
   for (const h of sim.health) {
     const row = coreRemaining[h.side];
-    if (isCoreHealth(h) && row !== undefined) row[h.core] = h.hp;
+    if (isCoreHealth(h) && row !== undefined) row[h.core] = h.remaining;
   }
   const cells = arena.geom.width * arena.geom.height;
   const solid = buildSolid(arena);
@@ -781,7 +789,7 @@ export function createArenaSim(
     );
     health.push(
       b.kind === 'core'
-        ? { side: b.side, core: b.player, hp }
+        ? { side: b.side, core: b.player, hp, remaining: hp, fellTick: null }
         : { side: b.side, building: b.id, hp },
     );
   }
@@ -2601,6 +2609,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     if (isCoreHealth(h)) {
       const row = ctx.coreRemaining[h.side];
       if (row !== undefined) row[h.core] = remaining;
+      h.remaining = remaining;
     }
     h.hp = Math.max(0, remaining);
   }
@@ -2643,6 +2652,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     const b = ref >= 0 ? arena.buildings[ref] : undefined;
     if (b === undefined || !b.alive) continue;
     destroyBuilding(sim, ctx, ref, tick);
+    if (isCoreHealth(h)) h.fellTick = tick;
     destroyed = true;
   }
   if (destroyed) {

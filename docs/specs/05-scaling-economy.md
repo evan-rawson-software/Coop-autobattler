@@ -16,7 +16,8 @@ the specification.
 
   - `r` — round number
   - `B0` — base budget at round 1
-  - `g` — per-round growth factor (starting proposal: 1.3–1.5)
+  - `g` — per-round growth factor (shipped: 1.25, issue #145; the starting
+    proposal was 1.3–1.5)
   - `m(type)` — encounter multiplier (easy < medium < hard; boss tuned
     separately, see SC-5)
 
@@ -86,8 +87,8 @@ first. Gold (next section) is never produced by the factory.
   grows with depth, leaving less time to ramp. The balance harness must
   chart party power **over battle time** as well as over rounds.
 - **SC-12 [DECIDED]** **Collector-boosting buildings (the Overclocker) stay,
-  with a much lower cap** than the current +300%. The number is **to be set
-  in the rebalance**. Constraint: supply must stay the binding limit, so the
+  with a much lower cap** than the old +300%. The cap is **+25%**
+  (`maxSourceSpeedPercent`, issue #145). Constraint: supply must stay the binding limit, so the
   cap has to be low enough that a boosted collector does not replace buying
   a higher-tier collector. Proposed target for the rebalance: a fully
   boosted collector of one tier produces less than an unboosted collector

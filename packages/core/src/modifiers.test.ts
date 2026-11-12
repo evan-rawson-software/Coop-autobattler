@@ -57,17 +57,17 @@ function fightResult(
 
 describe('modifiers travel in team state and change battles', () => {
   test('a Core health modifier turns a lost battle into a won one', () => {
-    expect(fight('fortify', 'arch_fortress', 'medium', 6, [])).toBe(1);
+    expect(fight('fortify', 'arch_fortress', 'medium', 8, [])).toBe(1);
     expect(
-      fight('fortify', 'arch_fortress', 'medium', 6, ['mod_fortified_core']),
+      fight('fortify', 'arch_fortress', 'medium', 8, ['mod_fortified_core']),
     ).toBe(0);
   });
 
   test('a turret damage modifier makes the same turrets kill more', () => {
     // The party loses this round either way; with sharper turrets it kills
     // more of the wave first.
-    const plain = fightResult('fortify', 'arch_fortress', 'hard', 12, []);
-    const sharp = fightResult('fortify', 'arch_fortress', 'hard', 12, [
+    const plain = fightResult('fortify', 'arch_fortress', 'hard', 14, []);
+    const sharp = fightResult('fortify', 'arch_fortress', 'hard', 14, [
       'mod_sharp_turrets',
     ]);
     expect(plain.winner).toBe(1);
@@ -75,9 +75,9 @@ describe('modifiers travel in team state and change battles', () => {
   });
 
   test('a unit strength modifier turns a lost battle into a won one', () => {
-    expect(fight('rush', 'arch_fortress', 'hard', 4, [])).toBe(1);
+    expect(fight('rush', 'arch_fortress', 'hard', 7, [])).toBe(1);
     expect(
-      fight('rush', 'arch_fortress', 'hard', 4, ['mod_drilled_troops']),
+      fight('rush', 'arch_fortress', 'hard', 7, ['mod_drilled_troops']),
     ).toBe(0);
   });
 

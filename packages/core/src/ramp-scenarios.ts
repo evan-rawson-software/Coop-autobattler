@@ -65,24 +65,24 @@ export const overclockerOnOre = (() => {
 })();
 
 /**
- * The crossover boards (criterion 1). Barracks at x = 0, 2, 4 (tier 1), each
- * fed directly by a tier 1 extractor under it on a `res_a` node; and an extra
+ * The crossover boards (criterion 1). `barracks` barracks (3 by default) at x
+ * = 0, 2, 4, ... (tier 1), each fed directly by a tier 1 extractor under it
+ * on a `res_a` node; and an extra
  * tier 1 extractor at (10, 0) whose output goes north into a building at
  * (10, 1): a fourth barracks (`variant: 'barracks'`) or an overclocker of tier
  * 3 (`variant: 'overclocker'`), both fed directly.
  */
-export function crossoverTeam(variant: 'barracks' | 'overclocker'): TeamState {
+export function crossoverTeam(
+  variant: 'barracks' | 'overclocker',
+  barracks = 3,
+): TeamState {
+  const columns = Array.from({ length: barracks }, (_, i) => 2 * i);
   const lab = new Lab(
-    tinyMap([
-      [0, 0, 'res_a'],
-      [2, 0, 'res_a'],
-      [4, 0, 'res_a'],
-      [10, 0, 'res_a'],
-    ]),
+    tinyMap([...columns, 10].map((x) => [x, 0, 'res_a'])),
     overclockerOnOre,
   );
   lab.core(5, 6);
-  for (const x of [0, 2, 4]) {
+  for (const x of columns) {
     const s = lab.put('bld_extractor', x, 0);
     const b = lab.put('bld_barracks', x, 1);
     lab.link(s, 'north', b, 'south');

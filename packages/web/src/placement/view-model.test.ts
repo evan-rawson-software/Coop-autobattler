@@ -193,3 +193,14 @@ describe('hint line', () => {
     );
   });
 });
+
+describe('choiceAnnouncement', () => {
+  test('names the chosen spot and Ready', async () => {
+    const { choiceAnnouncement } = await import('./view-model.js');
+    expect(choiceAnnouncement(null, false)).toBe('');
+    expect(choiceAnnouncement({ x: 3, y: 4 }, false)).toBe(
+      'Core spot chosen: column 3, row 4.',
+    );
+    expect(choiceAnnouncement({ x: 3, y: 4 }, true)).toMatch(/You are Ready/);
+  });
+});

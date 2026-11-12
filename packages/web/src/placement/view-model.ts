@@ -124,6 +124,19 @@ export function hintText(input: {
     : `Chosen: column ${String(input.selected.x)}, row ${String(input.selected.y)}.`;
 }
 
+/**
+ * What a screen reader hears about the choice (a live region): the chosen
+ * spot, and whether the player is Ready. Empty when nothing is chosen.
+ */
+export function choiceAnnouncement(
+  selected: Cell | null,
+  ready: boolean,
+): string {
+  if (selected === null) return '';
+  const at = `Core spot chosen: column ${String(selected.x)}, row ${String(selected.y)}.`;
+  return ready ? `${at} You are Ready.` : at;
+}
+
 /** A click on the spot that is already chosen: nothing to send. */
 export function isRepeatClick(selected: Cell | null, cell: Cell): boolean {
   return selected !== null && selected.x === cell.x && selected.y === cell.y;

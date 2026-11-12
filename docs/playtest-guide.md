@@ -10,6 +10,10 @@ Place your Core, then repeat each round: build, pick a PvE battle, watch it, pic
 
 The shop tells you who the PvP opponent is before you ready up. It is either a ghost (a snapshot of another factory, with its owner label) or the boss. Ghosts labelled "Bundled" come with the game; the others are snapshots your own earlier runs left in this browser. Rounds 1 to 6 have bundled ghosts, later rounds meet the boss. The Run over screen lists every opponent and result.
 
+## What the numbers are meant to do
+
+Supply is scarce: one collector fully feeds one building of the same tier (a tier 1 collector gives 0.50 items per second, and a tier 1 Barracks, Overclocker or Armory takes at most that much). Your area has three Ore, three Power and one Flux node, so it can run three Barracks at full speed and no more; to grow after that, raise tiers, use the Overclocker (at most +25% collector speed) or the Armory (+25% to +50% unit health and damage, at most +100% per player), or share through a border link. You earn 9 to 26 gold per round. Threats grow 25% per round, and strongholds have at most 6 turrets per area. A competent build should beat hard PvE through about round 5, find it a gamble in rounds 6 to 8, and meet the round-5 boss at every party size with a fair chance.
+
 ## What to try
 
 - Play at least two runs back to back, and look for your first run's factory in the second.

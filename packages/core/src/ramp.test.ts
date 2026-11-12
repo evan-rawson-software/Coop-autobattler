@@ -345,15 +345,15 @@ describe('economy buildings: charging and steps (CB-11)', () => {
     expect(sim.ramps).toEqual([
       { side: 0, building: 2, charge: 0, steps: 0, cooldown: 0 },
     ]);
-    // Tier 1: costPerStep 4. The source (interval 10) delivers at ticks 9,
-    // 19, 29, 39; the fourth item completes the step in the same tick.
-    runArena(sim, ctx, 39);
-    expect(got(sim.ramps[0])).toMatchObject({ charge: 3, steps: 0 });
+    // Tier 1: costPerStep 2. The source (interval 10) delivers at ticks 9,
+    // 19; the second item completes the step in the same tick.
+    runArena(sim, ctx, 19);
+    expect(got(sim.ramps[0])).toMatchObject({ charge: 1, steps: 0 });
     stepArena(sim, ctx);
     expect(got(sim.ramps[0])).toMatchObject({ charge: 0, steps: 1 });
     expect(ofType(events, 'ramp_step')).toEqual([
       {
-        tick: 39,
+        tick: 19,
         type: 'ramp_step',
         side: 0,
         building: 2,
@@ -371,30 +371,31 @@ describe('economy buildings: charging and steps (CB-11)', () => {
       content,
       simConfig,
     );
-    // Tier 1: maxSteps 6, costPerStep 4, stepPercent 5. Without the speed-up
-    // 6 steps would need 24 items = tick 239; the bonus only shortens that.
+    // Tier 1: maxSteps 5, costPerStep 2, stepPercent 2, a step every 40
+    // ticks at the earliest (the top speed): 5 steps need 10 items and 160
+    // ticks of cooldown, and the last one comes at tick 179.
     runArena(sim, ctx, 600);
     const r = got(sim.ramps[0]);
-    expect(r).toMatchObject({ steps: 6, charge: 0 });
+    expect(r).toMatchObject({ steps: 5, charge: 0 });
     const consumedAt600 = got(sim.boards[0].consumers[0]).inputs[0]?.consumed;
-    expect(consumedAt600).toBe(24); // exactly 6 steps * 4 items
+    expect(consumedAt600).toBe(10); // exactly 5 steps * 2 items
     expect(ofType(events, 'ramp_step').map((e) => e.steps)).toEqual([
-      1, 2, 3, 4, 5, 6,
+      1, 2, 3, 4, 5,
     ]);
-    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(30);
+    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(10);
     // 300 more ticks: nothing changes, the buffer is full, the source stalls.
     runArena(sim, ctx, 300);
-    expect(got(sim.ramps[0])).toMatchObject({ steps: 6, charge: 0 });
+    expect(got(sim.ramps[0])).toMatchObject({ steps: 5, charge: 0 });
     const input = got(sim.boards[0].consumers[0]?.inputs[0]);
-    expect(input.consumed).toBe(24);
+    expect(input.consumed).toBe(10);
     expect(input.count).toBe(sim.boards[0].bufferCapacity);
     expect(got(sim.boards[0].sources[0]).stalled).toBe(1);
-    expect(ofType(events, 'ramp_step')).toHaveLength(6);
-    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(30);
+    expect(ofType(events, 'ramp_step')).toHaveLength(5);
+    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(10);
   });
 
   test('the global maximum clamps the total (source_speed)', () => {
-    // Four tier 3 overclockers: 4 * (10 steps * 8 percent) = 320, capped at 300.
+    // Four tier 3 overclockers: 4 * (5 steps * 5 percent) = 100, capped at 25.
     const lab = new Lab(tinyMap());
     lab.core(5, 6);
     for (const x of [0, 2, 4, 6]) lab.put('bld_overclocker', x, 0, 0, 3);
@@ -406,10 +407,13 @@ describe('economy buildings: charging and steps (CB-11)', () => {
       simConfig,
     );
     expect(sim.ramps).toHaveLength(4);
-    for (const r of sim.ramps) r.steps = 10;
-    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(300);
+    for (const r of sim.ramps) r.steps = 5;
+    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(25);
     got(sim.ramps[3]).steps = 0;
-    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(240); // below the cap
+    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(25); // 75, still capped
+    for (const i of [1, 2]) got(sim.ramps[i]).steps = 0;
+    got(sim.ramps[0]).steps = 3;
+    expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(15); // below the cap
     expect(rampBonus(sim, ctx, 1, 'source_speed', 0)).toBe(0);
     expect(rampBonus(sim, ctx, 0, 'unit_strength', 0)).toBe(0);
   });
@@ -497,11 +501,11 @@ describe('economy buildings: charging and steps (CB-11)', () => {
   });
 
   test('the global maximum clamps the total (unit_strength)', () => {
-    // Six tier 3 armories: 6 * (10 * 6) = 360, capped at 300; a soldier
-    // spawned then has health mulPct(40, 400) and damage mulPct(6, 400).
+    // Three tier 3 armories: 3 * (5 * 10) = 150, capped at 100; a soldier
+    // spawned then has health mulPct(40, 200) and damage mulPct(6, 200).
     const lab = new Lab(tinyMap());
     lab.core(5, 6);
-    for (const x of [0, 2, 4, 6, 8, 10]) lab.put('bld_armory', x, 0, 0, 3);
+    for (const x of [0, 2, 4]) lab.put('bld_armory', x, 0, 0, 3);
     const { sim, ctx } = startArenaBattle(
       lab.state,
       coreOnlyTeam(),
@@ -509,8 +513,8 @@ describe('economy buildings: charging and steps (CB-11)', () => {
       content,
       simConfig,
     );
-    for (const r of sim.ramps) r.steps = 10;
-    expect(rampBonus(sim, ctx, 0, 'unit_strength', 0)).toBe(300);
+    for (const r of sim.ramps) r.steps = 5;
+    expect(rampBonus(sim, ctx, 0, 'unit_strength', 0)).toBe(100);
     const u = spawnUnitForTest(sim, ctx, {
       side: 0,
       owner: 0,
@@ -518,13 +522,13 @@ describe('economy buildings: charging and steps (CB-11)', () => {
       x: 11,
       y: 12,
     });
-    expect(u.hp).toBe(160);
-    expect(u.damage).toBe(24);
+    expect(u.hp).toBe(80);
+    expect(u.damage).toBe(12);
   });
 
   test('a capped speed total is applied to the source intervals (floor, at least 1)', () => {
-    // Four tier 3 overclockers at max (320 -> 300): a base source of interval
-    // 20 resets to floor(2000 / 400) = 5. Item ticks: 19, then 24, 29, ...
+    // Four tier 3 overclockers at max (100 -> 25): a base source of interval
+    // 20 resets to floor(2000 / 125) = 16. Item ticks: 19, then 35, 51, ...
     const lab = new Lab(tinyMap([[11, 0, 'res_a']]));
     lab.core(5, 6);
     for (const x of [0, 2, 4, 6]) lab.put('bld_overclocker', x, 0, 0, 3);
@@ -538,13 +542,13 @@ describe('economy buildings: charging and steps (CB-11)', () => {
       content,
       simConfig,
     );
-    for (const r of sim.ramps) r.steps = 10;
-    runArena(sim, ctx, 40);
+    for (const r of sim.ramps) r.steps = 5;
+    runArena(sim, ctx, 60);
     expect(
       ofType(events, 'produced')
         .filter((e) => e.building === s)
         .map((e) => e.tick),
-    ).toEqual([19, 24, 29, 34, 39]);
+    ).toEqual([19, 35, 51]);
   });
 });
 
@@ -571,42 +575,46 @@ describe('an overclocker speeds up a source', () => {
     const without = oreTicks(false);
     expect(without).toHaveLength(30);
     expect(without[1]).toBe(39);
-    // With: the flux extractor (tier 3, interval 10) delivers 4 items by tick
-    // 39, so step 1 is taken at tick 39 (+5 percent) and step 2 at 76 (+10).
-    // The ore extractor resets at 19 and 39 with 0 percent (20 ticks), at 59
-    // with 5 percent (floor(2000 / 105) = 19, next item 78), at 78 with 10
-    // percent (floor(2000 / 110) = 18, next item 96), at 96 still with 10
-    // percent (step 3 comes at 112): next item 114, and so on.
+    // With: the flux extractor (tier 3, interval 10) delivers 2 items by tick
+    // 19, so step 1 is taken at tick 19 (+2 percent) and step 2 at 59 (+4;
+    // a step every 40 ticks at the earliest). The ore extractor resets at 19
+    // with 0 percent (the step of 19 comes after its reset: next item 39), at
+    // 39 with 2 percent (floor(2000 / 102) = 19, next item 58), at 58 still
+    // with 2 percent (next item 77), at 77 with 4 percent (floor(2000 / 104)
+    // = 19, next item 96), and so on.
     const withIt = oreTicks(true);
-    expect(withIt.slice(0, 6)).toEqual([19, 39, 59, 78, 96, 114]);
+    expect(withIt.slice(0, 6)).toEqual([19, 39, 58, 77, 96, 115]);
     expect(withIt.length).toBeGreaterThan(without.length);
   });
 });
 
 describe('crossover: ramp versus the same resources elsewhere (criterion 1)', () => {
-  // Three barracks (tier 1, costPerUnit 6) are each fed directly by a tier 1
-  // extractor (interval 20) on ore. A fourth extractor feeds either
-  //   Y: a fourth barracks, or
-  //   X: a tier 3 overclocker (costPerStep 3, +8 percent per step, 10 steps).
+  // Five barracks (tier 1, costPerUnit 5) are each fed directly by a tier 1
+  // extractor (interval 20) on ore. A sixth extractor feeds either
+  //   Y: a sixth barracks, or
+  //   X: a tier 3 overclocker (costPerStep 4, +5 percent per step, 5 steps).
   // The test content lets the overclocker take ore, so the resources are the
-  // same either way.
+  // same either way, and the barracks has no top speed, so the test is about
+  // supply. With the speed-up capped at +25 percent, the ramp can only pay
+  // off on a wide board: 5 * 1.25 = 6.25 against 5 + 1 = 6 barracks (with 3
+  // barracks 3.75 would stay below 4 for ever).
   //
   // Y (no ramp): an item every 20 ticks, produced at ticks 19, 39, ..., the
-  // sixth at tick 119; a direct link delivers it in the same tick and the
+  // fifth at tick 99; a direct link delivers it in the same tick and the
   // barracks takes it in the same tick, so every barracks spawns at ticks
-  // 119, 239, ... and Y has 4 * floor((t + 1) / 120) units after tick t.
+  // 99, 199, ... and Y has 6 * floor((t + 1) / 100) units after tick t.
   //
-  // X: the extra source makes items at 19, 39, 59: three items, so step 1 is
-  // taken at tick 59. The bonus 8 percent applies at a source's next reset: the
-  // extra source reset at 59 used 0 percent (item at 79), its reset at 79
-  // uses floor(2000 / 108) = 18 (items 97, 115 -> step 2 at tick 115), and
-  // so on. After step 10 the bonus is 80 percent: floor(2000 / 180) = 11
-  // ticks per item for every source. Three barracks then make a unit every 66
-  // ticks each: 3 / 66 per tick against Y's 4 / 120 per tick (1.36 times).
-  // Until the ramp has paid for the missing fourth barracks X is behind.
+  // X: the extra source makes items at 19, 39, 59, 79: four items, so step 1
+  // is taken at tick 79; a step costs 4 items and a step needs 40 ticks of
+  // cooldown, so the 5 steps come at ticks 79, 156, 229, 298 and 363. The
+  // bonus applies at a source's next reset only. After step 5 the bonus is 25
+  // percent: floor(2000 / 125) = 16 ticks per item, a unit per 80 ticks for
+  // each of the 5 barracks: 5 / 80 per tick against Y's 6 / 100 (1.04 times).
+  // The ramp has to make up the missing sixth barracks first, so X is behind
+  // for the first 2000 ticks and ahead after about 2500.
   const run = (variant: 'barracks' | 'overclocker', ticks: number[]) => {
     const { sim, ctx, events } = startArenaBattle(
-      crossoverTeam(variant),
+      crossoverTeam(variant, 5),
       coreOnlyTeam(),
       GAP,
       overclockerOnOre,
@@ -622,26 +630,25 @@ describe('crossover: ramp versus the same resources elsewhere (criterion 1)', ()
     }
     return { counts, events };
   };
-  const marks = [120, 240, 360, 480, 600, 720, 960, 1200, 1440];
+  const marks = [300, 600, 900, 1200, 1800, 2700, 3600, 4800, 6000];
 
   test('X trails Y before the crossover and leads it afterwards', () => {
     const y = run('barracks', marks).counts;
     const x = run('overclocker', marks);
-    // Y is exactly 4 units per 120 ticks.
-    expect(marks.map((m) => y[m])).toEqual(marks.map((m) => (m / 120) * 4));
+    // Y is exactly 6 units per 100 ticks.
+    expect(marks.map((m) => y[m])).toEqual(marks.map((m) => (m / 100) * 6));
     expect(marks.map((m) => x.counts[m])).toEqual([
-      3, 6, 9, 15, 21, 27, 36, 48, 57,
+      15, 30, 50, 70, 105, 165, 220, 295, 370,
     ]);
-    // Behind at 120, 240, 360, 480; ahead from 600 on.
-    for (const m of [120, 240, 360, 480]) {
+    // Behind until 1800; ahead from 2700 on.
+    for (const m of [300, 600, 900, 1200, 1800]) {
       expect(x.counts[m]).toBeLessThan(y[m] ?? 0);
     }
-    for (const m of [600, 720, 960, 1200, 1440]) {
+    for (const m of [2700, 3600, 4800, 6000]) {
       expect(x.counts[m]).toBeGreaterThan(y[m] ?? 0);
     }
     const steps = ofType(x.events, 'ramp_step');
-    expect(steps.map((e) => e.tick).slice(0, 2)).toEqual([59, 115]);
-    expect(steps).toHaveLength(10);
+    expect(steps.map((e) => e.tick)).toEqual([79, 156, 229, 298, 363]);
   });
 
   test('an economy building takes nothing from the board without it', () => {
@@ -681,21 +688,21 @@ describe('unit_strength (armory)', () => {
       content,
       simConfig,
     );
-    // Tier 1 armory: costPerStep 6, +4 percent, max 6. The ore source makes an
-    // item every 20 ticks (19, 39, ...): a step needs 6 items, so steps are
-    // taken at ticks 119, 239, 359, ... The barracks needs 6 ore per soldier
-    // and spawns at the same ticks, but the barracks acts BEFORE the armory
-    // in the same tick, so the unit spawned at 119 sees 0 steps, the unit
-    // of 239 sees 1 step (+4 percent) and the unit of 359 sees 2 (+8 percent).
-    runArena(sim, ctx, 360);
+    // Tier 1 armory: costPerStep 4, +5 percent, max 5, a step every 80 ticks
+    // at the earliest. The ore source makes an item every 20 ticks (19, 39,
+    // ...): a step needs 4 items, so steps are taken at ticks 79, 159, 239,
+    // ... The barracks needs 5 ore per soldier and spawns at 99, 199, 299:
+    // the unit of 99 sees 1 step (+5 percent), the unit of 199 sees 2 (+10)
+    // and the unit of 299 sees 3 (+15).
+    runArena(sim, ctx, 300);
     const spawned = ofType(events, 'unit_spawned');
-    expect(spawned.map((e) => e.tick)).toEqual([119, 239, 359]);
+    expect(spawned.map((e) => e.tick)).toEqual([99, 199, 299]);
     const hp = spawned.map((e) => sim.units.find((u) => u.id === e.unit)?.hp);
-    // mulPct(40, 100) = 40, mulPct(40, 104) = 41 (41.6), mulPct(40, 108) = 43.
-    expect(hp).toEqual([40, 41, 43]);
-    expect(sim.units.map((u) => u.damage)).toEqual([6, 6, 6]); // 6.24, 6.48 -> 6
+    // mulPct(40, 105) = 42, mulPct(40, 110) = 44, mulPct(40, 115) = 46.
+    expect(hp).toEqual([42, 44, 46]);
+    expect(sim.units.map((u) => u.damage)).toEqual([6, 6, 6]); // 6.3, 6.6, 6.9 -> 6
     expect(ofType(events, 'ramp_step').map((e) => e.tick)).toEqual([
-      119, 239, 359,
+      79, 159, 239,
     ]);
     expect(ofType(events, 'ramp_step').map((e) => e.effect)).toEqual([
       'unit_strength',
@@ -704,11 +711,11 @@ describe('unit_strength (armory)', () => {
     ]);
     // The earlier units were not changed by the later steps.
     const first = got(sim.units[0]);
-    expect(first.hp).toBe(40);
-    expect(rampBonus(sim, ctx, 0, 'unit_strength', 0)).toBe(12);
+    expect(first.hp).toBe(42);
+    expect(rampBonus(sim, ctx, 0, 'unit_strength', 0)).toBe(15);
     expect(rampBonus(sim, ctx, 0, 'source_speed', 0)).toBe(0);
     expect(rampBonus(sim, ctx, 1, 'unit_strength', 0)).toBe(0);
-    // Damage rounding: 5 steps = +20 percent -> mulPct(6, 120) = 7.
+    // Damage rounding: 5 steps = +25 percent -> mulPct(6, 125) = 7 (7.5).
     got(sim.ramps.find((r) => r.building === armory)).steps = 5;
     const u = spawnUnitForTest(sim, ctx, {
       side: 0,
@@ -717,7 +724,7 @@ describe('unit_strength (armory)', () => {
       x: 11,
       y: 12,
     });
-    expect([u.hp, u.damage]).toEqual([48, 7]);
+    expect([u.hp, u.damage]).toEqual([50, 7]);
   });
 
   test('unitStats applies mulPct to health and damage only', () => {
@@ -740,7 +747,7 @@ describe('unit_strength (armory)', () => {
       content,
       simConfig,
     );
-    got(sim.ramps[0]).steps = 5; // +20 percent
+    got(sim.ramps[0]).steps = 5; // +25 percent
     // 204 apart (circle radius 72 each, reach 60): in contact.
     const strong = spawnUnitForTest(sim, ctx, {
       side: 0,
@@ -760,7 +767,7 @@ describe('unit_strength (armory)', () => {
     const hits = ofType(events, 'unit_attacked');
     expect(hits.find((e) => e.unit === strong.id)?.damage).toBe(7);
     expect(hits.find((e) => e.unit === foe.id)?.damage).toBe(6);
-    expect(strong.hp).toBe(48 - 6);
+    expect(strong.hp).toBe(50 - 6);
     expect(foe.hp).toBe(40 - 7);
   });
 });
