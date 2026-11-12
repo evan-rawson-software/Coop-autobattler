@@ -1351,7 +1351,10 @@ export class BuildController {
   draftBack(): void {
     const d = this.ui.draft;
     if (d === null) return;
-    if (d.cells.length === 0) this.set({ draft: null });
+    // A receiving half starts with its spot cell; taking that away would leave
+    // a draft nothing can finish, so Backspace there cancels the draft.
+    const floor = d.building === -1 ? 1 : 0;
+    if (d.cells.length <= floor) this.set({ draft: null });
     else this.set({ draft: { ...d, cells: d.cells.slice(0, -1) } });
   }
 

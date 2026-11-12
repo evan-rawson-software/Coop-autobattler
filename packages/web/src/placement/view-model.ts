@@ -100,9 +100,10 @@ export function verdictAt(
 }
 
 /**
- * The hint line: it describes the cell under the pointer, or the chosen cell
- * when the pointer is off the board. A stored message (a failed Confirm, or a
- * click on a touch screen with no pointer) shows only when no cell is hovered.
+ * The hint line: a stored message (a refused click or Ready) comes first, so
+ * a hover left over after a tap does not hide it; the screen clears it when
+ * the pointer moves to another cell or the acting player changes. Otherwise it
+ * describes the cell under the pointer, or the chosen cell.
  */
 export function hintText(input: {
   readonly hover: Verdict | null;
@@ -110,6 +111,7 @@ export function hintText(input: {
   readonly message: string | null;
   readonly ready?: boolean;
 }): string {
+  if (input.message !== null) return input.message;
   if (input.hover !== null) {
     return input.hover.ok
       ? input.ready === true
@@ -117,7 +119,6 @@ export function hintText(input: {
         : 'The Core fits here. Click to choose this spot.'
       : (input.hover.text ?? '');
   }
-  if (input.message !== null) return input.message;
   return input.selected === null
     ? 'Point at the map to try a position.'
     : `Chosen: column ${String(input.selected.x)}, row ${String(input.selected.y)}.`;

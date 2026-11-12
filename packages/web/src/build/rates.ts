@@ -7,12 +7,14 @@
 
 import {
   collectorHundredthsPerSecond,
+  dryRunFlow,
   needHundredthsPerSecond,
   needPer1000,
   productionOf,
   type BuildingDef,
   type DryRunResult,
   type PlacedBuilding,
+  type SimConfig,
   type TeamState,
 } from '@game/core';
 import type { WebContent } from '../content.js';
@@ -109,6 +111,32 @@ export function supplyOf(
       gets: Math.floor((got * ticksPerSecond) / 10),
     });
   }
+  return out;
+}
+
+/**
+ * The length of the `'need'` dry run behind "supplied / UNDER-SUPPLIED". It is
+ * fixed, so the label does not change with the dry-run length setting.
+ */
+export const NEED_RUN_TICKS = 600;
+
+const needCache = new WeakMap<TeamState, Supply[]>();
+
+/** `supplyOf` over a fixed-length `'need'` run, memoised per board state. */
+export function needSupply(
+  team: TeamState,
+  content: WebContent,
+  sim: SimConfig,
+): Supply[] {
+  const hit = needCache.get(team);
+  if (hit !== undefined) return hit;
+  const out = supplyOf(
+    team,
+    content,
+    dryRunFlow(team, content, sim, NEED_RUN_TICKS, 'need'),
+    sim.ticksPerSecond,
+  );
+  needCache.set(team, out);
   return out;
 }
 

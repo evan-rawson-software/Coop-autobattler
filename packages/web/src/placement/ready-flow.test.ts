@@ -1,7 +1,15 @@
 import { listLegalCorePositions } from '@game/core';
 import { describe, expect, test } from 'vitest';
+import {
+  createEconomyDeps,
+  createMemorySaveStore,
+  openRun,
+  startRun,
+} from '@game/session';
+import { economy } from '../build/setup.js';
 import { BuildSession } from '../build/session.js';
 import { content } from '../content.js';
+import { reasonMessage } from '../build/reasons.js';
 import { hintText, verdictAt } from './view-model.js';
 
 function spots(s: BuildSession, p: number) {
@@ -30,7 +38,13 @@ describe('Core placement: place, change until Ready, Unready reopens', () => {
 
     // The partner must place before Ready, then the step ends.
     s.setActing(1);
-    expect((await s.dispatch({ type: 'ready' })).ok).toBe(false);
+    const early = await s.dispatch({ type: 'ready' });
+    expect(early).toMatchObject({ ok: false, reason: 'core_not_placed' });
+    if (!early.ok) {
+      expect(reasonMessage(early.reason, early.detail)).toBe(
+        'Choose a spot for the Core first.',
+      );
+    }
     expect((await s.dispatch({ type: 'place_core', ...b1 })).ok).toBe(true);
     expect((await s.dispatch({ type: 'ready' })).ok).toBe(true);
     expect(s.run.step).toBe('build');
@@ -59,5 +73,46 @@ describe('Core placement: place, change until Ready, Unready reopens', () => {
     expect(
       hintText({ hover: v, selected: null, message: null, ready: true }),
     ).toMatch(/Unready/);
+  });
+});
+
+describe('a refused Ready names the player', () => {
+  test('a saved illegal pending spot', async () => {
+    const deps = createEconomyDeps(content, content.mapgen, economy);
+    const store = createMemorySaveStore();
+    const created = await startRun(
+      {
+        runId: 'illegal-spot',
+        runVersion: '1.0',
+        seed: 7,
+        players: ['Ann', 'Bo'],
+        host: 0,
+      },
+      deps,
+      store,
+      Date.now(),
+      '1.0.0',
+    );
+    if (!created.ok) throw new Error(created.reason);
+    const rec = (await store.get('illegal-spot')) as {
+      state: { pending: { positions: unknown[] } };
+    };
+    // Player 1 "saved" a spot inside player 0's area.
+    rec.state.pending.positions[1] = { x: 0, y: 0 };
+    await store.put(rec as never);
+    // A saved illegal pending spot never reaches the screen: the run is
+    // refused as corrupt, naming the spot (the machine's own refusal at Ready
+    // is a second guard for rules that change between versions).
+    const opened = await openRun('illegal-spot', deps, store, '1.0.0');
+    expect(opened).toMatchObject({ ok: false, reason: 'corrupt' });
+    expect(String((opened as { errors?: string[] }).errors)).toMatch(
+      /positions\[1\].*outside_own_plot/,
+    );
+  });
+
+  test('the player is named by number', () => {
+    expect(reasonMessage('core_not_placed', 'player 1')).toBe(
+      'Choose a spot for the Core first. Player 2 has to pick a spot.',
+    );
   });
 });

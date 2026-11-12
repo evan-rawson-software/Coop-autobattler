@@ -233,10 +233,51 @@ describe('rates', () => {
     // The extractor makes 1 per 20 ticks (50 per 1000); the barracks needs 75.
     expect(sup?.state).toBe('under');
     expect(flow.underSupplied.has(b.id)).toBe(true);
+    // The label does not depend on the dry-run length setting.
+    for (const ticks of [0, 1, 100, 5000]) {
+      const f = computeFlowView(s.run.team, content, simConfig, ticks);
+      expect(f?.supply, `at ${String(ticks)} ticks`).toEqual(flow.supply);
+    }
     expect(
       deriveProblems(s.run.team, content, flow).some(
         (p) => p.kind === 'under_supplied' && p.building === b.id,
       ),
     ).toBe(true);
+  });
+});
+
+describe('supplied against need', () => {
+  test('received at least the need: supplied; clearly less: under', async () => {
+    const { s } = await start();
+    s.setActing(0);
+    const bk = s.run.team.stash.find(
+      (b) => b.owner === 0 && b.def === 'bld_barracks',
+    );
+    const core = s.run.team.cores[0];
+    if (bk === undefined || core === undefined) throw new Error('setup');
+    const placed = await s.dispatch({
+      type: 'place_building',
+      id: bk.id,
+      x: core.x,
+      y: core.y + 4,
+      rotation: 0,
+    });
+    expect(placed.ok).toBe(true);
+    const team = s.run.team;
+    const run = (rate: number) =>
+      supplyOf(
+        team,
+        content,
+        {
+          ticks: 600,
+          needs: [{ building: bk.id, needPer1000: 75 }],
+          consumers: [{ building: bk.id, side: 'south', ratePer1000: rate }],
+        } as never,
+        simConfig.ticksPerSecond,
+      )[0]?.state;
+    expect(run(80)).toBe('full');
+    expect(run(75)).toBe('full');
+    expect(run(50)).toBe('under');
+    expect(run(0)).toBe('under');
   });
 });

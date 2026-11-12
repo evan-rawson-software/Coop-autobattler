@@ -150,9 +150,13 @@ describe('hint line', () => {
   const bad = verdictAt(team, content, { x: width - 1, y: 0 }, 0);
   const stale = 'The Core is 2 × 2 and would hang over the edge of the board.';
 
-  test('hovering a legal cell after an illegal click shows the legal text', () => {
+  test('a stored refusal is not hidden by a hover left over after a tap', () => {
     expect(bad.ok).toBe(false);
-    expect(hintText({ hover: good, selected: null, message: stale })).toMatch(
+    expect(hintText({ hover: good, selected: null, message: stale })).toBe(
+      stale,
+    );
+    // The screen clears the message when the pointer moves to another cell.
+    expect(hintText({ hover: good, selected: null, message: null })).toMatch(
       /fits here/,
     );
   });
