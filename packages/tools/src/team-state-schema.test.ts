@@ -74,6 +74,7 @@ describe('team-state.schema.json', () => {
       s = added.state;
       if (owner === 0) {
         const placed = placeFromStash(s, content, {
+          actor: 0,
           id: added.id,
           x: node.x,
           y: node.y,
@@ -117,6 +118,7 @@ describe('team-state.schema.json', () => {
       if (!spl.ok) throw new Error(spl.reason);
       s = spl.state;
       const a = placeFromStash(s, content, {
+        actor: 0,
         id: src.id,
         x: n.x,
         y: n.y,
@@ -124,6 +126,7 @@ describe('team-state.schema.json', () => {
       });
       if (!a.ok) continue;
       const b = placeFromStash(a.state, content, {
+        actor: 0,
         id: spl.id,
         x: n.x,
         y: n.y + 1,
@@ -131,6 +134,7 @@ describe('team-state.schema.json', () => {
       });
       if (!b.ok) continue;
       const c = addConduit(b.state, content, {
+        actor: 0,
         from: { building: src.id, side: 'north' },
         to: { building: spl.id, side: 'south' },
         cells: [],

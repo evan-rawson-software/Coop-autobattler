@@ -20,8 +20,9 @@ export const REASON_MESSAGES: Readonly<Record<KnownReason, string>> = {
   // Placement
   unknown_building: 'That building does not exist.',
   invalid_rotation: 'That rotation is not allowed.',
+  not_owner: 'That belongs to another player.',
   outside_own_plot:
-    "The Core has to stand wholly inside its player's own area.",
+    "Everything has to stand wholly inside its player's own area.",
   out_of_bounds: 'Outside the board.',
   blocked_by_feature: 'Water and cliffs cannot be built on.',
   overlaps_core: 'The Core is in the way.',

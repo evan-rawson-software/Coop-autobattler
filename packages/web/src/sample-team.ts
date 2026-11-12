@@ -89,6 +89,7 @@ function tryPlace(
   const stashed = addToStash(state, content, { def: def.id, tier, owner });
   if (!stashed.ok) return state;
   const placed = placeFromStash(stashed.state, content, {
+    actor: owner,
     id: stashed.id,
     x,
     y,
@@ -225,6 +226,7 @@ export function buildSampleTeam(
           : candidatePaths(o, i).filter((p) => p.length <= maxLen);
         for (const cells of paths) {
           const r = addConduit(state, content, {
+            actor: from.b.owner,
             from: { building: from.b.id, side: out },
             to: { building: to.b.id, side: inSide },
             cells,

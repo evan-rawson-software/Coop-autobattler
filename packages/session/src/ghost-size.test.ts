@@ -117,6 +117,7 @@ function maximalBoard(round: number): GhostSnapshot {
     const added = addToStash(team, content, { def, tier: 1, owner });
     if (!added.ok) throw new Error(added.reason);
     const placed = placeFromStash(added.state, content, {
+      actor: owner,
       id: added.id,
       x,
       y,
@@ -173,6 +174,7 @@ function maximalBoard(round: number): GhostSnapshot {
       if (trial === null) break;
       const before = team;
       const added = addConduit(team, content, {
+        actor: team.buildings.find((b) => b.id === ex)?.owner ?? 0,
         from: { building: ex, side: 'north' },
         to: { building: trial, side: 'south' },
         cells: path,

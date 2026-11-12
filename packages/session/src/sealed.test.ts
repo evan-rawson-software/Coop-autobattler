@@ -31,6 +31,7 @@ function put(
   const a = addToStash(team, content, { def, tier: 1, owner: 0 });
   if (!a.ok) return null;
   const p = placeFromStash(a.state, content, {
+    actor: 0,
     id: a.id,
     x,
     y,
