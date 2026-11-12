@@ -387,7 +387,7 @@ export function pendingCoreSpots(
   const out: { player: number; x: number; y: number }[] = [];
   list.forEach((p: unknown, player) => {
     const c = p as { x?: unknown; y?: unknown } | null;
-    if (c !== null && typeof c?.x === 'number' && typeof c.y === 'number') {
+    if (c !== null && typeof c.x === 'number' && typeof c.y === 'number') {
       out.push({ player, x: c.x, y: c.y });
     }
   });

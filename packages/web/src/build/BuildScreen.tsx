@@ -491,7 +491,9 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
               <ActingSwitch
                 run={run}
                 acting={acting}
-                onActing={(p) => ctl.session?.setActing(p)}
+                onActing={(p) => {
+                  ctl.session?.setActing(p);
+                }}
               />
             )}
           </Panel>
@@ -534,7 +536,9 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
             ctl={ctl}
             gate={gate}
             acting={acting}
-            onActing={(p) => ctl.session?.setActing(p)}
+            onActing={(p) => {
+              ctl.session?.setActing(p);
+            }}
           />
         </div>
       </>

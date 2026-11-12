@@ -209,7 +209,9 @@ export function CoreScreen(props: { run: RunHandle }) {
           <ActingSwitch
             run={view.run}
             acting={acting}
-            onActing={(p) => session.setActing(p)}
+            onActing={(p) => {
+              session.setActing(p);
+            }}
           />
           <button
             type="button"
