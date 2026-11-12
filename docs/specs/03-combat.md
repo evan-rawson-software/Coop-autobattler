@@ -469,8 +469,10 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   walls, lakes and cliffs, and collides only with other flying units (by a
   much smaller collision circle than its drawn size). Walls and gates do
   nothing against it; turrets and ranged units are the defense. Placeholder:
-  the Drone, from the Hangar building. (Flyers in PvE waves and the shop
-  entries of the new buildings are not done yet.)
+  the Drone, from the Hangar building. A flyer picks its next Core by
+  straight-line distance, and a Hangar walled in on every side still sends
+  its drones out (it is never "sealed"). (Flyers in PvE waves are not done
+  yet.)
 - **CB-16a** **Production and room.** A unit appears next to the building that
   made it, at the nearest free spot. When there is none the finished unit is
   held, production stops drawing resources and the factory backs up like any
@@ -498,8 +500,8 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   neutral zone, and is in range. It can never target a unit on the enemy's
   board, however close to the far edge of the zone the turret's range
   reaches. (Owner decision; replaces "a turret's range never reaches across the front
-  edge". Not yet implemented: the prototype's turrets still stop at their
-  own front edge. See the rules reference.)
+  edge". Implemented with PP-13: turrets engage units in the neutral zone.
+  See the rules reference.)
 - **CB-19** **Funnelling.** Lakes, cliffs, and walls together determine the
   paths enemy units can take. A player who leaves one long, turret-lined
   approach to their Core gets far more value from each defense than one with

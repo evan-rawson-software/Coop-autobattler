@@ -1075,11 +1075,34 @@ function chooseTarget(
   side: number,
   owner: number,
   k: number,
+  fly?: { x: number; y: number },
 ): number {
   const n = ctx.arena.coreRef[1 - side]?.length ?? 0;
   const opp = n - 1 - owner;
   if (coreAlive(ctx.arena, side, opp)) return opp;
+  if (fly !== undefined) {
+    return bestCore(ctx, side, owner, (q) =>
+      flyRank(ctx, side, q, fly.x, fly.y),
+    );
+  }
   return bestCore(ctx, side, owner, (q) => cellRank(ctx, side, q, k));
+}
+
+/**
+ * A flying unit's rank for the enemy Core `core` (CB-16c): class 0 and the
+ * straight-line squared distance from the point `(x, y)` to the Core's
+ * nearest cell. Terrain, walls and the ground fields play no part.
+ */
+function flyRank(
+  ctx: ArenaContext,
+  side: number,
+  core: number,
+  x: number,
+  y: number,
+): { cls: number; d: number } {
+  const ref = ctx.arena.coreRef[1 - side]?.[core] ?? -1;
+  const b = ref >= 0 ? ctx.arena.buildings[ref] : undefined;
+  return { cls: 0, d: b === undefined ? 0 : buildingDist2(x, y, b) };
 }
 
 /**
@@ -1346,6 +1369,7 @@ function spawnCells(
   core: number,
   ref: number,
   producer: ArenaBuilding,
+  fly: boolean,
 ): Int32Array {
   const key = ref * SPAWN_KEY + core + 1;
   const cached = ctx.spawnCells.get(key);
@@ -1359,8 +1383,11 @@ function spawnCells(
       const y = c.y + dy;
       if (x < 0 || y < 0 || x >= width || y >= height) continue;
       const k = y * width + x;
-      if (!openFor(arena, side, k)) continue;
-      const { cls, d } = cellRank(ctx, side, core, k);
+      // A flyer may leave onto any cell, ranked by straight-line distance.
+      if (!fly && !openFor(arena, side, k)) continue;
+      const { cls, d } = fly
+        ? flyRank(ctx, side, core, x * S + S / 2, y * S + S / 2)
+        : cellRank(ctx, side, core, k);
       cands.push({ k, cls, d, tie: tieKey(arena, side, x, y) });
     }
   }
@@ -1458,6 +1485,8 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (unitDef === undefined) throw new Error(`Unknown unit "${info.unit}".`);
     const producer = ctx.arena.buildings[info.ref];
     if (producer === undefined) continue;
+    const fly = unitDef.flying;
+    const gw = ctx.arena.geom.width;
     // The target Core: the opposite one if it stands (the spawn cells are
     // ordered by its fields), else the nearest by the first spawn cell.
     const owner = info.owner;
@@ -1466,10 +1495,19 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     const target = coreAlive(ctx.arena, p.side, opp)
       ? opp
       : bestCore(ctx, p.side, owner, (q) => {
-          const first = spawnCells(ctx, p.side, q, info.ref, producer)[0];
-          return first === undefined ? null : cellRank(ctx, p.side, q, first);
+          const first = spawnCells(ctx, p.side, q, info.ref, producer, fly)[0];
+          if (first === undefined) return null;
+          return fly
+            ? flyRank(
+                ctx,
+                p.side,
+                q,
+                (first % gw) * S + S / 2,
+                divFloor(first, gw) * S + S / 2,
+              )
+            : cellRank(ctx, p.side, q, first);
         });
-    const cells = spawnCells(ctx, p.side, target, info.ref, producer);
+    const cells = spawnCells(ctx, p.side, target, info.ref, producer, fly);
     const pos = spawnPosition(sim, ctx, p.side, cells, unitDef);
     if (pos === null) continue; // held: no free position at the exit
     p.progress = 0;
@@ -1653,7 +1691,13 @@ function enterWaves(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
       // PP-11: the owner is the plot of the column it entered on; the target
       // is chosen from the entry cell.
       const owner = divFloor(used, sim.teams[side === 0 ? 0 : 1].map.plotWidth);
-      const target = chooseTarget(ctx, side, owner, cellAt(ctx, side, pos));
+      const target = chooseTarget(
+        ctx,
+        side,
+        owner,
+        cellAt(ctx, side, pos),
+        unitDef.flying ? pos : undefined,
+      );
       // A wave unit has no producer, so no ramp bonus (PP-8).
       addUnit(
         sim,
@@ -1874,7 +1918,15 @@ export function spawnUnitForTest(
     damage: stats.damage,
     attackCooldown: 0,
     owner,
-    target: args.target ?? chooseTarget(ctx, args.side, owner, k),
+    target:
+      args.target ??
+      chooseTarget(
+        ctx,
+        args.side,
+        owner,
+        k,
+        def.flying ? { x: px, y: py } : undefined,
+      ),
   };
   sim.nextUnitId += 1;
   sim.units.push(unit);
@@ -2674,6 +2726,9 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
         u.side,
         u.owner,
         cellAt(ctx, u.side, { x: u.px, y: u.py }),
+        ctx.content.units.get(u.def)?.flying === true
+          ? { x: u.px, y: u.py }
+          : undefined,
       );
       events?.push({
         tick,

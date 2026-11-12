@@ -49,6 +49,7 @@ function put(
 function sealIn(
   s: RunState,
   gate = false,
+  producer = 'bld_barracks',
 ): { state: RunState; barracks: number; walls: number[] } {
   const w = s.team.map.width;
   const clear: TeamState = {
@@ -60,7 +61,7 @@ function sealIn(
     [w - 2, -1],
   ] as const) {
     let team = clear;
-    const b = put(team, 'bld_barracks', bx, 0);
+    const b = put(team, producer, bx, 0);
     if (b === null) continue;
     team = b.team;
     // The four cells next to the 2x2 footprint, inside the board.
@@ -121,6 +122,12 @@ describe('Ready is refused while a unit producer is sealed in (issue #37, 3a)', 
 
   test('a gate in the enclosure is not sealed', () => {
     const { state } = sealIn(inBuild(['Ann']), true);
+    expect(sealedProducers(state, deps)).toEqual([]);
+    expect(ok(state, 0, { type: 'ready' }, deps).state.step).toBe('pve_choice');
+  });
+
+  test('a walled-in Hangar (flying units) is never sealed and does not block Ready', () => {
+    const { state } = sealIn(inBuild(['Ann']), false, 'bld_hangar');
     expect(sealedProducers(state, deps)).toEqual([]);
     expect(ok(state, 0, { type: 'ready' }, deps).state.step).toBe('pve_choice');
   });

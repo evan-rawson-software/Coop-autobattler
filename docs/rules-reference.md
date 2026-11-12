@@ -2042,7 +2042,7 @@ units unless noted):
 | `flying` | Boolean. A flying unit ignores walls, lakes and cliffs and collides only with other flying units ("Ranged units and flyers"). A flying unit must be `ranged` (the loader rejects a melee flyer). |
 | `attackType` | `"melee"` or `"ranged"`. A melee unit cannot hit a flying unit; a ranged unit can. For a ranged unit `reach` is its range (edge to edge, as for melee). |
 
-Placeholder content (units added with part 2, all numbers placeholders to tune: archer `health 30, damage 5, cooldown 10, radius 66, collisionRadius 43, reach 720` (three cells), ranged; drone `health 20, damage 4, cooldown 8, moveCooldownTicks 4, radius 66, collisionRadius 16, reach 600`, flying, ranged; producers `bld_range` (archer, `res_a`) and `bld_hangar` (drone, `res_b`), both 2x2 like the Barracks, offered in the shop at weights 5 and 3): soldier `radius = 72` (0.30 cell), `collisionRadius = 47`,
+Placeholder content (units added with part 2, all numbers placeholders to tune: archer `health 30, damage 5, cooldown 10, moveCooldownTicks 6 (speed 40, like the soldier), radius 66, collisionRadius 43, reach 720` (three cells), ranged; drone `health 20, damage 4, cooldown 8, moveCooldownTicks 4, radius 66, collisionRadius 16, reach 600`, flying, ranged; producers `bld_range` (archer, `res_a`) and `bld_hangar` (drone, `res_b`), both 2x2 like the Barracks, offered in the shop at weights 5 and 3): soldier `radius = 72` (0.30 cell), `collisionRadius = 47`,
 `reach = 60`; raider `radius = 60` (0.25 cell), `collisionRadius = 39`, `reach =
 60`. Reach, aggro and turret range use `radius` (the body); collision uses
 `collisionRadius`, so bodies pack tighter than they are drawn.
@@ -2125,13 +2125,27 @@ Implemented in `arena-sim.ts` (decisions, spawn) and `unit-motion.ts`
   pushes if both units are in the same layer, so flyers push only flyers (by
   their small `collisionRadius`) and ground units push only ground units. The
   steering of rule c ("Steering") considers only allies of the same layer.
-  Spawning places a flyer by the same exit cells as a ground unit but checks
-  `fits` against the empty world and the overlap test against flyers only;
+  Spawning places a flyer on the **spawn cells** below, which for a flyer are
+  **every** in-board cell 4-adjacent to the producer's footprint, open or not
+  (a wall, a building or a lake cell included), ordered by the straight-line
+  key `(0, buildingDist2(cell centre, target Core), tie key)`; it checks `fits`
+  against the empty world and the overlap test against flyers only, so a
+  Hangar walled in on every side still spawns its drones.
   `spawnUnitForTest` the same. A flyer's reach and body are measured as for
   any unit, so a unit's circle is hit at its `radius` whether it flies or not.
+- **A flyer chooses a Core by straight-line distance.** The rule of PP-11 is
+  unchanged (the Core opposite the owner's plot if it stands), but wherever
+  the "nearest" Core is picked (a new target when the Core fell, a wave
+  spawn, a spawn from a Hangar, `spawnUnitForTest`) a flying unit ranks the
+  living Cores by `(0, buildingDist2(px, py, Core))` from its own position
+  (from the centre of its first spawn cell at a spawn), never by the movement
+  and breach fields; the later parts of the key `(|q - opposite(owner)|, -q)`
+  are as before. Ties are therefore deterministic and mirror symmetric.
+- **Sealed producers.** A producer of flying units is never sealed
+  ("Sealed unit producers"), so it never blocks Ready.
 - **Mirror symmetry and restore** hold as before: nothing above depends on
   unit order, and nothing new is stored.
-- Not done: flyers in PvE waves (`threats.json`) and shop entries for the Range and the Hangar (see the pull request).
+- Not done: flyers in PvE waves (`threats.json`) and bot use of the Range and the Hangar.
 
 ### State (plain JSON)
 
@@ -2199,7 +2213,9 @@ exactly like the original.
       and spawn one unit of the producer's `unit` type there. The **spawn cells** are the
       cells 4-adjacent to the producer's footprint that are open for the
       producer's side (not blocked and not covered by a building that blocks
-      that side; an own gate counts as open), ordered by the key (class,
+      that side; an own gate counts as open; for a **flying** unit every
+      in-board neighbour counts and the key is the straight-line one of
+      "Ranged units and flyers"), ordered by the key (class,
       distance, tie key): class 0 if the cell has a finite distance in the
       movement field of the unit's **target Core** (below) and then that
       distance; else class 1 with its distance in the breach field of that
@@ -2312,6 +2328,10 @@ exactly like the original.
      Core nearest to it (the same cell as in "Goals and movement fields", "at
      the Core"), steered as in "Steering" (only flying allies count as
      blockers), and it never breaches. With no enemy Core standing it waits.
+     Its target Core is chosen by straight-line distance ("Ranged units and
+     flyers"). Rules a and a2 do not test line of sight for a flyer (the
+     attacker): it chases an enemy within the aggro range behind a wall or a
+     lake, where a ground unit does not.
    - **c. Move.** Otherwise the unit chooses a **heading** or a **target
      point** as follows (field details in "Goals and movement fields"); the
      move itself is resolved in step 5. Let `d` be the unit's cell's distance
@@ -2365,9 +2385,9 @@ exactly like the original.
    `cooldownTicks`, the tier's `damage` is added to the unit's pending damage,
    and `turret_fired` is recorded (in this step, after all decisions, before
    the `unit_attacked` events of step 4). A turret with no valid target keeps
-   its charge and its (already 0) cooldown. A turret's range therefore never
-   reaches across its owner's front edge, however close to the edge it stands
-   (CB-18). Turrets do not otherwise affect movement: they are buildings, they
+   its charge and its (already 0) cooldown. A turret therefore never fires at
+   a unit on the enemy's board, however close to the neutral zone the unit is
+   (CB-18a); units in the neutral zone are targets (PP-13). Turrets do not otherwise affect movement: they are buildings, they
    block all units and have health.
 4. **Resolve attacks simultaneously.** Every unit that chose (a) or (b) and has
    `attackCooldown = 0` deals its `damage` (the unit's own stored `damage`)
@@ -2943,7 +2963,7 @@ corner cell between a healthy and a damaged wall of equal maximum health that
 attacks the healthy one because the breach step prices buildings by maximum
 health).
 
-Vectors added with the circle model (issue #59): `arena-sim.separation-converging-soldiers` (four soldiers converging on one target: equal and unequal priority in the separation pass), `arena-sim.choke-point` (twelve soldiers through a wall line with a one-cell gap), `arena-sim.producer-held-at-blocked-exit` (a barracks whose only exit is occupied holds its unit, stops drawing, the source stalls) and `arena-sim.wide-unit-blocked-by-gap` (an ogre with a collision diameter of 320 waits in front of a one-cell gap that a soldier passes). Vectors added with ranged units and flyers (issue #59 part 2): `arena-sim.ranged-fires-from-range-and-holds`, `arena-sim.flyer-crosses-lake-line`, `arena-sim.melee-cannot-hit-flyer` and `arena-sim.ranged-and-flyers-mirror-restore` (mirrored rosters with all four unit types, saved and restored three times). Two optional inputs make them possible: `extraUnits`, a list of unit definitions in the format of `content/units.json` added to the content for the run, and `report: "positions"`, which adds `positions` (`[[id, px, py], ...]` of the living units) to the result.
+Vectors added with the circle model (issue #59): `arena-sim.separation-converging-soldiers` (four soldiers converging on one target: equal and unequal priority in the separation pass), `arena-sim.choke-point` (twelve soldiers through a wall line with a one-cell gap), `arena-sim.producer-held-at-blocked-exit` (a barracks whose only exit is occupied holds its unit, stops drawing, the source stalls) and `arena-sim.wide-unit-blocked-by-gap` (an ogre with a collision diameter of 320 waits in front of a one-cell gap that a soldier passes). Vectors added with ranged units and flyers (issue #59 part 2): `arena-sim.ranged-fires-from-range-and-holds`, `arena-sim.flyer-crosses-lake-line`, `arena-sim.melee-cannot-hit-flyer` and `arena-sim.ranged-and-flyers-mirror-restore` (mirrored rosters with all four unit types, saved and restored three times). Vectors added with the flyer follow-ups: `arena-sim.walled-hangar-spawns-drones` (a Hangar walled in on every side spawns drones that fly out), `arena-sim.flyer-crosses-walls-and-buildings` (a drone passes a wall line and a row of Barracks without attacking them) and `arena-sim.flyer-retargets-by-distance` (after its Core falls a drone takes the nearer Core where the ground tie rule would take the higher index). Two optional inputs make them possible: `extraUnits`, a list of unit definitions in the format of `content/units.json` added to the content for the run, and `report: "positions"`, which adds `positions` (`[[id, px, py], ...]` of the living units) to the result.
 
 The team scripts of this kind and of `team-state-ops` may give an explicit
 `map` (in the map format) instead of `seed` and `partySize`; the vectors that
@@ -4154,6 +4174,10 @@ units could not reach the front row:
   of 4-adjacent walkable cells joins it to a walkable cell of the front row.
   Otherwise it is sealed. This is the spawn rule of the arena ("where to
   spawn") without its preference ordering: only whether a route exists.
+- A producer whose unit is **flying** is never sealed: its units appear on any
+  cell next to it and fly over everything (CB-16c). `sealedProducers` knows
+  this when the content it is given has `units` (the session and the web do);
+  given buildings only, it applies the ground rule to every producer.
 - Unplaced buildings (the stash) never count; a building that is not a unit
   producer is never listed. The search is one breadth-first pass from the front
   row (about a millisecond on a full four-plot board).

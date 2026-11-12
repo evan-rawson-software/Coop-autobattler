@@ -7,6 +7,7 @@
 import { createArena } from './arena.js';
 import { NEIGHBORS, openFor } from './arena-paths.js';
 import type { TeamContent, TeamState } from './team-state.js';
+import type { UnitConfig } from './units.js';
 
 /**
  * The ids of the placed unit producers of `team` that are sealed in, in
@@ -24,14 +25,18 @@ import type { TeamContent, TeamState } from './team-state.js';
  * cells leads from it to a walkable cell of the front row. Otherwise it is
  * sealed. The neutral zone itself is not consulted (it does not exist while
  * building). One breadth-first search from the front row serves all producers.
+ * A producer of flying units (when `content.units` is given) is never sealed:
+ * its units appear on any cell next to it and fly over everything (CB-16c).
  */
 export function sealedProducers(
   team: TeamState,
-  content: TeamContent,
+  content: TeamContent & { readonly units?: UnitConfig },
 ): number[] {
-  const producers = team.buildings.filter(
-    (b) => content.buildings.get(b.def)?.kind === 'unit_producer',
-  );
+  const producers = team.buildings.filter((b) => {
+    const def = content.buildings.get(b.def);
+    if (def?.kind !== 'unit_producer') return false;
+    return content.units?.get(def.unit)?.flying !== true;
+  });
   if (producers.length === 0) return [];
   // Side 0 is this team; the other side is the same board with nothing on it.
   const arena = createArena(
