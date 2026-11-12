@@ -308,11 +308,10 @@ describe('no giving (CP-29, CP-21i)', () => {
     }
   });
 
-  // Known gap, owned by issue #129 (CP-28): the board intents do not check
-  // who owns the building yet, so a player can place, move or return a
-  // partner's building. Remove `.fails` when #129 lands.
-  test.fails(
-    "board intents on another player's buildings change nothing (needs #129)",
+  // PP-1 (issue #129): the board intents check who owns the building, so a
+  // player cannot place, move or return a partner's building.
+  test(
+    "board intents on another player's buildings change nothing",
     () => {
       const s = byStep.get('build') as RunState;
       for (const type of [

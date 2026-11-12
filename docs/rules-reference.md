@@ -56,7 +56,7 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 
 | Rule | What it specifies | Status |
 | ---- | ----------------- | ------ |
-| PP-1 | Ownership and plot checks on every board operation; conduits have an owner | not yet implemented (issue #129) |
+| PP-1 | Ownership and plot checks on every board operation; conduits have an owner | **implemented** (issue #129) |
 | PP-2 | One Core per player: team state, positions, `placeCore` | **implemented** (issue #128); health of every Core and `core_not_placed` with the player index remain: not yet implemented (issue #132) |
 | PP-3 | Core placement step: each player places their own Core, no vote | not yet implemented (issue #131) |
 | PP-4 | Border links | not yet implemented (issues #135 and #136) |
@@ -69,7 +69,7 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-11 | A unit's owner and target Core; one movement field per target Core | not yet implemented (issue #133). A unit also attacks any enemy Core within reach, target or not |
 | PP-12 | Enemy-path preview per Core | not yet implemented (issue #133) |
 | PP-14 | PvE strongholds and bosses with one Core per player | not yet implemented (issue #138) |
-| PP-15 | Sealed-producer check per owner; map rule per plot | not yet implemented (issues #131 and #129) |
+| PP-15 | Sealed-producer check per owner; map rule per plot | map rule **implemented** (issue #129); sealed check per owner: not yet implemented (issue #131) |
 | PP-16 | Party votes and run streams without the Core vote | not yet implemented (issue #131) |
 | PP-17 | Formats, version, ghost validation | not yet implemented (issue #139) |
 
@@ -699,8 +699,7 @@ remove; the rule is that none is added. A building's `owner` never changes.
 The guard test `packages/session/src/no-giving.test.ts` sends every intent a
 player can send and checks that no other player's gold, stash or placed
 buildings change and no `owner` changes. Board intents aimed at a partner's
-buildings are not yet rejected (CP-28, issue #129); that part of the test is
-marked `test.fails` until then.
+buildings are rejected with `not_owner` (CP-28, PP-1, issue #129).
 
 ## The PRNG
 
@@ -1030,7 +1029,6 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-15 | One more fairness constraint: every walkable cell of a plot is reachable from that plot's own front row inside the plot. Generated maps change. | not yet implemented (issue #129) |
 
 Implemented by `generateMap` in `packages/core/src/generate-map.ts`. Parameters
 come from `content/mapgen.json` (loader: `packages/core/src/mapgen.ts`), the
@@ -1152,6 +1150,10 @@ not matter, as any failure moves to the next attempt):
 - every walkable cell is reachable from the front row (flood fill with 4-way
   moves from all walkable front-row cells) - the front row itself is always
   walkable because features keep off it;
+- per plot (PP-15), every walkable cell of the plot is reachable from a
+  walkable front-row cell of that plot by 4-way moves through cells of that
+  plot only (so terrain alone never closes off part of a plot from its own
+  front);
 - every plot has at least one legal Core position whose footprint lies within
   that plot's columns.
 
@@ -1203,7 +1205,6 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-1 | Every operation names its `actor`; only the owner places, moves, returns or removes a building; every footprint cell must be in the owner's plot. New reasons `not_owner`, `outside_own_plot`. "Anyone may move any building" and "a building may go anywhere on the board" no longer hold. | not yet implemented (issue #129) |
 | PP-4 | Conduit ends may be border spots (halves of a border link). | not yet implemented (issue #135) |
 
 Implemented in `packages/core/src/team-state.ts` (golden kind `team-state-ops`:
@@ -1296,32 +1297,45 @@ Each returns `{ ok: true, state }` (`addToStash` also the new `id`) or
   `placeFromStash`, `moveBuilding` and `addConduit` means the footprint of any
   placed Core. `validateTeamState` requires every placed Core to be legal for
   its player, and `renderTeamStateAscii` draws every Core as `C`.
-- `placeFromStash(id, x, y, rotation)`: `id` must be in `stash`. Moves the entry
-  to `buildings` (same ID, tier, owner).
-- `moveBuilding(id, x, y, rotation)`: `id` must be in `buildings`. Sets position
-  and rotation in one step; moving to the same position with a new rotation is
-  a rotate in place. The building's own current cells never count as overlap.
-  Anyone may move any building (CP-13); owner is not checked.
-- `returnToStash(id)`: `id` must be in `buildings`; the entry goes back to
-  `stash` (sorted by ID). Only `unknown_building` can reject.
-- `removeFromStash(id)`: `id` must be in `stash`; the entry is deleted
-  (selling and refunds come later). Only `unknown_building` can reject.
+- `placeFromStash(actor, id, x, y, rotation)`: `id` must be in `stash`. Moves
+  the entry to `buildings` (same ID, tier, owner).
+- `moveBuilding(actor, id, x, y, rotation)`: `id` must be in `buildings`. Sets
+  position and rotation in one step; moving to the same position with a new
+  rotation is a rotate in place. The building's own current cells never count
+  as overlap.
+- `returnToStash(actor, id)`: `id` must be in `buildings`; the entry goes back
+  to `stash` (sorted by ID). Rejects with `unknown_building`, `invalid_owner`
+  or `not_owner`.
+- `removeFromStash(actor, id)`: `id` must be in `stash`; the entry is deleted
+  (selling and refunds come later). Rejects with `unknown_building`,
+  `invalid_owner` or `not_owner`.
+
+Every operation names its `actor`, the player index of the player performing
+it (PP-1). **Only the owner acts on a building**: an `actor` that is not the
+building's `owner` gets `not_owner`; an `actor` that is not an integer from 0
+to `partySize - 1` gets `invalid_owner`. **A building's cells lie in its
+owner's plot**: every cell of the rotated footprint has `plotOf(x) = owner`.
+With one player, plot 0 is the whole board and neither rule can reject.
 
 **Rule order for `placeFromStash` and `moveBuilding`.** The first failing rule
 in this order is the reported reason:
 
 1. `unknown_building`: no such instance ID where expected (stash for place,
    buildings for move).
-2. `invalid_rotation`: not 0, 90, 180 or 270.
-3. `out_of_bounds`: a non-integer position, or any cell of the rotated
+2. `invalid_owner` (`actor` is not a player index), then `not_owner` (`actor`
+   is not the building's `owner`). (`invalid_owner` is not in the PP-1 list;
+   it is checked here so that a malformed `actor` is told apart.)
+3. `invalid_rotation`: not 0, 90, 180 or 270.
+4. `out_of_bounds`: a non-integer position, or any cell of the rotated
    footprint outside `0 <= x < width`, `0 <= y < height`.
-4. `blocked_by_feature`: a cell holds a feature whose `blocksBuilding` is true.
-5. `overlaps_core`: a cell is in the Core footprint (when the Core is placed).
-6. `overlaps_building`: a cell is covered by another placed building.
-7. `overlaps_conduit`: a cell holds a conduit cell. For `moveBuilding`, conduits
+5. `outside_own_plot`: a footprint cell has `plotOf(x) != owner`.
+6. `blocked_by_feature`: a cell holds a feature whose `blocksBuilding` is true.
+7. `overlaps_core`: a cell is in the footprint of any placed Core.
+8. `overlaps_building`: a cell is covered by another placed building.
+9. `overlaps_conduit`: a cell holds a conduit cell. For `moveBuilding`, conduits
    attached to the moving building do not count (they are removed when the
    move succeeds); conduits of other buildings do.
-8. Node rules:
+10. Node rules:
    - `source_needs_node`: a building of kind `source` must have every
      footprint cell on a resource node, all of the same resource (a
      placeholder source is 1x1). It produces that resource.
@@ -1330,8 +1344,7 @@ in this order is the reported reason:
      for sources.
 
 A rejected operation changes nothing. Placement does not require the Core to
-be placed first, and CP-12 applies: a building may go anywhere on the board
-whoever owns it.
+be placed first. A building goes only in its owner's plot (PP-1).
 
 ### Conduits attached to a moved building
 
@@ -1374,10 +1387,10 @@ Input `{ "seed": u32, "partySize": 1..4, "ops": [...] }`. The map is the
 `map-gen` map for that seed and party size, the state starts as
 `createTeamState(map)`, and the ops run in order. An op is an object with an
 `op` field and its arguments: `addToStash` (`def`, `tier`, `owner`),
-`placeCore` (`x`, `y`), `placeFromStash` and `moveBuilding` (`id`, `x`, `y`,
-`rotation`), `returnToStash` and `removeFromStash` (`id`), `addConduit`
-(`from` and `to`, each `{ building, side }`, and `cells`, a list of `{ x, y }`)
-and `eraseConduit` (`id`). A rejected op leaves
+`placeCore` (`actor`, `x`, `y`), `placeFromStash` and `moveBuilding` (`actor`,
+`id`, `x`, `y`, `rotation`), `returnToStash` and `removeFromStash` (`actor`,
+`id`), `addConduit` (`actor`, `from` and `to`, each `{ building, side }`, and
+`cells`, a list of `{ x, y }`) and `eraseConduit` (`actor`, `id`). A rejected op leaves
 the state as it was and the run continues. Result `{ "results": [...],
 "state": <final state>, "hash": <hash of the final state> }`, with one entry
 per op: `{ "op", "ok": true }` (plus `"id"` for `addToStash` and `addConduit`) or `{ "op",
@@ -1392,7 +1405,6 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-1 | A conduit has an `owner`, joins two buildings of that owner and lies in that owner's plot; only the owner erases it. "Conduits have no owner" no longer holds. | not yet implemented (issue #129) |
 | PP-4 | Border links: a half ends at a border spot; two matching halves are one conduit in the flow graph (`linkedConduit` on the edge); an open half carries nothing and loses nothing (a connected output that never accepts). | not yet implemented (issues #135 and #136) |
 
 Implemented in `packages/core/src/conduits.ts` (golden kinds `team-state-ops`
@@ -1403,9 +1415,12 @@ crossover building. All functions are pure.
 
 ### Model
 
-A conduit is `{ id, from: { building, side }, to: { building, side }, cells }`
-(`schemas/team-state.schema.json`):
+A conduit is `{ id, owner, from: { building, side }, to: { building, side },
+cells }` (`schemas/team-state.schema.json`):
 
+- `owner`: the player who drew it, the `actor` of the `addConduit` that made it
+  (PP-1). It joins two buildings of its owner and every path cell lies in its
+  owner's plot. Only the owner erases it.
 - `id`: a unique positive integer taken from `nextId`, the same counter as
   buildings, and never reused. `addConduit` assigns it and increments `nextId`.
 - `from.building`, `to.building`: instance IDs of **placed** buildings (never
@@ -1458,33 +1473,37 @@ cell is outside an edge of the `from` side and the last outside an edge of the
 
 ### `addConduit` rules and their order
 
-`addConduit(state, content, { from, to, cells })` returns `{ ok: true, state, id }`
+`addConduit(state, content, { actor, from, to, cells })` returns `{ ok: true, state, id }`
 or `{ ok: false, reason, detail? }`. The rules are checked in this fixed order
 and the first failing rule is the reported reason:
 
 1. `unknown_building`: either end is not a placed building (an unknown ID, a
    stashed building, or the Core).
-2. `not_an_output`: `from.side` is not one of the building's output sides at its
+2. `not_owner`: an end building is not owned by `actor` (`from` checked before
+   `to`; an `actor` that is no player owns nothing, so it gets this reason too).
+3. `not_an_output`: `from.side` is not one of the building's output sides at its
    rotation (this includes buildings with no outputs and any value that is not a
    side name). Then `not_an_input` likewise for `to.side`. `from` is checked
    before `to`.
-3. `side_in_use`: that output side, or that input side, already has a conduit
+4. `side_in_use`: that output side, or that input side, already has a conduit
    (output first).
-4. `invalid_path`: see Path and Direct connection above.
-5. `blocked_by_feature`: a path cell holds a feature with `blocksBuilding`.
-6. `overlaps_core`: a path cell is in the Core footprint.
-7. `overlaps_building`: a path cell is covered by a placed building.
-8. `crosses_conduit`: a path cell is used by another conduit (CB-3g: conduits
-   never share or cross a cell).
-9. `resource_mismatch`: see Resource typing.
-10. `would_loop`: see Loops.
+5. `invalid_path`: see Path and Direct connection above.
+6. `outside_own_plot`: a path cell has `plotOf(x) != actor`.
+7. `blocked_by_feature`: a path cell holds a feature with `blocksBuilding`.
+8. `overlaps_core`: a path cell is in the footprint of any placed Core.
+9. `overlaps_building`: a path cell is covered by a placed building.
+10. `crosses_conduit`: a path cell is used by another conduit (CB-3g: conduits
+    never share or cross a cell).
+11. `resource_mismatch`: see Resource typing.
+12. `would_loop`: see Loops.
 
 A conduit may run over a resource node cell (it blocks that node while it is
 there, since `placeFromStash` and `moveBuilding` reject `overlaps_conduit`;
 conduits are free to erase). A rejected operation changes nothing.
 
-Other operations: `eraseConduit(state, { id })` removes one conduit (reason
-`unknown_conduit`); the ID is never reused. `detachConduits` is described under
+Other operations: `eraseConduit(state, { actor, id })` removes one conduit
+(reasons, in order: `unknown_conduit`, `invalid_owner`, `not_owner`; only the
+conduit's owner erases it); the ID is never reused. `detachConduits` is described under
 Team state and placement. Placement and moving respect conduits:
 `placeFromStash`, `moveBuilding` and `placeCore` reject `overlaps_conduit` when
 a footprint cell is a conduit cell (rule 7 there; for `placeCore` after
@@ -3709,7 +3728,6 @@ section when their issue lands; none of them is in the code yet.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-1 | The board scripts gain `actor` on every op (`placeCore` has it already, as player 0); a multi-plot board must keep every building in its owner's plot. | not yet implemented (issue #129) |
 | PP-6 | The boards are rebuilt as supply-limited boards (each building's need against its collectors' rates); the descriptions below, and every result measured on them, are void until then. Since issue #130 the production step caps every producer at its top speed (placeholder intervals), so the pinned results changed. | not yet implemented (issue #145) |
 
 `reference-boards.ts` and `reference-boards-siege.ts` (importable by later
