@@ -6,6 +6,7 @@ import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
 import { Panel } from '../shell/AppShell.js';
 import type { WebContent } from '../content.js';
+import { screenText, screenTexts } from '../build/texts.js';
 import { bossLabel } from '../run/display-text.js';
 import { ChartLegend, LineChart, type ChartMarker } from './charts.js';
 import {
@@ -429,47 +430,46 @@ function stepText(
   core: string,
   [own, foe]: readonly [StepSide, StepSide],
 ): string | null {
-  const share = `yours ${String(own.coreHealth)} / ${String(own.coreMaxHealth)}, theirs ${String(foe.coreHealth)} / ${String(foe.coreMaxHealth)}`;
+  const tx = (key: string, values: Record<string, string> = {}): string =>
+    screenText(screenTexts, key, { core, ...values });
   if (reason === 'time_limit') {
     return own.coresStanding !== foe.coresStanding
-      ? `Time ran out. The side with more ${core}s standing wins: yours ${String(own.coresStanding)}, theirs ${String(foe.coresStanding)}.`
-      : `Time ran out with equal ${core}s standing. The side with the larger share of its total ${core} health left wins: ${share}.`;
+      ? tx('battleTimeMoreCores', {
+          own: String(own.coresStanding),
+          foe: String(foe.coresStanding),
+        })
+      : tx('battleTimeLargerShare', {
+          ownhealth: String(own.coreHealth),
+          ownmax: String(own.coreMaxHealth),
+          foehealth: String(foe.coreHealth),
+          foemax: String(foe.coreMaxHealth),
+        });
   }
   if (reason === 'core_destroyed') return null;
   const doubleFall = own.coresStanding === 0 && foe.coresStanding === 0;
-  const origin = doubleFall
-    ? `Both sides lost their last ${core} in the same tick`
-    : `Time ran out with equal ${core}s standing and equal shares of total ${core} health`;
-  const eq = doubleFall ? ' with equal overkill damage' : '';
+  const form = doubleFall ? 'Double' : 'Time';
   switch (reason) {
     case 'tiebreak_overkill':
-      return doubleFall
-        ? null
-        : `${origin}; the side whose ${core}s took less overkill damage wins.`;
+      return doubleFall ? null : tx('battleTieOverkillTime');
     case 'tiebreak_building_damage':
-      return `${origin}${eq}; the side that dealt more damage to the enemy's buildings wins.`;
+      return tx(`battleTieBuildingDamage${form}`);
     case 'tiebreak_kills':
-      return `${origin}${eq} and equal damage to the enemy's buildings; the side that killed more enemy units wins.`;
+      return tx(`battleTieKills${form}`);
     case 'tiebreak_attacker':
-      return `${origin}${eq}, equal damage to the enemy's buildings and equal kills; the attacker (the party) wins.`;
+      return tx(`battleTieAttacker${form}`);
   }
 }
 
-function genericReasonText(reason: BattleReason, coreName: string): string {
-  switch (reason) {
-    case 'core_destroyed':
-      return `One side's last ${coreName} was destroyed; the other side wins.`;
-    case 'tiebreak_overkill':
-      return `Both sides lost their last ${coreName} in the same tick; the side whose ${coreName}s took less overkill damage wins.`;
-    case 'tiebreak_building_damage':
-      return `A tie on ${coreName} health (both ${coreName}s destroyed in the same tick with equal overkill damage, or equal ${coreName}s standing and equal shares of total health at the time limit); the side that dealt more damage to the enemy's buildings wins.`;
-    case 'tiebreak_kills':
-      return `A tie on ${coreName} health and on damage dealt to the enemy's buildings; the side that killed more enemy units wins.`;
-    case 'tiebreak_attacker':
-      return `A tie on ${coreName} health, on damage dealt to the enemy's buildings and on enemy units killed; the attacker (the party) wins.`;
-    case 'time_limit':
-      return `Time ran out; the side with more ${coreName}s standing wins, then the side with the larger share of its total ${coreName} health left.`;
-  }
+function genericReasonText(reason: BattleReason, core: string): string {
+  const key = {
+    core_destroyed: 'battleGenericCoreDestroyed',
+    tiebreak_overkill: 'battleGenericOverkill',
+    tiebreak_building_damage: 'battleGenericBuildingDamage',
+    tiebreak_kills: 'battleGenericKills',
+    tiebreak_attacker: 'battleGenericAttacker',
+    time_limit: 'battleGenericTimeLimit',
+  }[reason];
+  return screenText(screenTexts, key, { core });
 }
 
 export interface SummaryProps {

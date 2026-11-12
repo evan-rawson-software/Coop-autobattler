@@ -19,7 +19,6 @@ import {
   buildingEnd,
 } from '@game/core';
 import type { WebContent } from '../content.js';
-import { count } from '../plural.js';
 import { formatHundredths, needSupply, type Supply } from './rates.js';
 import { playerName, screenText } from './texts.js';
 
@@ -313,7 +312,7 @@ export function deriveProblems(
         out.push({
           id: `missing:${String(b.id)}`,
           kind: 'missing_input',
-          text: `${name(b)} has nothing feeding it.`,
+          text: screenText(texts, 'problemNothingFeeding', { name: name(b) }),
           focus: first,
           building: b.id,
         });
@@ -321,14 +320,16 @@ export function deriveProblems(
     } else if (def.kind !== 'source') {
       for (const inp of sides.inputs) {
         if (inputConnected(state, b.id, inp.side)) continue;
-        const what =
-          inp.resource === undefined
-            ? 'an input'
-            : `its ${resourceName(content, inp.resource)} input`;
         out.push({
           id: `missing:${String(b.id)}:${inp.side}`,
           kind: 'missing_input',
-          text: `${name(b)} has no conduit into ${what}.`,
+          text:
+            inp.resource === undefined
+              ? screenText(texts, 'problemNoConduitAny', { name: name(b) })
+              : screenText(texts, 'problemNoConduitResource', {
+                  name: name(b),
+                  resource: resourceName(content, inp.resource),
+                }),
           focus: first,
           building: b.id,
         });
@@ -364,7 +365,10 @@ export function deriveProblems(
       out.push({
         id: `starved:${String(b.id)}:${c.side}`,
         kind: 'starved',
-        text: `${name(b)} receives no ${resourceName(content, c.resource)} in the dry run.`,
+        text: screenText(texts, 'problemStarved', {
+          name: name(b),
+          resource: resourceName(content, c.resource),
+        }),
         focus: occ.cellsOf(b)[0] ?? { x: b.x, y: b.y },
         building: b.id,
       });
@@ -426,7 +430,15 @@ export function deriveProblems(
     out.push({
       id: 'free_nodes',
       kind: 'free_nodes',
-      text: `${buildingName(content, sourceInStash.def)} in stash: ${count(freeNodes.length, 'free node')} (${kinds.join(', ')}).`,
+      text: screenText(
+        texts,
+        freeNodes.length === 1 ? 'problemFreeNodesOne' : 'problemFreeNodesMany',
+        {
+          name: buildingName(content, sourceInStash.def),
+          count: String(freeNodes.length),
+          kinds: kinds.join(', '),
+        },
+      ),
       focus: first === undefined ? null : { x: first.x, y: first.y },
       building: null,
     });
@@ -436,7 +448,11 @@ export function deriveProblems(
     out.push({
       id: 'stash',
       kind: 'stash',
-      text: `${count(n, 'building')} in the stash could be placed.`,
+      text: screenText(
+        texts,
+        n === 1 ? 'problemStashOne' : 'problemStashMany',
+        { count: String(n) },
+      ),
       focus: null,
       building: null,
     });
