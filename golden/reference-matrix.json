@@ -22,6 +22,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -35,6 +36,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -42,6 +44,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -60,6 +63,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -73,6 +77,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -80,6 +85,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -98,6 +104,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -111,6 +118,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -118,6 +126,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -136,6 +145,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 10,
             "x": 9,
             "y": 8,
@@ -149,6 +159,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 10,
             "y": 8,
@@ -162,6 +173,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 11,
             "y": 8,
@@ -175,6 +187,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 13,
             "x": 12,
             "y": 8,
@@ -188,6 +201,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 13,
             "y": 8,
@@ -201,6 +215,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 14,
             "y": 8,
@@ -284,7 +299,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "fe56b023",
+        "stateHash": "7d77ba66",
         "events": 275
       },
       "eventLogHash": "9c7e8dbb"
@@ -313,6 +328,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -326,6 +342,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -333,6 +350,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -351,6 +369,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -364,6 +383,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -371,6 +391,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -389,6 +410,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -402,6 +424,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -409,6 +432,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -427,6 +451,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 10,
             "x": 9,
             "y": 8,
@@ -440,6 +465,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 10,
             "y": 8,
@@ -453,6 +479,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 11,
             "y": 8,
@@ -466,6 +493,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 13,
             "x": 12,
             "y": 8,
@@ -479,6 +507,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 13,
             "y": 8,
@@ -492,6 +521,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 14,
             "y": 8,
@@ -575,7 +605,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "b8b2575e",
+        "stateHash": "a405334d",
         "events": 256
       },
       "eventLogHash": "f4cd2a55"
@@ -604,6 +634,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -617,6 +648,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -624,6 +656,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -642,6 +675,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -655,6 +689,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -662,6 +697,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -680,6 +716,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -693,6 +730,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -700,6 +738,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -718,6 +757,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 10,
             "x": 9,
             "y": 8,
@@ -731,6 +771,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 10,
             "y": 8,
@@ -744,6 +785,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 11,
             "y": 8,
@@ -757,6 +799,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 13,
             "x": 12,
             "y": 8,
@@ -770,6 +813,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 13,
             "y": 8,
@@ -783,6 +827,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 14,
             "y": 8,
@@ -866,7 +911,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "119a7c6b",
+        "stateHash": "aaa9a2c0",
         "events": 215
       },
       "eventLogHash": "f32c0a70"
@@ -895,6 +940,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -908,6 +954,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -915,6 +962,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -933,6 +981,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -946,6 +995,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -953,6 +1003,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -971,6 +1022,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -984,6 +1036,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -991,6 +1044,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -1009,6 +1063,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 10,
             "x": 9,
             "y": 8,
@@ -1022,6 +1077,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 10,
             "y": 8,
@@ -1035,6 +1091,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 11,
             "y": 8,
@@ -1048,6 +1105,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 13,
             "x": 12,
             "y": 8,
@@ -1061,6 +1119,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 13,
             "y": 8,
@@ -1074,6 +1133,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 14,
             "y": 8,
@@ -1157,7 +1217,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "c797c598",
+        "stateHash": "f7c4d839",
         "events": 242
       },
       "eventLogHash": "aeca971a"
@@ -1186,6 +1246,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -1199,6 +1260,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -1206,6 +1268,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -1224,6 +1287,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -1237,6 +1301,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -1244,6 +1309,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -1262,6 +1328,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -1275,6 +1342,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -1282,6 +1350,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -1360,7 +1429,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "78866b3c",
+        "stateHash": "e9d887eb",
         "events": 460
       },
       "eventLogHash": "488662a2"
@@ -1389,6 +1458,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -1402,6 +1472,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -1409,6 +1480,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -1427,6 +1499,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -1440,6 +1513,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -1447,6 +1521,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -1465,6 +1540,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -1478,6 +1554,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -1485,6 +1562,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -1593,7 +1671,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "9d6c8e3b",
+        "stateHash": "ebee46be",
         "events": 132
       },
       "eventLogHash": "48998f8e"
@@ -1622,6 +1700,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -1635,6 +1714,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -1642,6 +1722,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -1660,6 +1741,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -1673,6 +1755,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -1680,6 +1763,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -1698,6 +1782,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -1711,6 +1796,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -1718,6 +1804,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -1796,7 +1883,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "5ef9efe2",
+        "stateHash": "ad10fc8d",
         "events": 1723
       },
       "eventLogHash": "2f02d3b5"
@@ -1825,6 +1912,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -1838,6 +1926,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -1845,6 +1934,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -1863,6 +1953,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -1876,6 +1967,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -1883,6 +1975,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -1901,6 +1994,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -1914,6 +2008,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -1921,6 +2016,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -2029,7 +2125,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "4ae842e5",
+        "stateHash": "3a4f9118",
         "events": 508
       },
       "eventLogHash": "7f062e7c"
@@ -2058,6 +2154,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -2071,6 +2168,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -2078,6 +2176,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -2096,6 +2195,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -2109,6 +2209,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -2116,6 +2217,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -2134,6 +2236,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -2147,6 +2250,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -2154,6 +2258,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -2232,7 +2337,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "6f5c5c6a",
+        "stateHash": "aed9f589",
         "events": 196
       },
       "eventLogHash": "a1cc9dc3"
@@ -2261,6 +2366,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -2274,6 +2380,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -2281,6 +2388,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -2299,6 +2407,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -2312,6 +2421,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -2319,6 +2429,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -2337,6 +2448,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -2350,6 +2462,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -2357,6 +2470,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -2465,7 +2579,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "0a02253a",
+        "stateHash": "386c73d1",
         "events": 209
       },
       "eventLogHash": "b8451b59"
@@ -2494,6 +2608,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -2507,6 +2622,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -2514,6 +2630,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -2532,6 +2649,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -2545,6 +2663,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -2552,6 +2671,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -2570,6 +2690,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -2583,6 +2704,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -2590,6 +2712,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -2668,7 +2791,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "c25832d4",
+        "stateHash": "4b45cd5b",
         "events": 842
       },
       "eventLogHash": "02fd3238"
@@ -2697,6 +2820,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -2710,6 +2834,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -2717,6 +2842,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -2735,6 +2861,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -2748,6 +2875,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -2755,6 +2883,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -2773,6 +2902,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -2786,6 +2916,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -2793,6 +2924,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -2901,7 +3033,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "37b899bf",
+        "stateHash": "c4f23764",
         "events": 284
       },
       "eventLogHash": "822081a3"
@@ -2930,6 +3062,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 9,
             "y": 8,
@@ -2943,6 +3076,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 10,
             "y": 8,
@@ -2956,6 +3090,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 3,
             "x": 13,
             "y": 8,
@@ -2969,6 +3104,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 14,
             "y": 8,
@@ -2982,6 +3118,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 9,
             "y": 7,
@@ -2995,6 +3132,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 14,
             "y": 7,
@@ -3008,6 +3146,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 9,
             "y": 4,
@@ -3021,6 +3160,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 13,
             "y": 7,
@@ -3034,6 +3174,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 9,
             "x": 19,
             "y": 5,
@@ -3041,6 +3182,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 9,
               "side": "north"
@@ -3088,6 +3230,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 16,
             "y": 8,
@@ -3101,6 +3244,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 23,
             "y": 6,
@@ -3108,6 +3252,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 12,
               "side": "north"
@@ -3159,6 +3304,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 10,
             "y": 7,
@@ -3172,6 +3318,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 1,
             "y": 2,
@@ -3179,6 +3326,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 15,
               "side": "north"
@@ -3250,6 +3398,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 17,
             "x": 10,
             "y": 1,
@@ -3263,6 +3412,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 18,
             "x": 9,
             "y": 2,
@@ -3270,6 +3420,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 17,
               "side": "north"
@@ -3288,6 +3439,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 20,
             "x": 8,
             "y": 8,
@@ -3301,6 +3453,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 21,
             "x": 8,
             "y": 9,
@@ -3308,6 +3461,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 20,
               "side": "north"
@@ -3386,7 +3540,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "a0d80001",
+        "stateHash": "072a324c",
         "events": 574
       },
       "eventLogHash": "0d0d4d02"
@@ -3415,6 +3569,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 9,
             "y": 8,
@@ -3428,6 +3583,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 10,
             "y": 8,
@@ -3441,6 +3597,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 3,
             "x": 13,
             "y": 8,
@@ -3454,6 +3611,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 14,
             "y": 8,
@@ -3467,6 +3625,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 9,
             "y": 7,
@@ -3480,6 +3639,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 14,
             "y": 7,
@@ -3493,6 +3653,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 9,
             "y": 4,
@@ -3506,6 +3667,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 13,
             "y": 7,
@@ -3519,6 +3681,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 9,
             "x": 19,
             "y": 5,
@@ -3526,6 +3689,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 9,
               "side": "north"
@@ -3573,6 +3737,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 16,
             "y": 8,
@@ -3586,6 +3751,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 23,
             "y": 6,
@@ -3593,6 +3759,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 12,
               "side": "north"
@@ -3644,6 +3811,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 10,
             "y": 7,
@@ -3657,6 +3825,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 1,
             "y": 2,
@@ -3664,6 +3833,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 15,
               "side": "north"
@@ -3735,6 +3905,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 17,
             "x": 10,
             "y": 1,
@@ -3748,6 +3919,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 18,
             "x": 9,
             "y": 2,
@@ -3755,6 +3927,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 17,
               "side": "north"
@@ -3773,6 +3946,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 20,
             "x": 8,
             "y": 8,
@@ -3786,6 +3960,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 21,
             "x": 8,
             "y": 9,
@@ -3793,6 +3968,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 20,
               "side": "north"
@@ -3901,7 +4077,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "d4e59242",
+        "stateHash": "34eaedbb",
         "events": 312
       },
       "eventLogHash": "06d87e17"
@@ -3930,6 +4106,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 9,
             "y": 8,
@@ -3943,6 +4120,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 10,
             "y": 8,
@@ -3956,6 +4134,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 3,
             "x": 13,
             "y": 8,
@@ -3969,6 +4148,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 14,
             "y": 8,
@@ -3982,6 +4162,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 9,
             "y": 7,
@@ -3995,6 +4176,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 14,
             "y": 7,
@@ -4008,6 +4190,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 9,
             "y": 4,
@@ -4021,6 +4204,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 13,
             "y": 7,
@@ -4034,6 +4218,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 9,
             "x": 19,
             "y": 5,
@@ -4041,6 +4226,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 9,
               "side": "north"
@@ -4088,6 +4274,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 16,
             "y": 8,
@@ -4101,6 +4288,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 23,
             "y": 6,
@@ -4108,6 +4296,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 12,
               "side": "north"
@@ -4159,6 +4348,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 10,
             "y": 7,
@@ -4172,6 +4362,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 1,
             "y": 2,
@@ -4179,6 +4370,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 15,
               "side": "north"
@@ -4250,6 +4442,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 17,
             "x": 10,
             "y": 1,
@@ -4263,6 +4456,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 18,
             "x": 9,
             "y": 2,
@@ -4270,6 +4464,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 17,
               "side": "north"
@@ -4288,6 +4483,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 20,
             "x": 8,
             "y": 8,
@@ -4301,6 +4497,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 21,
             "x": 8,
             "y": 9,
@@ -4308,6 +4505,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 20,
               "side": "north"
@@ -4386,7 +4584,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "6f3b9d01",
+        "stateHash": "958230ee",
         "events": 884
       },
       "eventLogHash": "39331130"
@@ -4415,6 +4613,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 9,
             "y": 8,
@@ -4428,6 +4627,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 10,
             "y": 8,
@@ -4441,6 +4641,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 3,
             "x": 13,
             "y": 8,
@@ -4454,6 +4655,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 14,
             "y": 8,
@@ -4467,6 +4669,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 9,
             "y": 7,
@@ -4480,6 +4683,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 14,
             "y": 7,
@@ -4493,6 +4697,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 9,
             "y": 4,
@@ -4506,6 +4711,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 13,
             "y": 7,
@@ -4519,6 +4725,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 9,
             "x": 19,
             "y": 5,
@@ -4526,6 +4733,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 9,
               "side": "north"
@@ -4573,6 +4781,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 16,
             "y": 8,
@@ -4586,6 +4795,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 23,
             "y": 6,
@@ -4593,6 +4803,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 12,
               "side": "north"
@@ -4644,6 +4855,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 10,
             "y": 7,
@@ -4657,6 +4869,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 1,
             "y": 2,
@@ -4664,6 +4877,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 15,
               "side": "north"
@@ -4735,6 +4949,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 17,
             "x": 10,
             "y": 1,
@@ -4748,6 +4963,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 18,
             "x": 9,
             "y": 2,
@@ -4755,6 +4971,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 17,
               "side": "north"
@@ -4773,6 +4990,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 20,
             "x": 8,
             "y": 8,
@@ -4786,6 +5004,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 21,
             "x": 8,
             "y": 9,
@@ -4793,6 +5012,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 20,
               "side": "north"
@@ -4901,7 +5121,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "c2fd27bb",
+        "stateHash": "f45381ba",
         "events": 986
       },
       "eventLogHash": "87bc8e70"
@@ -4930,6 +5150,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 9,
             "y": 8,
@@ -4943,6 +5164,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 10,
             "y": 8,
@@ -4956,6 +5178,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 3,
             "x": 13,
             "y": 8,
@@ -4969,6 +5192,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 14,
             "y": 8,
@@ -4982,6 +5206,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 9,
             "y": 7,
@@ -4995,6 +5220,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 14,
             "y": 7,
@@ -5008,6 +5234,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 9,
             "y": 4,
@@ -5021,6 +5248,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 13,
             "y": 7,
@@ -5034,6 +5262,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 9,
             "x": 19,
             "y": 5,
@@ -5041,6 +5270,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 9,
               "side": "north"
@@ -5088,6 +5318,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 16,
             "y": 8,
@@ -5101,6 +5332,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 23,
             "y": 6,
@@ -5108,6 +5340,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 12,
               "side": "north"
@@ -5159,6 +5392,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 10,
             "y": 7,
@@ -5172,6 +5406,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 1,
             "y": 2,
@@ -5179,6 +5414,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 15,
               "side": "north"
@@ -5250,6 +5486,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 17,
             "x": 10,
             "y": 1,
@@ -5263,6 +5500,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 18,
             "x": 9,
             "y": 2,
@@ -5270,6 +5508,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 17,
               "side": "north"
@@ -5288,6 +5527,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 20,
             "x": 8,
             "y": 8,
@@ -5301,6 +5541,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 21,
             "x": 8,
             "y": 9,
@@ -5308,6 +5549,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 20,
               "side": "north"
@@ -5386,7 +5628,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "d8dfa1e7",
+        "stateHash": "4fe20c96",
         "events": 275
       },
       "eventLogHash": "21a6829d"
@@ -5415,6 +5657,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 9,
             "y": 8,
@@ -5428,6 +5671,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 10,
             "y": 8,
@@ -5441,6 +5685,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 3,
             "x": 13,
             "y": 8,
@@ -5454,6 +5699,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 14,
             "y": 8,
@@ -5467,6 +5713,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 9,
             "y": 7,
@@ -5480,6 +5727,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 14,
             "y": 7,
@@ -5493,6 +5741,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 9,
             "y": 4,
@@ -5506,6 +5755,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 13,
             "y": 7,
@@ -5519,6 +5769,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 9,
             "x": 19,
             "y": 5,
@@ -5526,6 +5777,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 9,
               "side": "north"
@@ -5573,6 +5825,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 16,
             "y": 8,
@@ -5586,6 +5839,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 23,
             "y": 6,
@@ -5593,6 +5847,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 12,
               "side": "north"
@@ -5644,6 +5899,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 10,
             "y": 7,
@@ -5657,6 +5913,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 1,
             "y": 2,
@@ -5664,6 +5921,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 15,
               "side": "north"
@@ -5735,6 +5993,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 17,
             "x": 10,
             "y": 1,
@@ -5748,6 +6007,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 18,
             "x": 9,
             "y": 2,
@@ -5755,6 +6015,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 17,
               "side": "north"
@@ -5773,6 +6034,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 20,
             "x": 8,
             "y": 8,
@@ -5786,6 +6048,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 21,
             "x": 8,
             "y": 9,
@@ -5793,6 +6056,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 20,
               "side": "north"
@@ -5901,7 +6165,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "a2de28bf",
+        "stateHash": "dcef76b8",
         "events": 946
       },
       "eventLogHash": "30ecb41f"
@@ -5930,6 +6194,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 9,
             "y": 8,
@@ -5943,6 +6208,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 10,
             "y": 8,
@@ -5956,6 +6222,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 3,
             "x": 13,
             "y": 8,
@@ -5969,6 +6236,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 14,
             "y": 8,
@@ -5982,6 +6250,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 9,
             "y": 7,
@@ -5995,6 +6264,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 14,
             "y": 7,
@@ -6008,6 +6278,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 9,
             "y": 4,
@@ -6021,6 +6292,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 13,
             "y": 7,
@@ -6034,6 +6306,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 9,
             "x": 19,
             "y": 5,
@@ -6041,6 +6314,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 9,
               "side": "north"
@@ -6088,6 +6362,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 16,
             "y": 8,
@@ -6101,6 +6376,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 23,
             "y": 6,
@@ -6108,6 +6384,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 12,
               "side": "north"
@@ -6159,6 +6436,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 10,
             "y": 7,
@@ -6172,6 +6450,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 1,
             "y": 2,
@@ -6179,6 +6458,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 15,
               "side": "north"
@@ -6250,6 +6530,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 17,
             "x": 10,
             "y": 1,
@@ -6263,6 +6544,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 18,
             "x": 9,
             "y": 2,
@@ -6270,6 +6552,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 17,
               "side": "north"
@@ -6288,6 +6571,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 20,
             "x": 8,
             "y": 8,
@@ -6301,6 +6585,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 21,
             "x": 8,
             "y": 9,
@@ -6308,6 +6593,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 20,
               "side": "north"
@@ -6386,7 +6672,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "498a091d",
+        "stateHash": "9fb20690",
         "events": 943
       },
       "eventLogHash": "1319cf75"
@@ -6415,6 +6701,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 9,
             "y": 8,
@@ -6428,6 +6715,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 10,
             "y": 8,
@@ -6441,6 +6729,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 3,
             "x": 13,
             "y": 8,
@@ -6454,6 +6743,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 14,
             "y": 8,
@@ -6467,6 +6757,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 9,
             "y": 7,
@@ -6480,6 +6771,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 14,
             "y": 7,
@@ -6493,6 +6785,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 9,
             "y": 4,
@@ -6506,6 +6799,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 13,
             "y": 7,
@@ -6519,6 +6813,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 9,
             "x": 19,
             "y": 5,
@@ -6526,6 +6821,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 9,
               "side": "north"
@@ -6573,6 +6869,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 16,
             "y": 8,
@@ -6586,6 +6883,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 23,
             "y": 6,
@@ -6593,6 +6891,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 12,
               "side": "north"
@@ -6644,6 +6943,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 10,
             "y": 7,
@@ -6657,6 +6957,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 1,
             "y": 2,
@@ -6664,6 +6965,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 15,
               "side": "north"
@@ -6735,6 +7037,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 17,
             "x": 10,
             "y": 1,
@@ -6748,6 +7051,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 18,
             "x": 9,
             "y": 2,
@@ -6755,6 +7059,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 17,
               "side": "north"
@@ -6773,6 +7078,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 20,
             "x": 8,
             "y": 8,
@@ -6786,6 +7092,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 21,
             "x": 8,
             "y": 9,
@@ -6793,6 +7100,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 20,
               "side": "north"
@@ -6901,7 +7209,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "7792d610",
+        "stateHash": "e63e92f9",
         "events": 555
       },
       "eventLogHash": "b1bd7d09"
@@ -6930,6 +7238,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -6943,6 +7252,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -6950,6 +7260,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -6968,6 +7279,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -6981,6 +7293,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -6988,6 +7301,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -7006,6 +7320,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -7019,6 +7334,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -7026,6 +7342,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -7044,6 +7361,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 10,
             "x": 9,
             "y": 8,
@@ -7057,6 +7375,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 10,
             "y": 8,
@@ -7070,6 +7389,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 11,
             "y": 8,
@@ -7083,6 +7403,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 13,
             "x": 12,
             "y": 8,
@@ -7096,6 +7417,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 13,
             "y": 8,
@@ -7109,6 +7431,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 14,
             "y": 8,
@@ -7182,7 +7505,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "e45588ea",
+        "stateHash": "465bd693",
         "events": 463
       },
       "eventLogHash": "3d489b51"
@@ -7211,6 +7534,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -7224,6 +7548,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -7231,6 +7556,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -7249,6 +7575,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -7262,6 +7589,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -7269,6 +7597,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -7287,6 +7616,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -7300,6 +7630,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -7307,6 +7638,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -7325,6 +7657,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 10,
             "x": 9,
             "y": 8,
@@ -7338,6 +7671,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 10,
             "y": 8,
@@ -7351,6 +7685,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 11,
             "y": 8,
@@ -7364,6 +7699,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 13,
             "x": 12,
             "y": 8,
@@ -7377,6 +7713,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 13,
             "y": 8,
@@ -7390,6 +7727,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 14,
             "y": 8,
@@ -7493,7 +7831,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "4e4e2ceb",
+        "stateHash": "dfba6986",
         "events": 260
       },
       "eventLogHash": "98559ddd"
@@ -7522,6 +7860,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -7535,6 +7874,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -7542,6 +7882,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -7560,6 +7901,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -7573,6 +7915,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -7580,6 +7923,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -7598,6 +7942,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -7611,6 +7956,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -7618,6 +7964,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -7636,6 +7983,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 10,
             "x": 9,
             "y": 8,
@@ -7649,6 +7997,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 10,
             "y": 8,
@@ -7662,6 +8011,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 11,
             "y": 8,
@@ -7675,6 +8025,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 13,
             "x": 12,
             "y": 8,
@@ -7688,6 +8039,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 13,
             "y": 8,
@@ -7701,6 +8053,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 14,
             "y": 8,
@@ -7774,7 +8127,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "bdb02e45",
+        "stateHash": "c6437706",
         "events": 2542
       },
       "eventLogHash": "7b7501e6"
@@ -7803,6 +8156,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -7816,6 +8170,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -7823,6 +8178,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -7841,6 +8197,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -7854,6 +8211,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -7861,6 +8219,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -7879,6 +8238,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -7892,6 +8252,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -7899,6 +8260,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -7917,6 +8279,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 10,
             "x": 9,
             "y": 8,
@@ -7930,6 +8293,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 10,
             "y": 8,
@@ -7943,6 +8307,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 11,
             "y": 8,
@@ -7956,6 +8321,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 13,
             "x": 12,
             "y": 8,
@@ -7969,6 +8335,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 13,
             "y": 8,
@@ -7982,6 +8349,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 14,
             "y": 8,
@@ -8085,7 +8453,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "88858478",
+        "stateHash": "817bdcc9",
         "events": 1587
       },
       "eventLogHash": "0b2fb019"
@@ -8114,6 +8482,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -8127,6 +8496,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -8134,6 +8504,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -8152,6 +8523,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -8165,6 +8537,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -8172,6 +8545,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -8190,6 +8564,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -8203,6 +8578,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -8210,6 +8586,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -8228,6 +8605,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 10,
             "x": 9,
             "y": 8,
@@ -8241,6 +8619,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 10,
             "y": 8,
@@ -8254,6 +8633,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 11,
             "y": 8,
@@ -8267,6 +8647,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 13,
             "x": 12,
             "y": 8,
@@ -8280,6 +8661,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 13,
             "y": 8,
@@ -8293,6 +8675,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 14,
             "y": 8,
@@ -8366,7 +8749,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "19671ee2",
+        "stateHash": "35b17ad1",
         "events": 268
       },
       "eventLogHash": "4117ea09"
@@ -8395,6 +8778,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -8408,6 +8792,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -8415,6 +8800,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -8433,6 +8819,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -8446,6 +8833,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -8453,6 +8841,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -8471,6 +8860,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -8484,6 +8874,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -8491,6 +8882,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -8509,6 +8901,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 10,
             "x": 9,
             "y": 8,
@@ -8522,6 +8915,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 10,
             "y": 8,
@@ -8535,6 +8929,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 11,
             "y": 8,
@@ -8548,6 +8943,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 13,
             "x": 12,
             "y": 8,
@@ -8561,6 +8957,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 13,
             "y": 8,
@@ -8574,6 +8971,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 14,
             "y": 8,
@@ -8677,7 +9075,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "331c6081",
+        "stateHash": "f0d87cbc",
         "events": 450
       },
       "eventLogHash": "e009bea2"
@@ -8706,6 +9104,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -8719,6 +9118,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -8726,6 +9126,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -8744,6 +9145,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -8757,6 +9159,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -8764,6 +9167,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -8782,6 +9186,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -8795,6 +9200,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -8802,6 +9208,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -8820,6 +9227,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 10,
             "x": 9,
             "y": 8,
@@ -8833,6 +9241,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 10,
             "y": 8,
@@ -8846,6 +9255,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 11,
             "y": 8,
@@ -8859,6 +9269,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 13,
             "x": 12,
             "y": 8,
@@ -8872,6 +9283,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 13,
             "y": 8,
@@ -8885,6 +9297,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 14,
             "y": 8,
@@ -8958,7 +9371,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "3c4cf85d",
+        "stateHash": "c5635c2a",
         "events": 428
       },
       "eventLogHash": "2df0690d"
@@ -8987,6 +9400,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -9000,6 +9414,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 9,
             "y": 2,
@@ -9007,6 +9422,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -9025,6 +9441,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 8,
             "y": 8,
@@ -9038,6 +9455,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 8,
             "y": 9,
@@ -9045,6 +9463,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 4,
               "side": "north"
@@ -9063,6 +9482,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 21,
             "y": 4,
@@ -9076,6 +9496,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 21,
             "y": 5,
@@ -9083,6 +9504,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 7,
               "side": "north"
@@ -9101,6 +9523,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 10,
             "x": 9,
             "y": 8,
@@ -9114,6 +9537,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 11,
             "x": 10,
             "y": 8,
@@ -9127,6 +9551,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 12,
             "x": 11,
             "y": 8,
@@ -9140,6 +9565,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 13,
             "x": 12,
             "y": 8,
@@ -9153,6 +9579,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 14,
             "x": 13,
             "y": 8,
@@ -9166,6 +9593,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 15,
             "x": 14,
             "y": 8,
@@ -9269,7 +9697,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "cb0cee86",
+        "stateHash": "ffb6009d",
         "events": 848
       },
       "eventLogHash": "317f2d25"
@@ -9298,6 +9726,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -9311,6 +9740,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 2,
             "y": 12,
@@ -9318,6 +9748,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -9405,6 +9836,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 21,
             "y": 4,
@@ -9418,6 +9850,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 0,
             "y": 0,
@@ -9431,6 +9864,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 1,
             "y": 0,
@@ -9444,6 +9878,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 2,
             "y": 0,
@@ -9457,6 +9892,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 22,
             "y": 0,
@@ -9530,7 +9966,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "47944a7d",
+        "stateHash": "4ce4c4ce",
         "events": 176
       },
       "eventLogHash": "9a6fe354"
@@ -9559,6 +9995,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -9572,6 +10009,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 2,
             "y": 12,
@@ -9579,6 +10017,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -9666,6 +10105,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 21,
             "y": 4,
@@ -9679,6 +10119,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 0,
             "y": 0,
@@ -9692,6 +10133,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 1,
             "y": 0,
@@ -9705,6 +10147,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 2,
             "y": 0,
@@ -9718,6 +10161,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 22,
             "y": 0,
@@ -9821,7 +10265,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "3b42624a",
+        "stateHash": "28c499c3",
         "events": 83
       },
       "eventLogHash": "30e8e207"
@@ -9850,6 +10294,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -9863,6 +10308,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 2,
             "y": 12,
@@ -9870,6 +10316,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -9957,6 +10404,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 21,
             "y": 4,
@@ -9970,6 +10418,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 0,
             "y": 0,
@@ -9983,6 +10432,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 1,
             "y": 0,
@@ -9996,6 +10446,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 2,
             "y": 0,
@@ -10009,6 +10460,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 22,
             "y": 0,
@@ -10082,7 +10534,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "1b00ad39",
+        "stateHash": "dd7c30aa",
         "events": 428
       },
       "eventLogHash": "e66876b7"
@@ -10111,6 +10563,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -10124,6 +10577,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 2,
             "y": 12,
@@ -10131,6 +10585,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -10218,6 +10673,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 21,
             "y": 4,
@@ -10231,6 +10687,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 0,
             "y": 0,
@@ -10244,6 +10701,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 1,
             "y": 0,
@@ -10257,6 +10715,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 2,
             "y": 0,
@@ -10270,6 +10729,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 22,
             "y": 0,
@@ -10373,7 +10833,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "bc3830c0",
+        "stateHash": "6680b085",
         "events": 288
       },
       "eventLogHash": "fc1fa70e"
@@ -10402,6 +10862,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -10415,6 +10876,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 2,
             "y": 12,
@@ -10422,6 +10884,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -10509,6 +10972,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 21,
             "y": 4,
@@ -10522,6 +10986,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 0,
             "y": 0,
@@ -10535,6 +11000,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 1,
             "y": 0,
@@ -10548,6 +11014,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 2,
             "y": 0,
@@ -10561,6 +11028,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 22,
             "y": 0,
@@ -10634,7 +11102,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "4173dead",
+        "stateHash": "cdd1e09a",
         "events": 195
       },
       "eventLogHash": "fa955da2"
@@ -10663,6 +11131,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -10676,6 +11145,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 2,
             "y": 12,
@@ -10683,6 +11153,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -10770,6 +11241,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 21,
             "y": 4,
@@ -10783,6 +11255,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 0,
             "y": 0,
@@ -10796,6 +11269,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 1,
             "y": 0,
@@ -10809,6 +11283,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 2,
             "y": 0,
@@ -10822,6 +11297,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 22,
             "y": 0,
@@ -10925,7 +11401,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "28683500",
+        "stateHash": "141fce21",
         "events": 110
       },
       "eventLogHash": "bdab2cbe"
@@ -10954,6 +11430,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -10967,6 +11444,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 2,
             "y": 12,
@@ -10974,6 +11452,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -11061,6 +11540,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 21,
             "y": 4,
@@ -11074,6 +11554,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 0,
             "y": 0,
@@ -11087,6 +11568,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 1,
             "y": 0,
@@ -11100,6 +11582,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 2,
             "y": 0,
@@ -11113,6 +11596,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 22,
             "y": 0,
@@ -11186,7 +11670,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "3304a5b4",
+        "stateHash": "dafe6535",
         "events": 300
       },
       "eventLogHash": "a15012fa"
@@ -11215,6 +11699,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 1,
             "x": 10,
             "y": 1,
@@ -11228,6 +11713,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 2,
             "x": 2,
             "y": 12,
@@ -11235,6 +11721,7 @@
           },
           {
             "op": "addConduit",
+            "actor": 0,
             "from": {
               "building": 1,
               "side": "north"
@@ -11322,6 +11809,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 4,
             "x": 21,
             "y": 4,
@@ -11335,6 +11823,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 5,
             "x": 0,
             "y": 0,
@@ -11348,6 +11837,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 6,
             "x": 1,
             "y": 0,
@@ -11361,6 +11851,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 7,
             "x": 2,
             "y": 0,
@@ -11374,6 +11865,7 @@
           },
           {
             "op": "placeFromStash",
+            "actor": 0,
             "id": 8,
             "x": 22,
             "y": 0,
@@ -11477,7 +11969,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "abd79bf8",
+        "stateHash": "ab89bdd3",
         "events": 138
       },
       "eventLogHash": "c86644a7"
