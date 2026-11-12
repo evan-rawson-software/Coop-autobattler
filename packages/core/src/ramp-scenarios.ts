@@ -34,18 +34,27 @@ export function coreOnlyTeam(x = 5, y = 6): TeamState {
 /**
  * Content in which the overclocker takes `res_a` (like barracks) instead of
  * `res_c`, so that one source can feed either a barracks or an overclocker at
- * the same place. Everything else is the real content.
+ * the same place, and the barracks has no top speed (interval 1), because the
+ * crossover scenario is about supply rates, not about the cap of PP-6.
+ * Everything else is the real content.
  */
 export const overclockerOnOre = (() => {
   const buildings = (
     buildingsJson as unknown as {
       buildings: Record<string, unknown>[];
     }
-  ).buildings.map((b) =>
-    b['id'] === 'bld_overclocker'
+  ).buildings.map((b) => {
+    if (b['id'] === 'bld_barracks') {
+      const tiers = (b['tiers'] as Record<string, unknown>[]).map((t) => ({
+        ...t,
+        productionIntervalTicks: 1,
+      }));
+      return { ...b, tiers };
+    }
+    return b['id'] === 'bld_overclocker'
       ? { ...b, inputs: [{ resource: 'res_a', side: 'south' }] }
-      : b,
-  );
+      : b;
+  });
   return loadAllContentOrThrow({
     resources: resourcesJson,
     terrain: terrainJson,

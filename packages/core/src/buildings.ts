@@ -14,6 +14,7 @@
  */
 
 import { sortedKeys } from './hash.js';
+import { mulDiv } from './int.js';
 import { MAX_DAMAGE, MAX_HEALTH } from './limits.js';
 import type { ResourceConfig, ResourceId } from './resources.js';
 import type { UnitConfig, UnitId } from './units.js';
@@ -58,6 +59,8 @@ export interface SourceTier extends TierBase {
 export interface UnitProducerTier extends TierBase {
   /** Resource units consumed to spawn one unit. */
   readonly costPerUnit: number;
+  /** Minimum ticks between two units made (PP-6). */
+  readonly productionIntervalTicks: number;
 }
 export interface TurretTier extends TierBase {
   readonly damage: number;
@@ -69,6 +72,8 @@ export interface TurretTier extends TierBase {
 export interface EconomyTier extends TierBase {
   /** Resource units consumed per upgrade step. */
   readonly costPerStep: number;
+  /** Minimum ticks between two upgrade steps (PP-6). */
+  readonly stepIntervalTicks: number;
   /** Integer percent gained per step. */
   readonly stepPercent: number;
   /** Cap on steps (SC-8). */
@@ -244,7 +249,7 @@ function tierFields(
     case 'route':
       return bought;
     case 'unit_producer':
-      return { ...bought, costPerUnit: 1 };
+      return { ...bought, costPerUnit: 1, productionIntervalTicks: 1 };
     case 'defense':
       return defenseType === 'turret'
         ? {
@@ -256,7 +261,13 @@ function tierFields(
           }
         : bought;
     case 'economy':
-      return { ...bought, costPerStep: 1, stepPercent: 1, maxSteps: 1 };
+      return {
+        ...bought,
+        costPerStep: 1,
+        stepIntervalTicks: 1,
+        stepPercent: 1,
+        maxSteps: 1,
+      };
     case 'core':
       return { health: 1 };
     default:
@@ -290,7 +301,7 @@ function ioRule(kind: string, subtype: string | undefined): IoRule | undefined {
       return {
         resource: 'forbidden',
         inputs: none,
-        outputs: [1, 4],
+        outputs: [1, 1],
         what: 'a source',
       };
     case 'route':
@@ -697,7 +708,11 @@ function parseBuilding(
         kind,
         unit,
         tiers: toTiers3(
-          mapTiers((t) => ({ ...base(t), costPerUnit: num(t, 'costPerUnit') })),
+          mapTiers((t) => ({
+            ...base(t),
+            costPerUnit: num(t, 'costPerUnit'),
+            productionIntervalTicks: num(t, 'productionIntervalTicks'),
+          })),
         ),
       };
     case 'defense':
@@ -734,6 +749,7 @@ function parseBuilding(
           mapTiers((t) => ({
             ...base(t),
             costPerStep: num(t, 'costPerStep'),
+            stepIntervalTicks: num(t, 'stepIntervalTicks'),
             stepPercent: num(t, 'stepPercent'),
             maxSteps: num(t, 'maxSteps'),
           })),
@@ -787,4 +803,58 @@ export function loadBuildingsOrThrow(
   context: BuildingLoadContext,
 ): BuildingConfig {
   return unwrapOrThrow('building configuration', loadBuildings(data, context));
+}
+
+/**
+ * The cost and the minimum time between productions of a consumer tier
+ * (PP-6): `costPerUnit` / `productionIntervalTicks` for a unit producer,
+ * `costPerShot` / `cooldownTicks` for a turret, `costPerStep` /
+ * `stepIntervalTicks` for an economy building. `undefined` for a building
+ * that consumes nothing (CB-10c) or a tier that does not exist.
+ */
+export function productionOf(
+  def: BuildingDef,
+  tier: number,
+): { readonly cost: number; readonly interval: number } | undefined {
+  switch (def.kind) {
+    case 'unit_producer': {
+      const t = def.tiers[tier - 1];
+      return t && { cost: t.costPerUnit, interval: t.productionIntervalTicks };
+    }
+    case 'economy': {
+      const t = def.tiers[tier - 1];
+      return t && { cost: t.costPerStep, interval: t.stepIntervalTicks };
+    }
+    case 'defense': {
+      if (def.defenseType !== 'turret') return undefined;
+      const t = def.tiers[tier - 1];
+      return t && { cost: t.costPerShot, interval: t.cooldownTicks };
+    }
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Items per 1000 ticks a consumer takes at its top speed (PP-6):
+ * `floor(1000 * cost / interval)`; 0 for a building that consumes nothing.
+ */
+export function needPer1000(def: BuildingDef, tier: number): number {
+  const p = productionOf(def, tier);
+  return p === undefined ? 0 : mulDiv(1000, p.cost, p.interval);
+}
+
+/**
+ * The same need as items per second in hundredths, rounded down (PP-6):
+ * `floor(100 * cost * ticksPerSecond / interval)`.
+ */
+export function needHundredthsPerSecond(
+  def: BuildingDef,
+  tier: number,
+  ticksPerSecond: number,
+): number {
+  const p = productionOf(def, tier);
+  return p === undefined
+    ? 0
+    : mulDiv(mulDiv(100, p.cost, 1), ticksPerSecond, p.interval);
 }

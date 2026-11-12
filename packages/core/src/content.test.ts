@@ -190,7 +190,7 @@ describe('loadBuildings', () => {
         { resource: 'res_b', side: 'west' },
       ],
       outputs: [],
-      tiers: tiers3({ costPerUnit: 3 }),
+      tiers: tiers3({ costPerUnit: 3, productionIntervalTicks: 5 }),
     });
     const config = loadBuildingsOrThrow({ buildings: [forge] }, ctx);
     expect(config.get('bld_forge')?.inputs.map((i) => i.resource)).toEqual([
@@ -222,7 +222,7 @@ describe('loadBuildings', () => {
         unit: 'unit_ghost',
         inputs: [{ resource: 'res_a', side: 'south' }],
         outputs: [],
-        tiers: tiers3({ costPerUnit: 1 }),
+        tiers: tiers3({ costPerUnit: 1, productionIntervalTicks: 1 }),
       }),
     );
     expect(text).toMatch(/unknown resource ID "res_zzz"/);
@@ -359,7 +359,12 @@ describe('loadBuildings', () => {
         outputs: [],
         tiers,
       });
-    const good = tiers3({ costPerStep: 1, stepPercent: 5, maxSteps: 3 });
+    const good = tiers3({
+      costPerStep: 1,
+      stepIntervalTicks: 1,
+      stepPercent: 5,
+      maxSteps: 3,
+    });
     expect(
       loadBuildings({ buildings: [econ({ type: 'unit_strength' }, good)] }, ctx)
         .ok,
