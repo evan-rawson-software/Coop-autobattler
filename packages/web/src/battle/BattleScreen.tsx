@@ -572,6 +572,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
         content={content}
         own={pb.sim.teams[0]}
         enemy={pb.sim.teams[1]}
+        basePlayer={props.acting}
         neutralHeight={record.zone.depth}
         neutral={neutral}
         neutralLabel={

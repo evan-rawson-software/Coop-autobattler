@@ -22,7 +22,7 @@ import {
 
 export function RunBattleScreen(props: { run: RunHandle }) {
   const { session, deps } = props.run;
-  const run = useStore(session.store).run;
+  const { run, acting } = useStore(session.store);
   const [error, setError] = useState<string | null>(null);
   // One description per battle: replacing it would simulate the battle again.
   const built = useMemo(
@@ -73,6 +73,7 @@ export function RunBattleScreen(props: { run: RunHandle }) {
         eventLogHash: b.storedEventLogHash,
         ...(b.reason === null ? {} : { reason: b.reason }),
       }}
+      acting={acting}
       initialTick={initialTick}
       onTick={(t) => {
         writeTick(key, t);
