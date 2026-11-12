@@ -66,8 +66,8 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-8 | Economy buildings act for their owner only; lower collector speed-up cap | not yet implemented (issue #137) |
 | PP-9 | Several Cores per side in the arena; Overload per Core; a destroyed Core switches nothing off | **implemented** (issue #132; "The arena", "One battle tick", "Overload", "Side options") |
 | PP-10 | End conditions and the tiebreak ladder with several Cores | **implemented** (issue #132; "Battles") |
-| PP-11 | A unit's owner and target Core; one movement field per target Core | not yet implemented (issue #133). A unit also attacks any enemy Core within reach, target or not |
-| PP-12 | Enemy-path preview per Core | not yet implemented (issue #133) |
+| PP-11 | A unit's owner and target Core; one movement field per target Core; a unit also attacks any enemy Core within reach, target or not | **implemented** (issue #133; "The arena", "One battle tick", "Goals and movement fields", "Side options", "Resolution order") |
+| PP-12 | Enemy-path preview per Core | **implemented** (issue #133; "Enemy-path preview") |
 | PP-14 | PvE strongholds and bosses with one Core per player | not yet implemented (issue #138) |
 | PP-15 | Sealed-producer check per owner; map rule per plot | map rule **implemented** (issue #129); sealed check per owner: not yet implemented (issue #131) |
 | PP-16 | Party votes and run streams without the Core vote | not yet implemented (issue #131) |
@@ -596,12 +596,13 @@ owns them (`blocksUnit` is by side, unchanged).
 ### PP-12. Enemy-path preview per Core
 
 `previewEnemyPaths` answers, for every `x` whose front-row cell is open for
-the enemy and whose plot's Core is placed (`cores[plotOf(x)]` is not `null`),
-with the path of an enemy unit that enters there and heads for the Core of
-plot `plotOf(x)`: today's walk, on the fields of that Core (PP-11). Each
-entry gains `core: plotOf(x)`. Columns of a plot without a Core give no
-entry; the function no longer throws for a board with some Cores unplaced.
-What a unit does after that Core has fallen is not previewed.
+the enemy, with the path of an enemy unit that enters there and heads for its
+target Core: the Core of plot `plotOf(x)` if it is placed, else the placed
+Core `chooseTarget` picks from the entry cell (the nearest, with the key of
+PP-11, `opposite` being `plotOf(x)`); today's walk, on the fields of that Core.
+Each entry gains `core`, that Core's player index. The function does not
+throw for a board with some Cores unplaced; with no Core placed it gives no
+entry. What a unit does after that Core has fallen is not previewed.
 
 ### PP-14. PvE strongholds and bosses with one Core per player
 
@@ -1953,15 +1954,6 @@ that conservation still holds:
 
 ## The arena
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-11 | A unit gains `owner` and `target` (the enemy Core it heads for). | not yet implemented (issue #133) |
-
 **Cores (PP-9).** Each side has one Core per placed player Core: `Arena.coreRef[side][player]` is its building `ref` (-1 if none was placed). The `health` list holds, per side, the Cores in player order as `{side, core, hp}` and then the buildings by instance ID as `{side, building, hp}`. Each Core starts at its own maximum health (`maxHealthOf`, with the side option `coreHealths[player]`). A destroyed Core's cells become open ground and **nothing else changes** (CB-17a): its owner's buildings, sources, conduits and units carry on.
 
 Implemented in `packages/core/src/arena.ts` (geometry) and `arena-sim.ts`
@@ -2002,7 +1994,10 @@ integer; it never goes below 0. A building at 0 is destroyed (step 6 below).
 
 ### Units
 
-A unit is `{id, side, def, px, py, hp, damage, attackCooldown}`. `(px, py)` is
+A unit is `{id, side, def, px, py, hp, damage, attackCooldown, owner, target}`.
+`owner` is a player index of the unit's own side and `target` the player index
+of the enemy Core it heads for, or `-1` when none stands (PP-11, "Goals and
+movement fields"). `(px, py)` is
 the **centre of the unit's circle** in arena **sub-cell units** (see "Unit
 geometry"). `id` is a positive integer taken from one counter shared by both
 sides, in spawn order (the counter starts at 1, is never reused); the unit list
@@ -2156,7 +2151,6 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-11 | Steps 2 and 3: "the enemy Core" and "the movement field" become the unit's target Core and its fields; step 6 ends with retargeting. | not yet implemented (issue #133) |
 | PP-8 | The ramp bonus is per owner. | not yet implemented (issue #137) |
 
 `stepArena(sim, ctx)` changes the state in place, in exactly this order. Let
@@ -2191,9 +2185,16 @@ row says so.
       producer's side (not blocked and not covered by a building that blocks
       that side; an own gate counts as open), ordered by the key (class,
       distance, tie key): class 0 if the cell has a finite distance in the
-      unit's movement field (below) and then that distance; else class 1 with
-      its distance in the breach field; else class 2; ties by the **tie key**
-      (below). For each spawn cell in that order, and for each **offset** in the
+      movement field of the unit's **target Core** (below) and then that
+      distance; else class 1 with its distance in the breach field of that
+      Core; else class 2; ties by the **tie key** (below). The unit's `owner`
+      is the producer's `owner`; its target is the Core opposite the owner's
+      plot if it stands, else, for each living enemy Core `q`, the key
+      (class, distance) of the first spawn cell ordered by `q`'s fields
+      decides, with the ties of "Goals and movement fields" (a producer with
+      no spawn cell for `q` is not a candidate for `q`); the spawn cells are
+      those ordered by the chosen Core. `unit_spawned` records `owner` and
+      `target`. For each spawn cell in that order, and for each **offset** in the
       order below, the candidate position is the cell's centre
       `(240 cx + 120, 240 cy + 120)` plus the offset; the **first candidate at
       which the unit's collision circle fits for its side (see "Unit geometry")
@@ -2276,10 +2277,13 @@ row says so.
      Why two units that move in the same ticks always meet: both close the
      distance each tick (up to their speed) and attack once in contact; blocked
      by other units they wait, never walk away.
-   - **b. Attack a building.** Otherwise, if the **goal building** (the enemy
-     Core, if alive) is within reach, that is, `buildingDist2(px, py, building)
-     <= (reach + R)^2` (the gap between the circle and the nearest point of the
-     building's cells is at most `reach`), target it.
+   - **b. Attack a building.** Otherwise, if a living **enemy Core** is within
+     reach, that is, `buildingDist2(px, py, building) <= (reach + R)^2` (the gap
+     between the circle and the nearest point of the building's cells is at most
+     `reach`), target it. Any enemy Core counts, not only the unit's target
+     (CB-15c); with several in reach: the unit's target Core if it is one of
+     them, else the one with the smallest `buildingDist2`, ties by `(|q -
+     opposite(owner)|, -q)`. The unit's `target` does not change.
    - **c. Move.** Otherwise the unit chooses a **heading** or a **target
      point** as follows (field details in "Goals and movement fields"); the
      move itself is resolved in step 5. Let `d` be the unit's cell's distance
@@ -2296,7 +2300,8 @@ row says so.
        go to the first cell in the unit's own frame, i.e. side 1 reads the
        list from the end): `H = (240 bx + 120 - px, 240 by + 120 - py)`; if
        that is `(0, 0)` the unit does not move. The unit presses against the
-       Core until rule b fires.
+       Core until rule b fires. (The Core is the unit's target Core; a unit
+       with `target = -1` does not move.)
      - `d = -1` (sealed): follow the breach field. `bd = breach(c)`; if `bd < 0`
        the unit waits. If `bd = 0` the heading is as for `d = 0`. Otherwise `k
        = breachStep(c)`: if `k` is open for the side the target POINT is `k`'s
@@ -2473,9 +2478,15 @@ row says so.
      destroyed Core is only recorded: the Core's
      cells become open (`stepArena` itself never ends a battle and stays safe
      to call, and Core decay skips a destroyed Core; the battle-end rule is
-     checked after the tick by the code in "Battles"). Both Cores can fall in
+     checked after the tick by the code in "Battles"). Any number of Cores of both sides can fall in
      the same tick.
-   - After any destruction every cached movement field is dropped.
+   - After any destruction every cached movement field and breach field is
+     dropped. Then, at the end of this step, every living unit, in unit-`id`
+     order, whose target Core now has health 0 gets `target =
+     chooseTarget(owner, c)` (PP-11, "Goals and movement fields"), `c` the
+     cell that holds its centre, and `unit_retargeted {unit, target}` is
+     recorded after the destruction events. A unit changes its target at no
+     other time after it spawned.
 7. **Cooldowns.** Each living turret's, unit producer's and economy
    building's non-zero `cooldown` and each surviving
    unit's non-zero `attackCooldown` decreases by 1. Then
@@ -2515,25 +2526,20 @@ buildings and the Core have no inputs and consume nothing (CB-10c).
 
 ### Goals and movement fields
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
+**Every unit heads for its target Core** (issue #66: there is no other
+target preference; a unit never goes for sources, routes or defenses). A
+unit's `target` is the Core of the plot opposite its owner's plot while that
+Core stands, then the nearest remaining enemy Core (PP-11, below; with one
+Core per side it is always that one). The unit fights the enemy units it meets
+(rules a and a2) and attacks a building only when that building is an enemy
+Core within reach, target or not (rule b, CB-15c), or blocks the way (the
+breach rule below). In this section "the Core" means the unit's target Core
+and "the movement field" and "the breach field" the fields of that Core,
+except where rule b says otherwise.
 
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-11 | A unit heads for its **target Core**: the Core of the plot opposite its owner's plot, then the nearest remaining enemy Core. One movement field and one breach field per side and per living enemy Core. A unit attacks any enemy Core within its reach, target or not (rule b, CB-15c); where it walks is unchanged. | not yet implemented (issue #133) |
-
-**Every unit heads for the enemy Core** (issue #66: there is no target
-preference; a unit never goes for sources, routes or defenses). It fights the
-enemy units it meets (rules a and a2) and attacks a building only when that
-building is an enemy Core within reach or blocks the way (the breach rule
-below). The code on `main` has one enemy Core, so "an enemy Core within
-reach" is "the Core"; with several Cores (PP-11) a Core that is not the
-unit's target is attacked when in reach too.
-
-- The **goal set** of a side is the enemy Core. A destroyed Core is not a goal;
-  with no goal the unit waits. The goal building is the Core.
+- The **goal set** of a unit is its target Core. A destroyed Core is not a
+  goal; with no goal (`target = -1`) the unit waits. The goal building is the
+  Core.
 - Which buildings block which side's units is one predicate (`blocksUnit`): a
   living building blocks the units of both sides, **except** that a gate
   (`defenseType` `gate`) does not block the units of its own side. A cell is
@@ -2549,8 +2555,9 @@ unit's target is attacked when in reach too.
   unit attacks it only as a breach building (below), like a wall.
   When a gate is destroyed it is removed like any building and is open ground
   for everyone. Walls and turrets block both sides.
-- The **movement field** of a side (one per side: there is a single goal, the
-  enemy Core) is a least-cost map over open cells (cells, not positions: the
+- The **movement field** of a side and an enemy Core (one per side and per
+  living enemy Core, `computeField(arena, side, core)`; the goal is that Core)
+  is a least-cost map over open cells (cells, not positions: the
   fields do not know about radii or other units, and they do not depend on
   where the crowds are; routing around crowds is deferred, issue #86).
   There are **eight directions**: a straight step (north, east, south, west)
@@ -2575,9 +2582,9 @@ unit's target is attacked when in reach too.
   half a cell); a unit whose collision diameter exceeds one cell is routed
   through gaps it cannot enter and waits at them (the circle rules, not the
   field, stop it).
-- The unit's **goal building** (rule b) is the Core, when the gap from the
-  unit's circle to the Core's nearest cell is at most `reach`. (With PP-11 it
-  is any enemy Core within reach, the target Core first.)
+- The unit's **goal building** (rule b) is any living enemy Core when the gap
+  from the unit's circle to the Core's nearest cell is at most `reach`, the
+  target Core first (step 3b).
 - **Tie key.** Wherever two cells tie (equal score in `fieldStep`, equal
   cost in `breachStep`, equal distance among spawn cells), the preferred one
   is the most **forward** one, then the lowest `x`, **in the board frame of
@@ -2594,9 +2601,10 @@ unit's target is attacked when in reach too.
   within `reach` (rule b is evaluated first, whether or not the cell has a
   distance: a unit in a sealed pocket attacks the Core if it is in its reach),
   it uses the **breach field** of its side. This is a least-cost map (Dijkstra, integer costs)
-  towards the enemy Core. Passable cells are open cells and cells covered by an
-  enemy building other than the Core; terrain, the unit's own side's blocking
-  buildings and the Core's own cells are impassable. Entering an open cell
+  towards the target Core. Passable cells are open cells and cells covered by
+  an enemy building other than the target Core (an enemy Core that is not the
+  target is passable and costs like any building); terrain, the unit's own
+  side's blocking buildings and the target Core's own cells are impassable. Entering an open cell
   costs 1; entering a cell covered by an enemy building costs
   `breachBaseCost + ceil(maxHealth / breachHealthPerCost)` (at most 1.000001e12: see
   "Content bounds" for why every distance stays exact), where `maxHealth` is
@@ -2614,8 +2622,8 @@ unit's target is attacked when in reach too.
   is the Core. With no breach
   distance either, the unit waits. When a breach opens a real path the normal
   field takes over (fields are dropped after every destruction).
-- Fields are computed lazily, cached per side and per side for the
-  breach field, and dropped whenever a building is destroyed (the per-side
+- Fields are computed lazily, cached per side and enemy Core (and per side and
+  enemy Core for the breach field), and dropped whenever a building is destroyed (the per-side
   solid-cell grids of "Unit geometry" are rebuilt at the same moment). They never
   depend on unit positions. The breach field and the breach step (the choice
   of the next cell) use maximum health only, so a damaged building is no
@@ -2842,7 +2850,8 @@ shot is recorded in step 3, before the step 4 attack events):
 
 | `type`               | Fields (besides `tick`)                                         |
 | -------------------- | --------------------------------------------------------------- |
-| `unit_spawned`       | `unit`, `side`, `def`, `px`, `py` (the centre, sub-cell units), `building` (the producer's ID, or 0 for a scheduled wave, see "Side options") |
+| `unit_spawned`       | `unit`, `side`, `def`, `px`, `py` (the centre, sub-cell units), `building` (the producer's ID, or 0 for a scheduled wave, see "Side options"), `owner`, `target` (PP-11) |
+| `unit_retargeted`    | `unit`, `target` (the new target Core, a player index, or -1); recorded after the destruction events of step 6 |
 | `unit_attacked`      | `unit`, `target`, `damage`                                      |
 | `turret_fired`       | `side` (the owner), `building` (the turret), `unit`, `damage`   |
 | `unit_died`          | `unit`                                                          |
@@ -2891,7 +2900,7 @@ side's units and turrets took from the enemy's buildings, the Core included,
 Overload decay not; `buildingsDestroyed` does not count the Core;
 a destroyed Core has 0). The event log is the vector's event log (`eventLogHash`). Vectors:
 `golden/arena-sim.json` (a mirror match, a rush against an almost empty base, a
-sealed base that is breached at its weakest wall, a ringed Core battle saved and restored four times, raiders that walk past a splitter to the Core (issue #66),
+four-plot battles where each unit walks to the Core opposite its plot, retargets when it falls (also saved and restored around the fall), takes the larger index in an exact tie, attacks a Core in reach that is not its target and then walks on, and a mirrored four-plot battle (issue #133), sealed base that is breached at its weakest wall, a ringed Core battle saved and restored four times, raiders that walk past a splitter to the Core (issue #66),
 three turrets killing a wave that crosses the front edge, the same turrets
 unpowered, a gate that lets its owner out while holding the enemy, a funnel
 of a lake band and walls leaving one approach above eight turrets, an
@@ -2919,18 +2928,8 @@ The last line is a legend.
 
 ### Enemy-path preview
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-12 | A path per front-row column to the Core of the plot that column is in; each entry gains `core`. | not yet implemented (issue #133) |
-
 `previewEnemyPaths(teamState, content, simConfig)` (`enemy-paths.ts`) is the
-build-screen helper (CB-43). For a single board whose Core is placed (otherwise
-it throws) it builds an arena with the board as side 0 and an empty board as
+build-screen helper (CB-43). For a single board it builds an arena with the board as side 0 and an empty board as
 side 1 (gap 0), so that the board's cells are arena cells, and answers, **as
 seen from the enemy side (side 1)**, with the same field and breach code as
 the simulation (`computeField`, `fieldStep`, `computeBreach`, `breachStep`;
@@ -2938,7 +2937,12 @@ no second pathfinder; gates, walls and turrets all block the enemy):
 
 For every `x` from 0 to `width - 1`, in order, such that the front-row cell
 `(x, height - 1)` is open for the enemy side (no terrain, no building that
-blocks it), an entry `{entry: {x, y}, cells, approach, breach}`:
+blocks it) (PP-12), an entry `{entry: {x, y}, core, cells, approach, breach}`
+with `core` the Core of plot `plotOf(x)` if placed, else the nearest placed
+Core by the key of PP-11. The path is that of an enemy unit that enters there
+and heads for that Core, on the fields of that Core (PP-11); with no Core
+placed there is no entry and the function does not throw. What a unit does after that Core has fallen is not previewed, and
+neither is an attack on a Core that is not its target:
 
 - `cells` is the walked path in board coordinates, **starting with the entry
   cell**, restricted to cells on the board (`y < height`); the walked cells
@@ -2979,9 +2983,9 @@ preview shows a path.
 
 Golden kind `enemy-paths`: input is a team script (`team-state-ops` format,
 with `map` or `seed`/`partySize`) that places the Core; result
-`{paths: [{entry: [x, y], cells: [[x, y], ...], breach: null | {building,
+`{paths: [{entry: [x, y], core, cells: [[x, y], ...], breach: null | {building,
 cell: [x, y]}}, ...]}` (`approach` is not part of the golden result). Vectors: `golden/enemy-paths.json` (an open base around
-terrain, a wall, a gate and a turret; a sealed base with one weak wall).
+terrain, a wall, a gate and a turret; a sealed base with one weak wall; four plots with Cores for players 0, 1 and 3).
 
 ### Seams for later issues
 
@@ -3379,15 +3383,6 @@ bare Cores), `battle.wave-queue` (a wave of 80 soldiers larger than the front ro
 
 ## Side options
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-11 | A wave unit's owner is the plot of the column it enters on; its target is the Core of the party plot it enters. | not yet implemented (issue #133) |
-
 A small, general mechanism of the arena simulation (`createArenaSim(...,
 options)`, `ArenaOptions.sideOptions`, also `BattleInput.sideOptions`): per side,
 an optional object with any of the fields below. Ghost battles do not use it.
@@ -3415,7 +3410,9 @@ identically; with none the field is absent.
   columns outside `0 .. W - 1` are skipped), and in each column whose front-row
   cell is **open for the side** (not blocked terrain, not covered by a building
   that blocks the side) the same **offsets** as for producers (step 2.2) are
-  tried from the cell centre; the first position where the unit's collision
+  tried from the cell centre; the unit's `owner` is `plotOf(c)` for the
+  own-frame column `c` it entered on (the column actually used, not `col`) and
+  its target is `chooseTarget(owner, entry cell)` (PP-11); the first position where the unit's collision
   circle fits and is not heavily blocked by any living unit (rule of step 2.2;
   the units that entered earlier in this walk included) is its spawn position. (The offsets are `120 - collisionRadius`
   times the offset table, so a unit of another collision radius tries other
@@ -3463,7 +3460,6 @@ row says so.
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
 | PP-14 | A stronghold has one Core per player, bosses included; its total Core health is split evenly; walls and turrets are laid out per plot around each Core; the profile's `stronghold` holds `cores`. "Because the stronghold has one Core" below no longer holds. | not yet implemented (issue #138) |
-| PP-11 | Each wave unit heads first for the Core of the party plot it enters. | not yet implemented (issue #133) |
 
 Implemented in `threats.ts` (configuration and the budget), `threat-gen.ts`
 (the generator), `threat-layouts.ts` (stronghold layouts), `pve-battle.ts`
@@ -3795,15 +3791,6 @@ battle length, battles per second at one and four plots, event log size).
 
 ## Resolution order
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-11 | Target choice: the opposite Core, then the nearest by field distance; ties by nearness of plot index to the opposite plot, then the larger enemy player index (the lower column in the unit's own frame). | not yet implemented (issue #133) |
-
 What exists so far is the order in which simultaneous flow events resolve; all
 of it is fixed by the tick order above and uses no random numbers:
 
@@ -3832,8 +3819,14 @@ broken as follows:
   from the unit's centre to its nearest cell (ties: lowest unit `id`), only
   among units on its owner's board rows.
 - **Which building to hit:** an enemy Core when it is within reach (with
-  several: the unit's target Core, else the nearest, PP-11); in breach mode
+  several: the unit's target Core, else the nearest by `buildingDist2`, ties by
+  `(|q - opposite(owner)|, -q)`, PP-11); in breach mode
   the building covering the next breach cell.
+- **Which target Core** (PP-11, `chooseTarget`): the Core opposite the owner's
+  plot while it stands; else the smallest `(class, distance, |q -
+  opposite(owner)|, -q)`: the nearer by movement field, then breach field,
+  then the plot nearer to the opposite plot, then the larger enemy player
+  index (the lower column in the unit's own frame).
 - **Which way to step** (equal distance or equal cost) and **where to spawn**
   (equal distance): the lowest `y`, then the lowest `x`, in the board frame of
   the unit's own side (the tie key). Equal-length shortest paths are therefore

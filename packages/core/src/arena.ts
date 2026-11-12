@@ -212,16 +212,3 @@ export function removeFromArena(arena: Arena, ref: number): void {
     arena.occupant[cellIndex(arena.geom, c.x, c.y)] = -1;
   }
 }
-
-/**
- * The Core a side's units head for while issue #133 (targeting) is not in:
- * the lowest-indexed living Core of `side` (the enemy of the units), or -1
- * when none stands. #133 replaces this with the opposite Core first, then the
- * nearest.
- */
-export function goalCoreRef(arena: Arena, side: number): number {
-  for (const ref of arena.coreRef[side] ?? []) {
-    if (ref >= 0 && arena.buildings[ref]?.alive === true) return ref;
-  }
-  return -1;
-}

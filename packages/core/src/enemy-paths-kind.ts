@@ -22,6 +22,7 @@ export function makeEnemyPathsKind(
     const state = runTeamStateOps(input, content, mapgen).state;
     const paths = previewEnemyPaths(state, content, simConfig).map((p) => ({
       entry: [p.entry.x, p.entry.y],
+      core: p.core,
       cells: p.cells.map((c) => [c.x, c.y]),
       breach:
         p.breach === null

@@ -64,7 +64,7 @@ describe('the movement field (8 directions)', () => {
       content,
       simConfig,
     );
-    return { arena: ctx.arena, f: computeField(ctx.arena, 0) };
+    return { arena: ctx.arena, f: computeField(ctx.arena, 0, 0) };
   }
   const at = (x: number, y: number): number => y * W + x;
 
@@ -109,8 +109,8 @@ describe('the movement field (8 directions)', () => {
   test('the field of a mirrored battle is the half turn of the other', () => {
     const team = coreOnly();
     const { ctx } = startArenaBattle(team, team, GAP, content, simConfig);
-    const f0 = computeField(ctx.arena, 0);
-    const f1 = computeField(ctx.arena, 1);
+    const f0 = computeField(ctx.arena, 0, 0);
+    const f1 = computeField(ctx.arena, 1, 0);
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
         expect(f1.dist[at(W - 1 - x, H - 1 - y)]).toBe(f0.dist[at(x, y)]);
