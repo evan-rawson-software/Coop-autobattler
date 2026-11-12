@@ -269,7 +269,8 @@ describe('late rounds stay inside the performance budget', () => {
           // Sample moved (waves mix in archers and drones from round 4, which
           // cost more per unit, so fewer units per wave): Fortress hard at
           // round 15 now has unitStrengthPercent 100 (party 1) and 96
-          // (party 4), no longer over the cap; round 16 has 142 and 144.
+          // (party 4), which fail "> 100" (117 and 121 without the mix);
+          // round 16 has 142 and 144.
           const sampleRound =
             arch === 'arch_fortress' && type === 'hard' ? round + 1 : round;
           const t = threat(arch, type, sampleRound, party);

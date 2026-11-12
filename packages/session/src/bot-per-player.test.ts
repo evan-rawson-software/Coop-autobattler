@@ -39,6 +39,7 @@ function play(
   strategy: (typeof BOT_STRATEGIES)[number],
   party: number,
   seed: number,
+  maxRounds = 4,
 ): BotRunResult {
   const args: CreateRunArgs = {
     runId: 'bot',
@@ -51,7 +52,7 @@ function play(
     strategy,
     seed,
     rerollCost: 1,
-    maxRounds: 4,
+    maxRounds,
   });
 }
 
@@ -158,12 +159,41 @@ describe('bots build per player', () => {
     }
   }, 300_000);
 
+  test('a rush bot places a Range on some of 12 seeds', () => {
+    let placed = 0;
+    for (let seed = 1; seed <= 12; seed++) {
+      placed += play('rush', 1, seed, 8).state.team.buildings.filter(
+        (b) => b.def === 'bld_range',
+      ).length;
+    }
+    expect(placed).toBeGreaterThan(0);
+  }, 600_000);
+
+  test('layout places and feeds a Range and a Hangar from their collectors', () => {
+    for (const def of ['bld_range', 'bld_hangar']) {
+      const team = withStash(['bld_extractor', 'bld_extractor', def]);
+      const id = team.stash[2]?.id;
+      const plan = planLayout(
+        team,
+        0,
+        content,
+        team.map.plotWidth,
+        { ...style, priority: [def] },
+        Rng.fromSeed(1),
+      );
+      expect(
+        plan.some((i) => i.type === 'place_building' && i.id === id),
+        def,
+      ).toBe(true);
+    }
+  });
+
   // Known gap, see #178: since the rebalance (#145) every tier-1 consumer
   // needs exactly what one tier-1 collector gives, so the bot fills its
   // collector nodes first and rarely places a Splitter. This pins the measured
   // rate, it is not a goal: over 20 fixed seeds at most MAX_SPLITTER_SEEDS
-  // solo rush runs hold a Splitter with two outputs. Lower it when #178 is
-  // fixed.
+  // solo rush runs hold a Splitter with two outputs. When #178 is fixed the
+  // count rises and this test fails: replace it with a lower bound.
   const MAX_SPLITTER_SEEDS = 5; // measured: 3
   test('few solo rush runs share a collector through a two-output Splitter (#178)', () => {
     let seeds = 0;

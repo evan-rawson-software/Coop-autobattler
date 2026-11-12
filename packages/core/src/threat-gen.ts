@@ -273,14 +273,19 @@ export function generateThreat(
   if (largest > cap) {
     unitStrengthPercent = ceilDiv(100 * largest, cap) - 100;
     for (const w of planned) {
-      for (const e of w.entries) {
-        const scaled = divFloor(e.n * cap, largest);
-        // The few ranged units of a mixed wave are not scaled away.
+      const before = w.entries.map((e) => e.n);
+      for (const e of w.entries) e.n = divFloor(e.n * cap, largest);
+      // The few ranged units of a mixed wave are not scaled away, as long as
+      // the wave stays within the cap.
+      w.entries.forEach((e, i) => {
         const ranged =
           e.unit === threats.rangedMix?.archerUnit ||
           e.unit === threats.rangedMix?.droneUnit;
-        e.n = ranged && e.n > 0 ? Math.max(1, scaled) : scaled;
-      }
+        const total = w.entries.reduce((a, x) => a + x.n, 0);
+        if (ranged && (before[i] ?? 0) > 0 && e.n === 0 && total < cap) {
+          e.n = 1;
+        }
+      });
       if (w.entries.every((e) => e.n === 0)) {
         // Keep at least one unit: the entry with the most units before
         // scaling is not known any more, so use the first entry.

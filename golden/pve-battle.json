@@ -4312,9 +4312,9 @@
     }
   },
   {
-    "id": "pve-battle.fortify-vs-escalator-r12-loses",
+    "id": "pve-battle.fortify-vs-escalator-r12-wins",
     "kind": "pve-battle",
-    "description": "A round 12 hard Escalator: the fortify board loses (strength-scaled waves).",
+    "description": "A round 12 hard Escalator: the fortify board wins (strength-scaled waves).",
     "input": {
       "team": {
         "seed": 5,

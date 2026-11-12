@@ -3625,12 +3625,20 @@ the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
 4. **Ranged mix** (`rangedMix` in `threats.json`, optional: `{fromRound,
    archerUnit, archerPercent, droneUnit, dronePercent}`, shipped 4, archer 25,
    drone 15). In a round `>= fromRound`, each wave that is not a signature wave
-   first sets aside `A = floor(W_k * archerPercent / 100)` and `D = floor(W_k *
-   dronePercent / 100)`; the composition entries then share `W_k - A - D`, and
-   two more entries are appended after them: `floor(A / cost(archer))`
-   archers and `floor(D / cost(drone))` drones. Rounds before `fromRound` and
+   sets aside `A = floor(W_k * archerPercent / 100)` and `D = floor(W_k *
+   dronePercent / 100)`; the composition entries then share `W_k - A - D`. A
+   running pool per kind starts at 0 for the threat; each such wave adds its
+   `A` (`D`) to the pool and takes `floor(pool / cost)` whole archers
+   (drones) out of it (the pool keeps the rest). The last non-signature wave
+   instead takes `floor((pool + floor(cost / 2)) / cost)`, i.e. rounds to the
+   nearest unit, and the pool may go slightly negative; so the mix can spend
+   up to half a unit's price more than was set aside, and the total wave cost
+   can exceed the wave budget slightly (by up to about one archer plus one
+   drone). Two entries are appended after the composition entries (archer,
+   then drone), also when their count is 0. Rounds before `fromRound` and
    signature waves are exactly as without the mix. It draws no random numbers.
-   Wave units get no ramp bonus (CB-16c), so these are plain units.
+   Wave units get no ramp bonus (the ramp rule "A unit of a scheduled PvE wave has no producer"), so these are
+   plain units.
    **Unit counts.** The budget of an entry is `floor(W_k * weight / weightSum)`
    (same overflow-safe division) and its ideal count `n = floor(that / cost)`.
    If every entry of a wave has `n = 0`, the entry with the highest weight
@@ -3639,14 +3647,17 @@ the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
    plot). Let `m` be the largest wave (sum of `n` over a wave's entries). If `m
    <= cap`, `unitStrengthPercent = 0`. Otherwise `unitStrengthPercent =
    ceil(100 * m / cap) - 100`, and every `n` becomes `floor(n * cap / m)`; a
-   wave left with no unit gets 1 of its first entry. So the largest wave has
-   at most `cap` units, each `(100 + P) / 100` times as strong, and total wave
+   wave left with no unit gets 1 of its first entry. A ranged entry (archer or
+   drone unit of `rangedMix`) that had `n > 0` before scaling and is `0` after
+   it gets 1, but only while the wave's total stays below `cap`. So the largest
+   wave has at most `cap` units, each `(100 + P) / 100` times as strong, and total wave
    power (units times strength) stays within a few percent of the wave
    budget (rounding, the one-unit minimum), while the unit count stays small
    however high the budget grows. The strength is applied to health and damage
    as in `unitStats`.
 6. Waves are listed per wave tick (`firstTick + k * intervalTicks`), one entry
-   per composition entry with a non-zero count.
+   per composition entry (and per appended archer or drone entry) with a
+   non-zero count.
 7. **Stronghold** (`N = partySize`, `share(total, p) = floor(total / N) + (1 if
    p < total mod N else 0)`).
    - `wallsTotal = min(floor(floor(S * wallSharePercent / 100) / wallPrice),

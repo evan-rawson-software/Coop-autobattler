@@ -295,6 +295,37 @@ describe('generateThreat', () => {
     expect(p.waves.some((w) => w.unit === 'unit_archer')).toBe(false);
   });
 
+  test('ranged units never push a wave over the unit cap', () => {
+    // A small cap makes the "ranged keeps at least one unit" bump matter.
+    for (const perPlot of [1, 2, 3, 5]) {
+      const small = { ...threats, maxUnitsPerWavePerPlot: perPlot };
+      for (const arch of threats.archetypes) {
+        for (let round = 4; round <= 30; round++) {
+          const p = generateThreat(
+            {
+              seed: round,
+              round,
+              type: 'hard',
+              partySize: 1,
+              archetype: arch.id,
+            },
+            content,
+            { threats: small, mapgen },
+          );
+          const perTick = new Map<number, number>();
+          for (const w of p.waves) {
+            perTick.set(w.tick, (perTick.get(w.tick) ?? 0) + w.count);
+          }
+          for (const total of perTick.values()) {
+            expect(total, `${arch.id} r${String(round)}`).toBeLessThanOrEqual(
+              perPlot,
+            );
+          }
+        }
+      }
+    }
+  });
+
   test('late rounds get their power from unitStrengthPercent', () => {
     const early = generateThreat(
       {
