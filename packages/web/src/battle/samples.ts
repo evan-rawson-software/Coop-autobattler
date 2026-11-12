@@ -166,7 +166,10 @@ export function buildSample(sel: SampleSelection): Sample {
       unit: stressUnit(),
       count: 40,
     }));
-    const options = { scheduledWaves: waves, coreHealth: 5000 };
+    const options = {
+      scheduledWaves: waves,
+      coreHealths: [5000, 5000, 5000, 5000],
+    };
     return {
       battle: {
         kind: 'versus',
