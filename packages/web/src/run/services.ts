@@ -45,6 +45,8 @@ import {
   type StorageLike,
 } from './local-storage-store.js';
 import { loadBundledGhostStore } from './bundled-ghosts.js';
+import { registerDebug } from '../debug-hook.js';
+import { withForcedOpponent } from './force-opponent.js';
 import { INSTALLED_VERSION, RUN_VERSION } from './version.js';
 
 /**
@@ -261,14 +263,32 @@ export async function createServices(
         }),
   });
   const init = await initSaves(saves, INSTALLED_VERSION, env.now(), runDeps);
+  const localPool = ghostPool.store;
+  registerDebug({
+    ghostPool: {
+      local: async (partySize, round) =>
+        (
+          await localPool.list({
+            gameVersion: RUN_VERSION,
+            partySize,
+            round,
+          })
+        ).map((v) => {
+          const g = v as { owner?: { id?: string }; runId?: string };
+          return { ownerId: g.owner?.id ?? '', runId: g.runId ?? '' };
+        }),
+    },
+  });
   return {
     saves,
     finished,
     storage,
     fallback: storage === 'indexeddb' ? null : (fallback ?? 'unavailable'),
     deps: runDeps,
-    ghosts: layerGhostStores(ghostPool.store, () =>
-      loadBundledGhostStore(RUN_VERSION),
+    ghosts: withForcedOpponent(
+      layerGhostStores(ghostPool.store, () =>
+        loadBundledGhostStore(RUN_VERSION),
+      ),
     ),
     ghostStorage: ghostPool.kind,
     init,

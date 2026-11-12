@@ -5,7 +5,11 @@
  */
 import type { Json } from './hash.js';
 import { Rng } from './rng.js';
-import { placeholderDuel, type SimulationOutput } from './placeholder-duel.js';
+
+export interface SimulationOutput {
+  result: Json;
+  eventLog?: Json[];
+}
 
 export type SimulationFn = (input: Json) => SimulationOutput;
 
@@ -57,7 +61,6 @@ function prngChild(input: Json): SimulationOutput {
 }
 
 export const goldenKinds: Readonly<Record<string, SimulationFn>> = {
-  'placeholder-duel': placeholderDuel,
   'prng-u32': prngU32,
   'prng-sample': prngSample,
   'prng-child': prngChild,

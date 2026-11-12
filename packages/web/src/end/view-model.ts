@@ -6,7 +6,7 @@
 import type { TeamState } from '@game/core';
 import type { HistoryEntry, RoundRecord, RunState } from '@game/session';
 import { opponentName } from '../event/view-model.js';
-import { bossName } from '../run/temporary-text.js';
+import { bossName } from '../run/display-text.js';
 import { count } from '../plural.js';
 
 export interface BestView {
@@ -52,7 +52,7 @@ export interface RoundRow {
   /** "Hard · Rusher" or "—". */
   readonly pve: string;
   readonly pveResult: 'won' | 'lost' | '—';
-  /** "the boss (Fortress)", a ghost's name, or "—". */
+  /** "the boss (Fortress)", "Ghost · label" (bundled ones say so), or "—". */
   readonly pvp: string;
   readonly pvpResult: 'won' | 'lost' | '—';
 }
@@ -77,7 +77,9 @@ export function roundRows(history: readonly RoundRecord[]): RoundRow[] {
           ? '—'
           : pvp.opponent.kind === 'boss'
             ? bossName(opponentName('boss', pvp.opponent.label))
-            : opponentName(pvp.opponent.kind, pvp.opponent.label),
+            : pvp.opponent.label.startsWith('Bundled ')
+              ? `Ghost · ${pvp.opponent.label} (bundled)`
+              : `Ghost · ${opponentName(pvp.opponent.kind, pvp.opponent.label)}`,
       pvpResult: pvp === null ? '—' : pvp.won ? 'won' : 'lost',
     };
   });

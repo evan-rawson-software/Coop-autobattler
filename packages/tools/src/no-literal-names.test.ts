@@ -69,3 +69,34 @@ test('resource display names do not appear as string literals in source', () => 
   }
   expect(offenders).toEqual([]);
 });
+
+type NamedGroup = Record<string, { name: string }>;
+
+test('archetype, event and modifier names are not string literals in source', () => {
+  const raw = JSON.parse(
+    readFileSync(
+      path.join(repoRoot, 'content', 'presentation.en.json'),
+      'utf8',
+    ),
+  ) as { archetypes: NamedGroup; events: NamedGroup; modifiers: NamedGroup };
+  const names = [raw.archetypes, raw.events, raw.modifiers].flatMap((group) =>
+    Object.values(group).map((e) => e.name),
+  );
+  expect(names.length).toBeGreaterThan(0);
+  const offenders: string[] = [];
+  for (const dir of sourceDirs) {
+    for (const file of sourceFiles(dir)) {
+      const literals = new Set(
+        stringLiterals(file, readFileSync(file, 'utf8')),
+      );
+      for (const name of names) {
+        if (literals.has(name)) {
+          offenders.push(
+            `${path.relative(repoRoot, file)}: string literal "${name}" is a display name from the presentation file`,
+          );
+        }
+      }
+    }
+  }
+  expect(offenders).toEqual([]);
+});
