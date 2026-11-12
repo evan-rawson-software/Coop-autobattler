@@ -101,6 +101,13 @@ export async function runWorkerSmoke({ browser, baseUrl, check }) {
         !r.info.usesWorker && r.info.ranOnMainThread,
         'sim worker: without Workers the same screen simulates on the main thread',
       );
+      // Positive control: the same observer sees the main-thread run block, so
+      // the worker run's "no long task" check above can fail when it should.
+      const fallbackWorst = Math.max(0, ...r.longTasks);
+      check(
+        r.longTasks.length >= 1 && fallbackWorst > 100,
+        `sim worker (fallback): the long-task observer sees the blocking run (worst ${fallbackWorst.toFixed(0)} ms)`,
+      );
       check(
         errors.length === 0,
         `sim worker: the fallback raises no console errors${errors.length ? ': ' + errors.join(' | ') : ''}`,

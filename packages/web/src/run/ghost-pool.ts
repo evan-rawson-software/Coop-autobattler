@@ -77,6 +77,28 @@ function sizeBound(
   return GHOST_STORE_DEFAULT_MAX_SIZE;
 }
 
+/**
+ * Whether a bucket's game version is lower than `keepVersion` (numeric parts,
+ * `major.minor`). A version that cannot be read counts as lower; a newer one
+ * (a stale tab or a downgraded build) is never removed.
+ */
+function isLowerVersion(bucket: string, keepVersion: string): boolean {
+  const parts = (v: string): number[] => v.split('.').map(Number);
+  const a = parts(bucketKeyVersion(bucket));
+  const b = parts(keepVersion);
+  if (
+    a.some((n) => !Number.isFinite(n)) ||
+    b.some((n) => !Number.isFinite(n))
+  ) {
+    return bucketKeyVersion(bucket) !== keepVersion;
+  }
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const d = (a[i] ?? 0) - (b[i] ?? 0);
+    if (d !== 0) return d < 0;
+  }
+  return false;
+}
+
 function compareStored(a: unknown, b: unknown): number {
   const id = (v: unknown): GhostSnapshot | null => {
     if (typeof v !== 'object' || v === null) return null;
@@ -242,7 +264,7 @@ export function createIdbGhostStore(
           }
           if (
             typeof bucket === 'string' &&
-            bucketKeyVersion(bucket) !== keepVersion
+            isLowerVersion(bucket, keepVersion)
           ) {
             os.delete(k);
           }
@@ -434,10 +456,27 @@ export function createLocalStorageGhostStore(
           }
           if (
             typeof bucket === 'string' &&
-            bucketKeyVersion(bucket) !== keepVersion
+            isLowerVersion(bucket, keepVersion)
           ) {
             ls.removeItem(k);
             ls.removeItem(metaHead + rest);
+          }
+        }
+        // A meta key whose row is gone: remove it if its version is lower.
+        for (const k of keysWith(metaHead)) {
+          const rest = k.slice(metaHead.length);
+          if (ls.getItem(head + rest) !== null) continue;
+          let bucket: unknown;
+          try {
+            bucket = (JSON.parse(rest) as unknown[])[0];
+          } catch {
+            continue;
+          }
+          if (
+            typeof bucket === 'string' &&
+            isLowerVersion(bucket, keepVersion)
+          ) {
+            ls.removeItem(k);
           }
         }
         return Promise.resolve();

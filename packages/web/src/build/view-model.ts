@@ -279,10 +279,22 @@ export interface Problem {
   readonly building: number | null;
 }
 
+/**
+ * Whose problems the list names. With a party, under-supplied buildings are
+ * listed one by one for the acting player only; each partner gets one summary
+ * line (how many of their buildings are under-supplied). Omit it in solo.
+ */
+export interface ProblemScope {
+  readonly acting: number;
+  /** Display name per player index. */
+  readonly names: readonly string[];
+}
+
 export function deriveProblems(
   state: TeamState,
   content: WebContent,
   flow: FlowView | null,
+  scope?: ProblemScope,
 ): Problem[] {
   const out: Problem[] = [];
   const occ = occupancy(state, content);
@@ -358,17 +370,31 @@ export function deriveProblems(
   }
 
   if (flow !== null) {
+    const partnerCounts = new Map<number, number>();
     for (const u of flow.supply) {
       // Nothing at all is reported as "starved" above.
       if (u.state !== 'under' || flow.starved.has(u.building)) continue;
       const b = state.buildings.find((x) => x.id === u.building);
       if (b === undefined) continue;
+      if (scope !== undefined && b.owner !== scope.acting) {
+        partnerCounts.set(b.owner, (partnerCounts.get(b.owner) ?? 0) + 1);
+        continue;
+      }
       out.push({
         id: `under:${String(b.id)}`,
         kind: 'under_supplied',
         text: `${name(b)} gets ${formatHundredths(u.gets)}/s of the ${formatHundredths(u.needs)}/s it needs.`,
         focus: occ.cellsOf(b)[0] ?? { x: b.x, y: b.y },
         building: b.id,
+      });
+    }
+    for (const [owner, n] of [...partnerCounts].sort((a, b) => a[0] - b[0])) {
+      out.push({
+        id: `under-partner:${String(owner)}`,
+        kind: 'under_supplied',
+        text: `${scope?.names[owner] ?? `Player ${String(owner + 1)}`} has ${count(n, 'under-supplied building')}.`,
+        focus: null,
+        building: null,
       });
     }
   }
