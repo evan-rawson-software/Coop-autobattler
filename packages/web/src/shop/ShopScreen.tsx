@@ -473,7 +473,7 @@ export function ShopTab(props: { run: RunHandle }) {
           {solo ? null : (
             <Panel title="Party (co-op)" id="panel-party-shop">
               <p class="muted">
-                Teammates' gold, stash and a way to give gold will appear here.
+                Teammates' gold and stash will appear here.
                 You only ever see your own offers.
               </p>
             </Panel>

@@ -139,7 +139,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>Your offers. A card shows the kind, what it needs, what it does, and its price.</li>
       <li>Gold buys buildings and re-rolls, nothing else.</li>
       <li>Your stash: buildings you own that are not on the board. Drag here to sell.</li>
-      <li>Teammates' gold and stash, with a way to give gold. You do not see their offers. Hidden in solo.</li>
+      <li>Teammates' gold and stash, for information only. You do not see their offers. Hidden in solo.</li>
       <li>What comes next. PvE options are shown ahead of time; a PvP opponent never is.</li>
       <li>A small live view of the board that jumps to the Build tab.</li>
       <li>Ready is available on both tabs.</li>
@@ -429,9 +429,8 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     [["Ana", "9 gold", "stash: 2 buildings · ready"], ["Bo", "21 gold", "stash: empty · still shopping"]].forEach(function (r, i) {
       var y = 352 + i * 62;
       R(s, 36, y, 416, 52, "box"); T(s, 48, y + 22, r[0], "th"); T(s, 48, y + 40, r[2], "ts tm"); T(s, 150, y + 22, r[1], "t");
-      btn(s, 330, y + 12, 110, 28, "Give gold");
     });
-    T(s, 36, 508, "You see only your own offers. Gold and buildings can be given.", "ts tm");
+    T(s, 36, 508, "You see only your own offers. Help a partner over a border link.", "ts tm");
     // next battle
     R(s, 476, 318, 216, 206, "panel"); T(s, 488, 338, "NEXT BATTLE", "ts tm");
     T(s, 488, 362, "PvP", "tb"); lines(s, 488, 384, ["Opponent unknown until", "the battle starts.", "", "Lose: −1 life", "Win: gold"], "ts", 15);

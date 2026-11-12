@@ -73,7 +73,6 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-15 | Sealed-producer check per owner; map rule per plot | not yet implemented (issues #131 and #129) |
 | PP-16 | Party votes and run streams without the Core vote | not yet implemented (issue #131) |
 | PP-17 | Formats, version, ghost validation | not yet implemented (issue #139) |
-| PP-18 | No giving | nothing to implement: the code has no way to give gold or buildings. The wireframes are corrected in issue #144 |
 
 ### Numbers to be set in the rebalance
 
@@ -836,6 +835,11 @@ unaffected by this rule.
 Players cannot give each other gold or buildings (CP-29). The session has no
 intent that moves gold or a building between players, so there is nothing to
 remove; the rule is that none is added. A building's `owner` never changes.
+The guard test `packages/session/src/no-giving.test.ts` sends every intent a
+player can send and checks that no other player's gold, stash or placed
+buildings change and no `owner` changes. Board intents aimed at a partner's
+buildings are not yet rejected (CP-28, issue #129); that part of the test is
+marked `test.fails` until then.
 
 ## The PRNG
 
@@ -3960,7 +3964,6 @@ row says so.
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
 | PP-3 | Gold and the starting kit are granted when the Core placement step ends (every player has placed a Core), on entering the first `build` step. | not yet implemented (issue #131) |
-| PP-18 | No giving: no intent moves gold or a building between players. | holds today (no such intent exists) |
 
 Placeholder numbers live in `content/economy.json`; the rules below are what
 the code does. Code: `packages/core/src/shop.ts`, `weighted.ts`, `economy.ts`
