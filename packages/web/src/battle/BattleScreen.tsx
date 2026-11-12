@@ -35,6 +35,7 @@ import {
   sideStats,
   type Moment,
 } from './derive.js';
+import { coreMaxima } from './derive.js';
 import { drawBattleOverlay, linkMap, makeDrawIndex } from './draw.js';
 import { BattleSummaryView, LeftPanels, RightPanels } from './panels.js';
 import {
@@ -523,7 +524,11 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
   const overloadNote =
     foeKind === 'ghost'
       ? null
-      : overloadLine(battleConfig.sim, record.coreMax[0], record.coreMax[1]);
+      : overloadLine(
+          battleConfig.sim,
+          coreMaxima(record, 0),
+          coreMaxima(record, 1),
+        );
   const overloadTick = moments.find((m) => m.kind === 'overload')?.tick ?? null;
 
   return (

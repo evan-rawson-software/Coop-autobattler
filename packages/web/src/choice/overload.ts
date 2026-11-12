@@ -28,11 +28,15 @@ export function partyCoreMax(
 /** Plain words for which Core Overload destroys first, and when. */
 export function overloadLine(
   sim: SimConfig,
-  partyMax: number,
-  strongholdMax: number,
+  partyMax: number | readonly number[],
+  strongholdMax: number | readonly number[],
 ): string {
   const at = clock(sim.overloadStartTick, sim.ticksPerSecond);
-  const out = overloadOutcome(sim, [partyMax], [strongholdMax]);
+  const out = overloadOutcome(
+    sim,
+    typeof partyMax === 'number' ? [partyMax] : partyMax,
+    typeof strongholdMax === 'number' ? [strongholdMax] : strongholdMax,
+  );
   const when = out.tick === null ? '' : clock(out.tick, sim.ticksPerSecond);
   switch (out.first) {
     case 'b':
