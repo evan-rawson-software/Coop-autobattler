@@ -23,6 +23,7 @@ import type { RunHandle } from '../run/handle.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import { drawCoreOverlay, type Candidate } from './overlay.js';
 import {
+  choiceAnnouncement,
   hintText,
   isRepeatClick,
   visibleProblem,
@@ -299,6 +300,10 @@ export function CoreScreen(props: { run: RunHandle }) {
             message: problem,
             ready: isReady,
           })}
+        </p>
+
+        <p class="sr-only" aria-live="polite" data-field="core-choice">
+          {choiceAnnouncement(selected, isReady)}
         </p>
 
         <BoardView
