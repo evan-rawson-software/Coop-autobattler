@@ -136,6 +136,7 @@ export function makeArenaSimKind(
           );
         }
         h.hp = hp;
+        if (isCoreHealth(h)) h.remaining = hp;
       }
     }
     const events: ArenaEvent[] = [];
