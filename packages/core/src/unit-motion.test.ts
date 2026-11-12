@@ -997,7 +997,7 @@ describe('overlap is bounded', () => {
       );
       // The enemy Core is gone before the first tick: nobody has a goal.
       for (const h of sim.health) {
-        if (h.side === 1 && h.building === 0) h.hp = 0;
+        if (h.side === 1 && 'core' in h && h.core === 0) h.hp = 0;
       }
       const rng = Rng.fromSeed(seed);
       let placed = 0;

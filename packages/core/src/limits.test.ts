@@ -249,7 +249,7 @@ describe('bounds: the (distance, cell) heap', () => {
     const n = width * height;
     const dist: number[] = new Array<number>(n).fill(-1);
     const done: boolean[] = new Array<boolean>(n).fill(false);
-    const core = got(ctx.arena.buildings[ctx.arena.coreRef[1] ?? -1]);
+    const core = got(ctx.arena.buildings[ctx.arena.coreRef[1]?.[0] ?? -1]);
     for (const c of core.cells) {
       for (const [dx, dy] of NEIGHBORS) {
         const x = c.x + dx;
@@ -371,12 +371,12 @@ describe('bounds: run-time scaling is checked', () => {
     a.core(11, 0);
     const mk = (coreHealth: number): void => {
       createArenaSim(a.state, a.state, GAP, content, simConfig, {
-        sideOptions: [null, { coreHealth }],
+        sideOptions: [null, { coreHealths: [coreHealth] }],
       });
     };
     expect(() => {
       mk(MAX_HEALTH + 1);
-    }).toThrow(/coreHealth must be an integer from 1 to 1000000000000/);
+    }).toThrow(/coreHealths must be an integer from 1 to 1000000000000/);
     expect(() => {
       mk(0);
     }).toThrow(RangeError);

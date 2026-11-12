@@ -9,6 +9,7 @@
 
 import {
   createArena,
+  goalCoreRef,
   removeFromArena,
   type Arena,
   type ArenaBuilding,
@@ -83,7 +84,7 @@ export type UnitTarget =
       readonly side: number;
       readonly building: number;
     }
-  | { readonly kind: 'core'; readonly side: number };
+  | { readonly kind: 'core'; readonly side: number; readonly core: number };
 
 /**
  * The flow events of each board, tagged with the board's `side`. The
@@ -165,6 +166,7 @@ export type ArenaEvent =
       readonly tick: number;
       readonly type: 'core_destroyed';
       readonly side: number;
+      readonly core: number;
     }
   | {
       readonly tick: number;
@@ -184,6 +186,7 @@ export type ArenaEvent =
       readonly tick: number;
       readonly type: 'overload_core_damage';
       readonly side: number;
+      readonly core: number;
       readonly damage: number;
     }
   | {
@@ -214,12 +217,29 @@ export interface UnitSim {
   attackCooldown: number;
 }
 
-export interface HealthSim {
+/** A player's Core in the `health` list (PP-9). */
+export interface CoreHealthSim {
   readonly side: number;
-  /** Instance ID, or 0 for the side's Core. */
+  /** The player index. */
+  readonly core: number;
+  /** 0 once destroyed. */
+  hp: number;
+}
+
+/** A placed building in the `health` list. */
+export interface BuildingHealthSim {
+  readonly side: number;
+  /** Instance ID. */
   readonly building: number;
   /** 0 once destroyed. */
   hp: number;
+}
+
+export type HealthSim = CoreHealthSim | BuildingHealthSim;
+
+/** True for the entry of a Core. */
+export function isCoreHealth(h: HealthSim): h is CoreHealthSim {
+  return 'core' in h;
 }
 
 export interface TurretSim {
@@ -287,8 +307,12 @@ export interface SideOptions {
    * side's `unit_strength` ramp bonus.
    */
   readonly unitStrengthPercent?: number;
-  /** The side's Core starts with this health instead of the definition's. */
-  readonly coreHealth?: number;
+  /**
+   * Starting and maximum health of each Core by player index (before
+   * `core_health_percent`), instead of the definition's; a player without an
+   * entry has the definition's (PP-9).
+   */
+  readonly coreHealths?: readonly number[];
 }
 
 export interface ArenaSim {
@@ -302,7 +326,7 @@ export interface ArenaSim {
   /** Each side's team state with destroyed buildings and conduits removed. */
   readonly teams: [TeamState, TeamState];
   readonly boards: [BoardSim, BoardSim];
-  /** Every building and Core ever placed, by (side, id); Core first. */
+  /** Every Core and building ever placed: per side the Cores by player, then buildings by ID. */
   readonly health: HealthSim[];
   /** Living unit producers, by (side, building). */
   producers: ProducerSim[];
@@ -415,11 +439,12 @@ export interface ArenaContext {
   /** `ref` -> index into `sim.health`. */
   readonly healthIndex: Int32Array;
   /**
-   * Per side, the Core's health after all damage of the latest tick that
-   * damaged it, NOT clamped at 0 (so a destroyed Core's overkill is known,
-   * CB-33). Equals the Core's health while it is alive.
+   * Per side and player index, the Core's health after all damage of the
+   * latest tick that damaged it, NOT clamped at 0 (so a destroyed Core's
+   * overkill is known, CB-33). Equals the Core's health while it is alive.
+   * 0 for a player without a Core.
    */
-  readonly coreRemaining: [number, number];
+  readonly coreRemaining: number[][];
   readonly producers: Map<number, ProducerInfo>;
   readonly turrets: Map<number, TurretInfo>;
   readonly ramps: Map<number, RampInfo>;
@@ -482,6 +507,15 @@ export interface ArenaContext {
 }
 
 const bkey = (side: number, id: number): number => id * 2 + side;
+/** Key of a Core's health entry; never equal to a `bkey` (negative). */
+const ckey = (side: number, player: number): number => -1 - (player * 2 + side);
+
+/** The arena `ref` of the building or Core a health entry belongs to, or -1. */
+function refOfHealth(arena: Arena, h: HealthSim): number {
+  return isCoreHealth(h)
+    ? (arena.coreRef[h.side]?.[h.core] ?? -1)
+    : (arena.byId[h.side]?.get(h.building) ?? -1);
+}
 
 /** The arena of a state: destroyed Cores are taken out again. */
 export function arenaOf(sim: ArenaSim, content: ArenaContent): Arena {
@@ -494,10 +528,8 @@ export function arenaOf(sim: ArenaSim, content: ArenaContent): Arena {
   );
   for (const h of sim.health) {
     if (h.hp > 0) continue;
-    const ref = arena.byId[h.side]?.get(h.building);
-    const core = arena.coreRef[h.side] ?? -1;
-    const r = h.building === 0 ? core : ref;
-    if (r !== undefined && r >= 0) removeFromArena(arena, r);
+    const r = refOfHealth(arena, h);
+    if (r >= 0) removeFromArena(arena, r);
   }
   return arena;
 }
@@ -538,10 +570,17 @@ export function createArenaContext(
 ): ArenaContext {
   const arena = arenaOf(sim, content);
   const healthAt = new Map<number, number>();
-  sim.health.forEach((h, i) => healthAt.set(bkey(h.side, h.building), i));
+  sim.health.forEach((h, i) =>
+    healthAt.set(
+      isCoreHealth(h) ? ckey(h.side, h.core) : bkey(h.side, h.building),
+      i,
+    ),
+  );
   const healthIndex = new Int32Array(arena.buildings.length);
   for (const b of arena.buildings) {
-    const i = healthAt.get(bkey(b.side, b.id));
+    const i = healthAt.get(
+      b.kind === 'core' ? ckey(b.side, b.player) : bkey(b.side, b.id),
+    );
     if (i === undefined) throw new Error('Arena: building without health.');
     healthIndex[b.ref] = i;
   }
@@ -554,7 +593,9 @@ export function createArenaContext(
       sim.teams[side],
       b,
       content,
-      b.kind === 'core' ? sim.sideOptions?.[side].coreHealth : undefined,
+      b.kind === 'core'
+        ? sim.sideOptions?.[side].coreHealths?.[b.player]
+        : undefined,
     );
   }
   const producers = new Map<number, ProducerInfo>();
@@ -597,9 +638,10 @@ export function createArenaContext(
       }
     }
   });
-  const coreRemaining: [number, number] = [0, 0];
+  const coreRemaining: number[][] = sim.teams.map((t) => t.cores.map(() => 0));
   for (const h of sim.health) {
-    if (h.building === 0) coreRemaining[h.side === 0 ? 0 : 1] = h.hp;
+    const row = coreRemaining[h.side];
+    if (isCoreHealth(h) && row !== undefined) row[h.core] = h.hp;
   }
   const cells = arena.geom.width * arena.geom.height;
   const solid = buildSolid(arena);
@@ -692,9 +734,15 @@ export function createArenaSim(
       teams[side],
       b,
       content,
-      b.kind === 'core' ? options.sideOptions?.[side]?.coreHealth : undefined,
+      b.kind === 'core'
+        ? options.sideOptions?.[side]?.coreHealths?.[b.player]
+        : undefined,
     );
-    health.push({ side: b.side, building: b.id, hp });
+    health.push(
+      b.kind === 'core'
+        ? { side: b.side, core: b.player, hp }
+        : { side: b.side, building: b.id, hp },
+    );
   }
   // Fail at the start, not mid-battle: with the side's base strength, its
   // strength modifiers and the largest ramp bonus it can reach (none without
@@ -1806,7 +1854,7 @@ function decideAim(
       return;
     }
   }
-  const coreRef = arena.coreRef[1 - u.side] ?? -1;
+  const coreRef = goalCoreRef(arena, 1 - u.side);
   const core = coreRef >= 0 ? arena.buildings[coreRef] : undefined;
   if (
     core !== undefined &&
@@ -1910,7 +1958,7 @@ function moveToCore(
   i: number,
   u: UnitSim,
 ): void {
-  const core = ctx.arena.coreRef[1 - u.side] ?? -1;
+  const core = goalCoreRef(ctx.arena, 1 - u.side);
   const b = core >= 0 ? ctx.arena.buildings[core] : undefined;
   if (b === undefined || !b.alive) return;
   let bx = 0;
@@ -2031,7 +2079,12 @@ function destroyBuilding(
   if (b === undefined || !b.alive) return;
   removeFromArena(ctx.arena, ref);
   if (b.kind === 'core') {
-    ctx.events?.push({ tick, type: 'core_destroyed', side: b.side });
+    ctx.events?.push({
+      tick,
+      type: 'core_destroyed',
+      side: b.side,
+      core: b.player,
+    });
     return;
   }
   ctx.events?.push({
@@ -2183,7 +2236,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
       ctx.attackDamage[arg] = addDamage(ctx.attackDamage[arg] ?? 0, damage);
       target =
         b.kind === 'core'
-          ? { kind: 'core', side: b.side }
+          ? { kind: 'core', side: b.side, core: b.player }
           : { kind: 'building', side: b.side, building: b.id };
     }
     u.attackCooldown = stats.attackCooldownTicks;
@@ -2198,11 +2251,23 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   // Overload Core decay, applied together with the damage above.
   if (beat) {
     const decay = level * cfg.overloadCoreDamageStep;
+    // Every living Core takes the full amount: side 0 then side 1, players in
+    // ascending order (PP-9).
     for (const side of [0, 1]) {
-      const ref = arena.coreRef[side] ?? -1;
-      if (ref < 0 || arena.buildings[ref]?.alive !== true) continue;
-      ctx.buildingDamage[ref] = addDamage(ctx.buildingDamage[ref] ?? 0, decay);
-      events?.push({ tick, type: 'overload_core_damage', side, damage: decay });
+      (arena.coreRef[side] ?? []).forEach((ref, core) => {
+        if (ref < 0 || arena.buildings[ref]?.alive !== true) return;
+        ctx.buildingDamage[ref] = addDamage(
+          ctx.buildingDamage[ref] ?? 0,
+          decay,
+        );
+        events?.push({
+          tick,
+          type: 'overload_core_damage',
+          side,
+          core,
+          damage: decay,
+        });
+      });
     }
   }
   for (let i = 0; i < n; i++) {
@@ -2226,7 +2291,10 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
       );
     }
     const remaining = h.hp - dmg;
-    if (h.building === 0) ctx.coreRemaining[h.side === 0 ? 0 : 1] = remaining;
+    if (isCoreHealth(h)) {
+      const row = ctx.coreRemaining[h.side];
+      if (row !== undefined) row[h.core] = remaining;
+    }
     h.hp = Math.max(0, remaining);
   }
 
@@ -2262,10 +2330,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   let destroyed = false;
   for (const h of sim.health) {
     if (h.hp > 0) continue;
-    const ref =
-      h.building === 0
-        ? (arena.coreRef[h.side] ?? -1)
-        : (arena.byId[h.side]?.get(h.building) ?? -1);
+    const ref = refOfHealth(arena, h);
     const b = ref >= 0 ? arena.buildings[ref] : undefined;
     if (b === undefined || !b.alive) continue;
     destroyBuilding(sim, ctx, ref, tick);
