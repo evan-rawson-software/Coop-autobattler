@@ -166,6 +166,27 @@ export function drawBattleOverlay(
     }
   }
 
+  // --- Fallen Cores: greyed out with a cross (follows the playback tick) ----
+  for (const h of sim.health) {
+    if (!isCoreHealth(h) || h.hp > 0) continue;
+    const r = index.coreRects[h.side === 0 ? 0 : 1][h.core];
+    if (r === null || r === undefined) continue;
+    const x = ox + r.x * z;
+    const y = oy + r.y * z;
+    ctx.fillStyle = theme.outline;
+    ctx.globalAlpha = 0.65;
+    ctx.fillRect(x, y, r.w * z, r.h * z);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = sideColor(h.side === 0 ? 0 : 1);
+    ctx.lineWidth = Math.max(2, z * 0.1);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + r.w * z, y + r.h * z);
+    ctx.moveTo(x + r.w * z, y);
+    ctx.lineTo(x, y + r.h * z);
+    ctx.stroke();
+  }
+
   // --- Health bars of damaged buildings and the Cores ---------------------
   if (z >= 6) {
     const initial = pb.record.initialHealth;

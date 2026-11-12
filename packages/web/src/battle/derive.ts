@@ -722,3 +722,12 @@ export function clock(ticks: number, ticksPerSecond: number): string {
   const s = Math.floor(ticks / ticksPerSecond);
   return `${String(Math.floor(s / 60))}:${String(s % 60).padStart(2, '0')}`;
 }
+
+/** The maximum health of each of a side's Cores. */
+export function coreMaxima(record: BattleRecord, side: Side): number[] {
+  const out: number[] = [];
+  record.initialHealth.forEach((h) => {
+    if (isCoreHealth(h) && h.side === side) out.push(h.hp);
+  });
+  return out;
+}
