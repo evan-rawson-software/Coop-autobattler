@@ -563,18 +563,14 @@ describe('Hangar spawning, flyer targeting by distance, test-only units (issue #
     expect(spawned.length).toBeGreaterThan(2);
     // Every drone starts on a cell next to the Hangar (columns 1 to 4, rows 4 to 7).
     for (const e of spawned) {
-      if (e.type !== 'unit_spawned') continue;
       const cx = Math.floor(e.px / CU);
       const cy = Math.floor(e.py / CU);
       expect(cx >= 1 && cx <= 4 && cy >= 4 && cy <= 7).toBe(true);
     }
     expect(attacks(events).some((a) => a.target.kind === 'core')).toBe(true);
     // The first one stands on a wall cell, closed to ground units.
-    const first = spawned[0];
-    expect(first?.type === 'unit_spawned' ? [first.px, first.py] : []).toEqual([
-      mid(3),
-      mid(7),
-    ]);
+    const first = got(spawned[0]);
+    expect([first.px, first.py]).toEqual([mid(3), mid(7)]);
   });
 
   /** A Range and a walled-in Hangar, both fed; the same board on both sides. */
