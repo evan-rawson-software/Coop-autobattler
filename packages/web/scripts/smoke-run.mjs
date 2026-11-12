@@ -499,10 +499,10 @@ export async function runRunSmoke({
     await page.locator('#core-confirm').isDisabled(),
     'Core placement: Confirm is disabled until a position is chosen',
   );
-  const legal = await page.evaluate(() => window.__debug.placement.legal());
+  const legal = await page.evaluate(() => window.__debug?.placement?.legal());
   const legalKey = new Set(legal.map((c) => `${c.x},${c.y}`));
   const bt = await page.evaluate(() => ({
-    w: window.__debug.placement.legal().length,
+    w: window.__debug?.placement?.legal().length,
   }));
   check(bt.w > 10, `Core placement: ${bt.w} legal positions are marked`);
   // An illegal cell: the last column (the Core would hang off the board).
@@ -513,7 +513,7 @@ export async function runRunSmoke({
     return null;
   })();
   const pBad = await page.evaluate(
-    ([x, y]) => window.__debug.placement.cellToScreen(x, y),
+    ([x, y]) => window.__debug?.placement?.cellToScreen(x, y),
     [bad.x, bad.y],
   );
   await page.mouse.move(pBad.x, pBad.y);
@@ -527,7 +527,8 @@ export async function runRunSmoke({
   await settle();
   check(
     (await page.locator('#core-confirm').isDisabled()) &&
-      (await page.evaluate(() => window.__debug.placement.selected())) === null,
+      (await page.evaluate(() => window.__debug?.placement?.selected())) ===
+        null,
     'Core placement: an illegal cell cannot be chosen, Confirm stays disabled',
   );
   await shot('run-2-core-illegal');
@@ -539,13 +540,13 @@ export async function runRunSmoke({
   void water;
   const pick = legal[Math.floor(legal.length / 2)];
   const pGood = await page.evaluate(
-    ([x, y]) => window.__debug.placement.cellToScreen(x, y),
+    ([x, y]) => window.__debug?.placement?.cellToScreen(x, y),
     [pick.x, pick.y],
   );
   await page.mouse.move(pGood.x, pGood.y);
   await settle();
   check(
-    (await page.evaluate(() => window.__debug.placement.pathCount())) > 0,
+    (await page.evaluate(() => window.__debug?.placement?.pathCount())) > 0,
     'Core placement: the routes enemy units would take are shown for a legal position',
   );
   // After the illegal click, the hint follows the pointer to a legal cell.
@@ -560,7 +561,7 @@ export async function runRunSmoke({
   check(
     !(await page.locator('#core-confirm').isDisabled()) &&
       JSON.stringify(
-        await page.evaluate(() => window.__debug.placement.selected()),
+        await page.evaluate(() => window.__debug?.placement?.selected()),
       ) === JSON.stringify(pick),
     `Core placement: choosing a legal position enables Confirm (${pick.x}, ${pick.y})`,
   );
@@ -572,7 +573,7 @@ export async function runRunSmoke({
   await page.waitForSelector('#core-confirm');
   await settle();
   const pPick = await page.evaluate(
-    ([x, y]) => window.__debug.placement.cellToScreen(x, y),
+    ([x, y]) => window.__debug?.placement?.cellToScreen(x, y),
     [pick.x, pick.y],
   );
   await page.mouse.click(pPick.x, pPick.y);
@@ -1129,10 +1130,10 @@ export async function runRunSmoke({
   // Place its Core, then back to the menu.
   await page.waitForFunction(() => window.__debug?.placement?.legal);
   const pickB = (
-    await page.evaluate(() => window.__debug.placement.legal())
+    await page.evaluate(() => window.__debug?.placement?.legal())
   )[3];
   const pB = await page.evaluate(
-    ([x, y]) => window.__debug.placement.cellToScreen(x, y),
+    ([x, y]) => window.__debug?.placement?.cellToScreen(x, y),
     [pickB.x, pickB.y],
   );
   await page.mouse.click(pB.x, pB.y);
@@ -1551,29 +1552,32 @@ export async function runRunSmoke({
         window.__debug.placement
           .legal()
           .every(
-            (c) => (n === 0) === c.x < window.__debug.placement.plotWidth(),
+            (c) => (n === 0) === c.x < window.__debug?.placement?.plotWidth(),
           ),
       p,
     );
-    const spots = await page.evaluate(() => window.__debug.placement.legal());
+    const spots = await page.evaluate(() => window.__debug?.placement?.legal());
     const spot = spots[Math.floor(spots.length / 2)];
     const at2 = await page.evaluate(
-      ([x, y]) => window.__debug.placement.cellToScreen(x, y),
+      ([x, y]) => window.__debug?.placement?.cellToScreen(x, y),
       [spot.x, spot.y],
     );
     // A click in the other player's plot is refused, in words.
     const foreign = await page.evaluate(
-      ([n]) => {
-        const w = window.__debug.placement.plotWidth();
-        return window.__debug.placement.cellToScreen((n === 0 ? w : 0) + 2, 8);
+      ([n, sx, sy]) => {
+        const w = window.__debug?.placement?.plotWidth();
+        return window.__debug?.placement?.cellToScreen(
+          (n === 0 ? w : 0) + (sx % w),
+          sy,
+        );
       },
-      [p],
+      [p, spot.x, spot.y],
     );
     await page.mouse.click(foreign.x, foreign.y);
     await settle();
     check(
       /own area/i.test(await page.locator('#core-hint').innerText()) &&
-        (await page.evaluate(() => window.__debug.placement.selected())) ===
+        (await page.evaluate(() => window.__debug?.placement?.selected())) ===
           null,
       `two players: player ${p + 1} cannot place the Core in another player's area (the reason is shown)`,
     );
@@ -1589,12 +1593,27 @@ export async function runRunSmoke({
       );
       await page.click('#core-confirm');
       await page.waitForSelector('#core-unready');
-      await page.mouse.click(foreign.x, foreign.y);
+      // While Ready, a click on another legal spot changes nothing and says why.
+      const other = spots.find((c) => c.x !== spot.x || c.y !== spot.y);
+      const atOther = await page.evaluate(
+        ([x, y]) => window.__debug?.placement?.cellToScreen(x, y),
+        [other.x, other.y],
+      );
+      await page.mouse.click(atOther.x, atOther.y);
+      await page.waitForFunction(() =>
+        /Unready/.test(document.querySelector('#core-hint')?.textContent ?? ''),
+      );
+      check(
+        JSON.stringify(
+          await page.evaluate(() => window.__debug?.placement?.selected()),
+        ) === JSON.stringify(spot),
+        'two players: while Ready, a click on another spot is refused and the spot stays',
+      );
       await page.click('#core-unready');
       await page.waitForSelector('#core-confirm:not([disabled])');
       check(
         JSON.stringify(
-          await page.evaluate(() => window.__debug.placement.selected()),
+          await page.evaluate(() => window.__debug?.placement?.selected()),
         ) === JSON.stringify(spot),
         'two players: Unready reopens the choice, the chosen spot is kept',
       );
@@ -1638,6 +1657,9 @@ export async function runRunSmoke({
     const node = t0.nodes
       .filter((n) => n.resource === 'res_a' && n.x < w)
       .sort((a, b) => b.x - a.x)[0];
+    if (node === undefined) {
+      throw new Error('border link: no res_a node on the left half');
+    }
     const dragFromStash = async (def, x, y) => {
       const before = (await B.team()).buildings.length;
       const box = await page
@@ -1650,7 +1672,7 @@ export async function runRunSmoke({
       await page.mouse.move(p.x, p.y, { steps: 6 });
       await page.mouse.up();
       await page.waitForFunction(
-        (n) => window.__debug.build.team().buildings.length > n,
+        (n) => window.__debug?.build?.team().buildings.length > n,
         before,
         { timeout: slow(3000) },
       );
@@ -1659,13 +1681,15 @@ export async function runRunSmoke({
       const p = await at(x, y);
       await page.mouse.click(p.x, p.y);
     };
-    const links = () => page.evaluate(() => window.__debug.build.links());
+    const links = () => page.evaluate(() => window.__debug?.build?.links());
     await actAs(0);
     await dragFromStash('bld_extractor', node.x, node.y);
     await page.click('[data-tool="conduit"]');
     await clickCell(node.x, node.y + 1);
     await clickCell(w - 1, node.y + 1);
-    await page.waitForFunction(() => window.__debug.build.links().length === 1);
+    await page.waitForFunction(
+      () => window.__debug?.build?.links().length === 1,
+    );
     const first = await links();
     check(
       first[0].owner === 0 &&
@@ -1678,13 +1702,34 @@ export async function runRunSmoke({
     await page.click('[data-tool="conduit"]');
     await clickCell(w, node.y + 1);
     await clickCell(w + 2, node.y + 2);
-    await page.waitForFunction(() => window.__debug.build.links().length === 2);
+    await page.waitForFunction(
+      () => window.__debug?.build?.links().length === 2,
+    );
     await page.waitForFunction(() =>
-      window.__debug.build.links().every((h) => h.state === 'joined'),
+      window.__debug?.build?.links().every((h) => h.state === 'joined'),
     );
     check(
       (await links()).map((h) => h.kind).join() === 'send,receive',
       'border link: the two halves of different players are joined',
+    );
+    // A neighbour's half cannot be erased; removing your own half returns the
+    // other to "open".
+    await page.click('[data-tool="erase"]');
+    await clickCell(w - 1, node.y + 1);
+    await settle();
+    check(
+      (await links()).length === 2,
+      "border link: a neighbour's half cannot be erased",
+    );
+    await clickCell(w, node.y + 1);
+    await page.waitForFunction(
+      () =>
+        window.__debug?.build?.links().length === 1 &&
+        window.__debug.build.links()[0].state === 'open',
+    );
+    check(
+      (await links())[0].owner === 0,
+      'border link: removing one half returns the other to open',
     );
     await page.click('[data-tool="select"]');
   }

@@ -241,10 +241,108 @@ describe('rates', () => {
     // The extractor makes 1 per 20 ticks (50 per 1000); the barracks needs 71.
     expect(sup?.state).toBe('under');
     expect(flow.underSupplied.has(b.id)).toBe(true);
+    // The label does not depend on the dry-run length setting.
+    for (const ticks of [0, 1, 100, 5000]) {
+      const f = computeFlowView(s.run.team, content, simConfig, ticks);
+      expect(f?.supply, `at ${String(ticks)} ticks`).toEqual(flow.supply);
+    }
     expect(
       deriveProblems(team, content, flow).some(
         (p) => p.kind === 'under_supplied' && p.building === b.id,
       ),
     ).toBe(true);
+  });
+});
+
+describe('supplied against need', () => {
+  test('received at least the need: supplied; clearly less: under', async () => {
+    const { s } = await start();
+    s.setActing(0);
+    const bk = s.run.team.stash.find(
+      (b) => b.owner === 0 && b.def === 'bld_barracks',
+    );
+    const core = s.run.team.cores[0] ?? null;
+    if (bk === undefined || core === null) throw new Error('setup');
+    const placed = await s.dispatch({
+      type: 'place_building',
+      id: bk.id,
+      x: core.x,
+      y: core.y + 4,
+      rotation: 0,
+    });
+    expect(placed.ok).toBe(true);
+    const team = s.run.team;
+    const run = (rate: number) =>
+      supplyOf(
+        team,
+        content,
+        {
+          ticks: 600,
+          needs: [{ building: bk.id, needPer1000: 75 }],
+          consumers: [{ building: bk.id, side: 'south', ratePer1000: rate }],
+        } as never,
+        simConfig.ticksPerSecond,
+      )[0]?.state;
+    expect(run(80)).toBe('full');
+    expect(run(75)).toBe('full');
+    expect(run(50)).toBe('under');
+    expect(run(0)).toBe('under');
+  });
+});
+
+describe('a consumer whose need legitimately stopped', () => {
+  test('an economy building that used all its steps is not under-supplied', async () => {
+    const { s } = await start();
+    const base = s.run.team;
+    const oc = {
+      id: 9001,
+      def: 'bld_overclocker',
+      tier: 1,
+      x: 1,
+      y: 1,
+      rotation: 0,
+      owner: 0,
+    };
+    const team = { ...base, buildings: [...base.buildings, oc] } as never;
+    const max = (
+      content.buildings.get('bld_overclocker')?.tiers[0] as
+        { maxSteps?: number } | undefined
+    )?.maxSteps;
+    if (max === undefined) throw new Error('content');
+    const run = (productions: number) =>
+      supplyOf(
+        team,
+        content,
+        {
+          ticks: 600,
+          needs: [{ building: 9001, needPer1000: 100, productions }],
+          // The pacer stopped taking items at the limit: nothing arrives
+          // in the second half of the run.
+          consumers: [{ building: 9001, side: 'south', ratePer1000: 0 }],
+        } as never,
+        simConfig.ticksPerSecond,
+      )[0]?.state;
+    expect(run(max)).toBe('full');
+    expect(run(max - 1)).toBe('under');
+  });
+});
+
+describe('Backspace while drawing a border half', () => {
+  test('on a receiving draft it cancels instead of leaving a stuck draft', async () => {
+    const { s, ctl } = await start();
+    const w = s.run.team.map.plotWidth;
+    s.setActing(1);
+    ctl.setTool('conduit');
+    click(ctl, { x: w, y: 6 }); // the border spot starts a receiving draft
+    expect(ctl.model.get().ui.draft?.building).toBe(-1);
+    expect(ctl.model.get().ui.draft?.cells).toHaveLength(1);
+    const key = {
+      key: 'Backspace',
+      ctrlKey: false,
+      shiftKey: false,
+      metaKey: false,
+    };
+    expect(ctl.key(key)).toBe(true);
+    expect(ctl.model.get().ui.draft).toBeNull();
   });
 });

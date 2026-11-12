@@ -20,7 +20,7 @@ import {
 } from '@game/core';
 import type { WebContent } from '../content.js';
 import { count } from '../plural.js';
-import { formatHundredths, supplyOf, type Supply } from './rates.js';
+import { formatHundredths, needSupply, type Supply } from './rates.js';
 
 // ---------------------------------------------------------------------------
 // Names
@@ -72,12 +72,7 @@ export function computeFlowView(
   const active = new Set<number>();
   try {
     dry = dryRunFlow(state, content, sim, ticks);
-    supply = supplyOf(
-      state,
-      content,
-      dryRunFlow(state, content, sim, ticks, 'need'),
-      sim.ticksPerSecond,
-    );
+    supply = needSupply(state, content, sim);
     const graph = buildFlowGraph(state, content);
     const producing = new Set(
       dry.sources.filter((s) => s.produced > 0).map((s) => String(s.building)),

@@ -7,6 +7,8 @@ import {
   clipPaths,
   coreCells,
   hintText,
+  isRepeatClick,
+  visibleProblem,
   kitRows,
   legalSet,
   problemText,
@@ -144,15 +146,33 @@ describe('starting kit', () => {
   });
 });
 
+describe('repeat click and refusal ownership', () => {
+  test('a repeat click on the chosen spot sends nothing', () => {
+    expect(isRepeatClick({ x: 3, y: 4 }, { x: 3, y: 4 })).toBe(true);
+    expect(isRepeatClick({ x: 3, y: 4 }, { x: 3, y: 5 })).toBe(false);
+    expect(isRepeatClick(null, { x: 3, y: 4 })).toBe(false);
+  });
+  test('a refusal is not shown after the acting player changes', () => {
+    const stored = { acting: 0, text: 'No.' };
+    expect(visibleProblem(stored, 0)).toBe('No.');
+    expect(visibleProblem(stored, 1)).toBeNull();
+    expect(visibleProblem(null, 0)).toBeNull();
+  });
+});
+
 describe('hint line', () => {
   const legalCell = legalCore(run)[0] ?? { x: 0, y: 0 };
   const good = verdictAt(team, content, legalCell, 0);
   const bad = verdictAt(team, content, { x: width - 1, y: 0 }, 0);
   const stale = 'The Core is 2 × 2 and would hang over the edge of the board.';
 
-  test('hovering a legal cell after an illegal click shows the legal text', () => {
+  test('a stored refusal is not hidden by a hover left over after a tap', () => {
     expect(bad.ok).toBe(false);
-    expect(hintText({ hover: good, selected: null, message: stale })).toMatch(
+    expect(hintText({ hover: good, selected: null, message: stale })).toBe(
+      stale,
+    );
+    // The screen clears the message when the pointer moves to another cell.
+    expect(hintText({ hover: good, selected: null, message: null })).toMatch(
       /fits here/,
     );
   });

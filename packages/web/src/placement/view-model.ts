@@ -100,9 +100,10 @@ export function verdictAt(
 }
 
 /**
- * The hint line: it describes the cell under the pointer, or the chosen cell
- * when the pointer is off the board. A stored message (a failed Confirm, or a
- * click on a touch screen with no pointer) shows only when no cell is hovered.
+ * The hint line: a stored message (a refused click or Ready) comes first, so
+ * a hover left over after a tap does not hide it; the screen clears it when
+ * the pointer moves to another cell or the acting player changes. Otherwise it
+ * describes the cell under the pointer, or the chosen cell.
  */
 export function hintText(input: {
   readonly hover: Verdict | null;
@@ -110,6 +111,7 @@ export function hintText(input: {
   readonly message: string | null;
   readonly ready?: boolean;
 }): string {
+  if (input.message !== null) return input.message;
   if (input.hover !== null) {
     return input.hover.ok
       ? input.ready === true
@@ -117,10 +119,28 @@ export function hintText(input: {
         : 'The Core fits here. Click to choose this spot.'
       : (input.hover.text ?? '');
   }
-  if (input.message !== null) return input.message;
   return input.selected === null
     ? 'Point at the map to try a position.'
     : `Chosen: column ${String(input.selected.x)}, row ${String(input.selected.y)}.`;
+}
+
+/** A click on the spot that is already chosen: nothing to send. */
+export function isRepeatClick(selected: Cell | null, cell: Cell): boolean {
+  return selected !== null && selected.x === cell.x && selected.y === cell.y;
+}
+
+/** A refusal message and the player it was shown to. */
+export interface StoredProblem {
+  readonly acting: number;
+  readonly text: string;
+}
+
+/** A refusal belongs to one player: after a switch it is not shown. */
+export function visibleProblem(
+  stored: StoredProblem | null,
+  acting: number,
+): string | null {
+  return stored !== null && stored.acting === acting ? stored.text : null;
 }
 
 /** Every legal position in the player's own plot, as a lookup by `y * width + x`. */

@@ -1,6 +1,6 @@
 /** The panels of the battle screen (left, right) and its summary. */
 
-import type { BattleReason } from '@game/core';
+import type { BattleReason, BattleSideSummary } from '@game/core';
 import { useMemo } from 'preact/hooks';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
@@ -399,7 +399,63 @@ export function RightPanels(props: {
  * Core health left, wins and
  * a tie there goes down the same last three steps. The defender wins no tie.
  */
-export function reasonText(reason: BattleReason, coreName: string): string {
+export function reasonText(
+  reason: BattleReason,
+  coreName: string,
+  sides?: readonly [StepSide, StepSide],
+): string {
+  if (sides !== undefined) {
+    const detailed = stepText(reason, coreName, sides);
+    if (detailed !== null) return detailed;
+  }
+  return genericReasonText(reason, coreName);
+}
+
+/** The figures of a battle summary that name the ladder step. */
+export type StepSide = Pick<
+  BattleSideSummary,
+  'coresStanding' | 'coreHealth' | 'coreMaxHealth'
+>;
+
+/**
+ * Which step decided a time-limit or double-fall result, from what the
+ * summary exposes. `reason` already names the rung from overkill on; only
+ * `time_limit` (Cores standing, or share of Core health) and where a tie came
+ * from need the final figures: no Core standing on either side is the double
+ * fall, anything else the time limit. The ladder is not recomputed.
+ */
+function stepText(
+  reason: BattleReason,
+  core: string,
+  [own, foe]: readonly [StepSide, StepSide],
+): string | null {
+  const share = `yours ${String(own.coreHealth)} / ${String(own.coreMaxHealth)}, theirs ${String(foe.coreHealth)} / ${String(foe.coreMaxHealth)}`;
+  if (reason === 'time_limit') {
+    return own.coresStanding !== foe.coresStanding
+      ? `Time ran out. The side with more ${core}s standing wins: yours ${String(own.coresStanding)}, theirs ${String(foe.coresStanding)}.`
+      : `Time ran out with equal ${core}s standing. The side with the larger share of its total ${core} health left wins: ${share}.`;
+  }
+  if (reason === 'core_destroyed') return null;
+  const doubleFall = own.coresStanding === 0 && foe.coresStanding === 0;
+  const origin = doubleFall
+    ? `Both sides lost their last ${core} in the same tick`
+    : `Time ran out with equal ${core}s standing and equal shares of total ${core} health`;
+  const eq = doubleFall ? ' with equal overkill damage' : '';
+  switch (reason) {
+    case 'tiebreak_overkill':
+      return doubleFall
+        ? null
+        : `${origin}; the side whose ${core}s took less overkill damage wins.`;
+    case 'tiebreak_building_damage':
+      return `${origin}${eq}; the side that dealt more damage to the enemy's buildings wins.`;
+    case 'tiebreak_kills':
+      return `${origin}${eq} and equal damage to the enemy's buildings; the side that killed more enemy units wins.`;
+    case 'tiebreak_attacker':
+      return `${origin}${eq}, equal damage to the enemy's buildings and equal kills; the attacker (the party) wins.`;
+  }
+}
+
+function genericReasonText(reason: BattleReason, coreName: string): string {
   switch (reason) {
     case 'core_destroyed':
       return `One side's last ${coreName} was destroyed; the other side wins.`;
@@ -541,7 +597,7 @@ export function BattleSummaryView(props: SummaryProps) {
           {props.rewardText}
         </p>
         <p class="result-detail">
-          {reasonText(rec.result.reason, coreName)} Battle time{' '}
+          {reasonText(rec.result.reason, coreName, [own, foe])} Battle time{' '}
           {clock(rec.result.endTick, props.tps)}. Your {coreName}{' '}
           <strong data-field="final-core-own">
             {own.coreHealth} / {own.coreMaxHealth}
