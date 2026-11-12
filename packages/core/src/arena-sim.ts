@@ -440,6 +440,8 @@ interface TurretInfo {
 }
 
 interface RampInfo {
+  /** The player who owns the building (PP-8: only this player gains). */
+  readonly owner: number;
   readonly effect: EconomyEffectType;
   readonly costPerStep: number;
   readonly stepInterval: number;
@@ -648,6 +650,7 @@ export function createArenaContext(
         const tier = def.tiers[p.tier - 1];
         if (tier === undefined) continue;
         ramps.set(bkey(side, p.id), {
+          owner: p.owner,
           effect: def.effect.type,
           costPerStep: tier.costPerStep,
           stepInterval: tier.stepIntervalTicks,
@@ -1061,9 +1064,10 @@ function chooseTarget(
 }
 
 /**
- * A side's bonus percent for one effect: the sum over its living economy
- * buildings of that effect of `steps * stepPercent`, capped at the global
- * maximum from `sim.json`. Destroyed buildings are no longer in `sim.ramps`,
+ * One player's bonus percent for one effect (PP-8): the sum over the living
+ * economy buildings of that effect owned by player `owner` on `side` of
+ * `steps * stepPercent`, capped at the global maximum from `sim.json`. Each
+ * owner is capped on their own; buildings of a partner add nothing. Destroyed buildings are no longer in `sim.ramps`,
  * so their share leaves the total at once.
  */
 export function rampBonus(
@@ -1071,12 +1075,14 @@ export function rampBonus(
   ctx: ArenaContext,
   side: number,
   effect: EconomyEffectType,
+  owner: number,
 ): number {
   let raw = 0;
   for (const r of sim.ramps) {
     if (r.side !== side) continue;
     const info = ctx.ramps.get(bkey(r.side, r.building));
-    if (info === undefined || info.effect !== effect) continue;
+    if (info === undefined || info.effect !== effect || info.owner !== owner)
+      continue;
     raw += r.steps * info.stepPercent;
   }
   return cappedBonus(
@@ -1425,19 +1431,36 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (pos === null) continue; // held: no free position at the exit
     p.progress = 0;
     p.cooldown = info.interval;
-    addUnit(sim, ctx, p.side, unitDef, pos.x, pos.y, p.building, tick, {
-      owner,
-      target,
-    });
+    addUnit(
+      sim,
+      ctx,
+      p.side,
+      unitDef,
+      pos.x,
+      pos.y,
+      p.building,
+      tick,
+      { owner, target },
+      info.owner,
+    );
   }
   queueWaves(sim, tick);
   enterWaves(sim, ctx, tick);
 }
 
-/** The strength percent a unit of `side` spawned now gets: ramp bonus plus base. */
-function spawnStrength(sim: ArenaSim, ctx: ArenaContext, side: number): number {
+/**
+ * The strength percent a unit of `side` spawned now gets: the ramp bonus of
+ * the player who owns its producer (`owner`; `null` for a scheduled-wave unit,
+ * which has no owner and gets none) plus the side-wide base (PP-8).
+ */
+function spawnStrength(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  side: number,
+  owner: number | null,
+): number {
   return (
-    rampBonus(sim, ctx, side, 'unit_strength') +
+    (owner === null ? 0 : rampBonus(sim, ctx, side, 'unit_strength', owner)) +
     (sim.sideOptions?.[side === 0 ? 0 : 1]?.unitStrengthPercent ?? 0) +
     modifierPercent(sim.teams[side === 0 ? 0 : 1], 'unit_strength_percent')
   );
@@ -1454,8 +1477,13 @@ function addUnit(
   building: number,
   tick: number,
   who: { owner: number; target: number },
+  rampOwner: number | null,
 ): void {
-  const stats = unitStats(side, unitDef, spawnStrength(sim, ctx, side));
+  const stats = unitStats(
+    side,
+    unitDef,
+    spawnStrength(sim, ctx, side, rampOwner),
+  );
   const unit: UnitSim = {
     id: sim.nextUnitId,
     side,
@@ -1583,10 +1611,19 @@ function enterWaves(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
       // is chosen from the entry cell.
       const owner = divFloor(used, sim.teams[side === 0 ? 0 : 1].map.plotWidth);
       const target = chooseTarget(ctx, side, owner, cellAt(ctx, side, pos));
-      addUnit(sim, ctx, side, unitDef, pos.x, pos.y, 0, tick, {
-        owner,
-        target,
-      });
+      // A wave unit has no producer, so no ramp bonus (PP-8).
+      addUnit(
+        sim,
+        ctx,
+        side,
+        unitDef,
+        pos.x,
+        pos.y,
+        0,
+        tick,
+        { owner, target },
+        null,
+      );
     }
   }
   sim.entering = rest;
@@ -1727,7 +1764,10 @@ export function spawnUnitForTest(
     py?: number;
     /** Skip the overlap check (tests of damage sums that stack units). */
     allowOverlap?: boolean;
-    /** The unit's owner; default the plot its cell is in, in its own frame. */
+    /**
+     * The unit's owner; default the plot its cell is in, in its own frame. The
+     * owner's ramp bonus applies to its strength (PP-8).
+     */
     owner?: number;
     /** The unit's target Core; default `chooseTarget(owner, cell)`. */
     target?: number;
@@ -1756,7 +1796,6 @@ export function spawnUnitForTest(
       );
     }
   }
-  const stats = unitStats(args.side, def, spawnStrength(sim, ctx, args.side));
   const k = cellAt(ctx, args.side, { x: px, y: py });
   const ownCol =
     args.side === 0
@@ -1765,6 +1804,11 @@ export function spawnUnitForTest(
   const owner =
     args.owner ??
     divFloor(ownCol, sim.teams[args.side === 0 ? 0 : 1].map.plotWidth);
+  const stats = unitStats(
+    args.side,
+    def,
+    spawnStrength(sim, ctx, args.side, owner),
+  );
   const unit: UnitSim = {
     id: sim.nextUnitId,
     side: args.side,
@@ -2355,7 +2399,9 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     if (buf !== undefined) buf.length = 0;
     const flow = ctx.flows[side];
     if (flow === undefined) throw new Error('Arena: missing flow context.');
-    flow.sourceSpeedPercent = rampBonus(sim, ctx, side, 'source_speed');
+    flow.sourceSpeedPercent = sim.teams[side].cores.map((_, owner) =>
+      rampBonus(sim, ctx, side, 'source_speed', owner),
+    );
     stepFlow(sim.boards[side], flow);
     if (events !== undefined && buf !== undefined) {
       for (const e of buf) {
