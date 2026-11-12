@@ -3462,14 +3462,14 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "d658fc40",
-        "events": 268,
+        "stateHash": "920e5d53",
+        "events": 281,
         "sides": [
           {
             "spawned": 6,
             "alive": 6,
             "unitsDied": 0,
-            "buildingDamageDealt": 390,
+            "buildingDamageDealt": 468,
             "buildingsDestroyed": 0,
             "coreHealth": [500, 500]
           },
@@ -3479,11 +3479,11 @@
             "unitsDied": 0,
             "buildingDamageDealt": 0,
             "buildingsDestroyed": 0,
-            "coreHealth": [110, 500]
+            "coreHealth": [500, 32]
           }
         ]
       },
-      "eventLogHash": "a36dfd53"
+      "eventLogHash": "876b3a87"
     }
   },
   {
