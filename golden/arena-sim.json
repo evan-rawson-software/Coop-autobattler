@@ -238,7 +238,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "48716391",
+        "stateHash": "fb7c43b1",
         "events": 1306,
         "sides": [
           {
@@ -412,7 +412,7 @@
     "expected": {
       "result": {
         "tick": 1800,
-        "stateHash": "d16c5160",
+        "stateHash": "ff1cca58",
         "events": 892,
         "sides": [
           {
@@ -677,7 +677,7 @@
     "expected": {
       "result": {
         "tick": 2200,
-        "stateHash": "257950db",
+        "stateHash": "b948180b",
         "events": 1099,
         "sides": [
           {
@@ -1053,7 +1053,7 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "0afd060e",
+        "stateHash": "5ead38ba",
         "events": 256,
         "sides": [
           {
@@ -3146,7 +3146,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "b8fb1109",
+        "stateHash": "64a3dac2",
         "events": 221,
         "sides": [
           {
@@ -3304,7 +3304,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "339e3ec6",
+        "stateHash": "517b6876",
         "events": 142,
         "sides": [
           {
@@ -3419,7 +3419,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "f8cb367c",
+        "stateHash": "62417561",
         "events": 63,
         "sides": [
           {
@@ -3777,7 +3777,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "db4be586",
+        "stateHash": "b69596a4",
         "events": 630,
         "sides": [
           {
@@ -5152,7 +5152,7 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "69293293",
+        "stateHash": "53385dc0",
         "events": 244,
         "sides": [
           {

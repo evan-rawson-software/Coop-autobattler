@@ -300,7 +300,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "de95e9ab",
+        "stateHash": "582d99c1",
         "events": 1028
       }
     }
@@ -1367,33 +1367,33 @@
       "result": {
         "ok": true,
         "result": {
-          "winner": 1,
+          "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 560
+          "endTick": 574
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 78,
-              "unitsLost": 74,
-              "buildingsLost": 0,
-              "coreHealth": 0,
-              "coreMaxHealth": 500,
-              "coreOverkill": 6,
-              "rampSteps": 0,
-              "buildingDamageDealt": 0,
-              "unitsKilled": 16
-            },
-            {
-              "unitsSpawned": 48,
-              "unitsLost": 16,
+              "unitsSpawned": 84,
+              "unitsLost": 67,
               "buildingsLost": 0,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 30,
+              "rampSteps": 0,
               "buildingDamageDealt": 500,
-              "unitsKilled": 74
+              "unitsKilled": 15
+            },
+            {
+              "unitsSpawned": 28,
+              "unitsLost": 15,
+              "buildingsLost": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 500,
+              "coreOverkill": 4,
+              "rampSteps": 30,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 67
             }
           ]
         },
@@ -1414,8 +1414,8 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "336f08da",
-        "events": 2684
+        "stateHash": "3b8e4ce2",
+        "events": 2651
       }
     }
   },
@@ -1769,7 +1769,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "600c077b",
+        "stateHash": "31904e9d",
         "events": 379
       }
     }
