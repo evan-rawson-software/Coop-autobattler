@@ -18,6 +18,7 @@ import {
   type TeamState,
 } from '@game/core';
 import type { WebContent } from '../content.js';
+import { screenText, screenTexts, type ScreenTexts } from './texts.js';
 
 /** `125` -> `"1.25"`. */
 export function formatHundredths(h: number): string {
@@ -63,11 +64,14 @@ export function buildingRate(
   };
 }
 
-/** What a rate line says in words, e.g. "needs 0.50/s at top speed (0.25 shots/s)". */
-export function topSpeedWord(def: BuildingDef): string {
-  if (def.kind === 'unit_producer') return 'units';
-  if (def.kind === 'economy') return 'steps';
-  return 'shots';
+/** What a rate line counts, e.g. "shots" in "0.25 shots / s" (from the presentation file). */
+export function topSpeedWord(
+  def: BuildingDef,
+  texts: ScreenTexts = screenTexts,
+): string {
+  if (def.kind === 'unit_producer') return screenText(texts, 'unitsWord');
+  if (def.kind === 'economy') return screenText(texts, 'stepsWord');
+  return screenText(texts, 'shotsWord');
 }
 
 /** Shortest counting window the supplied/under tolerance is computed over. */
@@ -157,13 +161,20 @@ export function rateText(
   def: BuildingDef,
   tier: number,
   ticksPerSecond: number,
+  texts: ScreenTexts = screenTexts,
 ): string {
   const r = buildingRate(def, tier, ticksPerSecond);
   if (r.collects !== null) {
-    return `Collects ${formatHundredths(r.collects)} / s`;
+    return screenText(texts, 'collects', {
+      rate: formatHundredths(r.collects),
+    });
   }
   if (r.needs !== null && r.topSpeed !== null) {
-    return `Needs ${formatHundredths(r.needs)} / s at top speed (${formatHundredths(r.topSpeed)} ${topSpeedWord(def)} / s)`;
+    return screenText(texts, 'needsTopSpeed', {
+      rate: formatHundredths(r.needs),
+      speed: formatHundredths(r.topSpeed),
+      unit: topSpeedWord(def, texts),
+    });
   }
   return '';
 }

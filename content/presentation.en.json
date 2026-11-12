@@ -163,6 +163,29 @@
     "needs": {
       "nothing": "nothing",
       "any": "any resource"
+    },
+    "screens": {
+      "collects": "Collects {rate} / s",
+      "inspectorCollects": "{rate} / s",
+      "inspectorNeeds": "{rate} / s at top speed",
+      "inspectorSupplied": " · supplied (gets {gets} / s)",
+      "inspectorTopSpeed": "{speed} {unit} / s",
+      "inspectorUnderSupplied": " · UNDER-SUPPLIED: gets {gets} / s",
+      "linkJoined": "Linked with {name} ({verb})",
+      "linkOpen": "Not connected: waiting for your neighbour ({verb})",
+      "linkReceiving": "receiving",
+      "linkSameKind": "Cannot join: {name} is also {verb}",
+      "linkSending": "sending",
+      "needsTopSpeed": "Needs {rate} / s at top speed ({speed} {unit} / s)",
+      "partnerUnderSuppliedMany": "{player} has {count} under-supplied buildings.",
+      "partnerUnderSuppliedOne": "{player} has 1 under-supplied building.",
+      "playerFallback": "Player {number}",
+      "problemUnderSupplied": "{name} gets {gets}/s of the {needs}/s it needs.",
+      "shotsWord": "shots",
+      "stepsWord": "steps",
+      "tableSupplied": "supplied",
+      "tableUnderSupplied": "UNDER-SUPPLIED",
+      "unitsWord": "units"
     }
   }
 }

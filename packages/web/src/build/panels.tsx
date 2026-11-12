@@ -14,6 +14,7 @@ import { ActingSwitch } from '../shell/ActingSwitch.js';
 import type { BuildController, Model, Tool } from './build-controller.js';
 import { halfStatuses, linkText } from './border-links.js';
 import { buildingRate, formatHundredths, topSpeedWord } from './rates.js';
+import { playerName, screenText, screenTexts } from './texts.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { simConfig } from './setup.js';
@@ -281,9 +282,12 @@ export function InspectorPanel(props: {
                 <>
                   <dt>Border link</dt>
                   <dd data-field="link-state">
-                    {linkText(
-                      h,
-                      (p) => run.players[p]?.name ?? `Player ${String(p + 1)}`,
+                    {linkText(h, (p) =>
+                      playerName(
+                        screenTexts,
+                        run.players.map((x) => x.name),
+                        p,
+                      ),
                     )}
                   </dd>
                 </>
@@ -312,8 +316,11 @@ export function InspectorPanel(props: {
     if (b !== undefined && def !== undefined) {
       const entry = content.presentation.get(b.def);
       const figs = inspectorFigures(team, content, simConfig, dry, b);
-      const owner =
-        run.players[b.owner]?.name ?? `Player ${String(b.owner + 1)}`;
+      const owner = playerName(
+        screenTexts,
+        run.players.map((x) => x.name),
+        b.owner,
+      );
       const attached = team.conduits.filter((c) => conduitTouches(c, b.id));
       const rate = buildingRate(def, b.tier, simConfig.ticksPerSecond);
       const supply = props.flow?.supply.find((x) => x.building === b.id);
@@ -340,7 +347,9 @@ export function InspectorPanel(props: {
               <>
                 <dt>Collects</dt>
                 <dd data-field="collects">
-                  {formatHundredths(rate.collects)} / s
+                  {screenText(screenTexts, 'inspectorCollects', {
+                    rate: formatHundredths(rate.collects),
+                  })}
                 </dd>
               </>
             ) : null}
@@ -348,16 +357,25 @@ export function InspectorPanel(props: {
               <>
                 <dt>Top speed</dt>
                 <dd data-field="top-speed">
-                  {formatHundredths(rate.topSpeed)} {topSpeedWord(def)} / s
+                  {screenText(screenTexts, 'inspectorTopSpeed', {
+                    speed: formatHundredths(rate.topSpeed),
+                    unit: topSpeedWord(def),
+                  })}
                 </dd>
                 <dt>Needs</dt>
                 <dd data-field="needs-rate">
-                  {formatHundredths(rate.needs)} / s at top speed
+                  {screenText(screenTexts, 'inspectorNeeds', {
+                    rate: formatHundredths(rate.needs),
+                  })}
                   {supply === undefined
                     ? ''
-                    : supply.state === 'full'
-                      ? ` · supplied (gets ${formatHundredths(supply.gets)} / s)`
-                      : ` · UNDER-SUPPLIED: gets ${formatHundredths(supply.gets)} / s`}
+                    : screenText(
+                        screenTexts,
+                        supply.state === 'full'
+                          ? 'inspectorSupplied'
+                          : 'inspectorUnderSupplied',
+                        { gets: formatHundredths(supply.gets) },
+                      )}
                 </dd>
               </>
             ) : null}
@@ -525,23 +543,35 @@ export function ProblemsPanel(props: {
         </p>
       ) : (
         <ul class="problems">
-          {props.problems.map((p) => (
-            <li key={p.id}>
-              <button
-                type="button"
-                class="problem"
-                data-problem={p.kind}
-                onClick={() => {
-                  props.onPick(p);
-                }}
-              >
-                <span class="problem-mark" aria-hidden="true">
-                  {p.kind === 'stash' || p.kind === 'free_nodes' ? '△' : '⚠'}
+          {props.problems.map((p) =>
+            p.focus === null && p.building === null ? (
+              // Nothing to jump to (a partner's summary): plain text, still read out.
+              <li key={p.id}>
+                <span class="problem" data-problem={p.kind}>
+                  <span class="problem-mark" aria-hidden="true">
+                    {p.kind === 'stash' ? '△' : '⚠'}
+                  </span>
+                  {p.text}
                 </span>
-                {p.text}
-              </button>
-            </li>
-          ))}
+              </li>
+            ) : (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  class="problem"
+                  data-problem={p.kind}
+                  onClick={() => {
+                    props.onPick(p);
+                  }}
+                >
+                  <span class="problem-mark" aria-hidden="true">
+                    {p.kind === 'stash' || p.kind === 'free_nodes' ? '△' : '⚠'}
+                  </span>
+                  {p.text}
+                </button>
+              </li>
+            ),
+          )}
         </ul>
       )}
     </Panel>
@@ -660,9 +690,12 @@ export function DryRunTable(props: {
                   <td data-field="supply">
                     {sup === undefined
                       ? '-'
-                      : sup.state === 'full'
-                        ? 'supplied'
-                        : 'UNDER-SUPPLIED'}
+                      : screenText(
+                          screenTexts,
+                          sup.state === 'full'
+                            ? 'tableSupplied'
+                            : 'tableUnderSupplied',
+                        )}
                   </td>
                 </tr>
               );
@@ -692,7 +725,11 @@ export function BorderLinksPanel(props: {
   const team = run.team;
   if (run.players.length < 2) return null;
   const nameOf = (p: number): string =>
-    run.players[p]?.name ?? `Player ${String(p + 1)}`;
+    playerName(
+      screenTexts,
+      run.players.map((x) => x.name),
+      p,
+    );
   const mine = halfStatuses(team).filter((h) => h.owner === acting);
   return (
     <Panel title="Border links" id="panel-links">

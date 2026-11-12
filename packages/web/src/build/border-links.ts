@@ -12,6 +12,7 @@ import {
   type Conduit,
   type TeamState,
 } from '@game/core';
+import { screenText, screenTexts, type ScreenTexts } from './texts.js';
 
 /** A half sends when its building end is the `from`; else it receives. */
 export type HalfKind = 'send' | 'receive';
@@ -131,15 +132,23 @@ export function ownHalfAt(
 }
 
 /** Display text for one half's state; the same words are used on the board. */
-export function linkText(h: HalfStatus, nameOf: (p: number) => string): string {
-  const verb = h.kind === 'send' ? 'sending' : 'receiving';
+export function linkText(
+  h: HalfStatus,
+  nameOf: (p: number) => string,
+  texts: ScreenTexts = screenTexts,
+): string {
+  const verb = screenText(
+    texts,
+    h.kind === 'send' ? 'linkSending' : 'linkReceiving',
+  );
+  const name = (): string => nameOf(h.neighbour ?? h.owner);
   switch (h.state) {
     case 'joined':
-      return `Linked with ${nameOf(h.neighbour ?? h.owner)} (${verb})`;
+      return screenText(texts, 'linkJoined', { name: name(), verb });
     case 'same_kind':
-      return `Cannot join: ${nameOf(h.neighbour ?? h.owner)} is also ${verb}`;
+      return screenText(texts, 'linkSameKind', { name: name(), verb });
     case 'open':
-      return `Not connected: waiting for your neighbour (${verb})`;
+      return screenText(texts, 'linkOpen', { verb });
   }
 }
 

@@ -237,6 +237,12 @@ ul.problems {
   padding: 0;
 }
 
+span.problem {
+  display: block;
+  padding: 0.12rem 0;
+  font-size: 0.82rem;
+}
+
 button.problem {
   display: block;
   width: 100%;

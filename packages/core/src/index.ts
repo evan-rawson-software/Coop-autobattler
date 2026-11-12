@@ -83,6 +83,7 @@ export {
   loadPresentation,
   loadPresentationOrThrow,
   TEMPLATE_SLOTS,
+  SCREEN_TEXT_SLOTS,
 } from './presentation.js';
 export type {
   ArchetypeEntry,

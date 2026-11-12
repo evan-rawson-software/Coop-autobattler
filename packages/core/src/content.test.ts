@@ -560,6 +560,19 @@ describe('loadPresentation', () => {
     expect(text).toMatch(/\["core"\]: placeholder \{res_nope\} is not a known/);
   });
 
+  test('rejects a screen text with an unknown placeholder or a missing key', () => {
+    const data = clone(raw.presentation) as {
+      templates: { screens: Record<string, string> };
+    };
+    data.templates.screens['linkOpen'] = 'Waiting {nothing} ({verb})';
+    delete data.templates.screens['collects'];
+    const text = presentationErrors(data);
+    expect(text).toMatch(
+      /screens\["linkOpen"\]: unknown placeholder \{nothing\}/,
+    );
+    expect(text).toMatch(/screens\["collects"\]: missing or empty text/);
+  });
+
   test('every archetype, event type and modifier has display text', () => {
     const threats = threatsJson as { archetypes: { id: string }[] };
     const events = eventsJson as {
