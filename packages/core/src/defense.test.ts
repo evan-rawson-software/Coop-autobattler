@@ -102,7 +102,11 @@ describe('walls', () => {
     expect(openFor(ctx.arena, 0, k)).toBe(false);
     expect(openFor(ctx.arena, 1, k)).toBe(false);
     expect(
-      got(sim.health.find((h) => h.side === 0 && h.building === wall)).hp,
+      got(
+        sim.health.find(
+          (h) => h.side === 0 && 'building' in h && h.building === wall,
+        ),
+      ).hp,
     ).toBe(100);
   });
 });
@@ -546,10 +550,11 @@ describe('turrets', () => {
       postContent,
       simConfig,
     );
-    const h = got(sim.health.find((x) => x.side === 0 && x.building > 0));
+    const h = got(sim.health.find((x) => x.side === 0 && 'building' in x));
     expect(sim.turrets.length).toBe(1);
     for (const x of sim.health)
-      if (x.building === got(sim.turrets[0]).building) x.hp = 0;
+      if ('building' in x && x.building === got(sim.turrets[0]).building)
+        x.hp = 0;
     stepArena(sim, ctx);
     expect(sim.turrets.length).toBe(0);
     expect(h.hp).toBeGreaterThanOrEqual(0);

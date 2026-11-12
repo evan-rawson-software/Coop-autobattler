@@ -7,7 +7,7 @@
 
 import { addInt, divFloor } from './int.js';
 import { assertWithin, MAX_ARENA_CELLS } from './limits.js';
-import type { Arena, ArenaBuilding } from './arena.js';
+import { goalCoreRef, type Arena, type ArenaBuilding } from './arena.js';
 
 /** The four moves. Order does not matter: ties are broken by `tieKey`. */
 export const NEIGHBORS: readonly (readonly [number, number])[] = [
@@ -202,12 +202,12 @@ export function breachStep(
 }
 
 /**
- * The goal set of a side's units: the enemy Core, while it stands (every unit
+ * The goal set of a side's units: the enemy's lowest-indexed living Core
+ * (`goalCoreRef`; issue #133 replaces this), while one stands (every unit
  * heads for the Core; no unit prefers other buildings, issue #66).
  */
 export function goalBuildings(arena: Arena, side: number): ArenaBuilding[] {
-  const enemy = 1 - side;
-  const core = arena.coreRef[enemy] ?? -1;
+  const core = goalCoreRef(arena, 1 - side);
   const coreB = core >= 0 ? arena.buildings[core] : undefined;
   return coreB !== undefined && coreB.alive ? [coreB] : [];
 }
@@ -355,7 +355,7 @@ export function computeBreach(
   // distance below stays a safe integer.
   assertWithin(n, 1, MAX_ARENA_CELLS, 'Breach: arena cell count');
   const dist = new Float64Array(n).fill(-1);
-  const core = arena.buildings[arena.coreRef[1 - side] ?? -1];
+  const core = arena.buildings[goalCoreRef(arena, 1 - side)];
   if (core === undefined || !core.alive) return dist;
 
   // Binary min-heap of (distance, cell) pairs, ordered by distance and then

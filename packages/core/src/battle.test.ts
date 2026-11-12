@@ -540,7 +540,7 @@ describe('end conditions', () => {
     hp: number,
   ): void => {
     const h = battle.sim.health.find(
-      (x) => x.side === side && x.building === 0,
+      (x) => x.side === side && 'core' in x && x.core === 0,
     );
     if (h === undefined) throw new Error('no core');
     h.hp = hp;
@@ -795,7 +795,7 @@ describe('end conditions', () => {
           teamA: coreOnly(),
           teamB: coreOnly(),
           seed: 1,
-          sideOptions: [{ coreHealth: max0 }, { coreHealth: max1 }],
+          sideOptions: [{ coreHealths: [max0] }, { coreHealths: [max1] }],
         },
         content,
         cfg,
@@ -828,7 +828,7 @@ describe('Overload helpers against real bare-Core battles (time limit)', () => {
         teamA: coreOnly(),
         teamB: coreOnly(),
         seed: 1,
-        sideOptions: [{ coreHealth: hpA }, { coreHealth: hpB }],
+        sideOptions: [{ coreHealths: [hpA] }, { coreHealths: [hpB] }],
       },
       content,
       config,
@@ -854,7 +854,7 @@ describe('Overload helpers against real bare-Core battles (time limit)', () => {
         expect(d.decayDestroysTick, String(hp)).not.toBeNull();
         expect(r.reason, String(hp)).not.toBe('time_limit');
         expect(r.endTick, String(hp)).toBe((d.decayDestroysTick ?? -1) + 1);
-        expect(overloadOutcome(simConfig, hp, hp)).toEqual({
+        expect(overloadOutcome(simConfig, [hp], [hp])).toEqual({
           first: 'both',
           tick: d.decayDestroysTick,
         });
@@ -865,7 +865,7 @@ describe('Overload helpers against real bare-Core battles (time limit)', () => {
           decayDestroysLevel: null,
         });
         expect(r.endTick, String(hp)).toBe(simConfig.maxBattleTicks);
-        expect(overloadOutcome(simConfig, hp, hp)).toEqual({
+        expect(overloadOutcome(simConfig, [hp], [hp])).toEqual({
           first: null,
           tick: null,
         });
@@ -883,7 +883,7 @@ describe('Overload helpers against real bare-Core battles (time limit)', () => {
       [26_266, 26_267],
     ] as const) {
       const r = bare(a, b);
-      const o = overloadOutcome(simConfig, a, b);
+      const o = overloadOutcome(simConfig, [a], [b]);
       const side = a < b ? 'a' : 'b';
       if (Math.min(a, b) <= 26_265) {
         expect(o.first, `${String(a)} ${String(b)}`).toBe(side);

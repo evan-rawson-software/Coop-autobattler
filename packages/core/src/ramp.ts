@@ -118,28 +118,42 @@ export function overloadDeadline(
   };
 }
 
-/** Which Core the Overload decay alone destroys first (`overloadOutcome`). */
+/** Which side loses its last Core to the Overload decay first (`overloadOutcome`). */
 export interface OverloadOutcome {
-  /** `'a'`/`'b'`: that Core falls first; `'both'`: on the same tick; `null`: the decay destroys neither within the battle. */
+  /** `'a'`/`'b'`: that side loses its last Core first; `'both'`: on the same tick; `null`: the decay does not strip either side within the battle. */
   readonly first: 'a' | 'b' | 'both' | null;
-  /** The tick of the first fall (`null` with `first`). */
+  /** The last-Core tick of the first side (`null` with `first`). */
   readonly tick: number | null;
 }
 
 /**
- * Which of two Cores (maximum health `coreMaxA`, `coreMaxB`) the Overload decay
- * alone destroys first within the battle (before `maxBattleTicks`, see
- * `overloadDeadline`), and on which tick; equal ticks give `'both'`. A Core the
- * decay does not destroy within the battle never falls first: if only one does,
- * that one is first. Other damage is ignored (it only makes a fall earlier).
+ * Which side the Overload decay alone strips of its last Core first, and on
+ * which tick, given each side's Cores' maximum health (before the battle
+ * ends at `maxBattleTicks`, see `overloadDeadline`). Every living Core takes
+ * the full decay, so a side's **last-Core tick** is the largest
+ * `decayDestroysTick` of its Cores, or `null` if the decay does not destroy
+ * one of them within the battle (or the side has no Core). The side with the
+ * smaller last-Core tick is first; equal ticks give `'both'`; a side whose
+ * tick is `null` never comes first. Other damage is ignored (it only makes a
+ * fall earlier).
  */
 export function overloadOutcome(
   config: SimConfig,
-  coreMaxA: number,
-  coreMaxB: number,
+  coresA: readonly number[],
+  coresB: readonly number[],
 ): OverloadOutcome {
-  const a = overloadDeadline(config, coreMaxA).decayDestroysTick;
-  const b = overloadDeadline(config, coreMaxB).decayDestroysTick;
+  const last = (cores: readonly number[]): number | null => {
+    if (cores.length === 0) return null;
+    let worst = 0;
+    for (const max of cores) {
+      const t = overloadDeadline(config, max).decayDestroysTick;
+      if (t === null) return null;
+      if (t > worst) worst = t;
+    }
+    return worst;
+  };
+  const a = last(coresA);
+  const b = last(coresB);
   if (a === null) {
     return b === null ? { first: null, tick: null } : { first: 'b', tick: b };
   }

@@ -7,6 +7,7 @@
 
 import type { ArenaContent } from './arena.js';
 import {
+  isCoreHealth,
   createArenaContext,
   createArenaSim,
   stepArena,
@@ -21,7 +22,8 @@ import {
   zoneBlockedCells,
   type NeutralZone,
 } from './neutral-zone.js';
-import { compareFractions } from './int.js';
+import { addInt, addSaturating, compareFractions } from './int.js';
+import { MAX_TICK_DAMAGE } from './limits.js';
 import type { MapgenConfig } from './mapgen.js';
 import type { SimConfig } from './sim-config.js';
 import type { TeamState } from './team-state.js';
@@ -46,13 +48,12 @@ export type BattleErrorCode =
   | 'party_size_mismatch'
   | 'board_size_mismatch'
   | 'core_not_placed'
-  | 'several_cores'
   | 'invalid_zone';
 
 export interface BattleError {
   readonly code: BattleErrorCode;
   readonly message: string;
-  /** The side at fault, for `core_not_placed` and `several_cores`. */
+  /** The side at fault, for `core_not_placed`. */
   readonly side?: 0 | 1;
 }
 
@@ -88,15 +89,40 @@ export interface BattleOptions {
   readonly zone?: NeutralZone;
 }
 
+/** One Core of a side in the summary (PP-10). */
+export interface CoreSummary {
+  /** The player index. */
+  readonly player: number;
+  /** Health at the end, clamped at 0. */
+  readonly health: number;
+  readonly maxHealth: number;
+  /** Damage beyond 0 that destroyed the Core; 0 while it stands. */
+  readonly overkill: number;
+  /** The tick the Core fell, or null while it stands. */
+  readonly destroyedTick: number | null;
+}
+
+interface CoreMax {
+  readonly player: number;
+  readonly max: number;
+}
+
 export interface BattleSideSummary {
   readonly unitsSpawned: number;
   readonly unitsLost: number;
   /** Buildings destroyed, not counting the Core. */
   readonly buildingsLost: number;
-  /** Core health at the end, clamped at 0. */
+  /** Every placed Core of the side, by player index. */
+  readonly cores: readonly CoreSummary[];
+  readonly coresStanding: number;
+  /** Total Core health at the end (Cores clamped at 0): `sumHp` of PP-10. */
   readonly coreHealth: number;
+  /** Total maximum Core health: `sumMax`. */
   readonly coreMaxHealth: number;
-  /** Damage beyond 0 that destroyed the Core (0 while it stands). */
+  /**
+   * The overkill of the Cores destroyed in the latest tick, summed
+   * (saturating): the rung-3 value of PP-10. 0 while all Cores stand.
+   */
   readonly coreOverkill: number;
   /** `ramp_step` events of this side over the battle. */
   readonly rampSteps: number;
@@ -205,17 +231,6 @@ export function startBattle(
       side: 1,
     });
   }
-  // Fighting with several Cores per side comes with issue #132.
-  for (const side of [0, 1] as const) {
-    const team = side === 0 ? teamA : teamB;
-    if (team.cores.filter((c) => c !== null).length > 1) {
-      return fail({
-        code: 'several_cores',
-        message: `Side ${String(side)} has more than one Core placed; a battle supports one Core per side for now.`,
-        side,
-      });
-    }
-  }
   let zone: NeutralZone;
   if (options.zone !== undefined) {
     zone = options.zone;
@@ -242,10 +257,14 @@ export function startBattle(
   });
   eventLog.push({ tick: 0, type: 'zone_revealed', zone });
 
-  const coreMax: [number, number] = [0, 0];
+  // Per side, the placed Cores by player index (the health list order).
+  const coreMax: [CoreMax[], CoreMax[]] = [[], []];
   for (const h of sim.health) {
-    if (h.building === 0) coreMax[h.side === 0 ? 0 : 1] = h.hp;
+    if (isCoreHealth(h)) {
+      coreMax[h.side === 0 ? 0 : 1].push({ player: h.core, max: h.hp });
+    }
   }
+  const fellAt: Map<string, number> = new Map();
   const rampSteps: [number, number] = [0, 0];
   const timeline: TimelineSample[] = [];
   let scanned = eventLog.length;
@@ -270,16 +289,57 @@ export function startBattle(
   };
   sample();
 
-  const coreHp = (s: number): number =>
-    sim.health.find((h) => h.side === s && h.building === 0)?.hp ?? 0;
+  const coreHpOf = (s: number, player: number): number => {
+    const h = sim.health.find(
+      (x) => isCoreHealth(x) && x.side === s && x.core === player,
+    );
+    return h?.hp ?? 0;
+  };
+  const standing = (s: 0 | 1): number =>
+    coreMax[s].filter((c) => coreHpOf(s, c.player) > 0).length;
+  const sumHp = (s: 0 | 1): number =>
+    coreMax[s].reduce((t, c) => addInt(t, coreHpOf(s, c.player)), 0);
+  const sumMax = (s: 0 | 1): number =>
+    coreMax[s].reduce((t, c) => addInt(t, c.max), 0);
+  const fellTick = (s: number, player: number): number | null =>
+    fellAt.get(`${String(s)}:${String(player)}`) ?? null;
+  /**
+   * A side's overkill: the sum, in player order and saturating, of the
+   * overkill of its Cores destroyed in the latest tick (PP-10).
+   */
+  const overkillSum = (s: 0 | 1): number => {
+    let sum = 0;
+    for (const c of coreMax[s]) {
+      if (fellTick(s, c.player) !== sim.tick - 1) continue;
+      const remaining = ctx.coreRemaining[s]?.[c.player] ?? 0;
+      sum = addSaturating(sum, 0 - remaining, MAX_TICK_DAMAGE);
+    }
+    return sum;
+  };
 
   /**
-   * The tiebreak rungs shared by a same-tick double Core fall (after the
-   * overkill rung) and the time limit (after the Core health fraction): more
-   * building damage dealt, then more enemy units killed, then the attacker
-   * (side 0). The defender wins no tie.
+   * The ladder of PP-10 from rung `from` on; the first rung on which the
+   * sides differ decides. Rungs 1 and 2 only matter at the time limit.
+   * The defender wins no tie.
    */
-  const ladder = (): Omit<BattleResult, 'endTick'> => {
+  const ladder = (from: 1 | 3): Omit<BattleResult, 'endTick'> => {
+    if (from === 1) {
+      const c0 = standing(0);
+      const c1 = standing(1);
+      if (c0 !== c1) {
+        return { winner: c0 > c1 ? 0 : 1, reason: 'time_limit' };
+      }
+      // Share of total Core health, compared exactly (no product).
+      const cmp = compareFractions(sumHp(0), sumMax(0), sumHp(1), sumMax(1));
+      if (cmp !== 0) {
+        return { winner: cmp > 0 ? 0 : 1, reason: 'time_limit' };
+      }
+    }
+    const o0 = overkillSum(0);
+    const o1 = overkillSum(1);
+    if (o0 !== o1) {
+      return { winner: o0 < o1 ? 0 : 1, reason: 'tiebreak_overkill' };
+    }
     const d0 = sim.buildingDamageDealt[0];
     const d1 = sim.buildingDamageDealt[1];
     if (d0 !== d1) {
@@ -298,33 +358,14 @@ export function startBattle(
     return { winner: 0, reason: 'tiebreak_attacker' };
   };
 
-  /** The end conditions, checked after each tick (CB-33). */
+  /** The end conditions, checked after each tick (CB-33, PP-10). */
   const decide = (): Omit<BattleResult, 'endTick'> | null => {
-    const dead0 = coreHp(0) <= 0;
-    const dead1 = coreHp(1) <= 0;
-    if (dead0 && dead1) {
-      const r0 = ctx.coreRemaining[0];
-      const r1 = ctx.coreRemaining[1];
-      if (r0 !== r1) {
-        return { winner: r0 > r1 ? 0 : 1, reason: 'tiebreak_overkill' };
-      }
-      return ladder();
-    }
+    const dead0 = standing(0) === 0;
+    const dead1 = standing(1) === 0;
+    if (dead0 && dead1) return ladder(3);
     if (dead0) return { winner: 1, reason: 'core_destroyed' };
     if (dead1) return { winner: 0, reason: 'core_destroyed' };
-    if (sim.tick >= config.sim.maxBattleTicks) {
-      // Health as a fraction of the maximum, compared exactly (no product).
-      const cmp = compareFractions(
-        coreHp(0),
-        coreMax[0],
-        coreHp(1),
-        coreMax[1],
-      );
-      if (cmp !== 0) {
-        return { winner: cmp > 0 ? 0 : 1, reason: 'time_limit' };
-      }
-      return ladder();
-    }
+    if (sim.tick >= config.sim.maxBattleTicks) return ladder(1);
     return null;
   };
 
@@ -332,16 +373,27 @@ export function startBattle(
     const side = (s: 0 | 1): BattleSideSummary => {
       let buildingsLost = 0;
       for (const h of sim.health) {
-        if (h.side === s && h.building !== 0 && h.hp <= 0) buildingsLost += 1;
+        if (h.side === s && !isCoreHealth(h) && h.hp <= 0) buildingsLost += 1;
       }
-      const hp = coreHp(s);
+      const cores = coreMax[s].map((c): CoreSummary => {
+        const hp = coreHpOf(s, c.player);
+        return {
+          player: c.player,
+          health: hp,
+          maxHealth: c.max,
+          overkill: hp > 0 ? 0 : 0 - (ctx.coreRemaining[s]?.[c.player] ?? 0),
+          destroyedTick: fellTick(s, c.player),
+        };
+      });
       return {
         unitsSpawned: sim.spawned[s],
         unitsLost: sim.unitsDied[s],
         buildingsLost,
-        coreHealth: hp,
-        coreMaxHealth: coreMax[s],
-        coreOverkill: hp > 0 ? 0 : 0 - ctx.coreRemaining[s],
+        cores,
+        coresStanding: standing(s),
+        coreHealth: sumHp(s),
+        coreMaxHealth: sumMax(s),
+        coreOverkill: overkillSum(s),
         rampSteps: rampSteps[s],
         buildingDamageDealt: sim.buildingDamageDealt[s],
         unitsKilled: sim.unitsDied[s === 0 ? 1 : 0],
@@ -361,6 +413,9 @@ export function startBattle(
       for (; scanned < eventLog.length; scanned++) {
         const e = eventLog[scanned];
         if (e?.type === 'ramp_step') rampSteps[e.side === 0 ? 0 : 1] += 1;
+        if (e?.type === 'core_destroyed') {
+          fellAt.set(`${String(e.side)}:${String(e.core)}`, e.tick);
+        }
       }
       const ended = decide();
       if (ended !== null) {

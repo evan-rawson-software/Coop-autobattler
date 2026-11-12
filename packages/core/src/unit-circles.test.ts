@@ -401,7 +401,7 @@ describe('save and restore at any tick', () => {
           null,
           {
             scheduledWaves: [{ tick: 0, unit: 'unit_soldier', count: 1200 }],
-            coreHealth: 200000,
+            coreHealths: [200000],
           },
         ],
       });
@@ -500,7 +500,9 @@ describe('save and restore at any tick', () => {
           ctx.arena.buildings.find((x) => x.def === 'bld_wall' && x.side === 0),
         );
         const h = got(
-          sim.health.find((x) => x.side === 0 && x.building === wall.id),
+          sim.health.find(
+            (x) => x.side === 0 && 'building' in x && x.building === wall.id,
+          ),
         );
         h.hp = 0; // destroyed in step 6 of this tick
       }

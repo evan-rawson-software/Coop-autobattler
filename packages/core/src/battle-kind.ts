@@ -2,7 +2,7 @@
  * Golden-vector kind `battle`. Input `{ teamA, teamB, seed }` where each team
  * is a `team-state-ops` script, plus an optional `sideOptions`: `[side0, side1]`
  * where each is `null` or an object of the arena side options (`scheduledWaves`,
- * `freePower`, `unitStrengthPercent`, `coreHealth`; see "Side options"), so a
+ * `freePower`, `unitStrengthPercent`, `coreHealths`; see "Side options"), so a
  * scenario can bring waves of units or turrets that need no supply. Result on success: `{ ok: true, result,
  * summary, zone, stateHash, events }` where `summary` has no timeline,
  * `stateHash` is the hash of the final `ArenaSim` and `events` the number of
@@ -52,8 +52,8 @@ function rejectUnknown(
 
 /**
  * One side's options, field by field: `scheduledWaves` (a list of `{tick,
- * unit, count}`), `freePower` (boolean), `unitStrengthPercent` and
- * `coreHealth` (integers). Unknown keys and wrong types throw a `TypeError`.
+ * unit, count}`), `freePower` (boolean), `unitStrengthPercent` (an
+ * integer) and `coreHealths` (a list of integers, one per player). Unknown keys and wrong types throw a `TypeError`.
  */
 export function parseSideOptions(raw: Json, what: string): SideOptions {
   if (!isPlainObject(raw)) {
@@ -61,14 +61,14 @@ export function parseSideOptions(raw: Json, what: string): SideOptions {
   }
   rejectUnknown(
     raw,
-    ['scheduledWaves', 'freePower', 'unitStrengthPercent', 'coreHealth'],
+    ['scheduledWaves', 'freePower', 'unitStrengthPercent', 'coreHealths'],
     what,
   );
   const out: {
     scheduledWaves?: ScheduledWave[];
     freePower?: boolean;
     unitStrengthPercent?: number;
-    coreHealth?: number;
+    coreHealths?: number[];
   } = {};
   const waves = raw['scheduledWaves'];
   if (waves !== undefined) {
@@ -107,9 +107,14 @@ export function parseSideOptions(raw: Json, what: string): SideOptions {
       0,
     );
   }
-  const core = raw['coreHealth'];
-  if (core !== undefined) {
-    out.coreHealth = intField(core, `${what}.coreHealth`, 1);
+  const cores = raw['coreHealths'];
+  if (cores !== undefined) {
+    if (!Array.isArray(cores)) {
+      throw new TypeError(`battle: ${what}.coreHealths must be an array`);
+    }
+    out.coreHealths = (cores as Json[]).map((c, j) =>
+      intField(c, `${what}.coreHealths[${String(j)}]`, 1),
+    );
   }
   return out;
 }

@@ -6,15 +6,16 @@
  * stands at its centre) or `[{ side, def, px, py }]` (exact position, sub-cell
  * units) puts units on the field at tick 0, in list order (scenario setup,
  * like `spawnUnitForTest`; a position that does not fit is an error). An optional `buildingHealth` list
- * `[{ side, building, hp }]` sets the current health of those buildings at
- * tick 0 (building 0 is the Core; `hp` from 1 to the building's maximum), so
- * a scenario can start with damaged buildings. An optional `restoreAt` list of ticks makes the run
+ * `[{ side, building, hp }]` or, for a Core, `[{ side, core, hp }]` (`core`
+ * is the player index) sets the current health of those buildings at tick 0
+ * (`hp` from 1 to the maximum), so a scenario can start with damaged
+ * buildings. An optional `restoreAt` list of ticks makes the run
  * save and restore the state (JSON round trip, then `createArenaContext`) after
  * that many ticks; a restored battle must continue exactly like the original,
  * so the result is the same with or without it. Result: `{ tick, stateHash, events, sides }` where `stateHash` is the hash
  * of the final `ArenaSim`, `events` the number of events, and `sides` a
  * summary per side (`spawned`, `alive`, `unitsDied`, `buildingDamageDealt`,
- * `buildingsDestroyed`, `coreHealth`). The event log is the vector's event log.
+ * `buildingsDestroyed`, `coreHealth`: the list of Core health by player). The event log is the vector's event log.
  *
  * Two optional inputs help scenarios that the shipped unit types cannot
  * show: `extraUnits`, a list of unit definitions in the format of
@@ -26,6 +27,7 @@ import type { ArenaContent } from './arena.js';
 import {
   createArenaContext,
   createArenaSim,
+  isCoreHealth,
   spawnUnitForTest,
   stepArena,
   type ArenaEvent,
@@ -56,10 +58,10 @@ function nonNegative(v: Json | undefined, what: string): number {
 export function summarizeArena(sim: ArenaSim): Json {
   return [0, 1].map((side) => {
     let buildingsDestroyed = 0;
-    let coreHealth = 0;
+    const coreHealth: number[] = [];
     for (const h of sim.health) {
       if (h.side !== side) continue;
-      if (h.building === 0) coreHealth = h.hp;
+      if (isCoreHealth(h)) coreHealth.push(h.hp);
       else if (h.hp <= 0) buildingsDestroyed += 1;
     }
     return {
@@ -112,11 +114,22 @@ export function makeArenaSimKind(
         }
         const e = raw as Record<string, Json>;
         const side = nonNegative(e['side'], 'buildingHealth.side');
-        const building = nonNegative(e['building'], 'buildingHealth.building');
         const hp = nonNegative(e['hp'], 'buildingHealth.hp');
-        const h = sim.health.find(
-          (x) => x.side === side && x.building === building,
-        );
+        const h =
+          e['core'] !== undefined
+            ? sim.health.find(
+                (x) =>
+                  isCoreHealth(x) &&
+                  x.side === side &&
+                  x.core === nonNegative(e['core'], 'buildingHealth.core'),
+              )
+            : sim.health.find(
+                (x) =>
+                  !isCoreHealth(x) &&
+                  x.side === side &&
+                  x.building ===
+                    nonNegative(e['building'], 'buildingHealth.building'),
+              );
         if (h === undefined || hp < 1 || hp > h.hp) {
           throw new TypeError(
             'arena-sim: buildingHealth names a missing building or an hp outside 1..maximum',

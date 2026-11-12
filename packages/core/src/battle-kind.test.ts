@@ -27,7 +27,7 @@ describe('battle golden kind: sideOptions validation', () => {
         {
           freePower: true,
           unitStrengthPercent: 10,
-          coreHealth: 30000,
+          coreHealths: [30000],
           scheduledWaves: [{ tick: 1, unit: 'unit_soldier', count: 2 }],
         },
       ]),
@@ -36,7 +36,7 @@ describe('battle golden kind: sideOptions validation', () => {
       {
         freePower: true,
         unitStrengthPercent: 10,
-        coreHealth: 30000,
+        coreHealths: [30000],
         scheduledWaves: [{ tick: 1, unit: 'unit_soldier', count: 2 }],
       },
     ]);
@@ -58,7 +58,7 @@ describe('battle golden kind: sideOptions validation', () => {
 
   test.each([
     [[{ coreHealth: '30000' }, null], /coreHealth/],
-    [[{ coreHealth: 0 }, null], /coreHealth/],
+    [[{ coreHealths: [0] }, null], /coreHealth/],
     [[{ coreHealth: 1.5 }, null], /coreHealth/],
     [[{ freePower: 1 }, null], /freePower/],
     [[{ unitStrengthPercent: -1 }, null], /unitStrengthPercent/],
@@ -76,7 +76,9 @@ describe('battle golden kind: sideOptions validation', () => {
   });
 
   test('a valid sideOptions pair still runs a battle', () => {
-    const r = run([{ coreHealth: 100 }, null]) as { result: { ok: boolean } };
+    const r = run([{ coreHealths: [100] }, null]) as {
+      result: { ok: boolean };
+    };
     expect(r.result.ok).toBe(true);
   });
 });
