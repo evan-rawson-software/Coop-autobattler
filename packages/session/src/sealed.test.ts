@@ -28,9 +28,12 @@ function put(
   x: number,
   y: number,
 ): { team: TeamState; id: number } | null {
-  const a = addToStash(team, content, { def, tier: 1, owner: 0 });
+  // The building belongs to the player whose plot column `x` is in.
+  const owner = Math.floor(x / team.map.plotWidth);
+  const a = addToStash(team, content, { def, tier: 1, owner });
   if (!a.ok) return null;
   const p = placeFromStash(a.state, content, {
+    actor: owner,
     id: a.id,
     x,
     y,

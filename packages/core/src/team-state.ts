@@ -68,6 +68,8 @@ export interface ConduitEnd {
  */
 export interface Conduit {
   readonly id: number;
+  /** The player who drew it (PP-1); joins two buildings of this player. */
+  readonly owner: number;
   readonly from: ConduitEnd;
   readonly to: ConduitEnd;
   readonly cells: readonly Cell[];
@@ -101,8 +103,11 @@ export type TeamContent = MapContent;
 
 export type PlacementReason =
   | 'unknown_building'
+  | 'invalid_owner'
+  | 'not_owner'
   | 'invalid_rotation'
   | 'out_of_bounds'
+  | 'outside_own_plot'
   | 'blocked_by_feature'
   | 'overlaps_core'
   | 'overlaps_building'
@@ -231,10 +236,11 @@ function makeContext(
 }
 
 /**
- * Check a placement. Rules are checked in this fixed order and the first
- * failure is reported: invalid_rotation, out_of_bounds, blocked_by_feature,
- * overlaps_core, overlaps_building, overlaps_conduit, source_needs_node,
- * node_reserved. (`unknown_building` is checked by the caller, first.)
+ * Check a placement for a building of player `owner`. Rules are checked in
+ * this fixed order and the first failure is reported: invalid_rotation,
+ * out_of_bounds, outside_own_plot, blocked_by_feature, overlaps_core,
+ * overlaps_building, overlaps_conduit, source_needs_node, node_reserved.
+ * (`unknown_building` and `not_owner` are checked by the caller, first.)
  */
 function checkPlacement(
   ctx: RuleContext,
@@ -242,6 +248,7 @@ function checkPlacement(
   x: unknown,
   y: unknown,
   rotation: unknown,
+  owner: number,
 ): OpFailure<PlacementReason> | null {
   if (!isRotation(rotation)) return { ok: false, reason: 'invalid_rotation' };
   const map = ctx.q.map;
@@ -263,6 +270,15 @@ function checkPlacement(
     last.y >= map.height
   ) {
     return { ok: false, reason: 'out_of_bounds' };
+  }
+  for (const c of cells) {
+    if (ctx.q.plotOf(c.x) !== owner) {
+      return {
+        ok: false,
+        reason: 'outside_own_plot',
+        detail: `(${String(c.x)}, ${String(c.y)})`,
+      };
+    }
   }
   for (const c of cells) {
     if (!ctx.q.isBuildable(c.x, c.y)) {
@@ -402,14 +418,29 @@ export function detachConduits(
     : { ...state, conduits: kept };
 }
 
-/** Delete one conduit by ID. Free. */
+/** Whether `actor` is an integer player index of this board. */
+function isActor(state: TeamState, actor: unknown): actor is number {
+  return (
+    typeof actor === 'number' &&
+    Number.isInteger(actor) &&
+    actor >= 0 &&
+    actor < state.map.partySize
+  );
+}
+
+/**
+ * Delete one conduit by ID. Free. Reasons, in order: unknown_conduit,
+ * invalid_owner, not_owner (PP-1).
+ */
 export function eraseConduit(
   state: TeamState,
-  args: { id: number },
-): OpResult<'unknown_conduit'> {
-  if (!state.conduits.some((c) => c.id === args.id)) {
-    return { ok: false, reason: 'unknown_conduit' };
-  }
+  args: { actor: number; id: number },
+): OpResult<'unknown_conduit' | 'invalid_owner' | 'not_owner'> {
+  const conduit = state.conduits.find((c) => c.id === args.id);
+  if (conduit === undefined) return { ok: false, reason: 'unknown_conduit' };
+  if (!isActor(state, args.actor))
+    return { ok: false, reason: 'invalid_owner' };
+  if (conduit.owner !== args.actor) return { ok: false, reason: 'not_owner' };
   return {
     ok: true,
     state: {
@@ -473,17 +504,33 @@ export function soleCore(state: TeamState): Cell | null {
   return placed[0] ?? null;
 }
 
-/** Place a stashed building on the board. Free. */
+/** invalid_owner, then not_owner, for an `actor` acting on `owner`'s building. */
+function checkActor(
+  state: TeamState,
+  actor: unknown,
+  owner: number,
+): OpFailure<'invalid_owner' | 'not_owner'> | null {
+  if (!isActor(state, actor)) return { ok: false, reason: 'invalid_owner' };
+  if (actor !== owner) return { ok: false, reason: 'not_owner' };
+  return null;
+}
+
+/**
+ * Place a stashed building on the board. Free. Reasons, in order:
+ * unknown_building, invalid_owner, not_owner, then those of `checkPlacement`.
+ */
 export function placeFromStash(
   state: TeamState,
   content: TeamContent,
-  args: { id: number; x: number; y: number; rotation: number },
+  args: { actor: number; id: number; x: number; y: number; rotation: number },
 ): OpResult<PlacementReason> {
   const item = state.stash.find((s) => s.id === args.id);
   const def = item === undefined ? undefined : content.buildings.get(item.def);
   if (item === undefined || def === undefined) {
     return { ok: false, reason: 'unknown_building' };
   }
+  const denied = checkActor(state, args.actor, item.owner);
+  if (denied !== null) return denied;
   const index = buildingCellIndex(state, content);
   const ctx = makeContext(
     state,
@@ -491,7 +538,14 @@ export function placeFromStash(
     (x, y) => index.has(cellKey(state.map, x, y)),
     conduitCellKeys(state.map, state.conduits),
   );
-  const failure = checkPlacement(ctx, def, args.x, args.y, args.rotation);
+  const failure = checkPlacement(
+    ctx,
+    def,
+    args.x,
+    args.y,
+    args.rotation,
+    item.owner,
+  );
   if (failure !== null) return failure;
   const placed: PlacedBuilding = {
     id: item.id,
@@ -520,13 +574,15 @@ export function placeFromStash(
 export function moveBuilding(
   state: TeamState,
   content: TeamContent,
-  args: { id: number; x: number; y: number; rotation: number },
+  args: { actor: number; id: number; x: number; y: number; rotation: number },
 ): OpResult<PlacementReason> {
   const item = state.buildings.find((b) => b.id === args.id);
   const def = item === undefined ? undefined : content.buildings.get(item.def);
   if (item === undefined || def === undefined) {
     return { ok: false, reason: 'unknown_building' };
   }
+  const denied = checkActor(state, args.actor, item.owner);
+  if (denied !== null) return denied;
   const index = buildingCellIndex(state, content);
   const ctx = makeContext(
     state,
@@ -539,7 +595,14 @@ export function moveBuilding(
     // they do not block it.
     conduitCellKeys(state.map, state.conduits, item.id),
   );
-  const failure = checkPlacement(ctx, def, args.x, args.y, args.rotation);
+  const failure = checkPlacement(
+    ctx,
+    def,
+    args.x,
+    args.y,
+    args.rotation,
+    item.owner,
+  );
   if (failure !== null) return failure;
   const moved: PlacedBuilding = {
     ...item,
@@ -558,10 +621,12 @@ export function moveBuilding(
 export function returnToStash(
   state: TeamState,
   _content: Pick<TeamContent, 'buildings'>,
-  args: { id: number },
-): OpResult<'unknown_building'> {
+  args: { actor: number; id: number },
+): OpResult<'unknown_building' | 'invalid_owner' | 'not_owner'> {
   const item = state.buildings.find((b) => b.id === args.id);
   if (item === undefined) return { ok: false, reason: 'unknown_building' };
+  const denied = checkActor(state, args.actor, item.owner);
+  if (denied !== null) return denied;
   const next: TeamState = {
     ...state,
     buildings: state.buildings.filter((b) => b.id !== item.id),
@@ -615,11 +680,12 @@ export function raiseTier(
 /** Delete a stash entry (used later for selling). */
 export function removeFromStash(
   state: TeamState,
-  args: { id: number },
-): OpResult<'unknown_building'> {
-  if (!state.stash.some((s) => s.id === args.id)) {
-    return { ok: false, reason: 'unknown_building' };
-  }
+  args: { actor: number; id: number },
+): OpResult<'unknown_building' | 'invalid_owner' | 'not_owner'> {
+  const item = state.stash.find((s) => s.id === args.id);
+  if (item === undefined) return { ok: false, reason: 'unknown_building' };
+  const denied = checkActor(state, args.actor, item.owner);
+  if (denied !== null) return denied;
   return {
     ok: true,
     state: { ...state, stash: state.stash.filter((s) => s.id !== args.id) },
@@ -981,7 +1047,7 @@ function validateInner(
       },
       conduitKeys: new Set<number>(),
     };
-    const failure = checkPlacement(ctx, def, b.x, b.y, b.rotation);
+    const failure = checkPlacement(ctx, def, b.x, b.y, b.rotation, b.owner);
     if (failure !== null) {
       errors.push(
         `buildings[${String(i)}] (id ${String(b.id)}): ${failure.reason}${failure.detail === undefined ? '' : ` at ${failure.detail}`}.`,

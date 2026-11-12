@@ -37,7 +37,10 @@ export function previewPlace(
   content: WebContent,
   args: PlaceArgs,
 ): Verdict {
-  const r = placeFromStash(state, content, args);
+  // The build screen only offers a player's own buildings; the session names
+  // the acting player and enforces ownership (PP-1).
+  const owner = state.stash.find((s) => s.id === args.id)?.owner ?? 0;
+  const r = placeFromStash(state, content, { ...args, actor: owner });
   return r.ok ? { ok: true, state: r.state } : fail(r);
 }
 
@@ -47,7 +50,8 @@ export function previewMove(
   content: WebContent,
   args: PlaceArgs,
 ): Verdict {
-  const r = moveBuilding(state, content, args);
+  const owner = state.buildings.find((b) => b.id === args.id)?.owner ?? 0;
+  const r = moveBuilding(state, content, { ...args, actor: owner });
   return r.ok ? { ok: true, state: r.state } : fail(r);
 }
 
@@ -59,6 +63,7 @@ export function previewConduit(
   to: ConduitEnd,
   cells: readonly Cell[],
 ): Verdict {
-  const r = addConduit(state, content, { from, to, cells });
+  const actor = state.buildings.find((b) => b.id === from.building)?.owner ?? 0;
+  const r = addConduit(state, content, { actor, from, to, cells });
   return r.ok ? { ok: true, state: r.state } : fail(r);
 }

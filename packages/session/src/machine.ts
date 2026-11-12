@@ -751,6 +751,7 @@ function applyBuiltin(
         return fail('invalid_intent');
       }
       const args = {
+        actor: player,
         id: intent.id,
         x: intent.x,
         y: intent.y,
@@ -764,17 +765,21 @@ function applyBuiltin(
     }
     case 'return_building':
       if (!isInt(intent.id)) return fail('invalid_intent');
-      return withTeam(returnToStash(s.team, content, { id: intent.id }));
+      return withTeam(
+        returnToStash(s.team, content, { actor: player, id: intent.id }),
+      );
     case 'erase_conduit':
       if (!isInt(intent.id)) return fail('invalid_intent');
-      return withTeam(eraseConduit(s.team, { id: intent.id }));
+      return withTeam(eraseConduit(s.team, { actor: player, id: intent.id }));
     case 'add_conduit': {
       const ok =
         isRecord(intent.from) &&
         isRecord(intent.to) &&
         Array.isArray(intent.cells);
       if (!ok) return fail('invalid_intent');
-      return withTeam(addConduit(s.team, content, intent));
+      return withTeam(
+        addConduit(s.team, content, { ...intent, actor: player }),
+      );
     }
     default:
       return fail('unknown_intent');

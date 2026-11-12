@@ -130,16 +130,21 @@
       }
     },
     "conduits": {
-      "description": "Conduits, sorted by ascending id. Each runs from a side of one placed building to a side of another; cells is the ordered path from the cell just outside the from side to the cell just outside the to side, empty for a direct connection.",
+      "description": "Conduits, sorted by ascending id. Each runs from a side of one placed building to a side of another building of the same owner; cells is the ordered path from the cell just outside the from side to the cell just outside the to side, empty for a direct connection.",
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "from", "to", "cells"],
+        "required": ["id", "owner", "from", "to", "cells"],
         "additionalProperties": false,
         "properties": {
           "id": {
             "type": "integer",
             "minimum": 1
+          },
+          "owner": {
+            "description": "The player who drew the conduit (PP-1). It joins two buildings of this player and lies in this player's plot.",
+            "type": "integer",
+            "minimum": 0
           },
           "from": {
             "$ref": "#/$defs/conduitEnd"

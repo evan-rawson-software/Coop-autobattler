@@ -56,7 +56,13 @@ function put(
 ): number {
   const s = addToStash(lab.state, content, { def, tier, owner });
   if (!s.ok) throw new Error(s.reason);
-  const p = placeFromStash(s.state, content, { id: s.id, x, y, rotation: 0 });
+  const p = placeFromStash(s.state, content, {
+    actor: owner,
+    id: s.id,
+    x,
+    y,
+    rotation: 0,
+  });
   if (!p.ok) throw new Error(`${def}: ${p.reason}`);
   lab.state = p.state;
   return s.id;

@@ -148,6 +148,7 @@ describe('every placed Core is an obstacle', () => {
     if (!stash.ok) throw new Error(stash.reason);
     expect(
       placeFromStash(stash.state, content, {
+        actor: 2,
         id: stash.id,
         x: c2.x,
         y: c2.y,
@@ -156,6 +157,7 @@ describe('every placed Core is an obstacle', () => {
     ).toMatchObject({ ok: false, reason: 'overlaps_core' });
     const ok = must(
       placeFromStash(stash.state, content, {
+        actor: 2,
         id: stash.id,
         x: c2.x + fp.width,
         y: c2.y,
@@ -164,6 +166,7 @@ describe('every placed Core is an obstacle', () => {
     );
     expect(
       moveBuilding(ok, content, {
+        actor: 2,
         id: stash.id,
         x: c2.x,
         y: c2.y,

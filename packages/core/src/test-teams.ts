@@ -1,6 +1,7 @@
 /** Random but working teams for battle tests and benchmarks. */
 import { addConduit } from './conduits.js';
 import { generateMap } from './generate-map.js';
+import { divFloor } from './int.js';
 import { Rng } from './rng.js';
 import {
   addToStash,
@@ -42,9 +43,11 @@ export function randomTeam(seed: number, partySize: number): TeamState {
     x: number,
     y: number,
   ): number | null => {
-    const a = addToStash(s, content, { def, tier, owner: 0 });
+    const owner = divFloor(x, m.plotWidth);
+    const a = addToStash(s, content, { def, tier, owner });
     if (!a.ok) return null;
     const p = placeFromStash(a.state, content, {
+      actor: owner,
       id: a.id,
       x,
       y,
@@ -63,7 +66,9 @@ export function randomTeam(seed: number, partySize: number): TeamState {
     else if (rng.nextInt(4) === 0) consumerDef = 'bld_armory';
     let consumer: number | null = null;
     for (let tries = 0; tries < 40 && consumer === null; tries++) {
-      const x = rng.nextInt(m.width);
+      // Same plot as its source: a conduit cannot leave the owner's plot.
+      const x =
+        divFloor(n.x, m.plotWidth) * m.plotWidth + rng.nextInt(m.plotWidth);
       const y =
         consumerDef === 'bld_turret'
           ? m.height - 5 + rng.nextInt(4)
@@ -86,6 +91,7 @@ export function randomTeam(seed: number, partySize: number): TeamState {
       used,
     );
     const r = addConduit(s, content, {
+      actor: a.owner,
       from: { building: src, side: 'north' },
       to: { building: consumer, side: 'south' },
       cells: cells ?? [],
@@ -93,7 +99,14 @@ export function randomTeam(seed: number, partySize: number): TeamState {
     if (r.ok) s = r.state;
   }
   for (let i = 0; i < 4; i++) {
-    place('bld_wall', 1, rng.nextInt(m.width), m.height - 3 + rng.nextInt(2));
+    // A wall in a random plot.
+    const wallPlot = m.partySize > 1 ? rng.nextInt(m.partySize) : 0;
+    place(
+      'bld_wall',
+      1,
+      wallPlot * m.plotWidth + rng.nextInt(m.plotWidth),
+      m.height - 3 + rng.nextInt(2),
+    );
   }
   return s;
 }

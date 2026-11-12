@@ -289,6 +289,42 @@ function checkFairness(
     }
   }
   if (reached !== walkable) return 'a walkable cell is cut off from the front';
+  // PP-15: inside every plot, every walkable cell of the plot is reachable
+  // from that plot's own front row through cells of that plot only.
+  for (let p = 0; p < map.partySize; p++) {
+    const x0 = p * map.plotWidth;
+    const x1 = x0 + map.plotWidth;
+    const inPlot = new Uint8Array(width * height);
+    const todo: number[] = [];
+    let cells = 0;
+    for (let y = 0; y < height; y++) {
+      for (let x = x0; x < x1; x++) if (q.isWalkable(x, y)) cells++;
+    }
+    for (let x = x0; x < x1; x++) {
+      if (q.isWalkable(x, height - 1)) {
+        inPlot[(height - 1) * width + x] = 1;
+        todo.push((height - 1) * width + x);
+      }
+    }
+    let count = 0;
+    for (let k = todo.pop(); k !== undefined; k = todo.pop()) {
+      count++;
+      const x = k % width;
+      const y = Math.floor(k / width);
+      for (const [dx, dy] of DIRS) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < x0 || nx >= x1 || !q.isWalkable(nx, ny)) continue;
+        const nk = ny * width + nx;
+        if (inPlot[nk] === 1) continue;
+        inPlot[nk] = 1;
+        todo.push(nk);
+      }
+    }
+    if (count !== cells) {
+      return `a walkable cell of plot ${String(p)} is cut off from that plot's front`;
+    }
+  }
   // A legal Core position inside every plot.
   for (let p = 0; p < map.partySize; p++) {
     if (listLegalCorePositions(map, content, config, p).length === 0) {

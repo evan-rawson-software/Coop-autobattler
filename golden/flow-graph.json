@@ -15,6 +15,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 10,
           "y": 3,
@@ -28,6 +29,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 10,
           "y": 4,
@@ -41,6 +43,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 10,
           "y": 5,
@@ -54,6 +57,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 13,
           "y": 4,
@@ -67,6 +71,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 5,
           "x": 4,
           "y": 0,
@@ -80,6 +85,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 6,
           "x": 4,
           "y": 1,
@@ -93,6 +99,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 7,
           "x": 4,
           "y": 2,
@@ -106,6 +113,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 8,
           "x": 11,
           "y": 0,
@@ -119,6 +127,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 9,
           "x": 3,
           "y": 3,
@@ -132,6 +141,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 10,
           "x": 3,
           "y": 6,
@@ -145,6 +155,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 11,
           "x": 3,
           "y": 7,
@@ -158,6 +169,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 12,
           "x": 1,
           "y": 2,
@@ -171,6 +183,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 13,
           "x": 4,
           "y": 6,
@@ -178,6 +191,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -190,6 +204,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "north"
@@ -202,6 +217,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "east"
@@ -223,6 +239,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 5,
             "side": "north"
@@ -235,6 +252,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 6,
             "side": "north"
@@ -247,6 +265,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 8,
             "side": "west"
@@ -288,6 +307,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 9,
             "side": "north"
@@ -309,6 +329,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 12,
             "side": "north"
@@ -342,6 +363,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 10,
             "side": "north"
@@ -354,6 +376,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 10,
             "side": "east"
@@ -742,6 +765,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 11,
           "y": 0,
@@ -755,6 +779,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 11,
           "y": 1,
@@ -768,6 +793,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 10,
           "y": 1,
@@ -781,6 +807,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 10,
           "y": 2,
@@ -794,6 +821,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 5,
           "x": 10,
           "y": 3,
@@ -801,6 +829,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "west"
@@ -813,6 +842,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 4,
             "side": "south"
@@ -825,6 +855,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -837,6 +868,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 5,
             "side": "south"
@@ -849,10 +881,12 @@
         },
         {
           "op": "eraseConduit",
+          "actor": 0,
           "id": 7
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 5,
             "side": "south"
@@ -871,6 +905,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 10,
           "x": 5,
           "y": 6,
@@ -884,6 +919,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 11,
           "x": 5,
           "y": 7,
@@ -897,6 +933,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 12,
           "x": 8,
           "y": 7,
@@ -904,6 +941,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 10,
             "side": "north"
@@ -916,6 +954,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 11,
             "side": "east"
@@ -937,6 +976,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 12,
             "side": "south"
@@ -962,6 +1002,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 12,
             "side": "east"

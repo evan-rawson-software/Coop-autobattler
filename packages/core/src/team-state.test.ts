@@ -70,13 +70,20 @@ function cellsWhere(pred: (x: number, y: number) => boolean): Cell[] {
 }
 const isOpen = (x: number, y: number): boolean =>
   q.isBuildable(x, y) && q.nodeAt(x, y) === undefined;
-const lake = map.features.find((f) => f.feature === 'ter_lake');
-const node = map.nodes[0];
+// Plot 0: the tests' buildings belong to player 0 (PP-1).
+const lake = map.features.find(
+  (f) => f.feature === 'ter_lake' && f.x < map.plotWidth,
+);
+const node = map.nodes.find((n) => n.x < map.plotWidth);
 if (lake === undefined || node === undefined) throw new Error('bad test map');
 
-/** An open w x h rectangle's lowest cell, the `skip`-th such one. */
+/**
+ * An open w x h rectangle's lowest cell, the `skip`-th such one. It lies in
+ * plot 0, where the tests' buildings (owner 0) must stand (PP-1).
+ */
 function openRect(w: number, h: number, skip = 0): Cell {
   const found = cellsWhere((x, y) => {
+    if (x + w > map.plotWidth) return false;
     for (let dy = 0; dy < h; dy++)
       for (let dx = 0; dx < w; dx++) if (!isOpen(x + dx, y + dy)) return false;
     return true;
@@ -128,7 +135,7 @@ describe('createTeamState and addToStash', () => {
     s = deepFreeze(a.state);
     const b = stashed(s, SOURCE, 1, 3);
     expect([a.id, b.id]).toEqual([1, 2]);
-    s = deepFreeze(must(removeFromStash(b.state, { id: 2 })));
+    s = deepFreeze(must(removeFromStash(b.state, { actor: 1, id: 2 })));
     const c = stashed(s, WALL);
     expect(c.id).toBe(3);
     expect(valid(c.state)).toEqual([]);
@@ -213,6 +220,7 @@ describe('placeCore', () => {
     const w = stashed(s0, WALL);
     const placed = must(
       placeFromStash(w.state, content, {
+        actor: 0,
         id: w.id,
         x: pos.x,
         y: pos.y,
@@ -250,6 +258,7 @@ describe('placeFromStash and moveBuilding rules', () => {
       id: a.id,
       stash: a.state,
       result: placeFromStash(deepFreeze(a.state), content, {
+        actor: 0,
         id: a.id,
         x,
         y,
@@ -271,24 +280,42 @@ describe('placeFromStash and moveBuilding rules', () => {
 
   test('unknown_building (not in stash / not placed)', () => {
     expect(
-      placeFromStash(base, content, { id: 99, x: 0, y: 0, rotation: 0 }),
+      placeFromStash(base, content, {
+        actor: 0,
+        id: 99,
+        x: 0,
+        y: 0,
+        rotation: 0,
+      }),
     ).toMatchObject({ reason: 'unknown_building' });
     expect(
-      moveBuilding(base, content, { id: 99, x: 0, y: 0, rotation: 0 }),
+      moveBuilding(base, content, {
+        actor: 0,
+        id: 99,
+        x: 0,
+        y: 0,
+        rotation: 0,
+      }),
     ).toMatchObject({ reason: 'unknown_building' });
-    expect(returnToStash(base, content, { id: 99 })).toMatchObject({
+    expect(returnToStash(base, content, { actor: 0, id: 99 })).toMatchObject({
       reason: 'unknown_building',
     });
-    expect(removeFromStash(base, { id: 99 })).toMatchObject({
+    expect(removeFromStash(base, { actor: 0, id: 99 })).toMatchObject({
       reason: 'unknown_building',
     });
     // A placed building is not in the stash, and vice versa.
     const p = place(base, WALL, open.x, open.y);
     const s = must(p.result);
     expect(
-      placeFromStash(s, content, { id: p.id, x: 0, y: 0, rotation: 0 }),
+      placeFromStash(s, content, {
+        actor: 0,
+        id: p.id,
+        x: 0,
+        y: 0,
+        rotation: 0,
+      }),
     ).toMatchObject({ reason: 'unknown_building' });
-    expect(removeFromStash(s, { id: p.id })).toMatchObject({
+    expect(removeFromStash(s, { actor: 0, id: p.id })).toMatchObject({
       reason: 'unknown_building',
     });
   });
@@ -346,6 +373,7 @@ describe('placeFromStash and moveBuilding rules', () => {
     });
     // move in place by one column (own old cells do not count) when free
     const moved = moveBuilding(s1, content, {
+      actor: 0,
       id: first.id,
       x: rect.x,
       y: rect.y,
@@ -394,6 +422,7 @@ describe('placeFromStash and moveBuilding rules', () => {
     const s1 = deepFreeze(must(p.result));
     const rotated = must(
       moveBuilding(s1, content, {
+        actor: 0,
         id: p.id,
         x: rect.x,
         y: rect.y,
@@ -403,6 +432,7 @@ describe('placeFromStash and moveBuilding rules', () => {
     expect(rotated.buildings[0]?.rotation).toBe(180);
     expect(s1.buildings[0]?.rotation).toBe(0);
     const bad = moveBuilding(s1, content, {
+      actor: 0,
       id: p.id,
       x: lake.x,
       y: lake.y,
@@ -418,7 +448,7 @@ describe('placeFromStash and moveBuilding rules', () => {
     let s = must(b.result);
     const c = stashed(s, WALL);
     s = c.state;
-    s = must(returnToStash(s, content, { id: a.id }));
+    s = must(returnToStash(s, content, { actor: 0, id: a.id }));
     expect(s.stash.map((e) => e.id)).toEqual([a.id, c.id]);
     expect(s.buildings.map((e) => e.id)).toEqual([b.id]);
     expect(valid(s)).toEqual([]);
@@ -430,6 +460,7 @@ describe('placeFromStash and moveBuilding rules', () => {
     expect(s.conduits).toEqual([]);
     const m = must(
       moveBuilding(s, content, {
+        actor: 0,
         id: a.id,
         x: open.x,
         y: open.y,
@@ -450,6 +481,7 @@ describe('occupancy and geometry', () => {
     const spot = openRect(1, 1, 30);
     s = must(
       placeFromStash(s, content, {
+        actor: 0,
         id: a.id,
         x: spot.x,
         y: spot.y,
@@ -475,6 +507,7 @@ describe('occupancy and geometry', () => {
     const a = stashed(s, BARRACKS);
     s = must(
       placeFromStash(a.state, content, {
+        actor: 0,
         id: a.id,
         x: rect.x,
         y: rect.y,
@@ -518,7 +551,13 @@ describe('validateTeamState rejects illegal states', () => {
   const w = stashed(good, WALL);
   const o = openRect(1, 1, 40);
   good = must(
-    placeFromStash(w.state, content, { id: w.id, x: o.x, y: o.y, rotation: 0 }),
+    placeFromStash(w.state, content, {
+      actor: 0,
+      id: w.id,
+      x: o.x,
+      y: o.y,
+      rotation: 0,
+    }),
   );
   const s2 = stashed(good, WALL, 1, 2);
   good = s2.state;
@@ -680,6 +719,7 @@ describe('renderTeamStateAscii', () => {
     const a = stashed(s, SOURCE);
     s = must(
       placeFromStash(a.state, content, {
+        actor: 0,
         id: a.id,
         x: src.x,
         y: src.y,
@@ -707,16 +747,28 @@ describe('purity and properties', () => {
     const o = openRect(1, 1, 50);
     s = deepFreeze(
       must(
-        placeFromStash(s, content, { id: a.id, x: o.x, y: o.y, rotation: 0 }),
+        placeFromStash(s, content, {
+          actor: 0,
+          id: a.id,
+          x: o.x,
+          y: o.y,
+          rotation: 0,
+        }),
       ),
     );
     s = deepFreeze(
       must(
-        moveBuilding(s, content, { id: a.id, x: o.x, y: o.y, rotation: 90 }),
+        moveBuilding(s, content, {
+          actor: 0,
+          id: a.id,
+          x: o.x,
+          y: o.y,
+          rotation: 90,
+        }),
       ),
     );
-    s = deepFreeze(must(returnToStash(s, content, { id: a.id })));
-    s = deepFreeze(must(removeFromStash(s, { id: a.id })));
+    s = deepFreeze(must(returnToStash(s, content, { actor: 0, id: a.id })));
+    s = deepFreeze(must(removeFromStash(s, { actor: 0, id: a.id })));
     expect(s.stash).toEqual([]);
     expect(placeCore(s, content, config, 0, legal).ok).toBe(false);
   });
@@ -787,6 +839,7 @@ describe('purity and properties', () => {
               rng.nextInt(2) === 0 ? nodePos() : { x: anyX(), y: anyY() };
             check(
               placeFromStash(s, content, {
+                actor: 0,
                 id: e?.id ?? 0,
                 x: p.x,
                 y: p.y,
@@ -800,6 +853,7 @@ describe('purity and properties', () => {
               rng.nextInt(2) === 0 ? nodePos() : { x: anyX(), y: anyY() };
             check(
               moveBuilding(s, content, {
+                actor: 0,
                 id: e?.id ?? 0,
                 x: p.x,
                 y: p.y,
@@ -809,7 +863,10 @@ describe('purity and properties', () => {
             );
           } else if (s.buildings.length > 0) {
             const e = s.buildings[rng.nextInt(s.buildings.length)];
-            check(returnToStash(s, content, { id: e?.id ?? 0 }), before);
+            check(
+              returnToStash(s, content, { actor: 0, id: e?.id ?? 0 }),
+              before,
+            );
           }
         }
       }

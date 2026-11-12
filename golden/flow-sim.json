@@ -15,6 +15,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 20,
           "y": 6,
@@ -28,6 +29,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 20,
           "y": 12,
@@ -35,6 +37,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -122,6 +125,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 10,
           "y": 3,
@@ -135,6 +139,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 10,
           "y": 4,
@@ -148,6 +153,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 10,
           "y": 5,
@@ -161,6 +167,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 13,
           "y": 4,
@@ -168,6 +175,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -180,6 +188,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "north"
@@ -192,6 +201,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "east"
@@ -282,6 +292,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 4,
           "y": 0,
@@ -295,6 +306,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 4,
           "y": 1,
@@ -308,6 +320,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 4,
           "y": 2,
@@ -321,6 +334,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 11,
           "y": 0,
@@ -328,6 +342,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -340,6 +355,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "north"
@@ -352,6 +368,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 4,
             "side": "west"
@@ -478,6 +495,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 7,
           "y": 4,
@@ -491,6 +509,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 7,
           "y": 5,
@@ -504,6 +523,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 8,
           "y": 5,
@@ -517,6 +537,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 8,
           "y": 6,
@@ -530,6 +551,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 5,
           "x": 14,
           "y": 5,
@@ -537,6 +559,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -549,6 +572,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "east"
@@ -561,6 +585,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 5,
             "side": "west"
@@ -594,6 +619,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 3,
             "side": "north"
@@ -685,6 +711,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 3,
           "y": 3,
@@ -698,6 +725,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 3,
           "y": 6,
@@ -711,6 +739,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 3,
           "y": 7,
@@ -724,6 +753,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 1,
           "y": 2,
@@ -737,6 +767,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 5,
           "x": 4,
           "y": 6,
@@ -744,6 +775,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -765,6 +797,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 4,
             "side": "north"
@@ -798,6 +831,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "north"
@@ -810,6 +844,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "east"
@@ -904,6 +939,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 10,
           "y": 3,
@@ -917,6 +953,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 10,
           "y": 4,
@@ -924,6 +961,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -988,6 +1026,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 20,
           "y": 6,
@@ -1001,6 +1040,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 20,
           "y": 12,
@@ -1008,6 +1048,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -1119,6 +1160,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 8,
           "y": 4,
@@ -1132,6 +1174,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 7,
           "y": 5,
@@ -1145,6 +1188,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 8,
           "y": 5,
@@ -1158,6 +1202,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 8,
           "y": 6,
@@ -1165,6 +1210,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -1177,6 +1223,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "east"
@@ -1189,6 +1236,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 3,
             "side": "north"
@@ -1291,6 +1339,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 8,
           "y": 4,
@@ -1304,6 +1353,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 8,
           "y": 5,
@@ -1317,6 +1367,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 8,
           "y": 6,
@@ -1330,6 +1381,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 14,
           "y": 5,
@@ -1337,6 +1389,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -1349,6 +1402,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 4,
             "side": "west"
@@ -1382,6 +1436,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "north"
@@ -1479,6 +1534,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 15,
           "y": 5,
@@ -1492,6 +1548,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 14,
           "y": 5,
@@ -1505,6 +1562,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 14,
           "y": 6,
@@ -1518,6 +1576,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 3,
           "y": 5,
@@ -1525,6 +1584,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "west"
@@ -1537,6 +1597,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 4,
             "side": "east"
@@ -1590,6 +1651,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "north"
@@ -1670,6 +1732,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 10,
           "y": 3,
@@ -1683,6 +1746,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 10,
           "y": 4,
@@ -1696,6 +1760,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 10,
           "y": 5,
@@ -1709,6 +1774,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 13,
           "y": 4,
@@ -1716,6 +1782,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -1728,6 +1795,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "north"
@@ -1740,6 +1808,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "east"
@@ -1844,6 +1913,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 10,
           "y": 3,
@@ -1857,6 +1927,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 20,
           "y": 6,
@@ -1870,6 +1941,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 10,
           "y": 4,
@@ -1883,6 +1955,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 10,
           "y": 5,
@@ -1896,6 +1969,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 5,
           "x": 10,
           "y": 6,
@@ -1909,6 +1983,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 6,
           "x": 6,
           "y": 5,
@@ -1916,6 +1991,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -1928,6 +2004,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "north"
@@ -2001,6 +2078,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 3,
             "side": "north"
@@ -2013,6 +2091,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 4,
             "side": "north"
@@ -2025,6 +2104,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 4,
             "side": "west"
@@ -2142,6 +2222,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 10,
           "y": 3,
@@ -2155,6 +2236,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 20,
           "y": 6,
@@ -2168,6 +2250,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 10,
           "y": 4,
@@ -2181,6 +2264,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 10,
           "y": 5,
@@ -2194,6 +2278,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 5,
           "x": 10,
           "y": 6,
@@ -2207,6 +2292,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 6,
           "x": 6,
           "y": 5,
@@ -2214,6 +2300,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -2226,6 +2313,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "north"
@@ -2299,6 +2387,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 3,
             "side": "north"
@@ -2311,6 +2400,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 4,
             "side": "north"
@@ -2323,6 +2413,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 4,
             "side": "west"
@@ -2440,6 +2531,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 10,
           "y": 3,
@@ -2453,6 +2545,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 10,
           "y": 4,
@@ -2466,6 +2559,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 10,
           "y": 5,
@@ -2479,6 +2573,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 6,
           "y": 4,
@@ -2486,6 +2581,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -2498,6 +2594,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "north"
@@ -2510,6 +2607,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "west"

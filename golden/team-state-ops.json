@@ -87,6 +87,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 0,
           "y": 0,
@@ -377,6 +378,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 4,
           "y": 0,
@@ -384,6 +386,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 4,
           "y": 0,
@@ -391,6 +394,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 14,
           "y": 6,
@@ -398,6 +402,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 11,
           "y": 0,
@@ -405,6 +410,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 1,
           "y": 1,
@@ -412,6 +418,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": -1,
           "y": 0,
@@ -419,6 +426,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 6,
           "y": 6,
@@ -426,6 +434,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 23,
           "y": 15,
@@ -433,6 +442,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 99,
           "x": 0,
           "y": 0,
@@ -440,6 +450,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 5,
           "y": 5,
@@ -447,6 +458,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 6,
           "y": 6,
@@ -454,6 +466,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 7,
           "y": 4,
@@ -749,6 +762,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 4,
           "y": 0,
@@ -756,6 +770,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 7,
           "y": 4,
@@ -763,6 +778,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 6,
           "y": 6,
@@ -770,6 +786,7 @@
         },
         {
           "op": "moveBuilding",
+          "actor": 0,
           "id": 2,
           "x": 7,
           "y": 4,
@@ -777,6 +794,7 @@
         },
         {
           "op": "moveBuilding",
+          "actor": 0,
           "id": 2,
           "x": 23,
           "y": 15,
@@ -784,6 +802,7 @@
         },
         {
           "op": "moveBuilding",
+          "actor": 0,
           "id": 1,
           "x": 5,
           "y": 5,
@@ -791,6 +810,7 @@
         },
         {
           "op": "moveBuilding",
+          "actor": 0,
           "id": 99,
           "x": 0,
           "y": 0,
@@ -798,6 +818,7 @@
         },
         {
           "op": "moveBuilding",
+          "actor": 0,
           "id": 3,
           "x": 6,
           "y": 6,
@@ -805,6 +826,7 @@
         },
         {
           "op": "moveBuilding",
+          "actor": 0,
           "id": 3,
           "x": 7,
           "y": 4,
@@ -812,6 +834,7 @@
         },
         {
           "op": "moveBuilding",
+          "actor": 0,
           "id": 3,
           "x": 10,
           "y": 3,
@@ -819,6 +842,7 @@
         },
         {
           "op": "moveBuilding",
+          "actor": 0,
           "id": 3,
           "x": 11,
           "y": 0,
@@ -826,6 +850,7 @@
         },
         {
           "op": "moveBuilding",
+          "actor": 0,
           "id": 1,
           "x": 11,
           "y": 0,
@@ -833,14 +858,17 @@
         },
         {
           "op": "returnToStash",
+          "actor": 0,
           "id": 1
         },
         {
           "op": "returnToStash",
+          "actor": 0,
           "id": 1
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 10,
           "y": 3,
@@ -848,18 +876,22 @@
         },
         {
           "op": "removeFromStash",
+          "actor": 0,
           "id": 1
         },
         {
           "op": "removeFromStash",
+          "actor": 0,
           "id": 1
         },
         {
           "op": "returnToStash",
+          "actor": 0,
           "id": 3
         },
         {
           "op": "removeFromStash",
+          "actor": 0,
           "id": 3
         }
       ]
@@ -1172,6 +1204,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 1,
           "id": 1,
           "x": 30,
           "y": 5,
@@ -1179,6 +1212,7 @@
         },
         {
           "op": "moveBuilding",
+          "actor": 1,
           "id": 1,
           "x": 31,
           "y": 6,
@@ -1186,6 +1220,7 @@
         },
         {
           "op": "returnToStash",
+          "actor": 1,
           "id": 1
         }
       ]
@@ -1531,6 +1566,623 @@
     }
   },
   {
+    "id": "team-state-ops.ownership-and-plots",
+    "kind": "team-state-ops",
+    "description": "PP-1: only the owner places, moves, returns or removes a building (not_owner); a footprint or conduit cell in a neighbour's plot is outside_own_plot; a conduit crossing the border is rejected; only the owner erases a conduit.",
+    "input": {
+      "seed": 1,
+      "partySize": 2,
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_wall",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall",
+          "tier": 1,
+          "owner": 1
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 1,
+          "id": 1,
+          "x": 5,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 24,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 23,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "moveBuilding",
+          "actor": 1,
+          "id": 1,
+          "x": 22,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "moveBuilding",
+          "actor": 0,
+          "id": 1,
+          "x": 24,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "returnToStash",
+          "actor": 1,
+          "id": 1
+        },
+        {
+          "op": "removeFromStash",
+          "actor": 0,
+          "id": 2
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 1,
+          "id": 2,
+          "x": 5,
+          "y": 4,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 21,
+          "y": 6,
+          "rotation": 90
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 22,
+          "y": 8,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 3,
+            "side": "east"
+          },
+          "to": {
+            "building": 4,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 22,
+              "y": 6
+            },
+            {
+              "x": 23,
+              "y": 6
+            },
+            {
+              "x": 24,
+              "y": 6
+            },
+            {
+              "x": 24,
+              "y": 7
+            },
+            {
+              "x": 23,
+              "y": 7
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 1,
+          "from": {
+            "building": 3,
+            "side": "east"
+          },
+          "to": {
+            "building": 4,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 22,
+              "y": 6
+            },
+            {
+              "x": 22,
+              "y": 7
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 3,
+            "side": "east"
+          },
+          "to": {
+            "building": 4,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 22,
+              "y": 6
+            },
+            {
+              "x": 22,
+              "y": 7
+            }
+          ]
+        },
+        {
+          "op": "eraseConduit",
+          "actor": 1,
+          "id": 5
+        },
+        {
+          "op": "eraseConduit",
+          "actor": 0,
+          "id": 5
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "not_owner"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "outside_own_plot"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "moveBuilding",
+            "ok": false,
+            "reason": "not_owner"
+          },
+          {
+            "op": "moveBuilding",
+            "ok": false,
+            "reason": "outside_own_plot"
+          },
+          {
+            "op": "returnToStash",
+            "ok": false,
+            "reason": "not_owner"
+          },
+          {
+            "op": "removeFromStash",
+            "ok": false,
+            "reason": "not_owner"
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "outside_own_plot"
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 4
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "outside_own_plot"
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "not_owner"
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 5
+          },
+          {
+            "op": "eraseConduit",
+            "ok": false,
+            "reason": "not_owner"
+          },
+          {
+            "op": "eraseConduit",
+            "ok": true
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 48,
+            "height": 16,
+            "partySize": 2,
+            "plotWidth": 24,
+            "features": [
+              {
+                "x": 2,
+                "y": 3,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 2,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 2,
+                "y": 5,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 2,
+                "y": 6,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 13,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 14,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 26,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 2,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 14,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 15,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 12,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 13,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 14,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 15,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 28,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 42,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 43,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 44,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 45,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 15,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 28,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 9,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 15,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 26,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 28,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 29,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 30,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 10,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 27,
+                "y": 11,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 11,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 27,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 12,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 40,
+                "y": 13,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 40,
+                "y": 14,
+                "feature": "ter_cliff"
+              }
+            ],
+            "nodes": [
+              {
+                "x": 4,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 11,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 34,
+                "y": 1,
+                "resource": "res_a"
+              },
+              {
+                "x": 1,
+                "y": 2,
+                "resource": "res_c"
+              },
+              {
+                "x": 4,
+                "y": 3,
+                "resource": "res_b"
+              },
+              {
+                "x": 11,
+                "y": 3,
+                "resource": "res_a"
+              },
+              {
+                "x": 46,
+                "y": 5,
+                "resource": "res_b"
+              },
+              {
+                "x": 21,
+                "y": 6,
+                "resource": "res_a"
+              },
+              {
+                "x": 38,
+                "y": 9,
+                "resource": "res_a"
+              },
+              {
+                "x": 43,
+                "y": 9,
+                "resource": "res_a"
+              },
+              {
+                "x": 22,
+                "y": 10,
+                "resource": "res_a"
+              },
+              {
+                "x": 34,
+                "y": 10,
+                "resource": "res_b"
+              },
+              {
+                "x": 47,
+                "y": 12,
+                "resource": "res_b"
+              },
+              {
+                "x": 34,
+                "y": 15,
+                "resource": "res_c"
+              }
+            ]
+          },
+          "cores": [null, null],
+          "buildings": [
+            {
+              "id": 1,
+              "def": "bld_wall",
+              "tier": 1,
+              "x": 23,
+              "y": 4,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 3,
+              "def": "bld_extractor",
+              "tier": 1,
+              "x": 21,
+              "y": 6,
+              "rotation": 90,
+              "owner": 0
+            },
+            {
+              "id": 4,
+              "def": "bld_barracks",
+              "tier": 1,
+              "x": 22,
+              "y": 8,
+              "rotation": 0,
+              "owner": 0
+            }
+          ],
+          "stash": [
+            {
+              "id": 2,
+              "def": "bld_wall",
+              "tier": 1,
+              "owner": 1
+            }
+          ],
+          "nextId": 6,
+          "conduits": []
+        },
+        "hash": "62c528a2"
+      }
+    }
+  },
+  {
     "id": "team-state-ops.conduit-rules",
     "kind": "team-state-ops",
     "description": "Every conduit rejection reason, direct and path conduits, erase, and detaching on move and return.",
@@ -1546,6 +2198,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 10,
           "y": 3,
@@ -1559,6 +2212,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 10,
           "y": 7,
@@ -1572,6 +2226,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 7,
           "y": 7,
@@ -1585,6 +2240,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 9,
           "y": 5,
@@ -1598,6 +2254,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 5,
           "x": 12,
           "y": 5,
@@ -1611,6 +2268,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 6,
           "x": 4,
           "y": 0,
@@ -1624,6 +2282,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 7,
           "x": 4,
           "y": 1,
@@ -1637,6 +2296,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 8,
           "x": 11,
           "y": 0,
@@ -1650,6 +2310,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 9,
           "x": 11,
           "y": 1,
@@ -1663,6 +2324,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 10,
           "x": 20,
           "y": 6,
@@ -1676,6 +2338,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 11,
           "x": 14,
           "y": 3,
@@ -1689,6 +2352,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 12,
           "x": 15,
           "y": 5,
@@ -1702,6 +2366,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 99,
             "side": "north"
@@ -1727,6 +2392,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -1752,6 +2418,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "south"
@@ -1777,6 +2444,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "north"
@@ -1802,6 +2470,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -1827,6 +2496,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -1852,6 +2522,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -1864,6 +2535,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -1885,6 +2557,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -1906,6 +2579,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -1931,6 +2605,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 6,
             "side": "north"
@@ -1948,6 +2623,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -1973,6 +2649,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 6,
             "side": "north"
@@ -1985,6 +2662,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -2018,6 +2696,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 4,
             "side": "north"
@@ -2039,6 +2718,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 4,
             "side": "east"
@@ -2060,6 +2740,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 8,
             "side": "north"
@@ -2072,6 +2753,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 13,
           "x": 10,
           "y": 5,
@@ -2085,6 +2767,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 10,
             "side": "south"
@@ -2126,6 +2809,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 13,
           "x": 18,
           "y": 4,
@@ -2133,6 +2817,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 10,
             "side": "south"
@@ -2178,6 +2863,7 @@
         },
         {
           "op": "moveBuilding",
+          "actor": 0,
           "id": 13,
           "x": 6,
           "y": 10,
@@ -2191,6 +2877,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 10,
             "side": "south"
@@ -2236,14 +2923,17 @@
         },
         {
           "op": "eraseConduit",
+          "actor": 0,
           "id": 999
         },
         {
           "op": "eraseConduit",
+          "actor": 0,
           "id": 15
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 6,
             "side": "north"
@@ -2256,6 +2946,7 @@
         },
         {
           "op": "moveBuilding",
+          "actor": 0,
           "id": 2,
           "x": 10,
           "y": 9,
@@ -2263,6 +2954,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -2296,6 +2988,7 @@
         },
         {
           "op": "returnToStash",
+          "actor": 0,
           "id": 1
         }
       ]
@@ -2825,6 +3518,7 @@
           "conduits": [
             {
               "id": 16,
+              "owner": 0,
               "from": {
                 "building": 6,
                 "side": "north"
@@ -2837,7 +3531,7 @@
             }
           ]
         },
-        "hash": "03e4d80f"
+        "hash": "dc31fdb8"
       }
     }
   },
@@ -2857,6 +3551,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 10,
           "y": 3,
@@ -2870,6 +3565,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 10,
           "y": 4,
@@ -2883,6 +3579,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 10,
           "y": 5,
@@ -2896,6 +3593,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 13,
           "y": 4,
@@ -2909,6 +3607,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 5,
           "x": 4,
           "y": 0,
@@ -2922,6 +3621,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 6,
           "x": 4,
           "y": 1,
@@ -2935,6 +3635,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 7,
           "x": 4,
           "y": 2,
@@ -2948,6 +3649,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 8,
           "x": 11,
           "y": 0,
@@ -2961,6 +3663,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 9,
           "x": 3,
           "y": 3,
@@ -2974,6 +3677,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 10,
           "x": 3,
           "y": 6,
@@ -2987,6 +3691,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 11,
           "x": 3,
           "y": 7,
@@ -3000,6 +3705,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 12,
           "x": 1,
           "y": 2,
@@ -3013,6 +3719,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 13,
           "x": 4,
           "y": 6,
@@ -3020,6 +3727,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -3032,6 +3740,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "north"
@@ -3044,6 +3753,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "east"
@@ -3065,6 +3775,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 5,
             "side": "north"
@@ -3077,6 +3788,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 6,
             "side": "north"
@@ -3089,6 +3801,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 8,
             "side": "west"
@@ -3130,6 +3843,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 9,
             "side": "north"
@@ -3151,6 +3865,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 12,
             "side": "north"
@@ -3184,6 +3899,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 10,
             "side": "north"
@@ -3196,6 +3912,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 10,
             "side": "east"
@@ -3635,6 +4352,7 @@
           "conduits": [
             {
               "id": 14,
+              "owner": 0,
               "from": {
                 "building": 1,
                 "side": "north"
@@ -3647,6 +4365,7 @@
             },
             {
               "id": 15,
+              "owner": 0,
               "from": {
                 "building": 2,
                 "side": "north"
@@ -3659,6 +4378,7 @@
             },
             {
               "id": 16,
+              "owner": 0,
               "from": {
                 "building": 2,
                 "side": "east"
@@ -3680,6 +4400,7 @@
             },
             {
               "id": 17,
+              "owner": 0,
               "from": {
                 "building": 5,
                 "side": "north"
@@ -3692,6 +4413,7 @@
             },
             {
               "id": 18,
+              "owner": 0,
               "from": {
                 "building": 6,
                 "side": "north"
@@ -3704,6 +4426,7 @@
             },
             {
               "id": 19,
+              "owner": 0,
               "from": {
                 "building": 8,
                 "side": "west"
@@ -3745,6 +4468,7 @@
             },
             {
               "id": 20,
+              "owner": 0,
               "from": {
                 "building": 9,
                 "side": "north"
@@ -3766,6 +4490,7 @@
             },
             {
               "id": 21,
+              "owner": 0,
               "from": {
                 "building": 12,
                 "side": "north"
@@ -3799,6 +4524,7 @@
             },
             {
               "id": 22,
+              "owner": 0,
               "from": {
                 "building": 10,
                 "side": "north"
@@ -3811,6 +4537,7 @@
             },
             {
               "id": 23,
+              "owner": 0,
               "from": {
                 "building": 10,
                 "side": "east"
@@ -3823,7 +4550,7 @@
             }
           ]
         },
-        "hash": "aa8ae346"
+        "hash": "d90cadcc"
       }
     }
   },
@@ -3843,6 +4570,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 1,
           "x": 11,
           "y": 0,
@@ -3856,6 +4584,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 2,
           "x": 11,
           "y": 1,
@@ -3869,6 +4598,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 3,
           "x": 10,
           "y": 1,
@@ -3882,6 +4612,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 4,
           "x": 10,
           "y": 2,
@@ -3895,6 +4626,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 5,
           "x": 10,
           "y": 3,
@@ -3902,6 +4634,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 2,
             "side": "west"
@@ -3914,6 +4647,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 4,
             "side": "south"
@@ -3926,6 +4660,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 1,
             "side": "north"
@@ -3938,6 +4673,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 5,
             "side": "south"
@@ -3950,10 +4686,12 @@
         },
         {
           "op": "eraseConduit",
+          "actor": 0,
           "id": 7
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 5,
             "side": "south"
@@ -3972,6 +4710,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 10,
           "x": 5,
           "y": 6,
@@ -3985,6 +4724,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 11,
           "x": 5,
           "y": 7,
@@ -3998,6 +4738,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 0,
           "id": 12,
           "x": 8,
           "y": 7,
@@ -4005,6 +4746,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 10,
             "side": "north"
@@ -4017,6 +4759,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 11,
             "side": "east"
@@ -4038,6 +4781,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 12,
             "side": "south"
@@ -4063,6 +4807,7 @@
         },
         {
           "op": "addConduit",
+          "actor": 0,
           "from": {
             "building": 12,
             "side": "east"
@@ -4424,6 +5169,7 @@
           "conduits": [
             {
               "id": 6,
+              "owner": 0,
               "from": {
                 "building": 2,
                 "side": "west"
@@ -4436,6 +5182,7 @@
             },
             {
               "id": 8,
+              "owner": 0,
               "from": {
                 "building": 1,
                 "side": "north"
@@ -4448,6 +5195,7 @@
             },
             {
               "id": 9,
+              "owner": 0,
               "from": {
                 "building": 5,
                 "side": "south"
@@ -4460,6 +5208,7 @@
             },
             {
               "id": 13,
+              "owner": 0,
               "from": {
                 "building": 10,
                 "side": "north"
@@ -4472,6 +5221,7 @@
             },
             {
               "id": 14,
+              "owner": 0,
               "from": {
                 "building": 11,
                 "side": "east"
@@ -4493,7 +5243,7 @@
             }
           ]
         },
-        "hash": "ea2aab71"
+        "hash": "3bc57646"
       }
     }
   },
@@ -4555,6 +5305,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 1,
           "id": 1,
           "x": 31,
           "y": 1,
@@ -4562,6 +5313,7 @@
         },
         {
           "op": "placeFromStash",
+          "actor": 1,
           "id": 1,
           "x": 33,
           "y": 1,
