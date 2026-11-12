@@ -281,3 +281,23 @@ describe('supplied against need', () => {
     expect(run(0)).toBe('under');
   });
 });
+
+describe('Backspace while drawing a border half', () => {
+  test('on a receiving draft it cancels instead of leaving a stuck draft', async () => {
+    const { s, ctl } = await start();
+    const w = s.run.team.map.plotWidth;
+    s.setActing(1);
+    ctl.setTool('conduit');
+    click(ctl, { x: w, y: 6 }); // the border spot starts a receiving draft
+    expect(ctl.ui.draft?.building).toBe(-1);
+    expect(ctl.ui.draft?.cells).toHaveLength(1);
+    const key = {
+      key: 'Backspace',
+      ctrlKey: false,
+      shiftKey: false,
+      metaKey: false,
+    };
+    expect(ctl.key(key)).toBe(true);
+    expect(ctl.ui.draft).toBeNull();
+  });
+});

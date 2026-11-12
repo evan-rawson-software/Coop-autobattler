@@ -1687,7 +1687,9 @@ export async function runRunSmoke({
     await page.click('[data-tool="conduit"]');
     await clickCell(node.x, node.y + 1);
     await clickCell(w - 1, node.y + 1);
-    await page.waitForFunction(() => window.__debug?.build?.links().length === 1);
+    await page.waitForFunction(
+      () => window.__debug?.build?.links().length === 1,
+    );
     const first = await links();
     check(
       first[0].owner === 0 &&
@@ -1700,7 +1702,9 @@ export async function runRunSmoke({
     await page.click('[data-tool="conduit"]');
     await clickCell(w, node.y + 1);
     await clickCell(w + 2, node.y + 2);
-    await page.waitForFunction(() => window.__debug?.build?.links().length === 2);
+    await page.waitForFunction(
+      () => window.__debug?.build?.links().length === 2,
+    );
     await page.waitForFunction(() =>
       window.__debug?.build?.links().every((h) => h.state === 'joined'),
     );
