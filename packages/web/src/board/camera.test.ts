@@ -130,9 +130,7 @@ describe('start zoom showing the Core', () => {
     const cam = clampCamera({ cx: centre.x, cy: centre.y, zoom: z }, v, tall);
     const s = worldToScreen(cam, v, core);
     const r = CORE_VIEW_RADIUS * cam.zoom;
-    return (
-      s.x - r >= 0 && s.y - r >= 0 && s.x + r <= v.w && s.y + r <= v.h
-    );
+    return s.x - r >= 0 && s.y - r >= 0 && s.x + r <= v.w && s.y + r <= v.h;
   };
 
   test('a tall screen keeps the start zoom', () => {
@@ -166,8 +164,8 @@ describe('start zoom showing the Core', () => {
   });
 
   test('without a Core it is the start zoom or the fit zoom', () => {
-    expect(startZoomShowing(vp, bounds, null, DEFAULT_ZOOM)).toBeLessThanOrEqual(
-      DEFAULT_ZOOM,
-    );
+    expect(
+      startZoomShowing(vp, bounds, null, DEFAULT_ZOOM),
+    ).toBeLessThanOrEqual(DEFAULT_ZOOM);
   });
 });

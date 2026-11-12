@@ -1427,7 +1427,7 @@ try {
 
     // A ghost board, by contrast, is a factory with conduits (so the check
     // above can fail), and Watch again works on it after Skip.
-    await open('#battle?p=rush&o=ghost:rush&s=1');
+    await open(`#battle?p=${winGold.board}&o=ghost:rush&s=1`);
     await waitPhase('playing');
     {
       const ghostScene = await page.evaluate(() =>
@@ -1466,7 +1466,7 @@ try {
     }
 
     // Performance at 4x with hundreds of units.
-    await open('#battle?p=rush&o=stress&s=1');
+    await open(`#battle?p=${winGold.board}&o=stress&s=1`);
     await waitPhase('playing');
     await page.waitForFunction(
       () => window.__debug.battle.revealed(),
@@ -1545,11 +1545,10 @@ try {
     await shot('battle-6-stress');
 
     // Editing the hash by hand: the route follows it, the tick included.
-    await open('#battle?p=rush&o=pve:arch_rusher:1:medium&s=1');
+    await open(`#battle?p=${winGold.board}&o=pve:arch_rusher:1:medium&s=1`);
     await waitPhase('playing');
     await page.evaluate(() => {
-      window.location.hash =
-        '#battle?p=rush&o=pve:arch_rusher:1:medium&s=1&t=120';
+      window.location.hash = `#battle?p=${winGold.board}&o=pve:arch_rusher:1:medium&s=1&t=120`;
     });
     await page.waitForFunction(
       () => (window.__debug?.battle?.tick?.() ?? 0) >= 120,
