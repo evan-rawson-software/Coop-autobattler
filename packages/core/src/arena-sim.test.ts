@@ -1590,11 +1590,13 @@ describe('production', () => {
 });
 
 describe('determinism and symmetry', () => {
-  function farmTeam(): TeamState {
+  /** With `turrets`, also a powered tier 3 turret at the front edge (x = 10). */
+  function farmTeam(turrets = false): TeamState {
     const lab = new Lab(
       tiny([
         [2, 2, 'res_a'],
         [8, 2, 'res_a'],
+        ...(turrets ? ([[10, 2, 'res_b']] as [number, number, string][]) : []),
       ]),
     );
     lab.core(5, 0);
@@ -1614,6 +1616,13 @@ describe('determinism and symmetry', () => {
     ]);
     lab.put('bld_wall', 4, 12);
     lab.put('bld_wall', 7, 12);
+    if (turrets) {
+      const src = lab.put('bld_extractor', 10, 2, 0, 3);
+      const turret = lab.put('bld_turret', 10, 13, 0, 3);
+      const cells: [number, number][] = [];
+      for (let y = 3; y < 13; y++) cells.push([10, y]);
+      lab.link(src, 'north', turret, 'south', cells);
+    }
     return lab.state;
   }
 
@@ -1665,6 +1674,39 @@ describe('determinism and symmetry', () => {
     expect(sim.unitsDied[0]).toBeGreaterThan(3);
     expect(ofType(events, 'unit_attacked').length).toBeGreaterThan(50);
     expect(fights).toBeGreaterThan(1000);
+  });
+
+  test('a mirror match stays exactly symmetric while turrets shoot into the gap (PP-13)', () => {
+    const team = farmTeam(true);
+    const { sim, ctx, events } = startArenaBattle(
+      team,
+      team,
+      GAP,
+      content,
+      simConfig,
+    );
+    const { boardHeight, gapRows } = ctx.arena.geom;
+    const inGap = [0, 0];
+    for (let t = 0; t < 700; t++) {
+      const rows = new Map(sim.units.map((u) => [u.id, Math.floor(u.py / CU)]));
+      const start = events.length;
+      stepArena(sim, ctx);
+      for (const e of events.slice(start)) {
+        if (e.type !== 'turret_fired') continue;
+        const y = got(rows.get(e.unit));
+        if (y >= boardHeight && y < boardHeight + gapRows) {
+          inGap[e.side === 0 ? 0 : 1] += 1;
+        }
+      }
+      expect(mirrorKey(sim, 1)).toEqual(mirrorKey(sim, 0));
+      expect(hashJson(sim.boards[0])).toBe(hashJson(sim.boards[1]));
+      expect(
+        sim.health.filter((h) => h.side === 0).map((h) => h.hp),
+      ).toEqual(sim.health.filter((h) => h.side === 1).map((h) => h.hp));
+    }
+    // Shots land in the gap, and the same number for both sides.
+    expect(inGap[0]).toBeGreaterThan(0);
+    expect(inGap[1]).toBe(inGap[0]);
   });
 
   test('identical inputs give identical states and events', () => {

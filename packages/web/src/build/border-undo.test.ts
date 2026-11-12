@@ -89,13 +89,29 @@ describe('undo with border halves', () => {
       half,
     ]);
     // Applying the return and then the inverse gives the same layout.
-    const returned = previewActions(
-      team,
-      content,
-      [{ t: 'return', id: src }],
-      0,
-    );
-    expect(returned.ok).toBe(true);
+    expect(
+      previewActions(team, content, [{ t: 'return', id: src }], 0).ok,
+    ).toBe(true);
+    const returned = returnToStash(team, content, { actor: 0, id: src });
+    if (!returned.ok) throw new Error(returned.reason);
+    expect(returned.state.conduits).toEqual([]);
+    expect(layoutHash(returned.state)).not.toBe(layoutHash(team));
+    const placed = placeFromStash(returned.state, content, {
+      actor: 0,
+      id: src,
+      x: 2,
+      y: 2,
+      rotation: 0,
+    });
+    if (!placed.ok) throw new Error(placed.reason);
+    const undone = addConduit(placed.state, content, {
+      actor: 0,
+      from: half.from,
+      to: half.to,
+      cells: half.cells,
+    });
+    if (!undone.ok) throw new Error(undone.reason);
+    expect(layoutHash(undone.state)).toBe(layoutHash(team));
   });
 
   test('erasing a half is undone by adding it again', () => {
