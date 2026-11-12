@@ -178,7 +178,7 @@ export interface RunState {
   readonly runId: string;
   readonly runVersion: string;
   /** `RUN_STATE_FORMAT_VERSION`; a state of another version is rejected. */
-  readonly formatVersion: 4;
+  readonly formatVersion: 5;
   readonly seed: number;
   /** The saved state of the run's `Rng`. */
   readonly rng: readonly [number, number, number, number];

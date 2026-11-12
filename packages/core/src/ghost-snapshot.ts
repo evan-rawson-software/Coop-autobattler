@@ -185,7 +185,7 @@ export interface GhostPvpRecord {
 }
 
 export interface GhostSnapshot {
-  readonly formatVersion: 1;
+  readonly formatVersion: 2;
   /** The game version (`major.minor`) the run was played on. */
   readonly gameVersion: string;
   readonly partySize: number;

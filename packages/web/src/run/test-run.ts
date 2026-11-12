@@ -26,7 +26,7 @@ export function realDeps(): RunDeps {
 
 export function newRun(seed = 5, runId = 'test-run'): RunState {
   const r = createRun(
-    { runId, runVersion: '0.1', seed, players: ['You'], host: 0 },
+    { runId, runVersion: '1.0', seed, players: ['You'], host: 0 },
     realDeps(),
   );
   if (!r.ok) throw new Error(r.detail);

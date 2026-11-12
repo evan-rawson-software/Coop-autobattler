@@ -192,10 +192,11 @@ describe('a run saved before the per-player design (issue #139)', () => {
   /** What a save looked like before `core` became `cores`, format 4. */
   function preChange(version: VersionKind): SaveRecord {
     const rec = makeRecord(version, 'none', false);
-    const { cores: _cores, ...team } = rec.state.team;
+    const team = { ...rec.state.team, core: null } as Record<string, unknown>;
+    delete team['cores'];
     return {
       ...rec,
-      state: { ...rec.state, formatVersion: 4, team: { ...team, core: null } },
+      state: { ...rec.state, formatVersion: 4, team },
     } as unknown as SaveRecord;
   }
 

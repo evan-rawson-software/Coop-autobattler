@@ -90,11 +90,11 @@ async function shopSession(): Promise<{
   const deps = createShopDeps();
   const runId = 'test-shop';
   const r = await startRun(
-    { runId, runVersion: '0.1', seed: 11, players: ['You'], host: 0 },
+    { runId, runVersion: '1.0', seed: 11, players: ['You'], host: 0 },
     deps,
     store,
     1,
-    '0.1.0',
+    '1.0.0',
   );
   if (!r.ok) throw new Error(r.reason);
   const s = BuildSession.fromController(r.controller);
@@ -285,7 +285,7 @@ describe('reload', () => {
 
     // A new store over the same storage, as after a page reload.
     const store2 = createLocalStorageSaveStore(storage);
-    const opened = await openRun(runId, createShopDeps(), store2, '0.1.0');
+    const opened = await openRun(runId, createShopDeps(), store2, '1.0.0');
     if (!opened.ok) throw new Error(opened.reason);
     const back = opened.controller.state;
     expect(back).toEqual(saved);

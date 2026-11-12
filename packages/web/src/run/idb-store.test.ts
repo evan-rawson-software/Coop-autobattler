@@ -14,14 +14,14 @@ function record(runId: string, counter: number, round = 1): SaveRecord {
   return {
     saveFormatVersion: 1,
     runId,
-    runVersion: '0.1',
-    installedVersionAtSave: '0.1.0',
+    runVersion: '1.0',
+    installedVersionAtSave: '1.0.0',
     actionCounter: counter,
     hostName: 'Ann',
     playerNames: ['Ann'],
     createArgs: {
       runId,
-      runVersion: '0.1',
+      runVersion: '1.0',
       seed: 1,
       players: ['Ann'],
       host: 0,
