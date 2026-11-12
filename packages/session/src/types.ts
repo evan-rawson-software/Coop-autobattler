@@ -48,9 +48,10 @@ export type Step = (typeof STEPS)[number];
  * dependent on gold (a version-2 save mid-Workshop could not be finished);
  * version 4 added the ghost fields `pvpOpponent` and `ghostsFought` (W3-1);
  * version 5 is the per-player design (issue #124: `cores` in place of `core`, and an
- * `owner` on every conduit). Older states are not readable.
+ * `owner` on every conduit); version 6 lets a conduit end in the team state be a
+ * border spot (halves of border links, PP-4). Older states are not readable.
  */
-export const RUN_STATE_FORMAT_VERSION = 6;
+export const RUN_STATE_FORMAT_VERSION = 7;
 
 /**
  * Steps a saved state can never be in. `pve_battle` and `pvp_battle` are
@@ -177,7 +178,7 @@ export interface RunState {
   readonly runId: string;
   readonly runVersion: string;
   /** `RUN_STATE_FORMAT_VERSION`; a state of another version is rejected. */
-  readonly formatVersion: 6;
+  readonly formatVersion: 7;
   readonly seed: number;
   /** The saved state of the run's `Rng`. */
   readonly rng: readonly [number, number, number, number];

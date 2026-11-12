@@ -419,13 +419,13 @@ describe('item 2: the controller validates the next state before every save', ()
   }, 60_000);
 });
 
-describe('format 2 and one Core (issue #139)', () => {
+describe('format 3 and one Core (issue #139, #135)', () => {
   const ctx = ctxOf();
 
-  test('a format-1 snapshot is rejected, and so is any other format', () => {
+  test('a format-2 snapshot (before border links) is rejected, and so is any other format', () => {
     const good = goodSnapshot(2);
-    expect(good.formatVersion).toBe(3);
-    for (const v of [1, 2, 4, 0, '3']) {
+    expect(good.formatVersion).toBe(4);
+    for (const v of [1, 2, 3, 5, 0, '4']) {
       const r = validateGhostSnapshot(
         { ...clone(good), formatVersion: v },
         ctx,

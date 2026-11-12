@@ -226,43 +226,41 @@ describe('a run saved before the per-player design (issue #139)', () => {
   });
 });
 
-describe('a run saved with the Core vote (run-state format 5, issue #131)', () => {
-  /** A core_placement save as format 5 wrote it: a Core vote and proposals. */
-  function withVote(version: VersionKind): SaveRecord {
-    const rec = makeRecord(version, 'none', false);
-    return {
-      ...rec,
-      state: {
-        ...rec.state,
-        formatVersion: 5,
-        step: 'core_placement',
-        votes: { topic: 'core', choices: [null] },
-        pending: { proposals: [] },
-      },
-    } as unknown as SaveRecord;
-  }
+describe.each([5, 6])(
+  'a run-state format %i save, before the Core placement without a vote (issue #131)',
+  (previous) => {
+    const format5 = (version: VersionKind): SaveRecord => {
+      const rec = makeRecord(version, 'none', false);
+      return {
+        ...rec,
+        state: {
+          ...rec.state,
+          formatVersion: previous,
+          step: 'core_placement',
+          votes: { topic: 'core', choices: [null] },
+          pending: { proposals: [] },
+        },
+      } as unknown as SaveRecord;
+    };
 
-  test('under the current major it is unsupported, not corrupt', async () => {
-    const rec = withVote('same');
-    expect(classifySave(rec, KEY, INSTALLED, deps).kind).toBe(
-      'unsupported_format',
-    );
-    const open = await openRun(KEY, deps, freshStore(rec), INSTALLED);
-    expect(open.ok ? 'ok' : open.reason).toBe('unsupported_format');
-    const store = freshStore(rec);
-    const res = await initSaves(store, INSTALLED, 99, deps);
-    expect(res.corrupt).toEqual([]);
-  });
+    test('under the current major it is unsupported_format, never damaged', async () => {
+      const rec = format5('same');
+      const open = await openRun(KEY, deps, freshStore(rec), INSTALLED);
+      expect(open.ok ? 'ok' : open.reason).toBe('unsupported_format');
+      const res = await initSaves(freshStore(rec), INSTALLED, 99, deps);
+      expect(res.corrupt).toEqual([]);
+    });
 
-  test('under an older major it is wiped at start-up', async () => {
-    const rec = withVote('older_major');
-    const store = freshStore(rec);
-    const res = await initSaves(store, INSTALLED, 99, deps);
-    expect(res.wipedUnreadable.map((w) => w.runId)).toEqual([KEY]);
-    expect(res.corrupt).toEqual([]);
-    expect(await store.get(KEY)).toBeNull();
-  });
-});
+    test('under an older major it is wiped at start-up', async () => {
+      const rec = format5('older_major');
+      const store = freshStore(rec);
+      const res = await initSaves(store, INSTALLED, 99, deps);
+      expect(res.wipedUnreadable.map((w) => w.runId)).toEqual([KEY]);
+      expect(res.corrupt).toEqual([]);
+      expect(await store.get(KEY)).toBeNull();
+    });
+  },
+);
 
 /** A store whose chosen method rejects (a fake for a failing disk). */
 function failing(

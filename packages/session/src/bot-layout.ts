@@ -9,6 +9,7 @@
  */
 import {
   addConduit,
+  isBorderEnd,
   occupancy,
   placeFromStash,
   queryMap,
@@ -301,8 +302,8 @@ function freeNodes(env: Env, team: TeamState, resource: string): Cell[] {
 function attached(team: TeamState): Set<number> {
   const ids = new Set<number>();
   for (const c of team.conduits) {
-    ids.add(c.from.building);
-    ids.add(c.to.building);
+    if (!isBorderEnd(c.from)) ids.add(c.from.building);
+    if (!isBorderEnd(c.to)) ids.add(c.to.building);
   }
   return ids;
 }

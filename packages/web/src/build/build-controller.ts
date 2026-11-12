@@ -16,6 +16,8 @@ import {
   type PlacedBuilding,
   type Rotation,
   type TeamState,
+  conduitTouches,
+  isBorderEnd,
 } from '@game/core';
 import { createStore, type Store } from '../app-state.js';
 import type { BoardPointerEvent } from '../board/BoardView.js';
@@ -166,9 +168,7 @@ export function conduitAt(team: TeamState, cell: Cell) {
 }
 
 function attachedCount(team: TeamState, id: number): number {
-  return team.conduits.filter(
-    (c) => c.from.building === id || c.to.building === id,
-  ).length;
+  return team.conduits.filter((c) => conduitTouches(c, id)).length;
 }
 
 function plural(n: number, one: string, many: string): string {
@@ -739,7 +739,8 @@ export class BuildController {
     const s = this.session;
     if (s === null) return;
     const c = s.run.team.conduits.find((x) => x.id === id);
-    if (c === undefined) {
+    // Halves of border links have no session intent yet (issue #136).
+    if (c === undefined || isBorderEnd(c.from) || isBorderEnd(c.to)) {
       this.refuse('unknown_conduit');
       return;
     }

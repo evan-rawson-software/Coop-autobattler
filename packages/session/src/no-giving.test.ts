@@ -1,4 +1,9 @@
-import { Rng, loadEconomyOrThrow, type PlacedBuilding } from '@game/core';
+import {
+  Rng,
+  conduitTouches,
+  loadEconomyOrThrow,
+  type PlacedBuilding,
+} from '@game/core';
 import { describe, expect, test } from 'vitest';
 import economyJson from '../../../content/economy.json';
 import { planLayout } from './bot-layout.js';
@@ -196,7 +201,7 @@ const MAKERS: Record<string, Maker> = {
     const lay = laidOut(s, actor).s;
     const mine = new Set(owned(lay.team.buildings, actor, 'own'));
     return lay.team.conduits
-      .filter((c) => mine.has(c.from.building) || mine.has(c.to.building))
+      .filter((c) => [...mine].some((b) => conduitTouches(c, b)))
       .map((c) => ({ type: 'erase_conduit', id: c.id }));
   },
   // Economy handlers (`deps.handlers`).

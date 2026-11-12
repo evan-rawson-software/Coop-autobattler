@@ -195,6 +195,7 @@ describe('run-state.schema.json', () => {
     expect(bad((o) => (o['formatVersion'] = 1))).toBe(false);
     expect(bad((o) => (o['formatVersion'] = 4))).toBe(false);
     expect(bad((o) => (o['formatVersion'] = 5))).toBe(false);
+    expect(bad((o) => (o['formatVersion'] = 6))).toBe(false);
     expect(bad((o) => (o['step'] = 'pve_battle'))).toBe(false);
     expect(bad((o) => (o['rng'] = [1, 2, 3]))).toBe(false);
     expect(bad((o) => (o['runVersion'] = 'v1'))).toBe(false);

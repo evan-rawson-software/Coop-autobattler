@@ -13,6 +13,7 @@ import {
   type PlacedBuilding,
   type Side,
   type TeamState,
+  buildingEnd,
 } from '@game/core';
 import type { WebContent } from '../content.js';
 import { mapSalt } from '../sprites/variants.js';
@@ -286,8 +287,8 @@ function buildBoard(
       const v = cellToView(frame, p.x, p.y);
       return { x: v.x + 0.5, y: v.y + 0.5 };
     };
-    const a = byId.get(c.from.building);
-    const b = byId.get(c.to.building);
+    const a = byId.get(buildingEnd(c.from)?.building ?? -1);
+    const b = byId.get(buildingEnd(c.to)?.building ?? -1);
     const aCells = a ? occ.cellsOf(a) : [];
     const bCells = b ? occ.cellsOf(b) : [];
     const near = (
