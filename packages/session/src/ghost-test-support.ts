@@ -8,7 +8,7 @@ import { SELECT_GHOST } from './ghosts.js';
 import { applyIntent, createRun } from './machine.js';
 import { startRun, type RunController } from './run-controller.js';
 import { createMemorySaveStore } from './save-store-memory.js';
-import { corePosition, makeGameDeps } from './test-support.js';
+import { coreMove, makeGameDeps } from './test-support.js';
 import type {
   CreateRunArgs,
   Effect,
@@ -77,10 +77,8 @@ export async function stepOnce(g: Game): Promise<void> {
   const all = Array.from({ length: n }, (_, i) => i);
   switch (s.step) {
     case 'core_placement': {
-      const pos = corePosition(s);
-      await send(g, 0, { type: 'propose_core', ...pos });
-      for (const p of all.slice(1))
-        await send(g, p, { type: 'vote', choice: pos });
+      for (const p of all) await send(g, p, coreMove(s, p));
+      for (const p of all) await send(g, p, { type: 'ready' });
       return;
     }
     case 'pve_choice':
@@ -205,10 +203,11 @@ export function botStep(
   };
   switch (s.step) {
     case 'core_placement': {
-      const pos = corePosition(s);
-      if (!put(0, { type: 'propose_core', ...pos })) return null;
-      for (let p = 1; p < n; p++) {
-        if (!put(p, { type: 'vote', choice: pos })) return null;
+      for (let p = 0; p < n; p++) {
+        if (!put(p, coreMove(s, p))) return null;
+      }
+      for (let p = 0; p < n; p++) {
+        if (!put(p, { type: 'ready' })) return null;
       }
       return s;
     }

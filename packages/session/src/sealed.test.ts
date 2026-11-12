@@ -131,14 +131,20 @@ describe('Ready is refused while a unit producer is sealed in (issue #37, 3a)', 
     expect(sealedProducers(s, deps)).toEqual([]);
   });
 
-  test('two players: the sealed producer of one blocks the ready of both', () => {
-    const { state } = sealIn(inBuild(['Ann', 'Bo']));
-    for (const p of [0, 1]) {
-      expect(applyIntent(state, p, { type: 'ready' }, deps)).toMatchObject({
-        ok: false,
-        reason: 'sealed_producer',
-      });
-    }
+  test('two players: a sealed producer blocks only its owner (PP-15)', () => {
+    const { state, barracks } = sealIn(inBuild(['Ann', 'Bo']));
+    const owner = state.team.buildings.find((b) => b.id === barracks)
+      ?.owner as number;
+    const other = 1 - owner;
+    expect(applyIntent(state, owner, { type: 'ready' }, deps)).toMatchObject({
+      ok: false,
+      reason: 'sealed_producer',
+      detail: String(barracks),
+    });
+    // The other player owns no sealed producer: their Ready is accepted.
+    const r = ok(state, other, { type: 'ready' }, deps);
+    expect(r.state.perPlayer[other]?.ready).toBe(true);
+    expect(r.state.step).toBe('build');
   });
 
   test('also in the shop, but not in the summary steps', () => {

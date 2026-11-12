@@ -36,7 +36,7 @@ export function sealedProducers(
 
 export interface OpenVoteView {
   readonly topic: VoteTopic;
-  /** What can be voted for: PvE options, event offers, or core proposals. */
+  /** What can be voted for: PvE options or event offers. */
   readonly options: readonly Json[];
   /** Each player's current choice, or null. */
   readonly choices: readonly (Json | null)[];
@@ -53,7 +53,7 @@ export function openVote(state: RunState): OpenVoteView | null {
     typeof pending === 'object' && pending !== null && !Array.isArray(pending)
       ? (pending as Record<string, Json>)
       : {};
-  const list = rec[votes.topic === 'core' ? 'proposals' : 'options'];
+  const list = rec['options'];
   const waitingFor: number[] = [];
   votes.choices.forEach((c, i) => {
     if (c === null) waitingFor.push(i);

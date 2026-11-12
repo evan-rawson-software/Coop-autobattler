@@ -31,7 +31,7 @@ last player has voted. Then, if every player chose the same option, that
 option wins; otherwise ONE player's vote is picked at random, each player's vote being one equally likely ticket (so an option with
 3 of 4 votes wins with probability 3/4; there is no host tie-break). The pick
 is one `nextInt(players)` from the stream `vote:<topic>:r<r>:<leg>` (topic
-`core`, `pve`, `event` or `event_follow_up`), drawn once when the last vote
+`pve`, `event` or `event_follow_up`; there is no Core vote), drawn once when the last vote
 arrives and stored in the new state (the chosen option is in `pending`/`team`),
 so a reload or a replay gives the same result and nothing can re-roll it. For a
 party of two or more, every vote resolution advances the run generator exactly
@@ -42,7 +42,7 @@ when a pick was made, `picked: { player, random: true }`.
 
 | Step             | Intents allowed (besides `abandon` by the host)   | How it ends                                                                                               |
 | ---------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `core_placement` | `propose_core`, `vote` (for a proposal)           | Every player has voted for a legal position (a proposal counts as its proposer's vote); unanimous or one vote picked at random: Core placed, `startingKit` hook, then `build`. |
+| `core_placement` | `place_core`, `ready`, `unready`                  | Each player places their own Core in their own plot (`place_core` stores a pending position in `pending.positions[player]`, changeable until Ready; `ready` without one is `core_not_placed`). All ready: every Core is placed in player order, `startingKit` hook, then `build`. No vote, no random draw. |
 | `build`          | board edits, `ready`, `unready`, extension intents | All players ready: `pve_choice`.                                                                          |
 | `pve_choice`     | `vote` (an option id from `pending.options`)      | All voted: winner chosen, then `pve_battle`. The options were stored earlier in `upcomingPve` (see "Game deps"). |
 | `pve_battle`     | none (never saved)                                | Resolved at once through `deps.battle`; goes to `pve_summary`.                                            |
@@ -54,7 +54,7 @@ when a pick was made, `picked: { player, random: true }`.
 | `pvp_summary`    | `ready`, `unready`                                | All ready: `rewards` hook; a loss costs `pvpLossLifeCost` lives; 0 lives gives `run_over`, else `event_choice`. |
 | `run_over`       | none                                              | Final. `outcome` is `defeated` or `abandoned`.                                                            |
 
-**Ready locks (issue #58).** In `build` and `shop`, a player who is Ready can
+**Ready locks (issue #58).** In `core_placement`, `build` and `shop`, a player who is Ready can
 only `unready` (the host can also `abandon`): their buy, sell, re-roll, board
 edits and extension intents are rejected with `locked_ready` until they
 unready. `applyIntent` enforces it for built-in and extension intents alike
@@ -66,7 +66,8 @@ a locked state.
 rejected with `sealed_producer` (`detail`: the ids, such as `"12,15"`) while a
 placed unit producer is fully enclosed: no walkable route from its spawn cells
 to the board's front row (gates are walkable; see "Sealed unit producers" in
-`docs/rules-reference.md`). The check covers the whole shared board and is
+`docs/rules-reference.md`). Only producers owned by the player who sent
+`ready` block them (PP-15); the check reads the whole shared board and is
 the pure function `sealedProducers` in `core`; the selector
 `sealedProducers(state, deps)` returns the same ids for a screen.
 

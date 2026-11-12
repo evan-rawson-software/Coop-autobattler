@@ -861,7 +861,8 @@ export class BuildController {
   private async proposeCore(cell: Cell): Promise<void> {
     const s = this.session;
     if (s === null) return;
-    const r = await s.dispatch({ type: 'propose_core', x: cell.x, y: cell.y });
+    let r = await s.dispatch({ type: 'place_core', x: cell.x, y: cell.y });
+    if (r.ok) r = await s.dispatch({ type: 'ready' });
     if (r.ok) {
       this.legalCore = [];
       this.set({

@@ -7,7 +7,7 @@
  * It only reads the run state and sends intents; it decides nothing about the
  * rules.
  */
-import { listLegalCorePositionsAnyPlot } from '@game/core';
+import { listLegalCorePositions } from '@game/core';
 import {
   SKIP_CHOICE,
   type DispatchResult,
@@ -41,18 +41,23 @@ function firstId(list: Json | undefined): string | null {
 }
 
 /** The next intent of the default path, or null when nothing applies. */
-export function nextIntent(state: RunState): Intent | null {
+export function nextIntent(state: RunState, player = 0): Intent | null {
   const pending = isRecord(state.pending) ? state.pending : {};
   switch (state.step) {
     case 'core_placement': {
-      const pos = listLegalCorePositionsAnyPlot(
+      const placed = Array.isArray(pending['positions'])
+        ? (pending['positions'] as Json[])[player]
+        : null;
+      if (placed !== null && placed !== undefined) return { type: 'ready' };
+      const pos = listLegalCorePositions(
         state.team.map,
         content,
         content.mapgen,
+        player,
       )[0];
       return pos === undefined
         ? null
-        : { type: 'propose_core', x: pos.x, y: pos.y };
+        : { type: 'place_core', x: pos.x, y: pos.y };
     }
     case 'pve_choice':
       return { type: 'vote', choice: 'medium' };
@@ -118,7 +123,7 @@ export async function driveToShop(
     // Everyone else proposes, votes, readies and chooses too. The step moves
     // on with the last of them.
     for (let p = 1; p <= others.count; p++) {
-      const own = nextIntent(getState());
+      const own = nextIntent(getState(), p);
       if (own === null || getState().step !== state.step) break;
       const o = await others.dispatchAs(p, own);
       if (!o.ok) {

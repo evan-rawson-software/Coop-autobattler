@@ -55,6 +55,8 @@ export interface BattleError {
   readonly message: string;
   /** The side at fault, for `core_not_placed`. */
   readonly side?: 0 | 1;
+  /** The lowest player index without a Core on that side, for `core_not_placed`. */
+  readonly player?: number;
 }
 
 export interface BattleInput {
@@ -233,6 +235,7 @@ export function startBattle(
       code: 'core_not_placed',
       message: 'Side 0 has not placed its Core.',
       side: 0,
+      player: teamA.cores.findIndex((c) => c === null),
     });
   }
   if (teamB.cores.every((c) => c === null)) {
@@ -240,6 +243,7 @@ export function startBattle(
       code: 'core_not_placed',
       message: 'Side 1 has not placed its Core.',
       side: 1,
+      player: teamB.cores.findIndex((c) => c === null),
     });
   }
   let zone: NeutralZone;

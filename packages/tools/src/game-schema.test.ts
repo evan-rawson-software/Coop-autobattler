@@ -89,7 +89,8 @@ describe('run-state.schema.json with options, events and modifiers', () => {
     };
     const pos = listLegalCorePositionsAnyPlot(s.team.map, content, mapgen)[0];
     if (pos === undefined) throw new Error('no Core position');
-    send({ type: 'propose_core', ...pos });
+    send({ type: 'place_core', ...pos });
+    send({ type: 'ready' });
     send({ type: 'ready' });
     send({ type: 'vote', choice: 'medium' });
     send({ type: 'ready' });

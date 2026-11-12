@@ -362,13 +362,14 @@ describe('item 2: the controller validates the next state before every save', ()
     if (!started.ok) return;
     const c = started.controller;
     const pos = (await import('./test-support.js')).corePosition(c.state);
-    expect((await c.dispatch(0, { type: 'propose_core', ...pos }, 2)).ok).toBe(
+    expect((await c.dispatch(0, { type: 'place_core', ...pos }, 2)).ok).toBe(
       true,
     );
+    expect((await c.dispatch(0, { type: 'ready' }, 3)).ok).toBe(true);
     expect(c.state.step).toBe('build');
     const before = c.state;
     const stored = JSON.stringify(await saves.get('run-v'));
-    const bad = await c.dispatch(0, { type: 'evil', mode: 'lives' }, 3);
+    const bad = await c.dispatch(0, { type: 'evil', mode: 'lives' }, 4);
     expect(bad.ok).toBe(false);
     if (!bad.ok) {
       expect(bad.reason).toBe('invalid_state');

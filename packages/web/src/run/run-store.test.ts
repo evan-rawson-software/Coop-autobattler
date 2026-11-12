@@ -151,7 +151,7 @@ describe('saved runs in IndexedDB, as a page reload sees them', () => {
     // This tab still thinks it is at the start and makes a different move.
     const stale = await started.controller.dispatch(
       0,
-      { type: 'propose_core', x: 0, y: 0 },
+      { type: 'place_core', x: 0, y: 0 },
       3,
     );
     expect(stale).toMatchObject({ ok: false, reason: 'save_failed' });

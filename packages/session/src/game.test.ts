@@ -803,6 +803,32 @@ describe('a whole run with real battles', () => {
     expect(abandoned).toBeGreaterThan(30);
   });
 
+  test('four players, one Core each: the first battle is fought and a lost PvP battle costs exactly one life', () => {
+    const { deps, s, states } = play(['A', 'B', 'C', 'D'], 5);
+    expect(states[0]?.team.cores.filter((c) => c !== null)).toHaveLength(4);
+    const fought = states.filter((x) => x.step === 'pve_summary');
+    expect(fought.length).toBeGreaterThan(0);
+    let lost = 0;
+    for (let i = 1; i < states.length; i++) {
+      const prev = states[i - 1] as RunState;
+      const cur = states[i] as RunState;
+      if (cur.lives < prev.lives) {
+        expect(prev.step).toBe('pvp_summary');
+        expect(cur.lives).toBe(prev.lives - 1);
+        lost += 1;
+      }
+    }
+    expect(lost).toBeGreaterThan(0);
+    expect(s.lives).toBe(5 - lost);
+    expect(s.team.cores.every((c) => c !== null)).toBe(true);
+    const replayed = replayRun(
+      runArgs(['A', 'B', 'C', 'D'], 5),
+      s.actionLog,
+      deps,
+    );
+    expect(replayed.ok && replayed.state).toEqual(s);
+  });
+
   test('PvE losses never cost a life; only PvP losses do', () => {
     const { s, states } = play(['Ann'], 3);
     let livesLostInPvp = 0;

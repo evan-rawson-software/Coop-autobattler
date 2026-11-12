@@ -19,6 +19,7 @@ import {
 } from './save-store-memory.js';
 import {
   content,
+  coreMove,
   corePosition,
   mapgenConfig,
   runArgs,
@@ -76,7 +77,7 @@ function nextIntent(s: RunState, phase: Map<string, number>): Intent {
   const options = (s.pending as { options?: { id: string }[] } | null)?.options;
   switch (s.step) {
     case 'core_placement':
-      return { type: 'propose_core', ...corePosition(s) };
+      return coreMove(s);
     case 'pve_choice':
     case 'event_choice':
       return { type: 'vote', choice: options?.[0]?.id ?? '' };
@@ -363,7 +364,7 @@ describe('the run controller', () => {
     const c2 = await start(counting);
     const n = puts;
     const rej = await c2.dispatch(0, { type: 'ready' }, tick());
-    expect(rej).toMatchObject({ ok: false, reason: 'wrong_step' });
+    expect(rej).toMatchObject({ ok: false, reason: 'core_not_placed' });
     expect(puts).toBe(n);
   });
 
@@ -376,7 +377,7 @@ describe('the run controller', () => {
     const c = await start(store);
     await c.dispatch(
       0,
-      { type: 'propose_core', ...corePosition(c.state) },
+      { type: 'place_core', ...corePosition(c.state) },
       tick(),
     );
     const stored = await store.get('run-1');
@@ -711,9 +712,9 @@ describe('the run controller', () => {
     });
     const c = await start(store);
     const pos = corePosition(c.state);
-    const p1 = c.dispatch(0, { type: 'propose_core', ...pos }, 1);
+    const p1 = c.dispatch(0, { type: 'place_core', ...pos }, 1);
     const p2 = c.dispatch(0, { type: 'ready' }, 2);
-    const p3 = c.dispatch(0, { type: 'vote', choice: 'easy' }, 3);
+    const p3 = c.dispatch(0, { type: 'ready' }, 3);
     const order: number[] = [];
     void p1.then(() => order.push(1));
     void p2.then(() => order.push(2));

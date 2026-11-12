@@ -86,12 +86,11 @@ export interface PlayerRunState {
   readonly shop: Json;
 }
 
-export type VoteTopic = 'core' | 'pve' | 'event';
+export type VoteTopic = 'pve' | 'event';
 
 /**
  * The open votes of the current step. `choices[i]` is player i's current
- * choice or null. For `core` a choice is a `{x, y}` position; for `pve` and
- * `event` it is the string `id` of one of the options in `pending.options`.
+ * choice or null. For `pve` and `event` it is the string `id` of one of the options in `pending.options`.
  */
 export interface OpenVote {
   readonly topic: VoteTopic;
@@ -248,7 +247,7 @@ export type BoardIntent =
   | { readonly type: 'erase_conduit'; readonly id: number };
 
 export type BuiltinIntent =
-  | { readonly type: 'propose_core'; readonly x: number; readonly y: number }
+  | { readonly type: 'place_core'; readonly x: number; readonly y: number }
   | { readonly type: 'vote'; readonly choice: Json }
   | { readonly type: 'ready' }
   | { readonly type: 'unready' }
@@ -266,7 +265,7 @@ export interface ExtensionIntent {
 export type Intent = BuiltinIntent | ExtensionIntent;
 
 export const BUILTIN_INTENT_TYPES: readonly BuiltinIntentType[] = [
-  'propose_core',
+  'place_core',
   'vote',
   'ready',
   'unready',
@@ -307,7 +306,12 @@ export type Effect =
       readonly to: Step;
       readonly round: number;
     }
-  | { readonly type: 'core_placed'; readonly x: number; readonly y: number }
+  | {
+      readonly type: 'core_placed';
+      readonly player: number;
+      readonly x: number;
+      readonly y: number;
+    }
   | { readonly type: 'vote_changed'; readonly player: number }
   | {
       readonly type: 'vote_resolved';
