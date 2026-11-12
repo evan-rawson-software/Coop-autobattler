@@ -108,7 +108,7 @@ export class BuildSession {
     const r = await startRun(
       {
         runId: `dev-${String(seed)}-${String(runCounter)}`,
-        runVersion: '0.1',
+        runVersion: '1.0',
         seed,
         players: ['You'],
         host: 0,
@@ -116,7 +116,7 @@ export class BuildSession {
       deps,
       createMemorySaveStore(),
       now(),
-      '0.1.0',
+      '1.0.0',
     );
     if (!r.ok) throw new Error(`Could not start a run: ${r.reason}`);
     return new BuildSession(r.controller, now);

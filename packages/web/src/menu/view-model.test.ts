@@ -7,8 +7,8 @@ const NOW = 1_000_000_000_000;
 function item(over: Partial<SaveListItem> & { runId: string }): SaveListItem {
   return {
     corrupt: false,
-    runVersion: '0.1',
-    installedVersionAtSave: '0.1.0',
+    runVersion: '1.0',
+    installedVersionAtSave: '1.0.0',
     actionCounter: 3,
     hostName: 'You',
     playerNames: ['You'],
@@ -48,7 +48,12 @@ describe('menuRows', () => {
   });
 
   test('an older minor version gets the prompt note and can be resumed', () => {
-    const [row] = menuRows([item({ runId: 'a', runVersion: '0.0' })], NOW, 5);
+    const [row] = menuRows(
+      [item({ runId: 'a', runVersion: '1.0' })],
+      NOW,
+      5,
+      '1.1.0',
+    );
     expect(row).toMatchObject({ kind: 'run', blocked: null });
     expect(row?.kind === 'run' ? row.note : '').toMatch(
       /older version: some things may have changed/,
@@ -56,7 +61,7 @@ describe('menuRows', () => {
   });
 
   test('a newer version is listed but cannot be resumed', () => {
-    const [row] = menuRows([item({ runId: 'a', runVersion: '0.2' })], NOW, 5);
+    const [row] = menuRows([item({ runId: 'a', runVersion: '1.1' })], NOW, 5);
     expect(row?.kind === 'run' ? row.blocked : null).toMatch(/newer version/);
   });
 
