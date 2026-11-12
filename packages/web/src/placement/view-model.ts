@@ -6,8 +6,7 @@
  */
 import {
   coreFootprint,
-  corePlayerAt,
-  listLegalCorePositionsAnyPlot,
+  listLegalCorePositions,
   placeCore,
   previewEnemyPaths,
   validateCorePosition,
@@ -82,13 +81,14 @@ export function verdictAt(
   team: TeamState,
   content: WebContent,
   pos: Cell,
+  player: number,
 ): Verdict {
   const fp = coreFootprint(content.buildings);
   const r = validateCorePosition(
     team.map,
     content,
     content.mapgen,
-    corePlayerAt(team.map, content, pos.x),
+    player,
     pos,
   );
   return {
@@ -108,10 +108,13 @@ export function hintText(input: {
   readonly hover: Verdict | null;
   readonly selected: Cell | null;
   readonly message: string | null;
+  readonly ready?: boolean;
 }): string {
   if (input.hover !== null) {
     return input.hover.ok
-      ? 'The Core fits here. Click to choose this spot.'
+      ? input.ready === true
+        ? 'You are Ready. Unready to change your Core.'
+        : 'The Core fits here. Click to choose this spot.'
       : (input.hover.text ?? '');
   }
   if (input.message !== null) return input.message;
@@ -120,11 +123,15 @@ export function hintText(input: {
     : `Chosen: column ${String(input.selected.x)}, row ${String(input.selected.y)}.`;
 }
 
-/** Every legal position, as a lookup by `y * width + x`. */
-export function legalSet(team: TeamState, content: WebContent): Set<number> {
+/** Every legal position in the player's own plot, as a lookup by `y * width + x`. */
+export function legalSet(
+  team: TeamState,
+  content: WebContent,
+  player: number,
+): Set<number> {
   const w = team.map.width;
   return new Set(
-    listLegalCorePositionsAnyPlot(team.map, content, content.mapgen).map(
+    listLegalCorePositions(team.map, content, content.mapgen, player).map(
       (c) => c.y * w + c.x,
     ),
   );
@@ -162,14 +169,9 @@ export function routesFor(
   content: WebContent,
   sim: SimConfig,
   pos: Cell,
+  player: number,
 ): EnemyPath[] | null {
-  const placed = placeCore(
-    team,
-    content,
-    content.mapgen,
-    corePlayerAt(team.map, content, pos.x),
-    pos,
-  );
+  const placed = placeCore(team, content, content.mapgen, player, pos);
   if (!placed.ok) return null;
   try {
     return clipPaths(

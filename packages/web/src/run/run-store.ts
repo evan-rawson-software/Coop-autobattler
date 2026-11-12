@@ -265,7 +265,10 @@ export type NewRunResult =
   | { readonly ok: false; readonly message: string };
 
 /** Start a solo run and make it the open one. The caller then goes to its route. */
-export async function createNewRun(seed?: number): Promise<NewRunResult> {
+export async function createNewRun(
+  seed?: number,
+  players = 1,
+): Promise<NewRunResult> {
   let services: GameServices;
   try {
     services = await getServices();
@@ -281,7 +284,9 @@ export async function createNewRun(seed?: number): Promise<NewRunResult> {
       runId: newRunId(),
       runVersion: RUN_VERSION,
       seed: useSeed,
-      players: ['You'],
+      players: Array.from({ length: players }, (_, i) =>
+        i === 0 ? 'You' : `Player ${String(i + 1)}`,
+      ),
       host: 0,
     },
     services.deps,

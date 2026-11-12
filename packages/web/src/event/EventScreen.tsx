@@ -8,7 +8,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { useStore } from '../app-state.js';
 import { reasonMessage } from '../build/reasons.js';
-import { ME } from '../build/session.js';
 import { gameConfigs } from '../build/setup.js';
 import { content } from '../content.js';
 import type { RunHandle } from '../run/handle.js';
@@ -41,11 +40,16 @@ function Modifiers(props: { list: readonly ModifierLine[] }) {
 
 export function EventChoiceScreen(props: { run: RunHandle }) {
   const { session, deps } = props.run;
-  const run = useStore(session.store).run;
+  const view = useStore(session.store);
+  const run = view.run;
+  const acting = view.acting;
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const header = useMemo(() => battleHeader(run, deps), [run, deps]);
-  const cards = useMemo(() => eventCards(run, gameConfigs.events, ME), [run]);
+  const cards = useMemo(
+    () => eventCards(run, gameConfigs.events, acting),
+    [run, acting],
+  );
   const word =
     cards.length === 1 ? 'one event' : `pick one of ${String(cards.length)}`;
 
@@ -132,12 +136,14 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
 
 export function EventResolveScreen(props: { run: RunHandle }) {
   const { session, deps } = props.run;
-  const run = useStore(session.store).run;
+  const view = useStore(session.store);
+  const run = view.run;
+  const acting = view.acting;
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const v = useMemo(
-    () => followUpView(run, gameConfigs.events, content, ME, deps),
-    [run, deps],
+    () => followUpView(run, gameConfigs.events, content, acting, deps),
+    [run, acting, deps],
   );
 
   const choose = (id: string): void => {

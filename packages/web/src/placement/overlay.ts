@@ -22,6 +22,13 @@ export interface CoreOverlayData {
   readonly hover: Candidate | null;
   readonly selected: Candidate | null;
   readonly paths: readonly EnemyPath[] | null;
+  /** The player who is placing; the other plots are drawn dimmed. */
+  readonly acting: number;
+  /** Partners' proposed Core spots: footprint cells and the player. */
+  readonly partners: readonly {
+    readonly player: number;
+    readonly cells: readonly Cell[];
+  }[];
 }
 
 interface Colors {
@@ -71,13 +78,20 @@ export function drawCoreOverlay(
     const p = topLeft(c);
     return { x: p.x + z / 2, y: p.y + z / 2 };
   };
-  const { width, height } = d.team.map;
+  const { width, height, plotWidth } = d.team.map;
 
   // Every position: green where the Core fits, faint red where it does not.
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const legal = d.legal.has(y * width + x);
       const p = topLeft({ x, y });
+      if (Math.floor(x / plotWidth) !== d.acting) {
+        // Another player's area: dimmed, no verdict.
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = col.surface;
+        ctx.fillRect(p.x, p.y, z, z);
+        continue;
+      }
       ctx.globalAlpha = legal ? 0.2 : 0.09;
       ctx.fillStyle = legal ? col.ok : col.bad;
       ctx.fillRect(p.x, p.y, z, z);
@@ -181,6 +195,11 @@ export function drawCoreOverlay(
     ctx.fillStyle = col.ink;
     ctx.fillText(text, x + 7, y + 0.5);
   };
+
+  for (const pc of d.partners) {
+    ring(pc.cells, col.accent, 2.5);
+    label(pc.cells, `Player ${String(pc.player + 1)}'s Core`, col.accent);
+  }
 
   // The chosen position, then the one under the pointer.
   if (d.selected !== null) {
