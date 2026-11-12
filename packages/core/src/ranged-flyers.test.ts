@@ -6,8 +6,10 @@
  * restore-at-any-tick property.
  */
 import { describe, expect, test } from 'vitest';
+import type { ArenaContent } from './arena.js';
 import {
   createArenaContext,
+  isCoreHealth,
   spawnUnitForTest,
   startArenaBattle,
   stepArena,
@@ -28,6 +30,8 @@ import {
   overlapStats,
   simConfig,
 } from './test-support.js';
+import { sealedProducers } from './sealed-producers.js';
+import { loadUnitsOrThrow } from './units.js';
 
 const GAP = 4;
 /** Arena rows: 16 + 4 + 16; columns: 12 for one plot. */
@@ -485,5 +489,273 @@ describe('symmetry and restore with both new kinds', () => {
       expect(hashJson(restored)).toBe(want);
       expect(events.map((e) => hashJson(e))).toEqual(wantEvents.slice(seen));
     }
+  });
+});
+
+describe('Hangar spawning, flyer targeting by distance, test-only units (issue #59 follow-ups)', () => {
+  /** A Hangar (or Barracks) at (2,5) walled in; fed by an Extractor at (2,2). */
+  function walledProducer(producer: string, resource: string): TeamState {
+    const lab = new Lab({
+      width: 24,
+      height: 16,
+      partySize: 1,
+      plotWidth: 24,
+      features: [],
+      nodes: [{ x: 2, y: 2, resource }],
+    });
+    lab.core(8, 0);
+    const src = lab.put('bld_extractor', 2, 2);
+    const prod = lab.put(producer, 2, 5);
+    lab.link(src, 'north', prod, 'south', [
+      [2, 3],
+      [2, 4],
+    ]);
+    for (const [x, y] of [
+      [1, 5],
+      [1, 6],
+      [4, 5],
+      [4, 6],
+      [2, 7],
+      [3, 7],
+      [3, 4],
+    ] as const) {
+      lab.put('bld_wall', x, y);
+    }
+    return lab.state;
+  }
+
+  /** A producer at (3,5) with a ring of walls and nothing else. */
+  function ringed(producer: string): TeamState {
+    const lab = new Lab(map1([], 24));
+    lab.core(8, 0);
+    lab.put(producer, 3, 5);
+    for (let x = 2; x <= 5; x++) {
+      lab.put('bld_wall', x, 4);
+      lab.put('bld_wall', x, 7);
+    }
+    lab.put('bld_wall', 2, 5);
+    lab.put('bld_wall', 2, 6);
+    lab.put('bld_wall', 5, 5);
+    lab.put('bld_wall', 5, 6);
+    return lab.state;
+  }
+
+  test('a walled-in Hangar is never sealed, a walled-in Barracks is', () => {
+    expect(sealedProducers(ringed('bld_hangar'), content)).toEqual([]);
+    expect(sealedProducers(ringed('bld_barracks'), content)).toHaveLength(1);
+    // Without unit content the old ground rule applies.
+    expect(
+      sealedProducers(ringed('bld_hangar'), {
+        resources: content.resources,
+        terrain: content.terrain,
+        buildings: content.buildings,
+      }),
+    ).toHaveLength(1);
+  });
+
+  test('a walled-in Hangar spawns drones on the cells next to it; they fly out', () => {
+    const { sim, ctx, events } = start(
+      walledProducer('bld_hangar', 'res_b'),
+      coreTeam(map1([], 24)),
+    );
+    run(sim, ctx, 1500);
+    const spawned = events.filter((e) => e.type === 'unit_spawned');
+    expect(spawned.length).toBeGreaterThan(2);
+    // Every drone starts on a cell next to the Hangar (columns 1 to 4, rows 4 to 7).
+    for (const e of spawned) {
+      const cx = Math.floor(e.px / CU);
+      const cy = Math.floor(e.py / CU);
+      expect(cx >= 1 && cx <= 4 && cy >= 4 && cy <= 7).toBe(true);
+    }
+    expect(attacks(events).some((a) => a.target.kind === 'core')).toBe(true);
+    // The first one stands on a wall cell, closed to ground units.
+    const first = got(spawned[0]);
+    expect([first.px, first.py]).toEqual([mid(3), mid(7)]);
+  });
+
+  /** A Range and a walled-in Hangar, both fed; the same board on both sides. */
+  function producing(): TeamState {
+    const lab = new Lab({
+      width: 24,
+      height: 16,
+      partySize: 1,
+      plotWidth: 24,
+      features: [],
+      nodes: [
+        { x: 2, y: 2, resource: 'res_a' },
+        { x: 14, y: 2, resource: 'res_b' },
+      ],
+    });
+    lab.core(8, 0);
+    const a = lab.put('bld_extractor', 2, 2);
+    const range = lab.put('bld_range', 2, 5);
+    lab.link(a, 'north', range, 'south', [
+      [2, 3],
+      [2, 4],
+    ]);
+    const b = lab.put('bld_extractor', 14, 2);
+    const hangar = lab.put('bld_hangar', 14, 5);
+    lab.link(b, 'north', hangar, 'south', [
+      [14, 3],
+      [14, 4],
+    ]);
+    for (const [x, y] of [
+      [13, 5],
+      [13, 6],
+      [16, 5],
+      [16, 6],
+      [14, 7],
+      [15, 7],
+      [15, 4],
+    ] as const) {
+      lab.put('bld_wall', x, y);
+    }
+    return lab.state;
+  }
+
+  test('producers of archers and drones keep the mirror symmetry and restore at any tick', () => {
+    const W = 24;
+    const battle = () => start(producing(), producing());
+    const key = (sim: ArenaSim, side: number): string[] =>
+      sim.units
+        .filter((u) => u.side === side)
+        .map((u) => {
+          const x = side === 0 ? u.px : W * CU - u.px;
+          const y = side === 0 ? u.py : H * CU - u.py;
+          return `${u.def} ${String(x)},${String(y)} hp${String(u.hp)}`;
+        })
+        .sort();
+    const a = battle();
+    for (let t = 0; t < 1200; t++) {
+      stepArena(a.sim, a.ctx);
+      expect(key(a.sim, 1)).toEqual(key(a.sim, 0));
+    }
+    const defs = new Set(a.sim.units.map((u) => u.def));
+    expect(defs.has('unit_archer') && defs.has('unit_drone')).toBe(true);
+    const want = hashJson(a.sim);
+    const wantEvents = a.events.map((e) => hashJson(e));
+    for (const at of [1, 150, 331, 777]) {
+      const b = battle();
+      run(b.sim, b.ctx, at);
+      const seen = b.events.length;
+      const restored = JSON.parse(JSON.stringify(b.sim)) as ArenaSim;
+      const events: ArenaEvent[] = [];
+      const ctx = createArenaContext(restored, content, simConfig, { events });
+      run(restored, ctx, 1200 - at);
+      expect(hashJson(restored)).toBe(want);
+      expect(events.map((e) => hashJson(e))).toEqual(wantEvents.slice(seen));
+    }
+  });
+
+  test('a drone crosses a wall line and a row of buildings without attacking them', () => {
+    const board = (): TeamState => {
+      const lab = new Lab(map1());
+      lab.core(5, 0);
+      for (let x = 0; x < 12; x++) lab.put('bld_wall', x, 8);
+      for (let x = 0; x < 12; x += 2) lab.put('bld_barracks', x, 5);
+      return lab.state;
+    };
+    const { sim, ctx, events } = start(coreTeam(map1()), board());
+    const u = spawnUnitForTest(sim, ctx, {
+      side: 0,
+      def: 'unit_drone',
+      x: 8,
+      y: 22,
+    });
+    run(sim, ctx, 400);
+    const mine = attacks(events).filter((a) => a.unit === u.id);
+    expect(mine.length).toBeGreaterThan(5);
+    expect(mine.every((a) => a.target.kind === 'core')).toBe(true);
+    expect(groundViolations(sim, ctx)).toEqual([]);
+  });
+
+  test('when its Core falls a flyer picks the next one by straight-line distance, not by the ground fields', () => {
+    // Three plots; a lake line across side 1's whole board: every Core ranks
+    // alike on the ground. A flyer of plot 1 (opposite Core 1) stands at the
+    // right of its plot, nearer to Core 0 than to Core 2; the ground tie rule
+    // takes the higher index.
+    const lakes = lakeRow(8, 36);
+    const mk = (): TeamState => coreTeam(map1(lakes, 36, 3), [5, 17, 29]);
+    const pick = (def: string): number => {
+      const { sim, ctx } = start(mk(), mk());
+      const u = spawnUnitForTest(sim, ctx, {
+        side: 0,
+        def,
+        px: mid(23),
+        py: mid(22),
+      });
+      expect([u.owner, u.target]).toEqual([1, 1]);
+      got(
+        sim.health.find((x) => isCoreHealth(x) && x.side === 1 && x.core === 1),
+      ).hp = 0;
+      stepArena(sim, ctx);
+      return got(unitById(sim, u.id)).target;
+    };
+    expect(pick('unit_drone')).toBe(0);
+    expect(pick('unit_soldier')).toBe(2);
+  });
+
+  test('a flyer notices an enemy behind a lake wall that a ground unit with the same reach does not', () => {
+    // Test-only units whose reach (60) is far below the aggro range (3 cells),
+    // so only the aggro branch can move them. The enemy stands off the path
+    // to the Core, behind a lake line.
+    const withScouts: ArenaContent = {
+      ...content,
+      units: loadUnitsOrThrow({
+        units: [
+          ...content.units.list(),
+          ...[true, false].map((flying) => ({
+            id: flying ? 'unit_airscout' : 'unit_landscout',
+            health: 30,
+            damage: 1,
+            attackCooldownTicks: 10,
+            moveCooldownTicks: 4,
+            radius: 66,
+            collisionRadius: 40,
+            reach: 60,
+            flying,
+            attackType: flying ? 'ranged' : 'melee',
+          })),
+        ],
+      }),
+    };
+    // Side 1's board column 9 is arena column 2: a lake wall between the
+    // scout (column 3) and the enemy (column 1).
+    const lakeColumn: [number, number][] = Array.from(
+      { length: 16 },
+      (_, y): [number, number] => [9, y],
+    );
+    const go = (def: string): number => {
+      const b = startArenaBattle(
+        coreTeam(map1()),
+        coreTeam(map1(lakeColumn)),
+        GAP,
+        withScouts,
+        simConfig,
+      );
+      const scout = spawnUnitForTest(b.sim, b.ctx, {
+        side: 0,
+        def,
+        x: 3,
+        y: 28,
+      });
+      const post = spawnUnitForTest(b.sim, b.ctx, {
+        side: 1,
+        def: 'unit_soldier',
+        x: 1,
+        y: 28,
+      });
+      const [px, py] = [post.px, post.py];
+      for (let t = 0; t < 15; t++) {
+        stepArena(b.sim, b.ctx);
+        post.px = px;
+        post.py = py;
+      }
+      return got(unitById(b.sim, scout.id)).px;
+    };
+    // Heading for the enemy at column 1 moves the scout left; heading for
+    // the Core (column 6 or 7) moves it right.
+    expect(go('unit_airscout')).toBeLessThan(mid(3) - 100);
+    expect(go('unit_landscout')).toBeGreaterThan(mid(3));
   });
 });
