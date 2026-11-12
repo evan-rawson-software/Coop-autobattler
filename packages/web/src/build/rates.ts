@@ -70,6 +70,9 @@ export function topSpeedWord(def: BuildingDef): string {
   return 'shots';
 }
 
+/** Shortest counting window the supplied/under tolerance is computed over. */
+const MIN_WINDOW = 300;
+
 export type SupplyState = 'full' | 'under';
 
 export interface Supply {
@@ -94,7 +97,9 @@ export function supplyOf(
 ): Supply[] {
   const out: Supply[] = [];
   const window = needRun.ticks - Math.floor(needRun.ticks / 2);
-  const slack = window === 0 ? 0 : Math.ceil(1000 / window);
+  // One delivery of tolerance, counted over at least `MIN_WINDOW` ticks so a
+  // short dry-run setting cannot make a starving building read "supplied".
+  const slack = Math.ceil(1000 / Math.max(window, MIN_WINDOW));
   for (const n of needRun.needs ?? []) {
     const b: PlacedBuilding | undefined = team.buildings.find(
       (x) => x.id === n.building,

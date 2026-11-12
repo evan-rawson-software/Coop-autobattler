@@ -95,6 +95,7 @@ Where the factory is laid out. Everything of yours except your Core can be moved
 7. Preview of the routes enemy units would take with this layout, each to the Core of the plot it enters.
 8. Inspector for the selected building: what it needs per second, what it is getting, what it produces. For a collector: its flow rate.
 9. Overlays and problems: a dry run of resource flow, the enemy-path preview, and anything unconnected.
+   In co-op, a Border links list names each of your own halves (linked, waiting for your neighbour, or cannot join), what it carries, and a Remove button. The dry-run table shows each consumer's need per second and "supplied" or "UNDER-SUPPLIED" (all inputs together).
 10. Party panel: who is editing where, pings, and the Ready button. The party moves on when everyone is ready.
 11. In co-op each extra player adds a plot of their own to the side. A four-player board still fits the width of a 1080p screen, and everything below the board stays free for panels.
 

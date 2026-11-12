@@ -30,6 +30,7 @@ import {
   DryRunTable,
   InspectorPanel,
   OverlaysPanel,
+  BorderLinksPanel,
   PartyPanel,
   ProblemsPanel,
   StashPanel,
@@ -541,6 +542,12 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
         </div>
         <div class="dock-col">
           <OverlaysPanel model={model} ctl={ctl} />
+          <BorderLinksPanel
+            run={run}
+            ctl={ctl}
+            acting={acting}
+            locked={gate?.ready === true}
+          />
           <ProblemsPanel problems={problems} onPick={onPick} />
         </div>
         <div class="dock-col">
