@@ -57,6 +57,7 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | Rule | What it specifies | Status |
 | ---- | ----------------- | ------ |
 | PP-1 | Ownership and plot checks on every board operation; conduits have an owner | not yet implemented (issue #129) |
+| PP-2 | One Core per player: team state, positions, `placeCore` | **implemented** (issue #128); health of every Core and `core_not_placed` with the player index remain: not yet implemented (issue #132) |
 | PP-3 | Core placement step: each player places their own Core, no vote | not yet implemented (issue #131) |
 | PP-4 | Border links | not yet implemented (issues #135 and #136) |
 | PP-5 | Collector flow rate by tier | **implemented** (issue #130; "One tick: `stepFlow`", step 3, and "Collector rate") |
@@ -160,9 +161,20 @@ Golden kind `team-state-ops`: every op that changes the board gains `actor`.
 
 ### PP-2. One Core per player
 
-Implemented; the rule text is in "Core positions" and "Team state and
-placement". What the battle code does with several Cores (`core_not_placed`
-for any missing Core, health, Overload) stays specified under PP-9 and PP-10.
+The format, the legal positions, `placeCore(actor, x, y)`, `overlaps_core`,
+`buildingAt` and the ASCII picture are **implemented** (issue #128): see "Core
+positions" and "Team state and placement". Two parts of PP-2 are still
+specified only here, and are implemented with battles that have several Cores
+(issue #132):
+
+- **Health.** Every Core has the maximum health of the Core definition's
+  tier 1 (500), raised by the team's `core_health_percent` modifiers. All
+  Cores of a side therefore have the same maximum health (a PvE stronghold
+  is the exception, PP-14).
+- **A battle needs every Core placed**: `core_not_placed` carries the `side`
+  and the lowest `player` index without a Core. (Today a side with no Core
+  placed gives `core_not_placed` without a player, and a side with more than
+  one placed gives `several_cores`.)
 
 ### PP-3. The Core placement step
 
