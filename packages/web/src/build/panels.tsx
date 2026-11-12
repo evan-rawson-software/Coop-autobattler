@@ -10,6 +10,7 @@ import {
 import type { RunState } from '@game/session';
 import { content } from '../content.js';
 import { Panel } from '../shell/AppShell.js';
+import { ActingSwitch } from '../shell/ActingSwitch.js';
 import type { BuildController, Model, Tool } from './build-controller.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
@@ -608,34 +609,6 @@ export function DryRunTable(props: {
 
 // ---------------------------------------------------------------------------
 // Party and ready
-
-/** Which player this device acts as; shown only for a party of two or more. */
-export function ActingSwitch(props: {
-  run: RunState;
-  acting: number;
-  onActing?: ((player: number) => void) | undefined;
-}) {
-  const { run, acting } = props;
-  if (run.players.length < 2) return null;
-  return (
-    <div class="party-switch" role="group" aria-label="Acting player">
-      {run.players.map((p, i) => (
-        <button
-          type="button"
-          key={i}
-          class={i === acting ? 'active' : ''}
-          data-action="act-as"
-          data-player={i}
-          aria-pressed={i === acting}
-          onClick={() => props.onActing?.(i)}
-        >
-          {p.name}
-          {run.perPlayer[i]?.ready === true ? ' ✓' : ''}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 export function PartyPanel(props: {
   run: RunState;

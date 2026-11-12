@@ -67,6 +67,7 @@ export interface PlacementDebug {
   cellToScreen: (x: number, y: number) => { x: number; y: number } | null;
   selected: () => { x: number; y: number } | null;
   pathCount: () => number;
+  plotWidth: () => number;
 }
 
 /** Read-only view of the main menu for the smoke script. */

@@ -31,7 +31,6 @@ import {
   verdictAt,
 } from './view-model.js';
 import { pendingCoreSpots } from '../build/view-model.js';
-import { ActingSwitch } from '../build/panels.js';
 import { count } from '../plural.js';
 
 const camera = new CameraController();
@@ -141,6 +140,7 @@ export function CoreScreen(props: { run: RunHandle }) {
         },
         selected: () => selectedRef.current,
         pathCount: () => data.current.paths?.length ?? 0,
+        plotWidth: () => data.current.team.map.plotWidth,
       },
     });
     return () => {
@@ -206,18 +206,15 @@ export function CoreScreen(props: { run: RunHandle }) {
                 : `${count(routeCount, 'enemy route')} shown for this position.`}
             </p>
           )}
-          <ActingSwitch
-            run={view.run}
-            acting={acting}
-            onActing={(p) => {
-              session.setActing(p);
-            }}
-          />
           <button
             type="button"
             id="core-confirm"
             class="primary"
-            disabled={selected === null || busy}
+            disabled={
+              selected === null ||
+              busy ||
+              view.run.perPlayer[acting]?.ready === true
+            }
             onClick={confirm}
           >
             Confirm Core position

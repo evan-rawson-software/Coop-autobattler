@@ -30,12 +30,12 @@ import {
   DryRunTable,
   InspectorPanel,
   OverlaysPanel,
-  ActingSwitch,
   PartyPanel,
   ProblemsPanel,
   StashPanel,
   ToolsPanel,
 } from './panels.js';
+import { ActingSwitch } from '../shell/ActingSwitch.js';
 import { gateFor, READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { ME, isEditStep } from './session.js';
 import { DEFAULT_SEED, simConfig } from './setup.js';
@@ -536,9 +536,13 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
             ctl={ctl}
             gate={gate}
             acting={acting}
-            onActing={(p) => {
-              ctl.session?.setActing(p);
-            }}
+            onActing={
+              shared === undefined
+                ? (p) => {
+                    ctl.session?.setActing(p);
+                  }
+                : undefined
+            }
           />
         </div>
       </>

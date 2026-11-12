@@ -4,7 +4,7 @@ import { content } from '../content.js';
 import { pendingCoreSpots } from './view-model.js';
 import { BuildController } from './build-controller.js';
 import { previewActions } from './undo.js';
-import { previewMove } from './ops.js';
+import { previewMove, previewPlace } from './ops.js';
 import { BuildSession } from './session.js';
 import { groupStash } from './panels.js';
 
@@ -62,19 +62,34 @@ describe('acting player', () => {
       1,
     );
     expect(place).toMatchObject({ ok: false, reason: 'not_owner' });
-    const mine = s.run.team.buildings.find((b) => b.owner === 0);
-    if (mine !== undefined) {
-      const mv = previewMove(
-        s.run.team,
-        content,
-        { id: mine.id, x: mine.x, y: mine.y, rotation: mine.rotation },
-        1,
-      );
-      expect(mv).toMatchObject({ ok: false, reason: 'not_owner' });
+    // Player 0 places a building; player 1 may not move it.
+    s.setActing(0);
+    let placed = false;
+    for (let y = 0; y < s.run.team.map.height && !placed; y++) {
+      for (let x = 0; x < s.run.team.map.plotWidth && !placed; x++) {
+        const args = { id: stash0.id, x, y, rotation: 0 };
+        if (previewPlace(s.run.team, content, args, 0).ok) {
+          const r0 = await s.dispatch({ type: 'place_building', ...args });
+          placed = r0.ok;
+        }
+      }
     }
+    expect(placed).toBe(true);
+    s.setActing(1);
+    const mine = s.run.team.buildings.find((b) => b.id === stash0.id);
+    if (mine === undefined) throw new Error('not placed');
+    const mv = previewMove(
+      s.run.team,
+      content,
+      { id: mine.id, x: mine.x, y: mine.y, rotation: mine.rotation },
+      1,
+    );
+    expect(mv).toMatchObject({ ok: false, reason: 'not_owner' });
+    const other = s.run.team.stash.find((b) => b.owner === 0);
+    if (other === undefined) throw new Error('no second stash item');
     const r = await s.dispatch({
       type: 'place_building',
-      id: stash0.id,
+      id: other.id,
       x: 1,
       y: 1,
       rotation: 0,

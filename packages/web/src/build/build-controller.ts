@@ -292,6 +292,8 @@ export class BuildController {
   }
 
   /** The player this device acts as (the session's acting player). */
+  private lastActing = ME;
+
   private actor(): number {
     return this.session?.acting ?? ME;
   }
@@ -319,6 +321,18 @@ export class BuildController {
   /** The team changed (or the session did): drop stale selections, redo previews. */
   private afterState(): void {
     this.refreshLegalCore();
+    const acting = this.actor();
+    if (acting !== this.lastActing) {
+      // A held piece, selection or draft belongs to the previous player.
+      this.lastActing = acting;
+      this.ui = {
+        ...this.ui,
+        selection: null,
+        held: null,
+        moving: null,
+        draft: null,
+      };
+    }
     const team = this.team();
     let sel = this.ui.selection;
     if (team !== null && sel !== null) {

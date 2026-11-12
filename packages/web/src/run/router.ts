@@ -109,3 +109,12 @@ export function seedFromHash(hash: string): number | null {
   const n = Number(text);
   return Number.isSafeInteger(n) && n >= 0 && n < 2 ** 32 ? n : null;
 }
+
+/** `?players=2` (or 3, 4) after `#/`: a local party of that many for the next run. */
+export function playersFromHash(hash: string): number {
+  const q = hash.indexOf('?');
+  if (q < 0) return 1;
+  const text = new URLSearchParams(hash.slice(q + 1)).get('players');
+  if (text === null || !/^[1-4]$/.test(text)) return 1;
+  return Number(text);
+}
