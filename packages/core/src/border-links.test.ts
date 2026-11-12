@@ -449,14 +449,17 @@ describe('validateTeamState', () => {
     if (!bad.ok) {
       expect(bad.errors.join('\n')).toContain('invalid_border');
     }
-    const dup = JSON.parse(JSON.stringify(lab.state)) as {
-      conduits: { owner: number; to: Record<string, number> }[];
+    // A half whose owner does not own its building end (not the duplicate-spot
+    // rule, which has its own test below).
+    const foreign = JSON.parse(JSON.stringify(lab.state)) as {
+      conduits: { owner: number }[];
     };
-    dup.conduits[0] = {
-      ...(dup.conduits[0] as object),
-      owner: 1,
-    } as never;
-    expect(validateTeamState(dup, content, mapgen).ok).toBe(false);
+    const owned = foreign.conduits[0];
+    if (owned === undefined) throw new Error('no conduit');
+    owned.owner = 1;
+    const notOwned = validateTeamState(foreign, content, mapgen);
+    expect(notOwned.ok).toBe(false);
+    if (!notOwned.ok) expect(notOwned.errors.join('\n')).toContain('not_owner');
   });
 
   test('two halves of one player at one spot are border_spot_in_use', () => {
