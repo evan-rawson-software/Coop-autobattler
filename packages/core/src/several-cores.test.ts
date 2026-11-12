@@ -410,3 +410,38 @@ describe('mirror and restore with several Cores per side', () => {
     }
   });
 });
+
+describe('economy bonuses through real unit production (PP-8, issue #175)', () => {
+  test("player 1's producer makes a unit without the Armory of player 0; player 0's producer makes a stronger one", () => {
+    const lab = new Lab(map2());
+    lab.core(5, 0, 0);
+    lab.core(17, 0, 1);
+    lab.put('bld_armory', 8, 10, 0, 3);
+    for (const x of [2, 14]) {
+      const e = lab.put('bld_extractor', x, 2, 0, 3);
+      const b = lab.put('bld_barracks', x, 6, 0, 3);
+      lab.link(e, 'north', b, 'south', [
+        [x, 3],
+        [x, 4],
+        [x, 5],
+      ]);
+    }
+    const b = start(lab.state, team2(false));
+    for (const r of b.sim.ramps) r.steps = 10;
+    while (!b.isOver() && b.sim.units.length < 2 && b.sim.tick < 600) b.step();
+    const spawned = events(b, 'unit_spawned').filter((e) => e.side === 0);
+    const by = (owner: number) =>
+      b.sim.units.find((u) =>
+        spawned.some((e) => e.unit === u.id && e.owner === owner),
+      );
+    const mine = by(0);
+    const partner = by(1);
+    if (mine === undefined || partner === undefined) {
+      throw new Error('both producers should have spawned a unit');
+    }
+    const base = content.units.get(mine.def);
+    expect(base).toBeDefined();
+    expect(partner.hp).toBe(base?.health);
+    expect(mine.hp).toBeGreaterThan(partner.hp);
+  });
+});
