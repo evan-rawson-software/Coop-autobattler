@@ -12,7 +12,7 @@ describe('the outcome text of a battle that cannot be shown', () => {
       'Core',
     );
     expect(win.word).toBe('Victory');
-    expect(win.reason).toMatch(/lost its last Core/);
+    expect(win.reason).toMatch(/last Core was destroyed/);
     const loss = describeOutcome({ won: false, reason: 'time_limit' }, 'Core');
     expect(loss.word).toBe('Defeat');
     expect(loss.reason).toMatch(/Time ran out/);

@@ -402,7 +402,7 @@ export function RightPanels(props: {
 export function reasonText(reason: BattleReason, coreName: string): string {
   switch (reason) {
     case 'core_destroyed':
-      return `One side lost its last ${coreName}; the other side wins.`;
+      return `One side's last ${coreName} was destroyed; the other side wins.`;
     case 'tiebreak_overkill':
       return `Both sides lost their last ${coreName} in the same tick; the side whose ${coreName}s took less overkill damage wins.`;
     case 'tiebreak_building_damage':
@@ -553,7 +553,7 @@ export function BattleSummaryView(props: SummaryProps) {
           .
         </p>
         {own.cores.length + foe.cores.length > 2 ? (
-          <p class="result-detail" data-field="cores-standing">
+          <p class="muted" data-field="cores-standing">
             {coreName}s standing: yours{' '}
             <strong data-field="standing-own">
               {own.coresStanding} / {own.cores.length}
