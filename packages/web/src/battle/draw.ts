@@ -5,7 +5,14 @@
  * between frames except scratch buffers, so there is no per-unit allocation.
  */
 
-import { CELL_UNITS, isCoreHealth, type UnitSim } from '@game/core';
+import {
+  CELL_UNITS,
+  buildFlowGraph,
+  isCoreHealth,
+  type TeamContent,
+  type TeamState,
+  type UnitSim,
+} from '@game/core';
 import type { OverlayContext } from '../board/BoardView.js';
 import type { Scene, ViewRect } from '../board/scene.js';
 import type { WebContent } from '../content.js';
@@ -28,6 +35,11 @@ export interface DrawIndex {
 export function makeDrawIndex(
   initial: Scene,
   labels: { own: string; enemy: string },
+  /** Each side's starting layout, to join the two halves of border links. */
+  links?: readonly [
+    ReadonlyMap<number, number> | undefined,
+    ReadonlyMap<number, number> | undefined,
+  ],
 ): DrawIndex {
   const rects: [Map<number, ViewRect>, Map<number, ViewRect>] = [
     new Map<number, ViewRect>(),
@@ -44,6 +56,14 @@ export function makeDrawIndex(
     for (const s of b.buildings) rects[side].set(s.instance.id, s.rect);
     cores[side] = b.core?.rect ?? null;
     for (const c of b.conduits) conduits[side].set(c.id, c.cells);
+    // A link is one flow edge under its sending half's id; its slots run
+    // along the sending half and then the receiving half (PP-4).
+    for (const [send, recv] of links?.[side] ?? []) {
+      conduits[side].set(send, [
+        ...(conduits[side].get(send) ?? []),
+        ...(conduits[side].get(recv) ?? []),
+      ]);
+    }
     boardLabels.push({
       text: side === 0 ? labels.own : labels.enemy,
       rect: { x: b.frame.ox, y: b.frame.oy, w: b.frame.w, h: b.frame.h },
@@ -397,4 +417,16 @@ export function drawBattleOverlay(
     }
   }
   ctx.globalAlpha = 1;
+}
+
+/** Sending half id to receiving half id, for each joined link of a team. */
+export function linkMap(
+  team: TeamState,
+  content: TeamContent,
+): ReadonlyMap<number, number> {
+  const m = new Map<number, number>();
+  for (const e of buildFlowGraph(team, content).edges) {
+    if (e.linkedConduit !== null) m.set(e.conduitId, e.linkedConduit);
+  }
+  return m;
 }

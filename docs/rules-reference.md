@@ -59,11 +59,11 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-1 | Ownership and plot checks on every board operation; conduits have an owner | **implemented** (issue #129) |
 | PP-2 | One Core per player: team state, positions, `placeCore`, health | **implemented** (issues #128 and #132); `core_not_placed` names the side and the lowest player without a Core, and fires only for a side with no Core at all: the per-player check comes with issue #138 (PvE strongholds have one Core until then) |
 | PP-3 | Core placement step: each player places their own Core, no vote | **implemented** (issue #131) |
-| PP-4 | Border links | **implemented** for halves, joining, validation, the flow graph and the flow simulation (issue #135); "In battle", undo and session intents are still issue #136 |
+| PP-4 | Border links | **implemented** (issues #135 and #136; "Conduits", "Mid-battle removal", "One battle tick" step 6) |
 | PP-5 | Collector flow rate by tier | **implemented** (issue #130; "One tick: `stepFlow`", step 3, and "Collector rate") |
 | PP-6 | Minimum time between productions, need, store | **implemented** (issue #130; "One battle tick", step 2 and step 7, "In-battle ramp", "Dry run (CB-43)") |
 | PP-7 | Splitting, with back-up | **implemented** ("One tick: `stepFlow`", step 2; vectors against consumers with a top speed since issue #130). An open border half (PP-4) is a connected output that never accepts (issue #135) |
-| PP-8 | Economy buildings act for their owner only; lower collector speed-up cap | not yet implemented (issue #137) |
+| PP-8 | Economy buildings act for their owner only; lower collector speed-up cap | **implemented** (issue #137) for the per-owner bonus, cap and modifiers ("In-battle ramp"); the lower `maxSourceSpeedPercent` value comes with the rebalance (issue #145) |
 | PP-9 | Several Cores per side in the arena; Overload per Core; a destroyed Core switches nothing off | **implemented** (issue #132; "The arena", "One battle tick", "Overload", "Side options") |
 | PP-10 | End conditions and the tiebreak ladder with several Cores | **implemented** (issue #132; "Battles") |
 | PP-11 | A unit's owner and target Core; one movement field per target Core; a unit also attacks any enemy Core within reach, target or not | **implemented** (issue #133; "The arena", "One battle tick", "Goals and movement fields", "Side options", "Resolution order") |
@@ -304,10 +304,15 @@ operation adds an edge, so no other operation needs the check.
 
 **Removing.** `eraseConduit` removes one half (owner only, PP-1);
 `detachConduits` removes the halves attached to a moved or returned building.
-The other player's half is untouched and becomes open. Undo and redo are per
+The other player's half is untouched and becomes open. A player who is left
+alone (the other has disconnected, CP-21i) can erase their own half; nothing
+of the absent player's can be changed. The session intents `add_conduit` and
+`erase_conduit` take border ends (`{ border, y }`) and name the acting player;
+a refusal reports its reason to the player who sent it. Undo and redo are per
 player and layout only (RS-5g): undoing the removal of a half adds it again
 with the checks above, and if that is now rejected the undo is refused with
-the same reason and the player's history is left as it was.
+the same reason and the player's history is left as it was (the web client
+checks the whole inverse first, so a refusal changes nothing).
 
 **Validation.** `validateTeamState` checks every half with the rules above,
 at most one half per player per spot, and no mismatch or loop on the joined
@@ -315,8 +320,9 @@ network.
 
 **In battle.** `BoardSim.conduits` has one entry per flow edge, so one per
 link, under the sending half's id. When the building at either end of a link
-is destroyed, both halves are removed, each recorded as `conduit_destroyed`
-(in conduit-ID order), and the items in the link are lost as for any conduit.
+is destroyed, both halves are removed (`conduitsLostWith`), each recorded as
+`conduit_destroyed` (in conduit-ID order), and the items in the link are lost
+as for any conduit.
 An open half attached to a destroyed building is removed with one event. A
 destroyed Core removes nothing (PP-9).
 
@@ -326,6 +332,11 @@ links both ways at different spots. A half cannot reach a border that is not
 its owner's, so links join neighbouring plots only. To pass resources on to
 a third plot, the player in between needs a route building of their own
 between a receiving half and a sending half.
+
+Vectors: `arena-sim.border-link-sender-destroyed`,
+`arena-sim.border-link-receiver-destroyed` (a link cut by destroying the
+sending or the receiving building) and `arena-sim.border-core-fallen-link-carries`
+(the link keeps carrying after its owner's Core fell).
 
 Golden kinds: `team-state-ops` accepts border ends in `addConduit`;
 `flow-sim` gains `flow-sim.splitter-only-open-halves` (a collector feeding a
@@ -355,10 +366,9 @@ consumers with a top speed (golden kind `flow-sim`, mode `"need"`).
 
 ### PP-8. Economy buildings act for their owner
 
-Today a side's economy buildings add up to one bonus per effect for the whole
-side ("In-battle ramp"). Decided (owner decision 19 on issue #124, CB-24a):
-economy buildings help only their owner, and border links are the only way to
-help a partner (CP-29):
+Implemented (issue #137; the rules are in "In-battle ramp"). Decided (owner
+decision 19 on issue #124, CB-24a): economy buildings help only their owner,
+and border links are the only way to help a partner (CP-29):
 
 - The raw total and the capped **bonus are computed per side, per owner and
   per effect**: the sum over that owner's living economy buildings with that
@@ -367,9 +377,12 @@ help a partner (CP-29):
   takes one source interval modifier per player index, not one per board.
 - `unit_strength` of owner `p` applies to units spawned by `p`'s unit
   producers. The side option `unitStrengthPercent` and the team's
-  `unit_strength_percent` modifiers stay side-wide.
+  `unit_strength_percent` modifiers stay side-wide. The modifiers come only
+  from run modifiers (`TeamState.modifiers`), never from an economy building,
+  so decision 19 does not touch them. A scheduled-wave unit has no producer
+  and no owner, so it gets no ramp bonus (only the side-wide parts).
 - `maxSourceSpeedPercent` is lowered (see "Numbers to be set in the
-  rebalance").
+  rebalance"); the lowering is not part of issue #137.
 
 ### PP-9. Several Cores per side in the arena
 
@@ -976,7 +989,8 @@ middle:
   unit type up front with `P` = the side's `unitStrengthPercent` option, plus
   its `unit_strength_percent` modifiers, plus the largest ramp bonus the side
   can reach: `maxUnitStrengthPercent` if it has a `unit_strength` economy
-  building, otherwise 0. `maxStrengthPercent(unit)` (in `units.ts`) is the
+  building, otherwise 0 (each owner is capped alone, so this bound holds for
+  every owner). `maxStrengthPercent(unit)` (in `units.ts`) is the
   largest `P` a unit allows: the largest `P` with `floor(health * (100 + P) /
   100) <= MAX_HEALTH` and `floor(damage * (100 + P) / 100) <= MAX_DAMAGE`
   (a unit with 0 damage does not limit on damage).
@@ -1205,15 +1219,6 @@ digits, hash of the map>, "attempts": <number> }`. Vectors: `golden/map-gen.json
 
 ## Team state and placement
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-4 | Conduit ends may be border spots (halves of a border link). | **implemented** (issue #135) |
-
 Implemented in `packages/core/src/team-state.ts` (golden kind `team-state-ops`:
 `team-state-ops.ts`). The party's whole state for combat is one board (CP-6,
 CB-32). All operations are pure: each returns a new state or a rejection and
@@ -1404,15 +1409,6 @@ per op: `{ "op", "ok": true }` (plus `"id"` for `addToStash` and `addConduit`) o
 "ok": false, "reason" }`. Vectors: `golden/team-state-ops.json`.
 
 ## Conduits
-
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-4 | Border links: a half ends at a border spot; two matching halves are one conduit in the flow graph (`linkedConduit` on the edge); an open half carries nothing and loses nothing (a connected output that never accepts). | **implemented** (issue #135) |
 
 Implemented in `packages/core/src/conduits.ts` (golden kinds `team-state-ops`
 and `flow-graph`: `team-state-ops.ts`). Conduits carry resources between
@@ -1620,8 +1616,6 @@ row says so.
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
 | PP-7 | With PP-4 an output whose half is open is a connected output that never accepts (the item is held and the line backs up; it is not a dead end and nothing is lost). | **implemented** (issue #135) |
-| PP-8 | The source interval modifier becomes one value per owning player. | not yet implemented (issue #137) |
-| PP-4 | `rebuildFlow` removes both halves of a link when either end building is destroyed. | not yet implemented (issue #136) |
 
 Implemented in `packages/core/src/flow-sim.ts` (golden kind `flow-sim`:
 `flow-sim-kind.ts`). This is the resource flow of **one board on its own**
@@ -1629,7 +1623,8 @@ Implemented in `packages/core/src/flow-sim.ts` (golden kind `flow-sim`:
 battle tick" below, which adds units, production, combat and destruction.
 Economy buildings (in-battle ramp) and Overload are described under "One
 battle tick"; the only thing they add to this single-board flow is the optional
-**source interval modifier** (step 3 below), which is 0 in a dry run.
+**source interval modifier** (step 3 below), one value per player index, 0 in a
+dry run.
 
 ### Constants (`content/sim.json`)
 
@@ -1768,10 +1763,11 @@ the route building (for a crossover, the crossover building).
    `{tick: T, type: "produced", building, resource}` is recorded,
    `countdown = scaledInterval`, `stalled = 0`, where `scaledInterval =
 max(1, floor(intervalTicks * 100 / (100 + P)))` and `P` is the board's
-   **source interval modifier** (percent) for this tick. `P` is an input of
-   the step, 0 unless the caller sets it (the arena sets it each tick, see
-   "In-battle ramp"; a dry run leaves it at 0, which gives `intervalTicks`
-   unchanged). The result is rounded **down** (a faster source never rounds
+   **source interval modifier** (percent) of the source's **owner** for this
+   tick (PP-8: `FlowContext.sourceSpeedPercent` is a list by player index, and a
+   missing entry is 0). `P` is an input of the step, 0 unless the caller sets
+   it (the arena sets it each tick, see "In-battle ramp"; a dry run leaves it
+   unset, which gives `intervalTicks` unchanged). The result is rounded **down** (a faster source never rounds
    in favour of the slower one) and is never below 1, so a source produces at
    most one item per tick. The modifier is only read at a reset: a countdown
    that is already running is never rewritten, and the very first countdown
@@ -1946,7 +1942,8 @@ change.
 
 `rebuildFlow(sim, newState, content, simConfig)` (`flow-sim.ts`) supports the
 destruction of buildings (CB-9a). `newState` is the team state with the
-destroyed building and every conduit attached to it removed. The flow plan is
+destroyed building, every conduit attached to it, and the other half of every
+border link that lost a half (PP-4) removed. The flow plan is
 recompiled from `newState`; everything that survives keeps its state (sources
 by building ID; conduits by conduit ID; routes by node key; consumers by
 building ID and input side; `tick` is kept). What is removed is accounted so
@@ -2160,7 +2157,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-8 | The ramp bonus is per owner. | not yet implemented (issue #137) |
+| PP-11 | Steps 2 and 3: "the enemy Core" and "the movement field" become the unit's target Core and its fields; step 6 ends with retargeting. | not yet implemented (issue #133) |
 
 `stepArena(sim, ctx)` changes the state in place, in exactly this order. Let
 `T` be `sim.tick` at the start; every event of the step has `tick = T`.
@@ -2476,7 +2473,8 @@ row says so.
      then instance ID ascending), every still-present building with health 0 is
      destroyed: `building_destroyed` (or `core_destroyed` for a Core); it is
      removed from the arena; for a building (not a Core), every conduit
-     attached to it, "up to the next building" (CB-9a), is removed, each
+     attached to it, "up to the next building" (CB-9a), and the other half of
+     every border link (PP-4) that loses a half, is removed, each
      recorded as `conduit_destroyed` in conduit-ID order; it is dropped from its
      side's team state, producer list, turret list and flow plan (see
      Mid-battle removal),
@@ -2719,46 +2717,42 @@ leading band (8 cells deep) of a side spans 11.4 [7.0] columns.
 
 ### In-battle ramp (economy buildings)
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-8 | Totals and caps are per owner, and `maxSourceSpeedPercent` is lowered (number to be set in rebalance). | not yet implemented (issue #137) |
-
 "Economy" means buildings that make the factory stronger the longer a battle
 lasts (SC-8 to SC-10); it has nothing to do with gold. Each is a building of
 kind `economy` with `effect.type` `source_speed` or `unit_strength` and, per
 tier, `costPerStep`, `stepPercent` and `maxSteps`. Its battle state is the
-`ramps` entry `{side, building, charge, steps, cooldown}` (all 0 at the start of every
+`ramps` entry `{side, building, charge, steps, cooldown}` (the owner is read from the team state) (all 0 at the start of every
 battle: the state is built from the team state and `sim.json` only, so no
 upgrade carries from one battle to the next, CB-11). Charging, and the
 `cooldown` of `stepIntervalTicks` between two steps, are described in "One
 battle tick", step 2.
 
-**Totals and caps.** For a side and an effect, the _raw total_ is the sum, over
-that side's **living** economy buildings with that effect, of `steps *
-stepPercent` (the building's tier value). The side's **bonus** `P` is the raw
-total capped: `P = min(raw, cap)` with `cap = maxSourceSpeedPercent` for
+**Totals and caps (PP-8).** Economy buildings help only their owner. For a
+side, an **owner** (player index) and an effect, the _raw total_ is the sum, over
+that owner's **living** economy buildings on that side with that effect, of
+`steps * stepPercent` (the building's tier value). Buildings of a partner add
+nothing. The owner's **bonus** `P` is the raw total capped, each owner on their
+own (`rampBonus(sim, ctx, side, effect, owner)`): `P = min(raw, cap)` with `cap = maxSourceSpeedPercent` for
 `source_speed` and `maxUnitStrengthPercent` for `unit_strength` (both 300 at
 the moment). The total is recomputed whenever it is read. A building leaves
 the sum the moment it is destroyed (destroying ramp buildings weakens the enemy's ramp for the rest of the battle);
 what it already did stays: running source countdowns and units already
 spawned keep their values. Each building is also limited by its own
-`maxSteps`, so the ramp has two limits: per building and per side and effect.
+`maxSteps`, so the ramp has two limits: per building and per owner and effect.
 
 **`source_speed`.** Before each tick's flow step the arena sets the board's
-source interval modifier to the side's `source_speed` bonus. A source whose
-countdown is reset after producing uses `max(1, floor(intervalTicks * 100 /
+source interval modifiers to one value per player index: each owner's
+`source_speed` bonus. A source whose countdown is reset after producing uses the
+bonus `P` of its owner, so a player's Overclocker leaves a partner's collectors
+unchanged: `max(1, floor(intervalTicks * 100 /
 (100 + P)))` (integer division rounds down; at least 1, so at most one item
 per tick). With the maximum 300 a tier 1 extractor (20) drops to 5, a tier 3
 (10) to 2. The first countdown of a battle and any countdown already running
 are not changed when the bonus changes, only the next reset sees it.
 
-**`unit_strength`.** A unit spawned (or placed with `spawnUnitForTest`) while
-the side's bonus is `P` gets `hp = mulPct(base health, 100 + P)` and `damage =
+**`unit_strength`.** A unit spawned by a unit producer (or placed with
+`spawnUnitForTest` and an `owner`) while its producer's owner has the bonus `P`
+gets `hp = mulPct(base health, 100 + P)` and `damage =
 mulPct(base damage, 100 + P)`, each rounded down (for example, soldier health
 40 at 4 percent: 41 (41.6); damage 6 at 4 percent: 6 (6.24)). The damage is
 stored in the unit; later steps and later destruction of the building do not
@@ -3446,7 +3440,7 @@ identically; with none the field is absent.
   including that they only shoot units standing on their owner's board rows or in the neutral zone (PP-13).
 - **`unitStrengthPercent`**: a base strength percent for every unit the side
   spawns (producers and waves). `unitStats` receives the sum of this and the
-  side's `unit_strength` ramp bonus (which is capped separately by
+  spawning producer owner's `unit_strength` ramp bonus (which is capped separately by
   `maxUnitStrengthPercent`; the base is not) and its `unit_strength_percent`
   modifiers.
 - **`coreHealths`**: a list by player index: that player's Core starts with this health (and it is its maximum health in the summary and the time-limit rule) instead of the
@@ -4020,7 +4014,7 @@ compounded, so each extra stack is worth relatively less than the one before:
 | --- | --- |
 | `building_health_percent` (`target`: `all`, `wall`, `gate`, `turret`, `source`, `route`, `unit_producer`, `economy`) | to the maximum (and so the starting) health of matching placed buildings (not the Core; a defense matches its defense type, others their kind; `all` matches every building); at tick 0 in `createArenaSim` |
 | `core_health_percent` | to the maximum (and so the starting) Core health (after a side-option Core override) |
-| `unit_strength_percent` | added to the unit strength percent at each spawn (health and damage, see the unit stats seam in "The arena") |
+| `unit_strength_percent` | added to the unit strength percent at each spawn (health and damage, see the unit stats seam in "The arena"); side-wide, and it comes only from run modifiers, never from an economy building (PP-8) |
 | `turret_damage_percent` | to the damage of each of the side's turrets, when the arena context is built |
 
 Each side's modifiers come from its own team state (`TeamState.modifiers`):

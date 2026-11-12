@@ -160,6 +160,8 @@ interface PlanSource {
   /** Conduit index per output (clockwise from north), or -1. */
   readonly outputs: readonly number[];
   readonly interval: number;
+  /** The player who owns the source (PP-8: whose speed bonus applies). */
+  readonly owner: number;
 }
 
 export interface FlowPlan {
@@ -204,12 +206,14 @@ export interface FlowContext {
   /** Events are appended here when present. */
   readonly events?: SimEvent[];
   /**
-   * Source interval modifier for the tick, in percent (default 0): when a
-   * source's countdown is reset its interval is
-   * `max(1, floor(interval * 100 / (100 + percent)))`. Set by the arena each
-   * tick from the side's `source_speed` total; a dry run leaves it at 0.
+   * Source interval modifier for the tick, in percent, one value per player
+   * index (PP-8; a missing entry or an absent list is 0): when a source's
+   * countdown is reset its interval is
+   * `max(1, floor(interval * 100 / (100 + percent)))` with the percent of the
+   * source's owner. Set by the arena each tick from each owner's
+   * `source_speed` total; a dry run leaves it unset.
    */
-  sourceSpeedPercent?: number;
+  sourceSpeedPercent?: readonly number[];
   /** Present in `'need'` mode: one pacer per consumer, in `sim.consumers` order. */
   readonly pacers?: ConsumerPacer[];
 }
@@ -430,6 +434,7 @@ function compile(
         return o === undefined ? -1 : outIdx(o);
       }),
       interval: tier.intervalTicks,
+      owner: b.owner,
     });
     sourceSims.push({
       building: b.id,
@@ -822,7 +827,10 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
           resource: s.resource,
         });
       }
-      s.countdown = scaledInterval(ps.interval, ctx.sourceSpeedPercent ?? 0);
+      s.countdown = scaledInterval(
+        ps.interval,
+        ctx.sourceSpeedPercent?.[ps.owner] ?? 0,
+      );
       s.stalled = 0;
     } else {
       if (s.stalled === 0) {
