@@ -489,11 +489,35 @@ describe('enemy-path preview (PP-12)', () => {
     expect(far?.x).toBeLessThanOrEqual(43);
   });
 
-  test('plots without a placed Core give no entry', () => {
+  test('plots without a placed Core still get a path, to the Core a unit would choose', () => {
+    const lab = new Lab(map4());
+    lab.core(5, 0, 0);
+    lab.core(41, 0, 3);
+    const paths = previewEnemyPaths(lab.state, content, simConfig);
+    expect(paths).toHaveLength(48);
+    const { sim, ctx } = start(lab.state, team(spread));
+    for (const p of paths) {
+      // An enemy unit entering in this column of the arena (side 1, own
+      // plot opposite the column's plot).
+      const u = spawnUnitForTest(sim, ctx, {
+        side: 1,
+        def: 'unit_soldier',
+        x: p.entry.x,
+        y: 20,
+        allowOverlap: true,
+      });
+      expect(p.core).toBe(u.target);
+      expect([0, 3]).toContain(p.core);
+    }
+    expect(paths.some((p) => p.core === 0)).toBe(true);
+    expect(paths.some((p) => p.core === 3)).toBe(true);
+  });
+
+  test('with one Core placed in a party of four, every column has a path to it', () => {
     const lab = new Lab(map4());
     lab.core(17, 0, 1);
     const paths = previewEnemyPaths(lab.state, content, simConfig);
-    expect(paths).toHaveLength(12);
+    expect(paths).toHaveLength(48);
     for (const p of paths) expect(p.core).toBe(1);
   });
 });

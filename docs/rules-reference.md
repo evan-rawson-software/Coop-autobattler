@@ -585,12 +585,13 @@ owns them (`blocksUnit` is by side, unchanged).
 ### PP-12. Enemy-path preview per Core
 
 `previewEnemyPaths` answers, for every `x` whose front-row cell is open for
-the enemy and whose plot's Core is placed (`cores[plotOf(x)]` is not `null`),
-with the path of an enemy unit that enters there and heads for the Core of
-plot `plotOf(x)`: today's walk, on the fields of that Core (PP-11). Each
-entry gains `core: plotOf(x)`. Columns of a plot without a Core give no
-entry; the function no longer throws for a board with some Cores unplaced.
-What a unit does after that Core has fallen is not previewed.
+the enemy, with the path of an enemy unit that enters there and heads for its
+target Core: the Core of plot `plotOf(x)` if it is placed, else the placed
+Core `chooseTarget` picks from the entry cell (the nearest, with the key of
+PP-11, `opposite` being `plotOf(x)`); today's walk, on the fields of that Core.
+Each entry gains `core`, that Core's player index. The function does not
+throw for a board with some Cores unplaced; with no Core placed it gives no
+entry. What a unit does after that Core has fallen is not previewed.
 
 ### PP-14. PvE strongholds and bosses with one Core per player
 
@@ -2483,7 +2484,7 @@ row says so.
      destroyed Core is only recorded: the Core's
      cells become open (`stepArena` itself never ends a battle and stays safe
      to call, and Core decay skips a destroyed Core; the battle-end rule is
-     checked after the tick by the code in "Battles"). Both Cores can fall in
+     checked after the tick by the code in "Battles"). Any number of Cores of both sides can fall in
      the same tick.
    - After any destruction every cached movement field and breach field is
      dropped. Then, at the end of this step, every living unit, in unit-`id`
@@ -2942,12 +2943,11 @@ no second pathfinder; gates, walls and turrets all block the enemy):
 
 For every `x` from 0 to `width - 1`, in order, such that the front-row cell
 `(x, height - 1)` is open for the enemy side (no terrain, no building that
-blocks it) and the Core of the plot that column is in, `plotOf(x)`, is placed
-(PP-12), an entry `{entry: {x, y}, core, cells, approach, breach}` with `core
-= plotOf(x)`. The path is that of an enemy unit that enters there and heads for
-that Core, on the fields of that Core (PP-11); columns of a plot without a Core
-give no entry and the function no longer throws for a board with some Cores
-unplaced. What a unit does after that Core has fallen is not previewed, and
+blocks it) (PP-12), an entry `{entry: {x, y}, core, cells, approach, breach}`
+with `core` the Core of plot `plotOf(x)` if placed, else the nearest placed
+Core by the key of PP-11. The path is that of an enemy unit that enters there
+and heads for that Core, on the fields of that Core (PP-11); with no Core
+placed there is no entry and the function does not throw. What a unit does after that Core has fallen is not previewed, and
 neither is an attack on a Core that is not its target:
 
 - `cells` is the walked path in board coordinates, **starting with the entry
