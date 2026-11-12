@@ -88,7 +88,12 @@ describe('one Core per player (PP-14)', () => {
               p.budget - Math.floor((p.budget * arch.waveSharePercent) / 100);
             const spent = p.stronghold.buildings.reduce(
               (a, b) =>
-                a + got(got(content.buildings.get(b.def)).tiers[0]).price,
+                a +
+                (
+                  got(got(content.buildings.get(b.def)).tiers[0]) as {
+                    price: number;
+                  }
+                ).price,
               0,
             );
             const expected = Math.max(
