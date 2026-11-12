@@ -51,7 +51,7 @@ export type Step = (typeof STEPS)[number];
  * `owner` on every conduit); version 6 lets a conduit end in the team state be a
  * border spot (halves of border links, PP-4). Older states are not readable.
  */
-export const RUN_STATE_FORMAT_VERSION = 6;
+export const RUN_STATE_FORMAT_VERSION = 7;
 
 /**
  * Steps a saved state can never be in. `pve_battle` and `pvp_battle` are
@@ -88,12 +88,11 @@ export interface PlayerRunState {
   readonly shop: Json;
 }
 
-export type VoteTopic = 'core' | 'pve' | 'event';
+export type VoteTopic = 'pve' | 'event';
 
 /**
  * The open votes of the current step. `choices[i]` is player i's current
- * choice or null. For `core` a choice is a `{x, y}` position; for `pve` and
- * `event` it is the string `id` of one of the options in `pending.options`.
+ * choice or null. For `pve` and `event` it is the string `id` of one of the options in `pending.options`.
  */
 export interface OpenVote {
   readonly topic: VoteTopic;
@@ -179,7 +178,7 @@ export interface RunState {
   readonly runId: string;
   readonly runVersion: string;
   /** `RUN_STATE_FORMAT_VERSION`; a state of another version is rejected. */
-  readonly formatVersion: 6;
+  readonly formatVersion: 7;
   readonly seed: number;
   /** The saved state of the run's `Rng`. */
   readonly rng: readonly [number, number, number, number];
@@ -255,7 +254,7 @@ export type IntentConduitEnd =
   | { readonly border: number; readonly y: number };
 
 export type BuiltinIntent =
-  | { readonly type: 'propose_core'; readonly x: number; readonly y: number }
+  | { readonly type: 'place_core'; readonly x: number; readonly y: number }
   | { readonly type: 'vote'; readonly choice: Json }
   | { readonly type: 'ready' }
   | { readonly type: 'unready' }
@@ -273,7 +272,7 @@ export interface ExtensionIntent {
 export type Intent = BuiltinIntent | ExtensionIntent;
 
 export const BUILTIN_INTENT_TYPES: readonly BuiltinIntentType[] = [
-  'propose_core',
+  'place_core',
   'vote',
   'ready',
   'unready',
@@ -314,7 +313,12 @@ export type Effect =
       readonly to: Step;
       readonly round: number;
     }
-  | { readonly type: 'core_placed'; readonly x: number; readonly y: number }
+  | {
+      readonly type: 'core_placed';
+      readonly player: number;
+      readonly x: number;
+      readonly y: number;
+    }
   | { readonly type: 'vote_changed'; readonly player: number }
   | {
       readonly type: 'vote_resolved';

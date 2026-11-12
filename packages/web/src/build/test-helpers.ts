@@ -17,8 +17,10 @@ export async function buildRun(seed = 7): Promise<BuildSession> {
     content,
     content.mapgen,
   )[0] as Cell;
-  const r = await s.dispatch({ type: 'propose_core', x: pos.x, y: pos.y });
+  const r = await s.dispatch({ type: 'place_core', x: pos.x, y: pos.y });
   if (!r.ok) throw new Error(`core: ${r.reason}`);
+  const ready = await s.dispatch({ type: 'ready' });
+  if (!ready.ok) throw new Error(`core ready: ${ready.reason}`);
   if (s.run.step !== 'build') throw new Error(`step ${s.run.step}`);
   return s;
 }

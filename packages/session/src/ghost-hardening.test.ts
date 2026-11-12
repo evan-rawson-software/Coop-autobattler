@@ -11,8 +11,7 @@ import {
   ghostTierBound,
   ghostValueBound,
   hashJson,
-  listLegalCorePositions,
-  placeCore,
+  type Cell,
   tierPrice,
   validateGhostSnapshot,
   workshopPrice,
@@ -41,12 +40,7 @@ import { startRun, openRun } from './run-controller.js';
 import { buildSaveRecord } from './save.js';
 import { createMemorySaveStore } from './save-store-memory.js';
 import { allowedIntents } from './selectors.js';
-import {
-  content,
-  gameConfigs,
-  makeGameDeps,
-  mapgenConfig,
-} from './test-support.js';
+import { content, gameConfigs, makeGameDeps } from './test-support.js';
 import type {
   CreateRunArgs,
   Intent,
@@ -369,13 +363,14 @@ describe('item 2: the controller validates the next state before every save', ()
     if (!started.ok) return;
     const c = started.controller;
     const pos = (await import('./test-support.js')).corePosition(c.state);
-    expect((await c.dispatch(0, { type: 'propose_core', ...pos }, 2)).ok).toBe(
+    expect((await c.dispatch(0, { type: 'place_core', ...pos }, 2)).ok).toBe(
       true,
     );
+    expect((await c.dispatch(0, { type: 'ready' }, 3)).ok).toBe(true);
     expect(c.state.step).toBe('build');
     const before = c.state;
     const stored = JSON.stringify(await saves.get('run-v'));
-    const bad = await c.dispatch(0, { type: 'evil', mode: 'lives' }, 3);
+    const bad = await c.dispatch(0, { type: 'evil', mode: 'lives' }, 4);
     expect(bad.ok).toBe(false);
     if (!bad.ok) {
       expect(bad.reason).toBe('invalid_state');
@@ -429,8 +424,8 @@ describe('format 3 and one Core (issue #139, #135)', () => {
 
   test('a format-2 snapshot (before border links) is rejected, and so is any other format', () => {
     const good = goodSnapshot(2);
-    expect(good.formatVersion).toBe(3);
-    for (const v of [1, 2, 4, 0, '3']) {
+    expect(good.formatVersion).toBe(4);
+    for (const v of [1, 2, 3, 5, 0, '4']) {
       const r = validateGhostSnapshot(
         { ...clone(good), formatVersion: v },
         ctx,
@@ -440,30 +435,35 @@ describe('format 3 and one Core (issue #139, #135)', () => {
     }
   });
 
-  test('a snapshot or save with two Cores placed is rejected (until #132)', () => {
+  test('one Core per player is accepted; a Core outside its own plot or a missing Core is rejected (issue #160)', () => {
     const deps = botDeps('two');
     const run = botRun(deps, argsFor('two', 7, ['A', 'B']), 2, atRound(2));
     const snap = run.snapshots.find((s) => s.round === 2);
     if (snap === undefined) throw new Error('no snapshot');
-    expect(validateGhostSnapshot(clone(snap), ctxOf(deps)).ok).toBe(true);
     const cores = snap.team.cores;
-    const empty = cores.findIndex((c) => c === null);
-    // Both players have a Core placed: put one more in the empty slot.
-    const pos = listLegalCorePositions(
-      snap.team.map,
-      content,
-      mapgenConfig,
-      empty,
-    )[0];
-    if (empty < 0 || pos === undefined) throw new Error('no free Core slot');
-    const placed = placeCore(snap.team, content, mapgenConfig, empty, pos);
-    if (!placed.ok) throw new Error(placed.reason);
-    const two = { ...clone(snap), team: clone(placed.state) };
-    const r = validateGhostSnapshot(two, ctxOf(deps));
-    expect(r.ok ? '' : r.errors.join()).toMatch(/only one Core/);
-    const state = { ...clone(run.state), team: clone(placed.state) };
-    const s = validateRunState(state, deps);
-    expect(s.ok ? '' : s.errors.join()).toMatch(/only one Core/);
+    expect(cores.every((c) => c !== null)).toBe(true);
+    expect(validateGhostSnapshot(clone(snap), ctxOf(deps)).ok).toBe(true);
+    expect(validateRunState(clone(run.state), deps).ok).toBe(true);
+    const withCores = (list: typeof cores) => ({
+      ...clone(snap),
+      team: { ...clone(snap.team), cores: clone(list) },
+    });
+    const stateWith = (list: typeof cores) => ({
+      ...clone(run.state),
+      team: { ...clone(run.state.team), cores: clone(list) },
+    });
+    // Player 0's Core stands in player 1's plot.
+    const swapped = [cores[1] as Cell, cores[1] as Cell];
+    const r = validateGhostSnapshot(withCores(swapped), ctxOf(deps));
+    expect(r.ok ? '' : r.errors.join()).toMatch(/cores\[0\].*outside_own_plot/);
+    const t = validateRunState(stateWith(swapped), deps);
+    expect(t.ok ? '' : t.errors.join()).toMatch(/cores\[0\].*outside_own_plot/);
+    // A player without a Core in a battle step.
+    const missing = [cores[0] as Cell, null];
+    const m = validateGhostSnapshot(withCores(missing), ctxOf(deps));
+    expect(m.ok ? '' : m.errors.join()).toMatch(/Core must be placed/);
+    const n = validateRunState(stateWith(missing), deps);
+    expect(n.ok ? '' : n.errors.join()).toMatch(/Core must be placed/);
   });
 });
 

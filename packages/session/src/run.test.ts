@@ -1,10 +1,16 @@
 import { describe, expect, test } from 'vitest';
-import { soleCore } from '@game/core';
+import {
+  addToStash,
+  listLegalCorePositions,
+  placeFromStash,
+  soleCore,
+} from '@game/core';
 import { createDeps, fixedBattle } from './defaults.js';
 import { applyIntent, createRun, replayRun } from './machine.js';
 import { allowedIntents, openVote, whoIsReady } from './selectors.js';
 import {
   baseDeps,
+  coreMove,
   corePosition,
   deepFreeze,
   newRun,
@@ -201,7 +207,7 @@ describe('lives', () => {
 describe('wrong_step', () => {
   const none = [] as const;
   const legal: Record<Step, readonly string[]> = {
-    core_placement: ['propose_core', 'vote', 'abandon'],
+    core_placement: ['place_core', 'ready', 'unready', 'abandon'],
     build: ['ready', 'unready', 'abandon', ...boardNames()],
     pve_choice: ['vote', 'abandon'],
     pve_battle: ['abandon'],
@@ -246,7 +252,7 @@ describe('wrong_step', () => {
   }
 
   const samples: Intent[] = [
-    { type: 'propose_core', x: 0, y: 0 },
+    { type: 'place_core', x: 0, y: 0 },
     { type: 'vote', choice: 'easy' },
     { type: 'ready' },
     { type: 'unready' },
@@ -304,20 +310,20 @@ describe('bookkeeping', () => {
   test('accepted intents are logged and counted; rejected ones are not', () => {
     let s = newRun();
     const rejected = applyIntent(s, 0, { type: 'ready' }, baseDeps);
-    expect(rejected.ok).toBe(false);
+    expect(rejected).toMatchObject({ ok: false, reason: 'core_not_placed' });
     expect(s.actionCounter).toBe(0);
     const pos = corePosition(s);
-    s = ok(s, 0, { type: 'propose_core', ...pos }).state;
+    s = ok(s, 0, { type: 'place_core', ...pos }).state;
     expect(s.actionCounter).toBe(1);
     expect(s.actionLog).toEqual([
-      { n: 1, player: 0, intent: { type: 'propose_core', ...pos } },
+      { n: 1, player: 0, intent: { type: 'place_core', ...pos } },
     ]);
-    const bad = applyIntent(s, 0, { type: 'propose_core', ...pos }, baseDeps);
-    expect(bad).toEqual({ ok: false, reason: 'wrong_step' });
-    expect(s.actionCounter).toBe(1);
+    // The position can be sent again until the player is ready.
+    s = ok(s, 0, { type: 'place_core', ...pos }).state;
     s = ok(s, 0, { type: 'ready' }).state;
-    expect(s.actionCounter).toBe(2);
-    expect(s.actionLog.map((a) => a.n)).toEqual([1, 2]);
+    expect(s.step).toBe('build');
+    expect(s.actionCounter).toBe(3);
+    expect(s.actionLog.map((a) => a.n)).toEqual([1, 2, 3]);
   });
 
   test('nothing is mutated (deep-frozen inputs)', () => {
@@ -450,6 +456,38 @@ describe('state, JSON and replay', () => {
     expect(
       bad((o) => (o['votes'] = { topic: 'core', choices: [null] })).join(),
     ).toMatch(/votes/);
+    // Core placement: one pending position per player, legal for its plot.
+    const placing = (
+      mutate: (o: Record<string, unknown>) => void,
+    ): string[] => {
+      const o = JSON.parse(
+        JSON.stringify(newRun(baseDeps, ['A', 'B'])),
+      ) as Record<string, unknown>;
+      mutate(o);
+      const v = validateRunState(o, baseDeps);
+      return v.ok ? [] : [...v.errors];
+    };
+    expect(placing(() => undefined)).toEqual([]);
+    expect(
+      placing((o) => (o['pending'] = { positions: [null] })).join(),
+    ).toMatch(/pending.positions/);
+    const two = newRun(baseDeps, ['A', 'B']);
+    expect(
+      placing(
+        (o) =>
+          (o['pending'] = {
+            positions: [corePosition(two, 1), corePosition(two, 1)],
+          }),
+      ).join(),
+    ).toMatch(/positions\[0\].*legal/);
+    expect(
+      placing((o) => {
+        o['pending'] = { positions: [null, corePosition(two, 1)] };
+        (o['perPlayer'] as { ready: boolean }[]).forEach((p, i) => {
+          if (i === 0) p.ready = true;
+        });
+      }).join(),
+    ).toMatch(/ready player needs a position/);
     expect(
       bad((o) => (o['outcome'] = { reason: 'abandoned', round: 1 })).join(),
     ).toMatch(/outcome/);
@@ -464,7 +502,7 @@ describe('state, JSON and replay', () => {
 describe('selectors', () => {
   test('whoIsReady, openVote and allowedIntents follow the state', () => {
     let s = newRun(baseDeps, ['A', 'B']);
-    expect(openVote(s)).toMatchObject({ topic: 'core', waitingFor: [0, 1] });
+    expect(openVote(s)).toBeNull();
     s = placeCoreAll(s);
     expect(openVote(s)).toBeNull();
     expect(whoIsReady(s)).toEqual([]);
@@ -575,96 +613,147 @@ describe('three players', () => {
     });
   });
 
-  test('the Core resolves once all three have voted: one vote picked at random, legal positions only', () => {
+  test('each player places their own Core: no vote, no random draw (PP-3)', () => {
     let s = newRun(baseDeps, names);
-    const pos = corePosition(s);
-    const off = { x: -1, y: -1 };
-    expect(
-      applyIntent(s, 0, { type: 'propose_core', ...off }, baseDeps),
-    ).toMatchObject({
-      ok: false,
-    });
-    s = ok(s, 0, { type: 'propose_core', ...pos }).state;
-    s = ok(s, 1, { type: 'vote', choice: pos }).state;
+    const rng = s.rng;
+    const plots = s.team.map.plotWidth;
+    for (const p of [2, 0, 1]) {
+      const pos = corePosition(s, p);
+      expect(Math.floor(pos.x / plots)).toBe(p);
+      const r = ok(s, p, { type: 'place_core', ...pos });
+      s = r.state;
+      expect(r.effects).toEqual([]);
+    }
     expect(s.step).toBe('core_placement');
-    expect(soleCore(s.team)).toBeNull();
-    // A vote for an unproposed position is refused.
-    expect(
-      applyIntent(s, 2, { type: 'vote', choice: { x: 99, y: 99 } }, baseDeps),
-    ).toMatchObject({ ok: false, reason: 'invalid_choice' });
-    // Player 2 proposes another spot; as the last vote it resolves 2-1.
-    const other = require2(s, pos);
-    expect(openVote(s)?.options).toHaveLength(1);
-    const r = ok(s, 2, { type: 'propose_core', ...other });
-    expect(r.state.step).toBe('build');
-    expect(pickedBy(r.effects, [pos, pos, other])).toEqual(
-      soleCore(r.state.team),
-    );
-  });
-
-  test('a vote can change until the last player has voted', () => {
-    let s = newRun(baseDeps, names);
-    const pos = corePosition(s);
-    const other = require2(s, pos);
-    s = ok(s, 0, { type: 'propose_core', ...pos }).state;
-    s = ok(s, 1, { type: 'propose_core', ...other }).state;
-    // Player 0 changes to the other spot; still waiting for player 2.
-    s = ok(s, 0, { type: 'vote', choice: other }).state;
+    expect(s.votes).toBeNull();
+    expect(s.team.cores.every((c) => c === null)).toBe(true);
+    const fx: Effect[] = [];
+    for (const p of [1, 2]) s = ok(s, p, { type: 'ready' }, baseDeps).state;
     expect(s.step).toBe('core_placement');
-    const r = ok(s, 2, { type: 'vote', choice: other });
-    // Unanimous: no random pick.
-    expect(r.state.step).toBe('build');
-    expect(soleCore(r.state.team)).toEqual(other);
-    expect(
-      r.effects.find((e) => e.type === 'vote_resolved'),
-    ).not.toHaveProperty('picked');
-    expect(
-      validateRunState(JSON.parse(JSON.stringify(r.state)), baseDeps).ok,
-    ).toBe(true);
-  });
-
-  test('a 1-1 split of two players picks one of the two votes, and replays', () => {
-    let s = newRun(baseDeps, ['Ann', 'Bo']);
-    const pos = corePosition(s);
-    const other = (() => {
-      for (let dx = -3; dx <= 3; dx++) {
-        for (let dy = -3; dy <= 3; dy++) {
-          if (dx === 0 && dy === 0) continue;
-          const p = { x: pos.x + dx, y: pos.y + dy };
-          if (applyIntent(s, 1, { type: 'propose_core', ...p }, baseDeps).ok) {
-            return p;
-          }
-        }
-      }
-      throw new Error('no second legal position nearby');
-    })();
-    s = ok(s, 1, { type: 'propose_core', ...other }).state;
-    expect(s.step).toBe('core_placement');
-    const r = ok(s, 0, { type: 'propose_core', ...pos });
-    s = r.state;
+    expect(s.rng).toEqual(rng);
+    const last = ok(s, 0, { type: 'ready' });
+    fx.push(...last.effects);
+    s = last.state;
     expect(s.step).toBe('build');
-    expect(pickedBy(r.effects, [pos, other])).toEqual(soleCore(s.team));
-    const replayed = replayRun(runArgs(['Ann', 'Bo']), s.actionLog, baseDeps);
-    expect(replayed.ok).toBe(true);
-    if (replayed.ok) expect(replayed.state).toEqual(s);
+    expect(fx.some((e) => e.type === 'vote_resolved')).toBe(false);
+    expect(fx.filter((e) => e.type === 'core_placed')).toEqual(
+      [0, 1, 2].map((p) => ({
+        type: 'core_placed',
+        player: p,
+        ...corePosition(newRun(baseDeps, names), p),
+      })),
+    );
+    expect(s.team.cores).toEqual(
+      [0, 1, 2].map((p) => corePosition(newRun(baseDeps, names), p)),
+    );
     expect(validateRunState(JSON.parse(JSON.stringify(s)), baseDeps).ok).toBe(
       true,
     );
+    const replayed = replayRun(runArgs(names), s.actionLog, baseDeps);
+    expect(replayed.ok && replayed.state).toEqual(s);
   });
 
-  function require2(s: RunState, not: { x: number; y: number }) {
-    // Any other legal position: try neighbours until the machine accepts.
-    for (let dx = -3; dx <= 3; dx++) {
-      for (let dy = -3; dy <= 3; dy++) {
-        const p = { x: not.x + dx, y: not.y + dy };
-        if (dx === 0 && dy === 0) continue;
-        const r = applyIntent(s, 2, { type: 'propose_core', ...p }, baseDeps);
-        if (r.ok) return p;
-      }
+  test('a position can change until the player is ready, and again after unready', () => {
+    let s = newRun(baseDeps, names);
+    const legal = listLegalCorePositions(
+      s.team.map,
+      baseDeps.content,
+      baseDeps.mapgenConfig,
+      1,
+    );
+    const first = legal[0] as { x: number; y: number };
+    const second = legal[legal.length - 1] as { x: number; y: number };
+    s = ok(s, 1, { type: 'place_core', ...first }).state;
+    s = ok(s, 1, { type: 'place_core', ...second }).state;
+    expect(pendingPositions(s)[1]).toEqual(second);
+    s = ok(s, 1, { type: 'ready' }).state;
+    expect(
+      applyIntent(s, 1, { type: 'place_core', ...first }, baseDeps),
+    ).toMatchObject({ ok: false, reason: 'locked_ready' });
+    s = ok(s, 1, { type: 'unready' }).state;
+    s = ok(s, 1, { type: 'place_core', ...first }).state;
+    expect(pendingPositions(s)[1]).toEqual(first);
+    // The step ends only when everyone has a position and is ready.
+    for (const p of [0, 2]) {
+      s = ok(s, p, coreMove(s, p)).state;
     }
-    throw new Error('no second legal position nearby');
-  }
+    s = ok(s, 0, { type: 'ready' }).state;
+    s = ok(s, 1, { type: 'ready' }).state;
+    expect(s.step).toBe('core_placement');
+    s = ok(s, 2, { type: 'ready' }).state;
+    expect(s.step).toBe('build');
+    expect(s.team.cores[1]).toEqual(first);
+  });
+
+  test('ready without a position is core_not_placed; a position outside the plot is outside_own_plot', () => {
+    const s = newRun(baseDeps, names);
+    expect(applyIntent(s, 1, { type: 'ready' }, baseDeps)).toMatchObject({
+      ok: false,
+      reason: 'core_not_placed',
+    });
+    // Player 0's position, sent by player 1.
+    expect(
+      applyIntent(
+        s,
+        1,
+        { type: 'place_core', ...corePosition(s, 0) },
+        baseDeps,
+      ),
+    ).toMatchObject({ ok: false, reason: 'outside_own_plot' });
+    // Another player placing does not give player 1 a position.
+    const t = ok(s, 0, { type: 'place_core', ...corePosition(s, 0) }).state;
+    expect(applyIntent(t, 1, { type: 'ready' }, baseDeps)).toMatchObject({
+      reason: 'core_not_placed',
+    });
+  });
+
+  test('a pending position that cannot be placed (tampered save) is refused, never thrown', () => {
+    let s = newRun(baseDeps, ['A', 'B']);
+    const pos = corePosition(s, 0);
+    s = ok(s, 0, { type: 'place_core', ...pos }).state;
+    s = ok(s, 1, coreMove(s, 1)).state;
+    s = ok(s, 0, { type: 'ready' }).state;
+    // A building stands on player 0's pending spot.
+    const a = addToStash(s.team, baseDeps.content, {
+      def: 'bld_wall',
+      tier: 1,
+      owner: 0,
+    });
+    if (!a.ok) throw new Error(a.reason);
+    const put = placeFromStash(a.state, baseDeps.content, {
+      actor: 0,
+      id: a.id,
+      x: pos.x,
+      y: pos.y,
+      rotation: 0,
+    });
+    if (!put.ok) throw new Error(put.reason);
+    const bad = { ...s, team: put.state };
+    // The validator rejects the saved state.
+    const v = validateRunState(JSON.parse(JSON.stringify(bad)), baseDeps);
+    expect(v.ok ? '' : v.errors.join()).toMatch(
+      /positions\[0\].*legal.*overlaps_building/,
+    );
+    // And the last Ready is refused, naming the player; nothing is thrown.
+    const r = applyIntent(bad, 1, { type: 'ready' }, baseDeps);
+    expect(r).toMatchObject({
+      ok: false,
+      reason: 'overlaps_building',
+      detail: 'player 0',
+    });
+  });
+
+  test('the Core vote is gone', () => {
+    const s = newRun(baseDeps, names);
+    expect(
+      applyIntent(s, 0, { type: 'vote', choice: corePosition(s) }, baseDeps),
+    ).toEqual({ ok: false, reason: 'wrong_step' });
+  });
 });
+
+function pendingPositions(s: RunState): unknown[] {
+  return (s.pending as { positions: unknown[] }).positions;
+}
 
 describe('extension handlers', () => {
   const testBuy = (advance: boolean) => ({

@@ -5,8 +5,8 @@
  * cannot be moved: the machine leaves `core_placement` and no later step
  * accepts a Core move.
  *
- * Solo: confirming sends `propose_core`, which the party's single vote
- * settles at once. The legal positions and the reasons come from `core`.
+ * Solo: confirming sends `place_core` and then `ready`, which ends the step
+ * at once (the per-player screen is issue #142). The legal positions and the reasons come from `core`.
  */
 import type { Cell } from '@game/core';
 import { coreFootprint } from '@game/core';
@@ -139,7 +139,8 @@ export function CoreScreen(props: { run: RunHandle }) {
     if (selected === null || busy) return;
     setBusy(true);
     void session
-      .dispatch({ type: 'propose_core', x: selected.x, y: selected.y })
+      .dispatch({ type: 'place_core', x: selected.x, y: selected.y })
+      .then((r) => (r.ok ? session.dispatch({ type: 'ready' }) : r))
       .then((r) => {
         setBusy(false);
         if (!r.ok) setProblem(reasonMessage(r.reason, r.detail));

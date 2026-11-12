@@ -23,7 +23,7 @@ const BUILD_LIKE: readonly BuiltinIntentType[] = [
 export const STEP_INTENTS: Readonly<
   Record<Step, readonly BuiltinIntentType[]>
 > = {
-  core_placement: ['propose_core', 'vote', 'abandon'],
+  core_placement: ['place_core', 'ready', 'unready', 'abandon'],
   build: BUILD_LIKE,
   pve_choice: ['vote', 'abandon'],
   pve_battle: ['abandon'],
@@ -37,11 +37,15 @@ export const STEP_INTENTS: Readonly<
 };
 
 /** The steps in which a player's Ready flag locks their own editing (#58). */
-export const READY_LOCK_STEPS: readonly Step[] = ['build', 'shop'];
+export const READY_LOCK_STEPS: readonly Step[] = [
+  'core_placement',
+  'build',
+  'shop',
+];
 
 /**
- * True if `type` is refused for a player who is Ready in `step`: in a build
- * or shop step a Ready player may only unready (or abandon, for the host).
+ * True if `type` is refused for a player who is Ready in `step`: in the
+ * Core placement, a build or a shop step a Ready player may only unready (or abandon, for the host).
  * Every other intent, built-in or from an extension handler, is locked.
  */
 export function lockedWhileReady(step: Step, type: string): boolean {

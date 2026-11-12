@@ -7,7 +7,6 @@
 import {
   conduitResource,
   occupancy,
-  soleCore,
   type BuildingDef,
   type FeatureCell,
   type Occupancy,
@@ -257,7 +256,8 @@ function buildBoard(
   });
 
   let core: BoardScene['core'] = null;
-  const stateCore = soleCore(state);
+  // The first placed Core; drawing every player's Core is the web issue #142.
+  const stateCore = state.cores.find((c) => c !== null) ?? null;
   if (stateCore !== null) {
     const coreDef = content.buildings.list().find((d) => d.kind === 'core');
     if (coreDef !== undefined) {

@@ -14,7 +14,6 @@ import {
   moveBuilding,
   placeCore,
   placeFromStash,
-  corePlayerAt,
   returnToStash,
   sealedProducers,
   type Json,
@@ -105,10 +104,7 @@ function applyPatch(s: RunState, patch: StatePatch): RunState {
   };
 }
 
-function emptyVotes(
-  topic: 'core' | 'pve' | 'event',
-  n: number,
-): RunState['votes'] {
+function emptyVotes(topic: 'pve' | 'event', n: number): RunState['votes'] {
   return { topic, choices: Array.from({ length: n }, () => null) };
 }
 
@@ -165,11 +161,12 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
     lives: deps.rules.startingLives,
     team: createTeamState(map),
     perPlayer: args.players.map(() => ({ gold: 0, ready: false, shop: null })),
-    votes: emptyVotes('core', n),
+    votes: null,
     upcomingPve: null,
     pvpOpponent: null,
     ghostsFought: [],
-    pending: { proposals: [] },
+    // Each player's pending Core position (PP-3), null until placed.
+    pending: { positions: Array.from({ length: n }, () => null) },
     history: [],
     thisRound: { pve: null, pvp: null },
     actionLog: [],
@@ -424,11 +421,54 @@ function applyRewards(
   };
 }
 
+/**
+ * Place every pending Core position on the team, in player order; players
+ * without a position are skipped. Fails with the first position `placeCore`
+ * refuses (the same legality as `place_core`), naming the player.
+ */
+function placePending(
+  s: RunState,
+  deps: RunDeps,
+):
+  | {
+      readonly ok: true;
+      readonly team: RunState['team'];
+      readonly placed: { player: number; x: number; y: number }[];
+    }
+  | { readonly ok: false; readonly reason: string; readonly detail: string } {
+  let team = s.team;
+  const placed: { player: number; x: number; y: number }[] = [];
+  const positions = pendingList(s, 'positions');
+  for (let p = 0; p < s.players.length; p++) {
+    const pos = positions[p];
+    if (!isRecord(pos) || !isInt(pos['x']) || !isInt(pos['y'])) continue;
+    const r = placeCore(team, deps.content, deps.mapgenConfig, p, {
+      x: pos['x'],
+      y: pos['y'],
+    });
+    if (!r.ok) {
+      return { ok: false, reason: r.reason, detail: `player ${String(p)}` };
+    }
+    team = r.state;
+    placed.push({ player: p, x: pos['x'], y: pos['y'] });
+  }
+  return { ok: true, team, placed };
+}
+
 /** The step has met its condition: apply what it owes and move on. */
 function completeStep(s: RunState, deps: RunDeps, fx: Effect[]): RunState {
   switch (s.step) {
-    case 'core_placement':
-      return enter(s, 'build', deps, fx);
+    case 'core_placement': {
+      // Every player is ready, so every player has a position (PP-3); `ready`
+      // has already refused positions that cannot be placed.
+      const all = placePending(s, deps);
+      if (!all.ok) {
+        throw new Error(`core_placement: ${all.reason} (${all.detail}).`);
+      }
+      const team = all.team;
+      for (const c of all.placed) fx.push({ type: 'core_placed', ...c });
+      return enter({ ...s, team }, 'build', deps, fx);
+    }
     case 'build':
       return enter(s, 'pve_choice', deps, fx);
     case 'pve_choice':
@@ -527,16 +567,6 @@ export function voteResolvedEffect(
 function normalizeChoice(s: RunState, choice: Json): Json | null {
   const votes = s.votes;
   if (votes === null) return null;
-  if (votes.topic === 'core') {
-    if (!isRecord(choice) || !isInt(choice['x']) || !isInt(choice['y'])) {
-      return null;
-    }
-    const { x, y } = choice as { x: number; y: number };
-    const known = pendingList(s, 'proposals').some(
-      (p) => isRecord(p) && p['x'] === x && p['y'] === y,
-    );
-    return known ? { x, y } : null;
-  }
   if (typeof choice !== 'string') return null;
   return pendingList(s, 'options').some((o) => idOf(o) === choice)
     ? choice
@@ -562,31 +592,6 @@ function resolveVotes(s: RunState, deps: RunDeps, fx: Effect[]): Next {
   for (const c of votes.choices) {
     if (c === null) return { ok: true, state: s };
     all.push(c);
-  }
-  if (votes.topic === 'core') {
-    // Every player has voted (CP-16): unanimous, or one vote picked at random.
-    const t = tally(s, all, streamLabels.vote('core', s.round, s.leg));
-    const first = t.winner;
-    const pos = first as { x: number; y: number };
-    const placed = placeCore(
-      s.team,
-      deps.content,
-      deps.mapgenConfig,
-      corePlayerAt(s.team.map, deps.content, pos.x),
-      pos,
-    );
-    if (!placed.ok) return fail(placed.reason, placed.detail);
-    fx.push(voteResolvedEffect('core', all, t));
-    fx.push({ type: 'core_placed', x: pos.x, y: pos.y });
-    return {
-      ok: true,
-      state: enter(
-        { ...t.state, team: placed.state, pending: null },
-        'build',
-        deps,
-        fx,
-      ),
-    };
   }
   const t = tally(s, all, streamLabels.vote(votes.topic, s.round, s.leg));
   s = t.state;
@@ -687,9 +692,21 @@ function applyBuiltin(
       ) {
         return fail('ghost_selection_pending');
       }
-      // A sealed-in unit producer cannot be left behind (issue #37, 3a).
+      if (s.step === 'core_placement') {
+        const pos = pendingList(s, 'positions')[player];
+        if (!isRecord(pos)) return fail('core_not_placed');
+        // A saved position that can no longer be placed must not end the
+        // step: refuse, naming the player who has to pick another spot.
+        const all = placePending(s, deps);
+        if (!all.ok) return fail(all.reason, all.detail);
+      }
+      // A sealed-in unit producer cannot be left behind (issue #37, 3a);
+      // only the player's own producers block them (PP-15).
       if (s.step === 'build' || s.step === 'shop') {
-        const sealed = sealedProducers(s.team, content);
+        const owners = new Map(s.team.buildings.map((b) => [b.id, b.owner]));
+        const sealed = sealedProducers(s.team, content).filter(
+          (id) => owners.get(id) === player,
+        );
         if (sealed.length > 0) return fail('sealed_producer', sealed.join(','));
       }
       const next = setReady(s, player, true);
@@ -707,31 +724,25 @@ function applyBuiltin(
       return { ok: true, state: setReady(s, player, false) };
     }
 
-    case 'propose_core': {
+    case 'place_core': {
       if (!isInt(intent.x) || !isInt(intent.y)) return fail('invalid_intent');
       const pos = { x: intent.x, y: intent.y };
-      const check = placeCore(
-        s.team,
-        content,
-        mapgenConfig,
-        corePlayerAt(s.team.map, deps.content, pos.x),
-        pos,
-      );
+      // No Core is on the board during this step, so this checks the
+      // position (PP-2) for this player's plot only.
+      const check = placeCore(s.team, content, mapgenConfig, player, pos);
       if (!check.ok) return fail(check.reason, check.detail);
-      const proposals = pendingList(s, 'proposals');
-      const known = proposals.some(
-        (p) => isRecord(p) && p['x'] === pos.x && p['y'] === pos.y,
-      );
-      const next = castVote(
-        {
+      const positions = pendingList(s, 'positions');
+      return {
+        ok: true,
+        state: {
           ...s,
-          pending: { proposals: known ? proposals : [...proposals, pos] },
+          pending: {
+            positions: s.players.map((_, i) =>
+              i === player ? pos : (positions[i] ?? null),
+            ),
+          },
         },
-        player,
-        pos,
-      );
-      fx.push({ type: 'vote_changed', player });
-      return resolveVotes(next, deps, fx);
+      };
     }
     case 'vote': {
       const choice = normalizeChoice(s, intent.choice);

@@ -56,7 +56,7 @@ describe('legal and illegal Core positions', () => {
     expect(v.ok).toBe(false);
     const r = (() => {
       try {
-        return send(run, { type: 'propose_core', x: bad.x, y: bad.y });
+        return send(run, { type: 'place_core', x: bad.x, y: bad.y });
       } catch (e) {
         return e instanceof Error ? e.message : '';
       }

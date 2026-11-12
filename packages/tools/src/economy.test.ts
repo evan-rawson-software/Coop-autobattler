@@ -92,7 +92,8 @@ describe('run-state.schema.json with shop data', () => {
       if (!r.ok) throw new Error(r.reason);
       return r.state;
     };
-    let s = go(created.state, { type: 'propose_core', ...pos });
+    let s = go(created.state, { type: 'place_core', ...pos });
+    s = go(s, { type: 'ready' });
     s = go(s, { type: 'ready' });
     s = go(s, { type: 'vote', choice: 'easy' });
     s = go(s, { type: 'ready' });

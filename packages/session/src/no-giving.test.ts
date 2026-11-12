@@ -153,7 +153,7 @@ function owned(
  * something to act on.
  */
 const MAKERS: Record<string, Maker> = {
-  propose_core: (s) => [{ type: 'propose_core', ...corePosition(s) }],
+  place_core: (s) => [{ type: 'place_core', ...corePosition(s) }],
   vote: (s) =>
     s.step === 'core_placement'
       ? [{ type: 'vote', choice: corePosition(s) }]

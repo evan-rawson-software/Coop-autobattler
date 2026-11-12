@@ -162,6 +162,7 @@ describe('refused battles', () => {
       config,
     );
     expect(both.ok ? null : both.error.side).toBe(0);
+    expect(both.ok ? null : both.error.player).toBe(0);
   });
 
   test('a handed-in zone must fit', () => {

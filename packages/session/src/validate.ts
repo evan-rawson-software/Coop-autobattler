@@ -7,6 +7,7 @@
 import {
   checkGhostSnapshotShape,
   ghostKey,
+  placeCore,
   validateGhostSnapshot,
   validateTeamState,
 } from '@game/core';
@@ -102,6 +103,7 @@ const KEYS = [
 ];
 
 const READY_STEPS: readonly Step[] = [
+  'core_placement',
   'build',
   'shop',
   'pve_summary',
@@ -234,12 +236,8 @@ function check(
       err('team: map party size does not match the number of players.');
     }
     const coreRequired = st !== 'core_placement' && st !== 'run_over';
-    if (coreRequired && team.state.cores.every((c) => c === null)) {
-      err(`team: the Core must be placed in step "${st}".`);
-    }
-    if (team.state.cores.filter((c) => c !== null).length > 1) {
-      // A battle supports one Core per side until issue #132.
-      err('team: only one Core may be placed.');
+    if (coreRequired && team.state.cores.some((c) => c === null)) {
+      err(`team: every player's Core must be placed in step "${st}".`);
     }
     if (st === 'core_placement' && team.state.cores.some((c) => c !== null)) {
       err('team: the Core is already placed in step "core_placement".');
@@ -275,7 +273,6 @@ function check(
 
   // Votes and pending
   const expectedTopic: Partial<Record<Step, string>> = {
-    core_placement: 'core',
     pve_choice: 'pve',
     event_choice: 'event',
   };
@@ -296,14 +293,7 @@ function check(
     votes['choices'].forEach((c, i) => {
       if (c !== null && !isJson(c))
         err(`votes.choices[${String(i)}]: must be JSON or null.`);
-      if (
-        c !== null &&
-        topic === 'core' &&
-        (!isRec(c) || !isInt(c['x']) || !isInt(c['y']))
-      ) {
-        err(`votes.choices[${String(i)}]: a Core vote must be {x, y}.`);
-      }
-      if (c !== null && topic !== 'core' && typeof c !== 'string') {
+      if (c !== null && typeof c !== 'string') {
         err(`votes.choices[${String(i)}]: must be an option id.`);
       }
     });
@@ -341,8 +331,43 @@ function check(
   const pending = data['pending'];
   if (!isJson(pending)) err('pending: must be JSON.');
   const p = isRec(pending) ? pending : {};
-  if (st === 'core_placement' && !Array.isArray(p['proposals'])) {
-    err('pending.proposals: must be an array in step "core_placement".');
+  if (st === 'core_placement') {
+    const positions = p['positions'];
+    if (!Array.isArray(positions) || positions.length !== n) {
+      err(
+        'pending.positions: must have one entry per player in "core_placement".',
+      );
+    } else if (team.ok) {
+      const ready = data['perPlayer'];
+      // Every position must be placeable (the legality of `placeCore`:
+      // terrain, plot, buildings and conduits), or the step could not end.
+      let board = team.state;
+      positions.forEach((pos, i) => {
+        if (!isRec(pos) || !isInt(pos['x']) || !isInt(pos['y'])) return;
+        const r = placeCore(board, deps.content, deps.mapgenConfig, i, {
+          x: pos['x'],
+          y: pos['y'],
+        });
+        if (r.ok) board = r.state;
+        else {
+          err(
+            `pending.positions[${String(i)}]: not a legal Core position (${r.reason}).`,
+          );
+        }
+      });
+      positions.forEach((pos, i) => {
+        if (pos === null) {
+          const row = Array.isArray(ready) ? (ready[i] as unknown) : null;
+          if (isRec(row) && row['ready'] === true) {
+            err(
+              `pending.positions[${String(i)}]: a ready player needs a position.`,
+            );
+          }
+        } else if (!isRec(pos) || !isInt(pos['x']) || !isInt(pos['y'])) {
+          err(`pending.positions[${String(i)}]: must be null or {x, y}.`);
+        }
+      });
+    }
   }
   if (
     (st === 'pve_choice' || st === 'event_choice') &&

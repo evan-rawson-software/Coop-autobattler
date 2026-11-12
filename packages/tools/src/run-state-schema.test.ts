@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { describe, expect, test } from 'vitest';
 import {
-  listLegalCorePositionsAnyPlot,
+  listLegalCorePositions,
   loadAllContentOrThrow,
   loadMapgenOrThrow,
 } from '@game/core';
@@ -92,14 +92,19 @@ describe('run-state.schema.json', () => {
       s = r.state;
       states.push(s);
     };
-    const pos = listLegalCorePositionsAnyPlot(
+    const pos = listLegalCorePositions(s.team.map, content, mapgenConfig, 0)[0];
+    if (pos === undefined) throw new Error('no core position');
+    send(0, { type: 'place_core', ...pos });
+    const pos1 = listLegalCorePositions(
       s.team.map,
       content,
       mapgenConfig,
+      1,
     )[0];
-    if (pos === undefined) throw new Error('no core position');
-    send(0, { type: 'propose_core', ...pos });
-    send(1, { type: 'vote', choice: { x: pos.x, y: pos.y } });
+    if (pos1 === undefined) throw new Error('no core position');
+    send(1, { type: 'place_core', ...pos1 });
+    send(0, { type: 'ready' });
+    send(1, { type: 'ready' });
     const stashed = s.team.stash[0];
     if (stashed === undefined) throw new Error('setup');
     // A node in the plot of the building's owner, sent by that owner (PP-1).
@@ -190,6 +195,7 @@ describe('run-state.schema.json', () => {
     expect(bad((o) => (o['formatVersion'] = 1))).toBe(false);
     expect(bad((o) => (o['formatVersion'] = 4))).toBe(false);
     expect(bad((o) => (o['formatVersion'] = 5))).toBe(false);
+    expect(bad((o) => (o['formatVersion'] = 6))).toBe(false);
     expect(bad((o) => (o['step'] = 'pve_battle'))).toBe(false);
     expect(bad((o) => (o['rng'] = [1, 2, 3]))).toBe(false);
     expect(bad((o) => (o['runVersion'] = 'v1'))).toBe(false);

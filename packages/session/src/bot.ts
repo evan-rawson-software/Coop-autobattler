@@ -12,11 +12,7 @@
  * reads the clock or `Math.random`. The same strategy, seed and run
  * arguments give the same run.
  */
-import {
-  Rng,
-  listLegalCorePositionsAnyPlot,
-  sealedProducers,
-} from '@game/core';
+import { Rng, listLegalCorePositions, sealedProducers } from '@game/core';
 import { planLayout, type LayoutStyle } from './bot-layout.js';
 import { applyIntent, createRun } from './machine.js';
 import { readShop } from './economy.js';
@@ -391,20 +387,24 @@ function playStep(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
   const st = d.state;
   switch (st.step) {
     case 'core_placement': {
-      const pos = pickCore(
-        s,
-        listLegalCorePositionsAnyPlot(
-          st.team.map,
-          d.deps.content,
-          d.deps.mapgenConfig,
-        ),
-        rng,
-      );
-      if (pos === undefined) return;
-      d.send(st.host, { type: 'propose_core', x: pos.x, y: pos.y });
+      // Each player places their own Core in their own plot, then readies.
+      for (let p = 0; p < st.players.length; p++) {
+        const pos = pickCore(
+          s,
+          listLegalCorePositions(
+            st.team.map,
+            d.deps.content,
+            d.deps.mapgenConfig,
+            p,
+          ),
+          rng,
+        );
+        if (pos === undefined) return;
+        d.send(p, { type: 'place_core', x: pos.x, y: pos.y });
+      }
       for (let p = 0; p < st.players.length; p++) {
         if (d.state.step !== 'core_placement') break;
-        if (p !== st.host) d.send(p, { type: 'vote', choice: pos });
+        d.send(p, { type: 'ready' });
       }
       return;
     }

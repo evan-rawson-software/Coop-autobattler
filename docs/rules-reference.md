@@ -57,8 +57,8 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | Rule | What it specifies | Status |
 | ---- | ----------------- | ------ |
 | PP-1 | Ownership and plot checks on every board operation; conduits have an owner | **implemented** (issue #129) |
-| PP-2 | One Core per player: team state, positions, `placeCore`, health | **implemented** (issues #128 and #132); `core_not_placed` still names only the side, and only for a side with no Core at all: the per-player check comes with issues #131 and #138 |
-| PP-3 | Core placement step: each player places their own Core, no vote | not yet implemented (issue #131) |
+| PP-2 | One Core per player: team state, positions, `placeCore`, health | **implemented** (issues #128 and #132); `core_not_placed` names the side and the lowest player without a Core, and fires only for a side with no Core at all: the per-player check comes with issue #138 (PvE strongholds have one Core until then) |
+| PP-3 | Core placement step: each player places their own Core, no vote | **implemented** (issue #131) |
 | PP-4 | Border links | **implemented** (issues #135 and #136; "Conduits", "Mid-battle removal", "One battle tick" step 6) |
 | PP-5 | Collector flow rate by tier | **implemented** (issue #130; "One tick: `stepFlow`", step 3, and "Collector rate") |
 | PP-6 | Minimum time between productions, need, store | **implemented** (issue #130; "One battle tick", step 2 and step 7, "In-battle ramp", "Dry run (CB-43)") |
@@ -69,9 +69,9 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-11 | A unit's owner and target Core; one movement field per target Core; a unit also attacks any enemy Core within reach, target or not | **implemented** (issue #133; "The arena", "One battle tick", "Goals and movement fields", "Side options", "Resolution order") |
 | PP-12 | Enemy-path preview per Core | **implemented** (issue #133; "Enemy-path preview") |
 | PP-14 | PvE strongholds and bosses with one Core per player | not yet implemented (issue #138) |
-| PP-15 | Sealed-producer check per owner; map rule per plot | map rule **implemented** (issue #129); sealed check per owner: not yet implemented (issue #131) |
-| PP-16 | Party votes and run streams without the Core vote | not yet implemented (issue #131) |
-| PP-17 | Formats, version, ghost validation | partly implemented (issue #139): major version 1.0, snapshot format 3 (2 before border links, issue #135), run-state format 6 (5 before), bundled ghosts regenerated, and at most one placed Core in snapshots and saves. Not yet: the per-owner value bound (waits for #131); border-link legality is checked by `validateTeamState` (issue #135) |
+| PP-15 | Sealed-producer check per owner; map rule per plot | map rule **implemented** (issue #129); sealed check per owner **implemented** (issue #131) |
+| PP-16 | Party votes and run streams without the Core vote | **implemented** (issue #131) |
+| PP-17 | Formats, version, ghost validation | partly implemented (issues #139, #160, #131, #135): major version 1.0, snapshot format 4 (3 added border links, 2 before), run-state format 7 (6 added border links, 5 before), bundled ghosts regenerated, one placed Core per player inside its player's plot (a missing Core is rejected too), border-link legality (`validateTeamState`). Not yet: plot and ownership checks of buildings and the per-owner value bound |
 
 ### Numbers to be set in the rebalance
 
@@ -170,10 +170,12 @@ positions" and "Team state and placement", and the Core health (issue #132):
   is the exception, PP-14).
 - **A battle needs every Core placed**: `core_not_placed` carries the `side`
   and the lowest `player` index without a Core. **Implemented so far:** a side
-  with no Core placed at all gives `core_not_placed` with the `side`; a side
-  with some Cores placed fights with those (a PvE stronghold still has one
-  Core, until issue #138). The per-player check follows with issues #131 and
-  #138.
+  with no Core placed at all gives `core_not_placed` with the `side` and the
+  `player` (the lowest index, so 0); a side with some Cores placed fights with
+  those (a PvE stronghold still has one Core, until issue #138). The check
+  that every player of a side has a Core follows with issue #138; PvP boards
+  are complete by construction, since a run cannot leave `core_placement`
+  until every player has placed (PP-3).
 
 ### PP-3. The Core placement step
 
@@ -3179,7 +3181,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-2 | `core_not_placed` names the lowest player without a Core. Today it fires only for a side with no Core at all (and names only the side); a side with some Cores fights with those. | per-player check: not yet implemented (issues #131 and #138) |
+| PP-2 | `core_not_placed` names the lowest player without a Core. Today it fires only for a side with no Core at all (and names only the side); a side with some Cores fights with those. | `player` named: **implemented** (issue #131); per-player check: not yet implemented (issue #138) |
 
 Implemented in `packages/core/src/battle.ts` (golden kind `battle`:
 `battle-kind.ts`). **Side 0 is always the party and side 1 the opponent** (the
@@ -3197,7 +3199,8 @@ order and the first failure is reported:
    4) run; different ones never do. This is checked before anything else.
 2. `board_size_mismatch`: the boards differ in height (not reachable with
    generated boards).
-3. `core_not_placed` (with the `side`): a side has no Core placed at all,
+3. `core_not_placed` (with the `side` and the lowest `player` without a Core): a
+   side has no Core placed at all,
    side 0 checked first.
 4. `invalid_zone`: only with the test-only option below.
 
@@ -3856,15 +3859,6 @@ broken as follows:
 
 ## Run random streams
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-16 | The stream `vote:core:...` is no longer drawn (there is no Core vote). | not yet implemented (issue #131) |
-
 Code: `packages/session/src/streams.ts`, `machine.ts`.
 
 A run keeps one generator, saved in the run state. Its root is
@@ -3899,15 +3893,6 @@ Golden vectors for run streams do not exist yet (`prng-child` covers the
 derivation of a child stream only).
 
 ## Shops and gold
-
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-3 | Gold and the starting kit are granted when the Core placement step ends (every player has placed a Core), on entering the first `build` step. | not yet implemented (issue #131) |
 
 Placeholder numbers live in `content/economy.json`; the rules below are what
 the code does. Code: `packages/core/src/shop.ts`, `weighted.ts`, `economy.ts`
@@ -4039,24 +4024,14 @@ none. An extractor-speed kind is not implemented.
 
 ### Party votes (CP-16)
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-16 | Core placement is no longer a party decision: the topic `core` goes. The topics are `pve`, `event`, `event_follow_up`. | not yet implemented (issue #131) |
-| PP-3 | The Core placement step: each player places their own Core and readies up. | not yet implemented (issue #131) |
-
-Every party decision (Core placement, PvE difficulty, event choice, event
+Every party decision (PvE difficulty, event choice, event
 follow-up choice) is one vote per player, changeable until the last player has
 voted. It resolves when the last vote arrives:
 
 1. If every player chose the same option, that option wins. The random pick of
    step 2 is not made (the stream is derived but unused).
 2. Otherwise one player's vote is picked at random: `pick = nextInt(n)` on the
-   child stream `vote:<topic>:r<round>:<leg>` (topic `core`, `pve`, `event` or
+   child stream `vote:<topic>:r<round>:<leg>` (topic `pve`, `event` or
    `event_follow_up`), where `n` is the number of players and tickets are
    ordered by player index; the winner is that player's vote. Each vote is one
    equally likely ticket, so an option with 3 of 4 votes wins with probability
@@ -4076,19 +4051,12 @@ true }`.
 
 ### Ready (CP-17, CP-17a)
 
-**Status (#124).** This section describes the code on `main`. Specified in
-"Per-player design (issue #124)", not yet in the code:
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-3 | `ready` and `unready` are also legal in `core_placement`; Ready locks `place_core`; `ready` there is rejected with `core_not_placed` without a pending position. | not yet implemented (issue #131) |
-
-`ready` and `unready` are legal in `build`, `shop`, `pve_summary` and
-`pvp_summary`. A step ends when every player is ready (a solo player's `ready`
+`ready` and `unready` are legal in `core_placement`, `build`, `shop`,
+`pve_summary` and `pvp_summary`. A step ends when every player is ready (a solo player's `ready`
 ends it at once); the ready flags are cleared on entering the next step.
-**Ready locks editing (issue #58):** in `build` and `shop`, while a player is
+**Ready locks editing (issue #58):** in `core_placement`, `build` and `shop`, while a player is
 ready, every intent of theirs other than `unready` (and `abandon` by the host)
-is rejected with `locked_ready`: `buy`, `sell`, `reroll`, the board edits
+is rejected with `locked_ready`: `place_core`, `buy`, `sell`, `reroll`, the board edits
 (`place_building`, `move_building`, `return_building`, `add_conduit`,
 `erase_conduit`) and any extension intent a handler allows in those steps.
 The step check comes first (a `vote` in `build` is still `wrong_step`), and
@@ -4099,19 +4067,11 @@ is set. The summary steps have nothing to edit and are not locked.
 
 ### Sealed unit producers (issue #37, part 3a)
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-15 | `ready` from a player is rejected only for sealed producers that player owns. "The check is on the whole shared board, whoever sent `ready`" no longer holds for who is blocked; the board is still read whole. | not yet implemented (issue #131) |
-
 `ready` in `build` or `shop` is rejected with `sealed_producer`, with the
 building ids in `detail` (ascending, comma separated, such as `"12,15"`), while
 `sealedProducers(team, content)` (core, `sealed-producers.ts`) is not empty.
-The check is on the whole shared board, whoever sent `ready`. A placed unit
+The board is read whole, but `ready` from player `p` is rejected only while a
+sealed producer is **owned by `p`** (PP-15); `detail` lists only those ids. A placed unit
 producer (a building whose kind is `unit_producer`) is **sealed** when its
 units could not reach the front row:
 
@@ -4287,7 +4247,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-17 | Snapshot `formatVersion` 3, run-state format 6, a new major version (saves and the local pool are wiped). Validation adds plot and ownership checks, one Core per player, legal border links, and a value bound per owner. Bundled ghosts are regenerated. | partly implemented (issue #139): version, formats, bundled ghosts, at most one placed Core; the other validation waits for #129, #135, #131 |
+| PP-17 | A new major version (saves and the local pool are wiped); snapshot and run-state format numbers are raised by every #124 issue that changes a saved shape (now snapshot `formatVersion` 4, run-state format 7: issue #131 removed the Core vote and added `pending.positions`, and a snapshot needs every player's Core placed). Validation adds plot and ownership checks, one Core per player, legal border links, and a value bound per owner. Bundled ghosts are regenerated. | partly implemented (issues #139, #160, #131): version, formats, bundled ghosts, one placed Core per player inside its own plot (a missing Core is rejected too); the other validation (plot and ownership of buildings, per-owner value) is not yet implemented |
 
 A ghost is another run's party, frozen at the start of one of its PvP battles
 and fought by a later run (MM-1..MM-17, W3-1). Everything below is implemented

@@ -1,6 +1,6 @@
 /** Helpers for tests only. */
 import {
-  listLegalCorePositionsAnyPlot,
+  listLegalCorePositions,
   loadAllContentOrThrow,
   loadEconomyOrThrow,
   loadEventsOrThrow,
@@ -85,14 +85,29 @@ export function ok(
   return { state: r.state, effects: r.effects };
 }
 
-export function corePosition(state: RunState): { x: number; y: number } {
-  const pos = listLegalCorePositionsAnyPlot(
+export function corePosition(
+  state: RunState,
+  player = 0,
+): { x: number; y: number } {
+  const pos = listLegalCorePositions(
     state.team.map,
     content,
     mapgenConfig,
+    player,
   )[0];
   if (pos === undefined) throw new Error('no legal Core position');
   return pos;
+}
+
+/**
+ * The next Core-placement move of `player`: place the first legal Core, then
+ * ready once it is placed.
+ */
+export function coreMove(state: RunState, player = 0): Intent {
+  const pending = state.pending as { positions?: unknown[] } | null;
+  return pending?.positions?.[player] != null
+    ? { type: 'ready' }
+    : { type: 'place_core', ...corePosition(state, player) };
 }
 
 /** Everyone readies up, in order. */
@@ -126,20 +141,22 @@ export function voteAll(
   return s;
 }
 
-/** Place the Core (everyone agrees), reaching `build`. */
+/** Every player places their own Core and readies, reaching `build`. */
 export function placeCoreAll(
   state: RunState,
   deps: RunDeps = baseDeps,
   effects: Effect[] = [],
 ): RunState {
-  const pos = corePosition(state);
-  let s = ok(state, 0, { type: 'propose_core', ...pos }, deps);
-  effects.push(...s.effects);
-  let cur = s.state;
-  for (let p = 1; p < cur.players.length; p++) {
-    s = ok(cur, p, { type: 'vote', choice: pos }, deps);
-    effects.push(...s.effects);
-    cur = s.state;
+  let cur = state;
+  for (let p = 0; p < cur.players.length; p++) {
+    const r = ok(cur, p, { type: 'place_core', ...corePosition(cur, p) }, deps);
+    effects.push(...r.effects);
+    cur = r.state;
+  }
+  for (let p = 0; p < cur.players.length; p++) {
+    const r = ok(cur, p, { type: 'ready' }, deps);
+    effects.push(...r.effects);
+    cur = r.state;
   }
   return cur;
 }

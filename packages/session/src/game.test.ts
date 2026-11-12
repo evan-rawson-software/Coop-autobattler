@@ -803,6 +803,32 @@ describe('a whole run with real battles', () => {
     expect(abandoned).toBeGreaterThan(30);
   });
 
+  test('four players, one Core each: the first battle is fought and a lost PvP battle costs exactly one life', () => {
+    const { deps, s, states } = play(['A', 'B', 'C', 'D'], 5);
+    expect(states[0]?.team.cores.filter((c) => c !== null)).toHaveLength(4);
+    const fought = states.filter((x) => x.step === 'pve_summary');
+    expect(fought.length).toBeGreaterThan(0);
+    let lost = 0;
+    for (let i = 1; i < states.length; i++) {
+      const prev = states[i - 1] as RunState;
+      const cur = states[i] as RunState;
+      if (cur.lives < prev.lives) {
+        expect(prev.step).toBe('pvp_summary');
+        expect(cur.lives).toBe(prev.lives - 1);
+        lost += 1;
+      }
+    }
+    expect(lost).toBeGreaterThan(0);
+    expect(s.lives).toBe(5 - lost);
+    expect(s.team.cores.every((c) => c !== null)).toBe(true);
+    const replayed = replayRun(
+      runArgs(['A', 'B', 'C', 'D'], 5),
+      s.actionLog,
+      deps,
+    );
+    expect(replayed.ok && replayed.state).toEqual(s);
+  });
+
   test('PvE losses never cost a life; only PvP losses do', () => {
     const { s, states } = play(['Ann'], 3);
     let livesLostInPvp = 0;
@@ -917,9 +943,9 @@ describe('the upcomingPve invariant (validateRunState)', () => {
 describe('the run-state format version', () => {
   const deps = fixedDeps(true, true);
 
-  test('a new run has version 6; version 1 and other versions are rejected clearly', () => {
+  test('a new run has version 7; version 1 and other versions are rejected clearly', () => {
     const s = start(deps);
-    expect(s.formatVersion).toBe(6);
+    expect(s.formatVersion).toBe(7);
     expect(validateRunState(clone(s), deps).ok).toBe(true);
     // A version-1 state: the old version, and no upcomingPve field.
     const old = clone(s) as unknown as Record<string, unknown>;
@@ -930,7 +956,7 @@ describe('the run-state format version', () => {
     if (r.ok) return;
     expect(r.errors).toHaveLength(1);
     expect(r.errors[0]).toMatch(/unsupported format version 1/);
-    for (const v of [2, 3, 4, 5, 7, '6', null, 0]) {
+    for (const v of [2, 3, 4, 5, 6, 8, '7', null, 0]) {
       const o = clone(s) as unknown as Record<string, unknown>;
       o['formatVersion'] = v;
       const x = validateRunState(o, deps);
