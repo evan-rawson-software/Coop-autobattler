@@ -10,7 +10,13 @@ import type { OverlayContext } from '../board/BoardView.js';
 import { cellToView } from '../board/layout.js';
 import type { WebContent } from '../content.js';
 import type { Ui } from './build-controller.js';
-import { halfStatuses, ownSpots, type LinkState } from './border-links.js';
+import {
+  halfAlpha,
+  halfCell,
+  halfStatuses,
+  ownSpots,
+  type LinkState,
+} from './border-links.js';
 import { pathSegments, pathStubs } from './path-segments.js';
 import { isEditStep } from './session.js';
 import { sideMarkers, type SideMarker } from './sides.js';
@@ -410,11 +416,7 @@ export function drawBuildOverlay(
       }
     }
     for (const h of halves) {
-      if (h.owner !== d.acting) continue;
-      const cell = mine.find(
-        (m) => m.spot.border === h.spot.border && m.spot.y === h.spot.y,
-      )?.cell;
-      if (cell === undefined) continue;
+      const cell = halfCell(d.team, h);
       const m = marks[h.state];
       const color =
         h.state === 'joined'
@@ -425,6 +427,7 @@ export function drawBuildOverlay(
       const p = centre(cell);
       const r = Math.max(7, z * 0.34);
       ctx.save();
+      ctx.globalAlpha = halfAlpha(h, d.acting);
       ctx.fillStyle = col.surface;
       ctx.strokeStyle = color;
       ctx.lineWidth = 2.5;

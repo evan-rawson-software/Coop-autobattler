@@ -36,7 +36,7 @@ import {
   StashPanel,
   ToolsPanel,
 } from './panels.js';
-import { halfStatuses } from './border-links.js';
+import { halfAlpha, halfStatuses } from './border-links.js';
 import { ActingSwitch } from '../shell/ActingSwitch.js';
 import { gateFor, READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { ME, isEditStep } from './session.js';
@@ -241,6 +241,7 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
                 owner: h.owner,
                 kind: h.kind,
                 state: h.state,
+                alpha: halfAlpha(h, ctl.session?.acting ?? ME),
               }));
         },
         status: () => ctl.model.get().ui.status,

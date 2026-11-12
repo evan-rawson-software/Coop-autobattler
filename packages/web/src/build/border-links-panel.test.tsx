@@ -15,6 +15,7 @@ import { content } from '../content.js';
 import { BuildController } from './build-controller.js';
 import { BuildSession } from './session.js';
 import { BorderLinksPanel } from './panels.js';
+import { NEIGHBOUR_ALPHA, halfAlpha, halfCell } from './border-links.js';
 
 // The Border links list (issue #142): own halves only, solo hidden, Remove
 // locked while Ready.
@@ -170,5 +171,22 @@ describe('removing a half while Ready', () => {
     await ctl.eraseConduit(id);
     expect(act).not.toHaveBeenCalled();
     expect(s.run.team.conduits.some((c) => c.id === id)).toBe(true);
+  });
+});
+
+describe('neighbour halves are dimmed', () => {
+  test('alpha follows the acting player; the cell is on the owner side', () => {
+    const { team: t } = team();
+    expect(halfAlpha({ owner: 0 }, 0)).toBe(1);
+    expect(halfAlpha({ owner: 0 }, 1)).toBe(NEIGHBOUR_ALPHA);
+    expect(NEIGHBOUR_ALPHA).toBeLessThan(1);
+    expect(halfCell(t, { owner: 0, spot: { border: 0, y: 3 } })).toEqual({
+      x: 11,
+      y: 3,
+    });
+    expect(halfCell(t, { owner: 1, spot: { border: 0, y: 3 } })).toEqual({
+      x: 12,
+      y: 3,
+    });
   });
 });

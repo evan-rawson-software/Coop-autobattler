@@ -142,3 +142,22 @@ export function linkText(h: HalfStatus, nameOf: (p: number) => string): string {
       return `Not connected: waiting for your neighbour (${verb})`;
   }
 }
+
+/** Opacity of a half on the board: a neighbour's half is dimmed (owner decision). */
+export const NEIGHBOUR_ALPHA = 0.4;
+
+export function halfAlpha(h: Pick<Half, 'owner'>, acting: number): number {
+  return h.owner === acting ? 1 : NEIGHBOUR_ALPHA;
+}
+
+/**
+ * The board cell of a half's border spot, on its owner's side: border `b`
+ * lies between plot `b` (left) and plot `b + 1` (right).
+ */
+export function halfCell(
+  team: TeamState,
+  h: Pick<Half, 'owner' | 'spot'>,
+): Cell {
+  const edge = (h.spot.border + 1) * team.map.plotWidth;
+  return { x: h.owner === h.spot.border ? edge - 1 : edge, y: h.spot.y };
+}
