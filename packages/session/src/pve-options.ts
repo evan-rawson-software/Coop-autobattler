@@ -47,12 +47,21 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
-/** Read a stored option; null if it is not one of ours. */
-export function readPveOption(v: unknown): PveOption | null {
+/**
+ * Read a stored option; null if it is not one of ours. `partySize` is the
+ * number of players in the run: the threat's stronghold must have one Core
+ * per player, or a tampered option would throw later when the battle is built.
+ */
+export function readPveOption(v: unknown, partySize: number): PveOption | null {
   if (!isRecord(v)) return null;
   const id = v['id'];
   if (!(PVE_DIFFICULTIES as readonly unknown[]).includes(id)) return null;
-  if (!isRecord(v['threat']) || !isRecord(v['summary'])) return null;
+  const threat = v['threat'];
+  if (!isRecord(threat) || !isRecord(v['summary'])) return null;
+  const stronghold = threat['stronghold'];
+  if (!isRecord(stronghold)) return null;
+  const cores = stronghold['cores'];
+  if (!Array.isArray(cores) || cores.length !== partySize) return null;
   const reward = v['reward'];
   if (!isRecord(reward) || typeof reward['gold'] !== 'number') return null;
   return v as unknown as PveOption;

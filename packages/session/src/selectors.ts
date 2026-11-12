@@ -223,10 +223,13 @@ export type NextBattleInfo =
       };
     };
 
-function pveViews(options: readonly Json[]): PveOptionView[] {
+function pveViews(
+  options: readonly Json[],
+  partySize: number,
+): PveOptionView[] {
   const out: PveOptionView[] = [];
   for (const o of options) {
-    const option = readPveOption(o);
+    const option = readPveOption(o, partySize);
     if (option !== null) out.push(pveOptionView(option));
   }
   return out;
@@ -252,7 +255,7 @@ export function nextBattleInfo(
     round: number,
     options: readonly Json[],
   ): NextBattleInfo | null => {
-    const views = pveViews(options);
+    const views = pveViews(options, state.players.length);
     return views.length === 0 ? null : { kind: 'pve', round, options: views };
   };
   switch (state.step) {

@@ -8,6 +8,8 @@
 import {
   bestDepthFromHistory,
   compareListItems,
+  isStaleWrite,
+  StaleSaveError,
   summarizeStored,
   type HistoryEntry,
   type SaveListItem,
@@ -16,6 +18,8 @@ import {
 } from './save.js';
 
 export interface MemorySaveStoreOptions {
+  /** Refuse a `put` whose `actionCounter` is not above the stored one. */
+  readonly rejectStale?: boolean;
   /**
    * Awaited inside `put` after the record is staged and before it is
    * committed. Throw (or reject) to simulate a failed write; return a pending
@@ -68,6 +72,19 @@ export function createMemorySaveStore(
       const runId = (record as { runId?: unknown }).runId;
       if (typeof runId !== 'string' || runId === '') {
         throw new Error('put: record has no runId');
+      }
+      if (options.rejectStale === true) {
+        const have = (
+          saves.get(runId) as { actionCounter?: unknown } | undefined
+        )?.actionCounter;
+        if (
+          isStaleWrite(
+            have,
+            (record as { actionCounter?: unknown }).actionCounter,
+          )
+        ) {
+          throw new StaleSaveError();
+        }
       }
       const staged = copy(record);
       if (putFault !== null) {

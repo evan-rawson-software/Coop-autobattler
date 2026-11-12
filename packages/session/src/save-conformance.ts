@@ -79,6 +79,8 @@ function entry(
 export function runSaveStoreConformance(
   name: string,
   makeStore: () => SaveStore | Promise<SaveStore>,
+  /** An EMPTY store that refuses stale writes; omit to skip those cases. */
+  makeStaleStore?: () => SaveStore | Promise<SaveStore>,
 ): void {
   describe(`SaveStore conformance: ${name}`, () => {
     test('starts empty; get is null; remove of an unknown ID resolves', async () => {
@@ -202,6 +204,39 @@ export function runSaveStoreConformance(
       await s.appendHistory(entry('c', 2, 3, 'version_wiped'));
       await s.appendHistory(entry('d', 1, 5));
       expect(await s.bestDepthByPartySize()).toEqual({ 1: 7, 2: 3 });
+    });
+
+    describe.skipIf(makeStaleStore === undefined)('stale writes', () => {
+      const fresh = async (): Promise<SaveStore> =>
+        (makeStaleStore as () => SaveStore | Promise<SaveStore>)();
+      const at = (counter: number, round: number): SaveRecord =>
+        fakeRecord('a', 10 + counter, round, { actionCounter: counter });
+
+      test('a first write, then a higher counter, is stored', async () => {
+        const s = await fresh();
+        await s.put(at(1, 1));
+        await s.put(at(2, 2));
+        expect(((await s.get('a')) as SaveRecord).summary.round).toBe(2);
+      });
+
+      test('an equal or lower counter is refused and the stored record is unchanged', async () => {
+        const s = await fresh();
+        await s.put(at(5, 3));
+        await expect(s.put(at(5, 9))).rejects.toMatchObject({
+          name: 'StaleSaveError',
+        });
+        await expect(s.put(at(4, 9))).rejects.toMatchObject({
+          name: 'StaleSaveError',
+        });
+        expect(((await s.get('a')) as SaveRecord).summary.round).toBe(3);
+      });
+
+      test('the counter is per run', async () => {
+        const s = await fresh();
+        await s.put(at(5, 3));
+        await s.put(fakeRecord('b', 10, 1, { actionCounter: 1 }));
+        expect(await s.list()).toHaveLength(2);
+      });
     });
   });
 }

@@ -26,7 +26,10 @@ export function rewardGold(
     const pending = state.pending;
     const option =
       typeof pending === 'object' && pending !== null && !Array.isArray(pending)
-        ? readPveOption((pending as Record<string, unknown>)['option'])
+        ? readPveOption(
+            (pending as Record<string, unknown>)['option'],
+            state.players.length,
+          )
         : null;
     return option === null ? 0 : option.reward.gold;
   }

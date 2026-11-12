@@ -169,7 +169,7 @@ function describeStoredBattle(
   } else {
     let threat;
     if (source.type === 'option') {
-      const option = readPveOption(pending['option']);
+      const option = readPveOption(pending['option'], run.players.length);
       if (option === null) {
         return {
           ok: false,

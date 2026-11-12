@@ -139,7 +139,11 @@ describe('versions', () => {
   });
 });
 
-runSaveStoreConformance('memory', () => createMemorySaveStore());
+runSaveStoreConformance(
+  'memory',
+  () => createMemorySaveStore(),
+  () => createMemorySaveStore({ rejectStale: true }),
+);
 
 describe('the save record', () => {
   test('carries the seed and the full action log; replays to the same state', async () => {

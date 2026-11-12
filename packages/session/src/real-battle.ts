@@ -165,7 +165,10 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
     }
     let threat;
     if (source.type === 'option') {
-      const option = readPveOption(pendingRecord(state)['option']);
+      const option = readPveOption(
+        pendingRecord(state)['option'],
+        state.players.length,
+      );
       if (option === null) return { error: 'the PvE option is not stored' };
       threat = option.threat;
     } else {
@@ -183,7 +186,7 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
       const seed = rng.nextU32();
       let source: BattleSource;
       if (kind === 'pve') {
-        const option = readPveOption(input.option);
+        const option = readPveOption(input.option, state.players.length);
         if (option === null) {
           throw new Error('PvE battle: no stored option was voted for.');
         }
