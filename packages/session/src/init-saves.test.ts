@@ -188,6 +188,36 @@ describe('initSaves classifies like openRun (issue #68)', () => {
   });
 });
 
+describe('a run saved before the per-player design (issue #139)', () => {
+  /** What a save looked like before `core` became `cores`, format 4. */
+  function preChange(version: VersionKind): SaveRecord {
+    const rec = makeRecord(version, 'none', false);
+    const { cores: _cores, ...team } = rec.state.team;
+    return {
+      ...rec,
+      state: { ...rec.state, formatVersion: 4, team: { ...team, core: null } },
+    } as unknown as SaveRecord;
+  }
+
+  test('an old-major save is wiped at start-up, never reported as damaged', async () => {
+    const rec = preChange('older_major');
+    const open = await openRun(KEY, deps, freshStore(rec), INSTALLED);
+    expect(open.ok ? 'ok' : open.reason).toBe('older_major');
+    expect(classifySave(rec, KEY, INSTALLED, deps).kind).toBe('older_major');
+    const store = freshStore(rec);
+    const res = await initSaves(store, INSTALLED, 99, deps);
+    expect(res.wipedUnreadable.map((w) => w.runId)).toEqual([KEY]);
+    expect(res.corrupt).toEqual([]);
+    expect(await store.get(KEY)).toBeNull();
+  });
+
+  test('a pre-change state under the current major is unsupported, not corrupt', async () => {
+    const rec = preChange('same');
+    const open = await openRun(KEY, deps, freshStore(rec), INSTALLED);
+    expect(open.ok ? 'ok' : open.reason).toBe('unsupported_format');
+  });
+});
+
 /** A store whose chosen method rejects (a fake for a failing disk). */
 function failing(
   inner: ReturnType<typeof createMemorySaveStore>,

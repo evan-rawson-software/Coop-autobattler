@@ -136,6 +136,33 @@ a test in `packages/tools` fails when the committed file differs, so after any
 change to the sim, the bot, the content or the ghost rules run
 `pnpm ghosts:update` and commit the result (it often does not change).
 
+## Versions and saved formats
+
+The game version is `major.minor.patch` (`packages/web/src/run/version.ts`;
+the bundled ghosts use the same `major.minor`, `BUNDLED_GAME_VERSION`). The
+run state, the ghost snapshot and the save record each carry a format number
+(`RUN_STATE_FORMAT_VERSION`, `GHOST_SNAPSHOT_FORMAT_VERSION`,
+`SAVE_FORMAT_VERSION`). The per-player design (issue #124) is major version 1
+(run state format 5, ghost snapshot format 2); everything older is wiped at
+start-up with a notice, with no migration (TA-8).
+
+The rule for a change that makes saved data unreadable:
+
+- Any PR that changes the shape or meaning of a saved format (run state,
+  team state, ghost snapshot) raises that format number in the same PR, with
+  a test. A save or ghost with another number is then `unsupported_format`
+  (or skipped), never "damaged": the version and format checks run before
+  `validateRunState`.
+- The major version is raised once for the whole design change (this is
+  done). Further format changes inside #124 (multi-Core battles, border
+  links, per-player placement) raise the format numbers only. Nobody holds a
+  save of the new major yet, so no wipe is needed. If a build of the new major
+  has been given to testers before the design is finished, the breaking PR
+  raises the major as well (and regenerates the bundled ghosts), so that
+  their saves are wiped and not left as unsupported.
+- Regenerate the bundled ghosts (`pnpm ghosts:update`) whenever a PR changes
+  rules or formats that they depend on.
+
 ## Layer rule
 
 - `core` must not import from `session` or `web`, from the DOM or other

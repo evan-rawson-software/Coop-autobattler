@@ -20,7 +20,7 @@ import { tierPrice } from './shop.js';
 import { validateTeamState, type TeamState } from './team-state.js';
 
 /** The snapshot format. Bump when a field changes meaning. */
-export const GHOST_SNAPSHOT_FORMAT_VERSION = 1;
+export const GHOST_SNAPSHOT_FORMAT_VERSION = 2;
 
 /** Longest owner id, owner label and run id accepted. */
 export const GHOST_MAX_ID_LENGTH = 128;
@@ -746,8 +746,11 @@ function shapeInner(
     return undefined;
   }
   const t = team.state;
-  if (t.cores.every((c) => c === null))
-    errors.push('team: the Core must be placed.');
+  const placedCores = t.cores.filter((c) => c !== null).length;
+  if (placedCores === 0) errors.push('team: the Core must be placed.');
+  // A battle supports one Core per side until issue #132; a snapshot with
+  // several would make every battle against it fail.
+  if (placedCores > 1) errors.push('team: only one Core may be placed.');
   if (t.map.partySize !== size) {
     errors.push('team: map party size does not match partySize.');
   }

@@ -177,7 +177,7 @@ describe('taking snapshots', () => {
     expect(canonicalJson(JSON.parse(JSON.stringify(snap)))).toBe(
       canonicalJson(snap),
     );
-    expect(snap.formatVersion).toBe(1);
+    expect(snap.formatVersion).toBe(2);
     expect(snap.gameVersion).toBe('0.1');
     expect(snap.partySize).toBe(1);
     expect(snap.mapSeed).toBe(7);
@@ -566,7 +566,7 @@ describe('validation', () => {
     };
     bad['unplaced Core'] = {
       ...clone(good),
-      team: { ...clone(good.team), core: null },
+      team: { ...clone(good.team), cores: [null] },
     };
     bad['not an object'] = 7;
     for (const [name, snap] of Object.entries(bad)) {

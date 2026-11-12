@@ -217,7 +217,11 @@ Everything from here down describes the Godot game.
       player, own-plot building, production intervals, border links) is a
       major version** [DECIDED]: the team-state, ghost-snapshot and
       run-state formats all change, old saves and ghosts are wiped, and
-      there is no migration.
+      there is no migration. **Development rule**: the major is raised once
+      for the whole design change; each later format-breaking change inside
+      it raises the affected format number (so older data is "unsupported",
+      never "damaged"), and raises the major again only if a build of the new
+      major has already reached players (see `CONTRIBUTING.md`).
   - Two versions are distinguished wherever it matters:
     - the **installed version** — the full `major.minor.patch` of the game
       a player is running;
