@@ -13,6 +13,8 @@ export interface DebugHook {
   viewport?: () => { w: number; h: number };
   hovered?: () => Hit | null;
   selection?: () => Selection | null;
+  /** View-space rectangle (cells) of the own Core, or null when unplaced. */
+  ownCoreRect?: () => { x: number; y: number; w: number; h: number } | null;
   /** Mean and count of canvas draw times in milliseconds. */
   drawStats?: () => { count: number; meanMs: number; maxMs: number };
   resetDrawStats?: () => void;

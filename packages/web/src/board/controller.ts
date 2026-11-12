@@ -6,6 +6,7 @@
 import {
   centerCamera,
   clampCamera,
+  startZoomShowing,
   fitCamera,
   focusCamera,
   panBy,
@@ -73,6 +74,16 @@ export class CameraController {
     return this.vp.w > 0 && this.vp.h > 0;
   }
 
+  /** The start zoom, lowered so the own Core (the base point) is in view. */
+  private effectiveStartZoom(): number {
+    return startZoomShowing(
+      this.vp,
+      this.bounds,
+      this.base,
+      this.startZoom ?? 0,
+    );
+  }
+
   /** Describe the content. A new `key` puts the camera back at Center. */
   setLayout(bounds: Bounds, base: Point | null, key: unknown): void {
     this.bounds = bounds;
@@ -101,7 +112,7 @@ export class CameraController {
       if (this.startZoom !== null) {
         this.set(
           clampCamera(
-            { ...this.cam, zoom: this.startZoom },
+            { ...this.cam, zoom: this.effectiveStartZoom() },
             this.vp,
             this.bounds,
           ),
@@ -126,7 +137,7 @@ export class CameraController {
       // Centre returns to the start view: the start zoom, when one is set.
       if (name === 'center' && this.startZoom !== null)
         cam = clampCamera(
-          { ...cam, zoom: this.startZoom },
+          { ...cam, zoom: this.effectiveStartZoom() },
           this.vp,
           this.bounds,
         );

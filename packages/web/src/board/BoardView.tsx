@@ -281,6 +281,9 @@ export function BoardView(props: BoardViewProps) {
     registerDebug({
       camera: () => controller.camera,
       viewport: () => controller.viewport,
+      ownCoreRect: () =>
+        live.current.scene.boards.find((b) => b.frame.id === 'own')?.core
+          ?.rect ?? null,
       hovered: () => live.current.hover,
       selection: () => live.current.selection,
       drawStats: () => {

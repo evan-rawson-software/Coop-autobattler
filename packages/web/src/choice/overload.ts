@@ -36,7 +36,7 @@ export function overloadLine(
   const when = out.tick === null ? '' : clock(out.tick, sim.ticksPerSecond);
   switch (out.first) {
     case 'b':
-      return `Overload at ${at} would destroy the stronghold's Core first (at ${when}) — outlasting it wins.`;
+      return `Overload at ${at} would destroy the stronghold's Core first at ${when} — outlasting it wins.`;
     case 'a':
       return `Overload at ${at} would destroy your Core first at ${when} — break the stronghold before then.`;
     case 'both':

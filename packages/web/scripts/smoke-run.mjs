@@ -402,7 +402,7 @@ export async function runRunSmoke({
       ),
       'sealed: the inspector explains the sealed Barracks',
     );
-    await shot('run-12-sealed-build');
+    await shot('run-8c-sealed-build');
     // The same on the Shop tab.
     await page.click('.topbar-tabs button:has-text("Shop")');
     await page.waitForSelector('#shop-screen');
@@ -415,7 +415,7 @@ export async function runRunSmoke({
         /Ready is blocked: Barracks/.test(shopReason),
       `sealed: Ready is disabled on the Shop tab too ("${shopReason}")`,
     );
-    await shot('run-13-sealed-shop');
+    await shot('run-8d-sealed-shop');
     // Open a way out: the turret goes to the stash and back on the front row.
     await page.click('.topbar-tabs button:has-text("Build")');
     await page.waitForFunction(() => window.__debug?.build?.step() === 'shop');
@@ -714,7 +714,7 @@ export async function runRunSmoke({
   check(
     overloadLines.length === 3 &&
       overloadLines.every((t) =>
-        /^Overload at 3:00 would (destroy (the stronghold's Core first \(at \d+:\d\d\) — outlasting it wins|your Core first at \d+:\d\d — break the stronghold before then|both Cores at \d+:\d\d)|not destroy either Core)/.test(
+        /^Overload at 3:00 would (destroy (the stronghold's Core first at \d+:\d\d — outlasting it wins|your Core first at \d+:\d\d — break the stronghold before then|both Cores at \d+:\d\d)|not destroy either Core)/.test(
           t.trim(),
         ),
       ) &&

@@ -129,6 +129,37 @@ export function centerCamera(vp: Viewport, bounds: Bounds): Camera {
   return focusCamera(vp, bounds, boundsCenter(bounds));
 }
 
+/** Cells from the Core's centre that must be in view (covers its footprint). */
+export const CORE_VIEW_RADIUS = 2.5;
+
+/**
+ * The zoom a board opens at: `startZoom`, lowered just enough that `core`
+ * (view-space centre, plus a margin) is inside a viewport centred on the
+ * content's centre. Never above `startZoom`, never below the zoom limits'
+ * minimum (where the Core may then stay out of view).
+ */
+export function startZoomShowing(
+  vp: Viewport,
+  bounds: Bounds,
+  core: Point | null,
+  startZoom: number,
+  padding = FIT_PADDING_PX,
+): number {
+  const lim = zoomLimits(vp, bounds);
+  let z = startZoom;
+  if (core) {
+    const c = boundsCenter(bounds);
+    const ex = Math.abs(core.x - c.x) + CORE_VIEW_RADIUS;
+    const ey = Math.abs(core.y - c.y) + CORE_VIEW_RADIUS;
+    const need = Math.min(
+      Math.max(vp.w / 2 - padding, 1) / ex,
+      Math.max(vp.h / 2 - padding, 1) / ey,
+    );
+    z = Math.min(z, need);
+  }
+  return Math.max(z, lim.min);
+}
+
 /** Move the view by a screen-pixel drag: content follows the pointer. */
 export function panBy(
   cam: Camera,
