@@ -3292,6 +3292,201 @@
     }
   },
   {
+    "id": "arena-sim.ramp-overclocker-own-plot-only",
+    "kind": "arena-sim",
+    "description": "Two plots. Player 0 has the ore extractor and barracks and the flux extractor feeding a tier 1 overclocker (as in ramp-overclocker-speeds-source); player 1 has a lone ore extractor in their own plot (ore node at x 12, not connected, so its items are lost at its own cadence) and no overclocker. Player 0's collectors speed up step by step; player 1's extractor stays on the unmodified cadence (PP-8).",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 0,
+              "y": 0,
+              "resource": "res_a"
+            },
+            {
+              "x": 10,
+              "y": 0,
+              "resource": "res_c"
+            },
+            {
+              "x": 12,
+              "y": 0,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 0,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 10,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_overclocker",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 10,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 4,
+              "side": "north"
+            },
+            "to": {
+              "building": 5,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 7,
+            "x": 12,
+            "y": 0,
+            "rotation": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 6
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 6
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 6
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 600
+    },
+    "expected": {
+      "result": {
+        "tick": 600,
+        "stateHash": "920e5d53",
+        "events": 281,
+        "sides": [
+          {
+            "spawned": 6,
+            "alive": 6,
+            "unitsDied": 0,
+            "buildingDamageDealt": 468,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 32]
+          }
+        ]
+      },
+      "eventLogHash": "876b3a87"
+    }
+  },
+  {
     "id": "arena-sim.ramp-armory-stronger-units",
     "kind": "arena-sim",
     "description": "An armory (costPerStep 6, +4 percent per step) beside a barracks: the soldiers spawned at ticks 119, 239, 359 have 40, 41 and 43 health; units already on the field keep theirs.",
