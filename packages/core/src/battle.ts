@@ -235,7 +235,7 @@ export function startBattle(
       code: 'core_not_placed',
       message: 'Side 0 has not placed its Core.',
       side: 0,
-      player: teamA.cores.findIndex((c) => c === null),
+      player: 0, // no Core at all, so the lowest index is 0
     });
   }
   if (teamB.cores.every((c) => c === null)) {
@@ -243,7 +243,7 @@ export function startBattle(
       code: 'core_not_placed',
       message: 'Side 1 has not placed its Core.',
       side: 1,
-      player: teamB.cores.findIndex((c) => c === null),
+      player: 0, // no Core at all, so the lowest index is 0
     });
   }
   let zone: NeutralZone;
