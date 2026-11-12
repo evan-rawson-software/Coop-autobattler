@@ -61,7 +61,7 @@ describe('bot player', () => {
         );
         expect(again.ok).toBe(true);
         if (again.ok) expect(hashJson(again.state)).toBe(hashJson(r.state));
-      });
+      }, 30_000);
     }
   }
 

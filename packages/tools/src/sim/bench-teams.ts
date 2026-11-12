@@ -9,7 +9,6 @@ import {
   createTeamState,
   placeCore,
   placeFromStash,
-  corePlayerAt,
   type GameMap,
   type Side,
   type TeamState,
@@ -18,7 +17,7 @@ import type { SimContext } from './context.js';
 
 /**
  * 48 modules of an extractor, a splitter and two barracks each (96 barracks,
- * 48 sources), Core at (40, 6); every building but the splitters has `tier`.
+ * 48 sources), a Core per plot at (24 p + 16, 6); every building but the splitters has `tier`.
  */
 export function denseFourPlotTeam(ctx: SimContext, tier: number): TeamState {
   const nodes: { x: number; y: number; resource: string }[] = [];
@@ -86,13 +85,14 @@ export function denseFourPlotTeam(ctx: SimContext, tier: number): TeamState {
       link(sp, 'east', b, 'west', [[x0 + 1, y0 + 3]]);
     }
   }
-  const c = placeCore(
-    state,
-    ctx.content,
-    ctx.mapgen,
-    corePlayerAt(state.map, ctx.content, 40),
-    { x: 40, y: 6 },
-  );
-  if (!c.ok) return fail('core', c.reason);
-  return c.state;
+  // One Core per player, at the same spot of each plot.
+  for (let p = 0; p < 4; p++) {
+    const c = placeCore(state, ctx.content, ctx.mapgen, p, {
+      x: p * 24 + 16,
+      y: 6,
+    });
+    if (!c.ok) return fail('core', c.reason);
+    state = c.state;
+  }
+  return state;
 }
