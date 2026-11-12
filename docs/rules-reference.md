@@ -1012,6 +1012,20 @@ same list, and the final state), `prng-child` (the parent state and the first
 `neutral-zone` and `battle` (see "The neutral zone" and "Battles"), `threat-gen` and
 `pve-battle` (see "PvE threats").
 
+`shop-roll` (see "Run random streams" and "Shops and gold"): input `{seed,
+before, round, leg, players, rerolls}`. Start at `rootRng(seed)`, draw each
+label in `before` in order, then draw `shop:r<round>:<leg>`. For each player
+`i`, roll the offers from that stream's child `p<i>`, then re-roll `rerolls`
+times from the same child. The result lists each player's rolls (offers as
+`slot def tier price`) and final stream state, and the run generator state
+after the shop draw. `run-replay`: input `{seed, players, actions}`, where
+`actions` is a list of `{player, intent}`. The run is created with the given
+seed and player names and the actions are applied in order, with a battle
+resolver that always wins. The result is the final step, round, action count,
+gold, shop offers, run generator state and the hash of the whole run state
+(`hashJson`), or `{ok: false, reason, at}` if an action is rejected. Both kinds
+need `@game/session`, which the `golden` package may depend on (it is test-only).
+
 In the reference implementation the registry is `goldenKinds` in
 `packages/core/src/golden-kinds.ts`; a new kind is one added entry. Kinds that
 need the real content files (`map-gen`) cannot be built in `core`, which reads
@@ -3998,8 +4012,8 @@ step machine draws them in a round:
 
 The order of draws matters because each draw advances `g`. A shop re-roll
 does not draw a new run stream: it continues the player's stored shop stream.
-Golden vectors for run streams do not exist yet (`prng-child` covers the
-derivation of a child stream only).
+Golden vectors: `shop-roll` and `run-replay` (see "Golden vectors") pin the
+stream derivation; `prng-child` covers the derivation of a child stream only.
 
 ## Shops and gold
 

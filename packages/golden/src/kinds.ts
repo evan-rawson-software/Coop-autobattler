@@ -6,6 +6,8 @@
 import {
   goldenKinds as coreKinds,
   loadAllContentOrThrow,
+  loadEconomyOrThrow,
+  loadEventsOrThrow,
   loadMapgenOrThrow,
   loadSimConfigOrThrow,
   loadThreatsOrThrow,
@@ -23,6 +25,8 @@ import {
 } from '@game/core';
 import {
   rawBuildings,
+  rawEconomy,
+  rawEvents,
   rawMapgen,
   rawPresentationEn,
   rawResources,
@@ -31,6 +35,7 @@ import {
   rawThreats,
   rawUnits,
 } from '@game/content';
+import { makeRunReplayKind, makeShopRollKind } from './run-kinds.js';
 
 const content = loadAllContentOrThrow({
   resources: rawResources,
@@ -46,6 +51,14 @@ const threats = loadThreatsOrThrow(rawThreats, {
   buildings: content.buildings,
 });
 
+const gameConfigs = {
+  mapgen,
+  economy: loadEconomyOrThrow(rawEconomy, { buildings: content.buildings }),
+  events: loadEventsOrThrow(rawEvents),
+  threats,
+  sim: simConfig,
+};
+
 /** Every golden kind: those in `core` plus the content-dependent ones. */
 export const goldenKinds: Readonly<Record<string, SimulationFn>> = {
   ...coreKinds,
@@ -59,4 +72,6 @@ export const goldenKinds: Readonly<Record<string, SimulationFn>> = {
   battle: makeBattleKind(content, mapgen, simConfig),
   'threat-gen': makeThreatGenKind(content, mapgen, threats),
   'pve-battle': makePveBattleKind(content, mapgen, simConfig, threats),
+  'shop-roll': makeShopRollKind(content, gameConfigs),
+  'run-replay': makeRunReplayKind(content, gameConfigs),
 };

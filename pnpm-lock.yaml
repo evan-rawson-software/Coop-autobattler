@@ -68,6 +68,9 @@ importers:
       '@game/core':
         specifier: workspace:*
         version: link:../core
+      '@game/session':
+        specifier: workspace:*
+        version: link:../session
     devDependencies:
       '@types/node':
         specifier: 22.20.5
