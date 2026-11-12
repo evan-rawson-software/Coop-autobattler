@@ -212,7 +212,7 @@ conduits or producers; its cost is its units and its stronghold buildings, both
 bounded by configuration: a wave has at most `maxUnitsPerWavePerPlot` (12)
 units per plot (48 on four plots) and a threat has at most 12 waves, so at most
 576 threat units on a four-plot board, and a stronghold has at most
-`maxWallsPerPlot + maxTurretsPerPlot` (76) buildings per plot (304 on four
+`maxWallsPerPlot + maxTurretsPerPlot` (66) buildings per plot (264 on four
 plots). Late-round power comes from `unitStrengthPercent`, not from numbers.
 
 Measured (reference `rush` board for one plot, the dense four-plot board above

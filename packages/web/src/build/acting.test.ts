@@ -97,6 +97,36 @@ describe('acting player', () => {
     expect(r).toMatchObject({ ok: false, reason: 'not_owner' });
   });
 
+  test("undo and redo of player 1's own change preview as player 1 (BuildSession)", async () => {
+    const s = await pair();
+    await placeBoth(s);
+    s.setActing(1);
+    const item = s.run.team.stash.find((b) => b.owner === 1);
+    if (item === undefined) throw new Error('no stash');
+    const w = s.run.team.map.plotWidth;
+    let cell: { x: number; y: number } | null = null;
+    for (let y = 0; y < s.run.team.map.height && cell === null; y++) {
+      for (let x = w; x < 2 * w && cell === null; x++) {
+        const args = { id: item.id, x, y, rotation: 0 };
+        if (previewPlace(s.run.team, content, args, 1).ok) cell = { x, y };
+      }
+    }
+    if (cell === null) throw new Error('no legal cell');
+    const placed = await s.act({
+      t: 'place',
+      id: item.id,
+      ...cell,
+      rotation: 0,
+    });
+    expect(placed).toEqual({ ok: true });
+    expect(s.run.team.buildings.some((b) => b.id === item.id)).toBe(true);
+    // Preview as player 0 would refuse (not_owner); the session uses player 1.
+    expect(await s.undo()).toEqual({ ok: true });
+    expect(s.run.team.buildings.some((b) => b.id === item.id)).toBe(false);
+    expect(await s.redo()).toEqual({ ok: true });
+    expect(s.run.team.buildings.some((b) => b.id === item.id)).toBe(true);
+  });
+
   test('the stash lists the acting player buildings only', async () => {
     const s = await pair();
     await placeBoth(s);

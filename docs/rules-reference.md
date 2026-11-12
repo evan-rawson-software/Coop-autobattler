@@ -63,6 +63,7 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-10 | End conditions and the tiebreak ladder with several Cores | **implemented** (issue #132; "Battles") |
 | PP-11 | A unit's owner and target Core; one movement field per target Core; a unit also attacks any enemy Core within reach, target or not | **implemented** (issue #133; "The arena", "One battle tick", "Goals and movement fields", "Side options", "Resolution order") |
 | PP-12 | Enemy-path preview per Core | **implemented** (issue #133; "Enemy-path preview") |
+| PP-13 | Turrets engage units in the neutral zone | **implemented** (issue #134; "Turret fire", step 3) |
 | PP-14 | PvE strongholds and bosses with one Core per player | **implemented** (issue #138; "PvE threats", "Side options") |
 | PP-15 | Sealed-producer check per owner; map rule per plot | map rule **implemented** (issue #129); sealed check per owner **implemented** (issue #131) |
 | PP-16 | Party votes and run streams without the Core vote | **implemented** (issue #131) |
@@ -583,6 +584,11 @@ PP-11, `opposite` being `plotOf(x)`); today's walk, on the fields of that Core.
 Each entry gains `core`, that Core's player index. The function does not
 throw for a board with some Cores unplaced; with no Core placed it gives no
 entry. What a unit does after that Core has fallen is not previewed.
+
+### PP-13. Turrets engage units in the neutral zone
+
+Implemented (issue #134). The rule is in "One battle tick": "Turret fire",
+step 3.
 
 ### PP-14. PvE strongholds and bosses with one Core per player
 
@@ -3263,7 +3269,10 @@ maximum health) and `fellTick` (the tick in which the Core was destroyed, or
 `null`). `ctx.coreRemaining` is derived from them when a context is built, and
 the `Battle` reads the fall tick from `fellTick`, so a Core that fell before a
 restore point keeps its overkill and its `destroyedTick`: restoring at any tick
-gives the same summary as a straight run. `ArenaSim` is not a saved format (a
+gives the same Core state, `coreOverkill` and `destroyedTick` as a straight run.
+The summary's `rampSteps` and `timeline` are not part of the state: they
+exist only in the closure of the `Battle` that ran the ticks (counted from its
+own first tick), so a restore does not give them back. `ArenaSim` is not a saved format (a
 `Battle` is not saved), so no format number changes; the entries are part of
 the state hash, which is why this change regenerated the pinned `stateHash`es
 of every battle.

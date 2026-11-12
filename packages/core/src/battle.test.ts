@@ -455,7 +455,7 @@ describe('mirror matches (symmetry)', () => {
   });
 });
 
-describe('buildings never act in or reach into the zone', () => {
+describe('buildings never reach into the zone, turrets only shoot into it', () => {
   const H = 16;
 
   /**

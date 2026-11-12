@@ -1129,7 +1129,7 @@
   {
     "id": "arena-sim.turret-kills-wave",
     "kind": "arena-sim",
-    "description": "Three powered tier 2 turrets beside the front edge kill three soldiers that cross it after a long walk across a 12-row gap, by which time the turrets are charged (they fire only once a unit stands on their own board rows).",
+    "description": "Three powered tier 2 turrets beside the front edge kill three soldiers that cross it after a long walk across a 12-row gap, by which time the turrets are charged (they fire once a unit stands on their own board rows or in the neutral zone).",
     "input": {
       "teamA": {
         "map": {
@@ -3130,7 +3130,7 @@
   {
     "id": "arena-sim.ramp-overclocker-speeds-source",
     "kind": "arena-sim",
-    "description": "A fast flux extractor feeds a tier 1 overclocker (costPerStep 4, +5 percent per step); the ore extractor beside it, which feeds a barracks, speeds up step by step (ore items at 19, 39, 59, 78, 96, ...).",
+    "description": "A fast flux extractor feeds a tier 1 overclocker (costPerStep 2, +2 percent per step); the ore extractor beside it, which feeds a barracks, speeds up step by step (ore items at 19, 39, 59, 78, 96, ...).",
     "input": {
       "teamA": {
         "map": {
@@ -3489,7 +3489,7 @@
   {
     "id": "arena-sim.ramp-armory-stronger-units",
     "kind": "arena-sim",
-    "description": "An armory (costPerStep 6, +4 percent per step) beside a barracks: the soldiers spawned at ticks 119, 239, 359 have 40, 41 and 43 health; units already on the field keep theirs.",
+    "description": "An armory (costPerStep 4, +5 percent per step) beside a barracks: the soldiers spawned at ticks 119, 239, 359 have 40, 41 and 43 health; units already on the field keep theirs.",
     "input": {
       "teamA": {
         "map": {
@@ -3653,7 +3653,7 @@
   {
     "id": "arena-sim.ramp-building-at-cap",
     "kind": "arena-sim",
-    "description": "A tier 1 overclocker (maxSteps 6) fed by a fast flux extractor reaches its sixth step and then takes nothing more: its buffer fills and the extractor stalls.",
+    "description": "A tier 1 overclocker (maxSteps 5) fed by a fast flux extractor reaches its fifth step and then takes nothing more: its buffer fills and the extractor stalls.",
     "input": {
       "teamA": {
         "map": {
@@ -7739,8 +7739,9 @@
   {
     "id": "arena-sim.border-link-sender-destroyed",
     "kind": "arena-sim",
-    "description": "A base sealed by a wall row whose weak point is the extractor that sends over a border link: the attackers destroy it, and both halves of the link go with it (two conduit_destroyed events, in id order).",
+    "description": "A base sealed by a wall row whose weak point is the extractor that sends over a border link: the attackers destroy it, and both halves of the link go with it (two conduit_destroyed events, in id order; the vector pins only hashes, the events are checked by border-battle.test.ts). It is saved and restored at ticks 100 and 300, around the cut.",
     "input": {
+      "restoreAt": [100, 300],
       "teamA": {
         "map": {
           "width": 24,
@@ -8337,6 +8338,7 @@
     "kind": "arena-sim",
     "description": "A base sealed by a wall row whose weak point is the barracks that receives over a border link: the attackers destroy it, and both halves of the link go with it, so the extractor on the other plot loses its path.",
     "input": {
+      "restoreAt": [100, 300],
       "teamA": {
         "map": {
           "width": 24,
@@ -8919,6 +8921,7 @@
     "kind": "arena-sim",
     "description": "Player 0 loses their Core early (health 1) while their extractor still sends over a border link to the barracks of player 1: no building or conduit is destroyed by the fall, and the link keeps delivering until the end.",
     "input": {
+      "restoreAt": [450],
       "teamA": {
         "map": {
           "width": 24,
