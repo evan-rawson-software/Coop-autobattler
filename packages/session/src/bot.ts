@@ -73,6 +73,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
     want: {
       bld_barracks: 10,
       bld_extractor: 8,
+      bld_range: 4,
       bld_armory: 4,
       bld_overclocker: 3,
       bld_turret: 1,
@@ -89,7 +90,13 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       connect: true,
       walls: false,
       placeLeftovers: true,
-      priority: ['bld_barracks', 'bld_armory', 'bld_overclocker', 'bld_turret'],
+      priority: [
+        'bld_barracks',
+        'bld_range',
+        'bld_armory',
+        'bld_overclocker',
+        'bld_turret',
+      ],
       links: true,
     },
   },
@@ -102,6 +109,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       bld_extractor: 7,
       bld_gate: 4,
       bld_overclocker: 5,
+      bld_range: 6,
       bld_barracks: 4,
     },
     tierBonus: 2,
@@ -120,7 +128,13 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       connect: true,
       walls: true,
       placeLeftovers: true,
-      priority: ['bld_turret', 'bld_overclocker', 'bld_barracks', 'bld_armory'],
+      priority: [
+        'bld_turret',
+        'bld_range',
+        'bld_overclocker',
+        'bld_barracks',
+        'bld_armory',
+      ],
     },
   },
   siege: {
@@ -133,6 +147,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       bld_wall: 5,
       bld_turret: 3,
       bld_overclocker: 2,
+      bld_hangar: 3,
       bld_splitter: 5,
     },
     tierBonus: 6,
@@ -146,7 +161,13 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       connect: true,
       walls: true,
       placeLeftovers: true,
-      priority: ['bld_barracks', 'bld_armory', 'bld_turret', 'bld_overclocker'],
+      priority: [
+        'bld_barracks',
+        'bld_armory',
+        'bld_turret',
+        'bld_hangar',
+        'bld_overclocker',
+      ],
       links: true,
     },
   },
@@ -350,6 +371,8 @@ const CONSUMERS = [
   'bld_turret',
   'bld_armory',
   'bld_overclocker',
+  'bld_range',
+  'bld_hangar',
 ];
 
 /** Buy what the strategy wants, keeping extractors and consumers balanced. */

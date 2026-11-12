@@ -259,6 +259,39 @@ describe('generateThreat', () => {
     }
   });
 
+  test('ranged mix: archers and drones from round 4, none before', () => {
+    const count = (round: number, arch: string, unit: string): number =>
+      generateThreat(
+        { seed: 7, round, type: 'medium', partySize: 1, archetype: arch },
+        content,
+        configs,
+      )
+        .waves.filter((w) => w.unit === unit)
+        .reduce((a, w) => a + w.count, 0);
+    for (const arch of ['arch_rusher', 'arch_escalator', 'arch_boss']) {
+      for (const round of [1, 2, 3]) {
+        expect(count(round, arch, 'unit_archer')).toBe(0);
+        expect(count(round, arch, 'unit_drone')).toBe(0);
+      }
+      expect(count(10, arch, 'unit_archer'), arch).toBeGreaterThan(0);
+      expect(count(10, arch, 'unit_drone'), arch).toBeGreaterThan(0);
+    }
+    // Switching the mix off gives back the melee-only waves.
+    const off = { ...threats, rangedMix: undefined };
+    const p = generateThreat(
+      {
+        seed: 7,
+        round: 8,
+        type: 'medium',
+        partySize: 1,
+        archetype: 'arch_rusher',
+      },
+      content,
+      { threats: off, mapgen },
+    );
+    expect(p.waves.some((w) => w.unit === 'unit_archer')).toBe(false);
+  });
+
   test('late rounds get their power from unitStrengthPercent', () => {
     const early = generateThreat(
       {
@@ -436,7 +469,7 @@ describe('pickArchetypes and threatSummary', () => {
     const p = generateThreat(
       {
         seed: 2,
-        round: 5,
+        round: 8,
         type: 'hard',
         partySize: 1,
         archetype: 'arch_fortress',

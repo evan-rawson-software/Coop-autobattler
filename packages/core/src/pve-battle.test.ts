@@ -340,9 +340,9 @@ function sweep(): Row[] {
 
 /** The last round at which a board wins any threat in the sweep (pinned). */
 const LAST_WIN: Record<ReferenceBoardName, number> = {
-  rush: 12,
-  fortify: 16,
-  poor: 11,
+  rush: 13,
+  fortify: 15,
+  poor: 12,
 };
 
 describe('sweep of reference boards against every threat', () => {
@@ -384,9 +384,9 @@ describe('sweep of reference boards against every threat', () => {
     expect(blocks[2]).toBeGreaterThan(blocks[3] ?? 0);
     expect(blocks[4]).toBe(0);
     // With threats growing 25 percent per round (issue #145) the wins fall
-    // off slowly: 214, 113, 21, 1 and none from round 21 on (the last win is
-    // the fortify board's, in round 16).
-    expect(blocks).toEqual([214, 113, 21, 1, 0]);
+    // off slowly: 214, 115, 24 and none from round 16 on (the last win is
+    // the fortify board's, in round 15, since waves hold archers and drones).
+    expect(blocks).toEqual([214, 115, 24, 0, 0]);
   }, 300_000);
 
   test('archetypes test what they should (criterion 3)', () => {
@@ -408,8 +408,8 @@ describe('sweep of reference boards against every threat', () => {
       );
     // The undefended rush board loses to a Rusher that the fortify board beats.
     for (const type of ['medium', 'hard'] as const) {
-      expect(get('rush', 'arch_rusher', type, 8).won).toBe(false);
-      expect(get('fortify', 'arch_rusher', type, 8).won).toBe(true);
+      expect(get('rush', 'arch_rusher', type, 9).won).toBe(false);
+      expect(get('fortify', 'arch_rusher', type, 9).won).toBe(true);
     }
     // The fortify board takes longer against the Fortress in the early
     // rounds, where both win: 1.35 times as long in easy round 1 (it was 2.6

@@ -368,7 +368,13 @@ export function loadThreats(
     } else {
       rejectUnknownKeys(
         rm,
-        new Set(['fromRound', 'archerUnit', 'archerPercent', 'droneUnit', 'dronePercent']),
+        new Set([
+          'fromRound',
+          'archerUnit',
+          'archerPercent',
+          'droneUnit',
+          'dronePercent',
+        ]),
         rat,
         errors,
       );
