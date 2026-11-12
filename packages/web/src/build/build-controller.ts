@@ -17,7 +17,6 @@ import {
   type Rotation,
   type TeamState,
   conduitTouches,
-  isBorderEnd,
 } from '@game/core';
 import { createStore, type Store } from '../app-state.js';
 import type { BoardPointerEvent } from '../board/BoardView.js';
@@ -739,8 +738,7 @@ export class BuildController {
     const s = this.session;
     if (s === null) return;
     const c = s.run.team.conduits.find((x) => x.id === id);
-    // Halves of border links have no session intent yet (issue #136).
-    if (c === undefined || isBorderEnd(c.from) || isBorderEnd(c.to)) {
+    if (c === undefined) {
       this.refuse('unknown_conduit');
       return;
     }
@@ -776,7 +774,7 @@ export class BuildController {
     else if (r.ok) this.say('Undone.', 'ok');
     else
       this.say(
-        `Undo failed: ${reasonMessage(r.reason, r.detail)} History cleared.`,
+        `Undo refused: ${reasonMessage(r.reason, r.detail)} ${r.kept === true ? 'History unchanged.' : 'History cleared.'}`,
         'error',
       );
   }
@@ -793,7 +791,7 @@ export class BuildController {
     else if (r.ok) this.say('Redone.', 'ok');
     else
       this.say(
-        `Redo failed: ${reasonMessage(r.reason, r.detail)} History cleared.`,
+        `Redo refused: ${reasonMessage(r.reason, r.detail)} ${r.kept === true ? 'History unchanged.' : 'History cleared.'}`,
         'error',
       );
   }

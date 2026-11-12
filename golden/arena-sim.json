@@ -7734,5 +7734,1464 @@
       },
       "eventLogHash": "537b343a"
     }
+  },
+  {
+    "id": "arena-sim.border-link-sender-destroyed",
+    "kind": "arena-sim",
+    "description": "A base sealed by a wall row whose weak point is the extractor that sends over a border link: the attackers destroy it, and both halves of the link go with it (two conduit_destroyed events, in id order).",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 2,
+              "y": 2,
+              "resource": "res_a"
+            },
+            {
+              "x": 14,
+              "y": 2,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "seed": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 2,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 2,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 2,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 4,
+            "x": 14,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 5,
+            "x": 14,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 1,
+            "from": {
+              "building": 4,
+              "side": "north"
+            },
+            "to": {
+              "building": 5,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 14,
+                "y": 3
+              },
+              {
+                "x": 14,
+                "y": 4
+              },
+              {
+                "x": 14,
+                "y": 5
+              }
+            ]
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 11,
+              "y": 10,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "seed": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 1,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 2,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 3,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 4,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 5,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 7,
+            "x": 6,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 8,
+            "x": 7,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 9,
+            "x": 8,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 10,
+            "x": 9,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 11,
+            "x": 10,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 12,
+            "x": 12,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 13,
+            "x": 13,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 14,
+            "x": 14,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 15,
+            "x": 15,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 16,
+            "x": 16,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 17,
+            "x": 17,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 18,
+            "x": 18,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 19,
+            "x": 19,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 20,
+            "x": 20,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 21,
+            "x": 21,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 22,
+            "x": 22,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 23,
+            "x": 23,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 24,
+            "x": 11,
+            "y": 10,
+            "rotation": 180
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 25,
+            "x": 12,
+            "y": 7,
+            "rotation": 180
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 24,
+              "side": "south"
+            },
+            "to": {
+              "border": 0,
+              "y": 9
+            },
+            "cells": [
+              {
+                "x": 11,
+                "y": 9
+              }
+            ]
+          },
+          {
+            "op": "addConduit",
+            "actor": 1,
+            "from": {
+              "border": 0,
+              "y": 9
+            },
+            "to": {
+              "building": 25,
+              "side": "north"
+            },
+            "cells": [
+              {
+                "x": 12,
+                "y": 9
+              }
+            ]
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 900
+    },
+    "expected": {
+      "result": {
+        "tick": 900,
+        "stateHash": "b0913947",
+        "events": 645,
+        "sides": [
+          {
+            "spawned": 44,
+            "alive": 44,
+            "unitsDied": 0,
+            "buildingDamageDealt": 1030,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500]
+          },
+          {
+            "spawned": 1,
+            "alive": 0,
+            "unitsDied": 1,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 1,
+            "coreHealth": [0, 0]
+          }
+        ]
+      },
+      "eventLogHash": "cb723e32"
+    }
+  },
+  {
+    "id": "arena-sim.border-link-receiver-destroyed",
+    "kind": "arena-sim",
+    "description": "A base sealed by a wall row whose weak point is the barracks that receives over a border link: the attackers destroy it, and both halves of the link go with it, so the extractor on the other plot loses its path.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 2,
+              "y": 2,
+              "resource": "res_a"
+            },
+            {
+              "x": 14,
+              "y": 2,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "seed": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 2,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 2,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 2,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 4,
+            "x": 14,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 5,
+            "x": 14,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 1,
+            "from": {
+              "building": 4,
+              "side": "north"
+            },
+            "to": {
+              "building": 5,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 14,
+                "y": 3
+              },
+              {
+                "x": 14,
+                "y": 4
+              },
+              {
+                "x": 14,
+                "y": 5
+              }
+            ]
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 10,
+              "y": 9,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "seed": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 1,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 2,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 3,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 4,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 5,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 7,
+            "x": 6,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 8,
+            "x": 7,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 9,
+            "x": 8,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 10,
+            "x": 9,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 11,
+            "x": 10,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 12,
+            "x": 11,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 13,
+            "x": 14,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 14,
+            "x": 15,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 15,
+            "x": 16,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 16,
+            "x": 17,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 17,
+            "x": 18,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 18,
+            "x": 19,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 19,
+            "x": 20,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 20,
+            "x": 21,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 21,
+            "x": 22,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 22,
+            "x": 23,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 23,
+            "x": 10,
+            "y": 9,
+            "rotation": 90
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 24,
+            "x": 12,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 23,
+              "side": "east"
+            },
+            "to": {
+              "border": 0,
+              "y": 9
+            },
+            "cells": [
+              {
+                "x": 11,
+                "y": 9
+              }
+            ]
+          },
+          {
+            "op": "addConduit",
+            "actor": 1,
+            "from": {
+              "border": 0,
+              "y": 9
+            },
+            "to": {
+              "building": 24,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 12,
+                "y": 9
+              }
+            ]
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 900
+    },
+    "expected": {
+      "result": {
+        "tick": 900,
+        "stateHash": "31dbce4f",
+        "events": 974,
+        "sides": [
+          {
+            "spawned": 44,
+            "alive": 42,
+            "unitsDied": 2,
+            "buildingDamageDealt": 1480,
+            "buildingsDestroyed": 0,
+            "coreHealth": [0, 20]
+          },
+          {
+            "spawned": 7,
+            "alive": 5,
+            "unitsDied": 2,
+            "buildingDamageDealt": 980,
+            "buildingsDestroyed": 2,
+            "coreHealth": [0, 0]
+          }
+        ]
+      },
+      "eventLogHash": "b74d3388"
+    }
+  },
+  {
+    "id": "arena-sim.border-core-fallen-link-carries",
+    "kind": "arena-sim",
+    "description": "Player 0 loses their Core early (health 1) while their extractor still sends over a border link to the barracks of player 1: no building or conduit is destroyed by the fall, and the link keeps delivering until the end.",
+    "input": {
+      "teamA": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 2,
+              "y": 2,
+              "resource": "res_a"
+            },
+            {
+              "x": 14,
+              "y": 2,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "seed": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 2,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 2,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 2,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 4,
+            "x": 14,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 5,
+            "x": 14,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 1,
+            "from": {
+              "building": 4,
+              "side": "north"
+            },
+            "to": {
+              "building": 5,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 14,
+                "y": 3
+              },
+              {
+                "x": 14,
+                "y": 4
+              },
+              {
+                "x": 14,
+                "y": 5
+              }
+            ]
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 10,
+              "y": 9,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "seed": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 3
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 3
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 10,
+            "y": 9,
+            "rotation": 90
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 2,
+            "x": 12,
+            "y": 7,
+            "rotation": 180
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "east"
+            },
+            "to": {
+              "border": 0,
+              "y": 9
+            },
+            "cells": [
+              {
+                "x": 11,
+                "y": 9
+              }
+            ]
+          },
+          {
+            "op": "addConduit",
+            "actor": 1,
+            "from": {
+              "border": 0,
+              "y": 9
+            },
+            "to": {
+              "building": 2,
+              "side": "north"
+            },
+            "cells": [
+              {
+                "x": 12,
+                "y": 9
+              }
+            ]
+          }
+        ]
+      },
+      "gapRows": 4,
+      "ticks": 900,
+      "buildingHealth": [
+        {
+          "side": 1,
+          "core": 0,
+          "hp": 1
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 900,
+        "stateHash": "989b2b65",
+        "events": 696,
+        "sides": [
+          {
+            "spawned": 44,
+            "alive": 42,
+            "unitsDied": 2,
+            "buildingDamageDealt": 501,
+            "buildingsDestroyed": 0,
+            "coreHealth": [230, 500]
+          },
+          {
+            "spawned": 7,
+            "alive": 4,
+            "unitsDied": 3,
+            "buildingDamageDealt": 270,
+            "buildingsDestroyed": 0,
+            "coreHealth": [0, 0]
+          }
+        ]
+      },
+      "eventLogHash": "b25c56b3"
+    }
   }
 ]

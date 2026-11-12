@@ -35,7 +35,7 @@ import {
   sideStats,
   type Moment,
 } from './derive.js';
-import { drawBattleOverlay, makeDrawIndex } from './draw.js';
+import { drawBattleOverlay, linkMap, makeDrawIndex } from './draw.js';
 import { BattleSummaryView, LeftPanels, RightPanels } from './panels.js';
 import {
   Playback,
@@ -313,11 +313,18 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
   );
   const index = useMemo(
     () =>
-      makeDrawIndex(init, {
-        own: 'YOUR BOARD',
-        enemy: foeKind === 'ghost' ? 'ENEMY BOARD' : 'STRONGHOLD',
-      }),
-    [init, foeKind],
+      makeDrawIndex(
+        init,
+        {
+          own: 'YOUR BOARD',
+          enemy: foeKind === 'ghost' ? 'ENEMY BOARD' : 'STRONGHOLD',
+        },
+        [
+          linkMap(record.initialTeams[0], content),
+          linkMap(record.initialTeams[1], content),
+        ],
+      ),
+    [init, foeKind, record],
   );
   const tps = battleConfig.sim.ticksPerSecond;
   const [phase, setPhase] = useState<Phase>(

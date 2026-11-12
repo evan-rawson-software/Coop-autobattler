@@ -201,6 +201,7 @@ export {
   addConduit,
   buildFlowGraph,
   conduitResource,
+  conduitsLostWith,
 } from './conduits.js';
 export type {
   AddConduitResult,

@@ -59,7 +59,7 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-1 | Ownership and plot checks on every board operation; conduits have an owner | **implemented** (issue #129) |
 | PP-2 | One Core per player: team state, positions, `placeCore`, health | **implemented** (issues #128 and #132); `core_not_placed` still names only the side, and only for a side with no Core at all: the per-player check comes with issues #131 and #138 |
 | PP-3 | Core placement step: each player places their own Core, no vote | not yet implemented (issue #131) |
-| PP-4 | Border links | **implemented** for halves, joining, validation, the flow graph and the flow simulation (issue #135); "In battle", undo and session intents are still issue #136 |
+| PP-4 | Border links | **implemented** (issues #135 and #136; "Conduits", "Mid-battle removal", "One battle tick" step 6) |
 | PP-5 | Collector flow rate by tier | **implemented** (issue #130; "One tick: `stepFlow`", step 3, and "Collector rate") |
 | PP-6 | Minimum time between productions, need, store | **implemented** (issue #130; "One battle tick", step 2 and step 7, "In-battle ramp", "Dry run (CB-43)") |
 | PP-7 | Splitting, with back-up | **implemented** ("One tick: `stepFlow`", step 2; vectors against consumers with a top speed since issue #130). An open border half (PP-4) is a connected output that never accepts (issue #135) |
@@ -302,10 +302,15 @@ operation adds an edge, so no other operation needs the check.
 
 **Removing.** `eraseConduit` removes one half (owner only, PP-1);
 `detachConduits` removes the halves attached to a moved or returned building.
-The other player's half is untouched and becomes open. Undo and redo are per
+The other player's half is untouched and becomes open. A player who is left
+alone (the other has disconnected, CP-21i) can erase their own half; nothing
+of the absent player's can be changed. The session intents `add_conduit` and
+`erase_conduit` take border ends (`{ border, y }`) and name the acting player;
+a refusal reports its reason to the player who sent it. Undo and redo are per
 player and layout only (RS-5g): undoing the removal of a half adds it again
 with the checks above, and if that is now rejected the undo is refused with
-the same reason and the player's history is left as it was.
+the same reason and the player's history is left as it was (the web client
+checks the whole inverse first, so a refusal changes nothing).
 
 **Validation.** `validateTeamState` checks every half with the rules above,
 at most one half per player per spot, and no mismatch or loop on the joined
@@ -313,8 +318,9 @@ network.
 
 **In battle.** `BoardSim.conduits` has one entry per flow edge, so one per
 link, under the sending half's id. When the building at either end of a link
-is destroyed, both halves are removed, each recorded as `conduit_destroyed`
-(in conduit-ID order), and the items in the link are lost as for any conduit.
+is destroyed, both halves are removed (`conduitsLostWith`), each recorded as
+`conduit_destroyed` (in conduit-ID order), and the items in the link are lost
+as for any conduit.
 An open half attached to a destroyed building is removed with one event. A
 destroyed Core removes nothing (PP-9).
 
@@ -324,6 +330,11 @@ links both ways at different spots. A half cannot reach a border that is not
 its owner's, so links join neighbouring plots only. To pass resources on to
 a third plot, the player in between needs a route building of their own
 between a receiving half and a sending half.
+
+Vectors: `arena-sim.border-link-sender-destroyed`,
+`arena-sim.border-link-receiver-destroyed` (a link cut by destroying the
+sending or the receiving building) and `arena-sim.border-core-fallen-link-carries`
+(the link keeps carrying after its owner's Core fell).
 
 Golden kinds: `team-state-ops` accepts border ends in `addConduit`;
 `flow-sim` gains `flow-sim.splitter-only-open-halves` (a collector feeding a
@@ -1206,15 +1217,6 @@ digits, hash of the map>, "attempts": <number> }`. Vectors: `golden/map-gen.json
 
 ## Team state and placement
 
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-4 | Conduit ends may be border spots (halves of a border link). | **implemented** (issue #135) |
-
 Implemented in `packages/core/src/team-state.ts` (golden kind `team-state-ops`:
 `team-state-ops.ts`). The party's whole state for combat is one board (CP-6,
 CB-32). All operations are pure: each returns a new state or a rejection and
@@ -1405,15 +1407,6 @@ per op: `{ "op", "ok": true }` (plus `"id"` for `addToStash` and `addConduit`) o
 "ok": false, "reason" }`. Vectors: `golden/team-state-ops.json`.
 
 ## Conduits
-
-**Status (#124).** This section describes the code on `main`. The rules
-below are specified in "Per-player design (issue #124)" and change this
-section when their issue lands; none of them is in the code yet unless the
-row says so.
-
-| Rule | Change to this section | Status |
-| ---- | ---------------------- | ------ |
-| PP-4 | Border links: a half ends at a border spot; two matching halves are one conduit in the flow graph (`linkedConduit` on the edge); an open half carries nothing and loses nothing (a connected output that never accepts). | **implemented** (issue #135) |
 
 Implemented in `packages/core/src/conduits.ts` (golden kinds `team-state-ops`
 and `flow-graph`: `team-state-ops.ts`). Conduits carry resources between
@@ -1621,7 +1614,6 @@ row says so.
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
 | PP-7 | With PP-4 an output whose half is open is a connected output that never accepts (the item is held and the line backs up; it is not a dead end and nothing is lost). | **implemented** (issue #135) |
-| PP-4 | `rebuildFlow` removes both halves of a link when either end building is destroyed. | not yet implemented (issue #136) |
 
 Implemented in `packages/core/src/flow-sim.ts` (golden kind `flow-sim`:
 `flow-sim-kind.ts`). This is the resource flow of **one board on its own**
@@ -1948,7 +1940,8 @@ change.
 
 `rebuildFlow(sim, newState, content, simConfig)` (`flow-sim.ts`) supports the
 destruction of buildings (CB-9a). `newState` is the team state with the
-destroyed building and every conduit attached to it removed. The flow plan is
+destroyed building, every conduit attached to it, and the other half of every
+border link that lost a half (PP-4) removed. The flow plan is
 recompiled from `newState`; everything that survives keeps its state (sources
 by building ID; conduits by conduit ID; routes by node key; consumers by
 building ID and input side; `tick` is kept). What is removed is accounted so
@@ -2478,7 +2471,8 @@ row says so.
      then instance ID ascending), every still-present building with health 0 is
      destroyed: `building_destroyed` (or `core_destroyed` for a Core); it is
      removed from the arena; for a building (not a Core), every conduit
-     attached to it, "up to the next building" (CB-9a), is removed, each
+     attached to it, "up to the next building" (CB-9a), and the other half of
+     every border link (PP-4) that loses a half, is removed, each
      recorded as `conduit_destroyed` in conduit-ID order; it is dropped from its
      side's team state, producer list, turret list and flow plan (see
      Mid-battle removal),

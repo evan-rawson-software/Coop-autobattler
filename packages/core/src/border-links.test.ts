@@ -458,4 +458,76 @@ describe('validateTeamState', () => {
     } as never;
     expect(validateTeamState(dup, content, mapgen).ok).toBe(false);
   });
+
+  test('two halves of one player at one spot are border_spot_in_use', () => {
+    const lab = twoPlots([
+      [2, 2, 'res_a'],
+      [4, 10, 'res_a'],
+    ]);
+    const a = lab.put('bld_extractor', 2, 2);
+    const b = lab.put('bld_extractor', 4, 10);
+    add(lab, 0, side(a, 'north'), spot(3), row(2, 11, 3));
+    add(lab, 0, side(b, 'north'), spot(11), row(4, 11, 11));
+    const ok = validateTeamState(
+      JSON.parse(JSON.stringify(lab.state)),
+      content,
+      mapgen,
+    );
+    expect(ok.ok).toBe(true);
+    const doc = JSON.parse(JSON.stringify(lab.state)) as {
+      conduits: { to: { border: number; y: number } }[];
+    };
+    const second = doc.conduits[1];
+    if (second === undefined) throw new Error('no conduit');
+    second.to = { border: 0, y: 3 };
+    const bad = validateTeamState(doc, content, mapgen);
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors.join('\n')).toContain('border_spot_in_use');
+  });
+
+  test('a half on a solo board, and at the outer border for 2 to 4 players', () => {
+    const lab = twoPlots();
+    const src = lab.put('bld_extractor', 2, 2);
+    add(lab, 0, side(src, 'north'), spot(3), row(2, 11, 3));
+    const doc = JSON.parse(JSON.stringify(lab.state)) as {
+      map: { partySize: number; width: number };
+      conduits: { to: { border: number; y: number } }[];
+    };
+    const errorsOf = (d: unknown): string => {
+      const r = validateTeamState(d, content, mapgen);
+      return r.ok ? 'ok' : r.errors.join('\n');
+    };
+    const solo = JSON.parse(JSON.stringify(doc)) as typeof doc;
+    solo.map.partySize = 1;
+    solo.map.width = 12;
+    expect(errorsOf(solo)).toContain('invalid_border');
+    for (const n of [2, 3, 4]) {
+      const d = JSON.parse(JSON.stringify(doc)) as typeof doc;
+      d.map.partySize = n;
+      d.map.width = n * 12;
+      const c = d.conduits[0];
+      if (c === undefined) throw new Error('no conduit');
+      c.to = { border: n - 1, y: 3 };
+      expect(errorsOf(d), `N = ${String(n)}`).toContain('invalid_border');
+    }
+  });
+
+  test('two receiving halves at one spot stay open and give no edges', () => {
+    const lab = twoPlots([
+      [2, 2, 'res_a'],
+      [14, 2, 'res_a'],
+    ]);
+    const mine = lab.put('bld_barracks', 2, 6);
+    const theirs = lab.put('bld_barracks', 14, 6);
+    add(lab, 0, spot(3), side(mine, 'south'), [
+      ...row(11, 2, 3),
+      [2, 4],
+      [2, 5],
+    ]);
+    add(lab, 1, spot(3), side(theirs, 'south'), receivingPath());
+    expect(buildFlowGraph(lab.state, content).edges).toEqual([]);
+    for (const c of lab.state.conduits) {
+      expect(conduitResource(lab.state, content, c.id)).toBe(null);
+    }
+  });
 });

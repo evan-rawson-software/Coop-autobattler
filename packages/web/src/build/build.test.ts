@@ -293,7 +293,7 @@ describe('undo and redo', () => {
     expect(await s.undo()).toBeNull();
   });
 
-  test('a rejected inverse stops and clears the stack', async () => {
+  test('an undo the board no longer allows is refused and the history is kept', async () => {
     const { s, ex } = await factory();
     // Break history: return the extractor outside the stack, then undo its
     // placement (whose inverse returns it again).
@@ -302,8 +302,8 @@ describe('undo and redo', () => {
     // undo of the barracks placement (the latest entry) still works
     expect(r).toEqual({ ok: true });
     const r2 = await s.undo();
-    expect(r2 !== null && !r2.ok).toBe(true);
-    expect(s.stack.undoCount).toBe(0);
+    expect(r2).toMatchObject({ ok: false, kept: true });
+    expect(s.stack.undoCount).toBe(1);
   });
 });
 

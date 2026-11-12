@@ -95,7 +95,10 @@ export function conduitTouches(c: Conduit, building: number): boolean {
  */
 export interface Conduit {
   readonly id: number;
-  /** The player who drew it (PP-1); joins two buildings of this player. */
+  /**
+   * The player who drew it (PP-1). An ordinary conduit joins two buildings of
+   * this player; a half (PP-4) has one building end, of this player.
+   */
   readonly owner: number;
   readonly from: ConduitEnd | BorderEnd;
   readonly to: ConduitEnd | BorderEnd;
