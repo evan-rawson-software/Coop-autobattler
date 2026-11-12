@@ -23,4 +23,18 @@ describe('Center preset', () => {
     c.preset('center');
     expect(c.camera.zoom).toBeLessThan(DEFAULT_ZOOM);
   });
+
+  test('Center applies the same Core-in-view start zoom', () => {
+    const tall = { x0: -1.6, y0: -1.6, x1: 15.6, y1: 39.6 };
+    const c = new CameraController();
+    c.startZoom = DEFAULT_ZOOM;
+    c.setViewport({ w: 1366, h: 560 });
+    c.setLayout(tall, { x: 7, y: 33 }, 'k');
+    const start = c.camera;
+    expect(start.zoom).toBeLessThan(DEFAULT_ZOOM);
+    expect(start.cy).toBeCloseTo(19);
+    c.preset('fit');
+    c.preset('center');
+    expect(c.camera).toEqual(start);
+  });
 });

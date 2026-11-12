@@ -7,6 +7,8 @@ import {
   fitZoom,
   focusCamera,
   panBy,
+  startZoomShowing,
+  CORE_VIEW_RADIUS,
   screenToWorld,
   worldToScreen,
   zoomAbout,
@@ -117,5 +119,55 @@ describe('clamp', () => {
     const cam = clampCamera({ cx: -500, cy: 900, zoom: 10 }, vp, bounds);
     expect(cam.cx).toBe(bounds.x0);
     expect(cam.cy).toBe(bounds.y1);
+  });
+});
+
+describe('start zoom showing the Core', () => {
+  // Two 14-wide boards with a neutral strip: 14 by 38 cells plus margin.
+  const tall: Bounds = { x0: -1.6, y0: -1.6, x1: 15.6, y1: 39.6 };
+  const centre = { x: 7, y: 19 };
+  const shows = (z: number, v: Viewport, core: { x: number; y: number }) => {
+    const cam = clampCamera({ cx: centre.x, cy: centre.y, zoom: z }, v, tall);
+    const s = worldToScreen(cam, v, core);
+    const r = CORE_VIEW_RADIUS * cam.zoom;
+    return (
+      s.x - r >= 0 && s.y - r >= 0 && s.x + r <= v.w && s.y + r <= v.h
+    );
+  };
+
+  test('a tall screen keeps the start zoom', () => {
+    const v = { w: 1400, h: 1700 };
+    const core = { x: 7, y: 33 };
+    expect(startZoomShowing(v, tall, core, DEFAULT_ZOOM)).toBe(DEFAULT_ZOOM);
+  });
+
+  test('a short screen is lowered until the Core is in view', () => {
+    const v = { w: 1366, h: 560 };
+    const core = { x: 7, y: 33 };
+    expect(shows(DEFAULT_ZOOM, v, core)).toBe(false);
+    const z = startZoomShowing(v, tall, core, DEFAULT_ZOOM);
+    expect(z).toBeLessThan(DEFAULT_ZOOM);
+    expect(shows(z, v, core)).toBe(true);
+    // Just enough: a slightly larger zoom no longer shows it.
+    expect(shows(z * 1.05, v, core)).toBe(false);
+  });
+
+  test('a Core further from the centre needs a lower zoom', () => {
+    const v = { w: 1366, h: 560 };
+    const near = startZoomShowing(v, tall, { x: 7, y: 28 }, DEFAULT_ZOOM);
+    const far = startZoomShowing(v, tall, { x: 7, y: 36 }, DEFAULT_ZOOM);
+    expect(far).toBeLessThan(near);
+  });
+
+  test('never goes below the zoom minimum, even if the Core stays hidden', () => {
+    const v = { w: 300, h: 70 };
+    const z = startZoomShowing(v, tall, { x: 7, y: 38 }, DEFAULT_ZOOM);
+    expect(z).toBe(zoomLimits(v, tall).min);
+  });
+
+  test('without a Core it is the start zoom or the fit zoom', () => {
+    expect(startZoomShowing(vp, bounds, null, DEFAULT_ZOOM)).toBeLessThanOrEqual(
+      DEFAULT_ZOOM,
+    );
   });
 });
