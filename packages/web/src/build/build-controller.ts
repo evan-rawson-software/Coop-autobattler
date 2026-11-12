@@ -19,6 +19,7 @@ import {
   conduitTouches,
   isBorderEnd,
 } from '@game/core';
+import { screenText, screenTexts } from './texts.js';
 import { createStore, type Store } from '../app-state.js';
 import type { BoardPointerEvent } from '../board/BoardView.js';
 import { content } from '../content.js';
@@ -160,7 +161,7 @@ const INITIAL_UI: Ui = {
   hover: null,
   overlays: { flow: false, paths: false, dry: false },
   dryTicks: 600,
-  status: { text: 'Starting a run.', kind: 'info' },
+  status: { text: tx('statusStarting'), kind: 'info' },
   ghost: null,
   draftView: null,
   attempt: null,
@@ -183,8 +184,31 @@ function attachedCount(team: TeamState, id: number): number {
   return team.conduits.filter((c) => conduitTouches(c, id)).length;
 }
 
-function plural(n: number, one: string, many: string): string {
-  return n === 1 ? one : many;
+/** A status text with a singular and a plural template (`<key>One`, `<key>Many`). */
+function many(
+  n: number,
+  key: string,
+  values: Record<string, string> = {},
+): string {
+  return screenText(screenTexts, n === 1 ? `${key}One` : `${key}Many`, {
+    ...values,
+    count: String(n),
+  });
+}
+
+function tx(key: string, values: Record<string, string> = {}): string {
+  return screenText(screenTexts, key, values);
+}
+
+/** "Undo refused: <why> History unchanged." (or "cleared"). */
+function refusedText(
+  key: 'statusUndoRefused' | 'statusRedoRefused',
+  r: { reason: string; detail?: string; kept?: boolean },
+): string {
+  return tx(key, {
+    cause: reasonMessage(r.reason, r.detail),
+    history: tx(r.kept === true ? 'statusHistoryKept' : 'statusHistoryCleared'),
+  });
 }
 
 export class BuildController {
@@ -234,7 +258,7 @@ export class BuildController {
     this.shared = false;
     this.ui = {
       ...INITIAL_UI,
-      status: { text: 'Starting a run.', kind: 'info' },
+      status: { text: tx('statusStarting'), kind: 'info' },
     };
     this.session = null;
     this.emit();
@@ -262,8 +286,8 @@ export class BuildController {
       status: {
         text:
           s.run.step === 'core_placement'
-            ? 'Choose where the Core goes. It cannot be moved afterwards.'
-            : 'Ready to build.',
+            ? tx('statusChooseCore')
+            : tx('statusReadyToBuild'),
         kind: 'info',
       },
     };
@@ -456,10 +480,7 @@ export class BuildController {
         cells: footprintCells(def, x, y, m.rotation),
         ok: v.ok,
         message: v.ok ? null : reasonMessage(v.reason, v.detail),
-        warn:
-          n > 0
-            ? `Moving detaches ${String(n)} ${plural(n, 'conduit', 'conduits')}.`
-            : null,
+        warn: n > 0 ? many(n, 'statusMovingDetaches') : null,
       };
     }
     return null;
@@ -553,7 +574,7 @@ export class BuildController {
         return {
           cells: d.cells,
           ok: false,
-          message: 'No route to that border spot.',
+          message: tx('statusNoRouteBorder'),
           offending: null,
           target: null,
         };
@@ -581,7 +602,7 @@ export class BuildController {
         return {
           cells: d.cells,
           ok: false,
-          message: 'No route to that side.',
+          message: tx('statusNoRouteSide'),
           offending: null,
           target,
         };
@@ -644,10 +665,10 @@ export class BuildController {
       status: {
         text:
           tool === 'conduit'
-            ? 'Conduit: click a building, then its output side, then click toward an input side.'
+            ? tx('statusToolConduit')
             : tool === 'erase'
-              ? 'Erase conduit: click a conduit.'
-              : 'Select / move: click to select, drag a building to move it.',
+              ? tx('statusToolErase')
+              : tx('statusToolSelect'),
         kind: 'info',
       },
     });
@@ -682,7 +703,7 @@ export class BuildController {
         moving: null,
         draft: null,
         attempt: null,
-        status: { text: 'Cancelled.', kind: 'info' },
+        status: { text: tx('statusCancelled'), kind: 'info' },
       });
     } else if (u.selection !== null) {
       this.set({ selection: null });
@@ -701,7 +722,7 @@ export class BuildController {
       attempt: null,
       selection: null,
       status: {
-        text: 'Drop on the board. R rotates. Esc cancels.',
+        text: tx('statusDropHint'),
         kind: 'info',
       },
     });
@@ -714,7 +735,7 @@ export class BuildController {
     this.set({
       held: { ...h, mode: 'sticky' },
       status: {
-        text: 'Click a cell to place it. R rotates. Esc cancels.',
+        text: tx('statusClickHint'),
         kind: 'info',
       },
     });
@@ -756,7 +777,7 @@ export class BuildController {
         held: null,
         selection: { kind: 'building', id: item.id },
         status: {
-          text: `Placed ${buildingName(content, def.id)}.`,
+          text: tx('statusPlaced', { name: buildingName(content, def.id) }),
           kind: 'ok',
         },
       });
@@ -790,7 +811,7 @@ export class BuildController {
     }
     const sel = this.ui.selection;
     if (sel === null || sel.kind !== 'building') {
-      this.say('Select a building to rotate.', 'info');
+      this.say(tx('statusSelectRotate'), 'info');
       return;
     }
     const b = s.run.team.buildings.find((x) => x.id === sel.id);
@@ -815,9 +836,7 @@ export class BuildController {
     const r = await s.act({ t: 'move', id: b.id, x: b.x, y: b.y, rotation });
     if (r.ok) {
       this.say(
-        n > 0
-          ? `Rotated. ${String(n)} ${plural(n, 'conduit was', 'conduits were')} detached.`
-          : 'Rotated.',
+        n > 0 ? many(n, 'statusRotatedDetached') : tx('statusRotated'),
         'ok',
       );
     } else this.refuse(r.reason, r.detail);
@@ -828,24 +847,26 @@ export class BuildController {
     const sel = this.ui.selection;
     if (s === null) return;
     if (sel?.kind === 'core') {
-      this.say('The Core cannot be moved or stashed.', 'error');
+      this.say(tx('statusCoreFixed'), 'error');
       return;
     }
     if (sel === null || sel.kind !== 'building') {
-      this.say('Select a building to return to the stash.', 'info');
+      this.say(tx('statusSelectReturn'), 'info');
       return;
     }
     const b = s.run.team.buildings.find((x) => x.id === sel.id);
     const n = attachedCount(s.run.team, sel.id);
     const r = await s.act({ t: 'return', id: sel.id });
+    const returned =
+      b === undefined ? tx('statusBuildingWord') : buildingName(content, b.def);
     if (r.ok) {
       this.set({
         selection: null,
         status: {
           text:
             n > 0
-              ? `Returned ${b === undefined ? 'building' : buildingName(content, b.def)} to the stash. ${String(n)} ${plural(n, 'conduit was', 'conduits were')} detached.`
-              : `Returned ${b === undefined ? 'building' : buildingName(content, b.def)} to the stash.`,
+              ? many(n, 'statusReturnedDetached', { name: returned })
+              : tx('statusReturned', { name: returned }),
           kind: 'ok',
         },
       });
@@ -874,7 +895,7 @@ export class BuildController {
       this.set({
         selection:
           this.ui.selection?.kind === 'conduit' ? null : this.ui.selection,
-        status: { text: 'Conduit erased.', kind: 'ok' },
+        status: { text: tx('statusConduitErased'), kind: 'ok' },
       });
     } else this.refuse(r.reason, r.detail);
   }
@@ -892,13 +913,9 @@ export class BuildController {
       return;
     }
     const r = await s.undo();
-    if (r === null) this.say('Nothing to undo in this step.', 'info');
-    else if (r.ok) this.say('Undone.', 'ok');
-    else
-      this.say(
-        `Undo refused: ${reasonMessage(r.reason, r.detail)} ${r.kept === true ? 'History unchanged.' : 'History cleared.'}`,
-        'error',
-      );
+    if (r === null) this.say(tx('statusNothingUndo'), 'info');
+    else if (r.ok) this.say(tx('statusUndone'), 'ok');
+    else this.say(refusedText('statusUndoRefused', r), 'error');
   }
 
   async redo(): Promise<void> {
@@ -909,13 +926,9 @@ export class BuildController {
       return;
     }
     const r = await s.redo();
-    if (r === null) this.say('Nothing to redo.', 'info');
-    else if (r.ok) this.say('Redone.', 'ok');
-    else
-      this.say(
-        `Redo refused: ${reasonMessage(r.reason, r.detail)} ${r.kept === true ? 'History unchanged.' : 'History cleared.'}`,
-        'error',
-      );
+    if (r === null) this.say(tx('statusNothingRedo'), 'info');
+    else if (r.ok) this.say(tx('statusRedone'), 'ok');
+    else this.say(refusedText('statusRedoRefused', r), 'error');
   }
 
   async toggleReady(): Promise<void> {
@@ -935,13 +948,16 @@ export class BuildController {
         moving: null,
         draft: null,
         status: {
-          text: `Everyone is ready: the run moves from ${before} to ${s.run.step}.`,
+          text: tx('statusEveryoneReady', {
+            before,
+            after: s.run.step,
+          }),
           kind: 'ok',
         },
       });
     } else {
       this.say(
-        readyNow ? 'Not ready.' : 'Ready. Waiting for the others.',
+        readyNow ? tx('statusNotReady') : tx('statusReadyWaiting'),
         'ok',
       );
     }
@@ -988,7 +1004,7 @@ export class BuildController {
       this.set({
         hover: null,
         status: {
-          text: 'Core placed. Build your factory from the stash.',
+          text: tx('statusCorePlaced'),
           kind: 'ok',
         },
       });
@@ -1069,7 +1085,7 @@ export class BuildController {
           },
           attempt: null,
           status: {
-            text: 'Drag or click toward an input side. Esc cancels.',
+            text: tx('statusConduitDrag'),
             kind: 'info',
           },
         });
@@ -1080,7 +1096,7 @@ export class BuildController {
         return true;
       }
       if (building === 'core') {
-        this.say('The Core has no output side.', 'error');
+        this.say(tx('statusCoreNoOutput'), 'error');
         return true;
       }
       const spot = ownSpotAt(team, this.actor(), cell);
@@ -1099,7 +1115,7 @@ export class BuildController {
           },
           attempt: null,
           status: {
-            text: 'Receiving from your neighbour: click an input side of a building. Esc cancels.',
+            text: tx('statusReceiving'),
             kind: 'info',
           },
         });
@@ -1110,7 +1126,7 @@ export class BuildController {
     // A draft is under way.
     if (building !== null && building !== 'core') {
       if (building.id === d.building) {
-        this.say('A conduit goes between two different buildings.', 'error');
+        this.say(tx('statusTwoBuildings'), 'error');
         return true;
       }
       this.set({ draft: { ...d, pressed: true, dragged: false } });
@@ -1118,7 +1134,7 @@ export class BuildController {
       return true;
     }
     if (building === 'core') {
-      this.say('The Core has no input side.', 'error');
+      this.say(tx('statusCoreNoInput'), 'error');
       return true;
     }
     const spot = this.sendingSpot(team, d, cell);
@@ -1134,7 +1150,7 @@ export class BuildController {
     }
     const ext = extendPath(team, content, d.from, d.cells, cell);
     if (ext === null) {
-      this.say('No route to that cell.', 'error');
+      this.say(tx('statusNoRouteCell'), 'error');
       return true;
     }
     this.set({
@@ -1148,7 +1164,7 @@ export class BuildController {
     const outs = freeOutputSides(team, content, b);
     const name = buildingName(content, b.def);
     if (outs.length === 0) {
-      this.say(`${name} has no free output side.`, 'error');
+      this.say(tx('statusNoFreeOutput', { name }), 'error');
       return;
     }
     if (outs.length === 1) {
@@ -1162,7 +1178,10 @@ export class BuildController {
         },
         attempt: null,
         status: {
-          text: `From ${name}'s ${outs[0] as string} side: click an input side or a building.`,
+          text: tx('statusFromSide', {
+            name,
+            side: outs[0] as string,
+          }),
           kind: 'info',
         },
       });
@@ -1177,7 +1196,7 @@ export class BuildController {
         dragged: false,
       },
       attempt: null,
-      status: { text: `${name}: pick one of its output sides.`, kind: 'info' },
+      status: { text: tx('statusPickOutput', { name }), kind: 'info' },
     });
   }
 
@@ -1195,7 +1214,7 @@ export class BuildController {
           status:
             n > 0
               ? {
-                  text: `Moving detaches ${String(n)} ${plural(n, 'conduit', 'conduits')}.`,
+                  text: many(n, 'statusMovingDetaches'),
                   kind: 'info',
                 }
               : u.status,
@@ -1230,7 +1249,7 @@ export class BuildController {
       if (m.started && cell !== null) {
         void this.commitMove(m, cell);
       } else if (m.started) {
-        this.say('Move cancelled.', 'info');
+        this.say(tx('statusMoveCancelled'), 'info');
       }
       return;
     }
@@ -1255,9 +1274,7 @@ export class BuildController {
     const r = await s.act({ t: 'move', id: m.id, x, y, rotation: m.rotation });
     if (r.ok) {
       this.say(
-        n > 0
-          ? `Moved. ${String(n)} ${plural(n, 'conduit was', 'conduits were')} detached.`
-          : 'Moved.',
+        n > 0 ? many(n, 'statusMovedDetached') : tx('statusMoved'),
         'ok',
       );
     } else this.refuse(r.reason, r.detail);
@@ -1274,7 +1291,7 @@ export class BuildController {
     const team = s.run.team;
     const cells = extendPath(team, content, d.from, d.cells, cell);
     if (cells === null) {
-      this.say('No route to that border spot.', 'error');
+      this.say(tx('statusNoRouteBorder'), 'error');
       return;
     }
     const v = previewConduit(team, content, d.from, spot, cells, this.actor());
@@ -1294,7 +1311,7 @@ export class BuildController {
         draft: null,
         attempt: null,
         status: {
-          text: 'Border half added: it is not connected until your neighbour draws theirs.',
+          text: tx('statusBorderHalf'),
           kind: 'ok',
         },
       });
@@ -1314,7 +1331,7 @@ export class BuildController {
       chooseInput(team, content, b, d.cells[d.cells.length - 1] ?? null);
     const r = this.resolveFinish(team, d, target);
     if (r.cells === null) {
-      this.say('No route to that side.', 'error');
+      this.say(tx('statusNoRouteSide'), 'error');
       return;
     }
     const act: LayoutAction = {
@@ -1332,7 +1349,10 @@ export class BuildController {
             v !== null && v.detail !== undefined ? parseCell(v.detail) : null,
         },
         status: {
-          text: v === null ? 'No route.' : reasonMessage(v.reason, v.detail),
+          text:
+            v === null
+              ? tx('statusNoRoute')
+              : reasonMessage(v.reason, v.detail),
           kind: 'error',
         },
       });
@@ -1344,7 +1364,7 @@ export class BuildController {
         draft: null,
         attempt: null,
         status: {
-          text: `Conduit added (${String(r.cells.length)} ${plural(r.cells.length, 'cell', 'cells')}).`,
+          text: many(r.cells.length, 'statusConduitAdded'),
           kind: 'ok',
         },
       });
