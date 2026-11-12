@@ -40,10 +40,11 @@ function map2(): GameMap {
 }
 
 /** Two Cores, one per player; with `farm`, a working extractor + barracks per plot. */
-function team2(farm: boolean): TeamState {
+function team2(farm: boolean, turret = false): TeamState {
   const lab = new Lab(map2());
   lab.core(5, 0, 0);
   lab.core(17, 0, 1);
+  if (turret) lab.put('bld_turret', 20, 6);
   if (farm) {
     for (const x of [2, 14]) {
       const e = lab.put('bld_extractor', x, 2, 0, 3);
@@ -188,30 +189,27 @@ describe('several Cores per side', () => {
   });
 
   test('a player whose Core fell keeps producing, shooting and feeding', () => {
-    const b = start(team2(true), team2(true), [
-      { coreHealths: [20, 500] },
+    // Side 0 has a turret that needs no feeding; its Core of player 1 is the
+    // one every enemy unit heads for (the opposite of plot 0 is Core 1).
+    const b = start(team2(true, true), team2(true), [
+      { coreHealths: [500, 20], freePower: true },
       null,
     ]);
+    const fired = () => events(b, 'turret_fired').length;
     while (!b.isOver() && events(b, 'core_destroyed').length === 0) b.step();
     const fell = events(b, 'core_destroyed')[0];
-    expect(fell).toMatchObject({ side: 0, core: 0 });
+    expect(fell).toMatchObject({ side: 0, core: 1 });
     const producers = b.sim.producers.length;
     const buildings = b.sim.teams[0].buildings.length;
     const spawned = b.sim.spawned[0];
+    const shots = fired();
     for (let i = 0; i < 400 && !b.isOver(); i++) b.step();
     expect(b.sim.producers).toHaveLength(producers);
     expect(b.sim.teams[0].buildings).toHaveLength(buildings);
     expect(b.sim.spawned[0]).toBeGreaterThan(spawned);
+    // The turret keeps shooting after its owner's Core is gone (PP-9).
+    expect(fired()).toBeGreaterThan(shots);
     expect(events(b, 'conduit_destroyed')).toEqual([]);
-  });
-
-  test('the stop-gap goal is the lowest-indexed living enemy Core', () => {
-    const b = start(team2(false), team2(false));
-    const { arena } = b.ctx;
-    const [r0, r1] = arena.coreRef[1] ?? [];
-    expect(r0).toBeGreaterThanOrEqual(0);
-    expect(r1).toBeGreaterThanOrEqual(0);
-    expect(arena.buildings[r0 ?? -1]).toMatchObject({ player: 0, side: 1 });
   });
 });
 

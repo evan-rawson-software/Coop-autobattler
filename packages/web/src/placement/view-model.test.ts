@@ -106,6 +106,7 @@ describe('routes to a position', () => {
     const paths: EnemyPath[] = [
       {
         entry: { x: 1, y: height - 1 },
+        core: 0,
         cells: [
           { x: 1, y: height - 1 },
           { x: 1, y: height },
@@ -117,6 +118,7 @@ describe('routes to a position', () => {
       },
       {
         entry: { x: 0, y: height },
+        core: 0,
         cells: [{ x: 0, y: height }],
         approach: [],
         breach: null,
