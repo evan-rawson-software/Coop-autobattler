@@ -6,6 +6,7 @@
  */
 
 import { hashJson, type TeamState } from '@game/core';
+import { Component, type ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { DEFAULT_ZOOM } from '../board/camera.js';
@@ -51,6 +52,8 @@ import {
 } from './samples.js';
 import { overloadLine } from '../choice/overload.js';
 import { simClient, type RecordOutcome } from '../sim-worker/client.js';
+import { CannotShow } from './CannotShow.js';
+import { readFailPlayback } from './cannot-show.js';
 import { createReadyGate } from './ready-gate.js';
 import { battleConfig } from './setup.js';
 import type { BattleDescription, BattleViewProps } from './types.js';
@@ -160,6 +163,11 @@ export function BattleView(props: BattleViewProps) {
   // arrives for a request that was cancelled is never shown.
   useEffect(() => {
     setPrep(null);
+    // Debug builds only: the playback fails on purpose (smoke check).
+    if (DEBUG_HOOK && readFailPlayback()) {
+      setPrep('Playback failure forced by the debug option.');
+      return;
+    }
     let cancelled = false;
     const handle = simClient.simulate(props.battle);
     handle.promise.then(
@@ -224,16 +232,66 @@ export function BattleView(props: BattleViewProps) {
       </AppShell>
     );
   }
-  if (prep === null || typeof prep === 'string') {
+  if (typeof prep === 'string') {
+    return <CannotShowScreen {...props} message={prep} />;
+  }
+  if (prep === null) {
     return (
       <AppShell title={props.title} status={props.topBarExtra}>
         <div class="battle-preparing" id="battle-preparing" role="status">
-          {prep === null ? 'Preparing the battle…' : `Cannot play: ${prep}`}
+          Preparing the battle…
         </div>
       </AppShell>
     );
   }
-  return <BattleStage {...props} prep={prep} />;
+  return (
+    <PlaybackBoundary
+      fallback={(message) => <CannotShowScreen {...props} message={message} />}
+    >
+      <BattleStage {...props} prep={prep} />
+    </PlaybackBoundary>
+  );
+}
+
+/**
+ * A battle that cannot be displayed: the recorded outcome as text and a
+ * Continue that advances the run as after a watched battle.
+ */
+function CannotShowScreen(props: BattleViewProps & { message: string }) {
+  const stored = props.stored;
+  return (
+    <AppShell title={props.title} status={props.topBarExtra}>
+      <CannotShow
+        message={props.message}
+        outcome={
+          stored === undefined
+            ? null
+            : { won: stored.won, reason: stored.reason ?? null }
+        }
+        rewardText={stored === undefined ? undefined : props.reward(stored.won)}
+        onContinue={props.onReady}
+      />
+    </AppShell>
+  );
+}
+
+/** Catches a failure while drawing the battle and shows the fallback. */
+class PlaybackBoundary extends Component<
+  {
+    fallback: (message: string) => ComponentChildren;
+    children: ComponentChildren;
+  },
+  { error: string | null }
+> {
+  override state = { error: null as string | null };
+  override componentDidCatch(e: unknown): void {
+    this.setState({ error: e instanceof Error ? e.message : String(e) });
+  }
+  override render() {
+    return this.state.error === null
+      ? this.props.children
+      : this.props.fallback(this.state.error);
+  }
 }
 
 function BattleStage(props: BattleViewProps & { prep: Prep }) {

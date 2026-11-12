@@ -44,6 +44,8 @@ export interface BattleViewProps {
   readonly stored?: {
     readonly won: boolean;
     readonly eventLogHash: string;
+    /** The stored end reason of the battle, shown if it cannot be played. */
+    readonly reason?: string;
   };
   /**
    * The Ready button of the summary. Returns whether Ready was accepted; when

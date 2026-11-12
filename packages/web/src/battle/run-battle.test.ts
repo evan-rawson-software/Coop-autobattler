@@ -2,7 +2,7 @@ import { hashJson } from '@game/core';
 import type { BattleDetail, RunState } from '@game/session';
 import { describe, expect, test } from 'vitest';
 import { content } from '../content.js';
-import { reachStep, realDeps } from '../run/test-run.js';
+import { reachStep, realDeps, send } from '../run/test-run.js';
 import { replayMatches, simulateRecord } from './playback.js';
 import { createMemoryStorage } from '../run/local-storage-store.js';
 import {
@@ -11,6 +11,7 @@ import {
   describeRunBattle,
   readTick,
   rewardLine,
+  storedOutcome,
   tickKey,
   writeTick,
 } from './run-battle.js';
@@ -175,5 +176,89 @@ describe('playback positions', () => {
     // Another run's position is not touched.
     expect(readTick(tickKey(stranger), storage)).toBe(40);
     expect(storage.length).toBe(1);
+  });
+});
+
+describe('a battle that cannot be shown', () => {
+  const withoutDetail = (run: RunState): RunState => {
+    const pending = run.pending as unknown as {
+      battle: Record<string, unknown>;
+    };
+    const battle = { ...pending.battle };
+    delete battle['detail'];
+    return { ...run, pending: { ...pending, battle } } as unknown as RunState;
+  };
+
+  test('the recorded outcome (result and reason) is read from the run state', () => {
+    const run = reachStep('pve_summary');
+    const out = storedOutcome(run);
+    expect(out).not.toBeNull();
+    expect(out?.won).toBe(
+      (run.pending as unknown as { battle: { won: boolean } }).battle.won,
+    );
+    expect(out?.reason).toBe(detailOf(run).summary.reason);
+  });
+
+  test('a replay that fails still reports the recorded outcome', () => {
+    const run = reachStep('pve_summary');
+    const core = run.team.core as { x: number; y: number };
+    const changed: RunState = {
+      ...run,
+      team: { ...run.team, core: { x: core.x + 1, y: core.y } },
+    };
+    const r = describeRunBattle(changed, realDeps());
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.outcome).toEqual(storedOutcome(run));
+    expect(r.outcome).not.toBeNull();
+  });
+
+  test('a missing stored detail or option keeps the outcome when there is one', () => {
+    const run = reachStep('pve_summary');
+    const r = describeRunBattle(withoutDetail(run), realDeps());
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.outcome?.won).toBe(storedOutcome(run)?.won);
+    expect(r.outcome?.reason).toBeNull();
+
+    const noOption = {
+      ...run,
+      pending: { ...(run.pending as object), option: null },
+    } as unknown as RunState;
+    const o = describeRunBattle(noOption, realDeps());
+    expect(o.ok).toBe(false);
+    if (!o.ok) expect(o.outcome).not.toBeNull();
+  });
+
+  test('a step with no recorded result has no outcome (the screen offers the menu)', () => {
+    const r = describeRunBattle(reachStep('build'), realDeps());
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.outcome).toBeNull();
+    expect(storedOutcome(reachStep('build'))).toBeNull();
+    const mangled = {
+      ...reachStep('pve_summary'),
+      pending: { battle: { won: 'yes' } },
+    } as unknown as RunState;
+    expect(storedOutcome(mangled)).toBeNull();
+  });
+
+  test('describing a malformed run never throws', () => {
+    const broken = {
+      ...reachStep('pve_summary'),
+      team: null,
+    } as unknown as RunState;
+    const r = describeRunBattle(broken, realDeps());
+    expect(r.ok).toBe(false);
+  });
+
+  test('Continue is the ordinary Ready: the state after it is the same without playback', () => {
+    const run = reachStep('pve_summary');
+    // Ready never looks at playback, so an unplayable battle continues alike.
+    const watched = send(run, { type: 'ready' });
+    const unplayable = send(withoutDetail(run), { type: 'ready' });
+    expect(unplayable.step).toBe(watched.step);
+    expect(unplayable.lives).toBe(watched.lives);
+    expect(unplayable.round).toBe(watched.round);
   });
 });

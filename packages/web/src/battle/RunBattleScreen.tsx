@@ -8,7 +8,8 @@ import { useMemo, useState } from 'preact/hooks';
 import { useStore } from '../app-state.js';
 import { reasonMessage } from '../build/reasons.js';
 import type { RunHandle } from '../run/handle.js';
-import { AppShell, Panel } from '../shell/AppShell.js';
+import { AppShell } from '../shell/AppShell.js';
+import { CannotShow } from './CannotShow.js';
 import { BattleView } from './BattleScreen.js';
 import {
   clearRunTicks,
@@ -50,23 +51,12 @@ export function RunBattleScreen(props: { run: RunHandle }) {
   if (!built.ok) {
     return (
       <AppShell title={`Round ${String(run.round)} · Battle`}>
-        <div class="run-blocked">
-          <Panel title="The battle cannot be shown">
-            <p data-field="reason">{built.message}</p>
-            <p class="muted">
-              The result of the battle is still in your run. You can continue.
-            </p>
-            <button
-              type="button"
-              class="primary"
-              onClick={() => {
-                void ready();
-              }}
-            >
-              Continue
-            </button>
-          </Panel>
-        </div>
+        <CannotShow
+          message={built.message}
+          outcome={built.outcome}
+          onContinue={built.outcome === null ? undefined : ready}
+          error={error}
+        />
       </AppShell>
     );
   }
@@ -78,7 +68,11 @@ export function RunBattleScreen(props: { run: RunHandle }) {
       opponent={b.opponent}
       title={b.title}
       reward={b.reward}
-      stored={{ won: b.won, eventLogHash: b.storedEventLogHash }}
+      stored={{
+        won: b.won,
+        eventLogHash: b.storedEventLogHash,
+        ...(b.reason === null ? {} : { reason: b.reason }),
+      }}
       initialTick={initialTick}
       onTick={(t) => {
         writeTick(key, t);

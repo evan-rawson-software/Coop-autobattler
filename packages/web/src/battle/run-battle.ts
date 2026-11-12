@@ -19,6 +19,7 @@ import {
 } from '@game/session';
 import type { StorageLike } from '../run/local-storage-store.js';
 import { archetypeText, bossLabel, bossName } from '../run/display-text.js';
+import type { StoredOutcome } from './cannot-show.js';
 import type { BattleDescription, OpponentInfo } from './types.js';
 import { count } from '../plural.js';
 
@@ -34,11 +35,36 @@ export interface RunBattle {
   readonly kind: 'pve' | 'pvp';
   /** The reward line, from the stored outcome. */
   readonly reward: (won: boolean) => string;
+  /** The stored end reason, for the "cannot be shown" text. */
+  readonly reason: string | null;
 }
 
 export type RunBattleResult =
   | { readonly ok: true; readonly value: RunBattle }
-  | { readonly ok: false; readonly message: string };
+  | {
+      readonly ok: false;
+      readonly message: string;
+      /** The result the run recorded, if there is one (the run can go on). */
+      readonly outcome: StoredOutcome | null;
+    };
+
+/**
+ * The result the session layer recorded for the battle just fought, read from
+ * the run state alone (nothing is re-derived); null when there is none.
+ */
+export function storedOutcome(run: RunState): StoredOutcome | null {
+  const pending = isRecord(run.pending) ? run.pending : {};
+  const stored = isRecord(pending['battle']) ? pending['battle'] : null;
+  if (stored === null || typeof stored['won'] !== 'boolean') return null;
+  const detail = isRecord(stored['detail']) ? stored['detail'] : null;
+  const summary =
+    detail !== null && isRecord(detail['summary']) ? detail['summary'] : null;
+  const reason = summary?.['reason'];
+  return {
+    won: stored['won'],
+    reason: typeof reason === 'string' ? reason : null,
+  };
+}
 
 function isRecord(v: unknown): v is Record<string, Json> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -81,10 +107,33 @@ export function rewardLine(
   return `−${count(cost, 'life', 'lives')}${rewards === undefined ? '' : ` · +${String(rewards.pvpLoss)} gold consolation`}`;
 }
 
+/** Never throws: any failure becomes a result that cannot be shown. */
 export function describeRunBattle(
   run: RunState,
   deps: Pick<RunDeps, 'battle' | 'rules' | 'rewards'>,
 ): RunBattleResult {
+  try {
+    const r = describeStoredBattle(run, deps);
+    return r.ok
+      ? r
+      : { ok: false, message: r.message, outcome: storedOutcome(run) };
+  } catch (e) {
+    return {
+      ok: false,
+      message: `The battle cannot be shown (${e instanceof Error ? e.message : String(e)}).`,
+      outcome: storedOutcome(run),
+    };
+  }
+}
+
+type Described =
+  | { readonly ok: true; readonly value: RunBattle }
+  | { readonly ok: false; readonly message: string };
+
+function describeStoredBattle(
+  run: RunState,
+  deps: Pick<RunDeps, 'battle' | 'rules' | 'rewards'>,
+): Described {
   const replay = replayLastBattle(run, deps);
   if (!replay.ok) {
     return {
@@ -168,6 +217,7 @@ export function describeRunBattle(
     value: {
       battle,
       won,
+      reason: storedOutcome(run)?.reason ?? null,
       storedEventLogHash: replay.storedEventLogHash,
       opponent,
       kind,
