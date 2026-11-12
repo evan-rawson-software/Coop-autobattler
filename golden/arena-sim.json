@@ -1466,6 +1466,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 6,
             "y": 0
           },
@@ -1732,6 +1733,7 @@
         "ops": [
           {
             "op": "placeCore",
+            "actor": 0,
             "x": 5,
             "y": 0
           }
@@ -1751,7 +1753,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "4d18dd56",
+        "stateHash": "7bbf303c",
         "events": 93,
         "sides": [
           {
