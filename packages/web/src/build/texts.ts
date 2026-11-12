@@ -12,13 +12,24 @@ export type ScreenTexts = Readonly<Record<string, string>>;
 /** The texts of the loaded presentation file. */
 export const screenTexts: ScreenTexts = content.presentation.templates.screens;
 
-/** The template `key` with its `{slot}`s filled from `values`. */
+/**
+ * The template `key` with its `{slot}`s filled from `values`. An unknown key
+ * throws in development and tests and gives '' in a production build.
+ */
 export function screenText(
   texts: ScreenTexts,
   key: string,
   values: Record<string, string> = {},
 ): string {
-  return fill(texts[key] ?? '', values);
+  const template = texts[key];
+  if (template === undefined) {
+    // The loader guarantees every key, so this is a typo in the code. Fail
+    // loudly in development and tests; a player sees an empty text instead
+    // of a broken screen.
+    if (import.meta.env.DEV) throw new Error(`Unknown screen text "${key}".`);
+    return '';
+  }
+  return fill(template, values);
 }
 
 /** A player's display name, or the configured fallback ("Player 2"). */
@@ -31,4 +42,14 @@ export function playerName(
     names[index] ??
     screenText(texts, 'playerFallback', { number: String(index + 1) })
   );
+}
+
+/** Label of a player's Core on the board ("Player 2's Core"). */
+export function coreLabel(
+  player: number,
+  texts: ScreenTexts = screenTexts,
+): string {
+  return screenText(texts, 'coreLabel', {
+    name: playerName(texts, [], player),
+  });
 }

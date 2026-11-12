@@ -4,6 +4,7 @@
  * and the routes enemy units would take to it. It draws what the view model
  * already decided.
  */
+import { coreLabel } from '../build/texts.js';
 import type { Cell, EnemyPath, TeamState } from '@game/core';
 import type { OverlayContext } from '../board/BoardView.js';
 import { cellToView } from '../board/layout.js';
@@ -198,7 +199,7 @@ export function drawCoreOverlay(
 
   for (const pc of d.partners) {
     ring(pc.cells, col.accent, 2.5);
-    label(pc.cells, `Player ${String(pc.player + 1)}'s Core`, col.accent);
+    label(pc.cells, coreLabel(pc.player), col.accent);
   }
 
   // The chosen position, then the one under the pointer.
