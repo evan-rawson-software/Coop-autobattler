@@ -4,6 +4,7 @@
  * draws what the controller and `core` already decided; it decides nothing.
  */
 
+import { coreFootprint } from '@game/core';
 import type { Cell, EnemyPath, TeamState } from '@game/core';
 import type { OverlayContext } from '../board/BoardView.js';
 import { cellToView } from '../board/layout.js';
@@ -24,6 +25,14 @@ export interface OverlayData {
   readonly content: WebContent;
   /** Placed unit producers with no walkable route to the front row. */
   readonly sealed?: readonly number[];
+  /** The player this device acts as; the other plots are shown dimmed. */
+  readonly acting: number;
+  /** Other players' proposed Core spots (Core placement step). */
+  readonly partnerCores: readonly {
+    readonly player: number;
+    readonly x: number;
+    readonly y: number;
+  }[];
 }
 
 interface Colors {
@@ -150,8 +159,41 @@ export function drawBuildOverlay(
     }
   };
 
+  // ---- Other players' plots: visible, not editable (PP-1) --------------------
+  const { partySize, plotWidth, height } = d.team.map;
+  for (let p = 0; p < partySize && partySize > 1; p++) {
+    if (p === d.acting) continue;
+    const a = topLeft({ x: p * plotWidth, y: 0 });
+    const b = topLeft({ x: (p + 1) * plotWidth, y: height });
+    ctx.globalAlpha = 0.38;
+    ctx.fillStyle = col.surface;
+    ctx.fillRect(
+      Math.min(a.x, b.x),
+      Math.min(a.y, b.y),
+      Math.abs(b.x - a.x),
+      Math.abs(b.y - a.y),
+    );
+    ctx.globalAlpha = 1;
+  }
+
   // ---- Core placement ------------------------------------------------------
   if (d.step === 'core_placement') {
+    // A partner's proposed spot: an outlined footprint, labelled.
+    const fp = coreFootprint(d.content.buildings);
+    for (const pc of d.partnerCores) {
+      const cells: Cell[] = [];
+      for (let dy = 0; dy < fp.height; dy++) {
+        for (let dx = 0; dx < fp.width; dx++) {
+          cells.push({ x: pc.x + dx, y: pc.y + dy });
+        }
+      }
+      ring(cells, col.accent, 2.5);
+      label(
+        { x: pc.x, y: pc.y },
+        `Player ${String(pc.player + 1)}'s Core`,
+        col.accent,
+      );
+    }
     for (const c of d.legalCore) {
       const p = centre(c);
       ctx.fillStyle = col.ok;

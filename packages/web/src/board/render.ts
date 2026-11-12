@@ -470,9 +470,10 @@ function drawBoard(
     }
   }
 
-  // Core.
-  if (!sprite && board.core && visible(board.core.rect)) {
-    const r = board.core.rect;
+  // Cores.
+  for (const core of sprite ? [] : board.cores) {
+    if (core === null || !visible(core.rect)) continue;
+    const r = core.rect;
     const x = sx(r.x) + 1;
     const y = sy(r.y) + 1;
     const w = r.w * z - 2;
@@ -485,7 +486,7 @@ function drawBoard(
     if (z >= 10) {
       ctx.fillStyle = theme.coreInk;
       ctx.font = font(Math.min(20, Math.max(9, z * 0.4)));
-      ctx.fillText(board.core.label, x + w / 2, y + h / 2 + 0.5);
+      ctx.fillText(core.label, x + w / 2, y + h / 2 + 0.5);
     }
   }
 }

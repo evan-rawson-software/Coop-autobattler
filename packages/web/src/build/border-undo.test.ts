@@ -89,7 +89,12 @@ describe('undo with border halves', () => {
       half,
     ]);
     // Applying the return and then the inverse gives the same layout.
-    const returned = previewActions(team, content, [{ t: 'return', id: src }]);
+    const returned = previewActions(
+      team,
+      content,
+      [{ t: 'return', id: src }],
+      0,
+    );
     expect(returned.ok).toBe(true);
   });
 
@@ -99,10 +104,10 @@ describe('undo with border halves', () => {
     if (c === undefined) throw new Error('no half');
     const erased = eraseConduit(team, { actor: 0, id: c.id });
     if (!erased.ok) throw new Error(erased.reason);
-    expect(previewActions(team, content, [{ ...half, t: 'erase' }]).ok).toBe(
+    expect(previewActions(team, content, [{ ...half, t: 'erase' }], 0).ok).toBe(
       true,
     );
-    expect(previewActions(erased.state, content, [half]).ok).toBe(true);
+    expect(previewActions(erased.state, content, [half], 0).ok).toBe(true);
     // The restored layout equals the original.
     const back = addConduit(erased.state, content, {
       actor: 0,
@@ -142,7 +147,7 @@ describe('undo with border halves', () => {
         applied = true;
         return Promise.resolve({ ok: true as const });
       },
-      (acts) => previewActions(board, content, acts),
+      (acts) => previewActions(board, content, acts, 0),
     );
     expect(r).toMatchObject({ ok: false, kept: true });
     expect(applied).toBe(false);
@@ -150,7 +155,7 @@ describe('undo with border halves', () => {
     // With the wall gone the same undo is accepted.
     const ok = await stack.undo(
       () => Promise.resolve({ ok: true as const }),
-      (acts) => previewActions(r1.state, content, acts),
+      (acts) => previewActions(r1.state, content, acts, 0),
     );
     expect(ok).toEqual({ ok: true });
     expect(stack.redoCount).toBe(1);

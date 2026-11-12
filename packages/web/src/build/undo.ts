@@ -162,30 +162,26 @@ export function previewActions(
   team: TeamState,
   content: TeamContent,
   actions: readonly LayoutAction[],
+  actor: number,
 ): ApplyResult {
   let state = team;
-  const owner = (id: number): number =>
-    state.buildings.find((b) => b.id === id)?.owner ??
-    state.stash.find((b) => b.id === id)?.owner ??
-    0;
   for (const a of actions) {
     let r:
       | { ok: true; state: TeamState }
       | { ok: false; reason: string; detail?: string };
     switch (a.t) {
       case 'place':
-        r = placeFromStash(state, content, { ...a, actor: owner(a.id) });
+        r = placeFromStash(state, content, { ...a, actor });
         break;
       case 'move':
-        r = moveBuilding(state, content, { ...a, actor: owner(a.id) });
+        r = moveBuilding(state, content, { ...a, actor });
         break;
       case 'return':
-        r = returnToStash(state, content, { id: a.id, actor: owner(a.id) });
+        r = returnToStash(state, content, { id: a.id, actor });
         break;
       case 'add': {
-        const end = 'building' in a.from ? a.from : a.to;
         r = addConduit(state, content, {
-          actor: 'building' in end ? owner(end.building) : 0,
+          actor,
           from: a.from,
           to: a.to,
           cells: a.cells,
@@ -197,7 +193,7 @@ export function previewActions(
         r =
           c === undefined
             ? { ok: false, reason: 'unknown_conduit' }
-            : eraseConduit(state, { actor: c.owner, id: c.id });
+            : eraseConduit(state, { actor, id: c.id });
         break;
       }
     }

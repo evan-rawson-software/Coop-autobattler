@@ -186,6 +186,7 @@ describe('building draw calls carry the rotation', () => {
           nodes: [],
           conduits: [],
           core: null,
+          cores: [],
           salt: 0,
           buildings: [at(turret, 0), at(wall, 1)],
         } as unknown as BoardScene;
@@ -240,6 +241,7 @@ describe('tier pips', () => {
         nodes: [],
         conduits: [],
         core: null,
+        cores: [],
         salt: 0,
         buildings: [
           {
