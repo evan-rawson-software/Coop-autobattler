@@ -2761,6 +2761,9 @@ the sum the moment it is destroyed (destroying ramp buildings weakens the enemy'
 what it already did stays: running source countdowns and units already
 spawned keep their values. Each building is also limited by its own
 `maxSteps`, so the ramp has two limits: per building and per owner and effect.
+A unit of a scheduled PvE wave has no producer and so **no ramp bonus** (owner
+decision, issue #175): it gets only the side-wide `unitStrengthPercent` and run
+modifiers; pinned by a test in `ramp.test.ts`.
 
 **`source_speed`.** Before each tick's flow step the arena sets the board's
 source interval modifiers to one value per player index: each owner's
