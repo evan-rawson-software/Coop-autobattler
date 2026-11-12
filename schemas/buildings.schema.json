@@ -191,6 +191,7 @@
             "properties": {
               "outputs": {
                 "description": "A collector has exactly one output side (PP-5, CB-9e).",
+                "type": "array",
                 "minItems": 1,
                 "maxItems": 1
               },
