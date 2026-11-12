@@ -7,7 +7,7 @@
  * the web layer keeps the last few final states here, apart from the saves.
  * This is a presentation convenience: nothing in the rules reads it.
  */
-import type { RunState } from '@game/session';
+import { RUN_STATE_FORMAT_VERSION, type RunState } from '@game/session';
 import type { StorageLike } from './local-storage-store.js';
 
 export interface FinishedRecord {
@@ -32,7 +32,12 @@ function isRecord(v: unknown): v is FinishedRecord {
     typeof r['runId'] === 'string' &&
     typeof r['finishedAt'] === 'number' &&
     typeof r['state'] === 'object' &&
-    r['state'] !== null
+    r['state'] !== null &&
+    // A final state of another run-state format (a run that ended before the
+    // per-player design) is not shown: the Run over screen reads the current
+    // shape. The player lands on the history entry or the menu instead.
+    (r['state'] as Record<string, unknown>)['formatVersion'] ===
+      RUN_STATE_FORMAT_VERSION
   );
 }
 

@@ -47,8 +47,7 @@ export type Step = (typeof STEPS)[number];
  * changed the battle detail; version 3 made the Workshop per-player and
  * dependent on gold (a version-2 save mid-Workshop could not be finished);
  * version 4 added the ghost fields `pvpOpponent` and `ghostsFought` (W3-1);
- * version 5 is the per-player design (issue #124: `cores` in place of `core`,
- * an owner on every conduit). Older states are not readable.
+ * version 5 is the per-player design (issue #124: `cores` in place of `core`). Older states are not readable.
  */
 export const RUN_STATE_FORMAT_VERSION = 5;
 

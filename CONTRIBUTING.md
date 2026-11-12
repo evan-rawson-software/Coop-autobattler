@@ -148,9 +148,10 @@ start-up with a notice, with no migration (TA-8).
 
 The rule for a change that makes saved data unreadable:
 
-- Any PR that changes the shape or meaning of a saved format (run state,
-  team state, ghost snapshot) raises that format number in the same PR, with
-  a test. A save or ghost with another number is then `unsupported_format`
+- Any PR that changes the shape or meaning of a saved format raises that
+  format number in the same PR, with a test. A change to the saved team state
+  raises BOTH the run-state format and the ghost snapshot format, because
+  both contain the team state. A save or ghost with another number is then `unsupported_format`
   (or skipped), never "damaged": the version and format checks run before
   `validateRunState`.
 - The major version is raised once for the whole design change (this is
