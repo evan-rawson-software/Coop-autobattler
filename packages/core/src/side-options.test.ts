@@ -59,6 +59,32 @@ function spawns(events: readonly ArenaEvent[]): { x: number; y: number }[] {
 }
 
 describe('side options: scheduled waves', () => {
+  test('wave units get no unit_strength ramp bonus, though the side has an Armory (PP-8, issue #175)', () => {
+    const lab = new Lab(board([]));
+    lab.core(11, 0);
+    lab.put('bld_armory', 0, 6, 0, 3);
+    const { sim, ctx } = start(lab.state, {
+      scheduledWaves: [{ tick: 0, unit: 'unit_soldier', count: 2 }],
+    });
+    for (const r of sim.ramps) r.steps = 10;
+    stepArena(sim, ctx);
+    expect(sim.units).toHaveLength(2);
+    const base = got(content.units.get('unit_soldier'));
+    expect(sim.units.map((u) => [u.hp, u.damage])).toEqual([
+      [base.health, base.damage],
+      [base.health, base.damage],
+    ]);
+    // The same Armory does strengthen a unit made for its owner.
+    const owned = spawnUnitForTest(sim, ctx, {
+      side: 1,
+      owner: 0,
+      def: 'unit_soldier',
+      x: 3,
+      y: 30,
+    });
+    expect(owned.hp).toBeGreaterThan(base.health);
+  });
+
   test('units arrive on the front row at the wave tick, evenly across the width', () => {
     const { sim, ctx, events } = start(empty(), {
       scheduledWaves: [{ tick: 3, unit: 'unit_soldier', count: 4 }],
