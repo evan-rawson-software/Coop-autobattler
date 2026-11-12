@@ -1364,6 +1364,44 @@ export async function runRunSmoke({
   await page.click(`[data-run="${runA}"] [data-action="resume"]`);
   await waitStep('pve_choice');
   const roundsBefore = (await R.state()).round;
+  // A battle whose playback fails (debug option) still lets the run go on:
+  // the screen says so, states the recorded result and Continue advances the
+  // run exactly as after a watched battle.
+  {
+    await page.evaluate(() =>
+      localStorage.setItem('coop-autobattler:debug-fail-playback', '1'),
+    );
+    await advance(); // PvE choice -> the battle summary step
+    await waitStep('pve_summary');
+    await page.waitForSelector('#battle-cannot-show');
+    const panel = await page.locator('#battle-cannot-show').innerText();
+    const before = await R.state();
+    check(
+      /could not be displayed/i.test(panel) &&
+        /Cannot play/.test(panel) &&
+        /Result:\s*(Victory|Defeat)/.test(panel) &&
+        (await page.locator('#battle-continue').count()) === 1,
+      `forced playback failure: says so, states the recorded result, offers Continue ("${panel.replace(/\s+/g, ' ').slice(0, 160)}")`,
+    );
+    check(
+      (await page.evaluate(() => window.__debug?.battle?.phase)) === undefined,
+      'forced playback failure: no playback is mounted',
+    );
+    await page.evaluate(() =>
+      localStorage.removeItem('coop-autobattler:debug-fail-playback'),
+    );
+    await page.click('#battle-continue');
+    await waitStep('event_choice');
+    await page.waitForSelector('#event-choice');
+    const after = await R.state();
+    check(
+      after.step === 'event_choice' &&
+        after.round === before.round &&
+        after.gold >= before.gold &&
+        after.lives <= before.lives,
+      `forced playback failure: Continue advances the run like a watched battle (step ${before.step} -> ${after.step}, gold ${before.gold} -> ${after.gold}, lives ${before.lives} -> ${after.lives})`,
+    );
+  }
   // Debug option: the boss for every battle from here on (the pool holds no
   // ghost for the later rounds of a real install either).
   await page.evaluate(() =>
