@@ -855,6 +855,10 @@ export class BuildController {
   async eraseConduit(id: number): Promise<void> {
     const s = this.session;
     if (s === null) return;
+    if (this.isReady()) {
+      this.say(READY_LOCK_TEXT, 'info');
+      return;
+    }
     const c = s.run.team.conduits.find((x) => x.id === id);
     if (c === undefined) {
       this.refuse('unknown_conduit');

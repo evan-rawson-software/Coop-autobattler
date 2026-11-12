@@ -1712,6 +1712,28 @@ export async function runRunSmoke({
       (await links()).map((h) => h.kind).join() === 'send,receive',
       'border link: the two halves of different players are joined',
     );
+    // Owner decision: a neighbour's half is drawn dimmed; mine at full strength.
+    check(
+      (await links()).every((h) => (h.alpha === 1) === (h.owner === 1)) &&
+        (await links()).some((h) => h.owner === 0 && h.alpha < 1),
+      "border link: a neighbour's half is dimmed, mine is not (acting player 2)",
+    );
+    await actAs(0);
+    check(
+      (await links()).every((h) => (h.alpha === 1) === (h.owner === 0)),
+      'border link: dimming follows the acting-player switcher',
+    );
+    await actAs(1);
+    // The Border links list shows only the acting player's own half, in words.
+    await page.waitForSelector('#panel-links [data-link-state="joined"]');
+    const listed = await page.$$eval(
+      '#panel-links [data-field="link-text"]',
+      (els) => els.map((e) => e.textContent ?? ''),
+    );
+    check(
+      listed.length === 1 && listed[0].startsWith('Linked with'),
+      'border link: the Border links list shows only my half, as linked',
+    );
     // A neighbour's half cannot be erased; removing your own half returns the
     // other to "open".
     await page.click('[data-tool="erase"]');

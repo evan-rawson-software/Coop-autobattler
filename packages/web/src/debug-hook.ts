@@ -146,6 +146,8 @@ export interface BuildDebug {
     owner: number;
     kind: string;
     state: string;
+    /** 1 for the acting player's half, less for a neighbour's (dimmed). */
+    alpha: number;
   }[];
   partnerCores: () => readonly { player: number; x: number; y: number }[];
   /** Ids of the placed unit producers sealed off from the front row. */

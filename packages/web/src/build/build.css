@@ -346,3 +346,20 @@ button.problem:hover {
 .dock-bottom.tall > .panel:only-child {
   grid-column: 1 / -1;
 }
+
+.link-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+}
+
+.link-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}

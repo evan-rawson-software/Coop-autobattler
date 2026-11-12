@@ -625,8 +625,8 @@ export function DryRunTable(props: {
             <th>Resource</th>
             <th>Delivered</th>
             <th>Per sec</th>
-            <th>Need / s</th>
-            <th>Supply</th>
+            <th>Need / s (all inputs)</th>
+            <th>Supply (all inputs)</th>
           </tr>
         </thead>
         <tbody>
@@ -647,11 +647,11 @@ export function DryRunTable(props: {
                   <td>{name(c.building)}</td>
                   <td>{resourceName(content, c.resource)}</td>
                   <td data-field="delivered">{c.delivered}</td>
-                  <td>
-                    {fmt(
-                      Math.round(
-                        (c.ratePer1000 * simConfig.ticksPerSecond) / 100,
-                      ) / 10,
+                  <td data-field="per-sec">
+                    {formatHundredths(
+                      Math.floor(
+                        (c.ratePer1000 * simConfig.ticksPerSecond) / 10,
+                      ),
                     )}
                   </td>
                   <td data-field="need-rate">
@@ -671,6 +671,61 @@ export function DryRunTable(props: {
         </tbody>
       </table>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Border links (keyboard and screen reader route to what the board draws)
+
+/**
+ * The acting player's own border halves as a list: state in words, the
+ * resource the half carries, and a Remove button. A neighbour's half is not
+ * listed (it cannot be removed from here). Nothing for a solo run.
+ */
+export function BorderLinksPanel(props: {
+  run: RunState;
+  ctl: BuildController;
+  acting: number;
+  locked: boolean;
+}) {
+  const { run, ctl, acting } = props;
+  const team = run.team;
+  if (run.players.length < 2) return null;
+  const nameOf = (p: number): string =>
+    run.players[p]?.name ?? `Player ${String(p + 1)}`;
+  const mine = halfStatuses(team).filter((h) => h.owner === acting);
+  return (
+    <Panel title="Border links" id="panel-links">
+      <ul class="link-list" data-field="links" aria-live="polite">
+        {mine.length === 0 ? (
+          <li class="muted" data-field="links-empty">
+            No border links yet. Draw a conduit to a border cell of your area.
+          </li>
+        ) : (
+          mine.map((h) => {
+            const res = conduitResource(team, content, h.conduit);
+            return (
+              <li key={h.conduit} data-link-state={h.state}>
+                <span data-field="link-text">
+                  {linkText(h, nameOf)}
+                  {res === null
+                    ? ''
+                    : ` · carries ${resourceName(content, res)}`}
+                </span>
+                <button
+                  type="button"
+                  data-action="remove-link"
+                  disabled={props.locked}
+                  onClick={() => void ctl.eraseConduit(h.conduit)}
+                >
+                  Remove my half
+                </button>
+              </li>
+            );
+          })
+        )}
+      </ul>
+    </Panel>
   );
 }
 

@@ -50,8 +50,10 @@ export const REASON_MESSAGES: Readonly<Record<KnownReason, string>> = {
   side_in_use: 'That side already has a conduit.',
   invalid_path: 'The path is not a valid line of free cells.',
   crosses_conduit: 'Conduits cannot cross another conduit.',
-  resource_mismatch: 'Mixed resources: this input needs a different one.',
-  would_loop: 'That would make the flow loop back on itself.',
+  resource_mismatch:
+    "Mixed resources: this input needs a different one. With a border link the clash can be on your neighbour's side.",
+  would_loop:
+    "That would make the flow loop back on itself. With a border link the loop can run through your neighbour's area.",
   unknown_conduit: 'That conduit does not exist.',
   // Session
   wrong_step: 'Not possible in this step.',
