@@ -205,7 +205,7 @@ describe('side options: strength, free power, Core health', () => {
     expect('sideOptions' in sim).toBe(false);
   });
 
-  test('turrets fire with no flow, and only at units on their own board', () => {
+  test('turrets fire with no flow, at units on their board or in the zone, never on the enemy board', () => {
     const lab = new Lab(board([]));
     lab.core(11, 0);
     lab.put('bld_turret', 5, 15); // front row of side 1
@@ -226,7 +226,7 @@ describe('side options: strength, free power, Core health', () => {
       return events.filter((e) => e.type === 'turret_fired').length;
     };
     expect(run(true, 24)).toBe(1); // on the turret's board, distance 1
-    expect(run(true, 22)).toBe(0); // in the gap, distance 1: not its board
+    expect(run(true, 22)).toBe(1); // in the gap, distance 1 (PP-13)
     expect(run(false, 24)).toBe(0); // unpowered
   });
 });

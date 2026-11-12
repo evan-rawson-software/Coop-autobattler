@@ -298,7 +298,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "07f2a3b5",
+        "stateHash": "e71d7bb3",
         "events": 1028
       }
     }
@@ -1363,33 +1363,33 @@
       "result": {
         "ok": true,
         "result": {
-          "winner": 1,
+          "winner": 0,
           "reason": "core_destroyed",
-          "endTick": 555
+          "endTick": 574
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 78,
-              "unitsLost": 73,
-              "buildingsLost": 0,
-              "coreHealth": 0,
-              "coreMaxHealth": 500,
-              "coreOverkill": 10,
-              "rampSteps": 0,
-              "buildingDamageDealt": 0,
-              "unitsKilled": 12
-            },
-            {
-              "unitsSpawned": 48,
-              "unitsLost": 12,
+              "unitsSpawned": 84,
+              "unitsLost": 67,
               "buildingsLost": 0,
               "coreHealth": 500,
               "coreMaxHealth": 500,
               "coreOverkill": 0,
-              "rampSteps": 30,
+              "rampSteps": 0,
               "buildingDamageDealt": 500,
-              "unitsKilled": 73
+              "unitsKilled": 15
+            },
+            {
+              "unitsSpawned": 28,
+              "unitsLost": 15,
+              "buildingsLost": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 500,
+              "coreOverkill": 4,
+              "rampSteps": 30,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 67
             }
           ]
         },
@@ -1410,8 +1410,8 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "3c5cec34",
-        "events": 2578
+        "stateHash": "57e0b4a8",
+        "events": 2651
       }
     }
   },
@@ -1763,7 +1763,7 @@
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "f22773d5",
+        "stateHash": "709a447f",
         "events": 379
       }
     }
@@ -2599,7 +2599,7 @@
         "stateHash": "83559d57",
         "events": 65
       },
-      "eventLogHash": "c21e0808"
+      "eventLogHash": "1f37d2b7"
     }
   },
   {
@@ -3608,7 +3608,7 @@
         "stateHash": "789c1555",
         "events": 327
       },
-      "eventLogHash": "0116b044"
+      "eventLogHash": "eeae1f47"
     }
   },
   {

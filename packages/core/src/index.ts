@@ -39,7 +39,10 @@ export type {
 export {
   loadBuildings,
   loadBuildingsOrThrow,
+  needHundredthsPerSecond,
+  needPer1000,
   oppositeSide,
+  productionOf,
   rotateBuilding,
   rotateSide,
 } from './buildings.js';
@@ -222,8 +225,10 @@ export type {
   ConduitSim,
   ConsumerInputSim,
   ConsumerMode,
+  ConsumerPacer,
   ConsumerSim,
   DryRunConsumerInput,
+  DryRunNeed,
   DryRunResult,
   DryRunRoute,
   DryRunSource,
@@ -337,7 +342,11 @@ export type { WorkshopOption } from './workshop.js';
 // In-battle ramp (economy buildings) and Overload (W1-7).
 export { rampBonus } from './arena-sim.js';
 export type { RampSim } from './arena-sim.js';
-export { scaledInterval } from './flow-sim.js';
+export {
+  collectorHundredthsPerSecond,
+  collectorRatePer1000,
+  scaledInterval,
+} from './flow-sim.js';
 export {
   cappedBonus,
   isOverloadBeat,

@@ -4,12 +4,26 @@
 // work that existed before the step is ignored.
 import { spawnSync } from 'node:child_process';
 
+// Test hook: CHECK_STEPS is a JSON array of argv arrays that replaces the
+// real chain (and skips the golden step). Used only by the gate's own test.
+// Do not pipe this script through other commands (e.g. `| tail`): the pipe
+// reports the last command's status, not ours. Use `set -o pipefail` if you must.
+function fail(name, code) {
+  console.error(`\ncheck failed at: ${name}`);
+  console.error(`CHECK FAILED at step ${name}`);
+  process.exit(code);
+}
+
 function run(cmd, args) {
-  console.log(`\n==> ${[cmd, ...args].join(' ')}`);
+  const name = [cmd, ...args].join(' ');
+  console.log(`\n==> ${name}`);
   const r = spawnSync(cmd, args, { stdio: 'inherit' });
-  if (r.status !== 0) {
-    console.error(`\ncheck failed at: ${[cmd, ...args].join(' ')}`);
-    process.exit(r.status ?? 1);
+  // Only a clean exit with status 0 passes: a signal kill or a spawn error
+  // leaves status null, which must also fail.
+  if (r.error || r.signal || r.status !== 0) {
+    if (r.error) console.error(String(r.error));
+    if (r.signal) console.error(`killed by signal ${r.signal}`);
+    fail(name, typeof r.status === 'number' && r.status !== 0 ? r.status : 1);
   }
 }
 
@@ -43,6 +57,13 @@ function treeSnapshot() {
   return { status, diff: diff.stdout };
 }
 
+const override = process.env.CHECK_STEPS;
+if (override !== undefined) {
+  for (const argv of JSON.parse(override)) run(argv[0], argv.slice(1));
+  console.log('\nCHECK PASSED');
+  process.exit(0);
+}
+
 for (const step of [
   'typecheck',
   'lint',
@@ -62,6 +83,7 @@ if (before.status !== after.status || before.diff !== after.diff) {
   console.error(
     `\ncheck failed: golden:update changed files (the committed golden files are stale; commit the regenerated ones).\nBefore:\n${before.status || '(clean)\n'}After:\n${after.status}`,
   );
-  process.exit(1);
+  fail('golden:update (stale golden files)', 1);
 }
 console.log('\ncheck passed');
+console.log('CHECK PASSED');

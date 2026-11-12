@@ -60,15 +60,14 @@ plot `p` is the columns `p * plotWidth` to `(p + 1) * plotWidth - 1`, and
 | PP-2 | One Core per player in the team state | not yet implemented (issue #128) |
 | PP-3 | Core placement step: each player places their own Core, no vote | not yet implemented (issue #131) |
 | PP-4 | Border links | not yet implemented (issues #135 and #136) |
-| PP-5 | Collector flow rate by tier | **implemented today** ("One tick: `stepFlow`", step 3); the display value and the one-output content rule are not (issue #130) |
-| PP-6 | Minimum time between productions, need, store | not yet implemented (issue #130); turrets already have it (`cooldownTicks`) |
-| PP-7 | Splitting, with back-up | **implemented today** ("One tick: `stepFlow`", step 2); vectors that pin it against consumers with a top speed are not (issue #130) |
+| PP-5 | Collector flow rate by tier | **implemented** (issue #130; "One tick: `stepFlow`", step 3, and "Collector rate") |
+| PP-6 | Minimum time between productions, need, store | **implemented** (issue #130; "One battle tick", step 2 and step 7, "In-battle ramp", "Dry run (CB-43)") |
+| PP-7 | Splitting, with back-up | **implemented** ("One tick: `stepFlow`", step 2; vectors against consumers with a top speed since issue #130). An open border half (PP-4) is still issue #135 |
 | PP-8 | Economy buildings act for their owner only; lower collector speed-up cap | not yet implemented (issue #137) |
 | PP-9 | Several Cores per side in the arena; Overload per Core; a destroyed Core switches nothing off | not yet implemented (issue #132) |
 | PP-10 | End conditions and the tiebreak ladder with several Cores | not yet implemented (issue #132) |
 | PP-11 | A unit's owner and target Core; one movement field per target Core | not yet implemented (issue #133). A unit also attacks any enemy Core within reach, target or not |
 | PP-12 | Enemy-path preview per Core | not yet implemented (issue #133) |
-| PP-13 | Turrets can shoot units in the neutral zone | not yet implemented (issue #134) |
 | PP-14 | PvE strongholds and bosses with one Core per player | not yet implemented (issue #138) |
 | PP-15 | Sealed-producer check per owner; map rule per plot | not yet implemented (issues #131 and #129) |
 | PP-16 | Party votes and run streams without the Core vote | not yet implemented (issue #131) |
@@ -83,8 +82,8 @@ placeholders or do not exist yet; all are set in the rebalance
 | Number | Where | Today | Constraint |
 | ------ | ----- | ----- | ---------- |
 | Collector `intervalTicks` per tier | `buildings.json` | 20 / 14 / 10 | integer >= 1; a higher tier is never slower |
-| `productionIntervalTicks` per unit producer and tier | `buildings.json` (new) | does not exist | integer >= 1 |
-| `stepIntervalTicks` per economy building and tier | `buildings.json` (new) | does not exist | integer >= 1 |
+| `productionIntervalTicks` per unit producer and tier | `buildings.json` | placeholder 80 / 60 / 40 (barracks) | integer >= 1 |
+| `stepIntervalTicks` per economy building and tier | `buildings.json` | placeholder 10 / 8 / 6 | integer >= 1 |
 | `costPerUnit`, `costPerShot`, `costPerStep`, `cooldownTicks` | `buildings.json` | as shipped | integers >= 1; a stronger building should have a higher need |
 | `inputBufferUnits` (items waiting at each input) | `sim.json` | 4 | integer >= 1, small: "a little waiting in the pipe" |
 | `maxSourceSpeedPercent` (collector speed-up cap) | `sim.json` | 300 | to be set in rebalance; much lower than 300. Target: a fully boosted collector of one tier stays slower than an unboosted collector of the next tier (SC-12) |
@@ -347,129 +346,20 @@ halves, and a mismatch and a loop that only appear across a link.
 
 ### PP-5. Collector flow rate
 
-Implemented today: a collector produces one item every `intervalTicks` ticks
-(its tier's value; "One tick: `stepFlow`", step 3) and stalls, without
-losing the item, when its conduit is full.
-
-Specified, not yet implemented:
-
-- **Display value.** `ratePer1000 = floor(1000 / scaledInterval)` items per
-  1000 ticks, with `scaledInterval` as in step 3 (the plain `intervalTicks`
-  when there is no speed-up). Screens show items per second with two
-  decimals, rounded down: `floor(100 * ticksPerSecond / scaledInterval)`
-  hundredths (tier 1 at 20 ticks: 0.50/s).
-- **Content rule.** A building of kind `source` has exactly one output side
-  (true of the shipped extractor; the loader does not check it yet). With it
-  the splitter is the only thing that divides a flow (CB-9e).
+Implemented (issue #130). The rule is in "Tick order": "One tick:
+`stepFlow`", step 3 and "Collector rate".
 
 ### PP-6. Minimum time between productions, need and store
 
-**Content.** Per tier:
-
-| Kind | Cost of one production | Minimum time between productions |
-| ---- | ---------------------- | -------------------------------- |
-| Unit producer | `costPerUnit` (exists) | `productionIntervalTicks` (new) |
-| Turret | `costPerShot` (exists) | `cooldownTicks` (exists) |
-| Economy building | `costPerStep` (exists) | `stepIntervalTicks` (new) |
-
-All are integers of at least 1. Walls, gates, route buildings and the Core
-have no inputs and consume nothing (CB-10c).
-
-**State.** Each `producers` entry becomes `{side, building, progress,
-cooldown}` and each `ramps` entry `{side, building, charge, steps,
-cooldown}`; `cooldown` starts at 0. Turret entries are unchanged.
-
-**The production step** ("One battle tick", step 2) becomes, for each living
-unit producer in today's order:
-
-1. **Intake.** If `progress < costPerUnit`: go through its inputs clockwise
-   from north and, for each, take `min(input buffer count, costPerUnit -
-   progress)` items (`takeFromBuffer`) and add them to `progress`. So
-   `progress` never exceeds `costPerUnit` (today the whole buffer is drained
-   and the surplus kept; that ends). All resources count alike, as today.
-2. **Produce.** At most once per tick: if `progress = costPerUnit` and
-   `cooldown = 0` and the unit finds a spawn position (today's rule), spawn
-   it, set `progress = 0` and `cooldown = productionIntervalTicks`. If there
-   is no spawn position the unit is held as today: `progress` stays at
-   `costPerUnit` and `cooldown` stays 0.
-
-Economy buildings: intake is today's (only while `steps < maxSteps`, at most
-`costPerStep - charge`). A step is taken when `charge = costPerStep` **and
-`cooldown = 0`**: `steps += 1`, `charge = 0`, `cooldown = stepIntervalTicks`,
-`ramp_step` recorded. Intake continues while the cooldown runs, up to
-`costPerStep`. Turrets are unchanged: they already charge up to `costPerShot`
-and fire at most once per `cooldownTicks`.
-
-**Cooldowns** of producers and economy buildings decrease by 1 in step 7,
-together with the turret and unit cooldowns, when non-zero. So a building
-that produces in tick `t` with an interval of `k` can produce again in tick
-`t + k` at the earliest, exactly like a turret.
-
-**What follows from these rules.**
-
-- **Top speed.** A fully fed building makes one production every interval,
-  never more.
-- **Need.** `needPer1000 = floor(1000 * cost / interval)` items per 1000
-  ticks; screens show items per second with two decimals, rounded down:
-  `floor(100 * cost * ticksPerSecond / interval)` hundredths. A turret has
-  this need only while it fires; a charged, idle turret takes nothing. An
-  economy building at `maxSteps` takes nothing.
-- **Under-supplied buildings wait** (CB-10d): `progress` or `charge` keeps
-  what has arrived, the production happens when the full cost is there, and
-  it is a full production (same unit, same shot, same step). Nothing is ever
-  produced at reduced strength and no building switches off.
-- **Store** (CB-10b). A building holds at most `cost` in `progress` or
-  `charge`, plus `inputBufferUnits` in each input buffer. When both are full
-  it refuses items ("Accepting"), its conduit fills and the flow backs up
-  (PP-7).
-- **Cold start** (CB-11): `progress`, `charge`, `cooldown` and every buffer
-  are 0 at tick 0 of every battle. The first production needs no waiting
-  beyond collecting its cost.
-
-**Dry run.** `dryRunFlow` gains the consumer mode `"need"`, used by the build
-screen: each consumer runs the intake and produce rules above on its own,
-with no arena (a unit producer always finds a spawn position; a turret is
-taken to fire whenever it is charged and off cooldown, the upper bound of
-its need; an economy building stops at `maxSteps`). Per consumer it reports
-`needPer1000`, `productions`, and per input `delivered` and `ratePer1000`
-(today's definition). The modes `"hold"` and `"drain"` stay for tests.
-
-Golden kind `flow-sim` gains `"need"` vectors; `arena-sim` and `battle`
-vectors are re-pinned.
+Implemented (issue #130). The rules are in "Content bounds" (the fields),
+"The arena" (state), "One battle tick" (step 2, step 7 and "Top speed, need
+and store"), "In-battle ramp (economy buildings)" and "Dry run (CB-43)".
 
 ### PP-7. Splitting, with back-up
 
-Implemented today, and unchanged ("One tick: `stepFlow`", step 2). Stated
-here as the rule the design relies on:
-
-- A splitter holds at most one item. Each tick, if it holds an item, it
-  tries its outputs in the order `pointer, pointer + 1, ...` (clockwise from
-  north, modulo the number of output sides), skipping sides with no conduit.
-  (With PP-4, a side whose half is open is not skipped: it is tried and
-  always refuses, like a full conduit.) The first output that
-  **accepts** takes the item and `pointer` becomes the index after it. If
-  none accepts, the item stays and `pointer` does not move.
-- An output accepts when the first slot of its conduit is empty, or, for a
-  direct connection, when the building behind it accepts ("Accepting").
-- `pointer` starts at 0 at the start of every battle.
-
-Consequences: while every connected output accepts, the items go to the
-outputs in strict rotation, so after any number of items the counts of two
-outputs differ by at most 1 (an **even split**; the odd item goes to the
-output next in rotation). An output whose path is full **backs up** and is
-skipped, so its share goes to the outputs that still accept (**the remainder
-goes to the other paths**). When no path accepts, the splitter holds its
-item, its input conduit fills, and the collector stalls: production is
-delayed, not lost. No division is performed anywhere and no item is ever
-split.
-
-What PP-6 adds is the reason a path stops accepting: a consumer at top speed
-with a full store. The vectors to add (issue #130): a splitter feeding
-two unit producers of equal need from a collector that supplies less than
-both need (even split, both under-supplied); one that supplies more than one
-of them needs (that path backs up, the other gets the remainder); one that
-supplies more than both need (everything backs up, the collector stalls);
-and a three-way splitter with one unconnected output.
+Implemented. The rule is in "Tick order": "One tick: `stepFlow`", step 2,
+and "Splitting with back-up". The vectors of issue #130 pin it against
+consumers with a top speed (golden kind `flow-sim`, mode `"need"`).
 
 ### PP-8. Economy buildings act for their owner
 
@@ -707,25 +597,6 @@ plot `plotOf(x)`: today's walk, on the fields of that Core (PP-11). Each
 entry gains `core: plotOf(x)`. Columns of a plot without a Core give no
 entry; the function no longer throws for a board with some Cores unplaced.
 What a unit does after that Core has fallen is not previewed.
-
-### PP-13. Turrets can shoot units in the neutral zone
-
-Owner decision (CB-3j, CB-18a). Today a turret's target must stand on the
-arena rows of the turret owner's own board ("One battle tick", "Turret
-fire"; `arena-sim.ts`, the `rowLo`/`rowHi` test). The rule becomes: the
-unit's cell row, taken in the frame of the turret's side exactly as today,
-must be inside **the owner's board rows or the gap rows**:
-
-- side 0: rows `0 .. h + gapRows - 1`;
-- side 1: rows `h .. H - 1`.
-
-Rows of the enemy's board never qualify. Range, target choice, ties, damage
-and events are unchanged. The boundary cases follow from the same row
-formula: for a side 0 turret a unit with `py = 240 (h + gapRows)` exactly is
-on the enemy's first row and is not a target. `freePower` turrets of a PvE
-stronghold follow the same rule. The statement under "Battles", "no building
-acts in the zone", is replaced by: nothing can be built in the zone and no
-flow or production happens there; turrets may shoot into it.
 
 ### PP-14. PvE strongholds and bosses with one Core per player
 
@@ -1530,7 +1401,6 @@ row says so.
 | ---- | ---------------------- | ------ |
 | PP-1 | A conduit has an `owner`, joins two buildings of that owner and lies in that owner's plot; only the owner erases it. "Conduits have no owner" no longer holds. | not yet implemented (issue #129) |
 | PP-4 | Border links: a half ends at a border spot; two matching halves are one conduit in the flow graph (`linkedConduit` on the edge); an open half carries nothing and loses nothing (a connected output that never accepts). | not yet implemented (issues #135 and #136) |
-| PP-5 | Content rule: a source has exactly one output side. | not yet implemented (issue #130) |
 
 Implemented in `packages/core/src/conduits.ts` (golden kinds `team-state-ops`
 and `flow-graph`: `team-state-ops.ts`). Conduits carry resources between
@@ -1730,9 +1600,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-5 | Collector flow rate by tier. | **implemented today** (step 3). The display value `ratePer1000` for a source is not yet implemented (issue #130) |
-| PP-7 | Splitting evenly, with back-up. | **implemented today** (step 2), unchanged. With PP-4 an output whose half is open is a connected output that never accepts (the item is held and the line backs up; it is not a dead end and nothing is lost): not yet implemented (issue #135) |
-| PP-6 | A dry-run consumer mode `"need"` that paces each consumer at its top speed and reports its need. | not yet implemented (issue #130) |
+| PP-7 | With PP-4 an output whose half is open is a connected output that never accepts (the item is held and the line backs up; it is not a dead end and nothing is lost). | not yet implemented (issue #135) |
 | PP-8 | The source interval modifier becomes one value per owning player. | not yet implemented (issue #137) |
 | PP-4 | `rebuildFlow` removes both halves of a link when either end building is destroyed. | not yet implemented (issue #136) |
 
@@ -1801,7 +1669,7 @@ of the saved state.
 ### One tick: `stepFlow`
 
 The reference implementation changes the state in place. The step context
-chooses the consumer mode, `hold` or `drain`, and may carry an event list that
+chooses the consumer mode, `hold`, `drain` or `need` (see "Dry run"), and may carry an event list that
 the step appends to. Let `T` be `tick` at the start of the step; every event of
 the step has `tick = T`. In this order:
 
@@ -1906,6 +1774,17 @@ with `takeFromBuffer` (below).
 
 **4. The tick counter** increases by 1.
 
+### Collector rate
+
+A collector (a building of kind `source`) has **exactly one output side**
+(the loader rejects any other count), so the splitter is the only building
+that divides a flow (CB-9e). Its rate is one item per `scaledInterval` ticks
+(step 3). The helpers `collectorRatePer1000` and `collectorHundredthsPerSecond`
+give the display values: `ratePer1000 = floor(1000 / scaledInterval)` items per
+1000 ticks (the plain `intervalTicks` when there is no speed-up), and
+`floor(100 * ticksPerSecond / scaledInterval)` hundredths of an item per second
+(tier 1 at 20 ticks: 0.50 per second, shown rounded down).
+
 ### Accepting
 
 An item offered to a building's input side (by step 1a, or by a push):
@@ -1937,6 +1816,27 @@ their only shared resource is a consumer buffer or conduit slot fed by one
 input, and a splitter already rotates over the outputs that accept; the
 direct-connection case matters only where several inputs meet, at a merger.
 
+### Splitting with back-up
+
+A splitter holds at most one item. Each tick, if it holds an item, it tries
+its outputs in the order `pointer, pointer + 1, ...` (clockwise from north,
+modulo the number of output sides), skipping sides with no conduit. The first
+output that **accepts** takes the item and `pointer` becomes the index after
+it; if none accepts, the item stays and `pointer` does not move. An output
+accepts when the first slot of its conduit is empty or, for a direct
+connection, when the building behind it accepts ("Accepting"). `pointer`
+starts at 0 at the start of every battle.
+
+So while every connected output accepts, the items go out in strict rotation
+and the counts of two outputs differ by at most 1 (an **even split**). An
+output whose path is full **backs up** and is skipped, so its share goes to
+the outputs that still accept (**the remainder goes to the other paths**).
+When no path accepts, the splitter holds its item, its input conduit fills
+and the collector stalls: production is delayed, not lost. No division is
+performed and no item is split. A path stops accepting when its consumer is at
+top speed with a full store ("Top speed, need and store" under "One battle
+tick").
+
 ### Consumer seam
 
 `takeFromBuffer(sim, buildingId, sideOrResource, n)` returns whether `n` units
@@ -1965,17 +1865,32 @@ produced.
 
 ### Dry run (CB-43)
 
-`dryRunFlow(teamState, content, simConfig, ticks)` runs `createBoardSim` and
-`stepFlow` with `consumers: "drain"` for `ticks` ticks and reports, per source:
+`dryRunFlow(teamState, content, simConfig, ticks, mode = "drain")` runs
+`createBoardSim` and `stepFlow` with `consumers: "drain"` for `ticks` ticks and reports, per source:
 `produced`, `lost`, `stalledTicks`; per route: `lost`; per consumer input:
 `delivered` and `ratePer1000` = `floor(1000 * d / w)` where
 `w = ticks - floor(ticks / 2)` and `d` is the number of deliveries during the
 last `w` ticks (so the cold start does not distort it; 0 when `w` is 0).
 
+With `mode = "need"` (consumer mode `need`, used by the build screen) each
+consumer is instead **paced at its top speed**, with no arena: after the flow
+steps of each tick, every consumer in building-ID order runs the intake and
+produce rules of "One battle tick" step 2 (a unit producer always finds a
+spawn position; a turret is taken to fire whenever it is charged and off
+cooldown, the upper bound of its need; an economy building stops after
+`maxSteps` steps and then takes nothing), then its cooldown counts down by 1.
+The result gains `needs`: per consumer `{building, needPer1000, productions}`,
+with `needPer1000` the helper below and `productions` the count during the run.
+The delivered `ratePer1000` is as above, so a consumer fed at or above its
+need shows a rate equal to its need (over a window that is a whole number of
+intervals). The pacer state (`progress`, `cooldown`, `productions` per
+consumer) belongs to the run's context, not to `BoardSim`, so the state hash
+of the other modes is unchanged. The modes `hold` and `drain` stay for tests.
+
 ### Golden kind `flow-sim`
 
 Input: a `team-state-ops` script (`seed`, `partySize`, `ops`) plus `ticks` and
-`consumers` (`"hold"` or `"drain"`), and optionally `take`, `{building, side,
+`consumers` (`"hold"`, `"drain"` or `"need"`), and optionally `take`, `{building, side,
 every}` (`building` an integer, `side` one of `north`, `east`, `south`, `west`,
 `every` an integer from 1; anything else is rejected): before every tick `T` with `T mod every = every - 1` one unit is taken
 from that consumer input with `takeFromBuffer` (if it holds one), which paces a
@@ -1985,13 +1900,28 @@ simulation runs for `ticks` ticks from the cold start. Result:
 hash of the final state, `flow` the conservation totals, `sources` a list of
 `{building, resource, produced, lost, stalledTicks}`, `routes` a list of
 `{building, key, lost, held}` and `consumers` a list with one entry per
-consumer input `{building, side, resource, count, delivered, consumed}`. The event log of the run is the vector's event log (`eventLogHash`).
+consumer input `{building, side, resource, count, delivered, consumed}`; in
+mode `"need"` it also has `pacers`, one `{building, progress, cooldown,
+productions}` per consumer. The event log of the run is the vector's event log (`eventLogHash`).
 Vectors: `golden/flow-sim.json` (a long conduit, a splitter, a merger, a
 crossover with two resources, a dead end, a full-buffer backpressure case, and a
 merger with a direct input and a conduit input behind a slow consumer, a
 merger fed directly by two sources behind a slow consumer, and a merger fed
 directly by one source and by a conduit behind a slow consumer: the last two
-pin the "direct source is ready when its `countdown` is at most 1" rule).
+pin the "direct source is ready when its `countdown` is at most 1" rule). Four
+`"need"` vectors (2000 ticks) pin PP-7 against consumers with a top speed
+(the barracks needs 75, 83 and 100 items per 1000 ticks at tiers 1 to 3):
+`need-even-split` (a tier 3 collector, 100 per 1000 ticks, into a splitter with
+two tier 1 barracks: both under-supplied, 100 and 99 items),
+`need-top-speed-one-path-backs-up` (a tier 3 and a tier 2 collector, 171 per
+1000 ticks, through a merger and a splitter into a tier 1 and a tier 3
+barracks: the even share, 85, is above the tier 1 barracks' top speed, so its
+production interval makes that path back up and the tier 3 barracks takes the
+remainder), `need-top-speed-all-backs-up` (the same supply into two tier 1
+barracks: both reach their top speed, the collectors stall, nothing is lost)
+and `need-three-way-unconnected` (one of the three outputs has no conduit).
+Without the cooldown rule of the production step the two `top-speed` vectors
+change.
 
 ### Mid-battle removal
 
@@ -2023,7 +1953,6 @@ row says so.
 | ---- | ---------------------- | ------ |
 | PP-9 | Each side has one Core per player; the `health` list holds them as `{side, core, hp}`; each Core starts at its own maximum health. | not yet implemented (issue #132) |
 | PP-11 | A unit gains `owner` and `target` (the enemy Core it heads for). | not yet implemented (issue #133) |
-| PP-6 | `producers` and `ramps` entries gain `cooldown`. | not yet implemented (issue #130) |
 
 Implemented in `packages/core/src/arena.ts` (geometry) and `arena-sim.ts`
 (state and tick), `arena-paths.ts` (fields). Units live in an **arena**: one
@@ -2186,13 +2115,14 @@ state at tick 0:
 - `health`: one entry `{side, building, hp}` per Core and placed building, in
   order of side, then building ID with the Core (`building = 0`) first; a
   destroyed building stays in the list with `hp = 0`;
-- `producers`: `{side, building, progress}` for each living unit producer, by
-  side then building ID;
+- `producers`: `{side, building, progress, cooldown}` for each living unit
+  producer, by side then building ID, all starting at `progress = 0`,
+  `cooldown = 0`;
 - `turrets`: `{side, building, charge, cooldown}` for each living turret, by
   side then building ID, all starting at `charge = 0`, `cooldown = 0`;
-- `ramps`: `{side, building, charge, steps}` for each living economy building
-  (in-battle ramp), by side then building ID, all starting at `charge = 0`,
-  `steps = 0` (CB-11);
+- `ramps`: `{side, building, charge, steps, cooldown}` for each living economy
+  building (in-battle ramp), by side then building ID, all starting at
+  `charge = 0`, `steps = 0`, `cooldown = 0` (CB-11);
 - `units`; `entering`: the scheduled-wave units that have not found room yet,
   `{side, unit, col}` in queue order (see "Side options"); and counters `spawned`, `unitsDied` and `buildingDamageDealt`, each a
   pair indexed by side (`buildingDamageDealt[s]` is the damage the units of side
@@ -2216,9 +2146,7 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-6 | Step 2: a unit producer takes at most `costPerUnit - progress` and spawns only when its `cooldown` is 0; an economy building steps only when its `cooldown` is 0; step 7 counts both cooldowns down. Today a producer has no top speed. | not yet implemented (issue #130) |
 | PP-11 | Steps 2 and 3: "the enemy Core" and "the movement field" become the unit's target Core and its fields; step 6 ends with retargeting. | not yet implemented (issue #133) |
-| PP-13 | Step 3, turret fire: a target may also stand in the neutral zone (gap rows). Today only the owner's own board rows qualify. | not yet implemented (issue #134) |
 | PP-9 | Step 4: Overload decay hits every living Core, each for the full amount. Step 6: `core_destroyed {side, core}`; a destroyed Core switches nothing else off. | not yet implemented (issue #132) |
 | PP-8 | The ramp bonus is per owner. | not yet implemented (issue #137) |
 
@@ -2237,15 +2165,19 @@ row says so.
    (see Events).
 2. **Production.** For each living unit producer, side 0 first and each side in
    instance-ID order:
-   1. **Only if `progress < costPerUnit`** (no finished unit is waiting): move
-      every item in its input buffers into its `progress` counter
-      (`takeFromBuffer` on each input with a non-zero count; all resources
-      count alike). A producer that holds a finished unit (step 2 below could
-      not place it) takes nothing, so its buffers fill and its conduits back up
-      (the source stalls), exactly like a fully charged turret.
-   2. At most once per tick: if `progress >= costPerUnit` (the building's tier)
-      and the unit finds a **spawn position**, subtract `costPerUnit` and spawn
-      one unit of the producer's `unit` type there. The **spawn cells** are the
+   1. **Intake.** Only if `progress < costPerUnit` (no finished unit is
+      waiting): go through its inputs clockwise from north and, for each, take
+      `min(input buffer count, costPerUnit - progress)` items
+      (`takeFromBuffer`) and add them to `progress` (all resources count
+      alike). So `progress` never exceeds `costPerUnit`; the rest stays in the
+      buffer. A producer that holds a finished unit (step 2 below could not
+      place it, or its cooldown is running) takes nothing, so its buffers fill
+      and its conduits back up (the source stalls), exactly like a fully
+      charged turret.
+   2. **Produce.** At most once per tick: if `progress = costPerUnit` (the
+      building's tier) **and `cooldown = 0`** and the unit finds a **spawn
+      position**, set `progress = 0`, set `cooldown = productionIntervalTicks`
+      and spawn one unit of the producer's `unit` type there. The **spawn cells** are the
       cells 4-adjacent to the producer's footprint that are open for the
       producer's side (not blocked and not covered by a building that blocks
       that side; an own gate counts as open), ordered by the key (class,
@@ -2267,15 +2199,15 @@ row says so.
       `(m, 0)`, `(0, -m)`, `(-m, m)`, `(m, m)`, `(-m, -m)`, `(m, -m)` (own
       frame `+y` points at the enemy; for side 1 both components are negated,
       the arena rotation). If no cell has a free position the unit is **held**:
-      nothing is spawned and `progress` stays at or above `costPerUnit`, so
-      step 2.1 takes nothing on later ticks until the unit can be placed. Only
+      nothing is spawned and `progress` stays at `costPerUnit` and `cooldown`
+      at 0, so step 2.1 takes nothing on later ticks until the unit can be
+      placed. Only
       the cells next to the producer are tried, so a jam at the exit holds the
       unit rather than letting it appear farther away.
    3. A new unit has `attackCooldown = 0` and gets the next ID. It is placed
       immediately and takes part in this tick's decisions. (`inputBufferUnits`
       is smaller than some `costPerUnit` values, so the progress counter is
-      what makes those producers work; the drain in 2.1 can take more than the
-      remaining cost, and the surplus stays in `progress`.)
+      what makes those producers work.)
 
    After all unit producers, the **scheduled waves** enter (see "Side options").
    Then, **turret charging**: for each living turret,
@@ -2292,10 +2224,11 @@ row says so.
    maxSteps` (its tier), go through its inputs clockwise from north and, for
    each, take `min(input buffer count, costPerStep - charge)` items out of
    the buffer (`takeFromBuffer`) and add them to `charge`. If `charge =
-   costPerStep` afterwards: `steps += 1`, `charge = 0` and `ramp_step {side,
-   building, effect, steps}` is recorded. Since a building takes at most
-   `costPerStep` items per tick and resets after completing, it takes at most
-   one step per tick. A building with `steps = maxSteps` takes nothing, so
+   costPerStep` **and `cooldown = 0`** afterwards: `steps += 1`, `charge = 0`,
+   `cooldown = stepIntervalTicks` and `ramp_step {side, building, effect,
+   steps}` is recorded. Intake continues while the cooldown runs, up to
+   `costPerStep`. So a building takes at most one step per
+   `stepIntervalTicks` ticks. A building with `steps = maxSteps` takes nothing, so
    its buffer fills and its conduit backs up (the source stalls). Because the
    ramp is charged after unit production, a unit spawned in a tick sees the
    bonus as it was at the start of that tick's production step; a step taken
@@ -2377,8 +2310,8 @@ row says so.
    and `charge = costPerShot`, looks for a target: an enemy unit whose **cell
    row**, taken **in the frame of the turret's owner** (side 0: `floor(py /
    240)`; side 1: `H - 1 - floor((240 H - py) / 240)`, "Unit geometry"), is
-   inside the arena rows of the **turret owner's own board** (side 0: rows `0 .. h - 1`; side 1: rows `H - h .. H - 1`; the
-   gap and the enemy board never qualify; so a unit with `py = 240 h` exactly is in the gap row for a side 0 turret, and one with `py = 240 (H - h)` exactly is in the gap row for a side 1 turret, whatever its own side) and that is **in range**:
+   inside the arena rows of the **turret owner's own board or the gap** (side 0: rows `0 .. h + gapRows - 1`; side 1: rows `h .. H - 1`; the
+   enemy's board never qualifies (PP-13, CB-3j, CB-18a); so a unit with `py = 240 (h + gapRows)` exactly is on the enemy's first row for a side 0 turret, and one with `py = 240 h` exactly is on the enemy's last row for a side 1 turret, whatever its own side) and that is **in range**:
    `buildingDist2(px, py, turret) <= (rangeCells * 240 + R)^2` with `R` the
    unit's `radius` and `rangeCells` the turret tier's range, that is, the gap
    from the unit's circle to the nearest point of the turret's cells is at
@@ -2533,13 +2466,42 @@ row says so.
      checked after the tick by the code in "Battles"). Both Cores can fall in
      the same tick.
    - After any destruction every cached movement field is dropped.
-7. **Cooldowns.** Each living turret's non-zero `cooldown` and each surviving
+7. **Cooldowns.** Each living turret's, unit producer's and economy
+   building's non-zero `cooldown` and each surviving
    unit's non-zero `attackCooldown` decreases by 1. Then
    `tick` increases by 1. (Because the
    decrease also applies to the tick of the action, a turret that fires in tick
    `t` with `cooldownTicks = 8` may fire again in tick `t + 8`, and a unit with
    `attackCooldownTicks = 10` that attacked in tick `t` attacks again in tick
-   `t + 10`.)
+   `t + 10`. A unit producer that makes a unit in tick `t` with a
+   `productionIntervalTicks` of `k` can make the next in tick `t + k`, and an
+   economy building steps again after `stepIntervalTicks` the same way.)
+
+#### Top speed, need and store
+
+Every consumer has a top speed: one production per minimum time between
+productions (a unit per `productionIntervalTicks`, a shot per `cooldownTicks`,
+a step per `stepIntervalTicks`; integers of at least 1). Walls, gates, route
+buildings and the Core have no inputs and consume nothing (CB-10c).
+
+- **Top speed.** A fully fed building makes one production every interval,
+  never more; supply beyond it backs up (see "Splitting with back-up").
+- **Need.** `needPer1000 = floor(1000 * cost / interval)` items per 1000
+  ticks (helper `needPer1000(building, tier)`; 0 for a building that consumes
+  nothing). Screens show items per second with two decimals, rounded down:
+  `floor(100 * cost * ticksPerSecond / interval)` hundredths
+  (`needHundredthsPerSecond`). A turret has this need only while it fires: a
+  charged, idle turret takes nothing; an economy building at `maxSteps` takes
+  nothing.
+- **Under-supplied buildings wait** (CB-10d): `progress` or `charge` keeps
+  what has arrived and the production happens when the full cost is there. It
+  is a full production (same unit, same shot, same step); nothing is produced
+  at reduced strength and no building switches off.
+- **Store** (CB-10b). A building holds at most `cost` in `progress` or
+  `charge`, plus `inputBufferUnits` in each input buffer. When both are full
+  it refuses items ("Accepting"), its conduit fills and the flow backs up.
+- **Cold start** (CB-11): `progress`, `charge`, `cooldown` and every buffer
+  are 0 at tick 0 of every battle.
 
 ### Goals and movement fields
 
@@ -2738,17 +2700,17 @@ row says so.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-6 | A step also needs the building's `cooldown` to be 0 (`stepIntervalTicks` between steps). | not yet implemented (issue #130) |
 | PP-8 | Totals and caps are per owner, and `maxSourceSpeedPercent` is lowered (number to be set in rebalance). | not yet implemented (issue #137) |
 
 "Economy" means buildings that make the factory stronger the longer a battle
 lasts (SC-8 to SC-10); it has nothing to do with gold. Each is a building of
 kind `economy` with `effect.type` `source_speed` or `unit_strength` and, per
 tier, `costPerStep`, `stepPercent` and `maxSteps`. Its battle state is the
-`ramps` entry `{side, building, charge, steps}` (all 0 at the start of every
+`ramps` entry `{side, building, charge, steps, cooldown}` (all 0 at the start of every
 battle: the state is built from the team state and `sim.json` only, so no
-upgrade carries from one battle to the next, CB-11). Charging is described in
-"One battle tick", step 2.
+upgrade carries from one battle to the next, CB-11). Charging, and the
+`cooldown` of `stepIntervalTicks` between two steps, are described in "One
+battle tick", step 2.
 
 **Totals and caps.** For a side and an effect, the _raw total_ is the sum, over
 that side's **living** economy buildings with that effect, of `steps *
@@ -3215,7 +3177,6 @@ row says so.
 | ---- | ---------------------- | ------ |
 | PP-10 | A side loses when **all** of its Cores are destroyed. Ties and the time limit: Cores standing, then share of total Core health, then overkill summed over the Cores that fell in the final tick, then building damage, kills, attacker. The summary lists every Core. | not yet implemented (issue #132) |
 | PP-2 | `core_not_placed` when any player's Core is missing. | not yet implemented (issue #128) |
-| PP-13 | "No building acts in the zone" becomes: turrets may shoot units in the zone. | not yet implemented (issue #134) |
 
 Implemented in `packages/core/src/battle.ts` (golden kind `battle`:
 `battle-kind.ts`). **Side 0 is always the party and side 1 the opponent** (the
@@ -3244,9 +3205,8 @@ at tick 0.
 
 These follow from the arena rules and are checked by tests: nothing can be
 built in the zone (a board is exactly its own `h` rows); no building has cells
-or conduits in a zone row; no building acts in the zone (turrets only shoot
-units standing in their owner's own rows; production and flow stay on the
-boards); only units fight there. A unit producer on a front row may spawn a
+or conduits in a zone row; no building produces or flows in the zone (production and flow stay on the
+boards; turrets may shoot units standing in the zone, never units on the enemy's board); only units fight there. A unit producer on a front row may spawn a
 unit onto the first zone row.
 
 The only test-only switch is `options.zone`: a zone to use instead of the
@@ -3432,7 +3392,6 @@ row says so.
 | ---- | ---------------------- | ------ |
 | PP-9 | `coreHealth` becomes `coreHealths`, one value per Core. | not yet implemented (issue #132) |
 | PP-11 | A wave unit's owner is the plot of the column it enters on; its target is the Core of the party plot it enters. | not yet implemented (issue #133) |
-| PP-13 | `freePower` turrets may also shoot units in the zone. | not yet implemented (issue #134) |
 
 A small, general mechanism of the arena simulation (`createArenaSim(...,
 options)`, `ArenaOptions.sideOptions`, also `BattleInput.sideOptions`): per side,
@@ -3483,7 +3442,7 @@ identically; with none the field is absent.
   the turret charging step, `charge` is set to `costPerShot` without touching
   the input buffers. No flow is needed (the PvE threat has no sources,
   conduits or producers). The turrets still obey the normal firing rules,
-  including that they only shoot units standing on their owner's board rows.
+  including that they only shoot units standing on their owner's board rows or in the neutral zone (PP-13).
 - **`unitStrengthPercent`**: a base strength percent for every unit the side
   spawns (producers and waves). `unitStats` receives the sum of this and the
   side's `unit_strength` ramp bonus (which is capped separately by
@@ -3758,7 +3717,7 @@ section when their issue lands; none of them is in the code yet.
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
 | PP-1, PP-2 | The board scripts gain `actor` on every op and place the Core as player 0; a multi-plot board must keep every building in its owner's plot. | not yet implemented (issues #128 and #129) |
-| PP-6 | The boards are rebuilt as supply-limited boards (each building's need against its collectors' rates); the descriptions below, and every result measured on them, are void until then. | not yet implemented (issues #130 and #145) |
+| PP-6 | The boards are rebuilt as supply-limited boards (each building's need against its collectors' rates); the descriptions below, and every result measured on them, are void until then. Since issue #130 the production step caps every producer at its top speed (placeholder intervals), so the pinned results changed. | not yet implemented (issue #145) |
 
 `reference-boards.ts` and `reference-boards-siege.ts` (importable by later
 tools; not test modules): four solo boards as `team-state-ops` scripts on the

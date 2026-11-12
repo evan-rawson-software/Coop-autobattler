@@ -336,7 +336,9 @@ describe('economy buildings: charging and steps (CB-11)', () => {
       content,
       simConfig,
     );
-    expect(sim.ramps).toEqual([{ side: 0, building: 2, charge: 0, steps: 0 }]);
+    expect(sim.ramps).toEqual([
+      { side: 0, building: 2, charge: 0, steps: 0, cooldown: 0 },
+    ]);
     // Tier 1: costPerStep 4. The source (interval 10) delivers at ticks 9,
     // 19, 29, 39; the fourth item completes the step in the same tick.
     runArena(sim, ctx, 39);

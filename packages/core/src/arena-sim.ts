@@ -238,13 +238,17 @@ export interface RampSim {
   charge: number;
   /** Steps taken so far (0 .. maxSteps). */
   steps: number;
+  /** Ticks until the next step is allowed (PP-6). */
+  cooldown: number;
 }
 
 export interface ProducerSim {
   readonly side: number;
   readonly building: number;
-  /** Resource units collected towards the next unit. */
+  /** Resource units collected towards the next unit (0 .. costPerUnit). */
   progress: number;
+  /** Ticks until the next unit may be made (PP-6). */
+  cooldown: number;
 }
 
 /**
@@ -381,6 +385,7 @@ interface ProducerInfo {
   readonly ref: number;
   readonly unit: UnitId;
   readonly cost: number;
+  readonly interval: number;
 }
 
 interface TurretInfo {
@@ -394,6 +399,7 @@ interface TurretInfo {
 interface RampInfo {
   readonly effect: EconomyEffectType;
   readonly costPerStep: number;
+  readonly stepInterval: number;
   readonly stepPercent: number;
   readonly maxSteps: number;
 }
@@ -566,6 +572,7 @@ export function createArenaContext(
           ref,
           unit: def.unit,
           cost: tier.costPerUnit,
+          interval: tier.productionIntervalTicks,
         });
       } else if (def.kind === 'economy') {
         const tier = def.tiers[p.tier - 1];
@@ -573,6 +580,7 @@ export function createArenaContext(
         ramps.set(bkey(side, p.id), {
           effect: def.effect.type,
           costPerStep: tier.costPerStep,
+          stepInterval: tier.stepIntervalTicks,
           stepPercent: tier.stepPercent,
           maxSteps: tier.maxSteps,
         });
@@ -736,7 +744,12 @@ export function createArenaSim(
   const producers: ProducerSim[] = [];
   for (const b of arena.buildings) {
     if (b.kind === 'unit_producer') {
-      producers.push({ side: b.side, building: b.id, progress: 0 });
+      producers.push({
+        side: b.side,
+        building: b.id,
+        progress: 0,
+        cooldown: 0,
+      });
     }
   }
   const turrets: TurretSim[] = [];
@@ -748,7 +761,13 @@ export function createArenaSim(
   const ramps: RampSim[] = [];
   for (const b of arena.buildings) {
     if (b.kind === 'economy') {
-      ramps.push({ side: b.side, building: b.id, charge: 0, steps: 0 });
+      ramps.push({
+        side: b.side,
+        building: b.id,
+        charge: 0,
+        steps: 0,
+        cooldown: 0,
+      });
     }
   }
   const given = options.sideOptions;
@@ -1212,27 +1231,30 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     const info = ctx.producers.get(bkey(p.side, p.building));
     const board = sim.boards[p.side === 0 ? 0 : 1];
     if (info === undefined) continue;
-    // A producer holding a finished unit takes nothing: its buffers fill and
-    // its conduits back up.
+    // Intake (PP-6): at most `cost - progress` items, so `progress` never
+    // exceeds the cost. A producer holding a finished unit takes nothing: its
+    // buffers fill and its conduits back up.
     if (p.progress < info.cost) {
       const consumer = board.consumers.find((c) => c.building === p.building);
       if (consumer !== undefined) {
         for (const input of consumer.inputs) {
-          const n = input.count;
+          const n = Math.min(input.count, info.cost - p.progress);
           if (n > 0 && takeFromBuffer(board, p.building, input.side, n)) {
             p.progress += n;
           }
         }
       }
     }
-    if (p.progress < info.cost) continue;
+    // A unit is made only when the cost is there and the cooldown is over.
+    if (p.progress < info.cost || p.cooldown > 0) continue;
     const unitDef = ctx.content.units.get(info.unit);
     if (unitDef === undefined) throw new Error(`Unknown unit "${info.unit}".`);
     const producer = ctx.arena.buildings[info.ref];
     if (producer === undefined) continue;
     const pos = spawnPosition(sim, ctx, p.side, info.ref, producer, unitDef);
     if (pos === null) continue; // held: no free position at the exit
-    p.progress -= info.cost;
+    p.progress = 0;
+    p.cooldown = info.interval;
     addUnit(sim, ctx, p.side, unitDef, pos.x, pos.y, p.building, tick);
   }
   queueWaves(sim, tick);
@@ -1413,9 +1435,10 @@ function chargeRamps(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
         r.charge += take;
       }
     }
-    if (r.charge >= info.costPerStep) {
+    if (r.charge >= info.costPerStep && r.cooldown === 0) {
       r.charge = 0;
       r.steps += 1;
+      r.cooldown = info.stepInterval;
       ctx.events?.push({
         tick,
         type: 'ramp_step',
@@ -1432,7 +1455,8 @@ function chargeRamps(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
  * Turret fire (end of step 3). Each ready turret (cooldown 0, fully charged),
  * side 0 first then by building ID, shoots the nearest enemy unit that is
  * in range and whose centre stands inside the arena rows of the turret
- * owner's own board. In range: the squared distance from the unit's centre to
+ * owner's own board or the gap rows (never the enemy's board; side 0: rows
+ * `0 .. h + gapRows - 1`, side 1: rows `h .. H - 1`). In range: the squared distance from the unit's centre to
  * the nearest cell of the turret is at most `(rangeCells * CELL_UNITS +
  * radius)^2`, i.e. the gap from the unit's circle to the turret is at most
  * `rangeCells` cells. Nearest: smallest such squared distance; ties by lowest
@@ -1447,8 +1471,10 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (info === undefined || t.charge < info.costPerShot) continue;
     const turret = ctx.arena.buildings[info.ref];
     if (turret === undefined) continue;
-    const rowLo = t.side === 0 ? 0 : geom.height - geom.boardHeight;
-    const rowHi = rowLo + geom.boardHeight - 1;
+    // PP-13: the owner's board rows and the gap rows (never the enemy board).
+    const rowLo = t.side === 0 ? 0 : geom.boardHeight;
+    const rowHi =
+      t.side === 0 ? geom.boardHeight + geom.gapRows - 1 : geom.height - 1;
     let best = -1;
     let bestD = Number.MAX_SAFE_INTEGER;
     for (let i = 0; i < units.length; i++) {
@@ -2256,6 +2282,12 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   // 7. Cooldowns, then the tick counter.
   for (const t of sim.turrets) {
     if (t.cooldown > 0) t.cooldown -= 1;
+  }
+  for (const p of sim.producers) {
+    if (p.cooldown > 0) p.cooldown -= 1;
+  }
+  for (const r of sim.ramps) {
+    if (r.cooldown > 0) r.cooldown -= 1;
   }
   for (const u of sim.units) {
     if (u.attackCooldown > 0) u.attackCooldown -= 1;

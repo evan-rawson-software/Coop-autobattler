@@ -1,7 +1,7 @@
 /**
  * Golden-vector kind `flow-sim`. Input: a `team-state-ops` script (`seed`,
  * `partySize`, `ops`) plus `ticks` (integer >= 0) and `consumers` (`"hold"` or
- * `"drain"`) and optionally `take`: `{building, side, every}`, which removes
+ * `"drain"` or `"need"`) and optionally `take`: `{building, side, every}`, which removes
  * one unit from that consumer input (`takeFromBuffer`) before every tick whose
  * number T satisfies `T mod every = every - 1` (when a unit is there); it paces
  * a slow consumer in `"hold"` mode. The script builds the board; the flow simulation then runs for
@@ -46,8 +46,10 @@ export function makeFlowSimKind(
     if (typeof ticks !== 'number' || !Number.isInteger(ticks) || ticks < 0) {
       throw new TypeError('flow-sim: ticks must be a non-negative integer');
     }
-    if (mode !== 'hold' && mode !== 'drain') {
-      throw new TypeError('flow-sim: consumers must be "hold" or "drain"');
+    if (mode !== 'hold' && mode !== 'drain' && mode !== 'need') {
+      throw new TypeError(
+        'flow-sim: consumers must be "hold", "drain" or "need"',
+      );
     }
     const take = field(input, 'take');
     let taker: { building: number; side: string; every: number } | undefined;
@@ -85,7 +87,7 @@ export function makeFlowSimKind(
       }
       stepFlow(sim, ctx);
     }
-    const result: Json = {
+    const result: Record<string, Json> = {
       tick: sim.tick,
       stateHash: hashJson(sim),
       flow: { ...flowTotals(sim) },
@@ -113,6 +115,14 @@ export function makeFlowSimKind(
         })),
       ),
     };
+    if (ctx.pacers !== undefined) {
+      result['pacers'] = ctx.pacers.map((p) => ({
+        building: p.building,
+        progress: p.progress,
+        cooldown: p.cooldown,
+        productions: p.productions,
+      }));
+    }
     return { result, eventLog: events };
   };
 }
