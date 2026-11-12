@@ -310,6 +310,28 @@ function fetchRow(
 }
 
 describe('ghost pool upgrades and clean-up', () => {
+  test('localStorage: removeOtherVersions removes rows and meta of other versions only', async () => {
+    const ls = createMemoryStorage();
+    const s = createLocalStorageGhostStore(ls);
+    await s.save(snap('ann'));
+    await s.save({ ...snap('bob'), gameVersion: '0.0' });
+    ls.setItem('coop:save:run-1', '{"save":true}');
+    const seq = ls.getItem('coop:ghost-seq');
+    const names = (): string[] =>
+      Array.from({ length: ls.length }, (_, i) => ls.key(i) as string);
+    expect(names().filter((k) => k.startsWith('coop:ghost')).length).toBe(5);
+    await s.removeOtherVersions(B.gameVersion);
+    const left = names().filter((k) => k.startsWith('coop:ghost'));
+    expect(left.length).toBe(3);
+    expect(
+      left.every(
+        (k) => k === 'coop:ghost-seq' || k.includes(ghostBucketKey(B)),
+      ),
+    ).toBe(true);
+    expect(ls.getItem('coop:ghost-seq')).toBe(seq);
+    expect(ls.getItem('coop:save:run-1')).toBe('{"save":true}');
+  });
+
   test('localStorage: old-shape ghost rows are removed at start-up and nothing else', async () => {
     const ls = createMemoryStorage();
     const bk = ghostBucketKey(B);

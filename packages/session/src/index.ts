@@ -137,6 +137,7 @@ export {
   type BundledGhostFile,
 } from './bundled-ghosts.js';
 export {
+  bucketKeyVersion,
   createMemoryGhostStore,
   evictionKeys,
   ghostStoreKey,
@@ -171,6 +172,7 @@ export {
   describeBotStrategy,
   isBotStrategy,
   playBotRun,
+  type BattleStat,
   type BotOptions,
   type BotRunResult,
   type BotStrategyName,

@@ -9,7 +9,9 @@
  */
 import {
   addConduit,
+  collectorRatePer1000,
   isBorderEnd,
+  needPer1000,
   occupancy,
   placeFromStash,
   queryMap,
@@ -24,7 +26,7 @@ import {
 } from '@game/core';
 import type { BoardIntent } from './types.js';
 
-type Side = 'north' | 'east' | 'south' | 'west';
+export type Side = 'north' | 'east' | 'south' | 'west';
 
 /** How a strategy lays a factory out. */
 export interface LayoutStyle {
@@ -36,14 +38,50 @@ export interface LayoutStyle {
   readonly placeLeftovers: boolean;
   /** Building definitions in the order they are connected, first first. */
   readonly priority: readonly string[];
+  /** Share supply with a neighbour through border links (PP-4). */
+  readonly links?: boolean;
 }
 
-interface Plan {
+/**
+ * The least share of its need (percent) that the collectors feeding a
+ * consumer must supply for the bot to place it (CB-10a). A bot never places
+ * a consumer its collectors cannot feed at least this much.
+ */
+export const MIN_COVERAGE_PERCENT = 20;
+
+/** Percent of `need` that `supply` covers (both items per 1000 ticks). */
+export function coveragePercent(supply: number, need: number): number {
+  return need <= 0 ? 100 : Math.floor((100 * supply) / need);
+}
+
+/** The need of a consumer building (items per 1000 ticks at top speed). */
+export function consumerNeed(
+  content: Content,
+  def: string,
+  tier: number,
+): number {
+  const d = content.buildings.get(def);
+  return d === undefined ? 0 : needPer1000(d, tier);
+}
+
+/** What one collector of `tier` supplies (items per 1000 ticks). */
+export function collectorSupply(
+  content: Content,
+  def: string,
+  tier: number,
+): number {
+  const d = content.buildings.get(def);
+  return d !== undefined && d.kind === 'source'
+    ? collectorRatePer1000(d, tier)
+    : 0;
+}
+
+export interface Plan {
   readonly team: TeamState;
   readonly out: readonly BoardIntent[];
 }
 
-interface Env {
+export interface Env {
   readonly content: Content;
   readonly rng: Rng;
   readonly style: LayoutStyle;
@@ -51,13 +89,15 @@ interface Env {
   readonly x0: number;
   readonly x1: number;
   readonly baselineSealed: number;
+  /** The player's own Core (top-left cell), when placed. */
+  readonly core: Cell | null;
 }
 
 /** Search window around a source output for a consumer, in cells. */
 const WINDOW_X = 4;
 const WINDOW_Y = 5;
 
-function shuffle<T>(items: readonly T[], rng: Rng): T[] {
+export function shuffle<T>(items: readonly T[], rng: Rng): T[] {
   const a = [...items];
   for (let i = a.length - 1; i > 0; i--) {
     const j = rng.nextInt(i + 1);
@@ -68,16 +108,16 @@ function shuffle<T>(items: readonly T[], rng: Rng): T[] {
   return a;
 }
 
-function defOf(env: Env, id: string): BuildingDef | undefined {
+export function defOf(env: Env, id: string): BuildingDef | undefined {
   return env.content.buildings.get(id);
 }
 
-function sizeOf(env: Env, id: string): { w: number; h: number } {
+export function sizeOf(env: Env, id: string): { w: number; h: number } {
   const fp = defOf(env, id)?.footprint;
   return { w: fp?.width ?? 1, h: fp?.height ?? 1 };
 }
 
-function outsideCell(
+export function outsideCell(
   b: { x: number; y: number },
   w: number,
   h: number,
@@ -96,11 +136,11 @@ function outsideCell(
   }
 }
 
-function sideLength(side: Side, w: number, h: number): number {
+export function sideLength(side: Side, w: number, h: number): number {
   return side === 'north' || side === 'south' ? w : h;
 }
 
-function boxOf(env: Env, b: PlacedBuilding): { w: number; h: number } {
+export function boxOf(env: Env, b: PlacedBuilding): { w: number; h: number } {
   const def = defOf(env, b.def);
   if (def === undefined) return { w: 1, h: 1 };
   const fp = rotateBuilding(def, b.rotation).footprint;
@@ -108,7 +148,7 @@ function boxOf(env: Env, b: PlacedBuilding): { w: number; h: number } {
 }
 
 /** Cells that a conduit may use: open ground, no building, Core or conduit. */
-function freeCells(
+export function freeCells(
   env: Env,
   team: TeamState,
 ): (x: number, y: number) => boolean {
@@ -118,6 +158,15 @@ function freeCells(
   for (const c of team.conduits) {
     for (const cell of c.cells) used.add(cell.y * team.map.width + cell.x);
   }
+  const fp = env.content.buildings.get('bld_core')?.footprint;
+  for (const core of team.cores) {
+    if (core === null) continue;
+    for (let dy = 0; dy < (fp?.height ?? 2); dy++) {
+      for (let dx = 0; dx < (fp?.width ?? 2); dx++) {
+        used.add((core.y + dy) * team.map.width + core.x + dx);
+      }
+    }
+  }
   return (x, y) =>
     q.isBuildable(x, y) &&
     occ.buildingAt(x, y) === null &&
@@ -125,7 +174,7 @@ function freeCells(
 }
 
 /** Shortest path of free cells from `start` to any of `targets`. */
-function route(
+export function route(
   team: TeamState,
   free: (x: number, y: number) => boolean,
   start: Cell,
@@ -173,7 +222,7 @@ function sealsNothingNew(env: Env, team: TeamState): boolean {
   return sealedProducers(team, env.content).length <= env.baselineSealed;
 }
 
-function withPlace(
+export function withPlace(
   env: Env,
   plan: Plan,
   id: number,
@@ -203,13 +252,19 @@ function withConduit(
   plan: Plan,
   sourceId: number,
   consumerId: number,
+  wantSide?: Side,
 ): Plan | null {
   const t = plan.team;
   const s = t.buildings.find((b) => b.id === sourceId);
   const c = t.buildings.find((b) => b.id === consumerId);
   if (s === undefined || c === undefined) return null;
   const occ = occupancy(t, env.content);
-  const outSide = occ.absoluteSides(s).outputs[0];
+  const outSide = wantSide ?? occ.absoluteSides(s).outputs[0];
+  if (
+    wantSide !== undefined &&
+    !occ.absoluteSides(s).outputs.includes(wantSide)
+  )
+    return null;
   const input = occ.absoluteSides(c).inputs[0];
   if (outSide === undefined || input === undefined) return null;
   const sb = boxOf(env, s);
@@ -245,7 +300,7 @@ function inPlot(env: Env, x: number, w: number): boolean {
 }
 
 /** Positions for a consumer near a cell, nearest first. */
-function nearby(env: Env, around: Cell, w: number): Cell[] {
+export function nearby(env: Env, around: Cell, w: number): Cell[] {
   const out: Cell[] = [];
   for (let dy = -WINDOW_Y; dy <= WINDOW_Y; dy++) {
     for (let dx = -WINDOW_X; dx <= WINDOW_X; dx++) {
@@ -270,11 +325,13 @@ function placeConsumerNear(
   plan: Plan,
   sourceId: number,
   consumerId: number,
+  wantSide?: Side,
 ): Plan | null {
   const s = plan.team.buildings.find((b) => b.id === sourceId);
   const c = plan.team.stash.find((b) => b.id === consumerId);
   if (s === undefined || c === undefined) return null;
-  const outSide = occupancy(plan.team, env.content).absoluteSides(s).outputs[0];
+  const outSide =
+    wantSide ?? occupancy(plan.team, env.content).absoluteSides(s).outputs[0];
   if (outSide === undefined) return null;
   const sb = boxOf(env, s);
   const start = outsideCell(s, sb.w, sb.h, outSide, 0);
@@ -282,14 +339,14 @@ function placeConsumerNear(
   for (const pos of nearby(env, start, size.w)) {
     const placed = withPlace(env, plan, consumerId, pos.x, pos.y);
     if (placed === null) continue;
-    const done = withConduit(env, placed, sourceId, consumerId);
+    const done = withConduit(env, placed, sourceId, consumerId, wantSide);
     if (done !== null && sealsNothingNew(env, done.team)) return done;
   }
   return null;
 }
 
 /** Nodes of a resource inside the player's plot, free of anything. */
-function freeNodes(env: Env, team: TeamState, resource: string): Cell[] {
+export function freeNodes(env: Env, team: TeamState, resource: string): Cell[] {
   const nodes: Cell[] = [];
   for (const n of team.map.nodes) {
     if (n.resource === resource && n.x >= env.x0 && n.x < env.x1) {
@@ -369,18 +426,27 @@ function connectConsumer(
   return null;
 }
 
-/** Scan order for loose buildings: front rows first, from a random column. */
+/**
+ * Scan order for loose buildings: the cells of the player's plot nearest to
+ * their own Core first (ties broken by the bot's generator), so walls and
+ * turrets gather around it.
+ */
 function scanCells(env: Env, team: TeamState, w: number, h: number): Cell[] {
-  const span = Math.max(1, env.x1 - env.x0);
-  const offset = env.rng.nextInt(span);
-  const out: Cell[] = [];
+  const around: Cell = env.core ?? {
+    x: Math.floor((env.x0 + env.x1) / 2),
+    y: team.map.height - 1,
+  };
+  const out: { c: Cell; d: number }[] = [];
   for (let y = team.map.height - 1 - h; y >= 1; y--) {
-    for (let i = 0; i < span; i++) {
-      const x = env.x0 + ((i + offset) % span);
-      if (inPlot(env, x, w)) out.push({ x, y });
+    for (let x = env.x0; x < env.x1; x++) {
+      if (!inPlot(env, x, w)) continue;
+      const d = Math.abs(x - around.x) + Math.abs(y - around.y);
+      out.push({ c: { x, y }, d: d * 4 + env.rng.nextInt(4) });
     }
   }
-  return out;
+  return out
+    .sort((a, b) => a.d - b.d || b.c.y - a.c.y || a.c.x - b.c.x)
+    .map((e) => e.c);
 }
 
 function placeLoose(env: Env, plan: Plan, id: number): Plan | null {
@@ -404,6 +470,129 @@ function isWallLike(env: Env, def: string): boolean {
   return d?.kind === 'defense' && d.defenseType !== 'turret';
 }
 
+export function makeEnv(
+  team: TeamState,
+  player: number,
+  content: Content,
+  plotWidth: number,
+  style: LayoutStyle,
+  rng: Rng,
+): Env {
+  return {
+    content,
+    rng,
+    style,
+    player,
+    x0: player * plotWidth,
+    x1: Math.min(team.map.width, (player + 1) * plotWidth),
+    baselineSealed: sealedProducers(team, content).length,
+    core: team.cores[player] ?? null,
+  };
+}
+
+/** The best collector the player owns, as a supply (items per 1000 ticks). */
+export function bestOwnedSupply(
+  team: TeamState,
+  player: number,
+  content: Content,
+): number {
+  let best = 0;
+  for (const b of [...team.buildings, ...team.stash]) {
+    if (b.owner !== player) continue;
+    best = Math.max(best, collectorSupply(content, b.def, b.tier));
+  }
+  return best;
+}
+
+/** Can one such collector feed `parts` consumers at the minimum coverage? */
+export function feeds(
+  env: Env,
+  team: TeamState,
+  c: { def: string; tier: number },
+  parts: number,
+): boolean {
+  const supply = bestOwnedSupply(team, env.player, env.content);
+  const share = Math.floor(supply / parts);
+  return (
+    coveragePercent(share, consumerNeed(env.content, c.def, c.tier)) >=
+    MIN_COVERAGE_PERCENT
+  );
+}
+
+const SPLIT_SIDES: readonly Side[] = ['north', 'east', 'west'];
+
+/**
+ * One collector on a free node feeds two consumers through a Splitter placed
+ * directly after it (CB-9e). Nothing is planned unless both fit.
+ */
+function connectPair(
+  env: Env,
+  plan: Plan,
+  first: number,
+  second: number,
+  resource: string,
+): Plan | null {
+  const t = plan.team;
+  const source = t.stash.find(
+    (b) => b.owner === env.player && defOf(env, b.def)?.kind === 'source',
+  );
+  const splitter = t.stash.find(
+    (b) =>
+      b.owner === env.player &&
+      (defOf(env, b.def) as { routeType?: string } | undefined)?.routeType ===
+        'splitter',
+  );
+  if (source === undefined || splitter === undefined) return null;
+  for (const node of shuffle(freeNodes(env, t, resource), env.rng)) {
+    const s1 = withPlace(env, plan, source.id, node.x, node.y);
+    const s2 = s1 && withPlace(env, s1, splitter.id, node.x, node.y + 1);
+    const s3 = s2 && withConduit(env, s2, source.id, splitter.id);
+    if (s3 === null) continue;
+    let cur: Plan | null = s3;
+    const used = new Set<Side>();
+    for (const id of [first, second]) {
+      const base: Plan = cur;
+      const isPlaced: boolean = base.team.buildings.some((b) => b.id === id);
+      let done: Plan | null = null;
+      for (const side of SPLIT_SIDES) {
+        if (used.has(side)) continue;
+        const tried: Plan | null = isPlaced
+          ? withConduit(env, base, splitter.id, id, side)
+          : placeConsumerNear(env, base, splitter.id, id, side);
+        if (tried !== null && sealsNothingNew(env, tried.team)) {
+          done = tried;
+          used.add(side);
+          break;
+        }
+      }
+      if (done === null) {
+        cur = null;
+        break;
+      }
+      cur = done;
+    }
+    if (cur !== null) return cur;
+  }
+  return null;
+}
+
+function consumersOf(env: Env, team: TeamState, rank: (d: string) => number) {
+  return [...team.buildings, ...team.stash]
+    .filter((b) => {
+      const d = defOf(env, b.def);
+      return (
+        b.owner === env.player &&
+        d !== undefined &&
+        d.kind !== 'route' &&
+        d.kind !== 'source' &&
+        d.inputs.length > 0
+      );
+    })
+    .sort(
+      (a, b) => rank(a.def) - rank(b.def) || b.tier - a.tier || a.id - b.id,
+    );
+}
+
 /**
  * The board intents that lay out `player`'s stash. Returns the list in the
  * order to send it; empty when there is nothing to do or nothing fits.
@@ -416,40 +605,37 @@ export function planLayout(
   style: LayoutStyle,
   rng: Rng,
 ): BoardIntent[] {
-  const env: Env = {
-    content,
-    rng,
-    style,
-    player,
-    x0: player * plotWidth,
-    x1: Math.min(team.map.width, (player + 1) * plotWidth),
-    baselineSealed: sealedProducers(team, content).length,
-  };
+  const env = makeEnv(team, player, content, plotWidth, style, rng);
   let plan: Plan = { team, out: [] };
   const rank = (def: string): number => {
     const i = style.priority.indexOf(def);
     return i === -1 ? style.priority.length : i;
   };
   if (style.connect) {
-    const consumers = [...team.buildings, ...team.stash]
-      .filter((b) => {
-        const d = defOf(env, b.def);
-        return (
-          b.owner === player &&
-          d !== undefined &&
-          d.kind !== 'route' &&
-          d.kind !== 'source' &&
-          d.inputs.length > 0
-        );
-      })
-      .sort(
-        (a, b) => rank(a.def) - rank(b.def) || b.tier - a.tier || a.id - b.id,
-      );
+    const consumers = consumersOf(env, team, rank);
     for (const c of consumers) {
       if (attached(plan.team).has(c.id)) continue;
       const input = defOf(env, c.def)?.inputs[0];
       const resource = input?.resource;
       if (resource === undefined) continue;
+      // Supply awareness: a consumer its collectors cannot feed is not placed.
+      if (!feeds(env, plan.team, c, 1)) continue;
+      // One collector for two such consumers, through a Splitter.
+      const mate = consumers.find(
+        (m) =>
+          m.id !== c.id &&
+          !attached(plan.team).has(m.id) &&
+          defOf(env, m.def)?.inputs[0]?.resource === resource &&
+          feeds(env, plan.team, c, 2) &&
+          feeds(env, plan.team, m, 2),
+      );
+      if (mate !== undefined) {
+        const pair = connectPair(env, plan, c.id, mate.id, resource);
+        if (pair !== null) {
+          plan = pair;
+          continue;
+        }
+      }
       const done = connectConsumer(env, plan, c.id, resource);
       if (done !== null) plan = done;
     }
@@ -458,6 +644,10 @@ export function planLayout(
     const loose = plan.team.stash
       .filter((b) => b.owner === player)
       .filter((b) => style.walls || !isWallLike(env, b.def))
+      // A bot that connects does not place consumers it could not feed.
+      .filter(
+        (b) => !style.connect || (defOf(env, b.def)?.inputs.length ?? 0) === 0,
+      )
       .sort((a, b) => rank(a.def) - rank(b.def) || a.id - b.id);
     for (const b of loose) {
       const done = placeLoose(env, plan, b.id);
