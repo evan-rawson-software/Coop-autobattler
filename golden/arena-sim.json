@@ -250,8 +250,8 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "b2aa4c83",
-        "events": 1306,
+        "stateHash": "064b113f",
+        "events": 1328,
         "sides": [
           {
             "spawned": 44,
@@ -271,7 +271,7 @@
           }
         ]
       },
-      "eventLogHash": "e8394787"
+      "eventLogHash": "15d6e8fe"
     }
   },
   {
@@ -431,8 +431,8 @@
     "expected": {
       "result": {
         "tick": 1800,
-        "stateHash": "b107e41e",
-        "events": 892,
+        "stateHash": "72b4230a",
+        "events": 908,
         "sides": [
           {
             "spawned": 88,
@@ -452,7 +452,7 @@
           }
         ]
       },
-      "eventLogHash": "edd67853"
+      "eventLogHash": "26c652ea"
     }
   },
   {
@@ -710,8 +710,8 @@
     "expected": {
       "result": {
         "tick": 2200,
-        "stateHash": "9eb30ff5",
-        "events": 1099,
+        "stateHash": "95ac9499",
+        "events": 1119,
         "sides": [
           {
             "spawned": 108,
@@ -731,7 +731,7 @@
           }
         ]
       },
-      "eventLogHash": "84286f3d"
+      "eventLogHash": "cb343987"
     }
   },
   {
@@ -896,7 +896,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "af7e5073",
+        "stateHash": "0827d3cb",
         "events": 69,
         "sides": [
           {
@@ -1102,8 +1102,8 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "7337c1f7",
-        "events": 256,
+        "stateHash": "2cf872e9",
+        "events": 266,
         "sides": [
           {
             "spawned": 3,
@@ -1123,7 +1123,7 @@
           }
         ]
       },
-      "eventLogHash": "a80b3e3f"
+      "eventLogHash": "524c5514"
     }
   },
   {
@@ -1953,7 +1953,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "e4882f3a",
+        "stateHash": "e7669450",
         "events": 75,
         "sides": [
           {
@@ -2206,7 +2206,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "df023662",
+        "stateHash": "eb50664e",
         "events": 40,
         "sides": [
           {
@@ -3103,8 +3103,8 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "dadaabee",
-        "events": 458,
+        "stateHash": "617c05a6",
+        "events": 463,
         "sides": [
           {
             "spawned": 0,
@@ -3124,7 +3124,7 @@
           }
         ]
       },
-      "eventLogHash": "5f0210f1"
+      "eventLogHash": "5ed376ce"
     }
   },
   {
@@ -3267,7 +3267,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "77d2e508",
+        "stateHash": "789e8710",
         "events": 221,
         "sides": [
           {
@@ -3288,7 +3288,7 @@
           }
         ]
       },
-      "eventLogHash": "ec8c1b57"
+      "eventLogHash": "fa565367"
     }
   },
   {
@@ -3626,7 +3626,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "5d736350",
+        "stateHash": "25926ad8",
         "events": 142,
         "sides": [
           {
@@ -3647,7 +3647,7 @@
           }
         ]
       },
-      "eventLogHash": "469d2e79"
+      "eventLogHash": "1c347feb"
     }
   },
   {
@@ -4121,8 +4121,8 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "885edfbe",
-        "events": 630,
+        "stateHash": "3614694e",
+        "events": 648,
         "sides": [
           {
             "spawned": 44,
@@ -4142,7 +4142,7 @@
           }
         ]
       },
-      "eventLogHash": "a255d36d"
+      "eventLogHash": "f45f6f05"
     }
   },
   {
@@ -4698,7 +4698,7 @@
     "expected": {
       "result": {
         "tick": 60,
-        "stateHash": "cd5a358e",
+        "stateHash": "11a8e9e4",
         "events": 7,
         "sides": [
           {
@@ -4816,7 +4816,7 @@
     "expected": {
       "result": {
         "tick": 60,
-        "stateHash": "d28dc237",
+        "stateHash": "4b11b81d",
         "events": 21,
         "sides": [
           {
@@ -5291,8 +5291,8 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "fb9092d8",
-        "events": 86,
+        "stateHash": "513c1dd8",
+        "events": 98,
         "sides": [
           {
             "spawned": 12,
@@ -5326,7 +5326,7 @@
           [12, 3188, 8533]
         ]
       },
-      "eventLogHash": "8ca82cb7"
+      "eventLogHash": "3b73df2e"
     }
   },
   {
@@ -5559,7 +5559,7 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "22ba654b",
+        "stateHash": "7b6f38f7",
         "events": 244,
         "sides": [
           {
@@ -5588,7 +5588,7 @@
           [7, 505, 988]
         ]
       },
-      "eventLogHash": "134e9c27"
+      "eventLogHash": "aaedd92f"
     }
   },
   {
@@ -5989,7 +5989,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "ddc396f9",
+        "stateHash": "f3e5646b",
         "events": 41,
         "sides": [
           {
@@ -6273,7 +6273,7 @@
     "expected": {
       "result": {
         "tick": 1,
-        "stateHash": "a8928a61",
+        "stateHash": "86eb97a1",
         "events": 9,
         "sides": [
           {
@@ -6325,6 +6325,1414 @@
         ]
       },
       "eventLogHash": "675f87cd"
+    }
+  },
+  {
+    "id": "arena-sim.four-plot-opposite-targets",
+    "kind": "arena-sim",
+    "description": "Four players per side, Cores only. One soldier of side 0 from each plot walks to the Core of the plot opposite its own and attacks it: all four enemy Cores take damage (a single shared goal would hit only one).",
+    "input": {
+      "teamA": {
+        "seed": 1,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 29,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 41,
+            "y": 0
+          }
+        ],
+        "map": {
+          "width": 48,
+          "height": 16,
+          "partySize": 4,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 29,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 41,
+            "y": 0
+          }
+        ],
+        "map": {
+          "width": 48,
+          "height": 16,
+          "partySize": 4,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "gapRows": 4,
+      "ticks": 500,
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 5,
+          "y": 14
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 17,
+          "y": 14
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 29,
+          "y": 14
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 41,
+          "y": 14
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 500,
+        "stateHash": "76e4447f",
+        "events": 156,
+        "sides": [
+          {
+            "spawned": 4,
+            "alive": 4,
+            "unitsDied": 0,
+            "buildingDamageDealt": 936,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500, 500, 500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [266, 266, 266, 266]
+          }
+        ]
+      },
+      "eventLogHash": "8c407fb5"
+    }
+  },
+  {
+    "id": "arena-sim.four-plot-retarget",
+    "kind": "arena-sim",
+    "description": "The same four soldiers with the enemy Cores of players 2 and 3 nearly dead. When a unit's Core falls it takes the nearest remaining Core (unit_retargeted) and keeps it; units whose Core still stands do not change.",
+    "input": {
+      "teamA": {
+        "seed": 1,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 29,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 41,
+            "y": 0
+          }
+        ],
+        "map": {
+          "width": 48,
+          "height": 16,
+          "partySize": 4,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 29,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 41,
+            "y": 0
+          }
+        ],
+        "map": {
+          "width": 48,
+          "height": 16,
+          "partySize": 4,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "gapRows": 4,
+      "ticks": 900,
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 5,
+          "y": 14
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 17,
+          "y": 14
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 29,
+          "y": 14
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 41,
+          "y": 14
+        }
+      ],
+      "buildingHealth": [
+        {
+          "side": 1,
+          "core": 3,
+          "hp": 5
+        },
+        {
+          "side": 1,
+          "core": 2,
+          "hp": 5
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 900,
+        "stateHash": "8730ece7",
+        "events": 183,
+        "sides": [
+          {
+            "spawned": 4,
+            "alive": 4,
+            "unitsDied": 0,
+            "buildingDamageDealt": 1010,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500, 500, 500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [0, 0, 0, 0]
+          }
+        ]
+      },
+      "eventLogHash": "bb32ab7d"
+    }
+  },
+  {
+    "id": "arena-sim.four-plot-retarget-restore",
+    "kind": "arena-sim",
+    "description": "The four-plot retarget battle saved and restored before, during and after the first Core falls: the result equals the run without restoring.",
+    "input": {
+      "teamA": {
+        "seed": 1,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 29,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 41,
+            "y": 0
+          }
+        ],
+        "map": {
+          "width": 48,
+          "height": 16,
+          "partySize": 4,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 29,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 41,
+            "y": 0
+          }
+        ],
+        "map": {
+          "width": 48,
+          "height": 16,
+          "partySize": 4,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "gapRows": 4,
+      "ticks": 900,
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 5,
+          "y": 14
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 17,
+          "y": 14
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 29,
+          "y": 14
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 41,
+          "y": 14
+        }
+      ],
+      "buildingHealth": [
+        {
+          "side": 1,
+          "core": 3,
+          "hp": 5
+        },
+        {
+          "side": 1,
+          "core": 2,
+          "hp": 5
+        }
+      ],
+      "restoreAt": [0, 1, 60, 112, 113, 114, 115, 116, 300, 458, 459]
+    },
+    "expected": {
+      "result": {
+        "tick": 900,
+        "stateHash": "8730ece7",
+        "events": 183,
+        "sides": [
+          {
+            "spawned": 4,
+            "alive": 4,
+            "unitsDied": 0,
+            "buildingDamageDealt": 1010,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500, 500, 500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [0, 0, 0, 0]
+          }
+        ]
+      },
+      "eventLogHash": "bb32ab7d"
+    }
+  },
+  {
+    "id": "arena-sim.two-plot-retarget",
+    "kind": "arena-sim",
+    "description": "Two players per side. The soldier of plot 0 walks to Core 1 and destroys it; it then takes Core 0 as its target.",
+    "input": {
+      "teamA": {
+        "seed": 1,
+        "partySize": 2,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          }
+        ],
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 2,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          }
+        ],
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 2,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "gapRows": 4,
+      "ticks": 500,
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 5,
+          "y": 14
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 17,
+          "y": 21
+        }
+      ],
+      "buildingHealth": [
+        {
+          "side": 1,
+          "core": 1,
+          "hp": 5
+        },
+        {
+          "side": 0,
+          "core": 1,
+          "hp": 5
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 500,
+        "stateHash": "8d8a684a",
+        "events": 71,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 197,
+            "buildingsDestroyed": 0,
+            "coreHealth": [302, 0]
+          },
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 203,
+            "buildingsDestroyed": 0,
+            "coreHealth": [308, 0]
+          }
+        ]
+      },
+      "eventLogHash": "942d873e"
+    }
+  },
+  {
+    "id": "arena-sim.retarget-tie-between-equal-cores",
+    "kind": "arena-sim",
+    "description": "The soldier of plot 1 destroys Core 2, standing above it. Cores 1 and 3 are exactly as far from it (movement distance 104 each); the tie is broken by the plot nearer to the opposite one (equal) and then the larger player index, so it takes Core 3.",
+    "input": {
+      "teamA": {
+        "seed": 1,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 29,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 41,
+            "y": 0
+          }
+        ],
+        "map": {
+          "width": 48,
+          "height": 16,
+          "partySize": 4,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 18,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 29,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 41,
+            "y": 0
+          }
+        ],
+        "map": {
+          "width": 48,
+          "height": 16,
+          "partySize": 4,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "gapRows": 4,
+      "ticks": 300,
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 17,
+          "y": 33
+        }
+      ],
+      "buildingHealth": [
+        {
+          "side": 1,
+          "core": 2,
+          "hp": 10
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 300,
+        "stateHash": "4e9a071c",
+        "events": 27,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 148,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500, 500, 500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500, 0, 362]
+          }
+        ]
+      },
+      "eventLogHash": "b5bcc591"
+    }
+  },
+  {
+    "id": "arena-sim.attacks-core-in-reach-then-walks-on",
+    "kind": "arena-sim",
+    "description": "A soldier of plot 0 (target: Core 3, at the far left) stands beside Core 2, which is not its target. It attacks Core 2 as an enemy in reach and holds its place until Core 2 falls, then walks on to Core 3 and attacks that; its target never changes.",
+    "input": {
+      "teamA": {
+        "seed": 1,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 29,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 41,
+            "y": 0
+          }
+        ],
+        "map": {
+          "width": 48,
+          "height": 16,
+          "partySize": 4,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 34,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 46,
+            "y": 0
+          }
+        ],
+        "map": {
+          "width": 48,
+          "height": 16,
+          "partySize": 4,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        }
+      },
+      "gapRows": 4,
+      "ticks": 500,
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 11,
+          "y": 34
+        }
+      ],
+      "buildingHealth": [
+        {
+          "side": 1,
+          "core": 2,
+          "hp": 15
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 500,
+        "stateHash": "e75e4ef5",
+        "events": 47,
+        "sides": [
+          {
+            "spawned": 1,
+            "alive": 1,
+            "unitsDied": 0,
+            "buildingDamageDealt": 273,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500, 500, 500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500, 500, 0, 242]
+          }
+        ]
+      },
+      "eventLogHash": "b2db382b"
+    }
+  },
+  {
+    "id": "arena-sim.mirror-four-plots",
+    "kind": "arena-sim",
+    "description": "The same four-player team with a working barracks line in every plot on both sides of a 4-row gap, Cores 0 and 3 weak: the battle stays mirror-symmetric through the falls and retargets (checked tick by tick in unit-targets.test.ts).",
+    "input": {
+      "teamA": {
+        "seed": 1,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 29,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 41,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 2,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 2,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 2,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 4,
+            "x": 14,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 5,
+            "x": 14,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 1,
+            "from": {
+              "building": 4,
+              "side": "north"
+            },
+            "to": {
+              "building": 5,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 14,
+                "y": 3
+              },
+              {
+                "x": 14,
+                "y": 4
+              },
+              {
+                "x": 14,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 7,
+            "x": 26,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 8,
+            "x": 26,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 2,
+            "from": {
+              "building": 7,
+              "side": "north"
+            },
+            "to": {
+              "building": 8,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 26,
+                "y": 3
+              },
+              {
+                "x": 26,
+                "y": 4
+              },
+              {
+                "x": 26,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 10,
+            "x": 38,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 11,
+            "x": 38,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 3,
+            "from": {
+              "building": 10,
+              "side": "north"
+            },
+            "to": {
+              "building": 11,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 38,
+                "y": 3
+              },
+              {
+                "x": 38,
+                "y": 4
+              },
+              {
+                "x": 38,
+                "y": 5
+              }
+            ]
+          }
+        ],
+        "map": {
+          "width": 48,
+          "height": 16,
+          "partySize": 4,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 2,
+              "y": 2,
+              "resource": "res_a"
+            },
+            {
+              "x": 14,
+              "y": 2,
+              "resource": "res_a"
+            },
+            {
+              "x": 26,
+              "y": 2,
+              "resource": "res_a"
+            },
+            {
+              "x": 38,
+              "y": 2,
+              "resource": "res_a"
+            }
+          ]
+        }
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 17,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 29,
+            "y": 0
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 41,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 2,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 2,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 2,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 4,
+            "x": 14,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 5,
+            "x": 14,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 1,
+            "from": {
+              "building": 4,
+              "side": "north"
+            },
+            "to": {
+              "building": 5,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 14,
+                "y": 3
+              },
+              {
+                "x": 14,
+                "y": 4
+              },
+              {
+                "x": 14,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 7,
+            "x": 26,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 8,
+            "x": 26,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 2,
+            "from": {
+              "building": 7,
+              "side": "north"
+            },
+            "to": {
+              "building": 8,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 26,
+                "y": 3
+              },
+              {
+                "x": 26,
+                "y": 4
+              },
+              {
+                "x": 26,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 10,
+            "x": 38,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 11,
+            "x": 38,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 3,
+            "from": {
+              "building": 10,
+              "side": "north"
+            },
+            "to": {
+              "building": 11,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 38,
+                "y": 3
+              },
+              {
+                "x": 38,
+                "y": 4
+              },
+              {
+                "x": 38,
+                "y": 5
+              }
+            ]
+          }
+        ],
+        "map": {
+          "width": 48,
+          "height": 16,
+          "partySize": 4,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": [
+            {
+              "x": 2,
+              "y": 2,
+              "resource": "res_a"
+            },
+            {
+              "x": 14,
+              "y": 2,
+              "resource": "res_a"
+            },
+            {
+              "x": 26,
+              "y": 2,
+              "resource": "res_a"
+            },
+            {
+              "x": 38,
+              "y": 2,
+              "resource": "res_a"
+            }
+          ]
+        }
+      },
+      "gapRows": 4,
+      "ticks": 1200,
+      "buildingHealth": [
+        {
+          "side": 0,
+          "core": 0,
+          "hp": 30
+        },
+        {
+          "side": 0,
+          "core": 3,
+          "hp": 60
+        },
+        {
+          "side": 1,
+          "core": 0,
+          "hp": 30
+        },
+        {
+          "side": 1,
+          "core": 3,
+          "hp": 60
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 1200,
+        "stateHash": "3304fa17",
+        "events": 2888,
+        "sides": [
+          {
+            "spawned": 116,
+            "alive": 102,
+            "unitsDied": 14,
+            "buildingDamageDealt": 1090,
+            "buildingsDestroyed": 0,
+            "coreHealth": [0, 0, 0, 0]
+          },
+          {
+            "spawned": 116,
+            "alive": 102,
+            "unitsDied": 14,
+            "buildingDamageDealt": 1090,
+            "buildingsDestroyed": 0,
+            "coreHealth": [0, 0, 0, 0]
+          }
+        ]
+      },
+      "eventLogHash": "537b343a"
     }
   }
 ]

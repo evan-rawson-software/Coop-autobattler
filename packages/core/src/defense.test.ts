@@ -1173,9 +1173,9 @@ describe('enemy-path preview', () => {
     expect(simulated(modified)).toBe(gate);
   });
 
-  test('requires a placed Core', () => {
-    expect(() =>
+  test('a plot without a placed Core gives no entry (PP-12)', () => {
+    expect(
       previewEnemyPaths(new Lab(tiny()).state, content, simConfig),
-    ).toThrow(/Core/);
+    ).toEqual([]);
   });
 });

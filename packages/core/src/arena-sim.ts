@@ -9,7 +9,6 @@
 
 import {
   createArena,
-  goalCoreRef,
   removeFromArena,
   type Arena,
   type ArenaBuilding,
@@ -133,6 +132,17 @@ export type ArenaEvent =
       readonly px: number;
       readonly py: number;
       readonly building: number;
+      /** The producing building's owner; for a wave unit, the plot it enters on (PP-11). */
+      readonly owner: number;
+      /** The player index of the enemy Core it heads for, or -1 (PP-11). */
+      readonly target: number;
+    }
+  | {
+      readonly tick: number;
+      readonly type: 'unit_retargeted';
+      readonly unit: number;
+      /** The new target: a player index of the enemy side, or -1. */
+      readonly target: number;
     }
   | {
       readonly tick: number;
@@ -215,6 +225,13 @@ export interface UnitSim {
   /** Attack damage fixed at spawn (base damage with the side's strength bonus). */
   damage: number;
   attackCooldown: number;
+  /** A player index of the unit's own side: whose plot it belongs to (PP-11). */
+  readonly owner: number;
+  /**
+   * The player index of the enemy Core it heads for, or -1 when none stands.
+   * Changes only when that Core is destroyed (PP-11).
+   */
+  target: number;
 }
 
 /** A player's Core in the `health` list (PP-9). */
@@ -407,11 +424,11 @@ export function unitStats(
 
 interface ProducerInfo {
   readonly ref: number;
-  /** The player who owns the producer (PP-8: whose strength bonus applies). */
-  readonly owner: number;
   readonly unit: UnitId;
   readonly cost: number;
   readonly interval: number;
+  /** The building's owner: the owner of the units it makes (PP-11). */
+  readonly owner: number;
 }
 
 interface TurretInfo {
@@ -465,11 +482,17 @@ export interface ArenaContext {
   /** Largest collision radius and largest body radius among the unit types. */
   readonly maxRadius: number;
   readonly maxBody: number;
-  /** Lazily computed, dropped whenever a building is destroyed. */
-  fields: (Field | undefined)[];
-  breach: (Float64Array | undefined)[];
-  /** Per building `ref`: its cached `spawnCells`, dropped with the fields. */
-  spawnCells: (Int32Array | undefined)[];
+  /**
+   * Per side, per enemy Core (player index): lazily computed, dropped
+   * whenever a building is destroyed (PP-11).
+   */
+  fields: (Field | undefined)[][];
+  breach: (Float64Array | undefined)[][];
+  /**
+   * Cached `spawnCells` per (producer `ref`, target Core), key
+   * `ref * SPAWN_KEY + core`; dropped with the fields.
+   */
+  spawnCells: Map<number, Int32Array>;
   // Scratch buffers reused across ticks (rebuilt from the state every tick).
   /** Per side, per cell: the first unit index whose centre is in the cell. */
   heads: Int32Array[];
@@ -478,8 +501,11 @@ export interface ArenaContext {
   crad: Int32Array;
   brad: Int32Array;
   motion: MotionScratch;
-  /** Per side, per cell: cached `fieldStep` (-1 none, -2 not computed yet). */
-  readonly steps: Int32Array[];
+  /**
+   * Per side, per target Core, per cell: cached `fieldStep` (-1 none, -2 not
+   * computed yet); allocated with the field.
+   */
+  readonly steps: (Int32Array | undefined)[][];
   /**
    * Per side: summed-area table of the number of units whose centre is in a
    * cell ((width + 1) * (height + 1) entries), rebuilt every tick; lets the
@@ -615,10 +641,10 @@ export function createArenaContext(
         if (tier === undefined) continue;
         producers.set(bkey(side, p.id), {
           ref,
-          owner: p.owner,
           unit: def.unit,
           cost: tier.costPerUnit,
           interval: tier.productionIntervalTicks,
+          owner: p.owner,
         });
       } else if (def.kind === 'economy') {
         const tier = def.tiers[p.tier - 1];
@@ -676,17 +702,15 @@ export function createArenaContext(
       ...content.units.list().map((d) => d.collisionRadius),
     ),
     maxBody: Math.max(1, ...content.units.list().map((d) => d.radius)),
-    fields: new Array<Field | undefined>(2).fill(undefined),
-    breach: [undefined, undefined] as (Float64Array | undefined)[],
-    spawnCells: new Array<Int32Array | undefined>(arena.buildings.length).fill(
-      undefined,
-    ),
+    fields: [[], []] as (Field | undefined)[][],
+    breach: [[], []] as (Float64Array | undefined)[][],
+    spawnCells: new Map<number, Int32Array>(),
     heads: [new Int32Array(cells), new Int32Array(cells)],
     next: new Int32Array(0),
     crad: new Int32Array(0),
     brad: new Int32Array(0),
     motion: new MotionScratch(),
-    steps: [new Int32Array(cells).fill(-2), new Int32Array(cells).fill(-2)],
+    steps: [[], []] as (Int32Array | undefined)[][],
     present: [
       new Int32Array((arena.geom.width + 1) * (arena.geom.height + 1)),
       new Int32Array((arena.geom.width + 1) * (arena.geom.height + 1)),
@@ -856,11 +880,14 @@ export function createArenaSim(
 // ---------------------------------------------------------------------------
 // Fields
 
-function fieldFor(ctx: ArenaContext, side: number): Field {
-  let f = ctx.fields[side];
+/** The movement field of `side` towards the enemy Core of player `core`. */
+function fieldFor(ctx: ArenaContext, side: number, core: number): Field {
+  const row = ctx.fields[side] ?? [];
+  let f = row[core];
   if (f === undefined) {
-    f = computeField(ctx.arena, side);
-    ctx.fields[side] = f;
+    f = computeField(ctx.arena, side, core);
+    row[core] = f;
+    ctx.fields[side] = row;
   }
   return f;
 }
@@ -869,11 +896,13 @@ function fieldFor(ctx: ArenaContext, side: number): Field {
 function stepFor(
   ctx: ArenaContext,
   side: number,
+  core: number,
   field: Field,
   cell: number,
 ): number {
-  const cache = ctx.steps[side];
-  if (cache === undefined) return -1;
+  const row = ctx.steps[side] ?? [];
+  ctx.steps[side] = row;
+  const cache = (row[core] ??= new Int32Array(field.dist.length).fill(-2));
   let v = cache[cell] ?? -2;
   if (v === -2) {
     v = fieldStep(ctx.arena, side, field, cell);
@@ -934,19 +963,104 @@ function anyPresent(
   );
 }
 
-function breachFor(ctx: ArenaContext, side: number): Float64Array {
-  let f = ctx.breach[side];
+function breachFor(
+  ctx: ArenaContext,
+  side: number,
+  core: number,
+): Float64Array {
+  const row = ctx.breach[side] ?? [];
+  let f = row[core];
   if (f === undefined) {
     f = computeBreach(
       ctx.arena,
       side,
+      core,
       (ref) => ctx.maxHealth[ref] ?? 0,
       ctx.simConfig.breachBaseCost,
       ctx.simConfig.breachHealthPerCost,
     );
-    ctx.breach[side] = f;
+    row[core] = f;
+    ctx.breach[side] = row;
   }
   return f;
+}
+
+/** True while the enemy Core of player `core` (enemy of `side`) stands. */
+function coreAlive(arena: Arena, side: number, core: number): boolean {
+  const ref = arena.coreRef[1 - side]?.[core] ?? -1;
+  return ref >= 0 && arena.buildings[ref]?.alive === true;
+}
+
+/**
+ * A cell's rank for the enemy Core `core` (PP-11): class 0 and its distance
+ * in the movement field, else class 1 and its distance in the breach field,
+ * else class 2. Smaller is nearer; `core` -1 (no Core) ranks every cell 2.
+ */
+function cellRank(
+  ctx: ArenaContext,
+  side: number,
+  core: number,
+  k: number,
+): { cls: number; d: number } {
+  if (core < 0) return { cls: 2, d: 0 };
+  const d = fieldFor(ctx, side, core).dist[k] ?? -1;
+  if (d >= 0) return { cls: 0, d };
+  const b = breachFor(ctx, side, core)[k] ?? -1;
+  return b >= 0 ? { cls: 1, d: b } : { cls: 2, d: 0 };
+}
+
+/**
+ * The best target by the key `(class, distance, |q - opposite|, -q)` among
+ * the living enemy Cores, where `rank(q)` gives the first two parts, or -1
+ * when none stands. Applies only once the opposite Core is gone.
+ */
+function bestCore(
+  ctx: ArenaContext,
+  side: number,
+  owner: number,
+  rank: (q: number) => { cls: number; d: number } | null,
+): number {
+  const n = ctx.arena.coreRef[1 - side]?.length ?? 0;
+  const opp = n - 1 - owner;
+  let best = -1;
+  let bc = 0;
+  let bd = 0;
+  let bn = 0;
+  for (let q = 0; q < n; q++) {
+    if (!coreAlive(ctx.arena, side, q)) continue;
+    const r = rank(q);
+    if (r === null) continue;
+    const near = Math.abs(q - opp);
+    if (
+      best < 0 ||
+      r.cls < bc ||
+      (r.cls === bc &&
+        (r.d < bd || (r.d === bd && (near < bn || (near === bn && q > best)))))
+    ) {
+      best = q;
+      bc = r.cls;
+      bd = r.d;
+      bn = near;
+    }
+  }
+  return best;
+}
+
+/**
+ * `chooseTarget(owner, cell)` of PP-11 for a unit of `side` whose centre is
+ * in arena cell `k`: the Core opposite its owner's plot if it stands, else
+ * the nearest living enemy Core, else -1.
+ */
+function chooseTarget(
+  ctx: ArenaContext,
+  side: number,
+  owner: number,
+  k: number,
+): number {
+  const n = ctx.arena.coreRef[1 - side]?.length ?? 0;
+  const opp = n - 1 - owner;
+  if (coreAlive(ctx.arena, side, opp)) return opp;
+  return bestCore(ctx, side, owner, (q) => cellRank(ctx, side, q, k));
 }
 
 /**
@@ -1195,14 +1309,15 @@ function freeInCell(
 function spawnCells(
   ctx: ArenaContext,
   side: number,
+  core: number,
   ref: number,
   producer: ArenaBuilding,
 ): Int32Array {
-  const cached = ctx.spawnCells[ref];
+  const key = ref * SPAWN_KEY + core + 1;
+  const cached = ctx.spawnCells.get(key);
   if (cached !== undefined) return cached;
   const arena = ctx.arena;
   const { width, height } = arena.geom;
-  const field = fieldFor(ctx, side);
   const cands: { k: number; cls: number; d: number; tie: number }[] = [];
   for (const c of producer.cells) {
     for (const [dx, dy] of NEIGHBORS) {
@@ -1211,16 +1326,7 @@ function spawnCells(
       if (x < 0 || y < 0 || x >= width || y >= height) continue;
       const k = y * width + x;
       if (!openFor(arena, side, k)) continue;
-      let cls = 0;
-      let d = field.dist[k] ?? -1;
-      if (d < 0) {
-        cls = 1;
-        d = breachFor(ctx, side)[k] ?? -1;
-        if (d < 0) {
-          cls = 2;
-          d = 0;
-        }
-      }
+      const { cls, d } = cellRank(ctx, side, core, k);
       cands.push({ k, cls, d, tie: tieKey(arena, side, x, y) });
     }
   }
@@ -1235,9 +1341,12 @@ function spawnCells(
     out.push(c.k);
   }
   const cells = Int32Array.from(out);
-  ctx.spawnCells[ref] = cells;
+  ctx.spawnCells.set(key, cells);
   return cells;
 }
+
+/** Stride of the `spawnCells` cache key: more than any party size plus one. */
+const SPAWN_KEY = 64;
 
 /**
  * The spawn position of a unit leaving `producer`: the first free position in
@@ -1248,11 +1357,9 @@ function spawnPosition(
   sim: ArenaSim,
   ctx: ArenaContext,
   side: number,
-  ref: number,
-  producer: ArenaBuilding,
+  cells: Int32Array,
   unitDef: UnitDef,
 ): { x: number; y: number } | null {
-  const cells = spawnCells(ctx, side, ref, producer);
   if (cells.length === 0) return null;
   const width = ctx.arena.geom.width;
   let x0 = Infinity;
@@ -1308,7 +1415,19 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (unitDef === undefined) throw new Error(`Unknown unit "${info.unit}".`);
     const producer = ctx.arena.buildings[info.ref];
     if (producer === undefined) continue;
-    const pos = spawnPosition(sim, ctx, p.side, info.ref, producer, unitDef);
+    // The target Core: the opposite one if it stands (the spawn cells are
+    // ordered by its fields), else the nearest by the first spawn cell.
+    const owner = info.owner;
+    const n = ctx.arena.coreRef[1 - p.side]?.length ?? 0;
+    const opp = n - 1 - owner;
+    const target = coreAlive(ctx.arena, p.side, opp)
+      ? opp
+      : bestCore(ctx, p.side, owner, (q) => {
+          const first = spawnCells(ctx, p.side, q, info.ref, producer)[0];
+          return first === undefined ? null : cellRank(ctx, p.side, q, first);
+        });
+    const cells = spawnCells(ctx, p.side, target, info.ref, producer);
+    const pos = spawnPosition(sim, ctx, p.side, cells, unitDef);
     if (pos === null) continue; // held: no free position at the exit
     p.progress = 0;
     p.cooldown = info.interval;
@@ -1321,6 +1440,7 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
       pos.y,
       p.building,
       tick,
+      { owner, target },
       info.owner,
     );
   }
@@ -1356,9 +1476,14 @@ function addUnit(
   py: number,
   building: number,
   tick: number,
-  owner: number | null,
+  who: { owner: number; target: number },
+  rampOwner: number | null,
 ): void {
-  const stats = unitStats(side, unitDef, spawnStrength(sim, ctx, side, owner));
+  const stats = unitStats(
+    side,
+    unitDef,
+    spawnStrength(sim, ctx, side, rampOwner),
+  );
   const unit: UnitSim = {
     id: sim.nextUnitId,
     side,
@@ -1368,6 +1493,8 @@ function addUnit(
     hp: stats.health,
     damage: stats.damage,
     attackCooldown: 0,
+    owner: who.owner,
+    target: who.target,
   };
   sim.nextUnitId += 1;
   sim.units.push(unit);
@@ -1384,7 +1511,21 @@ function addUnit(
     px,
     py,
     building,
+    owner: unit.owner,
+    target: unit.target,
   });
+}
+
+/** The arena cell index holding the point `(pos.x, pos.y)` (sub-cell units). */
+function cellAt(
+  ctx: ArenaContext,
+  side: number,
+  pos: { x: number; y: number },
+): number {
+  const { width, height } = ctx.arena.geom;
+  return (
+    ownCellCoord(side, pos.y, height) * width + ownCellCoord(side, pos.x, width)
+  );
 }
 
 /** Between consecutive scheduled waves of a side the start column moves by this. */
@@ -1448,20 +1589,42 @@ function enterWaves(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     }
     const row = side === 0 ? boardHeight - 1 : height - boardHeight;
     let pos: { x: number; y: number } | null = null;
+    let used = 0;
     for (let d = 0; d < width && pos === null; d++) {
       for (const c of d === 0 ? [e.col] : [e.col - d, e.col + d]) {
         if (c < 0 || c >= width) continue;
         const cx = side === 0 ? c : width - 1 - c;
         if (!openFor(arena, side, row * width + cx)) continue;
         pos = freeInCell(sim, ctx, side, unitDef, cx, row);
-        if (pos !== null) break;
+        if (pos !== null) {
+          used = c;
+          break;
+        }
       }
     }
     if (pos === null) {
       rest.push(e);
       if (side === 0) (failed0 ??= []).push(unitDef.collisionRadius);
       else (failed1 ??= []).push(unitDef.collisionRadius);
-    } else addUnit(sim, ctx, side, unitDef, pos.x, pos.y, 0, tick, null);
+    } else {
+      // PP-11: the owner is the plot of the column it entered on; the target
+      // is chosen from the entry cell.
+      const owner = divFloor(used, sim.teams[side === 0 ? 0 : 1].map.plotWidth);
+      const target = chooseTarget(ctx, side, owner, cellAt(ctx, side, pos));
+      // A wave unit has no producer, so no ramp bonus (PP-8).
+      addUnit(
+        sim,
+        ctx,
+        side,
+        unitDef,
+        pos.x,
+        pos.y,
+        0,
+        tick,
+        { owner, target },
+        null,
+      );
+    }
   }
   sim.entering = rest;
 }
@@ -1601,8 +1764,13 @@ export function spawnUnitForTest(
     py?: number;
     /** Skip the overlap check (tests of damage sums that stack units). */
     allowOverlap?: boolean;
-    /** The player whose ramp bonus the unit gets (default: none, as a wave unit). */
+    /**
+     * The unit's owner; default the plot its cell is in, in its own frame. The
+     * owner's ramp bonus applies to its strength (PP-8).
+     */
     owner?: number;
+    /** The unit's target Core; default `chooseTarget(owner, cell)`. */
+    target?: number;
   },
 ): UnitSim {
   const def = ctx.content.units.get(args.def);
@@ -1628,10 +1796,18 @@ export function spawnUnitForTest(
       );
     }
   }
+  const k = cellAt(ctx, args.side, { x: px, y: py });
+  const ownCol =
+    args.side === 0
+      ? cellCoord(px, ctx.arena.geom.width)
+      : ctx.arena.geom.width - 1 - cellCoord(px, ctx.arena.geom.width);
+  const owner =
+    args.owner ??
+    divFloor(ownCol, sim.teams[args.side === 0 ? 0 : 1].map.plotWidth);
   const stats = unitStats(
     args.side,
     def,
-    spawnStrength(sim, ctx, args.side, args.owner ?? null),
+    spawnStrength(sim, ctx, args.side, owner),
   );
   const unit: UnitSim = {
     id: sim.nextUnitId,
@@ -1642,6 +1818,8 @@ export function spawnUnitForTest(
     hp: stats.health,
     damage: stats.damage,
     attackCooldown: 0,
+    owner,
+    target: args.target ?? chooseTarget(ctx, args.side, owner, k),
   };
   sim.nextUnitId += 1;
   sim.units.push(unit);
@@ -1889,15 +2067,39 @@ function decideAim(
       return;
     }
   }
-  const coreRef = goalCoreRef(arena, 1 - u.side);
-  const core = coreRef >= 0 ? arena.buildings[coreRef] : undefined;
-  if (
-    core !== undefined &&
-    core.alive &&
-    buildingDist2(u.px, u.py, core) <= reachR * reachR
-  ) {
+  // Rule b (PP-11, CB-15c): any living enemy Core within reach. The unit's
+  // target Core first, else the nearest; ties by the later parts of the
+  // target key, `(|q - opposite(owner)|, -q)`.
+  const cores = arena.coreRef[1 - u.side] ?? [];
+  const opp = cores.length - 1 - u.owner;
+  let best = -1;
+  let bestT = 0;
+  let bestD = 0;
+  let bestN = 0;
+  for (let q = 0; q < cores.length; q++) {
+    const ref = cores[q] ?? -1;
+    const core = ref >= 0 ? arena.buildings[ref] : undefined;
+    if (core === undefined || !core.alive) continue;
+    const d = buildingDist2(u.px, u.py, core);
+    if (d > reachR * reachR) continue;
+    const t = q === u.target ? 0 : 1;
+    const near = Math.abs(q - opp);
+    if (
+      best < 0 ||
+      t < bestT ||
+      (t === bestT &&
+        (d < bestD ||
+          (d === bestD && (near < bestN || (near === bestN && q > best)))))
+    ) {
+      best = q;
+      bestT = t;
+      bestD = d;
+      bestN = near;
+    }
+  }
+  if (best >= 0) {
     ctx.action[i] = ACT_BUILDING;
-    ctx.arg[i] = coreRef;
+    ctx.arg[i] = cores[best] ?? -1;
     ctx.holds[i] = 1;
   }
 }
@@ -1993,7 +2195,7 @@ function moveToCore(
   i: number,
   u: UnitSim,
 ): void {
-  const core = goalCoreRef(ctx.arena, 1 - u.side);
+  const core = ctx.arena.coreRef[1 - u.side]?.[u.target] ?? -1;
   const b = core >= 0 ? ctx.arena.buildings[core] : undefined;
   if (b === undefined || !b.alive) return;
   let bx = 0;
@@ -2049,10 +2251,11 @@ function decideMove(
   const cell =
     ownCellCoord(u.side, u.py, height) * width +
     ownCellCoord(u.side, u.px, width);
-  const field = fieldFor(ctx, u.side);
+  if (u.target < 0) return; // no enemy Core stands: wait
+  const field = fieldFor(ctx, u.side, u.target);
   const d = field.dist[cell] ?? -1;
   if (d > 0) {
-    const k = stepFor(ctx, u.side, field, cell);
+    const k = stepFor(ctx, u.side, u.target, field, cell);
     if (k >= 0) {
       // Steer by the direction of the step, not at the next cell's centre.
       moveAlong(
@@ -2072,7 +2275,7 @@ function decideMove(
   }
 
   // No route in the normal field: breach (CB-20).
-  const bd = breachFor(ctx, u.side);
+  const bd = breachFor(ctx, u.side, u.target);
   const here0 = bd[cell] ?? -1;
   if (here0 < 0) return; // wait
   if (here0 === 0) {
@@ -2087,6 +2290,7 @@ function decideMove(
     (r) => ctx.maxHealth[r] ?? 0,
     ctx.simConfig.breachBaseCost,
     ctx.simConfig.breachHealthPerCost,
+    ctx.arena.coreRef[1 - u.side]?.[u.target] ?? -1,
   );
   if (k < 0) return;
   const occ = arena.occupant[k] ?? -1;
@@ -2370,11 +2574,32 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     destroyed = true;
   }
   if (destroyed) {
-    ctx.fields.fill(undefined);
-    ctx.breach.fill(undefined);
-    ctx.spawnCells.fill(undefined);
-    for (const s of ctx.steps) s.fill(-2);
+    ctx.fields[0] = [];
+    ctx.fields[1] = [];
+    ctx.breach[0] = [];
+    ctx.breach[1] = [];
+    ctx.spawnCells.clear();
+    for (const row of ctx.steps) {
+      for (const s of row) s?.fill(-2);
+    }
     fillSolid(arena, ctx.world.solid);
+    // PP-11: a unit whose target Core fell chooses a new one, in unit-ID
+    // order, from the cell that holds its centre.
+    for (const u of sim.units) {
+      if (u.target < 0 || coreAlive(arena, u.side, u.target)) continue;
+      u.target = chooseTarget(
+        ctx,
+        u.side,
+        u.owner,
+        cellAt(ctx, u.side, { x: u.px, y: u.py }),
+      );
+      events?.push({
+        tick,
+        type: 'unit_retargeted',
+        unit: u.id,
+        target: u.target,
+      });
+    }
   }
 
   // 7. Cooldowns, then the tick counter.
