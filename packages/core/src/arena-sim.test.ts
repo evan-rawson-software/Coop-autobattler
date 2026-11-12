@@ -1894,7 +1894,8 @@ function checkTick(sim: ArenaSim, ctx: ArenaContext): void {
 /**
  * One tick with the turret-fire invariant: every `turret_fired` event of the
  * tick names a unit of the other side that stood, before the tick's moves,
- * inside the arena rows of the turret owner's own board and within range.
+ * inside the arena rows of the turret owner's own board or the gap and within
+ * range.
  */
 function stepChecked(
   sim: ArenaSim,
@@ -1905,7 +1906,7 @@ function stepChecked(
     sim.units.map((u) => [u.id, { y: Math.floor(u.py / CU), side: u.side }]),
   );
   const start = events.length;
-  const { boardHeight, height } = ctx.arena.geom;
+  const { boardHeight, gapRows } = ctx.arena.geom;
   stepArena(sim, ctx);
   let shots = 0;
   for (const e of events.slice(start)) {
@@ -1913,9 +1914,10 @@ function stepChecked(
     shots += 1;
     const u = got(before.get(e.unit));
     expect(u.side).toBe(1 - e.side);
-    const lo = e.side === 0 ? 0 : height - boardHeight;
+    // PP-13: owner board rows and gap rows, never the enemy board.
+    const lo = e.side === 0 ? 0 : boardHeight;
     expect(u.y).toBeGreaterThanOrEqual(lo);
-    expect(u.y).toBeLessThanOrEqual(lo + boardHeight - 1);
+    expect(u.y).toBeLessThanOrEqual(lo + boardHeight + gapRows - 1);
   }
   return shots;
 }

@@ -260,7 +260,7 @@ describe('turrets', () => {
     return spawnUnitForTest(sim, ctx, { side: 1, def: 'unit_post', x, y });
   }
 
-  test('never fires at a unit that has not crossed the front edge', () => {
+  test('fires at a unit in the neutral zone (PP-13)', () => {
     const { state, turret } = turretBoard(true);
     const { sim, ctx, events } = startArenaBattle(
       state,
@@ -270,36 +270,70 @@ describe('turrets', () => {
       simConfig,
     );
     const foe = park(sim, ctx, 3, 17); // in the gap, two cells from the turret
-    for (let t = 0; t < 200; t++) stepArena(sim, ctx);
+    for (let t = 0; t < 22; t++) stepArena(sim, ctx);
+    const shots = ofType(events, 'turret_fired');
+    expect(shots[0]).toEqual({
+      tick: 21,
+      type: 'turret_fired',
+      side: 0,
+      building: turret,
+      unit: foe.id,
+      damage: 5,
+    });
+    expect(foe.hp).toBeLessThan(1000);
+  });
+
+  test('kills a soldier in the zone before it reaches the board (golden vector turret-kills-in-zone)', () => {
+    const lab = new Lab(tiny(ALL_B([3, 5, 8])));
+    lab.core(6, 0);
+    for (const x of [3, 5, 8]) turretLane(lab, x, 14, 3);
+    const { sim, ctx, events } = startArenaBattle(
+      lab.state,
+      coreOnly(),
+      12,
+      content,
+      simConfig,
+    );
+    const foe = spawnUnitForTest(sim, ctx, {
+      side: 1,
+      def: 'unit_soldier',
+      x: 3,
+      y: 27,
+    });
+    let lastPy = foe.py;
+    for (let t = 0; t < 600 && foe.hp > 0; t++) {
+      lastPy = foe.py;
+      stepArena(sim, ctx);
+    }
+    expect(foe.hp).toBeLessThanOrEqual(0);
+    expect(ofType(events, 'unit_died')).toHaveLength(1);
+    expect(lastPy).toBeGreaterThanOrEqual(16 * 240); // never reached the board
+    expect(lastPy).toBeLessThan(27 * 240); // and it was in the zone
+  });
+
+  test('never fires at a unit on the enemy board, however long the range', () => {
+    // Tier 3 reaches 6 cells: the enemy's first row (arena row 20) is 4.5
+    // cells away, in reach, and still never a target.
+    const { state } = turretBoard(true, 3);
+    const { sim, ctx, events } = startArenaBattle(
+      state,
+      coreOnly(),
+      GAP,
+      postContent,
+      simConfig,
+    );
+    const foe = park(sim, ctx, 3, 20);
+    for (let t = 0; t < 300; t++) stepArena(sim, ctx);
     expect(ofType(events, 'turret_fired')).toEqual([]);
     expect(foe.hp).toBe(1000);
     // The turret is charged and waiting.
-    expect(got(sim.turrets[0]).charge).toBe(1);
-    // A unit on the enemy board is out of reach as well.
-    // Step onto the owner's front row: it is fired upon at once.
-    foe.py = mid(15);
-    foe.px = mid(4);
-    stepArena(sim, ctx);
-    const shots = ofType(events, 'turret_fired');
-    expect(shots).toEqual([
-      {
-        tick: 200,
-        type: 'turret_fired',
-        side: 0,
-        building: turret,
-        unit: foe.id,
-        damage: 5,
-      },
-    ]);
-    expect(foe.hp).toBe(995);
+    expect(got(sim.turrets[0]).charge).toBeGreaterThan(0);
   });
 
-  test('a side-1 turret also only fires inside its own board rows', () => {
-    // Side 1 owns the turret; side 0's unit in the gap (arena row 17) is one
-    // row from side 1's front row (arena row 20 for gap 4: 20 - 17 = 3).
+  test('a side-1 turret also shoots into the zone, not onto the enemy board', () => {
     const lab = new Lab(tiny(ALL_B([3])));
     lab.core(8, 0);
-    turretLane(lab, 3, 15);
+    turretLane(lab, 3, 15, 3);
     const { sim, ctx, events } = startArenaBattle(
       coreOnly(),
       lab.state,
@@ -307,32 +341,32 @@ describe('turrets', () => {
       postContent,
       simConfig,
     );
+    // Side 1's turret is on arena row 20. Arena row 15 is side 0's front row
+    // (4.5 cells away, in tier 3 reach): no shot in 300 ticks.
     const u = spawnUnitForTest(sim, ctx, {
       side: 0,
       def: 'unit_post',
       x: 8,
-      y: 19,
+      y: 15,
     });
-    for (let t = 0; t < 100; t++) stepArena(sim, ctx);
+    for (let t = 0; t < 300; t++) stepArena(sim, ctx);
     expect(ofType(events, 'turret_fired')).toEqual([]);
-    u.px = mid(7);
-    u.py = mid(20); // side 1's front row
+    u.py = mid(17); // in the gap
     for (let t = 0; t < 10; t++) stepArena(sim, ctx);
     expect(ofType(events, 'turret_fired').length).toBeGreaterThan(0);
     expect(u.hp).toBeLessThan(1000);
   });
 
   test('the row of a unit on a cell boundary is taken in the frame of the turret owner', () => {
-    // The front edge of each board is a cell boundary: arena y = 16 * 240 for
-    // side 0's board (rows 0..15), y = 20 * 240 for side 1's (rows 20..35).
-    // In the owner's frame a centre exactly on it belongs to the gap row next
-    // to the board, so a turret does not fire; one unit lower it does. The
-    // unit's own frame would give the opposite answer (a side 1 unit at
-    // y = 3840 would count as row 15), which is not the rule.
+    // The first row of the enemy board is a cell boundary: arena y = 20 * 240
+    // for side 0's turret (rows 0..19 qualify), y = 16 * 240 for side 1's
+    // (rows 16..35 qualify). In the owner's frame a centre exactly on it
+    // belongs to the enemy row, so a turret does not fire; one unit nearer it
+    // does. The unit's own frame would give the opposite answer.
     const fireAt = (turretSide: 0 | 1, py: number): number => {
       const lab = new Lab(tiny(ALL_B([3])));
       lab.core(8, 0);
-      turretLane(lab, 3, 15);
+      turretLane(lab, 3, 15, 3);
       const a = turretSide === 0 ? lab.state : coreOnly();
       const b = turretSide === 0 ? coreOnly() : lab.state;
       const { sim, ctx, events } = startArenaBattle(
@@ -342,25 +376,24 @@ describe('turrets', () => {
         postContent,
         simConfig,
       );
-      // The foe belongs to the other side; park it in the gap while the
-      // turret charges, then step it onto the tested position.
+      // Park the foe out of reach while the turret charges.
       const foe = spawnUnitForTest(sim, ctx, {
         side: 1 - turretSide,
         def: 'unit_post',
-        x: turretSide === 0 ? 5 : 6,
-        y: 17,
+        x: 0,
+        y: turretSide === 0 ? 30 : 5,
       });
       for (let t = 0; t < 100; t++) stepArena(sim, ctx);
       expect(ofType(events, 'turret_fired')).toEqual([]);
-      foe.px = mid(turretSide === 0 ? 5 : 6);
+      foe.px = mid(turretSide === 0 ? 3 : 8);
       foe.py = py;
       stepArena(sim, ctx);
       return ofType(events, 'turret_fired').length;
     };
-    expect(fireAt(0, 16 * 240)).toBe(0);
-    expect(fireAt(0, 16 * 240 - 1)).toBe(1);
-    expect(fireAt(1, 20 * 240)).toBe(0);
-    expect(fireAt(1, 20 * 240 + 1)).toBe(1);
+    expect(fireAt(0, 20 * 240)).toBe(0);
+    expect(fireAt(0, 20 * 240 - 1)).toBe(1);
+    expect(fireAt(1, 16 * 240)).toBe(0);
+    expect(fireAt(1, 16 * 240 + 1)).toBe(1);
   });
 
   test('an unpowered turret never fires; restored supply restores fire', () => {

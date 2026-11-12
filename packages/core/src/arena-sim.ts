@@ -1455,7 +1455,8 @@ function chargeRamps(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
  * Turret fire (end of step 3). Each ready turret (cooldown 0, fully charged),
  * side 0 first then by building ID, shoots the nearest enemy unit that is
  * in range and whose centre stands inside the arena rows of the turret
- * owner's own board. In range: the squared distance from the unit's centre to
+ * owner's own board or the gap rows (never the enemy's board; side 0: rows
+ * `0 .. h + gapRows - 1`, side 1: rows `h .. H - 1`). In range: the squared distance from the unit's centre to
  * the nearest cell of the turret is at most `(rangeCells * CELL_UNITS +
  * radius)^2`, i.e. the gap from the unit's circle to the turret is at most
  * `rangeCells` cells. Nearest: smallest such squared distance; ties by lowest
@@ -1470,8 +1471,10 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (info === undefined || t.charge < info.costPerShot) continue;
     const turret = ctx.arena.buildings[info.ref];
     if (turret === undefined) continue;
-    const rowLo = t.side === 0 ? 0 : geom.height - geom.boardHeight;
-    const rowHi = rowLo + geom.boardHeight - 1;
+    // PP-13: the owner's board rows and the gap rows (never the enemy board).
+    const rowLo = t.side === 0 ? 0 : geom.boardHeight;
+    const rowHi =
+      t.side === 0 ? geom.boardHeight + geom.gapRows - 1 : geom.height - 1;
     let best = -1;
     let bestD = Number.MAX_SAFE_INTEGER;
     for (let i = 0; i < units.length; i++) {
