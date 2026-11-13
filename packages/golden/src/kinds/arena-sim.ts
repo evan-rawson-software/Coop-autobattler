@@ -28,22 +28,23 @@
  * entry `{ tick, alive: [side 0, side 1], coreHealth: [side 0, side 1],
  * stateHash }` with the same Core health lists and state hash as the result.
  */
-import type { ArenaContent } from './arena.js';
 import {
   createArenaContext,
   createArenaSim,
+  hashJson,
   isCoreHealth,
+  loadUnitsOrThrow,
+  runTeamStateOps,
   spawnUnitForTest,
   stepArena,
+  type ArenaContent,
   type ArenaEvent,
   type ArenaSim,
-} from './arena-sim.js';
-import { hashJson, type Json } from './hash.js';
-import type { SimulationFn } from './golden-kinds.js';
-import type { MapgenConfig } from './mapgen.js';
-import type { SimConfig } from './sim-config.js';
-import { runTeamStateOps } from './team-state-ops.js';
-import { loadUnitsOrThrow } from './units.js';
+  type Json,
+  type MapgenConfig,
+  type SimConfig,
+} from '@game/core';
+import type { SimulationFn } from './prng.js';
 
 function field(input: Json, key: string): Json | undefined {
   if (input === null || typeof input !== 'object' || Array.isArray(input)) {

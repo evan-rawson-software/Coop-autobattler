@@ -1,25 +1,21 @@
 /**
- * Golden-vector kind `team-state-ops`. Input `{ seed, partySize, ops }` (or
- * `{ map, ops }` with an explicit map in the map format) where
- * each op is `{ op, ...args }` (`addToStash` {def, tier, owner}; `placeCore`
- * {actor, x, y}; `placeFromStash` and `moveBuilding` {actor, id, x, y,
- * rotation}; `returnToStash` and `removeFromStash` {actor, id}). The map is `generateMap(seed,
- * partySize)`. Result: `{ results, state, hash }` with one result per op
- * (`{ op, ok: true }` plus `id` for addToStash and addConduit, or
- * `{ op, ok: false, reason }`) and `hash = hashJson(state)`. Conduit ops:
- * `addConduit` {actor, from: {building, side}, to: {building, side}, cells:
- * [{x, y}]} and `eraseConduit` {actor, id}.
- *
- * Golden-vector kind `flow-graph`: the same input; the result is
- * `{ graph, hash }` with `graph = buildFlowGraph(final state)` and
- * `hash = hashJson(graph)`.
+ * `runTeamStateOps`: build a team state from a plain JSON script, the input of
+ * the golden kinds `team-state-ops`, `flow-graph` and the battle kinds, and of
+ * the reference boards. Input `{ seed, partySize, ops }` (or `{ map, ops }`
+ * with an explicit map in the map format) where each op is `{ op, ...args }`
+ * (`addToStash` {def, tier, owner}; `placeCore` {actor, x, y};
+ * `placeFromStash` and `moveBuilding` {actor, id, x, y, rotation};
+ * `returnToStash` and `removeFromStash` {actor, id}; `addConduit` {actor,
+ * from: {building, side}, to: {building, side}, cells: [{x, y}]} and
+ * `eraseConduit` {actor, id}). The map is `generateMap(seed, partySize)`. The
+ * result has one entry per op (`{ op, ok: true }` plus `id` for addToStash
+ * and addConduit, or `{ op, ok: false, reason }`) and the final state.
  */
 import { generateMap } from './generate-map.js';
-import { hashJson, type Json } from './hash.js';
-import type { SimulationFn } from './golden-kinds.js';
+import type { Json } from './hash.js';
 import { loadMapOrThrow, type MapContent } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
-import { addConduit, buildFlowGraph, type ConduitEndArg } from './conduits.js';
+import { addConduit, type ConduitEndArg } from './conduits.js';
 import {
   addToStash,
   createTeamState,
@@ -179,31 +175,4 @@ export function runTeamStateOps(
     }
     return { results, state };
   }
-}
-
-export function makeTeamStateOpsKind(
-  content: MapContent,
-  config: MapgenConfig,
-): SimulationFn {
-  return (input: Json) => {
-    const { results, state } = runTeamStateOps(input, content, config);
-    return {
-      result: {
-        results,
-        state: state as unknown as Json,
-        hash: hashJson(state),
-      },
-    };
-  };
-}
-
-export function makeFlowGraphKind(
-  content: MapContent,
-  config: MapgenConfig,
-): SimulationFn {
-  return (input: Json) => {
-    const { state } = runTeamStateOps(input, content, config);
-    const graph = buildFlowGraph(state, content) as unknown as Json;
-    return { result: { graph, hash: hashJson(graph) } };
-  };
 }

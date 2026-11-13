@@ -7,9 +7,6 @@ import {
   loadAllContentOrThrow,
   loadMapgenOrThrow,
   loadSimConfigOrThrow,
-  makeArenaSimKind,
-  makeBattleKind,
-  makeFlowSimKind,
 } from '@game/core';
 import {
   rawBuildings,
@@ -20,6 +17,9 @@ import {
   rawTerrain,
   rawUnits,
 } from '@game/content';
+import { makeArenaSimKind } from './kinds/arena-sim.js';
+import { makeBattleKind } from './kinds/battle.js';
+import { makeFlowSimKind } from './kinds/flow-sim.js';
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),

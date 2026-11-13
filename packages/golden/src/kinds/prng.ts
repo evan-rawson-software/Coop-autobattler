@@ -1,10 +1,8 @@
 /**
- * Registry of golden-vector kinds: `kind` -> pure function from plain JSON
- * input to a plain JSON result (and optionally an event log). To add a kind,
- * add one entry to `goldenKinds`. Functions must be deterministic.
+ * The golden-vector function type, and the PRNG kinds (`prng-u32`,
+ * `prng-sample`, `prng-child`), which need no content.
  */
-import type { Json } from './hash.js';
-import { Rng } from './rng.js';
+import { Rng, type Json } from '@game/core';
 
 export interface SimulationOutput {
   result: Json;
@@ -62,7 +60,7 @@ function prngChild(input: Json): SimulationOutput {
   return { result: { parentState: parent.getState(), values } };
 }
 
-export const goldenKinds: Readonly<Record<string, SimulationFn>> = {
+export const prngKinds: Readonly<Record<string, SimulationFn>> = {
   'prng-u32': prngU32,
   'prng-sample': prngSample,
   'prng-child': prngChild,

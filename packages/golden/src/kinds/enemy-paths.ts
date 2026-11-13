@@ -5,13 +5,15 @@
  * breach: null | { building, cell: [x, y] } }` as returned by
  * `previewEnemyPaths` (board coordinates), in ascending entry `x`.
  */
-import type { ArenaContent } from './arena.js';
-import { previewEnemyPaths } from './enemy-paths.js';
-import type { Json } from './hash.js';
-import type { SimulationFn } from './golden-kinds.js';
-import type { MapgenConfig } from './mapgen.js';
-import type { SimConfig } from './sim-config.js';
-import { runTeamStateOps } from './team-state-ops.js';
+import {
+  previewEnemyPaths,
+  runTeamStateOps,
+  type ArenaContent,
+  type Json,
+  type MapgenConfig,
+  type SimConfig,
+} from '@game/core';
+import type { SimulationFn } from './prng.js';
 
 export function makeEnemyPathsKind(
   content: ArenaContent,

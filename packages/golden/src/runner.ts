@@ -6,7 +6,8 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Ajv } from 'ajv';
-import { hashJson, type Json, type SimulationFn } from '@game/core';
+import { hashJson, type Json } from '@game/core';
+import type { SimulationFn } from './kinds/prng.js';
 import { goldenKinds } from './kinds.js';
 
 export interface GoldenExpected {

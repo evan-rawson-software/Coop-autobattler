@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import type { SimulationFn } from '@game/core';
+import type { SimulationFn } from './kinds/prng.js';
 import { goldenKinds } from './kinds.js';
 import {
   compareVector,

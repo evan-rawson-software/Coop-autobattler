@@ -1040,11 +1040,12 @@ gold, shop offers, run generator state and the hash of the whole run state
 need `@game/session`, which the `golden` package may depend on (it is test-only).
 
 In the reference implementation the registry is `goldenKinds` in
-`packages/core/src/golden-kinds.ts`; a new kind is one added entry. Kinds that
-need the real content files (`map-gen`) cannot be built in `core`, which reads
-no files: `core` exports a factory (`makeMapGenKind(content, config)`) and
-`packages/golden/src/kinds.ts` builds the full registry from `@game/content`
-and the `core` kinds. A port needs its own way to hand content to such kinds.
+`packages/golden/src/kinds.ts`; a new kind is one added entry. Each kind is an
+adapter in `packages/golden/src/kinds/` (one file per kind, `run-kinds.ts` for
+the two session kinds) that reads the vector input, calls the rules in `core`
+or `session`, and builds the result. The registry hands the adapters the
+content from `@game/content`; a port needs its own way to hand content to
+them.
 `pnpm test`
 runs all vectors and never rewrites them. `pnpm golden:update` regenerates the
 `expected` parts and must be run deliberately; review the diff of `golden/`
@@ -1649,7 +1650,7 @@ row says so.
 | PP-7 | With PP-4 an output whose half is open is a connected output that never accepts (the item is held and the line backs up; it is not a dead end and nothing is lost). | **implemented** (issue #135) |
 
 Implemented in `packages/core/src/flow-sim.ts` (golden kind `flow-sim`:
-`flow-sim-kind.ts`). This is the resource flow of **one board on its own**
+`packages/golden/src/kinds/flow-sim.ts`). This is the resource flow of **one board on its own**
 (CB-10, CB-11). It is step 1 of the two-board battle tick described under "One
 battle tick" below, which adds units, production, combat and destruction.
 Economy buildings (in-battle ramp) and Overload are described under "One
@@ -3288,7 +3289,7 @@ row says so.
 | PP-2 | `core_not_placed` names the lowest player without a Core, for any side with a player without a Core. | **implemented** (issues #131, #138) |
 
 Implemented in `packages/core/src/battle.ts` (golden kind `battle`:
-`battle-kind.ts`). **Side 0 is always the party and side 1 the opponent** (the
+`packages/golden/src/kinds/battle.ts`). **Side 0 is always the party and side 1 the opponent** (the
 defender, also called the ghost when the opponent is a recorded team). A
 battle is a pure function of `(teamA, teamB, seed)`, the content and the
 configuration (CB-30).
@@ -3579,7 +3580,7 @@ One Core per player in the stronghold, bosses included (PP-14, issue #138): **im
 Implemented in `threats.ts` (configuration and the budget), `threat-gen.ts`
 (the generator), `threat-layouts.ts` (stronghold layouts), `pve-battle.ts`
 (battles) and `reference-boards.ts` (test boards); golden kinds `threat-gen`
-and `pve-battle`: `threat-kind.ts`. A PvE enemy or boss is a scripted threat,
+and `pve-battle`: `packages/golden/src/kinds/threat.ts`. A PvE enemy or boss is a scripted threat,
 not a factory: a schedule of unit **waves** that arrive at the front edge of its
 side, plus a **stronghold** (one Core per party plot, walls and turrets) for the party to attack.
 Its strength grows exponentially with the round (SC-1 to SC-7) so that every

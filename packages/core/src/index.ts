@@ -123,8 +123,6 @@ export {
   toHex8,
   type Json,
 } from './hash.js';
-export type { SimulationOutput } from './golden-kinds.js';
-export { goldenKinds, type SimulationFn } from './golden-kinds.js';
 export { loadMapgen, loadMapgenOrThrow } from './mapgen.js';
 export type {
   MapgenCliffs,
@@ -154,11 +152,7 @@ export type {
   MapQuery,
   ResourceNode,
 } from './map.js';
-export {
-  generateMap,
-  generateMapWithStats,
-  makeMapGenKind,
-} from './generate-map.js';
+export { generateMap, generateMapWithStats } from './generate-map.js';
 export type { GeneratedMap } from './generate-map.js';
 export {
   ROTATIONS,
@@ -221,11 +215,7 @@ export type {
   FlowNodeKind,
   FlowOutput,
 } from './conduits.js';
-export {
-  makeFlowGraphKind,
-  makeTeamStateOpsKind,
-  runTeamStateOps,
-} from './team-state-ops.js';
+export { runTeamStateOps } from './team-state-ops.js';
 export { loadSimConfig, loadSimConfigOrThrow } from './sim-config.js';
 export type { SimConfig, SimConfigLoadResult } from './sim-config.js';
 export {
@@ -258,7 +248,6 @@ export type {
   SimEvent,
   SourceSim,
 } from './flow-sim.js';
-export { makeFlowSimKind } from './flow-sim-kind.js';
 export {
   createArena,
   removeFromArena,
@@ -322,8 +311,6 @@ export {
 export { renderArenaAscii } from './arena-render.js';
 export { previewEnemyPaths } from './enemy-paths.js';
 export type { EnemyPath } from './enemy-paths.js';
-export { makeEnemyPathsKind } from './enemy-paths-kind.js';
-export { makeArenaSimKind, summarizeArena } from './arena-sim-kind.js';
 export { pickWeightedIndex } from './weighted.js';
 export { loadEconomy, loadEconomyOrThrow } from './economy.js';
 export type {
@@ -386,7 +373,6 @@ export {
   NEUTRAL_ZONE_STREAM,
   generateNeutralZone,
   generateNeutralZoneWithStats,
-  makeNeutralZoneKind,
   neutralZoneProblem,
   renderNeutralZoneAscii,
   zoneBlockedCells,
@@ -415,7 +401,6 @@ export type {
   TimelineSample,
   TimelineSide,
 } from './battle.js';
-export { makeBattleKind } from './battle-kind.js';
 
 // PvE threats (W1-9).
 export {
@@ -478,7 +463,6 @@ export {
   referenceBoardScript,
 } from './reference-boards.js';
 export type { ReferenceBoardName, TeamScript } from './reference-boards.js';
-export { makePveBattleKind, makeThreatGenKind } from './threat-kind.js';
 
 // Events and run modifiers (W2-3).
 export {

@@ -1,7 +1,9 @@
+import {
+  type Json,
+} from '@game/core';
 import { describe, expect, test } from 'vitest';
-import type { Json } from './hash.js';
-import { makeBattleKind, parseSideOptionsPair } from './battle-kind.js';
-import { content, mapgen, simConfig } from './test-support.js';
+import { makeBattleKind, parseSideOptionsPair } from './battle.js';
+import { content, mapgen, simConfig } from '../kinds.js';
 
 const bare = {
   map: {

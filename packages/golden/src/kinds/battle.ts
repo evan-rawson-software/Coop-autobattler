@@ -9,14 +9,19 @@
  * events; the event log is the vector's event log. On a refused battle:
  * `{ ok: false, error: { code, message } }`.
  */
-import { startBattle } from './battle.js';
-import type { ArenaContent } from './arena.js';
-import type { ScheduledWave, SideOptions } from './arena-sim.js';
-import { hashJson, sortedKeys, type Json } from './hash.js';
-import type { SimulationFn } from './golden-kinds.js';
-import type { MapgenConfig } from './mapgen.js';
-import type { SimConfig } from './sim-config.js';
-import { runTeamStateOps } from './team-state-ops.js';
+import {
+  hashJson,
+  runTeamStateOps,
+  sortedKeys,
+  startBattle,
+  type ArenaContent,
+  type Json,
+  type MapgenConfig,
+  type ScheduledWave,
+  type SideOptions,
+  type SimConfig,
+} from '@game/core';
+import type { SimulationFn } from './prng.js';
 
 function field(input: Json, key: string): Json | undefined {
   if (input === null || typeof input !== 'object' || Array.isArray(input)) {

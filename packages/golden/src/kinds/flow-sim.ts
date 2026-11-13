@@ -15,16 +15,17 @@ import {
   createBoardSim,
   createFlowContext,
   flowTotals,
+  hashJson,
+  runTeamStateOps,
   stepFlow,
   takeFromBuffer,
+  type Json,
+  type MapContent,
+  type MapgenConfig,
+  type SimConfig,
   type SimEvent,
-} from './flow-sim.js';
-import { hashJson, type Json } from './hash.js';
-import type { SimulationFn } from './golden-kinds.js';
-import type { MapContent } from './map.js';
-import type { MapgenConfig } from './mapgen.js';
-import type { SimConfig } from './sim-config.js';
-import { runTeamStateOps } from './team-state-ops.js';
+} from '@game/core';
+import type { SimulationFn } from './prng.js';
 
 const TAKE_SIDES: readonly string[] = ['north', 'east', 'south', 'west'];
 

@@ -4,8 +4,6 @@
  */
 
 import { sortedIntEntries } from './collections.js';
-import type { Json } from './hash.js';
-import { hashJson } from './hash.js';
 import {
   compareCells,
   listLegalCorePositions,
@@ -17,7 +15,6 @@ import {
 } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
 import { Rng } from './rng.js';
-import type { SimulationFn } from './golden-kinds.js';
 
 /** Direction steps used by lake growth and cliffs, in fixed order. */
 const DIRS: readonly (readonly [number, number])[] = [
@@ -380,35 +377,4 @@ export function generateMap(
   config: MapgenConfig,
 ): GameMap {
   return generateMapWithStats(seed, partySize, content, config).map;
-}
-
-/**
- * Golden-vector kind `map-gen`. Input `{ seed, partySize }`; the result is
- * `{ map, hash, attempts }` with `hash = hashJson(map)`. The content and
- * configuration are supplied by the package that registers the kind.
- */
-export function makeMapGenKind(
-  content: MapContent,
-  config: MapgenConfig,
-): SimulationFn {
-  return (input: Json) => {
-    if (input === null || typeof input !== 'object' || Array.isArray(input)) {
-      throw new TypeError('map-gen: input must be an object');
-    }
-    const o = input as Record<string, Json>;
-    const seed = o['seed'];
-    const partySize = o['partySize'];
-    if (typeof seed !== 'number' || typeof partySize !== 'number') {
-      throw new TypeError('map-gen: seed and partySize must be numbers');
-    }
-    const { map, attempts } = generateMapWithStats(
-      seed,
-      partySize,
-      content,
-      config,
-    );
-    return {
-      result: { map, hash: hashJson(map), attempts },
-    };
-  };
 }

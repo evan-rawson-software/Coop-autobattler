@@ -10,15 +10,20 @@
  * stateHash, events }`; the event log is the vector's event log. On a refused
  * battle `{ ok: false, error: { code, message } }`.
  */
-import type { ArenaContent } from './arena.js';
-import { hashJson, type Json } from './hash.js';
-import type { SimulationFn } from './golden-kinds.js';
-import type { MapgenConfig } from './mapgen.js';
-import { startPveBattle } from './pve-battle.js';
-import type { SimConfig } from './sim-config.js';
-import { runTeamStateOps } from './team-state-ops.js';
-import { generateThreat, type ThreatInput } from './threat-gen.js';
-import type { ThreatType, ThreatsConfig } from './threats.js';
+import {
+  generateThreat,
+  hashJson,
+  runTeamStateOps,
+  startPveBattle,
+  type ArenaContent,
+  type Json,
+  type MapgenConfig,
+  type SimConfig,
+  type ThreatInput,
+  type ThreatsConfig,
+  type ThreatType,
+} from '@game/core';
+import type { SimulationFn } from './prng.js';
 
 function obj(v: Json | undefined, what: string): Record<string, Json> {
   if (
