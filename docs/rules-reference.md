@@ -3481,9 +3481,9 @@ result, summary (without timeline), zone, stateHash, events}` where
 `stateHash` is the hash of the final `ArenaSim` and `events` the length of the
 event log; the event log is the vector's `eventLogHash`. For a refused battle:
 `{ok: false, error: {code, message}}` (no event log). Vectors:
-`golden/battle.json`: a mirror match (it ends by the attacker rung: both
-Cores fall in the same tick, 684, with equal overkill, kills and building
-damage; before issue #82 part 2 the armies stalled and Overload destroyed both
+`golden/battle.json`: a mirror match (it ends at tick 1740 with side 0 as the
+winner by the attacker rung of the ladder, reason `tiebreak_attacker`;
+before issue #82 part 2 the armies stalled and Overload destroyed both
 Cores at tick 3100);
 rush against fortify-and-ramp; a quick one-sided battle; a walled stalemate
 ended by Overload (attacker rung); one vector for each rung of the ladder after
@@ -4209,6 +4209,11 @@ same action and stored in the state, so a reload cannot change it and a replay
 of the action log reproduces it. The `vote_resolved` effect lists `tickets`
 (every vote in player order) and, for a random pick, `picked: { player, random:
 true }`.
+
+Note on predictability: the random pick is not secret. The generator is part
+of the run state, so a modified client can compute the pick before it votes.
+This matters only once play is networked. It is recorded in issue #65 for the
+networking and anti-cheat design.
 
 ### Ready (CP-17, CP-17a)
 

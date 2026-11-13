@@ -43,7 +43,7 @@ export const STAGE_BOARDS: readonly StageBoardName[] = [
   'full3',
 ];
 
-interface StageSpec {
+export interface StageSpec {
   readonly name: StageBoardName;
   readonly tier: number;
   readonly barracks: number;
@@ -153,38 +153,41 @@ function priceOf(content: Content, def: string, tier: number): number {
   return t.price;
 }
 
-export function buildStageBoard(
+/**
+ * Fills one plot of `state` for player `owner` with the stage layout of `spec`
+ * (the Core is placed by the caller). `dx` is the x offset of the plot, so the
+ * solo sites also fit a plot of a wider map made of copies of the solo plot.
+ * Returns the new state and the shop value placed.
+ */
+export function fillStagePlot(
   ctx: SimContext,
-  name: StageBoardName,
-): StageBoard {
-  const spec = SPECS.find((s) => s.name === name);
-  if (spec === undefined) throw new Error(`stage: unknown board ${name}`);
-  const core = stageCore(ctx);
-  let state = createTeamState(
-    generateMap(STAGE_MAP_SEED, 1, ctx.content, ctx.mapgen),
-  );
+  start: TeamState,
+  spec: StageSpec,
+  owner: number,
+  dx: number,
+  label: string,
+): { readonly state: TeamState; readonly value: number } {
+  let state = start;
   const fail = (what: string, reason: string): never => {
-    throw new Error(`stage board ${name}: ${what}: ${reason}`);
+    throw new Error(`${label}: ${what}: ${reason}`);
   };
-  const c = placeCore(state, ctx.content, ctx.mapgen, 0, core);
-  if (!c.ok) fail('core', c.reason);
-  else state = c.state;
   let value = 0;
   const put = (def: string, [x, y]: Point): number => {
     const s = addToStash(state, ctx.content, {
       def,
       tier: spec.tier,
-      owner: 0,
+      owner,
     });
     if (!s.ok) return fail(def, s.reason);
     const p = placeFromStash(s.state, ctx.content, {
-      actor: 0,
+      actor: owner,
       id: s.id,
-      x,
+      x: x + dx,
       y,
       rotation: 0,
     });
-    if (!p.ok) return fail(`${def} at ${String(x)},${String(y)}`, p.reason);
+    if (!p.ok)
+      return fail(`${def} at ${String(x + dx)},${String(y)}`, p.reason);
     state = p.state;
     value += priceOf(ctx.content, def, spec.tier);
     return s.id;
@@ -200,18 +203,18 @@ export function buildStageBoard(
     path.forEach((p, i) => {
       const prev = path[i - 1];
       if (prev === undefined) {
-        cells.push({ x: p[0], y: p[1] });
+        cells.push({ x: p[0] + dx, y: p[1] });
         return;
       }
-      const dx = Math.sign(p[0] - prev[0]);
-      const dy = Math.sign(p[1] - prev[1]);
-      for (let x = prev[0] + dx, y = prev[1] + dy; ; x += dx, y += dy) {
-        cells.push({ x, y });
+      const sx = Math.sign(p[0] - prev[0]);
+      const sy = Math.sign(p[1] - prev[1]);
+      for (let x = prev[0] + sx, y = prev[1] + sy; ; x += sx, y += sy) {
+        cells.push({ x: x + dx, y });
         if (x === p[0] && y === p[1]) break;
       }
     });
     const r = addConduit(state, ctx.content, {
-      actor: 0,
+      actor: owner,
       from: { building: from, side: fromSide },
       to: { building: to, side: toSide },
       cells,
@@ -230,6 +233,34 @@ export function buildStageBoard(
     link(x, 'north', b, 'south');
   }
   for (const w of WALL_SITES.slice(0, spec.walls)) put('bld_wall', w);
+  return { state, value };
+}
+
+export function stageSpec(name: StageBoardName): StageSpec {
+  const spec = SPECS.find((s) => s.name === name);
+  if (spec === undefined) throw new Error(`stage: unknown board ${name}`);
+  return spec;
+}
+
+export function buildStageBoard(
+  ctx: SimContext,
+  name: StageBoardName,
+): StageBoard {
+  const spec = stageSpec(name);
+  const core = stageCore(ctx);
+  const state0 = createTeamState(
+    generateMap(STAGE_MAP_SEED, 1, ctx.content, ctx.mapgen),
+  );
+  const c = placeCore(state0, ctx.content, ctx.mapgen, 0, core);
+  if (!c.ok) throw new Error(`stage board ${name}: core: ${c.reason}`);
+  const { state, value } = fillStagePlot(
+    ctx,
+    c.state,
+    spec,
+    0,
+    0,
+    `stage board ${name}`,
+  );
   const collectors = spec.barracks + spec.turrets;
   return {
     name,

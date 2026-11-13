@@ -1624,9 +1624,11 @@ try {
       effectSpritesAfter - effectSpritesBefore > 0,
       `battle: effects are drawn from the atlas (${effectSpritesAfter - effectSpritesBefore} effect sprites in the stress window)`,
     );
-    // `unitsAlive` counts both sides. The stress sample is a four-plot board
-    // on both sides with a steady stream of units: a few hundred alive at once.
-    // The floor sits just under the sample's peak so a cut of the sample fails here; the sample is to be rebuilt against the real unit budget later (#104, #145).
+    // `unitsAlive` counts both sides. The stress sample is 12 scripted waves
+    // of 40 units, about 390 alive in total at its peak (a rendering stress
+    // test, not a board a party could build; the legal dense board peaks at 24
+    // to 36 units a side, see docs/performance-budget.md). The floor sits just
+    // under the sample's peak so a cut of the sample fails here.
     const STRESS_PEAK_FLOOR = 370;
     check(
       peak >= STRESS_PEAK_FLOOR,
