@@ -310,7 +310,7 @@ function fetchRow(
 }
 
 describe('ghost pool upgrades and clean-up', () => {
-  test('localStorage: removeOtherVersions removes rows and meta of other versions only', async () => {
+  test('localStorage: removeOlderVersions removes rows and meta of other versions only', async () => {
     const ls = createMemoryStorage();
     const s = createLocalStorageGhostStore(ls);
     await s.save(snap('ann'));
@@ -320,7 +320,7 @@ describe('ghost pool upgrades and clean-up', () => {
     const names = (): string[] =>
       Array.from({ length: ls.length }, (_, i) => ls.key(i) as string);
     expect(names().filter((k) => k.startsWith('coop:ghost')).length).toBe(5);
-    await s.removeOtherVersions(B.gameVersion);
+    await s.removeOlderVersions(B.gameVersion);
     const left = names().filter((k) => k.startsWith('coop:ghost'));
     expect(left.length).toBe(3);
     expect(
@@ -332,7 +332,7 @@ describe('ghost pool upgrades and clean-up', () => {
     expect(ls.getItem('coop:save:run-1')).toBe('{"save":true}');
   });
 
-  test('localStorage: removeOtherVersions keeps newer versions and drops orphan meta of lower ones', async () => {
+  test('localStorage: removeOlderVersions keeps newer versions and drops orphan meta of lower ones', async () => {
     const ls = createMemoryStorage();
     const s = createLocalStorageGhostStore(ls);
     await s.save({ ...snap('new'), gameVersion: '2.0' });
@@ -341,7 +341,7 @@ describe('ghost pool upgrades and clean-up', () => {
       `coop:ghostmeta:${JSON.stringify([`${v}|1|1`, 'zed', 'r'])}`;
     ls.setItem(orphan('0.0'), '{}');
     ls.setItem(orphan('3.0'), '{}');
-    await s.removeOtherVersions(B.gameVersion);
+    await s.removeOlderVersions(B.gameVersion);
     const keys = Array.from({ length: ls.length }, (_, i) => ls.key(i) ?? '');
     expect(keys.some((k) => k.includes('2.0|'))).toBe(true);
     expect(keys.some((k) => k.includes('0.0|'))).toBe(false);
@@ -349,12 +349,12 @@ describe('ghost pool upgrades and clean-up', () => {
     expect(keys).not.toContain(orphan('0.0'));
   });
 
-  test('IndexedDB: removeOtherVersions removes lower versions only', async () => {
+  test('IndexedDB: removeOlderVersions removes lower versions only', async () => {
     const s = createIdbGhostStore(await openGhostDb(new IDBFactory()));
     await s.save({ ...snap('new'), gameVersion: '2.0' });
     await s.save({ ...snap('cur') });
     await s.save({ ...snap('old'), gameVersion: '0.0' });
-    await s.removeOtherVersions(B.gameVersion);
+    await s.removeOlderVersions(B.gameVersion);
     const at = (gameVersion: string) =>
       s.list({ gameVersion, partySize: 1, round: 1 });
     expect(await at('2.0')).toHaveLength(1);

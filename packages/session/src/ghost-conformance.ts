@@ -177,7 +177,7 @@ export function runGhostStoreConformance(
       expect(await s.list(B)).toHaveLength(1);
     });
 
-    test('removeOtherVersions drops other game versions and leaves the kept one', async () => {
+    test('removeOlderVersions drops other game versions and leaves the kept one', async () => {
       const s = await makeStore();
       const old: GhostBucket = { gameVersion: '0.1', partySize: 2, round: 3 };
       const cur: GhostBucket = { gameVersion: '1.0', partySize: 2, round: 3 };
@@ -185,21 +185,21 @@ export function runGhostStoreConformance(
       await s.save(fake('bob', 'old-b', { ...old, round: 5 }));
       await s.save(fake('ann', 'cur-a', cur));
       await s.save(fake('bob', 'cur-b', cur));
-      await s.removeOtherVersions('1.0');
+      await s.removeOlderVersions('1.0');
       expect(await s.list(old)).toEqual([]);
       expect(await s.list({ ...old, round: 5 })).toEqual([]);
       expect(await s.get(old, 'ann', 'old-a')).toBeNull();
       expect(await s.list(cur)).toHaveLength(2);
       // Nothing left to remove, and the store is usable after.
-      await s.removeOtherVersions('1.0');
+      await s.removeOlderVersions('1.0');
       await s.save(fake('cy', 'cur-c', cur));
       expect(await s.list(cur)).toHaveLength(3);
       // An empty store is fine too.
       await s.clear();
-      await s.removeOtherVersions('1.0');
+      await s.removeOlderVersions('1.0');
     });
 
-    test('removeOtherVersions removes lower versions only and nothing for a malformed keepVersion', async () => {
+    test('removeOlderVersions removes lower versions only and nothing for a malformed keepVersion', async () => {
       const s = await makeStore();
       const old: GhostBucket = { gameVersion: '0.1', partySize: 2, round: 3 };
       const cur: GhostBucket = { gameVersion: '1.0', partySize: 2, round: 3 };
@@ -208,12 +208,12 @@ export function runGhostStoreConformance(
       await s.save(fake('ann', 'cur-a', cur));
       await s.save(fake('ann', 'new-a', newer));
       for (const bad of ['', 'abc', '1.x', '1..0', 'NaN']) {
-        await s.removeOtherVersions(bad);
+        await s.removeOlderVersions(bad);
       }
       expect(await s.list(old)).toHaveLength(1);
       expect(await s.list(cur)).toHaveLength(1);
       expect(await s.list(newer)).toHaveLength(1);
-      await s.removeOtherVersions('1.0');
+      await s.removeOlderVersions('1.0');
       expect(await s.list(old)).toEqual([]);
       expect(await s.list(cur)).toHaveLength(1);
       expect(await s.list(newer)).toHaveLength(1);

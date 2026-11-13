@@ -225,7 +225,7 @@ export function createIdbGhostStore(
       tx.objectStore(STORE).clear();
       await done(tx);
     },
-    async removeOtherVersions(keepVersion) {
+    async removeOlderVersions(keepVersion) {
       const tx = db.transaction(STORE, 'readwrite');
       const os = tx.objectStore(STORE);
       const finished = done(tx);
@@ -422,7 +422,7 @@ export function createLocalStorageGhostStore(
       );
       return Promise.resolve(row === null ? null : row.value);
     },
-    removeOtherVersions(keepVersion) {
+    removeOlderVersions(keepVersion) {
       try {
         for (const k of keysWith(head)) {
           const rest = k.slice(head.length);
