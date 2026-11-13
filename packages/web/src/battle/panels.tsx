@@ -2,6 +2,7 @@
 
 import type { BattleReason, BattleSideSummary } from '@game/core';
 import { useMemo } from 'preact/hooks';
+import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
 import { Panel } from '../shell/AppShell.js';
@@ -745,6 +746,9 @@ export function BattleSummaryView(props: SummaryProps) {
             disabled={props.ready}
             onClick={props.onReady}
           >
+            {props.ready ? (
+              <SpriteIcon name="ui_icon_ready" scale={1} class="ready-icon" />
+            ) : null}
             {props.ready ? 'Ready ✓' : 'Ready'}
           </button>
         </div>

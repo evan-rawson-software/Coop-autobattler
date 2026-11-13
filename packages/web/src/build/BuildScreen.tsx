@@ -40,6 +40,7 @@ import {
 } from './panels.js';
 import { halfAlpha, halfStatuses } from './border-links.js';
 import { gateFor, READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
+import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { ME, isEditStep } from './session.js';
 import { DEFAULT_SEED, simConfig } from './setup.js';
 import { layoutHash } from './undo.js';
@@ -369,7 +370,9 @@ export function BuildView(props: {
     run === null ? null : (
       <>
         <span class="muted" data-field="run-info">
-          Round {run.round} · Lives {run.lives}
+          Round {run.round} ·{' '}
+          <SpriteIcon name="ui_icon_heart" scale={1} class="bar-icon" />
+          Lives {run.lives}
           {readyText === null ? '' : ` · ${readyText}`}
         </span>
         {switcher}
@@ -405,7 +408,9 @@ export function BuildView(props: {
       </button>
       {run !== null ? (
         <span class="muted" data-field="run-info">
-          Round {run.round} · Lives {run.lives}
+          Round {run.round} ·{' '}
+          <SpriteIcon name="ui_icon_heart" scale={1} class="bar-icon" />
+          Lives {run.lives}
           {readyText === null ? '' : ` · ${readyText}`}
         </span>
       ) : null}
@@ -511,6 +516,7 @@ export function BuildView(props: {
         )}
         {gate?.ready === true ? (
           <div class="status-line info" id="ready-lock" role="status">
+            <SpriteIcon name="ui_icon_lock" scale={1} class="bar-icon" />
             {READY_LOCK_TEXT}
           </div>
         ) : null}

@@ -894,6 +894,9 @@ export function PartyPanel(props: {
         title={block ?? undefined}
         onClick={() => void ctl.toggleReady()}
       >
+        {ready ? (
+          <SpriteIcon name="ui_icon_ready" scale={1} class="ready-icon" />
+        ) : null}
         {t(ready ? 'uiPartyUnready' : 'uiPartyReady')}
       </button>
       {block !== null ? (
@@ -902,6 +905,7 @@ export function PartyPanel(props: {
         </p>
       ) : ready ? (
         <p class="muted" data-field="ready-locked">
+          <SpriteIcon name="ui_icon_lock" scale={1} class="bar-icon" />
           {READY_LOCK_TEXT}
         </p>
       ) : null}

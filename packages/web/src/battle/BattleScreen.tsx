@@ -8,6 +8,7 @@
 import { hashJson, type TeamState } from '@game/core';
 import { Component, type ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { DEFAULT_ZOOM } from '../board/camera.js';
 import { CameraController } from '../board/controller.js';
@@ -227,6 +228,9 @@ export function BattleView(props: BattleViewProps) {
               mismatchGate.current?.();
             }}
           >
+            {mismatchReady ? (
+              <SpriteIcon name="ui_icon_ready" scale={1} class="ready-icon" />
+            ) : null}
             {mismatchReady ? 'Ready ✓' : 'Ready'}
           </button>
         </div>

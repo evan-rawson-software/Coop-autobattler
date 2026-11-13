@@ -11,6 +11,7 @@
 import type { Cell } from '@game/core';
 import { coreFootprint } from '@game/core';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { useStore } from '../app-state.js';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
@@ -255,6 +256,7 @@ export function CoreScreen(props: { run: RunHandle }) {
                 setReady(false);
               }}
             >
+              <SpriteIcon name="ui_icon_ready" scale={1} class="ready-icon" />
               Unready (change the Core)
             </button>
           ) : (

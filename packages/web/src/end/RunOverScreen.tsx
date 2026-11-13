@@ -5,6 +5,7 @@
  */
 import type { HistoryEntry, RunState } from '@game/session';
 import { useEffect, useMemo, useState } from 'preact/hooks';
+import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { navigate } from '../app-state.js';
 import { BoardView } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
@@ -157,7 +158,10 @@ export function RunOverScreen(props: {
                   .join(' · ')}
               </dd>
               <dt>Lives lost</dt>
-              <dd data-field="lives-lost">{stats.livesLost}</dd>
+              <dd data-field="lives-lost">
+                <SpriteIcon name="ui_icon_heart" scale={1} class="bar-icon" />
+                {stats.livesLost}
+              </dd>
               <dt>Version</dt>
               <dd>{state.runVersion}</dd>
             </dl>
