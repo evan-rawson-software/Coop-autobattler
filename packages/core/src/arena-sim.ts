@@ -7,6 +7,7 @@
  * "One battle tick".
  */
 
+import { sortedInts } from './collections.js';
 import {
   createArena,
   removeFromArena,
@@ -2465,7 +2466,7 @@ function destroyBuilding(
   const team = sim.teams[b.side === 0 ? 0 : 1];
   const open = new Set(brokenLinks(team, ctx.content).map((l) => l.sending));
   const lost = new Set(conduitsLostWith(team.conduits, b.id, open));
-  for (const id of [...lost].sort((x, y) => x - y)) {
+  for (const id of sortedInts(lost)) {
     ctx.events?.push({
       tick,
       type: 'conduit_destroyed',

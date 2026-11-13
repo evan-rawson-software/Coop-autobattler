@@ -1,5 +1,5 @@
 /** Read-only helpers for the presentation layer. */
-import { sealedProducers as sealedIn } from '@game/core';
+import { sealedProducers as sealedIn, sortedKeys } from '@game/core';
 import {
   pveOptionView,
   readPveOption,
@@ -186,7 +186,11 @@ export function allowedIntents(
     out.push(type);
   }
   if (deps !== undefined && state.step !== 'run_over') {
-    for (const [type, handler] of Object.entries(deps.handlers)) {
+    // By intent name, so the list does not depend on how the handlers were
+    // put together.
+    for (const type of sortedKeys(deps.handlers)) {
+      const handler = deps.handlers[type];
+      if (handler === undefined) continue;
       if (me.ready && lockedWhileReady(state.step, type)) continue;
       if (handler.hostOnly === true && player !== state.host) continue;
       // The selection is offered only while one is owed.

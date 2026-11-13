@@ -7,6 +7,7 @@
  * docs/rules-reference.md, "Team state and placement".
  */
 
+import { sortedInts } from './collections.js';
 import { allCoreCells, cellKey, coreCells, defCells } from './board-cells.js';
 import {
   rotateBuilding,
@@ -515,9 +516,7 @@ export function placeCore(
   }
   const check = validateCorePosition(state.map, content, config, actor, pos);
   if (!check.ok) return { ok: false, reason: check.reason };
-  const mine = new Set(
-    coreCells(pos, content).map((c) => cellKey(state.map, c.x, c.y)),
-  );
+  const mine = coreCells(pos, content).map((c) => cellKey(state.map, c.x, c.y));
   const index = buildingCellIndex(state, content);
   for (const k of mine) {
     if (index.has(k)) return { ok: false, reason: 'overlaps_building' };
@@ -1017,7 +1016,7 @@ function validateInner(
     if (seen.has(e.id)) dup.add(e.id);
     seen.add(e.id);
   }
-  for (const id of [...dup].sort((a, b) => a - b)) {
+  for (const id of sortedInts(dup)) {
     errors.push(`ids: duplicate instance ID ${String(id)}.`);
   }
   const ordered = (list: readonly { id: number }[], name: string): void => {
@@ -1037,7 +1036,7 @@ function validateInner(
     errors.push('nextId: must be a positive integer.');
   } else {
     let max = 0;
-    for (const id of seen) max = id > max ? id : max;
+    for (const e of [...placed, ...stash]) max = e.id > max ? e.id : max;
     if (nextId <= max) {
       errors.push(
         `nextId: ${String(nextId)} must be greater than every ID (largest is ${String(max)}).`,

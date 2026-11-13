@@ -446,7 +446,7 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
         d.deps.content,
         d.state.team.map.plotWidth,
       );
-      const openNodes = [...room.openNodes.values()].reduce((a, b) => a + b, 0);
+      const openNodes = room.openNodeTotal;
       // Owned consumers by the resource they take, board and stash.
       const taking = new Map<string, number>();
       for (const b of owned) {
@@ -485,8 +485,11 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       // would use it: the best liked consumer of each resource, tier 1.
       const likedConsumers: { def: string; tier: number }[] = [];
       const seenResource = new Set<string>();
+      // Most wanted first; equal wants keep the order of CONSUMERS.
       for (const def of [...CONSUMERS].sort(
-        (a, b) => (s.want[b] ?? 0) - (s.want[a] ?? 0),
+        (a, b) =>
+          (s.want[b] ?? 0) - (s.want[a] ?? 0) ||
+          CONSUMERS.indexOf(a) - CONSUMERS.indexOf(b),
       )) {
         const res = d.deps.content.buildings.get(def)?.inputs[0]?.resource;
         if ((s.want[def] ?? 0) === 0 || res === undefined) continue;

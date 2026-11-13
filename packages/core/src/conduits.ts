@@ -4,6 +4,7 @@
  * All functions are pure. See docs/rules-reference.md, "Conduits".
  */
 
+import { sortedInts } from './collections.js';
 import { decodeConduitId, encodeConduitId } from './conduit-ids.js';
 import { allCoreCells, cellKey, defCells } from './board-cells.js';
 import {
@@ -477,11 +478,14 @@ interface Candidate {
   readonly y: number;
   /** The receiving half's building end. */
   readonly to: BEnd;
+  /** Position in the order found: the last tie-break of the sort. */
+  readonly seq: number;
 }
 
 /**
  * The links that could join: a sending and a receiving half at one spot,
- * sorted by border, then row (the fixed order of the derivation).
+ * sorted by border, then row, then the order of the sending halves in
+ * `conduits` (the fixed order of the derivation).
  */
 function candidatesOf(conduits: readonly Conduit[]): Candidate[] {
   const halves = new Map<string, Conduit>();
@@ -502,9 +506,16 @@ function candidatesOf(conduits: readonly Conduit[]): Candidate[] {
     if (other === undefined || ote === null || !isBorderEnd(other.from)) {
       continue;
     }
-    out.push({ send: c, recv: other, border: sp.border, y: sp.y, to: ote });
+    out.push({
+      send: c,
+      recv: other,
+      border: sp.border,
+      y: sp.y,
+      to: ote,
+      seq: out.length,
+    });
   }
-  return out.sort((a, b) => a.border - b.border || a.y - b.y);
+  return out.sort((a, b) => a.border - b.border || a.y - b.y || a.seq - b.seq);
 }
 
 /** The edges, in conduit order, with exactly the links in `joined` joined. */
@@ -620,7 +631,7 @@ export function conduitsLostWith(
       gone.add(k.recv.id);
     }
   }
-  return [...gone].sort((a, b) => a - b);
+  return sortedInts(gone);
 }
 
 // ---------------------------------------------------------------------------
@@ -763,11 +774,15 @@ function hasLoop(view: View, edges: readonly Edge[]): boolean {
     });
   }
   const keys = new Set<string>();
+  const nodeKeys: string[] = []; // each key once, in first-seen order
   for (const e of list) {
-    keys.add(e.from);
-    keys.add(e.to);
+    for (const k of [e.from, e.to]) {
+      if (keys.has(k)) continue;
+      keys.add(k);
+      nodeKeys.push(k);
+    }
   }
-  const nodes = [...keys].map(nodeRefOf);
+  const nodes = nodeKeys.map(nodeRefOf);
   return topoOrder(nodes, list).length < nodes.length;
 }
 
@@ -845,7 +860,10 @@ function findMismatch(
     const k = `${String(to.building)}:${to.side}`;
     if (!firstInto.has(k)) firstInto.set(k, x);
   }
-  for (const e of view.byId.values()) {
+  // Buildings in state order: the order `byId` was filled in.
+  for (const b of view.state.buildings) {
+    const e = view.byId.get(b.id);
+    if (e === undefined) continue;
     if (e.def.kind !== 'route' || e.def.routeType !== 'merger') continue;
     let first: ResourceId | null = null;
     for (const side of SIDE_ORDER) {

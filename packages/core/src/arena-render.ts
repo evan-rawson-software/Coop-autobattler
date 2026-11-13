@@ -1,5 +1,6 @@
 /** ASCII rendering of a battle (W1-5), for debugging and tests. */
 
+import { sortedIntEntries } from './collections.js';
 import type { ArenaContent } from './arena.js';
 import { arenaOf, type ArenaSim } from './arena-sim.js';
 import { CELL_UNITS } from './limits.js';
@@ -56,7 +57,7 @@ export function renderArenaAscii(sim: ArenaSim, content: ArenaContent): string {
       Math.min(width - 1, Math.floor(u.px / CELL_UNITS));
     seen.set(k, (seen.get(k) ?? 0) | (u.side === 0 ? 1 : 2));
   }
-  for (const [k, mask] of seen) {
+  for (const [k, mask] of sortedIntEntries(seen)) {
     put(
       k % width,
       Math.floor(k / width),

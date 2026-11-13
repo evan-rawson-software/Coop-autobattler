@@ -9,6 +9,7 @@
  * `validateGhostSnapshot` first. See docs/rules-reference.md, "Ghosts".
  */
 
+import { sortedIntEntries } from './collections.js';
 import { canonicalJson, sortedKeys } from './hash.js';
 import type { Content } from './content.js';
 import type { EconomyConfig } from './economy.js';
@@ -842,7 +843,7 @@ function plausibility(
       (values.get(b.owner) ?? 0) + tierPrice(ctx.content, b.def, b.tier),
     );
   }
-  for (const [owner, value] of [...values].sort((x, y) => x[0] - y[0])) {
+  for (const [owner, value] of sortedIntEntries(values)) {
     if (value > ownerLimit) {
       errors.push(
         `owner ${String(owner)}: building value ${String(value)} is more than the ${String(ownerLimit)} possible by round ${String(s.round)}.`,
@@ -856,7 +857,7 @@ function plausibility(
       excess.set(b.owner, (excess.get(b.owner) ?? 0) + b.tier - tiers.shopTier);
     }
   }
-  for (const [owner, n] of [...excess].sort((a, b) => a[0] - b[0])) {
+  for (const [owner, n] of sortedIntEntries(excess)) {
     if (n > tiers.upgradesPerOwner) {
       errors.push(
         `team: player ${String(owner)} has ${String(n)} tiers above the shop's tier ${String(tiers.shopTier)}, at most ${String(tiers.upgradesPerOwner)} possible by round ${String(s.round)} (Workshop raises).`,

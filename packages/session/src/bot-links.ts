@@ -170,9 +170,15 @@ function planOneLink(
   for (const consumer of needy) {
     const resource = defOf(re, consumer.def)?.inputs[0]?.resource;
     if (resource === undefined) continue;
+    // Nearest column first; equal distances keep the shuffled order.
     const nodes = shuffle(freeNodes(se, team, resource), rng)
-      .sort((a, c) => Math.abs(a.x - sx) - Math.abs(c.x - sx))
-      .slice(0, 6);
+      .map((node, seq) => ({ node, seq }))
+      .sort(
+        (a, c) =>
+          Math.abs(a.node.x - sx) - Math.abs(c.node.x - sx) || a.seq - c.seq,
+      )
+      .slice(0, 6)
+      .map((e) => e.node);
     for (const node of nodes) {
       const placed = withPlace(
         se,

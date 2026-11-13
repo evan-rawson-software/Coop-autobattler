@@ -1,3 +1,4 @@
+import { sortedKeys } from '@game/core';
 /**
  * The save record format and the storage interface (W2-4).
  *
@@ -281,7 +282,7 @@ function checkShape(raw: unknown, errors: string[]): void {
     err('must be an object.');
     return;
   }
-  for (const k of Object.keys(raw)) {
+  for (const k of sortedKeys(raw)) {
     if (!KEYS.includes(k) && k !== 'signature' && k !== 'startedAt') {
       err(`unknown field "${k}".`);
     }

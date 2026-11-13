@@ -420,12 +420,13 @@ function connectConsumer(
     : undefined;
   let nodes = shuffle(freeNodes(env, t, resource), env.rng);
   if (consumer !== undefined) {
-    nodes = nodes.sort(
-      (a, b) =>
-        Math.abs(a.x - consumer.x) +
-        Math.abs(a.y - consumer.y) -
-        (Math.abs(b.x - consumer.x) + Math.abs(b.y - consumer.y)),
-    );
+    // Nearest first; equal distances keep the shuffled order.
+    const dist = (n: { x: number; y: number }): number =>
+      Math.abs(n.x - consumer.x) + Math.abs(n.y - consumer.y);
+    nodes = nodes
+      .map((node, seq) => ({ node, seq }))
+      .sort((a, b) => dist(a.node) - dist(b.node) || a.seq - b.seq)
+      .map((e) => e.node);
   }
   for (const node of nodes) {
     const placed = withPlace(env, plan, first.id, node.x, node.y);
@@ -506,6 +507,8 @@ export function makeEnv(
 export interface PlotRoom {
   /** Nodes with nothing on them: where a bought collector could go. */
   readonly openNodes: ReadonlyMap<string, number>;
+  /** The sum of `openNodes` over every resource. */
+  readonly openNodeTotal: number;
   /** Collectors already on the board, on a node of the resource. */
   readonly placedSources: ReadonlyMap<string, number>;
   /** Of those, the ones a Splitter could still share (CB-9e): feeding nothing or one consumer straight. */
@@ -522,9 +525,11 @@ export function plotRoom(
   const x1 = Math.min(team.map.width, (player + 1) * plotWidth);
   const occ = occupancy(team, content);
   const openNodes = new Map<string, number>();
+  let openNodeTotal = 0;
   for (const n of team.map.nodes) {
     if (n.x < x0 || n.x >= x1 || occ.buildingAt(n.x, n.y) !== null) continue;
     openNodes.set(n.resource, (openNodes.get(n.resource) ?? 0) + 1);
+    openNodeTotal++;
   }
   const placedSources = new Map<string, number>();
   const shareable = new Map<string, number>();
@@ -549,7 +554,7 @@ export function plotRoom(
       shareable.set(r, (shareable.get(r) ?? 0) + 1);
     }
   }
-  return { openNodes, placedSources, shareable };
+  return { openNodes, openNodeTotal, placedSources, shareable };
 }
 
 /**

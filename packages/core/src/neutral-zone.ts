@@ -5,6 +5,7 @@
  * keep the two in sync.
  */
 
+import { sortedIntEntries } from './collections.js';
 import type { Json } from './hash.js';
 import { hashJson } from './hash.js';
 import type { SimulationFn } from './golden-kinds.js';
@@ -272,7 +273,7 @@ function attempt(
   }
 
   const features: FeatureCell[] = [];
-  for (const [k, feature] of grid.features) {
+  for (const [k, feature] of sortedIntEntries(grid.features)) {
     features.push({ x: k % width, y: Math.floor(k / width), feature });
   }
   features.sort((p, q) => p.y - q.y || p.x - q.x);

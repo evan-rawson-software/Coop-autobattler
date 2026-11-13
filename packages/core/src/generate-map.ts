@@ -3,6 +3,7 @@
  * docs/rules-reference.md ("Map generation"); keep the two in sync.
  */
 
+import { sortedIntEntries } from './collections.js';
 import type { Json } from './hash.js';
 import { hashJson } from './hash.js';
 import {
@@ -218,12 +219,12 @@ function attempt(
   }
 
   const features: FeatureCell[] = [];
-  for (const [k, feature] of b.features) {
+  for (const [k, feature] of sortedIntEntries(b.features)) {
     features.push({ x: k % width, y: Math.floor(k / width), feature });
   }
   features.sort(compareCells);
   const nodes: ResourceNode[] = [];
-  for (const [k, resource] of b.nodes) {
+  for (const [k, resource] of sortedIntEntries(b.nodes)) {
     nodes.push({ x: k % width, y: Math.floor(k / width), resource });
   }
   nodes.sort(compareCells);

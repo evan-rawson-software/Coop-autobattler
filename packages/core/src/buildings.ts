@@ -593,11 +593,14 @@ function parseBuilding(
       }
     }
     const inputSides = new Set<Side>();
+    const inputSideList: Side[] = []; // each side once, in input order
     for (const input of inputs) {
       if (inputSides.has(input.side)) {
         errors.push(`${label}: more than one input on the ${input.side} side.`);
+      } else {
+        inputSides.add(input.side);
+        inputSideList.push(input.side);
       }
-      inputSides.add(input.side);
     }
     const outputSides = new Set<Side>();
     for (const side of outputs) {
@@ -614,7 +617,7 @@ function parseBuilding(
       }
     }
     if (kind === 'route' && routeType === 'crossover') {
-      for (const side of inputSides) {
+      for (const side of inputSideList) {
         if (!outputSides.has(oppositeSide(side))) {
           errors.push(
             `${label}: crossover input on the ${side} side needs an output on the ${oppositeSide(side)} side (a straight-through path).`,

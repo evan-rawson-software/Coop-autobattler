@@ -9,6 +9,7 @@ import {
   ghostKey,
   placeCore,
   validateTeamState,
+  sortedKeys,
 } from '@game/core';
 import { ghostContext, BOSS_LABEL } from './ghosts.js';
 import {
@@ -49,7 +50,7 @@ function isJson(v: unknown, depth = 0): boolean {
     return true;
   if (typeof v === 'number') return Number.isFinite(v);
   if (Array.isArray(v)) return v.every((x) => isJson(x, depth + 1));
-  if (isRec(v)) return Object.values(v).every((x) => isJson(x, depth + 1));
+  if (isRec(v)) return sortedKeys(v).every((k) => isJson(v[k], depth + 1));
   return false;
 }
 
@@ -148,7 +149,7 @@ function check(
     );
     return;
   }
-  for (const k of Object.keys(data)) {
+  for (const k of sortedKeys(data)) {
     if (!KEYS.includes(k)) err(`run state: unknown field "${k}".`);
   }
   for (const k of KEYS) {

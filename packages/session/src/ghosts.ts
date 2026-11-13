@@ -30,6 +30,7 @@ import {
   type GhostSnapshot,
   type GhostValidationContext,
   type Json,
+  sortedKeys,
 } from '@game/core';
 import { drawStream, streamLabels } from './streams.js';
 import type {
@@ -446,8 +447,11 @@ function replaySelection(
   vctx: GhostValidationContext,
 ): HandlerResult {
   const { state, intent } = ctx;
-  const keys = Object.keys(intent).sort();
-  if (keys.join() !== [...LOGGED_KEYS].sort().join()) {
+  const keys = sortedKeys(intent);
+  if (
+    keys.length !== LOGGED_KEYS.length ||
+    !LOGGED_KEYS.every((k) => Object.hasOwn(intent, k))
+  ) {
     return mismatch('not a logged selection (fields differ)');
   }
   const n = intent['n'];
