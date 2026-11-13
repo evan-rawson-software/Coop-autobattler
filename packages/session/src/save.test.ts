@@ -423,6 +423,29 @@ describe('the run controller', () => {
     expect(await store.get('run-1')).toEqual(savedBefore);
   });
 
+  test('5a: a tab holding a discarded run cannot overwrite the run started after it', async () => {
+    const store = createMemorySaveStore({ rejectStale: true });
+    const a = await start(store);
+    await playUntil(a, (s) => s.step === 'build');
+    // Tab B: the run is discarded and a new one starts under the same key.
+    await store.remove('run-1');
+    const b = await start(store);
+    const second = (await store.get('run-1')) as SaveRecord;
+    expect(a.state.actionCounter).toBeGreaterThan(b.state.actionCounter);
+    const r = await a.dispatch(0, { type: 'ready' }, tick());
+    expect(r).toMatchObject({ ok: false, reason: 'stale' });
+    expect(await store.get('run-1')).toEqual(second);
+    // The start stamp is carried unchanged on later writes of one run.
+    await b.dispatch(
+      0,
+      { type: 'place_core', ...corePosition(b.state) },
+      tick(),
+    );
+    const later = (await store.get('run-1')) as SaveRecord;
+    expect(later.actionCounter).toBeGreaterThan(second.actionCounter);
+    expect(later.startedAt).toBe(second.startedAt);
+  });
+
   test('5b: a hook that throws mid-put leaves no partial record', async () => {
     const store = createMemorySaveStore({
       beforePut: (rec) => {

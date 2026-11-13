@@ -250,10 +250,13 @@ export async function createServices(
   // What this tab last read or wrote per run, to tell a page restored from the
   // back/forward cache whether another tab saved meanwhile.
   const held = new Map<string, unknown>();
-  const counterOf = (v: unknown): unknown =>
-    typeof v === 'object' && v !== null
-      ? (v as { actionCounter?: unknown }).actionCounter
-      : null;
+  // The counter and the start stamp: a run replaced by another start of the
+  // same key is noticed even when the counters are equal.
+  const counterOf = (v: unknown): unknown => {
+    if (typeof v !== 'object' || v === null) return null;
+    const r = v as { actionCounter?: unknown; startedAt?: unknown };
+    return `${String(r.actionCounter)}@${String(r.startedAt)}`;
+  };
   const inner = saves;
   saves = {
     ...inner,

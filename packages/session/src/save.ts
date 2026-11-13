@@ -45,6 +45,12 @@ export interface SaveRecord {
   readonly summary: SaveSummary;
   /** Supplied by the caller (milliseconds, say); an integer. */
   readonly updatedAt: number;
+  /**
+   * When this run was first saved (same clock as `updatedAt`), carried
+   * unchanged on every later write. It tells one start of a run from another
+   * under the same `runId`; records without it still open.
+   */
+  readonly startedAt?: number;
   readonly signature?: string;
 }
 
@@ -103,9 +109,22 @@ export class StaleSaveError extends Error {
   }
 }
 
-/** True if a write at `next` must be refused over a stored `have`. */
+/**
+ * True if `next` must be refused over the stored `have` (both are the raw
+ * values, possibly damaged). The counter rule: not greater than the stored
+ * counter. The identity rule: both carry `startedAt` and they differ, so the
+ * stored run is another start of this key. A side without `startedAt` falls
+ * back to the counter rule.
+ */
 export function isStaleWrite(have: unknown, next: unknown): boolean {
-  return typeof have === 'number' && typeof next === 'number' && have >= next;
+  const field = (v: unknown, k: string): unknown =>
+    isRec(v) ? v[k] : undefined;
+  const a = field(have, 'startedAt');
+  const b = field(next, 'startedAt');
+  if (typeof a === 'number' && typeof b === 'number' && a !== b) return true;
+  const hc = field(have, 'actionCounter');
+  const nc = field(next, 'actionCounter');
+  return typeof hc === 'number' && typeof nc === 'number' && hc >= nc;
 }
 
 /**
@@ -159,6 +178,7 @@ export function buildSaveRecord(
   installedVersion: string,
   updatedAt: number,
   signature?: string,
+  startedAt?: number,
 ): SaveRecord {
   const base: SaveRecord = {
     saveFormatVersion: SAVE_FORMAT_VERSION,
@@ -172,6 +192,7 @@ export function buildSaveRecord(
     state,
     summary: summarize(state),
     updatedAt,
+    ...(startedAt === undefined ? {} : { startedAt }),
   };
   return signature === undefined ? base : { ...base, signature };
 }
@@ -261,7 +282,9 @@ function checkShape(raw: unknown, errors: string[]): void {
     return;
   }
   for (const k of Object.keys(raw)) {
-    if (!KEYS.includes(k) && k !== 'signature') err(`unknown field "${k}".`);
+    if (!KEYS.includes(k) && k !== 'signature' && k !== 'startedAt') {
+      err(`unknown field "${k}".`);
+    }
   }
   for (const k of KEYS) if (!(k in raw)) err(`missing field "${k}".`);
   if (errors.length > 0) return;
@@ -271,6 +294,12 @@ function checkShape(raw: unknown, errors: string[]): void {
   }
   if ('signature' in raw && typeof raw['signature'] !== 'string') {
     err('signature must be a string.');
+  }
+  if (
+    'startedAt' in raw &&
+    (!isInt(raw['startedAt']) || raw['startedAt'] < 0)
+  ) {
+    err('startedAt must be an integer of at least 0.');
   }
   if (typeof raw['runId'] !== 'string' || raw['runId'] === '') {
     err('runId must be a non-empty string.');

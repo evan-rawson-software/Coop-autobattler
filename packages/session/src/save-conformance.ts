@@ -250,6 +250,44 @@ export function runSaveStoreConformance(
         });
       });
 
+      test('a different startedAt is refused even with a higher counter', async () => {
+        const s = await fresh();
+        await s.put(
+          fakeRecord('a', 10, 3, { actionCounter: 1, startedAt: 100 }),
+        );
+        await expect(
+          s.put(fakeRecord('a', 11, 9, { actionCounter: 7, startedAt: 200 })),
+        ).rejects.toMatchObject({ name: 'StaleSaveError' });
+        expect(((await s.get('a')) as SaveRecord).summary.round).toBe(3);
+      });
+
+      test('the same startedAt follows the counter rule', async () => {
+        const s = await fresh();
+        await s.put(
+          fakeRecord('a', 10, 1, { actionCounter: 1, startedAt: 100 }),
+        );
+        await s.put(
+          fakeRecord('a', 11, 2, { actionCounter: 2, startedAt: 100 }),
+        );
+        await expect(
+          s.put(fakeRecord('a', 12, 9, { actionCounter: 2, startedAt: 100 })),
+        ).rejects.toMatchObject({ name: 'StaleSaveError' });
+        expect(((await s.get('a')) as SaveRecord).summary.round).toBe(2);
+      });
+
+      test('a side without startedAt follows the counter rule', async () => {
+        const s = await fresh();
+        await s.put(fakeRecord('a', 10, 1, { actionCounter: 1 }));
+        await s.put(
+          fakeRecord('a', 11, 2, { actionCounter: 2, startedAt: 100 }),
+        );
+        await s.put(fakeRecord('a', 12, 3, { actionCounter: 3 }));
+        await expect(
+          s.put(fakeRecord('a', 13, 9, { actionCounter: 3, startedAt: 200 })),
+        ).rejects.toMatchObject({ name: 'StaleSaveError' });
+        expect(((await s.get('a')) as SaveRecord).summary.round).toBe(3);
+      });
+
       test('the counter is per run', async () => {
         const s = await fresh();
         await s.put(at(5, 3));

@@ -177,7 +177,7 @@ export class BuildSession {
 
   /**
    * Stop accepting intents (the saved run changed elsewhere). Every later
-   * dispatch is refused as `save_failed` with this text, and nothing is sent
+   * dispatch is refused as `stale` with this text, and nothing is sent
    * to the controller.
    */
   lock(detail: string): void {
@@ -192,7 +192,7 @@ export class BuildSession {
    * intent that is not a layout change (buying, selling, re-rolling). */
   async dispatch(intent: Intent): Promise<DispatchResult> {
     if (this.lockedDetail !== null) {
-      return { ok: false, reason: 'save_failed', detail: this.lockedDetail };
+      return { ok: false, reason: 'stale', detail: this.lockedDetail };
     }
     const r = await this.controller.dispatch(
       this.actingPlayer,
@@ -228,7 +228,7 @@ export class BuildSession {
    */
   async dispatchAs(player: number, intent: Intent): Promise<DispatchResult> {
     if (this.lockedDetail !== null) {
-      return { ok: false, reason: 'save_failed', detail: this.lockedDetail };
+      return { ok: false, reason: 'stale', detail: this.lockedDetail };
     }
     const r = await this.controller.dispatch(player, intent, this.stamp());
     this.publish();

@@ -348,7 +348,13 @@ new ID. Do not add one.
   accepts any record, so a conformance suite that rewrites one counter still
   passes; the browser stores enforce the rule in the Shop. A stored or
   incoming record without a numeric `actionCounter` is never stale (`isStaleWrite`
-  is false), so that write is accepted.
+  is false), so that write is accepted. Run identity: an optional
+  `startedAt` is set once when a run is first saved and carried unchanged on
+  every later write. When both the stored and the incoming record carry it and
+  the values differ, the write is stale whatever the counters (the run was
+  discarded and started again under the same key). If either lacks it, only
+  the counter rule applies, so older records stay readable and writable. A new
+  run replaces an old one by `remove`, then `put`.
 - `list()` returns every stored run (no limit), sorted by `updatedAt`
   descending, then `runId`. A stored value that does not parse is still listed,
   as `{corrupt: true, runId, updatedAt, errors}` (use `summarizeStored`). A

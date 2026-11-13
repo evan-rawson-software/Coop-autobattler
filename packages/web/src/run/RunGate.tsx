@@ -12,6 +12,7 @@ import type { RunHandle } from './handle.js';
 import {
   optionsFromUrl,
   reloadShopRun,
+  discardUnopenableShopRun,
   restartShopRun,
   shopRunStore,
   type ShopRun,
@@ -65,7 +66,9 @@ function UnopenablePanel(props: { message: string }) {
             id="run-discard"
             class="danger"
             onClick={() => {
-              void restartShopRun(optionsFromUrl(window.location.search));
+              void discardUnopenableShopRun(
+                optionsFromUrl(window.location.search),
+              );
             }}
           >
             Discard and start a new sample run

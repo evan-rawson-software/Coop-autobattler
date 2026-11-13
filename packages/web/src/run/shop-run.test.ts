@@ -52,7 +52,7 @@ describe('two tabs on one saved run', () => {
 
     // B accepts nothing more.
     const again = await b.session.dispatch({ type: 'reroll' });
-    expect(again).toMatchObject({ ok: false, reason: 'save_failed' });
+    expect(again).toMatchObject({ ok: false, reason: 'stale' });
 
     // A reload shows A's re-roll, with the refund of neither.
     const reloaded = await loadShopRun({ storage });
@@ -115,6 +115,18 @@ describe('a save that cannot be opened is kept', () => {
     const run = await loadShopRun({ storage, fresh: true });
     expect(run.restored).toBe(false);
     expect(run.session.run.step).toBe('shop');
+  });
+
+  test('discarding an unopenable save replaces it, but keeps a run that opens now', async () => {
+    const { storage } = await planted(() => '{not json');
+    const replaced = await loadShopRun({ storage, discardUnopenable: true });
+    expect(replaced.restored).toBe(false);
+    const stored = storage.getItem(KEY);
+    // The save opens now (another tab started it): it is kept, not replaced.
+    const kept = await loadShopRun({ storage, discardUnopenable: true });
+    expect(kept.restored).toBe(true);
+    expect(storage.getItem(KEY)).toBe(stored);
+    expect(JSON.parse(stored as string)).toHaveProperty('startedAt');
   });
 
   test('every reason has plain wording', () => {

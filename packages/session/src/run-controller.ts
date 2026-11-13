@@ -138,6 +138,7 @@ function makeController(
   store: SaveStore,
   installedVersion: string,
   options: ControllerOptions,
+  startedAt?: number,
 ): RunController {
   let current = initial;
   let tail: Promise<unknown> = Promise.resolve();
@@ -168,7 +169,14 @@ function makeController(
     }
     // A signature (a later phase) would cover the old state, so a rewritten
     // record carries none; signing happens on write in that phase.
-    const record = buildSaveRecord(createArgs, r.state, installedVersion, now);
+    const record = buildSaveRecord(
+      createArgs,
+      r.state,
+      installedVersion,
+      now,
+      undefined,
+      startedAt,
+    );
     try {
       await store.put(record);
     } catch (e) {
@@ -349,7 +357,14 @@ export async function startRun(
       };
     }
     await store.put(
-      buildSaveRecord(createArgs, created.state, installedVersion, now),
+      buildSaveRecord(
+        createArgs,
+        created.state,
+        installedVersion,
+        now,
+        undefined,
+        now,
+      ),
     );
   } catch (e) {
     return {
@@ -367,6 +382,7 @@ export async function startRun(
       store,
       installedVersion,
       options,
+      now,
     ),
   };
 }
@@ -437,6 +453,7 @@ export async function openRun(
           store,
           installedVersion,
           options,
+          c.record.startedAt,
         ),
       };
   }

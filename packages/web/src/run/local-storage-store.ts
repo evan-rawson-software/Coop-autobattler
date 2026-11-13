@@ -119,10 +119,7 @@ export function createLocalStorageSaveStore(
       const write = (): void => {
         if (options.rejectStale === true) {
           const stored = parse(storage.getItem(key));
-          const have = (stored as { actionCounter?: unknown } | null)
-            ?.actionCounter;
-          const next = (record as { actionCounter?: unknown }).actionCounter;
-          if (isStaleWrite(have, next)) {
+          if (isStaleWrite(stored, record)) {
             options.onStale?.();
             throw new StaleSaveError();
           }
