@@ -5,20 +5,17 @@
  */
 import { describe, expect, test, vi } from 'vitest';
 import {
+  buildFlowGraph,
+  collectorRatePer1000,
   isBorderEnd,
+  needPer1000,
   validateGhostSnapshot,
   validateTeamState,
   type BuildingId,
   type TeamState,
 } from '@game/core';
 import { BOT_STRATEGIES, playBotRun, type BotRunResult } from './bot.js';
-import {
-  bestOwnedSupply,
-  consumerNeed,
-  coveragePercent,
-  feeds,
-  makeEnv,
-} from './bot-layout.js';
+import { feeds, makeEnv } from './bot-layout.js';
 import { ghostContext } from './ghosts.js';
 import { Rng } from '@game/core';
 import { planLayout } from './bot-layout.js';
@@ -135,30 +132,75 @@ describe('bots build per player', () => {
     }
   });
 
-  test('a connecting bot places no consumer its collectors cannot feed', () => {
-    for (const strategy of ['rush', 'fortify', 'siege'] as const) {
-      for (const seed of [4, 5, 6]) {
-        const r = play(strategy, 2, seed);
-        for (const b of r.state.team.buildings) {
-          const def = content.buildings.get(b.def);
-          if (
-            def === undefined ||
-            def.kind === 'route' ||
-            def.inputs.length === 0
-          ) {
-            continue;
-          }
-          const supply = bestOwnedSupply(r.state.team, b.owner, content);
-          const cover = coveragePercent(
-            supply,
-            consumerNeed(content, b.def, b.tier),
-          );
-          expect(
-            cover,
-            `${strategy} ${b.def} tier ${String(b.tier)}`,
-          ).toBeGreaterThanOrEqual(20);
+  /**
+   * What reaches each consumer on the board, read off the flow graph and not
+   * off the bot's own rule: every collector upstream of it (through
+   * Splitters, over border links) gives its rate divided by the number of
+   * consumers it ends up in. Percent of the consumer's need, per consumer.
+   */
+  function coverageOnBoard(team: TeamState): number[] {
+    const graph = buildFlowGraph(team, content);
+    const kindOf = new Map(graph.nodes.map((n) => [n.key, n.kind]));
+    const into = new Map<string, string[]>();
+    const out = new Map<string, string[]>();
+    for (const e of graph.edges) {
+      into.set(e.to, [...(into.get(e.to) ?? []), e.from]);
+      out.set(e.from, [...(out.get(e.from) ?? []), e.to]);
+    }
+    const reach = (from: string, next: Map<string, string[]>): Set<string> => {
+      const seen = new Set<string>();
+      const todo = [from];
+      for (let k = todo.pop(); k !== undefined; k = todo.pop()) {
+        for (const n of next.get(k) ?? []) {
+          if (seen.has(n)) continue;
+          seen.add(n);
+          todo.push(n);
         }
       }
+      return seen;
+    };
+    const result: number[] = [];
+    for (const node of graph.nodes) {
+      if (node.kind !== 'consumer') continue;
+      const b = team.buildings.find((x) => x.id === node.building);
+      const def = b === undefined ? undefined : content.buildings.get(b.def);
+      if (b === undefined || def === undefined) continue;
+      let supply = 0;
+      for (const key of reach(node.key, into)) {
+        if (kindOf.get(key) !== 'source') continue;
+        const src = graph.nodes.find((x) => x.key === key);
+        const sb = team.buildings.find((x) => x.id === src?.building);
+        const sd = sb === undefined ? undefined : content.buildings.get(sb.def);
+        if (sb === undefined || sd === undefined || sd.kind !== 'source') {
+          continue;
+        }
+        const takers = [...reach(key, out)].filter(
+          (k) => kindOf.get(k) === 'consumer',
+        ).length;
+        supply += Math.floor(
+          collectorRatePer1000(sd, sb.tier) / Math.max(1, takers),
+        );
+      }
+      result.push(Math.floor((100 * supply) / needPer1000(def, b.tier)));
+    }
+    return result;
+  }
+
+  test('a connecting bot places no consumer its collectors cannot feed', () => {
+    for (const strategy of ['rush', 'fortify', 'siege'] as const) {
+      let checked = 0;
+      for (const seed of [4, 5, 6]) {
+        const r = play(strategy, 2, seed);
+        for (const cover of coverageOnBoard(r.state.team)) {
+          expect(
+            cover,
+            `${strategy} seed ${String(seed)}`,
+          ).toBeGreaterThanOrEqual(20);
+          checked++;
+        }
+      }
+      // Not vacuous: consumers were on the boards to be checked.
+      expect(checked, strategy).toBeGreaterThan(0);
     }
   }, 300_000);
 
@@ -496,10 +538,10 @@ describe('bots build per player', () => {
     const armory = { def: 'bld_armory', tier: 1 };
     const strong = { def: 'bld_extractor', tier: 3 };
     const weak = { def: 'bld_extractor', tier: 1 };
-    // Best owned: the tier 3 collector, so the old check said yes to any.
-    expect(feeds(env, owned, armory, 2)).toBe(true);
-    expect(feeds(env, owned, armory, 2, strong)).toBe(true);
-    expect(feeds(env, owned, armory, 2, weak)).toBe(false);
-    expect(feeds(env, owned, armory, 1, weak)).toBe(true);
+    // Asked of the collector being used: a strong one in the stash does not
+    // help a consumer that is to be fed by the weak one.
+    expect(feeds(env, armory, 2, strong)).toBe(true);
+    expect(feeds(env, armory, 2, weak)).toBe(false);
+    expect(feeds(env, armory, 1, weak)).toBe(true);
   });
 });

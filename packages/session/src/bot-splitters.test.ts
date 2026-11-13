@@ -21,54 +21,84 @@ const CONSUMER_DEFS = [
   'bld_hangar',
 ];
 
+const played = new Map<string, ReturnType<typeof playBotRun>>();
+
+/** One bot run; the same run is shared by every test of this file. */
 function run(strategy: BotStrategyName, party: number, seed: number) {
-  return playBotRun(
-    deps,
-    {
-      runId: 'bot',
-      runVersion: '1.0',
-      seed,
-      players: NAMES.slice(0, party),
-      host: 0,
-    },
-    { strategy, seed, rerollCost: 1, maxRounds: 6 },
-  );
+  const key = `${strategy}/${String(party)}/${String(seed)}`;
+  let r = played.get(key);
+  if (r === undefined) {
+    r = playBotRun(
+      deps,
+      {
+        runId: 'bot',
+        runVersion: '1.0',
+        seed,
+        players: NAMES.slice(0, party),
+        host: 0,
+      },
+      { strategy, seed, rerollCost: 1, maxRounds: 6 },
+    );
+    played.set(key, r);
+  }
+  return r;
+}
+
+/** Splitters on the boards and in the stashes of one run. */
+function splitters(r: ReturnType<typeof run>): {
+  placed: number;
+  stashed: number;
+} {
+  const t = r.state.team;
+  return {
+    placed: t.buildings.filter((b) => b.def === 'bld_splitter').length,
+    stashed: t.stash.filter((b) => b.def === 'bld_splitter').length,
+  };
 }
 
 describe('Splitter placement (#178)', () => {
-  // Measured over SEEDS at party sizes 1, 2 and 4, placed of bought. On main:
-  // rush 104 of 115 (15/15, 32/33, 57/67), siege 3 of 3. Now: rush 101 of 111
-  // (14/14, 30/30, 57/67), siege 3 of 3 (only the solo bot buys any). Every
-  // placed Splitter on main fed both its consumers; the ratio is the placement.
-  const MEASURED = {
-    rush: { minBought: 100, minPlaced: 95 },
-    siege: { minBought: 3, minPlaced: 3 },
-  } as const;
-  for (const strategy of ['rush', 'siege'] as const) {
-    test(`${strategy}: Splitters are bought and most are placed, at every party size`, () => {
-      const want = MEASURED[strategy];
-      let bought = 0;
-      let placedAll = 0;
-      for (const party of [1, 2, 4]) {
-        let placed = 0;
-        let stashed = 0;
-        for (const seed of SEEDS) {
-          const t = run(strategy, party, seed).state.team;
-          placed += t.buildings.filter((b) => b.def === 'bld_splitter').length;
-          stashed += t.stash.filter((b) => b.def === 'bld_splitter').length;
-        }
-        bought += placed + stashed;
-        placedAll += placed;
-        expect(
-          placed,
-          `${strategy} party ${String(party)}`,
-        ).toBeGreaterThanOrEqual(0.75 * (placed + stashed));
+  // Measured over SEEDS at party sizes 1, 2 and 4, placed of bought, after 6
+  // rounds. Rush: 101 of 103 (13/13, 31/32, 57/58). The ratio is the point: a
+  // Splitter that is bought is placed.
+  test('rush: Splitters are bought and nearly all are placed, at every party size', () => {
+    let bought = 0;
+    let placedAll = 0;
+    for (const party of [1, 2, 4]) {
+      let placed = 0;
+      let stashed = 0;
+      for (const seed of SEEDS) {
+        const s = splitters(run('rush', party, seed));
+        placed += s.placed;
+        stashed += s.stashed;
       }
-      // The ratio means nothing if nothing is bought.
-      expect(bought).toBeGreaterThanOrEqual(want.minBought);
-      expect(placedAll).toBeGreaterThanOrEqual(want.minPlaced);
-    });
-  }
+      bought += placed + stashed;
+      placedAll += placed;
+      expect(placed, `rush party ${String(party)}`).toBeGreaterThanOrEqual(
+        0.9 * (placed + stashed),
+      );
+    }
+    // The ratio means nothing if nothing is bought.
+    expect(bought).toBeGreaterThanOrEqual(100);
+    expect(placedAll).toBeGreaterThanOrEqual(98);
+    expect(placedAll / bought).toBeGreaterThanOrEqual(0.95);
+  });
+
+  // Siege buys few Splitters (its barracks and armories are high tier), so
+  // the check runs over 20 seeds at party sizes 1 and 2. Measured: 5 bought,
+  // 5 placed (3 of them solo).
+  test('siege: it does buy Splitters, and every one is placed', () => {
+    let bought = 0;
+    let placed = 0;
+    for (const party of [1, 2]) {
+      for (let seed = 1; seed <= 20; seed++) {
+        const s = splitters(run('siege', party, seed));
+        placed += s.placed;
+        bought += s.placed + s.stashed;
+      }
+    }
+    expect(bought).toBeGreaterThanOrEqual(4);
+    expect(placed).toBe(bought);
+  });
 });
 
 describe('shop buys only what can be placed (#178)', () => {
@@ -93,13 +123,12 @@ describe('shop buys only what can be placed (#178)', () => {
     }
   });
 
-  test('rush and fortify leave few consumers they cannot feed in the stash', () => {
-    // Consumers left in the stash, summed over SEEDS at party sizes 1 / 2 / 4.
-    // Measured now: rush 8 / 10 / 35, fortify 10 / 18 / 39. On main: rush
-    // 15 / 26 / 61, fortify 16 / 26 / 55.
+  test('consumers the layout cannot feed are not left in the stash', () => {
+    // Consumers left in the stash, summed over SEEDS at party sizes 1 / 2 / 4
+    // after 6 rounds. Measured: rush 2 / 9 / 24, fortify 0 / 0 / 0.
     const limit = {
-      rush: { 1: 8, 2: 10, 4: 35 },
-      fortify: { 1: 10, 2: 18, 4: 39 },
+      rush: { 1: 3, 2: 10, 4: 26 },
+      fortify: { 1: 1, 2: 1, 4: 1 },
     } as const;
     for (const strategy of ['rush', 'fortify'] as const) {
       for (const party of [1, 2, 4] as const) {
@@ -107,6 +136,32 @@ describe('shop buys only what can be placed (#178)', () => {
         for (const seed of SEEDS) {
           n += run(strategy, party, seed).state.team.stash.filter((b) =>
             CONSUMER_DEFS.includes(b.def),
+          ).length;
+        }
+        expect(n, `${strategy} party ${String(party)}`).toBeLessThanOrEqual(
+          limit[strategy][party],
+        );
+      }
+    }
+  });
+
+  test('few collectors, Splitters and consumers are left in the stash at the end of a run', () => {
+    // Extractors + Splitters + consumers in the stash, summed over SEEDS at
+    // party sizes 1 / 2 / 4 after 6 rounds. Measured: rush 9 / 31 / 70,
+    // fortify 6 / 15 / 28, siege 10 / 13 / 27. The collectors are mostly the
+    // ones a donor buys for a neighbour, and the two every player starts with.
+    const limit = {
+      rush: { 1: 10, 2: 33, 4: 73 },
+      fortify: { 1: 7, 2: 16, 4: 30 },
+      siege: { 1: 11, 2: 14, 4: 29 },
+    } as const;
+    const wanted = ['bld_extractor', 'bld_splitter', ...CONSUMER_DEFS];
+    for (const strategy of ['rush', 'fortify', 'siege'] as const) {
+      for (const party of [1, 2, 4] as const) {
+        let n = 0;
+        for (const seed of SEEDS) {
+          n += run(strategy, party, seed).state.team.stash.filter((b) =>
+            wanted.includes(b.def),
           ).length;
         }
         expect(n, `${strategy} party ${String(party)}`).toBeLessThanOrEqual(
