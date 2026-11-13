@@ -1765,9 +1765,17 @@ export async function runRunSmoke({
         }
         if (p === 0) await settle();
       }
+      // Both players have acted, so the step is over. The last click returns
+      // before its action is applied: wait for the step to move on, or the
+      // next pass would read the old step and wait for a control that is
+      // about to go away.
       await page.waitForFunction(
-        (a) => window.__debug?.run?.state().actions !== a,
-        s.actions,
+        ([step, leg]) => {
+          const st = window.__debug?.run?.state();
+          return st !== undefined && (st.step !== step || st.leg !== leg);
+        },
+        [s.step, s.leg],
+        { timeout: slow(20000) },
       );
     }
     await waitStep('pvp_summary');
