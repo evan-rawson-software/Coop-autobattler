@@ -291,7 +291,9 @@ the app touches a run. `dispatch(player, intent, now)` applies the intent; a
 rejected intent writes nothing; an accepted one is saved with `await
 store.put` BEFORE the result is returned (CP-23a). If the save fails the
 controller keeps its old state and returns `save_failed`; the same intent can be
-retried. Dispatches are queued, so saves are in action order. When the run
+retried. If the store holds a newer save (`StaleSaveError`: the run changed
+in another tab) it returns `stale` instead, with the state unchanged; that is
+not retryable, so reload the run. Dispatches are queued, so saves are in action order. When the run
 ends, history is appended and then the save is removed; `initSaves` repairs an
 interruption between the two. Nothing stored is recomputed on open: offers and
 the battle result are outcomes inside the state, so a rules or economy change

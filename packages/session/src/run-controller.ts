@@ -100,6 +100,8 @@ export interface RunController {
    * Apply one intent and save it. Calls are queued: a dispatch made while
    * another is in flight waits for it, so counters and saves stay in order.
    * On `save_failed` the state is unchanged and the intent can be retried.
+   * On `stale` (the store holds a newer save: the run changed elsewhere) the
+   * state is also unchanged, but a retry is refused again; reload the run.
    */
   dispatch(
     player: number,

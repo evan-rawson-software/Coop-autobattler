@@ -218,6 +218,37 @@ describe('put under navigator.locks', () => {
     expect(await s.get('a')).toMatchObject({ marker: 'x' });
   });
 
+  test('remove runs inside the same lock', async () => {
+    const events: string[] = [];
+    const base = createMemoryStorage();
+    const storage = {
+      get length() {
+        return base.length;
+      },
+      key: (i: number) => base.key(i),
+      getItem: (k: string) => base.getItem(k),
+      setItem: (k: string, v: string) => {
+        base.setItem(k, v);
+      },
+      removeItem: (k: string) => {
+        events.push('remove');
+        base.removeItem(k);
+      },
+    };
+    vi.stubGlobal('navigator', { locks: fakeLocks(events) });
+    const s = createLocalStorageSaveStore(storage);
+    await s.put(rec(1, 'one'));
+    events.length = 0;
+    await s.remove('a');
+    expect(events).toEqual([
+      'request lock:coop:save:a',
+      'acquired',
+      'remove',
+      'released',
+    ]);
+    expect(await s.get('a')).toBeNull();
+  });
+
   test('without navigator.locks the store behaves as before', async () => {
     vi.stubGlobal('navigator', {});
     const s = createLocalStorageSaveStore(createMemoryStorage(), undefined, {

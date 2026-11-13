@@ -142,7 +142,15 @@ export function createLocalStorageSaveStore(
 
     async remove(runId: string): Promise<void> {
       await Promise.resolve();
-      storage.removeItem(savePrefix + runId);
+      const key = savePrefix + runId;
+      const locks = (globalThis as { navigator?: { locks?: LockManagerLike } })
+        .navigator?.locks;
+      // Same lock as `put`, so a put holding it cannot interleave.
+      if (locks === undefined) storage.removeItem(key);
+      else
+        await locks.request(`lock:${key}`, () => {
+          storage.removeItem(key);
+        });
     },
 
     async listHistory(): Promise<readonly HistoryEntry[]> {
