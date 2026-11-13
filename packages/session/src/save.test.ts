@@ -11,7 +11,12 @@ import {
   startRun,
   type RunController,
 } from './run-controller.js';
-import { buildSaveRecord, parseSaveRecord, type SaveRecord } from './save.js';
+import {
+  buildSaveRecord,
+  parseSaveRecord,
+  StaleSaveError,
+  type SaveRecord,
+} from './save.js';
 import { runSaveStoreConformance } from './save-conformance.js';
 import {
   createMemorySaveStore,
@@ -144,6 +149,35 @@ runSaveStoreConformance(
   () => createMemorySaveStore(),
   () => createMemorySaveStore({ rejectStale: true }),
 );
+
+describe('the memory store', () => {
+  test('two overlapping puts at one counter: only the first is stored', async () => {
+    const release: (() => void)[] = [];
+    const store = createMemorySaveStore({
+      rejectStale: true,
+      beforePut: () =>
+        new Promise<void>((resolve) => {
+          release.push(resolve);
+        }),
+    });
+    const state = (await start(createMemorySaveStore())).state;
+    const mk = (round: number): SaveRecord => {
+      const rec = buildSaveRecord(runArgs(), state, INSTALLED, 1);
+      return { ...rec, summary: { ...rec.summary, round } };
+    };
+    const a = store.put(mk(1));
+    const b = store.put(mk(2));
+    await Promise.resolve();
+    await Promise.resolve();
+    release.forEach((r) => {
+      r();
+    });
+    const results = await Promise.allSettled([a, b]);
+    expect(results.map((r) => r.status)).toEqual(['fulfilled', 'rejected']);
+    const stored = (await store.get('run-1')) as SaveRecord;
+    expect(stored.summary.round).toBe(1);
+  });
+});
 
 describe('the save record', () => {
   test('carries the seed and the full action log; replays to the same state', async () => {
@@ -370,6 +404,23 @@ describe('the run controller', () => {
     const rej = await c2.dispatch(0, { type: 'ready' }, tick());
     expect(rej).toMatchObject({ ok: false, reason: 'core_not_placed' });
     expect(puts).toBe(n);
+  });
+
+  test('5a: a stale write is its own reason, and nothing is revealed', async () => {
+    const store = createMemorySaveStore();
+    const c = await start(store);
+    await playUntil(c, (s) => s.step === 'build');
+    const before = c.state;
+    const savedBefore = await store.get('run-1');
+    store.put = () => Promise.reject(new StaleSaveError());
+    const r = await c.dispatch(0, { type: 'ready' }, tick());
+    expect(r).toMatchObject({
+      ok: false,
+      reason: 'stale',
+      detail: 'This run changed in another tab.',
+    });
+    expect(c.state).toBe(before);
+    expect(await store.get('run-1')).toEqual(savedBefore);
   });
 
   test('5b: a hook that throws mid-put leaves no partial record', async () => {

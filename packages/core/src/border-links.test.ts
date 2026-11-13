@@ -534,3 +534,161 @@ describe('validateTeamState', () => {
     }
   });
 });
+
+// A link that would leave the network invalid is broken (issue #38).
+
+const asRestore = (
+  lab: Lab,
+  actor: number,
+  from: ConduitEndArg,
+  to: ConduitEndArg,
+  path: Pairs,
+) =>
+  addConduit(lab.state, content, {
+    actor,
+    from,
+    to,
+    cells: cells(path),
+    restore: true,
+  });
+
+/**
+ * Merger M (plot 0) -> link at row 9 -> splitter S (plot 1) -> link at row 12
+ * -> M. Everything is placed except the receiving half at row 9, so that
+ * adding it closes the loop; `last` is that half's path.
+ */
+function loopBoard() {
+  const lab = twoPlots();
+  const m = lab.put('bld_merger', 9, 5);
+  const s = lab.put('bld_splitter', 14, 10);
+  add(lab, 0, side(m, 'north'), spot(9), [
+    ...[6, 7, 8, 9].map((y): [number, number] => [9, y]),
+    [10, 9],
+    [11, 9],
+  ]);
+  add(lab, 1, side(s, 'west'), spot(12), [
+    [13, 10],
+    [13, 11],
+    [13, 12],
+    [12, 12],
+  ]);
+  add(lab, 0, spot(12), side(m, 'west'), [
+    [11, 12],
+    [10, 12],
+    [9, 12],
+    [8, 12],
+    ...[11, 10, 9, 8, 7, 6, 5].map((y): [number, number] => [8, y]),
+  ]);
+  const last: [ConduitEndArg, ConduitEndArg, Pairs] = [
+    spot(9),
+    side(s, 'south'),
+    [
+      [12, 9],
+      [13, 9],
+      [14, 9],
+    ],
+  ];
+  return { lab, m, s, last };
+}
+
+describe('broken links', () => {
+  test('a link that would close a loop is broken: the later one in order', () => {
+    const { lab, last } = loopBoard();
+    expect(reasonOf(half(lab, 1, ...last))).toBe('would_loop');
+    const r = asRestore(lab, 1, ...last);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    lab.state = r.state;
+    const graph = buildFlowGraph(lab.state, content);
+    // The link at row 9 joined first; the one at row 12 is the broken one.
+    expect(graph.brokenLinks).toHaveLength(1);
+    expect(graph.brokenLinks[0]).toMatchObject({
+      border: 0,
+      y: 12,
+      reason: 'would_loop',
+    });
+    expect(graph.edges.map((e) => e.linkedConduit)).toEqual([r.id]);
+    const b = graph.brokenLinks[0];
+    const open = graph.nodes.flatMap((n) => n.outputs).filter((o) => o.open);
+    expect(open.map((o) => o.conduit)).toEqual([b?.sending]);
+    // Both halves act as open ones: nothing arrives through the receiving half.
+    expect(conduitResource(lab.state, content, b?.receiving ?? 0)).toBeNull();
+    expect(
+      validateTeamState(JSON.parse(JSON.stringify(lab.state)), content, mapgen)
+        .ok,
+    ).toBe(true);
+  });
+
+  test('a mismatch through a link breaks it, and removing the cause mends it', () => {
+    const lab = twoPlots([
+      [2, 2, 'res_a'],
+      [16, 2, 'res_b'],
+    ]);
+    const a = lab.put('bld_extractor', 2, 2);
+    const b = lab.put('bld_extractor', 16, 2);
+    const m = lab.put('bld_merger', 14, 6);
+    add(lab, 0, side(a, 'north'), spot(3), row(2, 11, 3));
+    add(lab, 1, spot(3), side(m, 'south'), receivingPath());
+    const into: [ConduitEndArg, ConduitEndArg, Pairs] = [
+      side(b, 'north'),
+      side(m, 'east'),
+      [
+        [16, 3],
+        [16, 4],
+        [16, 5],
+        [16, 6],
+        [15, 6],
+      ],
+    ];
+    expect(reasonOf(half(lab, 1, ...into))).toBe('resource_mismatch');
+    const r = asRestore(lab, 1, ...into);
+    if (!r.ok) throw new Error(r.reason);
+    const before = lab.state;
+    lab.state = r.state;
+    const broken = buildFlowGraph(lab.state, content).brokenLinks;
+    expect(broken).toHaveLength(1);
+    expect(broken[0]).toMatchObject({ y: 3, reason: 'resource_mismatch' });
+    expect(broken[0]?.detail).toContain(`merger ${String(m)}`);
+    // Erasing the cause mends the link, and nothing else changed.
+    const erased = eraseConduit(lab.state, { actor: 1, id: r.id });
+    if (!erased.ok) throw new Error(erased.reason);
+    expect(erased.state.conduits).toEqual(before.conduits);
+    expect(buildFlowGraph(erased.state, content).brokenLinks).toEqual([]);
+    expect(buildFlowGraph(erased.state, content).edges).toHaveLength(1);
+  });
+
+  test('an ordinary add never breaks a link; a broken one stays out of the check', () => {
+    const { lab, last } = loopBoard();
+    const r = asRestore(lab, 1, ...last);
+    if (!r.ok) throw new Error(r.reason);
+    lab.state = r.state;
+    // The loop is absorbed, so the board is fine and an unrelated add works.
+    const extra = lab.put('bld_extractor', 2, 2);
+    expect(
+      reasonOf(half(lab, 0, side(extra, 'north'), spot(3), row(2, 11, 3))),
+    ).toBe('ok');
+  });
+
+  test('a restoring add is still refused for a loop inside one plot', () => {
+    const lab = twoPlots();
+    const m = lab.put('bld_merger', 5, 6);
+    const p1 = lab.put('bld_splitter', 5, 7);
+    const p2 = lab.put('bld_splitter', 8, 7, 90);
+    add(lab, 0, side(m, 'north'), side(p1, 'south'), []);
+    add(lab, 0, side(p1, 'east'), side(p2, 'west'), [
+      [6, 7],
+      [7, 7],
+    ]);
+    const close: [ConduitEndArg, ConduitEndArg, Pairs] = [
+      side(p2, 'south'),
+      side(m, 'east'),
+      [
+        [8, 6],
+        [7, 6],
+        [6, 6],
+      ],
+    ];
+    expect(reasonOf(half(lab, 0, ...close))).toBe('would_loop');
+    expect(reasonOf(asRestore(lab, 0, ...close))).toBe('would_loop');
+  });
+});

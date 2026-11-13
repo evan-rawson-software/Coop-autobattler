@@ -1096,6 +1096,7 @@ describe('flow graph', () => {
       },
     ],
     order: ['1', '2', '3', '4', '5', '6', '7.south', '7.west', '8', '9'],
+    brokenLinks: [],
   };
 
   test('matches a hand-written expectation', () => {
@@ -1118,6 +1119,7 @@ describe('flow graph', () => {
       nodes: [],
       edges: [],
       order: [],
+      brokenLinks: [],
     });
   });
 

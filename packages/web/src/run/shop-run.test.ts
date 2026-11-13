@@ -44,7 +44,7 @@ describe('two tabs on one saved run', () => {
     const old = b.session.run;
     const slot = buildShopView(old, ME, ctx).offers.findIndex((c) => c.canBuy);
     const r = await b.session.dispatch({ type: 'buy', slot });
-    expect(r).toMatchObject({ ok: false, reason: 'save_failed' });
+    expect(r).toMatchObject({ ok: false, reason: 'stale' });
     expect(r.ok ? '' : r.detail).toBe(STALE_MESSAGE);
     expect(b.session.run).toBe(old);
     expect(b.conflict.get()).toBe(true);

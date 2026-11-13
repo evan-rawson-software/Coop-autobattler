@@ -22,6 +22,7 @@ import {
   classifySave,
   historyEntryFor,
   type HistoryReason,
+  StaleSaveError,
   type SaveStore,
 } from './save.js';
 import { validateRunState } from './validate.js';
@@ -61,7 +62,7 @@ export type DispatchResult =
        * has the first problems. It is a bug (or a poisoned input the rules
        * let through), never something the player can fix.
        */
-      readonly reason: RejectReason | 'save_failed' | 'invalid_state';
+      readonly reason: RejectReason | 'save_failed' | 'stale' | 'invalid_state';
       readonly detail?: string;
       /**
        * When the rejection is `ghost_selection_pending`, why the automatic
@@ -75,7 +76,7 @@ export const CONTROLLER_REASONS = ['save_failed', 'invalid_state'] as const;
 
 /** Why the automatic ghost selection did not complete. */
 export interface SelectionFailure {
-  readonly reason: RejectReason | 'save_failed' | 'invalid_state';
+  readonly reason: RejectReason | 'save_failed' | 'stale' | 'invalid_state';
   readonly detail?: string;
 }
 
@@ -99,6 +100,8 @@ export interface RunController {
    * Apply one intent and save it. Calls are queued: a dispatch made while
    * another is in flight waits for it, so counters and saves stay in order.
    * On `save_failed` the state is unchanged and the intent can be retried.
+   * On `stale` (the store holds a newer save: the run changed elsewhere) the
+   * state is also unchanged, but a retry is refused again; reload the run.
    */
   dispatch(
     player: number,
@@ -171,7 +174,8 @@ function makeController(
     } catch (e) {
       return {
         ok: false,
-        reason: 'save_failed',
+        // A newer save exists (another tab): not revealed, not retryable.
+        reason: e instanceof StaleSaveError ? 'stale' : 'save_failed',
         detail:
           e instanceof Error ? e.message : 'the save could not be written',
       };

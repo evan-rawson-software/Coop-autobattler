@@ -231,6 +231,25 @@ export function runSaveStoreConformance(
         expect(((await s.get('a')) as SaveRecord).summary.round).toBe(3);
       });
 
+      test('a record without a numeric counter is never stale: the write is accepted', async () => {
+        const s = await fresh();
+        // Record validation (`parseSaveRecord`) requires an integer
+        // `actionCounter`, so this cannot be built through the public types;
+        // the cast pins what `isStaleWrite` does for hand-edited data.
+        const noCounter = (round: number): SaveRecord => {
+          const rec = at(1, round) as unknown as Record<string, unknown>;
+          delete rec['actionCounter'];
+          return rec as unknown as SaveRecord;
+        };
+        await s.put(noCounter(1));
+        await s.put(noCounter(2));
+        await s.put(at(1, 3));
+        expect(((await s.get('a')) as SaveRecord).summary.round).toBe(3);
+        await expect(s.put(at(1, 4))).rejects.toMatchObject({
+          name: 'StaleSaveError',
+        });
+      });
+
       test('the counter is per run', async () => {
         const s = await fresh();
         await s.put(at(5, 3));

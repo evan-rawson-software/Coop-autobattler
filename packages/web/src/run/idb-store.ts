@@ -18,6 +18,8 @@
 import {
   bestDepthFromHistory,
   compareListItems,
+  isStaleWrite,
+  StaleSaveError,
   summarizeStored,
   type HistoryEntry,
   type SaveListItem,
@@ -30,7 +32,6 @@ import {
   type FinishedRecord,
   type FinishedRuns,
 } from './finished.js';
-import { StaleSaveError } from './local-storage-store.js';
 
 export const DB_NAME = 'coop-autobattler';
 const DB_VERSION = 1;
@@ -263,11 +264,7 @@ export async function openIndexedDbStores(
                 )?.actionCounter;
                 const next = (record as { actionCounter?: unknown })
                   .actionCounter;
-                if (
-                  typeof have === 'number' &&
-                  typeof next === 'number' &&
-                  have >= next
-                ) {
+                if (isStaleWrite(have, next)) {
                   flags.stale = true;
                   abort(new StaleSaveError());
                   return;

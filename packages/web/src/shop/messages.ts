@@ -15,7 +15,10 @@ export function shopReason(
   detail?: string,
   cause?: SelectionCause,
 ): string {
-  if (reason === 'save_failed' && detail === STALE_MESSAGE) {
+  if (
+    reason === 'stale' ||
+    (reason === 'save_failed' && detail === STALE_MESSAGE)
+  ) {
     return screenText(screenTexts, 'uiShopStale', { message: STALE_MESSAGE });
   }
   const key = Object.hasOwn(SHOP_REASONS, reason)

@@ -102,8 +102,10 @@ export function reasonMessage(
   detail?: string,
   cause?: SelectionCause,
 ): string {
-  const base: string | undefined = Object.hasOwn(REASON_MESSAGES, code)
-    ? (REASON_MESSAGES as Readonly<Record<string, string>>)[code]
+  // `stale` (a newer save exists) reads like `save_failed` until it has its own text.
+  const known = code === 'stale' ? 'save_failed' : code;
+  const base: string | undefined = Object.hasOwn(REASON_MESSAGES, known)
+    ? (REASON_MESSAGES as Readonly<Record<string, string>>)[known]
     : undefined;
   const text =
     base ?? screenText(screenTexts, 'reasonUnknown', { reason: code });

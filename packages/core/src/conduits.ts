@@ -456,8 +456,34 @@ interface Edge {
   readonly length: number;
 }
 
-/** Joining is derived from the halves every time, never stored. */
-function joinEdges(conduits: readonly Conduit[]): Edge[] {
+/** A link that is not joined: it acts as two open halves (PP-4, issue #38). */
+export interface BrokenLink {
+  /** The spot of the link. */
+  readonly border: number;
+  readonly y: number;
+  /** The sending half's id, and the receiving half's id. */
+  readonly sending: number;
+  readonly receiving: number;
+  /** Why joining it would leave the network invalid. */
+  readonly reason: 'would_loop' | 'resource_mismatch';
+  /** What the edit-time check names (a mismatch only; a loop has none). */
+  readonly detail?: string;
+}
+
+interface Candidate {
+  readonly send: Conduit;
+  readonly recv: Conduit;
+  readonly border: number;
+  readonly y: number;
+  /** The receiving half's building end. */
+  readonly to: BEnd;
+}
+
+/**
+ * The links that could join: a sending and a receiving half at one spot,
+ * sorted by border, then row (the fixed order of the derivation).
+ */
+function candidatesOf(conduits: readonly Conduit[]): Candidate[] {
   const halves = new Map<string, Conduit>();
   for (const c of conduits) {
     const sp = spotOf(c);
@@ -465,12 +491,34 @@ function joinEdges(conduits: readonly Conduit[]): Edge[] {
     const k = spotKey(c.owner, sp);
     if (!halves.has(k)) halves.set(k, c);
   }
+  const out: Candidate[] = [];
+  for (const c of conduits) {
+    const sp = spotOf(c);
+    if (sp === null || buildingEnd(c.from) === null) continue;
+    const other = halves.get(
+      spotKey(c.owner === sp.border ? sp.border + 1 : sp.border, sp),
+    );
+    const ote = other === undefined ? null : buildingEnd(other.to);
+    if (other === undefined || ote === null || !isBorderEnd(other.from)) {
+      continue;
+    }
+    out.push({ send: c, recv: other, border: sp.border, y: sp.y, to: ote });
+  }
+  return out.sort((a, b) => a.border - b.border || a.y - b.y);
+}
+
+/** The edges, in conduit order, with exactly the links in `joined` joined. */
+function edgesWith(
+  conduits: readonly Conduit[],
+  cands: readonly Candidate[],
+  joined: ReadonlySet<number>,
+): Edge[] {
+  const byId = new Map(cands.map((c) => [c.send.id, c]));
   const out: Edge[] = [];
   for (const c of conduits) {
     const fe = buildingEnd(c.from);
     const te = buildingEnd(c.to);
-    const sp = spotOf(c);
-    if (sp === null) {
+    if (spotOf(c) === null) {
       if (fe !== null && te !== null) {
         out.push({
           id: c.id,
@@ -483,40 +531,93 @@ function joinEdges(conduits: readonly Conduit[]): Edge[] {
       continue;
     }
     if (fe === null) continue; // a receiving half: part of its link, or open
-    const other = halves.get(
-      spotKey(c.owner === sp.border ? sp.border + 1 : sp.border, sp),
-    );
-    const ote = other === undefined ? null : buildingEnd(other.to);
-    const joined =
-      other !== undefined && ote !== null && isBorderEnd(other.from);
+    const k = joined.has(c.id) ? byId.get(c.id) : undefined;
     out.push({
       id: c.id,
-      linked: joined ? other.id : null,
+      linked: k === undefined ? null : k.recv.id,
       from: fe,
-      to: joined ? ote : null,
-      length: c.cells.length + (joined ? other.cells.length : 0),
+      to: k === undefined ? null : k.to,
+      length: c.cells.length + (k === undefined ? 0 : k.recv.cells.length),
     });
   }
   return out;
+}
+
+/** The first violation of a network: a mismatch, else a loop, else null. */
+function violation(
+  view: View,
+  edges: readonly Edge[],
+): { reason: 'resource_mismatch' | 'would_loop'; detail?: string } | null {
+  const m = findMismatch(view, edges, computeResources(view, edges));
+  if (m !== null) return { reason: 'resource_mismatch', detail: m };
+  return hasLoop(view, edges) ? { reason: 'would_loop' } : null;
+}
+
+/**
+ * The joined network, derived from the halves every time, never stored.
+ * Candidate links are taken in order (border, then row); one is joined unless
+ * joining it, on top of the ordinary conduits and the links already joined,
+ * would give a mismatch or a loop, and is then broken: two open halves.
+ * Violations only grow when edges are added, so if joining all is valid no
+ * link is broken (the fast path), and an added edge never mends a broken link
+ * nor breaks a link that stays joined.
+ */
+function deriveJoins(
+  view: View,
+  conduits: readonly Conduit[],
+): { edges: Edge[]; broken: BrokenLink[] } {
+  const cands = candidatesOf(conduits);
+  const joined = new Set(cands.map((c) => c.send.id));
+  const all = edgesWith(conduits, cands, joined);
+  if (cands.length === 0 || violation(view, all) === null) {
+    return { edges: all, broken: [] };
+  }
+  joined.clear();
+  const broken: BrokenLink[] = [];
+  for (const c of cands) {
+    joined.add(c.send.id);
+    const v = violation(view, edgesWith(conduits, cands, joined));
+    if (v === null) continue;
+    joined.delete(c.send.id);
+    broken.push({
+      border: c.border,
+      y: c.y,
+      sending: c.send.id,
+      receiving: c.recv.id,
+      reason: v.reason,
+      ...(v.detail === undefined ? {} : { detail: v.detail }),
+    });
+  }
+  return { edges: edgesWith(conduits, cands, joined), broken };
+}
+
+/** The broken links of a state (never throws). */
+export function brokenLinks(
+  state: TeamState,
+  content: TeamContent,
+): BrokenLink[] {
+  return deriveJoins(makeView(state, content), state.conduits).broken;
 }
 
 /**
  * The IDs (ascending) of the conduits and halves that go when `building` is
  * destroyed in battle (PP-4, CB-9a): everything attached to it, and the other
  * half of every joined link that loses one half. An open half attached to it
- * goes alone.
+ * goes alone, as does each half of a broken link (`broken`).
  */
 export function conduitsLostWith(
   conduits: readonly Conduit[],
   building: number,
+  /** Sending-half IDs of broken links: those halves are open, so go alone. */
+  broken: ReadonlySet<number> = new Set(),
 ): number[] {
   const gone = new Set<number>();
   for (const c of conduits) if (conduitTouches(c, building)) gone.add(c.id);
-  for (const e of joinEdges(conduits)) {
-    if (e.linked === null) continue;
-    if (gone.has(e.id) || gone.has(e.linked)) {
-      gone.add(e.id);
-      gone.add(e.linked);
+  for (const k of candidatesOf(conduits)) {
+    if (broken.has(k.send.id)) continue;
+    if (gone.has(k.send.id) || gone.has(k.recv.id)) {
+      gone.add(k.send.id);
+      gone.add(k.recv.id);
     }
   }
   return [...gone].sort((a, b) => a - b);
@@ -791,6 +892,12 @@ export function addConduit(
      * the actor's next ID is used.
      */
     id?: number;
+    /**
+     * Allow the add although it makes a link conflict (undo and redo): the
+     * link is then broken (see `deriveJoins`). Refused as ever when a
+     * mismatch or loop would remain with every conflicting link broken.
+     */
+    restore?: boolean;
   },
 ): AddConduitResult {
   const explicit = args.id;
@@ -854,12 +961,32 @@ export function addConduit(
   // Conduits stay sorted by ID; a new ID can fall between others (another
   // player's counter, or an explicit ID).
   const conduits = [...state.conduits, candidate].sort((a, b) => a.id - b.id);
-  const edges = joinEdges(conduits);
-  const mismatch = findMismatch(view, edges, computeResources(view, edges));
-  if (mismatch !== null) {
-    return { ok: false, reason: 'resource_mismatch', detail: mismatch };
+  const after = deriveJoins(view, conduits);
+  // What remains with every conflicting link broken (a plot's own mismatch
+  // or loop) is refused in any case.
+  const v = violation(view, after.edges);
+  if (v !== null) {
+    return {
+      ok: false,
+      reason: v.reason,
+      ...(v.detail === undefined ? {} : { detail: v.detail }),
+    };
   }
-  if (hasLoop(view, edges)) return { ok: false, reason: 'would_loop' };
+  if (args.restore !== true) {
+    // An ordinary add must not break a link: broken links count as open, and
+    // the ones that were broken stay so (adding edges cannot mend them).
+    const key = (l: BrokenLink): string =>
+      `${String(l.sending)}:${String(l.receiving)}`;
+    const was = new Set(deriveJoins(view, state.conduits).broken.map(key));
+    const fresh = after.broken.find((l) => !was.has(key(l)));
+    if (fresh !== undefined) {
+      return {
+        ok: false,
+        reason: fresh.reason,
+        ...(fresh.detail === undefined ? {} : { detail: fresh.detail }),
+      };
+    }
+  }
   return {
     ok: true,
     id: candidate.id,
@@ -887,7 +1014,7 @@ export function conduitResource(
   conduitId: number,
 ): ResourceId | null {
   const view = makeView(state, content);
-  const edges = joinEdges(state.conduits);
+  const edges = deriveJoins(view, state.conduits).edges;
   const edge = edges.find((e) => e.id === conduitId || e.linked === conduitId);
   if (edge === undefined) return null;
   return computeResources(view, edges).get(edge.id) ?? null;
@@ -958,6 +1085,8 @@ export interface FlowGraph {
   readonly edges: readonly FlowEdge[];
   /** Node keys, every edge going from earlier to later. */
   readonly order: readonly string[];
+  /** Links acting as two open halves (issue #38), by border then row. */
+  readonly brokenLinks: readonly BrokenLink[];
 }
 
 /**
@@ -972,7 +1101,8 @@ export function buildFlowGraph(
   content: TeamContent,
 ): FlowGraph {
   const view = makeView(state, content);
-  const joined = joinEdges(state.conduits);
+  const derived = deriveJoins(view, state.conduits);
+  const joined = derived.edges;
   const res = computeResources(view, joined);
   const byFrom = new Map<string, Edge>();
   const byTo = new Map<string, Edge>();
@@ -1069,7 +1199,7 @@ export function buildFlowGraph(
   if (order.length < nodes.length) {
     throw new Error('The conduit network contains a loop.');
   }
-  return { nodes, edges, order };
+  return { nodes, edges, order, brokenLinks: derived.broken };
 }
 
 // ---------------------------------------------------------------------------
@@ -1224,7 +1354,8 @@ export function checkConduitList(
       (f !== null || t !== null)
     );
   });
-  const edges = joinEdges(sound);
+  // Broken links are allowed: only what remains once they are open counts.
+  const edges = deriveJoins(view, sound).edges;
   const mismatch = findMismatch(view, edges, computeResources(view, edges));
   if (mismatch !== null) {
     errors.push(`conduits: resource_mismatch (${mismatch}).`);
