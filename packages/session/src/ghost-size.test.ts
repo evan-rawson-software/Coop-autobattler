@@ -222,6 +222,14 @@ function maximalBoard(round: number): GhostSnapshot {
     held.push({ id: stackable.id, effects: stackable.effects });
   }
   team = { ...team, modifiers: held };
+  // Still maximal: every owner is within one wall of the per-owner limit.
+  for (let owner = 0; owner < partySize; owner++) {
+    const spendOf = spentBy.get(owner) ?? 0;
+    expect(
+      perOwner - spendOf,
+      `round ${String(round)} owner ${String(owner)}: spend ${String(spendOf)} of ${String(perOwner)}`,
+    ).toBeLessThan(price('bld_wall') + 1e-9);
+  }
   return {
     ...snap,
     round,

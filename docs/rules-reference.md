@@ -4661,7 +4661,9 @@ Implemented (issues #135, #131, #139, #160).
   exactly one placed Core per player; every building inside its owner's
   plot; every conduit and half owned and placed as PP-1 and PP-4 require; no
   mismatch or loop on the joined network. Plot and ownership checks are
-  implemented.
+  implemented in `validateTeamState` (`packages/core/src/team-state.ts`; error
+  `outside_own_plot`; tests in `packages/core/src/ownership.test.ts` and
+  `per-player-cores.test.ts`).
 - **Value bound per owner.** Gold cannot be given (CP-29), so the bound is
   applied to each owner: the shop value of an owner's buildings, placed or
   stashed, is at most `per player gold + kit` (`goldPerPlayer + kitPerPlayer`
