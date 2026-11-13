@@ -244,23 +244,68 @@ function hangarSprite(): Pix {
   return p;
 }
 
-function wallSprite(): Pix {
+/** Wall autotile bits: N 1, E 2, S 4, W 8 (set = that side is also a wall). */
+const WALL_N = 1;
+const WALL_E = 2;
+const WALL_S = 4;
+const WALL_W = 8;
+
+/**
+ * One wall frame for a mask of joined sides. A joined side runs the stone to
+ * the tile edge with no outline, and the mortar rows (every 4 px, period 16)
+ * and joints carry across, so neighbouring cells read as one wall. Mask 0 is
+ * the single block. Where two joined sides meet at an open corner the corner
+ * pixel is a single dark pixel, so the outline turns the corner.
+ */
+function wallFrame(mask: number): Pix {
   const p = new Pix(16, 16);
-  plate(p, 1, 1, 14, 14, ['R', 'r', 'q']);
-  for (const y of [5, 9, 13]) p.rect(2, y, 12, 1, 'R');
-  for (const [x, y] of [
-    [8, 2],
-    [5, 6],
-    [11, 6],
-    [8, 10],
-    [3, 10],
-    [13, 10],
-  ] as const)
-    p.rect(x, y, 1, 3, 'R');
+  const n = (mask & WALL_N) !== 0;
+  const e = (mask & WALL_E) !== 0;
+  const s = (mask & WALL_S) !== 0;
+  const w = (mask & WALL_W) !== 0;
+  const x0 = w ? -1 : 1;
+  const x1 = e ? 16 : 14;
+  const y0 = n ? -1 : 1;
+  const y1 = s ? 16 : 14;
+  const body = (x: number, y: number): boolean => {
+    if (x < x0 || x > x1 || y < y0 || y > y1) return false;
+    // Cut a corner only where neither of its sides is joined.
+    const cutX = (x === x0 && x0 === 1) || (x === x1 && x1 === 14);
+    const cutY = (y === y0 && y0 === 1) || (y === y1 && y1 === 14);
+    return !(cutX && cutY);
+  };
+  bevelShape(p, body, ['R', 'r', 'q']);
+  const xa = w ? 0 : 2;
+  const xb = e ? 15 : 13;
+  const row = (y: number, key: string): void => {
+    p.rect(xa, y, xb - xa + 1, 1, key);
+  };
+  for (const y of [5, 9, 13]) row(y, 'R');
+  if (n) row(1, 'R');
+  const joint = (x: number, y: number): void => {
+    if (x >= xa && x <= xb) p.rect(x, y, 1, 3, 'R');
+  };
+  joint(8, 2);
+  for (const x of [5, 11]) joint(x, 6);
+  for (const x of [3, 8, 13]) joint(x, 10);
+  // The fourth band (rows 14, 15 and 0 of the next cell) staggers against the
+  // third: its joints sit at 5 and 11 and are split between the two cells.
+  for (const x of [5, 11]) {
+    if (s && x >= xa && x <= xb) p.rect(x, 14, 1, 2, 'R');
+    if (n && x >= xa && x <= xb) p.set(x, 0, 'R');
+  }
   p.rect(2, 2, 3, 1, 'p');
   p.rect(9, 6, 2, 1, 'p');
   p.rect(3, 11, 3, 1, 'p');
+  if (n && e) p.set(15, 0, 'K');
+  if (n && w) p.set(0, 0, 'K');
+  if (s && e) p.set(15, 15, 'K');
+  if (s && w) p.set(0, 15, 'K');
   return p;
+}
+
+function wallSprite(): Pix {
+  return wallFrame(0);
 }
 
 function gateSprite(): Pix {
@@ -600,6 +645,14 @@ export function buildingSprites(
       note: `Overlay for a ${String(t)}x${String(t)} building: frame 0 = tier 2 (silver corner brackets), frame 1 = tier 3 (gold). Tier 1 has none. Draw over the building, then tier_pips.`,
     });
   }
+  add({
+    name: 'bld_wall_auto',
+    sheet: 'buildings',
+    category: 'building',
+    frames: Array.from({ length: 16 }, (_, m) => wallFrame(m)),
+    columns: 8,
+    note: 'Wall autotile, 16 static frames in 2 rows of 8. Frame index = 4-bit mask of the cardinal neighbours that are also walls: bit0 N, bit1 E, bit2 S, bit3 W (N=1, E=2, S=4, W=8). Frame 0 is the single block. No diagonals. Shop cards and icons use bld_wall.',
+  });
   const c = (name: string, open: Open, note: string): void => {
     add({
       name,
