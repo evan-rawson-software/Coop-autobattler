@@ -66,6 +66,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
 .wall { fill: var(--ally); } .wall.e { fill: var(--enemy); }
 .core { fill: var(--ally); stroke: var(--ink); stroke-width: 2; } .core.e { fill: var(--enemy); }
 .core-t { fill: var(--sheet); font-size: 8.5px; font-weight: 500; }
+.core-fell { fill: var(--muted); opacity: 0.6; stroke: var(--ink); stroke-width: 1.5; } .fell-x { stroke: var(--ally); stroke-width: 3; } .fell-x.e { stroke: var(--enemy); }
 .c-ore { stroke: var(--ore); } .c-power { stroke: var(--power); } .c-flux { stroke: var(--flux); }
 .cond { fill: none; stroke-width: 4; stroke-linejoin: round; opacity: 0.85; }
 .n-ore { fill: var(--ore); } .n-power { fill: var(--power); } .n-flux { fill: var(--flux); }
@@ -107,20 +108,21 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
 
   <section>
     <h2>1. Battle</h2>
-    <p>Nobody gives orders here. The party watches its factory start cold, ramp up, and send units across the neutral zone while the enemy does the same.</p>
-    <div class="sheet"><svg id="s-battle" class="big" viewBox="0 0 1280 720" role="img" aria-label="Battle screen wireframe: the enemy board at the top, a neutral zone in the middle, the party's board at the bottom, with status panels on both sides."></svg></div>
+    <p>Nobody gives orders here. The party watches its factory start cold, ramp up, and send units across the neutral zone while the enemy does the same. Each player has their own Core, so each side shows one health bar per Core under a total. The sketch is a three-player party; a solo battle shows one bar per side.</p>
+    <div class="sheet"><svg id="s-battle" class="big" viewBox="0 0 1280 720" role="img" aria-label="Battle screen wireframe: the stronghold board at the top, a neutral zone in the middle, the party's board at the bottom with three Cores, one of them fallen, and status panels on both sides with a health bar for each Core."></svg></div>
     <ol class="notes">
       <li>Who you are fighting and what kind of battle it is. A ghost shows the other party's names; a boss says so.</li>
       <li>Your board, at the bottom, exactly as you built it. Conduits light up as resources flow.</li>
       <li>The neutral zone. Its lakes and cliffs are generated for this battle and revealed when it starts. Buildings do nothing here; only units fight.</li>
-      <li>The enemy board, at the top. Your units attack buildings in their way and finally the Core.</li>
+      <li>The enemy board, at the top, with one Core per player. Your units attack buildings in their way and finally the Cores: first the one opposite their owner’s plot, then the nearest still standing.</li>
       <li>Units from both sides meet and form a front line.</li>
-      <li>Your Core's health and how many walls still stand. The enemy's is in the matching panel on the right.</li>
+      <li>A Core that has fallen: greyed out with a cross in its side’s colour. Its player’s buildings stay on the board.</li>
+      <li>The total Core health and how many Cores stand, then one bar per player’s Core, and how many walls still stand. A fallen Core reads “(fallen)”. The enemy’s are in the matching panel on the right. A side loses when all of its Cores are destroyed.</li>
       <li>Live production and army counts, so you can see the ramp.</li>
-      <li>Army strength over time for both sides. Useful afterwards for seeing when you fell behind.</li>
+      <li>Army strength over time for both sides, and, against a PvE stronghold, the Overload line: which side’s last Core Overload would destroy first, and when.</li>
       <li>Speed controls. In co-op, a change applies once everyone agrees.</li>
-      <li>A log of the moments that mattered, such as a junction being destroyed.</li>
-      <li>Camera. It starts at the center of the map, and the view pans and zooms, so a larger map or a four-player battle still works on the same screen.</li>
+      <li>A log of the moments that mattered, such as a junction being destroyed or a Core falling (“Your Core 2 fell”).</li>
+      <li>Camera presets (Center, My base, Their base, Fit battle). It starts at the center of the map, and the view pans and zooms, so a larger map or a four-player battle still works on the same screen.</li>
     </ol>
   </section>
 
@@ -222,9 +224,9 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     <p>Shown when playback ends. It says what happened and why, so the party can decide what to change.</p>
     <div class="sheet"><svg id="s-summary" viewBox="0 0 960 540" role="img" aria-label="Battle summary wireframe: result strip, a chart over time, a small map showing where defenses were breached, per-building totals, costs and rewards, and ready controls."></svg></div>
     <ol class="notes">
-      <li>The result, and in the corner what it cost or paid: lives lost and gold gained. Battle rewards are always gold.</li>
-      <li>Army strength over the battle for both sides, with the moments that mattered marked.</li>
-      <li>Where the enemy got through.</li>
+      <li>The result, and in the corner what it cost or paid: lives lost and gold gained. Battle rewards are always gold. Below it, why it ended: the step of the tiebreak ladder that decided it (here, more Cores standing), the Core health left, how many Cores stand on each side and when each Core fell.</li>
+      <li>Army strength over the battle for both sides, with the moments that mattered marked, including each Core that fell.</li>
+      <li>Where the enemy got through. Fallen Cores are greyed with a cross.</li>
       <li>What each building did.</li>
       <li>What comes next in the round.</li>
       <li>Watch the battle again, or ready up. The party moves on to the event when everyone is ready.</li>
@@ -324,6 +326,17 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       R(g, k.x + 1, k.y + 1, k.w - 2, k.h - 2, "core" + (enemy ? " e" : ""));
       if (!bare) T(g, k.x + k.w / 2, k.y + k.h / 2 + 3.5, "CORE", "core-t", "middle");
     }
+    if (d.cores) d.cores.forEach(function (c) {
+      var k = C(2, c.fr, 2, 2);
+      if (c.fallen) {
+        R(g, k.x + 1, k.y + 1, k.w - 2, k.h - 2, "core-fell");
+        el(g, "line", { x1: k.x + 2, y1: k.y + 2, x2: k.x + k.w - 2, y2: k.y + k.h - 2, class: "fell-x" + (enemy ? " e" : "") });
+        el(g, "line", { x1: k.x + k.w - 2, y1: k.y + 2, x2: k.x + 2, y2: k.y + k.h - 2, class: "fell-x" + (enemy ? " e" : "") });
+      } else {
+        R(g, k.x + 1, k.y + 1, k.w - 2, k.h - 2, "core" + (enemy ? " e" : ""));
+        if (!bare) T(g, k.x + k.w / 2, k.y + k.h / 2 + 3.5, "C" + c.n, "core-t", "middle");
+      }
+    });
     return g;
   }
   function units(p, list, cls, r) { list.forEach(function (u) { el(p, "circle", { cx: u[0], cy: u[1], r: r || 3.5, class: cls }); }); }
@@ -331,53 +344,69 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   // ================= 1. BATTLE =================
   (function () {
     var s = document.getElementById("s-battle"), S = 16, bx = 448, by = 52;
-    topbar(s, "Round 4 · PvP battle", "vs. ghost of “Kai + Lin + Mo”", "Battle time 1:24  ·  Lives 4 / 5", 1280, 720);
+    // A party battle against a PvE stronghold, three Cores per side. Each Core sits in its player's plot (plots of 8 columns).
+    var myB = Object.assign({}, mine, { core: null, cores: [{ fr: 3, n: 1 }, { fr: 11, n: 2, fallen: true }, { fr: 19, n: 3 }] });
+    var foeB = Object.assign({}, theirs, { core: null, cores: [{ fr: 3, n: 1 }, { fr: 11, n: 2 }, { fr: 19, n: 3 }] });
+    topbar(s, "Round 4 · PvE battle", "vs. Hard · Rusher", "Battle time 1:24  ·  Lives 4 / 5", 1280, 720);
     var zy = by + W * S, zh = 7 * S, my = zy + zh, bw = H * S;
-    board(s, bx, by, S, theirs, true);
+    board(s, bx, by, S, foeB, true);
     R(s, bx, zy, bw, zh, "zone");
     [[6,2],[7,2],[6,3],[7,3],[8,3],[7,4]].forEach(function (c) { R(s, bx + c[0] * S, zy + c[1] * S, S, S, "water"); });
     [[14,3],[15,3],[16,3],[17,3],[17,4]].forEach(function (c) { R(s, bx + c[0] * S, zy + c[1] * S, S, S, "cliff"); });
     T(s, bx + bw - 8, zy + 16, "NEUTRAL ZONE", "ts tm", "end");
-    board(s, bx, my, S, mine, false);
+    board(s, bx, my, S, myB, false);
     function side(label, y) { var x = bx - 9; T(s, x, y, label, "ts tm", "middle").setAttribute("transform", "rotate(-90 " + x + " " + y + ")"); }
-    side("ENEMY BOARD", by + W * S / 2); side("YOUR BOARD", my + W * S / 2);
+    side("STRONGHOLD", by + W * S / 2); side("YOUR BOARD", my + W * S / 2);
     function U(list, cls) { units(s, list.map(function (u) { return [bx + u[0] * S, by + u[1] * S]; }), cls, 4); }
     U([[9,21.5],[10,20.6],[11,21],[12,21.4],[8,22.4],[13,22],[10,24],[12,25.2],[3,19.6],[4,20.6],[18,10],[19,11]], "u-a");
     U([[9.5,19.6],[10.5,19],[11.5,19.7],[12.5,19.2],[11,18],[10,17.4],[3.5,18.6],[4.5,18],[20,27],[21,28.2]], "u-e");
+    var lx = 16, pw = 400, rx = 864;
+    // One Core bar row: label, bar, numbers. A fallen Core is dimmed and reads "(fallen)".
+    function coreRow(x, y, label, hp, max, cls, dim) {
+      var g = el(s, "g", dim ? { opacity: 0.6 } : {});
+      T(g, x + 12, y, label, "ts"); R(g, x + 138, y - 11, 160, 12, "hp"); R(g, x + 138, y - 11, Math.round(160 * hp / max), 12, cls);
+      T(g, x + pw - 12, y, hp + " / " + max, "ts", "end");
+    }
+    function coreBars(x, y, total, rows, cls) {
+      coreRow(x, y, total[0], total[1], total[2], cls);
+      rows.forEach(function (r, i) { coreRow(x, y + 22 * (i + 1), r[0], r[1], 500, cls, r[1] === 0); });
+    }
     // left: your side
-    var lx = 16, pw = 400;
-    R(s, lx, 52, pw, 110, "panel"); T(s, lx + 12, 76, "YOUR SIDE", "ts tm");
-    T(s, lx + 12, 106, "Core", "t"); R(s, lx + 84, 94, 300, 14, "hp"); R(s, lx + 84, 94, 236, 14, "hp-a");
-    T(s, lx + 12, 140, "Walls: 11 / 11 standing", "ts tm");
-    R(s, lx, 174, pw, 190, "panel"); T(s, lx + 12, 198, "PRODUCTION (per sec)", "ts tm");
-    lines(s, lx + 12, 226, ["Ore     3.0   ▲ ramping", "Power   1.0", "Flux    0.0"], "t", 22);
-    el(s, "line", { x1: lx + 12, y1: 286, x2: lx + pw - 12, y2: 286, class: "rule" });
-    lines(s, lx + 12, 312, ["Units alive   12  vs  10", "Units lost     7  vs  11"], "t", 22);
-    R(s, lx, 376, pw, 130, "panel"); T(s, lx + 12, 400, "PARTY", "ts tm");
-    lines(s, lx + 12, 428, ["You   watching: front line", "Ana   watching: enemy Core", "Bo    watching: own base"], "ts", 22);
-    R(s, lx, 518, pw, 158, "panel"); T(s, lx + 12, 542, "ARMY STRENGTH", "ts tm");
-    el(s, "line", { x1: lx + 16, y1: 656, x2: lx + pw - 16, y2: 656, class: "rule" });
-    el(s, "polyline", { class: "chart-a", points: "32,650 90,644 150,628 210,610 270,596 300,588" });
-    el(s, "polyline", { class: "chart-e", points: "32,646 90,632 150,624 210,620 270,612 300,608" });
-    el(s, "line", { x1: 300, y1: 556, x2: 300, y2: 656, class: "rule" }); T(s, 308, 572, "now", "ts tm");
-    T(s, lx + pw - 14, 672, "overload begins 4:00", "ts tm", "end");
-    // right: enemy and controls
-    var rx = 864;
-    R(s, rx, 52, pw, 110, "panel"); T(s, rx + 12, 76, "ENEMY", "ts tm");
-    T(s, rx + 12, 106, "Core", "t"); R(s, rx + 84, 94, 300, 14, "hp"); R(s, rx + 84, 94, 168, 14, "hp-e");
-    T(s, rx + 12, 140, "Walls: 5 / 5 standing", "ts tm");
-    R(s, rx, 174, pw, 190, "panel"); T(s, rx + 12, 198, "BATTLE LOG", "ts tm");
-    lines(s, rx + 12, 226, ["1:22  Your soldiers reached the enemy walls", "1:10  Front line formed in the neutral zone", "0:45  Enemy raiders stopped by your turret", "0:20  First units spawned on both sides", "0:02  Neutral zone revealed"], "ts", 22);
-    R(s, rx, 376, pw, 130, "panel"); T(s, rx + 12, 400, "SPEED", "ts tm");
-    btn(s, rx + 12, 414, 86, 34, "1×", true); btn(s, rx + 108, 414, 86, 34, "2×"); btn(s, rx + 204, 414, 86, 34, "4×"); btn(s, rx + 300, 414, 88, 34, "Skip");
-    T(s, rx + 12, 480, "co-op: all players must agree", "ts tm");
-    R(s, rx, 518, pw, 158, "panel"); T(s, rx + 12, 542, "CAMERA", "ts tm");
-    btn(s, rx + 12, 556, 120, 34, "Center", true); btn(s, rx + 140, 556, 120, 34, "My base"); btn(s, rx + 268, 556, 120, 34, "Fit battle");
-    lines(s, rx + 12, 622, ["Drag to pan · scroll to zoom.", "Click a building to see what it is doing."], "ts tm", 22);
+    R(s, lx, 52, pw, 176, "panel"); T(s, lx + 12, 76, "YOUR SIDE", "ts tm");
+    coreBars(lx, 102, ["Cores 2/3", 840, 1500], [["Core 1", 380], ["Core 2 (fallen)", 0], ["Core 3", 460]], "hp-a");
+    T(s, lx + 12, 204, "Walls: 11 / 11 standing", "ts tm");
+    R(s, lx, 240, pw, 160, "panel"); T(s, lx + 12, 264, "PRODUCTION (per sec)", "ts tm");
+    lines(s, lx + 12, 288, ["Ore     3.0   ▲ ramping", "Power   1.0", "Flux    0.0"], "t", 22);
+    el(s, "line", { x1: lx + 12, y1: 342, x2: lx + pw - 12, y2: 342, class: "rule" });
+    lines(s, lx + 12, 364, ["Units alive   12  vs  10", "Units lost     7  vs  11"], "t", 22);
+    R(s, lx, 412, pw, 102, "panel"); T(s, lx + 12, 434, "PARTY", "ts tm");
+    lines(s, lx + 12, 458, ["You   watching: front line", "Ana   watching: enemy Core", "Bo    watching: own base"], "ts", 22);
+    R(s, lx, 526, pw, 150, "panel"); T(s, lx + 12, 548, "ARMY STRENGTH", "ts tm");
+    el(s, "line", { x1: lx + 16, y1: 612, x2: lx + pw - 16, y2: 612, class: "rule" });
+    el(s, "polyline", { class: "chart-a", points: "32,608 90,604 150,594 210,582 270,574 300,568" });
+    el(s, "polyline", { class: "chart-e", points: "32,606 90,596 150,590 210,586 270,580 300,578" });
+    el(s, "line", { x1: 300, y1: 556, x2: 300, y2: 612, class: "rule" }); T(s, 308, 572, "now", "ts tm");
+    lines(s, lx + 12, 634, ["Overload at 4:00 would destroy your Core first", "at 5:12 — break the stronghold before then."], "ts tm", 16);
+    // right: stronghold and controls
+    R(s, rx, 52, pw, 176, "panel"); T(s, rx + 12, 76, "STRONGHOLD", "ts tm");
+    T(s, rx + 12, 98, "Hard · Rusher", "ts"); T(s, rx + pw - 12, 98, "PvE threat", "ts tm", "end");
+    coreBars(rx, 124, ["Cores 3/3", 1210, 1500], [["Core 1", 300], ["Core 2", 500], ["Core 3", 410]], "hp-e");
+    T(s, rx + 12, 214, "Walls: 5 / 5 standing", "ts tm");
+    R(s, rx, 240, pw, 178, "panel"); T(s, rx + 12, 264, "BATTLE LOG", "ts tm");
+    lines(s, rx + 12, 290, ["1:12  Your Core 2 fell", "1:10  Front line formed in the neutral zone", "0:45  Enemy raiders stopped by your turret", "0:20  First units spawned on both sides", "0:02  Neutral zone revealed"], "ts", 22);
+    R(s, rx, 430, pw, 110, "panel"); T(s, rx + 12, 454, "SPEED", "ts tm");
+    btn(s, rx + 12, 466, 86, 34, "1×", true); btn(s, rx + 108, 466, 86, 34, "2×"); btn(s, rx + 204, 466, 86, 34, "4×"); btn(s, rx + 300, 466, 88, 34, "Skip");
+    T(s, rx + 12, 522, "co-op: all players must agree", "ts tm");
+    R(s, rx, 552, pw, 124, "panel"); T(s, rx + 12, 576, "CAMERA", "ts tm");
+    [["Center", true], ["My base"], ["Their base"], ["Fit battle"]].forEach(function (b, i) {
+      R(s, rx + 12 + i * 95, 588, 90, 34, b[1] ? "btn-go" : "btn"); T(s, rx + 57 + i * 95, 609, b[0], b[1] ? "ts go-t" : "ts", "middle");
+    });
+    T(s, rx + 12, 654, "Drag to pan · scroll to zoom.", "ts tm");
     // marks
-    mark(s, 478, 20, 1, 11); mark(s, bx + 30, my + W * S - 24, 2, 11); mark(s, bx + 30, zy + 24, 3, 11); mark(s, bx + 30, by + 24, 4, 11);
-    mark(s, bx + 15 * S, by + 20.4 * S, 5, 11); mark(s, lx + pw - 18, 68, 6, 11); mark(s, lx + pw - 18, 190, 7, 11); mark(s, lx + pw - 18, 534, 8, 11);
-    mark(s, rx + pw - 18, 392, 9, 11); mark(s, rx + pw - 18, 190, 10, 11); mark(s, rx + pw - 18, 534, 11, 11);
+    mark(s, 478, 20, 1, 11); mark(s, bx + 30, my + W * S - 24, 2, 11); mark(s, bx + 30, zy + 24, 3, 11); mark(s, bx + 30, by + 16, 4, 11);
+    mark(s, bx + 15 * S, by + 20.4 * S, 5, 11); mark(s, bx + 14 * S + 8, my + 12 * S + 16, 6, 11);
+    mark(s, lx + pw - 18, 68, 7, 11); mark(s, lx + pw - 18, 252, 8, 11); mark(s, lx + pw - 18, 538, 9, 11);
+    mark(s, rx + pw - 18, 442, 10, 11); mark(s, rx + pw - 18, 252, 11, 11); mark(s, rx + pw - 18, 564, 12, 11);
   })();
 
   // ================= 2. EVENT =================
@@ -640,24 +669,29 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   // ================= 8. BATTLE SUMMARY =================
   (function () {
     var s = document.getElementById("s-summary");
+    // A lost party battle against a ghost, three Cores per side: decided at the time limit by Cores standing.
+    var myS = Object.assign({}, mine, { core: null, cores: [{ fr: 3, n: 1, fallen: true }, { fr: 11, n: 2, fallen: true }, { fr: 19, n: 3 }] });
     topbar(s, "Round 4 · PvP battle · Summary", "", "Lives 3 / 5");
-    R(s, 24, 48, 912, 44, "panel"); T(s, 38, 77, "Defeat · vs. ghost of “Kai + Lin + Mo”", "tb"); T(s, 922, 75, "−1 life   ·   +3 gold each", "t", "end");
-    R(s, 24, 104, 440, 250, "panel"); T(s, 36, 124, "ARMY STRENGTH OVER TIME", "ts tm");
+    R(s, 24, 48, 912, 94, "panel"); T(s, 38, 77, "Defeat · vs. ghost of “Kai + Lin + Mo”", "tb"); T(s, 922, 75, "−1 life   ·   +3 gold each", "t", "end");
+    lines(s, 38, 98, ["Time ran out. The side with more Cores standing wins: yours 1, theirs 3.", "Battle time 6:00. Your Core 340 / 1500, theirs 1320 / 1500.", "Cores standing: yours 1 / 3, theirs 3 / 3. Your Core 1 fell at 2:10. Your Core 2 fell at 3:05."], "ts", 16);
+    R(s, 24, 154, 440, 200, "panel"); T(s, 36, 174, "ARMY STRENGTH OVER TIME", "ts tm");
     el(s, "line", { x1: 40, y1: 330, x2: 448, y2: 330, class: "rule" });
-    el(s, "polyline", { class: "chart-a", points: "40,326 100,318 160,300 220,290 280,296 340,306 448,318" });
-    el(s, "polyline", { class: "chart-e", points: "40,322 100,310 160,300 220,280 280,250 340,215 448,180" });
-    el(s, "line", { x1: 220, y1: 140, x2: 220, y2: 330, class: "rule" }); T(s, 226, 152, "1:05 your splitter destroyed", "ts tm");
-    T(s, 446, 172, "3:40 Core destroyed", "ts tm", "end"); T(s, 40, 346, "teal: you   ·   red: enemy", "ts tm");
-    R(s, 476, 104, 220, 250, "panel"); T(s, 488, 124, "WHERE YOU WERE BREACHED", "ts tm");
-    board(s, 490, 136, 8, mine, false, true); R(s, 490 + 16 * 8 - 2, 136 + 4, 68, 20, "sel");
-    lines(s, 488, 290, ["Enemy units came through", "the open right flank and", "cut the splitter at 1:05."], "ts", 16);
-    R(s, 708, 104, 228, 250, "panel"); T(s, 720, 124, "YOUR BUILDINGS", "ts tm");
-    lines(s, 720, 150, ["Barracks    14 soldiers", "Foundry      3 heavies", "Turret      22 kills", "Armory       2 upgrades", "Walls        5 of 11 lost", "Splitter     destroyed 1:05"], "t", 22);
+    el(s, "polyline", { class: "chart-a", points: "40,322 100,316 160,304 220,300 280,306 340,312 448,320" });
+    el(s, "polyline", { class: "chart-e", points: "40,320 100,312 160,300 220,288 280,270 340,254 448,246" });
+    el(s, "line", { x1: 114, y1: 192, x2: 114, y2: 330, class: "rule" }); T(s, 120, 204, "1:05 your splitter destroyed", "ts tm");
+    el(s, "line", { x1: 188, y1: 210, x2: 188, y2: 330, class: "rule" }); T(s, 194, 222, "2:10 your Core 1 fell", "ts tm");
+    el(s, "line", { x1: 250, y1: 228, x2: 250, y2: 330, class: "rule" }); T(s, 256, 240, "3:05 your Core 2 fell", "ts tm");
+    T(s, 40, 346, "teal: you   ·   red: enemy", "ts tm");
+    R(s, 476, 154, 220, 200, "panel"); T(s, 488, 174, "WHERE YOU WERE BREACHED", "ts tm");
+    board(s, 490, 184, 7, myS, false, true); R(s, 490 + 16 * 7 - 2, 184 + 4, 60, 18, "sel");
+    lines(s, 488, 314, ["Enemy units came through the", "open right flank, cut the splitter", "and took Cores 1 and 2."], "ts", 14);
+    R(s, 708, 154, 228, 200, "panel"); T(s, 720, 174, "YOUR BUILDINGS", "ts tm");
+    lines(s, 720, 198, ["Barracks    14 soldiers", "Foundry      3 heavies", "Turret      22 kills", "Armory       2 upgrades", "Walls        5 of 11 lost", "Splitter     destroyed 1:05"], "t", 22);
     R(s, 24, 366, 672, 150, "panel"); T(s, 36, 386, "NEXT", "ts tm");
     ["Event", "Shop + Build", "PvE battle (round 5)"].forEach(function (k, i) { R(s, 36 + i * 220, 404, 200, 44, "box"); T(s, 136 + i * 220, 431, k, "t", "middle"); if (i < 2) T(s, 246 + i * 220, 431, "→", "t tm", "middle"); });
     T(s, 36, 494, "Your factory was saved as a ghost for other parties to fight.", "ts tm");
     R(s, 708, 366, 228, 150, "panel"); btn(s, 720, 382, 204, 36, "Watch again"); btn(s, 720, 428, 204, 36, "Ready", true); T(s, 720, 494, "1 of 3 ready", "ts tm");
-    mark(s, 30, 56, 1); mark(s, 450, 118, 2); mark(s, 682, 118, 3); mark(s, 922, 118, 4); mark(s, 682, 380, 5); mark(s, 922, 478, 6);
+    mark(s, 30, 56, 1); mark(s, 450, 168, 2); mark(s, 682, 168, 3); mark(s, 922, 168, 4); mark(s, 682, 380, 5); mark(s, 922, 478, 6);
   })();
 
   // ================= 9. RUN OVER =================
