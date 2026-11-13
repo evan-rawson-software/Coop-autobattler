@@ -103,14 +103,9 @@ describe('bot player', () => {
     const weak = play('weak', 1, 5);
     expect(rush['bld_wall'] ?? 0).toBe(0);
     expect(fortify['bld_wall'] ?? 0).toBeGreaterThan(0);
-    // A plot has few Barracks nodes now (#178), so a single seed can tie:
-    // compare the strategies over several.
-    const barracks = (strategy: BotStrategyName): number =>
-      [1, 2, 3, 4, 5, 6].reduce(
-        (n, seed) => n + (counts(play(strategy, 1, seed))['bld_barracks'] ?? 0),
-        0,
-      );
-    expect(barracks('rush')).toBeGreaterThan(barracks('fortify'));
+    expect(rush['bld_barracks'] ?? 0).toBeGreaterThan(
+      fortify['bld_barracks'] ?? 0,
+    );
     expect(siege['bld_wall'] ?? 0).toBeGreaterThan(0);
     // The weak bot never draws a conduit; the others do.
     expect(weak.state.team.conduits).toHaveLength(0);

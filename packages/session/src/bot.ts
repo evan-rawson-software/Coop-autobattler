@@ -418,13 +418,6 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
           taking.set(r, (taking.get(r) ?? 0) + 1);
         }
       }
-      // Free nodes a collector could take for a consumer without one yet.
-      let nodesWanted = 0;
-      for (const [r, open] of room.openNodes) {
-        const unserved =
-          (taking.get(r) ?? 0) - (room.placedSources.get(r) ?? 0);
-        nodesWanted += Math.max(0, Math.min(open, unserved));
-      }
       let neighbourSpare = 0;
       for (let q = 0; q < n; q++) {
         if (q === p) continue;
@@ -481,6 +474,7 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       const splittersWaiting = d.state.team.stash.filter(
         (b) => b.owner === p && b.def === 'bld_splitter',
       ).length;
+      const shareNext = splitters * 2 < users && splittersWaiting === 0;
       // With links and a neighbour, even players are donors (more collectors)
       // and odd players receivers (more consumers); everyone else balances
       // their own.
@@ -496,16 +490,12 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
           const more = role === 2 ? slack : 1;
           if (o.def === 'bld_extractor' && sources >= users + extra) score = 0;
           if (CONSUMERS.includes(o.def) && users >= sources + more) score = 0;
-          // Never buy a collector that cannot be placed: the layout puts a
-          // collector on a free node of a resource some consumer is waiting
-          // for (a donor's spare ones go to a neighbour, so any free node
-          // does; so does one while the player has no consumer), and a
-          // style that does not connect places none (issue #178).
+          // Never buy a collector no free node can take (it would wait in the
+          // stash), nor any for a style that does not connect, which places
+          // none (issue #178).
           if (
             o.def === 'bld_extractor' &&
-            (!s.layout.connect ||
-              extractorsWaiting >=
-                (users === 0 || role === 1 ? openNodes : nodesWanted))
+            (!s.layout.connect || extractorsWaiting >= openNodes)
           ) {
             score = 0;
           }
@@ -523,7 +513,10 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
               (taking.get(res) ?? 0) >=
                 (room.openNodes.get(res) ?? 0) +
                   (room.placedSources.get(res) ?? 0) +
-                  splitters
+                  splitters +
+                  // One more while a share is possible, so the waiting
+                  // consumer is what lets the Splitter be bought.
+                  (shareNext && (room.shareable.get(res) ?? 0) > 0 ? 1 : 0)
             ) {
               score = 0;
             }
@@ -537,8 +530,6 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
             (splitters * 2 >= users ||
               splittersWaiting > 0 ||
               consumersWaiting === 0 ||
-              // A receiver's waiting consumers are fed over a border link.
-              role === 2 ||
               !canSplit)
           ) {
             score = 0;

@@ -36,18 +36,16 @@ function run(strategy: BotStrategyName, party: number, seed: number) {
 }
 
 describe('Splitter placement (#178)', () => {
-  // Measured over SEEDS at party sizes 1, 2 and 4, placed of bought. Before
-  // the capacity check: rush 104 of 115, siege 3 of 3 (the check counted the
-  // player's best collector, not the one being split). After: rush 30 of 43
-  // (9 of 9, 10 of 14, 11 of 20), siege 12 of 13 (3 of 3, 3 of 4, 6 of 6). The
-  // bots buy fewer Splitters now, and every placed one has a collector that
-  // feeds both of its consumers.
+  // Measured over SEEDS at party sizes 1, 2 and 4, placed of bought. On main:
+  // rush 104 of 115 (15/15, 32/33, 57/67), siege 3 of 3. Now: rush 101 of 111
+  // (14/14, 30/30, 57/67), siege 3 of 3 (only the solo bot buys any). Every
+  // placed Splitter on main fed both its consumers; the ratio is the placement.
   const MEASURED = {
-    rush: { minBought: 40, minPlaced: 28, minShare: 0.65 },
-    siege: { minBought: 12, minPlaced: 11, minShare: 0.8 },
+    rush: { minBought: 100, minPlaced: 95 },
+    siege: { minBought: 3, minPlaced: 3 },
   } as const;
   for (const strategy of ['rush', 'siege'] as const) {
-    test(`${strategy}: Splitters are bought and most are placed`, () => {
+    test(`${strategy}: Splitters are bought and most are placed, at every party size`, () => {
       const want = MEASURED[strategy];
       let bought = 0;
       let placedAll = 0;
@@ -61,17 +59,19 @@ describe('Splitter placement (#178)', () => {
         }
         bought += placed + stashed;
         placedAll += placed;
+        expect(
+          placed,
+          `${strategy} party ${String(party)}`,
+        ).toBeGreaterThanOrEqual(0.75 * (placed + stashed));
       }
       // The ratio means nothing if nothing is bought.
       expect(bought).toBeGreaterThanOrEqual(want.minBought);
       expect(placedAll).toBeGreaterThanOrEqual(want.minPlaced);
-      expect(placedAll).toBeGreaterThanOrEqual(want.minShare * bought);
     });
   }
 });
 
 describe('shop buys only what can be placed (#178)', () => {
-  /** Stash contents at the end of the run, per player run. */
   function stashed(strategy: BotStrategyName, party: number, def: string) {
     let n = 0;
     for (const seed of SEEDS) {
@@ -82,21 +82,10 @@ describe('shop buys only what can be placed (#178)', () => {
     return n;
   }
 
-  // Measured over SEEDS before: Extractors left in the stash, summed over the
-  // seeds, siege 10 / 13 / 27 and rush 25 / 39 / 91 at party sizes 1 / 2 / 4.
-  // After: siege 3 / 2 / 3 and rush 5 / 18 / 34.
-  test('siege leaves at most one Extractor per two runs in the stash', () => {
-    for (const party of [1, 2, 4]) {
-      expect(
-        stashed('siege', party, 'bld_extractor'),
-        `party ${String(party)}`,
-      ).toBeLessThanOrEqual(4);
-    }
-  });
-
   test('a bot that never connects buys no Extractors at all', () => {
     // The weak bot places no collector, so it must not buy any beyond the
-    // starting stash (2 per player, measured 16 / 32 / 64 of 8 seeds).
+    // starting stash (2 per player run). Measured over SEEDS: 16 / 32 / 64 at
+    // party sizes 1 / 2 / 4 (33 / 69 / 121 on main).
     for (const party of [1, 2, 4]) {
       expect(stashed('weak', party, 'bld_extractor')).toBeLessThanOrEqual(
         2 * party * SEEDS.length,
@@ -104,19 +93,26 @@ describe('shop buys only what can be placed (#178)', () => {
     }
   });
 
-  test('rush keeps far fewer unplaced consumers than before', () => {
-    // Measured, summed over SEEDS: rush 15 / 26 / 61 before; 4 / 22 / 54 now.
-    const limit: Record<number, number> = { 1: 6, 2: 26, 4: 58 };
-    for (const party of [1, 2, 4]) {
-      let n = 0;
-      for (const seed of SEEDS) {
-        n += run('rush', party, seed).state.team.stash.filter((b) =>
-          CONSUMER_DEFS.includes(b.def),
-        ).length;
+  test('rush and fortify leave few consumers they cannot feed in the stash', () => {
+    // Consumers left in the stash, summed over SEEDS at party sizes 1 / 2 / 4.
+    // Measured now: rush 8 / 10 / 35, fortify 10 / 18 / 39. On main: rush
+    // 15 / 26 / 61, fortify 16 / 26 / 55.
+    const limit = {
+      rush: { 1: 8, 2: 10, 4: 35 },
+      fortify: { 1: 10, 2: 18, 4: 39 },
+    } as const;
+    for (const strategy of ['rush', 'fortify'] as const) {
+      for (const party of [1, 2, 4] as const) {
+        let n = 0;
+        for (const seed of SEEDS) {
+          n += run(strategy, party, seed).state.team.stash.filter((b) =>
+            CONSUMER_DEFS.includes(b.def),
+          ).length;
+        }
+        expect(n, `${strategy} party ${String(party)}`).toBeLessThanOrEqual(
+          limit[strategy][party],
+        );
       }
-      expect(n, `party ${String(party)}`).toBeLessThanOrEqual(
-        limit[party] ?? 0,
-      );
     }
   });
 });

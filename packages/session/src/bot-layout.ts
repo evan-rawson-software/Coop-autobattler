@@ -750,10 +750,8 @@ function connectShare(
     const others = t.conduits.filter(
       (c) =>
         c.id !== only.id &&
-        (isBorderEnd(c.from) ||
-          isBorderEnd(c.to) ||
-          c.from.building === user.id ||
-          c.to.building === user.id),
+        ((!isBorderEnd(c.from) && c.from.building === user.id) ||
+          (!isBorderEnd(c.to) && c.to.building === user.id)),
     );
     // A border link half cannot be rebuilt here: leave such a consumer be.
     if (others.some((c) => isBorderEnd(c.from) || isBorderEnd(c.to))) continue;

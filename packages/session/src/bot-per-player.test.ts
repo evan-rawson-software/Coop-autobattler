@@ -369,6 +369,96 @@ describe('bots build per player', () => {
     }
   });
 
+  /** The state of the share test just before the second Barracks arrives. */
+  function sharePending() {
+    const g = makeGameDeps();
+    const base = placeCoreAll(newRun(g, ['Ann']), g);
+    const first = withStash(['bld_extractor', 'bld_barracks']);
+    const lay1 = planLayout(
+      first,
+      0,
+      content,
+      first.map.plotWidth,
+      style,
+      Rng.fromSeed(1),
+    );
+    let state: RunState = { ...base, team: first };
+    for (const i of lay1) state = ok(state, 0, i, g).state;
+    const nextId = state.team.nextId;
+    return {
+      ...state.team,
+      stash: [
+        { id: nextId, def: 'bld_splitter', tier: 1, owner: 0 },
+        { id: nextId + 1, def: 'bld_barracks', tier: 1, owner: 0 },
+      ],
+      nextId: nextId + 2,
+    };
+  }
+
+  test('an unrelated border link elsewhere does not stop a share (#178)', () => {
+    const team = sharePending();
+    const ext = team.buildings.find((b) => b.def === 'bld_extractor');
+    if (ext === undefined) throw new Error('no extractor');
+    // A half of a link that ends at the extractor: nothing to do with the
+    // Barracks that would be taken back.
+    const withLink = {
+      ...team,
+      conduits: [
+        ...team.conduits,
+        {
+          id: 9000,
+          owner: 0,
+          from: { border: 0, y: 3 },
+          to: { building: ext.id, side: 'west' as const },
+          cells: [],
+        },
+      ],
+    };
+    const lay = planLayout(
+      withLink,
+      0,
+      content,
+      withLink.map.plotWidth,
+      style,
+      Rng.fromSeed(1),
+    );
+    expect(lay.some((i) => i.type === 'return_building')).toBe(true);
+    expect(lay.filter((i) => i.type === 'add_conduit')).toHaveLength(3);
+  });
+
+  test('a consumer with another conduit that cannot be rebuilt is left alone (#178)', () => {
+    const team = sharePending();
+    const barracks = team.buildings.find((b) => b.def === 'bld_barracks');
+    const ext = team.buildings.find((b) => b.def === 'bld_extractor');
+    if (barracks === undefined || ext === undefined) throw new Error('setup');
+    // A second collector also feeds the Barracks, on a side it has no input
+    // on: taking the Barracks back would drop that conduit for good.
+    const second = { ...ext, id: 9100, x: ext.x + 4 };
+    const withSecond = {
+      ...team,
+      buildings: [...team.buildings, second],
+      conduits: [
+        ...team.conduits,
+        {
+          id: 9001,
+          owner: 0,
+          from: { building: second.id, side: 'north' as const },
+          to: { building: barracks.id, side: 'west' as const },
+          cells: [],
+        },
+      ],
+    };
+    const lay = planLayout(
+      withSecond,
+      0,
+      content,
+      withSecond.map.plotWidth,
+      style,
+      Rng.fromSeed(1),
+    );
+    expect(lay.some((i) => i.type === 'return_building')).toBe(false);
+  });
+
   test('feeds checks the collector being split, not the best one owned (#178)', () => {
     // An Armory that costs three times as much per step: need 150 per 1000
     // ticks. Two halves of a tier 3 collector (100) cover 33 percent of it,
