@@ -41,6 +41,28 @@ export function workshopPrice(
 }
 
 /**
+ * `workshopPrice`, or null where it would throw: no purchasable tier
+ * `newTier` of `def`, or a percent or price that is not a safe integer.
+ * Never throws.
+ */
+export function workshopPriceOrNull(
+  content: ShopContent,
+  def: BuildingId,
+  newTier: number,
+  percent: number,
+): number | null {
+  if (!Number.isSafeInteger(newTier) || newTier < 1) return null;
+  const t = content.buildings.get(def)?.tiers[newTier - 1];
+  if (t === undefined || !('price' in t)) return null;
+  const price = t.price;
+  if (!Number.isSafeInteger(price) || !Number.isSafeInteger(percent)) {
+    return null;
+  }
+  if (!Number.isSafeInteger(price * percent)) return null;
+  return mulPct(price, percent);
+}
+
+/**
  * Every building `player` owns (placed or in the stash) that is below tier 3
  * and has a purchasable next tier, in instance id order, with its price and
  * whether `gold` covers it.

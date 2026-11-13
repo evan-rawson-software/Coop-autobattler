@@ -5,7 +5,7 @@
 
 import type { BuildingConfig } from './buildings.js';
 import { sortedKeys } from './hash.js';
-import { mulDiv } from './int.js';
+import { divFloor, mulDiv } from './int.js';
 import {
   isRecord,
   readInt,
@@ -133,8 +133,11 @@ export function budgetLimit(config: ThreatsConfig): number {
   const maxType = Math.max(
     ...THREAT_TYPES.map((t) => config.typeMultiplierPercent[t]),
   );
-  return Math.floor(
-    Number.MAX_SAFE_INTEGER / (HEADROOM * maxType * config.maxPartySize),
+  // Integer division: a floating-point quotient can round up across an
+  // integer, which an int64 port would not do.
+  return divFloor(
+    Number.MAX_SAFE_INTEGER,
+    HEADROOM * maxType * config.maxPartySize,
   );
 }
 

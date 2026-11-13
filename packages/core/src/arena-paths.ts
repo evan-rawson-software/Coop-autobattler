@@ -341,7 +341,7 @@ export function breachPassable(
   if (arena.blocked[cell] === 1) return false;
   if (openFor(arena, side, cell)) return true;
   const ref = arena.occupant[cell] ?? -1;
-  const b = arena.buildings[ref];
+  const b = ref >= 0 ? arena.buildings[ref] : undefined;
   return b !== undefined && b.side !== side && ref !== goal;
 }
 

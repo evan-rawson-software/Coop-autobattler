@@ -49,12 +49,6 @@ const DIRS: readonly (readonly [number, number])[] = [
   [-1, 0],
 ];
 
-class AttemptFailed extends Error {}
-
-function fail(why: string): never {
-  throw new AttemptFailed(why);
-}
-
 /** Draw an integer in [min, max]; always consumes one `nextInt`. */
 function between(rng: Rng, min: number, max: number): number {
   return min + rng.nextInt(max - min + 1);
@@ -74,6 +68,7 @@ interface Grid {
   readonly features: Map<number, string>;
 }
 
+/** Place the lakes; returns why it failed, or null. */
 function placeLakes(
   g: Grid,
   rng: Rng,
@@ -81,7 +76,7 @@ function placeLakes(
   count: number,
   config: MapgenConfig,
   feature: string,
-): void {
+): string | null {
   const c = config.neutralZone.lakes;
   for (let i = 0; i < count; i++) {
     let placed = false;
@@ -131,10 +126,12 @@ function placeLakes(
       for (const [cx, cy] of cells) g.features.set(cy * g.width + cx, feature);
       placed = true;
     }
-    if (!placed) fail('could not place a lake');
+    if (!placed) return 'could not place a lake';
   }
+  return null;
 }
 
+/** Place the cliffs; returns why it failed, or null. */
 function placeCliffs(
   g: Grid,
   rng: Rng,
@@ -142,7 +139,7 @@ function placeCliffs(
   count: number,
   config: MapgenConfig,
   feature: string,
-): void {
+): string | null {
   const c = config.neutralZone.cliffs;
   for (let i = 0; i < count; i++) {
     let placed = false;
@@ -183,8 +180,9 @@ function placeCliffs(
       for (const [x, y] of cells) g.features.set(y * g.width + x, feature);
       placed = true;
     }
-    if (!placed) fail('could not place a cliff');
+    if (!placed) return 'could not place a cliff';
   }
+  return null;
 }
 
 /** True when `blocked(x, y)` leaves every open cell 4-connected. */
@@ -225,6 +223,7 @@ function openCellsConnected(
   return reached === open;
 }
 
+/** One attempt: the zone, or why it failed (the reason is a string). */
 function attempt(
   zoneRng: Rng,
   attemptIndex: number,
@@ -232,7 +231,7 @@ function attempt(
   plots: number,
   content: NeutralZoneContent,
   config: MapgenConfig,
-): NeutralZone {
+): NeutralZone | string {
   const nz = config.neutralZone;
   const grid: Grid = { width, depth: nz.depth, features: new Map() };
   const attemptRng = zoneRng.child(attemptIndex);
@@ -254,7 +253,15 @@ function attempt(
     nz.lakes.countMaxPerPlot * plots,
   );
   if (room) {
-    placeLakes(grid, lakesRng, region, lakeCount, config, config.lakes.feature);
+    const why = placeLakes(
+      grid,
+      lakesRng,
+      region,
+      lakeCount,
+      config,
+      config.lakes.feature,
+    );
+    if (why !== null) return why;
   }
   const cliffCount = between(
     cliffsRng,
@@ -262,7 +269,7 @@ function attempt(
     nz.cliffs.countMaxPerPlot * plots,
   );
   if (room) {
-    placeCliffs(
+    const why = placeCliffs(
       grid,
       cliffsRng,
       region,
@@ -270,6 +277,7 @@ function attempt(
       config,
       config.cliffs.feature,
     );
+    if (why !== null) return why;
   }
 
   const features: FeatureCell[] = [];
@@ -282,7 +290,7 @@ function attempt(
     return f !== undefined && content.terrain.get(f)?.blocksMovement === true;
   };
   if (!openCellsConnected(width, nz.depth, blocked)) {
-    fail('the open cells of the zone are not connected');
+    return 'the open cells of the zone are not connected';
   }
   return { width, depth: nz.depth, features, pointsOfInterest: [] };
 }
@@ -309,15 +317,9 @@ export function generateNeutralZoneWithStats(
   const zoneRng = Rng.fromSeed(battleSeed).child(NEUTRAL_ZONE_STREAM);
   let last = 'no attempt made';
   for (let a = 0; a < config.neutralZone.maxAttempts; a++) {
-    try {
-      return {
-        zone: attempt(zoneRng, a, width, plots, content, config),
-        attempts: a + 1,
-      };
-    } catch (error) {
-      if (!(error instanceof AttemptFailed)) throw error;
-      last = error.message;
-    }
+    const zone = attempt(zoneRng, a, width, plots, content, config);
+    if (typeof zone !== 'string') return { zone, attempts: a + 1 };
+    last = zone;
   }
   throw new Error(
     `generateNeutralZone: no valid zone for seed ${String(battleSeed)}, width ${String(width)} after ${String(config.neutralZone.maxAttempts)} attempts (last failure: ${last})`,

@@ -7,7 +7,11 @@
  * The price actually charged is `currentWorkshopPrice`, computed when the
  * player chooses. Used by event_choose and validateRunState.
  */
-import { workshopPrice, type ShopContent, type TeamState } from '@game/core';
+import {
+  workshopPriceOrNull,
+  type ShopContent,
+  type TeamState,
+} from '@game/core';
 
 /** The Workshop price percent used when an offer carries none. */
 export const DEFAULT_WORKSHOP_PERCENT = 80;
@@ -19,11 +23,7 @@ export function currentWorkshopPrice(
   def: string,
   tier: number,
 ): number | null {
-  try {
-    return workshopPrice(content, def, tier + 1, percent);
-  } catch {
-    return null;
-  }
+  return workshopPriceOrNull(content, def, tier + 1, percent);
 }
 
 /** A structural problem with `option` (as one of `player`'s), or null. */

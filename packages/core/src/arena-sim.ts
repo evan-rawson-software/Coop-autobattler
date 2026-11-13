@@ -1817,7 +1817,7 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
         bestD = d; // units are in ID order, so a tie keeps the lower ID
       }
     }
-    const target = units[best];
+    const target = best >= 0 ? units[best] : undefined;
     if (target === undefined) continue;
     t.charge = 0;
     t.cooldown = info.cooldownTicks;
@@ -1986,7 +1986,7 @@ function nearestContact(
     const list = ctx.bySide[1 - u.side];
     for (let q = 0; q < few; q++) {
       const j = list?.[q] ?? -1;
-      const e = sim.units[j];
+      const e = j >= 0 ? sim.units[j] : undefined;
       if (e === undefined) continue;
       const dx = e.px - u.px;
       const dy = e.py - u.py;
@@ -2095,7 +2095,7 @@ function nearestVisible(
     const list = ctx.bySide[1 - u.side];
     for (let q = 0; q < few; q++) {
       const j = list?.[q] ?? -1;
-      const e = sim.units[j];
+      const e = j >= 0 ? sim.units[j] : undefined;
       if (e === undefined) continue;
       const dx = e.px - u.px;
       const dy = e.py - u.py;
@@ -2362,7 +2362,8 @@ function decideMove(
   const reachR = def.reach + def.radius;
   const act = ctx.action[i];
   if (act === ACT_AGGRO) {
-    const e = sim.units[ctx.arg[i] ?? -1];
+    const j = ctx.arg[i] ?? -1;
+    const e = j >= 0 ? sim.units[j] : undefined;
     ctx.action[i] = ACT_NONE;
     if (e === undefined) return;
     const hx = e.px - u.px;
@@ -2445,7 +2446,7 @@ function destroyBuilding(
   ref: number,
   tick: number,
 ): void {
-  const b = ctx.arena.buildings[ref];
+  const b = ref >= 0 ? ctx.arena.buildings[ref] : undefined;
   if (b === undefined || !b.alive) return;
   removeFromArena(ctx.arena, ref);
   if (b.kind === 'core') {

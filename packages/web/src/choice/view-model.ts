@@ -3,7 +3,7 @@
  * with the archetype and what it does in plain words, the threat level and
  * facts, and the reward. Pure; reads the stored options of the run.
  */
-import type { SimConfig } from '@game/core';
+import { coreMaxHealth, type SimConfig } from '@game/core';
 import {
   nextBattleInfo,
   openVote,
@@ -14,7 +14,7 @@ import {
 import { clock } from '../battle/derive.js';
 import { archetypeText } from '../run/display-text.js';
 import { count } from '../plural.js';
-import { overloadLine, partyCoreMax } from './overload.js';
+import { overloadLine } from './overload.js';
 
 export interface PveCard {
   readonly id: string;
@@ -80,7 +80,7 @@ export function pveChoiceView(
   const vote = openVote(run);
   const mine = vote?.choices[player] ?? null;
   const overloadAt = overloadClock(sim);
-  const partyMax = partyCoreMax(run.team, deps.content.buildings);
+  const partyMax = coreMaxHealth(run.team, deps.content);
   const cards = info.options.map((o): PveCard => {
     const text = archetypeText(o.archetype);
     return {

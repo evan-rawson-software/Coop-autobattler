@@ -116,6 +116,7 @@ export {
 } from './int.js';
 export {
   canonicalJson,
+  canonicalJsonOrNull,
   fnv1a32,
   hashJson,
   sortedKeys,
@@ -355,7 +356,11 @@ export type {
 export { sealedProducers } from './sealed-producers.js';
 
 // Workshop event rules (issue #50).
-export { workshopOptions, workshopPrice } from './workshop.js';
+export {
+  workshopOptions,
+  workshopPrice,
+  workshopPriceOrNull,
+} from './workshop.js';
 export type { WorkshopOption } from './workshop.js';
 
 // In-battle ramp (economy buildings) and Overload (W1-7).
@@ -552,3 +557,4 @@ export type {
   GhostTierBound,
   GhostValueBound,
 } from './ghost-snapshot.js';
+export { coreMaxHealth } from './max-health.js';

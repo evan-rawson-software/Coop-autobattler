@@ -205,7 +205,7 @@ export function createArena(
 
 /** Take a building out of the arena: its cells become open ground. */
 export function removeFromArena(arena: Arena, ref: number): void {
-  const b = arena.buildings[ref];
+  const b = ref >= 0 ? arena.buildings[ref] : undefined;
   if (b === undefined || !b.alive) return;
   b.alive = false;
   for (const c of b.cells) {

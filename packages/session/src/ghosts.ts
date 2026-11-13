@@ -21,6 +21,7 @@ import {
   ghostBucketKey,
   ghostBucketOf,
   ghostKey,
+  canonicalJsonOrNull,
   hashJson,
   validateGhostSnapshot,
   GHOST_MAX_LABEL_LENGTH,
@@ -176,13 +177,15 @@ export function eligibleGhosts(
       if (!cheapEligible(item, state)) continue;
       const v = validateGhostSnapshot(item, ctx);
       if (!v.ok) continue;
-      hashJson(v.snapshot); // defence in depth: a value canonical JSON refuses is no candidate
+      // Defence in depth: a value canonical JSON refuses is no candidate.
+      if (canonicalJsonOrNull(v.snapshot) === null) continue;
       const key = ghostKey(v.snapshot);
       if (fought.has(key) || seen.has(key)) continue;
       seen.add(key);
       out.push(v.snapshot);
     } catch {
-      // A value that throws when read (a getter, a proxy) is not a candidate.
+      // JavaScript-only hardening: a value that throws when read (a getter,
+      // a proxy) is not a candidate. Plain parsed data never throws here.
     }
   }
   return out.sort(compareGhosts);
@@ -232,7 +235,7 @@ export function presentCandidates(
         h: hashJson([state.runId, state.round, key]),
       });
     } catch {
-      // A value that throws when read is not a candidate.
+      // JavaScript-only hardening, as in eligibleGhosts.
     }
   }
   rows.sort((a, b) =>
