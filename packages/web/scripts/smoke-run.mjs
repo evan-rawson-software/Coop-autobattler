@@ -68,6 +68,78 @@ export async function runRunSmoke({
       w,
     );
 
+  // The 1366x768 laptop check: no page scroll, the primary controls inside the
+  // viewport and not covered, and the board drawn from the atlas at the zoom
+  // the screen opens with. The viewport is restored afterwards.
+  const checkAt1366 = async (label, selectors, shotName) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await settle();
+    await frames(page, 15);
+    const m = await page.evaluate((sels) => {
+      const de = document.documentElement;
+      const bar = document.querySelector('.topbar, header');
+      const rects = sels.map((sel) => {
+        const el = document.querySelector(sel);
+        if (el === null) return { sel, missing: true };
+        const r = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          Math.min(Math.max(r.x + r.width / 2, 0), innerWidth - 1),
+          Math.min(Math.max(r.y + r.height / 2, 0), innerHeight - 1),
+        );
+        return {
+          sel,
+          rect: [r.x, r.y, r.right, r.bottom].map(Math.round),
+          inView:
+            r.width > 0 &&
+            r.height > 0 &&
+            r.x >= 0 &&
+            r.y >= 0 &&
+            r.right <= innerWidth &&
+            r.bottom <= innerHeight,
+          covered: hit === null || !(el === hit || el.contains(hit)),
+        };
+      });
+      return {
+        sw: de.scrollWidth,
+        sh: de.scrollHeight,
+        bodyH: document.body.scrollHeight,
+        vw: innerWidth,
+        vh: innerHeight,
+        topbarH:
+          bar === null ? null : Math.round(bar.getBoundingClientRect().height),
+        rects,
+      };
+    }, selectors);
+    console.log(`${label} 1366x768 top bar height: ${m.topbarH} px`);
+    check(
+      m.sw <= 1366 && m.sh <= 768 && m.bodyH <= 768,
+      `${label}: no page scroll at 1366x768 (${JSON.stringify(m)})`,
+    );
+    check(
+      m.rects.every((r) => !r.missing && r.inView && !r.covered),
+      `${label}: controls are inside the viewport and not covered at 1366x768 (${JSON.stringify(m.rects)})`,
+    );
+    const cam = await page.evaluate(() => window.__debug.camera());
+    const art = await page.evaluate(() => window.__debug.sprites?.() ?? null);
+    console.log(`${label} 1366x768 board zoom: ${cam.zoom.toFixed(2)}`);
+    check(
+      art !== null &&
+        art.state === 'ready' &&
+        art.spriteFrames > 0 &&
+        art.drawn > 0,
+      `${label}: the board is drawn from the atlas at 1366x768 (${JSON.stringify(art)})`,
+    );
+    check(
+      cam.zoom >= 12,
+      `${label}: sprites are used at the opening zoom at 1366x768 (${cam.zoom.toFixed(1)} px a cell)`,
+    );
+    await shot(shotName);
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await settle();
+  };
+
   const mark2 = (set, b, fps) => {
     for (let dx = 0; dx < fps[b.def].width; dx++)
       for (let dy = 0; dy < fps[b.def].height; dy++)
@@ -567,6 +639,11 @@ export async function runRunSmoke({
   );
   await shot('run-3-core-selected');
   await shotDark('art2-core-placement');
+  await checkAt1366(
+    'Core placement',
+    ['#core-confirm'],
+    'run-3-core-placement-1366x768',
+  );
   await reloadSame('Core placement');
 
   // Confirm: Core placed, cannot be moved.
@@ -673,6 +750,11 @@ export async function runRunSmoke({
       `first build: the board is drawn from the atlas (${JSON.stringify(art)})`,
     );
   }
+  await checkAt1366(
+    'first build',
+    ['#ready-button', '#panel-stash', '#panel-tools', '#panel-inspector'],
+    'run-4-first-build-1366x768',
+  );
   const placedCount = (await B.team()).buildings.length;
   check(placedCount >= 4, `placed buildings survive a reload (${placedCount})`);
 
