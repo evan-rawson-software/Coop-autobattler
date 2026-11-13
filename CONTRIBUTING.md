@@ -153,7 +153,9 @@ The rule for a change that makes saved data unreadable:
   raises BOTH the run-state format and the ghost snapshot format, because
   both contain the team state. A save or ghost with another number is then `unsupported_format`
   (or skipped), never "damaged": the version and format checks run before
-  `validateRunState`.
+  `validateRunState`. The one exception so far is the optional save field
+  `startedAt` (the stale-write rule): it was added without a format bump
+  because records without it stay readable.
 - The major version is raised once for the whole design change (this is
   done). Further format changes inside #124 (multi-Core battles, border
   links, per-player placement) raise the format numbers only. Nobody holds a

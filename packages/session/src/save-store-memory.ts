@@ -83,15 +83,7 @@ export function createMemorySaveStore(
       // Checked after the await, right before the commit, so two overlapping
       // puts cannot both pass.
       if (options.rejectStale === true) {
-        const have = (
-          saves.get(runId) as { actionCounter?: unknown } | undefined
-        )?.actionCounter;
-        if (
-          isStaleWrite(
-            have,
-            (record as { actionCounter?: unknown }).actionCounter,
-          )
-        ) {
+        if (isStaleWrite(saves.get(runId), record)) {
           throw new StaleSaveError();
         }
       }

@@ -62,6 +62,13 @@ export interface ShopRunOptions {
   readonly storage?: StorageLike | null;
 }
 
+interface LoadOptions {
+  /** Discard a saved run first, whatever it is. */
+  readonly fresh?: boolean;
+  /** Discard the saved run only if it still cannot be opened (re-read first). */
+  readonly discardUnopenable?: boolean;
+}
+
 /** A saved run exists but `openRun` refused it. It is never deleted for you. */
 export class UnopenableRunError extends Error {
   constructor(
@@ -181,7 +188,7 @@ async function create(
  * cannot be opened is never deleted here: this throws `UnopenableRunError`.
  */
 export async function loadShopRun(
-  options: ShopRunOptions & { readonly fresh?: boolean } = {},
+  options: ShopRunOptions & LoadOptions = {},
 ): Promise<ShopRun> {
   const next = options.next ?? 'pvp';
   const seed = options.seed ?? 11;
@@ -197,7 +204,18 @@ export async function loadShopRun(
   const { store, storage, raw } = chooseStore(options.storage, markConflict);
   if (options.fresh === true) await store.remove(runId);
 
-  const opened = await openRun(runId, deps, store, INSTALLED_VERSION);
+  let opened = await openRun(runId, deps, store, INSTALLED_VERSION);
+  if (
+    options.discardUnopenable === true &&
+    !opened.ok &&
+    opened.reason !== 'not_found' &&
+    opened.reason !== 'load_failed'
+  ) {
+    // Re-read just now: another tab may have replaced the save with a run,
+    // which is then kept and opened below.
+    await store.remove(runId);
+    opened = await openRun(runId, deps, store, INSTALLED_VERSION);
+  }
   let controller: RunController;
   let restored: boolean;
   if (opened.ok) {
@@ -277,7 +295,7 @@ function current(): ShopRun | null {
 }
 
 async function replaceRun(
-  options: (ShopRunOptions & { readonly fresh?: boolean }) | undefined,
+  options: (ShopRunOptions & LoadOptions) | undefined,
 ): Promise<void> {
   current()?.dispose();
   shopRunStore.set({ status: 'loading' });
@@ -292,7 +310,7 @@ async function replaceRun(
 }
 
 function start(
-  options: (ShopRunOptions & { readonly fresh?: boolean }) | undefined,
+  options: (ShopRunOptions & LoadOptions) | undefined,
 ): Promise<void> {
   const p = replaceRun(options).finally(() => {
     if (loading === p) loading = null;
@@ -316,4 +334,14 @@ export function reloadShopRun(options?: ShopRunOptions): Promise<void> {
 /** Discard the saved sample run and set up a new one. */
 export function restartShopRun(options?: ShopRunOptions): Promise<void> {
   return start({ ...options, fresh: true });
+}
+
+/**
+ * Replace a save that could not be opened, after reading it again: a run
+ * another tab has started since is kept and opened instead.
+ */
+export function discardUnopenableShopRun(
+  options?: ShopRunOptions,
+): Promise<void> {
+  return start({ ...options, discardUnopenable: true });
 }

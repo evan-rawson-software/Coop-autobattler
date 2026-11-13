@@ -259,12 +259,7 @@ export async function openIndexedDbStores(
             const read = os.get(runId);
             read.onsuccess = () => {
               if (options.rejectStale === true) {
-                const have = (
-                  read.result as { actionCounter?: unknown } | undefined
-                )?.actionCounter;
-                const next = (record as { actionCounter?: unknown })
-                  .actionCounter;
-                if (isStaleWrite(have, next)) {
+                if (isStaleWrite(read.result, record)) {
                   flags.stale = true;
                   abort(new StaleSaveError());
                   return;
