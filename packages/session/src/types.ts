@@ -327,6 +327,7 @@ export type Effect =
       readonly x: number;
       readonly y: number;
     }
+  | { readonly type: 'core_position_changed'; readonly player: number }
   | { readonly type: 'vote_changed'; readonly player: number }
   | {
       readonly type: 'vote_resolved';
