@@ -100,6 +100,63 @@ describe('a page restored from the back/forward cache', () => {
   });
 });
 
+describe('a run replaced under the same id while the page was cached', () => {
+  async function held(restart: boolean): Promise<number> {
+    const factory = new IDBFactory();
+    const win = fakeWindow();
+    const a = await createServices(env(factory, win, 'a'), gameDeps());
+    const first = await startRun(
+      spec('r'),
+      gameDeps(),
+      a.saves,
+      1,
+      INSTALLED_VERSION,
+    );
+    if (!first.ok) throw new Error('start');
+    let told = 0;
+    a.watch('r', () => {
+      told += 1;
+    });
+    const b = await createServices(env(factory, null, 'b'), gameDeps());
+    const before = (await b.saves.get('r')) as {
+      actionCounter: number;
+      startedAt: number;
+    };
+    // Another service on the same store discards it and starts the run again.
+    await b.saves.remove('r');
+    if (restart) {
+      const second = await startRun(
+        spec('r'),
+        gameDeps(),
+        b.saves,
+        2,
+        INSTALLED_VERSION,
+      );
+      if (!second.ok) throw new Error('restart');
+      const after = (await b.saves.get('r')) as {
+        actionCounter: number;
+        startedAt: number;
+      };
+      // The point of the test: equal counters, different identities.
+      expect(after.actionCounter).toBe(before.actionCounter);
+      expect(after.startedAt).not.toBe(before.startedAt);
+    } else {
+      await b.saves.put(before as never);
+    }
+    win.dispatch('pageshow', { persisted: true });
+    await tick();
+    return told;
+  }
+
+  test('same counter, different start stamp: the watcher is told', async () => {
+    expect(await held(true)).toBe(1);
+  });
+
+  test('same counter, same start stamp: nobody is told', async () => {
+    expect(await held(false)).toBe(0);
+  });
+});
+
 describe('a save by this tab while the pageshow read runs', () => {
   test('is not taken for another tab', async () => {
     const factory = new IDBFactory();
