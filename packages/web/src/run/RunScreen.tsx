@@ -252,14 +252,13 @@ function BlockedRun(props: { runId: string; message: string; reason: string }) {
           {screenText(screenTexts, 'uiRunUnopenableKept')}
           {props.reason === 'load_failed'
             ? ''
-            : ' Removing the save deletes it for good, with no summary and no record.'}
+            : ` ${screenText(screenTexts, 'uiRunRemoveNote')}`}
         </p>
         {error === null ? null : <p class="error">{error}</p>}
         {asking ? (
           <>
             <p data-field="remove-warning">
-              Remove this save? It is deleted for good, with no summary and no
-              record of the run.
+              {screenText(screenTexts, 'uiRunRemoveWarning')}
             </p>
             <button
               type="button"

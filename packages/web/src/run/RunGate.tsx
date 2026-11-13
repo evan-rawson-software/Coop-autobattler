@@ -57,8 +57,8 @@ function UnopenablePanel(props: { message: string }) {
         <Panel title={screenText(screenTexts, 'uiRunUnopenableTitle')}>
           <p data-field="reason">{props.message}</p>
           <p class="muted">
-            {screenText(screenTexts, 'uiRunUnopenableKept')} Discarding it
-            starts a new sample run and cannot be undone.
+            {screenText(screenTexts, 'uiRunUnopenableKept')}{' '}
+            {screenText(screenTexts, 'uiRunDiscardSample')}
           </p>
           <button
             type="button"

@@ -100,6 +100,31 @@ describe('a page restored from the back/forward cache', () => {
   });
 });
 
+describe('a save by this tab while the pageshow read runs', () => {
+  test('is not taken for another tab', async () => {
+    const factory = new IDBFactory();
+    const win = fakeWindow();
+    const a = await createServices(env(factory, win, 'a'), gameDeps());
+    const started = await startRun(
+      spec('r'),
+      gameDeps(),
+      a.saves,
+      1,
+      INSTALLED_VERSION,
+    );
+    if (!started.ok) throw new Error('start');
+    let told = 0;
+    a.watch('r', () => {
+      told += 1;
+    });
+    win.dispatch('pageshow', { persisted: true });
+    const there = await a.saves.get('r');
+    await a.saves.put({ ...(there as object), actionCounter: 7 } as never);
+    await tick();
+    expect(told).toBe(0);
+  });
+});
+
 describe('two tabs on one empty store', () => {
   test('starting the same run at the same moment lets exactly one write', async () => {
     const factory = new IDBFactory();

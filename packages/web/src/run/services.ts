@@ -274,12 +274,14 @@ export async function createServices(
   const onPageShow = (e: Event): void => {
     if ((e as Event & { persisted?: boolean }).persisted !== true) return;
     for (const [runId, counter] of [...held]) {
-      void inner.get(runId).then(
-        (v) => {
+      void inner
+        .get(runId)
+        .then((v) => {
+          // A save by this tab while the read ran is not another tab's.
+          if (held.get(runId) !== counter) return;
           if (counterOf(v) !== counter) fire(runId);
-        },
-        () => undefined,
-      );
+        })
+        .catch(() => undefined);
     }
   };
   env.window?.addEventListener('pageshow', onPageShow);
