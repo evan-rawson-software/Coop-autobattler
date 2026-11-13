@@ -2086,12 +2086,15 @@ export async function runRunSmoke({
   await page.waitForFunction(
     () => window.__debug?.battle?.phase() === 'summary',
   );
-  await bothReady('event_choice', async () => {
-    // The screen may replay for the other player: skip, then continue.
+  // "Watch again" after one player is Ready: the battle replays and the Ready
+  // of that player is kept (the run still waits for the other player).
+  const toSummary = async () => {
     await page.waitForFunction(
       () =>
         window.__debug?.battle?.phase() === 'summary' ||
         document.querySelector('#skip') !== null,
+      undefined,
+      { timeout: slow(10000) },
     );
     if (
       (await page.evaluate(() => window.__debug.battle.phase())) !== 'summary'
@@ -2099,28 +2102,623 @@ export async function runRunSmoke({
       await page.click('#skip');
       await page.waitForFunction(
         () => window.__debug?.battle?.phase() === 'summary',
+        undefined,
+        { timeout: slow(10000) },
       );
     }
-    await page.click('#battle-ready');
-  });
+  };
+  const playerDone = (n) =>
+    page.evaluate(
+      (i) =>
+        window.__debug.run.state().ready[i] === true ||
+        window.__debug.run.state().voted?.[i] === true,
+      n,
+    );
+  await actAs(0);
+  await toSummary();
+  await page.click('#battle-ready');
+  await page.waitForFunction(
+    () =>
+      window.__debug?.run?.state().ready[0] === true ||
+      window.__debug?.run?.state().voted?.[0] === true,
+    undefined,
+    { timeout: slow(10000) },
+  );
+  await page.click('#watch-again');
+  await page.waitForFunction(
+    () => window.__debug?.battle?.phase() === 'playing',
+    undefined,
+    { timeout: slow(10000) },
+  );
+  check(
+    (await page.evaluate(() => window.__debug.battle.tick())) === 0 &&
+      (await R.state()).step === 'pve_summary' &&
+      (await playerDone(0)),
+    'two players: Watch again after Ready replays the battle from the start and the run keeps player 1 Ready',
+  );
+  await page.click('#skip');
+  await page.waitForFunction(
+    () => window.__debug?.battle?.phase() === 'summary',
+    undefined,
+    { timeout: slow(10000) },
+  );
+  check(
+    (await page.locator('#battle-ready').isDisabled()) &&
+      !(await page.locator('#watch-again').isDisabled()) &&
+      (await playerDone(0)) &&
+      !(await playerDone(1)) &&
+      (await R.state()).step === 'pve_summary',
+    'two players: after the replay the summary still shows player 1 Ready (button disabled, run waiting for player 2)',
+  );
+  await shot('run-two-player-watch-again-ready');
+  await actAs(1);
+  await toSummary();
+  check(
+    !(await page.locator('#battle-ready').isDisabled()) &&
+      !(await playerDone(1)),
+    'two players: the other player is not Ready and can press Ready on the summary',
+  );
+  await page.click('#battle-ready');
+  await waitStep('event_choice');
   await page.waitForSelector('#event-choice');
+
+  // The event vote: both pick the Workshop, which has a follow-up of its own
+  // for each player.
+  const workshopOffer = await page
+    .locator('.event-card[data-type="workshop"]')
+    .first()
+    .getAttribute('data-offer');
+  check(
+    workshopOffer !== null,
+    `two players: the Workshop is among the event offers (seed ${SEED})`,
+  );
   for (const p of [0, 1]) {
     await actAs(p);
-    await page.waitForSelector('[data-action="choose-event"]');
-    await page.click('[data-action="choose-event"]');
+    await page.click(
+      `[data-action="choose-event"][data-offer="${workshopOffer}"]`,
+    );
     if (p === 0) {
       await page.waitForFunction(
         () => window.__debug?.run?.state().voted?.[0] === true,
+        undefined,
+        { timeout: slow(10000) },
       );
     }
   }
-  await page.waitForFunction(
-    () => window.__debug?.run?.state().step !== 'event_choice',
+  await waitStep('event_resolve');
+  await page.waitForSelector('#event-resolve');
+  await settle();
+
+  const followOptions = async () =>
+    (
+      await page
+        .locator('#event-resolve .event-card[data-option]')
+        .evaluateAll((els) =>
+          els.map((e) => ({
+            id: e.dataset.option,
+            affordable: e.dataset.affordable === 'true',
+            text: e.innerText,
+          })),
+        )
+    ).map((o) => ({
+      ...o,
+      price: Number(/Costs (\d+) gold/.exec(o.text)?.[1]),
+      from: Number(/Tier (\d) → tier (\d)/.exec(o.text)?.[1]),
+      to: Number(/Tier (\d) → tier (\d)/.exec(o.text)?.[2]),
+      name: o.text.split('\n')[0].trim(),
+    }));
+  const picks = [];
+  const golds = [];
+  for (const p of [0, 1]) {
+    await actAs(p);
+    await page.waitForSelector('#event-resolve [data-field="chosen"]');
+    golds[p] = (await R.state()).gold;
+    const mine = await followOptions();
+    picks[p] = mine.find((o) => o.affordable);
+    check(
+      mine.length > 0 && picks[p] !== undefined,
+      `two players: Workshop follow-up, player ${p + 1} has ${mine.length} option(s) and can afford one (gold ${golds[p]})`,
+    );
+  }
+  check(
+    picks[0].id !== picks[1].id,
+    'two players: Workshop follow-up, each player is offered their own buildings (the two first picks differ)',
+  );
+  const chosenLines = () =>
+    page.locator('#event-resolve [data-field="chosen"] li').allInnerTexts();
+  const waitingCount = () =>
+    page.locator('#event-resolve [data-field="waiting"]').count();
+  await actAs(0);
+  {
+    const before = await chosenLines();
+    check(
+      before.length === 2 &&
+        before.every((l) => /choosing/.test(l)) &&
+        (await waitingCount()) === 0,
+      `two players: Workshop follow-up, nobody has chosen yet (${before.join(' | ')})`,
+    );
+  }
+  const optionButton = (id) =>
+    page.locator(
+      `#event-resolve [data-action="choose-option"][data-option="${id}"]`,
+    );
+  await optionButton(picks[0].id).click();
+  await page.waitForSelector('#event-resolve [data-field="waiting"]');
+  const waitingText = await page
+    .locator('#event-resolve [data-field="waiting"]')
+    .innerText();
+  const lines = await chosenLines();
+  check(
+    /waiting for other players/i.test(waitingText) &&
+      /Player 2/.test(waitingText) &&
+      lines.length === 2 &&
+      /has chosen/.test(lines[0]) &&
+      /choosing/.test(lines[1]) &&
+      !/has chosen/.test(lines[1]),
+    `two players: Workshop follow-up, player 1 chose and sees "${waitingText}" with the list ${JSON.stringify(lines)}`,
   );
   check(
-    (await R.state()).step !== 'event_choice',
-    `two players: both event votes done (now "${(await R.state()).step}")`,
+    ![waitingText, ...lines].some(
+      (t) => t.includes(picks[0].name) || /tier|gold|skip/i.test(t),
+    ),
+    'two players: Workshop follow-up, the waiting note and the chosen list do not say what was chosen',
   );
+  check(
+    (await R.state()).gold === golds[0] &&
+      (await optionButton(picks[0].id).innerText()) === 'Chosen',
+    'two players: Workshop follow-up, nothing is paid until everyone has chosen',
+  );
+  await shot('run-two-player-workshop-waiting');
+  // The choice can be changed while the other player has not chosen.
+  await optionButton('skip').click();
+  await page.waitForFunction(
+    () =>
+      document.querySelector(
+        '#event-resolve [data-action="choose-option"][data-option="skip"]',
+      )?.textContent === 'Skipping (chosen)',
+    undefined,
+    { timeout: slow(10000) },
+  );
+  {
+    const l = await chosenLines();
+    check(
+      /has chosen/.test(l[0]) &&
+        /choosing/.test(l[1]) &&
+        (await waitingCount()) === 1 &&
+        (await optionButton(picks[0].id).innerText()) === 'Choose' &&
+        (await R.state()).step === 'event_resolve' &&
+        (await R.state()).gold === golds[0],
+      'two players: Workshop follow-up, player 1 changed the choice to Skip while player 2 had not chosen',
+    );
+  }
+  await optionButton(picks[0].id).click();
+  await page.waitForFunction(
+    (id) =>
+      document.querySelector(
+        `#event-resolve [data-action="choose-option"][data-option="${id}"]`,
+      )?.textContent === 'Chosen',
+    picks[0].id,
+    { timeout: slow(10000) },
+  );
+  // A reload in the middle of the choice resumes in the same state.
+  await reloadSame('the Workshop follow-up with one player chosen');
+  await page.waitForSelector('#event-resolve [data-field="chosen"]');
+  await actAs(0);
+  {
+    const l = await chosenLines();
+    check(
+      (await R.state()).step === 'event_resolve' &&
+        (await optionButton(picks[0].id).innerText()) === 'Chosen' &&
+        /has chosen/.test(l[0]) &&
+        /choosing/.test(l[1]) &&
+        /waiting for other players/i.test(
+          await page
+            .locator('#event-resolve [data-field="waiting"]')
+            .innerText(),
+        ),
+      'two players: Workshop follow-up, after a reload player 1 is still chosen and player 2 still choosing',
+    );
+  }
+  await actAs(1);
+  {
+    const l = await chosenLines();
+    check(
+      (await waitingCount()) === 0 &&
+        /has chosen/.test(l[0]) &&
+        /choosing/.test(l[1]) &&
+        (await optionButton(picks[1].id).innerText()) === 'Choose',
+      'two players: Workshop follow-up, player 2 sees that player 1 has chosen, with no waiting note and nothing chosen yet',
+    );
+  }
+  await optionButton(picks[1].id).click();
+  await waitStep('shop');
+  await page.waitForSelector('#shop-screen');
+  await settle();
+  for (const p of [0, 1]) {
+    await actAs(p);
+    const g = (await R.state()).gold;
+    check(
+      g === golds[p] - picks[p].price + income,
+      `two players: Workshop follow-up, player ${p + 1} paid ${picks[p].price} gold (${golds[p]} -> ${g} with ${income} income)`,
+    );
+  }
+  await page.click('.topbar-tabs button:has-text("Build")');
+  await page.waitForFunction(() => window.__debug?.build?.step() === 'shop');
+  await settle();
+  {
+    const t = await B.team();
+    const tierOf = (id) =>
+      [...t.buildings, ...t.stash].find((b) => b.id === Number(id.slice(1)))
+        ?.tier;
+    check(
+      tierOf(picks[0].id) === picks[0].to &&
+        tierOf(picks[1].id) === picks[1].to,
+      `two players: Workshop follow-up, both chosen buildings rose a tier (${picks[0].from}->${tierOf(picks[0].id)}, ${picks[1].from}->${tierOf(picks[1].id)})`,
+    );
+  }
+  await page.click('.topbar-tabs button:has-text("Shop")');
+  await page.waitForSelector('#shop-screen');
+  check(
+    (await R.state()).step === 'shop',
+    'two players: both Workshop choices made, the run moves on to the shop',
+  );
+  // The Ready lock on the Shop and Build tabs (two players). Player 1 presses
+  // Ready: buying, selling, re-rolling and every board edit are refused, with
+  // the lock text; player 2, who is not Ready, is unaffected; Unready reopens
+  // everything for player 1.
+  {
+    const LOCK = 'Ready — press Unready to make changes.';
+    const shopState = () => page.evaluate(() => window.__debug.shop.state());
+    const shopTab = async () => {
+      await page.click('.topbar-tabs button:has-text("Shop")');
+      await page.waitForSelector('#shop-screen');
+      await hookReady(page, 'shop');
+      await settle();
+    };
+    const buildTab = async () => {
+      await page.click('.topbar-tabs button:has-text("Build")');
+      await page.waitForFunction(
+        () => window.__debug?.build?.step() === 'shop',
+      );
+      await settle();
+    };
+    // What the player can still change on the Shop tab, as one comparable.
+    const shopSnap = async () => {
+      const s = await shopState();
+      return JSON.stringify({
+        gold: s.gold,
+        offers: s.offers,
+        offerPrices: s.offerPrices,
+        stash: s.stash,
+        placed: s.placed,
+        actions: s.actions,
+      });
+    };
+    const readyOf = async () => (await R.state()).ready;
+
+    // A cell where a wall of player 1's stash can be dropped: found now by
+    // placing one and undoing it, so the drops below are legal when open and
+    // refused only by the lock.
+    const dropWall = async (x, y) => {
+      const b = await page
+        .locator('[data-stash-def="bld_wall"]')
+        .first()
+        .boundingBox();
+      await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+      await page.mouse.down();
+      const p = await at(x, y);
+      await page.mouse.move(p.x, p.y, { steps: 6 });
+      await page.mouse.up();
+      await frames(page, 4);
+    };
+    await actAs(0);
+    await buildTab();
+    let spot = null;
+    {
+      const t0 = await B.team();
+      const before = t0.buildings.length;
+      for (let y = 3; y < t0.height - 2 && spot === null; y += 1) {
+        for (let x = 1; x < t0.width / 2 - 2 && spot === null; x += 1) {
+          await dropWall(x, y);
+          if ((await B.team()).buildings.length > before) spot = { x, y };
+          else await page.keyboard.press('Escape');
+        }
+      }
+      check(
+        spot !== null,
+        'two players: a wall of player 1 can be placed before Ready (a legal cell to test the lock against)',
+      );
+      await page.click('[data-action="undo"]');
+      await page.waitForFunction(
+        (n) => window.__debug.build.team().buildings.length === n,
+        before,
+        { timeout: slow(10000) },
+      );
+    }
+    await actAs(0);
+    await shopTab();
+    const start = await shopState();
+    console.log(
+      `two players: shop of player 1 before Ready: gold ${start.gold}, offers ${JSON.stringify(start.offers)} at ${JSON.stringify(start.offerPrices)}, stash ${start.stash.length}, placed ${start.placed}`,
+    );
+
+    await page.click('#shop-ready');
+    await page.waitForFunction(
+      () => window.__debug?.run?.state().ready[0],
+      null,
+      {
+        timeout: slow(10000),
+      },
+    );
+    await page.waitForFunction(
+      () =>
+        document.querySelector('#shop-ready')?.textContent?.includes('Unready'),
+      null,
+      { timeout: slow(10000) },
+    );
+    const lockedSnap = await shopSnap();
+    // Every live offer, the re-roll and every Sell button are off, each with
+    // the lock text as the reason.
+    const offerState = await page.$$eval('#offers > li', (els) =>
+      els.map((e) => ({
+        sold: e.dataset.state === 'sold',
+        disabled: e.querySelector('[data-action="buy"]')?.disabled ?? true,
+        reason: e.querySelector('[data-field="reason"]')?.textContent ?? '',
+      })),
+    );
+    const live = offerState.filter((o) => !o.sold);
+    check(
+      live.length > 0 && live.every((o) => o.disabled && o.reason === LOCK),
+      `two players: while Ready, every offer's Buy is off and says "${LOCK}" (${live.length} offers)`,
+    );
+    check(
+      (await page.locator('#reroll').isDisabled()) &&
+        (await page.locator('[data-field="reroll-reason"]').innerText()) ===
+          LOCK,
+      'two players: while Ready, Re-roll is off and says why',
+    );
+    const sellBtns = page.locator('#shop-stash [data-action="sell"]');
+    const sellCount = await sellBtns.count();
+    let sellOff = true;
+    for (let i = 0; i < sellCount; i++) {
+      sellOff = sellOff && (await sellBtns.nth(i).isDisabled());
+    }
+    check(
+      sellCount > 0 && sellOff,
+      `two players: while Ready, Sell is off on all ${sellCount} stash rows`,
+    );
+    // Attempts anyway: forced clicks on the disabled buttons, and a drag of a
+    // stash row to the sell target.
+    for (let i = 0; i < live.length; i++) {
+      await page
+        .locator('#offers [data-action="buy"]')
+        .nth(i)
+        .click({ force: true, timeout: slow(3000) });
+    }
+    await page.locator('#reroll').click({ force: true, timeout: slow(3000) });
+    await sellBtns.first().click({ force: true, timeout: slow(3000) });
+    await page
+      .locator('#shop-stash .stash-row')
+      .first()
+      .dragTo(page.locator('#sell-target'), {
+        force: true,
+        timeout: slow(3000),
+      });
+    await settle();
+    await frames(page, 6);
+    check(
+      (await page.locator('#sell-confirm').count()) === 0 &&
+        (await shopSnap()) === lockedSnap,
+      'two players: while Ready, buy, re-roll and sell attempts change nothing (gold, offers, stash, board, action count)',
+    );
+    check(
+      (await page.locator('[data-field="ready-state"]').innerText()).includes(
+        LOCK,
+      ),
+      'two players: while Ready, the Shop shows the lock text next to Unready',
+    );
+    await shot('run-two-player-shop-ready-locked');
+
+    // The Build tab: no drag from the stash, no hotkey, no click edits.
+    await buildTab();
+    const boardBefore = JSON.stringify(await B.team());
+    const toolBefore = await page.evaluate(
+      () => window.__debug.build.ui().tool,
+    );
+    const dragTarget = (await B.team()).buildings.find((b) => b.owner === 0);
+    await dropWall(spot.x, spot.y);
+    if (dragTarget !== undefined) {
+      const onIt = await at(dragTarget.x, dragTarget.y);
+      await page.mouse.click(onIt.x, onIt.y);
+    }
+    for (const key of ['r', 'c', 'e', 'Delete', 'Backspace']) {
+      await page.keyboard.press(key);
+    }
+    await settle();
+    await frames(page, 6);
+    check(
+      JSON.stringify(await B.team()) === boardBefore &&
+        (await page.evaluate(() => window.__debug.build.ui().tool)) ===
+          toolBefore &&
+        (await page.evaluate(() => window.__debug.build.status().text)) ===
+          LOCK,
+      'two players: while Ready, dragging from the stash, clicking a building and the r, c, e, Delete keys leave the board and the tool alone and say why',
+    );
+    check(
+      (await page.locator('[data-field="ready-locked"]').count()) === 1 &&
+        (await page.locator('[data-tool="conduit"]').isDisabled()) &&
+        (await page.locator('[data-tool="erase"]').isDisabled()),
+      'two players: while Ready, the Build tab shows the lock and disables the conduit and erase tools',
+    );
+    await shot('run-two-player-build-ready-locked');
+
+    // Player 2 is not Ready and is unaffected: the Shop is open for them.
+    await shopTab();
+    await actAs(1);
+    {
+      const ready = await readyOf();
+      const s1 = await shopState();
+      const affordable = await page.$$eval('#offers > li', (els) =>
+        els.map((e) => ({
+          disabled: e.querySelector('[data-action="buy"]')?.disabled ?? true,
+          reason: e.querySelector('[data-field="reason"]')?.textContent ?? '',
+          slot: Number(e.dataset.slot),
+        })),
+      );
+      const canBuy = affordable.find((o) => !o.disabled);
+      check(
+        ready[0] === true &&
+          ready[1] === false &&
+          affordable.every((o) => o.reason !== LOCK) &&
+          !(await page.locator('#sell-target').isHidden()) &&
+          (await page.locator('#shop-ready').innerText()).includes('Ready') &&
+          !(await page.locator('#shop-ready').innerText()).includes('Unready'),
+        'two players: player 2 is not locked while player 1 is Ready (no lock text on their offers, their button reads Ready)',
+      );
+      check(
+        canBuy !== undefined,
+        `two players: player 2 can afford an offer (gold ${s1.gold})`,
+      );
+      if (canBuy !== undefined) {
+        const stashBefore = (await shopState()).stash.length;
+        await page
+          .locator('#offers > li')
+          .nth(canBuy.slot)
+          .locator('[data-action="buy"]')
+          .click();
+        await page.waitForFunction(
+          (n) => window.__debug.shop.state().stash.length > n,
+          stashBefore,
+          { timeout: slow(10000) },
+        );
+        const s2 = await shopState();
+        check(
+          s2.gold < s1.gold &&
+            (await readyOf())[0] === true &&
+            (await readyOf())[1] === false,
+          `two players: player 2 bought while player 1 is Ready (gold ${s1.gold} -> ${s2.gold}), player 1 stays Ready`,
+        );
+      }
+    }
+
+    // Unready reopens everything for player 1.
+    await actAs(0);
+    await shopTab();
+    await page.click('#shop-ready');
+    await page.waitForFunction(
+      () => !window.__debug?.run?.state().ready[0],
+      null,
+      {
+        timeout: slow(10000),
+      },
+    );
+    await page.waitForFunction(
+      () =>
+        !document
+          .querySelector('#shop-ready')
+          ?.textContent?.includes('Unready'),
+      null,
+      { timeout: slow(10000) },
+    );
+    const open = await shopState();
+    const openOffers = await page.$$eval('#offers > li', (els) =>
+      els.map((e) => ({
+        sold: e.dataset.state === 'sold',
+        disabled: e.querySelector('[data-action="buy"]')?.disabled ?? true,
+        reason: e.querySelector('[data-field="reason"]')?.textContent ?? '',
+        slot: Number(e.dataset.slot),
+      })),
+    );
+    check(
+      openOffers.every((o) => o.reason !== LOCK) &&
+        (await page.locator('[data-field="reroll-reason"]').innerText()) !==
+          LOCK &&
+        (await page.locator('#shop-stash [data-action="sell"]').count()) > 0 &&
+        !(await page
+          .locator('#shop-stash [data-action="sell"]')
+          .first()
+          .isDisabled()),
+      'two players: after Unready, the lock text is gone and Sell is on again',
+    );
+    // Sell one stash row (gold goes up), then buy (gold goes down).
+    // Not a wall: the wall is dropped on the board below.
+    await page
+      .locator(
+        '#shop-stash .stash-row:not([data-stash-def="bld_wall"]) [data-action="sell"]',
+      )
+      .first()
+      .click();
+    await page.waitForSelector('#sell-confirm');
+    await page.click('#sell-confirm');
+    await page.waitForFunction(
+      (g) => window.__debug.shop.state().gold > g,
+      open.gold,
+      { timeout: slow(10000) },
+    );
+    const afterSell = await shopState();
+    check(
+      afterSell.stash.length === open.stash.length - 1,
+      `two players: after Unready, selling works (stash ${open.stash.length} -> ${afterSell.stash.length}, gold ${open.gold} -> ${afterSell.gold})`,
+    );
+    const buyable = await page.$$eval('#offers > li', (els) =>
+      els.map((e) => ({
+        disabled: e.querySelector('[data-action="buy"]')?.disabled ?? true,
+        slot: Number(e.dataset.slot),
+      })),
+    );
+    const slot = buyable.find((o) => !o.disabled);
+    check(
+      slot !== undefined,
+      'two players: after Unready, an offer can be bought',
+    );
+    if (slot !== undefined) {
+      await page
+        .locator('#offers > li')
+        .nth(slot.slot)
+        .locator('[data-action="buy"]')
+        .click();
+      await page.waitForFunction(
+        (n) => window.__debug.shop.state().stash.length > n,
+        afterSell.stash.length,
+        { timeout: slow(10000) },
+      );
+      const afterBuy = await shopState();
+      check(
+        afterBuy.gold < afterSell.gold,
+        `two players: after Unready, buying works (gold ${afterSell.gold} -> ${afterBuy.gold})`,
+      );
+    }
+    if (!(await page.locator('#reroll').isDisabled())) {
+      const g = (await shopState()).gold;
+      await page.click('#reroll');
+      await page.waitForFunction(
+        (n) => window.__debug.shop.state().gold < n,
+        g,
+        { timeout: slow(10000) },
+      );
+      check(true, 'two players: after Unready, re-rolling works');
+    } else {
+      check(
+        (await page.locator('[data-field="reroll-reason"]').innerText()) !==
+          LOCK,
+        'two players: after Unready, Re-roll is off only for lack of gold, not for the lock',
+      );
+    }
+    // The Build tab edits again: place a stash item on the board.
+    await buildTab();
+    {
+      const t0 = await B.team();
+      const before = t0.buildings.length;
+      await dropWall(spot.x, spot.y);
+      const placed = (await B.team()).buildings.length === before + 1;
+      check(
+        placed,
+        'two players: after Unready, a wall can be dropped on the same cell again',
+      );
+    }
+    await shopTab();
+  }
+
   await goMenu();
 
   const newErrors = consoleErrors.slice(errorsAtStart);

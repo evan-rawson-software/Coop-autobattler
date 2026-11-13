@@ -65,7 +65,8 @@ function walledIn(
     try {
       const b = put(clear, 'bld_barracks', c.bx, 0, owner);
       let team = b.team;
-      for (const [x, y] of c.sides) team = put(team, 'bld_wall', x, y, owner).team;
+      for (const [x, y] of c.sides)
+        team = put(team, 'bld_wall', x, y, owner).team;
       return { run: { ...run, team }, barracks: b.id };
     } catch {
       // This corner is taken (the Core); try the other one.
@@ -134,9 +135,7 @@ describe('sealed producers', () => {
     expect(second.reason).toContain(SEALED_HINT);
     // The gate agrees: player 1 may press Ready, player 2 may not.
     expect(gateFor(run, 0, realDeps(), content).readyBlock).toBeNull();
-    expect(gateFor(run, 1, realDeps(), content).readyBlock).toBe(
-      second.reason,
-    );
+    expect(gateFor(run, 1, realDeps(), content).readyBlock).toBe(second.reason);
   });
 
   test('Ready is blocked on the Shop view and the gate, and the session agrees', () => {

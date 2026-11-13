@@ -25,10 +25,11 @@ export function RunBattleScreen(props: { run: RunHandle }) {
   const { run, acting } = useStore(session.store);
   const [error, setError] = useState<string | null>(null);
   // One description per battle: replacing it would simulate the battle again.
-  const built = useMemo(
-    () => describeRunBattle(run, deps),
-    [run.runId, run.actionCounter, deps],
-  );
+  // A player's Ready bumps the action counter but is not another battle, so
+  // the screen is keyed by the step, not the counter: Ready must not restart
+  // the replay or forget that it was pressed.
+  const battleId = `${run.runId}:${String(run.round)}:${run.leg}:${run.step}`;
+  const built = useMemo(() => describeRunBattle(run, deps), [battleId, deps]);
   const key = tickKey(run);
   const initialTick = useMemo(() => readTick(key), [key]);
 
@@ -63,7 +64,7 @@ export function RunBattleScreen(props: { run: RunHandle }) {
   const b = built.value;
   return (
     <BattleView
-      key={key}
+      key={battleId}
       battle={b.battle}
       opponent={b.opponent}
       title={b.title}
@@ -74,6 +75,7 @@ export function RunBattleScreen(props: { run: RunHandle }) {
         ...(b.reason === null ? {} : { reason: b.reason }),
       }}
       acting={acting}
+      ready={run.perPlayer[acting]?.ready === true}
       initialTick={initialTick}
       onTick={(t) => {
         writeTick(key, t);
