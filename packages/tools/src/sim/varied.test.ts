@@ -78,4 +78,20 @@ describe('varied unequal boards', () => {
     expect(even.overloadShare).toBeLessThanOrEqual(0.1);
     expect(even.advancedColumnsPerUnit).toBeGreaterThanOrEqual(0.25);
   }, 120_000);
+
+  test('a party of four gets a Core per player and can fight (issue #164)', () => {
+    const dense4 = denseBoards(ctx, [4]);
+    const matched4 = matchedBoards(ctx, [4]);
+    for (const b of [...dense4, ...matched4]) {
+      expect(b.team.cores).toHaveLength(4);
+      expect(b.team.cores.every((c) => c !== null)).toBe(true);
+    }
+    const row = runVaried(
+      ctx,
+      dense4[1] as VariedBoard,
+      matched4[0] as VariedBoard,
+      1,
+    );
+    expect(row.ticks).toBeGreaterThan(0);
+  });
 });
