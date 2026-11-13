@@ -25,7 +25,9 @@ import {
   spriteStats,
   type SpriteSet,
 } from '../sprites/atlas.js';
+import { rampOf } from '../board/sprite-board.js';
 import { restFacing, type Playback } from './playback.js';
+import { spriteHalf, spriteReach } from './sprite-size.js';
 
 type Pt = { x: number; y: number };
 
@@ -194,6 +196,60 @@ function unitArt(def: string, side: number): UnitArt | null {
 
 const OCTANT = Math.PI / 4;
 
+/** Effect, shadow and item sprites, cut out once per atlas; null parts fall back to flat drawing. */
+interface FxArt {
+  readonly hit: readonly HTMLCanvasElement[] | null;
+  readonly boom: readonly HTMLCanvasElement[] | null;
+  readonly puff: readonly HTMLCanvasElement[] | null;
+  readonly shot: readonly HTMLCanvasElement[] | null;
+  readonly shadow: HTMLCanvasElement | null;
+}
+
+let fxSet: SpriteSet | null = null;
+let fxCache: FxArt | null = null;
+// Tinted conduit item per resource id (null: no art, draw the flat circle).
+const itemCache = new Map<string, HTMLCanvasElement | null>();
+// The conduit item art has a 6 px dot in a 16 px frame; scale to match a circle.
+const ITEM_FRAME_SCALE = 16 / 6;
+
+function fxArt(): FxArt | null {
+  const set = spriteSet();
+  if (set === null) return null;
+  if (set !== fxSet || fxCache === null) {
+    itemCache.clear();
+    fxSet = set;
+    fxCache = {
+      hit: framesOf(set, 'fx_hit_spark'),
+      boom: framesOf(set, 'fx_explosion'),
+      puff: framesOf(set, 'fx_spawn_puff'),
+      shot: framesOf(set, 'fx_turret_shot'),
+      shadow: frameCanvas(set, 'fx_shadow', 0),
+    };
+  }
+  return fxCache;
+}
+
+function itemArt(res: string): HTMLCanvasElement | null {
+  const hit = itemCache.get(res);
+  if (hit !== undefined) return hit;
+  const set = spriteSet();
+  const ramp = set === null ? undefined : rampOf(set, res);
+  const img =
+    set === null || ramp === undefined
+      ? null
+      : frameCanvas(set, 'conduit_item', 0, ramp);
+  itemCache.set(res, img);
+  return img;
+}
+
+/** The frame of an effect `p` (0 to 1) of the way through its life. */
+function fxFrame(
+  frames: readonly HTMLCanvasElement[],
+  p: number,
+): HTMLCanvasElement | undefined {
+  return frames[Math.min(frames.length - 1, Math.floor(p * frames.length))];
+}
+
 /**
  * The fallback: units without a sprite are filled circles of their real
  * radius; side B carries a small diamond in the middle (shape as well as colour).
@@ -287,6 +343,8 @@ export function drawBattleOverlay(
   }
 
   // --- Resources in conduits ----------------------------------------------
+  ctx.imageSmoothingEnabled = false;
+  const fx = fxArt();
   const itemR = Math.max(2, z * 0.17);
   for (const side of [0, 1] as const) {
     const cells = index.conduitCells[side];
@@ -298,6 +356,18 @@ export function drawBattleOverlay(
         const res = slots[i];
         const p = pts[i];
         if (res === null || res === undefined || p === undefined) continue;
+        const art = fx === null ? null : itemArt(res);
+        if (art !== null) {
+          const half = itemR * ITEM_FRAME_SCALE;
+          ctx.drawImage(
+            art,
+            ox + p.x * z - half,
+            oy + p.y * z - half,
+            half * 2,
+            half * 2,
+          );
+          continue;
+        }
         const color = content.resources.get(res)?.color ?? theme.inkMuted;
         ctx.beginPath();
         ctx.arc(ox + p.x * z, oy + p.y * z, itemR, 0, Math.PI * 2);
@@ -424,7 +494,18 @@ export function drawBattleOverlay(
   };
   const base = ctx.getTransform();
   const clock = (tick + frac) / pb.ticksPerSecond;
-  ctx.imageSmoothingEnabled = false;
+  if (fx?.shadow) {
+    // Flyers cast a soft shadow under their sprite, drawn before any unit.
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i];
+      if (u === undefined || content.units.get(u.def)?.flying !== true)
+        continue;
+      if (unitArt(u.def, u.side) === null) continue;
+      pxOf(u, tmp);
+      const h = spriteHalf(radiusOf(u), false);
+      ctx.drawImage(fx.shadow, tmp.x - h, tmp.y - h + h * 0.4, h * 2, h * 2);
+    }
+  }
   let flat = 0;
   for (let i = 0; i < units.length; i++) {
     const u = units[i];
@@ -461,10 +542,12 @@ export function drawBattleOverlay(
     }
     const k = (face - restFacing(u.side)) & 7;
     if (k === 0) {
-      ctx.drawImage(img, tmp.x - ur, tmp.y - ur, ur * 2, ur * 2);
+      const h = spriteHalf(ur, false);
+      ctx.drawImage(img, tmp.x - h, tmp.y - h, h * 2, h * 2);
     } else {
-      // A turned square pokes out of the circle: keep it inside the diameter.
-      const h = k & 1 ? ur * Math.SQRT1_2 : ur;
+      // A turned square pokes out of the circle: keep it inside the diameter
+      // (but never below the minimum sprite size).
+      const h = spriteHalf(ur, (k & 1) === 1);
       ctx.setTransform(base);
       ctx.translate(tmp.x, tmp.y);
       ctx.rotate(k * OCTANT);
@@ -495,10 +578,15 @@ export function drawBattleOverlay(
       const max = content.units.get(u.def)?.health ?? 0;
       if (max <= 0 || u.hp >= max) continue;
       pxOf(u, tmp);
+      // Clear of a sprite that was enlarged to the minimum size.
+      const up =
+        unitArt(u.def, u.side) === null
+          ? r
+          : Math.max(r, spriteReach(radiusOf(u)));
       ctx.fillStyle = theme.outline;
-      ctx.fillRect(tmp.x - r, tmp.y - r - 5, r * 2, 3);
+      ctx.fillRect(tmp.x - r, tmp.y - up - 5, r * 2, 3);
       ctx.fillStyle = sideColor(u.side);
-      ctx.fillRect(tmp.x - r, tmp.y - r - 5, r * 2 * (u.hp / max), 3);
+      ctx.fillRect(tmp.x - r, tmp.y - up - 5, r * 2 * (u.hp / max), 3);
     }
   }
 
@@ -526,6 +614,20 @@ export function drawBattleOverlay(
         ctx.moveTo(tmp.x, tmp.y);
         ctx.lineTo(tmp2.x, tmp2.y);
         ctx.stroke();
+        const spark = fx?.hit ? fxFrame(fx.hit, age / LIFE_ATTACK) : undefined;
+        if (spark !== undefined) {
+          const half = Math.max(8, z * 0.4);
+          ctx.globalAlpha = 1;
+          ctx.drawImage(
+            spark,
+            tmp2.x - half,
+            tmp2.y - half,
+            half * 2,
+            half * 2,
+          );
+          spriteStats.effects++;
+          break;
+        }
         ctx.beginPath();
         ctx.arc(tmp2.x, tmp2.y, r * 0.7, 0, Math.PI * 2);
         ctx.fillStyle = theme.hover;
@@ -540,6 +642,22 @@ export function drawBattleOverlay(
         const t = ti >= 0 ? units[ti] : undefined;
         if (t === undefined || t.id !== e.unit) break;
         pxOf(t, tmp2);
+        const shot = fx?.shot ? fxFrame(fx.shot, age / LIFE_SHOT) : undefined;
+        if (shot !== undefined) {
+          // The shot flies from the turret to the target over its life.
+          const q = age / LIFE_SHOT;
+          const sx = ox + tmp.x * z;
+          const sy = oy + tmp.y * z;
+          const half = Math.max(4, z * 0.25);
+          ctx.globalAlpha = 1;
+          ctx.setTransform(base);
+          ctx.translate(sx + (tmp2.x - sx) * q, sy + (tmp2.y - sy) * q);
+          ctx.rotate(Math.atan2(tmp2.x - sx, -(tmp2.y - sy)));
+          ctx.drawImage(shot, -half, -half, half * 2, half * 2);
+          ctx.setTransform(base);
+          spriteStats.effects++;
+          break;
+        }
         ctx.globalAlpha = 1 - age / LIFE_SHOT;
         ctx.strokeStyle = sideColor(side);
         ctx.lineWidth = 3;
@@ -552,6 +670,16 @@ export function drawBattleOverlay(
       case 'unit_spawned': {
         if (age >= LIFE_SPAWN) break;
         const p = age / LIFE_SPAWN;
+        const puff = fx?.puff ? fxFrame(fx.puff, p) : undefined;
+        if (puff !== undefined) {
+          const half = z * 0.8;
+          const cx = ox + (e.px / CELL_UNITS) * z;
+          const cy = oy + (geo.height - e.py / CELL_UNITS) * z;
+          ctx.globalAlpha = 1;
+          ctx.drawImage(puff, cx - half, cy - half, half * 2, half * 2);
+          spriteStats.effects++;
+          break;
+        }
         ctx.globalAlpha = 1 - p;
         ctx.strokeStyle = sideColor(e.side);
         ctx.lineWidth = 2;
@@ -587,6 +715,20 @@ export function drawBattleOverlay(
         }
         if (!have) break;
         const p = age / LIFE_DESTROY;
+        const boom = fx?.boom ? fxFrame(fx.boom, p) : undefined;
+        if (boom !== undefined) {
+          const half = z * 1.25;
+          ctx.globalAlpha = 1;
+          ctx.drawImage(
+            boom,
+            ox + tmp.x * z - half,
+            oy + tmp.y * z - half,
+            half * 2,
+            half * 2,
+          );
+          spriteStats.effects++;
+          break;
+        }
         const rad = z * (0.6 + 1.6 * p);
         ctx.globalAlpha = 1 - p;
         ctx.strokeStyle = theme.hover;
