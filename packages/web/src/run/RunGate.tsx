@@ -6,6 +6,7 @@
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import { useStore } from '../app-state.js';
+import { screenText, screenTexts } from '../build/texts.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import type { RunHandle } from './handle.js';
 import {
@@ -32,11 +33,8 @@ function ConflictPanel() {
   return (
     <AppShell title="Shop + Build">
       <div class="run-blocked" id="run-conflict" role="alert">
-        <Panel title="This run changed in another tab">
-          <p>
-            This run was saved from another tab or window, so this one is out of
-            date. Nothing here can be changed until you reload it.
-          </p>
+        <Panel title={screenText(screenTexts, 'uiRunConflictTitle')}>
+          <p>{screenText(screenTexts, 'uiRunConflictBody')}</p>
           <button
             type="button"
             id="run-reload"
@@ -56,12 +54,11 @@ function UnopenablePanel(props: { message: string }) {
   return (
     <AppShell title="Shop + Build">
       <div class="run-blocked" id="run-unopenable" role="alert">
-        <Panel title="The saved run cannot be opened">
+        <Panel title={screenText(screenTexts, 'uiRunUnopenableTitle')}>
           <p data-field="reason">{props.message}</p>
           <p class="muted">
-            It has not been deleted. Closing this tab or fixing the cause may
-            let it open. Discarding it starts a new sample run and cannot be
-            undone.
+            {screenText(screenTexts, 'uiRunUnopenableKept')} Discarding it
+            starts a new sample run and cannot be undone.
           </p>
           <button
             type="button"

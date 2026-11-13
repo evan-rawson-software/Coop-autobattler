@@ -20,6 +20,7 @@ import { EventChoiceScreen, EventResolveScreen } from '../event/EventScreen.js';
 import { CoreScreen } from '../placement/CoreScreen.js';
 import { AppShell, Panel, RunBarContext } from '../shell/AppShell.js';
 import { ShopTab } from '../shop/ShopScreen.js';
+import { screenText, screenTexts } from '../build/texts.js';
 import { stepTabStore } from '../shop/tabs.js';
 import { RunBar } from './RunBar.js';
 import { screenForStep, runIdFromHash } from './router.js';
@@ -28,6 +29,7 @@ import {
   discardSavedRun,
   needsVersionPrompt,
   reloadRun,
+  watchRun,
   runStore,
   showRun,
   type ActiveRun,
@@ -61,12 +63,9 @@ function MenuButton() {
 
 function Conflict(props: { runId: string }) {
   return (
-    <Blocked title="This run changed in another tab">
+    <Blocked title={screenText(screenTexts, 'uiRunConflictTitle')}>
       <div id="run-conflict" role="alert">
-        <p>
-          This run was saved from another tab or window, so this one is out of
-          date. Nothing here can be changed until you reload it.
-        </p>
+        <p>{screenText(screenTexts, 'uiRunConflictBody')}</p>
         <button
           type="button"
           id="run-reload"
@@ -237,13 +236,20 @@ function ReadyRun(props: { run: ActiveRun }) {
 function BlockedRun(props: { runId: string; message: string; reason: string }) {
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Another tab may replace the save while this panel is shown: look again.
+  useEffect(
+    () =>
+      watchRun(props.runId, () => {
+        void reloadRun(props.runId);
+      }),
+    [props.runId],
+  );
   return (
-    <Blocked title="The saved run cannot be opened">
+    <Blocked title={screenText(screenTexts, 'uiRunUnopenableTitle')}>
       <div id="run-unopenable" role="alert">
         <p data-field="reason">{props.message}</p>
         <p class="muted">
-          It has not been deleted. Closing this tab or fixing the cause may let
-          it open.
+          {screenText(screenTexts, 'uiRunUnopenableKept')}
           {props.reason === 'load_failed'
             ? ''
             : ' Removing the save deletes it for good, with no summary and no record.'}

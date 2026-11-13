@@ -247,6 +247,42 @@ export async function createServices(
   // wrapper keeps its final state first, so the Run over screen can open it.
   // Removing a finished run's save always goes through it.
   saves = finishFirst(saves, finished, env.now);
+  // What this tab last read or wrote per run, to tell a page restored from the
+  // back/forward cache whether another tab saved meanwhile.
+  const held = new Map<string, unknown>();
+  const counterOf = (v: unknown): unknown =>
+    typeof v === 'object' && v !== null
+      ? (v as { actionCounter?: unknown }).actionCounter
+      : null;
+  const inner = saves;
+  saves = {
+    ...inner,
+    async get(runId) {
+      const v = await inner.get(runId);
+      held.set(runId, counterOf(v));
+      return v;
+    },
+    async put(record) {
+      await inner.put(record);
+      held.set(record.runId, counterOf(record));
+    },
+    async remove(runId) {
+      await inner.remove(runId);
+      held.delete(runId);
+    },
+  };
+  const onPageShow = (e: Event): void => {
+    if ((e as Event & { persisted?: boolean }).persisted !== true) return;
+    for (const [runId, counter] of [...held]) {
+      void inner.get(runId).then(
+        (v) => {
+          if (counterOf(v) !== counter) fire(runId);
+        },
+        () => undefined,
+      );
+    }
+  };
+  env.window?.addEventListener('pageshow', onPageShow);
   if (storage !== 'indexeddb') {
     patch({
       fallbackNote: fallbackText(storage, fallback ?? 'unavailable'),
