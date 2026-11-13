@@ -1,5 +1,5 @@
 import { runSaveStoreConformance } from '@game/session/testing';
-import { describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
   createLocalStorageSaveStore,
   createMemoryStorage,
@@ -141,5 +141,89 @@ describe('watching the run key for changes from other tabs', () => {
     };
     expect(usableStorage(bad)).toBeNull();
     expect(usableStorage(createMemoryStorage())).not.toBeNull();
+  });
+});
+
+describe('put under navigator.locks', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+  const rec = (actionCounter: number, marker: string): never =>
+    ({ runId: 'a', updatedAt: actionCounter, actionCounter, marker }) as never;
+
+  /** A fake lock manager: one holder per name at a time, in request order. */
+  function fakeLocks(events: string[]) {
+    let tail: Promise<unknown> = Promise.resolve();
+    return {
+      request<T>(name: string, cb: () => T | Promise<T>): Promise<T> {
+        events.push(`request ${name}`);
+        const run = tail.then(async () => {
+          events.push('acquired');
+          try {
+            return await cb();
+          } finally {
+            events.push('released');
+          }
+        });
+        tail = run.catch(() => undefined);
+        return run;
+      },
+    };
+  }
+
+  test('the compare and the write happen inside the lock', async () => {
+    const events: string[] = [];
+    const base = createMemoryStorage();
+    const storage = {
+      get length() {
+        return base.length;
+      },
+      key: (i: number) => base.key(i),
+      getItem: (k: string) => {
+        events.push('read');
+        return base.getItem(k);
+      },
+      setItem: (k: string, v: string) => {
+        events.push('write');
+        base.setItem(k, v);
+      },
+      removeItem: (k: string) => {
+        base.removeItem(k);
+      },
+    };
+    vi.stubGlobal('navigator', { locks: fakeLocks(events) });
+    const s = createLocalStorageSaveStore(storage, undefined, {
+      rejectStale: true,
+    });
+    await s.put(rec(1, 'one'));
+    expect(events).toEqual([
+      'request lock:coop:save:a',
+      'acquired',
+      'read',
+      'write',
+      'released',
+    ]);
+  });
+
+  test('overlapping puts at one counter: exactly one is written', async () => {
+    vi.stubGlobal('navigator', { locks: fakeLocks([]) });
+    const s = createLocalStorageSaveStore(createMemoryStorage(), undefined, {
+      rejectStale: true,
+    });
+    const results = await Promise.allSettled([
+      s.put(rec(2, 'x')),
+      s.put(rec(2, 'y')),
+    ]);
+    expect(results.map((r) => r.status)).toEqual(['fulfilled', 'rejected']);
+    expect(await s.get('a')).toMatchObject({ marker: 'x' });
+  });
+
+  test('without navigator.locks the store behaves as before', async () => {
+    vi.stubGlobal('navigator', {});
+    const s = createLocalStorageSaveStore(createMemoryStorage(), undefined, {
+      rejectStale: true,
+    });
+    await s.put(rec(1, 'one'));
+    await expect(s.put(rec(1, 'two'))).rejects.toBeInstanceOf(StaleSaveError);
   });
 });

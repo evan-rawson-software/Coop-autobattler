@@ -344,7 +344,9 @@ new ID. Do not add one.
   stored record's by rejecting with `StaleSaveError`; the stored record stays
   as it was, and a first write for a `runId` always succeeds. The plain store
   accepts any record, so a conformance suite that rewrites one counter still
-  passes; the browser stores enforce the rule in the Shop.
+  passes; the browser stores enforce the rule in the Shop. A stored or
+  incoming record without a numeric `actionCounter` is never stale (`isStaleWrite`
+  is false), so that write is accepted.
 - `list()` returns every stored run (no limit), sorted by `updatedAt`
   descending, then `runId`. A stored value that does not parse is still listed,
   as `{corrupt: true, runId, updatedAt, errors}` (use `summarizeStored`). A
