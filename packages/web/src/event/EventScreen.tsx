@@ -240,9 +240,9 @@ export function EventResolveScreen(props: { run: RunHandle }) {
         )}
         {v === null || v.chosen.length < 2 ? null : (
           <ul class="follow-chosen" data-field="chosen">
-            {v.chosen.map((c, i) => (
-              <li key={i}>
-                {c.name}: {c.done ? 'has chosen' : 'choosing…'}
+            {v.chosen.map((c) => (
+              <li key={c.player}>
+                {c.name}: {c.status}
               </li>
             ))}
           </ul>

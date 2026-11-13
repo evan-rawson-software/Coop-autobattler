@@ -189,4 +189,28 @@ describe('acting player', () => {
     s.setActing(0);
     expect(ctl.legalCorePositions).toEqual([]);
   });
+
+  test('no hotkey changes the board or the tool while Ready', async () => {
+    const s = await pair();
+    await placeBoth(s);
+    expect(s.run.step).toBe('build');
+    s.setActing(0);
+    const ctl = new BuildController();
+    ctl.attach(s);
+    await s.dispatch({ type: 'ready' });
+    expect(s.run.perPlayer[0]?.ready).toBe(true);
+    const team = s.run.team;
+    const tool = ctl.model.get().ui.tool;
+    const keys = ['r', 'c', 'e', 'v', 'Escape', 'Backspace', 'Delete'];
+    for (const key of keys) {
+      ctl.key({ key, ctrlKey: false, shiftKey: false, metaKey: false });
+    }
+    for (const key of ['z', 'y']) {
+      ctl.key({ key, ctrlKey: true, shiftKey: false, metaKey: false });
+    }
+    await Promise.resolve();
+    expect(s.run.team).toBe(team);
+    expect(ctl.model.get().ui.tool).toBe(tool);
+    expect(s.run.perPlayer[0]?.ready).toBe(true);
+  });
 });

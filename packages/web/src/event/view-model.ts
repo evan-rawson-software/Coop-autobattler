@@ -238,7 +238,12 @@ export interface FollowUpView {
   /** True if each player chooses for themselves (Workshop). */
   readonly perPlayer: boolean;
   /** Per player: has chosen (never what). */
-  readonly chosen: readonly { readonly name: string; readonly done: boolean }[];
+  readonly chosen: readonly {
+    readonly player: number;
+    readonly name: string;
+    readonly done: boolean;
+    readonly status: string;
+  }[];
   /** Shown once this player has chosen and others have not; else null. */
   readonly waiting: string | null;
 }
@@ -353,6 +358,12 @@ export function followUpView(
     });
   }
   const chosen = f.chosen.map((done, i) => ({
+    player: i,
+    status: screenText(
+      screenTexts,
+      done ? 'eventChosenDone' : 'eventChosenPending',
+      {},
+    ),
     name: playerName(
       screenTexts,
       run.players.map((p) => p.name),
