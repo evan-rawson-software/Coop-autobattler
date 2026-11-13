@@ -14,13 +14,9 @@
  */
 import { Rng, listLegalCorePositions, sealedProducers } from '@game/core';
 import {
-  MIN_COVERAGE_PERCENT,
-  bestOwnedSupply,
-  collectorSupply,
-  consumerNeed,
-  coveragePercent,
   planLayout,
   plotRoom,
+  wouldPlace,
   type LayoutStyle,
 } from './bot-layout.js';
 import { planLinks } from './bot-links.js';
@@ -401,8 +397,6 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       const sources = owned.filter((b) => b.def === 'bld_extractor').length;
       const users = owned.filter((b) => CONSUMERS.includes(b.def)).length;
       const splitters = owned.filter((b) => b.def === 'bld_splitter').length;
-      // Upper bound for a consumer: the player's best collector, owned.
-      const supply = bestOwnedSupply(d.state.team, p, d.deps.content);
       const room = plotRoom(
         d.state.team,
         p,
@@ -437,44 +431,42 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       const consumersWaiting = d.state.team.stash.filter(
         (b) => b.owner === p && CONSUMERS.includes(b.def),
       ).length;
-      // A Splitter only helps where one owned collector can feed a waiting
-      // consumer and another consumer, both at the minimum coverage.
-      const content = d.deps.content;
-      const half =
-        (k: { def: string; tier: number }) =>
-        (c: { def: string; tier: number }): boolean =>
-          coveragePercent(
-            Math.floor(collectorSupply(content, k.def, k.tier) / 2),
-            consumerNeed(content, c.def, c.tier),
-          ) >= MIN_COVERAGE_PERCENT;
-      const inputOf = (def: string): string =>
-        content.buildings.get(def)?.inputs[0]?.resource ?? '';
-      const consumersOwned = owned.filter((b) => CONSUMERS.includes(b.def));
-      const consumersStashed = d.state.team.stash.filter(
-        (b) => b.owner === p && CONSUMERS.includes(b.def),
-      );
-      // The weakest collector is the test: the layout may split any of them.
-      const weakest = owned
-        .filter((k) => k.def === 'bld_extractor')
-        .sort((x, y) => x.tier - y.tier)[0];
-      const fits = weakest === undefined ? null : half(weakest);
-      const canSplit =
-        fits !== null &&
-        consumersStashed.some(
-          (c) =>
-            (room.shareable.get(inputOf(c.def)) ?? 0) +
-              (room.openNodes.get(inputOf(c.def)) ?? 0) >
-              0 &&
-            fits(c) &&
-            consumersOwned.some(
-              (m) =>
-                m.id !== c.id && inputOf(m.def) === inputOf(c.def) && fits(m),
-            ),
-        );
       const splittersWaiting = d.state.team.stash.filter(
         (b) => b.owner === p && b.def === 'bld_splitter',
       ).length;
       const shareNext = splitters * 2 < users && splittersWaiting === 0;
+      // What the layout step would do with a bought offer, asked of the
+      // layout code itself on a copy of the team (issue #178).
+      const memo = new Map<string, number>();
+      // A collector is worth buying when some consumer the strategy likes
+      // would use it: the best liked consumer of each resource, tier 1.
+      const likedConsumers: { def: string; tier: number }[] = [];
+      const seenResource = new Set<string>();
+      for (const def of [...CONSUMERS].sort(
+        (a, b) => (s.want[b] ?? 0) - (s.want[a] ?? 0),
+      )) {
+        const res = d.deps.content.buildings.get(def)?.inputs[0]?.resource;
+        if ((s.want[def] ?? 0) === 0 || res === undefined) continue;
+        if (seenResource.has(res)) continue;
+        seenResource.add(res);
+        likedConsumers.push({ def, tier: 1 });
+      }
+      const placeable = (
+        kind: 'collector' | 'consumer' | 'splitter',
+        o: { def: string; tier: number },
+        context: readonly { def: string; tier: number }[],
+      ): boolean =>
+        wouldPlace(
+          d.state.team,
+          p,
+          d.deps.content,
+          d.state.team.map.plotWidth,
+          s.layout,
+          kind,
+          o,
+          context,
+          memo,
+        );
       // With links and a neighbour, even players are donors (more collectors)
       // and odd players receivers (more consumers); everyone else balances
       // their own.
@@ -487,7 +479,10 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
         let score = buildScore(s, o.def, o.tier, rng);
         if (!s.random) {
           const extra = role === 1 ? slack : 1;
-          const more = role === 2 ? slack : 1;
+          // A receiver's own collectors are fewer now that the dry run keeps
+          // out those no plot cell can take, so it may hold one more consumer
+          // for its neighbours' spare collectors to feed.
+          const more = role === 2 ? slack + 1 : 1;
           if (o.def === 'bld_extractor' && sources >= users + extra) score = 0;
           if (CONSUMERS.includes(o.def) && users >= sources + more) score = 0;
           // Never buy a collector no free node can take (it would wait in the
@@ -529,22 +524,41 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
             o.def === 'bld_splitter' &&
             (splitters * 2 >= users ||
               splittersWaiting > 0 ||
-              consumersWaiting === 0 ||
-              !canSplit)
+              consumersWaiting === 0)
           ) {
             score = 0;
           }
-          // Never buy a consumer the collectors cannot feed (CB-10a). The
-          // supply is the player's own best collectors (`bestOwnedSupply`);
-          // a neighbour's collectors are not counted.
-          if (
-            CONSUMERS.includes(o.def) &&
-            coveragePercent(
-              supply,
-              consumerNeed(d.deps.content, o.def, o.tier),
-            ) < MIN_COVERAGE_PERCENT
-          ) {
-            score = 0;
+          // Only what the layout could place and connect now: a collector
+          // for a consumer to feed, a consumer one of the collectors can feed
+          // (CB-10a), a Splitter that shares a collector between two. A
+          // receiver's consumer is fed through a neighbour link instead.
+          if (score > 0 && s.layout.connect) {
+            const offer = { def: o.def, tier: o.tier };
+            if (o.def === 'bld_extractor') {
+              // A donor buys for the neighbour's consumers, which the link
+              // step places (it is not a dry run of this plot); everyone
+              // else for two consumers of a kind they like, so that the next
+              // purchase of this shop may be the one that takes it.
+              if (
+                role !== 1 &&
+                !likedConsumers.some((c) =>
+                  placeable('collector', offer, [c, c]),
+                )
+              ) {
+                score = 0;
+              }
+            } else if (CONSUMERS.includes(o.def) && role !== 2) {
+              const share =
+                (s.want.bld_splitter ?? 0) > 0
+                  ? [{ def: 'bld_splitter', tier: 1 }]
+                  : [];
+              if (!placeable('consumer', offer, share)) score = 0;
+            } else if (o.def === 'bld_splitter') {
+              if (
+                !likedConsumers.some((c) => placeable('splitter', offer, [c]))
+              )
+                score = 0;
+            }
           }
         }
         // A style that does not connect places no collector at all.

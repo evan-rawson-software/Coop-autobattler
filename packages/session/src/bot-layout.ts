@@ -22,7 +22,7 @@ import {
   type Cell,
   type Content,
   type PlacedBuilding,
-  type Rng,
+  Rng,
   type TeamState,
 } from '@game/core';
 import type { BoardIntent } from './types.js';
@@ -388,14 +388,17 @@ function connectConsumer(
 ): Plan | null {
   const t = plan.team;
   const isPlaced = t.buildings.some((b) => b.id === consumerId);
+  const need = [...t.buildings, ...t.stash].find((b) => b.id === consumerId);
+  if (need === undefined) return null;
   const taken = attached(t);
-  // 1. A placed extractor that feeds nothing yet.
+  // 1. A placed extractor that feeds nothing yet, and can feed this consumer.
   const sources = t.buildings.filter(
     (b) =>
       b.owner === env.player &&
       defOf(env, b.def)?.kind === 'source' &&
       !taken.has(b.id) &&
-      resourceOf(env, t, b) === resource,
+      resourceOf(env, t, b) === resource &&
+      feeds(env, need, 1, b),
   );
   for (const s of sources) {
     const done = isPlaced
@@ -405,7 +408,10 @@ function connectConsumer(
   }
   // 2. A stashed extractor, put on a free node of the resource.
   const stash = t.stash.filter(
-    (b) => b.owner === env.player && defOf(env, b.def)?.kind === 'source',
+    (b) =>
+      b.owner === env.player &&
+      defOf(env, b.def)?.kind === 'source' &&
+      feeds(env, need, 1, b),
   );
   const first = stash[0];
   if (first === undefined) return null;
@@ -496,26 +502,6 @@ export function makeEnv(
   };
 }
 
-/**
- * The best supply (items per 1000 ticks) of any collector the player owns,
- * on the board or in the stash. An upper bound for "could any collector of
- * theirs feed this?" (buying, and choosing a pair before a collector is
- * picked). It says nothing about a particular collector: once one is chosen,
- * pass it to `feeds`.
- */
-export function bestOwnedSupply(
-  team: TeamState,
-  player: number,
-  content: Content,
-): number {
-  let best = 0;
-  for (const b of [...team.buildings, ...team.stash]) {
-    if (b.owner !== player) continue;
-    best = Math.max(best, collectorSupply(content, b.def, b.tier));
-  }
-  return best;
-}
-
 /** What the shop can still use on the player's plot, by resource. */
 export interface PlotRoom {
   /** Nodes with nothing on them: where a bought collector could go. */
@@ -567,22 +553,19 @@ export function plotRoom(
 }
 
 /**
- * Can one collector feed `parts` consumers at the minimum coverage? With
- * `collector` it is that collector (the one actually being split); without,
- * the player's best owned one.
+ * Can this collector feed `parts` consumers like `c` at the minimum
+ * coverage? Asked of the one collector the layout is about to use, never of
+ * "the best one owned": a collector that stays in the stash feeds nothing.
  */
 export function feeds(
   env: Env,
-  team: TeamState,
   c: { def: string; tier: number },
   parts: number,
-  collector?: { def: string; tier: number },
+  collector: { def: string; tier: number },
 ): boolean {
-  const supply =
-    collector === undefined
-      ? bestOwnedSupply(team, env.player, env.content)
-      : collectorSupply(env.content, collector.def, collector.tier);
-  const share = Math.floor(supply / parts);
+  const share = Math.floor(
+    collectorSupply(env.content, collector.def, collector.tier) / parts,
+  );
   return (
     coveragePercent(share, consumerNeed(env.content, c.def, c.tier)) >=
     MIN_COVERAGE_PERCENT
@@ -668,7 +651,7 @@ function connectPair(
   }
   // The collector being split must itself have room for both consumers.
   const fits = (src: { def: string; tier: number }): boolean =>
-    feeds(env, plan.team, a, 2, src) && feeds(env, plan.team, b, 2, src);
+    feeds(env, a, 2, src) && feeds(env, b, 2, src);
   for (const start of splitterStarts(env, plan, resource, splitter.id, fits)) {
     let cur: Plan | null = start;
     const used = new Set<Side>();
@@ -740,8 +723,8 @@ function connectShare(
     if (
       user === undefined ||
       defOf(env, user.def)?.kind === 'route' ||
-      !feeds(env, t, user, 2, src) ||
-      !feeds(env, t, fresh, 2, src)
+      !feeds(env, user, 2, src) ||
+      !feeds(env, fresh, 2, src)
     ) {
       continue;
     }
@@ -837,6 +820,116 @@ function consumersOf(env: Env, team: TeamState, rank: (d: string) => number) {
     );
 }
 
+/** What a bought building is for: collectors, consumers or Splitters. */
+export type ProbeKind = 'collector' | 'consumer' | 'splitter';
+
+function kindMatches(content: Content, def: string, kind: ProbeKind): boolean {
+  const d = content.buildings.get(def);
+  if (d === undefined) return false;
+  switch (kind) {
+    case 'collector':
+      return d.kind === 'source';
+    case 'splitter':
+      return def === 'bld_splitter';
+    case 'consumer':
+      return d.kind !== 'route' && d.kind !== 'source' && d.inputs.length > 0;
+  }
+}
+
+/** The team with `items` added to `player`'s stash (a copy, for a dry run). */
+function withStashed(
+  team: TeamState,
+  player: number,
+  items: readonly { def: string; tier: number }[],
+): TeamState {
+  let id = team.nextId;
+  const stash = [...team.stash];
+  for (const it of items) {
+    stash.push({ id: id++, def: it.def, tier: it.tier, owner: player });
+  }
+  return { ...team, stash, nextId: id };
+}
+
+/**
+ * How many of `kind` the layout step would put on the board for `player`
+ * from the stash as it is, with `extra` added to it first: the same planner
+ * the bot's layout step runs (`planLayout`), on a copy of the team. Placing
+ * leftovers is off: only what the planner connects counts.
+ */
+export function plannedPlacements(
+  team: TeamState,
+  player: number,
+  content: Content,
+  plotWidth: number,
+  style: LayoutStyle,
+  kind: ProbeKind,
+  extra: readonly { def: string; tier: number }[],
+): number {
+  const trial = withStashed(team, player, extra);
+  const intents = planLayout(
+    trial,
+    player,
+    content,
+    plotWidth,
+    { ...style, placeLeftovers: false },
+    Rng.fromSeed(1),
+  );
+  const stashed = new Map(trial.stash.map((b) => [b.id, b.def]));
+  let n = 0;
+  for (const i of intents) {
+    if (i.type !== 'place_building') continue;
+    const def = stashed.get(i.id);
+    if (def !== undefined && kindMatches(content, def, kind)) n++;
+  }
+  return n;
+}
+
+/**
+ * Would a bought `offer` be placed, and connected, on the player's plot now?
+ * A dry run: the layout plan with the offer in the stash against the plan
+ * without it; the offer counts when it raises the number of buildings of its
+ * kind that get placed. `context` is stashed in both plans (a consumer to
+ * feed for a collector, a Splitter to share it for a consumer), so that
+ * buildings that only work together can each be bought first.
+ */
+export function wouldPlace(
+  team: TeamState,
+  player: number,
+  content: Content,
+  plotWidth: number,
+  style: LayoutStyle,
+  kind: ProbeKind,
+  offer: { def: string; tier: number },
+  context: readonly { def: string; tier: number }[] = [],
+  /** Plans without the offer, kept by the caller for one team state. */
+  memo?: Map<string, number>,
+): boolean {
+  const key = `${kind}|${context.map((c) => `${c.def}:${String(c.tier)}`).join(',')}`;
+  let base = memo?.get(key);
+  if (base === undefined) {
+    base = plannedPlacements(
+      team,
+      player,
+      content,
+      plotWidth,
+      style,
+      kind,
+      context,
+    );
+    memo?.set(key, base);
+  }
+  const more = plannedPlacements(
+    team,
+    player,
+    content,
+    plotWidth,
+    style,
+    kind,
+    [...context, offer],
+  );
+  return more > base;
+}
+
 /**
  * The board intents that lay out `player`'s stash. Returns the list in the
  * order to send it; empty when there is nothing to do or nothing fits.
@@ -862,23 +955,24 @@ export function planLayout(
       const input = defOf(env, c.def)?.inputs[0];
       const resource = input?.resource;
       if (resource === undefined) continue;
-      // Supply awareness: a consumer its collectors cannot feed is not placed.
-      if (!feeds(env, plan.team, c, 1)) continue;
-      // One collector for two such consumers, through a Splitter.
-      const mate = consumers.find(
-        (m) =>
-          m.id !== c.id &&
-          !attached(plan.team).has(m.id) &&
-          defOf(env, m.def)?.inputs[0]?.resource === resource &&
-          feeds(env, plan.team, c, 2) &&
-          feeds(env, plan.team, m, 2),
-      );
-      if (mate !== undefined) {
-        const pair = connectPair(env, plan, c.id, mate.id, resource);
-        if (pair !== null) {
-          plan = pair;
+      // One collector for two such consumers, through a Splitter. Whether a
+      // collector feeds a consumer is asked of that collector in the connect
+      // steps: a consumer none of them can feed stays in the stash.
+      let paired: Plan | null = null;
+      for (const m of consumers) {
+        if (
+          m.id === c.id ||
+          attached(plan.team).has(m.id) ||
+          defOf(env, m.def)?.inputs[0]?.resource !== resource
+        ) {
           continue;
         }
+        paired = connectPair(env, plan, c.id, m.id, resource);
+        if (paired !== null) break;
+      }
+      if (paired !== null) {
+        plan = paired;
+        continue;
       }
       const done =
         connectConsumer(env, plan, c.id, resource) ??
