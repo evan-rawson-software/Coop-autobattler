@@ -7,6 +7,8 @@ import { describe, expect, test } from 'vitest';
 import {
   Rng,
   canonicalJson,
+  GHOST_MAX_ROUND,
+  GHOST_MAX_SERIALIZED_BYTES,
   ghostMaxSerializedSize,
   ghostTierBound,
   ghostValueBound,
@@ -1009,6 +1011,149 @@ describe('item 5: the compact log form of select_ghost', () => {
         expect(JSON.stringify(r)).toMatch(/unsupported/);
       }
     }
+  });
+
+  describe('restore and replay of a chosen snapshot skip the content-derived bounds', () => {
+    // Validation numbers far below what the snapshot needed when it was chosen.
+    function strictOf(deps: RunDeps): RunDeps {
+      return {
+        ...deps,
+        ghosts: {
+          ownerId: 'me',
+          economy: {
+            ...gameConfigs.economy,
+            startingGold: 0,
+            baseIncomePerShop: 0,
+            startingKit: [],
+            rewards: {
+              pveWin: { easy: 0, medium: 0, hard: 0 },
+              pvpWin: 0,
+              pvpLoss: 0,
+            },
+          },
+          events: { ...gameConfigs.events, events: [] },
+        },
+      };
+    }
+    function chosenRun() {
+      const all = pool(2);
+      const { deps, args, run } = play(all, true, 2);
+      const log = clone(run.state.actionLog);
+      const at = log.findIndex(
+        (l) => (l.intent as { type: string }).type === SELECT_GHOST,
+      );
+      const chosen = (log[at]?.intent as Record<string, unknown>)[
+        'chosen'
+      ] as GhostSnapshot;
+      // The state right after the selection: the shop holding that opponent.
+      const upTo = replayRun(args, clone(log.slice(0, at + 1)), deps);
+      if (!upTo.ok) throw new Error('prefix replay failed');
+      expect(upTo.state.pvpOpponent?.kind).toBe('ghost');
+      expect(chosen).not.toBeNull();
+      const shop = { state: upTo.state };
+      return { deps, args, log, at, chosen, shop: shop.state };
+    }
+    function withLogged(
+      log: ReturnType<typeof chosenRun>['log'],
+      at: number,
+      change: (i: Record<string, unknown>) => void,
+    ) {
+      const copy = clone(log);
+      change((copy[at] as { intent: Record<string, unknown> }).intent);
+      return copy;
+    }
+    function restoreWith(
+      c: ReturnType<typeof chosenRun>,
+      ghost: unknown,
+      d: RunDeps = c.deps,
+    ) {
+      const st = clone(c.shop) as unknown as {
+        pvpOpponent: { ghost: unknown };
+      };
+      st.pvpOpponent.ghost = ghost;
+      return validateRunState(st, d);
+    }
+
+    test('a snapshot valid at save time restores and replays under lowered numbers; selection refuses it', () => {
+      const c = chosenRun();
+      const strict = strictOf(c.deps);
+      expect(validateGhostSnapshot(clone(c.chosen), ctxOf(strict)).ok).toBe(
+        false,
+      );
+      expect(validateGhostSnapshot(clone(c.chosen), ctxOf(c.deps)).ok).toBe(
+        true,
+      );
+      expect(validateRunState(clone(c.shop), c.deps).ok).toBe(true);
+      const restored = validateRunState(clone(c.shop), strict);
+      expect(restored.ok, restored.ok ? '' : restored.errors.join()).toBe(true);
+      expect(replayRun(c.args, clone(c.log), strict).ok).toBe(true);
+    });
+
+    test('a structurally bad snapshot is still rejected on restore and replay', () => {
+      const c = chosenRun();
+      const strict = strictOf(c.deps);
+      const bad = [
+        { ...clone(c.chosen), formatVersion: 5 },
+        {
+          ...clone(c.chosen),
+          team: {
+            ...clone(c.chosen.team),
+            cores: [{ x: 9999, y: 9999 }],
+          },
+        },
+      ];
+      for (const b of bad) {
+        expect(restoreWith(c, b, strict).ok).toBe(false);
+        const log = withLogged(c.log, c.at, (i) => {
+          i['chosen'] = b;
+          i['chosenHash'] = hashJson(b);
+        });
+        const r = replayRun(c.args, log, strict);
+        expect(r.ok).toBe(false);
+        if (!r.ok) expect(r.reason).toBe('replay_mismatch');
+      }
+    });
+
+    test('a logged snapshot that does not match its hash is still rejected', () => {
+      const c = chosenRun();
+      const changed = {
+        ...clone(c.chosen),
+        owner: { ...c.chosen.owner, label: 'changed' },
+      };
+      const log = withLogged(c.log, c.at, (i) => {
+        i['chosen'] = changed;
+      });
+      const r = replayRun(c.args, log, strictOf(c.deps));
+      expect(r.ok).toBe(false);
+      expect(JSON.stringify(r)).toMatch(/hash/);
+    });
+
+    test('over the 2 MiB cap or past round 200 is rejected on restore and replay', () => {
+      const c = chosenRun();
+      const strict = strictOf(c.deps);
+      const fat = {
+        ...clone(c.chosen),
+        pad: new Array<string>(17_500).fill('x'.repeat(120)),
+      };
+      expect(canonicalJson(fat).length).toBeGreaterThan(
+        GHOST_MAX_SERIALIZED_BYTES,
+      );
+      const late = { ...clone(c.chosen), round: GHOST_MAX_ROUND + 1 };
+      for (const [b, text] of [
+        [fat, 'larger than'],
+        [late, 'round: must be'],
+      ] as const) {
+        const rs = restoreWith(c, b, strict);
+        expect(rs.ok ? '' : rs.errors.join()).toContain(text);
+        const log = withLogged(c.log, c.at, (i) => {
+          i['chosen'] = b;
+          i['chosenHash'] = hashJson(b);
+        });
+        const r = replayRun(c.args, log, strict);
+        expect(r.ok).toBe(false);
+        expect(JSON.stringify(r)).toContain(text);
+      }
+    });
   });
 
   test('the compact form is refused live: nobody names their opponent', () => {
