@@ -805,6 +805,10 @@ function applyBuiltin(
       if (intent.id !== undefined && !isInt(intent.id)) {
         return fail('invalid_intent');
       }
+      const restore: unknown = intent.restore;
+      if (restore !== undefined && typeof restore !== 'boolean') {
+        return fail('invalid_intent');
+      }
       return withTeam(
         addConduit(s.team, content, { ...intent, actor: player }),
       );

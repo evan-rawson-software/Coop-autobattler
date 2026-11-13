@@ -46,6 +46,8 @@ export type LayoutAction =
       readonly cells: readonly Cell[];
       /** An add under this earlier ID (set on recorded inverses only). */
       readonly conduitId?: number;
+      /** An add by undo or redo: it may leave a link broken (issue #38). */
+      readonly restore?: true;
       /** An erase that hands the newest ID back (inverse of an add). */
       readonly reclaim?: true;
     };
@@ -103,6 +105,7 @@ export function toIntent(
         to: a.to,
         cells: a.cells,
         ...(a.conduitId === undefined ? {} : { id: a.conduitId }),
+        ...(a.restore === true ? { restore: true } : {}),
       };
     case 'erase': {
       const c = findConduit(state, a);
@@ -174,7 +177,9 @@ function withIds(
   return inverse.map((a): LayoutAction => {
     if (a.t === 'add') {
       const c = findConduit(before, a);
-      return c === undefined ? a : { ...a, conduitId: c.id };
+      return c === undefined
+        ? { ...a, restore: true }
+        : { ...a, conduitId: c.id, restore: true };
     }
     return a.t === 'erase' && action.t === 'add' ? { ...a, reclaim: true } : a;
   });
@@ -237,6 +242,7 @@ export function applyAction(
         to: a.to,
         cells: a.cells,
         ...(a.conduitId === undefined ? {} : { id: a.conduitId }),
+        ...(a.restore === true ? { restore: true } : {}),
       });
     case 'erase': {
       const c = findConduit(state, a);
@@ -315,12 +321,14 @@ export class UndoStack {
   ): Promise<ApplyResult | null> {
     const entry = this.redoList.pop();
     if (entry === undefined) return null;
-    const pre = check?.([entry.redo]);
+    const redo: LayoutAction =
+      entry.redo.t === 'add' ? { ...entry.redo, restore: true } : entry.redo;
+    const pre = check?.([redo]);
     if (pre !== undefined && !pre.ok) {
       this.redoList.push(entry);
       return pre;
     }
-    const r = await apply([entry.redo]);
+    const r = await apply([redo]);
     if (!r.ok) {
       this.clear();
       return r;

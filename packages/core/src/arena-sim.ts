@@ -70,7 +70,7 @@ import type { Cell } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
 import type { ResourceId } from './resources.js';
 import type { SimConfig } from './sim-config.js';
-import { conduitsLostWith } from './conduits.js';
+import { brokenLinks, conduitsLostWith } from './conduits.js';
 import type { TeamState } from './team-state.js';
 import { unitSpeed, type UnitDef, type UnitId } from './units.js';
 
@@ -2463,7 +2463,8 @@ function destroyBuilding(
     building: b.id,
   });
   const team = sim.teams[b.side === 0 ? 0 : 1];
-  const lost = new Set(conduitsLostWith(team.conduits, b.id));
+  const open = new Set(brokenLinks(team, ctx.content).map((l) => l.sending));
+  const lost = new Set(conduitsLostWith(team.conduits, b.id, open));
   for (const id of [...lost].sort((x, y) => x - y)) {
     ctx.events?.push({
       tick,
