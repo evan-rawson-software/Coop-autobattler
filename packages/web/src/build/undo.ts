@@ -4,10 +4,13 @@
  * grows. Moving, rotating or returning a building detaches its conduits, so
  * the inverse also re-adds them.
  *
- * Undo restores the exact previous team state, ids and `nextId` included.
+ * Undo restores the exact previous team state, ids and counters included.
  * Conduits are found by their ends and cells, and the recorded inverse names
  * each removed conduit's ID so it is re-added under it (`conduitId`); the
- * inverse of an add erases with `reclaim`, handing the newest ID back.
+ * inverse of an add erases with `reclaim`, handing the newest ID back. Every
+ * player has their own conduit ID space (issue #38), so what a teammate does
+ * in between can never take an ID that this player's undo needs: an undo is
+ * never refused over IDs.
  */
 
 import {

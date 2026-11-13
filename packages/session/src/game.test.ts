@@ -963,7 +963,7 @@ describe('the run-state format version', () => {
 
   test('a new run has version 8; version 1 and other versions are rejected clearly', () => {
     const s = start(deps);
-    expect(s.formatVersion).toBe(8);
+    expect(s.formatVersion).toBe(9);
     expect(validateRunState(clone(s), deps).ok).toBe(true);
     // A version-1 state: the old version, and no upcomingPve field.
     const old = clone(s) as unknown as Record<string, unknown>;

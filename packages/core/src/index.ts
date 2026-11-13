@@ -196,6 +196,11 @@ export type {
   ValidateTeamStateResult,
 } from './team-state.js';
 export {
+  MAX_PARTY_SIZE,
+  decodeConduitId,
+  encodeConduitId,
+} from './conduit-ids.js';
+export {
   SIDE_ORDER,
   addConduit,
   buildFlowGraph,

@@ -77,7 +77,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 4,
+            "id": 3,
             "x": 20,
             "y": 6,
             "rotation": 0
@@ -91,7 +91,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 5,
+            "id": 4,
             "x": 20,
             "y": 10,
             "rotation": 0
@@ -100,11 +100,11 @@
             "op": "addConduit",
             "actor": 0,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": [
@@ -197,7 +197,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 4,
+            "id": 3,
             "x": 20,
             "y": 6,
             "rotation": 0
@@ -211,7 +211,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 5,
+            "id": 4,
             "x": 20,
             "y": 10,
             "rotation": 0
@@ -220,11 +220,11 @@
             "op": "addConduit",
             "actor": 0,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": [
@@ -250,7 +250,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "3e209ec4",
+        "stateHash": "8a399d0a",
         "events": 1282,
         "sides": [
           {
@@ -271,7 +271,7 @@
           }
         ]
       },
-      "eventLogHash": "661b3231"
+      "eventLogHash": "579c04e1"
     }
   },
   {
@@ -352,7 +352,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 4,
+            "id": 3,
             "x": 20,
             "y": 6,
             "rotation": 0
@@ -366,7 +366,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 5,
+            "id": 4,
             "x": 20,
             "y": 10,
             "rotation": 0
@@ -375,11 +375,11 @@
             "op": "addConduit",
             "actor": 0,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": [
@@ -431,7 +431,7 @@
     "expected": {
       "result": {
         "tick": 1800,
-        "stateHash": "fc4488d9",
+        "stateHash": "6f6f9492",
         "events": 887,
         "sides": [
           {
@@ -452,7 +452,7 @@
           }
         ]
       },
-      "eventLogHash": "86799da5"
+      "eventLogHash": "06c85a07"
     }
   },
   {
@@ -533,7 +533,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 4,
+            "id": 3,
             "x": 20,
             "y": 6,
             "rotation": 0
@@ -547,7 +547,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 5,
+            "id": 4,
             "x": 20,
             "y": 10,
             "rotation": 0
@@ -556,11 +556,11 @@
             "op": "addConduit",
             "actor": 0,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": [
@@ -710,7 +710,7 @@
     "expected": {
       "result": {
         "tick": 2200,
-        "stateHash": "0af6cad0",
+        "stateHash": "49e641c5",
         "events": 1092,
         "sides": [
           {
@@ -731,7 +731,7 @@
           }
         ]
       },
-      "eventLogHash": "1dca3b17"
+      "eventLogHash": "db0c5db5"
     }
   },
   {
@@ -896,7 +896,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "627d81b5",
+        "stateHash": "280dae2f",
         "events": 69,
         "sides": [
           {
@@ -1069,7 +1069,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 8,
+            "id": 5,
             "x": 12,
             "y": 12,
             "rotation": 0
@@ -1102,7 +1102,7 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "4a703ed2",
+        "stateHash": "b432911a",
         "events": 269,
         "sides": [
           {
@@ -1258,7 +1258,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 4,
+            "id": 3,
             "x": 5,
             "y": 2,
             "rotation": 0
@@ -1272,7 +1272,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 5,
+            "id": 4,
             "x": 5,
             "y": 14,
             "rotation": 0
@@ -1281,11 +1281,11 @@
             "op": "addConduit",
             "actor": 0,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": [
@@ -1344,7 +1344,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 7,
+            "id": 5,
             "x": 8,
             "y": 2,
             "rotation": 0
@@ -1358,7 +1358,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 8,
+            "id": 6,
             "x": 8,
             "y": 14,
             "rotation": 0
@@ -1367,11 +1367,11 @@
             "op": "addConduit",
             "actor": 0,
             "from": {
-              "building": 7,
+              "building": 5,
               "side": "north"
             },
             "to": {
-              "building": 8,
+              "building": 6,
               "side": "south"
             },
             "cells": [
@@ -1467,7 +1467,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "fefdc8e2",
+        "stateHash": "a8bd4d84",
         "events": 114,
         "sides": [
           {
@@ -1488,7 +1488,7 @@
           }
         ]
       },
-      "eventLogHash": "0e1e22c7"
+      "eventLogHash": "32099216"
     }
   },
   {
@@ -1623,7 +1623,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 4,
+            "id": 3,
             "x": 5,
             "y": 2,
             "rotation": 0
@@ -1637,7 +1637,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 5,
+            "id": 4,
             "x": 5,
             "y": 14,
             "rotation": 0
@@ -1646,11 +1646,11 @@
             "op": "addConduit",
             "actor": 0,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": [
@@ -1709,7 +1709,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 7,
+            "id": 5,
             "x": 8,
             "y": 2,
             "rotation": 0
@@ -1723,7 +1723,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 8,
+            "id": 6,
             "x": 8,
             "y": 14,
             "rotation": 0
@@ -1732,11 +1732,11 @@
             "op": "addConduit",
             "actor": 0,
             "from": {
-              "building": 7,
+              "building": 5,
               "side": "north"
             },
             "to": {
-              "building": 8,
+              "building": 6,
               "side": "south"
             },
             "cells": [
@@ -1820,7 +1820,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "60109449",
+        "stateHash": "a4a6e68f",
         "events": 79,
         "sides": [
           {
@@ -1841,7 +1841,7 @@
           }
         ]
       },
-      "eventLogHash": "dcfe4aa2"
+      "eventLogHash": "eda6a404"
     }
   },
   {
@@ -1953,7 +1953,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "385a0656",
+        "stateHash": "d91e6382",
         "events": 75,
         "sides": [
           {
@@ -2206,7 +2206,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "77bd9893",
+        "stateHash": "03a45b51",
         "events": 40,
         "sides": [
           {
@@ -2480,7 +2480,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 4,
+            "id": 3,
             "x": 5,
             "y": 2,
             "rotation": 0
@@ -2494,7 +2494,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 5,
+            "id": 4,
             "x": 5,
             "y": 7,
             "rotation": 0
@@ -2503,11 +2503,11 @@
             "op": "addConduit",
             "actor": 0,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": [
@@ -2538,7 +2538,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 7,
+            "id": 5,
             "x": 6,
             "y": 2,
             "rotation": 0
@@ -2552,8 +2552,66 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 8,
+            "id": 6,
             "x": 6,
+            "y": 7,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 5,
+              "side": "north"
+            },
+            "to": {
+              "building": 6,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 6,
+                "y": 3
+              },
+              {
+                "x": 6,
+                "y": 4
+              },
+              {
+                "x": 6,
+                "y": 5
+              },
+              {
+                "x": 6,
+                "y": 6
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 7,
+            "x": 7,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 8,
+            "x": 7,
             "y": 7,
             "rotation": 0
           },
@@ -2570,19 +2628,19 @@
             },
             "cells": [
               {
-                "x": 6,
+                "x": 7,
                 "y": 3
               },
               {
-                "x": 6,
+                "x": 7,
                 "y": 4
               },
               {
-                "x": 6,
+                "x": 7,
                 "y": 5
               },
               {
-                "x": 6,
+                "x": 7,
                 "y": 6
               }
             ]
@@ -2596,8 +2654,8 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 10,
-            "x": 7,
+            "id": 9,
+            "x": 8,
             "y": 2,
             "rotation": 0
           },
@@ -2610,8 +2668,8 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 11,
-            "x": 7,
+            "id": 10,
+            "x": 8,
             "y": 7,
             "rotation": 0
           },
@@ -2619,28 +2677,86 @@
             "op": "addConduit",
             "actor": 0,
             "from": {
-              "building": 10,
+              "building": 9,
               "side": "north"
             },
             "to": {
-              "building": 11,
+              "building": 10,
               "side": "south"
             },
             "cells": [
               {
-                "x": 7,
+                "x": 8,
                 "y": 3
               },
               {
-                "x": 7,
+                "x": 8,
                 "y": 4
               },
               {
-                "x": 7,
+                "x": 8,
                 "y": 5
               },
               {
-                "x": 7,
+                "x": 8,
+                "y": 6
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 11,
+            "x": 9,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_turret",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 12,
+            "x": 9,
+            "y": 7,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 11,
+              "side": "north"
+            },
+            "to": {
+              "building": 12,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 9,
+                "y": 3
+              },
+              {
+                "x": 9,
+                "y": 4
+              },
+              {
+                "x": 9,
+                "y": 5
+              },
+              {
+                "x": 9,
                 "y": 6
               }
             ]
@@ -2655,7 +2771,7 @@
             "op": "placeFromStash",
             "actor": 0,
             "id": 13,
-            "x": 8,
+            "x": 10,
             "y": 2,
             "rotation": 0
           },
@@ -2669,7 +2785,7 @@
             "op": "placeFromStash",
             "actor": 0,
             "id": 14,
-            "x": 8,
+            "x": 10,
             "y": 7,
             "rotation": 0
           },
@@ -2686,19 +2802,19 @@
             },
             "cells": [
               {
-                "x": 8,
+                "x": 10,
                 "y": 3
               },
               {
-                "x": 8,
+                "x": 10,
                 "y": 4
               },
               {
-                "x": 8,
+                "x": 10,
                 "y": 5
               },
               {
-                "x": 8,
+                "x": 10,
                 "y": 6
               }
             ]
@@ -2712,8 +2828,8 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 16,
-            "x": 9,
+            "id": 15,
+            "x": 11,
             "y": 2,
             "rotation": 0
           },
@@ -2721,6 +2837,50 @@
             "op": "addToStash",
             "def": "bld_turret",
             "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 16,
+            "x": 11,
+            "y": 7,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 15,
+              "side": "north"
+            },
+            "to": {
+              "building": 16,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 11,
+                "y": 3
+              },
+              {
+                "x": 11,
+                "y": 4
+              },
+              {
+                "x": 11,
+                "y": 5
+              },
+              {
+                "x": 11,
+                "y": 6
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
             "owner": 0
           },
           {
@@ -2728,42 +2888,26 @@
             "actor": 0,
             "id": 17,
             "x": 9,
-            "y": 7,
+            "y": 9,
             "rotation": 0
           },
           {
-            "op": "addConduit",
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
             "actor": 0,
-            "from": {
-              "building": 16,
-              "side": "north"
-            },
-            "to": {
-              "building": 17,
-              "side": "south"
-            },
-            "cells": [
-              {
-                "x": 9,
-                "y": 3
-              },
-              {
-                "x": 9,
-                "y": 4
-              },
-              {
-                "x": 9,
-                "y": 5
-              },
-              {
-                "x": 9,
-                "y": 6
-              }
-            ]
+            "id": 18,
+            "x": 9,
+            "y": 10,
+            "rotation": 0
           },
           {
             "op": "addToStash",
-            "def": "bld_extractor",
+            "def": "bld_wall",
             "tier": 3,
             "owner": 0
           },
@@ -2771,14 +2915,14 @@
             "op": "placeFromStash",
             "actor": 0,
             "id": 19,
-            "x": 10,
-            "y": 2,
+            "x": 9,
+            "y": 11,
             "rotation": 0
           },
           {
             "op": "addToStash",
-            "def": "bld_turret",
-            "tier": 1,
+            "def": "bld_wall",
+            "tier": 3,
             "owner": 0
           },
           {
@@ -2786,42 +2930,26 @@
             "actor": 0,
             "id": 20,
             "x": 10,
-            "y": 7,
+            "y": 9,
             "rotation": 0
           },
           {
-            "op": "addConduit",
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
             "actor": 0,
-            "from": {
-              "building": 19,
-              "side": "north"
-            },
-            "to": {
-              "building": 20,
-              "side": "south"
-            },
-            "cells": [
-              {
-                "x": 10,
-                "y": 3
-              },
-              {
-                "x": 10,
-                "y": 4
-              },
-              {
-                "x": 10,
-                "y": 5
-              },
-              {
-                "x": 10,
-                "y": 6
-              }
-            ]
+            "id": 21,
+            "x": 10,
+            "y": 10,
+            "rotation": 0
           },
           {
             "op": "addToStash",
-            "def": "bld_extractor",
+            "def": "bld_wall",
             "tier": 3,
             "owner": 0
           },
@@ -2829,14 +2957,14 @@
             "op": "placeFromStash",
             "actor": 0,
             "id": 22,
-            "x": 11,
-            "y": 2,
+            "x": 10,
+            "y": 11,
             "rotation": 0
           },
           {
             "op": "addToStash",
-            "def": "bld_turret",
-            "tier": 1,
+            "def": "bld_wall",
+            "tier": 3,
             "owner": 0
           },
           {
@@ -2844,38 +2972,22 @@
             "actor": 0,
             "id": 23,
             "x": 11,
-            "y": 7,
+            "y": 9,
             "rotation": 0
           },
           {
-            "op": "addConduit",
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
             "actor": 0,
-            "from": {
-              "building": 22,
-              "side": "north"
-            },
-            "to": {
-              "building": 23,
-              "side": "south"
-            },
-            "cells": [
-              {
-                "x": 11,
-                "y": 3
-              },
-              {
-                "x": 11,
-                "y": 4
-              },
-              {
-                "x": 11,
-                "y": 5
-              },
-              {
-                "x": 11,
-                "y": 6
-              }
-            ]
+            "id": 24,
+            "x": 11,
+            "y": 10,
+            "rotation": 0
           },
           {
             "op": "addToStash",
@@ -2887,118 +2999,6 @@
             "op": "placeFromStash",
             "actor": 0,
             "id": 25,
-            "x": 9,
-            "y": 9,
-            "rotation": 0
-          },
-          {
-            "op": "addToStash",
-            "def": "bld_wall",
-            "tier": 3,
-            "owner": 0
-          },
-          {
-            "op": "placeFromStash",
-            "actor": 0,
-            "id": 26,
-            "x": 9,
-            "y": 10,
-            "rotation": 0
-          },
-          {
-            "op": "addToStash",
-            "def": "bld_wall",
-            "tier": 3,
-            "owner": 0
-          },
-          {
-            "op": "placeFromStash",
-            "actor": 0,
-            "id": 27,
-            "x": 9,
-            "y": 11,
-            "rotation": 0
-          },
-          {
-            "op": "addToStash",
-            "def": "bld_wall",
-            "tier": 3,
-            "owner": 0
-          },
-          {
-            "op": "placeFromStash",
-            "actor": 0,
-            "id": 28,
-            "x": 10,
-            "y": 9,
-            "rotation": 0
-          },
-          {
-            "op": "addToStash",
-            "def": "bld_wall",
-            "tier": 3,
-            "owner": 0
-          },
-          {
-            "op": "placeFromStash",
-            "actor": 0,
-            "id": 29,
-            "x": 10,
-            "y": 10,
-            "rotation": 0
-          },
-          {
-            "op": "addToStash",
-            "def": "bld_wall",
-            "tier": 3,
-            "owner": 0
-          },
-          {
-            "op": "placeFromStash",
-            "actor": 0,
-            "id": 30,
-            "x": 10,
-            "y": 11,
-            "rotation": 0
-          },
-          {
-            "op": "addToStash",
-            "def": "bld_wall",
-            "tier": 3,
-            "owner": 0
-          },
-          {
-            "op": "placeFromStash",
-            "actor": 0,
-            "id": 31,
-            "x": 11,
-            "y": 9,
-            "rotation": 0
-          },
-          {
-            "op": "addToStash",
-            "def": "bld_wall",
-            "tier": 3,
-            "owner": 0
-          },
-          {
-            "op": "placeFromStash",
-            "actor": 0,
-            "id": 32,
-            "x": 11,
-            "y": 10,
-            "rotation": 0
-          },
-          {
-            "op": "addToStash",
-            "def": "bld_wall",
-            "tier": 3,
-            "owner": 0
-          },
-          {
-            "op": "placeFromStash",
-            "actor": 0,
-            "id": 33,
             "x": 11,
             "y": 11,
             "rotation": 0
@@ -3103,7 +3103,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "4191d336",
+        "stateHash": "5cd14484",
         "events": 421,
         "sides": [
           {
@@ -3124,7 +3124,7 @@
           }
         ]
       },
-      "eventLogHash": "722a9290"
+      "eventLogHash": "eb8fc875"
     }
   },
   {
@@ -3209,7 +3209,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 4,
+            "id": 3,
             "x": 10,
             "y": 0,
             "rotation": 0
@@ -3223,7 +3223,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 5,
+            "id": 4,
             "x": 10,
             "y": 1,
             "rotation": 0
@@ -3232,11 +3232,11 @@
             "op": "addConduit",
             "actor": 0,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": []
@@ -3267,7 +3267,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "3b3b2b5b",
+        "stateHash": "77dcf3e0",
         "events": 186,
         "sides": [
           {
@@ -3288,7 +3288,7 @@
           }
         ]
       },
-      "eventLogHash": "62255e1a"
+      "eventLogHash": "8280d4c5"
     }
   },
   {
@@ -3378,7 +3378,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 4,
+            "id": 3,
             "x": 10,
             "y": 0,
             "rotation": 0
@@ -3392,7 +3392,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 5,
+            "id": 4,
             "x": 10,
             "y": 1,
             "rotation": 0
@@ -3401,11 +3401,11 @@
             "op": "addConduit",
             "actor": 0,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": []
@@ -3419,7 +3419,7 @@
           {
             "op": "placeFromStash",
             "actor": 1,
-            "id": 7,
+            "id": 5,
             "x": 12,
             "y": 0,
             "rotation": 0
@@ -3462,7 +3462,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "d49fdca2",
+        "stateHash": "6c45cd37",
         "events": 246,
         "sides": [
           {
@@ -3483,7 +3483,7 @@
           }
         ]
       },
-      "eventLogHash": "5232563f"
+      "eventLogHash": "3737245c"
     }
   },
   {
@@ -3568,7 +3568,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 4,
+            "id": 3,
             "x": 4,
             "y": 0,
             "rotation": 0
@@ -3582,7 +3582,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 5,
+            "id": 4,
             "x": 4,
             "y": 1,
             "rotation": 0
@@ -3591,11 +3591,11 @@
             "op": "addConduit",
             "actor": 0,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": []
@@ -3626,7 +3626,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "b0484442",
+        "stateHash": "2c24da11",
         "events": 154,
         "sides": [
           {
@@ -3647,7 +3647,7 @@
           }
         ]
       },
-      "eventLogHash": "e86dd365"
+      "eventLogHash": "feb15a7d"
     }
   },
   {
@@ -3744,7 +3744,7 @@
     "expected": {
       "result": {
         "tick": 600,
-        "stateHash": "6719afd6",
+        "stateHash": "318ba2aa",
         "events": 35,
         "sides": [
           {
@@ -3863,7 +3863,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 4,
+            "id": 3,
             "x": 10,
             "y": 0,
             "rotation": 0
@@ -3877,7 +3877,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 5,
+            "id": 4,
             "x": 10,
             "y": 4,
             "rotation": 0
@@ -3886,11 +3886,11 @@
             "op": "addConduit",
             "actor": 0,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": [
@@ -4121,7 +4121,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "66b7a86a",
+        "stateHash": "c569b1fb",
         "events": 635,
         "sides": [
           {
@@ -4142,7 +4142,7 @@
           }
         ]
       },
-      "eventLogHash": "9d44d450"
+      "eventLogHash": "be2e66ca"
     }
   },
   {
@@ -4528,7 +4528,7 @@
     "expected": {
       "result": {
         "tick": 3800,
-        "stateHash": "07c65b45",
+        "stateHash": "0e9a6747",
         "events": 51,
         "sides": [
           {
@@ -4698,7 +4698,7 @@
     "expected": {
       "result": {
         "tick": 60,
-        "stateHash": "89793995",
+        "stateHash": "9c2c74d3",
         "events": 7,
         "sides": [
           {
@@ -4816,7 +4816,7 @@
     "expected": {
       "result": {
         "tick": 60,
-        "stateHash": "51aff995",
+        "stateHash": "29377eb7",
         "events": 21,
         "sides": [
           {
@@ -5291,7 +5291,7 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "015f29e2",
+        "stateHash": "d06e66d4",
         "events": 98,
         "sides": [
           {
@@ -5415,7 +5415,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 4,
+            "id": 3,
             "x": 1,
             "y": 5,
             "rotation": 0
@@ -5429,9 +5429,23 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 5,
+            "id": 4,
             "x": 1,
             "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 4,
+            "y": 5,
             "rotation": 0
           },
           {
@@ -5445,20 +5459,6 @@
             "actor": 0,
             "id": 6,
             "x": 4,
-            "y": 5,
-            "rotation": 0
-          },
-          {
-            "op": "addToStash",
-            "def": "bld_wall",
-            "tier": 1,
-            "owner": 0
-          },
-          {
-            "op": "placeFromStash",
-            "actor": 0,
-            "id": 7,
-            "x": 4,
             "y": 6,
             "rotation": 0
           },
@@ -5471,7 +5471,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 8,
+            "id": 7,
             "x": 2,
             "y": 7,
             "rotation": 0
@@ -5485,7 +5485,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 9,
+            "id": 8,
             "x": 3,
             "y": 7,
             "rotation": 0
@@ -5499,7 +5499,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 10,
+            "id": 9,
             "x": 3,
             "y": 4,
             "rotation": 0
@@ -5559,7 +5559,7 @@
     "expected": {
       "result": {
         "tick": 700,
-        "stateHash": "23ed2f3b",
+        "stateHash": "d8502901",
         "events": 245,
         "sides": [
           {
@@ -5990,7 +5990,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "e2b1233f",
+        "stateHash": "4176959d",
         "events": 41,
         "sides": [
           {
@@ -6274,7 +6274,7 @@
     "expected": {
       "result": {
         "tick": 1,
-        "stateHash": "e2554af9",
+        "stateHash": "9c8e8c7f",
         "events": 9,
         "sides": [
           {
@@ -6441,7 +6441,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "9177f47b",
+        "stateHash": "57eb75b3",
         "events": 156,
         "sides": [
           {
@@ -6590,7 +6590,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "dd716de8",
+        "stateHash": "78aa7ea8",
         "events": 183,
         "sides": [
           {
@@ -6740,7 +6740,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "dd716de8",
+        "stateHash": "78aa7ea8",
         "events": 183,
         "sides": [
           {
@@ -6853,7 +6853,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "d5394dd0",
+        "stateHash": "cfeb08e8",
         "events": 71,
         "sides": [
           {
@@ -6979,7 +6979,7 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "73cb71d4",
+        "stateHash": "c8a8d744",
         "events": 27,
         "sides": [
           {
@@ -7105,7 +7105,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "99dfa97a",
+        "stateHash": "ec0ffba2",
         "events": 47,
         "sides": [
           {
@@ -7225,7 +7225,7 @@
           {
             "op": "placeFromStash",
             "actor": 1,
-            "id": 4,
+            "id": 3,
             "x": 14,
             "y": 2,
             "rotation": 0
@@ -7239,7 +7239,7 @@
           {
             "op": "placeFromStash",
             "actor": 1,
-            "id": 5,
+            "id": 4,
             "x": 14,
             "y": 6,
             "rotation": 0
@@ -7248,11 +7248,11 @@
             "op": "addConduit",
             "actor": 1,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": [
@@ -7279,7 +7279,7 @@
           {
             "op": "placeFromStash",
             "actor": 2,
-            "id": 7,
+            "id": 5,
             "x": 26,
             "y": 2,
             "rotation": 0
@@ -7293,7 +7293,7 @@
           {
             "op": "placeFromStash",
             "actor": 2,
-            "id": 8,
+            "id": 6,
             "x": 26,
             "y": 6,
             "rotation": 0
@@ -7301,66 +7301,66 @@
           {
             "op": "addConduit",
             "actor": 2,
+            "from": {
+              "building": 5,
+              "side": "north"
+            },
+            "to": {
+              "building": 6,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 26,
+                "y": 3
+              },
+              {
+                "x": 26,
+                "y": 4
+              },
+              {
+                "x": 26,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 7,
+            "x": 38,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 8,
+            "x": 38,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 3,
             "from": {
               "building": 7,
               "side": "north"
             },
             "to": {
               "building": 8,
-              "side": "south"
-            },
-            "cells": [
-              {
-                "x": 26,
-                "y": 3
-              },
-              {
-                "x": 26,
-                "y": 4
-              },
-              {
-                "x": 26,
-                "y": 5
-              }
-            ]
-          },
-          {
-            "op": "addToStash",
-            "def": "bld_extractor",
-            "tier": 3,
-            "owner": 3
-          },
-          {
-            "op": "placeFromStash",
-            "actor": 3,
-            "id": 10,
-            "x": 38,
-            "y": 2,
-            "rotation": 0
-          },
-          {
-            "op": "addToStash",
-            "def": "bld_barracks",
-            "tier": 3,
-            "owner": 3
-          },
-          {
-            "op": "placeFromStash",
-            "actor": 3,
-            "id": 11,
-            "x": 38,
-            "y": 6,
-            "rotation": 0
-          },
-          {
-            "op": "addConduit",
-            "actor": 3,
-            "from": {
-              "building": 10,
-              "side": "north"
-            },
-            "to": {
-              "building": 11,
               "side": "south"
             },
             "cells": [
@@ -7500,7 +7500,7 @@
           {
             "op": "placeFromStash",
             "actor": 1,
-            "id": 4,
+            "id": 3,
             "x": 14,
             "y": 2,
             "rotation": 0
@@ -7514,7 +7514,7 @@
           {
             "op": "placeFromStash",
             "actor": 1,
-            "id": 5,
+            "id": 4,
             "x": 14,
             "y": 6,
             "rotation": 0
@@ -7523,11 +7523,11 @@
             "op": "addConduit",
             "actor": 1,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": [
@@ -7554,7 +7554,7 @@
           {
             "op": "placeFromStash",
             "actor": 2,
-            "id": 7,
+            "id": 5,
             "x": 26,
             "y": 2,
             "rotation": 0
@@ -7568,7 +7568,7 @@
           {
             "op": "placeFromStash",
             "actor": 2,
-            "id": 8,
+            "id": 6,
             "x": 26,
             "y": 6,
             "rotation": 0
@@ -7576,66 +7576,66 @@
           {
             "op": "addConduit",
             "actor": 2,
+            "from": {
+              "building": 5,
+              "side": "north"
+            },
+            "to": {
+              "building": 6,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 26,
+                "y": 3
+              },
+              {
+                "x": 26,
+                "y": 4
+              },
+              {
+                "x": 26,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 7,
+            "x": 38,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 8,
+            "x": 38,
+            "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 3,
             "from": {
               "building": 7,
               "side": "north"
             },
             "to": {
               "building": 8,
-              "side": "south"
-            },
-            "cells": [
-              {
-                "x": 26,
-                "y": 3
-              },
-              {
-                "x": 26,
-                "y": 4
-              },
-              {
-                "x": 26,
-                "y": 5
-              }
-            ]
-          },
-          {
-            "op": "addToStash",
-            "def": "bld_extractor",
-            "tier": 3,
-            "owner": 3
-          },
-          {
-            "op": "placeFromStash",
-            "actor": 3,
-            "id": 10,
-            "x": 38,
-            "y": 2,
-            "rotation": 0
-          },
-          {
-            "op": "addToStash",
-            "def": "bld_barracks",
-            "tier": 3,
-            "owner": 3
-          },
-          {
-            "op": "placeFromStash",
-            "actor": 3,
-            "id": 11,
-            "x": 38,
-            "y": 6,
-            "rotation": 0
-          },
-          {
-            "op": "addConduit",
-            "actor": 3,
-            "from": {
-              "building": 10,
-              "side": "north"
-            },
-            "to": {
-              "building": 11,
               "side": "south"
             },
             "cells": [
@@ -7712,7 +7712,7 @@
     "expected": {
       "result": {
         "tick": 1200,
-        "stateHash": "82c6a88f",
+        "stateHash": "b7edc55b",
         "events": 2766,
         "sides": [
           {
@@ -7733,7 +7733,7 @@
           }
         ]
       },
-      "eventLogHash": "b3c85751"
+      "eventLogHash": "60a169dd"
     }
   },
   {
@@ -7839,7 +7839,7 @@
           {
             "op": "placeFromStash",
             "actor": 1,
-            "id": 4,
+            "id": 3,
             "x": 14,
             "y": 2,
             "rotation": 0
@@ -7853,7 +7853,7 @@
           {
             "op": "placeFromStash",
             "actor": 1,
-            "id": 5,
+            "id": 4,
             "x": 14,
             "y": 6,
             "rotation": 0
@@ -7862,11 +7862,11 @@
             "op": "addConduit",
             "actor": 1,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": [
@@ -8309,7 +8309,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "f1baef4d",
+        "stateHash": "c8b18b3a",
         "events": 631,
         "sides": [
           {
@@ -8330,7 +8330,7 @@
           }
         ]
       },
-      "eventLogHash": "451ab7b2"
+      "eventLogHash": "fe11c078"
     }
   },
   {
@@ -8436,7 +8436,7 @@
           {
             "op": "placeFromStash",
             "actor": 1,
-            "id": 4,
+            "id": 3,
             "x": 14,
             "y": 2,
             "rotation": 0
@@ -8450,7 +8450,7 @@
           {
             "op": "placeFromStash",
             "actor": 1,
-            "id": 5,
+            "id": 4,
             "x": 14,
             "y": 6,
             "rotation": 0
@@ -8459,11 +8459,11 @@
             "op": "addConduit",
             "actor": 1,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": [
@@ -8892,7 +8892,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "a876e67f",
+        "stateHash": "2dc9c4cd",
         "events": 985,
         "sides": [
           {
@@ -8913,7 +8913,7 @@
           }
         ]
       },
-      "eventLogHash": "085f732a"
+      "eventLogHash": "211d68ea"
     }
   },
   {
@@ -9019,7 +9019,7 @@
           {
             "op": "placeFromStash",
             "actor": 1,
-            "id": 4,
+            "id": 3,
             "x": 14,
             "y": 2,
             "rotation": 0
@@ -9033,7 +9033,7 @@
           {
             "op": "placeFromStash",
             "actor": 1,
-            "id": 5,
+            "id": 4,
             "x": 14,
             "y": 6,
             "rotation": 0
@@ -9042,11 +9042,11 @@
             "op": "addConduit",
             "actor": 1,
             "from": {
-              "building": 4,
+              "building": 3,
               "side": "north"
             },
             "to": {
-              "building": 5,
+              "building": 4,
               "side": "south"
             },
             "cells": [
@@ -9174,7 +9174,7 @@
     "expected": {
       "result": {
         "tick": 900,
-        "stateHash": "e5bd0a8a",
+        "stateHash": "feb25ffa",
         "events": 756,
         "sides": [
           {
@@ -9195,7 +9195,7 @@
           }
         ]
       },
-      "eventLogHash": "cc89a169"
+      "eventLogHash": "f9a8da0f"
     }
   },
   {
@@ -9260,7 +9260,7 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "a3253cb6",
+        "stateHash": "23ea7b3a",
         "events": 48,
         "sides": [
           {
@@ -9411,7 +9411,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "1e12735e",
+        "stateHash": "b62fa82c",
         "events": 46,
         "sides": [
           {
@@ -9513,7 +9513,7 @@
     "expected": {
       "result": {
         "tick": 200,
-        "stateHash": "bca9d9ba",
+        "stateHash": "d8eacb7e",
         "events": 32,
         "sides": [
           {
@@ -9886,7 +9886,7 @@
     "expected": {
       "result": {
         "tick": 500,
-        "stateHash": "71e1bba1",
+        "stateHash": "3a44e1d9",
         "events": 224,
         "sides": [
           {
@@ -9999,7 +9999,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 4,
+            "id": 3,
             "x": 1,
             "y": 5,
             "rotation": 0
@@ -10013,9 +10013,23 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 5,
+            "id": 4,
             "x": 1,
             "y": 6,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 4,
+            "y": 5,
             "rotation": 0
           },
           {
@@ -10029,20 +10043,6 @@
             "actor": 0,
             "id": 6,
             "x": 4,
-            "y": 5,
-            "rotation": 0
-          },
-          {
-            "op": "addToStash",
-            "def": "bld_wall",
-            "tier": 1,
-            "owner": 0
-          },
-          {
-            "op": "placeFromStash",
-            "actor": 0,
-            "id": 7,
-            "x": 4,
             "y": 6,
             "rotation": 0
           },
@@ -10055,7 +10055,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 8,
+            "id": 7,
             "x": 2,
             "y": 7,
             "rotation": 0
@@ -10069,7 +10069,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 9,
+            "id": 8,
             "x": 3,
             "y": 7,
             "rotation": 0
@@ -10083,7 +10083,7 @@
           {
             "op": "placeFromStash",
             "actor": 0,
-            "id": 10,
+            "id": 9,
             "x": 3,
             "y": 4,
             "rotation": 0
@@ -10112,7 +10112,7 @@
     "expected": {
       "result": {
         "tick": 1500,
-        "stateHash": "e6922288",
+        "stateHash": "781a8334",
         "events": 291,
         "sides": [
           {
@@ -10461,7 +10461,7 @@
     "expected": {
       "result": {
         "tick": 400,
-        "stateHash": "25a40d7b",
+        "stateHash": "0a302bcf",
         "events": 83,
         "sides": [
           {
@@ -10757,7 +10757,7 @@
     "expected": {
       "result": {
         "tick": 300,
-        "stateHash": "33beadb2",
+        "stateHash": "75c4c89c",
         "events": 32,
         "sides": [
           {

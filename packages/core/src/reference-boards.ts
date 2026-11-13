@@ -82,7 +82,6 @@ class Script {
         if (x === p[0] && y === p[1]) break;
       }
     });
-    this.nextId += 1;
     this.ops.push({
       op: 'addConduit',
       actor: 0,

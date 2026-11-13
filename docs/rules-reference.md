@@ -117,7 +117,8 @@ are the only statement of them:
   `invalid_owner`, `not_owner`, in that order.
 - Conduits: see "`addConduit` rules and their order" (`unknown_building`,
   `not_owner` for an end building that `actor` does not own, an `actor` that
-  is no player included, then the geometry rules, `outside_own_plot` among
+  is no player included, preceded by `invalid_conduit_id` when an explicit
+  `id` is given, then the geometry rules, `outside_own_plot` among
   them) and `eraseConduit` (`unknown_conduit`, `invalid_owner`, `not_owner`).
   `detachConduits` is unchanged: every conduit attached to a moved or returned
   building belongs to that building's owner.
@@ -135,7 +136,7 @@ takes its `actor` in the argument object: `placeFromStash(state, content, {
 actor, id, x, y, rotation })`, `moveBuilding(state, content, { actor, id, x, y,
 rotation })`, `returnToStash(state, content, { actor, id })`,
 `removeFromStash(state, { actor, id })`, `addConduit(state, content, { actor,
-from, to, cells })`, `eraseConduit(state, { actor, id })`.
+from, to, cells, id? })`, `eraseConduit(state, { actor, id, reclaimId? })`.
 
 ### PP-2. One Core per player
 
@@ -290,7 +291,10 @@ player and layout only (RS-5g): undoing the removal of a half adds it again
 with the checks above, and if that is now rejected the undo is refused with
 the same reason and the player's history is left as it was (the web client
 checks the whole inverse first, so a refusal changes nothing). Undo restores
-the previous team state exactly, including conduit IDs and `nextId`.
+the previous team state exactly, including conduit IDs and the counters
+(`nextId`, `nextConduitId`). Every player has their own conduit ID space (see
+Conduits, "Conduit IDs"), so what a teammate does in between never takes an ID
+an undo needs: an undo is never refused over IDs.
 
 **Validation.** `validateTeamState` checks every half with the rules above,
 at most one half per player per spot, and no mismatch or loop on the joined
@@ -1224,7 +1228,7 @@ never changes its input.
 ### Format (plain JSON, `schemas/team-state.schema.json`)
 
 ```
-{ map, cores, buildings, stash, nextId, conduits, modifiers? }
+{ map, cores, buildings, stash, nextId, nextConduitId, conduits, modifiers? }
 ```
 
 - `map`: the map format above.
@@ -1246,8 +1250,11 @@ never changes its input.
   `nextId` by `addToStash`, and are never reused (not even after
   `removeFromStash`). A building keeps its ID when it moves between `stash`
   and `buildings`.
+- `nextConduitId`: one counter per player, a list of exactly `partySize`
+  positive integers, each starting at 1: the number `n` of that player's next
+  conduit ID (see Conduits, "Conduit IDs"). Conduits no longer use `nextId`.
 - `conduits`: conduits `{ id, from, to, cells }`, sorted by `id` (see
-  Conduits). Their `id` comes from the same counter as building IDs.
+  Conduits). Their `id` is in the owner's own ID space, not the building one.
 
 - `modifiers` (optional): run modifiers `{ id, effects }` taken so far; omitted
   when there are none. See "PvE options, rewards, events and run modifiers".
@@ -1256,7 +1263,8 @@ Buildings of kind `core` never appear in `buildings` or `stash`.
 
 **Canonical order.** `buildings` and `stash` are each sorted by ascending
 `id`, so one state always serialises identically (and hashes identically).
-`createTeamState(map)` gives an empty state with `nextId` 1.
+`createTeamState(map)` gives an empty state with `nextId` 1 and every
+`nextConduitId` entry 1.
 
 ### Rotation, footprint cells and sides
 
@@ -1375,10 +1383,11 @@ map with `loadMap`; the Core position with `validateCorePosition` when placed;
 every entry's `id` (positive integer), `def` (known, never kind `core`), `tier`
 (1 to 3), `owner` (in range) and, for placed buildings, integer `x`, `y` and a
 legal `rotation`; IDs unique across `buildings` and `stash`; both lists sorted
-by ascending `id`; `nextId` greater than every ID (building, stash and conduit); and every
+by ascending `id`; `nextId` greater than every building and stash ID; and every
 placement rule above for every building (each against the Core and all other
-placed buildings); then every conduit (shape, unique ID shared with buildings
-and stash, canonical order, each conduit's geometry rules against all the other
+placed buildings); then every conduit (shape, unique ID among conduits, each ID decoding to
+the conduit's `owner`, canonical order, `nextConduitId` a list of `partySize`
+positive integers each above the largest number `n` of that owner's conduits, each conduit's geometry rules against all the other
 conduits, no two conduits on one side, no loop, no resource mismatch; see
 Conduits). It does not check that the map is one the generator could produce.
 
@@ -1422,8 +1431,9 @@ cells }` (`schemas/team-state.schema.json`):
   (PP-1). An ordinary conduit joins two buildings of its owner; a border half
   (PP-4) has one building end, of its owner. Every path cell lies in its
   owner's plot. Only the owner erases it.
-- `id`: a unique positive integer taken from `nextId`, the same counter as
-  buildings, and never reused. `addConduit` assigns it and increments `nextId`.
+- `id`: a unique positive integer in the owner's own ID space (below, "Conduit
+  IDs"); it may equal a building ID. `addConduit` assigns it from the owner's
+  counter `nextConduitId[owner]` and increments that counter.
 - `from.building`, `to.building`: instance IDs of **placed** buildings (never
   the Core, which has no ID).
 - `side`: an absolute side (`north`, `east`, `south`, `west`) of that building
@@ -1474,10 +1484,14 @@ cell is outside an edge of the `from` side and the last outside an edge of the
 
 ### `addConduit` rules and their order
 
-`addConduit(state, content, { actor, from, to, cells })` returns `{ ok: true, state, id }`
+`addConduit(state, content, { actor, from, to, cells, id? })` returns `{ ok: true, state, id }`
 or `{ ok: false, reason, detail? }`. The rules are checked in this fixed order
 and the first failing rule is the reported reason:
 
+0. `invalid_conduit_id`: only when an explicit `id` is given (undo re-adds a
+   conduit under the ID it had). It must decode to `actor`, with a number `n`
+   of at least 1 and below `nextConduitId[actor]`, and no conduit may have it.
+   The counter is left unchanged.
 1. `unknown_building`: either end is not a placed building (an unknown ID, a
    stashed building, or the Core).
 2. `not_owner`: an end building is not owned by `actor` (`from` checked before
@@ -1502,9 +1516,20 @@ A conduit may run over a resource node cell (it blocks that node while it is
 there, since `placeFromStash` and `moveBuilding` reject `overlaps_conduit`;
 conduits are free to erase). A rejected operation changes nothing.
 
-Other operations: `eraseConduit(state, { actor, id })` removes one conduit
-(reasons, in order: `unknown_conduit`, `invalid_owner`, `not_owner`; only the
-conduit's owner erases it); the ID is never reused. `detachConduits` is described under
+**Conduit IDs.** Every player has their own conduit ID space, so one player's
+adds, erases and undos can never touch another player's IDs. The ID of a
+player's `n`th conduit (`n` from 1) is `n * 4 + owner`, where 4 is the
+largest party size (`maxPartySize` in `mapgen.json`; the constant is
+`MAX_PARTY_SIZE` in `conduit-ids.ts`, with a test that it covers the content).
+A solo player's conduits are 4, 8, 12, ... Buildings and stash entries keep
+the shared `nextId`.
+
+Other operations: `eraseConduit(state, { actor, id, reclaimId? })` removes one
+conduit (reasons, in order: `unknown_conduit`, `invalid_owner`, `not_owner`;
+only the conduit's owner erases it); an erased ID is not handed out again,
+except with `reclaimId` (undo of an add): if the conduit's number is one below
+its owner's counter, that counter goes back by one, otherwise the counters are
+left alone. `detachConduits` is described under
 Team state and placement. Placement and moving respect conduits:
 `placeFromStash`, `moveBuilding` and `placeCore` reject `overlaps_conduit` when
 a footprint cell is a conduit cell (rule 7 there; for `placeCore` after

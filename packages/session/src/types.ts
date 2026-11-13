@@ -50,9 +50,9 @@ export type Step = (typeof STEPS)[number];
  * version 5 is the per-player design (issue #124: `cores` in place of `core`, and an
  * `owner` on every conduit); version 6 lets a conduit end in the team state be a
  * border spot (halves of border links, PP-4); version 7 has no Core vote; version 8
- * stores PvE threats with one Core per plot (`stronghold.cores`, PP-14). Older states are not readable.
+ * stores PvE threats with one Core per plot (`stronghold.cores`, PP-14); version 8 had one shared ID counter for conduits and buildings, version 9 gives each player their own conduit ID space (`nextConduitId`, issue #38). Older states are not readable.
  */
-export const RUN_STATE_FORMAT_VERSION = 8;
+export const RUN_STATE_FORMAT_VERSION = 9;
 
 /**
  * Steps a saved state can never be in. `pve_battle` and `pvp_battle` are
@@ -179,7 +179,7 @@ export interface RunState {
   readonly runId: string;
   readonly runVersion: string;
   /** `RUN_STATE_FORMAT_VERSION`; a state of another version is rejected. */
-  readonly formatVersion: 8;
+  readonly formatVersion: 9;
   readonly seed: number;
   /** The saved state of the run's `Rng`. */
   readonly rng: readonly [number, number, number, number];

@@ -126,7 +126,7 @@ describe('joining', () => {
     expect(graph.edges).toHaveLength(1);
     const edge = graph.edges[0];
     expect(edge).toMatchObject({
-      conduitId: 3,
+      conduitId: 4,
       linkedConduit: recv,
       from: String(src),
       to: String(cons),
@@ -138,7 +138,7 @@ describe('joining', () => {
     const consumer = graph.nodes.find((n) => n.building === cons);
     expect(consumer?.inputs[0]?.conduit).toBe(recv);
     expect(conduitResource(lab.state, content, recv)).toBe('res_a');
-    expect(conduitResource(lab.state, content, 3)).toBe('res_a');
+    expect(conduitResource(lab.state, content, 4)).toBe('res_a');
   });
 
   test('resources arrive after the combined conduit length, like one conduit', () => {
@@ -214,7 +214,7 @@ describe('open halves', () => {
     const out = buildFlowGraph(lab.state, content).nodes.find(
       (n) => n.building === src,
     );
-    expect(out?.outputs[0]).toEqual({ side: 'north', conduit: 3, open: true });
+    expect(out?.outputs[0]).toEqual({ side: 'north', conduit: 4, open: true });
 
     // Two sending halves at one spot stay open.
     const two = twoPlots([
@@ -239,7 +239,7 @@ describe('open halves', () => {
       (n) => n.building === cons,
     );
     expect(node?.inputs[0]?.conduit).toBeNull();
-    expect(conduitResource(lab.state, content, 3)).toBeNull();
+    expect(conduitResource(lab.state, content, 4)).toBeNull();
   });
 
   test('a splitter with an open half and a consumer sends everything to the consumer', () => {
@@ -411,17 +411,17 @@ describe('erasing', () => {
     const { lab, cons } = linkedBoard();
     const recv = add(lab, 1, spot(3), side(cons, 'south'), receivingPath());
     expect(buildFlowGraph(lab.state, content).edges).toHaveLength(1);
-    const wrong = eraseConduit(lab.state, { actor: 1, id: 3 });
+    const wrong = eraseConduit(lab.state, { actor: 1, id: 4 });
     expect(wrong).toEqual({ ok: false, reason: 'not_owner' });
     const bad0 = eraseConduit(lab.state, { actor: 0, id: recv });
     expect(bad0).toEqual({ ok: false, reason: 'not_owner' });
     const gone = eraseConduit(lab.state, { actor: 1, id: recv });
     if (!gone.ok) throw new Error(gone.reason);
-    expect(gone.state.conduits.map((c) => c.id)).toEqual([3]);
+    expect(gone.state.conduits.map((c) => c.id)).toEqual([4]);
     const graph = buildFlowGraph(gone.state, content);
     expect(graph.edges).toEqual([]);
     expect(graph.nodes[0]?.outputs[0]?.open).toBe(true);
-    const gone0 = eraseConduit(lab.state, { actor: 0, id: 3 });
+    const gone0 = eraseConduit(lab.state, { actor: 0, id: 4 });
     if (!gone0.ok) throw new Error(gone0.reason);
     expect(gone0.state.conduits.map((c) => c.id)).toEqual([recv]);
     expect(validateTeamState(gone0.state, content, mapgen).ok).toBe(true);
