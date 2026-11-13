@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest';
 import { economy, simConfig } from './setup.js';
 import { content } from '../content.js';
 import { realDeps, reachStep } from '../run/test-run.js';
+import { loadShopRun } from '../run/shop-run.js';
 import { buildShopView, type ShopContext } from '../shop/view-model.js';
 import { READY_LOCK_TEXT, SEALED_HINT, gateFor, sealedInfo } from './lock.js';
 
@@ -14,11 +15,12 @@ function put(
   def: string,
   x: number,
   y: number,
+  owner = 0,
 ): { team: TeamState; id: number } {
-  const a = addToStash(team, content, { def, tier: 1, owner: 0 });
+  const a = addToStash(team, content, { def, tier: 1, owner });
   if (!a.ok) throw new Error(a.reason);
   const p = placeFromStash(a.state, content, {
-    actor: 0,
+    actor: owner,
     id: a.id,
     x,
     y,
@@ -30,7 +32,10 @@ function put(
 }
 
 /** A barracks in a board corner closed in by four walls (first corner that is free). */
-function walledIn(run: RunState): { run: RunState; barracks: number } {
+function walledIn(
+  run: RunState,
+  owner = 0,
+): { run: RunState; barracks: number } {
   const w = run.team.map.width;
   const clear: TeamState = {
     ...run.team,
@@ -58,9 +63,9 @@ function walledIn(run: RunState): { run: RunState; barracks: number } {
   ] as const;
   for (const c of corners) {
     try {
-      const b = put(clear, 'bld_barracks', c.bx, 0);
+      const b = put(clear, 'bld_barracks', c.bx, 0, owner);
       let team = b.team;
-      for (const [x, y] of c.sides) team = put(team, 'bld_wall', x, y).team;
+      for (const [x, y] of c.sides) team = put(team, 'bld_wall', x, y, owner).team;
       return { run: { ...run, team }, barracks: b.id };
     } catch {
       // This corner is taken (the Core); try the other one.
@@ -111,6 +116,27 @@ describe('sealed producers', () => {
     expect(i2.reason).toMatch(/ are walled in\./);
     expect(i2.reason).not.toMatch(/ is walled in/);
     expect(i2.reason).toContain(i2.labels.join(', '));
+  });
+
+  test('with two players, only the owner of a sealed producer is blocked', async () => {
+    const two = (await loadShopRun({ storage: null, players: 2 })).session.run;
+    expect(two.perPlayer).toHaveLength(2);
+    // Player 2's plot is the right half: its corner is the one that is free.
+    const { run, barracks } = walledIn(two, 1);
+    expect(run.team.buildings.find((b) => b.id === barracks)?.owner).toBe(1);
+    const first = sealedInfo(run, realDeps(), content, 0);
+    expect(first.ids).toEqual([]);
+    expect(first.labels).toEqual([]);
+    expect(first.reason).toBeNull();
+    const second = sealedInfo(run, realDeps(), content, 1);
+    expect(second.ids).toEqual([barracks]);
+    expect(second.reason).toContain('Ready is blocked');
+    expect(second.reason).toContain(SEALED_HINT);
+    // The gate agrees: player 1 may press Ready, player 2 may not.
+    expect(gateFor(run, 0, realDeps(), content).readyBlock).toBeNull();
+    expect(gateFor(run, 1, realDeps(), content).readyBlock).toBe(
+      second.reason,
+    );
   });
 
   test('Ready is blocked on the Shop view and the gate, and the session agrees', () => {
