@@ -9,6 +9,7 @@ import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { navigate } from '../app-state.js';
 import { BoardView } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
+import { screenText, screenTexts } from '../build/texts.js';
 import { content } from '../content.js';
 import { clearRunTicks } from '../battle/run-battle.js';
 import { registerDebug, unregisterDebug } from '../debug-hook.js';
@@ -21,6 +22,7 @@ import {
   bestView,
   factoryCounts,
   headline,
+  resultText,
   roundRows,
   runStats,
 } from './view-model.js';
@@ -32,7 +34,10 @@ camera.refitOnResize = true;
 function Tally(props: { won: number; lost: number }) {
   return (
     <span>
-      {props.won} won · {props.lost} lost
+      {screenText(screenTexts, 'runOverTally', {
+        won: String(props.won),
+        lost: String(props.lost),
+      })}
     </span>
   );
 }
@@ -112,7 +117,10 @@ export function RunOverScreen(props: {
   };
 
   return (
-    <AppShell title="Run over" status={<span class="muted">{names}</span>}>
+    <AppShell
+      title={screenText(screenTexts, 'runOverTitle')}
+      status={<span class="muted">{names}</span>}
+    >
       <div class="run-over" id="run-over">
         <section class="panel over-head">
           <div>
@@ -133,41 +141,55 @@ export function RunOverScreen(props: {
         </section>
 
         <div class="over-grid">
-          <Panel title="This run" id="panel-this-run">
+          <Panel
+            title={screenText(screenTexts, 'runOverPanelThisRun')}
+            id="panel-this-run"
+          >
             <dl class="stats">
-              <dt>PvP battles</dt>
+              <dt>{screenText(screenTexts, 'runOverStatPvp')}</dt>
               <dd data-field="pvp">
                 <Tally {...stats.pvp} />
               </dd>
-              <dt class="sub">vs. ghosts</dt>
+              <dt class="sub">
+                {screenText(screenTexts, 'runOverStatGhosts')}
+              </dt>
               <dd>
                 <Tally {...stats.pvpGhosts} />
               </dd>
-              <dt class="sub">vs. bosses</dt>
+              <dt class="sub">
+                {screenText(screenTexts, 'runOverStatBosses')}
+              </dt>
               <dd>
                 <Tally {...stats.pvpBosses} />
               </dd>
-              <dt>PvE battles</dt>
+              <dt>{screenText(screenTexts, 'runOverStatPve')}</dt>
               <dd data-field="pve">
                 <Tally {...stats.pve} />
               </dd>
-              <dt class="sub">by difficulty</dt>
+              <dt class="sub">
+                {screenText(screenTexts, 'runOverStatByDifficulty')}
+              </dt>
               <dd>
-                {(['easy', 'medium', 'hard'] as const)
-                  .map((d) => `${d} ${String(stats.pveByDifficulty[d] ?? 0)}`)
-                  .join(' · ')}
+                {screenText(screenTexts, 'runOverByDifficultyCounts', {
+                  easy: String(stats.pveByDifficulty.easy ?? 0),
+                  medium: String(stats.pveByDifficulty.medium ?? 0),
+                  hard: String(stats.pveByDifficulty.hard ?? 0),
+                })}
               </dd>
-              <dt>Lives lost</dt>
+              <dt>{screenText(screenTexts, 'runOverStatLivesLost')}</dt>
               <dd data-field="lives-lost">
                 <SpriteIcon name="ui_icon_heart" scale={1} class="bar-icon" />
                 {stats.livesLost}
               </dd>
-              <dt>Version</dt>
+              <dt>{screenText(screenTexts, 'runOverStatVersion')}</dt>
               <dd>{state.runVersion}</dd>
             </dl>
           </Panel>
 
-          <Panel title="Final factory" id="panel-final-factory">
+          <Panel
+            title={screenText(screenTexts, 'runOverPanelFactory')}
+            id="panel-final-factory"
+          >
             <div class="final-board" id="final-factory">
               <BoardView
                 content={content}
@@ -179,23 +201,34 @@ export function RunOverScreen(props: {
               />
             </div>
             <p class="muted" data-field="factory-counts">
-              {counts.buildings}{' '}
-              {counts.buildings === 1 ? 'building' : 'buildings'} placed ·{' '}
-              {counts.atTier3} at tier 3 · {counts.stash} in stash
+              {screenText(
+                screenTexts,
+                counts.buildings === 1
+                  ? 'runOverFactoryCountsOne'
+                  : 'runOverFactoryCountsMany',
+                {
+                  count: String(counts.buildings),
+                  tier: String(counts.atTier3),
+                  stash: String(counts.stash),
+                },
+              )}
             </p>
           </Panel>
 
-          <Panel title="Round by round" id="panel-rounds">
+          <Panel
+            title={screenText(screenTexts, 'runOverPanelRounds')}
+            id="panel-rounds"
+          >
             {rows.length === 0 ? (
-              <p class="muted">No battle was fought.</p>
+              <p class="muted">{screenText(screenTexts, 'runOverNoBattle')}</p>
             ) : (
               <table class="rounds" id="round-table">
                 <thead>
                   <tr>
-                    <th>#</th>
-                    <th>PvE</th>
+                    <th>{screenText(screenTexts, 'runOverColRound')}</th>
+                    <th>{screenText(screenTexts, 'runOverColPve')}</th>
                     <th />
-                    <th>PvP opponent</th>
+                    <th>{screenText(screenTexts, 'runOverColPvp')}</th>
                     <th />
                   </tr>
                 </thead>
@@ -204,9 +237,9 @@ export function RunOverScreen(props: {
                     <tr key={r.round} data-round={r.round}>
                       <td>{r.round}</td>
                       <td>{r.pve}</td>
-                      <td class={r.pveResult}>{r.pveResult}</td>
+                      <td class={r.pveResult}>{resultText(r.pveResult)}</td>
                       <td>{r.pvp}</td>
-                      <td class={r.pvpResult}>{r.pvpResult}</td>
+                      <td class={r.pvpResult}>{resultText(r.pvpResult)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -224,7 +257,7 @@ export function RunOverScreen(props: {
               disabled={starting}
               onClick={newRun}
             >
-              New run
+              {screenText(screenTexts, 'runOverNewRun')}
             </button>
             <button
               type="button"
@@ -233,7 +266,7 @@ export function RunOverScreen(props: {
                 navigate('#/');
               }}
             >
-              Main menu
+              {screenText(screenTexts, 'runOverMainMenu')}
             </button>
           </div>
           {error === null ? null : (
@@ -241,10 +274,7 @@ export function RunOverScreen(props: {
               {error}
             </p>
           )}
-          <p class="muted">
-            The run leaves your saved runs. Its depth is kept in your records.
-            Nothing else carries over to the next run.
-          </p>
+          <p class="muted">{screenText(screenTexts, 'runOverNote')}</p>
         </section>
       </div>
     </AppShell>
