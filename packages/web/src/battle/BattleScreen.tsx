@@ -340,7 +340,8 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
     pb.finished ? 'summary' : 'playing',
   );
   const [, setFrame] = useState(0);
-  const [ready, setReady] = useState(false);
+  const [readyLocal, setReady] = useState(false);
+  const ready = props.ready ?? readyLocal;
   const camera = useMemo(() => {
     // Starts at the centre of the map (the neutral zone); "Fit battle" is a
     // preset. A resize re-centres until the user pans or zooms.
@@ -486,13 +487,19 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
     props.onTick?.(0);
     setPhase('playing');
   };
-  const gate = useRef<(() => void) | null>(null);
-  gate.current ??= createReadyGate(
-    () => latest.current.props.onReady(),
-    setReady,
-  );
+  // One gate per acting player: another player's Ready is a new press.
+  const gate = useRef<{
+    readonly acting: number | undefined;
+    readonly press: () => void;
+  } | null>(null);
+  if (gate.current === null || gate.current.acting !== props.acting) {
+    gate.current = {
+      acting: props.acting,
+      press: createReadyGate(() => latest.current.props.onReady(), setReady),
+    };
+  }
   const onReady = (): void => {
-    gate.current?.();
+    gate.current?.press();
   };
   const onFocus = (m: Moment): void => {
     if (m.focus !== null) camera.focusAt(m.focus);

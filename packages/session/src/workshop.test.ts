@@ -3,6 +3,7 @@ import { Rng, tierPrice, workshopOptions, workshopPrice } from '@game/core';
 import { fixedBattle } from './defaults.js';
 import { defaultEventHandlers, eventHooks } from './events.js';
 import { applyIntent, createRun, replayRun } from './machine.js';
+import { buildSaveRecord, parseSaveRecord } from './save.js';
 import { allowedIntents, eventFollowUp } from './selectors.js';
 import {
   content,
@@ -240,6 +241,50 @@ describe('Workshop, two players', () => {
     // No party vote and no random draw.
     expect(last.effects.some((e) => e.type === 'vote_resolved')).toBe(false);
     roundTrips(next);
+  });
+
+  test('a save taken mid-choice (one player chosen, one not) restores to the same follow-up state', () => {
+    const s = workshopStep(players, [100, 100]);
+    const a = mineOf(s, 0)[1] as Opt;
+    const b = mineOf(s, 1)[0] as Opt;
+    const mid = ok(
+      s,
+      0,
+      { type: 'event_choose', choice: a['id'] as string },
+      deps,
+    ).state;
+    // Through the save record and JSON, as a reload does.
+    const record = buildSaveRecord(runArgs(players, 7), mid, '1.0.0', 1);
+    const parsed = parseSaveRecord(JSON.parse(JSON.stringify(record)), deps);
+    if (!parsed.ok) throw new Error(parsed.errors.join('; '));
+    const back = parsed.record.state;
+    expect(back).toEqual(mid);
+    expect(back.step).toBe('event_resolve');
+    for (const player of [0, 1]) {
+      expect(eventFollowUp(back, player)).toEqual(eventFollowUp(mid, player));
+      expect(allowedIntents(back, player, deps)).toEqual(
+        allowedIntents(mid, player, deps),
+      );
+    }
+    expect(eventFollowUp(back, 0)?.chosen).toEqual([true, false]);
+    expect(eventFollowUp(back, 0)?.waitingFor).toEqual([1]);
+    // The first choice is still changeable, and the restored run finishes.
+    const changed = ok(
+      back,
+      0,
+      { type: 'event_choose', choice: 'skip' },
+      deps,
+    ).state;
+    expect(changed.step).toBe('event_resolve');
+    const done = ok(
+      changed,
+      1,
+      { type: 'event_choose', choice: b['id'] as string },
+      deps,
+    ).state;
+    expect(done.step).toBe('shop');
+    expect(tierOf(done, a['building'] as number)).toBe(a['tier']);
+    expect(tierOf(done, b['building'] as number)).toBe(b['newTier']);
   });
 
   test('a choice can be changed until the last player has chosen', () => {

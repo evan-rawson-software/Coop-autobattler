@@ -53,6 +53,12 @@ export interface BattleViewProps {
    */
   readonly onReady: () => Promise<boolean>;
   /**
+   * Whether the viewing player is Ready, as the run holds it. When given it
+   * decides how the Ready button reads, so it survives the screen being
+   * mounted again (a reload) and follows the acting player.
+   */
+  readonly ready?: boolean;
+  /**
    * Resume at this tick (the battle is re-simulated to it). Playback starts
    * revealed when above 0. Read once per battle, when `battle` is simulated:
    * changing it later does not move a battle that is already playing.

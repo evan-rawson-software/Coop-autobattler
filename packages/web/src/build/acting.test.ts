@@ -7,6 +7,7 @@ import { previewActions } from './undo.js';
 import { previewMove, previewPlace } from './ops.js';
 import { BuildSession } from './session.js';
 import { groupStash } from './panels.js';
+import { READY_LOCK_TEXT } from './lock.js';
 
 async function pair(): Promise<BuildSession> {
   return BuildSession.start(7, Date.now, ['Ann', 'Bo']);
@@ -221,7 +222,21 @@ describe('acting player', () => {
     expect(s.run.perPlayer[0]?.ready).toBe(true);
     const team = s.run.team;
     const tool = ctl.model.get().ui.tool;
-    const keys = ['r', 'c', 'e', 'v', 'Escape', 'Backspace', 'Delete'];
+    const rotationOf = (id: number): number | undefined =>
+      s.run.team.buildings.find((b) => b.id === id)?.rotation;
+    const rotation = rotationOf(placed[0] as number);
+    // The tool keys: each says why it did nothing (a bare `r` could also be
+    // refused further down, so the status text and the rotation are both read).
+    for (const key of ['r', 'c', 'e']) {
+      expect(
+        ctl.key({ key, ctrlKey: false, shiftKey: false, metaKey: false }),
+      ).toBe(true);
+      expect(ctl.model.get().ui.status.text).toBe(READY_LOCK_TEXT);
+      expect(ctl.model.get().ui.tool).toBe(tool);
+      expect(ctl.model.get().ui.held).toBeNull();
+      expect(rotationOf(placed[0] as number)).toBe(rotation);
+    }
+    const keys = ['v', 'Escape', 'Backspace', 'Delete'];
     for (const key of keys) {
       ctl.key({ key, ctrlKey: false, shiftKey: false, metaKey: false });
       expect(ctl.model.get().ui.tool).toBe(tool);

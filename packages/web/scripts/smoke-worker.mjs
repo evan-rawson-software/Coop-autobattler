@@ -105,7 +105,7 @@ export async function runWorkerSmoke({ browser, baseUrl, check }) {
       // thread, so the worker run's "no long task" check above can fail when
       // it should. The task spins by wall clock for well over the 100 ms
       // bound, so a fast runner cannot finish it under the bound.
-      const controlMs = 300;
+      const controlMs = slow(300);
       const control = await page.evaluate(async (ms) => {
         const probe = window.__probe;
         const before = probe.longTasks.length;
@@ -128,7 +128,7 @@ export async function runWorkerSmoke({ browser, baseUrl, check }) {
       }, controlMs);
       const fallbackWorst = Math.max(0, ...control);
       check(
-        control.length >= 1 && fallbackWorst > 100,
+        control.length >= 1 && fallbackWorst > slow(100),
         `sim worker (fallback): the long-task observer sees a ${controlMs} ms blocking task (worst ${fallbackWorst.toFixed(0)} ms)`,
       );
       check(
