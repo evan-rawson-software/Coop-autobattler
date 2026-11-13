@@ -16,18 +16,28 @@ export function actingAnnouncement(name: string): string {
 }
 
 /**
+ * What to announce when the acting player is `acting` and was `last` before:
+ * nothing on the first render (`last` is null) or when it did not change.
+ */
+export function announcementOnChange(
+  last: number | null,
+  acting: number,
+  name: string,
+): string | null {
+  return last === null || last === acting ? null : actingAnnouncement(name);
+}
+
+/**
  * A visually hidden live region: empty on first render, then the new acting
  * player's name each time `acting` changes.
  */
 export function ActingAnnouncer(props: { acting: number; name: string }) {
-  const first = useRef(true);
+  const last = useRef<number | null>(null);
   const [message, setMessage] = useState('');
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
-    setMessage(actingAnnouncement(props.name));
+    const next = announcementOnChange(last.current, props.acting, props.name);
+    last.current = props.acting;
+    if (next !== null) setMessage(next);
   }, [props.acting]);
   return (
     <span class="sr-only" aria-live="polite" data-field="acting-announce">
@@ -62,10 +72,6 @@ export function ActingSwitch(props: {
             data-action="act-as"
             data-player={i}
             aria-pressed={i === acting}
-            aria-label={text(
-              isDone(run, i) ? 'uiSwitchLabelDone' : 'uiSwitchLabelToAct',
-              { name: p.name },
-            )}
             onClick={() => props.onActing?.(i)}
           >
             {p.name} {text(isDone(run, i) ? 'uiSwitchDone' : 'uiSwitchToAct')}

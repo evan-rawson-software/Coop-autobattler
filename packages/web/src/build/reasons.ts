@@ -101,9 +101,9 @@ export function reasonMessage(
   detail?: string,
   cause?: SelectionCause,
 ): string {
-  const base: string | undefined = (
-    REASON_MESSAGES as Readonly<Record<string, string>>
-  )[code];
+  const base: string | undefined = Object.hasOwn(REASON_MESSAGES, code)
+    ? (REASON_MESSAGES as Readonly<Record<string, string>>)[code]
+    : undefined;
   const text =
     base ?? screenText(screenTexts, 'reasonUnknown', { reason: code });
   if (code === 'ghost_selection_pending' && cause !== undefined) {

@@ -28,6 +28,7 @@ import { effectText, kindLabel, needsText } from './effect-text.js';
 import { archetypeText } from '../run/display-text.js';
 import { count } from '../plural.js';
 import { gateFor, type Gate, type LockDeps } from '../build/lock.js';
+import { screenText, screenTexts } from '../build/texts.js';
 
 export interface OfferCard {
   readonly slot: number;
@@ -137,7 +138,7 @@ export function buildShopView(
   const lock = (intent: string): string | null =>
     gate === null
       ? me?.ready === true
-        ? 'Ready — press Unready to make changes.'
+        ? screenText(screenTexts, 'readyLock')
         : null
       : gate.ready || !gate.allowed.has(intent)
         ? gate.editBlock

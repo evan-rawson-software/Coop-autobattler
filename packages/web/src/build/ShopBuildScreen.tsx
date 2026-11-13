@@ -11,5 +11,5 @@ export function ShopBuildScreen() {
   useEffect(() => {
     void ensureShopRun(optionsFromUrl(window.location.search));
   }, []);
-  return <RunGate>{(run) => <BuildView shared={run} />}</RunGate>;
+  return <RunGate>{(run) => <BuildView shared={run} standalone />}</RunGate>;
 }

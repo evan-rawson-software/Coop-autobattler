@@ -7,6 +7,7 @@ import {
   ActingAnnouncer,
   ActingSwitch,
   actingAnnouncement,
+  announcementOnChange,
 } from './ActingSwitch.js';
 
 /** Every element of a vnode tree (function components are not run). */
@@ -35,14 +36,25 @@ describe('the acting player switch', () => {
     expect(actingAnnouncement('Bo')).toBe('Now playing as Bo');
   });
 
-  test('has a live region for the announcement and a label per state', () => {
+  test('has a live region and names each button by its visible text', () => {
     const nodes = walk(ActingSwitch({ run, acting: 1, onActing: () => {} }));
     const live = nodes.find((n) => n.type === ActingAnnouncer);
     expect(live?.props).toMatchObject({ acting: 1, name: 'Bo' });
-    const labels = nodes
-      .filter((n) => attr(n, 'data-action') === 'act-as')
-      .map((n) => attr(n, 'aria-label'));
-    expect(labels).toEqual(['Ann: done', 'Bo: still to act']);
+    const buttons = nodes.filter((n) => attr(n, 'data-action') === 'act-as');
+    // An aria-label that differs from the visible text breaks speech input.
+    expect(buttons.map((n) => attr(n, 'aria-label'))).toEqual([
+      undefined,
+      undefined,
+    ]);
+    expect(
+      buttons.map((n) => (n.props.children as unknown[]).join('')),
+    ).toEqual(['Ann (done)', 'Bo (to act)']);
+  });
+
+  test('announces nothing on the first render, then each change', () => {
+    expect(announcementOnChange(null, 0, 'Ann')).toBeNull();
+    expect(announcementOnChange(0, 0, 'Ann')).toBeNull();
+    expect(announcementOnChange(0, 1, 'Bo')).toBe('Now playing as Bo');
   });
 });
 
