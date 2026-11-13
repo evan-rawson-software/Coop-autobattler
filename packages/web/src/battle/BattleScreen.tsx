@@ -51,6 +51,7 @@ import {
   parseSampleHash,
   type SampleSelection,
 } from './samples.js';
+import { screenText, screenTexts } from '../build/texts.js';
 import { overloadLine } from '../choice/overload.js';
 import { simClient, type RecordOutcome } from '../sim-worker/client.js';
 import { CannotShow } from './CannotShow.js';
@@ -59,6 +60,9 @@ import { createReadyGate } from './ready-gate.js';
 import { battleConfig } from './setup.js';
 import type { BattleDescription, BattleViewProps } from './types.js';
 import { REFERENCE_BOARDS } from '@game/core';
+
+const t = (key: string, values: Record<string, string> = {}): string =>
+  screenText(screenTexts, key, values);
 
 /** How long the zone stays hidden before playback begins, in milliseconds. */
 export const INTRO_MS = 1200;
@@ -209,13 +213,15 @@ export function BattleView(props: BattleViewProps) {
       <AppShell title={props.title} status={props.topBarExtra}>
         <div class="battle-preparing" id="battle-mismatch" role="status">
           <h2 class="result-title">
-            <span data-field="result-word">{won ? 'Victory' : 'Defeat'}</span>
-            {' · vs. '}
-            {props.opponent.name}
+            <span data-field="result-word">
+              {t(won ? 'battleVictory' : 'battleDefeat')}
+            </span>
+            {t('battleVsOpponent', { name: props.opponent.name })}
           </h2>
           <p data-field="mismatch">
-            This battle was fought under different rules and cannot be replayed.
-            Result: {won ? 'Victory' : 'Defeat'},{' '}
+            {t('battleMismatch', {
+              result: t(won ? 'battleVictory' : 'battleDefeat'),
+            })}
             <span data-field="reward">{props.reward(won)}</span>
           </p>
           <button
@@ -227,7 +233,7 @@ export function BattleView(props: BattleViewProps) {
               mismatchGate.current?.();
             }}
           >
-            {mismatchReady ? 'Ready ✓' : 'Ready'}
+            {t(mismatchReady ? 'battleReadyDone' : 'battleReady')}
           </button>
         </div>
       </AppShell>
@@ -301,14 +307,16 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
   const foeKind = opponent.kind;
   // The run state's outcome when there is one; the simulation's otherwise.
   const won = props.stored?.won ?? record.result.winner === 0;
-  const foeWord = foeKind === 'ghost' ? 'Enemy' : 'Stronghold';
+  const foeWord = t(
+    foeKind === 'ghost' ? 'battleSideEnemy' : 'battleSideStronghold',
+  );
   const moments = useMemo(
     () =>
       deriveMoments(record, content, {
-        side: ['Your', foeWord],
+        side: [t('battleSideYour'), foeWord],
         coreName: coreNameOf(content),
-        zoneRevealed: 'Neutral zone revealed',
-        overload: 'Overload begins',
+        zoneRevealed: t('battleZoneRevealed'),
+        overload: t('battleOverloadBegins'),
       }),
     [record, foeWord],
   );
@@ -575,11 +583,9 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
         basePlayer={props.acting}
         neutralHeight={record.zone.depth}
         neutral={neutral}
-        neutralLabel={
-          revealed
-            ? 'Neutral zone'
-            : 'Neutral zone (hidden until the battle begins)'
-        }
+        neutralLabel={t(
+          revealed ? 'battleNeutralZone' : 'battleNeutralZoneHidden',
+        )}
         controller={camera}
         resetKey={record}
         drawOverlay={drawOverlay.current}
@@ -587,7 +593,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
       />
       {!revealed ? (
         <div class="intro-banner" id="intro-banner" role="status">
-          The battle is about to begin…
+          {t('battleIntro')}
         </div>
       ) : null}
     </AppShell>

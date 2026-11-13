@@ -6,7 +6,7 @@ import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
 import { Panel } from '../shell/AppShell.js';
 import type { WebContent } from '../content.js';
-import { screenText, screenTexts } from '../build/texts.js';
+import { screenNodes, screenText, screenTexts } from '../build/texts.js';
 import { bossLabel } from '../run/display-text.js';
 import { ChartLegend, LineChart, type ChartMarker } from './charts.js';
 import {
@@ -28,10 +28,22 @@ import type { Playback, PlaybackSpeed } from './playback.js';
 import { SPEEDS } from './playback.js';
 import type { OpponentInfo } from './types.js';
 
+const t = (key: string, values: Record<string, string> = {}): string =>
+  screenText(screenTexts, key, values);
+
+const wallsLine = (walls: string, standing: number, total: number): string =>
+  total === 0
+    ? t('battleWallsNone', { walls: walls.toLowerCase() })
+    : t('battleWallsStanding', {
+        walls,
+        standing: String(standing),
+        total: String(total),
+      });
+
 export const KIND_LABEL: Readonly<Record<OpponentInfo['kind'], string>> = {
-  ghost: 'Ghost',
+  ghost: t('battleKindGhost'),
   boss: bossLabel(),
-  pve: 'PvE threat',
+  pve: t('battleKindPve'),
 };
 
 export const opponentKindLabel = (o: OpponentInfo): string =>
@@ -63,7 +75,11 @@ export function CoreBars(props: {
   return (
     <div class="core-group" data-field={`cores-${String(props.side)}`}>
       <CoreBar
-        label={`${props.label}s ${String(standing)}/${String(cores.length)}`}
+        label={t('battleCoresCount', {
+          label: props.label,
+          standing: String(standing),
+          total: String(cores.length),
+        })}
         hp={props.hp}
         max={props.max}
         side={props.side}
@@ -75,7 +91,10 @@ export function CoreBars(props: {
           data-field={`core-${String(props.side)}-${String(c.player)}`}
         >
           <CoreBar
-            label={`${props.label} ${String(c.player + 1)}${c.hp > 0 ? '' : ' (fallen)'}`}
+            label={t(c.hp > 0 ? 'battleCoreStanding' : 'battleCoreFallen', {
+              label: props.label,
+              number: String(c.player + 1),
+            })}
             hp={c.hp}
             max={c.max}
             side={props.side}
@@ -156,7 +175,7 @@ export function LeftPanels(props: {
       : [];
   return (
     <>
-      <Panel title="Your side" id="panel-your-side">
+      <Panel title={t('battlePanelYourSide')} id="panel-your-side">
         <CoreBars
           label={coreName}
           cores={mine.cores}
@@ -165,12 +184,10 @@ export function LeftPanels(props: {
           side={0}
         />
         <p class="stat-line" data-field="walls-own">
-          {mine.wallsTotal === 0
-            ? `No ${walls.toLowerCase()}`
-            : `${walls}: ${String(mine.wallsStanding)} / ${String(mine.wallsTotal)} standing`}
+          {wallsLine(walls, mine.wallsStanding, mine.wallsTotal)}
         </p>
       </Panel>
-      <Panel title="Production (per sec)" id="panel-production">
+      <Panel title={t('battlePanelProduction')} id="panel-production">
         <table class="stat-table">
           <tbody>
             {mine.production.map((p) => (
@@ -184,32 +201,34 @@ export function LeftPanels(props: {
           </tbody>
         </table>
         {mine.rampSteps > 0 ? (
-          <p class="stat-line">▲ ramp steps taken: {mine.rampSteps}</p>
+          <p class="stat-line">
+            {t('battleRampSteps', { count: String(mine.rampSteps) })}
+          </p>
         ) : null}
         <hr />
         <table class="stat-table">
           <thead>
             <tr>
               <th />
-              <th>You</th>
-              <th>Them</th>
+              <th>{t('battleColYou')}</th>
+              <th>{t('battleColThem')}</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <th scope="row">Units alive</th>
+              <th scope="row">{t('battleRowUnitsAlive')}</th>
               <td data-field="alive-own">{mine.unitsAlive}</td>
               <td data-field="alive-foe">{theirs.unitsAlive}</td>
             </tr>
             <tr>
-              <th scope="row">Units lost</th>
+              <th scope="row">{t('battleRowUnitsLost')}</th>
               <td data-field="lost-own">{mine.unitsLost}</td>
               <td data-field="lost-foe">{theirs.unitsLost}</td>
             </tr>
           </tbody>
         </table>
       </Panel>
-      <Panel title="Army strength" id="panel-strength">
+      <Panel title={t('battlePanelStrength')} id="panel-strength">
         <LineChart
           series={[
             { side: 0, points: live.own },
@@ -224,9 +243,9 @@ export function LeftPanels(props: {
           formatX={(x) => clock(x, props.tps)}
           testId="chart-strength-live"
         />
-        <ChartLegend labels={['You', props.foeName]} />
+        <ChartLegend labels={[t('battleColYou'), props.foeName]} />
         {markers.length > 0 ? (
-          <p class="muted small">O: Overload begins</p>
+          <p class="muted small">{t('battleOverloadKey')}</p>
         ) : null}
         {props.overloadNote === undefined ||
         props.overloadNote === null ? null : (
@@ -289,14 +308,12 @@ export function RightPanels(props: {
           side={1}
         />
         <p class="stat-line" data-field="walls-foe">
-          {theirs.wallsTotal === 0
-            ? `No ${walls.toLowerCase()}`
-            : `${walls}: ${String(theirs.wallsStanding)} / ${String(theirs.wallsTotal)} standing`}
+          {wallsLine(walls, theirs.wallsStanding, theirs.wallsTotal)}
         </p>
       </Panel>
-      <Panel title="Battle log" id="panel-log" class="grow">
+      <Panel title={t('battlePanelLog')} id="panel-log" class="grow">
         {shown.length === 0 ? (
-          <p class="muted">Nothing yet.</p>
+          <p class="muted">{t('battleLogEmpty')}</p>
         ) : (
           <ol class="log" data-field="log">
             {shown.map((m, i) => (
@@ -320,7 +337,7 @@ export function RightPanels(props: {
           </ol>
         )}
       </Panel>
-      <Panel title="Speed" id="panel-speed">
+      <Panel title={t('battlePanelSpeed')} id="panel-speed">
         <div class="btn-row">
           {SPEEDS.map((s) => (
             <button
@@ -337,7 +354,7 @@ export function RightPanels(props: {
             </button>
           ))}
           <button type="button" id="skip" onClick={props.onSkip}>
-            Skip
+            {t('battleSkip')}
           </button>
         </div>
         <div class="btn-row">
@@ -348,11 +365,11 @@ export function RightPanels(props: {
             class={pb.paused ? 'on' : ''}
             onClick={props.onPause}
           >
-            {pb.paused ? 'Play' : 'Pause'}
+            {t(pb.paused ? 'battlePlay' : 'battlePause')}
           </button>
         </div>
       </Panel>
-      <Panel title="Camera" id="panel-camera">
+      <Panel title={t('uiCameraPanel')} id="panel-camera">
         <div class="btn-row">
           <button
             type="button"
@@ -360,7 +377,7 @@ export function RightPanels(props: {
               props.controller.preset('center');
             }}
           >
-            Center
+            {t('uiCameraCenter')}
           </button>
           <button
             type="button"
@@ -368,10 +385,10 @@ export function RightPanels(props: {
               props.controller.preset('base');
             }}
           >
-            My base
+            {t('uiCameraMyBase')}
           </button>
           <button type="button" onClick={props.onEnemyBase}>
-            Their base
+            {t('uiCameraTheirBase')}
           </button>
           <button
             type="button"
@@ -379,10 +396,10 @@ export function RightPanels(props: {
               props.controller.preset('fit');
             }}
           >
-            Fit battle
+            {t('uiCameraFitBattle')}
           </button>
         </div>
-        <p class="muted small">Drag to pan · scroll to zoom.</p>
+        <p class="muted small">{t('uiCameraHint')}</p>
       </Panel>
     </>
   );
@@ -589,56 +606,73 @@ export function BattleSummaryView(props: SummaryProps) {
         id="result-banner"
       >
         <h2 class="result-title">
-          <span data-field="result-word">{won ? 'Victory' : 'Defeat'}</span>
-          {' · vs. '}
-          {opponent.name}
+          <span data-field="result-word">
+            {t(won ? 'battleVictory' : 'battleDefeat')}
+          </span>
+          {t('battleVsOpponent', { name: opponent.name })}
         </h2>
         <p class="result-reward" data-field="reward">
           {props.rewardText}
         </p>
         <p class="result-detail">
-          {reasonText(rec.result.reason, coreName, [own, foe])} Battle time{' '}
-          {clock(rec.result.endTick, props.tps)}. Your {coreName}{' '}
-          <strong data-field="final-core-own">
-            {own.coreHealth} / {own.coreMaxHealth}
-          </strong>
-          , theirs{' '}
-          <strong data-field="final-core-foe">
-            {foe.coreHealth} / {foe.coreMaxHealth}
-          </strong>
-          .
+          {screenNodes(screenTexts, 'battleSummaryDetail', {
+            reason: reasonText(rec.result.reason, coreName, [own, foe]),
+            time: clock(rec.result.endTick, props.tps),
+            core: coreName,
+            own: (
+              <strong data-field="final-core-own">
+                {own.coreHealth} / {own.coreMaxHealth}
+              </strong>
+            ),
+            foe: (
+              <strong data-field="final-core-foe">
+                {foe.coreHealth} / {foe.coreMaxHealth}
+              </strong>
+            ),
+          })}
         </p>
         {own.cores.length + foe.cores.length > 2 ? (
           <p class="muted" data-field="cores-standing">
-            {coreName}s standing: yours{' '}
-            <strong data-field="standing-own">
-              {own.coresStanding} / {own.cores.length}
-            </strong>
-            , theirs{' '}
-            <strong data-field="standing-foe">
-              {foe.coresStanding} / {foe.cores.length}
-            </strong>
-            .{' '}
-            {[
-              ...own.cores.map((c) => ['Your', c] as const),
-              ...foe.cores.map((c) => ['Their', c] as const),
-            ]
-              .filter(([, c]) => c.destroyedTick !== null)
-              .map(
-                ([who, c]) =>
-                  `${who} ${coreName} ${String(c.player + 1)} fell at ${clock(c.destroyedTick ?? 0, props.tps)}.`,
-              )
-              .join(' ')}
+            {screenNodes(screenTexts, 'battleSummaryCoresStanding', {
+              core: coreName,
+              own: (
+                <strong data-field="standing-own">
+                  {own.coresStanding} / {own.cores.length}
+                </strong>
+              ),
+              foe: (
+                <strong data-field="standing-foe">
+                  {foe.coresStanding} / {foe.cores.length}
+                </strong>
+              ),
+              fell: [
+                ...own.cores.map((c) => [t('battleSideYour'), c] as const),
+                ...foe.cores.map((c) => [t('battleSideTheir'), c] as const),
+              ]
+                .filter(([, c]) => c.destroyedTick !== null)
+                .map(([who, c]) =>
+                  t('battleSummaryCoreFell', {
+                    who,
+                    core: coreName,
+                    number: String(c.player + 1),
+                    time: clock(c.destroyedTick ?? 0, props.tps),
+                  }),
+                )
+                .join(' '),
+            })}
           </p>
         ) : null}
         <p class="muted" data-field="tiebreak-counters">
-          Damage to buildings: yours {own.buildingDamageDealt}, theirs{' '}
-          {foe.buildingDamageDealt}. Units killed: yours {own.unitsKilled},
-          theirs {foe.unitsKilled}.
+          {t('battleSummaryTiebreak', {
+            ownbuild: String(own.buildingDamageDealt),
+            foebuild: String(foe.buildingDamageDealt),
+            ownkills: String(own.unitsKilled),
+            foekills: String(foe.unitsKilled),
+          })}
         </p>
       </section>
 
-      <Panel title="Army strength over time" id="panel-summary-chart">
+      <Panel title={t('battlePanelSummaryChart')} id="panel-summary-chart">
         <LineChart
           series={[
             { side: 0, points: chart.own },
@@ -652,7 +686,7 @@ export function BattleSummaryView(props: SummaryProps) {
           formatX={(x) => clock(x, props.tps)}
           testId="chart-strength-summary"
         />
-        <ChartLegend labels={['You', opponent.name]} />
+        <ChartLegend labels={[t('battleColYou'), opponent.name]} />
         <ol class="marker-list">
           {marked.map((m, i) => (
             <li key={`${String(m.tick)}-${String(i)}`}>
@@ -663,7 +697,7 @@ export function BattleSummaryView(props: SummaryProps) {
         </ol>
       </Panel>
 
-      <Panel title="Where you were breached" id="panel-breaches">
+      <Panel title={t('battlePanelBreaches')} id="panel-breaches">
         <div class="mini-board">
           <BoardView
             content={content}
@@ -676,7 +710,7 @@ export function BattleSummaryView(props: SummaryProps) {
         </div>
         {breaches.length === 0 ? (
           <p class="muted" data-field="no-breach">
-            Nothing of yours was destroyed.
+            {t('battleNoBreach')}
           </p>
         ) : (
           <ul class="plain breach-list" data-field="breach-list">
@@ -687,17 +721,17 @@ export function BattleSummaryView(props: SummaryProps) {
         )}
       </Panel>
 
-      <Panel title="Your buildings" id="panel-buildings">
+      <Panel title={t('battlePanelBuildings')} id="panel-buildings">
         <table class="stat-table buildings-table" data-field="buildings">
           <thead>
             <tr>
-              <th>Building</th>
-              {cols.produced ? <th>Produced</th> : null}
-              {cols.delivered ? <th>Received</th> : null}
-              {cols.trained ? <th>Units</th> : null}
-              {cols.damage ? <th>Damage</th> : null}
-              {cols.upgrades ? <th>Upgrades</th> : null}
-              <th>Lost</th>
+              <th>{t('battleColBuilding')}</th>
+              {cols.produced ? <th>{t('battleColProduced')}</th> : null}
+              {cols.delivered ? <th>{t('battleColReceived')}</th> : null}
+              {cols.trained ? <th>{t('battleColUnits')}</th> : null}
+              {cols.damage ? <th>{t('battleColDamage')}</th> : null}
+              {cols.upgrades ? <th>{t('battleColUpgrades')}</th> : null}
+              <th>{t('battleColLost')}</th>
             </tr>
           </thead>
           <tbody>
@@ -705,7 +739,9 @@ export function BattleSummaryView(props: SummaryProps) {
               <tr key={r.key}>
                 <th scope="row">
                   {r.name}
-                  {r.count > 1 ? ` ×${String(r.count)}` : ''}
+                  {r.count > 1
+                    ? t('battleCountSuffix', { count: String(r.count) })
+                    : ''}
                   {r.note === null ? null : (
                     <span class="muted fine" data-field="idle-note">
                       {' '}
@@ -721,11 +757,16 @@ export function BattleSummaryView(props: SummaryProps) {
                 <td>
                   {r.lost === 0
                     ? '–'
-                    : `${String(r.lost)} of ${String(r.count)}${
-                        r.firstLostTick === null
-                          ? ''
-                          : ` (first ${clock(r.firstLostTick, props.tps)})`
-                      }`}
+                    : r.firstLostTick === null
+                      ? t('battleLostOf', {
+                          lost: String(r.lost),
+                          count: String(r.count),
+                        })
+                      : t('battleLostOfFirst', {
+                          lost: String(r.lost),
+                          count: String(r.count),
+                          time: clock(r.firstLostTick, props.tps),
+                        })}
                 </td>
               </tr>
             ))}
@@ -733,10 +774,10 @@ export function BattleSummaryView(props: SummaryProps) {
         </table>
       </Panel>
 
-      <Panel title="Next" id="panel-ready" class="ready-panel">
+      <Panel title={t('battlePanelNext')} id="panel-ready" class="ready-panel">
         <div class="btn-col">
           <button type="button" id="watch-again" onClick={props.onWatchAgain}>
-            Watch again
+            {t('battleWatchAgain')}
           </button>
           <button
             type="button"
@@ -745,11 +786,11 @@ export function BattleSummaryView(props: SummaryProps) {
             disabled={props.ready}
             onClick={props.onReady}
           >
-            {props.ready ? 'Ready ✓' : 'Ready'}
+            {t(props.ready ? 'battleReadyDone' : 'battleReady')}
           </button>
         </div>
         <p class="muted" data-field="ready-note">
-          {props.ready ? 'You are ready.' : 'Ready continues the run.'}
+          {t(props.ready ? 'battleReadyYou' : 'battleReadyNote')}
         </p>
       </Panel>
     </div>

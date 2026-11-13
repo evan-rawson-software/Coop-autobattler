@@ -1,11 +1,14 @@
 /** Buttons for the camera presets and zoom, overlaid on the board view. */
 
+import { screenText, screenTexts } from '../build/texts.js';
 import type { CameraController } from './controller.js';
+
+const t = (key: string): string => screenText(screenTexts, key);
 
 export function CameraControls(props: { controller: CameraController }) {
   const c = props.controller;
   return (
-    <div class="camera-controls" role="group" aria-label="Camera">
+    <div class="camera-controls" role="group" aria-label={t('uiCameraPanel')}>
       <button
         type="button"
         data-camera="center"
@@ -13,7 +16,7 @@ export function CameraControls(props: { controller: CameraController }) {
           c.preset('center');
         }}
       >
-        Center
+        {t('uiCameraCenter')}
       </button>
       <button
         type="button"
@@ -22,7 +25,7 @@ export function CameraControls(props: { controller: CameraController }) {
           c.preset('base');
         }}
       >
-        My base
+        {t('uiCameraMyBase')}
       </button>
       <button
         type="button"
@@ -31,7 +34,7 @@ export function CameraControls(props: { controller: CameraController }) {
           c.preset('fit');
         }}
       >
-        Fit
+        {t('uiCameraFit')}
       </button>
       <button
         type="button"

@@ -12,6 +12,7 @@ import {
   type PlacedBuilding,
   conduitTouches,
 } from '@game/core';
+import { screenText, screenTexts } from '../build/texts.js';
 import type { WebContent } from '../content.js';
 import type { Playback, BattleRecord } from './playback.js';
 
@@ -256,8 +257,15 @@ export function deriveMoments(
         side,
         text:
           placed(record, side) > 1
-            ? `${labels.side[side]} ${labels.coreName} ${String(e.core + 1)} fell`
-            : `${labels.side[side]} ${labels.coreName} destroyed`,
+            ? screenText(screenTexts, 'battleLogCoreFell', {
+                who: labels.side[side],
+                core: labels.coreName,
+                number: String(e.core + 1),
+              })
+            : screenText(screenTexts, 'battleLogCoreDestroyed', {
+                who: labels.side[side],
+                core: labels.coreName,
+              }),
         focus: coreFocus(record, content, g, side, e.core),
       });
     }
