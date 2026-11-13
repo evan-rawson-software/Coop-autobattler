@@ -101,6 +101,10 @@ function maximalBoard(round: number): GhostSnapshot {
     ctx.economy,
     ctx.events,
   ).limit;
+  // Gold cannot be given (PP-17): one owner's buildings are worth at most
+  // `goldPerPlayer + kitPerPlayer`, so the board is filled owner by owner.
+  const perOwner = budget / partySize;
+  const spentBy = new Map<number, number>();
   let spent = 0;
   const price = (def: string): number => {
     const b = content.buildings.get(def);
@@ -115,6 +119,7 @@ function maximalBoard(round: number): GhostSnapshot {
   ): number | null => {
     if (spent + price(def) > budget) return null;
     const owner = q.plotOf(x);
+    if ((spentBy.get(owner) ?? 0) + price(def) > perOwner) return null;
     const added = addToStash(team, content, { def, tier: 1, owner });
     if (!added.ok) throw new Error(added.reason);
     const placed = placeFromStash(added.state, content, {
@@ -127,6 +132,7 @@ function maximalBoard(round: number): GhostSnapshot {
     if (!placed.ok) return null;
     team = placed.state;
     spent += price(def);
+    spentBy.set(owner, (spentBy.get(owner) ?? 0) + price(def));
     taken.add(key(x, y));
     return added.id;
   };
@@ -190,6 +196,8 @@ function maximalBoard(round: number): GhostSnapshot {
       // Not placeable that way: undo the Armory.
       team = before;
       spent -= price('bld_armory');
+      const o = q.plotOf(armory.x);
+      spentBy.set(o, (spentBy.get(o) ?? 0) - price('bld_armory'));
       taken.delete(key(armory.x, armory.y));
     }
   }
