@@ -72,7 +72,7 @@ The shop always follows the event. Each player has their own offers and their ow
 ![Shop screen wireframe](3-shop.png)
 
 1. Tabs for the two halves of this step.
-2. Your offers. A card shows the kind, what it needs (which resource and how much per second), what it does, and its price.
+2. Your offers, bought for your own plot. A card shows the kind, what it needs (which resource), its rate per second (a consumer's need at top speed, an extractor's collect rate), what it does, and its price.
 3. Gold buys buildings and re-rolls, nothing else.
 4. Your stash: buildings you own that are not on the board. Drag here to sell.
 5. Teammates' gold and stash. You do not see their offers, and gold and buildings cannot be given (CP-29). Hidden in solo.
@@ -82,7 +82,7 @@ The shop always follows the event. Each player has their own offers and their ow
 
 ## 4. Build
 
-Where the factory is laid out. Everything of yours except your Core can be moved, and conduits are free. In co-op every player edits at the same time, each in their own plot; the other plots are shown but cannot be edited. (The image shows the earlier design, one shared board with one Core; it is to be redrawn.)
+Where the factory is laid out. Everything of yours except your Core can be moved, and conduits are free. In co-op every player edits at the same time, each in their own plot; the other plots are shown but cannot be edited. The image shows your own plot with its border links, owner tags and a LOW marker.
 
 ![Build screen wireframe](4-build.png)
 
@@ -95,9 +95,11 @@ Where the factory is laid out. Everything of yours except your Core can be moved
 7. Preview of the routes enemy units would take with this layout, each to the Core of the plot it enters.
 8. Inspector for the selected building: what it needs per second, what it is getting, what it produces. For a collector: its flow rate.
 9. Overlays and problems: a dry run of resource flow, the enemy-path preview, and anything unconnected.
-   In co-op, a Border links list names each of your own halves (linked, waiting for your neighbour, or cannot join), what it carries, and a Remove button. The dry-run table shows each consumer's need per second and "supplied" or "UNDER-SUPPLIED" (all inputs together).
+   Your own buildings are listed one by one, and each partner gets one summary line (for example "Ana has 2 under-supplied buildings."). The dry-run table shows each consumer's need per second and "supplied" or "UNDER-SUPPLIED" (all inputs together).
 10. Party panel: who is editing where, pings, and the Ready button. The party moves on when everyone is ready.
 11. In co-op each extra player adds a plot of their own to the side. A four-player board still fits the width of a 1080p screen, and everything below the board stays free for panels.
+12. Border links (co-op): a list of your own halves, each with its state (linked, waiting for your neighbour, or cannot join), what it carries, and a Remove my half button.
+13. A border spot on the plot edge, where your conduit meets the neighbour's. The neighbour's half is drawn dimmed beside it. Buildings carry their owner's tag (P1, P2), and a consumer that gets less than it needs is marked LOW.
 
 ## 5. Main menu
 

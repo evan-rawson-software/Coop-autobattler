@@ -52,6 +52,8 @@ refined and then broken down into backlog items for coding agents.
 Layout sketches of the screens of a run (menu, Core placement, PvE choice,
 battle, summary, event, shop, build, and run over) are in
 [`docs/wireframes/`](docs/wireframes/).
+The shop and build screens show your own plot, border links to a
+neighbour's plot, and the need per second of each building.
 
 ## Conventions used in the specs
 
