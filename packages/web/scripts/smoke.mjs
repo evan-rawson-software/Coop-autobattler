@@ -1230,6 +1230,27 @@ try {
     );
     await shot('battle-0-before-start');
     {
+      // A solo battle looks as it always did: one Core bar per side.
+      const bars = await page.evaluate(() => {
+        const n = (s) => document.querySelectorAll(s).length;
+        return {
+          own: n('[data-field="core-hp-0"]'),
+          foe: n('[data-field="core-hp-1"]'),
+          perPlayer: n(
+            '[data-field^="core-hp-0-"], [data-field^="core-hp-1-"]',
+          ),
+          groups: n('[data-field="cores-0"], [data-field="cores-1"]'),
+        };
+      });
+      check(
+        bars.own === 1 &&
+          bars.foe === 1 &&
+          bars.perPlayer === 0 &&
+          bars.groups === 0,
+        `battle: a solo battle shows one Core bar per side (${JSON.stringify(bars)})`,
+      );
+    }
+    {
       // The camera starts at the centre of the map (the neutral zone), at a
       // readable zoom; "Fit battle" is a preset.
       const cam = await camera();
@@ -1549,6 +1570,17 @@ try {
         timeout: slow(10000),
       },
     );
+    {
+      // The four-plot battle shows eight Core bars, four per side.
+      const perSide = await page.evaluate(() => [
+        document.querySelectorAll('[data-field^="core-hp-0-"]').length,
+        document.querySelectorAll('[data-field^="core-hp-1-"]').length,
+      ]);
+      check(
+        perSide[0] === 4 && perSide[1] === 4,
+        `battle: a four-plot battle shows eight Core bars (${perSide.join(' + ')})`,
+      );
+    }
     await page.click('#speed-4');
     await page.waitForFunction(() => window.__debug?.battle?.tick() > 250);
     await page.evaluate(() => window.__debug.resetDrawStats());
