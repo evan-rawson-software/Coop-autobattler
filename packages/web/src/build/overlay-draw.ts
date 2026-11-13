@@ -22,9 +22,10 @@ import {
   boardRateText,
   halfFlow,
   rateFontPx,
-  rateLabelSpot,
+  rateLabelPlan,
   showRates,
   suppliedRateText,
+  suppliedShortText,
   type RateMark,
 } from './overlay-marks.js';
 import { pathSegments, pathStubs } from './path-segments.js';
@@ -83,6 +84,20 @@ function colors(o: OverlayContext): Colors {
   };
   colorCache.set(o.theme, c);
   return c;
+}
+
+const ownerTagFont = (z: number): string =>
+  `700 ${String(Math.max(9, Math.min(12, z * 0.34)))}px ui-monospace, monospace`;
+const ownerTagText = (owner: number): string => `P${String(owner + 1)}`;
+
+/** Width of a building's owner tag; the rate text on the bottom row starts after it. */
+function ownerTagWidth(
+  ctx: CanvasRenderingContext2D,
+  owner: number,
+  z: number,
+): number {
+  ctx.font = ownerTagFont(z);
+  return ctx.measureText(ownerTagText(owner)).width + 6;
 }
 
 export function drawBuildOverlay(
@@ -377,11 +392,11 @@ export function drawBuildOverlay(
   // ---- Owner of each building (not colour only) ----------------------------
   if (board !== undefined && partySize > 1) {
     ctx.save();
-    ctx.font = `700 ${String(Math.max(9, Math.min(12, z * 0.34)))}px ui-monospace, monospace`;
+    ctx.font = ownerTagFont(z);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     for (const b of board.buildings) {
-      const text = `P${String(b.instance.owner + 1)}`;
+      const text = ownerTagText(b.instance.owner);
       const w = ctx.measureText(text).width + 6;
       const x = sx(b.rect.x) + 1;
       const y = sy(b.rect.y) + b.rect.h * z - 14;
@@ -562,32 +577,37 @@ export function drawBuildOverlay(
         mark === 'low' || mark === 'starved'
           ? d.flow.supply.find((u) => u.building === id)
           : undefined;
-      const text =
+      const full =
         supply === undefined
           ? boardRateText(def, b.instance.tier, simConfig.ticksPerSecond)
           : suppliedRateText(supply);
-      if (text === '') continue;
+      if (full === '') continue;
+      const short = supply === undefined ? null : suppliedShortText(supply);
       ctx.save();
       ctx.font = `700 ${String(px)}px ui-monospace, monospace`;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      const w = ctx.measureText(text).width + 6;
-      // A one-cell building lets the text run over its right edge; with a
-      // badge in that corner it moves to the bottom row (or is hidden for the
-      // stalled marker). The owner tag sits at the bottom left, so the bottom
-      // row text starts after it.
-      const spot = rateLabelSpot({
+      const widthOf = (t: string): number => ctx.measureText(t).width + 6;
+      // The owner tag sits at the bottom left; the bottom row text starts
+      // after it and must fit inside the building.
+      const tagW = partySize > 1 ? ownerTagWidth(ctx, b.instance.owner, z) : 0;
+      ctx.font = `700 ${String(px)}px ui-monospace, monospace`;
+      const plan = rateLabelPlan({
         zoom: z,
         sealed: d.sealed?.includes(id) === true,
         mark,
-        textWidth: w,
+        fullWidth: widthOf(full),
+        shortWidth: short === null ? null : widthOf(short),
         reserved,
         boxWidth: bw,
+        tagWidth: tagW,
       });
-      if (spot !== 'hidden') {
-        const tag = partySize > 1 ? 26 : 0;
-        const bx = spot === 'top' ? x + 1 : x + 1 + tag;
-        const by = spot === 'top' ? y + 1 : y + b.rect.h * z - (px + 4) - 1;
+      if (plan.spot !== 'hidden') {
+        const text = plan.short && short !== null ? short : full;
+        const w = widthOf(text);
+        const bx = plan.spot === 'top' ? x + 1 : x + 1 + tagW;
+        const by =
+          plan.spot === 'top' ? y + 1 : y + b.rect.h * z - (px + 4) - 1;
         ctx.fillStyle = col.surface;
         ctx.globalAlpha = 0.85;
         ctx.fillRect(bx, by, w, px + 4);

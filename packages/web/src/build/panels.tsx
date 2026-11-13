@@ -31,6 +31,9 @@ function humanize(id: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+const t = (key: string, values: Record<string, string> = {}): string =>
+  screenText(screenTexts, key, values);
+
 const fmt = (n: number): string =>
   Number.isInteger(n) ? String(n) : n.toFixed(1);
 
@@ -77,7 +80,7 @@ export function StashPanel(props: {
   const groups = groupStash(team, props.player);
   const held = model.ui.held;
   return (
-    <Panel title="Stash · drag onto the board" id="panel-stash">
+    <Panel title={t('uiPanelStash')} id="panel-stash">
       {groups.length === 0 ? (
         <p class="muted">{screenText(screenTexts, 'uiStashEmpty')}</p>
       ) : (
@@ -171,19 +174,19 @@ export function ToolsPanel(props: {
     </button>
   );
   return (
-    <Panel title="Tools" id="panel-tools" class="fixed">
+    <Panel title={t('uiPanelTools')} id="panel-tools" class="fixed">
       <div class="tool-grid">
-        {tool('select', 'Select / move', 'V')}
-        {tool('conduit', 'Conduit · free', 'C')}
-        {tool('erase', 'Erase conduit', 'E')}
+        {tool('select', t('uiToolSelect'), 'V')}
+        {tool('conduit', t('uiToolConduit'), 'C')}
+        {tool('erase', t('uiToolErase'), 'E')}
         <button
           type="button"
           data-action="rotate"
           disabled={locked}
-          title="Rotate (R). Rotating detaches the building's conduits."
+          title={t('uiToolRotateTip')}
           onClick={() => void ctl.rotate()}
         >
-          Rotate (R)
+          {t('uiToolRotateKey')}
         </button>
         <button
           type="button"
@@ -191,17 +194,17 @@ export function ToolsPanel(props: {
           disabled={locked || ui.selection?.kind !== 'building'}
           onClick={() => void ctl.returnSelected()}
         >
-          To stash
+          {t('uiToolToStash')}
         </button>
         <span />
         <button
           type="button"
           data-action="undo"
           disabled={locked || (view?.undoCount ?? 0) === 0}
-          title="Undo (Ctrl+Z). Layout changes only."
+          title={t('uiToolUndoTip')}
           onClick={() => void ctl.undo()}
         >
-          Undo
+          {t('uiToolUndo')}
           {view !== null && view.undoCount > 0
             ? ` (${String(view.undoCount)})`
             : ''}
@@ -210,10 +213,10 @@ export function ToolsPanel(props: {
           type="button"
           data-action="redo"
           disabled={locked || (view?.redoCount ?? 0) === 0}
-          title="Redo (Ctrl+Shift+Z)"
+          title={t('uiToolRedoTip')}
           onClick={() => void ctl.redo()}
         >
-          Redo
+          {t('uiToolRedo')}
           {view !== null && view.redoCount > 0
             ? ` (${String(view.redoCount)})`
             : ''}
@@ -235,6 +238,8 @@ export function InspectorPanel(props: {
   ctl: BuildController;
   /** Ids of the unit producers with no route to the front row. */
   sealed?: readonly number[];
+  /** The acting player: a partner's source shows no backed-up line. */
+  acting?: number;
 }) {
   const { run, model, dry, ctl } = props;
   const team = run.team;
@@ -256,7 +261,7 @@ export function InspectorPanel(props: {
             : formatText(entry.description, content.resources)}
         </p>
         <dl class="props">
-          <dt>Health</dt>
+          <dt>{t('uiLblHealth')}</dt>
           <dd>{def?.tiers[0]?.health ?? '-'}</dd>
         </dl>
         <p class="notice">{screenText(screenTexts, 'uiInspectorCoreFixed')}</p>
@@ -269,10 +274,10 @@ export function InspectorPanel(props: {
       body = (
         <div data-inspector="conduit">
           <h3 class="insp-name" data-field="name">
-            Conduit
+            {t('uiConduitName')}
           </h3>
           <dl class="props">
-            <dt>Carries</dt>
+            <dt>{t('uiLblCarries')}</dt>
             <dd>
               {res === null
                 ? screenText(screenTexts, 'uiInspectorCarriesUnknown')
@@ -282,7 +287,7 @@ export function InspectorPanel(props: {
               .filter((h) => h.conduit === c.id)
               .map((h) => (
                 <>
-                  <dt>Border link</dt>
+                  <dt>{t('uiLblBorderLink')}</dt>
                   <dd data-field="link-state">
                     {linkText(h, (p) =>
                       playerName(
@@ -294,10 +299,12 @@ export function InspectorPanel(props: {
                   </dd>
                 </>
               ))}
-            <dt>Length</dt>
+            <dt>{t('uiLblLength')}</dt>
             <dd>
-              {c.cells.length} {c.cells.length === 1 ? 'cell' : 'cells'}
-              {c.cells.length === 0 ? ' (direct)' : ''}
+              {t(c.cells.length === 1 ? 'uiCellsOne' : 'uiCellsMany', {
+                count: String(c.cells.length),
+              })}
+              {c.cells.length === 0 ? t('uiCellsDirect') : ''}
             </dd>
           </dl>
           <div class="insp-buttons">
@@ -306,7 +313,7 @@ export function InspectorPanel(props: {
               data-action="erase"
               onClick={() => void ctl.eraseConduit(c.id)}
             >
-              Erase
+              {t('uiLblErase')}
             </button>
           </div>
         </div>
@@ -317,7 +324,14 @@ export function InspectorPanel(props: {
     const def = b === undefined ? undefined : content.buildings.get(b.def);
     if (b !== undefined && def !== undefined) {
       const entry = content.presentation.get(b.def);
-      const figs = inspectorFigures(team, content, simConfig, dry, b);
+      const figs = inspectorFigures(
+        team,
+        content,
+        simConfig,
+        dry,
+        b,
+        props.acting,
+      );
       const owner = playerName(
         screenTexts,
         run.players.map((x) => x.name),
@@ -331,7 +345,11 @@ export function InspectorPanel(props: {
           <h3 class="insp-name">
             <span data-field="name">{entry?.name ?? b.def}</span>
             <span class="insp-meta">
-              {humanize(def.kind)} · tier {b.tier} · bought by {owner}
+              {t('uiInspectorMeta', {
+                kind: humanize(def.kind),
+                tier: String(b.tier),
+                owner,
+              })}
             </span>
           </h3>
           {props.sealed?.includes(b.id) === true ? (
@@ -349,7 +367,7 @@ export function InspectorPanel(props: {
           <dl class="props">
             {rate.collects !== null ? (
               <>
-                <dt>Collects</dt>
+                <dt>{t('uiLblCollects')}</dt>
                 <dd data-field="collects">
                   {screenText(screenTexts, 'inspectorCollects', {
                     rate: formatHundredths(rate.collects),
@@ -359,14 +377,14 @@ export function InspectorPanel(props: {
             ) : null}
             {rate.needs !== null && rate.topSpeed !== null ? (
               <>
-                <dt>Top speed</dt>
+                <dt>{t('uiLblTopSpeed')}</dt>
                 <dd data-field="top-speed">
                   {screenText(screenTexts, 'inspectorTopSpeed', {
                     speed: formatHundredths(rate.topSpeed),
                     unit: topSpeedWord(def),
                   })}
                 </dd>
-                <dt>Needs</dt>
+                <dt>{t('uiLblNeeds')}</dt>
                 <dd data-field="needs-rate">
                   {screenText(screenTexts, 'inspectorNeeds', {
                     rate: formatHundredths(rate.needs),
@@ -469,11 +487,11 @@ export function InspectorPanel(props: {
                 </dd>
               </>
             ) : null}
-            <dt>Health</dt>
+            <dt>{t('uiLblHealth')}</dt>
             <dd>{def.tiers[b.tier - 1]?.health ?? '-'}</dd>
             {attached.length > 0 ? (
               <>
-                <dt>Conduits</dt>
+                <dt>{t('uiLblConduits')}</dt>
                 <dd>
                   {attached.map((c) => (
                     <button
@@ -497,14 +515,14 @@ export function InspectorPanel(props: {
               data-action="rotate"
               onClick={() => void ctl.rotate()}
             >
-              Rotate
+              {t('uiToolRotate')}
             </button>
             <button
               type="button"
               data-action="to-stash"
               onClick={() => void ctl.returnSelected()}
             >
-              Return to stash
+              {t('uiToolReturnToStash')}
             </button>
           </div>
         </div>
@@ -512,7 +530,7 @@ export function InspectorPanel(props: {
     }
   }
   return (
-    <Panel title="Selected" id="panel-inspector">
+    <Panel title={t('uiPanelSelected')} id="panel-inspector">
       {body}
     </Panel>
   );
@@ -538,17 +556,21 @@ export function OverlaysPanel(props: { model: Model; ctl: BuildController }) {
     </button>
   );
   return (
-    <Panel title="Overlays" id="panel-overlays" class="fixed">
+    <Panel title={t('uiPanelOverlays')} id="panel-overlays" class="fixed">
       <div class="overlay-row">
-        {toggle('flow', 'Resource flow')}
-        {toggle('paths', 'Enemy paths')}
+        {toggle('flow', t('uiOverlayFlow'))}
+        {toggle('paths', t('uiOverlayPaths'))}
         {toggle(
           'dry',
-          `Dry run ${String(Math.round(model.ui.dryTicks / simConfig.ticksPerSecond))}s`,
+          t('uiOverlayDry', {
+            secs: String(
+              Math.round(model.ui.dryTicks / simConfig.ticksPerSecond),
+            ),
+          }),
         )}
       </div>
       <label class="inline-field">
-        Dry run ticks
+        {t('uiOverlayDryTicks')}
         <input
           type="number"
           id="dry-ticks"
@@ -560,7 +582,11 @@ export function OverlaysPanel(props: { model: Model; ctl: BuildController }) {
             ctl.setDryTicks(Math.floor(Number(e.currentTarget.value)));
           }}
         />
-        <span class="muted">{simConfig.ticksPerSecond} ticks = 1 s</span>
+        <span class="muted">
+          {t('uiOverlayTicksPerSecond', {
+            ticks: String(simConfig.ticksPerSecond),
+          })}
+        </span>
       </label>
     </Panel>
   );
@@ -571,10 +597,10 @@ export function ProblemsPanel(props: {
   onPick: (p: Problem) => void;
 }) {
   return (
-    <Panel title="Problems" id="panel-problems">
+    <Panel title={t('uiPanelProblems')} id="panel-problems">
       {props.problems.length === 0 ? (
         <p class="ok-text" data-field="no-problems">
-          ✓ No problems
+          {t('uiNoProblems')}
         </p>
       ) : (
         <ul class="problems">
@@ -838,7 +864,10 @@ export function PartyPanel(props: {
   const readyCount = run.perPlayer.filter((p) => p.ready).length;
   const block = props.gate?.readyBlock ?? null;
   return (
-    <Panel title={multi ? 'Party' : 'Party · solo'} id="panel-party">
+    <Panel
+      title={t(multi ? 'uiPanelParty' : 'uiPanelPartySolo')}
+      id="panel-party"
+    >
       <div class="party-row">
         <span>{run.players[acting]?.name ?? 'You'}</span>
         <span class="muted">{screenText(screenTexts, 'uiPartyEditing')}</span>
@@ -850,8 +879,11 @@ export function PartyPanel(props: {
         </span>
       </div>
       <p class="muted party-next">
-        Next: {run.step === 'shop' && run.leg === 'pve' ? 'PvP' : 'PvE'} ·{' '}
-        {readyCount} of {run.players.length} ready
+        {t('uiPartyNext', {
+          leg: run.step === 'shop' && run.leg === 'pve' ? 'PvP' : 'PvE',
+          ready: String(readyCount),
+          total: String(run.players.length),
+        })}
       </p>
       <button
         type="button"
@@ -862,7 +894,7 @@ export function PartyPanel(props: {
         title={block ?? undefined}
         onClick={() => void ctl.toggleReady()}
       >
-        {ready ? 'Unready' : 'Ready'}
+        {t(ready ? 'uiPartyUnready' : 'uiPartyReady')}
       </button>
       {block !== null ? (
         <p class="error" data-field="ready-blocked" role="alert">

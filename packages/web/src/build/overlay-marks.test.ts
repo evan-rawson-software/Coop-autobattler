@@ -23,9 +23,11 @@ import {
   isBackedUp,
   MIN_RATE_FONT_PX,
   rateFontPx,
+  rateLabelPlan,
   rateLabelSpot,
   showRates,
   suppliedRateText,
+  suppliedShortText,
   type RateLabelInput,
 } from './overlay-marks.js';
 import { simConfig } from './setup.js';
@@ -337,6 +339,7 @@ describe('rate label hide rules', () => {
     textWidth: 40,
     reserved: 0,
     boxWidth: 40,
+    tagWidth: 0,
   };
   const spot = (o: Partial<RateLabelInput>) => rateLabelSpot({ ...base, ...o });
 
@@ -347,15 +350,32 @@ describe('rate label hide rules', () => {
     expect(spot({ zoom: 29 })).toBe('hidden');
     expect(spot({ zoom: 29, mark: 'low', reserved: 20 })).toBe('hidden');
   });
-  test('hidden on a sealed building', () => {
+  test('shown at exactly the cut-off zoom', () => {
+    expect(spot({ zoom: 30 })).toBe('top');
+  });
+  test('hidden on a sealed building, with or without a mark', () => {
     expect(spot({ sealed: true })).toBe('hidden');
+    for (const mark of ['low', 'starved', 'stalled'] as const) {
+      expect(spot({ sealed: true, mark, reserved: 20, boxWidth: 60 })).toBe(
+        'hidden',
+      );
+    }
   });
   test('LOW and starved: top when it fits beside the badge, else the bottom row', () => {
     for (const mark of ['low', 'starved'] as const) {
       expect(spot({ mark, reserved: 20, boxWidth: 60 })).toBe('top');
-      expect(spot({ mark, reserved: 20, boxWidth: 60.5 })).toBe('top');
       expect(spot({ mark, reserved: 21, boxWidth: 60 })).toBe('bottom');
     }
+  });
+  test('the bottom row must fit after the owner tag, else it is hidden', () => {
+    const o = {
+      mark: 'low',
+      reserved: 30,
+      boxWidth: 60,
+      tagWidth: 20,
+    } as const;
+    expect(spot({ ...o, textWidth: 40 })).toBe('bottom');
+    expect(spot({ ...o, textWidth: 41 })).toBe('hidden');
   });
   test('the stalled marker hides the text when it does not fit', () => {
     expect(spot({ mark: 'stalled', reserved: 20, boxWidth: 60 })).toBe('top');
@@ -365,10 +385,52 @@ describe('rate label hide rules', () => {
   });
 });
 
+describe('rate label plan at the zoom cut-off', () => {
+  // At zoom 30 a cell is 30 px. Full "0.25/0.50/s" is 65 px, "0.25/s" 38 px,
+  // the LOW badge 26 px and an owner tag 17 px.
+  const at = (cells: number, tagWidth: number) =>
+    rateLabelPlan({
+      zoom: 30,
+      sealed: false,
+      mark: 'low',
+      fullWidth: 65,
+      shortWidth: 38,
+      reserved: 26,
+      boxWidth: 30 * cells,
+      tagWidth,
+    });
+
+  test('a one-cell building shows nothing that would leave it', () => {
+    expect(at(1, 17)).toEqual({ spot: 'hidden', short: false });
+    expect(at(1, 0)).toEqual({ spot: 'hidden', short: false });
+  });
+  test('a two-cell building falls back to the short form on the bottom row', () => {
+    expect(at(2, 17)).toEqual({ spot: 'bottom', short: true });
+    expect(at(2, 0)).toEqual({ spot: 'bottom', short: true });
+  });
+  test('a three-cell building shows the full text', () => {
+    expect(at(3, 17)).toEqual({ spot: 'bottom', short: false });
+  });
+  test('no short form: hidden when the full text does not fit', () => {
+    const p = rateLabelPlan({
+      zoom: 30,
+      sealed: false,
+      mark: 'stalled',
+      fullWidth: 65,
+      shortWidth: null,
+      reserved: 26,
+      boxWidth: 60,
+      tagWidth: 0,
+    });
+    expect(p).toEqual({ spot: 'hidden', short: false });
+  });
+});
+
 describe('what an under-supplied consumer shows', () => {
-  test('gets and need per second', () => {
+  test('gets and need per second, or only what it gets', () => {
     expect(suppliedRateText({ gets: 25, needs: 50 })).toBe('0.25/0.50/s');
     expect(suppliedRateText({ gets: 0, needs: 120 })).toBe('0.00/1.20/s');
+    expect(suppliedShortText({ gets: 25 })).toBe('0.25/s');
   });
 });
 

@@ -22,6 +22,7 @@ import { registerDebug } from '../debug-hook.js';
 import { NotSavedNote, RestartButton } from '../run/RunGate.js';
 import type { RunHandle } from '../run/handle.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
+import { ActingSwitch } from '../shell/ActingSwitch.js';
 import { BUILD_TAB_SCREEN, onStepTab, stepTabs } from '../shop/tabs.js';
 import { readyLabel } from '../shop/view-model.js';
 import './build.css';
@@ -42,6 +43,7 @@ import { gateFor, READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { ME, isEditStep } from './session.js';
 import { DEFAULT_SEED, simConfig } from './setup.js';
 import { layoutHash } from './undo.js';
+import { screenText, screenTexts } from './texts.js';
 import {
   computeFlowView,
   deriveProblems,
@@ -85,7 +87,11 @@ export function BuildScreen() {
   return <BuildView shared={undefined} />;
 }
 
-export function BuildView(props: { shared: RunHandle | undefined }) {
+export function BuildView(props: {
+  shared: RunHandle | undefined;
+  /** Opened on its own (`#shop-build`), outside the run bar: show the switcher. */
+  standalone?: boolean;
+}) {
   const shared = props.shared;
   const model = useStore(ctl.model);
   const { ui, view } = model;
@@ -347,6 +353,18 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
   };
 
   const readyText = run === null ? null : readyLabel(run);
+  // On the run screen the run bar has the acting-player switcher; the
+  // standalone dev routes have no run bar, so their dev strip carries one.
+  const switcher =
+    run !== null && (shared === undefined || props.standalone === true) ? (
+      <ActingSwitch
+        run={run}
+        acting={acting}
+        onActing={(p) => {
+          (shared?.session ?? ctl.session)?.setActing(p);
+        }}
+      />
+    ) : null;
   const devStrip = shared ? (
     run === null ? null : (
       <>
@@ -354,11 +372,13 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
           Round {run.round} · Lives {run.lives}
           {readyText === null ? '' : ` · ${readyText}`}
         </span>
+        {switcher}
         <NotSavedNote run={shared} />
       </>
     )
   ) : (
     <span class="dev-strip">
+      {switcher}
       <label>
         Seed{' '}
         <input
@@ -398,7 +418,12 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
       ? [{ id: BUILD_TAB_SCREEN, label: 'Build' }]
       : stepTabs()
     : [
-        { id: 'shop', label: 'Shop', disabled: true, hint: 'Coming soon' },
+        {
+          id: 'shop',
+          label: 'Shop',
+          disabled: true,
+          hint: screenText(screenTexts, 'uiComingSoon'),
+        },
         { id: 'build', label: 'Build' },
       ];
 
@@ -439,7 +464,7 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
 
   const boardArea =
     team === null ? (
-      <p class="muted pad">Starting a run.</p>
+      <p class="muted pad">{screenText(screenTexts, 'uiStartingRun')}</p>
     ) : (
       <div class="build-board" ref={canvasWrap}>
         <div class="build-canvas">
@@ -503,20 +528,17 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
   if (step === 'core_placement') {
     return (
       <AppShell
-        title="Core placement"
+        title={screenText(screenTexts, 'uiCoreTitle')}
         status={devStrip}
         tallBottom
         bottom={
-          <Panel title="Core placement" id="panel-core">
+          <Panel title={screenText(screenTexts, 'uiCoreTitle')} id="panel-core">
             <p>
-              Click a green-dotted cell in your own area to place the Core (its
-              lowest-left cell). Your starting kit then appears in the stash.{' '}
-              {ctl.legalCorePositions.length} legal positions.
+              {screenText(screenTexts, 'uiCoreClick', {
+                count: String(ctl.legalCorePositions.length),
+              })}
             </p>
-            <p class="muted">
-              Every player places their own Core in their own area. Choosing a
-              position confirms it.
-            </p>
+            <p class="muted">{screenText(screenTexts, 'uiCoreEveryone')}</p>
           </Panel>
         }
       >
@@ -546,6 +568,7 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
             flow={flow}
             ctl={ctl}
             sealed={sealedIds}
+            acting={acting}
           />
         </div>
         <div class="dock-col">

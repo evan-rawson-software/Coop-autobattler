@@ -19,6 +19,7 @@ import { NotSavedNote, RestartButton, RunGate } from '../run/RunGate.js';
 import type { RunHandle } from '../run/handle.js';
 import { ensureShopRun, optionsFromUrl } from '../run/shop-run.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
+import { ActingSwitch } from '../shell/ActingSwitch.js';
 import './shop.css';
 import { screenText, screenTexts } from '../build/texts.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
@@ -51,7 +52,7 @@ export function ShopScreen() {
   useEffect(() => {
     void ensureShopRun(optionsFromUrl(window.location.search));
   }, []);
-  return <RunGate>{(run) => <ShopTab run={run} />}</RunGate>;
+  return <RunGate>{(run) => <ShopTab run={run} standalone />}</RunGate>;
 }
 
 function Card(props: { card: OfferCard; onBuy: (slot: number) => void }) {
@@ -60,7 +61,7 @@ function Card(props: { card: OfferCard; onBuy: (slot: number) => void }) {
   if (o === null) {
     return (
       <li class="offer sold" data-slot={card.slot} data-state="sold">
-        <p class="offer-empty">Sold out. Re-roll for new offers.</p>
+        <p class="offer-empty">{screenText(screenTexts, 'uiShopSoldOut')}</p>
       </li>
     );
   }
@@ -127,7 +128,7 @@ function StashList(props: {
 }) {
   const { rows, pending, onPick, onDrag, blocked } = props;
   if (rows.length === 0) {
-    return <p class="muted">Empty. Everything you own is on the board.</p>;
+    return <p class="muted">{screenText(screenTexts, 'uiStashEmpty')}</p>;
   }
   return (
     <ul class="shop-stash" id="shop-stash">
@@ -178,7 +179,7 @@ function StashList(props: {
 function NextBattle(props: { view: NextBattleView | null }) {
   const v = props.view;
   if (v === null) {
-    return <p class="muted">Nothing is known about the next battle.</p>;
+    return <p class="muted">{screenText(screenTexts, 'uiShopNextUnknown')}</p>;
   }
   if (v.kind === 'pve' || v.pvp === null) {
     return (
@@ -225,7 +226,11 @@ function NextBattle(props: { view: NextBattleView | null }) {
   );
 }
 
-export function ShopTab(props: { run: RunHandle }) {
+export function ShopTab(props: {
+  run: RunHandle;
+  /** Opened on its own (`#shop`), outside the run bar: show the switcher. */
+  standalone?: boolean;
+}) {
   const { session, deps } = props.run;
   const view: SessionView = useStore(session.store);
   const run = view.run;
@@ -333,7 +338,10 @@ export function ShopTab(props: { run: RunHandle }) {
   const onReady = (): void => {
     void act(
       { type: sv.ready ? 'unready' : 'ready' },
-      sv.ready ? 'Not ready.' : 'Ready. Waiting for the others.',
+      screenText(
+        screenTexts,
+        sv.ready ? 'statusNotReady' : 'statusReadyWaiting',
+      ),
     );
   };
 
@@ -351,6 +359,15 @@ export function ShopTab(props: { run: RunHandle }) {
         Round {run.round} · Lives {run.lives} / {deps.rules.startingLives}
         {ready === null ? '' : ` · ${ready}`}
       </span>
+      {props.standalone === true ? (
+        <ActingSwitch
+          run={run}
+          acting={view.acting}
+          onActing={(p) => {
+            session.setActing(p);
+          }}
+        />
+      ) : null}
       <NotSavedNote run={props.run} />
     </>
   );
@@ -505,7 +522,10 @@ export function ShopTab(props: { run: RunHandle }) {
                     class="ready-icon"
                   />
                 ) : null}
-                {sv.ready ? 'Unready' : 'Ready'}
+                {screenText(
+                  screenTexts,
+                  sv.ready ? 'uiPartyUnready' : 'uiPartyReady',
+                )}
               </button>
               <span
                 class={sv.readyBlock === null ? 'muted' : 'error'}
@@ -515,8 +535,8 @@ export function ShopTab(props: { run: RunHandle }) {
                 {sv.readyBlock !== null
                   ? sv.readyBlock
                   : sv.ready
-                    ? 'Ready — press Unready to make changes.'
-                    : 'Ready when you are done shopping and building.'}
+                    ? screenText(screenTexts, 'readyLock')
+                    : screenText(screenTexts, 'uiShopReadyHint')}
               </span>
             </div>
           </Panel>

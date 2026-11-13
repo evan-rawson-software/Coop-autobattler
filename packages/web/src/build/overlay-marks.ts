@@ -101,20 +101,47 @@ export interface RateLabelInput {
   /** Width the corner mark takes, 0 when there is none. */
   readonly reserved: number;
   readonly boxWidth: number;
+  /** Width of the owner tag at the bottom left, 0 when none is drawn. */
+  readonly tagWidth: number;
 }
 
 /**
  * Where the rate text is drawn. Hidden below the zoom cut-off and on a sealed
  * building. Beside a corner mark it stays on the top row when it fits; when it
  * does not, an under-supplied consumer (LOW or starved) moves it to the bottom
- * row so the canvas still shows what the building gets, and a stalled marker
- * hides it.
+ * row, after the owner tag, if it fits inside the building there. Otherwise,
+ * and for the stalled marker, it is hidden.
  */
 export function rateLabelSpot(i: RateLabelInput): RateLabelSpot {
   if (!showRates(i.zoom) || i.sealed) return 'hidden';
   if (i.mark === null || i.reserved === 0) return 'top';
   if (i.textWidth + i.reserved <= i.boxWidth) return 'top';
-  return i.mark === 'stalled' ? 'hidden' : 'bottom';
+  if (i.mark === 'stalled') return 'hidden';
+  return i.tagWidth + i.textWidth <= i.boxWidth ? 'bottom' : 'hidden';
+}
+
+export interface RateLabelPlan {
+  readonly spot: RateLabelSpot;
+  /** Draw the short form (what the building gets only). */
+  readonly short: boolean;
+}
+
+/**
+ * `rateLabelSpot` for the full text, then for the short form when the full
+ * one has no room. `shortWidth` is null when there is no short form.
+ */
+export function rateLabelPlan(
+  i: Omit<RateLabelInput, 'textWidth'> & {
+    readonly fullWidth: number;
+    readonly shortWidth: number | null;
+  },
+): RateLabelPlan {
+  const full = rateLabelSpot({ ...i, textWidth: i.fullWidth });
+  if (full !== 'hidden' || i.shortWidth === null) {
+    return { spot: full, short: false };
+  }
+  const short = rateLabelSpot({ ...i, textWidth: i.shortWidth });
+  return { spot: short, short: short !== 'hidden' };
 }
 
 /** "0.25/0.50/s": what an under-supplied consumer gets against what it needs. */
@@ -125,5 +152,15 @@ export function suppliedRateText(
   return screenText(texts, 'rateGetsNeeds', {
     gets: formatHundredths(supply.gets),
     needs: formatHundredths(supply.needs),
+  });
+}
+
+/** "0.25/s": only what an under-supplied consumer gets. */
+export function suppliedShortText(
+  supply: Pick<Supply, 'gets'>,
+  texts: ScreenTexts = screenTexts,
+): string {
+  return screenText(texts, 'rateOnBoard', {
+    rate: formatHundredths(supply.gets),
   });
 }

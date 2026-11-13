@@ -290,6 +290,74 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ],
   ['statusUndone', {}, 'Undone.'],
 
+  ['collects', { rate: '@rate' }, 'Collects @rate / s'],
+  ['coreLabel', { name: '@name' }, "@name's Core"],
+  ['inspectorCollects', { rate: '@rate' }, '@rate / s'],
+  ['inspectorNeeds', { rate: '@rate' }, '@rate / s at top speed'],
+  ['inspectorSupplied', { gets: '@gets' }, ' · supplied (gets @gets / s)'],
+  ['inspectorTopSpeed', { speed: '@speed', unit: '@unit' }, '@speed @unit / s'],
+  [
+    'inspectorUnderSupplied',
+    { gets: '@gets' },
+    ' · UNDER-SUPPLIED: gets @gets / s',
+  ],
+  ['linkJoined', { name: '@name', verb: '@verb' }, 'Linked with @name (@verb)'],
+  [
+    'linkOpen',
+    { verb: '@verb' },
+    'Not connected: waiting for your neighbour (@verb)',
+  ],
+  ['linkReceiving', {}, 'receiving'],
+  [
+    'linkSameKind',
+    { name: '@name', verb: '@verb' },
+    'Cannot join: @name is also @verb',
+  ],
+  ['linkSending', {}, 'sending'],
+  [
+    'needsTopSpeed',
+    { rate: '@rate', speed: '@speed', unit: '@unit' },
+    'Needs @rate / s at top speed (@speed @unit / s)',
+  ],
+  [
+    'partnerUnderSuppliedMany',
+    { player: '@player', count: '@count' },
+    '@player has @count under-supplied buildings.',
+  ],
+  [
+    'partnerUnderSuppliedOne',
+    { player: '@player' },
+    '@player has 1 under-supplied building.',
+  ],
+  ['playerFallback', { number: '@number' }, 'Player @number'],
+  [
+    'problemUnderSupplied',
+    { name: '@name', gets: '@gets', needs: '@needs' },
+    '@name gets @gets/s of the @needs/s it needs.',
+  ],
+  ['reasonAtCell', { text: '@text', x: '@x', y: '@y' }, '@text At (@x, @y).'],
+  [
+    'reasonPlayerToAct',
+    { text: '@text', number: '@number' },
+    '@text Player @number has to pick a spot.',
+  ],
+  ['reasonUnknown', { reason: '@reason' }, 'Not allowed (@reason).'],
+  [
+    'reasonWithCause',
+    { text: '@text', cause: '@cause' },
+    '@text It could not be chosen yet: @cause',
+  ],
+  [
+    'selectionNote',
+    { cause: '@cause' },
+    'Your next opponent could not be chosen yet: @cause It is tried again on your next action.',
+  ],
+  ['shotsWord', {}, 'shots'],
+  ['stepsWord', {}, 'steps'],
+  ['tableSupplied', {}, 'supplied'],
+  ['tableUnderSupplied', {}, 'UNDER-SUPPLIED'],
+  ['unitsWord', {}, 'units'],
+
   ['uiInspectorInput', {}, 'Input'],
   ['uiInspectorReceiving', {}, 'Receiving'],
   [
@@ -355,8 +423,6 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['uiSwitchGroup', {}, 'Acting player'],
   ['uiSwitchDone', {}, '(done)'],
   ['uiSwitchToAct', {}, '(to act)'],
-  ['uiSwitchLabelDone', { name: 'Ann' }, 'Ann: done'],
-  ['uiSwitchLabelToAct', { name: 'Ann' }, 'Ann: still to act'],
   ['uiSwitchEveryoneDone', {}, 'Everyone is done.'],
   ['uiSwitchWaiting', { names: 'Ann, Bo' }, 'Waiting for: Ann, Bo'],
   ['uiSwitchAnnounce', { name: 'Ann' }, 'Now playing as Ann'],
@@ -373,12 +439,82 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     { message: 'The run changed.' },
     'The run changed. Nothing was changed. Reload to see the saved run.',
   ],
+  ['uiCellsDirect', {}, ' (direct)'],
+  ['uiCellsMany', { count: '@count' }, '@count cells'],
+  ['uiCellsOne', { count: '@count' }, '@count cell'],
+  ['uiComingSoon', {}, 'Coming soon'],
+  ['uiConduitName', {}, 'Conduit'],
+  [
+    'uiCoreClick',
+    { count: '@count' },
+    'Click a green-dotted cell in your own area to place the Core (its lowest-left cell). Your starting kit then appears in the stash. @count legal positions.',
+  ],
+  [
+    'uiCoreEveryone',
+    {},
+    'Every player places their own Core in their own area. Choosing a position confirms it.',
+  ],
+  ['uiCoreTitle', {}, 'Core placement'],
+  [
+    'uiInspectorMeta',
+    { kind: '@kind', tier: '@tier', owner: '@owner' },
+    '@kind · tier @tier · bought by @owner',
+  ],
+  ['uiLblBorderLink', {}, 'Border link'],
+  ['uiLblCarries', {}, 'Carries'],
+  ['uiLblCollects', {}, 'Collects'],
+  ['uiLblConduits', {}, 'Conduits'],
+  ['uiLblErase', {}, 'Erase'],
+  ['uiLblHealth', {}, 'Health'],
+  ['uiLblLength', {}, 'Length'],
+  ['uiLblNeeds', {}, 'Needs'],
+  ['uiLblTopSpeed', {}, 'Top speed'],
+  ['uiNoProblems', {}, '✓ No problems'],
+  ['uiOverlayDry', { secs: '@secs' }, 'Dry run @secss'],
+  ['uiOverlayDryTicks', {}, 'Dry run ticks'],
+  ['uiOverlayFlow', {}, 'Resource flow'],
+  ['uiOverlayPaths', {}, 'Enemy paths'],
+  ['uiOverlayTicksPerSecond', { ticks: '@ticks' }, '@ticks ticks = 1 s'],
+  ['uiPanelOverlays', {}, 'Overlays'],
+  ['uiPanelParty', {}, 'Party'],
+  ['uiPanelPartySolo', {}, 'Party · solo'],
+  ['uiPanelProblems', {}, 'Problems'],
+  ['uiPanelSelected', {}, 'Selected'],
+  ['uiPanelStash', {}, 'Stash · drag onto the board'],
+  ['uiPanelTools', {}, 'Tools'],
+  [
+    'uiPartyNext',
+    { leg: '@leg', ready: '@ready', total: '@total' },
+    'Next: @leg · @ready of @total ready',
+  ],
+  ['uiPartyReady', {}, 'Ready'],
+  ['uiPartyUnready', {}, 'Unready'],
+  ['uiShopNextUnknown', {}, 'Nothing is known about the next battle.'],
+  ['uiShopReadyHint', {}, 'Ready when you are done shopping and building.'],
+  ['uiShopSoldOut', {}, 'Sold out. Re-roll for new offers.'],
+  ['uiStartingRun', {}, 'Starting a run.'],
+  ['uiToolConduit', {}, 'Conduit · free'],
+  ['uiToolErase', {}, 'Erase conduit'],
+  ['uiToolRedo', {}, 'Redo'],
+  ['uiToolRedoTip', {}, 'Redo (Ctrl+Shift+Z)'],
+  ['uiToolReturnToStash', {}, 'Return to stash'],
+  ['uiToolRotate', {}, 'Rotate'],
+  ['uiToolRotateKey', {}, 'Rotate (R)'],
+  [
+    'uiToolRotateTip',
+    {},
+    "Rotate (R). Rotating detaches the building's conduits.",
+  ],
+  ['uiToolSelect', {}, 'Select / move'],
+  ['uiToolToStash', {}, 'To stash'],
+  ['uiToolUndo', {}, 'Undo'],
+  ['uiToolUndoTip', {}, 'Undo (Ctrl+Z). Layout changes only.'],
   ['uiShopNeeds', { needs: 'Ore' }, 'Needs: Ore'],
   ['rateGetsNeeds', { gets: '0.25', needs: '0.50' }, '0.25/0.50/s'],
 ];
 
-const OWNED =
-  /^(status|battle|sealed|readyLock|problemNothing|problemNoConduit|problemStalled|problemStarved|inspectorStalled|linkActive|linkIdle|rate(OnBoard|GetsNeeds)|problemFreeNodes|problemStash|eventWaiting|ui[A-Z])/;
+/** The reason_* keys are pinned code by code in texts.test.ts. */
+const PINNED_ELSEWHERE = (key: string): boolean => key.startsWith('reason_');
 
 describe('screen texts are pinned key by key', () => {
   test.each(TABLE)('%s', (key, values, expected) => {
@@ -386,7 +522,7 @@ describe('screen texts are pinned key by key', () => {
   });
 
   test('the table covers every such key of the file', () => {
-    const inFile = Object.keys(screenTexts).filter((k) => OWNED.test(k));
+    const inFile = Object.keys(screenTexts).filter((k) => !PINNED_ELSEWHERE(k));
     expect(TABLE.map(([k]) => k).sort()).toEqual(inFile.sort());
   });
 });
