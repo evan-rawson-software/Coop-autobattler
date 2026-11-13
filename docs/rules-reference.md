@@ -234,6 +234,21 @@ In every other case (one half only, or two halves of the same kind) each half
 at the spot is **open**. Because the join is computed from the halves each
 time, erasing, moving or undoing never leaves a stale link.
 
+A link can also be **broken**. The links are taken in a fixed order: border
+ascending, then row ascending. A link is **joined** unless joining it, on top
+of every ordinary conduit and the links already joined, would give a
+`resource_mismatch` or a `would_loop` anywhere. Then it is broken. A broken
+link behaves exactly as two open halves: it carries nothing, loses nothing, and
+the sending side backs up. Nothing is stored, so a broken link is joined again
+as soon as the cause is removed. When two links lie on one loop, the later one
+in the order is the broken one. The flow graph lists each broken link as
+`brokenLinks`, in that order: `{ border, y, sending, receiving, reason,
+detail }`, with the two half ids, the reason (`resource_mismatch` or
+`would_loop`) and the `detail` the edit-time check would name (none for a
+loop). Everything that uses joins (the simulation, resource typing,
+`conduitResource`, "Accepting", battle setup, ghosts, bots) uses the joined
+links only, so a broken link is open everywhere.
+
 **A link is one conduit.** In the flow graph a link is one edge:
 
 - `conduitId` is the sending half's `id`; a new field `linkedConduit` is the
@@ -273,12 +288,24 @@ of a receiving half is that of its link's sending half, and `null` while it
 is open.
 
 **Checks cover the whole board.** `resource_mismatch` and `would_loop` are
-evaluated on the network with every link joined. Adding a conduit or a half
-is therefore rejected when it would cause a mismatch or a loop anywhere,
+evaluated on the network of joined links. Adding a conduit or a half is
+therefore rejected when it would cause a mismatch or a loop anywhere,
 including in the neighbour's plot (for example: a new conduit in plot 0 sends
-a second resource, through a link, into a merger in plot 1). The reason is
-the same and `detail` names the building where the problem appears. No other
-operation adds an edge, so no other operation needs the check.
+a second resource, through a link, into a merger in plot 1), or when it would
+break a link that is joined now. Broken links count as open. The reason is
+the same and `detail` names the building where the problem appears. An
+accepted add never changes which existing links are joined, because adding an
+edge can only add violations. No other operation adds an edge, so no other
+operation needs the check.
+
+**The restoring add.** `addConduit` takes the option `restore`. With it, the
+refusal for `resource_mismatch` and `would_loop` is skipped when the network
+after the derivation has no mismatch and no loop, that is, when the conflict is
+absorbed by one or more links becoming broken. A conflict that remains with
+every link broken (inside one plot) is refused as before. All other rules and
+their order are unchanged. Only undo and redo use it. The `add_conduit` intent
+carries it as an optional boolean (`restore`). Any client may send it: the
+resulting state is always valid.
 
 **Removing.** `eraseConduit` removes one half (owner only, PP-1);
 `detachConduits` removes the halves attached to a moved or returned building.
@@ -288,17 +315,19 @@ of the absent player's can be changed. The session intents `add_conduit` and
 `erase_conduit` take border ends (`{ border, y }`) and name the acting player;
 a refusal reports its reason to the player who sent it. Undo and redo are per
 player and layout only (RS-5g): undoing the removal of a half adds it again
-with the checks above, and if that is now rejected the undo is refused with
-the same reason and the player's history is left as it was (the web client
-checks the whole inverse first, so a refusal changes nothing). Undo restores
+with the restoring add. A conflict with a link is therefore never a reason to
+refuse an undo: the link is broken instead. An undo is refused only for a
+conflict inside one plot, with the same reason, and then the player's history
+is left as it was (the web client checks the whole inverse first, so a refusal
+changes nothing). Undo restores
 the previous team state exactly, including conduit IDs and the counters
 (`nextId`, `nextConduitId`). Every player has their own conduit ID space (see
 Conduits, "Conduit IDs"), so what a teammate does in between never takes an ID
 an undo needs: an undo is never refused over IDs.
 
 **Validation.** `validateTeamState` checks every half with the rules above,
-at most one half per player per spot, and no mismatch or loop on the joined
-network.
+at most one half per player per spot, and no mismatch or loop on the network
+after the derivation. Broken links are allowed.
 
 **In battle.** `BoardSim.conduits` has one entry per flow edge, so one per
 link, under the sending half's id. When the building at either end of a link

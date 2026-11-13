@@ -203,12 +203,14 @@ export {
 export {
   SIDE_ORDER,
   addConduit,
+  brokenLinks,
   buildFlowGraph,
   conduitResource,
   conduitsLostWith,
 } from './conduits.js';
 export type {
   AddConduitResult,
+  BrokenLink,
   ConduitEndArg,
   ConduitReason,
   FlowEdge,

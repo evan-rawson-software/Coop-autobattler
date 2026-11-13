@@ -1092,6 +1092,9 @@ function validateInner(
       errors.push(`ids: duplicate instance ID ${String(c.id)} (conduits).`);
     }
     conduitIds.add(c.id);
+    if (decodeConduitId(c.id).n < 1) {
+      errors.push(`conduits: ID ${String(c.id)} has a number below 1.`);
+    }
     if (decodeConduitId(c.id).owner !== c.owner) {
       errors.push(
         `conduits: ID ${String(c.id)} does not belong to its owner ${String(c.owner)}.`,

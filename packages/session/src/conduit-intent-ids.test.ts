@@ -107,6 +107,19 @@ describe('conduit id fields on intents', () => {
     ).toBe(true);
   });
 
+  test('a non-boolean restore is invalid_intent; a boolean is accepted', () => {
+    const { s, add } = build();
+    for (const restore of ['yes', 1, 0, null, {}]) {
+      const bad = { ...add, restore } as unknown as Intent;
+      expect(reason(applyIntent(s, 0, bad, baseDeps))).toBe('invalid_intent');
+    }
+    for (const restore of [true, false]) {
+      expect(reason(applyIntent(s, 0, { ...add, restore }, baseDeps))).toBe(
+        'ok',
+      );
+    }
+  });
+
   test('an explicit id is wrong_step outside the build and shop steps', () => {
     const { s, add } = build();
     const added = ok(s, 0, add).state;

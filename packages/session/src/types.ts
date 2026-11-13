@@ -248,6 +248,8 @@ export type BoardIntent =
       readonly cells: readonly Cell[];
       /** Re-add under this earlier ID (undo); see `addConduit`. */
       readonly id?: number;
+      /** Accept the add although a link breaks (undo and redo); see `addConduit`. */
+      readonly restore?: boolean;
     }
   | {
       readonly type: 'erase_conduit';

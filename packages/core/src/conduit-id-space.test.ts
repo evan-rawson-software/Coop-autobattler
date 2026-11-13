@@ -4,9 +4,15 @@ import {
   decodeConduitId,
   encodeConduitId,
 } from './conduit-ids.js';
-import { addConduit } from './conduits.js';
+import { addConduit, buildFlowGraph } from './conduits.js';
+import {
+  createBoardSim,
+  createFlowContext,
+  flowTotals,
+  stepFlow,
+} from './flow-sim.js';
 import type { GameMap } from './map.js';
-import { content, mapgen } from './test-support.js';
+import { content, mapgen, simConfig } from './test-support.js';
 import {
   addToStash,
   createTeamState,
@@ -182,6 +188,15 @@ describe('the conduit id space', () => {
       if (c !== undefined) c.id = 4;
     });
     expect(wrong.some((e) => e.includes('does not belong'))).toBe(true);
+    // A conduit number below 1 is invalid (id 1 is player 1's number 0).
+    const zero = check((j) => {
+      const c = j.conduits[0] as { id: number; owner: number } | undefined;
+      if (c !== undefined) {
+        c.id = 1;
+        c.owner = 1;
+      }
+    });
+    expect(zero.some((e) => e.includes('below 1'))).toBe(true);
     for (const bad of [[1, 1], [2], [2, 0], [2, 2, 2], [2, 1.5]]) {
       expect(
         check((j) => {
@@ -193,5 +208,50 @@ describe('the conduit id space', () => {
     const shared = ok(addConduit(team, content, link(0)));
     expect(shared.state.buildings.some((b) => b.id === shared.id)).toBe(true);
     expect(validateTeamState(shared.state, content, mapgen).ok).toBe(true);
+  });
+
+  test('a conduit id equal to a building id validates and runs', () => {
+    const { team, link } = rig();
+    const shared = ok(addConduit(team, content, link(0)));
+    expect(shared.state.buildings.some((b) => b.id === shared.id)).toBe(true);
+    expect(validateTeamState(shared.state, content, mapgen).ok).toBe(true);
+    expect(buildFlowGraph(shared.state, content).edges).toHaveLength(1);
+    const sim = createBoardSim(shared.state, content, simConfig);
+    const flow = createFlowContext(shared.state, content, simConfig, {
+      consumers: 'drain',
+    });
+    for (let i = 0; i < 100; i++) stepFlow(sim, flow);
+    const t = flowTotals(sim);
+    expect(t.consumed).toBeGreaterThan(0);
+    expect(t.produced).toBe(
+      t.inConduits + t.held + t.inBuffers + t.consumed + t.lost,
+    );
+  });
+
+  test('a team where both players own conduits runs as pinned', () => {
+    const { team, link } = rig();
+    const a = ok(addConduit(team, content, link(0)));
+    const b = ok(addConduit(a.state, content, link(1)));
+    expect([a.id, b.id]).toEqual([4, 5]);
+    const sim = createBoardSim(b.state, content, simConfig);
+    const flow = createFlowContext(b.state, content, simConfig, {
+      consumers: 'drain',
+    });
+    for (let i = 0; i < 100; i++) stepFlow(sim, flow);
+    // Each player's own conduit feeds their own barracks, five items each.
+    expect(
+      sim.consumers.map((c) => [c.building, c.inputs.map((x) => x.consumed)]),
+    ).toEqual([
+      [2, [5]],
+      [4, [5]],
+    ]);
+    expect(flowTotals(sim)).toEqual({
+      produced: 10,
+      inConduits: 0,
+      held: 0,
+      inBuffers: 0,
+      consumed: 10,
+      lost: 0,
+    });
   });
 });
