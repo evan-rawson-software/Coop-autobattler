@@ -308,7 +308,7 @@ export async function createServices(
   // they stop using quota (TA-8, PP-17); newer ones are kept. A failed
   // clean-up is not an error.
   try {
-    await ghostPool.store.removeOtherVersions(RUN_VERSION);
+    await ghostPool.store.removeOlderVersions(RUN_VERSION);
   } catch {
     // the rows only cost quota
   }

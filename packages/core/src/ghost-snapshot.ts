@@ -36,7 +36,14 @@ export const GHOST_MAX_LABEL_LENGTH = 40;
 /** Fixed allowance on top of the derived limit (ids, labels, counters, field names). */
 export const GHOST_MAX_BYTES_MARGIN = 4096;
 /** Highest round accepted in a snapshot (bounds the limit computed from it). */
-export const GHOST_MAX_ROUND = 1000;
+export const GHOST_MAX_ROUND = 200;
+/**
+ * Fixed size cap (2 MiB of canonical JSON), independent of content, economy
+ * and events. Restore and replay of an already-chosen snapshot use only this
+ * as the size limit; selection uses the smaller of this and the derived one,
+ * so whatever selection accepts can always be restored.
+ */
+export const GHOST_MAX_SERIALIZED_BYTES = 2_097_152;
 /** Deepest nesting of a snapshot (the real one is under 8 levels). */
 export const GHOST_MAX_DEPTH = 16;
 /** Longest string anywhere in a snapshot (ids, labels, terrain and building names). */
@@ -81,6 +88,8 @@ function entryLength(sample: unknown): number {
  *   stash       N * stash entry
  *   modifiers   (2 * round - 1) * longest modifier entry
  *   margin      GHOST_MAX_BYTES_MARGIN
+ *
+ * The result is at most `GHOST_MAX_SERIALIZED_BYTES`.
  *
  * Every entry is measured on a worst-case sample (longest content ids,
  * highest coordinates, instance id up to 7 digits). Compute it from the
@@ -162,13 +171,14 @@ export function ghostMaxSerializedSize(
     }
   }
   const placed = Math.min(cells, items);
-  return (
+  return Math.min(
+    GHOST_MAX_SERIALIZED_BYTES,
     cells * mapEntry +
-    placed * (building + 2 * conduit) +
-    cells * cellEntry +
-    items * stashEntry +
-    (2 * round - 1) * modifier +
-    GHOST_MAX_BYTES_MARGIN
+      placed * (building + 2 * conduit) +
+      cells * cellEntry +
+      items * stashEntry +
+      (2 * round - 1) * modifier +
+      GHOST_MAX_BYTES_MARGIN,
   );
 }
 
@@ -525,8 +535,11 @@ function structureProblem(root: unknown, maxSize: number): string | null {
 
 /**
  * Check shape, team state, map, and consistency of a snapshot, without the
- * economy bound. Never throws. Used by `validateRunState`, which has no
- * economy configuration; everything else uses `validateGhostSnapshot`.
+ * content-derived bounds (value, tier, modifiers known to events, and, when
+ * `bounds` is not given, the derived size limit: the fixed
+ * `GHOST_MAX_SERIALIZED_BYTES` applies instead). Never throws. Used on restore
+ * and replay of an already-chosen snapshot; new snapshots use
+ * `validateGhostSnapshot`.
  */
 export function checkGhostSnapshotShape(
   raw: unknown,
@@ -601,11 +614,15 @@ function shapeInner(
   // Before anything reads into the value: its size, depth and numbers.
   const sizeProblem = structureProblem(
     raw,
-    ghostMaxSerializedSize(declared, declaredRound, {
-      content,
-      mapgen,
-      ...bounds,
-    }),
+    // No bounds (restore and replay): only the fixed cap. With bounds
+    // (selection): the derived limit, itself at most the cap.
+    bounds === undefined
+      ? GHOST_MAX_SERIALIZED_BYTES
+      : ghostMaxSerializedSize(declared, declaredRound, {
+          content,
+          mapgen,
+          ...bounds,
+        }),
   );
   if (sizeProblem !== null) {
     errors.push(`snapshot: ${sizeProblem}.`);
@@ -809,7 +826,7 @@ function plausibility(
   ctx: GhostValidationContext,
   errors: string[],
 ): void {
-  const value = teamBuildingValue(s.team, ctx.content);
+  // Gold cannot be given (CP-29), so the bound applies to each owner (PP-17).
   const bound = ghostValueBound(
     s.round,
     s.partySize,
@@ -817,10 +834,20 @@ function plausibility(
     ctx.economy,
     ctx.events,
   );
-  if (value > bound.limit) {
-    errors.push(
-      `team: building value ${String(value)} is more than the ${String(bound.limit)} possible by round ${String(s.round)}.`,
+  const ownerLimit = bound.goldPerPlayer + bound.kitPerPlayer;
+  const values = new Map<number, number>();
+  for (const b of [...s.team.buildings, ...s.team.stash]) {
+    values.set(
+      b.owner,
+      (values.get(b.owner) ?? 0) + tierPrice(ctx.content, b.def, b.tier),
     );
+  }
+  for (const [owner, value] of [...values].sort((x, y) => x[0] - y[0])) {
+    if (value > ownerLimit) {
+      errors.push(
+        `owner ${String(owner)}: building value ${String(value)} is more than the ${String(ownerLimit)} possible by round ${String(s.round)}.`,
+      );
+    }
   }
   const tiers = ghostTierBound(s.round, ctx.economy, ctx.events);
   const excess = new Map<number, number>();

@@ -436,7 +436,7 @@ function mismatch(detail: string): HandlerResult {
 /**
  * Re-apply a logged selection. The draw is repeated on the same stream and
  * must give the logged index; the logged snapshot is used as it is, checked
- * for structure (`checkGhostSnapshotShape`: no economy numbers, no rules) and
+ * for structure (`checkGhostSnapshotShape`: no economy numbers, no rules, the fixed size cap) and
  * for fit to this run (same bucket, not this run's own, not fought before),
  * never re-judged by today's value or tier bounds. Any mismatch fails the
  * replay; it never falls back to another opponent.
@@ -496,9 +496,8 @@ function replaySelection(
     vctx.content,
     vctx.mapgen,
     undefined,
-    // The same size bounds as at selection, so replay accepts exactly what
-    // selection accepted (the no-economy bound is tighter at late rounds).
-    vctx,
+    // No economy or events: structure and the fixed size cap only.
+    undefined,
   );
   if (!shape.ok) {
     return mismatch(

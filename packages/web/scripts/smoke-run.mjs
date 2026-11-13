@@ -6,6 +6,7 @@
 // PvP battle, a second round, the run-over screen (by defeat and by
 // abandoning), reloads at each screen, and several saved runs at once.
 
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { frames, hookReady, slow } from './smoke-timing.mjs';
@@ -1601,6 +1602,186 @@ export async function runRunSmoke({
   );
   await page.goto(`${baseUrl}#/`);
   await page.waitForSelector('#main-menu');
+
+  // ---------------------------------------------------------------------
+  // The debug "Next PvP opponent" control writes the setting and clears it.
+  const FORCE_KEY = 'coop-autobattler:debug-force-opponent';
+  const forceValue = () =>
+    page.evaluate((k) => localStorage.getItem(k), FORCE_KEY);
+  await page.goto(`${baseUrl}#debug`);
+  await page.waitForSelector('#force-opponent');
+  await page.selectOption('#force-opponent', 'boss');
+  check(
+    (await forceValue()) === 'boss',
+    'debug screen: "Next PvP opponent" set to Boss stores the setting',
+  );
+  await page.selectOption('#force-opponent', 'auto');
+  check(
+    (await forceValue()) === null,
+    'debug screen: "Next PvP opponent" set back to Automatic removes the setting',
+  );
+
+  // ---------------------------------------------------------------------
+  // The boss with no setting: a real save of a party of two, alive at round 7
+  // (made in Node by the real bot, see smoke-seed.mjs), whose PvP opponent the
+  // browser selects from an empty bucket, since the bundled ghosts stop at
+  // round 6.
+  {
+    const record = JSON.parse(
+      execFileSync(
+        'pnpm',
+        ['exec', 'tsx', path.join(webDir, 'scripts/smoke-seed.mjs')],
+        { cwd: path.resolve(webDir, '../..'), maxBuffer: 1 << 26 },
+      ).toString('utf8'),
+    );
+    const id = record.runId;
+    await goMenu();
+    check((await forceValue()) === null, 'no-ghost boss: no force setting');
+    await page.evaluate(
+      async ([rec, runId]) => {
+        const db = await new Promise((res, rej) => {
+          const r = indexedDB.open('coop-autobattler', 1);
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+        });
+        await new Promise((res) => {
+          const tx = db.transaction('saves', 'readwrite');
+          tx.objectStore('saves').put(rec, runId);
+          tx.oncomplete = res;
+        });
+        db.close();
+      },
+      [record, id],
+    );
+    await page.reload();
+    await page.waitForSelector(`[data-run="${id}"]`);
+    await page.click(`[data-run="${id}"] [data-action="resume"]`);
+    await waitStep('pve_choice');
+    const start = await R.state();
+    check(
+      start.round >= 7 && start.lives > 0 && start.pvpOpponent === null,
+      `no-ghost boss: the saved run is alive at round ${start.round}, lives ${start.lives}, opponent not yet chosen`,
+    );
+    const actAs2 = async (p) => {
+      await page.click(
+        `#acting-switch [data-action="act-as"][data-player="${p}"]`,
+      );
+      await page.waitForFunction(
+        (n) => window.__debug?.run?.state().acting === n,
+        p,
+      );
+    };
+    // The battle screen may replay for the other player: skip, then continue.
+    const finishBattle = async () => {
+      await page.waitForFunction(() => window.__debug?.battle?.phase, null, {
+        timeout: slow(20000),
+      });
+      await page.waitForFunction(
+        () =>
+          window.__debug?.battle?.phase() === 'summary' ||
+          document.querySelector('#skip') !== null,
+      );
+      if (
+        (await page.evaluate(() => window.__debug.battle.phase())) !== 'summary'
+      ) {
+        await page.click('#skip');
+        await page.waitForFunction(
+          () => window.__debug?.battle?.phase() === 'summary',
+        );
+      }
+    };
+    // Both players act at each step until the PvP battle.
+    let guard = 0;
+    while ((await R.state()).step !== 'pvp_summary' && guard++ < 12) {
+      const s = await R.state();
+      if (s.step === 'pvp_summary') break;
+      if (s.step === 'shop' && s.leg === 'pve') {
+        check(
+          s.pvpOpponent?.kind === 'boss' && s.round >= 7,
+          `no-ghost boss: the browser's own read of the empty pool gives the boss at round ${s.round}`,
+        );
+        await page.waitForSelector('#shop-screen');
+        const t = await page.locator('#shop-screen').innerText();
+        check(
+          /Opponent: the boss/.test(t) && /Lose: -1 life/.test(t),
+          'no-ghost boss: the shop announces the boss, a loss costs 1 life',
+        );
+      }
+      for (const p of [0, 1]) {
+        // The step may have moved on after the first player.
+        if ((await R.state()).step !== s.step) break;
+        await actAs2(p);
+        if ((await R.state()).step !== s.step) break;
+        if (s.step === 'pve_choice') {
+          await page.waitForSelector('[data-action="choose"]');
+          await page.click('[data-action="choose"][data-difficulty="easy"]');
+        } else if (s.step === 'pve_summary') {
+          await finishBattle();
+          await page.click('#battle-ready');
+        } else if (s.step === 'event_choice') {
+          await page.waitForSelector('[data-action="choose-event"]');
+          await page.click('[data-action="choose-event"]');
+        } else if (s.step === 'event_resolve') {
+          await page.waitForSelector('[data-action="choose-option"]');
+          const skip = page.locator(
+            '[data-action="choose-option"][data-option="skip"]',
+          );
+          await page.click(
+            (await skip.count()) > 0
+              ? '[data-action="choose-option"][data-option="skip"]'
+              : '[data-action="choose-option"]:not([disabled])',
+          );
+        } else if (s.step === 'shop') {
+          await page.waitForSelector('#shop-ready');
+          await page.click('#shop-ready');
+        } else {
+          throw new Error(`no-ghost boss: unexpected step ${s.step}`);
+        }
+        if (p === 0) await settle();
+      }
+      await page.waitForFunction(
+        (a) => window.__debug?.run?.state().actions !== a,
+        s.actions,
+      );
+    }
+    await waitStep('pvp_summary');
+    const before = await R.state();
+    await actAs2(0);
+    await page.waitForFunction(() => window.__debug?.battle?.phase, null, {
+      timeout: slow(20000),
+    });
+    check(
+      /boss/i.test(await page.locator('[data-field="vs"]').innerText()),
+      'no-ghost boss: the PvP battle is fought against the boss',
+    );
+    await finishBattle();
+    const won =
+      (await page.locator('[data-field="result-word"]').innerText()) ===
+      'Victory';
+    const own = await page.locator('[data-field="standing-own"]').innerText();
+    const foe = await page.locator('[data-field="standing-foe"]').innerText();
+    check(
+      /\/ 2$/.test(own) && /\/ 2$/.test(foe),
+      `no-ghost boss: one Core per player on each side, the boss has 2 (own ${own}, boss ${foe})`,
+    );
+    check(
+      won ? /^0 \//.test(foe) : /^[12] \//.test(foe),
+      `no-ghost boss: a win needs every boss Core destroyed (${won ? 'won' : 'lost'}, boss Cores standing ${foe})`,
+    );
+    await page.click('#battle-ready');
+    await actAs2(1);
+    await finishBattle();
+    await page.click('#battle-ready');
+    await page.waitForFunction(
+      () => window.__debug?.run?.state().step !== 'pvp_summary',
+    );
+    const after = await R.state();
+    check(
+      won ? after.lives === before.lives : after.lives === before.lives - 1,
+      `no-ghost boss: the result is applied (${won ? 'won' : 'lost'}, lives ${before.lives} -> ${after.lives}, step ${after.step})`,
+    );
+    await goMenu();
+  }
 
   // ---------------------------------------------------------------------
   // A local party of two (?players=2): one browser, the acting player is
