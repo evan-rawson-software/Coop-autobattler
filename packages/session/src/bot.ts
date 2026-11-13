@@ -12,7 +12,12 @@
  * reads the clock or `Math.random`. The same strategy, seed and run
  * arguments give the same run.
  */
-import { Rng, listLegalCorePositions, sealedProducers } from '@game/core';
+import {
+  Rng,
+  listLegalCorePositions,
+  sealedProducers,
+  tierPrice,
+} from '@game/core';
 import {
   planLayout,
   plotRoom,
@@ -68,6 +73,22 @@ interface Strategy {
    * links actually form, and only with a neighbour (issue #178).
    */
   readonly roles?: boolean;
+  /**
+   * Stop buying walls once a player owns this many (a screen, not a hoard):
+   * the gold waits for what the strategy is really after (issue #178).
+   */
+  readonly wallCap?: number;
+  /**
+   * Buy only what is certain to be used: a collector for a consumer the
+   * player already owns, or for one on offer in the same shop that the gold
+   * covers together (and the other way round); never for a consumer that is
+   * merely imagined. A Splitter lets a collector count for two consumers, and
+   * gold is kept for the missing half of a pair instead of spent on re-rolls
+   * (issue #178).
+   */
+  readonly realOnly?: boolean;
+  /** With `realOnly`: gold kept back from re-rolls while no consumer waits. */
+  readonly pairReserve?: number;
 }
 
 const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
@@ -144,7 +165,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
   },
   siege: {
     description: 'Few, high-tier barracks and armories behind a wall screen.',
-    core: 'middle',
+    core: 'back',
     want: {
       bld_barracks: 9,
       bld_armory: 8,
@@ -159,7 +180,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
     maxBuys: 5,
     maxRerolls: 3,
     random: false,
-    pve: ['medium', 'hard', 'easy'],
+    pve: ['hard', 'medium', 'easy'],
     events: ['workshop', 'shrine', 'windfall'],
     modifiers: ['mod_drilled_troops', 'mod_reinforced_frames'],
     layout: {
@@ -175,6 +196,11 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       ],
       links: true,
     },
+    // The kit's three walls are the screen; more gold goes to what feeds
+    // the Core's defence, not to a hoard of walls.
+    wallCap: 3,
+    realOnly: true,
+    pairReserve: 20,
     // Siege draws no border links in any bundled ghost, so no roles.
   },
   weak: {
@@ -381,6 +407,22 @@ const CONSUMERS = [
   'bld_hangar',
 ];
 
+/**
+ * The gold a re-roll must leave: 6 (a cheap piece) for a strategy that buys
+ * speculatively; for one that buys only what it will use, the price of the
+ * collector a waiting consumer needs, or else the reserve for a pair.
+ */
+function rerollReserve(
+  d: Driver,
+  s: Strategy,
+  consumersWaiting: number,
+): number {
+  if (s.realOnly !== true) return 6;
+  return consumersWaiting > 0
+    ? tierPrice(d.deps.content, 'bld_extractor', 1)
+    : (s.pairReserve ?? 6);
+}
+
 /** Buy what the strategy wants, keeping extractors and consumers balanced. */
 function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
   const n = d.state.players.length;
@@ -397,6 +439,7 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       const sources = owned.filter((b) => b.def === 'bld_extractor').length;
       const users = owned.filter((b) => CONSUMERS.includes(b.def)).length;
       const splitters = owned.filter((b) => b.def === 'bld_splitter').length;
+      const walls = owned.filter((b) => b.def === 'bld_wall').length;
       const room = plotRoom(
         d.state.team,
         p,
@@ -484,7 +527,9 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
           // for its neighbours' spare collectors to feed.
           const more = role === 2 ? slack + 1 : 1;
           if (o.def === 'bld_extractor' && sources >= users + extra) score = 0;
-          if (CONSUMERS.includes(o.def) && users >= sources + more) score = 0;
+          if (CONSUMERS.includes(o.def) && users >= sources + more) {
+            score = 0;
+          }
           // Never buy a collector no free node can take (it would wait in the
           // stash), nor any for a style that does not connect, which places
           // none (issue #178).
@@ -541,9 +586,21 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
               // purchase of this shop may be the one that takes it.
               if (
                 role !== 1 &&
-                !likedConsumers.some((c) =>
-                  placeable('collector', offer, [c, c]),
-                )
+                !(s.realOnly === true
+                  ? placeable('collector', offer, []) ||
+                    data.offers.some(
+                      (e) =>
+                        e !== null &&
+                        CONSUMERS.includes(e.def) &&
+                        (s.want[e.def] ?? 0) > 0 &&
+                        o.price + e.price <= me.gold &&
+                        placeable('collector', offer, [
+                          { def: e.def, tier: e.tier },
+                        ]),
+                    )
+                  : likedConsumers.some((c) =>
+                      placeable('collector', offer, [c, c]),
+                    ))
               ) {
                 score = 0;
               }
@@ -552,14 +609,43 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
                 (s.want.bld_splitter ?? 0) > 0
                   ? [{ def: 'bld_splitter', tier: 1 }]
                   : [];
-              if (!placeable('consumer', offer, share)) score = 0;
-            } else if (o.def === 'bld_splitter') {
               if (
-                !likedConsumers.some((c) => placeable('splitter', offer, [c]))
+                !placeable('consumer', offer, share) &&
+                !(
+                  s.realOnly === true &&
+                  data.offers.some(
+                    (e) =>
+                      e !== null &&
+                      d.deps.content.buildings.get(e.def)?.kind === 'source' &&
+                      o.price + e.price <= me.gold &&
+                      placeable('consumer', offer, [
+                        { def: e.def, tier: e.tier },
+                      ]),
+                  )
+                )
+              ) {
+                score = 0;
+              }
+            } else if (o.def === 'bld_splitter') {
+              // A strategy that buys only what it will use asks about the
+              // consumers it really owns, not a liked one it might buy.
+              if (
+                s.realOnly === true
+                  ? !placeable('splitter', offer, [])
+                  : !likedConsumers.some((c) =>
+                      placeable('splitter', offer, [c]),
+                    )
               )
                 score = 0;
             }
           }
+        }
+        if (
+          s.wallCap !== undefined &&
+          o.def === 'bld_wall' &&
+          walls >= s.wallCap
+        ) {
+          score = 0;
         }
         // A style that does not connect places no collector at all.
         if (o.def === 'bld_extractor' && !s.layout.connect) score = 0;
@@ -577,7 +663,7 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       if (
         cost !== undefined &&
         rerolls < s.maxRerolls &&
-        me.gold >= cost + 6 &&
+        me.gold >= cost + rerollReserve(d, s, consumersWaiting) &&
         d.send(p, { type: 'reroll' })
       ) {
         rerolls++;
