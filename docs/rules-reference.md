@@ -2985,7 +2985,7 @@ cell's centre) or `{side, def, px, py}` (an exact position in sub-cell units) pl
 building, hp}` (or `{side, core, hp}` for a Core, `core` the player index) that sets the current health of those buildings (`hp` from 1 to the maximum) before the battle starts, and
 `restoreAt`, a list of tick counts
 after which the state is saved as JSON and restored (the context rebuilt from
-the state alone) before the run continues; the result must not depend on it. A battle starts and runs for `ticks`
+the state alone) before the run continues; the result must not depend on it. Optionally `checkpointEvery`, a positive integer number of ticks: the vector's `expected` then also holds `checkpoints`, a list with one entry `{tick, alive, coreHealth, stateHash}` at every multiple of `checkpointEvery` that the battle reaches (not tick 0; the final tick only if it is a multiple), where `alive` is `[side 0, side 1]` units alive, `coreHealth` is `[side 0, side 1]`, each the list of Core health by player (as in the result), and `stateHash` is the hash of the `ArenaSim` at that tick (as `result.stateHash` is at the final tick). A port that diverges learns the first checkpoint where it does; a mismatch is reported as the vector, the tick and the differing field. Vectors without `checkpointEvery` have no `checkpoints`. A battle starts and runs for `ticks`
 ticks. Result: `{ tick, stateHash, events, sides }` with `stateHash` the hash of
 the final `ArenaSim`, `events` the number of events, and `sides` a list of two
 summaries `{spawned, alive, unitsDied, buildingDamageDealt,

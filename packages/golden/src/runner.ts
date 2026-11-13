@@ -12,6 +12,7 @@ import { goldenKinds } from './kinds.js';
 export interface GoldenExpected {
   result?: Json;
   eventLogHash?: string;
+  checkpoints?: Json[];
 }
 
 export interface GoldenVector {
@@ -59,6 +60,7 @@ export function loadVectorFiles(dir = goldenDir): VectorFile[] {
 export interface RunOutput {
   result: Json;
   eventLogHash?: string;
+  checkpoints?: Json[];
 }
 
 export function runVector(
@@ -68,9 +70,10 @@ export function runVector(
   const fn = kinds[v.kind];
   if (fn === undefined) throw new Error(`vector ${v.id}: unknown kind "${v.kind}"`);
   const out = fn(v.input);
-  return out.eventLog === undefined
-    ? { result: out.result }
-    : { result: out.result, eventLogHash: hashJson(out.eventLog) };
+  const run: RunOutput = { result: out.result };
+  if (out.eventLog !== undefined) run.eventLogHash = hashJson(out.eventLog);
+  if (out.checkpoints !== undefined) run.checkpoints = out.checkpoints;
+  return run;
 }
 
 /** Paths and values that differ, e.g. `$.values[3]: expected 5, got 6`. */
@@ -116,6 +119,22 @@ export function compareVector(
       );
     }
   }
+  if (v.expected.checkpoints !== undefined) {
+    const want = v.expected.checkpoints;
+    const got = actual.checkpoints ?? [];
+    const tickOf = (c: unknown): string => {
+      const t = (c as { tick?: number } | undefined)?.tick;
+      return t === undefined ? '?' : String(t);
+    };
+    for (let i = 0; i < Math.max(want.length, got.length); i++) {
+      const tick = tickOf(want[i] ?? got[i]);
+      for (const d of diffJson(want[i], got[i], 'checkpoint')) {
+        problems.push(`vector ${v.id}: tick ${tick}: ${d}`);
+      }
+    }
+  } else if (actual.checkpoints !== undefined) {
+    problems.push(`vector ${v.id}: checkpoints not recorded (${String(actual.checkpoints.length)} produced)`);
+  }
   return problems;
 }
 
@@ -147,11 +166,15 @@ export function updateAll(dir = goldenDir): string[] {
     const updated = file.vectors.map((v): GoldenVector => {
       const actual = runVector(v);
       const expected: GoldenExpected = {};
-      const hadAny = v.expected.result !== undefined || v.expected.eventLogHash !== undefined;
+      const hadAny =
+        v.expected.result !== undefined ||
+        v.expected.eventLogHash !== undefined ||
+        v.expected.checkpoints !== undefined;
       if (v.expected.result !== undefined || !hadAny) expected.result = actual.result;
       if (actual.eventLogHash !== undefined && (v.expected.eventLogHash !== undefined || !hadAny)) {
         expected.eventLogHash = actual.eventLogHash;
       }
+      if (actual.checkpoints !== undefined) expected.checkpoints = actual.checkpoints;
       return { ...v, expected };
     });
     const after = formatJson(updated) + '\n';

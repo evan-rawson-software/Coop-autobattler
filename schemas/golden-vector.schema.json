@@ -39,6 +39,11 @@
           "minProperties": 1,
           "properties": {
             "result": { "$ref": "#/definitions/json" },
+            "checkpoints": {
+              "type": "array",
+              "description": "Intermediate states of a battle vector with a checkpointEvery input.",
+              "items": { "$ref": "#/definitions/json" }
+            },
             "eventLogHash": {
               "type": "string",
               "description": "FNV-1a 32 of the canonical JSON of the event log, 8 lowercase hex digits.",

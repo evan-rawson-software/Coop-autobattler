@@ -245,7 +245,8 @@
         ]
       },
       "gapRows": 6,
-      "ticks": 900
+      "ticks": 900,
+      "checkpointEvery": 130
     },
     "expected": {
       "result": {
@@ -271,7 +272,63 @@
           }
         ]
       },
-      "eventLogHash": "579c04e1"
+      "eventLogHash": "579c04e1",
+      "checkpoints": [
+        {
+          "tick": 130,
+          "alive": [4, 4],
+          "coreHealth": [
+            [500],
+            [500]
+          ],
+          "stateHash": "41ef94eb"
+        },
+        {
+          "tick": 260,
+          "alive": [6, 6],
+          "coreHealth": [
+            [500],
+            [500]
+          ],
+          "stateHash": "91b5a20d"
+        },
+        {
+          "tick": 390,
+          "alive": [4, 4],
+          "coreHealth": [
+            [500],
+            [500]
+          ],
+          "stateHash": "0c55d09c"
+        },
+        {
+          "tick": 520,
+          "alive": [5, 5],
+          "coreHealth": [
+            [500],
+            [500]
+          ],
+          "stateHash": "c02f13f8"
+        },
+        {
+          "tick": 650,
+          "alive": [4, 4],
+          "coreHealth": [
+            [500],
+            [500]
+          ],
+          "stateHash": "17cbba9e"
+        },
+        {
+          "tick": 780,
+          "alive": [5, 5],
+          "coreHealth": [
+            [500],
+            [500]
+          ],
+          "stateHash": "1812d9f3"
+        }
+      ]
     }
   },
   {
@@ -3098,7 +3155,8 @@
           "x": 11,
           "y": 17
         }
-      ]
+      ],
+      "checkpointEvery": 45
     },
     "expected": {
       "result": {
@@ -3124,7 +3182,81 @@
           }
         ]
       },
-      "eventLogHash": "eb8fc875"
+      "eventLogHash": "eb8fc875",
+      "checkpoints": [
+        {
+          "tick": 45,
+          "alive": [0, 11],
+          "coreHealth": [
+            [500],
+            [500]
+          ],
+          "stateHash": "a837a507"
+        },
+        {
+          "tick": 90,
+          "alive": [0, 9],
+          "coreHealth": [
+            [500],
+            [500]
+          ],
+          "stateHash": "ad789037"
+        },
+        {
+          "tick": 135,
+          "alive": [0, 6],
+          "coreHealth": [
+            [476],
+            [500]
+          ],
+          "stateHash": "0fddcb63"
+        },
+        {
+          "tick": 180,
+          "alive": [0, 6],
+          "coreHealth": [
+            [314],
+            [500]
+          ],
+          "stateHash": "e02838ce"
+        },
+        {
+          "tick": 225,
+          "alive": [0, 6],
+          "coreHealth": [
+            [152],
+            [500]
+          ],
+          "stateHash": "01fd9162"
+        },
+        {
+          "tick": 270,
+          "alive": [0, 6],
+          "coreHealth": [
+            [0],
+            [500]
+          ],
+          "stateHash": "73b96d49"
+        },
+        {
+          "tick": 315,
+          "alive": [0, 6],
+          "coreHealth": [
+            [0],
+            [500]
+          ],
+          "stateHash": "75827a31"
+        },
+        {
+          "tick": 360,
+          "alive": [0, 6],
+          "coreHealth": [
+            [0],
+            [500]
+          ],
+          "stateHash": "81c53bae"
+        }
+      ]
     }
   },
   {
@@ -6585,7 +6717,8 @@
           "core": 2,
           "hp": 5
         }
-      ]
+      ],
+      "checkpointEvery": 130
     },
     "expected": {
       "result": {
@@ -6611,7 +6744,63 @@
           }
         ]
       },
-      "eventLogHash": "bb32ab7d"
+      "eventLogHash": "bb32ab7d",
+      "checkpoints": [
+        {
+          "tick": 130,
+          "alive": [4, 0],
+          "coreHealth": [
+            [500, 500, 500, 500],
+            [488, 488, 0, 0]
+          ],
+          "stateHash": "6967637a"
+        },
+        {
+          "tick": 260,
+          "alive": [4, 0],
+          "coreHealth": [
+            [500, 500, 500, 500],
+            [410, 356, 0, 0]
+          ],
+          "stateHash": "0ff79260"
+        },
+        {
+          "tick": 390,
+          "alive": [4, 0],
+          "coreHealth": [
+            [500, 500, 500, 500],
+            [332, 122, 0, 0]
+          ],
+          "stateHash": "11cb45ba"
+        },
+        {
+          "tick": 520,
+          "alive": [4, 0],
+          "coreHealth": [
+            [500, 500, 500, 500],
+            [254, 0, 0, 0]
+          ],
+          "stateHash": "b998f4be"
+        },
+        {
+          "tick": 650,
+          "alive": [4, 0],
+          "coreHealth": [
+            [500, 500, 500, 500],
+            [0, 0, 0, 0]
+          ],
+          "stateHash": "95ebb714"
+        },
+        {
+          "tick": 780,
+          "alive": [4, 0],
+          "coreHealth": [
+            [500, 500, 500, 500],
+            [0, 0, 0, 0]
+          ],
+          "stateHash": "c88c7f32"
+        }
+      ]
     }
   },
   {
@@ -8304,7 +8493,8 @@
         ]
       },
       "gapRows": 4,
-      "ticks": 900
+      "ticks": 900,
+      "checkpointEvery": 140
     },
     "expected": {
       "result": {
@@ -8330,7 +8520,63 @@
           }
         ]
       },
-      "eventLogHash": "fe11c078"
+      "eventLogHash": "fe11c078",
+      "checkpoints": [
+        {
+          "tick": 140,
+          "alive": [4, 1],
+          "coreHealth": [
+            [500, 500],
+            [500, 500]
+          ],
+          "stateHash": "6e61f99f"
+        },
+        {
+          "tick": 280,
+          "alive": [10, 0],
+          "coreHealth": [
+            [500, 500],
+            [494, 500]
+          ],
+          "stateHash": "1a85fc51"
+        },
+        {
+          "tick": 420,
+          "alive": [16, 0],
+          "coreHealth": [
+            [500, 500],
+            [218, 266]
+          ],
+          "stateHash": "a5a53d8d"
+        },
+        {
+          "tick": 560,
+          "alive": [22, 0],
+          "coreHealth": [
+            [500, 500],
+            [0, 0]
+          ],
+          "stateHash": "1dd25142"
+        },
+        {
+          "tick": 700,
+          "alive": [26, 0],
+          "coreHealth": [
+            [500, 500],
+            [0, 0]
+          ],
+          "stateHash": "0c15d325"
+        },
+        {
+          "tick": 840,
+          "alive": [32, 0],
+          "coreHealth": [
+            [500, 500],
+            [0, 0]
+          ],
+          "stateHash": "e42d7879"
+        }
+      ]
     }
   },
   {
@@ -9255,7 +9501,8 @@
           "x": 8,
           "y": 22
         }
-      ]
+      ],
+      "checkpointEvery": 40
     },
     "expected": {
       "result": {
@@ -9285,7 +9532,72 @@
           [2, 1640, 8035]
         ]
       },
-      "eventLogHash": "7a217b02"
+      "eventLogHash": "7a217b02",
+      "checkpoints": [
+        {
+          "tick": 40,
+          "alive": [2, 0],
+          "coreHealth": [
+            [500],
+            [500]
+          ],
+          "stateHash": "70b5d587"
+        },
+        {
+          "tick": 80,
+          "alive": [2, 0],
+          "coreHealth": [
+            [500],
+            [479]
+          ],
+          "stateHash": "c6a9fdf1"
+        },
+        {
+          "tick": 120,
+          "alive": [2, 0],
+          "coreHealth": [
+            [500],
+            [435]
+          ],
+          "stateHash": "f0858a90"
+        },
+        {
+          "tick": 160,
+          "alive": [2, 0],
+          "coreHealth": [
+            [500],
+            [391]
+          ],
+          "stateHash": "fc2746f3"
+        },
+        {
+          "tick": 200,
+          "alive": [2, 0],
+          "coreHealth": [
+            [500],
+            [347]
+          ],
+          "stateHash": "34fe6b8f"
+        },
+        {
+          "tick": 240,
+          "alive": [2, 0],
+          "coreHealth": [
+            [500],
+            [303]
+          ],
+          "stateHash": "bdba277b"
+        },
+        {
+          "tick": 280,
+          "alive": [2, 0],
+          "coreHealth": [
+            [500],
+            [259]
+          ],
+          "stateHash": "e01e2655"
+        }
+      ]
     }
   },
   {

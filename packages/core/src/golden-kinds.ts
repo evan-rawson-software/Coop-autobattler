@@ -9,6 +9,8 @@ import { Rng } from './rng.js';
 export interface SimulationOutput {
   result: Json;
   eventLog?: Json[];
+  /** Intermediate states, checked against `expected.checkpoints`. */
+  checkpoints?: Json[];
 }
 
 export type SimulationFn = (input: Json) => SimulationOutput;

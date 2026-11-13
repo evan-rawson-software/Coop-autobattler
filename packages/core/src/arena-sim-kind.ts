@@ -22,6 +22,11 @@
  * `content/units.json` that are added to the content for this run (a unit too
  * wide for a gap, a target dummy), and `report: "positions"`, which adds
  * `positions` to the result: `[[id, px, py], ...]` of the living units.
+ *
+ * An optional `checkpointEvery` (a positive integer) adds `checkpoints` to the
+ * output: at every multiple of it that the battle reaches (not tick 0), an
+ * entry `{ tick, alive: [side 0, side 1], coreHealth: [side 0, side 1],
+ * stateHash }` with the same Core health lists and state hash as the result.
  */
 import type { ArenaContent } from './arena.js';
 import {
@@ -183,12 +188,30 @@ export function makeArenaSimKind(
         restoreAt.add(nonNegative(r, 'restoreAt entry'));
       }
     }
+    const everyRaw = field(input, 'checkpointEvery');
+    const every =
+      everyRaw === undefined ? 0 : nonNegative(everyRaw, 'checkpointEvery');
+    if (everyRaw !== undefined && every < 1) {
+      throw new TypeError(
+        'arena-sim: checkpointEvery must be a positive integer',
+      );
+    }
+    const checkpoints: Json[] = [];
     for (let t = 0; t < ticks; t++) {
       if (restoreAt.has(t)) {
         sim = JSON.parse(JSON.stringify(sim)) as ArenaSim;
         ctx = createArenaContext(sim, content, simConfig, { events });
       }
       stepArena(sim, ctx);
+      if (every > 0 && sim.tick % every === 0) {
+        const sides = summarizeArena(sim) as Record<string, Json>[];
+        checkpoints.push({
+          tick: sim.tick,
+          alive: sides.map((x) => x['alive'] as Json),
+          coreHealth: sides.map((x) => x['coreHealth'] as Json),
+          stateHash: hashJson(sim),
+        });
+      }
     }
     const result: Record<string, Json> = {
       tick: sim.tick,
@@ -199,6 +222,7 @@ export function makeArenaSimKind(
     if (field(input, 'report') === 'positions') {
       result['positions'] = sim.units.map((u) => [u.id, u.px, u.py]);
     }
-    return { result, eventLog: events as unknown as Json[] };
+    const eventLog = events as unknown as Json[];
+    return every > 0 ? { result, eventLog, checkpoints } : { result, eventLog };
   };
 }
