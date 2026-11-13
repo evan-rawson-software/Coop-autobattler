@@ -233,7 +233,7 @@
         "owner": 0
       },
       {
-        "id": 11,
+        "id": 10,
         "def": "bld_turret",
         "tier": 2,
         "x": 16,
@@ -242,7 +242,7 @@
         "owner": 0
       },
       {
-        "id": 12,
+        "id": 11,
         "def": "bld_extractor",
         "tier": 2,
         "x": 23,
@@ -251,7 +251,7 @@
         "owner": 0
       },
       {
-        "id": 14,
+        "id": 12,
         "def": "bld_turret",
         "tier": 2,
         "x": 10,
@@ -260,7 +260,7 @@
         "owner": 0
       },
       {
-        "id": 15,
+        "id": 13,
         "def": "bld_extractor",
         "tier": 2,
         "x": 1,
@@ -269,7 +269,7 @@
         "owner": 0
       },
       {
-        "id": 17,
+        "id": 14,
         "def": "bld_extractor",
         "tier": 1,
         "x": 10,
@@ -278,7 +278,7 @@
         "owner": 0
       },
       {
-        "id": 18,
+        "id": 15,
         "def": "bld_barracks",
         "tier": 1,
         "x": 9,
@@ -287,7 +287,7 @@
         "owner": 0
       },
       {
-        "id": 20,
+        "id": 16,
         "def": "bld_extractor",
         "tier": 1,
         "x": 8,
@@ -296,7 +296,7 @@
         "owner": 0
       },
       {
-        "id": 21,
+        "id": 17,
         "def": "bld_armory",
         "tier": 1,
         "x": 8,
@@ -306,10 +306,13 @@
       }
     ],
     "stash": [],
-    "nextId": 23,
+    "nextId": 18,
+    "nextConduitId": [
+      6
+    ],
     "conduits": [
       {
-        "id": 10,
+        "id": 4,
         "owner": 0,
         "from": {
           "building": 9,
@@ -351,14 +354,14 @@
         ]
       },
       {
-        "id": 13,
+        "id": 8,
         "owner": 0,
         "from": {
-          "building": 12,
+          "building": 11,
           "side": "north"
         },
         "to": {
-          "building": 11,
+          "building": 10,
           "side": "south"
         },
         "cells": [
@@ -397,14 +400,14 @@
         ]
       },
       {
-        "id": 16,
+        "id": 12,
         "owner": 0,
         "from": {
-          "building": 15,
+          "building": 13,
           "side": "north"
         },
         "to": {
-          "building": 14,
+          "building": 12,
           "side": "south"
         },
         "cells": [
@@ -463,27 +466,27 @@
         ]
       },
       {
-        "id": 19,
+        "id": 16,
         "owner": 0,
         "from": {
-          "building": 17,
+          "building": 14,
           "side": "north"
         },
         "to": {
-          "building": 18,
+          "building": 15,
           "side": "south"
         },
         "cells": []
       },
       {
-        "id": 22,
+        "id": 20,
         "owner": 0,
         "from": {
-          "building": 20,
+          "building": 16,
           "side": "north"
         },
         "to": {
-          "building": 21,
+          "building": 17,
           "side": "south"
         },
         "cells": []

@@ -4,6 +4,7 @@
  * All functions are pure. See docs/rules-reference.md, "Conduits".
  */
 
+import { decodeConduitId, encodeConduitId } from './conduit-ids.js';
 import { allCoreCells, cellKey, defCells } from './board-cells.js';
 import {
   oppositeSide,
@@ -768,7 +769,7 @@ export type ConduitEndArg =
 
 /**
  * Add a conduit, or a half of a border link (PP-4). The new conduit's ID is
- * `state.nextId`. Rules, in this fixed order, the first failure reported:
+ * the actor's next one (`nextConduitId`, issue #38). Rules, in this fixed order, the first failure reported:
  * invalid_conduit_id (only with an explicit `id`), unknown_building, not_owner, invalid_border, not_an_output, not_an_input,
  * side_in_use, border_spot_in_use, invalid_path, outside_own_plot,
  * blocked_by_feature, overlaps_core, overlaps_building, crosses_conduit,
@@ -784,20 +785,28 @@ export function addConduit(
     to: ConduitEndArg;
     cells: readonly Cell[];
     /**
-     * Re-add a conduit under an ID handed out before (undo, RS-5g). It must be
-     * below `nextId` and used by no building, stash entry or conduit;
-     * `nextId` is left unchanged. Without it the next ID is used.
+     * Re-add a conduit under an ID handed out before (undo, RS-5g). It must
+     * decode to `actor`, with a number from 1 up to below the actor's counter,
+     * and be used by no conduit; the counter is left unchanged. Without it
+     * the actor's next ID is used.
      */
     id?: number;
   },
 ): AddConduitResult {
   const explicit = args.id;
+  const counter = isInt(args.actor)
+    ? state.nextConduitId[args.actor]
+    : undefined;
   if (explicit !== undefined) {
-    const used =
-      state.buildings.some((b) => b.id === explicit) ||
-      state.stash.some((b) => b.id === explicit) ||
-      state.conduits.some((c) => c.id === explicit);
-    if (!isInt(explicit) || explicit < 1 || explicit >= state.nextId || used) {
+    const at = isInt(explicit) ? decodeConduitId(explicit) : undefined;
+    if (
+      at === undefined ||
+      counter === undefined ||
+      at.owner !== args.actor ||
+      at.n < 1 ||
+      at.n >= counter ||
+      state.conduits.some((c) => c.id === explicit)
+    ) {
       return { ok: false, reason: 'invalid_conduit_id' };
     }
   }
@@ -825,7 +834,9 @@ export function addConduit(
       )
     : [{ x: Number.NaN, y: Number.NaN }];
   const candidate: Conduit = {
-    id: explicit ?? state.nextId,
+    id:
+      explicit ??
+      encodeConduitId(isInt(args.actor) ? args.actor : -1, counter ?? 1),
     // Not a real player when malformed: fails the owner check.
     owner: isInt(args.actor) ? args.actor : -1,
     from: end((args as { from?: unknown }).from),
@@ -840,11 +851,9 @@ export function addConduit(
     false,
   );
   if (failure !== null) return failure;
-  // Conduits stay sorted by ID; an explicit ID can fall between others.
-  const conduits =
-    explicit === undefined
-      ? [...state.conduits, candidate]
-      : [...state.conduits, candidate].sort((a, b) => a.id - b.id);
+  // Conduits stay sorted by ID; a new ID can fall between others (another
+  // player's counter, or an explicit ID).
+  const conduits = [...state.conduits, candidate].sort((a, b) => a.id - b.id);
   const edges = joinEdges(conduits);
   const mismatch = findMismatch(view, edges, computeResources(view, edges));
   if (mismatch !== null) {
@@ -856,7 +865,13 @@ export function addConduit(
     id: candidate.id,
     state:
       explicit === undefined
-        ? { ...state, conduits, nextId: state.nextId + 1 }
+        ? {
+            ...state,
+            conduits,
+            nextConduitId: state.nextConduitId.map((n, i) =>
+              i === args.actor ? n + 1 : n,
+            ),
+          }
         : { ...state, conduits },
   };
 }

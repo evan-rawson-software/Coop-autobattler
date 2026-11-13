@@ -176,6 +176,7 @@ describe('team-state.schema.json', () => {
     >;
     expect(validate({})).toBe(false);
     expect(validate({ ...good, nextId: 0 })).toBe(false);
+    expect(validate({ ...good, nextConduitId: [0] })).toBe(false);
     expect(validate({ ...good, conduits: [1] })).toBe(false);
     expect(validate({ ...good, conduits: {} })).toBe(false);
     expect(validate({ ...good, extra: true })).toBe(false);

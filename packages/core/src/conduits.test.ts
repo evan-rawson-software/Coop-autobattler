@@ -6,6 +6,7 @@ import resourcesJson from '../../../content/resources.json';
 import terrainJson from '../../../content/terrain.json';
 import unitsJson from '../../../content/units.json';
 import type { Side } from './buildings.js';
+import { encodeConduitId } from './conduit-ids.js';
 import {
   addConduit,
   buildFlowGraph,
@@ -186,10 +187,10 @@ describe('accepted connections', () => {
     const l = new Lab();
     const s = l.put('bld_extractor', 2, 2);
     const b = l.put('bld_barracks', 2, 3);
-    const nextBefore = l.state.nextId;
+    const nextBefore = l.state.nextConduitId[0];
     const id = l.link(s, 'north', b, 'south');
-    expect(id).toBe(nextBefore);
-    expect(l.state.nextId).toBe(nextBefore + 1);
+    expect(id).toBe(4);
+    expect(l.state.nextConduitId[0]).toBe((nextBefore ?? 0) + 1);
     expect(l.state.conduits).toEqual([
       {
         id,
@@ -842,9 +843,7 @@ describe('placement and detaching', () => {
     }); // covers (4,3), (5,3)
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(r.state.conduits.map((c) => c.id)).toEqual([
-        10, 11, 13, 14, 15, 16,
-      ]);
+      expect(r.state.conduits.map((c) => c.id)).toEqual([4, 8, 16, 20, 24, 28]);
       expect(valid(r.state)).toEqual([]);
     }
   });
@@ -860,7 +859,7 @@ describe('placement and detaching', () => {
       rotation: 0,
     });
     if (!r.ok) throw new Error(r.reason);
-    expect(r.state.conduits.map((c) => c.id)).toEqual([10, 11, 12]);
+    expect(r.state.conduits.map((c) => c.id)).toEqual([4, 8, 12]);
     expect(valid(r.state)).toEqual([]);
     // Rotating in place also detaches.
     const p = ids[1] as number;
@@ -873,7 +872,7 @@ describe('placement and detaching', () => {
       rotation: 90,
     });
     if (!rot.ok) throw new Error(rot.reason);
-    expect(rot.state.conduits.map((c) => c.id)).toEqual([13, 14, 15, 16]);
+    expect(rot.state.conduits.map((c) => c.id)).toEqual([16, 20, 24, 28]);
   });
 
   test('returning to the stash removes exactly the conduits attached to the building', () => {
@@ -881,7 +880,7 @@ describe('placement and detaching', () => {
     const p = ids[1] as number;
     const r = returnToStash(l.state, content, { actor: 0, id: p });
     if (!r.ok) throw new Error(r.reason);
-    expect(r.state.conduits.map((c) => c.id)).toEqual([13, 14, 15, 16]);
+    expect(r.state.conduits.map((c) => c.id)).toEqual([16, 20, 24, 28]);
     expect(r.state.stash.map((s) => s.id)).toEqual([p]);
     expect(valid(r.state)).toEqual([]);
   });
@@ -891,12 +890,12 @@ describe('placement and detaching', () => {
     expect(detachConduits(l.state, 9999)).toBe(l.state);
     const sa1 = ids[0] as number;
     expect(detachConduits(l.state, sa1).conduits.map((c) => c.id)).toEqual([
-      11, 12, 13, 14, 15, 16,
+      8, 12, 16, 20, 24, 28,
     ]);
     const e = eraseConduit(l.state, { actor: 0, id: 12 });
     if (!e.ok) throw new Error(e.reason);
-    expect(e.state.conduits.map((c) => c.id)).toEqual([10, 11, 13, 14, 15, 16]);
-    expect(e.state.nextId).toBe(l.state.nextId);
+    expect(e.state.conduits.map((c) => c.id)).toEqual([4, 8, 16, 20, 24, 28]);
+    expect(e.state.nextConduitId).toEqual(l.state.nextConduitId);
     expect(eraseConduit(e.state, { actor: 0, id: 12 })).toEqual({
       ok: false,
       reason: 'unknown_conduit',
@@ -912,7 +911,7 @@ describe('placement and detaching', () => {
         [5, 3],
       ]),
     });
-    expect(again).toMatchObject({ ok: true, id: l.state.nextId });
+    expect(again).toMatchObject({ ok: true, id: 32 });
   });
 });
 
@@ -927,7 +926,7 @@ describe('flow graph', () => {
         kind: 'source',
         produces: A,
         inputs: [],
-        outputs: [{ side: 'north', conduit: 10 }],
+        outputs: [{ side: 'north', conduit: 4 }],
       },
       {
         key: '2',
@@ -936,9 +935,9 @@ describe('flow graph', () => {
         def: 'bld_splitter',
         kind: 'splitter',
         produces: null,
-        inputs: [{ side: 'south', conduit: 10, requires: null }],
+        inputs: [{ side: 'south', conduit: 4, requires: null }],
         outputs: [
-          { side: 'north', conduit: 11 },
+          { side: 'north', conduit: 8 },
           { side: 'east', conduit: 12 },
           { side: 'west', conduit: null },
         ],
@@ -950,7 +949,7 @@ describe('flow graph', () => {
         def: 'bld_barracks',
         kind: 'consumer',
         produces: null,
-        inputs: [{ side: 'south', conduit: 11, requires: A }],
+        inputs: [{ side: 'south', conduit: 8, requires: A }],
         outputs: [],
       },
       {
@@ -971,7 +970,7 @@ describe('flow graph', () => {
         kind: 'source',
         produces: A,
         inputs: [],
-        outputs: [{ side: 'north', conduit: 13 }],
+        outputs: [{ side: 'north', conduit: 16 }],
       },
       {
         key: '6',
@@ -981,7 +980,7 @@ describe('flow graph', () => {
         kind: 'source',
         produces: B,
         inputs: [],
-        outputs: [{ side: 'east', conduit: 14 }],
+        outputs: [{ side: 'east', conduit: 20 }],
       },
       {
         key: '7.south',
@@ -990,8 +989,8 @@ describe('flow graph', () => {
         def: 'bld_crossover',
         kind: 'crossover',
         produces: null,
-        inputs: [{ side: 'south', conduit: 13, requires: null }],
-        outputs: [{ side: 'north', conduit: 15 }],
+        inputs: [{ side: 'south', conduit: 16, requires: null }],
+        outputs: [{ side: 'north', conduit: 24 }],
       },
       {
         key: '7.west',
@@ -1000,8 +999,8 @@ describe('flow graph', () => {
         def: 'bld_crossover',
         kind: 'crossover',
         produces: null,
-        inputs: [{ side: 'west', conduit: 14, requires: null }],
-        outputs: [{ side: 'east', conduit: 16 }],
+        inputs: [{ side: 'west', conduit: 20, requires: null }],
+        outputs: [{ side: 'east', conduit: 28 }],
       },
       {
         key: '8',
@@ -1010,7 +1009,7 @@ describe('flow graph', () => {
         def: 'bld_barracks',
         kind: 'consumer',
         produces: null,
-        inputs: [{ side: 'south', conduit: 15, requires: A }],
+        inputs: [{ side: 'south', conduit: 24, requires: A }],
         outputs: [],
       },
       {
@@ -1020,13 +1019,13 @@ describe('flow graph', () => {
         def: 'bld_turret',
         kind: 'consumer',
         produces: null,
-        inputs: [{ side: 'west', conduit: 16, requires: B }],
+        inputs: [{ side: 'west', conduit: 28, requires: B }],
         outputs: [],
       },
     ],
     edges: [
       {
-        conduitId: 10,
+        conduitId: 4,
         linkedConduit: null,
         from: '1',
         to: '2',
@@ -1036,7 +1035,7 @@ describe('flow graph', () => {
         resource: A,
       },
       {
-        conduitId: 11,
+        conduitId: 8,
         linkedConduit: null,
         from: '2',
         to: '3',
@@ -1056,7 +1055,7 @@ describe('flow graph', () => {
         resource: A,
       },
       {
-        conduitId: 13,
+        conduitId: 16,
         linkedConduit: null,
         from: '5',
         to: '7.south',
@@ -1066,7 +1065,7 @@ describe('flow graph', () => {
         resource: A,
       },
       {
-        conduitId: 14,
+        conduitId: 20,
         linkedConduit: null,
         from: '6',
         to: '7.west',
@@ -1076,7 +1075,7 @@ describe('flow graph', () => {
         resource: B,
       },
       {
-        conduitId: 15,
+        conduitId: 24,
         linkedConduit: null,
         from: '7.south',
         to: '8',
@@ -1086,7 +1085,7 @@ describe('flow graph', () => {
         resource: A,
       },
       {
-        conduitId: 16,
+        conduitId: 28,
         linkedConduit: null,
         from: '7.west',
         to: '9',
@@ -1161,6 +1160,7 @@ describe('validateTeamState and conduits', () => {
   const good = (): TeamState => sampleBoard().lab.state;
   type J = {
     nextId: number;
+    nextConduitId: number[];
     buildings: { id: number; def: string }[];
     conduits: {
       id: number;
@@ -1235,8 +1235,8 @@ describe('validateTeamState and conduits', () => {
     has(
       mutated((j) => {
         const c = clone(got(j.conduits[1]));
-        c.id = 20;
-        j.nextId = 21;
+        c.id = 80;
+        j.nextConduitId[0] = 21;
         j.conduits.push(c);
       }),
       'side_in_use',
@@ -1254,7 +1254,7 @@ describe('validateTeamState and conduits', () => {
     ]);
     const j = clone(l.state) as unknown as J;
     j.conduits.push({
-      id: j.nextId,
+      id: (j.nextConduitId[0] ?? 0) * 4,
       owner: 0,
       from: { building: p0, side: 'east' },
       to: { building: t0, side: 'west' },
@@ -1263,7 +1263,7 @@ describe('validateTeamState and conduits', () => {
         { x: 3, y: 4 },
       ],
     });
-    j.nextId += 1;
+    j.nextConduitId[0] = (j.nextConduitId[0] ?? 0) + 1;
     has(valid(j), 'crosses_conduit');
     // On the lake.
     has(
@@ -1277,15 +1277,21 @@ describe('validateTeamState and conduits', () => {
   test('flags id, order and nextId problems', () => {
     has(
       mutated((j) => {
-        got(j.conduits[0]).id = 1;
+        got(j.conduits[0]).id = 8;
       }),
-      'duplicate instance ID 1',
+      'duplicate instance ID 8',
     );
     has(
       mutated((j) => {
-        got(j.conduits[1]).id = 10;
+        got(j.conduits[1]).id = 4;
       }),
-      'duplicate instance ID 10',
+      'duplicate instance ID 4',
+    );
+    has(
+      mutated((j) => {
+        got(j.conduits[0]).id = 1;
+      }),
+      'does not belong to its owner',
     );
     has(
       mutated((j) => {
@@ -1295,9 +1301,9 @@ describe('validateTeamState and conduits', () => {
     );
     has(
       mutated((j) => {
-        j.nextId = 16;
+        j.nextConduitId[0] = 3;
       }),
-      'nextId',
+      'nextConduitId',
     );
     has(
       mutated((j) => {
@@ -1325,7 +1331,7 @@ describe('validateTeamState and conduits', () => {
     ]);
     const j = clone(l.state) as unknown as J;
     j.conduits.push({
-      id: j.nextId,
+      id: (j.nextConduitId[0] ?? 0) * 4,
       owner: 0,
       from: { building: p2, side: 'south' },
       to: { building: m, side: 'east' },
@@ -1335,7 +1341,7 @@ describe('validateTeamState and conduits', () => {
         { x: 6, y: 6 },
       ],
     });
-    j.nextId += 1;
+    j.nextConduitId[0] = (j.nextConduitId[0] ?? 0) + 1;
     has(valid(j), 'would_loop');
   });
 
@@ -1414,7 +1420,7 @@ describe('purity', () => {
       eraseConduit(s, { actor: 0, id: 12 });
       detachConduits(s, ids[1] as number);
       buildFlowGraph(s, content);
-      conduitResource(s, content, 10);
+      conduitResource(s, content, 4);
       moveBuilding(s, content, {
         actor: 0,
         id: ids[6] as number,
@@ -1680,10 +1686,10 @@ describe('analysis order on looped and half-built networks', () => {
     toSide: Side,
     cells: Pairs = [],
   ): number {
-    const id = l.state.nextId;
+    const id = encodeConduitId(0, l.state.nextConduitId[0] ?? 1);
     l.state = {
       ...l.state,
-      nextId: id + 1,
+      nextConduitId: [(l.state.nextConduitId[0] ?? 1) + 1],
       conduits: [
         ...l.state.conduits,
         {
@@ -1814,7 +1820,7 @@ describe('analysis order on looped and half-built networks', () => {
       [6, 6],
     ]);
     expect(errorsOf(l)).toEqual([
-      'conduits[2] (id 6): unknown_building (999).',
+      'conduits[2] (id 12): unknown_building (999).',
       'conduits: would_loop (the network has a loop).',
     ]);
   });
@@ -1836,23 +1842,23 @@ describe('analysis order on looped and half-built networks', () => {
       return errorsOf(l);
     };
     expect(run(false, false)).toEqual([
-      'conduits[0] (id 5): side_in_use (input).',
-      'conduits[1] (id 6): side_in_use (input).',
+      'conduits[0] (id 4): side_in_use (input).',
+      'conduits[1] (id 8): side_in_use (input).',
     ]);
     expect(run(true, false)).toEqual([
-      'conduits[0] (id 5): side_in_use (input).',
-      'conduits[1] (id 6): side_in_use (input).',
+      'conduits[0] (id 4): side_in_use (input).',
+      'conduits[1] (id 8): side_in_use (input).',
     ]);
     expect(run(false, true)).toEqual([
-      'conduits[0] (id 5): side_in_use (input).',
-      'conduits[1] (id 6): side_in_use (output).',
-      'conduits[2] (id 7): side_in_use (output).',
+      'conduits[0] (id 4): side_in_use (input).',
+      'conduits[1] (id 8): side_in_use (output).',
+      'conduits[2] (id 12): side_in_use (output).',
       'conduits: resource_mismatch (merger 3 is fed both res_a and res_b).',
     ]);
     expect(run(true, true)).toEqual([
-      'conduits[0] (id 5): side_in_use (output).',
-      'conduits[1] (id 6): side_in_use (input).',
-      'conduits[2] (id 7): side_in_use (output).',
+      'conduits[0] (id 4): side_in_use (output).',
+      'conduits[1] (id 8): side_in_use (input).',
+      'conduits[2] (id 12): side_in_use (output).',
     ]);
   });
 
@@ -1863,10 +1869,10 @@ describe('analysis order on looped and half-built networks', () => {
       raw(l, eb, 'east', mm, 'west');
     }
     expect(errorsOf(l)).toEqual([
-      'conduits[0] (id 5): side_in_use (output).',
-      'conduits[1] (id 6): side_in_use (output).',
-      'conduits[2] (id 7): side_in_use (output).',
-      'conduits[3] (id 8): side_in_use (output).',
+      'conduits[0] (id 4): side_in_use (output).',
+      'conduits[1] (id 8): side_in_use (output).',
+      'conduits[2] (id 12): side_in_use (output).',
+      'conduits[3] (id 16): side_in_use (output).',
       'conduits: resource_mismatch (merger 3 is fed both res_a and res_b).',
     ]);
   });

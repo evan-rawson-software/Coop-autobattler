@@ -123,6 +123,7 @@ describe('createTeamState and addToStash', () => {
       buildings: [],
       stash: [],
       nextId: 1,
+      nextConduitId: [1, 1],
       conduits: [],
     });
     expect(valid(s)).toEqual([]);

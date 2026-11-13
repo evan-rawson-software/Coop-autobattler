@@ -2,9 +2,17 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "team-state.schema.json",
   "title": "Team state",
-  "description": "The party's whole state for combat (W1-2, W1-3): the map, one Core position per player, every building and every conduit. Arrays are sorted by ascending id. A Core is not an entry in buildings or stash. Instance IDs of buildings and conduits are drawn from one counter (nextId). Placement and conduit legality are checked by the validator, not by this schema.",
+  "description": "The party's whole state for combat (W1-2, W1-3): the map, one Core position per player, every building and every conduit. Arrays are sorted by ascending id. A Core is not an entry in buildings or stash. Instance IDs of buildings and stash entries are drawn from one counter (nextId); each player has their own conduit ID space (nextConduitId, conduit ID = n * 4 + owner). Placement and conduit legality are checked by the validator, not by this schema.",
   "type": "object",
-  "required": ["map", "cores", "buildings", "stash", "nextId", "conduits"],
+  "required": [
+    "map",
+    "cores",
+    "buildings",
+    "stash",
+    "nextId",
+    "nextConduitId",
+    "conduits"
+  ],
   "additionalProperties": false,
   "properties": {
     "map": {
@@ -105,6 +113,14 @@
     "nextId": {
       "type": "integer",
       "minimum": 1
+    },
+    "nextConduitId": {
+      "description": "One counter per player: the number n of that player's next conduit ID (conduit ID = n * 4 + owner).",
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      }
     },
     "modifiers": {
       "description": "Run modifiers taken so far (W2-3, EC-8), in the order taken, each with the effects it had when taken. Omitted when there are none.",

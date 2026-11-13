@@ -30,6 +30,7 @@ import {
 } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
 import type { ResourceId } from './resources.js';
+import { decodeConduitId } from './conduit-ids.js';
 import { checkConduitList, parseConduits } from './conduits.js';
 import { parseTeamModifiers, type TeamModifier } from './modifiers.js';
 
@@ -118,6 +119,11 @@ export interface TeamState {
   readonly stash: readonly StashedBuilding[];
   /** The next instance ID to assign; IDs are never reused. */
   readonly nextId: number;
+  /**
+   * One counter per player (`map.partySize` entries, each starting at 1): the
+   * `n` of that player's next conduit ID (`conduit-ids.ts`, issue #38).
+   */
+  readonly nextConduitId: readonly number[];
   /** Conduits, sorted by `id`. */
   readonly conduits: readonly Conduit[];
   /**
@@ -182,6 +188,7 @@ export function createTeamState(map: GameMap): TeamState {
     buildings: [],
     stash: [],
     nextId: 1,
+    nextConduitId: new Array<number>(map.partySize).fill(1),
     conduits: [],
   };
 }
@@ -456,8 +463,9 @@ function isActor(state: TeamState, actor: unknown): actor is number {
 /**
  * Delete one conduit by ID. Free. Reasons, in order: unknown_conduit,
  * invalid_owner, not_owner (PP-1). With `reclaimId` (undo of an add, RS-5g)
- * the newest ID is handed back: if the conduit's ID is `nextId - 1`, `nextId`
- * returns to it; otherwise `nextId` is left alone.
+ * the newest ID is handed back: if the conduit is the owner's newest (its
+ * counter value is one below the owner's counter), that counter goes back by
+ * one; otherwise the counters are left alone.
  */
 export function eraseConduit(
   state: TeamState,
@@ -473,10 +481,12 @@ export function eraseConduit(
     state: {
       ...state,
       conduits: state.conduits.filter((c) => c.id !== args.id),
-      nextId:
-        args.reclaimId === true && conduit.id === state.nextId - 1
-          ? conduit.id
-          : state.nextId,
+      nextConduitId:
+        args.reclaimId === true &&
+        decodeConduitId(conduit.id).n ===
+          (state.nextConduitId[conduit.owner] ?? 0) - 1
+          ? state.nextConduitId.map((n, i) => (i === conduit.owner ? n - 1 : n))
+          : state.nextConduitId,
     },
   };
 }
@@ -788,6 +798,7 @@ const STATE_KEYS = new Set([
   'buildings',
   'stash',
   'nextId',
+  'nextConduitId',
   'conduits',
   'modifiers',
 ]);
@@ -1077,17 +1088,34 @@ function validateInner(
   const conduits = parseConduits(data['conduits'], errors);
   const conduitIds = new Set<number>();
   for (const c of conduits) {
-    if (seen.has(c.id) || conduitIds.has(c.id)) {
-      errors.push(`ids: duplicate instance ID ${String(c.id)}.`);
+    if (conduitIds.has(c.id)) {
+      errors.push(`ids: duplicate instance ID ${String(c.id)} (conduits).`);
     }
     conduitIds.add(c.id);
+    if (decodeConduitId(c.id).owner !== c.owner) {
+      errors.push(
+        `conduits: ID ${String(c.id)} does not belong to its owner ${String(c.owner)}.`,
+      );
+    }
   }
   ordered(conduits, 'conduits');
-  if (isInt(nextId) && nextId >= 1) {
+  const rawCounters = data['nextConduitId'];
+  let nextConduitId: number[] | undefined;
+  if (
+    !Array.isArray(rawCounters) ||
+    rawCounters.length !== map.partySize ||
+    !rawCounters.every((n) => isInt(n) && n >= 1)
+  ) {
+    errors.push(
+      `nextConduitId: must be a list of ${String(map.partySize)} positive integers.`,
+    );
+  } else {
+    nextConduitId = rawCounters as number[];
     for (const c of conduits) {
-      if (nextId <= c.id) {
+      const counter = nextConduitId[c.owner];
+      if (counter !== undefined && counter <= decodeConduitId(c.id).n) {
         errors.push(
-          `nextId: ${String(nextId)} must be greater than every ID (conduit ${String(c.id)}).`,
+          `nextConduitId: ${String(counter)} must be greater than every conduit number of player ${String(c.owner)} (conduit ${String(c.id)}).`,
         );
       }
     }
@@ -1102,17 +1130,21 @@ function validateInner(
     buildings: placed,
     stash,
     nextId: isInt(nextId) ? nextId : 1,
+    nextConduitId: nextConduitId ?? new Array<number>(map.partySize).fill(1),
     conduits,
   };
   checkConduitList(partial, content, errors);
 
-  if (errors.length > 0 || !isInt(nextId)) return undefined;
+  if (errors.length > 0 || !isInt(nextId) || nextConduitId === undefined) {
+    return undefined;
+  }
   return {
     map,
     cores,
     buildings: placed,
     stash,
     nextId,
+    nextConduitId,
     conduits,
     ...(modifiers === undefined ? {} : { modifiers }),
   };

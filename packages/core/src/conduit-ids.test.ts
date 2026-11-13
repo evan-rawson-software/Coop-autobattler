@@ -87,12 +87,13 @@ describe('explicit conduit ID', () => {
     expect(twice).toMatchObject({ ok: false, reason: 'invalid_conduit_id' });
   });
 
-  test('a plain add is unchanged: next ID, nextId + 1', () => {
+  test('a plain add takes the owner counter, which moves by one; nextId is untouched', () => {
     const { team, args } = rig();
     const added = addConduit(team, content, args);
     if (!added.ok) throw new Error(added.reason);
-    expect(added.id).toBe(team.nextId);
-    expect(added.state.nextId).toBe(team.nextId + 1);
+    expect(added.id).toBe(4);
+    expect(added.state.nextConduitId).toEqual([2, 1]);
+    expect(added.state.nextId).toBe(team.nextId);
   });
 });
 

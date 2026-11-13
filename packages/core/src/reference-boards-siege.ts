@@ -47,7 +47,6 @@ function siegeScript(): TeamScript {
     return id;
   };
   const feed = (from: number, to: number): void => {
-    nextId += 1;
     ops.push({
       op: 'addConduit',
       actor: 0,

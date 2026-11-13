@@ -386,3 +386,32 @@ describe('a run-state format 7 save with a PvE threat of the old shape (issue #1
     expect(await store.get(KEY)).toBeNull();
   });
 });
+
+describe('a run-state format 8 save with one shared conduit id counter (issue #38)', () => {
+  /** Format 8 had no `nextConduitId` in the team state. */
+  const old = (version: VersionKind): SaveRecord => {
+    const rec = makeRecord(version, 'none', false);
+    const team: Record<string, unknown> = { ...rec.state.team };
+    delete team['nextConduitId'];
+    return {
+      ...rec,
+      state: { ...rec.state, formatVersion: 8, team },
+    } as unknown as SaveRecord;
+  };
+
+  test('under the current major it is unsupported_format, never damaged', async () => {
+    const rec = old('same');
+    const open = await openRun(KEY, deps, freshStore(rec), INSTALLED);
+    expect(open.ok ? 'ok' : open.reason).toBe('unsupported_format');
+    const res = await initSaves(freshStore(rec), INSTALLED, 99, deps);
+    expect(res.corrupt).toEqual([]);
+    expect(res.unsupported.map((u) => u.runId)).toEqual([KEY]);
+  });
+
+  test('under an older major it is wiped at start-up', async () => {
+    const store = freshStore(old('older_major'));
+    const res = await initSaves(store, INSTALLED, 99, deps);
+    expect(res.wipedUnreadable.map((w) => w.runId)).toEqual([KEY]);
+    expect(await store.get(KEY)).toBeNull();
+  });
+});
