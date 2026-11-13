@@ -313,6 +313,8 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     { building: '@building' },
     'Link broken: it would send a second resource into @building',
   ],
+  ['linkBrokenMark', {}, 'Link broken'],
+  ['linkBrokenSomeBuilding', {}, 'a building'],
   ['linkReceiving', {}, 'receiving'],
   [
     'linkSameKind',

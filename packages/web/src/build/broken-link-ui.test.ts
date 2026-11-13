@@ -1,6 +1,7 @@
 import {
   addConduit,
   addToStash,
+  type BrokenLink,
   createTeamState,
   placeCore,
   placeFromStash,
@@ -10,7 +11,12 @@ import {
 } from '@game/core';
 import { describe, expect, test } from 'vitest';
 import { content } from '../content.js';
-import { halfStatuses, linkText } from './border-links.js';
+import {
+  brokenParts,
+  halfStatuses,
+  linkText,
+  type HalfStatus,
+} from './border-links.js';
 import { deriveProblems } from './view-model.js';
 
 // A broken link is shown as broken, to both of its players (issue #38).
@@ -183,5 +189,54 @@ describe('a broken link on the Build screen', () => {
         (p) => p.kind === 'broken_link',
       ),
     ).toHaveLength(2);
+  });
+
+  test('the statuses are derived once per team state', () => {
+    const t = board();
+    expect(halfStatuses(t, content)).toBe(halfStatuses(t, content));
+    expect(halfStatuses(board(), content)).not.toBe(halfStatuses(t, content));
+  });
+
+  test('a player outside the link has no entry in the problems list', () => {
+    const scope = { acting: 2, names: ['Ann', 'Bo', 'Cy'] };
+    expect(
+      deriveProblems(team, content, null, scope).filter(
+        (p) => p.kind === 'broken_link',
+      ),
+    ).toEqual([]);
+  });
+
+  test('the building of a mismatch is read from either shape of the detail', () => {
+    const id = team.buildings.find((b) => b.def === 'bld_merger')?.id ?? -1;
+    const link = (detail?: string): BrokenLink => ({
+      border: 0,
+      y: 3,
+      sending: 1,
+      receiving: 2,
+      reason: 'resource_mismatch',
+      ...(detail === undefined ? {} : { detail }),
+    });
+    const parts = (d?: string) => brokenParts(team, content, link(d)).building;
+    expect(
+      parts(
+        `conduit 4 carries res_a into building ${String(id)}, which takes res_b`,
+      ),
+    ).toBe(name);
+    expect(parts(`merger ${String(id)} is fed both res_a and res_b`)).toBe(
+      name,
+    );
+    expect(parts('something else')).toBeNull();
+    expect(parts()).toBeNull();
+    expect(parts('into building 9999, which takes res_b')).toBeNull();
+    expect(
+      linkText(
+        {
+          ...(halfStatuses(team, content)[0] as HalfStatus),
+          state: 'broken',
+          broken: { reason: 'resource_mismatch', building: null },
+        },
+        String,
+      ),
+    ).toBe('Link broken: it would send a second resource into a building');
   });
 });

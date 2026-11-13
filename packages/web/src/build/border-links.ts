@@ -41,30 +41,55 @@ export interface HalfStatus extends Half {
   /** The neighbour who owns the other half, when there is one. */
   readonly neighbour: number | null;
   /** Why the link is broken, with its player-facing text (`broken` only). */
-  readonly broken?: {
-    readonly reason: BrokenLink['reason'];
-    readonly text: string;
-  };
+  readonly broken?: BrokenParts;
 }
 
-/** The player-facing text of a broken link: its reason, and the building of a mismatch. */
-export function brokenText(
+/** What the text of a broken link is made of: the reason and a mismatch's building. */
+export interface BrokenParts {
+  readonly reason: BrokenLink['reason'];
+  /** Name of the building named by a mismatch; null when it is unknown. */
+  readonly building: string | null;
+}
+
+export function brokenMessage(
+  b: BrokenParts,
+  texts: ScreenTexts = screenTexts,
+): string {
+  if (b.reason === 'would_loop') return screenText(texts, 'linkBrokenLoop');
+  return screenText(texts, 'linkBrokenMismatch', {
+    building: b.building ?? screenText(texts, 'linkBrokenSomeBuilding'),
+  });
+}
+
+/** The reason of a broken link, and the building its detail names. */
+export function brokenParts(
   team: TeamState,
   content: TeamContent & {
     presentation: { get(id: string): { name: string } | undefined };
   },
   b: BrokenLink,
+): BrokenParts {
+  // The detail reads "... into building <id>, ..." or "merger <id> is fed ...".
+  const m = /(?:building|merger) (\d+)/.exec(b.detail ?? '');
+  const def =
+    m === null
+      ? undefined
+      : team.buildings.find((x) => x.id === Number(m[1]))?.def;
+  return {
+    reason: b.reason,
+    building:
+      def === undefined ? null : (content.presentation.get(def)?.name ?? def),
+  };
+}
+
+/** The player-facing text of a broken link. */
+export function brokenText(
+  team: TeamState,
+  content: Parameters<typeof brokenParts>[1],
+  b: BrokenLink,
   texts: ScreenTexts = screenTexts,
 ): string {
-  if (b.reason === 'would_loop') return screenText(texts, 'linkBrokenLoop');
-  // The detail reads "... into building <id>, which takes ...".
-  const id = Number(/(?:building|merger) (\d+)/.exec(b.detail ?? '')?.[1]);
-  const def = team.buildings.find((x) => x.id === id)?.def;
-  const building =
-    def === undefined
-      ? 'a building'
-      : (content.presentation.get(def)?.name ?? def);
-  return screenText(texts, 'linkBrokenMismatch', { building });
+  return brokenMessage(brokenParts(team, content, b), texts);
 }
 
 /** One own-plot border spot: where the owner's border cell is. */
@@ -83,8 +108,27 @@ export function halfOf(c: Conduit): Half | null {
   return null;
 }
 
-/** Every half on the board with its link state, in conduit order. */
+const statusCache = new WeakMap<
+  TeamState,
+  { content: unknown; result: HalfStatus[] }
+>();
+
+/**
+ * Every half on the board with its link state, in conduit order. Derived
+ * once per team state: the board asks for it on every frame.
+ */
 export function halfStatuses(
+  team: TeamState,
+  content: Parameters<typeof brokenText>[1],
+): HalfStatus[] {
+  const hit = statusCache.get(team);
+  if (hit !== undefined && hit.content === content) return hit.result;
+  const result = deriveHalfStatuses(team, content);
+  statusCache.set(team, { content, result });
+  return result;
+}
+
+function deriveHalfStatuses(
   team: TeamState,
   content: Parameters<typeof brokenText>[1],
 ): HalfStatus[] {
@@ -120,9 +164,7 @@ export function halfStatuses(
       ...h,
       state,
       neighbour: (mate ?? clash)?.owner ?? null,
-      ...(b === undefined
-        ? {}
-        : { broken: { reason: b.reason, text: brokenText(team, content, b) } }),
+      ...(b === undefined ? {} : { broken: brokenParts(team, content, b) }),
     };
   });
 }
@@ -198,7 +240,7 @@ export function linkText(
     case 'open':
       return screenText(texts, 'linkOpen', { verb });
     case 'broken':
-      return h.broken?.text ?? '';
+      return h.broken === undefined ? '' : brokenMessage(h.broken, texts);
   }
 }
 

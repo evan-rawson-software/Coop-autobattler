@@ -32,7 +32,7 @@ import { pathSegments, pathStubs } from './path-segments.js';
 import { isEditStep } from './session.js';
 import { simConfig } from './setup.js';
 import { sideMarkers, type SideMarker } from './sides.js';
-import { coreLabel } from './texts.js';
+import { coreLabel, screenText, screenTexts } from './texts.js';
 import type { FlowView } from './view-model.js';
 
 export interface OverlayData {
@@ -416,7 +416,7 @@ export function drawBuildOverlay(
       joined: { glyph: '=', text: 'Linked' },
       open: { glyph: '?', text: 'Not connected' },
       same_kind: { glyph: '!', text: 'Cannot join' },
-      broken: { glyph: 'x', text: 'Link broken' },
+      broken: { glyph: 'x', text: screenText(screenTexts, 'linkBrokenMark') },
     };
     const mine = ownSpots(d.team, d.acting);
     if (d.ui.tool === 'conduit') {
