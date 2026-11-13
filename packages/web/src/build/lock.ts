@@ -11,13 +11,13 @@ import {
   type RunState,
 } from '@game/session';
 import type { WebContent } from '../content.js';
+import { screenText, screenTexts } from './texts.js';
 import { buildingName } from './view-model.js';
 
 export type LockDeps = Pick<RunDeps, 'content' | 'handlers'>;
 
-export const READY_LOCK_TEXT = 'Ready — press Unready to make changes.';
-export const SEALED_HINT =
-  'Its units cannot reach the front — open a path or add a gate.';
+export const READY_LOCK_TEXT = screenText(screenTexts, 'readyLock');
+export const SEALED_HINT = screenText(screenTexts, 'sealedHint');
 
 export interface SealedInfo {
   /** Building ids of the sealed producers. */
@@ -50,7 +50,11 @@ export function sealedInfo(
     reason:
       ids.length === 0
         ? null
-        : `Ready is blocked: ${labels.join(', ')} ${ids.length === 1 ? 'is' : 'are'} walled in. ${SEALED_HINT}`,
+        : screenText(
+            screenTexts,
+            ids.length === 1 ? 'sealedBlockedOne' : 'sealedBlockedMany',
+            { labels: labels.join(', '), hint: SEALED_HINT },
+          ),
   };
 }
 

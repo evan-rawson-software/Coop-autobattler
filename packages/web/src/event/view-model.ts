@@ -6,7 +6,7 @@
  * Cards say what an event does from the offer's own data, never from a
  * hard-coded number. There can be one, two or three cards.
  */
-import { playerName, screenTexts } from '../build/texts.js';
+import { playerName, screenText, screenTexts } from '../build/texts.js';
 import { findModifier, type EventsConfig } from '@game/core';
 import {
   SKIP_CHOICE,
@@ -363,15 +363,17 @@ export function followUpView(
   const others = f.waitingFor.filter((i) => i !== player);
   const waiting =
     f.mine !== null && others.length > 0 && run.players.length > 1
-      ? `Waiting for other players: ${others
-          .map((i) =>
-            playerName(
-              screenTexts,
-              chosen.map((c) => c.name),
-              i,
-            ),
-          )
-          .join(', ')}. You can still change your choice.`
+      ? screenText(screenTexts, 'eventWaiting', {
+          names: others
+            .map((i) =>
+              playerName(
+                screenTexts,
+                chosen.map((c) => c.name),
+                i,
+              ),
+            )
+            .join(', '),
+        })
       : null;
   return {
     eventTitle:

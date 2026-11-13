@@ -22,6 +22,7 @@ import { archetypeText, bossLabel, bossName } from '../run/display-text.js';
 import type { StoredOutcome } from './cannot-show.js';
 import type { BattleDescription, OpponentInfo } from './types.js';
 import { count } from '../plural.js';
+import { screenText, screenTexts } from '../build/texts.js';
 
 export interface RunBattle {
   /** What to play back; the screen simulates it and checks the hash below. */
@@ -71,13 +72,20 @@ function isRecord(v: unknown): v is Record<string, Json> {
 }
 
 const FAILURES: Readonly<Record<string, string>> = {
-  wrong_step: 'There is no battle to show in this step.',
-  no_replay: 'This game cannot play battles back.',
-  no_stored_battle:
-    'The battle of this run was not stored, so it cannot be shown.',
-  team_changed:
-    'The factory changed since the battle, so it cannot be shown again.',
+  wrong_step: 'battleFailWrongStep',
+  no_replay: 'battleFailNoReplay',
+  no_stored_battle: 'battleFailNoStoredBattle',
+  team_changed: 'battleFailTeamChanged',
 };
+
+function failureText(reason: string): string {
+  const key = FAILURES[reason];
+  return key === undefined ? cannotShow(reason) : screenText(screenTexts, key);
+}
+
+function cannotShow(reason: string): string {
+  return screenText(screenTexts, 'battleCannotShow', { reason });
+}
 
 function capital(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -120,7 +128,7 @@ export function describeRunBattle(
   } catch (e) {
     return {
       ok: false,
-      message: `The battle cannot be shown (${e instanceof Error ? e.message : String(e)}).`,
+      message: cannotShow(e instanceof Error ? e.message : String(e)),
       outcome: storedOutcome(run),
     };
   }
@@ -138,9 +146,7 @@ function describeStoredBattle(
   if (!replay.ok) {
     return {
       ok: false,
-      message:
-        FAILURES[replay.reason] ??
-        `The battle cannot be shown (${replay.reason}).`,
+      message: failureText(replay.reason),
     };
   }
   const pending = isRecord(run.pending) ? run.pending : {};
