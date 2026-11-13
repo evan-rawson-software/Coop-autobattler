@@ -74,6 +74,8 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
 .u-a { fill: var(--ally); } .u-e { fill: var(--enemy); } .u-n { fill: var(--neutral); }
 .hp { fill: var(--line); } .hp-a { fill: var(--ally); } .hp-e { fill: var(--enemy); }
 .mark { fill: var(--ink); } .mark-t { fill: var(--sheet); font-size: 10px; font-weight: 500; }
+.tag { font-size: 7px; font-weight: 500; } .spot { fill: var(--accent); stroke: var(--ink); stroke-width: 1; }
+.low { fill: none; stroke: var(--enemy); stroke-width: 2.5; stroke-dasharray: 3 3; } .lowt { font-size: 8px; font-weight: 500; fill: var(--enemy); }
 .sel { fill: none; stroke: var(--accent); stroke-width: 2.5; }
 .chart-a { fill: none; stroke: var(--ally); stroke-width: 2; } .chart-e { fill: none; stroke: var(--enemy); stroke-width: 2; }
 .card { fill: var(--sheet); stroke: var(--ink); stroke-width: 1.2; } .card.pick { stroke: var(--accent); stroke-width: 3; }
@@ -136,7 +138,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     <div class="sheet"><svg id="s-shop" viewBox="0 0 960 540" role="img" aria-label="Shop screen wireframe: five building offers, gold and re-roll, the player's stash, teammates, and a small view of the board."></svg></div>
     <ol class="notes">
       <li>Tabs for the two halves of this step.</li>
-      <li>Your offers. A card shows the kind, what it needs, what it does, and its price.</li>
+      <li>Your offers. A card shows the kind, what it needs, its rate per second (a consumer's need at top speed, an extractor's collect rate), what it does, and its price.</li>
       <li>Gold buys buildings and re-rolls, nothing else.</li>
       <li>Your stash: buildings you own that are not on the board. Drag here to sell.</li>
       <li>Teammates' gold and stash, for information only. You do not see their offers. Hidden in solo.</li>
@@ -148,20 +150,22 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
 
   <section>
     <h2>4. Build</h2>
-    <p>Where the factory is laid out. Everything except the Core can be moved, and conduits are free. In co-op every player edits this same board at once.</p>
+    <p>Where the factory is laid out. Everything except the Core can be moved, and conduits are free. In co-op every player edits at the same time, each in their own plot; neighbouring plots are shown but cannot be edited.</p>
     <div class="sheet"><svg id="s-build" class="big" viewBox="0 0 1280 720" role="img" aria-label="Build screen wireframe: the board across the top with its front edge along the top, room for other players' plots on either side, and a dock along the bottom with stash, tools, inspector, overlays, and party panel."></svg></div>
     <ol class="notes">
       <li>Stash. Drag a building onto the board to place it; placing is free.</li>
       <li>Tools. Conduit is always available and unlimited. Rotate turns the selected building. Undo covers layout changes only, never buying, selling, or re-rolling.</li>
       <li>The board. Lakes and cliffs cannot be built on. Extractors only go on resource nodes.</li>
-      <li>Conduits, one resource each, coloured by resource. They cannot cross; the splitter is what lets one line feed two buildings.</li>
+      <li>Conduits, one resource each, coloured by resource. They cannot cross; the splitter is what lets one line feed two buildings. A conduit drawn to a border spot on the plot edge joins a neighbour's conduit at the same spot; the neighbour's half is drawn dimmed. Buildings carry their owner's tag (P1, P2), and an under-supplied consumer is marked LOW.</li>
       <li>The Core. Placed once at the start of the run; it has no move handle.</li>
       <li>The front edge, along the top. Enemy units enter along it.</li>
       <li>Preview of the routes enemy units would take to the Core with this layout.</li>
-      <li>Inspector for the selected building: what it needs, what it is getting, what it produces.</li>
-      <li>Overlays and problems: a dry run of resource flow, the enemy-path preview, and anything unconnected.</li>
+      <li>Inspector for the selected building: what it needs per second, what it is getting, and whether it is under-supplied.</li>
+      <li>Overlays and problems: a dry run of resource flow, the enemy-path preview, and problems. Your own buildings are listed one by one, and each partner gets one summary line.</li>
       <li>Party panel: who is editing where, pings, and the Ready button. The party moves on when everyone is ready.</li>
       <li>In co-op each extra player adds a plot to the side. A four-player board still fits the width of a 1080p screen, and everything below the board stays free for panels.</li>
+      <li>Border links: each of your own halves with its state, what it carries, and a Remove my half button.</li>
+      <li>A border spot, where a conduit crosses into the neighbour's plot, with the neighbour's dimmed half beside it.</li>
     </ol>
   </section>
 
@@ -403,20 +407,21 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     btn(s, 380, 5, 96, 26, "Shop", true); btn(s, 482, 5, 96, 26, "Build");
     T(s, 24, 62, "YOUR OFFERS", "ts tm");
     var offers = [
-      ["Turret", "Defense · tier 1", "Needs: Power", ["Shoots enemy units", "on your side."], "4"],
-      ["Barracks", "Units · tier 1", "Needs: Ore", ["Spawns a soldier", "every few seconds."], "5"],
-      ["Wall", "Defense · tier 1", "Needs: nothing", ["Blocks movement.", "Has health."], "2"],
-      ["Splitter", "Route · tier 1", "Passes: any one", ["One conduit in,", "two out."], "3"],
-      ["Armory", "Economy · tier 2", "Needs: Ore", ["Units spawn stronger", "as the battle goes on."], "8"]
+      ["Turret", "Defense · tier 1", "Needs: Power", ["Needs 0.50 / s at", "top speed (0.25", "shots / s)"], ["Shoots enemy units", "on your side."], "4"],
+      ["Barracks", "Units · tier 1", "Needs: Ore", ["Needs 0.40 / s at", "top speed (0.25", "units / s)"], ["Spawns a soldier", "every few seconds."], "5"],
+      ["Wall", "Defense · tier 1", "Needs: nothing", [], ["Blocks movement.", "Has health."], "2"],
+      ["Extractor", "Source · tier 1", "Needs: nothing", ["Collects 0.50 / s"], ["Mines the resource", "node under it."], "3"],
+      ["Armory", "Economy · tier 2", "Needs: Ore", ["Needs 0.30 / s at", "top speed (0.10", "steps / s)"], ["Units spawn stronger", "as battle goes on."], "8"]
     ];
     offers.forEach(function (o, i) {
       var x = 24 + i * 150, y = 72, w = 140, h = 230;
       R(s, x, y, w, h, "card");
-      R(s, x + 12, y + 12, w - 24, 60, "panel"); T(s, x + w / 2, y + 46, "art", "ts tm", "middle");
-      T(s, x + 12, y + 94, o[0], "th"); T(s, x + 12, y + 110, o[1], "ts tm");
-      T(s, x + 12, y + 132, o[2], "ts");
-      lines(s, x + 12, y + 154, o[3], "ts", 13);
-      btn(s, x + 12, y + 190, w - 24, 28, "Buy  ·  " + o[4] + " gold", i === 0);
+      R(s, x + 12, y + 10, w - 24, 42, "panel"); T(s, x + w / 2, y + 35, "art", "ts tm", "middle");
+      T(s, x + 12, y + 72, o[0], "th"); T(s, x + 12, y + 87, o[1], "ts tm");
+      T(s, x + 12, y + 107, o[2], "ts");
+      lines(s, x + 12, y + 121, o[3], "ts", 12);
+      lines(s, x + 12, y + 163, o[4], "ts tm", 12);
+      btn(s, x + 12, y + 192, w - 24, 28, "Buy  ·  " + o[5] + " gold", i === 0);
     });
     var px = 782, pw = 154;
     R(s, px, 48, pw, 110, "panel"); T(s, px + 10, 66, "GOLD", "ts tm"); T(s, px + 10, 94, "14", "tb");
@@ -453,6 +458,21 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     R(s, 16, by, 368, bh, "plot"); T(s, 200, by + bh / 2, "co-op: another player’s plot", "ts tm", "middle"); T(s, 200, by + bh / 2 + 18, "joins the board here", "ts tm", "middle");
     R(s, 896, by, 368, bh, "plot"); T(s, 1080, by + bh / 2, "co-op: another player’s plot", "ts tm", "middle"); T(s, 1080, by + bh / 2 + 18, "joins the board here", "ts tm", "middle");
     board(s, bx, by, S, mine, false);
+    // owner tags: every building carries the owner's P-number, not colour only
+    mine.bld.forEach(function (b) { if (b[4] === "Bk") T(s, bx + (b[1] + b[3]) * S - 2, by + (W - b[0]) * S + 14, "P1", "tag", "end"); else T(s, bx + b[1] * S + 2, by + (W - b[0] - b[2]) * S - 2, "P1", "tag"); });
+    // border links: spots on the plot edge, my own halves solid, the neighbour's half dimmed
+    function edge(fr, dp) { return [bx + fr * S, by + (W - dp - 0.5) * S]; }
+    function half(res, pts) { el(s, "polyline", { class: "cond c-" + res, points: pts.map(function (q) { return q.join(","); }).join(" ") }); }
+    var l1 = edge(0, 6), r1 = edge(24, 12);
+    half("ore", [l1, [bx + 12.5 * S, l1[1]], [bx + 12.5 * S, by + (W - 8 - 0.5) * S]]);
+    half("power", [r1, [bx + 19 * S, r1[1]]]);
+    var nb = el(s, "g", { opacity: 0.35 });
+    el(nb, "polyline", { class: "cond c-ore", points: (bx - 74) + "," + l1[1] + " " + bx + "," + l1[1] });
+    R(nb, bx - 96, l1[1] - 11, 22, 22, "bld"); T(nb, bx - 85, l1[1] + 3, "Ex", "bl", "middle"); T(nb, bx - 94, l1[1] - 13, "P2", "tag");
+    [l1, r1].forEach(function (q) { R(s, q[0] - 5, q[1] - 5, 10, 10, "spot"); });
+    // under-supplied consumer: dashed warning frame and LOW marker (the Barracks, selected below)
+    el(s, "rect", { x: bx + 8 * S - 6, y: by + 2 * S - 6, width: 2 * S + 12, height: 2 * S + 12, class: "low" });
+    T(s, bx + 10 * S - 4, by + 2 * S + 11, "LOW", "lowt", "end");
     function path(pts) { el(s, "polyline", { class: "path", points: pts.map(function (q) { return (bx + q[1] * S) + "," + (by + (W - q[0]) * S); }).join(" ") }); }
     path([[16,20],[10.5,20],[10.5,16.5],[4.5,16.5],[4.5,12.5],[4,12.5]]);
     path([[16,9.5],[14.5,9.5],[14.5,10.5],[11.5,10.5],[11.5,11.5],[4,11.5]]);
@@ -466,23 +486,28 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     [["Select / move", 0], ["Conduit · free", 1], ["Rotate (R)", 0], ["Erase conduit", 0], ["To stash", 0], ["Undo", 0]].forEach(function (b, i) {
       btn(s, 28 + (i % 2) * 152, 600 + Math.floor(i / 2) * 35, 144, 29, b[0], !!b[1]);
     });
-    // dock B: inspector
-    R(s, 352, 404, 448, 304, "panel"); T(s, 364, 426, "SELECTED", "ts tm");
-    T(s, 364, 458, "Barracks", "tb"); T(s, 474, 458, "Units · tier 1 · bought by You", "ts tm");
-    lines(s, 364, 492, ["Needs      Ore 2.0 / sec", "Receiving  Ore 1.5 / sec", "           extractor is 12 cells away", "Produces   1 soldier / 5.3 s (4.0 s at full)", "Health     120"], "t", 24);
-    btn(s, 364, 664, 120, 30, "Rotate"); btn(s, 492, 664, 150, 30, "To stash"); btn(s, 650, 664, 138, 30, "Sell in Shop");
+    // dock B: inspector, then Border links
+    R(s, 352, 404, 448, 198, "panel"); T(s, 364, 426, "SELECTED", "ts tm");
+    T(s, 364, 452, "Barracks", "tb"); T(s, 474, 452, "Units · tier 1 · bought by You", "ts tm");
+    lines(s, 364, 476, ["Top speed  0.25 units / sec", "Needs      0.40 / sec at top speed", "           · UNDER-SUPPLIED: gets 0.30 / sec", "Receiving  Ore 0.30 / sec (estimate)", "Health     120"], "t", 19);
+    btn(s, 364, 566, 120, 28, "Rotate"); btn(s, 492, 566, 150, 28, "To stash"); btn(s, 650, 566, 138, 28, "Sell in Shop");
+    R(s, 352, 610, 448, 98, "panel"); T(s, 364, 628, "BORDER LINKS (co-op)", "ts tm");
+    [["Linked with Ana (receiving)", "carries Ore", 636], ["Not connected: waiting for your", "neighbour (receiving) · carries Power", 670]].forEach(function (r) {
+      R(s, 364, r[2], 424, 32, "box"); T(s, 372, r[2] + 14, r[0], "ts"); T(s, 372, r[2] + 27, r[1], "ts");
+      btn(s, 652, r[2] + 5, 130, 22, "Remove my half");
+    });
     // dock C: overlays + party
     R(s, 816, 404, 448, 156, "panel"); T(s, 828, 426, "OVERLAYS", "ts tm");
     btn(s, 828, 436, 136, 30, "Resource flow"); btn(s, 972, 436, 136, 30, "Enemy paths", true); btn(s, 1116, 436, 136, 30, "Dry run 60s");
     T(s, 828, 492, "PROBLEMS", "ts tm");
-    lines(s, 828, 512, ["⚠ Extractor in stash: 2 free nodes (Power, Flux)", "⚠ Armory is fed through a 9-cell conduit", "✓ No conduits cross"], "ts", 18);
-    R(s, 816, 568, 448, 140, "panel"); T(s, 828, 590, "PARTY (co-op) · everyone edits this board", "ts tm");
+    lines(s, 828, 512, ["⚠ Barracks gets 0.30/s of the 0.40/s it needs.", "⚠ Extractor in stash: 2 free nodes (Power, Flux)", "⚠ Ana has 2 under-supplied buildings."], "ts", 18);
+    R(s, 816, 568, 448, 140, "panel"); T(s, 828, 590, "PARTY (co-op) · each edits their own plot", "ts tm");
     lines(s, 828, 614, ["You   placing walls near the front    ready: no", "Ana   routing Power to turrets        ready: yes", "Bo    in Shop                         ready: no"], "ts", 18);
     T(s, 828, 690, "Next: PvP · opponent unknown", "ts tm");
     btn(s, 1104, 668, 148, 30, "Ready", true);
     // marks
     mark(s, 318, 420, 1, 11); mark(s, 318, 584, 2, 11); mark(s, bx + 450, by + 290, 3, 11); mark(s, bx + 150, by + 165, 4, 11); mark(s, bx + 284, by + 262, 5, 11);
-    mark(s, 790, by - 12, 6, 11); mark(s, bx + 424, by + 60, 7, 11); mark(s, 782, 420, 8, 11); mark(s, 1246, 420, 9, 11); mark(s, 1246, 584, 10, 11); mark(s, 200, by + 40, 11, 11);
+    mark(s, 790, by - 12, 6, 11); mark(s, bx + 424, by + 38, 7, 11); mark(s, 782, 420, 8, 11); mark(s, 782, 626, 12, 11); mark(s, 1246, 420, 9, 11); mark(s, 1246, 584, 10, 11); mark(s, 200, by + 40, 11, 11); mark(s, l1[0] - 14, l1[1] + 20, 13, 11);
   })();
 
   // ================= 5. MAIN MENU =================
