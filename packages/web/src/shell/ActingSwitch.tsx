@@ -4,6 +4,37 @@
  * two or more, and says in words who still has to act in the current step.
  */
 import type { RunState } from '@game/session';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { screenText, screenTexts } from '../build/texts.js';
+
+const text = (key: string, values: Record<string, string> = {}): string =>
+  screenText(screenTexts, key, values);
+
+/** What a screen reader hears when the acting player changes. */
+export function actingAnnouncement(name: string): string {
+  return text('uiSwitchAnnounce', { name });
+}
+
+/**
+ * A visually hidden live region: empty on first render, then the new acting
+ * player's name each time `acting` changes.
+ */
+export function ActingAnnouncer(props: { acting: number; name: string }) {
+  const first = useRef(true);
+  const [message, setMessage] = useState('');
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    setMessage(actingAnnouncement(props.name));
+  }, [props.acting]);
+  return (
+    <span class="sr-only" aria-live="polite" data-field="acting-announce">
+      {message}
+    </span>
+  );
+}
 
 /** Whether player `i` has nothing left to do in the current step. */
 export function isDone(run: RunState, i: number): boolean {
@@ -21,8 +52,8 @@ export function ActingSwitch(props: {
   const waiting = run.players.filter((_, i) => !isDone(run, i));
   return (
     <div class="party-switch" id="acting-switch">
-      <span class="muted fine">Playing as</span>
-      <span role="group" aria-label="Acting player">
+      <span class="muted fine">{text('uiSwitchPlayingAs')}</span>
+      <span role="group" aria-label={text('uiSwitchGroup')}>
         {run.players.map((p, i) => (
           <button
             type="button"
@@ -31,17 +62,24 @@ export function ActingSwitch(props: {
             data-action="act-as"
             data-player={i}
             aria-pressed={i === acting}
+            aria-label={text(
+              isDone(run, i) ? 'uiSwitchLabelDone' : 'uiSwitchLabelToAct',
+              { name: p.name },
+            )}
             onClick={() => props.onActing?.(i)}
           >
-            {p.name} {isDone(run, i) ? '(done)' : '(to act)'}
+            {p.name} {text(isDone(run, i) ? 'uiSwitchDone' : 'uiSwitchToAct')}
           </button>
         ))}
       </span>
       <span class="muted fine" data-field="waiting-for">
         {waiting.length === 0
-          ? 'Everyone is done.'
-          : `Waiting for: ${waiting.map((p) => p.name).join(', ')}`}
+          ? text('uiSwitchEveryoneDone')
+          : text('uiSwitchWaiting', {
+              names: waiting.map((p) => p.name).join(', '),
+            })}
       </span>
+      <ActingAnnouncer acting={acting} name={run.players[acting]?.name ?? ''} />
     </div>
   );
 }

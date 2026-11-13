@@ -78,8 +78,9 @@ const FAILURES: Readonly<Record<string, string>> = {
   team_changed: 'battleFailTeamChanged',
 };
 
-function failureText(reason: string): string {
-  const key = FAILURES[reason];
+export function failureText(reason: string): string {
+  // `reason` is arbitrary text: "constructor" must not find Object.prototype's.
+  const key = Object.hasOwn(FAILURES, reason) ? FAILURES[reason] : undefined;
   return key === undefined ? cannotShow(reason) : screenText(screenTexts, key);
 }
 
@@ -156,7 +157,7 @@ function describeStoredBattle(
       ? (stored['detail'] as unknown as BattleDetail)
       : null;
   if (detail === null || stored === null) {
-    return { ok: false, message: FAILURES['no_stored_battle'] as string };
+    return { ok: false, message: failureText('no_stored_battle') };
   }
   const opp = isRecord(stored['opponent']) ? stored['opponent'] : {};
   const oppKind = opp['kind'];

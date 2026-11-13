@@ -1,12 +1,13 @@
 /** Wording for the Shop tab's rejections and confirmations. UI text only. */
 import { reasonMessage, type SelectionCause } from '../build/reasons.js';
+import { screenText, screenTexts } from '../build/texts.js';
 import { STALE_MESSAGE } from '../run/local-storage-store.js';
 
 const SHOP_REASONS: Readonly<Record<string, string>> = {
-  not_enough_gold: 'Not enough gold.',
-  no_such_offer: 'That offer is gone (already bought or re-rolled).',
-  not_in_stash: 'That building is not in your stash.',
-  not_owner: 'That building belongs to another player.',
+  not_enough_gold: 'uiShopNotEnoughGold',
+  no_such_offer: 'uiShopNoSuchOffer',
+  not_in_stash: 'uiShopNotInStash',
+  not_owner: 'uiShopNotOwner',
 };
 
 export function shopReason(
@@ -15,7 +16,12 @@ export function shopReason(
   cause?: SelectionCause,
 ): string {
   if (reason === 'save_failed' && detail === STALE_MESSAGE) {
-    return `${STALE_MESSAGE} Nothing was changed. Reload to see the saved run.`;
+    return screenText(screenTexts, 'uiShopStale', { message: STALE_MESSAGE });
   }
-  return SHOP_REASONS[reason] ?? reasonMessage(reason, detail, cause);
+  const key = Object.hasOwn(SHOP_REASONS, reason)
+    ? SHOP_REASONS[reason]
+    : undefined;
+  return key === undefined
+    ? reasonMessage(reason, detail, cause)
+    : screenText(screenTexts, key);
 }

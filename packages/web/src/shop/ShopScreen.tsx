@@ -20,6 +20,7 @@ import type { RunHandle } from '../run/handle.js';
 import { ensureShopRun, optionsFromUrl } from '../run/shop-run.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import './shop.css';
+import { screenText, screenTexts } from '../build/texts.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { performAction } from './actions.js';
 import { onStepTab, stepTabs } from './tabs.js';
@@ -84,7 +85,9 @@ function Card(props: { card: OfferCard; onBuy: (slot: number) => void }) {
       <p class="offer-kind">
         {o.kindLabel} · tier {o.tier}
       </p>
-      <p class="offer-needs">Needs: {o.needs}</p>
+      <p class="offer-needs">
+        {screenText(screenTexts, 'uiShopNeeds', { needs: o.needs })}
+      </p>
       {o.rate === '' ? null : (
         <p class="offer-rate" data-field="rate">
           {o.rate}

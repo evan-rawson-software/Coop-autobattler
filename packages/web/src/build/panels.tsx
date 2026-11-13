@@ -10,7 +10,6 @@ import {
 import type { RunState } from '@game/session';
 import { content } from '../content.js';
 import { Panel } from '../shell/AppShell.js';
-import { ActingSwitch } from '../shell/ActingSwitch.js';
 import type { BuildController, Model, Tool } from './build-controller.js';
 import { halfStatuses, linkText } from './border-links.js';
 import { halfFlow } from './overlay-marks.js';
@@ -80,7 +79,7 @@ export function StashPanel(props: {
   return (
     <Panel title="Stash · drag onto the board" id="panel-stash">
       {groups.length === 0 ? (
-        <p class="muted">Empty. Everything you own is on the board.</p>
+        <p class="muted">{screenText(screenTexts, 'uiStashEmpty')}</p>
       ) : (
         <ul class="stash-list">
           {groups.map((g) => {
@@ -240,7 +239,7 @@ export function InspectorPanel(props: {
   const { run, model, dry, ctl } = props;
   const team = run.team;
   const sel = model.ui.selection;
-  let body = <p class="muted">Click a building or a conduit to inspect it.</p>;
+  let body = <p class="muted">{screenText(screenTexts, 'uiInspectorHint')}</p>;
 
   if (sel?.kind === 'core') {
     const def = content.buildings.list().find((d) => d.kind === 'core');
@@ -260,7 +259,7 @@ export function InspectorPanel(props: {
           <dt>Health</dt>
           <dd>{def?.tiers[0]?.health ?? '-'}</dd>
         </dl>
-        <p class="notice">The Core cannot be moved.</p>
+        <p class="notice">{screenText(screenTexts, 'uiInspectorCoreFixed')}</p>
       </div>
     );
   } else if (sel?.kind === 'conduit') {
@@ -275,7 +274,9 @@ export function InspectorPanel(props: {
           <dl class="props">
             <dt>Carries</dt>
             <dd>
-              {res === null ? 'Not determined yet' : resourceName(content, res)}
+              {res === null
+                ? screenText(screenTexts, 'uiInspectorCarriesUnknown')
+                : resourceName(content, res)}
             </dd>
             {halfStatuses(team)
               .filter((h) => h.conduit === c.id)
@@ -335,7 +336,9 @@ export function InspectorPanel(props: {
           </h3>
           {props.sealed?.includes(b.id) === true ? (
             <p class="notice sealed-note" data-field="sealed" role="alert">
-              Walled in. {SEALED_HINT}
+              {screenText(screenTexts, 'uiInspectorSealed', {
+                hint: SEALED_HINT,
+              })}
             </p>
           ) : null}
           <p class="muted insp-desc">
@@ -382,31 +385,39 @@ export function InspectorPanel(props: {
             ) : null}
             {figs?.inputs.map((i) => (
               <>
-                <dt>Input</dt>
+                <dt>{screenText(screenTexts, 'uiInspectorInput')}</dt>
                 <dd>{resourceName(content, i.resource)}</dd>
-                <dt>Receiving</dt>
+                <dt>{screenText(screenTexts, 'uiInspectorReceiving')}</dt>
                 <dd data-field="receiving">
                   {i.connected
-                    ? `${resourceName(content, i.resource)} ${fmt(i.arrivesPerSec)} / sec (estimate)`
-                    : 'nothing: no conduit on this input'}
+                    ? screenText(screenTexts, 'uiInspectorReceivingEstimate', {
+                        resource: resourceName(content, i.resource),
+                        rate: fmt(i.arrivesPerSec),
+                      })
+                    : screenText(screenTexts, 'uiInspectorReceivingNothing')}
                 </dd>
               </>
             ))}
             {figs?.produces != null ? (
               <>
-                <dt>Mines</dt>
+                <dt>{screenText(screenTexts, 'uiInspectorMines')}</dt>
                 <dd>
-                  {figs.produces.resource === null
-                    ? '-'
-                    : resourceName(content, figs.produces.resource)}{' '}
-                  {fmt(figs.produces.perSec)} / sec
+                  {screenText(screenTexts, 'uiInspectorMinesRate', {
+                    resource:
+                      figs.produces.resource === null
+                        ? '-'
+                        : resourceName(content, figs.produces.resource),
+                    rate: fmt(figs.produces.perSec),
+                  })}
                   {figs.produces.lostPerSec > 0
-                    ? `, ${fmt(figs.produces.lostPerSec)} / sec lost (no conduit)`
+                    ? screenText(screenTexts, 'uiInspectorMinesLost', {
+                        rate: fmt(figs.produces.lostPerSec),
+                      })
                     : ''}
                 </dd>
                 {figs.produces.stalledPercent !== null ? (
                   <>
-                    <dt>Backed up</dt>
+                    <dt>{screenText(screenTexts, 'uiInspectorBackedUp')}</dt>
                     <dd data-field="stalled">
                       {screenText(screenTexts, 'inspectorStalled', {
                         percent: String(figs.produces.stalledPercent),
@@ -419,29 +430,42 @@ export function InspectorPanel(props: {
             {figs?.derived != null ? (
               <>
                 <dt>
-                  {figs.derived.kind === 'units'
-                    ? 'Produces'
-                    : figs.derived.kind === 'shots'
-                      ? 'Fires'
-                      : 'Steps'}
+                  {screenText(
+                    screenTexts,
+                    figs.derived.kind === 'units'
+                      ? 'uiInspectorProduces'
+                      : figs.derived.kind === 'shots'
+                        ? 'uiInspectorFires'
+                        : 'uiInspectorSteps',
+                  )}
                 </dt>
                 <dd data-field="derived">
-                  {fmt(figs.derived.perMin)}{' '}
-                  {figs.derived.kind === 'units'
-                    ? 'units'
-                    : figs.derived.kind === 'shots'
-                      ? 'shots'
-                      : 'steps'}{' '}
-                  / min (estimate; costs {figs.derived.cost} per{' '}
-                  {figs.derived.kind === 'units'
-                    ? 'unit'
-                    : figs.derived.kind === 'shots'
-                      ? 'shot'
-                      : 'step'}
-                  {figs.derived.maxPerMin === null
-                    ? ''
-                    : `, at most ${fmt(figs.derived.maxPerMin)}`}
-                  )
+                  {screenText(screenTexts, 'uiInspectorDerived', {
+                    rate: fmt(figs.derived.perMin),
+                    things: screenText(
+                      screenTexts,
+                      figs.derived.kind === 'units'
+                        ? 'unitsWord'
+                        : figs.derived.kind === 'shots'
+                          ? 'shotsWord'
+                          : 'stepsWord',
+                    ),
+                    cost: String(figs.derived.cost),
+                    thing: screenText(
+                      screenTexts,
+                      figs.derived.kind === 'units'
+                        ? 'uiUnitWord'
+                        : figs.derived.kind === 'shots'
+                          ? 'uiShotWord'
+                          : 'uiStepWord',
+                    ),
+                    limit:
+                      figs.derived.maxPerMin === null
+                        ? ''
+                        : screenText(screenTexts, 'uiInspectorDerivedAtMost', {
+                            max: fmt(figs.derived.maxPerMin),
+                          }),
+                  })}
                 </dd>
               </>
             ) : null}
@@ -605,15 +629,23 @@ export function DryRunTable(props: {
   };
   const secs = dry.ticks / simConfig.ticksPerSecond;
   return (
-    <div class="dry-table" id="dry-table" role="region" aria-label="Dry run">
+    <div
+      class="dry-table"
+      id="dry-table"
+      role="region"
+      aria-label={screenText(screenTexts, 'uiDryRunRegion')}
+    >
       <div class="dry-head">
         <strong>
-          Dry run · {dry.ticks} ticks ({fmt(secs)} s)
+          {screenText(screenTexts, 'uiDryRunTitle', {
+            ticks: String(dry.ticks),
+            secs: fmt(secs),
+          })}
         </strong>
         <button
           type="button"
           onClick={props.onClose}
-          aria-label="Close dry run"
+          aria-label={screenText(screenTexts, 'uiDryRunClose')}
         >
           ×
         </button>
@@ -621,18 +653,18 @@ export function DryRunTable(props: {
       <table>
         <thead>
           <tr>
-            <th>Source</th>
-            <th>Resource</th>
-            <th>Produced</th>
-            <th>Lost</th>
-            <th>Rate / s</th>
+            <th>{screenText(screenTexts, 'uiDryRunSource')}</th>
+            <th>{screenText(screenTexts, 'uiDryRunResource')}</th>
+            <th>{screenText(screenTexts, 'uiDryRunProduced')}</th>
+            <th>{screenText(screenTexts, 'uiDryRunLost')}</th>
+            <th>{screenText(screenTexts, 'uiDryRunRate')}</th>
           </tr>
         </thead>
         <tbody>
           {dry.sources.length === 0 ? (
             <tr>
               <td colSpan={5} class="muted">
-                No sources placed.
+                {screenText(screenTexts, 'uiDryRunNoSources')}
               </td>
             </tr>
           ) : (
@@ -662,19 +694,19 @@ export function DryRunTable(props: {
       <table>
         <thead>
           <tr>
-            <th>Consumer</th>
-            <th>Resource</th>
-            <th>Delivered</th>
-            <th>Per sec</th>
-            <th>Need / s (all inputs)</th>
-            <th>Supply (all inputs)</th>
+            <th>{screenText(screenTexts, 'uiDryRunConsumer')}</th>
+            <th>{screenText(screenTexts, 'uiDryRunResource')}</th>
+            <th>{screenText(screenTexts, 'uiDryRunDelivered')}</th>
+            <th>{screenText(screenTexts, 'uiDryRunPerSec')}</th>
+            <th>{screenText(screenTexts, 'uiDryRunNeed')}</th>
+            <th>{screenText(screenTexts, 'uiDryRunSupply')}</th>
           </tr>
         </thead>
         <tbody>
           {dry.consumers.length === 0 ? (
             <tr>
               <td colSpan={6} class="muted">
-                No consumers placed.
+                {screenText(screenTexts, 'uiDryRunNoConsumers')}
               </td>
             </tr>
           ) : (
@@ -745,11 +777,11 @@ export function BorderLinksPanel(props: {
     );
   const mine = halfStatuses(team).filter((h) => h.owner === acting);
   return (
-    <Panel title="Border links" id="panel-links">
+    <Panel title={screenText(screenTexts, 'uiLinksTitle')} id="panel-links">
       <ul class="link-list" data-field="links" aria-live="polite">
         {mine.length === 0 ? (
           <li class="muted" data-field="links-empty">
-            No border links yet. Draw a conduit to a border cell of your area.
+            {screenText(screenTexts, 'uiLinksEmpty')}
           </li>
         ) : (
           mine.map((h) => {
@@ -760,7 +792,9 @@ export function BorderLinksPanel(props: {
                   {linkText(h, nameOf)}
                   {res === null
                     ? ''
-                    : ` · carries ${resourceName(content, res)}`}
+                    : screenText(screenTexts, 'uiLinksCarries', {
+                        resource: resourceName(content, res),
+                      })}
                   {props.flow == null
                     ? ''
                     : ` · ${screenText(
@@ -776,7 +810,7 @@ export function BorderLinksPanel(props: {
                   disabled={props.locked}
                   onClick={() => void ctl.eraseConduit(h.conduit)}
                 >
-                  Remove my half
+                  {screenText(screenTexts, 'uiLinksRemove')}
                 </button>
               </li>
             );
@@ -796,8 +830,6 @@ export function PartyPanel(props: {
   gate?: Gate | null;
   /** The player this device acts as. */
   acting: number;
-  /** Switch the acting player (party played from one browser). */
-  onActing?: ((player: number) => void) | undefined;
 }) {
   const { run, ctl, acting } = props;
   const me = run.perPlayer[acting];
@@ -807,11 +839,15 @@ export function PartyPanel(props: {
   const block = props.gate?.readyBlock ?? null;
   return (
     <Panel title={multi ? 'Party' : 'Party · solo'} id="panel-party">
-      <ActingSwitch run={run} acting={acting} onActing={props.onActing} />
       <div class="party-row">
         <span>{run.players[acting]?.name ?? 'You'}</span>
-        <span class="muted">editing the board</span>
-        <span data-field="ready-state">ready: {ready ? 'yes' : 'no'}</span>
+        <span class="muted">{screenText(screenTexts, 'uiPartyEditing')}</span>
+        <span data-field="ready-state">
+          {screenText(
+            screenTexts,
+            ready ? 'uiPartyReadyYes' : 'uiPartyReadyNo',
+          )}
+        </span>
       </div>
       <p class="muted party-next">
         Next: {run.step === 'shop' && run.leg === 'pve' ? 'PvP' : 'PvE'} ·{' '}
