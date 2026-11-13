@@ -157,15 +157,15 @@ tick on average with up to 1,220 units on the field.
 | One plot: battles per second (target)   | at least 100           | 129-149               | fails below 40 (about 3x)                    |
 | Four plots, dense: battles per second   | at least 5 (**not met**) | 2.9 (tier 1)        | fails below 0.7 (about 4x)                   |
 | Four plots, dense tier 3, one battle    | at most 1 s (**not met**) | 1.9 s              | fails above 6 s (about 3x)                   |
-| Event log, one plot                     | 1 MB                   | 0.44 MB               | `performance.test.ts`, exact                 |
-| Event log, four plots                   | 12 MB (was 8 MB, 5 MB) | 8.2 MB                | `performance.test.ts`, exact                 |
+| Event log, one plot                     | 1 MB                   | 0.38 MB               | `performance.test.ts`, exact                 |
+| Event log, four plots                   | 12 MB (was 8 MB, 5 MB) | 6.9 MB                | `performance.test.ts`, exact                 |
 
 Where the budget is written once more: the `BUDGET` constant at the top of
 `packages/tools/src/sim/performance.test.ts`. Keep the two in sync. The four
 plot log budget was raised from 5 MB to 8 MB because battles that used to stall
 for 3,101 ticks now end in under 2,000 with units fighting all the way (more
 events per tick, fewer ticks), and from 8 MB to 12 MB by the wide-front
-pathing (the dense tier 3 battle now runs 2,514 ticks and logs 8.2 MB).
+pathing (the dense tier 3 battle then ran 2,514 ticks and logged 8.2 MB; it now runs 2,318 ticks and logs 6.9 MB).
 
 **Benchmark.** `packages/tools/src/sim/performance.test.ts` (run by `pnpm
 test`; about 1 minute since the dense battles take seconds, each test has a 30 to 120 s timeout):
@@ -235,11 +235,41 @@ its own Core in 12 of them) and none reached `maxBattleTicks`.
 ## Notes
 
 - Flow events (`produced`, `delivered`, `lost`, `stalled`) are recorded for
-  every item moved, so the log grows with throughput as well as with fighting;
-  the log was not broken down by event type.
+  every item moved, so the log grows with throughput as well as with fighting.
+  See "Event log size by event type" below.
 - The numbers do not include the neutral zone generation (one attempt in
   practice, microseconds), the summary timeline (a sample every 50 ticks) or
   any rendering.
+
+## Event log size by event type (issue #38)
+
+Share of the log's JSON bytes per event type. One plot is the largest battle
+of the benchmark (every pair of the 4 reference boards, seeds 1 to 8): siege
+against siege, seed 7, 3,101 ticks, 384 KB. Dense is the four plot team
+against itself, seed 1: tier 1 is 2,117 ticks and 3.09 MB, tier 3 is 2,318
+ticks and 6.91 MB.
+
+| Event type        | One plot (siege, seed 7) | Dense tier 1 | Dense tier 3 |
+| ----------------- | ------------------------ | ------------ | ------------ |
+| `unit_attacked`   | 32.4%                    | 33.9%        | 34.8%        |
+| `delivered`       | 30.5%                    | 29.5%        | 29.1%        |
+| `produced`        | 24.7%                    | 24.1%        | 23.8%        |
+| `unit_spawned`    | 8.4%                     | 8.3%         | 8.5%         |
+| `unit_died`       | 2.7%                     | 2.1%         | 2.3%         |
+| `unit_retargeted` | 0.1%                     | 2.0%         | 1.4%         |
+| all others        | 1.2%                     | 0.1%         | 0.1%         |
+
+There is no per-tick movement event. Units move without logging.
+Resource flow events (`produced` and `delivered`, always equal in count) are a
+bit over half of an economy-heavy log. `unit_attacked` is about a third.
+
+Logs are not saved. The budgets are met with margin: the largest one plot log
+is 38% of its 1 MB budget and the dense tier 3 log is 58% of its 12 MB budget.
+The size is accepted for now.
+
+Coalescing flow events per building is the known option if co-op transport or
+ghost replays later need smaller logs. It is estimated, not measured, to save
+roughly 30 to 40% and would change the golden event log hashes.
 
 ## Simulating off the main thread (issue #53)
 
