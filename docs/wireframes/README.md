@@ -13,8 +13,8 @@ starting kit, threat pips, "an even chance to double it", "overload begins
 The specs are the source of truth. Where a wireframe and a spec disagree,
 the spec wins and the wireframe should be corrected.
 
-**Most images predate the per-player design (issue #124); 3, 4 and 6 are
-redrawn.** The others still show
+**Most images predate the per-player design (issue #124); 1, 3, 4, 6 and 8
+are redrawn.** The others still show
 one shared board, one Core per side and a vote on the Core position. The text below has been updated to the current design
 (each player has their own plot and Core, builds only there, and can link to
 a neighbour across the plot border; there is no giving); the images and
@@ -39,21 +39,22 @@ are coloured by resource.
 
 ## 1. Battle
 
-Nobody gives orders here. The party watches its factory start cold, ramp up, and send units across the neutral zone while the enemy does the same.
+Nobody gives orders here. The party watches its factory start cold, ramp up, and send units across the neutral zone while the enemy does the same. Each player has their own Core, so each side shows one health bar per Core under a total. The image is a three-player party against a PvE stronghold, with one of the party's Cores fallen; a solo battle shows one bar per side, with no total above it.
 
 ![Battle screen wireframe](1-battle.png)
 
 1. Who you are fighting and what kind of battle it is. A ghost shows the other party's names; a boss says so.
 2. Your board, at the bottom, exactly as you built it. Conduits light up as resources flow.
 3. The neutral zone. Its lakes and cliffs are generated for this battle and revealed when it starts. Nothing can be built here. Turrets can shoot enemy units in it; otherwise only units fight here.
-4. The enemy board, at the top. Your units attack buildings in their way and finally the enemy Cores: first the one opposite their owner's plot, then the nearest still standing.
+4. The enemy board, at the top, with one Core per player. Your units attack buildings in their way and finally the enemy Cores: first the one opposite their owner's plot, then the nearest still standing.
 5. Units from both sides meet and form a front line.
-6. The health of every Core on your side, one bar per player, and how many walls still stand. The enemy's is in the matching panel on the right. A side loses when all of its Cores are destroyed. (The image shows one Core bar per side; it is to be redrawn.)
-7. Live production and army counts, so you can see the ramp.
-8. Army strength over time for both sides. Useful afterwards for seeing when you fell behind.
-9. Speed controls. In co-op, a change applies once everyone agrees.
-10. A log of the moments that mattered, such as a junction being destroyed.
-11. Camera. It starts at the center of the map, and the view pans and zooms, so a larger map or a four-player battle still works on the same screen.
+6. A Core that has fallen: greyed out with a cross in its side's colour. Its player's buildings stay on the board.
+7. The total Core health and how many Cores stand ("Cores 2/3"), then one bar per player's Core ("Core 2 (fallen)" once it is destroyed), and how many walls still stand. The enemy's are in the matching panel on the right. A side loses when all of its Cores are destroyed. With a single Core the panel shows one bar, as in a solo battle.
+8. Live production and army counts, so you can see the ramp.
+9. Army strength over time for both sides. Against a PvE stronghold the Overload line below it says which side's last Core Overload would destroy first, and when ("Overload at 4:00 would destroy your Core first at 5:12"). There is no such line against a ghost.
+10. Speed controls. In co-op, a change applies once everyone agrees.
+11. A log of the moments that mattered, such as a junction being destroyed or a Core falling ("Your Core 2 fell"; with a single Core, "Your Core destroyed").
+12. Camera presets: Center, My base, Their base and Fit battle. It starts at the center of the map, and the view pans and zooms, so a larger map or a four-player battle still works on the same screen.
 
 ## 2. Event choice
 
@@ -149,9 +150,9 @@ Shown when playback ends. It says what happened and why, so the party can decide
 
 ![Battle summary screen wireframe](8-battle-summary.png)
 
-1. The result, and in the corner what it cost or paid: lives lost and gold gained. Battle rewards are always gold.
-2. Army strength over the battle for both sides, with the moments that mattered marked.
-3. Where the enemy got through.
+1. The result, and in the corner what it cost or paid: lives lost and gold gained. Battle rewards are always gold. Below it, why the battle ended, naming the step of the tiebreak ladder that decided it (at the time limit: more Cores standing, then the larger share of total Core health left), the Core health left on each side, how many Cores stand on each side and when each Core fell. The image shows a lost battle decided by Cores standing (1 against 3). A solo battle has one Core per side, so the Cores-standing line is left out.
+2. Army strength over the battle for both sides, with the moments that mattered marked, including each Core that fell.
+3. Where the enemy got through. Fallen Cores are greyed with a cross.
 4. What each building did.
 5. What comes next in the round.
 6. Watch the battle again, or ready up. The party moves on to the event when everyone is ready.
