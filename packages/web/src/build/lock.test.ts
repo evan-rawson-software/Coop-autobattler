@@ -87,6 +87,32 @@ describe('sealed producers', () => {
     expect(info.reason).toContain(SEALED_HINT);
   });
 
+  test('one sealed producer reads singular, two read plural', () => {
+    const one = walledIn(shop);
+    // A second barracks in the open along the top edge, walled in.
+    let team = put(one.run.team, 'bld_barracks', 6, 0).team;
+    for (const [x, y] of [
+      [5, 0],
+      [5, 1],
+      [8, 0],
+      [8, 1],
+      [6, 2],
+      [7, 2],
+    ] as const) {
+      team = put(team, 'bld_wall', x, y).team;
+    }
+    const two = { run: { ...one.run, team } };
+    const i1 = sealedInfo(one.run, realDeps(), content, 0);
+    const i2 = sealedInfo(two.run, realDeps(), content, 0);
+    expect(i1.labels).toHaveLength(1);
+    expect(i2.labels).toHaveLength(2);
+    expect(i1.reason).toMatch(/ is walled in\./);
+    expect(i1.reason).not.toMatch(/ are walled in/);
+    expect(i2.reason).toMatch(/ are walled in\./);
+    expect(i2.reason).not.toMatch(/ is walled in/);
+    expect(i2.reason).toContain(i2.labels.join(', '));
+  });
+
   test('Ready is blocked on the Shop view and the gate, and the session agrees', () => {
     const { run } = walledIn(shop);
     const gate = gateFor(run, 0, realDeps(), content);

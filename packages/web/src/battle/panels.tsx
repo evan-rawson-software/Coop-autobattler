@@ -425,7 +425,7 @@ export type StepSide = Pick<
  * from need the final figures: no Core standing on either side is the double
  * fall, anything else the time limit. The ladder is not recomputed.
  */
-function stepText(
+export function stepText(
   reason: BattleReason,
   core: string,
   [own, foe]: readonly [StepSide, StepSide],
@@ -460,7 +460,7 @@ function stepText(
   }
 }
 
-function genericReasonText(reason: BattleReason, core: string): string {
+export function genericReasonText(reason: BattleReason, core: string): string {
   const key = {
     core_destroyed: 'battleGenericCoreDestroyed',
     tiebreak_overkill: 'battleGenericOverkill',

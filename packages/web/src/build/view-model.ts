@@ -154,6 +154,8 @@ export function inspectorFigures(
   sim: SimConfig,
   dry: DryRunResult | null,
   building: PlacedBuilding,
+  /** The acting player: a partner's source is never reported as backed up. */
+  acting?: number,
 ): Figures | null {
   const def = content.buildings.get(building.def);
   if (def === undefined) return null;
@@ -201,6 +203,7 @@ export function inspectorFigures(
           : round1((row.lost * tps) / Math.max(1, dry.ticks)),
       stalledPercent:
         dry === null ||
+        (acting !== undefined && building.owner !== acting) ||
         !state.conduits.some(
           (c) => buildingEnd(c.from)?.building === building.id,
         )

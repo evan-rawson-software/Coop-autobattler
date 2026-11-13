@@ -311,6 +311,7 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   uiShopNotOwner: [],
   uiShopStale: ['message'],
   uiShopNeeds: ['needs'],
+  rateGetsNeeds: ['gets', 'needs'],
   ...Object.fromEntries(
     REASON_TEXT_CODES.map((code) => [`reason_${code}`, [] as string[]]),
   ),

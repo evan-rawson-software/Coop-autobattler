@@ -386,7 +386,8 @@
       "uiSwitchToAct": "(to act)",
       "uiSwitchWaiting": "Waiting for: {names}",
       "uiUnitWord": "unit",
-      "unitsWord": "units"
+      "unitsWord": "units",
+      "rateGetsNeeds": "{gets}/{needs}/s"
     }
   }
 }

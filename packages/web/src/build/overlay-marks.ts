@@ -6,7 +6,7 @@
 
 import type { BuildingDef, DryRunResult } from '@game/core';
 import type { Half } from './border-links.js';
-import { buildingRate, formatHundredths } from './rates.js';
+import { buildingRate, formatHundredths, type Supply } from './rates.js';
 import { screenText, screenTexts, type ScreenTexts } from './texts.js';
 
 /** Screen direction of the arrow on a border cell (plots lie left to right). */
@@ -83,4 +83,47 @@ export function backedUpSources(dry: DryRunResult): Map<number, number> {
     }
   }
   return out;
+}
+
+/** The mark a building carries in its top-right corner, if any. */
+export type RateMark = 'stalled' | 'starved' | 'low' | null;
+
+/** Where the rate text goes on a building. */
+export type RateLabelSpot = 'top' | 'bottom' | 'hidden';
+
+export interface RateLabelInput {
+  readonly zoom: number;
+  /** A sealed unit producer: its rate means nothing until it is reachable. */
+  readonly sealed: boolean;
+  readonly mark: RateMark;
+  /** Width of the text box, in pixels. */
+  readonly textWidth: number;
+  /** Width the corner mark takes, 0 when there is none. */
+  readonly reserved: number;
+  readonly boxWidth: number;
+}
+
+/**
+ * Where the rate text is drawn. Hidden below the zoom cut-off and on a sealed
+ * building. Beside a corner mark it stays on the top row when it fits; when it
+ * does not, an under-supplied consumer (LOW or starved) moves it to the bottom
+ * row so the canvas still shows what the building gets, and a stalled marker
+ * hides it.
+ */
+export function rateLabelSpot(i: RateLabelInput): RateLabelSpot {
+  if (!showRates(i.zoom) || i.sealed) return 'hidden';
+  if (i.mark === null || i.reserved === 0) return 'top';
+  if (i.textWidth + i.reserved <= i.boxWidth) return 'top';
+  return i.mark === 'stalled' ? 'hidden' : 'bottom';
+}
+
+/** "0.25/0.50/s": what an under-supplied consumer gets against what it needs. */
+export function suppliedRateText(
+  supply: Pick<Supply, 'gets' | 'needs'>,
+  texts: ScreenTexts = screenTexts,
+): string {
+  return screenText(texts, 'rateGetsNeeds', {
+    gets: formatHundredths(supply.gets),
+    needs: formatHundredths(supply.needs),
+  });
 }

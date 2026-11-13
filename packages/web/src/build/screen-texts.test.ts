@@ -374,10 +374,11 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     'The run changed. Nothing was changed. Reload to see the saved run.',
   ],
   ['uiShopNeeds', { needs: 'Ore' }, 'Needs: Ore'],
+  ['rateGetsNeeds', { gets: '0.25', needs: '0.50' }, '0.25/0.50/s'],
 ];
 
 const OWNED =
-  /^(status|battle|sealed|readyLock|problemNothing|problemNoConduit|problemStalled|problemStarved|inspectorStalled|linkActive|linkIdle|rateOnBoard|problemFreeNodes|problemStash|eventWaiting|ui[A-Z])/;
+  /^(status|battle|sealed|readyLock|problemNothing|problemNoConduit|problemStalled|problemStarved|inspectorStalled|linkActive|linkIdle|rate(OnBoard|GetsNeeds)|problemFreeNodes|problemStash|eventWaiting|ui[A-Z])/;
 
 describe('screen texts are pinned key by key', () => {
   test.each(TABLE)('%s', (key, values, expected) => {

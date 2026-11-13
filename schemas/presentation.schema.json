@@ -299,7 +299,8 @@
             "uiSwitchToAct",
             "uiSwitchWaiting",
             "uiUnitWord",
-            "unitsWord"
+            "unitsWord",
+            "rateGetsNeeds"
           ],
           "additionalProperties": false,
           "properties": {
@@ -524,7 +525,8 @@
             "uiSwitchToAct": { "$ref": "#/$defs/screenText" },
             "uiSwitchWaiting": { "$ref": "#/$defs/screenText" },
             "uiUnitWord": { "$ref": "#/$defs/screenText" },
-            "unitsWord": { "$ref": "#/$defs/screenText" }
+            "unitsWord": { "$ref": "#/$defs/screenText" },
+            "rateGetsNeeds": { "$ref": "#/$defs/screenText" }
           }
         },
         "needs": {

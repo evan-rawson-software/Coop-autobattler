@@ -22,7 +22,10 @@ import {
   boardRateText,
   halfFlow,
   rateFontPx,
+  rateLabelSpot,
   showRates,
+  suppliedRateText,
+  type RateMark,
 } from './overlay-marks.js';
 import { pathSegments, pathStubs } from './path-segments.js';
 import { isEditStep } from './session.js';
@@ -522,7 +525,9 @@ export function drawBuildOverlay(
       // Reserve the corner the LOW badge, the starved dot or the stalled
       // marker uses on the right.
       let reserved = 0;
+      let mark: RateMark = null;
       if (backed.has(id) && b.instance.owner === d.acting) {
+        mark = 'stalled';
         const r = Math.max(7, z * 0.22);
         ctx.save();
         ctx.fillStyle = col.warn;
@@ -533,26 +538,34 @@ export function drawBuildOverlay(
         ctx.fill();
         ctx.stroke();
         // Pause bars: the source is waiting, its output backs up.
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = col.surface;
         const bar = Math.max(2, r * 0.3);
         ctx.fillRect(x + bw - 1.5 * r - bar, y + 1 + r * 0.5, bar, r);
         ctx.fillRect(x + bw - r + bar * 0.1, y + 1 + r * 0.5, bar, r);
         ctx.restore();
         reserved = 2 * r + 2;
       } else if (d.flow.starved.has(id)) {
+        mark = 'starved';
         reserved = Math.max(7, z * 0.26) * 2;
       } else if (d.flow.underSupplied.has(id)) {
+        mark = 'low';
+        ctx.save();
         ctx.font = font;
         reserved = ctx.measureText('LOW').width + 6;
+        ctx.restore();
       }
-      if (!rates || d.sealed?.includes(id) === true) continue;
+      if (!rates) continue;
       const def = d.content.buildings.get(b.instance.def);
       if (def === undefined) continue;
-      const text = boardRateText(
-        def,
-        b.instance.tier,
-        simConfig.ticksPerSecond,
-      );
+      // An under-supplied consumer shows what it gets against what it needs.
+      const supply =
+        mark === 'low' || mark === 'starved'
+          ? d.flow.supply.find((u) => u.building === id)
+          : undefined;
+      const text =
+        supply === undefined
+          ? boardRateText(def, b.instance.tier, simConfig.ticksPerSecond)
+          : suppliedRateText(supply);
       if (text === '') continue;
       ctx.save();
       ctx.font = `700 ${String(px)}px ui-monospace, monospace`;
@@ -560,15 +573,27 @@ export function drawBuildOverlay(
       ctx.textBaseline = 'middle';
       const w = ctx.measureText(text).width + 6;
       // A one-cell building lets the text run over its right edge; with a
-      // badge in that corner it is hidden when it would run into it. The
-      // owner tag sits on the bottom row, below the box this takes.
-      if (reserved === 0 || w + reserved <= bw) {
+      // badge in that corner it moves to the bottom row (or is hidden for the
+      // stalled marker). The owner tag sits at the bottom left, so the bottom
+      // row text starts after it.
+      const spot = rateLabelSpot({
+        zoom: z,
+        sealed: d.sealed?.includes(id) === true,
+        mark,
+        textWidth: w,
+        reserved,
+        boxWidth: bw,
+      });
+      if (spot !== 'hidden') {
+        const tag = partySize > 1 ? 26 : 0;
+        const bx = spot === 'top' ? x + 1 : x + 1 + tag;
+        const by = spot === 'top' ? y + 1 : y + b.rect.h * z - (px + 4) - 1;
         ctx.fillStyle = col.surface;
         ctx.globalAlpha = 0.85;
-        ctx.fillRect(x + 1, y + 1, w, px + 4);
+        ctx.fillRect(bx, by, w, px + 4);
         ctx.globalAlpha = 1;
         ctx.fillStyle = col.ink;
-        ctx.fillText(text, x + 4, y + 1 + (px + 4) / 2 + 0.5);
+        ctx.fillText(text, bx + 3, by + (px + 4) / 2 + 0.5);
       }
       ctx.restore();
     }
