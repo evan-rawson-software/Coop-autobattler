@@ -23,6 +23,7 @@ import {
   sideBit,
   type ConduitKind,
 } from '../sprites/conduit-piece.js';
+import { cellSet, wallFrame } from '../sprites/wall-autotile.js';
 import { groundName, lakeFillFrame, neutralName } from '../sprites/variants.js';
 import type {
   BoardScene,
@@ -253,6 +254,12 @@ function drawBuildings(
   const turned = f.turned ? 2 : 0;
   const owners = new Set(board.buildings.map((b) => b.instance.owner));
   const multi = owners.size > 1;
+  // Walls join their wall neighbours (any tier or owner), in view space.
+  const wallCells = cellSet(
+    board.buildings
+      .filter((b) => b.def.id === 'bld_wall' && b.rect.w === 1)
+      .map((b) => b.rect),
+  );
   for (const b of board.buildings) {
     const px = (b.rect.x - f.ox) * T;
     const py = (b.rect.y - f.oy) * T;
@@ -279,6 +286,9 @@ function drawBuildings(
         lc.drawImage(src, -head.anchor[0], -head.anchor[1]);
         lc.restore();
       }
+    } else if (fits && b.def.id === 'bld_wall' && findSprite('bld_wall_auto')) {
+      const frame = wallFrame(wallCells, b.rect.x, b.rect.y);
+      drawSprite(lc, 'bld_wall_auto', px, py, 1, { frame });
     } else if (fits) {
       const rot = buildingSpriteRot(b, f.turned);
       drawSprite(lc, b.def.id, px, py, 1, rot ? { rot } : {});

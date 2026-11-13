@@ -954,6 +954,22 @@
       "category": "building",
       "note": "Overlay for a 2x2 building: frame 0 = tier 2 (silver corner brackets), frame 1 = tier 3 (gold). Tier 1 has none. Draw over the building, then tier_pips."
     },
+    "bld_wall_auto": {
+      "sheet": "buildings",
+      "x": 147,
+      "y": 33,
+      "w": 16,
+      "h": 16,
+      "frames": 16,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "building",
+      "columns": 8,
+      "note": "Wall autotile, 16 static frames in 2 rows of 8. Frame index = 4-bit mask of the cardinal neighbours that are also walls: bit0 N, bit1 E, bit2 S, bit3 W (N=1, E=2, S=4, W=8). Frame 0 is the single block. No diagonals. Shop cards and icons use bld_wall."
+    },
     "unit_soldier": {
       "sheet": "units",
       "x": 0,

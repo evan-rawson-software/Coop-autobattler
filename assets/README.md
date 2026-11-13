@@ -133,6 +133,7 @@ planned unit or building to content removes the flag by itself (tested).
 | `tier_trim_1x1`, `tier_trim_2x2` | Overlay for a whole building: frame 0 = tier 2 (silver corner brackets), frame 1 = tier 3 (gold). Tier 1 has none. |
 | `unit_<id>`                | Neutral unit, idle (1 frame). `.walk` is 2 frames, `.attack` 2 frames (wind-up, strike). |
 | `unit_<id>@a`, `@b`        | Same, pre-tinted for side A (faces north) and side B (faces south).  |
+| `bld_wall_auto`            | Wall autotile, 16 static frames (`columns` 8). Frame index = 4-bit mask of the cardinal neighbours that are also walls: bit0 N, bit1 E, bit2 S, bit3 W (1, 2, 4, 8). Frame 0 is the single block; joined sides run to the tile edge with no outline. No diagonals. `bld_wall` stays for shop cards and icons. |
 | `ter_lake`, `ter_cliff`    | Terrain ids. `ter_lake_auto` and `ter_cliff_auto` are 47-frame autotile sets, see below. Draw over ground. |
 | `ter_lake_fill`            | 4 static variants of interior water for a lake cell whose 8 neighbours are all lake (mask 255). Pick one per cell with a hash; they join each other and the autotile edges. |
 | `ground_1..6`, `neutral_1..4` | Seamless buildable and neutral-zone ground. Pick a variant at random per cell. |
@@ -211,6 +212,7 @@ TileSet settings:
   | W    | `CELL_NEIGHBOR_LEFT_SIDE`     |
   | NW   | `CELL_NEIGHBOR_TOP_LEFT_CORNER` |
 
+- Wall autotile (`bld_wall_auto`, on `buildings.png`, which is free-form): 16 tiles keyed by the cardinal neighbours (bit0 N, bit1 E, bit2 S, bit3 W); in Godot use a terrain set in "Match Sides" mode.
 - Conduits: add the five pieces once and get the other orientations by
   rotation, which depends on the Godot version.
   - Godot 4.0 to 4.2: create alternative tiles and set `TileData.transpose`,
