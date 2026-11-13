@@ -3043,9 +3043,13 @@ would a circle of radius R go". Every one-cell gap is passable, which is exact
 for every unit of part 1 (collision radii below half a cell); the walked path
 is the sequence of field cells, while a real unit steers by the direction of
 each step and keeps its offset inside the cell (see "Steering"), so it may cut
-across a neighbouring cell and slides along walls. The preview is the route,
-not the trajectory: the cells a lone soldier visits are within one cell of
-the previewed route (a test checks this against the simulation). A unit whose collision diameter is
+across a neighbouring cell and slides along walls. The preview is the route
+of a unit that enters at the centre of the column, not a trajectory. A unit
+usually stays within one cell of it. A unit that enters off-centre keeps its
+offset and now and then (about 1 to 2 walks in 100 in tests on random walled
+boards) passes a wall row through a neighbouring gap. It can then be several
+cells from the previewed route until the paths join again. A test measures
+this against the simulation. A unit whose collision diameter is
 larger than a gap does not fit through it in the simulation even though the
 preview shows a path.
 

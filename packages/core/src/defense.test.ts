@@ -10,6 +10,7 @@ import {
   type ArenaSim,
 } from './arena-sim.js';
 import { previewEnemyPaths } from './enemy-paths.js';
+import { Rng } from './rng.js';
 import type { Cell, GameMap } from './map.js';
 import { withModifier, type TeamModifier } from './modifiers.js';
 import type { TeamState } from './team-state.js';
@@ -1083,7 +1084,7 @@ describe('enemy-path preview', () => {
     expect(got(p6.cells[p6.cells.length - 1])).toEqual({ x: 6, y: 3 });
   });
 
-  test('it agrees with a simulated soldier walking from the entry', () => {
+  test('it agrees with a simulated soldier walking from the centre of the entry, on this one board', () => {
     const lab = new Lab(tiny([], [[5, 8]]));
     lab.core(5, 0);
     lab.put('bld_wall', 6, 8, 0, 3);
@@ -1123,6 +1124,81 @@ describe('enemy-path preview', () => {
         expect(walked.some((c) => near(r, c))).toBe(true);
       }
     }
+  });
+
+  test('an off-centre soldier on random walled boards stays near the preview, up to the accepted bound (#122)', () => {
+    // Measured on 30 seeded boards (2 to 4 rows of tier 3 walls at y 3..12,
+    // 2 or 3 gaps each, Core at (5,0)): 7 of 1,680
+    // walks (0.42%) leave the route by more than 1 cell, the worst by 5 cells. These numbers are a ratchet
+    // that describes accepted behaviour (#122), not a target. A unit that
+    // enters off-centre keeps its offset and now and then passes a wall row
+    // through a neighbouring gap.
+    const offsets = [
+      [0, 0],
+      [95, 60],
+      [-95, 60],
+      [95, -60],
+      [-95, -60],
+    ] as const;
+    let walks = 0;
+    let far = 0;
+    let worst = 0;
+    for (let seed = 1; seed <= 30; seed++) {
+      const rng = Rng.fromSeed(seed * 6007);
+      const lab = new Lab(tiny());
+      lab.core(5, 0);
+      const ys = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+      const rows = 2 + rng.nextInt(3);
+      for (let r = 0; r < rows; r++) {
+        const y = ys.splice(rng.nextInt(ys.length), 1)[0] as number;
+        const gaps = new Set<number>();
+        const n = 2 + rng.nextInt(2);
+        while (gaps.size < n) gaps.add(rng.nextInt(W));
+        for (let x = 0; x < W; x++) {
+          if (!gaps.has(x)) lab.put('bld_wall', x, y, 0, 3);
+        }
+      }
+      const paths = previewEnemyPaths(lab.state, content, simConfig);
+      for (const p of paths) {
+        const route = [...p.cells, ...p.approach];
+        for (const [dx, dy] of offsets) {
+          const { sim, ctx } = startArenaBattle(
+            lab.state,
+            coreOnly(),
+            GAP,
+            content,
+            simConfig,
+          );
+          let u;
+          try {
+            u = spawnUnitForTest(sim, ctx, {
+              side: 1,
+              def: 'unit_soldier',
+              px: mid(p.entry.x) + dx,
+              py: mid(p.entry.y) + dy,
+            });
+          } catch {
+            continue; // the spawn point is off the board or blocked
+          }
+          const walked = walk(sim, ctx, u, 12 * route.length + 80);
+          walks++;
+          let d = 0;
+          for (const c of walked) {
+            const dist = Math.min(
+              ...route.map((r) =>
+                Math.max(Math.abs(r.x - c.x), Math.abs(r.y - c.y)),
+              ),
+            );
+            d = Math.max(d, dist);
+          }
+          if (d > 1) far++;
+          worst = Math.max(worst, d);
+        }
+      }
+    }
+    expect(walks).toBeGreaterThan(1000);
+    expect(far / walks).toBeLessThanOrEqual(0.0042);
+    expect(worst).toBeLessThanOrEqual(5);
   });
 
   test('a wall-health modifier changes the previewed breach point, as in the simulation', () => {
