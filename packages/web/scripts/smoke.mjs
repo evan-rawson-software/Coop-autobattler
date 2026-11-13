@@ -1626,9 +1626,11 @@ try {
     );
     // `unitsAlive` counts both sides. The stress sample is a four-plot board
     // on both sides with a steady stream of units: a few hundred alive at once.
+    // The floor sits just under the sample's peak so a cut of the sample fails here; the sample is to be rebuilt against the real unit budget later (#104, #145).
+    const STRESS_PEAK_FLOOR = 370;
     check(
-      peak >= 300,
-      `battle: the stress battle has hundreds of units alive in total (peak ${peak}, at least 300)`,
+      peak >= STRESS_PEAK_FLOOR,
+      `battle: the stress battle has hundreds of units alive in total (peak ${peak}, at least ${STRESS_PEAK_FLOOR})`,
     );
     check(
       frames.length > 100 / CPU_THROTTLE && p95 < 34 * FRAME_SCALE,
