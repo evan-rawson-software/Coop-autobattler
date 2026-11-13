@@ -111,7 +111,7 @@ describe('border links in the Build screen', () => {
     click(ctl, { x: w - 1, y: 6 }); // output marker starts the draft
     click(ctl, { x: w - 1, y: 6 }); // the border spot ends it
     await settle();
-    let halves = halfStatuses(s.run.team);
+    let halves = halfStatuses(s.run.team, content);
     expect(halves).toHaveLength(1);
     expect(halves[0]).toMatchObject({ owner: 0, kind: 'send', state: 'open' });
     expect(linkText(halves[0] as HalfStatus, (p) => `P${String(p)}`)).toContain(
@@ -132,7 +132,7 @@ describe('border links in the Build screen', () => {
     click(ctl, { x: w, y: 6 }); // the border spot starts a receiving draft
     click(ctl, { x: w + 2, y: 7 }); // a building ends it at an input side
     await settle();
-    halves = halfStatuses(s.run.team);
+    halves = halfStatuses(s.run.team, content);
     expect(halves.map((h) => [h.owner, h.kind, h.state])).toEqual([
       [0, 'send', 'joined'],
       [1, 'receive', 'joined'],
@@ -150,7 +150,7 @@ describe('border links in the Build screen', () => {
     // Player 1 erases their own half: player 0's half is unconnected again.
     click(ctl, { x: w, y: 6 });
     await settle();
-    halves = halfStatuses(s.run.team);
+    halves = halfStatuses(s.run.team, content);
     expect(halves).toHaveLength(1);
     expect(halves[0]).toMatchObject({ owner: 0, state: 'open' });
   });
@@ -172,7 +172,7 @@ describe('border links in the Build screen', () => {
         mk(91, 1, { building: 2, side: 'north' }, { border: 0, y: 4 }),
       ],
     } as unknown as typeof t;
-    const st = halfStatuses(fake);
+    const st = halfStatuses(fake, content);
     expect(st.map((h) => h.state)).toEqual(['same_kind', 'same_kind']);
     expect(linkText(st[0] as HalfStatus, (p) => `P${String(p)}`)).toContain(
       'Cannot join',
@@ -280,7 +280,7 @@ describe('refused border halves and acting switches', () => {
     }
     await drawSend(s, ctl, 0, n0, 6);
     await drawSend(s, ctl, 1, n1, 6);
-    const halves = halfStatuses(s.run.team);
+    const halves = halfStatuses(s.run.team, content);
     expect(halves.map((h) => [h.owner, h.kind, h.state])).toEqual([
       [0, 'send', 'same_kind'],
       [1, 'send', 'same_kind'],

@@ -218,7 +218,7 @@ describe('Border links list mirrors active / idle', () => {
           flow: f,
         }),
       ).join('');
-    const h = halfStatuses(team)[0];
+    const h = halfStatuses(team, content)[0];
     if (h === undefined || flow === null) throw new Error('setup');
     expect(line(flow)).toContain('idle');
     const active = { ...flow, activeConduits: new Set([h.conduit]) };
@@ -303,7 +303,7 @@ describe('a joined border link reads the same on both halves', () => {
     const dir = senderRight ? 'west' : 'east';
     test(`sender on the ${senderRight ? 'right' : 'left'}: both halves point ${dir}`, () => {
       const team = joinedTeam(senderRight);
-      const halves = halfStatuses(team);
+      const halves = halfStatuses(team, content);
       expect(halves).toHaveLength(2);
       expect(halves.every((h) => h.state === 'joined')).toBe(true);
       expect(halves.map((h) => h.kind).sort()).toEqual(['receive', 'send']);
@@ -319,7 +319,7 @@ describe('a joined border link reads the same on both halves', () => {
     const team = joinedTeam(false);
     const flow = computeFlowView(team, content, simConfig, 600);
     if (flow === null) throw new Error('no flow');
-    const halves = halfStatuses(team);
+    const halves = halfStatuses(team, content);
     const send = halves.find((h) => h.kind === 'send');
     const recv = halves.find((h) => h.kind === 'receive');
     if (send === undefined || recv === undefined) throw new Error('halves');

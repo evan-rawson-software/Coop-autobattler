@@ -248,6 +248,11 @@ detail }`, with the two half ids, the reason (`resource_mismatch` or
 loop). Everything that uses joins (the simulation, resource typing,
 `conduitResource`, "Accepting", battle setup, ghosts, bots) uses the joined
 links only, so a broken link is open everywhere.
+Mending one link can break a later one in the fixed order: when an erase
+removes the cause of an earlier link, that link joins again and a later link
+that now clashes with it becomes the broken one. In a battle the joins are
+derived again whenever a building is destroyed, so a broken link can mend (or
+break) in the middle of the battle.
 
 **A link is one conduit.** In the flow graph a link is one edge:
 

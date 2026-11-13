@@ -9,6 +9,7 @@ import {
   buildFlowGraph,
   dryRunFlow,
   occupancy,
+  brokenLinks,
   type BuildingDef,
   type Cell,
   type DryRunResult,
@@ -19,6 +20,7 @@ import {
   buildingEnd,
 } from '@game/core';
 import type { WebContent } from '../content.js';
+import { brokenText, halfCell } from './border-links.js';
 import { backedUpSources } from './overlay-marks.js';
 import { formatHundredths, needSupply, type Supply } from './rates.js';
 import { playerName, screenText } from './texts.js';
@@ -280,6 +282,7 @@ export type ProblemKind =
   | 'under_supplied'
   | 'lost_output'
   | 'stalled_output'
+  | 'broken_link'
   | 'stash'
   | 'free_nodes';
 
@@ -448,6 +451,25 @@ export function deriveProblems(
         building: null,
       });
     }
+  }
+
+  // A broken link is listed for both of its players (all of them in solo).
+  for (const l of brokenLinks(state, content)) {
+    const halves = [l.sending, l.receiving].map((id) =>
+      state.conduits.find((c) => c.id === id),
+    );
+    const mine = halves.find((h) => h?.owner === (scope?.acting ?? h?.owner));
+    if (mine === undefined) continue;
+    out.push({
+      id: `broken:${String(l.border)}:${String(l.y)}`,
+      kind: 'broken_link',
+      text: brokenText(state, content, l, texts),
+      focus: halfCell(state, {
+        owner: mine.owner,
+        spot: { border: l.border, y: l.y },
+      }),
+      building: null,
+    });
   }
 
   const freeNodes = state.map.nodes.filter(

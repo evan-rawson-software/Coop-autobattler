@@ -5,6 +5,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   addConduit,
+  brokenLinks,
   buildFlowGraph,
   conduitResource,
   type ConduitEndArg,
@@ -690,5 +691,113 @@ describe('broken links', () => {
     ];
     expect(reasonOf(half(lab, 0, ...close))).toBe('would_loop');
     expect(reasonOf(asRestore(lab, 0, ...close))).toBe('would_loop');
+  });
+  test('erasing a cause mends an earlier link and thereby breaks a later one', () => {
+    const lab = twoPlots([
+      [2, 2, 'res_a'],
+      [16, 2, 'res_b'],
+      [2, 8, 'res_b'],
+    ]);
+    const a = lab.put('bld_extractor', 2, 2);
+    const b = lab.put('bld_extractor', 16, 2);
+    const c = lab.put('bld_extractor', 2, 8);
+    const m = lab.put('bld_merger', 14, 6);
+    add(lab, 0, side(a, 'north'), spot(3), row(2, 11, 3));
+    add(lab, 1, spot(3), side(m, 'south'), receivingPath());
+    // The cause: res_b into the merger by an ordinary conduit breaks row 3.
+    const cause = asRestore(lab, 1, side(b, 'north'), side(m, 'east'), [
+      [16, 3],
+      [16, 4],
+      [16, 5],
+      [16, 6],
+      [15, 6],
+    ]);
+    if (!cause.ok) throw new Error(cause.reason);
+    lab.state = cause.state;
+    // Row 9 also brings res_b into the merger: it agrees with the cause.
+    add(lab, 0, side(c, 'north'), spot(9), row(2, 11, 9));
+    add(lab, 1, spot(9), side(m, 'west'), [
+      [12, 9],
+      [12, 8],
+      [12, 7],
+      [12, 6],
+      [13, 6],
+    ]);
+    const rows = () => brokenLinks(lab.state, content).map((l) => l.y);
+    expect(rows()).toEqual([3]);
+    const erased = eraseConduit(lab.state, { actor: 1, id: cause.id });
+    if (!erased.ok) throw new Error(erased.reason);
+    lab.state = erased.state;
+    // Row 3 comes first in the order and joins again; row 9 is now the clash.
+    expect(rows()).toEqual([9]);
+  });
+
+  test('links join in the order of border, then row, whatever the conduit ids', () => {
+    // Player 1's merger takes res_a from border 0 and res_b from border 1.
+    const lab = new Lab(
+      board(
+        [
+          [2, 2, 'res_a'],
+          [26, 2, 'res_b'],
+        ],
+        36,
+        3,
+      ),
+    );
+    const a = lab.put('bld_extractor', 2, 2);
+    const b = lab.put('bld_extractor', 26, 2);
+    const m = lab.put('bld_merger', 18, 6);
+    // Border 1 is built first, so its halves have the lower ids.
+    add(lab, 2, side(b, 'north'), spot(3, 1), row(26, 24, 3));
+    add(lab, 1, spot(3, 1), side(m, 'east'), [
+      ...row(23, 19, 3),
+      [19, 4],
+      [19, 5],
+      [19, 6],
+    ]);
+    add(lab, 0, side(a, 'north'), spot(3), row(2, 11, 3));
+    const last = asRestore(lab, 1, spot(3), side(m, 'west'), [
+      ...row(12, 17, 3),
+      [17, 4],
+      [17, 5],
+      [17, 6],
+    ]);
+    if (!last.ok) throw new Error(last.reason);
+    lab.state = last.state;
+    const broken = brokenLinks(lab.state, content);
+    expect(broken).toHaveLength(1);
+    expect(broken[0]).toMatchObject({ border: 1, y: 3 });
+  });
+
+  test('a restoring add is still refused for a mismatch inside one plot', () => {
+    const lab = twoPlots([
+      [2, 2, 'res_a'],
+      [8, 2, 'res_b'],
+    ]);
+    const a = lab.put('bld_extractor', 2, 2);
+    const b = lab.put('bld_extractor', 8, 2);
+    const m = lab.put('bld_merger', 5, 6);
+    add(lab, 0, side(a, 'north'), side(m, 'west'), [
+      [2, 3],
+      [2, 4],
+      [2, 5],
+      [2, 6],
+      [3, 6],
+      [4, 6],
+    ]);
+    const clash: [ConduitEndArg, ConduitEndArg, Pairs] = [
+      side(b, 'north'),
+      side(m, 'east'),
+      [
+        [8, 3],
+        [8, 4],
+        [8, 5],
+        [8, 6],
+        [7, 6],
+        [6, 6],
+      ],
+    ];
+    expect(reasonOf(half(lab, 0, ...clash))).toBe('resource_mismatch');
+    expect(reasonOf(asRestore(lab, 0, ...clash))).toBe('resource_mismatch');
   });
 });

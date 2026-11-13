@@ -972,7 +972,7 @@ export function addConduit(
       ...(v.detail === undefined ? {} : { detail: v.detail }),
     };
   }
-  if (args.restore !== true) {
+  if (args.restore !== true && after.broken.length > 0) {
     // An ordinary add must not break a link: broken links count as open, and
     // the ones that were broken stay so (adding edges cannot mend them).
     const key = (l: BrokenLink): string =>

@@ -6,10 +6,13 @@
  */
 
 import {
+  brokenLinks,
   isBorderEnd,
   type BorderEnd,
+  type BrokenLink,
   type Cell,
   type Conduit,
+  type TeamContent,
   type TeamState,
 } from '@game/core';
 import { screenText, screenTexts, type ScreenTexts } from './texts.js';
@@ -21,8 +24,10 @@ export type HalfKind = 'send' | 'receive';
  * - `joined`: the neighbour has a half of the opposite kind at the same spot.
  * - `open`: no neighbour half (not drawn yet, or removed): unconnected.
  * - `same_kind`: the neighbour's half is of the same kind; they cannot join.
+ * - `broken`: both halves are there but joining them would leave the network
+ *   invalid (issue #38); they act as open halves.
  */
-export type LinkState = 'joined' | 'open' | 'same_kind';
+export type LinkState = 'joined' | 'open' | 'same_kind' | 'broken';
 
 export interface Half {
   readonly conduit: number;
@@ -35,6 +40,56 @@ export interface HalfStatus extends Half {
   readonly state: LinkState;
   /** The neighbour who owns the other half, when there is one. */
   readonly neighbour: number | null;
+  /** Why the link is broken, with its player-facing text (`broken` only). */
+  readonly broken?: BrokenParts;
+}
+
+/** What the text of a broken link is made of: the reason and a mismatch's building. */
+export interface BrokenParts {
+  readonly reason: BrokenLink['reason'];
+  /** Name of the building named by a mismatch; null when it is unknown. */
+  readonly building: string | null;
+}
+
+export function brokenMessage(
+  b: BrokenParts,
+  texts: ScreenTexts = screenTexts,
+): string {
+  if (b.reason === 'would_loop') return screenText(texts, 'linkBrokenLoop');
+  return screenText(texts, 'linkBrokenMismatch', {
+    building: b.building ?? screenText(texts, 'linkBrokenSomeBuilding'),
+  });
+}
+
+/** The reason of a broken link, and the building its detail names. */
+export function brokenParts(
+  team: TeamState,
+  content: TeamContent & {
+    presentation: { get(id: string): { name: string } | undefined };
+  },
+  b: BrokenLink,
+): BrokenParts {
+  // The detail reads "... into building <id>, ..." or "merger <id> is fed ...".
+  const m = /(?:building|merger) (\d+)/.exec(b.detail ?? '');
+  const def =
+    m === null
+      ? undefined
+      : team.buildings.find((x) => x.id === Number(m[1]))?.def;
+  return {
+    reason: b.reason,
+    building:
+      def === undefined ? null : (content.presentation.get(def)?.name ?? def),
+  };
+}
+
+/** The player-facing text of a broken link. */
+export function brokenText(
+  team: TeamState,
+  content: Parameters<typeof brokenParts>[1],
+  b: BrokenLink,
+  texts: ScreenTexts = screenTexts,
+): string {
+  return brokenMessage(brokenParts(team, content, b), texts);
 }
 
 /** One own-plot border spot: where the owner's border cell is. */
@@ -53,8 +108,35 @@ export function halfOf(c: Conduit): Half | null {
   return null;
 }
 
-/** Every half on the board with its link state, in conduit order. */
-export function halfStatuses(team: TeamState): HalfStatus[] {
+const statusCache = new WeakMap<
+  TeamState,
+  { content: unknown; result: HalfStatus[] }
+>();
+
+/**
+ * Every half on the board with its link state, in conduit order. Derived
+ * once per team state: the board asks for it on every frame.
+ */
+export function halfStatuses(
+  team: TeamState,
+  content: Parameters<typeof brokenText>[1],
+): HalfStatus[] {
+  const hit = statusCache.get(team);
+  if (hit !== undefined && hit.content === content) return hit.result;
+  const result = deriveHalfStatuses(team, content);
+  statusCache.set(team, { content, result });
+  return result;
+}
+
+function deriveHalfStatuses(
+  team: TeamState,
+  content: Parameters<typeof brokenText>[1],
+): HalfStatus[] {
+  const broken = new Map<number, BrokenLink>();
+  for (const b of brokenLinks(team, content)) {
+    broken.set(b.sending, b);
+    broken.set(b.receiving, b);
+  }
   const halves: Half[] = [];
   for (const c of team.conduits) {
     const h = halfOf(c);
@@ -69,13 +151,21 @@ export function halfStatuses(team: TeamState): HalfStatus[] {
     );
     const mate = others.find((o) => o.kind !== h.kind);
     const clash = others.find((o) => o.kind === h.kind);
+    const b = broken.get(h.conduit);
     const state: LinkState =
-      mate !== undefined
-        ? 'joined'
-        : clash !== undefined
-          ? 'same_kind'
-          : 'open';
-    return { ...h, state, neighbour: (mate ?? clash)?.owner ?? null };
+      b !== undefined
+        ? 'broken'
+        : mate !== undefined
+          ? 'joined'
+          : clash !== undefined
+            ? 'same_kind'
+            : 'open';
+    return {
+      ...h,
+      state,
+      neighbour: (mate ?? clash)?.owner ?? null,
+      ...(b === undefined ? {} : { broken: brokenParts(team, content, b) }),
+    };
   });
 }
 
@@ -149,6 +239,8 @@ export function linkText(
       return screenText(texts, 'linkSameKind', { name: name(), verb });
     case 'open':
       return screenText(texts, 'linkOpen', { verb });
+    case 'broken':
+      return h.broken === undefined ? '' : brokenMessage(h.broken, texts);
   }
 }
 

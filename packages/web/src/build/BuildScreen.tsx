@@ -256,7 +256,7 @@ export function BuildView(props: {
           const t = ctl.team();
           return t === null
             ? []
-            : halfStatuses(t).map((h) => ({
+            : halfStatuses(t, content).map((h) => ({
                 conduit: h.conduit,
                 owner: h.owner,
                 kind: h.kind,
