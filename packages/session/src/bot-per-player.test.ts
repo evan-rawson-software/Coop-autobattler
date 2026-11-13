@@ -16,6 +16,8 @@ import {
   bestOwnedSupply,
   consumerNeed,
   coveragePercent,
+  feeds,
+  makeEnv,
 } from './bot-layout.js';
 import { ghostContext } from './ghosts.js';
 import { Rng } from '@game/core';
@@ -25,9 +27,10 @@ import {
   makeGameDeps,
   mapgenConfig,
   newRun,
+  ok,
   placeCoreAll,
 } from './test-support.js';
-import type { CreateRunArgs } from './types.js';
+import type { CreateRunArgs, Intent, RunState } from './types.js';
 
 // Whole bot runs: far over the default 5 s on a loaded machine.
 vi.setConfig({ testTimeout: 120_000 });
@@ -193,7 +196,7 @@ describe('bots build per player', () => {
   // a Splitter is how the bot gets past the node count (#178). Over 20 fixed
   // seeds, at least MIN_SPLITTER_SEEDS solo rush runs hold a Splitter with
   // two outputs.
-  const MIN_SPLITTER_SEEDS = 15; // measured: 18 (3 before #178)
+  const MIN_SPLITTER_SEEDS = 17; // measured: 18 (3 before #178)
   test('most solo rush runs share a collector through a two-output Splitter (#178)', () => {
     let seeds = 0;
     for (let seed = 1; seed <= 20; seed++) {
@@ -307,5 +310,106 @@ describe('bots build per player', () => {
     );
     expect(plan.filter((i) => i.type === 'place_building')).toHaveLength(4);
     expect(plan.filter((i) => i.type === 'add_conduit')).toHaveLength(3);
+  });
+
+  test('layout shares a placed collector with a new consumer and rewires every conduit (#178)', () => {
+    const g = makeGameDeps();
+    const rng = (): Rng => Rng.fromSeed(1);
+    const apply = (state: RunState, intents: readonly Intent[]): RunState =>
+      intents.reduce((st, i) => ok(st, 0, i, g).state, state);
+    const base = placeCoreAll(newRun(g, ['Ann']), g);
+    const first = withStash(['bld_extractor', 'bld_barracks']);
+    const lay1 = planLayout(
+      first,
+      0,
+      content,
+      first.map.plotWidth,
+      style,
+      rng(),
+    );
+    let state = apply({ ...base, team: first }, lay1);
+    expect(state.team.conduits).toHaveLength(1);
+    const direct = state.team.buildings.find((b) => b.def === 'bld_barracks');
+    // A second Barracks and a Splitter arrive; no free collector is left.
+    const nextId = state.team.nextId;
+    state = {
+      ...state,
+      team: {
+        ...state.team,
+        stash: [
+          { id: nextId, def: 'bld_splitter', tier: 1, owner: 0 },
+          { id: nextId + 1, def: 'bld_barracks', tier: 1, owner: 0 },
+        ],
+        nextId: nextId + 2,
+      },
+    };
+    const lay2 = planLayout(
+      state.team,
+      0,
+      content,
+      state.team.map.plotWidth,
+      style,
+      rng(),
+    );
+    expect(
+      lay2.some((i) => i.type === 'return_building' && i.id === direct?.id),
+    ).toBe(true);
+    state = apply(state, lay2);
+    const t = state.team;
+    expect(t.stash).toHaveLength(0);
+    const barracks = t.buildings.filter((b) => b.def === 'bld_barracks');
+    expect(barracks).toHaveLength(2);
+    // The collector feeds the Splitter; the Splitter feeds both Barracks.
+    expect(t.conduits).toHaveLength(3);
+    for (const b of barracks) {
+      expect(
+        t.conduits.some((c) => !isBorderEnd(c.to) && c.to.building === b.id),
+        `barracks ${String(b.id)} is fed`,
+      ).toBe(true);
+    }
+  });
+
+  test('feeds checks the collector being split, not the best one owned (#178)', () => {
+    // An Armory that costs three times as much per step: need 150 per 1000
+    // ticks. Two halves of a tier 3 collector (100) cover 33 percent of it,
+    // two halves of a tier 1 collector (50) only 16 (under the 20 minimum).
+    const base = content.buildings.get('bld_armory');
+    if (base?.kind !== 'economy') throw new Error('no armory');
+    const armoryDef = {
+      ...base,
+      tiers: base.tiers.map((t) => ({ ...t, costPerStep: 3 * t.costPerStep })),
+    } as unknown as typeof base;
+    const hungry = {
+      ...content,
+      buildings: {
+        get: (id: BuildingId) =>
+          id === 'bld_armory' ? armoryDef : content.buildings.get(id),
+        list: () => content.buildings.list(),
+      },
+    };
+    const team = withStash(['bld_extractor', 'bld_armory']);
+    const owned = {
+      ...team,
+      stash: [
+        ...team.stash,
+        { id: 99, def: 'bld_extractor', tier: 3, owner: 0 },
+      ],
+    };
+    const env = makeEnv(
+      owned,
+      0,
+      hungry,
+      owned.map.plotWidth,
+      style,
+      Rng.fromSeed(1),
+    );
+    const armory = { def: 'bld_armory', tier: 1 };
+    const strong = { def: 'bld_extractor', tier: 3 };
+    const weak = { def: 'bld_extractor', tier: 1 };
+    // Best owned: the tier 3 collector, so the old check said yes to any.
+    expect(feeds(env, owned, armory, 2)).toBe(true);
+    expect(feeds(env, owned, armory, 2, strong)).toBe(true);
+    expect(feeds(env, owned, armory, 2, weak)).toBe(false);
+    expect(feeds(env, owned, armory, 1, weak)).toBe(true);
   });
 });

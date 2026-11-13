@@ -16,9 +16,11 @@ import { Rng, listLegalCorePositions, sealedProducers } from '@game/core';
 import {
   MIN_COVERAGE_PERCENT,
   bestOwnedSupply,
+  collectorSupply,
   consumerNeed,
   coveragePercent,
   planLayout,
+  plotRoom,
   type LayoutStyle,
 } from './bot-layout.js';
 import { planLinks } from './bot-links.js';
@@ -399,10 +401,83 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       const sources = owned.filter((b) => b.def === 'bld_extractor').length;
       const users = owned.filter((b) => CONSUMERS.includes(b.def)).length;
       const splitters = owned.filter((b) => b.def === 'bld_splitter').length;
+      // Upper bound for a consumer: the player's best collector, owned.
       const supply = bestOwnedSupply(d.state.team, p, d.deps.content);
+      const room = plotRoom(
+        d.state.team,
+        p,
+        d.deps.content,
+        d.state.team.map.plotWidth,
+      );
+      const openNodes = [...room.openNodes.values()].reduce((a, b) => a + b, 0);
+      // Owned consumers by the resource they take, board and stash.
+      const taking = new Map<string, number>();
+      for (const b of owned) {
+        const r = d.deps.content.buildings.get(b.def)?.inputs[0]?.resource;
+        if (r !== undefined && CONSUMERS.includes(b.def)) {
+          taking.set(r, (taking.get(r) ?? 0) + 1);
+        }
+      }
+      // Free nodes a collector could take for a consumer without one yet.
+      let nodesWanted = 0;
+      for (const [r, open] of room.openNodes) {
+        const unserved =
+          (taking.get(r) ?? 0) - (room.placedSources.get(r) ?? 0);
+        nodesWanted += Math.max(0, Math.min(open, unserved));
+      }
+      let neighbourSpare = 0;
+      for (let q = 0; q < n; q++) {
+        if (q === p) continue;
+        const theirs = [
+          ...d.state.team.buildings,
+          ...d.state.team.stash,
+        ].filter((b) => b.owner === q);
+        neighbourSpare += Math.max(
+          0,
+          theirs.filter((b) => b.def === 'bld_extractor').length -
+            theirs.filter((b) => CONSUMERS.includes(b.def)).length,
+        );
+      }
+      const extractorsWaiting = d.state.team.stash.filter(
+        (b) => b.owner === p && b.def === 'bld_extractor',
+      ).length;
       const consumersWaiting = d.state.team.stash.filter(
         (b) => b.owner === p && CONSUMERS.includes(b.def),
       ).length;
+      // A Splitter only helps where one owned collector can feed a waiting
+      // consumer and another consumer, both at the minimum coverage.
+      const content = d.deps.content;
+      const half =
+        (k: { def: string; tier: number }) =>
+        (c: { def: string; tier: number }): boolean =>
+          coveragePercent(
+            Math.floor(collectorSupply(content, k.def, k.tier) / 2),
+            consumerNeed(content, c.def, c.tier),
+          ) >= MIN_COVERAGE_PERCENT;
+      const inputOf = (def: string): string =>
+        content.buildings.get(def)?.inputs[0]?.resource ?? '';
+      const consumersOwned = owned.filter((b) => CONSUMERS.includes(b.def));
+      const consumersStashed = d.state.team.stash.filter(
+        (b) => b.owner === p && CONSUMERS.includes(b.def),
+      );
+      // The weakest collector is the test: the layout may split any of them.
+      const weakest = owned
+        .filter((k) => k.def === 'bld_extractor')
+        .sort((x, y) => x.tier - y.tier)[0];
+      const fits = weakest === undefined ? null : half(weakest);
+      const canSplit =
+        fits !== null &&
+        consumersStashed.some(
+          (c) =>
+            (room.shareable.get(inputOf(c.def)) ?? 0) +
+              (room.openNodes.get(inputOf(c.def)) ?? 0) >
+              0 &&
+            fits(c) &&
+            consumersOwned.some(
+              (m) =>
+                m.id !== c.id && inputOf(m.def) === inputOf(c.def) && fits(m),
+            ),
+        );
       const splittersWaiting = d.state.team.stash.filter(
         (b) => b.owner === p && b.def === 'bld_splitter',
       ).length;
@@ -421,6 +496,38 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
           const more = role === 2 ? slack : 1;
           if (o.def === 'bld_extractor' && sources >= users + extra) score = 0;
           if (CONSUMERS.includes(o.def) && users >= sources + more) score = 0;
+          // Never buy a collector that cannot be placed: the layout puts a
+          // collector on a free node of a resource some consumer is waiting
+          // for (a donor's spare ones go to a neighbour, so any free node
+          // does; so does one while the player has no consumer), and a
+          // style that does not connect places none (issue #178).
+          if (
+            o.def === 'bld_extractor' &&
+            (!s.layout.connect ||
+              extractorsWaiting >=
+                (users === 0 || role === 1 ? openNodes : nodesWanted))
+          ) {
+            score = 0;
+          }
+          // Nor a consumer whose resource has no collector or free node left
+          // for it, counting the Splitters that let a collector serve two.
+          if (CONSUMERS.includes(o.def) && s.layout.connect && role === 2) {
+            // A receiver lives on its neighbours' spare collectors: not more
+            // waiting consumers than those can feed.
+            if (consumersWaiting >= Math.max(1, neighbourSpare)) score = 0;
+          } else if (CONSUMERS.includes(o.def) && s.layout.connect) {
+            const res = d.deps.content.buildings.get(o.def)?.inputs[0]
+              ?.resource;
+            if (
+              res !== undefined &&
+              (taking.get(res) ?? 0) >=
+                (room.openNodes.get(res) ?? 0) +
+                  (room.placedSources.get(res) ?? 0) +
+                  splitters
+            ) {
+              score = 0;
+            }
+          }
           // One Splitter per two consumers, no more, and only while a
           // consumer waits in the stash for it: a Splitter only shares a
           // collector between a consumer on the board and one still to place,
@@ -429,7 +536,10 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
             o.def === 'bld_splitter' &&
             (splitters * 2 >= users ||
               splittersWaiting > 0 ||
-              consumersWaiting === 0)
+              consumersWaiting === 0 ||
+              // A receiver's waiting consumers are fed over a border link.
+              role === 2 ||
+              !canSplit)
           ) {
             score = 0;
           }
@@ -446,6 +556,8 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
             score = 0;
           }
         }
+        // A style that does not connect places no collector at all.
+        if (o.def === 'bld_extractor' && !s.layout.connect) score = 0;
         if (score > bestScore) {
           bestScore = score;
           best = slot;

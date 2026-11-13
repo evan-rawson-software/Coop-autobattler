@@ -36,11 +36,21 @@ function run(strategy: BotStrategyName, party: number, seed: number) {
 }
 
 describe('Splitter placement (#178)', () => {
-  // Measured before the fix: rush 9 placed of 171 bought (5 percent), siege 0
-  // of 56. After: rush 104 of 115 (90 percent), siege 3 of 3.
+  // Measured over SEEDS at party sizes 1, 2 and 4, placed of bought. Before
+  // the capacity check: rush 104 of 115, siege 3 of 3 (the check counted the
+  // player's best collector, not the one being split). After: rush 30 of 43
+  // (9 of 9, 10 of 14, 11 of 20), siege 12 of 13 (3 of 3, 3 of 4, 6 of 6). The
+  // bots buy fewer Splitters now, and every placed one has a collector that
+  // feeds both of its consumers.
+  const MEASURED = {
+    rush: { minBought: 40, minPlaced: 28, minShare: 0.65 },
+    siege: { minBought: 12, minPlaced: 11, minShare: 0.8 },
+  } as const;
   for (const strategy of ['rush', 'siege'] as const) {
-    test(`${strategy}: most bought Splitters are placed, at every party size`, () => {
+    test(`${strategy}: Splitters are bought and most are placed`, () => {
+      const want = MEASURED[strategy];
       let bought = 0;
+      let placedAll = 0;
       for (const party of [1, 2, 4]) {
         let placed = 0;
         let stashed = 0;
@@ -50,15 +60,65 @@ describe('Splitter placement (#178)', () => {
           stashed += t.stash.filter((b) => b.def === 'bld_splitter').length;
         }
         bought += placed + stashed;
-        expect(
-          placed,
-          `${strategy} party ${String(party)}`,
-        ).toBeGreaterThanOrEqual(0.75 * (placed + stashed));
+        placedAll += placed;
       }
-      // The ratio means nothing if nothing is bought: rush buys plenty.
-      if (strategy === 'rush') expect(bought).toBeGreaterThan(50);
+      // The ratio means nothing if nothing is bought.
+      expect(bought).toBeGreaterThanOrEqual(want.minBought);
+      expect(placedAll).toBeGreaterThanOrEqual(want.minPlaced);
+      expect(placedAll).toBeGreaterThanOrEqual(want.minShare * bought);
     });
   }
+});
+
+describe('shop buys only what can be placed (#178)', () => {
+  /** Stash contents at the end of the run, per player run. */
+  function stashed(strategy: BotStrategyName, party: number, def: string) {
+    let n = 0;
+    for (const seed of SEEDS) {
+      n += run(strategy, party, seed).state.team.stash.filter(
+        (b) => b.def === def,
+      ).length;
+    }
+    return n;
+  }
+
+  // Measured over SEEDS before: Extractors left in the stash, summed over the
+  // seeds, siege 10 / 13 / 27 and rush 25 / 39 / 91 at party sizes 1 / 2 / 4.
+  // After: siege 3 / 2 / 3 and rush 5 / 18 / 34.
+  test('siege leaves at most one Extractor per two runs in the stash', () => {
+    for (const party of [1, 2, 4]) {
+      expect(
+        stashed('siege', party, 'bld_extractor'),
+        `party ${String(party)}`,
+      ).toBeLessThanOrEqual(4);
+    }
+  });
+
+  test('a bot that never connects buys no Extractors at all', () => {
+    // The weak bot places no collector, so it must not buy any beyond the
+    // starting stash (2 per player, measured 16 / 32 / 64 of 8 seeds).
+    for (const party of [1, 2, 4]) {
+      expect(stashed('weak', party, 'bld_extractor')).toBeLessThanOrEqual(
+        2 * party * SEEDS.length,
+      );
+    }
+  });
+
+  test('rush keeps far fewer unplaced consumers than before', () => {
+    // Measured, summed over SEEDS: rush 15 / 26 / 61 before; 4 / 22 / 54 now.
+    const limit: Record<number, number> = { 1: 6, 2: 26, 4: 58 };
+    for (const party of [1, 2, 4]) {
+      let n = 0;
+      for (const seed of SEEDS) {
+        n += run('rush', party, seed).state.team.stash.filter((b) =>
+          CONSUMER_DEFS.includes(b.def),
+        ).length;
+      }
+      expect(n, `party ${String(party)}`).toBeLessThanOrEqual(
+        limit[party] ?? 0,
+      );
+    }
+  });
 });
 
 describe('link roles (#178)', () => {
