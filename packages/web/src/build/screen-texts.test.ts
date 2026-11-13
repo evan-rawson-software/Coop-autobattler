@@ -439,6 +439,33 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     { message: 'The run changed.' },
     'The run changed. Nothing was changed. Reload to see the saved run.',
   ],
+  [
+    'uiRunConflictBody',
+    {},
+    'This run is open in another tab. Reload to continue here. Nothing here can be changed until you do.',
+  ],
+  [
+    'uiRunDiscardSample',
+    {},
+    'Discarding it starts a new sample run and cannot be undone.',
+  ],
+  [
+    'uiRunRemoveNote',
+    {},
+    'Removing the save deletes it for good, with no summary and no record.',
+  ],
+  [
+    'uiRunRemoveWarning',
+    {},
+    'Remove this save? It is deleted for good, with no summary and no record of the run.',
+  ],
+  ['uiRunConflictTitle', {}, 'This run changed in another tab'],
+  [
+    'uiRunUnopenableKept',
+    {},
+    'It has not been deleted. Closing this tab or fixing the cause may let it open.',
+  ],
+  ['uiRunUnopenableTitle', {}, 'The saved run cannot be opened'],
   ['uiCellsDirect', {}, ' (direct)'],
   ['uiCellsMany', { count: '@count' }, '@count cells'],
   ['uiCellsOne', { count: '@count' }, '@count cell'],

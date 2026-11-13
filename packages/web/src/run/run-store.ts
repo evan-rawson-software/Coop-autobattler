@@ -241,6 +241,20 @@ export async function showRun(
   });
 }
 
+/** Call `onChange` when another tab saves `runId`; returns the stop function. */
+export function watchRun(runId: string, onChange: () => void): () => void {
+  let stop: (() => void) | null = null;
+  let stopped = false;
+  void getServices().then((services) => {
+    if (stopped) return;
+    stop = services.watch(runId, onChange);
+  });
+  return () => {
+    stopped = true;
+    stop?.();
+  };
+}
+
 /** Open the run again from its save (after a change in another tab). */
 export function reloadRun(runId: string): Promise<void> {
   return showRun(runId, { fresh: true });
@@ -385,6 +399,8 @@ export async function discardSavedRun(runId: string): Promise<AbandonResult> {
     INSTALLED_VERSION,
   );
   if (opened.ok) {
+    // Another tab replaced the unopenable save with a run: keep it and show it.
+    void showRun(runId, { fresh: true });
     return {
       ok: false,
       message: 'This run can be opened, so it is abandoned, not removed.',
