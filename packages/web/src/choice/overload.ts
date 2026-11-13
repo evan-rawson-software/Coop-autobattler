@@ -13,6 +13,7 @@ import {
   type TeamState,
 } from '@game/core';
 import { clock } from '../battle/derive.js';
+import { screenText, screenTexts } from '../build/texts.js';
 
 /** The party Core's maximum health: its tier, raised by the team's modifiers. */
 export function partyCoreMax(
@@ -38,14 +39,13 @@ export function overloadLine(
     typeof strongholdMax === 'number' ? [strongholdMax] : strongholdMax,
   );
   const when = out.tick === null ? '' : clock(out.tick, sim.ticksPerSecond);
-  switch (out.first) {
-    case 'b':
-      return `Overload at ${at} would destroy the stronghold's Core first at ${when} — outlasting it wins.`;
-    case 'a':
-      return `Overload at ${at} would destroy your Core first at ${when} — break the stronghold before then.`;
-    case 'both':
-      return `Overload at ${at} would destroy both Cores at ${when} — win before then, or the tiebreak decides.`;
-    default:
-      return `Overload at ${at} would not destroy either Core before the time limit — the battle can run to the limit.`;
-  }
+  const key =
+    out.first === 'b'
+      ? 'overloadStronghold'
+      : out.first === 'a'
+        ? 'overloadYours'
+        : out.first === 'both'
+          ? 'overloadBoth'
+          : 'overloadNeither';
+  return screenText(screenTexts, key, { at, when });
 }
