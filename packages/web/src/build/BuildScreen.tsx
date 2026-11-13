@@ -38,7 +38,6 @@ import {
   ToolsPanel,
 } from './panels.js';
 import { halfAlpha, halfStatuses } from './border-links.js';
-import { ActingSwitch } from '../shell/ActingSwitch.js';
 import { gateFor, READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { ME, isEditStep } from './session.js';
 import { DEFAULT_SEED, simConfig } from './setup.js';
@@ -518,15 +517,6 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
               Every player places their own Core in their own area. Choosing a
               position confirms it.
             </p>
-            {run === null ? null : (
-              <ActingSwitch
-                run={run}
-                acting={acting}
-                onActing={(p) => {
-                  ctl.session?.setActing(p);
-                }}
-              />
-            )}
           </Panel>
         }
       >
@@ -570,19 +560,7 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
           <ProblemsPanel problems={problems} onPick={onPick} />
         </div>
         <div class="dock-col">
-          <PartyPanel
-            run={run}
-            ctl={ctl}
-            gate={gate}
-            acting={acting}
-            onActing={
-              shared === undefined
-                ? (p) => {
-                    ctl.session?.setActing(p);
-                  }
-                : undefined
-            }
-          />
+          <PartyPanel run={run} ctl={ctl} gate={gate} acting={acting} />
         </div>
       </>
     );

@@ -4,6 +4,7 @@ import {
   FAIL_PLAYBACK_KEY,
   readFailPlayback,
 } from './cannot-show.js';
+import { failureText } from './run-battle.js';
 
 describe('the outcome text of a battle that cannot be shown', () => {
   test('a win and a loss are worded from the recorded result', () => {
@@ -41,5 +42,21 @@ describe('the forced playback failure', () => {
         },
       }),
     ).toBe(false);
+  });
+});
+
+describe('the text of a battle that cannot be replayed', () => {
+  test('a known reason has its own sentence', () => {
+    expect(failureText('team_changed')).toBe(
+      'The factory changed since the battle, so it cannot be shown again.',
+    );
+  });
+
+  test('an arbitrary reason, even an Object.prototype name, gets the generic text', () => {
+    for (const reason of ['constructor', 'toString', '__proto__', 'odd']) {
+      expect(failureText(reason)).toBe(
+        `The battle cannot be shown (${reason}).`,
+      );
+    }
   });
 });
