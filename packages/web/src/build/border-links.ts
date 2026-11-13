@@ -6,10 +6,13 @@
  */
 
 import {
+  brokenLinks,
   isBorderEnd,
   type BorderEnd,
+  type BrokenLink,
   type Cell,
   type Conduit,
+  type TeamContent,
   type TeamState,
 } from '@game/core';
 import { screenText, screenTexts, type ScreenTexts } from './texts.js';
@@ -21,8 +24,10 @@ export type HalfKind = 'send' | 'receive';
  * - `joined`: the neighbour has a half of the opposite kind at the same spot.
  * - `open`: no neighbour half (not drawn yet, or removed): unconnected.
  * - `same_kind`: the neighbour's half is of the same kind; they cannot join.
+ * - `broken`: both halves are there but joining them would leave the network
+ *   invalid (issue #38); they act as open halves.
  */
-export type LinkState = 'joined' | 'open' | 'same_kind';
+export type LinkState = 'joined' | 'open' | 'same_kind' | 'broken';
 
 export interface Half {
   readonly conduit: number;
@@ -35,6 +40,31 @@ export interface HalfStatus extends Half {
   readonly state: LinkState;
   /** The neighbour who owns the other half, when there is one. */
   readonly neighbour: number | null;
+  /** Why the link is broken, with its player-facing text (`broken` only). */
+  readonly broken?: {
+    readonly reason: BrokenLink['reason'];
+    readonly text: string;
+  };
+}
+
+/** The player-facing text of a broken link: its reason, and the building of a mismatch. */
+export function brokenText(
+  team: TeamState,
+  content: TeamContent & {
+    presentation: { get(id: string): { name: string } | undefined };
+  },
+  b: BrokenLink,
+  texts: ScreenTexts = screenTexts,
+): string {
+  if (b.reason === 'would_loop') return screenText(texts, 'linkBrokenLoop');
+  // The detail reads "... into building <id>, which takes ...".
+  const id = Number(/(?:building|merger) (\d+)/.exec(b.detail ?? '')?.[1]);
+  const def = team.buildings.find((x) => x.id === id)?.def;
+  const building =
+    def === undefined
+      ? 'a building'
+      : (content.presentation.get(def)?.name ?? def);
+  return screenText(texts, 'linkBrokenMismatch', { building });
 }
 
 /** One own-plot border spot: where the owner's border cell is. */
@@ -54,7 +84,15 @@ export function halfOf(c: Conduit): Half | null {
 }
 
 /** Every half on the board with its link state, in conduit order. */
-export function halfStatuses(team: TeamState): HalfStatus[] {
+export function halfStatuses(
+  team: TeamState,
+  content: Parameters<typeof brokenText>[1],
+): HalfStatus[] {
+  const broken = new Map<number, BrokenLink>();
+  for (const b of brokenLinks(team, content)) {
+    broken.set(b.sending, b);
+    broken.set(b.receiving, b);
+  }
   const halves: Half[] = [];
   for (const c of team.conduits) {
     const h = halfOf(c);
@@ -69,13 +107,23 @@ export function halfStatuses(team: TeamState): HalfStatus[] {
     );
     const mate = others.find((o) => o.kind !== h.kind);
     const clash = others.find((o) => o.kind === h.kind);
+    const b = broken.get(h.conduit);
     const state: LinkState =
-      mate !== undefined
-        ? 'joined'
-        : clash !== undefined
-          ? 'same_kind'
-          : 'open';
-    return { ...h, state, neighbour: (mate ?? clash)?.owner ?? null };
+      b !== undefined
+        ? 'broken'
+        : mate !== undefined
+          ? 'joined'
+          : clash !== undefined
+            ? 'same_kind'
+            : 'open';
+    return {
+      ...h,
+      state,
+      neighbour: (mate ?? clash)?.owner ?? null,
+      ...(b === undefined
+        ? {}
+        : { broken: { reason: b.reason, text: brokenText(team, content, b) } }),
+    };
   });
 }
 
@@ -149,6 +197,8 @@ export function linkText(
       return screenText(texts, 'linkSameKind', { name: name(), verb });
     case 'open':
       return screenText(texts, 'linkOpen', { verb });
+    case 'broken':
+      return h.broken?.text ?? '';
   }
 }
 

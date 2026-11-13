@@ -307,6 +307,12 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     { verb: '@verb' },
     'Not connected: waiting for your neighbour (@verb)',
   ],
+  ['linkBrokenLoop', {}, 'Link broken: it would form a loop'],
+  [
+    'linkBrokenMismatch',
+    { building: '@building' },
+    'Link broken: it would send a second resource into @building',
+  ],
   ['linkReceiving', {}, 'receiving'],
   [
     'linkSameKind',

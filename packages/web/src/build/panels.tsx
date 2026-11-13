@@ -283,7 +283,7 @@ export function InspectorPanel(props: {
                 ? screenText(screenTexts, 'uiInspectorCarriesUnknown')
                 : resourceName(content, res)}
             </dd>
-            {halfStatuses(team)
+            {halfStatuses(team, content)
               .filter((h) => h.conduit === c.id)
               .map((h) => (
                 <>
@@ -801,7 +801,7 @@ export function BorderLinksPanel(props: {
       run.players.map((x) => x.name),
       p,
     );
-  const mine = halfStatuses(team).filter((h) => h.owner === acting);
+  const mine = halfStatuses(team, content).filter((h) => h.owner === acting);
   return (
     <Panel title={screenText(screenTexts, 'uiLinksTitle')} id="panel-links">
       <ul class="link-list" data-field="links" aria-live="polite">

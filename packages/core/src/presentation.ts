@@ -153,6 +153,8 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   partnerUnderSuppliedMany: ['player', 'count'],
   linkActive: [],
   linkIdle: [],
+  linkBrokenLoop: [],
+  linkBrokenMismatch: ['building'],
   linkJoined: ['name', 'verb'],
   linkSameKind: ['name', 'verb'],
   linkOpen: ['verb'],

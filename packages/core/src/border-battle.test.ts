@@ -10,6 +10,7 @@ import { hashJson } from './hash.js';
 import { startBattle, type Battle } from './battle.js';
 import {
   addConduit,
+  brokenLinks,
   conduitsLostWith,
   type ConduitEndArg,
 } from './conduits.js';
@@ -18,13 +19,15 @@ import type { GameMap } from './map.js';
 import type { Conduit, TeamState } from './team-state.js';
 import { Lab, content, mapgen, simConfig } from './test-support.js';
 
-const map2 = (): GameMap => ({
+const map2 = (
+  nodes: GameMap['nodes'] = [{ x: 2, y: 2, resource: 'res_a' }],
+): GameMap => ({
   width: 24,
   height: 16,
   partySize: 2,
   plotWidth: 12,
   features: [],
-  nodes: [{ x: 2, y: 2, resource: 'res_a' }],
+  nodes,
 });
 
 const cellsOf = (pairs: [number, number][]) =>
@@ -85,8 +88,8 @@ function rig(joined = true): Rig {
 }
 
 /** Side 0 has the rig, side 1 only its Cores. */
-function start(state: TeamState): Battle {
-  const lab = new Lab(map2());
+function start(state: TeamState, nodes?: GameMap['nodes']): Battle {
+  const lab = new Lab(map2(nodes));
   lab.core(5, 0, 0);
   lab.core(17, 0, 1);
   const r = startBattle(
@@ -274,6 +277,74 @@ describe('a fallen Core removes no link', () => {
   });
 });
 
+describe('a broken link mends in battle', () => {
+  test('destroying the cause rejoins the link, and only the cause goes', () => {
+    const nodes: GameMap['nodes'] = [
+      { x: 2, y: 2, resource: 'res_a' },
+      { x: 16, y: 2, resource: 'res_b' },
+    ];
+    const lab = new Lab(map2(nodes));
+    lab.core(5, 0, 0);
+    lab.core(17, 0, 1);
+    const a = lab.put('bld_extractor', 2, 2);
+    const b = lab.put('bld_extractor', 16, 2);
+    const m = lab.put('bld_merger', 14, 6);
+    const go = (
+      actor: number,
+      from: ConduitEndArg,
+      to: ConduitEndArg,
+      path: [number, number][],
+      restore = false,
+    ): number => {
+      const r = addConduit(lab.state, content, {
+        actor,
+        from,
+        to,
+        cells: cellsOf(path),
+        restore,
+      });
+      if (!r.ok) throw new Error(`${r.reason} ${r.detail ?? ''}`);
+      lab.state = r.state;
+      return r.id;
+    };
+    const row: [number, number][] = [];
+    for (let x = 2; x <= 11; x++) row.push([x, 3]);
+    go(0, side(a, 'north'), { border: 0, y: 3 }, row);
+    go(1, { border: 0, y: 3 }, side(m, 'south'), [
+      [12, 3],
+      [13, 3],
+      [14, 3],
+      [14, 4],
+      [14, 5],
+    ]);
+    // res_b into the same merger breaks the link: both halves are open.
+    const cause = go(
+      1,
+      side(b, 'north'),
+      side(m, 'east'),
+      [
+        [16, 3],
+        [16, 4],
+        [16, 5],
+        [16, 6],
+        [15, 6],
+      ],
+      true,
+    );
+    expect(brokenLinks(lab.state, content)).toHaveLength(1);
+    const kept = lab.state.conduits.length - 1;
+    const battle = start(lab.state, nodes);
+    destroyAt(battle, b, 5);
+    expect(ofType(battle, 'conduit_destroyed').map((e) => e.conduit)).toEqual([
+      cause,
+    ]);
+    const after = battle.sim.teams[0];
+    expect(after.conduits).toHaveLength(kept);
+    // The mismatch is gone with its cause: the link is joined again.
+    expect(brokenLinks(after, content)).toEqual([]);
+  });
+});
+
 describe('conduitsLostWith', () => {
   test('lists a link whole when either end building goes, and others not', () => {
     const r = rig();
@@ -310,5 +381,28 @@ describe('conduitsLostWith', () => {
     expect(conduitsLostWith(conduits, 11)).toEqual([21, 22, 25]);
     expect(conduitsLostWith(conduits, 14)).toEqual([25]);
     expect(conduitsLostWith(conduits, 2)).toEqual([26]);
+  });
+
+  test('a broken link: its halves are open ones and go one by one', () => {
+    const end = (building: number, side: 'north' | 'east' | 'south') => ({
+      building,
+      side,
+    });
+    const c = (
+      id: number,
+      owner: number,
+      from: Conduit['from'],
+      to: Conduit['to'],
+    ): Conduit => ({ id, owner, from, to, cells: [] });
+    const conduits: Conduit[] = [
+      c(21, 0, end(1, 'east'), { border: 0, y: 3 }),
+      c(22, 1, { border: 0, y: 3 }, end(11, 'south')),
+      c(23, 0, end(1, 'north'), { border: 0, y: 5 }),
+      c(24, 1, { border: 0, y: 5 }, end(12, 'south')),
+    ];
+    const broken = new Set([23]);
+    expect(conduitsLostWith(conduits, 1, broken)).toEqual([21, 22, 23]);
+    expect(conduitsLostWith(conduits, 12, broken)).toEqual([24]);
+    expect(conduitsLostWith(conduits, 11, broken)).toEqual([21, 22]);
   });
 });

@@ -4,7 +4,12 @@
  * on any rejected intent, crash, or a run that differs when played again
  * with the same seed (`verify`).
  */
-import { hashJson, isBorderEnd } from '@game/core';
+import {
+  brokenLinks,
+  hashJson,
+  isBorderEnd,
+  type TeamContent,
+} from '@game/core';
 import {
   createGameDeps,
   playBotRun,
@@ -40,7 +45,7 @@ export function botDeps(ctx: SimContext): RunDeps {
 }
 
 /** Border links that are joined (a sending and a receiving half at a spot). */
-export function joinedLinks(state: RunState): number {
+export function joinedLinks(state: RunState, content: TeamContent): number {
   const sending = new Set<string>();
   const receiving = new Set<string>();
   for (const c of state.team.conduits) {
@@ -51,7 +56,8 @@ export function joinedLinks(state: RunState): number {
   }
   let n = 0;
   for (const k of sending) if (receiving.has(k)) n++;
-  return n;
+  // A spot with both halves whose link is broken is not joined.
+  return n - brokenLinks(state.team, content).length;
 }
 
 function meanOf(values: readonly number[]): string {
@@ -201,7 +207,7 @@ export function botCommand(
     }
     const battles = done.flatMap((r) => (r.result as BotRunResult).battles);
     const links = done.map((r) =>
-      joinedLinks((r.result as BotRunResult).state),
+      joinedLinks((r.result as BotRunResult).state, ctx.content),
     );
     lines.push(
       `  Battle length (ticks) by party size ${String(args.party)}: pve mean ${meanOf(battles.filter((b) => b.kind === 'pve').map((b) => b.endTick))}, pvp mean ${meanOf(battles.filter((b) => b.kind === 'pvp').map((b) => b.endTick))} (${String(battles.length)} battles)`,

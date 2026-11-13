@@ -238,7 +238,7 @@ export function drawBuildOverlay(
   }
   if (!isEditStep(d.step)) return;
 
-  const halves = halfStatuses(d.team);
+  const halves = halfStatuses(d.team, d.content);
 
   // ---- Enemy paths ---------------------------------------------------------
   if (d.ui.overlays.paths && d.paths !== null) {
@@ -416,6 +416,7 @@ export function drawBuildOverlay(
       joined: { glyph: '=', text: 'Linked' },
       open: { glyph: '?', text: 'Not connected' },
       same_kind: { glyph: '!', text: 'Cannot join' },
+      broken: { glyph: 'x', text: 'Link broken' },
     };
     const mine = ownSpots(d.team, d.acting);
     if (d.ui.tool === 'conduit') {
@@ -447,6 +448,7 @@ export function drawBuildOverlay(
           : h.state === 'open'
             ? col.accent
             : col.warn;
+      const broken = h.state === 'broken';
       const p = centre(cell);
       const r = Math.max(7, z * 0.34);
       ctx.save();
@@ -455,7 +457,7 @@ export function drawBuildOverlay(
       ctx.strokeStyle = color;
       ctx.lineWidth = 2.5;
       // Joined: solid ring. Open: dashed ring. Cannot join: square.
-      ctx.setLineDash(h.state === 'open' ? [4, 3] : []);
+      ctx.setLineDash(h.state === 'open' || broken ? [4, 3] : []);
       ctx.beginPath();
       if (h.state === 'same_kind') ctx.rect(p.x - r, p.y - r, 2 * r, 2 * r);
       else ctx.arc(p.x, p.y, r, 0, Math.PI * 2);

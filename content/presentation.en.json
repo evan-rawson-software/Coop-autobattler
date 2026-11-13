@@ -195,6 +195,8 @@
       "inspectorTopSpeed": "{speed} {unit} / s",
       "inspectorUnderSupplied": " · UNDER-SUPPLIED: gets {gets} / s",
       "linkActive": "carrying",
+      "linkBrokenLoop": "Link broken: it would form a loop",
+      "linkBrokenMismatch": "Link broken: it would send a second resource into {building}",
       "linkIdle": "idle",
       "linkJoined": "Linked with {name} ({verb})",
       "linkOpen": "Not connected: waiting for your neighbour ({verb})",
