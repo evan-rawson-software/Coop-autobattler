@@ -19,6 +19,13 @@ import {
   type RunDeps,
   type RunState,
 } from '@game/session';
+import {
+  measureRecord,
+  metricLines,
+  recordingDeps,
+  type BattleMetrics,
+  type BattleRecord,
+} from './bot-metrics.js';
 import type { CommandOutput } from './commands.js';
 import type { SimContext } from './context.js';
 
@@ -78,6 +85,8 @@ function pct(won: number, total: number): string {
 interface Played {
   readonly seed: number;
   readonly result: BotRunResult | null;
+  /** Measurements of every battle of the run (empty if it crashed). */
+  readonly metrics: readonly BattleMetrics[];
   readonly problems: string[];
 }
 
@@ -115,13 +124,13 @@ function playOne(
   const options = {
     strategy,
     seed,
-    trackBattles: true,
     rerollCost: ctx.economy.rerollCost,
     ...(args.maxRounds === null ? {} : { maxRounds: args.maxRounds }),
   };
   const problems: string[] = [];
+  const records: BattleRecord[] = [];
   try {
-    const result = playBotRun(deps, run, options);
+    const result = playBotRun(recordingDeps(deps, records), run, options);
     for (const r of result.rejected) {
       problems.push(
         `rejected ${r.intent} (${r.reason}${r.detail === '' ? '' : `: ${r.detail}`}) from player ${String(r.player)} in ${r.step}, round ${String(r.round)}`,
@@ -139,10 +148,13 @@ function playOne(
         problems.push('replaying the action log gave another state');
       }
     }
-    return { seed, result, problems };
+    const metrics = records.map((r) =>
+      measureRecord(r, deps, ctx.content, ctx.sim.overloadStartTick),
+    );
+    return { seed, result, metrics, problems };
   } catch (e) {
     problems.push(`crash: ${e instanceof Error ? e.message : String(e)}`);
-    return { seed, result: null, problems };
+    return { seed, result: null, metrics: [], problems };
   }
 }
 
@@ -205,7 +217,7 @@ export function botCommand(
         `  ${pad(String(round), 7)}${pad(pct(pveWon, pve), 10)}${pad(pct(pvpWon, pvp), 10)}${String(reached)}`,
       );
     }
-    const battles = done.flatMap((r) => (r.result as BotRunResult).battles);
+    const battles = done.flatMap((r) => r.metrics);
     const links = done.map((r) =>
       joinedLinks((r.result as BotRunResult).state, ctx.content),
     );
@@ -213,6 +225,7 @@ export function botCommand(
       `  Battle length (ticks) by party size ${String(args.party)}: pve mean ${meanOf(battles.filter((b) => b.kind === 'pve').map((b) => b.endTick))}, pvp mean ${meanOf(battles.filter((b) => b.kind === 'pvp').map((b) => b.endTick))} (${String(battles.length)} battles)`,
       `  Cores standing at the end: party mean ${meanOf(battles.map((b) => b.coresStanding[0]))}, opponent mean ${meanOf(battles.map((b) => b.coresStanding[1]))}`,
       `  Border links joined at the end of the run: mean ${meanOf(links)}`,
+      ...metricLines(battles, ctx.sim.overloadStartTick),
       '  Runs:',
     );
     for (const r of runs) {
