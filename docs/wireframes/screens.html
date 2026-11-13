@@ -10,7 +10,7 @@
 :root {
   --bg: #f3f5f7; --sheet: #ffffff; --panel: #eef1f4; --ink: #18222d; --muted: #5b6876; --line: #c3ccd6; --grid: #e4e9ee;
   --ally: #0f6f78; --ally-soft: #d9eff0; --enemy: #a8323a; --enemy-soft: #f6dfe1; --neutral: #7a6a3a;
-  --ore: #b86a00; --power: #2a62b8; --flux: #7a3fa6;
+  --ok: #1f8a4c; --ore: #b86a00; --power: #2a62b8; --flux: #7a3fa6;
   --water: #cfe3f5; --cliff: #b9b2a6; --accent: #c77700; --accent-ink: #ffffff;
   --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -20,14 +20,14 @@
   :root:not([data-theme="light"]) {
     --bg: #11171d; --sheet: #19212a; --panel: #212b36; --ink: #e6ebf0; --muted: #9aa7b4; --line: #3a4653; --grid: #26313c;
     --ally: #5cc4cc; --ally-soft: #153438; --enemy: #ef7f86; --enemy-soft: #3b1d20; --neutral: #c9b26a;
-    --ore: #f2a93b; --power: #7fb0f5; --flux: #c394ea;
+    --ok: #5cc98a; --ore: #f2a93b; --power: #7fb0f5; --flux: #c394ea;
     --water: #1f3a52; --cliff: #5a554c; --accent: #f2a93b; --accent-ink: #11171d; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #11171d; --sheet: #19212a; --panel: #212b36; --ink: #e6ebf0; --muted: #9aa7b4; --line: #3a4653; --grid: #26313c;
   --ally: #5cc4cc; --ally-soft: #153438; --enemy: #ef7f86; --enemy-soft: #3b1d20; --neutral: #c9b26a;
-  --ore: #f2a93b; --power: #7fb0f5; --flux: #c394ea;
+  --ok: #5cc98a; --ore: #f2a93b; --power: #7fb0f5; --flux: #c394ea;
   --water: #1f3a52; --cliff: #5a554c; --accent: #f2a93b; --accent-ink: #11171d; color-scheme: dark;
 }
 body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
@@ -76,6 +76,10 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
 .mark { fill: var(--ink); } .mark-t { fill: var(--sheet); font-size: 10px; font-weight: 500; }
 .tag { font-size: 7px; font-weight: 500; } .spot { fill: var(--accent); stroke: var(--ink); stroke-width: 1; }
 .low { fill: none; stroke: var(--enemy); stroke-width: 2.5; stroke-dasharray: 3 3; } .lowt { font-size: 8px; font-weight: 500; fill: var(--enemy); }
+.vok { fill: var(--ok); opacity: 0.22; } .vbad { fill: var(--enemy); opacity: 0.08; } .vok-k { fill: var(--ok); opacity: 0.45; stroke: var(--ok); } .vbad-k { fill: var(--enemy); opacity: 0.25; stroke: var(--enemy); }
+.veil { fill: var(--sheet); opacity: 0.55; } .chosen { fill: var(--accent); opacity: 0.45; } .hov { fill: var(--enemy); fill-opacity: 0.4; stroke: var(--enemy); stroke-width: 2.5; }
+.box.hov-b { stroke: var(--enemy); stroke-width: 1.5; } .box.hint { stroke: var(--enemy); stroke-width: 2; }
+.path.solid { stroke-dasharray: none; stroke-width: 2.4; } .path.faint { opacity: 0.45; }
 .sel { fill: none; stroke: var(--accent); stroke-width: 2.5; }
 .chart-a { fill: none; stroke: var(--ally); stroke-width: 2; } .chart-e { fill: none; stroke: var(--enemy); stroke-width: 2; }
 .card { fill: var(--sheet); stroke: var(--ink); stroke-width: 1.2; } .card.pick { stroke: var(--accent); stroke-width: 3; }
@@ -186,13 +190,16 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   <section>
     <h2>6. Core placement</h2>
     <p>The first decision of a run. The whole map is shown, and every player chooses where their own Core goes, in their own plot; other plots are dimmed. A Core cannot be moved once everyone is ready.</p>
-    <div class="sheet"><svg id="s-core" viewBox="0 0 960 540" role="img" aria-label="Core placement wireframe: the empty generated map with a proposed Core position, instructions and a Ready button on the right, and the starting kit below."></svg></div>
+    <div class="sheet"><svg id="s-core" class="big" viewBox="0 0 1280 720" role="img" aria-label="Core placement wireframe: the player's own plot with legal Core spots in green and the rest in red, the chosen spot with the enemy routes to it, a dimmed neighbour plot, the acting-player switcher in the run bar, a reason line, the Ready and Unready buttons, and the starting kit below."></svg></div>
     <ol class="notes">
-      <li>The whole map, visible and buildable from the start. It never expands.</li>
+      <li>Your own plot. Green cells are where the 2 × 2 Core fits (the cell is its lowest-left corner); red cells do not fit. A spot must lie wholly inside your plot, off water, cliffs and resource nodes, and not too close to the front edge.</li>
       <li>The front edge, where enemy units will enter.</li>
-      <li>The proposed Core position, with the routes enemy units would take to reach it.</li>
+      <li>Your chosen spot, marked "Core goes here", with the routes enemy units would take to reach it: the shortest as a solid line, the others faint. Pointing at a green cell previews its routes. Click a green cell to choose it; clicking the chosen cell again changes nothing. You can pick another until you are Ready.</li>
       <li>Resource nodes. Where the rare one sits is a big part of the choice.</li>
-      <li>In co-op every player places their own Core and readies up; there is no vote. You can change yours until you are ready (Unready reopens it). The step ends when everyone has placed a Core and is ready. Solo just readies.</li>
+      <li>Another player's plot, dimmed and without verdicts. Their chosen spot is outlined and carries their name.</li>
+      <li>The acting-player switcher in the run bar, for playing every seat from one device (debug; only with two or more players). Each button shows "(to act)" or "(done)"; the bar also says who is still awaited. The screen always shows the acting player's view.</li>
+      <li>The reason line. Pointing at a red cell says why it does not fit. A refused click or Ready (for example "Choose a spot for the Core first.", naming the player who still has to pick) shows here too, until the pointer moves to another cell or the acting player changes.</li>
+      <li>Ready needs a chosen spot. Each player readies for themselves. A Ready player is offered no spots, and the button reads "Unready (change the Core)"; Unready reopens the choice. The step ends when every player has placed a Core and is Ready; solo it ends when you are Ready. There is no vote.</li>
       <li>The starting kit, waiting in the stash for the first build.</li>
     </ol>
   </section>
@@ -312,9 +319,11 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       R(g, q.x + 1.5, q.y + 1.5, q.w - 3, q.h - 3, "bld" + (enemy ? " e" : ""));
       if (!bare) T(g, q.x + q.w / 2, q.y + q.h / 2 + 3.5, b[4], "bl", "middle");
     });
-    var k = C(d.core[0], d.core[1], 2, 2);
-    R(g, k.x + 1, k.y + 1, k.w - 2, k.h - 2, "core" + (enemy ? " e" : ""));
-    if (!bare) T(g, k.x + k.w / 2, k.y + k.h / 2 + 3.5, "CORE", "core-t", "middle");
+    if (d.core) {
+      var k = C(d.core[0], d.core[1], 2, 2);
+      R(g, k.x + 1, k.y + 1, k.w - 2, k.h - 2, "core" + (enemy ? " e" : ""));
+      if (!bare) T(g, k.x + k.w / 2, k.y + k.h / 2 + 3.5, "CORE", "core-t", "middle");
+    }
     return g;
   }
   function units(p, list, cls, r) { list.forEach(function (u) { el(p, "circle", { cx: u[0], cy: u[1], r: r || 3.5, class: cls }); }); }
@@ -536,24 +545,67 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
 
   // ================= 6. CORE PLACEMENT =================
   (function () {
-    var s = document.getElementById("s-core"), S = 20, bx = 100, by = 68, bw = H * S;
-    topbar(s, "New run · Place the Core", "", "Lives 5 / 5");
-    var empty = { lake: mine.lake, cliff: mine.cliff, nodes: mine.nodes, cond: [], bld: [], walls: [], core: mine.core };
-    T(s, bx + bw / 2, by - 8, "FRONT EDGE · enemy units enter here", "ts tm", "middle");
-    board(s, bx, by, S, empty, false);
-    function path(pts) { el(s, "polyline", { class: "path", points: pts.map(function (q) { return (bx + q[1] * S) + "," + (by + (W - q[0]) * S); }).join(" ") }); }
-    path([[16,20],[10.5,20],[10.5,16.5],[4.5,16.5],[4.5,13],[4,13]]);
-    path([[16,2],[12.5,2],[12.5,8.5],[4.5,8.5],[4.5,11],[4,11]]);
-    R(s, bx + 11 * S - 3, by + 12 * S - 3, 2 * S + 6, 2 * S + 6, "sel");
-    R(s, 640, 68, 304, 320, "panel"); T(s, 654, 88, "THE CORE", "ts tm");
-    lines(s, 654, 114, ["Pick a 2 × 2 spot in your own area.", "Change it until you are Ready.", "", "Deep is safer. Forward shortens", "your supply lines."], "t", 20);
-    T(s, 654, 246, "READY (co-op)", "ts tm");
-    lines(s, 654, 268, ["You   placed, ready", "Ana   placed, not ready", "Bo    not placed"], "ts", 18);
-    btn(s, 654, 340, 276, 34, "Ready", true);
-    R(s, 16, 402, 928, 122, "panel"); T(s, 28, 422, "STARTING KIT · in your stash when the run begins", "ts tm");
-    ["Extractor × 2", "Barracks × 1", "Wall × 3", "Turret × 1", "10 gold"].forEach(function (k, i) { R(s, 28 + i * 180, 434, 168, 38, "box"); T(s, 28 + i * 180 + 84, 458, k, "t", "middle"); });
-    T(s, 28, 502, "When every player is Ready you go to the Build screen, then to the first PvE battle.", "ts tm");
-    mark(s, bx + 450, by + 296, 1); mark(s, bx + bw / 2 + 150, by - 11, 2); mark(s, bx + 284, by + 262, 3); mark(s, bx + 420, by + 100, 4); mark(s, 930, 242, 5); mark(s, 930, 418, 6);
+    var s = document.getElementById("s-core"), S = 18, bx = 40, by = 96, bw = H * S, bh = W * S, nbx = bx + bw;
+    topbar(s, "New run · Place the Core", "", "", 1280, 720);
+    // run bar: round, lives, the acting-player switcher (debug multi-seat), who is awaited, step, Menu
+    T(s, 490, 25, "Round 1", "ts"); T(s, 552, 25, "Lives 5 / 5", "ts");
+    T(s, 646, 25, "Playing as", "ts tm");
+    btn(s, 730, 7, 118, 26, "You (to act)", true); btn(s, 856, 7, 108, 26, "Ana (done)");
+    T(s, 972, 25, "Waiting for: You", "ts tm"); T(s, 1099, 25, "Place the Core", "ts tm"); btn(s, 1214, 7, 52, 26, "Menu");
+    // front edge label
+    T(s, bx + bw / 2, by - 12, "FRONT EDGE · enemy units enter here", "ts tm", "middle");
+    // your plot: the empty map, then the verdict on every cell (green: the 2 x 2 Core fits there, red: it does not)
+    board(s, bx, by, S, { lake: mine.lake, cliff: mine.cliff, nodes: mine.nodes, cond: [], bld: [], walls: [], core: null }, false);
+    function hit(list, dp, fr) { return list.some(function (c) { return c[0] === dp && c[1] === fr; }); }
+    function fits(fr, dp) {
+      if (fr > 22 || dp > 6) return false;
+      for (var dy = 0; dy < 2; dy++) for (var dx = 0; dx < 2; dx++) {
+        if (hit(mine.lake, dp + dy, fr + dx) || hit(mine.cliff, dp + dy, fr + dx) || hit(mine.nodes, dp + dy, fr + dx)) return false;
+      }
+      return true;
+    }
+    for (var fr = 0; fr < H; fr++) for (var dp = 0; dp < W; dp++) {
+      R(s, bx + fr * S, by + (W - 1 - dp) * S, S, S, fits(fr, dp) ? "vok" : "vbad");
+    }
+    // the neighbour's plot, dimmed, with their chosen spot outlined
+    board(s, nbx, by, S, { lake: [[8,14],[8,15],[9,14],[9,15]], cliff: [[4,3],[4,4],[4,5]], nodes: [[6,5,"ore"],[10,17,"power"],[12,9,"flux"]], cond: [], bld: [], walls: [], core: null }, false, true);
+    R(s, nbx, by, bw, bh, "veil"); R(s, nbx, by, bw, bh, "plot");
+    T(s, nbx + bw / 2, by + bh - 12, "co-op: another player’s plot, dimmed", "ts tm", "middle");
+    var ax = nbx + 6 * S, ay = by + (W - 3 - 2) * S;
+    R(s, ax, ay, 2 * S, 2 * S, "sel");
+    R(s, ax, ay - 25, 86, 21, "box"); T(s, ax + 43, ay - 10, "Ana’s Core", "ts", "middle");
+    // enemy routes to the chosen spot: the shortest solid, the other faint
+    function path(pts, cls) { el(s, "polyline", { class: cls, points: pts.map(function (q) { return (bx + q[1] * S) + "," + (by + (W - q[0]) * S); }).join(" ") }); }
+    path([[16,2],[12.5,2],[12.5,8.5],[5.5,8.5],[5.5,11.5],[4,11.5]], "path faint");
+    path([[16,20],[5,20],[5,12.5],[4,12.5]], "path solid");
+    // the chosen spot
+    var cx = bx + 11 * S, cy = by + (W - 2 - 2) * S;
+    R(s, cx, cy, 2 * S, 2 * S, "chosen"); R(s, cx - 1, cy - 1, 2 * S + 2, 2 * S + 2, "sel");
+    R(s, cx, cy + 2 * S + 5, 115, 21, "box"); T(s, cx + 57, cy + 2 * S + 20, "Core goes here", "ts", "middle");
+    // a red cell under the pointer, with its short reason
+    var hx = bx + 12 * S, hy = by + (W - 8 - 2) * S;
+    R(s, hx, hy, 2 * S, 2 * S, "hov"); R(s, hx - 54, hy - 26, 172, 21, "box hov-b"); T(s, hx + 32, hy - 11, "Too close to the front", "ts", "middle");
+    // the reason line: one fixed line, always in the same place
+    R(s, 172, 402, 600, 44, "box hint"); T(s, 188, 429, "Too close to the front edge, where enemy units arrive.", "t");
+    // right panel
+    R(s, 920, 52, 344, 496, "panel"); T(s, 934, 74, "THE CORE", "ts tm");
+    lines(s, 934, 100, ["Pick a 2 × 2 spot for your Core in", "your own area. You can change it", "until you are Ready; once everyone", "is Ready it cannot be moved for the", "rest of the run."], "t", 19);
+    lines(s, 934, 206, ["Deep is safer. Forward shortens your", "supply lines."], "t tm", 19);
+    R(s, 934, 254, 12, 12, "vok-k"); T(s, 954, 264, "Green: the Core fits there", "ts");
+    R(s, 934, 276, 12, 12, "vbad-k"); lines(s, 954, 286, ["Red: it does not fit (point at a", "cell to see why)"], "ts", 16);
+    el(s, "line", { x1: 934, y1: 322, x2: 946, y2: 322, class: "path solid" });
+    lines(s, 954, 326, ["Solid line: the shortest route; faint", "dashes: other routes. Where enemy", "units walk to reach the Core"], "ts", 16);
+    T(s, 934, 384, "2 enemy routes shown for this position.", "ts tm");
+    btn(s, 934, 398, 296, 34, "Ready", true);
+    R(s, 934, 446, 316, 90, "box"); T(s, 946, 464, "WHEN YOU ARE READY", "ts tm");
+    btn(s, 946, 472, 292, 30, "Unready (change the Core)");
+    T(s, 946, 522, "No cells are highlighted.", "ts tm");
+    // starting kit
+    R(s, 16, 556, 1248, 148, "panel"); T(s, 30, 580, "STARTING KIT · in your stash when the run begins", "ts tm");
+    ["Extractor × 2", "Barracks × 1", "Wall × 3", "Turret × 1", "10 gold"].forEach(function (k, i) { R(s, 30 + i * 240, 592, 224, 42, "box"); T(s, 30 + i * 240 + 112, 618, k, "t", "middle"); });
+    T(s, 30, 668, "When every player is Ready you go to the Build screen, then to the first PvE battle.", "ts tm");
+    mark(s, 64, 366, 1); mark(s, bx + bw / 2 + 150, by - 15, 2); mark(s, cx + 2 * S + 22, cy + 20, 3); mark(s, 136, 288, 4);
+    mark(s, ax + 2 * S + 64, ay - 14, 5); mark(s, 790, 50, 6); mark(s, 790, 424, 7); mark(s, 1243, 415, 8); mark(s, 1246, 574, 9);
   })();
 
   // ================= 7. PVE CHOICE =================

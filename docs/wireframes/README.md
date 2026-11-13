@@ -13,7 +13,8 @@ starting kit, threat pips, "an even chance to double it", "overload begins
 The specs are the source of truth. Where a wireframe and a spec disagree,
 the spec wins and the wireframe should be corrected.
 
-**The images predate the per-player design (issue #124).** They still show
+**Most images predate the per-player design (issue #124); 3, 4 and 6 are
+redrawn.** The others still show
 one shared board, one Core per side and a vote on the Core position. The text below has been updated to the current design
 (each player has their own plot and Core, builds only there, and can link to
 a neighbour across the plot border; there is no giving); the images and
@@ -116,16 +117,19 @@ Where a run starts or resumes. Saved runs are listed without limit. The host of 
 
 ## 6. Core placement
 
-The first decision of a run. The whole map is shown, and every player chooses where their own Core goes, in their own plot. A Core cannot be moved once everyone is ready. Other plots are dimmed. (The PNG still shows the earlier design, one Core chosen by vote; `screens.html` is current and the PNG is to be redrawn.)
+The first decision of a run. The whole map is shown, and every player chooses where their own Core goes, in their own plot. A Core cannot be moved once everyone is ready. Other plots are dimmed. The image shows your own plot with the legal spots in green, your chosen spot and its enemy routes, a partner's dimmed plot, and the acting-player switcher in the run bar.
 
 ![Core placement screen wireframe](6-core-placement.png)
 
 1. The whole map, visible and buildable from the start. It never expands.
 2. The front edge, where enemy units will enter.
-3. Your chosen Core position, with the routes enemy units would take to reach it. You can change it until the step ends: while you are not ready, or after un-readying.
+3. Your chosen Core position, marked "Core goes here", with the routes enemy units would take to reach it (the shortest solid, the others faint). You can change it until the step ends: while you are not ready, or after un-readying. Clicking the chosen cell again changes nothing.
 4. Resource nodes. Where the rare one sits is a big part of the choice.
-5. In co-op every player places their own Core and readies up; there is no vote. The step ends when everyone has placed a Core and is ready. Solo just confirms.
-6. The starting kit, waiting in the stash for the first build.
+5. Another player's plot, dimmed, with their chosen spot outlined and named.
+6. The acting-player switcher in the run bar, for playing every seat from one device (debug; two or more players): "(to act)" or "(done)" per player, and who is still awaited.
+7. The reason line: why a red cell does not fit, or why a click or Ready was refused. It stays until the pointer moves to another cell or the acting player changes.
+8. Ready needs a chosen spot and is per player. A Ready player is offered no spots and sees "Unready (change the Core)". In co-op every player places their own Core and readies up; there is no vote. The step ends when everyone has placed a Core and is ready. Solo just confirms.
+9. The starting kit, waiting in the stash for the first build.
 
 ## 7. PvE difficulty choice
 
