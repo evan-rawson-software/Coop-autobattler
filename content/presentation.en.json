@@ -261,6 +261,7 @@
       "reason_source_needs_node": "Extractors only go on a resource node.",
       "reason_too_far_forward": "Too close to the front edge for the Core.",
       "reason_unknown_building": "That building does not exist.",
+      "reason_invalid_conduit_id": "That conduit ID cannot be reused.",
       "reason_unknown_conduit": "That conduit does not exist.",
       "reason_unknown_definition": "Unknown building type.",
       "reason_unknown_intent": "Unknown action.",

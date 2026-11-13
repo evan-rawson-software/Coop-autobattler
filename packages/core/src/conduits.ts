@@ -33,6 +33,7 @@ import {
 // Types
 
 export type ConduitReason =
+  | 'invalid_conduit_id'
   | 'unknown_building'
   | 'not_owner'
   | 'invalid_border'
@@ -768,7 +769,7 @@ export type ConduitEndArg =
 /**
  * Add a conduit, or a half of a border link (PP-4). The new conduit's ID is
  * `state.nextId`. Rules, in this fixed order, the first failure reported:
- * unknown_building, not_owner, invalid_border, not_an_output, not_an_input,
+ * invalid_conduit_id (only with an explicit `id`), unknown_building, not_owner, invalid_border, not_an_output, not_an_input,
  * side_in_use, border_spot_in_use, invalid_path, outside_own_plot,
  * blocked_by_feature, overlaps_core, overlaps_building, crosses_conduit,
  * resource_mismatch, would_loop. An `actor` that is no player index owns no
@@ -782,8 +783,24 @@ export function addConduit(
     from: ConduitEndArg;
     to: ConduitEndArg;
     cells: readonly Cell[];
+    /**
+     * Re-add a conduit under an ID handed out before (undo, RS-5g). It must be
+     * below `nextId` and used by no building, stash entry or conduit;
+     * `nextId` is left unchanged. Without it the next ID is used.
+     */
+    id?: number;
   },
 ): AddConduitResult {
+  const explicit = args.id;
+  if (explicit !== undefined) {
+    const used =
+      state.buildings.some((b) => b.id === explicit) ||
+      state.stash.some((b) => b.id === explicit) ||
+      state.conduits.some((c) => c.id === explicit);
+    if (!isInt(explicit) || explicit < 1 || explicit >= state.nextId || used) {
+      return { ok: false, reason: 'invalid_conduit_id' };
+    }
+  }
   const end = (e: unknown): ConduitEnd | BorderEnd => {
     const r = isRecord(e) ? e : {};
     if ('border' in r) {
@@ -808,7 +825,7 @@ export function addConduit(
       )
     : [{ x: Number.NaN, y: Number.NaN }];
   const candidate: Conduit = {
-    id: state.nextId,
+    id: explicit ?? state.nextId,
     // Not a real player when malformed: fails the owner check.
     owner: isInt(args.actor) ? args.actor : -1,
     from: end((args as { from?: unknown }).from),
@@ -823,7 +840,11 @@ export function addConduit(
     false,
   );
   if (failure !== null) return failure;
-  const conduits = [...state.conduits, candidate];
+  // Conduits stay sorted by ID; an explicit ID can fall between others.
+  const conduits =
+    explicit === undefined
+      ? [...state.conduits, candidate]
+      : [...state.conduits, candidate].sort((a, b) => a.id - b.id);
   const edges = joinEdges(conduits);
   const mismatch = findMismatch(view, edges, computeResources(view, edges));
   if (mismatch !== null) {
@@ -833,7 +854,10 @@ export function addConduit(
   return {
     ok: true,
     id: candidate.id,
-    state: { ...state, conduits, nextId: state.nextId + 1 },
+    state:
+      explicit === undefined
+        ? { ...state, conduits, nextId: state.nextId + 1 }
+        : { ...state, conduits },
   };
 }
 

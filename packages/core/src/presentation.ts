@@ -111,6 +111,7 @@ export const REASON_TEXT_CODES: readonly string[] = [
   'resource_mismatch',
   'would_loop',
   'unknown_conduit',
+  'invalid_conduit_id',
   'wrong_step',
   'not_a_player',
   'not_host',
