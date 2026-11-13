@@ -8,7 +8,6 @@ import {
   checkGhostSnapshotShape,
   ghostKey,
   placeCore,
-  validateGhostSnapshot,
   validateTeamState,
 } from '@game/core';
 import { ghostContext, BOSS_LABEL } from './ghosts.js';
@@ -547,9 +546,9 @@ function validBattleRecord(v: unknown, pve: boolean): boolean {
 
 /**
  * `pvpOpponent` and `ghostsFought` (W3-1). The opponent exists only in the
- * shop of the PvE leg, for the current round; a ghost in it must pass the same
- * checks as any candidate (the economy bound too, when the deps carry the
- * ghost configuration) and be one the run could have drawn.
+ * shop of the PvE leg, for the current round; a ghost in it must pass the
+ * structural checks and the fixed size cap (not the content-derived bounds,
+ * which only selection applies) and be one the run could have drawn.
  */
 function checkGhostFields(
   data: Rec,
@@ -592,10 +591,15 @@ function checkGhostFields(
     return;
   }
   const ctx = ghostContext(deps);
-  const checked =
-    ctx === null
-      ? checkGhostSnapshotShape(o['ghost'], deps.content, deps.mapgenConfig)
-      : validateGhostSnapshot(o['ghost'], ctx);
+  // Already chosen: structure, the rules and the fixed size cap only; the
+  // content-derived bounds (value, tiers, modifiers, derived size) are for
+  // selection, and a later content version must not reject a saved opponent.
+  const checked = checkGhostSnapshotShape(
+    o['ghost'],
+    deps.content,
+    deps.mapgenConfig,
+    ctx === null ? undefined : ctx.rules,
+  );
   if (!checked.ok) {
     for (const e of checked.errors) err(`pvpOpponent.ghost: ${e}`);
     return;

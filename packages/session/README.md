@@ -235,7 +235,9 @@ What `session` adds:
   record instead of the candidates: `{ type, n, index, chosen, hash,
   chosenHash }` (a handler returns it as `HandlerResult.logged`). `replayRun`
   re-draws, checks `nextInt(n) === index` and uses `chosen` after a structural
-  check only, with no store and no economy bounds; a mismatch fails the replay
+  check only, with no store and no economy, events or derived-size bounds
+  (the fixed 2 MiB cap `GHOST_MAX_SERIALIZED_BYTES` applies; restore of
+  `pvpOpponent.ghost` is the same); a mismatch fails the replay
   (`replay_mismatch`). The compact form is accepted only by `replayRun`. `ready`
   in that shop is refused with `ghost_selection_pending` until it was applied.
 - **`RunState.pvpOpponent`** (`{ round, kind: 'ghost' | 'boss', label, ghost }`,

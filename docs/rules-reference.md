@@ -4511,13 +4511,16 @@ refused with `invalid_intent`):
 
 `replayRun` takes the stream `ghost:r<round>` as the live path did, checks that
 `nextInt(n) === index`, checks `chosen` for structure only
-(`checkGhostSnapshotShape`: no rules, but with the same size bounds, economy
-and events, as selection, so replay accepts exactly what selection accepted;
-the no-economy size bound is not looser at late rounds), checks
+(`checkGhostSnapshotShape` with no rules, no economy and no events: the fixed
+size cap `GHOST_MAX_SERIALIZED_BYTES` (2 MiB) is the only size limit), checks
 `hashJson(chosen) === chosenHash`, that it belongs to the run's bucket, is not
 the run's own and has not been fought, and uses it. It does NOT run the value,
-tier or modifier bounds again: those are today's numbers, and replaying a run
-must not depend on them or on the pool. A wrong index, a changed or swapped
+tier, modifier (known to events, effects, stackable) or derived size bounds
+again: those are today's numbers, and replaying a run must not depend on them
+or on the pool. Restore does the same for `pvpOpponent.ghost` (structure, the
+`rules` lives checks as before, and the 2 MiB cap), so a run saved under
+earlier content or economy numbers still loads. Only selection of a new ghost
+applies every bound. A wrong index, a changed or swapped
 snapshot, a malformed entry or the old `candidates` form fails the replay with
 `replay_mismatch` at that action; it never falls back to another opponent.
 `hash` commits the run to the pool it saw but cannot be recomputed in a replay
@@ -4540,18 +4543,21 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
    be hashed), nesting at most 16
    levels, every string and key at most 128 characters, and a canonical JSON
    length of at most `ghostMaxSerializedSize(partySize, round)`, below. Only
-   `partySize` (1 to `maxPartySize`) and `round` (1 to 1000) are read before
+   `partySize` (1 to `maxPartySize`) and `round` (1 to `GHOST_MAX_ROUND`, 200) are read before
    this walk, and a value where either is not an integer in range is rejected
    without being walked. The walk counts characters incrementally, each string at its length as JSON writes it (quotes, backslashes and `\b \t \n \f \r` two characters, other control characters six), and gives up
    as soon as the budget is exceeded (an array or object whose element count
    alone cannot fit is rejected before its elements are visited; nothing is
    sorted), and at most 10 errors are reported (then "and N more").
 
-   **Size limit.** Derived from what a legitimate snapshot can contain, with
+   **Size limit.** At most `GHOST_MAX_SERIALIZED_BYTES` (2,097,152, fixed,
+   independent of content, economy and events): the limit below is clamped to
+   it, so whatever selection accepts always restores. At round 200 the derived
+   limit is below the cap for every party size (party 4: 1,053,694). Restore
+   and replay use the cap alone. The derived limit, from what a legitimate snapshot can contain, with
    `cells = partySize * plotWidth * plotDepth`, `V = ghostValueBound(round,
    partySize).limit` and `N = floor(V / cheapest tier-1 price)` (`cells` when
-   the economy numbers are not at hand, as in `checkGhostSnapshotShape`
-   without bounds):
+   `ghostMaxSerializedSize` is called without economy numbers):
 
        limit = cells * mapEntry                          (every cell a feature or node)
              + min(cells, N) * (buildingEntry            (every cell a building ...

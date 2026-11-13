@@ -9,6 +9,8 @@ import {
   addToStash,
   canonicalJson,
   createTeamState,
+  GHOST_MAX_ROUND,
+  GHOST_MAX_SERIALIZED_BYTES,
   ghostMaxSerializedSize,
   ghostValueBound,
   hashJson,
@@ -396,13 +398,13 @@ describe('conduit padding (quadratic check)', () => {
     };
   }
 
-  test('a conduit-padded junk snapshot at party 4 / round 1000 is rejected quickly', () => {
-    const limit = ghostMaxSerializedSize(4, 1000, ctx);
-    const probe = canonicalJson(padded(100, 1000)).length;
-    const base = canonicalJson(padded(0, 1000)).length;
+  test('a conduit-padded junk snapshot at party 4 / round 200 is rejected quickly', () => {
+    const limit = ghostMaxSerializedSize(4, 200, ctx);
+    const probe = canonicalJson(padded(100, 200)).length;
+    const base = canonicalJson(padded(0, 200)).length;
     const per = (probe - base) / 100;
     const count = Math.floor(((limit - base) / per) * 0.98);
-    const snap = padded(count, 1000);
+    const snap = padded(count, 200);
     expect(canonicalJson(snap).length).toBeLessThanOrEqual(limit);
     const t = perf.now();
     const r = validateGhostSnapshot(snap, ctx);
@@ -462,16 +464,16 @@ describe('conduit padding (quadratic check)', () => {
     } as unknown as GhostSnapshot;
   }
 
-  test('building-padded junk at party 4 / round 1000 is rejected quickly', () => {
+  test('building-padded junk at party 4 / round 200 is rejected quickly', () => {
     const cells = 4 * mapgen.plotWidth * mapgen.plotDepth;
-    const limit = ghostMaxSerializedSize(4, 1000, ctx);
+    const limit = ghostMaxSerializedSize(4, 200, ctx);
     for (const def of ['bld_merger', 'bld_splitter']) {
-      const probe = canonicalJson(crowded(10_000, 1000, def)).length;
-      const empty = canonicalJson(crowded(0, 1000, def)).length;
+      const probe = canonicalJson(crowded(10_000, 200, def)).length;
+      const empty = canonicalJson(crowded(0, 200, def)).length;
       const per = (probe - empty) / 10_000;
       const count = Math.floor(((limit - empty) / per) * 0.9);
       expect(count).toBeGreaterThan(cells);
-      const snap = crowded(count, 1000, def);
+      const snap = crowded(count, 200, def);
       expect(canonicalJson(snap).length).toBeLessThanOrEqual(limit);
       const t = perf.now();
       const r = validateGhostSnapshot(snap, ctx);
@@ -569,25 +571,69 @@ describe('replay accepts what selection accepted', () => {
     expect(r.ok ? '' : (r.detail ?? r.reason)).toBe('');
   });
 
-  test('replay uses the selection size bound, which is not the looser no-economy one at late rounds', () => {
-    const loose = ghostMaxSerializedSize(4, round, { content, mapgen });
-    const full = ghostMaxSerializedSize(4, round, ctx);
-    expect(full).toBeGreaterThan(loose);
-    // Padded into the gap between the two bounds (the value bound would
-    // refuse such a board live; replay checks structure only, so what it
-    // must show is that the size limit is the selection one).
+  /** Stash padding until the canonical JSON is at least `bytes` long. */
+  function paddedTo(bytes: number): GhostSnapshot {
     const per =
       (canonicalJson(atRound200(1000)).length -
         canonicalJson(atRound200(0)).length) /
       1000;
-    const snap = atRound200(
-      Math.ceil((loose + 1000 - canonicalJson(atRound200(0)).length) / per),
+    return atRound200(
+      Math.ceil((bytes - canonicalJson(atRound200(0)).length) / per) + 1,
     );
+  }
+
+  test('replay uses the fixed cap, not the economy-derived selection limit', () => {
+    const full = ghostMaxSerializedSize(4, round, ctx);
+    expect(full).toBeLessThan(GHOST_MAX_SERIALIZED_BYTES);
+    // Between the selection limit and the fixed cap: selection refuses it for
+    // size, replay (and restore) no longer does.
+    const snap = paddedTo(full + 1000);
     const size = canonicalJson(snap).length;
-    expect(size).toBeGreaterThan(loose);
-    expect(size).toBeLessThan(full);
+    expect(size).toBeGreaterThan(full);
+    expect(size).toBeLessThan(GHOST_MAX_SERIALIZED_BYTES);
+    const live = validateGhostSnapshot(JSON.parse(JSON.stringify(snap)), ctx);
+    expect(live.ok ? '' : live.errors.join(' ')).toContain('larger than');
     const r = replay(JSON.parse(JSON.stringify(snap)));
     expect(r.ok ? '' : (r.detail ?? r.reason)).not.toContain('larger than');
+  });
+
+  test('a logged snapshot over the fixed cap is rejected on replay', () => {
+    const snap = paddedTo(GHOST_MAX_SERIALIZED_BYTES + 1000);
+    expect(canonicalJson(snap).length).toBeGreaterThan(
+      GHOST_MAX_SERIALIZED_BYTES,
+    );
+    const r = replay(JSON.parse(JSON.stringify(snap)));
+    expect(r.ok).toBe(false);
+    expect(r.ok ? '' : (r.detail ?? '')).toContain('larger than');
+  });
+
+  test('a round above the maximum is rejected on replay', () => {
+    const snap = {
+      ...(JSON.parse(JSON.stringify(atRound200(0))) as GhostSnapshot),
+      round: GHOST_MAX_ROUND + 1,
+    };
+    const r = replay(snap);
+    expect(r.ok).toBe(false);
+    expect(r.ok ? '' : (r.detail ?? '')).toContain('round: must be');
+  });
+});
+
+describe('the fixed size cap and the round limit', () => {
+  test('the derived limit never exceeds the cap, at the maximum round', () => {
+    expect(GHOST_MAX_ROUND).toBe(200);
+    for (const n of [1, 2, 3, 4]) {
+      const limit = ghostMaxSerializedSize(n, GHOST_MAX_ROUND, ctx);
+      // Strictly below: equal would mean the clamp, not the economy, bounds it.
+      expect(limit, `party ${String(n)}`).toBeLessThan(
+        GHOST_MAX_SERIALIZED_BYTES,
+      );
+    }
+  });
+
+  test('the cap clamps a limit that would be larger', () => {
+    expect(ghostMaxSerializedSize(4, 1000, ctx)).toBe(
+      GHOST_MAX_SERIALIZED_BYTES,
+    );
   });
 });
 
