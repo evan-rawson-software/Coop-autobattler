@@ -1626,17 +1626,34 @@ export async function runRunSmoke({
   // (made in Node by the real bot, see smoke-seed.mjs), whose PvP opponent the
   // browser selects from an empty bucket, since the bundled ghosts stop at
   // round 6.
-  {
+  for (const seedArgs of [[], ['siege', '1', '2']]) {
+    // The second save is a party the siege bot made, which
+    // loses to the boss: the loss branch of the checks below. It keeps the
+    // run id: the first run left a round 7 ghost in the browser's pool, which
+    // is only skipped for a run of the same id.
+    const lossCase = seedArgs.length > 0;
+    const ngCheck = (ok, msg) =>
+      check(
+        ok,
+        lossCase
+          ? msg.replace('no-ghost boss', 'no-ghost boss, losing party')
+          : msg,
+      );
     const record = JSON.parse(
       execFileSync(
         'pnpm',
-        ['exec', 'tsx', path.join(webDir, 'scripts/smoke-seed.mjs')],
+        [
+          'exec',
+          'tsx',
+          path.join(webDir, 'scripts/smoke-seed.mjs'),
+          ...seedArgs,
+        ],
         { cwd: path.resolve(webDir, '../..'), maxBuffer: 1 << 26 },
       ).toString('utf8'),
     );
     const id = record.runId;
     await goMenu();
-    check((await forceValue()) === null, 'no-ghost boss: no force setting');
+    ngCheck((await forceValue()) === null, 'no-ghost boss: no force setting');
     await page.evaluate(
       async ([rec, runId]) => {
         const db = await new Promise((res, rej) => {
@@ -1658,7 +1675,7 @@ export async function runRunSmoke({
     await page.click(`[data-run="${id}"] [data-action="resume"]`);
     await waitStep('pve_choice');
     const start = await R.state();
-    check(
+    ngCheck(
       start.round >= 7 && start.lives > 0 && start.pvpOpponent === null,
       `no-ghost boss: the saved run is alive at round ${start.round}, lives ${start.lives}, opponent not yet chosen`,
     );
@@ -1696,13 +1713,22 @@ export async function runRunSmoke({
       const s = await R.state();
       if (s.step === 'pvp_summary') break;
       if (s.step === 'shop' && s.leg === 'pve') {
-        check(
-          s.pvpOpponent?.kind === 'boss' && s.round >= 7,
-          `no-ghost boss: the browser's own read of the empty pool gives the boss at round ${s.round}`,
+        // The controller reads the ghost pool after entering the shop, so the
+        // opponent may not be set yet in the state captured above: wait for
+        // it (a timeout fails the smoke), then check a fresh read.
+        await page.waitForFunction(
+          () => window.__debug?.run?.state().pvpOpponent != null,
+          null,
+          { timeout: slow(20000) },
+        );
+        const shopNow = await R.state();
+        ngCheck(
+          shopNow.pvpOpponent?.kind === 'boss' && shopNow.round >= 7,
+          `no-ghost boss: the browser's own read of the empty pool gives the boss at round ${shopNow.round}`,
         );
         await page.waitForSelector('#shop-screen');
         const t = await page.locator('#shop-screen').innerText();
-        check(
+        ngCheck(
           /Opponent: the boss/.test(t) && /Lose: -1 life/.test(t),
           'no-ghost boss: the shop announces the boss, a loss costs 1 life',
         );
@@ -1739,9 +1765,17 @@ export async function runRunSmoke({
         }
         if (p === 0) await settle();
       }
+      // Both players have acted, so the step is over. The last click returns
+      // before its action is applied: wait for the step to move on, or the
+      // next pass would read the old step and wait for a control that is
+      // about to go away.
       await page.waitForFunction(
-        (a) => window.__debug?.run?.state().actions !== a,
-        s.actions,
+        ([step, leg]) => {
+          const st = window.__debug?.run?.state();
+          return st !== undefined && (st.step !== step || st.leg !== leg);
+        },
+        [s.step, s.leg],
+        { timeout: slow(20000) },
       );
     }
     await waitStep('pvp_summary');
@@ -1750,7 +1784,7 @@ export async function runRunSmoke({
     await page.waitForFunction(() => window.__debug?.battle?.phase, null, {
       timeout: slow(20000),
     });
-    check(
+    ngCheck(
       /boss/i.test(await page.locator('[data-field="vs"]').innerText()),
       'no-ghost boss: the PvP battle is fought against the boss',
     );
@@ -1760,11 +1794,11 @@ export async function runRunSmoke({
       'Victory';
     const own = await page.locator('[data-field="standing-own"]').innerText();
     const foe = await page.locator('[data-field="standing-foe"]').innerText();
-    check(
+    ngCheck(
       /\/ 2$/.test(own) && /\/ 2$/.test(foe),
       `no-ghost boss: one Core per player on each side, the boss has 2 (own ${own}, boss ${foe})`,
     );
-    check(
+    ngCheck(
       won ? /^0 \//.test(foe) : /^[12] \//.test(foe),
       `no-ghost boss: a win needs every boss Core destroyed (${won ? 'won' : 'lost'}, boss Cores standing ${foe})`,
     );
@@ -1776,10 +1810,16 @@ export async function runRunSmoke({
       () => window.__debug?.run?.state().step !== 'pvp_summary',
     );
     const after = await R.state();
-    check(
+    ngCheck(
       won ? after.lives === before.lives : after.lives === before.lives - 1,
       `no-ghost boss: the result is applied (${won ? 'won' : 'lost'}, lives ${before.lives} -> ${after.lives}, step ${after.step})`,
     );
+    if (lossCase) {
+      ngCheck(
+        !won && /^[12] \//.test(foe) && after.lives === before.lives - 1,
+        `no-ghost boss: the boss wins, Cores standing ${foe} of 2, the party loses exactly 1 life (${before.lives} -> ${after.lives})`,
+      );
+    }
     await goMenu();
   }
 

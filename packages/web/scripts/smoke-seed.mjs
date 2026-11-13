@@ -9,8 +9,17 @@
 import { buildSaveRecord, createGameDeps, playBotRun } from '@game/session';
 import { loadSimContext } from '../../tools/src/sim/context.ts';
 
-const RUN_ID = 'smoke-no-ghost-boss';
-const SEED = 1;
+// Optional arguments: strategy, seed, party size, run id. The defaults give the
+// party that beats the boss; `siege 1 2` gives one
+// that loses to it (both found by playing the bot on, nothing edited).
+const [
+  STRATEGY = 'rush',
+  SEED_ARG = '1',
+  PARTY_ARG = '2',
+  RUN_ID = 'smoke-no-ghost-boss',
+] = process.argv.slice(2);
+const SEED = Number(SEED_ARG);
+const PLAYERS = ['You', 'Player 2'].slice(0, Number(PARTY_ARG));
 const ctx = loadSimContext();
 const deps = createGameDeps(
   ctx.content,
@@ -27,12 +36,12 @@ const createArgs = {
   runId: RUN_ID,
   runVersion: '1.0',
   seed: SEED,
-  players: ['You', 'Player 2'],
+  players: PLAYERS,
   host: 0,
 };
 // The bot stops once the round counter passes 6: the first step of round 7.
 const { state } = playBotRun(deps, createArgs, {
-  strategy: 'rush',
+  strategy: STRATEGY,
   seed: SEED,
   rerollCost: ctx.economy.rerollCost,
   maxRounds: 6,
