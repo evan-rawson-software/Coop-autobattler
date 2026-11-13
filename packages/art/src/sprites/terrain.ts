@@ -39,6 +39,22 @@ function scatter(
 }
 
 /**
+ * Speck counts per ground variant: [light, dark]. They differ on purpose.
+ * With the same count in every variant, the minimum-gap scatter gives every
+ * tile the same even density, and a field of them shows a faint lattice at
+ * the 16 px period. Uneven counts (and a gap that lets specks sit close)
+ * give clumps and bare patches instead, and the average is below the old 11.
+ */
+const GROUND_SPECKS: readonly (readonly [number, number])[] = [
+  [3, 2],
+  [5, 3],
+  [2, 4],
+  [4, 4],
+  [3, 5],
+  [5, 2],
+];
+
+/**
  * Buildable ground: a flat green-slate base with a few single-pixel specks,
  * deliberately low contrast (only the neighbouring shades of the ground
  * ramp), so tiles can be placed at random without a visible pattern. Variants
@@ -49,8 +65,9 @@ function groundTile(seed: number, variant: number): Pix {
   const r = rng(seed);
   p.rect(0, 0, T, T, 'c');
   const taken: [number, number][] = [];
-  scatter(p, r, 6, 'b', taken);
-  scatter(p, r, 5, 'd', taken);
+  const [light, dark] = GROUND_SPECKS[variant % GROUND_SPECKS.length] ?? [4, 4];
+  scatter(p, r, light, 'b', taken, 2);
+  scatter(p, r, dark, 'd', taken, 2);
   if (variant >= 3) {
     for (let i = 0; i < 2; i++) {
       const x = Math.floor(r() * T);
@@ -63,14 +80,25 @@ function groundTile(seed: number, variant: number): Pix {
   return p;
 }
 
+/** Speck counts per neutral variant: [light, dark]; uneven for the same reason as the ground. */
+const NEUTRAL_SPECKS: readonly (readonly [number, number])[] = [
+  [6, 3],
+  [8, 2],
+  [4, 4],
+  [5, 3],
+];
+
 /** Neutral-zone ground: a dusty violet-brown, a touch rougher. */
 function neutralTile(seed: number, variant: number): Pix {
   const p = new Pix(T, T);
   const r = rng(seed);
   p.rect(0, 0, T, T, 'f');
   const taken: [number, number][] = [];
-  scatter(p, r, 9, 'g', taken, 2);
-  scatter(p, r, 4, 'a', taken, 3);
+  const [light, dark] = NEUTRAL_SPECKS[variant % NEUTRAL_SPECKS.length] ?? [
+    6, 3,
+  ];
+  scatter(p, r, light, 'g', taken, 2);
+  scatter(p, r, dark, 'a', taken, 2);
   if (variant === 3) {
     // A short hairline crack that wraps.
     let x = Math.floor(r() * T);
@@ -102,6 +130,64 @@ function waterTile(frame: number): Pix {
   const p = new Pix(T, T);
   for (let y = 0; y < T; y++)
     for (let x = 0; x < T; x++) p.set(x, y, waterAt(x, y, frame));
+  return p;
+}
+
+export const LAKE_FILL_VARIANTS = 4;
+
+/** [strokes, dots] per lake fill variant; uneven so the fills differ in density. */
+const FILL_FEATURES: readonly (readonly [number, number])[] = [
+  [3, 6],
+  [4, 4],
+  [3, 7],
+  [4, 5],
+];
+
+/**
+ * Interior water for cells with all eight neighbours in the lake: plain water
+ * with a few wave strokes and dark dots at different spots in each variant.
+ * The outermost pixel ring stays plain water, so every variant joins every
+ * other, and the autotile edge frames, without a seam, and no feature
+ * lines up on the tile border. Features keep a one-pixel margin from each other.
+ */
+function lakeFill(variant: number): Pix {
+  const p = new Pix(T, T);
+  p.rect(0, 0, T, T, 'w');
+  const r = rng(301 + variant * 13);
+  const used = new Set<number>();
+  const free = (x0: number, y0: number, w: number, h: number): boolean => {
+    for (let y = y0 - 1; y <= y0 + h; y++)
+      for (let x = x0 - 1; x <= x0 + w; x++)
+        if (used.has(y * T + x)) return false;
+    return true;
+  };
+  const claim = (x0: number, y0: number, w: number, h: number): void => {
+    for (let y = y0; y < y0 + h; y++)
+      for (let x = x0; x < x0 + w; x++) used.add(y * T + x);
+  };
+  const [strokes, dots] = FILL_FEATURES[variant % FILL_FEATURES.length] ?? [
+    2, 2,
+  ];
+  for (let n = 0; n < strokes; n++)
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const len = 3 + Math.floor(r() * 2);
+      const x = 2 + Math.floor(r() * (T - 4 - len));
+      const y = 2 + Math.floor(r() * (T - 5));
+      if (!free(x, y, len, 2)) continue;
+      claim(x, y, len, 2);
+      for (let i = 0; i < len; i++) p.set(x + i, y, 'v');
+      p.set(x + 1, y + 1, 'u');
+      break;
+    }
+  for (let n = 0; n < dots; n++)
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const x = 1 + Math.floor(r() * (T - 2));
+      const y = 1 + Math.floor(r() * (T - 2));
+      if (!free(x, y, 1, 1)) continue;
+      claim(x, y, 1, 1);
+      p.set(x, y, 'W');
+      break;
+    }
   return p;
 }
 
@@ -361,6 +447,13 @@ export function terrainSprites(): SpriteDef[] {
     frames: [waterTile(0), waterTile(1)],
     fps: 2,
     note: 'Open water, 2 frames, tiles seamlessly.',
+  });
+  add({
+    name: 'ter_lake_fill',
+    sheet: 'tiles',
+    category: 'terrain',
+    frames: Array.from({ length: LAKE_FILL_VARIANTS }, (_, i) => lakeFill(i)),
+    note: 'Interior water for a lake cell with all 8 neighbours in the lake (blob mask 255), 4 static variants that join each other and the autotile edges. Pick a variant per cell, like ground. Not animated.',
   });
   add({
     name: 'ter_cliff',

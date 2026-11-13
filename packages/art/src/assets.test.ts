@@ -305,7 +305,7 @@ describe('no tiling stripes', () => {
 
   test('tileable terrain has no flat stripe when tiled 4x4', () => {
     for (const [name, sp] of Object.entries(committed.sprites)) {
-      if (!/^(ground_|neutral_|ter_water)/.test(name)) continue;
+      if (!/^(ground_|neutral_|ter_water|ter_lake_fill)/.test(name)) continue;
       for (let f = 0; f < sp.frames; f++)
         expect(flatLines(sp, f, 4), `${name} frame ${String(f)}`).toEqual([]);
     }

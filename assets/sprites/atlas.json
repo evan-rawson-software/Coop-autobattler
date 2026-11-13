@@ -346,10 +346,25 @@
       "id": "ter_lake",
       "note": "Open water, 2 frames, tiles seamlessly."
     },
+    "ter_lake_fill": {
+      "sheet": "tiles",
+      "x": 0,
+      "y": 96,
+      "w": 16,
+      "h": 16,
+      "frames": 4,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "terrain",
+      "note": "Interior water for a lake cell with all 8 neighbours in the lake (blob mask 255), 4 static variants that join each other and the autotile edges. Pick a variant per cell, like ground. Not animated."
+    },
     "ter_cliff": {
       "sheet": "tiles",
-      "x": 288,
-      "y": 0,
+      "x": 64,
+      "y": 96,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -364,8 +379,8 @@
     },
     "ground_1": {
       "sheet": "tiles",
-      "x": 304,
-      "y": 0,
+      "x": 80,
+      "y": 96,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -379,7 +394,7 @@
     },
     "ground_2": {
       "sheet": "tiles",
-      "x": 0,
+      "x": 96,
       "y": 96,
       "w": 16,
       "h": 16,
@@ -394,7 +409,7 @@
     },
     "ground_3": {
       "sheet": "tiles",
-      "x": 16,
+      "x": 112,
       "y": 96,
       "w": 16,
       "h": 16,
@@ -409,7 +424,7 @@
     },
     "ground_4": {
       "sheet": "tiles",
-      "x": 32,
+      "x": 128,
       "y": 96,
       "w": 16,
       "h": 16,
@@ -424,7 +439,7 @@
     },
     "ground_5": {
       "sheet": "tiles",
-      "x": 48,
+      "x": 144,
       "y": 96,
       "w": 16,
       "h": 16,
@@ -439,7 +454,7 @@
     },
     "ground_6": {
       "sheet": "tiles",
-      "x": 64,
+      "x": 160,
       "y": 96,
       "w": 16,
       "h": 16,
@@ -454,7 +469,7 @@
     },
     "neutral_1": {
       "sheet": "tiles",
-      "x": 80,
+      "x": 176,
       "y": 96,
       "w": 16,
       "h": 16,
@@ -469,7 +484,7 @@
     },
     "neutral_2": {
       "sheet": "tiles",
-      "x": 96,
+      "x": 192,
       "y": 96,
       "w": 16,
       "h": 16,
@@ -484,7 +499,7 @@
     },
     "neutral_3": {
       "sheet": "tiles",
-      "x": 112,
+      "x": 208,
       "y": 96,
       "w": 16,
       "h": 16,
@@ -499,7 +514,7 @@
     },
     "neutral_4": {
       "sheet": "tiles",
-      "x": 128,
+      "x": 224,
       "y": 96,
       "w": 16,
       "h": 16,
@@ -514,7 +529,7 @@
     },
     "node_res_a": {
       "sheet": "tiles",
-      "x": 144,
+      "x": 240,
       "y": 96,
       "w": 16,
       "h": 16,
@@ -530,7 +545,7 @@
     },
     "node_res_b": {
       "sheet": "tiles",
-      "x": 176,
+      "x": 272,
       "y": 96,
       "w": 16,
       "h": 16,
@@ -546,8 +561,8 @@
     },
     "node_res_c": {
       "sheet": "tiles",
-      "x": 208,
-      "y": 96,
+      "x": 0,
+      "y": 112,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -562,8 +577,8 @@
     },
     "conduit_straight": {
       "sheet": "tiles",
-      "x": 240,
-      "y": 96,
+      "x": 32,
+      "y": 112,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -578,8 +593,8 @@
     },
     "conduit_corner": {
       "sheet": "tiles",
-      "x": 256,
-      "y": 96,
+      "x": 48,
+      "y": 112,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -594,8 +609,8 @@
     },
     "conduit_t": {
       "sheet": "tiles",
-      "x": 272,
-      "y": 96,
+      "x": 64,
+      "y": 112,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -610,8 +625,8 @@
     },
     "conduit_cross": {
       "sheet": "tiles",
-      "x": 288,
-      "y": 96,
+      "x": 80,
+      "y": 112,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -626,8 +641,8 @@
     },
     "conduit_end": {
       "sheet": "tiles",
-      "x": 304,
-      "y": 96,
+      "x": 96,
+      "y": 112,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -642,7 +657,7 @@
     },
     "conduit_item": {
       "sheet": "tiles",
-      "x": 0,
+      "x": 112,
       "y": 112,
       "w": 16,
       "h": 16,

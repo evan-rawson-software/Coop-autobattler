@@ -27,7 +27,13 @@ import {
   conduitPiece,
   sideBit,
 } from './conduit-piece.js';
-import { cellHash, groundName, mapSalt, neutralName } from './variants.js';
+import {
+  cellHash,
+  groundName,
+  lakeFillFrame,
+  mapSalt,
+  neutralName,
+} from './variants.js';
 
 const cells = (list: [number, number][]) => {
   const set = new Set(list.map(([x, y]) => `${String(x)},${String(y)}`));
@@ -202,6 +208,20 @@ describe('deterministic ground variants', () => {
       for (let x = 0; x < 10; x++)
         if (groundName(x, y, salt) !== groundName(x, y, other)) diff++;
     expect(diff).toBeGreaterThan(20);
+  });
+});
+
+describe('lake fill variants', () => {
+  test('every variant is used, deterministically, and exists in the atlas', () => {
+    const salt = mapSalt(24, 16, 1, 24);
+    const seen = new Set<number>();
+    for (let y = 0; y < 12; y++)
+      for (let x = 0; x < 12; x++) {
+        const f = lakeFillFrame(x, y, salt);
+        expect(f).toBe(lakeFillFrame(x, y, salt));
+        seen.add(f);
+      }
+    expect(seen.size).toBe(atlasJson.sprites.ter_lake_fill.frames);
   });
 });
 

@@ -134,6 +134,7 @@ planned unit or building to content removes the flag by itself (tested).
 | `unit_<id>`                | Neutral unit, idle (1 frame). `.walk` is 2 frames, `.attack` 2 frames (wind-up, strike). |
 | `unit_<id>@a`, `@b`        | Same, pre-tinted for side A (faces north) and side B (faces south).  |
 | `ter_lake`, `ter_cliff`    | Terrain ids. `ter_lake_auto` and `ter_cliff_auto` are 47-frame autotile sets, see below. Draw over ground. |
+| `ter_lake_fill`            | 4 static variants of interior water for a lake cell whose 8 neighbours are all lake (mask 255). Pick one per cell with a hash; they join each other and the autotile edges. |
 | `ground_1..6`, `neutral_1..4` | Seamless buildable and neutral-zone ground. Pick a variant at random per cell. |
 | `node_<res id>`            | Resource node, pre-tinted from the resource colour; each resource has its own shape. |
 | `conduit_straight`, `_corner`, `_t`, `_cross`, `_end`, `conduit_item` | Neutral conduits. Open sides: straight N+S, corner N+E, t E+S+W, cross all, end S only. Rotate by quarter turns for the other orientations. |
@@ -190,7 +191,9 @@ TileSet settings:
   With `animation_columns` left at 0 the frames are read as one horizontal line,
   which is how they are stored.
 - Ground and neutral variants: add each as its own tile and set
-  `TileData.probability` so a random one is placed per cell.
+  `TileData.probability` so a random one is placed per cell. The four
+  `ter_lake_fill` frames are separate tiles with a probability too, used for
+  lake cells with all eight neighbours in the lake.
 - Autotiles: use a terrain set in "Match Corners and Sides" mode. For each tile
   set `TileData.terrain_set` and `TileData.terrain` FIRST; peering bits can only
   be set on a tile that already belongs to a terrain set, and Godot rejects or
