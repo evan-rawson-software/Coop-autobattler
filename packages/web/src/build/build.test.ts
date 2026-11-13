@@ -102,6 +102,10 @@ describe('reason messages', () => {
     ).toContain('could not be saved');
   });
 
+  test('an inherited property name is not a reason', () => {
+    expect(shopReason('constructor')).toBe('Not allowed (constructor).');
+  });
+
   test('covers placement, core, stash and conduit reasons from core', () => {
     const listed = [
       // PlacementReason
