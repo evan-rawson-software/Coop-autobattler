@@ -809,7 +809,7 @@ function plausibility(
   ctx: GhostValidationContext,
   errors: string[],
 ): void {
-  const value = teamBuildingValue(s.team, ctx.content);
+  // Gold cannot be given (CP-29), so the bound applies to each owner (PP-17).
   const bound = ghostValueBound(
     s.round,
     s.partySize,
@@ -817,10 +817,20 @@ function plausibility(
     ctx.economy,
     ctx.events,
   );
-  if (value > bound.limit) {
-    errors.push(
-      `team: building value ${String(value)} is more than the ${String(bound.limit)} possible by round ${String(s.round)}.`,
+  const ownerLimit = bound.goldPerPlayer + bound.kitPerPlayer;
+  const values = new Map<number, number>();
+  for (const b of [...s.team.buildings, ...s.team.stash]) {
+    values.set(
+      b.owner,
+      (values.get(b.owner) ?? 0) + tierPrice(ctx.content, b.def, b.tier),
     );
+  }
+  for (const [owner, value] of [...values].sort((x, y) => x[0] - y[0])) {
+    if (value > ownerLimit) {
+      errors.push(
+        `owner ${String(owner)}: building value ${String(value)} is more than the ${String(ownerLimit)} possible by round ${String(s.round)}.`,
+      );
+    }
   }
   const tiers = ghostTierBound(s.round, ctx.economy, ctx.events);
   const excess = new Map<number, number>();

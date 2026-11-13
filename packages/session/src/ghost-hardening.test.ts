@@ -647,6 +647,50 @@ describe('item 3: tier plausibility', () => {
     if (!r.ok) expect(r.errors.join(' ')).toContain('player 0');
   });
 
+  test('the value bound is per owner: one rich owner is rejected although the team total is within the team bound (PP-17)', () => {
+    const ctx = ctxOf(
+      makeGameDeps({
+        ghosts: { ownerId: 'x' },
+        battle: fixedBattle(true),
+        rules: RULES,
+      }),
+    );
+    const run = botRun(
+      botDeps('two'),
+      argsFor('two', 4, ['A', 'B']),
+      1,
+      atRound(1),
+    );
+    const base = run.snapshots[0] as GhostSnapshot;
+    const bound = ghostValueBound(1, 2, content, econ, events);
+    const ownerLimit = bound.goldPerPlayer + bound.kitPerPlayer;
+    expect(bound.limit).toBe(2 * ownerLimit);
+    const price = tierPrice(content, 'bld_wall', 1);
+    const fits = Math.floor(ownerLimit / price);
+    const stashOf = (counts: [number, number]) => {
+      const t = loose(base);
+      t.team.buildings = [];
+      t.team.stash = [];
+      let id = 1;
+      counts.forEach((n, owner) => {
+        for (let i = 0; i < n; i++) {
+          t.team.stash.push({ id: id++, def: 'bld_wall', tier: 1, owner });
+        }
+      });
+      t.team['nextId'] = id;
+      return t as unknown as GhostSnapshot;
+    };
+    // Everyone at or under the per-owner bound passes.
+    expect(validateGhostSnapshot(stashOf([fits, fits]), ctx).ok).toBe(true);
+    // Owner 0 above the bound, the total still within the old team bound.
+    const over = stashOf([fits + 1, 0]);
+    expect((fits + 1) * price).toBeGreaterThan(ownerLimit);
+    expect((fits + 1) * price).toBeLessThanOrEqual(bound.limit);
+    const r = validateGhostSnapshot(over, ctx);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(' ')).toMatch(/owner 0: building value/);
+  });
+
   test('fuzz: snapshots of buying, upgrading runs are never falsely rejected', () => {
     let checked = 0;
     let withRaises = 0;
@@ -933,6 +977,38 @@ describe('item 5: the compact log form of select_ghost', () => {
       candidates: [],
     };
     expectFail(replayRun(args, old, deps), 'candidates form');
+  });
+
+  test('a logged chosen snapshot of an older format is rejected as unsupported, in the entry and in replayRun', () => {
+    const all = pool(3);
+    const { deps, args, run } = play(all, true, 3);
+    const log = clone(run.state.actionLog);
+    const at = log.findIndex(
+      (l) => (l.intent as { type: string }).type === SELECT_GHOST,
+    );
+    const entry = log[at] as { n: number; intent: Record<string, unknown> };
+    const chosen = entry.intent['chosen'] as Record<string, unknown>;
+    expect(chosen['formatVersion']).toBe(6);
+    expect(replayRun(args, clone(log), deps).ok).toBe(true);
+    for (const old of [5, 4, 1]) {
+      const tampered = { ...clone(chosen), formatVersion: old };
+      // The snapshot itself is refused as unsupported ...
+      const shape = validateGhostSnapshot(clone(tampered), ctxOf(deps));
+      expect(shape.ok).toBe(false);
+      expect(shape.ok ? '' : shape.errors.join()).toMatch(/unsupported/);
+      // ... and so is the logged entry, even with its hash fixed up.
+      const copy = clone(log);
+      const i = (copy[at] as { intent: Record<string, unknown> }).intent;
+      i['chosen'] = tampered;
+      i['chosenHash'] = hashJson(tampered);
+      const r = replayRun(args, copy, deps);
+      expect(r.ok, String(old)).toBe(false);
+      if (!r.ok) {
+        expect(r.reason).toBe('replay_mismatch');
+        expect(r.at).toBe(entry.n);
+        expect(JSON.stringify(r)).toMatch(/unsupported/);
+      }
+    }
   });
 
   test('the compact form is refused live: nobody names their opponent', () => {
