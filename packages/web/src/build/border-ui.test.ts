@@ -8,6 +8,7 @@ import {
   ownSpotAt,
   ownSpots,
 } from './border-links.js';
+import { sideMarkers } from './sides.js';
 import { BuildController, conduitAt } from './build-controller.js';
 import { BuildSession } from './session.js';
 import { simConfig } from './setup.js';
@@ -176,6 +177,114 @@ describe('border links in the Build screen', () => {
     expect(linkText(st[0] as HalfStatus, (p) => `P${String(p)}`)).toContain(
       'Cannot join',
     );
+  });
+});
+
+// Player `p` puts a stashed extractor on `node` and draws a sending half out
+// of it to their border spot in row `y`, all through the controller.
+async function drawSend(
+  s: BuildSession,
+  ctl: BuildController,
+  p: 0 | 1,
+  node: Cell,
+  y: number,
+): Promise<Cell> {
+  s.setActing(p);
+  const w = s.run.team.map.plotWidth;
+  const ex = s.run.team.stash.find(
+    (b) => b.owner === p && b.def === 'bld_extractor',
+  );
+  if (ex === undefined) throw new Error('no extractor');
+  const placed = await s.dispatch({
+    type: 'place_building',
+    id: ex.id,
+    x: node.x,
+    y: node.y,
+    rotation: 0,
+  });
+  if (!placed.ok) throw new Error(placed.reason);
+  const start = sideMarkers(s.run.team, content, 'out', ex.id).flatMap(
+    (m) => m.cells,
+  )[0];
+  if (start === undefined) throw new Error('no output marker');
+  const spot = { x: p === 0 ? w - 1 : w, y };
+  ctl.setTool('conduit');
+  click(ctl, start); // the output marker starts the draft
+  click(ctl, spot); // the border spot ends it
+  await settle();
+  return spot;
+}
+
+describe('refused border halves and acting switches', () => {
+  test('a wrong border and a spot in use are refused and the draft stays usable', async () => {
+    const { s, ctl } = await start();
+    const w = s.run.team.map.plotWidth;
+    const node = s.run.team.map.nodes.find((n) => n.x === w - 1 && n.y === 5);
+    if (node === undefined) throw new Error('map changed: no node at border');
+    const spot = await drawSend(s, ctl, 0, node, 6);
+    expect(s.run.team.conduits).toHaveLength(1);
+
+    // Spot in use: a receiving draft cannot start on the taken spot.
+    click(ctl, spot);
+    await settle();
+    expect(s.run.team.conduits).toHaveLength(1);
+    expect(ctl.model.get().ui.status.kind).toBe('error');
+
+    // Wrong border: the neighbour's spot is not the acting player's.
+    expect(ownSpotAt(s.run.team, 0, { x: w, y: 4 })).toBeNull();
+    click(ctl, { x: w, y: 4 });
+    await settle();
+    expect(s.run.team.conduits).toHaveLength(1);
+    expect(ctl.model.get().ui.draft).toBeNull();
+
+    // The tool still works: erase the own half, then draw it again.
+    ctl.setTool('erase');
+    click(ctl, spot);
+    await settle();
+    expect(s.run.team.conduits).toHaveLength(0);
+    ctl.setTool('conduit');
+    click(ctl, spot);
+    await settle();
+    expect(ctl.model.get().ui.draft).not.toBeNull();
+    expect(ctl.model.get().ui.status.kind).toBe('info');
+  });
+
+  test('undo and redo of a border half do not cross a switch of the acting player', async () => {
+    const { s, ctl } = await start();
+    const w = s.run.team.map.plotWidth;
+    const node = s.run.team.map.nodes.find((n) => n.x === w - 1 && n.y === 5);
+    if (node === undefined) throw new Error('map changed: no node at border');
+    await drawSend(s, ctl, 0, node, 6);
+    expect(s.store.get().undoCount).toBe(1);
+    expect(await s.undo()).toEqual({ ok: true });
+    expect(s.run.team.conduits).toHaveLength(0);
+    expect(s.store.get().redoCount).toBe(1);
+
+    // Switching clears both stacks: nothing to redo, and nothing for player 1.
+    s.setActing(1);
+    expect(s.store.get().redoCount).toBe(0);
+    expect(await s.redo()).toBeNull();
+    s.setActing(0);
+    expect(await s.redo()).toBeNull();
+    expect(s.run.team.conduits).toHaveLength(0);
+  });
+
+  test('halves of the same kind drawn through the controller are not joined', async () => {
+    const { s, ctl } = await start();
+    const t = s.run.team;
+    const w = t.map.plotWidth;
+    const n0 = t.map.nodes.find((n) => n.x === w - 1 && n.y === 5);
+    const n1 = t.map.nodes.find((n) => n.x > w && n.x < 2 * w);
+    if (n0 === undefined || n1 === undefined) {
+      throw new Error('map changed: no node');
+    }
+    await drawSend(s, ctl, 0, n0, 6);
+    await drawSend(s, ctl, 1, n1, 6);
+    const halves = halfStatuses(s.run.team);
+    expect(halves.map((h) => [h.owner, h.kind, h.state])).toEqual([
+      [0, 'send', 'same_kind'],
+      [1, 'send', 'same_kind'],
+    ]);
   });
 });
 

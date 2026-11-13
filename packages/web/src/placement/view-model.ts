@@ -161,7 +161,10 @@ export function legalSet(
   team: TeamState,
   content: WebContent,
   player: number,
+  ready = false,
 ): Set<number> {
+  // A Ready player's Core is locked: no spot is offered.
+  if (ready) return new Set();
   const w = team.map.width;
   return new Set(
     listLegalCorePositions(team.map, content, content.mapgen, player).map(

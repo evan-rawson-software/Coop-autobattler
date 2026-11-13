@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { type EnemyPath } from '@game/core';
+import { listLegalCorePositions, type EnemyPath } from '@game/core';
+import { BuildSession } from '../build/session.js';
+import { pendingCoreSpots } from '../build/view-model.js';
 import { economy, simConfig } from '../build/setup.js';
 import { content } from '../content.js';
 import { legalCore, newRun, send } from '../run/test-run.js';
@@ -33,6 +35,11 @@ describe('legal and illegal Core positions', () => {
         text: null,
       });
     }
+  });
+
+  test('a Ready player is offered no spots', () => {
+    expect(legalSet(team, content, 0, true).size).toBe(0);
+    expect(legalSet(team, content, 0, false).size).toBe(legal.length);
   });
 
   test('every illegal cell has a reason in plain words', () => {
@@ -202,5 +209,29 @@ describe('choiceAnnouncement', () => {
       'Core spot chosen: column 3, row 4.',
     );
     expect(choiceAnnouncement({ x: 3, y: 4 }, true)).toMatch(/You are Ready/);
+  });
+});
+
+describe('the Core screen after a switch of the acting player', () => {
+  test('a refusal and a chosen spot belong to one player', async () => {
+    const s = await BuildSession.start(7, Date.now, ['Ann', 'Bo']);
+    const pos = listLegalCorePositions(
+      s.run.team.map,
+      content,
+      content.mapgen,
+      0,
+    )[0];
+    if (pos === undefined) throw new Error('no spot');
+    await s.dispatch({ type: 'place_core', x: pos.x, y: pos.y });
+    const chosen = (p: number) =>
+      pendingCoreSpots(s.run.pending).find((c) => c.player === p) ?? null;
+    const stored = { acting: 0, text: 'Not there.' };
+    expect(chosen(0)).toMatchObject(pos);
+    expect(visibleProblem(stored, 0)).toBe('Not there.');
+    s.setActing(1);
+    expect(chosen(1)).toBeNull();
+    expect(visibleProblem(stored, 1)).toBeNull();
+    s.setActing(0);
+    expect(chosen(0)).toMatchObject(pos);
   });
 });

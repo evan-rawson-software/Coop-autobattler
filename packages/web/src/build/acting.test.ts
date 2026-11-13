@@ -145,4 +145,48 @@ describe('acting player', () => {
     expect(s.acting).toBe(1);
     expect(s.store.get().acting).toBe(1);
   });
+
+  test('switching the acting player clears undo and redo', async () => {
+    const s = await pair();
+    await placeBoth(s);
+    s.setActing(0);
+    const item = s.run.team.stash.find((b) => b.owner === 0);
+    if (item === undefined) throw new Error('no stash');
+    const w = s.run.team.map.plotWidth;
+    let cell: { x: number; y: number } | null = null;
+    for (let y = 0; y < s.run.team.map.height && cell === null; y++) {
+      for (let x = 0; x < w && cell === null; x++) {
+        const args = { id: item.id, x, y, rotation: 0 };
+        if (previewPlace(s.run.team, content, args, 0).ok) cell = { x, y };
+      }
+    }
+    if (cell === null) throw new Error('no legal cell');
+    expect(
+      await s.act({ t: 'place', id: item.id, ...cell, rotation: 0 }),
+    ).toEqual({ ok: true });
+    expect(s.store.get().undoCount).toBe(1);
+    s.setActing(1);
+    expect(s.store.get().undoCount).toBe(0);
+    expect(await s.undo()).toBeNull();
+    s.setActing(0);
+    expect(await s.undo()).toBeNull();
+    expect(s.run.team.buildings.some((b) => b.id === item.id)).toBe(true);
+  });
+
+  test('Ready belongs to the acting player', async () => {
+    const s = await pair();
+    const ctl = new BuildController();
+    ctl.attach(s);
+    const pos = ctl.legalCorePositions[0];
+    if (pos === undefined) throw new Error('no spot');
+    await s.dispatch({ type: 'place_core', x: pos.x, y: pos.y });
+    await s.dispatch({ type: 'ready' });
+    expect(s.run.perPlayer[0]?.ready).toBe(true);
+    expect(s.run.perPlayer[1]?.ready).not.toBe(true);
+    expect(ctl.legalCorePositions).toEqual([]);
+    s.setActing(1);
+    expect(ctl.legalCorePositions.length).toBeGreaterThan(0);
+    s.setActing(0);
+    expect(ctl.legalCorePositions).toEqual([]);
+  });
 });
