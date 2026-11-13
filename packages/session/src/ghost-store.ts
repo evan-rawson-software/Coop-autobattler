@@ -65,7 +65,7 @@ export interface GhostStore {
    * snapshots of `keepVersion` or a newer version and the save counter are
    * left alone, and a malformed `keepVersion` removes nothing.
    */
-  removeOtherVersions(keepVersion: string): Promise<void>;
+  removeOlderVersions(keepVersion: string): Promise<void>;
 }
 
 /** The game version of a bucket key (`version|partySize|round`). */
@@ -227,7 +227,7 @@ export function createMemoryGhostStore(
       counter = 0;
       return Promise.resolve();
     },
-    removeOtherVersions(keepVersion) {
+    removeOlderVersions(keepVersion) {
       for (const [key, i] of [...items]) {
         if (isLowerBucketVersion(i.bucket, keepVersion)) items.delete(key);
       }
