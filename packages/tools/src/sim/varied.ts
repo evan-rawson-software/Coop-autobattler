@@ -99,8 +99,8 @@ function mix(a: number, b: number, c: number): number {
  * A dense factory on a flat map of `party` plots (24 x 16 cells each): up to
  * 12 modules per plot (extractor, splitter, two barracks), each kept with
  * probability `keepPercent` and given a tier between `tierLow` and `tierHigh`
- * by a fixed mix of `variant`; the Core is the `corePick`-th legal position
- * (modulo the count) after the modules are placed.
+ * by a fixed mix of `variant`; every player's Core is the `corePick`-th legal
+ * position of their plot (modulo the count) after the modules are placed.
  */
 export function denseVariant(
   ctx: SimContext,
@@ -186,20 +186,26 @@ export function denseVariant(
       link(sp, 'east', b, 'west', [[x0 + 1, y0 + 3]]);
     }
   }
-  const legal = Array.from({ length: state.map.partySize }, (_, player) =>
-    listLegalCorePositions(state.map, ctx.content, ctx.mapgen, player).map(
-      (pos) => ({ ...pos, player }),
-    ),
-  )
-    .flat()
-    .sort((a, b) => a.y - b.y || a.x - b.x);
-  for (let t = 0; t < legal.length; t++) {
-    const pos = legal[(corePick + t) % legal.length];
-    if (pos === undefined) break;
-    const c = placeCore(state, ctx.content, ctx.mapgen, pos.player, pos);
-    if (c.ok) return c.state;
+  // One Core per player (a battle needs every player's Core): each takes the
+  // `corePick`-th legal position of their own plot, or the next one that fits.
+  for (let player = 0; player < state.map.partySize; player++) {
+    const legal = [
+      ...listLegalCorePositions(state.map, ctx.content, ctx.mapgen, player),
+    ].sort((a, b) => a.y - b.y || a.x - b.x);
+    let placed = false;
+    for (let t = 0; t < legal.length && !placed; t++) {
+      const pos = legal[(corePick + t) % legal.length];
+      if (pos === undefined) break;
+      const c = placeCore(state, ctx.content, ctx.mapgen, player, pos);
+      if (c.ok) {
+        state = c.state;
+        placed = true;
+      }
+    }
+    if (!placed)
+      return fail('core', `no legal position for player ${String(player)}`);
   }
-  return fail('core', 'no legal position');
+  return state;
 }
 
 /** The dense boards: six variants per party size, tiers 1 to 3. */
