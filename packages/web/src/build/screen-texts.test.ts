@@ -136,6 +136,11 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ],
   ['problemNothingFeeding', { name: 'Mill' }, 'Mill has nothing feeding it.'],
   [
+    'problemStalled',
+    { name: 'Mill', percent: '97' },
+    'Mill is connected but stalled for 97% of the dry run: its output backs up unused.',
+  ],
+  [
     'problemStarved',
     { name: 'Mill', resource: 'Ore' },
     'Mill receives no Ore in the dry run.',
@@ -150,7 +155,15 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     { count: '3' },
     '3 building in the stash could be placed.',
   ],
+  ['rateOnBoard', { rate: '0.40' }, '0.40/s'],
   ['readyLock', {}, 'Ready — press Unready to make changes.'],
+  ['linkActive', {}, 'carrying'],
+  ['linkIdle', {}, 'idle'],
+  [
+    'inspectorStalled',
+    { percent: '97' },
+    'Backs up: stalled for 97% of the dry run, so output goes unused',
+  ],
   [
     'sealedBlockedMany',
     { labels: 'Barracks (column 3, row 5)', hint: 'Hint.' },
@@ -279,7 +292,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
 ];
 
 const OWNED =
-  /^(status|battle|sealed|readyLock|problemNothing|problemNoConduit|problemStarved|problemFreeNodes|problemStash|eventWaiting)/;
+  /^(status|battle|sealed|readyLock|problemNothing|problemNoConduit|problemStalled|problemStarved|inspectorStalled|linkActive|linkIdle|rateOnBoard|problemFreeNodes|problemStash|eventWaiting)/;
 
 describe('screen texts are pinned key by key', () => {
   test.each(TABLE)('%s', (key, values, expected) => {
