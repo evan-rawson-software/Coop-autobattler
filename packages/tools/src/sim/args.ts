@@ -74,6 +74,14 @@ export type Command =
       readonly time: boolean;
     }
   | {
+      readonly kind: 'stage';
+      /** Rounds 1..rounds are fought. */
+      readonly rounds: number;
+      /** Seeds 1..seeds per threat. */
+      readonly seeds: number;
+      readonly time: boolean;
+    }
+  | {
       readonly kind: 'ghosts';
       /** Where to write the file; null: the bundled file in the repository. */
       readonly out: string | null;
@@ -101,6 +109,18 @@ Commands:
             with seeds seed .. seed+count-1; report depth reached, win rate by
             round, where each run ended and the number of rejected intents
             (exit code 1 if any, or with --verify if a replay differs).
+            Also per strategy: how battles ended (PvE and boss/PvP), the share
+            that reached Overload, the share of ticks the party's producers and
+            turrets waited for resources, units made against top-speed output,
+            and (party of 2+) what losing the first Core means. Every battle is
+            replayed tick by tick for this, so large --count values are slow.
+  stage   [--rounds N] [--seeds N]
+            Build five solo boards by hand (the starting kit, half a board, and
+            a full board at tiers 1, 2 and 3) on the map of seed 5, fight each
+            against generated threats (easy, medium, hard with every archetype,
+            and the boss; defaults: 12 rounds, 6 seeds) and print the last round
+            each still wins at least half of its battles, plus soldiers made
+            per 1000 ticks. Slow (a few minutes with the defaults).
   ghosts  [--out FILE] [--check]
             Play bot runs with ghosts on and write their PvP snapshots to the
             bundled ghost file (default packages/web/src/run/bundled-ghosts.json).
@@ -147,6 +167,7 @@ const FLAGS: Readonly<Record<string, readonly string[]>> = {
     'time',
   ],
   bot: ['strategy', 'count', 'seed', 'party', 'max-rounds', 'verify', 'time'],
+  stage: ['rounds', 'seeds', 'time'],
   ghosts: ['out', 'check', 'time'],
 };
 /** The largest seed (an unsigned 32-bit integer, as core requires). */
@@ -319,6 +340,13 @@ export function parseArgs(argv: readonly string[]): Command {
         time,
       };
     }
+    case 'stage':
+      return {
+        kind: 'stage',
+        rounds: parseInteger('rounds', flags.get('rounds') ?? '12', 1, 63),
+        seeds: parseInteger('seeds', flags.get('seeds') ?? '6', 1, 100),
+        time,
+      };
     case 'ghosts':
       return {
         kind: 'ghosts',

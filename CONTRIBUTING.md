@@ -67,6 +67,7 @@ pnpm sim pve --team boards/rush.json --archetype rusher --type medium --round 3 
 pnpm sim batch --a rush --b fortify --count 300 --seed 1 [--time]
 pnpm sim batch --a siege --archetype fortress --round 5 --count 100
 pnpm sim bot --strategy all --count 3 --party 2 --verify
+pnpm sim stage [--rounds 12] [--seeds 6]
 pnpm sim ghosts [--check]          # same as: pnpm ghosts:update
 pnpm sim --help
 ```
@@ -84,6 +85,24 @@ pnpm sim --help
   board (`--b`) or a threat (`--archetype`) and reports win rate and the length
   distribution. The seeds must stay within 0 to 4294967295, and `--type`,
   `--round` and `--threat-seed` need `--archetype`.
+- `bot` also prints, per strategy and from a tick-by-tick replay of every
+  battle: how battles ended (PvE and boss/PvP, by end reason), the share that
+  reached Overload (`overloadStartTick`), under-supply (the share of
+  producer-ticks in which a party Barracks-type producer, or separately a
+  turret, was ready to act but did not yet hold the resources it needs), units
+  made as a share of top-speed output (one per production interval), and, for
+  parties of 2 or more, how often the side that lost a Core first lost the
+  battle. Counting needs only the tool: it wraps the run's battle resolver and
+  replays each battle, so it adds the time of one more simulation per battle.
+- `stage` builds five solo boards by hand on the map of seed 5 with the Core at
+  (11, 5): `kit` (the starting kit), `half`, and `full1`, `full2`, `full3` (all
+  six Ore and Power nodes used, 3 Barracks, 3 turrets, 7 walls, at tier 1, 2
+  and 3). It prints each board's shop value, fights each against generated
+  threats (rounds 1..`--rounds`; easy, medium and hard with every archetype, and
+  the boss, each with `--seeds` seeds) and prints the last round in which the
+  board still wins at least half of its battles, win percentages by round, and
+  the soldiers made in 1000 ticks against a passive Core. It takes about half a
+  minute with the defaults.
 
 Board files hold a team state plus a name, description, map seed and party size
 (see the rules reference, "Reference boards"); `mapSeed` and `partySize` are
