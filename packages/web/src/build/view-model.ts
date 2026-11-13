@@ -19,6 +19,7 @@ import {
   buildingEnd,
 } from '@game/core';
 import type { WebContent } from '../content.js';
+import { backedUpSources } from './overlay-marks.js';
 import { formatHundredths, needSupply, type Supply } from './rates.js';
 import { playerName, screenText } from './texts.js';
 
@@ -134,6 +135,8 @@ export interface Figures {
     readonly resource: string | null;
     readonly perSec: number;
     readonly lostPerSec: number;
+    /** Share (0-100) of the dry run a connected source was stalled, when it backs up. */
+    readonly stalledPercent: number | null;
   } | null;
   readonly derived: Derived | null;
 }
@@ -196,6 +199,13 @@ export function inspectorFigures(
         row === undefined || dry === null
           ? 0
           : round1((row.lost * tps) / Math.max(1, dry.ticks)),
+      stalledPercent:
+        dry === null ||
+        !state.conduits.some(
+          (c) => buildingEnd(c.from)?.building === building.id,
+        )
+          ? null
+          : (backedUpSources(dry).get(building.id) ?? null),
     };
   }
 
@@ -266,6 +276,7 @@ export type ProblemKind =
   | 'starved'
   | 'under_supplied'
   | 'lost_output'
+  | 'stalled_output'
   | 'stash'
   | 'free_nodes';
 
@@ -356,6 +367,26 @@ export function deriveProblems(
   }
 
   if (flow !== null) {
+    // A connected source that is stalled most of the run: supply backs up
+    // unused. Own buildings only; the lost-output case above has no conduit.
+    for (const [id, percent] of backedUpSources(flow.dry)) {
+      const b = state.buildings.find((x) => x.id === id);
+      if (b === undefined) continue;
+      if (scope !== undefined && b.owner !== scope.acting) continue;
+      if (!state.conduits.some((c) => buildingEnd(c.from)?.building === id)) {
+        continue;
+      }
+      out.push({
+        id: `stalled:${String(id)}`,
+        kind: 'stalled_output',
+        text: screenText(texts, 'problemStalled', {
+          name: name(b),
+          percent: String(percent),
+        }),
+        focus: occ.cellsOf(b)[0] ?? { x: b.x, y: b.y },
+        building: id,
+      });
+    }
     for (const c of flow.dry.consumers) {
       if (c.delivered !== 0 || !inputConnected(state, c.building, c.side)) {
         continue;

@@ -13,6 +13,7 @@ import { Panel } from '../shell/AppShell.js';
 import { ActingSwitch } from '../shell/ActingSwitch.js';
 import type { BuildController, Model, Tool } from './build-controller.js';
 import { halfStatuses, linkText } from './border-links.js';
+import { halfFlow } from './overlay-marks.js';
 import { buildingRate, formatHundredths, topSpeedWord } from './rates.js';
 import { playerName, screenText, screenTexts } from './texts.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
@@ -403,6 +404,16 @@ export function InspectorPanel(props: {
                     ? `, ${fmt(figs.produces.lostPerSec)} / sec lost (no conduit)`
                     : ''}
                 </dd>
+                {figs.produces.stalledPercent !== null ? (
+                  <>
+                    <dt>Backed up</dt>
+                    <dd data-field="stalled">
+                      {screenText(screenTexts, 'inspectorStalled', {
+                        percent: String(figs.produces.stalledPercent),
+                      })}
+                    </dd>
+                  </>
+                ) : null}
               </>
             ) : null}
             {figs?.derived != null ? (
@@ -720,6 +731,8 @@ export function BorderLinksPanel(props: {
   ctl: BuildController;
   acting: number;
   locked: boolean;
+  /** For the active / idle word of each half. */
+  flow?: FlowView | null;
 }) {
   const { run, ctl, acting } = props;
   const team = run.team;
@@ -748,6 +761,14 @@ export function BorderLinksPanel(props: {
                   {res === null
                     ? ''
                     : ` · carries ${resourceName(content, res)}`}
+                  {props.flow == null
+                    ? ''
+                    : ` · ${screenText(
+                        screenTexts,
+                        halfFlow(h, props.flow.activeConduits).active
+                          ? 'linkActive'
+                          : 'linkIdle',
+                      )}`}
                 </span>
                 <button
                   type="button"

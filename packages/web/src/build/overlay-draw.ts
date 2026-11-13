@@ -17,8 +17,16 @@ import {
   ownSpots,
   type LinkState,
 } from './border-links.js';
+import {
+  backedUpSources,
+  boardRateText,
+  halfFlow,
+  rateFontPx,
+  showRates,
+} from './overlay-marks.js';
 import { pathSegments, pathStubs } from './path-segments.js';
 import { isEditStep } from './session.js';
+import { simConfig } from './setup.js';
 import { sideMarkers, type SideMarker } from './sides.js';
 import { coreLabel } from './texts.js';
 import type { FlowView } from './view-model.js';
@@ -441,6 +449,35 @@ export function drawBuildOverlay(
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(m.glyph, p.x, p.y + 0.5);
+      // What the link carries and which way: an arrow in the resource's
+      // colour below the ring, pointing from the sending plot into the
+      // receiving one; solid when the dry run puts something through it,
+      // hollow and dashed when idle.
+      const f = halfFlow(h, d.flow?.activeConduits ?? null);
+      const resColor =
+        board?.conduits.find((c) => c.id === h.conduit)?.color ?? col.accent;
+      const s = Math.max(5, z * 0.17);
+      const dir = f.direction === 'east' ? 1 : -1;
+      const ay = p.y + r + s * 0.7;
+      ctx.beginPath();
+      ctx.moveTo(p.x + dir * s, ay);
+      ctx.lineTo(p.x - dir * s * 0.7, ay - s);
+      ctx.lineTo(p.x - dir * s * 0.7, ay + s);
+      ctx.closePath();
+      ctx.lineWidth = 2;
+      if (f.active) {
+        ctx.fillStyle = resColor;
+        ctx.strokeStyle = col.ink;
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = col.surface;
+        ctx.strokeStyle = resColor;
+        ctx.setLineDash([3, 2]);
+        ctx.fill();
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
       ctx.restore();
       label(
         cell,
@@ -468,6 +505,71 @@ export function drawBuildOverlay(
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillText('LOW', x + b.rect.w * z - 3, y + 9);
+      ctx.restore();
+    }
+  }
+
+  // ---- Rates per building, and sources that back up -----------------------
+  if (d.ui.overlays.flow && d.flow !== null && board !== undefined) {
+    const backed = backedUpSources(d.flow.dry);
+    const px = rateFontPx(z);
+    const rates = showRates(z);
+    for (const b of board.buildings) {
+      const id = b.instance.id;
+      const x = sx(b.rect.x);
+      const y = sy(b.rect.y);
+      const bw = b.rect.w * z;
+      // Reserve the corner the LOW badge, the starved dot or the stalled
+      // marker uses on the right.
+      let reserved = 0;
+      if (backed.has(id) && b.instance.owner === d.acting) {
+        const r = Math.max(7, z * 0.22);
+        ctx.save();
+        ctx.fillStyle = col.warn;
+        ctx.strokeStyle = col.surface;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(x + bw - 2 * r - 1, y + 1, 2 * r, 2 * r, 3);
+        ctx.fill();
+        ctx.stroke();
+        // Pause bars: the source is waiting, its output backs up.
+        ctx.fillStyle = '#fff';
+        const bar = Math.max(2, r * 0.3);
+        ctx.fillRect(x + bw - 1.5 * r - bar, y + 1 + r * 0.5, bar, r);
+        ctx.fillRect(x + bw - r + bar * 0.1, y + 1 + r * 0.5, bar, r);
+        ctx.restore();
+        reserved = 2 * r + 2;
+      } else if (d.flow.starved.has(id)) {
+        reserved = Math.max(7, z * 0.26) * 2;
+      } else if (d.flow.underSupplied.has(id)) {
+        ctx.font = font;
+        reserved = ctx.measureText('LOW').width + 6;
+      }
+      if (!rates || d.sealed?.includes(id) === true) continue;
+      const def = d.content.buildings.get(b.instance.def);
+      if (def === undefined) continue;
+      const text = boardRateText(
+        def,
+        b.instance.tier,
+        simConfig.ticksPerSecond,
+      );
+      if (text === '') continue;
+      ctx.save();
+      ctx.font = `700 ${String(px)}px ui-monospace, monospace`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      const w = ctx.measureText(text).width + 6;
+      // A one-cell building lets the text run over its right edge; with a
+      // badge in that corner it is hidden when it would run into it. The
+      // owner tag sits on the bottom row, below the box this takes.
+      if (reserved === 0 || w + reserved <= bw) {
+        ctx.fillStyle = col.surface;
+        ctx.globalAlpha = 0.85;
+        ctx.fillRect(x + 1, y + 1, w, px + 4);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = col.ink;
+        ctx.fillText(text, x + 4, y + 1 + (px + 4) / 2 + 0.5);
+      }
       ctx.restore();
     }
   }

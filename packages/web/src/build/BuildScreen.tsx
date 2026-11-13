@@ -565,6 +565,7 @@ export function BuildView(props: { shared: RunHandle | undefined }) {
             ctl={ctl}
             acting={acting}
             locked={gate?.ready === true}
+            flow={flow}
           />
           <ProblemsPanel problems={problems} onPick={onPick} />
         </div>
