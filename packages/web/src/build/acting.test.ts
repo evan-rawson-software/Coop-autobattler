@@ -197,6 +197,26 @@ describe('acting player', () => {
     s.setActing(0);
     const ctl = new BuildController();
     ctl.attach(s);
+    const items = s.run.team.stash.filter((b) => b.owner === 0);
+    const w = s.run.team.map.plotWidth;
+    const placed: number[] = [];
+    for (const item of items.slice(0, 2)) {
+      let done = false;
+      for (let y = 0; y < s.run.team.map.height && !done; y++) {
+        for (let x = 0; x < w && !done; x++) {
+          const r = await s.act({ t: 'place', id: item.id, x, y, rotation: 0 });
+          done = r.ok;
+        }
+      }
+      if (!done) throw new Error('no legal cell');
+      placed.push(item.id);
+    }
+    expect(placed).toHaveLength(2);
+    // One undone edit (redo has something) and one still in the history.
+    expect(await s.undo()).not.toBeNull();
+    expect(s.store.get().undoCount).toBe(1);
+    expect(s.store.get().redoCount).toBe(1);
+    ctl.select({ kind: 'building', id: placed[0] as number });
     await s.dispatch({ type: 'ready' });
     expect(s.run.perPlayer[0]?.ready).toBe(true);
     const team = s.run.team;
@@ -204,12 +224,15 @@ describe('acting player', () => {
     const keys = ['r', 'c', 'e', 'v', 'Escape', 'Backspace', 'Delete'];
     for (const key of keys) {
       ctl.key({ key, ctrlKey: false, shiftKey: false, metaKey: false });
+      expect(ctl.model.get().ui.tool).toBe(tool);
     }
     for (const key of ['z', 'y']) {
       ctl.key({ key, ctrlKey: true, shiftKey: false, metaKey: false });
     }
-    await Promise.resolve();
+    await new Promise((r) => setTimeout(r, 0));
     expect(s.run.team).toBe(team);
+    expect(s.store.get().undoCount).toBe(1);
+    expect(s.store.get().redoCount).toBe(1);
     expect(ctl.model.get().ui.tool).toBe(tool);
     expect(s.run.perPlayer[0]?.ready).toBe(true);
   });
