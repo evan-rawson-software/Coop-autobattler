@@ -15,6 +15,7 @@ import {
   mapgen,
   simConfig,
 } from './test-support.js';
+import { CELL_UNITS } from './limits.js';
 import type { TeamState } from './team-state.js';
 
 const config = { sim: simConfig, mapgen };
@@ -26,7 +27,18 @@ interface Stack {
   over50: number;
   over90: number;
   coincident: number;
+  /** Unit-ticks spent in a pile: a cell holding PILE or more living units of one side. */
+  pileUnitTicks: number;
+  /** Most consecutive ticks one (cell, side) stayed a pile. */
+  longestPile: number;
+  /** Pile runs of at least LONG_PILE ticks. */
+  longPiles: number;
+  /** Most units of one side in one cell at one tick. */
+  maxInCell: number;
 }
+
+const PILE = 10;
+const LONG_PILE = 100;
 
 function stacking(a: TeamState, b: TeamState, seed: number): Stack {
   const s = startBattle({ teamA: a, teamB: b, seed }, content, config);
@@ -38,8 +50,13 @@ function stacking(a: TeamState, b: TeamState, seed: number): Stack {
     over50: 0,
     over90: 0,
     coincident: 0,
+    pileUnitTicks: 0,
+    longestPile: 0,
+    longPiles: 0,
+    maxInCell: 0,
   };
   let runs = new Map<number, number>();
+  let pileRuns = new Map<number, number>();
   const cell = 2 * 47;
   while (!battle.isOver()) {
     battle.step();
@@ -80,11 +97,37 @@ function stacking(a: TeamState, b: TeamState, seed: number): Stack {
       }
     });
     runs = next;
+    const counts = new Map<number, number>();
+    for (const u of units) {
+      if (u.hp <= 0) continue;
+      const k =
+        (Math.floor(u.px / CELL_UNITS) * 65536 +
+          Math.floor(u.py / CELL_UNITS)) *
+          4 +
+        u.side;
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    const nextPiles = new Map<number, number>();
+    for (const [k, n] of counts) {
+      out.maxInCell = Math.max(out.maxInCell, n);
+      if (n < PILE) continue;
+      out.pileUnitTicks += n;
+      const run = (pileRuns.get(k) ?? 0) + 1;
+      nextPiles.set(k, run);
+      out.longestPile = Math.max(out.longestPile, run);
+    }
+    for (const [k, run] of pileRuns) {
+      if (!nextPiles.has(k) && run >= LONG_PILE) out.longPiles += 1;
+    }
+    pileRuns = nextPiles;
     for (const w of worst) {
       out.unitTicks += 1;
       if (w > 0.5) out.over50 += 1;
       if (w > 0.9) out.over90 += 1;
     }
+  }
+  for (const run of pileRuns.values()) {
+    if (run >= LONG_PILE) out.longPiles += 1;
   }
   return out;
 }
@@ -98,6 +141,10 @@ describe('stacking duration', () => {
     let unitTicks = 0;
     let over50 = 0;
     let over90 = 0;
+    let pileUnitTicks = 0;
+    let longestPile = 0;
+    let longPiles = 0;
+    let maxInCell = 0;
     for (const a of boards) {
       for (const b of boards) {
         const r = stacking(a, b, 1);
@@ -105,11 +152,19 @@ describe('stacking duration', () => {
         unitTicks += r.unitTicks;
         over50 += r.over50;
         over90 += r.over90;
+        pileUnitTicks += r.pileUnitTicks;
+        longestPile = Math.max(longestPile, r.longestPile);
+        longPiles += r.longPiles;
+        maxInCell = Math.max(maxInCell, r.maxInCell);
       }
     }
     expect(longest).toBeLessThanOrEqual(LONGEST_REFERENCE);
     expect(over50 / unitTicks).toBeLessThanOrEqual(SHARE50_REFERENCE);
     expect(over90 / unitTicks).toBeLessThanOrEqual(SHARE90_REFERENCE);
+    expect(pileUnitTicks).toBe(0);
+    expect(longestPile).toBe(0);
+    expect(longPiles).toBe(0);
+    expect(maxInCell).toBeLessThanOrEqual(4);
   }, 120_000);
 
   test('the dense four-plot battle (tier 1): same', () => {
@@ -120,6 +175,10 @@ describe('stacking duration', () => {
     expect(r.longest).toBeLessThanOrEqual(LONGEST_DENSE);
     expect(r.over50 / r.unitTicks).toBeLessThanOrEqual(SHARE50_DENSE);
     expect(r.over90 / r.unitTicks).toBeLessThanOrEqual(SHARE90_DENSE);
+    expect(r.pileUnitTicks / r.unitTicks).toBeLessThanOrEqual(0.099);
+    expect(r.longestPile).toBeLessThanOrEqual(51);
+    expect(r.longPiles).toBeLessThanOrEqual(0);
+    expect(r.maxInCell).toBeLessThanOrEqual(24);
   }, 120_000);
 });
 
@@ -142,9 +201,17 @@ describe('stacking duration, tier 3 and mixed', () => {
     expect(a.longest).toBeLessThanOrEqual(34);
     expect(a.over50 / a.unitTicks).toBeLessThanOrEqual(0.09);
     expect(a.over90 / a.unitTicks).toBeLessThanOrEqual(0.005);
+    expect(a.pileUnitTicks / a.unitTicks).toBeLessThanOrEqual(0.12);
+    expect(a.longestPile).toBeLessThanOrEqual(143);
+    expect(a.longPiles).toBeLessThanOrEqual(2);
+    expect(a.maxInCell).toBeLessThanOrEqual(30);
     expect(b.longest).toBeLessThanOrEqual(6);
     expect(b.over50 / b.unitTicks).toBeLessThanOrEqual(0.009);
     expect(b.over90 / b.unitTicks).toBeLessThanOrEqual(0.0002);
+    expect(b.pileUnitTicks / b.unitTicks).toBeLessThanOrEqual(0.0059);
+    expect(b.longestPile).toBeLessThanOrEqual(18);
+    expect(b.longPiles).toBeLessThanOrEqual(0);
+    expect(b.maxInCell).toBeLessThanOrEqual(20);
   }, 120_000);
 });
 
@@ -153,9 +220,11 @@ describe('stacking duration, tier 3 and mixed', () => {
 // dense tier 1: longest 12 [10], 1.04 [3.4] over 50, 0.008 [0.15] over 90;
 // tier 3: longest 30 [17], 6.5 [8.6] over 50, 0.34 [0.6] over 90;
 // tier 1 against tier 3: longest 5 [11], 0.22 [1.1] over 50, 0.005 [0.015] over 90.
-// The longest run of a pair is one worst case and rises where armies press on
-// the Core from every side (crowd density in the field is deferred, #86); the
-// shares of unit-ticks, which count the whole battle, all fall.
+// The longest run of a pair is one worst case; the shares of unit-ticks, which
+// count the whole battle, all fall. The deep piles (10+ units of one side in a
+// cell, #121) sit on front lines where a crowd converges on the same few
+// enemies, not at the Core. Their bounds are a ratchet: re-set when army sizes
+// are settled (#145) and when the test board is replaced by a legal one (#164).
 const LONGEST_REFERENCE = 2;
 const SHARE50_REFERENCE = 0.0005;
 const SHARE90_REFERENCE = 0.0005;
