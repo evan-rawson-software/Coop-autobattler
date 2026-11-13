@@ -109,6 +109,8 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     { core: 'Core', own: '2', foe: '1' },
     'Time ran out. The side with more Cores standing wins: yours 2, theirs 1.',
   ],
+  ['eventChosenDone', {}, 'has chosen'],
+  ['eventChosenPending', {}, 'choosing…'],
   [
     'eventWaiting',
     { names: 'Ann, Bo' },

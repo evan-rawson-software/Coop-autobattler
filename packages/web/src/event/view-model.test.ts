@@ -317,8 +317,8 @@ describe('follow-ups', () => {
     expect(v?.waiting).toMatch(/Waiting for other players: Ana/);
     expect(v?.waiting).not.toMatch(/skip/i);
     expect(v?.chosen).toEqual([
-      { name: 'You', done: true },
-      { name: 'Ana', done: false },
+      { player: 0, name: 'You', done: true, status: 'has chosen' },
+      { player: 1, name: 'Ana', done: false, status: 'choosing…' },
     ]);
   });
 

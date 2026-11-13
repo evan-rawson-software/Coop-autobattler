@@ -258,6 +258,8 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   problemStashMany: ['count'],
   rateOnBoard: ['rate'],
   eventWaiting: ['names'],
+  eventChosenDone: [],
+  eventChosenPending: [],
   uiInspectorInput: [],
   uiInspectorReceiving: [],
   uiInspectorReceivingEstimate: ['resource', 'rate'],

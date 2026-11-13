@@ -187,6 +187,8 @@
       "battleTimeMoreCores": "Time ran out. The side with more {core}s standing wins: yours {own}, theirs {foe}.",
       "collects": "Collects {rate} / s",
       "coreLabel": "{name}'s Core",
+      "eventChosenDone": "has chosen",
+      "eventChosenPending": "choosing…",
       "eventWaiting": "Waiting for other players: {names}. You can still change your choice.",
       "inspectorCollects": "{rate} / s",
       "inspectorNeeds": "{rate} / s at top speed",
