@@ -7,7 +7,7 @@ import type { TeamState } from '@game/core';
 import type { HistoryEntry, RoundRecord, RunState } from '@game/session';
 import { opponentName } from '../event/view-model.js';
 import { bossName } from '../run/display-text.js';
-import { count } from '../plural.js';
+import { screenText, screenTexts } from '../build/texts.js';
 
 export interface BestView {
   readonly isNewBest: boolean;
@@ -26,7 +26,11 @@ export function bestView(
 ): BestView {
   const size = state.players.length;
   const depth = state.outcome?.round ?? state.round;
-  const label = count(size, 'player');
+  const label = screenText(
+    screenTexts,
+    size === 1 ? 'runOverPlayersOne' : 'runOverPlayersMany',
+    { count: String(size) },
+  );
   let before = 0;
   for (const h of history) {
     if (h.runId !== state.runId && h.partySize === size && h.round > before) {
@@ -34,16 +38,25 @@ export function bestView(
     }
   }
   if (before === 0) {
-    return { isNewBest: true, text: `First recorded run for ${label}` };
+    return {
+      isNewBest: true,
+      text: screenText(screenTexts, 'runOverBestFirst', { label }),
+    };
   }
   return depth > before
     ? {
         isNewBest: true,
-        text: `New best for ${label} (was round ${String(before)})`,
+        text: screenText(screenTexts, 'runOverBestNew', {
+          label,
+          round: String(before),
+        }),
       }
     : {
         isNewBest: false,
-        text: `Best for ${label}: round ${String(before)}`,
+        text: screenText(screenTexts, 'runOverBestKept', {
+          label,
+          round: String(before),
+        }),
       };
 }
 
@@ -61,7 +74,25 @@ function capital(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/** The result mark of a battle, or the dash for no battle. */
+function mark(r: { readonly won: boolean } | null): 'won' | 'lost' | '—' {
+  return r === null ? '—' : r.won ? 'won' : 'lost';
+}
+
+/** The player-facing text of a result mark. */
+export function resultText(result: 'won' | 'lost' | '—'): string {
+  return screenText(
+    screenTexts,
+    result === 'won'
+      ? 'runOverWon'
+      : result === 'lost'
+        ? 'runOverLost'
+        : 'runOverNone',
+  );
+}
+
 export function roundRows(history: readonly RoundRecord[]): RoundRow[] {
+  const none = screenText(screenTexts, 'runOverNone');
   return history.map((r): RoundRow => {
     const pve = r.pve;
     const pvp = r.pvp;
@@ -69,18 +100,25 @@ export function roundRows(history: readonly RoundRecord[]): RoundRow[] {
       round: r.round,
       pve:
         pve === null
-          ? '—'
-          : `${capital(pve.difficulty)} · ${opponentName(pve.opponent.kind, pve.opponent.label)}`,
-      pveResult: pve === null ? '—' : pve.won ? 'won' : 'lost',
+          ? none
+          : screenText(screenTexts, 'runOverPveRow', {
+              difficulty: capital(pve.difficulty),
+              name: opponentName(pve.opponent.kind, pve.opponent.label),
+            }),
+      pveResult: mark(pve),
       pvp:
         pvp === null
-          ? '—'
+          ? none
           : pvp.opponent.kind === 'boss'
             ? bossName(opponentName('boss', pvp.opponent.label))
             : pvp.opponent.label.startsWith('Bundled ')
-              ? `Ghost · ${pvp.opponent.label} (bundled)`
-              : `Ghost · ${opponentName(pvp.opponent.kind, pvp.opponent.label)}`,
-      pvpResult: pvp === null ? '—' : pvp.won ? 'won' : 'lost',
+              ? screenText(screenTexts, 'runOverGhostBundled', {
+                  label: pvp.opponent.label,
+                })
+              : screenText(screenTexts, 'runOverGhost', {
+                  label: opponentName(pvp.opponent.kind, pvp.opponent.label),
+                }),
+      pvpResult: mark(pvp),
     };
   });
 }
@@ -154,12 +192,16 @@ export function headline(state: RunState): {
 } {
   const round = state.outcome?.round ?? state.round;
   return {
-    title: `Reached round ${String(round)}`,
-    reason:
+    title: screenText(screenTexts, 'runOverReached', {
+      round: String(round),
+    }),
+    reason: screenText(
+      screenTexts,
       state.outcome?.reason === 'abandoned'
-        ? 'You abandoned this run.'
+        ? 'runOverReasonAbandoned'
         : state.players.length > 1
-          ? "Your party's last life was lost in a PvP battle."
-          : 'Your last life was lost in a PvP battle.',
+          ? 'runOverReasonParty'
+          : 'runOverReasonSolo',
+    ),
   };
 }
