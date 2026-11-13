@@ -37,6 +37,11 @@ export interface StorageLike {
   removeItem(key: string): void;
 }
 
+/** The part of `navigator.locks` this store uses. */
+export interface LockManagerLike {
+  request<T>(name: string, callback: () => T | Promise<T>): Promise<T>;
+}
+
 export const DEFAULT_PREFIX = 'coop:';
 
 export { StaleSaveError, STALE_MESSAGE };
@@ -110,24 +115,42 @@ export function createLocalStorageSaveStore(
       if (typeof runId !== 'string' || runId === '') {
         throw new Error('put: record has no runId');
       }
-      if (options.rejectStale === true) {
-        const stored = parse(storage.getItem(savePrefix + runId));
-        const have = (stored as { actionCounter?: unknown } | null)
-          ?.actionCounter;
-        const next = (record as { actionCounter?: unknown }).actionCounter;
-        if (isStaleWrite(have, next)) {
-          options.onStale?.();
-          throw new StaleSaveError();
+      const key = savePrefix + runId;
+      const write = (): void => {
+        if (options.rejectStale === true) {
+          const stored = parse(storage.getItem(key));
+          const have = (stored as { actionCounter?: unknown } | null)
+            ?.actionCounter;
+          const next = (record as { actionCounter?: unknown }).actionCounter;
+          if (isStaleWrite(have, next)) {
+            options.onStale?.();
+            throw new StaleSaveError();
+          }
         }
-      }
-      // Serialising copies the record; setItem either stores all of it or
-      // throws and keeps the old value.
-      storage.setItem(savePrefix + runId, JSON.stringify(record));
+        // Serialising copies the record; setItem either stores all of it or
+        // throws and keeps the old value.
+        storage.setItem(key, JSON.stringify(record));
+      };
+      // The compare and the write run inside one Web Lock per key, so two
+      // tabs cannot both pass the check. Without `navigator.locks` this is
+      // the plain read-then-write.
+      const locks = (globalThis as { navigator?: { locks?: LockManagerLike } })
+        .navigator?.locks;
+      if (locks === undefined) write();
+      else await locks.request(`lock:${key}`, write);
     },
 
     async remove(runId: string): Promise<void> {
       await Promise.resolve();
-      storage.removeItem(savePrefix + runId);
+      const key = savePrefix + runId;
+      const locks = (globalThis as { navigator?: { locks?: LockManagerLike } })
+        .navigator?.locks;
+      // Same lock as `put`, so a put holding it cannot interleave.
+      if (locks === undefined) storage.removeItem(key);
+      else
+        await locks.request(`lock:${key}`, () => {
+          storage.removeItem(key);
+        });
     },
 
     async listHistory(): Promise<readonly HistoryEntry[]> {

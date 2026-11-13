@@ -73,6 +73,15 @@ export function createMemorySaveStore(
       if (typeof runId !== 'string' || runId === '') {
         throw new Error('put: record has no runId');
       }
+      const staged = copy(record);
+      if (putFault !== null) {
+        const message = putFault;
+        putFault = null;
+        throw new Error(message);
+      }
+      if (options.beforePut !== undefined) await options.beforePut(staged);
+      // Checked after the await, right before the commit, so two overlapping
+      // puts cannot both pass.
       if (options.rejectStale === true) {
         const have = (
           saves.get(runId) as { actionCounter?: unknown } | undefined
@@ -86,13 +95,6 @@ export function createMemorySaveStore(
           throw new StaleSaveError();
         }
       }
-      const staged = copy(record);
-      if (putFault !== null) {
-        const message = putFault;
-        putFault = null;
-        throw new Error(message);
-      }
-      if (options.beforePut !== undefined) await options.beforePut(staged);
       saves.set(runId, staged);
     },
 

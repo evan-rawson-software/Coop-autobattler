@@ -154,7 +154,7 @@ describe('saved runs in IndexedDB, as a page reload sees them', () => {
       { type: 'place_core', x: 0, y: 0 },
       3,
     );
-    expect(stale).toMatchObject({ ok: false, reason: 'save_failed' });
+    expect(stale).toMatchObject({ ok: false, reason: 'stale' });
     expect(told).toBe(1);
     expect(started.controller.state.step).toBe('core_placement');
   });
