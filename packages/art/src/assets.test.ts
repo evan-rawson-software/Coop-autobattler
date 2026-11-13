@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 import type { Atlas } from './atlas.js';
 import { BLOB47, NE, N, E, S, W, blobFrame, canonical } from './autotile.js';
-import { outDir, buildAll } from './build.js';
+import { outDir, buildAll, buildFavicon, faviconPath } from './build.js';
 import {
   type BuildingInfo,
   loadBuildings,
@@ -67,6 +67,13 @@ describe('committed assets', () => {
       });
       expect(Buffer.compare(have.rgba, want.rgba), `${file} pixels`).toBe(0);
     }
+  });
+
+  test('favicon matches a fresh build', () => {
+    const want = decodePng(buildFavicon(fresh.built));
+    const have = decodePng(readFileSync(faviconPath));
+    expect({ w: have.w, h: have.h }).toEqual({ w: 32, h: 32 });
+    expect(Buffer.compare(have.rgba, want.rgba)).toBe(0);
   });
 
   test('building twice gives identical pixels and atlas', () => {

@@ -396,6 +396,24 @@ try {
   await page.click('[data-camera="center"]');
   await settle();
   await shot('7-dark');
+  // The pixel skin applies once the atlas has loaded: the root carries the
+  // marker and the sprite variables hold real image data.
+  await page.waitForFunction(
+    () => document.documentElement.dataset.skin === 'pixel',
+    undefined,
+    { timeout: 10000 },
+  );
+  const skin = await page.evaluate(() => {
+    const root = document.documentElement;
+    return {
+      skin: root.dataset.skin,
+      bg: root.style.getPropertyValue('--sprite-ui-bg'),
+    };
+  });
+  check(
+    skin.skin === 'pixel' && skin.bg.startsWith('url("data:image/png'),
+    `skin: the root has data-skin="pixel" and a sprite background variable (${skin.skin}, ${skin.bg.slice(0, 24)})`,
+  );
   await page.emulateMedia({ colorScheme: 'light' });
 
   // --- Performance on a dense four-plot sample

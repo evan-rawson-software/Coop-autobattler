@@ -3,6 +3,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { buildSheets, type Built } from './atlas.js';
+import { decodePng, encodePng } from './png.js';
 import {
   loadBuildings,
   loadResources,
@@ -51,12 +52,45 @@ export function buildAll(content?: ContentLists): {
   return { built, atlasJson: JSON.stringify(built.atlas, null, 2) + '\n' };
 }
 
+export const faviconPath = path.join(
+  repoRoot,
+  'packages',
+  'web',
+  'public',
+  'favicon.png',
+);
+
+const FAVICON_SIZE = 32;
+
+/** A 32x32 PNG of the Core building sprite, scaled up by an integer if smaller. */
+export function buildFavicon(built: Built): Buffer {
+  const sp = built.atlas.sprites['bld_core'];
+  if (!sp) throw new Error('bld_core is missing from the atlas');
+  const sheet = built.pngs.get(built.atlas.sheets[sp.sheet]?.file ?? '');
+  if (!sheet) throw new Error(`sheet ${sp.sheet} is missing`);
+  const src = decodePng(sheet);
+  const k = Math.max(1, Math.floor(FAVICON_SIZE / Math.max(sp.w, sp.h)));
+  const out = new Uint8Array(FAVICON_SIZE * FAVICON_SIZE * 4);
+  const ox = Math.floor((FAVICON_SIZE - sp.w * k) / 2);
+  const oy = Math.floor((FAVICON_SIZE - sp.h * k) / 2);
+  for (let y = 0; y < sp.h * k; y++)
+    for (let x = 0; x < sp.w * k; x++) {
+      const i =
+        ((sp.y + Math.floor(y / k)) * src.w + sp.x + Math.floor(x / k)) * 4;
+      const o = ((oy + y) * FAVICON_SIZE + ox + x) * 4;
+      out.set(src.rgba.subarray(i, i + 4), o);
+    }
+  return encodePng(FAVICON_SIZE, FAVICON_SIZE, out);
+}
+
 export function writeAll(): void {
   const { built, atlasJson } = buildAll();
   mkdirSync(outDir, { recursive: true });
   for (const [file, buf] of built.pngs)
     writeFileSync(path.join(outDir, file), buf);
   writeFileSync(path.join(outDir, 'atlas.json'), atlasJson);
+  mkdirSync(path.dirname(faviconPath), { recursive: true });
+  writeFileSync(faviconPath, buildFavicon(built));
   const n = Object.keys(built.atlas.sprites).length;
   console.log(
     `wrote ${String(built.pngs.size)} sheets and an atlas with ${String(n)} sprites to ${outDir}`,
