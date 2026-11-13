@@ -43,3 +43,11 @@ export function neutralName(x: number, y: number, salt = 0): string {
   const i = cellHash(x, y, salt ^ 7) % NEUTRAL_PICK.length;
   return `neutral_${String(NEUTRAL_PICK[i])}`;
 }
+
+/** Number of `ter_lake_fill` variants (frames) in the atlas. */
+export const LAKE_FILL_VARIANTS = 4;
+
+/** Which `ter_lake_fill` frame a fully surrounded lake cell uses. */
+export function lakeFillFrame(x: number, y: number, salt = 0): number {
+  return cellHash(x, y, salt ^ 0x5bd1) % LAKE_FILL_VARIANTS;
+}

@@ -23,7 +23,7 @@ import {
   sideBit,
   type ConduitKind,
 } from '../sprites/conduit-piece.js';
-import { groundName, neutralName } from '../sprites/variants.js';
+import { groundName, lakeFillFrame, neutralName } from '../sprites/variants.js';
 import type {
   BoardScene,
   Scene,
@@ -94,6 +94,7 @@ function makeCanvas(cw: number, ch: number): HTMLCanvasElement {
 }
 
 const LAKE = 'ter_lake';
+const LAKE_FILL = 'ter_lake_fill';
 const CLIFF = 'ter_cliff';
 
 /** Draw ground, then lakes and cliffs through their blob autotiles. */
@@ -132,9 +133,20 @@ function drawTerrain(
       cells.has(`${String(x)},${String(y)}`);
     for (const key of cells) {
       const [x, y] = key.split(',').map(Number) as [number, number];
-      if (sprite !== null && findSprite(sprite)) {
+      const mask = blobMask(has, x, y);
+      if (
+        id === LAKE &&
+        blobFrame(mask) === blobFrame(255) &&
+        findSprite(LAKE_FILL)
+      ) {
+        // A fully surrounded lake cell: a hashed interior variant, so the
+        // open water does not repeat one tile.
+        drawSprite(lc, LAKE_FILL, x * T, y * T, 1, {
+          frame: lakeFillFrame(x, y, salt),
+        });
+      } else if (sprite !== null && findSprite(sprite)) {
         drawSprite(lc, sprite, x * T, y * T, 1, {
-          frame: blobFrame(blobMask(has, x, y)),
+          frame: blobFrame(mask),
         });
       } else {
         lc.fillStyle = theme.features[0] ?? '#557';
