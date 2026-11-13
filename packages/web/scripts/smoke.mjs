@@ -1538,6 +1538,9 @@ try {
     const unitSpritesBefore = await page.evaluate(
       () => window.__debug?.sprites?.()?.unitSprites ?? 0,
     );
+    const effectSpritesBefore = await page.evaluate(
+      () => window.__debug?.sprites?.()?.effectSprites ?? 0,
+    );
     let peak = 0;
     for (let i = 0; i < 40; i++) {
       await page.waitForTimeout(200);
@@ -1563,6 +1566,13 @@ try {
     check(
       unitSpritesAfter - unitSpritesBefore > 1000,
       `battle: units are drawn from the atlas (${unitSpritesAfter - unitSpritesBefore} unit sprites in the stress window)`,
+    );
+    const effectSpritesAfter = await page.evaluate(
+      () => window.__debug?.sprites?.()?.effectSprites ?? 0,
+    );
+    check(
+      effectSpritesAfter - effectSpritesBefore > 0,
+      `battle: effects are drawn from the atlas (${effectSpritesAfter - effectSpritesBefore} effect sprites in the stress window)`,
     );
     // `unitsAlive` counts both sides. The stress sample is a four-plot board
     // on both sides with a steady stream of units: a few hundred alive at once.

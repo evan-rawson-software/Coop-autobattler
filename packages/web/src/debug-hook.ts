@@ -38,6 +38,8 @@ export interface DebugHook {
     spriteFrames: number;
     /** Units drawn from the atlas so far (not as circles). */
     unitSprites: number;
+    /** Battle effect sprites drawn so far (hits, shots, spawns, explosions). */
+    effectSprites: number;
     flatFrames: number;
     layerBuilds: number;
     tintCache: number;

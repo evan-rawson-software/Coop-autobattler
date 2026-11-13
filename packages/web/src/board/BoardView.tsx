@@ -191,6 +191,7 @@ export function BoardView(props: BoardViewProps) {
         state: spritesState(),
         drawn: spriteStats.drawn,
         unitSprites: spriteStats.units,
+        effectSprites: spriteStats.effects,
         spriteFrames: renderStats.spriteFrames,
         flatFrames: renderStats.flatFrames,
         layerBuilds: layerStats.builds,

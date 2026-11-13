@@ -179,7 +179,10 @@ export function conduitCells(
   return out;
 }
 
-function rampOf(set: SpriteSet, resource: string | null): Ramp | undefined {
+export function rampOf(
+  set: SpriteSet,
+  resource: string | null,
+): Ramp | undefined {
   return resource === null ? undefined : set.atlas.tint.resources[resource];
 }
 
