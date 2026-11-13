@@ -732,6 +732,9 @@ function applyBuiltin(
       const check = placeCore(s.team, content, mapgenConfig, player, pos);
       if (!check.ok) return fail(check.reason, check.detail);
       const positions = pendingList(s, 'positions');
+      const prev = positions[player];
+      const same = isRecord(prev) && prev.x === pos.x && prev.y === pos.y;
+      if (!same) fx.push({ type: 'core_position_changed', player });
       return {
         ok: true,
         state: {

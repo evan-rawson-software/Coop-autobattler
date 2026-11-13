@@ -624,7 +624,7 @@ describe('three players', () => {
       expect(Math.floor(pos.x / plots)).toBe(p);
       const r = ok(s, p, { type: 'place_core', ...pos });
       s = r.state;
-      expect(r.effects).toEqual([]);
+      expect(r.effects).toEqual([{ type: 'core_position_changed', player: p }]);
     }
     expect(s.step).toBe('core_placement');
     expect(s.votes).toBeNull();
@@ -653,6 +653,37 @@ describe('three players', () => {
     );
     const replayed = replayRun(runArgs(names), s.actionLog, baseDeps);
     expect(replayed.ok && replayed.state).toEqual(s);
+  });
+
+  test('place_core emits core_position_changed only when the position changes', () => {
+    const s0 = newRun(baseDeps, ['A', 'B']);
+    const legal = listLegalCorePositions(
+      s0.team.map,
+      baseDeps.content,
+      baseDeps.mapgenConfig,
+      1,
+    );
+    const first = legal[0] as { x: number; y: number };
+    const second = legal[legal.length - 1] as { x: number; y: number };
+    const changed = { type: 'core_position_changed', player: 1 };
+    const a = ok(s0, 1, { type: 'place_core', ...first });
+    expect(a.effects).toContainEqual(changed);
+    const b = ok(a.state, 1, { type: 'place_core', ...first });
+    expect(b.effects.some((e) => e.type === 'core_position_changed')).toBe(
+      false,
+    );
+    const c = ok(b.state, 1, { type: 'place_core', ...second });
+    expect(c.effects).toContainEqual(changed);
+    const bad = applyIntent(
+      c.state,
+      1,
+      { type: 'place_core', x: -1, y: -1 },
+      baseDeps,
+    );
+    expect(bad.ok).toBe(false);
+    expect(
+      ok(s0, 0, { type: 'place_core', ...corePosition(s0, 0) }).effects,
+    ).toContainEqual({ type: 'core_position_changed', player: 0 });
   });
 
   test('a position can change until the player is ready, and again after unready', () => {
