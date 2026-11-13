@@ -347,7 +347,8 @@
             "uiToolToStash",
             "uiToolUndo",
             "uiToolUndoTip",
-            "unitsWord"
+            "unitsWord",
+            "rateGetsNeeds"
           ],
           "additionalProperties": false,
           "properties": {
@@ -620,7 +621,8 @@
             "uiToolToStash": { "$ref": "#/$defs/screenText" },
             "uiToolUndo": { "$ref": "#/$defs/screenText" },
             "uiToolUndoTip": { "$ref": "#/$defs/screenText" },
-            "unitsWord": { "$ref": "#/$defs/screenText" }
+            "unitsWord": { "$ref": "#/$defs/screenText" },
+            "rateGetsNeeds": { "$ref": "#/$defs/screenText" }
           }
         },
         "needs": {

@@ -568,6 +568,7 @@ export function BuildView(props: {
             flow={flow}
             ctl={ctl}
             sealed={sealedIds}
+            acting={acting}
           />
         </div>
         <div class="dock-col">

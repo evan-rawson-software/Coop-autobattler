@@ -510,6 +510,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['uiToolUndo', {}, 'Undo'],
   ['uiToolUndoTip', {}, 'Undo (Ctrl+Z). Layout changes only.'],
   ['uiShopNeeds', { needs: 'Ore' }, 'Needs: Ore'],
+  ['rateGetsNeeds', { gets: '0.25', needs: '0.50' }, '0.25/0.50/s'],
 ];
 
 /** The reason_* keys are pinned code by code in texts.test.ts. */

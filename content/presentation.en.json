@@ -434,7 +434,8 @@
       "uiToolToStash": "To stash",
       "uiToolUndo": "Undo",
       "uiToolUndoTip": "Undo (Ctrl+Z). Layout changes only.",
-      "unitsWord": "units"
+      "unitsWord": "units",
+      "rateGetsNeeds": "{gets}/{needs}/s"
     }
   }
 }

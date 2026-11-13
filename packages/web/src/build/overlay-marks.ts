@@ -6,7 +6,7 @@
 
 import type { BuildingDef, DryRunResult } from '@game/core';
 import type { Half } from './border-links.js';
-import { buildingRate, formatHundredths } from './rates.js';
+import { buildingRate, formatHundredths, type Supply } from './rates.js';
 import { screenText, screenTexts, type ScreenTexts } from './texts.js';
 
 /** Screen direction of the arrow on a border cell (plots lie left to right). */
@@ -83,4 +83,84 @@ export function backedUpSources(dry: DryRunResult): Map<number, number> {
     }
   }
   return out;
+}
+
+/** The mark a building carries in its top-right corner, if any. */
+export type RateMark = 'stalled' | 'starved' | 'low' | null;
+
+/** Where the rate text goes on a building. */
+export type RateLabelSpot = 'top' | 'bottom' | 'hidden';
+
+export interface RateLabelInput {
+  readonly zoom: number;
+  /** A sealed unit producer: its rate means nothing until it is reachable. */
+  readonly sealed: boolean;
+  readonly mark: RateMark;
+  /** Width of the text box, in pixels. */
+  readonly textWidth: number;
+  /** Width the corner mark takes, 0 when there is none. */
+  readonly reserved: number;
+  readonly boxWidth: number;
+  /** Width of the owner tag at the bottom left, 0 when none is drawn. */
+  readonly tagWidth: number;
+}
+
+/**
+ * Where the rate text is drawn. Hidden below the zoom cut-off and on a sealed
+ * building. Beside a corner mark it stays on the top row when it fits; when it
+ * does not, an under-supplied consumer (LOW or starved) moves it to the bottom
+ * row, after the owner tag, if it fits inside the building there. Otherwise,
+ * and for the stalled marker, it is hidden.
+ */
+export function rateLabelSpot(i: RateLabelInput): RateLabelSpot {
+  if (!showRates(i.zoom) || i.sealed) return 'hidden';
+  if (i.mark === null || i.reserved === 0) return 'top';
+  if (i.textWidth + i.reserved <= i.boxWidth) return 'top';
+  if (i.mark === 'stalled') return 'hidden';
+  return i.tagWidth + i.textWidth <= i.boxWidth ? 'bottom' : 'hidden';
+}
+
+export interface RateLabelPlan {
+  readonly spot: RateLabelSpot;
+  /** Draw the short form (what the building gets only). */
+  readonly short: boolean;
+}
+
+/**
+ * `rateLabelSpot` for the full text, then for the short form when the full
+ * one has no room. `shortWidth` is null when there is no short form.
+ */
+export function rateLabelPlan(
+  i: Omit<RateLabelInput, 'textWidth'> & {
+    readonly fullWidth: number;
+    readonly shortWidth: number | null;
+  },
+): RateLabelPlan {
+  const full = rateLabelSpot({ ...i, textWidth: i.fullWidth });
+  if (full !== 'hidden' || i.shortWidth === null) {
+    return { spot: full, short: false };
+  }
+  const short = rateLabelSpot({ ...i, textWidth: i.shortWidth });
+  return { spot: short, short: short !== 'hidden' };
+}
+
+/** "0.25/0.50/s": what an under-supplied consumer gets against what it needs. */
+export function suppliedRateText(
+  supply: Pick<Supply, 'gets' | 'needs'>,
+  texts: ScreenTexts = screenTexts,
+): string {
+  return screenText(texts, 'rateGetsNeeds', {
+    gets: formatHundredths(supply.gets),
+    needs: formatHundredths(supply.needs),
+  });
+}
+
+/** "0.25/s": only what an under-supplied consumer gets. */
+export function suppliedShortText(
+  supply: Pick<Supply, 'gets'>,
+  texts: ScreenTexts = screenTexts,
+): string {
+  return screenText(texts, 'rateOnBoard', {
+    rate: formatHundredths(supply.gets),
+  });
 }

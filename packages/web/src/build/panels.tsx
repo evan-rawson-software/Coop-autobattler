@@ -238,6 +238,8 @@ export function InspectorPanel(props: {
   ctl: BuildController;
   /** Ids of the unit producers with no route to the front row. */
   sealed?: readonly number[];
+  /** The acting player: a partner's source shows no backed-up line. */
+  acting?: number;
 }) {
   const { run, model, dry, ctl } = props;
   const team = run.team;
@@ -322,7 +324,14 @@ export function InspectorPanel(props: {
     const def = b === undefined ? undefined : content.buildings.get(b.def);
     if (b !== undefined && def !== undefined) {
       const entry = content.presentation.get(b.def);
-      const figs = inspectorFigures(team, content, simConfig, dry, b);
+      const figs = inspectorFigures(
+        team,
+        content,
+        simConfig,
+        dry,
+        b,
+        props.acting,
+      );
       const owner = playerName(
         screenTexts,
         run.players.map((x) => x.name),

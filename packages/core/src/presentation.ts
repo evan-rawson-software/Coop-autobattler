@@ -359,6 +359,7 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   uiToolToStash: [],
   uiToolUndo: [],
   uiToolUndoTip: [],
+  rateGetsNeeds: ['gets', 'needs'],
   ...Object.fromEntries(
     REASON_TEXT_CODES.map((code) => [`reason_${code}`, [] as string[]]),
   ),

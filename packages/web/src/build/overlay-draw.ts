@@ -22,7 +22,11 @@ import {
   boardRateText,
   halfFlow,
   rateFontPx,
+  rateLabelPlan,
   showRates,
+  suppliedRateText,
+  suppliedShortText,
+  type RateMark,
 } from './overlay-marks.js';
 import { pathSegments, pathStubs } from './path-segments.js';
 import { isEditStep } from './session.js';
@@ -80,6 +84,20 @@ function colors(o: OverlayContext): Colors {
   };
   colorCache.set(o.theme, c);
   return c;
+}
+
+const ownerTagFont = (z: number): string =>
+  `700 ${String(Math.max(9, Math.min(12, z * 0.34)))}px ui-monospace, monospace`;
+const ownerTagText = (owner: number): string => `P${String(owner + 1)}`;
+
+/** Width of a building's owner tag; the rate text on the bottom row starts after it. */
+function ownerTagWidth(
+  ctx: CanvasRenderingContext2D,
+  owner: number,
+  z: number,
+): number {
+  ctx.font = ownerTagFont(z);
+  return ctx.measureText(ownerTagText(owner)).width + 6;
 }
 
 export function drawBuildOverlay(
@@ -374,11 +392,11 @@ export function drawBuildOverlay(
   // ---- Owner of each building (not colour only) ----------------------------
   if (board !== undefined && partySize > 1) {
     ctx.save();
-    ctx.font = `700 ${String(Math.max(9, Math.min(12, z * 0.34)))}px ui-monospace, monospace`;
+    ctx.font = ownerTagFont(z);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     for (const b of board.buildings) {
-      const text = `P${String(b.instance.owner + 1)}`;
+      const text = ownerTagText(b.instance.owner);
       const w = ctx.measureText(text).width + 6;
       const x = sx(b.rect.x) + 1;
       const y = sy(b.rect.y) + b.rect.h * z - 14;
@@ -522,7 +540,9 @@ export function drawBuildOverlay(
       // Reserve the corner the LOW badge, the starved dot or the stalled
       // marker uses on the right.
       let reserved = 0;
+      let mark: RateMark = null;
       if (backed.has(id) && b.instance.owner === d.acting) {
+        mark = 'stalled';
         const r = Math.max(7, z * 0.22);
         ctx.save();
         ctx.fillStyle = col.warn;
@@ -533,42 +553,67 @@ export function drawBuildOverlay(
         ctx.fill();
         ctx.stroke();
         // Pause bars: the source is waiting, its output backs up.
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = col.surface;
         const bar = Math.max(2, r * 0.3);
         ctx.fillRect(x + bw - 1.5 * r - bar, y + 1 + r * 0.5, bar, r);
         ctx.fillRect(x + bw - r + bar * 0.1, y + 1 + r * 0.5, bar, r);
         ctx.restore();
         reserved = 2 * r + 2;
       } else if (d.flow.starved.has(id)) {
+        mark = 'starved';
         reserved = Math.max(7, z * 0.26) * 2;
       } else if (d.flow.underSupplied.has(id)) {
+        mark = 'low';
+        ctx.save();
         ctx.font = font;
         reserved = ctx.measureText('LOW').width + 6;
+        ctx.restore();
       }
-      if (!rates || d.sealed?.includes(id) === true) continue;
+      if (!rates) continue;
       const def = d.content.buildings.get(b.instance.def);
       if (def === undefined) continue;
-      const text = boardRateText(
-        def,
-        b.instance.tier,
-        simConfig.ticksPerSecond,
-      );
-      if (text === '') continue;
+      // An under-supplied consumer shows what it gets against what it needs.
+      const supply =
+        mark === 'low' || mark === 'starved'
+          ? d.flow.supply.find((u) => u.building === id)
+          : undefined;
+      const full =
+        supply === undefined
+          ? boardRateText(def, b.instance.tier, simConfig.ticksPerSecond)
+          : suppliedRateText(supply);
+      if (full === '') continue;
+      const short = supply === undefined ? null : suppliedShortText(supply);
       ctx.save();
       ctx.font = `700 ${String(px)}px ui-monospace, monospace`;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      const w = ctx.measureText(text).width + 6;
-      // A one-cell building lets the text run over its right edge; with a
-      // badge in that corner it is hidden when it would run into it. The
-      // owner tag sits on the bottom row, below the box this takes.
-      if (reserved === 0 || w + reserved <= bw) {
+      const widthOf = (t: string): number => ctx.measureText(t).width + 6;
+      // The owner tag sits at the bottom left; the bottom row text starts
+      // after it and must fit inside the building.
+      const tagW = partySize > 1 ? ownerTagWidth(ctx, b.instance.owner, z) : 0;
+      ctx.font = `700 ${String(px)}px ui-monospace, monospace`;
+      const plan = rateLabelPlan({
+        zoom: z,
+        sealed: d.sealed?.includes(id) === true,
+        mark,
+        fullWidth: widthOf(full),
+        shortWidth: short === null ? null : widthOf(short),
+        reserved,
+        boxWidth: bw,
+        tagWidth: tagW,
+      });
+      if (plan.spot !== 'hidden') {
+        const text = plan.short && short !== null ? short : full;
+        const w = widthOf(text);
+        const bx = plan.spot === 'top' ? x + 1 : x + 1 + tagW;
+        const by =
+          plan.spot === 'top' ? y + 1 : y + b.rect.h * z - (px + 4) - 1;
         ctx.fillStyle = col.surface;
         ctx.globalAlpha = 0.85;
-        ctx.fillRect(x + 1, y + 1, w, px + 4);
+        ctx.fillRect(bx, by, w, px + 4);
         ctx.globalAlpha = 1;
         ctx.fillStyle = col.ink;
-        ctx.fillText(text, x + 4, y + 1 + (px + 4) / 2 + 0.5);
+        ctx.fillText(text, bx + 3, by + (px + 4) / 2 + 0.5);
       }
       ctx.restore();
     }

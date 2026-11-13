@@ -23,7 +23,12 @@ import {
   isBackedUp,
   MIN_RATE_FONT_PX,
   rateFontPx,
+  rateLabelPlan,
+  rateLabelSpot,
   showRates,
+  suppliedRateText,
+  suppliedShortText,
+  type RateLabelInput,
 } from './overlay-marks.js';
 import { simConfig } from './setup.js';
 import {
@@ -220,5 +225,270 @@ describe('Border links list mirrors active / idle', () => {
     expect(line(active)).toContain('carrying');
     expect(line(active)).not.toContain('idle');
     expect(line(null)).not.toMatch(/idle|carrying/);
+  });
+});
+
+/**
+ * A joined border link at column 3 of border 0. The sender is an extractor on
+ * a node in its own plot, the receiver a Barracks fed from the border.
+ */
+function joinedTeam(senderRight: boolean): TeamState {
+  const m: GameMap = {
+    ...map,
+    nodes: [{ x: senderRight ? 21 : 2, y: 2, resource: 'res_a' }],
+  };
+  let t = createTeamState(m);
+  for (const [p, x] of [
+    [0, 5],
+    [1, 17],
+  ] as const) {
+    const r = placeCore(t, content, content.mapgen, p, { x, y: 0 });
+    if (!r.ok) throw new Error(r.reason);
+    t = r.state;
+  }
+  const sender = senderRight ? 1 : 0;
+  const place = (
+    owner: number,
+    def: string,
+    x: number,
+    y: number,
+  ): { state: TeamState; id: number } => {
+    const a = addToStash(t, content, { def, tier: 1, owner });
+    if (!a.ok) throw new Error(a.reason);
+    const p = placeFromStash(a.state, content, {
+      actor: owner,
+      id: a.id,
+      x,
+      y,
+      rotation: 0,
+    });
+    if (!p.ok) throw new Error(p.reason);
+    return { state: p.state, id: a.id };
+  };
+  const row = (from: number, to: number): { x: number; y: number }[] => {
+    const out = [];
+    const step = from <= to ? 1 : -1;
+    for (let x = from; x !== to + step; x += step) out.push({ x, y: 3 });
+    return out;
+  };
+  const ex = place(sender, 'bld_extractor', senderRight ? 21 : 2, 2);
+  t = ex.state;
+  const out = addConduit(t, content, {
+    actor: sender,
+    from: { building: ex.id, side: 'north' },
+    to: { border: 0, y: 3 },
+    cells: senderRight ? row(21, 12) : row(2, 11),
+  });
+  if (!out.ok) throw new Error(`${out.reason} ${out.detail ?? ''}`);
+  t = out.state;
+  const bx = senderRight ? 9 : 14;
+  const bk = place(1 - sender, 'bld_barracks', bx, 6);
+  t = bk.state;
+  const inn = addConduit(t, content, {
+    actor: 1 - sender,
+    from: { border: 0, y: 3 },
+    to: { building: bk.id, side: 'south' },
+    cells: [
+      ...(senderRight ? row(11, bx) : row(12, bx)),
+      { x: bx, y: 4 },
+      { x: bx, y: 5 },
+    ],
+  });
+  if (!inn.ok) throw new Error(`${inn.reason} ${inn.detail ?? ''}`);
+  return inn.state;
+}
+
+describe('a joined border link reads the same on both halves', () => {
+  for (const senderRight of [false, true]) {
+    const dir = senderRight ? 'west' : 'east';
+    test(`sender on the ${senderRight ? 'right' : 'left'}: both halves point ${dir}`, () => {
+      const team = joinedTeam(senderRight);
+      const halves = halfStatuses(team);
+      expect(halves).toHaveLength(2);
+      expect(halves.every((h) => h.state === 'joined')).toBe(true);
+      expect(halves.map((h) => h.kind).sort()).toEqual(['receive', 'send']);
+      const flow = computeFlowView(team, content, simConfig, 600);
+      if (flow === null) throw new Error('no flow');
+      for (const h of halves) {
+        expect(halfFlow(h, flow.activeConduits).direction).toBe(dir);
+      }
+    });
+  }
+
+  test('the neighbour half is carrying when the link carries, idle when it does not', () => {
+    const team = joinedTeam(false);
+    const flow = computeFlowView(team, content, simConfig, 600);
+    if (flow === null) throw new Error('no flow');
+    const halves = halfStatuses(team);
+    const send = halves.find((h) => h.kind === 'send');
+    const recv = halves.find((h) => h.kind === 'receive');
+    if (send === undefined || recv === undefined) throw new Error('halves');
+    expect(halfFlow(send, flow.activeConduits).active).toBe(true);
+    expect(halfFlow(recv, flow.activeConduits).active).toBe(true);
+    const idle = new Set<number>();
+    expect(halfFlow(send, idle).active).toBe(false);
+    expect(halfFlow(recv, idle).active).toBe(false);
+  });
+});
+
+describe('rate label hide rules', () => {
+  const base: RateLabelInput = {
+    zoom: 40,
+    sealed: false,
+    mark: null,
+    textWidth: 40,
+    reserved: 0,
+    boxWidth: 40,
+    tagWidth: 0,
+  };
+  const spot = (o: Partial<RateLabelInput>) => rateLabelSpot({ ...base, ...o });
+
+  test('no mark: on the top row', () => {
+    expect(spot({})).toBe('top');
+  });
+  test('hidden below the zoom cut-off, whatever the mark', () => {
+    expect(spot({ zoom: 29 })).toBe('hidden');
+    expect(spot({ zoom: 29, mark: 'low', reserved: 20 })).toBe('hidden');
+  });
+  test('shown at exactly the cut-off zoom', () => {
+    expect(spot({ zoom: 30 })).toBe('top');
+  });
+  test('hidden on a sealed building, with or without a mark', () => {
+    expect(spot({ sealed: true })).toBe('hidden');
+    for (const mark of ['low', 'starved', 'stalled'] as const) {
+      expect(spot({ sealed: true, mark, reserved: 20, boxWidth: 60 })).toBe(
+        'hidden',
+      );
+    }
+  });
+  test('LOW and starved: top when it fits beside the badge, else the bottom row', () => {
+    for (const mark of ['low', 'starved'] as const) {
+      expect(spot({ mark, reserved: 20, boxWidth: 60 })).toBe('top');
+      expect(spot({ mark, reserved: 21, boxWidth: 60 })).toBe('bottom');
+    }
+  });
+  test('the bottom row must fit after the owner tag, else it is hidden', () => {
+    const o = {
+      mark: 'low',
+      reserved: 30,
+      boxWidth: 60,
+      tagWidth: 20,
+    } as const;
+    expect(spot({ ...o, textWidth: 40 })).toBe('bottom');
+    expect(spot({ ...o, textWidth: 41 })).toBe('hidden');
+  });
+  test('the stalled marker hides the text when it does not fit', () => {
+    expect(spot({ mark: 'stalled', reserved: 20, boxWidth: 60 })).toBe('top');
+    expect(spot({ mark: 'stalled', reserved: 21, boxWidth: 60 })).toBe(
+      'hidden',
+    );
+  });
+});
+
+describe('rate label plan at the zoom cut-off', () => {
+  // At zoom 30 a cell is 30 px. Full "0.25/0.50/s" is 65 px, "0.25/s" 38 px,
+  // the LOW badge 26 px and an owner tag 17 px.
+  const at = (cells: number, tagWidth: number) =>
+    rateLabelPlan({
+      zoom: 30,
+      sealed: false,
+      mark: 'low',
+      fullWidth: 65,
+      shortWidth: 38,
+      reserved: 26,
+      boxWidth: 30 * cells,
+      tagWidth,
+    });
+
+  test('a one-cell building shows nothing that would leave it', () => {
+    expect(at(1, 17)).toEqual({ spot: 'hidden', short: false });
+    expect(at(1, 0)).toEqual({ spot: 'hidden', short: false });
+  });
+  test('a two-cell building falls back to the short form on the bottom row', () => {
+    expect(at(2, 17)).toEqual({ spot: 'bottom', short: true });
+    expect(at(2, 0)).toEqual({ spot: 'bottom', short: true });
+  });
+  test('a three-cell building shows the full text', () => {
+    expect(at(3, 17)).toEqual({ spot: 'bottom', short: false });
+  });
+  test('no short form: hidden when the full text does not fit', () => {
+    const p = rateLabelPlan({
+      zoom: 30,
+      sealed: false,
+      mark: 'stalled',
+      fullWidth: 65,
+      shortWidth: null,
+      reserved: 26,
+      boxWidth: 60,
+      tagWidth: 0,
+    });
+    expect(p).toEqual({ spot: 'hidden', short: false });
+  });
+});
+
+describe('what an under-supplied consumer shows', () => {
+  test('gets and need per second, or only what it gets', () => {
+    expect(suppliedRateText({ gets: 25, needs: 50 })).toBe('0.25/0.50/s');
+    expect(suppliedRateText({ gets: 0, needs: 120 })).toBe('0.00/1.20/s');
+    expect(suppliedShortText({ gets: 25 })).toBe('0.25/s');
+  });
+});
+
+describe('a partner source is not reported as backed up', () => {
+  test('the inspector is own-only, like the list and the marker', () => {
+    const { team, source } = borderTeam();
+    const dry = dryRunFlow(team, content, simConfig, 600);
+    const b = team.buildings.find((x) => x.id === source);
+    if (b === undefined) throw new Error('no building');
+    const pct = (acting?: number): number | null | undefined =>
+      inspectorFigures(team, content, simConfig, dry, b, acting)?.produces
+        ?.stalledPercent;
+    expect(pct(0)).toBeGreaterThan(50);
+    expect(pct(1)).toBeNull();
+  });
+});
+
+describe('problem texts agree with their count', () => {
+  const stashOf = (t: TeamState, def: string, n: number): TeamState => {
+    let out = t;
+    for (let i = 0; i < n; i++) {
+      const a = addToStash(out, content, { def, tier: 1, owner: 0 });
+      if (!a.ok) throw new Error(a.reason);
+      out = a.state;
+    }
+    return out;
+  };
+  const base = createTeamState({ ...map, nodes: [] });
+
+  test('stash: nothing at 0, singular at 1, plural at 2', () => {
+    const stash = (n: number): string[] =>
+      deriveProblems(stashOf(base, 'bld_barracks', n), content, null)
+        .filter((p) => p.kind === 'stash')
+        .map((p) => p.text);
+    expect(stash(0)).toEqual([]);
+    expect(stash(1)[0]).toMatch(/^1 building in the stash/);
+    expect(stash(2)[0]).toMatch(/^2 buildings in the stash/);
+  });
+
+  test('free nodes: nothing at 0, singular at 1, plural at 2', () => {
+    const nodes = (n: number): string[] => {
+      const t: TeamState = {
+        ...stashOf(base, 'bld_extractor', 1),
+        map: {
+          ...base.map,
+          nodes: Array.from({ length: n }, (_, i) => ({
+            x: 2 + i,
+            y: 2,
+            resource: 'res_a',
+          })),
+        },
+      };
+      return deriveProblems(t, content, null)
+        .filter((p) => p.kind === 'free_nodes')
+        .map((p) => p.text);
+    };
+    expect(nodes(0)).toEqual([]);
+    expect(nodes(1)[0]).toMatch(/: 1 free node \(/);
+    expect(nodes(2)[0]).toMatch(/: 2 free nodes \(/);
   });
 });
