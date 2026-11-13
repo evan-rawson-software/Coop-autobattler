@@ -289,7 +289,8 @@ a refusal reports its reason to the player who sent it. Undo and redo are per
 player and layout only (RS-5g): undoing the removal of a half adds it again
 with the checks above, and if that is now rejected the undo is refused with
 the same reason and the player's history is left as it was (the web client
-checks the whole inverse first, so a refusal changes nothing).
+checks the whole inverse first, so a refusal changes nothing). Undo restores
+the previous team state exactly, including conduit IDs and `nextId`.
 
 **Validation.** `validateTeamState` checks every half with the rules above,
 at most one half per player per spot, and no mismatch or loop on the joined

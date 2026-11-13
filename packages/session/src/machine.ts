@@ -779,15 +779,29 @@ function applyBuiltin(
       return withTeam(
         returnToStash(s.team, content, { actor: player, id: intent.id }),
       );
-    case 'erase_conduit':
+    case 'erase_conduit': {
       if (!isInt(intent.id)) return fail('invalid_intent');
-      return withTeam(eraseConduit(s.team, { actor: player, id: intent.id }));
+      const reclaim: unknown = intent.reclaimId;
+      if (reclaim !== undefined && typeof reclaim !== 'boolean') {
+        return fail('invalid_intent');
+      }
+      return withTeam(
+        eraseConduit(s.team, {
+          actor: player,
+          id: intent.id,
+          ...(reclaim === true ? { reclaimId: true } : {}),
+        }),
+      );
+    }
     case 'add_conduit': {
       const ok =
         isRecord(intent.from) &&
         isRecord(intent.to) &&
         Array.isArray(intent.cells);
       if (!ok) return fail('invalid_intent');
+      if (intent.id !== undefined && !isInt(intent.id)) {
+        return fail('invalid_intent');
+      }
       return withTeam(
         addConduit(s.team, content, { ...intent, actor: player }),
       );

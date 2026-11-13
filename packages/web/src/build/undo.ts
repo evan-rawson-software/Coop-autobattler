@@ -4,10 +4,10 @@
  * grows. Moving, rotating or returning a building detaches its conduits, so
  * the inverse also re-adds them.
  *
- * Actions are described symbolically (building IDs are stable; conduits are
- * found by their ends and cells) because a re-added conduit gets a new ID.
- * Consequently conduit IDs and `nextId` are not restored by undo; the layout
- * (`layoutHash`) is.
+ * Undo restores the exact previous team state, ids and `nextId` included.
+ * Conduits are found by their ends and cells, and the recorded inverse names
+ * each removed conduit's ID so it is re-added under it (`conduitId`); the
+ * inverse of an add erases with `reclaim`, handing the newest ID back.
  */
 
 import {
@@ -41,6 +41,10 @@ export type LayoutAction =
       readonly from: ConduitEnd | BorderEnd;
       readonly to: ConduitEnd | BorderEnd;
       readonly cells: readonly Cell[];
+      /** An add under this earlier ID (set on recorded inverses only). */
+      readonly conduitId?: number;
+      /** An erase that hands the newest ID back (inverse of an add). */
+      readonly reclaim?: true;
     };
 
 export interface ConduitSig {
@@ -90,10 +94,22 @@ export function toIntent(
     case 'return':
       return { type: 'return_building', id: a.id };
     case 'add':
-      return { type: 'add_conduit', from: a.from, to: a.to, cells: a.cells };
+      return {
+        type: 'add_conduit',
+        from: a.from,
+        to: a.to,
+        cells: a.cells,
+        ...(a.conduitId === undefined ? {} : { id: a.conduitId }),
+      };
     case 'erase': {
       const c = findConduit(state, a);
-      return c === undefined ? null : { type: 'erase_conduit', id: c.id };
+      return c === undefined
+        ? null
+        : {
+            type: 'erase_conduit',
+            id: c.id,
+            ...(a.reclaim === true ? { reclaimId: true } : {}),
+          };
     }
   }
 }
@@ -143,6 +159,24 @@ export function inverseOf(
   }
 }
 
+/**
+ * The inverse as recorded: every re-added conduit names the ID it had in
+ * `before`, and the erase that undoes an add reclaims its ID.
+ */
+function withIds(
+  before: TeamState,
+  action: LayoutAction,
+  inverse: readonly LayoutAction[],
+): LayoutAction[] {
+  return inverse.map((a): LayoutAction => {
+    if (a.t === 'add') {
+      const c = findConduit(before, a);
+      return c === undefined ? a : { ...a, conduitId: c.id };
+    }
+    return a.t === 'erase' && action.t === 'add' ? { ...a, reclaim: true } : a;
+  });
+}
+
 export type ApplyResult =
   | { readonly ok: true }
   | {
@@ -166,37 +200,7 @@ export function previewActions(
 ): ApplyResult {
   let state = team;
   for (const a of actions) {
-    let r:
-      | { ok: true; state: TeamState }
-      | { ok: false; reason: string; detail?: string };
-    switch (a.t) {
-      case 'place':
-        r = placeFromStash(state, content, { ...a, actor });
-        break;
-      case 'move':
-        r = moveBuilding(state, content, { ...a, actor });
-        break;
-      case 'return':
-        r = returnToStash(state, content, { id: a.id, actor });
-        break;
-      case 'add': {
-        r = addConduit(state, content, {
-          actor,
-          from: a.from,
-          to: a.to,
-          cells: a.cells,
-        });
-        break;
-      }
-      case 'erase': {
-        const c = findConduit(state, a);
-        r =
-          c === undefined
-            ? { ok: false, reason: 'unknown_conduit' }
-            : eraseConduit(state, { actor, id: c.id });
-        break;
-      }
-    }
+    const r = applyAction(state, content, a, actor);
     if (!r.ok) {
       return r.detail === undefined
         ? { ok: false, reason: r.reason, kept: true }
@@ -205,6 +209,43 @@ export function previewActions(
     state = r.state;
   }
   return { ok: true };
+}
+
+/** One action through the core operations (the same ones the intents use). */
+export function applyAction(
+  state: TeamState,
+  content: TeamContent,
+  a: LayoutAction,
+  actor: number,
+):
+  | { ok: true; state: TeamState }
+  | { ok: false; reason: string; detail?: string } {
+  switch (a.t) {
+    case 'place':
+      return placeFromStash(state, content, { ...a, actor });
+    case 'move':
+      return moveBuilding(state, content, { ...a, actor });
+    case 'return':
+      return returnToStash(state, content, { id: a.id, actor });
+    case 'add':
+      return addConduit(state, content, {
+        actor,
+        from: a.from,
+        to: a.to,
+        cells: a.cells,
+        ...(a.conduitId === undefined ? {} : { id: a.conduitId }),
+      });
+    case 'erase': {
+      const c = findConduit(state, a);
+      return c === undefined
+        ? { ok: false, reason: 'unknown_conduit' }
+        : eraseConduit(state, {
+            actor,
+            id: c.id,
+            ...(a.reclaim === true ? { reclaimId: true } : {}),
+          });
+    }
+  }
 }
 
 export interface UndoEntry {
@@ -226,7 +267,10 @@ export class UndoStack {
 
   /** Record an accepted action; `before` is the state it was applied to. */
   record(action: LayoutAction, before: TeamState): void {
-    this.undoList.push({ redo: action, undo: inverseOf(before, action) });
+    this.undoList.push({
+      redo: action,
+      undo: withIds(before, action, inverseOf(before, action)),
+    });
     this.redoList = [];
   }
 
@@ -285,8 +329,8 @@ export class UndoStack {
 
 /**
  * A hash of the layout: Core, buildings, stash and conduits (by their ends and
- * cells). It leaves out conduit IDs and the ID counter, which undo cannot
- * restore, so equal hashes mean the same factory.
+ * cells). It leaves out conduit IDs and the ID counter, so equal hashes mean
+ * the same factory; the full state hash is the exact check.
  */
 export function layoutHash(team: TeamState): string {
   const conduits = team.conduits

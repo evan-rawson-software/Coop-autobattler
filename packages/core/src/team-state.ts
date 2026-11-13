@@ -455,11 +455,13 @@ function isActor(state: TeamState, actor: unknown): actor is number {
 
 /**
  * Delete one conduit by ID. Free. Reasons, in order: unknown_conduit,
- * invalid_owner, not_owner (PP-1).
+ * invalid_owner, not_owner (PP-1). With `reclaimId` (undo of an add, RS-5g)
+ * the newest ID is handed back: if the conduit's ID is `nextId - 1`, `nextId`
+ * returns to it; otherwise `nextId` is left alone.
  */
 export function eraseConduit(
   state: TeamState,
-  args: { actor: number; id: number },
+  args: { actor: number; id: number; reclaimId?: boolean },
 ): OpResult<'unknown_conduit' | 'invalid_owner' | 'not_owner'> {
   const conduit = state.conduits.find((c) => c.id === args.id);
   if (conduit === undefined) return { ok: false, reason: 'unknown_conduit' };
@@ -471,6 +473,10 @@ export function eraseConduit(
     state: {
       ...state,
       conduits: state.conduits.filter((c) => c.id !== args.id),
+      nextId:
+        args.reclaimId === true && conduit.id === state.nextId - 1
+          ? conduit.id
+          : state.nextId,
     },
   };
 }

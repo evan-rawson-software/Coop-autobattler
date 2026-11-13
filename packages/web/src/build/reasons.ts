@@ -57,6 +57,7 @@ export const REASON_MESSAGES: Readonly<Record<KnownReason, string>> = {
   resource_mismatch: reason('resource_mismatch'),
   would_loop: reason('would_loop'),
   unknown_conduit: reason('unknown_conduit'),
+  invalid_conduit_id: reason('invalid_conduit_id'),
   // Session
   wrong_step: reason('wrong_step'),
   not_a_player: reason('not_a_player'),

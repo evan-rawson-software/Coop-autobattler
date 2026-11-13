@@ -246,8 +246,15 @@ export type BoardIntent =
       readonly from: IntentConduitEnd;
       readonly to: IntentConduitEnd;
       readonly cells: readonly Cell[];
+      /** Re-add under this earlier ID (undo); see `addConduit`. */
+      readonly id?: number;
     }
-  | { readonly type: 'erase_conduit'; readonly id: number };
+  | {
+      readonly type: 'erase_conduit';
+      readonly id: number;
+      /** Hand the newest ID back (undo of an add); see `eraseConduit`. */
+      readonly reclaimId?: boolean;
+    };
 
 /** A conduit end in an intent: a building side, or a border spot (PP-4). */
 export type IntentConduitEnd =
