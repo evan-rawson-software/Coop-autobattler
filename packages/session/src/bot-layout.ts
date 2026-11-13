@@ -254,6 +254,7 @@ function withConduit(
   sourceId: number,
   consumerId: number,
   wantSide?: Side,
+  wantInput?: Side,
 ): Plan | null {
   const t = plan.team;
   const s = t.buildings.find((b) => b.id === sourceId);
@@ -266,7 +267,11 @@ function withConduit(
     !occ.absoluteSides(s).outputs.includes(wantSide)
   )
     return null;
-  const input = occ.absoluteSides(c).inputs[0];
+  const inputs = occ.absoluteSides(c).inputs;
+  const input =
+    wantInput === undefined
+      ? inputs[0]
+      : inputs.find((i) => i.side === wantInput);
   if (outSide === undefined || input === undefined) return null;
   const sb = boxOf(env, s);
   const cb = boxOf(env, c);
@@ -491,7 +496,13 @@ export function makeEnv(
   };
 }
 
-/** The best collector the player owns, as a supply (items per 1000 ticks). */
+/**
+ * The best supply (items per 1000 ticks) of any collector the player owns,
+ * on the board or in the stash. An upper bound for "could any collector of
+ * theirs feed this?" (buying, and choosing a pair before a collector is
+ * picked). It says nothing about a particular collector: once one is chosen,
+ * pass it to `feeds`.
+ */
 export function bestOwnedSupply(
   team: TeamState,
   player: number,
@@ -505,14 +516,72 @@ export function bestOwnedSupply(
   return best;
 }
 
-/** Can one such collector feed `parts` consumers at the minimum coverage? */
+/** What the shop can still use on the player's plot, by resource. */
+export interface PlotRoom {
+  /** Nodes with nothing on them: where a bought collector could go. */
+  readonly openNodes: ReadonlyMap<string, number>;
+  /** Collectors already on the board, on a node of the resource. */
+  readonly placedSources: ReadonlyMap<string, number>;
+  /** Of those, the ones a Splitter could still share (CB-9e): feeding nothing or one consumer straight. */
+  readonly shareable: ReadonlyMap<string, number>;
+}
+
+export function plotRoom(
+  team: TeamState,
+  player: number,
+  content: Content,
+  plotWidth: number,
+): PlotRoom {
+  const x0 = player * plotWidth;
+  const x1 = Math.min(team.map.width, (player + 1) * plotWidth);
+  const occ = occupancy(team, content);
+  const openNodes = new Map<string, number>();
+  for (const n of team.map.nodes) {
+    if (n.x < x0 || n.x >= x1 || occ.buildingAt(n.x, n.y) !== null) continue;
+    openNodes.set(n.resource, (openNodes.get(n.resource) ?? 0) + 1);
+  }
+  const placedSources = new Map<string, number>();
+  const shareable = new Map<string, number>();
+  for (const b of team.buildings) {
+    if (b.owner !== player || content.buildings.get(b.def)?.kind !== 'source') {
+      continue;
+    }
+    const r = occ.sourceResource(b);
+    if (r === undefined) continue;
+    placedSources.set(r, (placedSources.get(r) ?? 0) + 1);
+    const out = team.conduits.filter(
+      (c) => !isBorderEnd(c.from) && c.from.building === b.id,
+    );
+    const to = out[0]?.to;
+    const direct =
+      to !== undefined &&
+      !isBorderEnd(to) &&
+      content.buildings.get(
+        team.buildings.find((x) => x.id === to.building)?.def ?? '',
+      )?.kind !== 'route';
+    if (out.length === 0 || (out.length === 1 && direct)) {
+      shareable.set(r, (shareable.get(r) ?? 0) + 1);
+    }
+  }
+  return { openNodes, placedSources, shareable };
+}
+
+/**
+ * Can one collector feed `parts` consumers at the minimum coverage? With
+ * `collector` it is that collector (the one actually being split); without,
+ * the player's best owned one.
+ */
 export function feeds(
   env: Env,
   team: TeamState,
   c: { def: string; tier: number },
   parts: number,
+  collector?: { def: string; tier: number },
 ): boolean {
-  const supply = bestOwnedSupply(team, env.player, env.content);
+  const supply =
+    collector === undefined
+      ? bestOwnedSupply(team, env.player, env.content)
+      : collectorSupply(env.content, collector.def, collector.tier);
   const share = Math.floor(supply / parts);
   return (
     coveragePercent(share, consumerNeed(env.content, c.def, c.tier)) >=
@@ -533,6 +602,7 @@ function splitterStarts(
   plan: Plan,
   resource: string,
   splitterId: number,
+  fits: (collector: { def: string; tier: number }) => boolean,
 ): Plan[] {
   const t = plan.team;
   const taken = attached(t);
@@ -552,7 +622,8 @@ function splitterStarts(
       b.owner !== env.player ||
       defOf(env, b.def)?.kind !== 'source' ||
       taken.has(b.id) ||
-      resourceOf(env, t, b) !== resource
+      resourceOf(env, t, b) !== resource ||
+      !fits(b)
     ) {
       continue;
     }
@@ -562,7 +633,7 @@ function splitterStarts(
   const source = t.stash.find(
     (b) => b.owner === env.player && defOf(env, b.def)?.kind === 'source',
   );
-  if (source === undefined) return starts;
+  if (source === undefined || !fits(source)) return starts;
   for (const node of shuffle(freeNodes(env, t, resource), env.rng)) {
     const s1 = withPlace(env, plan, source.id, node.x, node.y);
     const next = s1 && after(s1, source.id);
@@ -589,8 +660,16 @@ function connectPair(
       (defOf(env, b.def) as { routeType?: string } | undefined)?.routeType ===
         'splitter',
   );
-  if (splitter === undefined) return null;
-  for (const start of splitterStarts(env, plan, resource, splitter.id)) {
+  const owned = [...plan.team.buildings, ...plan.team.stash];
+  const a = owned.find((b) => b.id === first);
+  const b = owned.find((x) => x.id === second);
+  if (splitter === undefined || a === undefined || b === undefined) {
+    return null;
+  }
+  // The collector being split must itself have room for both consumers.
+  const fits = (src: { def: string; tier: number }): boolean =>
+    feeds(env, plan.team, a, 2, src) && feeds(env, plan.team, b, 2, src);
+  for (const start of splitterStarts(env, plan, resource, splitter.id, fits)) {
     let cur: Plan | null = start;
     const used = new Set<Side>();
     for (const id of [first, second]) {
@@ -640,7 +719,6 @@ function connectShare(
   );
   const fresh = t.stash.find((b) => b.id === newId);
   if (splitter === undefined || fresh === undefined) return null;
-  if (!feeds(env, t, fresh, 2)) return null;
   for (const src of t.buildings) {
     if (
       src.owner !== env.player ||
@@ -662,10 +740,21 @@ function connectShare(
     if (
       user === undefined ||
       defOf(env, user.def)?.kind === 'route' ||
-      !feeds(env, t, user, 2)
+      !feeds(env, t, user, 2, src) ||
+      !feeds(env, t, fresh, 2, src)
     ) {
       continue;
     }
+    // The return removes every conduit of the consumer, not only the one
+    // from `src`: remember the others to wire them again.
+    const others = t.conduits.filter(
+      (c) =>
+        c.id !== only.id &&
+        ((!isBorderEnd(c.from) && c.from.building === user.id) ||
+          (!isBorderEnd(c.to) && c.to.building === user.id)),
+    );
+    // A border link half cannot be rebuilt here: leave such a consumer be.
+    if (others.some((c) => isBorderEnd(c.from) || isBorderEnd(c.to))) continue;
     const taken = returnToStash(t, env.content, {
       actor: env.player,
       id: user.id,
@@ -705,6 +794,26 @@ function connectShare(
         break;
       }
       cur = done;
+    }
+    // Reconnect the consumer's other conduits from the same collectors.
+    for (const c of others) {
+      if (cur === null) break;
+      if (
+        isBorderEnd(c.from) ||
+        isBorderEnd(c.to) ||
+        c.to.building !== user.id
+      ) {
+        cur = null;
+        break;
+      }
+      cur = withConduit(
+        env,
+        cur,
+        c.from.building,
+        user.id,
+        c.from.side,
+        c.to.side,
+      );
     }
     if (cur !== null) return cur;
   }
