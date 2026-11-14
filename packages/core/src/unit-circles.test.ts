@@ -43,8 +43,8 @@ import {
   simConfig,
   threats,
   walk,
-} from './test-support.js';
-import { randomTeam } from './test-teams.js';
+} from './testing/support.js';
+import { randomTeam } from './testing/teams.js';
 import { loadUnitsOrThrow } from './units.js';
 
 const CU = CELL_UNITS;

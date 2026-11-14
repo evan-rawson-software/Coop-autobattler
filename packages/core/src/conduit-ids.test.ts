@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { addConduit } from './conduits.js';
 import { hashJson } from './hash.js';
 import type { GameMap } from './map.js';
-import { content, mapgen } from './test-support.js';
+import { content, mapgen } from './testing/support.js';
 import {
   addToStash,
   createTeamState,

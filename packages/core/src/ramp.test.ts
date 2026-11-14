@@ -32,8 +32,14 @@ import {
   overclockerOnOre,
   overclockerSpeedTeam,
   tinyMap,
-} from './ramp-scenarios.js';
-import { content, got, healthEntry, Lab, simConfig } from './test-support.js';
+} from './testing/ramp-scenarios.js';
+import {
+  content,
+  got,
+  healthEntry,
+  Lab,
+  simConfig,
+} from './testing/support.js';
 import type { TeamState } from './team-state.js';
 
 const GAP = 4;

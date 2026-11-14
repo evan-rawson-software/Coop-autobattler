@@ -1,4 +1,3 @@
-export { add } from './add.js';
 export { isCoreHealth } from './arena-sim.js';
 export { sumOverkill } from './battle.js';
 export {
@@ -138,7 +137,6 @@ export {
   loadMap,
   loadMapOrThrow,
   queryMap,
-  renderMapAscii,
   validateCorePosition,
 } from './map.js';
 export type {
@@ -167,7 +165,6 @@ export {
   placeCore,
   placeFromStash,
   removeFromStash,
-  renderTeamStateAscii,
   isBorderEnd,
   returnToStash,
   validateTeamState,
@@ -308,7 +305,12 @@ export {
   MAX_UNIT_RADIUS,
   MAX_UNIT_REACH,
 } from './limits.js';
-export { renderArenaAscii } from './arena-render.js';
+export {
+  renderArenaAscii,
+  renderMapAscii,
+  renderNeutralZoneAscii,
+  renderTeamStateAscii,
+} from './ascii-render.js';
 export { previewEnemyPaths } from './enemy-paths.js';
 export type { EnemyPath } from './enemy-paths.js';
 export { pickWeightedIndex } from './weighted.js';
@@ -374,7 +376,6 @@ export {
   generateNeutralZone,
   generateNeutralZoneWithStats,
   neutralZoneProblem,
-  renderNeutralZoneAscii,
   zoneBlockedCells,
 } from './neutral-zone.js';
 export type {

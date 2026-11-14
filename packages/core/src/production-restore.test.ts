@@ -2,8 +2,8 @@
 import { describe, expect, test } from 'vitest';
 import { createArenaContext, runArena, startArenaBattle } from './arena-sim.js';
 import { hashJson } from './hash.js';
-import { coreOnlyTeam, tinyMap } from './ramp-scenarios.js';
-import { content, got, Lab, simConfig } from './test-support.js';
+import { coreOnlyTeam, tinyMap } from './testing/ramp-scenarios.js';
+import { content, got, Lab, simConfig } from './testing/support.js';
 
 describe('restore mid-cooldown (PP-6)', () => {
   test('a state saved while a producer and an economy building are cooling down continues like the straight run', () => {

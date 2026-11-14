@@ -404,28 +404,3 @@ export function zoneBlockedCells(
   }
   return out;
 }
-
-/** ASCII picture of a zone, `y = 0` (side 0's edge) first: `~` lake, `#` cliff, `?` other, `.` open. */
-export function renderNeutralZoneAscii(
-  zone: NeutralZone,
-  lakeFeature: string,
-  cliffFeature: string,
-): string {
-  const rows: string[] = [];
-  for (let y = 0; y < zone.depth; y++) {
-    let row = '';
-    for (let x = 0; x < zone.width; x++) {
-      const f = zone.features.find((c) => c.x === x && c.y === y)?.feature;
-      row +=
-        f === undefined
-          ? '.'
-          : f === lakeFeature
-            ? '~'
-            : f === cliffFeature
-              ? '#'
-              : '?';
-    }
-    rows.push(row);
-  }
-  return rows.join('\n');
-}

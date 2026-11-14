@@ -25,7 +25,7 @@ import {
   groundViolations,
   overlapStats,
   simConfig,
-} from './test-support.js';
+} from './testing/support.js';
 import { MotionScratch } from './unit-motion.js';
 import { loadUnitsOrThrow } from './units.js';
 

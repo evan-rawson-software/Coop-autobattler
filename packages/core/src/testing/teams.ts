@@ -1,8 +1,8 @@
 /** Random but working teams for battle tests and benchmarks. */
-import { addConduit } from './conduits.js';
-import { generateMap } from './generate-map.js';
-import { divFloor } from './int.js';
-import { Rng } from './rng.js';
+import { addConduit } from '../conduits.js';
+import { generateMap } from '../generate-map.js';
+import { divFloor } from '../int.js';
+import { Rng } from '../rng.js';
 import {
   addToStash,
   createTeamState,
@@ -10,7 +10,7 @@ import {
   placeCore,
   placeFromStash,
   type TeamState,
-} from './team-state.js';
+} from '../team-state.js';
 import {
   content,
   got,
@@ -18,7 +18,7 @@ import {
   mapgen,
   outside,
   route,
-} from './test-support.js';
+} from './support.js';
 
 /**
  * A random team: a generated board with the Core placed, and for every

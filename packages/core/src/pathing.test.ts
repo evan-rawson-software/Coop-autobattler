@@ -25,7 +25,7 @@ import {
   mid,
   postContent,
   simConfig,
-} from './test-support.js';
+} from './testing/support.js';
 
 const CU = CELL_UNITS;
 const W = 12;

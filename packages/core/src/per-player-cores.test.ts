@@ -1,4 +1,5 @@
 /** One Core per player in the team state (PP-2, issue #128). */
+import { renderTeamStateAscii } from './ascii-render.js';
 import { describe, expect, test } from 'vitest';
 import { generateMap } from './generate-map.js';
 import {
@@ -15,11 +16,10 @@ import {
   occupancy,
   placeCore,
   placeFromStash,
-  renderTeamStateAscii,
   validateTeamState,
   type TeamState,
 } from './team-state.js';
-import { content, mapgen } from './test-support.js';
+import { content, mapgen } from './testing/support.js';
 
 const map = generateMap(7, 4, content, mapgen);
 const q = queryMap(map, content.terrain);

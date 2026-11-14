@@ -23,7 +23,7 @@ import {
   simConfig,
   type Pairs,
   TIMING,
-} from './test-support.js';
+} from './testing/support.js';
 import type { TeamState } from './team-state.js';
 interface Run {
   sim: BoardSim;

@@ -21,7 +21,6 @@ import { isRecord } from './load-util.js';
 import {
   loadMap,
   queryMap,
-  renderMapAscii,
   validateCorePosition,
   type Cell,
   type CorePositionProblem,
@@ -1150,49 +1149,4 @@ function validateInner(
     conduits,
     ...(modifiers === undefined ? {} : { modifiers }),
   };
-}
-
-// ---------------------------------------------------------------------------
-// ASCII renderer
-
-const KIND_LETTERS: Readonly<Record<string, string>> = {
-  source: 'S',
-  route: 'R',
-  unit_producer: 'U',
-  defense: 'D',
-  economy: 'E',
-};
-
-/**
- * Like `renderMapAscii` (front row on top), with buildings drawn over the
- * map: `S` source, `R` route, `U` unit producer, `D` defense, `E` economy,
- * `C` Core, and `*` for each conduit path cell. A final line gives the legend. The map's own characters (`.`
- * open, `~` lake, `#` cliff, lowercase letters for resource nodes) show
- * where no building stands.
- */
-export function renderTeamStateAscii(
-  state: TeamState,
-  content: TeamContent,
-): string {
-  const lines = renderMapAscii(state.map, content).split('\n');
-  const legend = lines.pop() ?? '';
-  const grid = lines.map((l) => l.split(''));
-  const paint = (c: Cell, ch: string): void => {
-    const row = grid[state.map.height - 1 - c.y];
-    if (row !== undefined && c.x >= 0 && c.x < row.length) row[c.x] = ch;
-  };
-  for (const b of state.buildings) {
-    const def = content.buildings.get(b.def);
-    if (def === undefined) continue;
-    const ch = KIND_LETTERS[def.kind] ?? '?';
-    for (const c of defCells(def, b.x, b.y, b.rotation)) paint(c, ch);
-  }
-  for (const conduit of state.conduits) {
-    for (const c of conduit.cells) paint(c, '*');
-  }
-  for (const c of allCoreCells(state.cores, content)) paint(c, 'C');
-  return [
-    ...grid.map((r) => r.join('')),
-    `${legend} | S=source R=route U=unit_producer D=defense E=economy C=core *=conduit`,
-  ].join('\n');
 }

@@ -15,7 +15,7 @@ import {
   content,
   got,
   simConfig,
-} from './test-support.js';
+} from './testing/support.js';
 import type { TeamState } from './team-state.js';
 
 /** Arena rows for 16 + 7 + 16 with a 24 wide board. */

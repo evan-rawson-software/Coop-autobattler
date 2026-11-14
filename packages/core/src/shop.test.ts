@@ -23,7 +23,7 @@ import {
   placeCore,
   placeFromStash,
 } from './team-state.js';
-import { content, mapgen } from './test-support.js';
+import { content, mapgen } from './testing/support.js';
 import { pickWeightedIndex } from './weighted.js';
 
 const economy = loadEconomyOrThrow(economyJson, {

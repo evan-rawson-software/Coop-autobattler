@@ -1,13 +1,13 @@
 /** Shared helpers for simulation tests: content, a board builder, networks. */
-import buildingsJson from '../../../content/buildings.json';
-import mapgenJson from '../../../content/mapgen.json';
-import presentationJson from '../../../content/presentation.en.json';
-import resourcesJson from '../../../content/resources.json';
-import simJson from '../../../content/sim.json';
-import terrainJson from '../../../content/terrain.json';
-import threatsJson from '../../../content/threats.json';
-import unitsJson from '../../../content/units.json';
-import type { Side } from './buildings.js';
+import buildingsJson from '../../../../content/buildings.json';
+import mapgenJson from '../../../../content/mapgen.json';
+import presentationJson from '../../../../content/presentation.en.json';
+import resourcesJson from '../../../../content/resources.json';
+import simJson from '../../../../content/sim.json';
+import terrainJson from '../../../../content/terrain.json';
+import threatsJson from '../../../../content/threats.json';
+import unitsJson from '../../../../content/units.json';
+import type { Side } from '../buildings.js';
 import {
   isCoreHealth,
   stepArena,
@@ -15,20 +15,20 @@ import {
   type HealthSim,
   type ArenaSim,
   type UnitSim,
-} from './arena-sim.js';
-import type { ArenaContent } from './arena.js';
-import { addConduit } from './conduits.js';
-import { loadAllContentOrThrow } from './content.js';
-import { generateMap } from './generate-map.js';
-import { fits } from './geometry.js';
-import { isqrtCeil } from './int.js';
-import { listLegalCorePositions, type Cell, type GameMap } from './map.js';
-import { loadMapgenOrThrow } from './mapgen.js';
-import { Rng } from './rng.js';
-import { loadSimConfigOrThrow } from './sim-config.js';
-import { loadUnitsOrThrow } from './units.js';
-import { CELL_UNITS } from './limits.js';
-import { loadThreatsOrThrow } from './threats.js';
+} from '../arena-sim.js';
+import type { ArenaContent } from '../arena.js';
+import { addConduit } from '../conduits.js';
+import { loadAllContentOrThrow } from '../content.js';
+import { generateMap } from '../generate-map.js';
+import { fits } from '../geometry.js';
+import { isqrtCeil } from '../int.js';
+import { listLegalCorePositions, type Cell, type GameMap } from '../map.js';
+import { loadMapgenOrThrow } from '../mapgen.js';
+import { Rng } from '../rng.js';
+import { loadSimConfigOrThrow } from '../sim-config.js';
+import { loadUnitsOrThrow } from '../units.js';
+import { CELL_UNITS } from '../limits.js';
+import { loadThreatsOrThrow } from '../threats.js';
 import {
   addToStash,
   createTeamState,
@@ -36,7 +36,7 @@ import {
   placeCore,
   placeFromStash,
   type TeamState,
-} from './team-state.js';
+} from '../team-state.js';
 export const content = loadAllContentOrThrow({
   resources: resourcesJson,
   terrain: terrainJson,

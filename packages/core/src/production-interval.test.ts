@@ -18,8 +18,8 @@ import {
   dryRunFlow,
   flowTotals,
 } from './flow-sim.js';
-import { coreOnlyTeam, tinyMap } from './ramp-scenarios.js';
-import { content, got, Lab, simConfig } from './test-support.js';
+import { coreOnlyTeam, tinyMap } from './testing/ramp-scenarios.js';
+import { content, got, Lab, simConfig } from './testing/support.js';
 
 const GAP = 4;
 const CTX = { resources: content.resources, units: content.units };

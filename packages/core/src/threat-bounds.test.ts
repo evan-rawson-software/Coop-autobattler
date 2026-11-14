@@ -5,7 +5,7 @@ import { unitStats } from './arena-sim.js';
 import { buildStronghold, generateThreat } from './threat-gen.js';
 import { THREAT_TYPES, maxThreatRound } from './threats.js';
 import { maxStrengthPercent } from './units.js';
-import { content, mapgen, simConfig, threats } from './test-support.js';
+import { content, mapgen, simConfig, threats } from './testing/support.js';
 
 const config = { sim: simConfig, mapgen };
 const configs = { threats, mapgen };

@@ -2,15 +2,15 @@
  * Shared scenarios for the in-battle ramp tests and the golden vectors (W1-7):
  * small boards on a 12 x 16 map built with the test `Lab`.
  */
-import buildingsJson from '../../../content/buildings.json';
-import presentationJson from '../../../content/presentation.en.json';
-import resourcesJson from '../../../content/resources.json';
-import terrainJson from '../../../content/terrain.json';
-import unitsJson from '../../../content/units.json';
-import { loadAllContentOrThrow } from './content.js';
-import type { GameMap } from './map.js';
-import type { TeamState } from './team-state.js';
-import { Lab } from './test-support.js';
+import buildingsJson from '../../../../content/buildings.json';
+import presentationJson from '../../../../content/presentation.en.json';
+import resourcesJson from '../../../../content/resources.json';
+import terrainJson from '../../../../content/terrain.json';
+import unitsJson from '../../../../content/units.json';
+import { loadAllContentOrThrow } from '../content.js';
+import type { GameMap } from '../map.js';
+import type { TeamState } from '../team-state.js';
+import { Lab } from './support.js';
 
 /** A 12 x 16 single-plot map with the given nodes. */
 export function tinyMap(nodes: [number, number, string][] = []): GameMap {

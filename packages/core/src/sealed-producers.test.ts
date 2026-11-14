@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { sealedProducers } from './sealed-producers.js';
 import { generateMap } from './generate-map.js';
 import { addToStash } from './team-state.js';
-import { randomTeam } from './test-teams.js';
+import { randomTeam } from './testing/teams.js';
 import {
   Lab,
   TIMING,
@@ -10,7 +10,7 @@ import {
   content,
   mapgen,
   type Pairs,
-} from './test-support.js';
+} from './testing/support.js';
 
 /** Cells of the ring around the box [x0..x1] x [y0..y1]. */
 function ring(x0: number, y0: number, x1: number, y1: number): Pairs {

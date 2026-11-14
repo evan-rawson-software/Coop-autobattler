@@ -1,4 +1,3 @@
-export { add } from '@game/core';
 export {
   applyIntent,
   createRun,

@@ -4,7 +4,7 @@
  */
 import { describe, expect, test } from 'vitest';
 import { canonicalJson, canonicalJsonOrNull } from './hash.js';
-import { content } from './test-support.js';
+import { content } from './testing/support.js';
 import { hasLoneSurrogate, utf8Bytes } from './utf8.js';
 import { workshopPrice, workshopPriceOrNull } from './workshop.js';
 

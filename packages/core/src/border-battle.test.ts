@@ -17,7 +17,7 @@ import {
 import { flowTotals } from './flow-sim.js';
 import type { GameMap } from './map.js';
 import type { Conduit, TeamState } from './team-state.js';
-import { Lab, content, mapgen, simConfig } from './test-support.js';
+import { Lab, content, mapgen, simConfig } from './testing/support.js';
 
 const map2 = (
   nodes: GameMap['nodes'] = [{ x: 2, y: 2, resource: 'res_a' }],
