@@ -83,6 +83,17 @@ export function runHash(runId: string): string {
   return `#${RUN_PREFIX}${encodeURIComponent(runId)}`;
 }
 
+/** `#run/<id>?review`: a finished run's Run over summary, read-only. */
+export function reviewRunHash(runId: string): string {
+  return `${runHash(runId)}?review`;
+}
+
+/** True for the review form of a run route (see `reviewRunHash`). */
+export function isReviewHash(hash: string): boolean {
+  const q = hash.indexOf('?');
+  return q >= 0 && new URLSearchParams(hash.slice(q + 1)).has('review');
+}
+
 /** The run a hash names, or null. */
 export function runIdFromHash(hash: string): string | null {
   const body = (hash.replace(/^#\/?/, '').split('?')[0] ?? '').trim();

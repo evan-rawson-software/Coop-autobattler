@@ -1433,6 +1433,27 @@ export async function runRunSmoke({
     `records: the abandoned run's depth is kept ("${records.replace(/\s+/g, ' ')}")`,
   );
 
+  // The abandoned run is listed under Recent runs; opening it shows its
+  // Run over summary read-only, with Back to menu and no New run.
+  check(
+    (await page.locator(`[data-recent="${runB}"]`).count()) === 1 &&
+      /1 player · round \d+ · \d{4}-\d\d-\d\d/.test(
+        await page.locator(`[data-recent="${runB}"]`).innerText(),
+      ),
+    'main menu: the abandoned run is listed under Recent runs',
+  );
+  await page.click(`[data-recent="${runB}"] [data-action="open-summary"]`);
+  await page.waitForSelector('#run-over');
+  check(
+    (await page.locator('#over-new-run').count()) === 0 &&
+      (await page.locator('#over-menu').innerText()) === 'Back to menu' &&
+      (await page.locator('#final-factory canvas').count()) === 1,
+    'a recent run reopens its summary read-only (Back to menu, no New run)',
+  );
+  await page.click('#over-menu');
+  await page.waitForSelector('#main-menu');
+  await page.waitForFunction(() => window.__debug?.menu?.runIds().length === 1);
+
   // ---------------------------------------------------------------------
   // Play run A to its end: lives reach 0 against the boss.
   await page.click(`[data-run="${runA}"] [data-action="resume"]`);

@@ -725,6 +725,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['runOverColPvp', {}, 'Rival party'],
   ['runOverNewRun', {}, 'New run'],
   ['runOverMainMenu', {}, 'Main menu'],
+  ['runOverBackToMenu', {}, 'Back to menu'],
 ];
 
 /** The reason_* keys are pinned code by code in texts.test.ts. */

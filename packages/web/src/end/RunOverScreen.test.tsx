@@ -91,4 +91,15 @@ describe('RunOverScreen for parties', () => {
       expect(out).toContain('Rival party');
     });
   }
+
+  test('a reopened finished run offers only Back to menu', () => {
+    const state = finished(1, 'defeated', false);
+    const full = text(RunOverScreen({ state, startingLives: 5 }));
+    expect(full).toContain('New run');
+    const out = text(
+      RunOverScreen({ state, startingLives: 5, readOnly: true }),
+    );
+    expect(out).toContain('Back to menu');
+    expect(out).not.toContain('New run');
+  });
 });

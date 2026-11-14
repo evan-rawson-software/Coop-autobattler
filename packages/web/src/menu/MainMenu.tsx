@@ -12,15 +12,23 @@ import {
   createNewRun,
   discardSavedRun,
 } from '../run/run-store.js';
-import { playersFromHash, runHash, seedFromHash } from '../run/router.js';
+import {
+  playersFromHash,
+  reviewRunHash,
+  runHash,
+  seedFromHash,
+} from '../run/router.js';
 import { getServices, type GameServices } from '../run/services.js';
 import { registerDebug, unregisterDebug } from '../debug-hook.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import './menu.css';
 import {
   menuRows,
+  recentRunRows,
   recordRows,
+  RECENT_RUNS_SHOWN,
   type MenuRow,
+  type RecentRunRow,
   type RecordRow,
 } from './view-model.js';
 import { count, plural } from '../plural.js';
@@ -29,6 +37,7 @@ interface MenuData {
   readonly services: GameServices;
   readonly rows: readonly MenuRow[];
   readonly records: readonly RecordRow[];
+  readonly recent: readonly RecentRunRow[];
   readonly now: number;
 }
 
@@ -54,15 +63,25 @@ const DEV_LINKS: readonly { readonly hash: string; readonly label: string }[] =
 
 async function load(): Promise<MenuData> {
   const services = await getServices();
-  const [items, best] = await Promise.all([
+  const [items, best, history] = await Promise.all([
     services.saves.list(),
     services.saves.bestDepthByPartySize(),
+    services.saves.listHistory().catch(() => []),
   ]);
+  // Only runs whose summary was kept are listed; look at the newest first.
+  const kept = new Set<string>();
+  const newest = [...history].sort((a, b) => b.finishedAt - a.finishedAt);
+  for (const h of newest) {
+    if (kept.size >= RECENT_RUNS_SHOWN) break;
+    const rec = await services.finished.get(h.runId).catch(() => null);
+    if (rec !== null) kept.add(h.runId);
+  }
   const now = Date.now();
   return {
     services,
     rows: menuRows(items, now, services.deps.rules.startingLives),
     records: recordRows(best),
+    recent: recentRunRows(history, (id) => kept.has(id)),
     now,
   };
 }
@@ -321,7 +340,10 @@ export function MainMenuScreen() {
                     {asking === row.runId ? (
                       row.blocked === null ? (
                         <div class="run-actions confirm" role="alertdialog">
-                          <p>Abandon this run?</p>
+                          <p data-field="abandon-warning">
+                            Abandon this run? It will end and can’t be resumed.
+                            Its deepest round still counts toward Records.
+                          </p>
                           <button
                             type="button"
                             class="danger"
@@ -426,6 +448,27 @@ export function MainMenuScreen() {
                 ),
               )}
             </ul>
+            {data !== null && data.recent.length > 0 ? (
+              <div class="recent" id="recent-runs">
+                <h3 class="recent-title">Recent runs</h3>
+                <ul class="run-list">
+                  {data.recent.map((r) => (
+                    <li key={r.runId} class="run-row" data-recent={r.runId}>
+                      <span data-field="recent-text">{r.text}</span>
+                      <button
+                        type="button"
+                        data-action="open-summary"
+                        onClick={() => {
+                          navigate(reviewRunHash(r.runId));
+                        }}
+                      >
+                        View summary
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
         </section>
       </div>

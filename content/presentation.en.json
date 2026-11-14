@@ -567,7 +567,8 @@
       "runOverColPve": "Stronghold",
       "runOverColPvp": "Rival party",
       "runOverNewRun": "New run",
-      "runOverMainMenu": "Main menu"
+      "runOverMainMenu": "Main menu",
+      "runOverBackToMenu": "Back to menu"
     }
   }
 }

@@ -23,7 +23,7 @@ import { ShopTab } from '../shop/ShopScreen.js';
 import { screenText, screenTexts } from '../build/texts.js';
 import { stepTabStore } from '../shop/tabs.js';
 import { RunBar } from './RunBar.js';
-import { screenForStep, runIdFromHash } from './router.js';
+import { isReviewHash, screenForStep, runIdFromHash } from './router.js';
 import {
   acknowledgeVersionNotice,
   discardSavedRun,
@@ -361,7 +361,11 @@ export function RunScreen() {
         <RunBarContext.Provider
           value={<RunBar state={st.state} maxLives={maxLives} />}
         >
-          <RunOverScreen state={st.state} startingLives={maxLives} />
+          <RunOverScreen
+            state={st.state}
+            startingLives={maxLives}
+            readOnly={isReviewHash(hash)}
+          />
         </RunBarContext.Provider>
       );
     }
