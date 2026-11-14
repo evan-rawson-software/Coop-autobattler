@@ -770,7 +770,7 @@
           ["0 bld_extractor t1 10", "1 bld_wall t1 4", "2 bld_extractor t1 10", "3 bld_extractor t1 10", "4 bld_splitter t1 5"]
         ],
         "rng": [4017906222, 1048198776, 252071946, 525099987],
-        "stateHash": "8cc14fa5"
+        "stateHash": "0cc93f8a"
       }
     }
   },
@@ -942,7 +942,7 @@
           ["0 bld_range t1 24", "1 bld_splitter t1 5", "2 bld_extractor t1 10", "3 bld_turret t1 15", "4 bld_wall t1 4"]
         ],
         "rng": [3911408375, 943011303, 2874200482, 3627807379],
-        "stateHash": "4ca67991"
+        "stateHash": "cbef838a"
       }
     }
   },
@@ -1201,7 +1201,7 @@
           ["0 bld_extractor t1 10", "1 bld_extractor t1 10", "2 bld_gate t1 8", "3 bld_range t1 24", "4 bld_armory t1 30"]
         ],
         "rng": [4183173375, 1530242370, 2692292519, 2946822902],
-        "stateHash": "80a387d4"
+        "stateHash": "ca55e412"
       }
     }
   },
@@ -1299,7 +1299,7 @@
           ["0 bld_wall t1 4", "1 bld_armory t1 30", "2 bld_armory t1 30", "3 bld_wall t1 4", "4 bld_turret t1 15"]
         ],
         "rng": [2782579401, 4181980959, 2945516258, 1625768006],
-        "stateHash": "18a6d440"
+        "stateHash": "43b4f2b5"
       }
     }
   }
