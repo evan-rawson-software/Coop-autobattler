@@ -318,18 +318,20 @@ button:disabled {
   padding-right: 0.7rem;
 }
 
+/* The Next panel sits right under the banner, as one row of buttons. */
 .ready-panel {
-  grid-column: 3;
+  grid-column: 1 / -1;
 }
 
 .btn-col {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.7rem;
 }
 
 .btn-col button {
-  padding: 0.55rem 0.8rem;
+  min-width: 10rem;
+  padding: 0.55rem 1.2rem;
 }
 
 .core-sub {

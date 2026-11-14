@@ -659,6 +659,25 @@ export function BattleSummaryView(props: SummaryProps) {
         </p>
       </section>
 
+      <Panel title={t('battlePanelNext')} id="panel-ready" class="ready-panel">
+        <div class="btn-col">
+          <button type="button" id="watch-again" onClick={props.onWatchAgain}>
+            {t('battleWatchAgain')}
+          </button>
+          <button
+            type="button"
+            id="battle-ready"
+            class="primary"
+            disabled={props.ready}
+            onClick={props.onReady}
+          >
+            {props.ready
+              ? t('battleReadyDone')
+              : (props.continueText ?? t('battleContinue'))}
+          </button>
+        </div>
+      </Panel>
+
       <Panel title={t('battlePanelSummaryChart')} id="panel-summary-chart">
         <p class="muted small" data-field="strength-unit">
           {t('battleStrengthUnit')}
@@ -776,25 +795,6 @@ export function BattleSummaryView(props: SummaryProps) {
             </tbody>
           </table>
         )}
-      </Panel>
-
-      <Panel title={t('battlePanelNext')} id="panel-ready" class="ready-panel">
-        <div class="btn-col">
-          <button type="button" id="watch-again" onClick={props.onWatchAgain}>
-            {t('battleWatchAgain')}
-          </button>
-          <button
-            type="button"
-            id="battle-ready"
-            class="primary"
-            disabled={props.ready}
-            onClick={props.onReady}
-          >
-            {props.ready
-              ? t('battleReadyDone')
-              : (props.continueText ?? t('battleContinue'))}
-          </button>
-        </div>
       </Panel>
     </div>
   );
