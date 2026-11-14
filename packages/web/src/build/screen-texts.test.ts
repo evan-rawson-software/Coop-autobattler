@@ -57,11 +57,6 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     'Time ran out: more Cores standing, then more Core health, wins.',
   ],
   [
-    'battleTieAttackerDouble',
-    { core: 'Core' },
-    'Both Cores fell at the same moment and every tiebreak was even, so you win.',
-  ],
-  [
     'battleTieAttackerTime',
     { core: 'Core' },
     'Time ran out and every tiebreak was even, so you win.',
@@ -695,6 +690,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['uiShopHealth', { health: '60' }, 'Health 60'],
   ['rateGetsNeeds', { gets: '0.25', needs: '0.50' }, '0.25/0.50/s'],
   ['runOverTitle', {}, 'Run over'],
+  ['runOverTitleReview', { date: '2026-03-04' }, 'Run summary · 2026-03-04'],
   ['runOverReached', { round: '4' }, 'Reached round 4'],
   ['runOverReasonAbandoned', {}, 'You abandoned this run.'],
   [

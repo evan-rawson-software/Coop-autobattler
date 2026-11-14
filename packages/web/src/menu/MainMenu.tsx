@@ -250,6 +250,26 @@ export function MainMenuScreen() {
               ))}
             </ul>
           </Panel>
+          {data !== null && data.recent.length > 0 ? (
+            <Panel title="Recent runs" id="recent-runs" class="recent">
+              <ul class="run-list">
+                {data.recent.map((r) => (
+                  <li key={r.runId} class="run-row" data-recent={r.runId}>
+                    <span data-field="recent-text">{r.text}</span>
+                    <button
+                      type="button"
+                      data-action="open-summary"
+                      onClick={() => {
+                        navigate(reviewRunHash(r.runId));
+                      }}
+                    >
+                      View summary
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          ) : null}
           {showDev ? (
             <details class="developer">
               <summary>Developer</summary>
@@ -448,27 +468,6 @@ export function MainMenuScreen() {
                 ),
               )}
             </ul>
-            {data !== null && data.recent.length > 0 ? (
-              <div class="recent" id="recent-runs">
-                <h3 class="recent-title">Recent runs</h3>
-                <ul class="run-list">
-                  {data.recent.map((r) => (
-                    <li key={r.runId} class="run-row" data-recent={r.runId}>
-                      <span data-field="recent-text">{r.text}</span>
-                      <button
-                        type="button"
-                        data-action="open-summary"
-                        onClick={() => {
-                          navigate(reviewRunHash(r.runId));
-                        }}
-                      >
-                        View summary
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
           </div>
         </section>
       </div>

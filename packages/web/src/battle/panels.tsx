@@ -431,7 +431,8 @@ export function stepText(
     case 'tiebreak_kills':
       return tx(`battleTieKills${form}`);
     case 'tiebreak_attacker':
-      return tx(`battleTieAttacker${form}`);
+      // A double fall is said by the summary's draw line; nothing to add.
+      return doubleFall ? null : tx('battleTieAttackerTime');
   }
 }
 
@@ -599,7 +600,10 @@ export function BattleSummaryView(props: SummaryProps) {
         </p>
         <p class="result-detail">
           {screenNodes(screenTexts, 'battleSummaryDetail', {
-            reason: reasonText(rec.result.reason, coreName, [own, foe]),
+            reason:
+              doubleFallTiebreak && rec.result.reason === 'tiebreak_attacker'
+                ? ''
+                : reasonText(rec.result.reason, coreName, [own, foe]),
             time: clock(rec.result.endTick, props.tps),
             core: coreName,
             own: (

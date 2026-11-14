@@ -102,4 +102,36 @@ describe('RunOverScreen for parties', () => {
     expect(out).toContain('Back to menu');
     expect(out).not.toContain('New run');
   });
+
+  test('sub-rows show only when they add to the total', () => {
+    const out = text(
+      RunOverScreen({
+        state: finished(1, 'defeated', false),
+        startingLives: 5,
+      }),
+    );
+    expect(out).toContain('Rival party battles');
+    expect(out).not.toContain('vs. rival parties');
+    expect(out).not.toContain('vs. the boss');
+  });
+
+  test('a reopened summary is titled with its date', () => {
+    const state = finished(1, 'defeated', false);
+    const at = new Date(2026, 2, 4, 12).getTime();
+    const titleOf = (v: unknown): unknown =>
+      (v as VNode<{ title?: unknown }>).props.title;
+    expect(
+      titleOf(
+        RunOverScreen({
+          state,
+          startingLives: 5,
+          readOnly: true,
+          finishedAt: at,
+        }),
+      ),
+    ).toBe('Run summary · 2026-03-04');
+    expect(titleOf(RunOverScreen({ state, startingLives: 5 }))).toBe(
+      'Run over',
+    );
+  });
 });
