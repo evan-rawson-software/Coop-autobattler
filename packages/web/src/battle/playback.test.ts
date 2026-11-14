@@ -548,7 +548,7 @@ describe('result reasons', () => {
       /more damage to buildings/,
     );
     expect(reasonText('tiebreak_kills', 'Core')).toMatch(/more kills/);
-    expect(reasonText('tiebreak_attacker', 'Core')).toMatch(/attacker/);
+    expect(reasonText('tiebreak_attacker', 'Core')).toMatch(/you win/);
     expect(reasonText('core_destroyed', 'Heart')).toMatch(/Heart/);
   });
 

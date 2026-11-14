@@ -18,7 +18,12 @@ import {
   type RunState,
 } from '@game/session';
 import type { StorageLike } from '../run/local-storage-store.js';
-import { archetypeText, bossLabel, bossName } from '../run/display-text.js';
+import {
+  archetypeText,
+  bossLabel,
+  bossName,
+  ghostDisplayName,
+} from '../run/display-text.js';
 import type { StoredOutcome } from './cannot-show.js';
 import type { BattleDescription, OpponentInfo } from './types.js';
 import { count } from '../plural.js';
@@ -196,7 +201,7 @@ function describeStoredBattle(
 
   let opponent: OpponentInfo;
   if (oppKind === 'ghost') {
-    opponent = { name: label, kind: 'ghost' };
+    opponent = { name: ghostDisplayName(label), kind: 'ghost' };
   } else if (oppKind === 'boss') {
     opponent = {
       name: bossName(archetypeText(label).name),
