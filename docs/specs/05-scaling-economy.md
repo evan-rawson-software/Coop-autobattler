@@ -115,7 +115,13 @@ first. Gold (next section) is never produced by the factory.
   much win rate varies by map seed.
 - **SC-10 [PROPOSED]** Economy buildings should be clearly worse than attack or
   defense buildings of the same price in a short battle and clearly better in a
-  long one, with the crossover point moving earlier as the run deepens.
+  long one, with the crossover point moving earlier as the run deepens. Under
+  scarcity this holds only where the ramp has spare demand to feed (owner
+  decision, issue #145): with the collector speed-up capped at +25 percent
+  (SC-12) an Overclocker never beats one more Barracks on a plot with 3 Ore
+  nodes (3 x 1.25 = 3.75 < 4). It pays off for turrets, which need two
+  collectors of their tier to fire without pause, and for consumers of a higher
+  tier than the collector that feeds them.
 
 ## Economy (gold)
 
