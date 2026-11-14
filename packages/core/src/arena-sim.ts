@@ -1460,8 +1460,11 @@ function spawnPosition(
   return null;
 }
 
+/**
+ * Step 2: unit producers take their inputs and spawn, then scheduled waves
+ * are queued and enter. The unit grid is current when this runs.
+ */
 function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
-  buildUnitGrid(sim, ctx);
   for (const p of sim.producers) {
     const info = ctx.producers.get(bkey(p.side, p.building));
     const board = sim.boards[p.side === 0 ? 0 : 1];
@@ -2507,26 +2510,63 @@ function destroyBuilding(
 // The step
 
 /**
- * Advance the battle by one tick, in place. Order: (1) flow on both boards;
- * (2) production and turret charging; (3) decisions from a snapshot, then
- * turret fire; (4) simultaneous attacks;
- * (5) moves and separation; (6) deaths and destruction; (7) cooldowns and the tick counter.
+ * Advance the battle by one tick, in place. Order: (0) the Overload level;
+ * (1) flow on both boards; (2) the unit grid, production (unit producers,
+ * then scheduled waves), turret and ramp charging; (3) decisions from a
+ * snapshot, then
+ * turret fire; (4) simultaneous attacks and the Overload Core decay, then
+ * damage; (5) moves and separation; (6) deaths and destruction; (7) cooldowns
+ * and the tick counter.
  */
 export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   const tick = sim.tick;
-  const events = ctx.events;
-  const arena = ctx.arena;
+  const cfg = ctx.simConfig;
 
   // 0. Overload level (derived from the tick; events on the ticks it rises).
-  const cfg = ctx.simConfig;
   const level = overloadLevel(tick, cfg);
   const beat = isOverloadBeat(tick, cfg);
   if (beat) {
-    if (level === 1) events?.push({ tick, type: 'overload_started' });
-    events?.push({ tick, type: 'overload_level', level });
+    if (level === 1) ctx.events?.push({ tick, type: 'overload_started' });
+    ctx.events?.push({ tick, type: 'overload_level', level });
   }
 
   // 1. Flow.
+  stepBothFlows(sim, ctx);
+
+  // 2. Production (unit producers, then scheduled waves), then turret and
+  // ramp charging. The per-side cell grid is rebuilt first; new units are
+  // linked into it as they are placed.
+  buildUnitGrid(sim, ctx);
+  produce(sim, ctx, tick);
+  chargeTurrets(sim, ctx);
+  chargeRamps(sim, ctx, tick);
+
+  // 3. Decide, from a snapshot. `units` stays this tick's list until step 6.
+  const units = sim.units;
+  decideAll(sim, ctx, units);
+  fireTurrets(sim, ctx, tick);
+
+  // 4. Resolve attacks simultaneously, with the Overload Core decay, then
+  // apply the damage.
+  resolveAttacks(ctx, units, tick, level);
+  if (beat) addOverloadDecay(ctx, tick, level);
+  applyDamage(sim, ctx, units);
+
+  // 5. Move and separate.
+  moveUnits(ctx, units);
+
+  // 6. Deaths and destruction.
+  removeDeadUnits(sim, ctx, units, tick);
+  destroyFallenBuildings(sim, ctx, tick);
+
+  // 7. Cooldowns, then the tick counter.
+  tickCooldowns(sim);
+  sim.tick += 1;
+}
+
+/** Step 1: each board's flow, side 0 then side 1, events tagged with the side. */
+function stepBothFlows(sim: ArenaSim, ctx: ArenaContext): void {
+  const events = ctx.events;
   for (const side of [0, 1] as const) {
     const buf = ctx.flowEvents[side];
     if (buf !== undefined) buf.length = 0;
@@ -2551,16 +2591,14 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
       }
     }
   }
+}
 
-  // 2. Production (unit producers, then turret charging).
-  produce(sim, ctx, tick);
-  chargeTurrets(sim, ctx);
-  chargeRamps(sim, ctx, tick);
-
-  // 3. Decide, from a snapshot.
-  // (The per-side cell grid was built in the Production step, new units
-  // linked as they were placed.)
-  const units = sim.units;
+/** Step 3: every unit's contact, then aim, then move decision, in unit order. */
+function decideAll(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  units: readonly UnitSim[],
+): void {
   const n = units.length;
   ensureUnitCapacity(ctx, n);
   ctx.unitDamage.fill(0, 0, n);
@@ -2577,9 +2615,22 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     const u = units[i];
     if (u !== undefined) decideMove(sim, ctx, i, u);
   }
-  fireTurrets(sim, ctx, tick);
+}
 
-  // 4. Resolve attacks simultaneously.
+/**
+ * Step 4: every attack ready this tick, in unit order, is summed into the
+ * damage tables (nothing is applied yet) and logged.
+ */
+function resolveAttacks(
+  ctx: ArenaContext,
+  units: readonly UnitSim[],
+  tick: number,
+  level: number,
+): void {
+  const events = ctx.events;
+  const arena = ctx.arena;
+  const cfg = ctx.simConfig;
+  const n = units.length;
   ctx.buildingDamage.fill(0);
   ctx.attackDamage.fill(0);
   for (let i = 0; i < n; i++) {
@@ -2618,28 +2669,42 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
       damage,
     });
   }
-  // Overload Core decay, applied together with the damage above.
-  if (beat) {
-    const decay = level * cfg.overloadCoreDamageStep;
-    // Every living Core takes the full amount: side 0 then side 1, players in
-    // ascending order (PP-9).
-    for (const side of [0, 1]) {
-      (arena.coreRef[side] ?? []).forEach((ref, core) => {
-        if (ref < 0 || arena.buildings[ref]?.alive !== true) return;
-        ctx.buildingDamage[ref] = addDamage(
-          ctx.buildingDamage[ref] ?? 0,
-          decay,
-        );
-        events?.push({
-          tick,
-          type: 'overload_core_damage',
-          side,
-          core,
-          damage: decay,
-        });
+}
+
+/** Step 4, on an Overload beat: every living Core takes the decay. */
+function addOverloadDecay(
+  ctx: ArenaContext,
+  tick: number,
+  level: number,
+): void {
+  const events = ctx.events;
+  const arena = ctx.arena;
+  const cfg = ctx.simConfig;
+  const decay = level * cfg.overloadCoreDamageStep;
+  // Every living Core takes the full amount: side 0 then side 1, players in
+  // ascending order (PP-9).
+  for (const side of [0, 1]) {
+    (arena.coreRef[side] ?? []).forEach((ref, core) => {
+      if (ref < 0 || arena.buildings[ref]?.alive !== true) return;
+      ctx.buildingDamage[ref] = addDamage(ctx.buildingDamage[ref] ?? 0, decay);
+      events?.push({
+        tick,
+        type: 'overload_core_damage',
+        side,
+        core,
+        damage: decay,
       });
-    }
+    });
   }
+}
+
+/** Step 4: apply the summed damage to units, then to buildings and Cores. */
+function applyDamage(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  units: readonly UnitSim[],
+): void {
+  const n = units.length;
   for (let i = 0; i < n; i++) {
     const dmg = ctx.unitDamage[i] ?? 0;
     const u = units[i];
@@ -2668,8 +2733,12 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     }
     h.hp = Math.max(0, remaining);
   }
+}
 
-  // 5. Move and separate.
+/** Step 5: hand this tick's motion inputs to the solver and run it. */
+function moveUnits(ctx: ArenaContext, units: readonly UnitSim[]): void {
+  const cfg = ctx.simConfig;
+  const n = units.length;
   for (let i = 0; i < n; i++) {
     const u = units[i];
     if (u === undefined) continue;
@@ -2689,8 +2758,16 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     ctx.maxRadius,
     ctx.air,
   );
+}
 
-  // 6. Deaths and destruction.
+/** Step 6: units at 0 health or less die, in unit order. */
+function removeDeadUnits(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  units: readonly UnitSim[],
+  tick: number,
+): void {
+  const events = ctx.events;
   let died = false;
   for (const u of units) {
     if (u.hp <= 0) {
@@ -2700,6 +2777,20 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     }
   }
   if (died) sim.units = units.filter((u) => u.hp > 0);
+}
+
+/**
+ * Step 6: buildings at 0 health are destroyed, in health-list order. When any
+ * fell, every cache that depends on the buildings is dropped and units whose
+ * target Core fell choose a new one.
+ */
+function destroyFallenBuildings(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  tick: number,
+): void {
+  const events = ctx.events;
+  const arena = ctx.arena;
   let destroyed = false;
   for (const h of sim.health) {
     if (h.hp > 0) continue;
@@ -2741,8 +2832,10 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
       });
     }
   }
+}
 
-  // 7. Cooldowns, then the tick counter.
+/** Step 7: every cooldown above zero goes down by one. */
+function tickCooldowns(sim: ArenaSim): void {
   for (const t of sim.turrets) {
     if (t.cooldown > 0) t.cooldown -= 1;
   }
@@ -2755,7 +2848,6 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   for (const u of sim.units) {
     if (u.attackCooldown > 0) u.attackCooldown -= 1;
   }
-  sim.tick += 1;
 }
 
 /**
