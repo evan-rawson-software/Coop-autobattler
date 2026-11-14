@@ -18,6 +18,7 @@ const side = (standing: number, health = 100) => ({
   coresStanding: standing,
   coreHealth: health,
   coreMaxHealth: 200,
+  cores: [],
 });
 const alive = [side(1), side(1)] as const;
 const bothDown = [side(0, 0), side(0, 0)] as const;
@@ -39,6 +40,28 @@ describe('genericReasonText', () => {
     expect(by['tiebreak_kills']).toMatch(/more kills/);
     expect(by['tiebreak_attacker']).toMatch(/attacker/);
     expect(by['time_limit']).toMatch(/Time ran out/);
+  });
+});
+
+describe('a lone Core that fell', () => {
+  const one = (standing: number) => ({
+    ...side(standing),
+    cores: [{}] as never,
+  });
+  test('says whose Core it was', () => {
+    expect(stepText('core_destroyed', 'Core', [one(0), one(1)])).toBe(
+      'Your Core was destroyed.',
+    );
+    expect(stepText('core_destroyed', 'Core', [one(1), one(0)])).toBe(
+      'Their Core was destroyed.',
+    );
+  });
+  test('keeps the generic wording with several Cores', () => {
+    const many = { ...side(0), cores: [{}, {}] as never };
+    expect(stepText('core_destroyed', 'Core', [many, one(1)])).toBeNull();
+    expect(reasonText('core_destroyed', 'Core', [many, one(1)])).toBe(
+      'Last Core destroyed.',
+    );
   });
 });
 

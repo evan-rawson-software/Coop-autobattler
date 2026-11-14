@@ -39,6 +39,16 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     'Tie: more damage to buildings wins.',
   ],
   ['battleGenericCoreDestroyed', { core: 'Core' }, 'Last Core destroyed.'],
+  [
+    'battleGenericCoreDestroyedYours',
+    { core: 'Core' },
+    'Your Core was destroyed.',
+  ],
+  [
+    'battleGenericCoreDestroyedTheirs',
+    { core: 'Core' },
+    'Their Core was destroyed.',
+  ],
   ['battleGenericKills', { core: 'Core' }, 'Tie: more kills wins.'],
   [
     'battleGenericOverkill',
@@ -301,7 +311,6 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     { name: '@name', gets: '@gets', needs: '@needs' },
     '@name gets @gets/s of the @needs/s it needs.',
   ],
-  ['reasonAtCell', { text: '@text', x: '@x', y: '@y' }, '@text At (@x, @y).'],
   [
     'reasonPlayerToAct',
     { text: '@text', number: '@number' },
@@ -528,7 +537,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'battleSummaryCoresStanding',
     { core: '@core', own: '@own', foe: '@foe', fell: '@fell' },
-    '@cores standing @own vs @foe. @fell',
+    '@cores standing: You @own, Them @foe. @fell',
   ],
   [
     'battleSummaryCoreFell',
@@ -544,7 +553,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
       own: '@own',
       foe: '@foe',
     },
-    '@reason Time @time · @core @own vs @foe.',
+    '@reason Time @time · @core health: You @own, Them @foe.',
   ],
   [
     'battleSummaryTiebreak',
@@ -554,7 +563,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
       ownkills: '@ownkills',
       foekills: '@foekills',
     },
-    'Building damage @ownbuild vs @foebuild · Kills @ownkills vs @foekills',
+    'Building damage: You @ownbuild, Them @foebuild. Kills: You @ownkills, Them @foekills.',
   ],
   ['battleVictory', {}, 'Victory'],
   ['battleDefeat', {}, 'Defeat'],
@@ -609,6 +618,12 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['battleWatchAgain', {}, 'Watch again'],
   ['battleReady', {}, 'Ready'],
   ['battleReadyDone', {}, 'Ready ✓'],
+  ['battleContinue', {}, 'Continue'],
+  ['battleContinueEvent', {}, 'Continue to the event'],
+  ['battleNoBuildings', {}, 'You had no buildings on the board.'],
+  ['battleStrengthUnit', {}, 'Total health of all units'],
+  ['choiceSubtitle', {}, 'Pick an opponent for this round'],
+  ['choiceFight', {}, 'Fight'],
   ['uiCameraPanel', {}, 'Camera'],
   ['uiCameraCenter', {}, 'Center'],
   ['uiCameraMyBase', {}, 'My base'],

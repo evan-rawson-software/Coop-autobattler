@@ -144,7 +144,10 @@ describe('reason messages', () => {
   });
 
   test('an offending cell from core is appended', () => {
-    expect(reasonMessage('crosses_conduit', '(3, 4)')).toContain('(3, 4)');
+    expect(reasonMessage('crosses_conduit', '(3, 4)')).toBe(
+      reasonMessage('crosses_conduit'),
+    );
+    expect(reasonMessage('crosses_conduit', '(3, 4)')).not.toContain('(3, 4)');
     expect(reasonMessage('made_up')).toContain('made_up');
   });
 });

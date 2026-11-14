@@ -726,8 +726,8 @@ try {
   await dragStash('bld_barracks', lake.x, lake.y);
   const stLake = await B.status();
   check(
-    stLake.kind === 'error' && /\(\d+, \d+\)/.test(stLake.text),
-    `terrain refusal names the cell: "${stLake.text}"`,
+    stLake.kind === 'error' && !/\(\d+, \d+\)/.test(stLake.text),
+    `terrain refusal states why, without coordinates: "${stLake.text}"`,
   );
 
   await dragStash('bld_barracks', BUILD_PLAN.barracks.x, BUILD_PLAN.barracks.y);
@@ -880,8 +880,8 @@ try {
   check(
     stCross.kind === 'error' &&
       /cross/i.test(stCross.text) &&
-      /\(\d+, \d+\)/.test(stCross.text),
-    `crossing attempt shows crosses_conduit's message with the cell: "${stCross.text}"`,
+      !/\(\d+, \d+\)/.test(stCross.text),
+    `crossing attempt shows crosses_conduit's message without coordinates: "${stCross.text}"`,
   );
   await shot('build-8b-conduit-crossing');
   check(
