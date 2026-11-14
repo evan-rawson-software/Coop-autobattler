@@ -758,6 +758,52 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['runOverNewRun', {}, 'New run'],
   ['runOverMainMenu', {}, 'Main menu'],
   ['runOverBackToMenu', {}, 'Back to menu'],
+  [
+    'menuPitch',
+    {},
+    'Build a factory. It trains an army. The army fights for you. Survive as many rounds as you can.',
+  ],
+  [
+    'menuPlayTutorialHint',
+    {},
+    'Your first real run, with tips · about 5 minutes',
+  ],
+  ['menuNewRun', {}, 'New run'],
+  ['menuContinue', {}, 'Continue'],
+  ['menuRecordsNoneYet', {}, 'none yet'],
+  ['menuRecordsNone', {}, 'none'],
+  ['menuRoundTitle', {}, 'How a round works'],
+  ['menuStepBuildTitle', {}, 'Build'],
+  [
+    'menuStepBuildBody',
+    {},
+    'Place buildings around your Core. Extractors mine resources, conduits carry them, and other buildings turn them into units and turret fire.',
+  ],
+  ['menuStepFightTitle', {}, 'Fight'],
+  [
+    'menuStepFightBody',
+    {},
+    'The battle plays itself. You watch. The first side to destroy the other’s Core wins.',
+  ],
+  ['menuStepRewardTitle', {}, 'Reward'],
+  [
+    'menuStepRewardBody',
+    {},
+    'Earn gold, pick one event, and buy new buildings. Then build again.',
+  ],
+  ['menuEyebrow', {}, 'Co-op factory autobattler · 1–4 players'],
+  ['menuPlayTutorial', {}, 'Play the tutorial'],
+  ['menuNewRunSkip', {}, 'New run (skip the tips)'],
+  [
+    'menuRecordsLine',
+    { deepest: 'none yet', saved: 'none' },
+    'Deepest round: none yet · Saved runs: none',
+  ],
+  [
+    'menuLivesRule',
+    { lives: '5' },
+    'You start with 5 lives. Losing to a rival party costs one. The run ends at 0.',
+  ],
 ];
 
 /** The reason_* keys are pinned code by code in texts.test.ts. */
