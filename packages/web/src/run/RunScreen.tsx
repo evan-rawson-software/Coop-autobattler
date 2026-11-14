@@ -20,6 +20,13 @@ import { EventChoiceScreen, EventResolveScreen } from '../event/EventScreen.js';
 import { CoreScreen } from '../placement/CoreScreen.js';
 import { AppShell, Panel, RunBarContext } from '../shell/AppShell.js';
 import { GameFrame } from '../shell/GameFrame.js';
+import {
+  PhaseContext,
+  nextPhaseAfterResult,
+  phaseForStep,
+  type PhaseInfo,
+} from '../shell/phase.js';
+import { markTipSeen } from '../shell/phase-tips.js';
 import { ShopTab } from '../shop/ShopScreen.js';
 import { screenText, screenTexts } from '../build/texts.js';
 import { stepTabStore } from '../shop/tabs.js';
@@ -176,6 +183,28 @@ function ReadyRun(props: { run: ActiveRun }) {
     [state, maxLives, run.storage],
   );
 
+  // The phase for the stepper and the tips. A tip counts as seen once the
+  // player has moved on from its phase (or left the run), or dismissed it.
+  const phase = phaseForStep(state.step);
+  useEffect(() => {
+    if (phase === null) return undefined;
+    return () => {
+      markTipSeen(phase);
+    };
+  }, [phase]);
+  const runEnds =
+    state.thisRound.pvp?.won === false &&
+    state.lives - run.deps.rules.pvpLossLifeCost <= 0;
+  const phaseInfo: PhaseInfo | null =
+    phase === null
+      ? null
+      : {
+          phase,
+          round: state.round,
+          leg: state.leg,
+          next: nextPhaseAfterResult(state.step, runEnds),
+        };
+
   if (conflict) return <Conflict runId={run.runId} />;
 
   let body: ComponentChildren;
@@ -222,7 +251,7 @@ function ReadyRun(props: { run: ActiveRun }) {
   }
   return (
     <RunBarContext.Provider value={bar}>
-      {body}
+      <PhaseContext.Provider value={phaseInfo}>{body}</PhaseContext.Provider>
       {needsVersionPrompt(run) ? (
         <VersionPrompt
           onContinue={() => {

@@ -9,7 +9,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { checkFrame } from './smoke-frame.mjs';
+import { checkFrame, checkStepper } from './smoke-frame.mjs';
 import { frames, hookReady, slow } from './smoke-timing.mjs';
 
 const SEED = 7;
@@ -749,6 +749,14 @@ export async function runRunSmoke({
   );
   await shot('run-3-core-selected');
   await checkFrame(page, check, 'Place Core');
+  const coreTip = await checkStepper(page, check, 'Place Core', {
+    phase: 'setup',
+    round1: true,
+  });
+  check(
+    coreTip.tip === 'setup' && coreTip.tipFirst,
+    'Place Core: the first-visit Set up box is at the top of the info rail',
+  );
   await shotDark('art2-core-placement');
   await checkAt1366(
     'Core placement',
@@ -806,6 +814,7 @@ export async function runRunSmoke({
   );
   await shot('run-4-first-build');
   await checkFrame(page, check, 'Build');
+  await checkStepper(page, check, 'Build', { phase: 'build', round1: true });
   const left = await placeKit();
   check(
     left === 0,
@@ -935,6 +944,11 @@ export async function runRunSmoke({
   );
   await shot('run-5-pve-choice');
   await checkFrame(page, check, 'Choose opponent');
+  await checkStepper(page, check, 'Choose opponent', {
+    phase: 'fight',
+    round1: true,
+    battle: 1,
+  });
   await shotDark('art2-pve-choice');
   await reloadSame('PvE choice');
   await page.click('[data-action="choose"][data-difficulty="easy"]');
@@ -1040,6 +1054,15 @@ export async function runRunSmoke({
   );
   await shot('run-6-battle-summary');
   await checkFrame(page, check, 'Battle result');
+  const resultStep = await checkStepper(page, check, 'Battle result', {
+    phase: 'fight',
+    round1: true,
+    battle: 1,
+  });
+  check(
+    resultStep.next === 'Next phase: Reward',
+    `Battle result: says the next phase (${resultStep.next})`,
+  );
   await reloadSame('the battle summary');
   await page.waitForFunction(
     () => window.__debug?.battle?.phase() === 'summary',
@@ -1076,6 +1099,7 @@ export async function runRunSmoke({
   );
   await shot('run-7-event-choice');
   await checkFrame(page, check, 'Event');
+  await checkStepper(page, check, 'Event', { phase: 'reward', round1: true });
   await shotDark('art2-event');
   await reloadSame('the event choice');
   // Prefer an event with a follow-up.
@@ -1177,6 +1201,7 @@ export async function runRunSmoke({
   await page.waitForSelector('#shop-screen');
   await shot('run-9-shop');
   await checkFrame(page, check, 'Shop');
+  await checkStepper(page, check, 'Shop', { phase: 'build', round1: true });
   await shotDark('art2-shop');
   {
     const shopText = await page.locator('#shop-screen').innerText();
