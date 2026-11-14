@@ -4,8 +4,11 @@ export {
   replayRun,
   type CreateRunResult,
   type ReplayResult,
-} from './machine.js';
-export { validateRunState, type ValidateRunStateResult } from './validate.js';
+} from './rules/machine.js';
+export {
+  validateRunState,
+  type ValidateRunStateResult,
+} from './rules/validate.js';
 export {
   allowedIntents,
   eventFollowUp,
@@ -16,12 +19,12 @@ export {
   type FollowUpView,
   type NextBattleInfo,
   type OpenVoteView,
-} from './selectors.js';
+} from './rules/selectors.js';
 export {
   createGameDeps,
   type GameConfigs,
   type GameOverrides,
-} from './game-deps.js';
+} from './rules/game-deps.js';
 export {
   PVE_DIFFICULTIES,
   pveOptionView,
@@ -30,7 +33,7 @@ export {
   type PveDifficulty,
   type PveOption,
   type PveOptionView,
-} from './pve-options.js';
+} from './rules/pve-options.js';
 export {
   createBattleResolver,
   type BattleDetail,
@@ -39,8 +42,8 @@ export {
   type FindPvpOpponent,
   type PvpOpponent,
   type StoredBattleSummary,
-} from './real-battle.js';
-export { rewardGold, rewardHooks } from './rewards.js';
+} from './rules/real-battle.js';
+export { rewardGold, rewardHooks } from './rules/rewards.js';
 export {
   checkEventHandlers,
   defaultEventHandlers,
@@ -56,19 +59,19 @@ export {
   type EventHandlers,
   type EventOffer,
   type FollowUpSpec,
-} from './events.js';
+} from './rules/events.js';
 export {
   replayLastBattle,
   verifyLastBattle,
   type ReplayLastBattleResult,
-} from './replay.js';
+} from './rules/replay.js';
 export {
   createDeps,
   defaultHooks,
   defaultRunRules,
   fixedBattle,
   stubBattle,
-} from './defaults.js';
+} from './rules/defaults.js';
 export {
   createEconomyDeps,
   economyHandlers,
@@ -76,7 +79,7 @@ export {
   playerShopLabel,
   readShop,
   type ShopData,
-} from './economy.js';
+} from './rules/economy.js';
 export {
   initSaves,
   openRun,
@@ -91,7 +94,7 @@ export {
   CONTROLLER_REASONS,
   type SelectionFailure,
   type StartRunResult,
-} from './run-controller.js';
+} from './app/run-controller.js';
 export {
   SAVE_FORMAT_VERSION,
   bestDepthFromHistory,
@@ -117,19 +120,19 @@ export {
   type SaveRecord,
   type SaveStore,
   type SaveSummary,
-} from './save.js';
+} from './app/save.js';
 export {
   createMemorySaveStore,
   type MemorySaveStore,
   type MemorySaveStoreOptions,
-} from './save-store-memory.js';
+} from './app/save-store-memory.js';
 export {
   classify,
   compareVersions,
   parseVersion,
   type ParsedVersion,
   type VersionClass,
-} from './version.js';
+} from './rules/version.js';
 export {
   BUNDLED_GHOST_FORMAT,
   BUNDLED_OWNER_PREFIX,
@@ -137,7 +140,7 @@ export {
   createBundledGhostStore,
   layerGhostStores,
   type BundledGhostFile,
-} from './bundled-ghosts.js';
+} from './app/bundled-ghosts.js';
 export {
   bucketKeyVersion,
   isLowerBucketVersion,
@@ -149,7 +152,7 @@ export {
   GHOST_STORE_DEFAULT_MAX_SIZE,
   type GhostStore,
   type MemoryGhostStore,
-} from './ghost-store.js';
+} from './app/ghost-store.js';
 export {
   BOSS_LABEL,
   MAX_GHOST_CANDIDATES,
@@ -169,7 +172,7 @@ export {
   selectionPending,
   snapshotOf,
   type GhostSelection,
-} from './ghosts.js';
+} from './rules/ghosts.js';
 export {
   BOT_STRATEGIES,
   describeBotStrategy,
@@ -180,14 +183,14 @@ export {
   type BotRunResult,
   type BotStrategyName,
   type Rejection,
-} from './bot.js';
-export { drawStream, streamLabels } from './streams.js';
-export { STEP_INTENTS } from './step-table.js';
+} from './bot/bot.js';
+export { drawStream, streamLabels } from './rules/streams.js';
+export { STEP_INTENTS } from './rules/step-table.js';
 export {
   BUILTIN_INTENT_TYPES,
   MAX_PLAYERS,
   RUN_STATE_FORMAT_VERSION,
   STEPS,
   TRANSIENT_STEPS,
-} from './types.js';
-export type * from './types.js';
+} from './rules/types.js';
+export type * from './rules/types.js';

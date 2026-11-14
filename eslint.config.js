@@ -286,17 +286,14 @@ export default tseslint.config(
     },
   },
   {
-    // Non-test session code: the same determinism rules as core. The
-    // in-memory stores and test support are app and test glue a port
-    // replaces, not rules.
-    files: ['packages/session/src/**/*.ts'],
-    ignores: [
-      '**/*.test.ts',
-      'packages/session/src/test-support.ts',
-      'packages/session/src/ghost-store.ts',
-      'packages/session/src/save-store-memory.ts',
-      'packages/session/src/bundled-ghosts.ts',
+    // Session rules and the bot: the same determinism rules as core. The
+    // app glue (src/app: controller, saves, stores) and the test support are
+    // replaced by a port, not ported.
+    files: [
+      'packages/session/src/rules/**/*.ts',
+      'packages/session/src/bot/**/*.ts',
     ],
+    ignores: ['**/*.test.ts'],
     plugins: { determinism: determinismPlugin },
     rules: {
       'no-restricted-globals': [

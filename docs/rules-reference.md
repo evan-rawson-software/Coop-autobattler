@@ -4021,7 +4021,7 @@ broken as follows:
 
 ## Run random streams
 
-Code: `packages/session/src/streams.ts`, `machine.ts`.
+Code: `packages/session/src/rules/streams.ts`, `machine.ts`.
 
 A run keeps one generator, saved in the run state. Its root is
 `rootRng(seed) = Rng.fromSeed(seed).child('run')` (see "Child streams").
@@ -4058,7 +4058,7 @@ stream derivation; `prng-child` covers the derivation of a child stream only.
 
 Placeholder numbers live in `content/economy.json`; the rules below are what
 the code does. Code: `packages/core/src/shop.ts`, `weighted.ts`, `economy.ts`
-and `packages/session/src/economy.ts`.
+and `packages/session/src/rules/economy.ts`.
 
 ### Gold
 
@@ -4130,7 +4130,7 @@ shown, and reloading or replaying never changes them.
 
 Code: `packages/core/src/modifiers.ts`, `events.ts`, `economy.ts` (rewards),
 `team-state.ts` (`raiseTier`), `arena-sim.ts` (modifiers in the simulation);
-`packages/session/src/pve-options.ts`, `rewards.ts`, `events.ts`,
+`packages/session/src/rules/pve-options.ts`, `rewards.ts`, `events.ts`,
 `real-battle.ts`, `replay.ts`, `game-deps.ts`. Data: `content/events.json`
 (`schemas/events.schema.json`) and `rewards` in `content/economy.json`.
 
@@ -4414,8 +4414,8 @@ if it differs.
 A ghost is another run's party, frozen at the start of one of its PvP battles
 and fought by a later run (MM-1..MM-17, W3-1). Everything below is implemented
 in `core/src/ghost-snapshot.ts` (format and validation) and
-`session/src/ghosts.ts` (taking, matching, selecting); the pool itself is the
-`GhostStore` interface (`session/src/ghost-store.ts`, see the session README).
+`session/src/rules/ghosts.ts` (taking, matching, selecting); the pool itself is the
+`GhostStore` interface (`session/src/app/ghost-store.ts`, see the session README).
 Ghosts are switched on by giving the run's deps `ghosts` (`createGameDeps(...,
 { ghosts: { ownerId } })`); without it PvP always fights the generated boss.
 
