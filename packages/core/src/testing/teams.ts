@@ -102,7 +102,7 @@ export function randomTeam(seed: number, partySize: number): TeamState {
     // A wall in a random plot.
     const wallPlot = m.partySize > 1 ? rng.nextInt(m.partySize) : 0;
     place(
-      'bld_wall',
+      'bld_wall_block',
       1,
       wallPlot * m.plotWidth + rng.nextInt(m.plotWidth),
       m.height - 3 + rng.nextInt(2),

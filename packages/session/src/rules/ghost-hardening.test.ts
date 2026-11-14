@@ -161,7 +161,12 @@ describe('item 1: reserved fields and structural hardening', () => {
   test('a snapshot over the size limit is rejected, with the limit scaled by party size', () => {
     const bad = loose(good);
     for (let i = 0; i < 2000; i++) {
-      bad.team.stash.push({ id: 100 + i, def: 'bld_wall', tier: 1, owner: 0 });
+      bad.team.stash.push({
+        id: 100 + i,
+        def: 'bld_wall_block',
+        tier: 1,
+        owner: 0,
+      });
     }
     expect(canonicalJson(bad).length).toBeGreaterThan(
       ghostMaxSerializedSize(1, 3, ctx),
@@ -428,8 +433,8 @@ describe('format 3 and one Core (issue #139, #135)', () => {
 
   test('a format-2 snapshot (before border links) is rejected, and so is any other format', () => {
     const good = goodSnapshot(2);
-    expect(good.formatVersion).toBe(6);
-    for (const v of [1, 2, 3, 4, 5, 0, '6']) {
+    expect(good.formatVersion).toBe(7);
+    for (const v of [1, 2, 3, 4, 5, 6, 0, '7']) {
       const r = validateGhostSnapshot(
         { ...clone(good), formatVersion: v },
         ctx,
@@ -586,8 +591,8 @@ describe('item 3: tier plausibility', () => {
     expect(
       validateGhostSnapshot(
         forged(1, [
-          { def: 'bld_wall', tier: 2, owner: 0 },
-          { def: 'bld_wall', tier: 2, owner: 0 },
+          { def: 'bld_wall_block', tier: 2, owner: 0 },
+          { def: 'bld_wall_block', tier: 2, owner: 0 },
         ]),
         ctx,
       ).ok,
@@ -633,8 +638,8 @@ describe('item 3: tier plausibility', () => {
     expect(
       validateGhostSnapshot(
         make([
-          { def: 'bld_wall', tier: 2, owner: 0 },
-          { def: 'bld_wall', tier: 2, owner: 1 },
+          { def: 'bld_wall_block', tier: 2, owner: 0 },
+          { def: 'bld_wall_block', tier: 2, owner: 1 },
         ]),
         ctx,
       ).ok,
@@ -642,8 +647,8 @@ describe('item 3: tier plausibility', () => {
     // Two tier-2 walls of one owner need two raises by round 1: rejected.
     const r = validateGhostSnapshot(
       make([
-        { def: 'bld_wall', tier: 2, owner: 0 },
-        { def: 'bld_wall', tier: 2, owner: 0 },
+        { def: 'bld_wall_block', tier: 2, owner: 0 },
+        { def: 'bld_wall_block', tier: 2, owner: 0 },
       ]),
       ctx,
     );
@@ -669,7 +674,7 @@ describe('item 3: tier plausibility', () => {
     const bound = ghostValueBound(1, 2, content, econ, events);
     const ownerLimit = bound.goldPerPlayer + bound.kitPerPlayer;
     expect(bound.limit).toBe(2 * ownerLimit);
-    const price = tierPrice(content, 'bld_wall', 1);
+    const price = tierPrice(content, 'bld_wall_block', 1);
     const fits = Math.floor(ownerLimit / price);
     const stashOf = (counts: [number, number]) => {
       const t = loose(base);
@@ -678,7 +683,12 @@ describe('item 3: tier plausibility', () => {
       let id = 1;
       counts.forEach((n, owner) => {
         for (let i = 0; i < n; i++) {
-          t.team.stash.push({ id: id++, def: 'bld_wall', tier: 1, owner });
+          t.team.stash.push({
+            id: id++,
+            def: 'bld_wall_block',
+            tier: 1,
+            owner,
+          });
         }
       });
       t.team['nextId'] = id;
@@ -992,9 +1002,9 @@ describe('item 5: the compact log form of select_ghost', () => {
     );
     const entry = log[at] as { n: number; intent: Record<string, unknown> };
     const chosen = entry.intent['chosen'] as Record<string, unknown>;
-    expect(chosen['formatVersion']).toBe(6);
+    expect(chosen['formatVersion']).toBe(7);
     expect(replayRun(args, clone(log), deps).ok).toBe(true);
-    for (const old of [5, 4, 1]) {
+    for (const old of [6, 5, 4, 1]) {
       const tampered = { ...clone(chosen), formatVersion: old };
       // The snapshot itself is refused as unsupported ...
       const shape = validateGhostSnapshot(clone(tampered), ctxOf(deps));
@@ -1095,7 +1105,7 @@ describe('item 5: the compact log form of select_ghost', () => {
       const c = chosenRun();
       const strict = strictOf(c.deps);
       const bad = [
-        { ...clone(c.chosen), formatVersion: 5 },
+        { ...clone(c.chosen), formatVersion: 6 },
         {
           ...clone(c.chosen),
           team: {

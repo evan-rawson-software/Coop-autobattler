@@ -17,11 +17,12 @@ import { findModifier, type EventsConfig } from './events.js';
 import { generateMap } from './generate-map.js';
 import { isRecord, isSafeInt } from './load-util.js';
 import type { MapgenConfig } from './mapgen.js';
+import { kitChoices } from './economy.js';
 import { tierPrice } from './shop.js';
 import { validateTeamState, type TeamState } from './team-state.js';
 
 /** The snapshot format. Bump when a field changes meaning. */
-export const GHOST_SNAPSHOT_FORMAT_VERSION = 6;
+export const GHOST_SNAPSHOT_FORMAT_VERSION = 7;
 
 /** Longest owner id, owner label and run id accepted. */
 export const GHOST_MAX_ID_LENGTH = 128;
@@ -196,7 +197,7 @@ export interface GhostPvpRecord {
 }
 
 export interface GhostSnapshot {
-  readonly formatVersion: 6;
+  readonly formatVersion: 7;
   /** The game version (`major.minor`) the run was played on. */
   readonly gameVersion: string;
   readonly partySize: number;
@@ -338,7 +339,10 @@ export function ghostValueBound(
     maxEventGold(events) * shops;
   let kitPerPlayer = 0;
   for (const k of economy.startingKit) {
-    kitPerPlayer += tierPrice(content, k.def, k.tier) * k.count;
+    // A `pick` entry is bounded by its dearest choice.
+    kitPerPlayer +=
+      Math.max(...kitChoices(k).map((def) => tierPrice(content, def, k.tier))) *
+      k.count;
   }
   return {
     goldPerPlayer,

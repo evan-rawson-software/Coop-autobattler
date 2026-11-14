@@ -136,7 +136,7 @@ describe('one Core per player (PP-14)', () => {
     const state = buildStronghold(p, content, mapgen);
     for (let plot = 0; plot < 4; plot++) {
       const walls = state.buildings.filter(
-        (b) => b.def === 'bld_wall' && b.owner === plot,
+        (b) => b.def === 'bld_wall_block' && b.owner === plot,
       );
       expect(walls.length).toBeGreaterThan(8);
       const core = got(p.stronghold.cores[plot]);

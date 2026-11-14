@@ -434,7 +434,9 @@ describe('layouts', () => {
     const ring = gen('arch_fortress');
     expect(threatSummary(ring, content).walls).toBeGreaterThan(8);
     const line = gen('arch_escalator', 4, 16);
-    const walls = line.stronghold.buildings.filter((b) => b.def === 'bld_wall');
+    const walls = line.stronghold.buildings.filter(
+      (b) => b.def === 'bld_wall_block',
+    );
     const rows = new Set(walls.map((w) => w.y));
     expect(rows.has(threats.layouts.line.lineRow)).toBe(true);
     const topRow = new Set(

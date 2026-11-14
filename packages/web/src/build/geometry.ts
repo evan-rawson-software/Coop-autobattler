@@ -5,6 +5,7 @@
  */
 
 import {
+  defCells,
   rotateBuilding,
   type BuildingDef,
   type Cell,
@@ -38,12 +39,7 @@ export function footprintCells(
   y: number,
   rotation: Rotation,
 ): Cell[] {
-  const fp = rotateBuilding(def, rotation).footprint;
-  const out: Cell[] = [];
-  for (let dy = 0; dy < fp.height; dy++) {
-    for (let dx = 0; dx < fp.width; dx++) out.push({ x: x + dx, y: y + dy });
-  }
-  return out;
+  return defCells(def, x, y, rotation);
 }
 
 /** Anchor so that the cursor cell sits near the middle of the footprint. */

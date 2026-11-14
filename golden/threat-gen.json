@@ -352,7 +352,7 @@
             ],
             "buildings": [
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 7,
@@ -366,49 +366,49 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 8,
@@ -417,7 +417,7 @@
             ]
           }
         },
-        "hash": "35701225"
+        "hash": "e7d07ba5"
       }
     }
   },
@@ -478,49 +478,49 @@
             ],
             "buildings": [
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 2,
@@ -534,21 +534,21 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 3,
@@ -569,21 +569,21 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 7,
@@ -597,49 +597,49 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 8,
@@ -648,7 +648,7 @@
             ]
           }
         },
-        "hash": "4b19d0c6"
+        "hash": "b1a1323a"
       }
     }
   },
@@ -719,84 +719,84 @@
             ],
             "buildings": [
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 0,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 0,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 2,
@@ -824,42 +824,42 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 3,
@@ -887,294 +887,294 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 9,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 9,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 6,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 7,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 16,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 17,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 6,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 7,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 16,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 17,
                 "y": 14,
@@ -1183,7 +1183,7 @@
             ]
           }
         },
-        "hash": "6d4eb38d"
+        "hash": "7515d3bd"
       }
     }
   },
@@ -1259,7 +1259,7 @@
             ],
             "buildings": [
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 10,
@@ -1268,7 +1268,7 @@
             ]
           }
         },
-        "hash": "59b94df6"
+        "hash": "d2147e38"
       }
     }
   },
@@ -1364,21 +1364,21 @@
             ],
             "buildings": [
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 3,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 4,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 7,
                 "y": 10,
@@ -1387,7 +1387,7 @@
             ]
           }
         },
-        "hash": "a0c67aaf"
+        "hash": "98151ee9"
       }
     }
   },
@@ -1515,77 +1515,77 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 1,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 2,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 3,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 4,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 6,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 11,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 12,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 10,
@@ -1594,7 +1594,7 @@
             ]
           }
         },
-        "hash": "3434723a"
+        "hash": "d6bba2a4"
       }
     }
   },
@@ -1660,14 +1660,14 @@
             ],
             "buildings": [
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 8,
@@ -1676,7 +1676,7 @@
             ]
           }
         },
-        "hash": "c0dbf848"
+        "hash": "3bebd188"
       }
     }
   },
@@ -1759,42 +1759,42 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 8,
@@ -1803,7 +1803,7 @@
             ]
           }
         },
-        "hash": "9bb56c0b"
+        "hash": "bc5ab9e3"
       }
     }
   },
@@ -1894,42 +1894,42 @@
             ],
             "buildings": [
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 2,
@@ -1950,21 +1950,21 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 3,
@@ -1992,70 +1992,70 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 8,
@@ -2064,7 +2064,7 @@
             ]
           }
         },
-        "hash": "6f0b36b3"
+        "hash": "d3bcf8f1"
       }
     }
   },
@@ -2320,448 +2320,448 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 1,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 2,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 3,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 4,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 6,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 7,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 11,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 12,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 16,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 17,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 24,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 25,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 26,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 27,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 28,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 29,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 30,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 33,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 34,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 35,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 36,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 37,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 38,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 40,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 41,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 52,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 53,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 54,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 55,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 56,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 57,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 58,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 59,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 62,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 63,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 64,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 65,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 66,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 67,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 68,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 69,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 72,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 73,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 74,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 75,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 76,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 77,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 78,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 79,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 82,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 83,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 84,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 85,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 86,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 87,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 88,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 89,
                 "y": 10,
@@ -2770,7 +2770,7 @@
             ]
           }
         },
-        "hash": "bbeb427b"
+        "hash": "1f2c848b"
       }
     }
   },
@@ -2856,154 +2856,154 @@
             ],
             "buildings": [
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 0,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 0,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 29,
                 "y": 0,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 42,
                 "y": 0,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 29,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 33,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 34,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 37,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 38,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 42,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 2,
@@ -3017,28 +3017,28 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 29,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 2,
@@ -3059,56 +3059,56 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 42,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 29,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 3,
@@ -3122,14 +3122,14 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 42,
                 "y": 3,
@@ -3150,14 +3150,14 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 6,
@@ -3171,28 +3171,28 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 29,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 6,
@@ -3206,28 +3206,28 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 42,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 7,
@@ -3248,28 +3248,28 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 29,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 7,
@@ -3290,490 +3290,490 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 42,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 29,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 33,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 34,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 37,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 38,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 42,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 9,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 9,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 29,
                 "y": 9,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 42,
                 "y": 9,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 29,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 42,
                 "y": 10,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 5,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 6,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 7,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 16,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 17,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 18,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 29,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 30,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 31,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 33,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 34,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 37,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 38,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 40,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 41,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 42,
                 "y": 11,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 6,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 7,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 16,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 17,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 30,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 31,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 33,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 34,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 37,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 38,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 40,
                 "y": 14,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 41,
                 "y": 14,
@@ -3782,7 +3782,7 @@
             ]
           }
         },
-        "hash": "3331d0a5"
+        "hash": "7d41ed0d"
       }
     }
   },
@@ -3873,189 +3873,189 @@
             ],
             "buildings": [
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 33,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 34,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 37,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 38,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 56,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 57,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 58,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 61,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 62,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 63,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 80,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 81,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 82,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 85,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 86,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 87,
                 "y": 1,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 2,
@@ -4076,28 +4076,28 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 56,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 63,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 80,
                 "y": 2,
@@ -4111,42 +4111,42 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 87,
                 "y": 2,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 56,
                 "y": 3,
@@ -4160,21 +4160,21 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 63,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 80,
                 "y": 3,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 87,
                 "y": 3,
@@ -4216,35 +4216,35 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 56,
                 "y": 6,
@@ -4258,14 +4258,14 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 63,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 80,
                 "y": 6,
@@ -4279,14 +4279,14 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 87,
                 "y": 6,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 7,
@@ -4307,14 +4307,14 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 7,
@@ -4328,14 +4328,14 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 56,
                 "y": 7,
@@ -4356,14 +4356,14 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 63,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 80,
                 "y": 7,
@@ -4384,182 +4384,182 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 87,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 33,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 34,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 37,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 38,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 56,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 57,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 58,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 61,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 62,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 63,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 80,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 81,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 82,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 85,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 86,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 87,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 11,
@@ -4568,7 +4568,7 @@
             ]
           }
         },
-        "hash": "e4e06a2a"
+        "hash": "d5369cb8"
       }
     }
   },
@@ -4732,14 +4732,14 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 7,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 7,
@@ -4760,168 +4760,168 @@
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 8,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 9,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 10,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 13,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 14,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 15,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 32,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 33,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 34,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 37,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 38,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 39,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 56,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 57,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 58,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 61,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 62,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 63,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 80,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 81,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 82,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 85,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 86,
                 "y": 8,
                 "rotation": 0
               },
               {
-                "def": "bld_wall",
+                "def": "bld_wall_block",
                 "tier": 1,
                 "x": 87,
                 "y": 8,
@@ -4930,7 +4930,7 @@
             ]
           }
         },
-        "hash": "5867d740"
+        "hash": "a36efdc0"
       }
     }
   }

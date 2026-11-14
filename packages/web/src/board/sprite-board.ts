@@ -80,7 +80,9 @@ export function occupiedCells(board: BoardScene): Uint8Array {
         if (cx >= 0 && cy >= 0 && cx < f.w && cy < f.h) occ[cy * f.w + cx] = 1;
       }
   };
-  for (const b of board.buildings) mark(b.rect);
+  for (const b of board.buildings) {
+    for (const c of b.cells) mark({ x: c.x, y: c.y, w: 1, h: 1 });
+  }
   for (const c of board.cores) if (c) mark(c.rect);
   for (const t of board.features) mark({ x: t.x, y: t.y, w: 1, h: 1 });
   occupiedCache.set(board, occ);
@@ -256,11 +258,32 @@ function drawBuildings(
   const multi = owners.size > 1;
   // Walls join their wall neighbours (any tier or owner), in view space.
   const wallCells = cellSet(
-    board.buildings
-      .filter((b) => b.def.id === 'bld_wall' && b.rect.w === 1)
-      .map((b) => b.rect),
+    board.buildings.filter((b) => b.solid).flatMap((b) => b.cells),
   );
   for (const b of board.buildings) {
+    if (b.solid && findSprite('bld_wall_auto')) {
+      // A wall of any shape: its own cells, each joined to wall neighbours.
+      const owner = theme.owners[b.instance.owner % theme.owners.length];
+      b.cells.forEach((c, i) => {
+        const cx = (c.x - f.ox) * T;
+        const cy = (c.y - f.oy) * T;
+        drawSprite(lc, 'bld_wall_auto', cx, cy, 1, {
+          frame: wallFrame(wallCells, c.x, c.y),
+        });
+        if (b.instance.tier >= 2) {
+          drawSprite(lc, 'tier_trim_1x1', cx, cy, 1, {
+            frame: b.instance.tier - 2,
+          });
+          if (i === 0) drawTierPips(lc, cx, cy, b.instance.tier);
+        }
+        if (multi) {
+          lc.strokeStyle = owner ?? theme.ink;
+          lc.lineWidth = 1;
+          lc.strokeRect(cx + 0.5, cy + 0.5, T - 1, T - 1);
+        }
+      });
+      continue;
+    }
     const px = (b.rect.x - f.ox) * T;
     const py = (b.rect.y - f.oy) * T;
     const pw = b.rect.w * T;
@@ -286,9 +309,6 @@ function drawBuildings(
         lc.drawImage(src, -head.anchor[0], -head.anchor[1]);
         lc.restore();
       }
-    } else if (fits && b.def.id === 'bld_wall' && findSprite('bld_wall_auto')) {
-      const frame = wallFrame(wallCells, b.rect.x, b.rect.y);
-      drawSprite(lc, 'bld_wall_auto', px, py, 1, { frame });
     } else if (fits) {
       const rot = buildingSpriteRot(b, f.turned);
       drawSprite(lc, b.def.id, px, py, 1, rot ? { rot } : {});

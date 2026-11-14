@@ -25,7 +25,7 @@ function ring(x0: number, y0: number, x1: number, y1: number): Pairs {
 }
 
 function walled(
-  skip: (x: number, y: number) => string | null = () => 'bld_wall',
+  skip: (x: number, y: number) => string | null = () => 'bld_wall_block',
   map = board([]),
 ) {
   const lab = new Lab(map);
@@ -41,7 +41,7 @@ describe('sealedProducers (issue #37, 3a)', () => {
   test('a producer in the open is not sealed; no producers gives none', () => {
     const lab = new Lab(board([]));
     lab.put('bld_barracks', 10, 5);
-    lab.put('bld_wall', 3, 3);
+    lab.put('bld_wall_block', 3, 3);
     expect(sealedProducers(lab.state, content)).toEqual([]);
     expect(sealedProducers(new Lab(board([])).state, content)).toEqual([]);
   });
@@ -53,14 +53,14 @@ describe('sealedProducers (issue #37, 3a)', () => {
 
   test('any building closes the ring, not just walls', () => {
     const { lab, barracks } = walled((x, y) =>
-      x === 9 && y === 4 ? 'bld_turret' : 'bld_wall',
+      x === 9 && y === 4 ? 'bld_turret' : 'bld_wall_block',
     );
     expect(sealedProducers(lab.state, content)).toEqual([barracks]);
   });
 
   test('a gate in the ring makes it walkable', () => {
     const { lab } = walled((x, y) =>
-      x === 12 && y === 5 ? 'bld_gate' : 'bld_wall',
+      x === 12 && y === 5 ? 'bld_gate' : 'bld_wall_block',
     );
     expect(sealedProducers(lab.state, content)).toEqual([]);
   });
@@ -79,7 +79,8 @@ describe('sealedProducers (issue #37, 3a)', () => {
       features.map((f) => `${String(f.x)},${String(f.y)}`),
     );
     const { lab, barracks } = walled(
-      (x, y) => (blocked.has(`${String(x)},${String(y)}`) ? null : 'bld_wall'),
+      (x, y) =>
+        blocked.has(`${String(x)},${String(y)}`) ? null : 'bld_wall_block',
       map,
     );
     expect(sealedProducers(lab.state, content)).toEqual([barracks]);
@@ -88,14 +89,16 @@ describe('sealedProducers (issue #37, 3a)', () => {
       (x, y) =>
         blocked.has(`${String(x)},${String(y)}`) || (x === 12 && y === 5)
           ? null
-          : 'bld_wall',
+          : 'bld_wall_block',
       map,
     );
     expect(sealedProducers(open.lab.state, content)).toEqual([]);
   });
 
   test('a 2x2 producer with one free exit cell is not sealed when that cell leads out', () => {
-    const { lab } = walled((x, y) => (x === 9 && y === 5 ? null : 'bld_wall'));
+    const { lab } = walled((x, y) =>
+      x === 9 && y === 5 ? null : 'bld_wall_block',
+    );
     expect(sealedProducers(lab.state, content)).toEqual([]);
   });
 
@@ -109,16 +112,16 @@ describe('sealedProducers (issue #37, 3a)', () => {
     around.delete('9,5');
     for (const key of around) {
       const [x, y] = key.split(',').map(Number) as [number, number];
-      lab.put('bld_wall', x, y);
+      lab.put('bld_wall_block', x, y);
     }
     // The pocket (9,5) is bounded by (8,5), (9,4), (9,6) and the barracks.
-    for (const [x, y] of [[8, 5]] as Pairs) lab.put('bld_wall', x, y);
+    for (const [x, y] of [[8, 5]] as Pairs) lab.put('bld_wall_block', x, y);
     expect(sealedProducers(lab.state, content)).toEqual([barracks]);
     const lab2 = new Lab(board([]));
     lab2.put('bld_barracks', 10, 5);
     for (const key of around) {
       const [x, y] = key.split(',').map(Number) as [number, number];
-      lab2.put('bld_wall', x, y);
+      lab2.put('bld_wall_block', x, y);
     }
     // (8, 5) left open: the pocket leads out.
     expect(sealedProducers(lab2.state, content)).toEqual([]);
@@ -127,7 +130,7 @@ describe('sealedProducers (issue #37, 3a)', () => {
   test('an enclosed building that is not a producer is not listed; unplaced ones never count', () => {
     const lab = new Lab(board([]));
     const turret = lab.put('bld_turret', 10, 5);
-    for (const [x, y] of ring(10, 5, 10, 5)) lab.put('bld_wall', x, y);
+    for (const [x, y] of ring(10, 5, 10, 5)) lab.put('bld_wall_block', x, y);
     expect(turret).toBeGreaterThan(0);
     expect(sealedProducers(lab.state, content)).toEqual([]);
     const stashed = addToStash(lab.state, content, {
@@ -143,7 +146,7 @@ describe('sealedProducers (issue #37, 3a)', () => {
     const lab = new Lab(board([]));
     const barracks = lab.put('bld_barracks', 10, 14);
     for (const [x, y] of ring(10, 14, 11, 15)) {
-      if (y <= 15) lab.put('bld_wall', x, y);
+      if (y <= 15) lab.put('bld_wall_block', x, y);
     }
     expect(barracks).toBeGreaterThan(0);
     expect(sealedProducers(lab.state, content)).toEqual([]);
@@ -153,7 +156,7 @@ describe('sealedProducers (issue #37, 3a)', () => {
     const { lab, barracks } = walled();
     const free = lab.put('bld_barracks', 2, 2);
     const second = lab.put('bld_barracks', 16, 8);
-    for (const [x, y] of ring(16, 8, 17, 9)) lab.put('bld_wall', x, y);
+    for (const [x, y] of ring(16, 8, 17, 9)) lab.put('bld_wall_block', x, y);
     expect(free).toBeGreaterThan(0);
     expect(sealedProducers(lab.state, content)).toEqual([barracks, second]);
   });
@@ -166,7 +169,7 @@ describe('sealedProducers (issue #37, 3a)', () => {
     lab.state = team;
     for (let i = 0; i < 400; i++) {
       try {
-        lab.put('bld_wall', (i * 7) % map.width, (i * 5) % map.height);
+        lab.put('bld_wall_block', (i * 7) % map.width, (i * 5) % map.height);
       } catch {
         // occupied or blocked: skip
       }

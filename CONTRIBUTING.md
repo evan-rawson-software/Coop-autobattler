@@ -165,7 +165,7 @@ the bundled ghosts use the same `major.minor`, `BUNDLED_GAME_VERSION`). The
 run state, the ghost snapshot and the save record each carry a format number
 (`RUN_STATE_FORMAT_VERSION`, `GHOST_SNAPSHOT_FORMAT_VERSION`,
 `SAVE_FORMAT_VERSION`). The per-player design (issue #124) is major version 1
-(run state format 9, ghost snapshot format 6; 8 / 5 had one shared id counter for conduits, issue #38; 7 / 4 had one Core per player, 6 / 3 added border links, issue #135); everything older is wiped at
+(run state format 10, ghost snapshot format 7; 9 / 6 had the one 1×1 wall `bld_wall`, before the seven tetromino wall shapes, issue #291; 8 / 5 had one shared id counter for conduits, issue #38; 7 / 4 had one Core per player, 6 / 3 added border links, issue #135); everything older is wiped at
 start-up with a notice, with no migration (TA-8).
 
 The rule for a change that makes saved data unreadable:

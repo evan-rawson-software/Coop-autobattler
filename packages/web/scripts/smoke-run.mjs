@@ -32,6 +32,35 @@ export async function runRunSmoke({
       ),
     ).buildings.map((b) => [b.id, b.footprint]),
   );
+  // Cells a building covers (wall shapes have a cell mask, issue #291): the
+  // mask rotated clockwise as drawn with north on top, `[x, y]` with y up.
+  const maskOf = (fp) =>
+    fp.cells ??
+    Array.from({ length: fp.width * fp.height }, (_, i) => [
+      i % fp.width,
+      Math.floor(i / fp.width),
+    ]);
+  const rotated = (fp, rot) => {
+    const w = fp.width;
+    const h = fp.height;
+    const swap = rot === 90 || rot === 270;
+    return {
+      width: swap ? h : w,
+      height: swap ? w : h,
+      cells: maskOf(fp).map(([x, y]) =>
+        rot === 90
+          ? [y, w - 1 - x]
+          : rot === 180
+            ? [w - 1 - x, h - 1 - y]
+            : rot === 270
+              ? [h - 1 - y, x]
+              : [x, y],
+      ),
+    };
+  };
+  const cellsAt = (def, x, y, rot = 0) =>
+    rotated(footprints[def], rot).cells.map(([cx, cy]) => [x + cx, y + cy]);
+  const isWallDef = (def) => def.startsWith('bld_wall_');
   const income = JSON.parse(
     readFileSync(path.resolve(webDir, '../../content/economy.json'), 'utf8'),
   ).baseIncomePerShop;
@@ -141,10 +170,9 @@ export async function runRunSmoke({
     await settle();
   };
 
-  const mark2 = (set, b, fps) => {
-    for (let dx = 0; dx < fps[b.def].width; dx++)
-      for (let dy = 0; dy < fps[b.def].height; dy++)
-        set.add(`${b.x + dx},${b.y + dy}`);
+  const mark2 = (set, b) => {
+    for (const [cx, cy] of cellsAt(b.def, b.x, b.y, b.rotation))
+      set.add(`${cx},${cy}`);
   };
   const goMenu = async (query = '') => {
     await page.goto(`${baseUrl}#/${query}`);
@@ -187,7 +215,8 @@ export async function runRunSmoke({
       };
       mark(t.cores[0].x, t.cores[0].y, 2, 2);
       for (const b of t.buildings)
-        mark(b.x, b.y, footprints[b.def].width, footprints[b.def].height);
+        for (const [cx, cy] of cellsAt(b.def, b.x, b.y, b.rotation))
+          mark(cx, cy, 1, 1);
       for (const f of t.features) mark(f.x, f.y, 1, 1);
       for (const n of t.nodes) mark(n.x, n.y, 1, 1);
       const candidates = [];
@@ -199,7 +228,7 @@ export async function runRunSmoke({
         }
       } else {
         // Defenses toward the front, everything else beside the Core.
-        const front = item.def === 'bld_wall' || item.def === 'bld_turret';
+        const front = isWallDef(item.def) || item.def === 'bld_turret';
         const rows = [];
         for (let y = 0; y < t.height - fp.height; y++) rows.push(y);
         if (!front) rows.reverse();
@@ -214,7 +243,7 @@ export async function runRunSmoke({
         }
       }
       let placed = false;
-      for (const c of candidates.slice(0, 14)) {
+      for (const c of candidates.slice(0, 60)) {
         const before = (await B.team()).buildings.length;
         const box = await page
           .locator(`[data-stash-def="${item.def}"]`)
@@ -223,7 +252,11 @@ export async function runRunSmoke({
         if (box === null) break;
         await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
         await page.mouse.down();
-        const p = await at(c.x, c.y);
+        // The cursor sits at the middle of the held box, so the corner is c.
+        const p = await at(
+          c.x + Math.floor((fp.width - 1) / 2),
+          c.y + Math.floor((fp.height - 1) / 2),
+        );
         await page.mouse.move(p.x, p.y, { steps: 6 });
         await page.mouse.up();
         await page
@@ -338,7 +371,10 @@ export async function runRunSmoke({
   // Wall a Barracks in on the Build tab: Ready must be disabled on both tabs
   // with the reason, the building must carry the warning; then open a way out.
   const sealedScenario = async () => {
-    const dragPlace = async (def, x, y) => {
+    // Drops the first stash entry of `def` with its rotated box's lowest-x,
+    // lowest-y corner on `(x, y)`: the held building sits with the cursor at
+    // the middle of its box, so the cursor goes there, and R turns it first.
+    const dragPlace = async (def, x, y, rot = 0) => {
       const before = (await B.team()).buildings.length;
       const box = await page
         .locator(`[data-stash-def="${def}"]`)
@@ -346,8 +382,13 @@ export async function runRunSmoke({
         .boundingBox();
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       await page.mouse.down();
-      const p = await at(x, y);
+      const r = rotated(footprints[def], rot);
+      const p = await at(
+        x + Math.floor((r.width - 1) / 2),
+        y + Math.floor((r.height - 1) / 2),
+      );
       await page.mouse.move(p.x, p.y, { steps: 6 });
+      for (let k = 0; k < rot / 90; k++) await page.keyboard.press('r');
       await page.mouse.up();
       await page.waitForFunction(
         (n) => window.__debug.build.team().buildings.length > n,
@@ -357,7 +398,9 @@ export async function runRunSmoke({
     };
     const toStash = async (b) => {
       const before = (await B.team()).stash.length;
-      const p = await at(b.x, b.y);
+      // A cell the building covers (a shape may not cover its own corner).
+      const [bcx, bcy] = cellsAt(b.def, b.x, b.y, b.rotation)[0];
+      const p = await at(bcx, bcy);
       await page.mouse.click(p.x, p.y);
       await page.click('[data-action="to-stash"]');
       await page.waitForFunction(
@@ -369,7 +412,7 @@ export async function runRunSmoke({
     const t = await B.team();
     const pieces = [
       t.buildings.find((b) => b.def === 'bld_barracks'),
-      ...t.buildings.filter((b) => b.def === 'bld_wall').slice(0, 3),
+      ...t.buildings.filter((b) => isWallDef(b.def)).slice(0, 3),
       t.buildings.find((b) => b.def === 'bld_turret'),
     ];
     check(
@@ -386,10 +429,60 @@ export async function runRunSmoke({
     mark(t.cores[0].x, t.cores[0].y, 2, 2);
     for (const b of t.buildings)
       if (!pieceIds.has(b.id))
-        mark(b.x, b.y, footprints[b.def].width, footprints[b.def].height);
+        for (const [cx, cy] of cellsAt(b.def, b.x, b.y, b.rotation))
+          mark(cx, cy, 1, 1);
     const terrain = new Set(t.features.map((f) => `${f.x},${f.y}`));
     const nodes = new Set(t.nodes.map((n) => `${n.x},${n.y}`));
     const fp = footprints.bld_barracks;
+    // The three walls are shapes (issue #291): cover the open cells with the
+    // turret on the first one (it is the piece taken away to open a way) and
+    // the walls, turned as needed, on the rest. Null when they do not fit.
+    const wallDefs = pieces.slice(1, 4).map((b) => b.def);
+    const fillPlan = (inside, open) => {
+      const legal = (x, y) =>
+        x >= 0 &&
+        y >= 0 &&
+        x < t.width &&
+        y < t.height &&
+        !blocked.has(`${x},${y}`) &&
+        !terrain.has(`${x},${y}`) &&
+        !nodes.has(`${x},${y}`) &&
+        !inside.has(`${x},${y}`);
+      const [tx, ty] = open[0];
+      const used = new Set([`${tx},${ty}`]);
+      const rest = open.slice(1);
+      const usedIdx = new Set();
+      const out = [];
+      const go = () => {
+        const left = rest.find(([x, y]) => !used.has(`${x},${y}`));
+        if (left === undefined) return true;
+        for (let j = 0; j < wallDefs.length; j++) {
+          if (usedIdx.has(j)) continue;
+          for (const rot of [0, 90, 180, 270]) {
+            const r = rotated(footprints[wallDefs[j]], rot);
+            for (const [sx, sy] of r.cells) {
+              const ax = left[0] - sx;
+              const ay = left[1] - sy;
+              const cells = r.cells.map(([cx, cy]) => [ax + cx, ay + cy]);
+              if (
+                !cells.every(([x, y]) => legal(x, y) && !used.has(`${x},${y}`))
+              )
+                continue;
+              for (const [x, y] of cells) used.add(`${x},${y}`);
+              usedIdx.add(j);
+              out.push({ def: wallDefs[j], x: ax, y: ay, rot });
+              if (go()) return true;
+              out.pop();
+              usedIdx.delete(j);
+              for (const [x, y] of cells) used.delete(`${x},${y}`);
+            }
+          }
+        }
+        return false;
+      };
+      if (!legal(tx, ty) || !go()) return null;
+      return [...out, { def: 'bld_turret', x: tx, y: ty, rot: 0 }];
+    };
     // A spot near the top-right corner whose open neighbours fit the pieces.
     let plan = null;
     for (let by = 0; by < t.height - 2 && plan === null; by++) {
@@ -432,8 +525,14 @@ export async function runRunSmoke({
         const open = [...ring].filter(
           (k) => !blocked.has(k) && !terrain.has(k),
         );
-        if (open.length <= 4 && open.every((k) => !nodes.has(k))) {
-          plan = { bx, by, open: open.map((k) => k.split(',').map(Number)) };
+        if (
+          open.length > 0 &&
+          open.length <= 4 &&
+          open.every((k) => !nodes.has(k))
+        ) {
+          const cellsOpen = open.map((k) => k.split(',').map(Number));
+          const fill = fillPlan(inside, cellsOpen);
+          if (fill !== null) plan = { bx, by, open: cellsOpen, fill };
         }
       }
     }
@@ -446,15 +545,12 @@ export async function runRunSmoke({
     const barracksId = (await B.team()).buildings.find(
       (b) => b.def === 'bld_barracks',
     ).id;
-    const fillers = ['bld_wall', 'bld_wall', 'bld_wall', 'bld_turret'];
     check(
       (await page.evaluate(() => window.__debug.build.sealed())).length === 0 &&
         !(await page.locator('#ready-button').isDisabled()),
       'sealed: before the walls are up Ready is enabled',
     );
-    for (const [i, [x, y]] of plan.open.entries()) {
-      await dragPlace(fillers[i], x, y);
-    }
+    for (const f of plan.fill) await dragPlace(f.def, f.x, f.y, f.rot);
     await page.waitForFunction(() => window.__debug.build.sealed().length > 0);
     await settle();
     const sealedIds = await page.evaluate(() => window.__debug.build.sealed());
@@ -512,17 +608,21 @@ export async function runRunSmoke({
       'sealed: with a way out Ready is enabled again and the warning is gone',
     );
     const occupied = new Set(blocked);
-    for (const b of (await B.team()).buildings) mark2(occupied, b, footprints);
+    for (const b of (await B.team()).buildings) mark2(occupied, b);
     let safe = null;
     for (let x = 1; x < t.width - 1 && safe === null; x++) {
       const k = `${x},${t.height - 1}`;
       if (!occupied.has(k) && !terrain.has(k) && !nodes.has(k)) safe = x;
     }
     await dragPlace('bld_turret', safe, t.height - 1);
+    // A wall the cover did not need (the shapes cover more cells than the old
+    // single walls did) goes back on the board too.
+    await placeKit();
+    const sealedNow = await page.evaluate(() => window.__debug.build.sealed());
+    const stashNow = (await B.team()).stash;
     check(
-      (await page.evaluate(() => window.__debug.build.sealed())).length === 0 &&
-        (await B.team()).stash.length === 0,
-      'sealed: the turret is back on the board, nothing is sealed and the stash is empty',
+      sealedNow.length === 0 && stashNow.length === 0,
+      `sealed: the turret is back on the board, nothing is sealed and the stash is empty (sealed ${JSON.stringify(sealedNow)}, stash ${JSON.stringify(stashNow.map((x) => x.def))})`,
     );
   };
 
@@ -2210,224 +2310,245 @@ export async function runRunSmoke({
   await page.waitForSelector('#event-choice');
 
   // The event vote: both pick the Workshop, which has a follow-up of its own
-  // for each player.
-  const workshopOffer = await page
-    .locator('.event-card[data-type="workshop"]')
-    .first()
-    .getAttribute('data-offer');
-  check(
-    workshopOffer !== null,
-    `two players: the Workshop is among the event offers (seed ${SEED})`,
-  );
-  for (const p of [0, 1]) {
-    await actAs(p);
-    await page.click(
-      `[data-action="choose-event"][data-offer="${workshopOffer}"]`,
+  // for each player. The Workshop is only offered while somebody can pay an
+  // upgrade, and a tier 2 wall costs more than the gold of the first round
+  // (issue #291); without it the party takes a Windfall and the per-player
+  // follow-up checks are left to the session tests.
+  const workshopCard = page.locator('.event-card[data-type="workshop"]');
+  const workshopOffer =
+    (await workshopCard.count()) > 0
+      ? await workshopCard.first().getAttribute('data-offer')
+      : null;
+  const takeOffer = async (offer) => {
+    for (const p of [0, 1]) {
+      await actAs(p);
+      await page.click(`[data-action="choose-event"][data-offer="${offer}"]`);
+      if (p === 0) {
+        await page.waitForFunction(
+          () => window.__debug?.run?.state().voted?.[0] === true,
+          undefined,
+          { timeout: slow(10000) },
+        );
+      }
+    }
+  };
+  if (workshopOffer === null) {
+    const plain = page.locator('.event-card[data-type="windfall"]');
+    const offer =
+      (await plain.count()) > 0
+        ? await plain.first().getAttribute('data-offer')
+        : await page.locator('.event-card').first().getAttribute('data-offer');
+    check(
+      offer !== null,
+      `two players: no Workshop is offered while nobody can pay an upgrade; the party takes "${offer}" (seed ${SEED})`,
     );
-    if (p === 0) {
-      await page.waitForFunction(
-        () => window.__debug?.run?.state().voted?.[0] === true,
-        undefined,
-        { timeout: slow(10000) },
+    await takeOffer(offer);
+    await waitStep('shop');
+    await page.waitForSelector('#shop-screen');
+    await settle();
+  } else {
+    check(
+      true,
+      `two players: the Workshop is among the event offers (seed ${SEED})`,
+    );
+    await takeOffer(workshopOffer);
+    await waitStep('event_resolve');
+    await page.waitForSelector('#event-resolve');
+    await settle();
+
+    const followOptions = async () =>
+      (
+        await page
+          .locator('#event-resolve .event-card[data-option]')
+          .evaluateAll((els) =>
+            els.map((e) => ({
+              id: e.dataset.option,
+              affordable: e.dataset.affordable === 'true',
+              text: e.innerText,
+            })),
+          )
+      ).map((o) => ({
+        ...o,
+        price: Number(/(\d+) gold/.exec(o.text)?.[1]),
+        from: Number(/Tier (\d) → (\d)/.exec(o.text)?.[1]),
+        to: Number(/Tier (\d) → (\d)/.exec(o.text)?.[2]),
+        name: o.text.split('\n')[0].trim(),
+      }));
+    const picks = [];
+    const golds = [];
+    for (const p of [0, 1]) {
+      await actAs(p);
+      await page.waitForSelector('#event-resolve [data-field="chosen"]');
+      golds[p] = (await R.state()).gold;
+      const mine = await followOptions();
+      picks[p] = mine.find((o) => o.affordable);
+      check(
+        mine.length > 0 && picks[p] !== undefined,
+        `two players: Workshop follow-up, player ${p + 1} has ${mine.length} option(s) and can afford one (gold ${golds[p]})`,
       );
     }
-  }
-  await waitStep('event_resolve');
-  await page.waitForSelector('#event-resolve');
-  await settle();
-
-  const followOptions = async () =>
-    (
-      await page
-        .locator('#event-resolve .event-card[data-option]')
-        .evaluateAll((els) =>
-          els.map((e) => ({
-            id: e.dataset.option,
-            affordable: e.dataset.affordable === 'true',
-            text: e.innerText,
-          })),
-        )
-    ).map((o) => ({
-      ...o,
-      price: Number(/(\d+) gold/.exec(o.text)?.[1]),
-      from: Number(/Tier (\d) → (\d)/.exec(o.text)?.[1]),
-      to: Number(/Tier (\d) → (\d)/.exec(o.text)?.[2]),
-      name: o.text.split('\n')[0].trim(),
-    }));
-  const picks = [];
-  const golds = [];
-  for (const p of [0, 1]) {
-    await actAs(p);
+    check(
+      picks[0].id !== picks[1].id,
+      'two players: Workshop follow-up, each player is offered their own buildings (the two first picks differ)',
+    );
+    const chosenLines = () =>
+      page.locator('#event-resolve [data-field="chosen"] li').allInnerTexts();
+    const waitingCount = () =>
+      page.locator('#event-resolve [data-field="waiting"]').count();
+    await actAs(0);
+    {
+      const before = await chosenLines();
+      check(
+        before.length === 2 &&
+          before.every((l) => /choosing/.test(l)) &&
+          (await waitingCount()) === 0,
+        `two players: Workshop follow-up, nobody has chosen yet (${before.join(' | ')})`,
+      );
+    }
+    const optionButton = (id) =>
+      page.locator(
+        `#event-resolve [data-action="choose-option"][data-option="${id}"]`,
+      );
+    const isChosen = (id) =>
+      optionButton(id).evaluate((e) => e.classList.contains('selected'));
+    await optionButton(picks[0].id).click();
+    await page.click('#event-resolve [data-action="confirm-upgrade"]');
+    await page.waitForSelector('#event-resolve [data-field="waiting"]');
+    const waitingText = await page
+      .locator('#event-resolve [data-field="waiting"]')
+      .innerText();
+    const lines = await chosenLines();
+    check(
+      /waiting for/i.test(waitingText) &&
+        /Player 2/.test(waitingText) &&
+        lines.length === 2 &&
+        /has chosen/.test(lines[0]) &&
+        /choosing/.test(lines[1]) &&
+        !/has chosen/.test(lines[1]),
+      `two players: Workshop follow-up, player 1 chose and sees "${waitingText}" with the list ${JSON.stringify(lines)}`,
+    );
+    check(
+      ![waitingText, ...lines].some(
+        (t) => t.includes(picks[0].name) || /tier|gold|skip/i.test(t),
+      ),
+      'two players: Workshop follow-up, the waiting note and the chosen list do not say what was chosen',
+    );
+    check(
+      (await R.state()).gold === golds[0] && (await isChosen(picks[0].id)),
+      'two players: Workshop follow-up, nothing is paid until everyone has chosen',
+    );
+    await shot('run-two-player-workshop-waiting');
+    // The choice can be changed while the other player has not chosen.
+    await optionButton('skip').click();
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector(
+            '#event-resolve [data-action="choose-option"][data-option="skip"]',
+          )
+          ?.classList.contains('selected') === true,
+      undefined,
+      { timeout: slow(10000) },
+    );
+    {
+      const l = await chosenLines();
+      check(
+        /has chosen/.test(l[0]) &&
+          /choosing/.test(l[1]) &&
+          (await waitingCount()) === 1 &&
+          !(await isChosen(picks[0].id)) &&
+          (await R.state()).step === 'event_resolve' &&
+          (await R.state()).gold === golds[0],
+        'two players: Workshop follow-up, player 1 changed the choice to Skip while player 2 had not chosen',
+      );
+    }
+    await optionButton(picks[0].id).click();
+    await page.click('#event-resolve [data-action="confirm-upgrade"]');
+    // Skip stops being the stored choice once the upgrade choice is stored.
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector(
+            '#event-resolve [data-action="choose-option"][data-option="skip"]',
+          )
+          ?.classList.contains('selected') === false,
+      undefined,
+      { timeout: slow(10000) },
+    );
+    await page.waitForFunction(
+      (id) =>
+        document
+          .querySelector(
+            `#event-resolve [data-action="choose-option"][data-option="${id}"]`,
+          )
+          ?.classList.contains('selected') === true,
+      picks[0].id,
+      { timeout: slow(10000) },
+    );
+    // A reload in the middle of the choice resumes in the same state.
+    await reloadSame('the Workshop follow-up with one player chosen');
     await page.waitForSelector('#event-resolve [data-field="chosen"]');
-    golds[p] = (await R.state()).gold;
-    const mine = await followOptions();
-    picks[p] = mine.find((o) => o.affordable);
-    check(
-      mine.length > 0 && picks[p] !== undefined,
-      `two players: Workshop follow-up, player ${p + 1} has ${mine.length} option(s) and can afford one (gold ${golds[p]})`,
-    );
-  }
-  check(
-    picks[0].id !== picks[1].id,
-    'two players: Workshop follow-up, each player is offered their own buildings (the two first picks differ)',
-  );
-  const chosenLines = () =>
-    page.locator('#event-resolve [data-field="chosen"] li').allInnerTexts();
-  const waitingCount = () =>
-    page.locator('#event-resolve [data-field="waiting"]').count();
-  await actAs(0);
-  {
-    const before = await chosenLines();
-    check(
-      before.length === 2 &&
-        before.every((l) => /choosing/.test(l)) &&
-        (await waitingCount()) === 0,
-      `two players: Workshop follow-up, nobody has chosen yet (${before.join(' | ')})`,
-    );
-  }
-  const optionButton = (id) =>
-    page.locator(
-      `#event-resolve [data-action="choose-option"][data-option="${id}"]`,
-    );
-  const isChosen = (id) =>
-    optionButton(id).evaluate((e) => e.classList.contains('selected'));
-  await optionButton(picks[0].id).click();
-  await page.click('#event-resolve [data-action="confirm-upgrade"]');
-  await page.waitForSelector('#event-resolve [data-field="waiting"]');
-  const waitingText = await page
-    .locator('#event-resolve [data-field="waiting"]')
-    .innerText();
-  const lines = await chosenLines();
-  check(
-    /waiting for/i.test(waitingText) &&
-      /Player 2/.test(waitingText) &&
-      lines.length === 2 &&
-      /has chosen/.test(lines[0]) &&
-      /choosing/.test(lines[1]) &&
-      !/has chosen/.test(lines[1]),
-    `two players: Workshop follow-up, player 1 chose and sees "${waitingText}" with the list ${JSON.stringify(lines)}`,
-  );
-  check(
-    ![waitingText, ...lines].some(
-      (t) => t.includes(picks[0].name) || /tier|gold|skip/i.test(t),
-    ),
-    'two players: Workshop follow-up, the waiting note and the chosen list do not say what was chosen',
-  );
-  check(
-    (await R.state()).gold === golds[0] && (await isChosen(picks[0].id)),
-    'two players: Workshop follow-up, nothing is paid until everyone has chosen',
-  );
-  await shot('run-two-player-workshop-waiting');
-  // The choice can be changed while the other player has not chosen.
-  await optionButton('skip').click();
-  await page.waitForFunction(
-    () =>
-      document
-        .querySelector(
-          '#event-resolve [data-action="choose-option"][data-option="skip"]',
-        )
-        ?.classList.contains('selected') === true,
-    undefined,
-    { timeout: slow(10000) },
-  );
-  {
-    const l = await chosenLines();
-    check(
-      /has chosen/.test(l[0]) &&
-        /choosing/.test(l[1]) &&
-        (await waitingCount()) === 1 &&
-        !(await isChosen(picks[0].id)) &&
+    await actAs(0);
+    {
+      const l = await chosenLines();
+      check(
         (await R.state()).step === 'event_resolve' &&
-        (await R.state()).gold === golds[0],
-      'two players: Workshop follow-up, player 1 changed the choice to Skip while player 2 had not chosen',
-    );
-  }
-  await optionButton(picks[0].id).click();
-  await page.click('#event-resolve [data-action="confirm-upgrade"]');
-  // Skip stops being the stored choice once the upgrade choice is stored.
-  await page.waitForFunction(
-    () =>
-      document
-        .querySelector(
-          '#event-resolve [data-action="choose-option"][data-option="skip"]',
-        )
-        ?.classList.contains('selected') === false,
-    undefined,
-    { timeout: slow(10000) },
-  );
-  await page.waitForFunction(
-    (id) =>
-      document
-        .querySelector(
-          `#event-resolve [data-action="choose-option"][data-option="${id}"]`,
-        )
-        ?.classList.contains('selected') === true,
-    picks[0].id,
-    { timeout: slow(10000) },
-  );
-  // A reload in the middle of the choice resumes in the same state.
-  await reloadSame('the Workshop follow-up with one player chosen');
-  await page.waitForSelector('#event-resolve [data-field="chosen"]');
-  await actAs(0);
-  {
-    const l = await chosenLines();
+          (await isChosen(picks[0].id)) &&
+          /has chosen/.test(l[0]) &&
+          /choosing/.test(l[1]) &&
+          /waiting for/i.test(
+            await page
+              .locator('#event-resolve [data-field="waiting"]')
+              .innerText(),
+          ),
+        'two players: Workshop follow-up, after a reload player 1 is still chosen and player 2 still choosing',
+      );
+    }
+    await actAs(1);
+    {
+      const l = await chosenLines();
+      check(
+        (await waitingCount()) === 0 &&
+          /has chosen/.test(l[0]) &&
+          /choosing/.test(l[1]) &&
+          !(await isChosen(picks[1].id)),
+        'two players: Workshop follow-up, player 2 sees that player 1 has chosen, with no waiting note and nothing chosen yet',
+      );
+    }
+    await optionButton(picks[1].id).click();
+    await page.click('#event-resolve [data-action="confirm-upgrade"]');
+    await waitStep('shop');
+    await page.waitForSelector('#shop-screen');
+    await settle();
+    for (const p of [0, 1]) {
+      await actAs(p);
+      const g = (await R.state()).gold;
+      check(
+        g === golds[p] - picks[p].price + income,
+        `two players: Workshop follow-up, player ${p + 1} paid ${picks[p].price} gold (${golds[p]} -> ${g} with ${income} income)`,
+      );
+    }
+    await page.click('.topbar-tabs button:has-text("Build")');
+    await page.waitForFunction(() => window.__debug?.build?.step() === 'shop');
+    await settle();
+    {
+      const t = await B.team();
+      const tierOf = (id) =>
+        [...t.buildings, ...t.stash].find((b) => b.id === Number(id.slice(1)))
+          ?.tier;
+      check(
+        tierOf(picks[0].id) === picks[0].to &&
+          tierOf(picks[1].id) === picks[1].to,
+        `two players: Workshop follow-up, both chosen buildings rose a tier (${picks[0].from}->${tierOf(picks[0].id)}, ${picks[1].from}->${tierOf(picks[1].id)})`,
+      );
+    }
+    await page.click('.topbar-tabs button:has-text("Shop")');
+    await page.waitForSelector('#shop-screen');
     check(
-      (await R.state()).step === 'event_resolve' &&
-        (await isChosen(picks[0].id)) &&
-        /has chosen/.test(l[0]) &&
-        /choosing/.test(l[1]) &&
-        /waiting for/i.test(
-          await page
-            .locator('#event-resolve [data-field="waiting"]')
-            .innerText(),
-        ),
-      'two players: Workshop follow-up, after a reload player 1 is still chosen and player 2 still choosing',
+      (await R.state()).step === 'shop',
+      'two players: both Workshop choices made, the run moves on to the shop',
     );
   }
-  await actAs(1);
-  {
-    const l = await chosenLines();
-    check(
-      (await waitingCount()) === 0 &&
-        /has chosen/.test(l[0]) &&
-        /choosing/.test(l[1]) &&
-        !(await isChosen(picks[1].id)),
-      'two players: Workshop follow-up, player 2 sees that player 1 has chosen, with no waiting note and nothing chosen yet',
-    );
-  }
-  await optionButton(picks[1].id).click();
-  await page.click('#event-resolve [data-action="confirm-upgrade"]');
-  await waitStep('shop');
-  await page.waitForSelector('#shop-screen');
-  await settle();
-  for (const p of [0, 1]) {
-    await actAs(p);
-    const g = (await R.state()).gold;
-    check(
-      g === golds[p] - picks[p].price + income,
-      `two players: Workshop follow-up, player ${p + 1} paid ${picks[p].price} gold (${golds[p]} -> ${g} with ${income} income)`,
-    );
-  }
-  await page.click('.topbar-tabs button:has-text("Build")');
-  await page.waitForFunction(() => window.__debug?.build?.step() === 'shop');
-  await settle();
-  {
-    const t = await B.team();
-    const tierOf = (id) =>
-      [...t.buildings, ...t.stash].find((b) => b.id === Number(id.slice(1)))
-        ?.tier;
-    check(
-      tierOf(picks[0].id) === picks[0].to &&
-        tierOf(picks[1].id) === picks[1].to,
-      `two players: Workshop follow-up, both chosen buildings rose a tier (${picks[0].from}->${tierOf(picks[0].id)}, ${picks[1].from}->${tierOf(picks[1].id)})`,
-    );
-  }
-  await page.click('.topbar-tabs button:has-text("Shop")');
-  await page.waitForSelector('#shop-screen');
-  check(
-    (await R.state()).step === 'shop',
-    'two players: both Workshop choices made, the run moves on to the shop',
-  );
   // The Ready lock on the Shop and Build tabs (two players). Player 1 presses
   // Ready: buying, selling, re-rolling and every board edit are refused, with
   // the lock text; player 2, who is not Ready, is unaffected; Unready reopens
@@ -2467,7 +2588,7 @@ export async function runRunSmoke({
     // refused only by the lock.
     const dropWall = async (x, y) => {
       const b = await page
-        .locator('[data-stash-def="bld_wall"]')
+        .locator('[data-stash-def^="bld_wall_"]')
         .first()
         .boundingBox();
       await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
@@ -2724,7 +2845,7 @@ export async function runRunSmoke({
     // Not a wall: the wall is dropped on the board below.
     await page
       .locator(
-        '#shop-stash .stash-row:not([data-stash-def="bld_wall"]) [data-action="sell"]',
+        '#shop-stash .stash-row:not([data-stash-def^="bld_wall_"]) [data-action="sell"]',
       )
       .first()
       .click();

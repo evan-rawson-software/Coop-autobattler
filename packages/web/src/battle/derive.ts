@@ -207,7 +207,11 @@ export function deriveMoments(
       const side: Side = e.side === 0 ? 0 : 1;
       const ref = index[side].get(e.building);
       if (ref === undefined) continue;
-      const name = buildingName(content, ref.def).toLowerCase();
+      // Every wall shape reads as "wall" (issue #291).
+      const name =
+        ref.def.kind === 'defense' && ref.def.defenseType === 'wall'
+          ? 'wall'
+          : buildingName(content, ref.def).toLowerCase();
       const who = labels.side[side];
       const focus = buildingFocus(record, content, g, side, ref);
       if (isWallLike(ref.def)) {
@@ -691,10 +695,16 @@ export function breachEntries(
     if (ref === undefined || !(isWallLike(ref.def) || isTurret(ref.def))) {
       continue;
     }
-    let g = groups.get(ref.def.id);
+    // Every wall shape is one group, "walls" (issue #291).
+    const isWall = ref.def.kind === 'defense' && ref.def.defenseType === 'wall';
+    const key = isWall ? 'defense:wall' : ref.def.id;
+    let g = groups.get(key);
     if (g === undefined) {
-      g = { name: buildingName(content, ref.def).toLowerCase(), ticks: [] };
-      groups.set(ref.def.id, g);
+      g = {
+        name: isWall ? 'wall' : buildingName(content, ref.def).toLowerCase(),
+        ticks: [],
+      };
+      groups.set(key, g);
     }
     g.ticks.push(e.tick + 1);
   }

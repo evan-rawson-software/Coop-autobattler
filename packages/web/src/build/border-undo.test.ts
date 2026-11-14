@@ -144,7 +144,7 @@ describe('undo with border halves', () => {
     const r1 = returnToStash(team, content, { actor: 0, id: src });
     if (!r1.ok) throw new Error(r1.reason);
     const w = addToStash(r1.state, content, {
-      def: 'bld_wall',
+      def: 'bld_wall_block',
       tier: 1,
       owner: 0,
     });

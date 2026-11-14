@@ -20,7 +20,8 @@ async function withWall() {
   const s = await buildRun();
   const ctl = new BuildController();
   ctl.attach(s);
-  const id = stashIds(s.run.team, 'bld_wall')[0] as number;
+  const id = s.run.team.stash.find((x) => x.def.startsWith('bld_wall_'))
+    ?.id as number;
   const c = firstFit(s.run.team, id);
   const r = await s.act({ t: 'place', id, x: c.x, y: c.y, rotation: 0 });
   expect(r.ok).toBe(true);

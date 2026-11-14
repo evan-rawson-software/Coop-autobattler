@@ -224,8 +224,8 @@ describe('arena geometry', () => {
   test('buildings start at their tier health', () => {
     const lab = new Lab(tiny());
     lab.core(0, 0);
-    const w1 = lab.put('bld_wall', 5, 5, 0, 1);
-    const w3 = lab.put('bld_wall', 6, 5, 0, 3);
+    const w1 = lab.put('bld_wall_block', 5, 5, 0, 1);
+    const w3 = lab.put('bld_wall_block', 6, 5, 0, 3);
     const sim = createArenaSim(lab.state, coreOnly(), GAP, content, simConfig);
     expect(healthOf(sim, 0, 0)).toBe(500);
     expect(healthOf(sim, 0, w1)).toBe(100);
@@ -720,7 +720,7 @@ describe('targeting (#66: every unit heads for the Core)', () => {
   test('a raider walks past sources, splitters and walls to the Core', () => {
     const lab = new Lab(tiny([[8, 5, 'res_a']]));
     lab.core(5, 0);
-    const wall = lab.put('bld_wall', 6, 14);
+    const wall = lab.put('bld_wall_block', 6, 14);
     const src = lab.put('bld_extractor', 8, 5);
     const sp = lab.put('bld_splitter', 3, 5);
     const { sim, ctx, events } = startArenaBattle(
@@ -862,10 +862,10 @@ describe('breaching sealed bases (CB-20)', () => {
       [7, 1],
       [7, 2],
     ] as const) {
-      lab.put('bld_wall', x, y, 0, 3);
+      lab.put('bld_wall_block', x, y, 0, 3);
     }
-    const weak = lab.put('bld_wall', 5, 2, 0, 1);
-    const strong = lab.put('bld_wall', 6, 2, 0, 3);
+    const weak = lab.put('bld_wall_block', 5, 2, 0, 1);
+    const strong = lab.put('bld_wall_block', 6, 2, 0, 3);
     return { lab, weak, strong };
   }
 
@@ -956,7 +956,10 @@ describe('breach step prices a building by its maximum health (CB-20)', () => {
       [7, 1],
       [7, 0],
     ] as const) {
-      ids.set(`${String(x)},${String(y)}`, lab.put('bld_wall', x, y, 0, 3));
+      ids.set(
+        `${String(x)},${String(y)}`,
+        lab.put('bld_wall_block', x, y, 0, 3),
+      );
     }
     const a = got(ids.get('7,1'));
     const b = got(ids.get('6,2'));
@@ -1005,7 +1008,7 @@ describe('breach field is a pure function of the saved state (CB-20)', () => {
       [7, 3],
       [7, 4],
     ] as const) {
-      lab.put('bld_wall', x, y, 0, 1);
+      lab.put('bld_wall_block', x, y, 0, 1);
     }
     return lab.state;
   }
@@ -1121,7 +1124,7 @@ describe('maximum health includes run modifiers (breach cost and start agree)', 
       [7, 3],
       [7, 4],
     ] as const) {
-      lab.put('bld_wall', x, y, 0, 1);
+      lab.put('bld_wall_block', x, y, 0, 1);
     }
     return lab.state;
   }
@@ -1318,7 +1321,7 @@ describe('maximum health includes run modifiers (breach cost and start agree)', 
     const stout = field(withModifier(ringedTeam(), stoutWalls));
     const wall = (hp: number): number =>
       simConfig.breachBaseCost + Math.ceil(hp / per);
-    const base = got(content.buildings.get('bld_wall')).tiers[0].health;
+    const base = got(content.buildings.get('bld_wall_block')).tiers[0].health;
     expect(stout - plain).toBe(
       wall(Math.floor((base * 250) / 100)) - wall(base),
     );
@@ -1614,8 +1617,8 @@ describe('determinism and symmetry', () => {
       [8, 4],
       [8, 5],
     ]);
-    lab.put('bld_wall', 4, 12);
-    lab.put('bld_wall', 7, 12);
+    lab.put('bld_wall_block', 4, 12);
+    lab.put('bld_wall_block', 7, 12);
     if (turrets) {
       const src = lab.put('bld_extractor', 10, 2, 0, 3);
       const turret = lab.put('bld_turret', 10, 13, 0, 3);
@@ -2041,7 +2044,7 @@ function defenseBoard(seed: number): TeamState {
   for (let k = 0; k < 14; k++) {
     try {
       lab.put(
-        rng.nextInt(3) === 0 ? 'bld_gate' : 'bld_wall',
+        rng.nextInt(3) === 0 ? 'bld_gate' : 'bld_wall_block',
         rng.nextInt(12),
         4 + rng.nextInt(11),
         0,

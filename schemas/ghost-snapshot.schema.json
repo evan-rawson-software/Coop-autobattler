@@ -19,8 +19,8 @@
   "additionalProperties": false,
   "properties": {
     "formatVersion": {
-      "description": "The snapshot format. Version 2 is the per-player design (issue #124: `cores` and an `owner` on every conduit); version 3 lets a conduit end be a border spot (PP-4); version 4 requires one Core per player (every player's Core placed, each inside its own plot); version 5 follows the run-state format 8 (PvE threats with one Core per plot, PP-14); version 6 follows the run-state format 9 (per-player conduit IDs, issue #38); older snapshots are rejected.",
-      "const": 6
+      "description": "The snapshot format. Version 2 is the per-player design (issue #124: `cores` and an `owner` on every conduit); version 3 lets a conduit end be a border spot (PP-4); version 4 requires one Core per player (every player's Core placed, each inside its own plot); version 5 follows the run-state format 8 (PvE threats with one Core per plot, PP-14); version 6 follows the run-state format 9 (per-player conduit IDs, issue #38); version 7 follows the run-state format 10 (tetromino walls replace `bld_wall`, issue #291); older snapshots are rejected.",
+      "const": 7
     },
     "gameVersion": {
       "description": "The game version the run was played on, as major.minor. Only snapshots of the same version meet.",
