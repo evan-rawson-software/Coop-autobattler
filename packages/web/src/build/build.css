@@ -109,8 +109,30 @@
   box-sizing: border-box;
 }
 
+/* Narrow desktop windows: give the stash the width for two columns of rows
+   (the Selected panel is mostly empty), and tighten the rows. */
+@media (max-width: 1200px) {
+  .dock-bottom.tall {
+    grid-template-columns: 2fr 1fr 1.4fr 0.8fr;
+  }
+
+  .stash-list {
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+    gap: 0.25rem;
+  }
+
+  .stash-item {
+    gap: 0.3rem;
+    padding: 0.15rem 0.4rem;
+    white-space: nowrap;
+  }
+}
+
 /* A panel body that scrolls shows a fade at the edge with more behind it. */
 #panel-stash .panel-body {
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-muted) var(--surface-2);
   background:
     linear-gradient(var(--surface) 30%, transparent) top / 100% 1.4rem no-repeat
       local,
