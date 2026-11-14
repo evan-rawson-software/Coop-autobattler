@@ -24,7 +24,7 @@ leaves +/- (2^53 - 1), so ported code never needs more than i64).
 `main` and is pinned by the golden vectors. Some sections start with a
 **Status (#124)** table naming what is still open; nothing marked "not yet
 implemented" is behaviour of the current code. The per-player design of
-issue #124 (rules PP-1 to PP-18, all implemented) is recorded in the appendix
+issue #124 (rules PP-1 to PP-18) is recorded in the appendix
 at the end, "Appendix: the per-player design (issue #124)".
 
 ### Notes for a port
@@ -4149,7 +4149,7 @@ opponent as `ghost` (label: the owner's label) or `boss`.
 This appendix records the per-player design decided in issue #124 and where
 each of its rules (PP-1 to PP-18) now lives; other sections cite the rules by
 number. It was the first section of this document while the design was being
-built; every rule in it is now implemented. The specs (Draft v5.0) describe
+built. The specs (Draft v5.0) describe
 a design decided in issue #124: every player
 has their own **plot** and their own **Core**, builds only what they own and
 only in their own plot, and can link to a neighbour with conduits across the
