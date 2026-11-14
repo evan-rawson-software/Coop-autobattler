@@ -3262,7 +3262,7 @@
   {
     "id": "arena-sim.ramp-overclocker-speeds-source",
     "kind": "arena-sim",
-    "description": "A fast flux extractor feeds a tier 1 overclocker (costPerStep 2, +2 percent per step); the ore extractor beside it, which feeds a barracks, speeds up step by step (ore items at 19, 39, 59, 78, 96, ...).",
+    "description": "A fast flux extractor feeds a tier 1 overclocker (costPerStep 2, +2 percent per step); the ore extractor beside it, which feeds a barracks, speeds up step by step (ore items at 19, 39, 58, 77, 96, ...).",
     "input": {
       "teamA": {
         "map": {
@@ -3621,7 +3621,7 @@
   {
     "id": "arena-sim.ramp-armory-stronger-units",
     "kind": "arena-sim",
-    "description": "An armory (costPerStep 4, +5 percent per step) beside a barracks: the soldiers spawned at ticks 119, 239, 359 have 40, 41 and 43 health; units already on the field keep theirs.",
+    "description": "An armory (costPerStep 4, +5 percent per step) beside a barracks: the soldiers spawned at ticks 99, 199 and 299 have 42, 44 and 46 health; units already on the field keep theirs.",
     "input": {
       "teamA": {
         "map": {
@@ -3785,7 +3785,7 @@
   {
     "id": "arena-sim.ramp-building-at-cap",
     "kind": "arena-sim",
-    "description": "A tier 1 overclocker (maxSteps 5) fed by a fast flux extractor reaches its fifth step and then takes nothing more: its buffer fills and the extractor stalls.",
+    "description": "A tier 1 overclocker (maxSteps 5) fed by a fast flux extractor takes its fifth and last step at tick 179 and then takes nothing more: 14 items are delivered in all (10 spent on the five steps, 4 left in its full buffer) and the extractor stalls, first at tick 119 and again at tick 159.",
     "input": {
       "teamA": {
         "map": {
@@ -3903,7 +3903,7 @@
   {
     "id": "arena-sim.ramp-building-destroyed",
     "kind": "arena-sim",
-    "description": "A base sealed by a wall row whose weakest point is an overclocker (a slow flux extractor feeds it): the attackers breach it and destroy it at tick 205, just after its fourth step; its bonus leaves the total at once.",
+    "description": "A base sealed by a wall row whose weakest point is an overclocker (a tier 2 flux extractor feeds it): the attackers breach it and destroy it at tick 209, just after its fifth and last step (tick 187); its bonus leaves the total at once.",
     "input": {
       "teamA": {
         "map": {
