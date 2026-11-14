@@ -191,6 +191,15 @@ button:disabled {
   font-size: 0.82rem;
 }
 
+.insp-stats {
+  margin: 0 0 0.3rem;
+  font-size: 0.85rem;
+}
+
+.insp-stats p {
+  margin: 0;
+}
+
 dl.props {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -235,6 +244,16 @@ button.link {
 .overlay-row button {
   font-size: 0.82rem;
   padding: 0.25rem 0.5rem;
+}
+
+.overlay-legend {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.overlay-legend p {
+  margin: 0 0 0.25rem;
 }
 
 .inline-field {

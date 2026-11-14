@@ -295,6 +295,8 @@ export interface Problem {
   readonly focus: Cell | null;
   /** Building to select when clicked, if any. */
   readonly building: number | null;
+  /** Stash entry to pick up when clicked (to place it), if any. */
+  readonly pick?: number;
 }
 
 /**
@@ -506,6 +508,7 @@ export function deriveProblems(
       ),
       focus: first === undefined ? null : { x: first.x, y: first.y },
       building: null,
+      pick: sourceInStash.id,
     });
   }
   if (state.stash.length > 0) {

@@ -10,10 +10,18 @@ import {
 import type { RunState } from '@game/session';
 import { content } from '../content.js';
 import { Panel } from '../shell/AppShell.js';
-import type { BuildController, Model, Tool } from './build-controller.js';
+import {
+  DRY_TICKS_MAX,
+  DRY_TICKS_MIN,
+  DRY_TICKS_STEP,
+  type BuildController,
+  type Model,
+  type Tool,
+} from './build-controller.js';
 import { halfStatuses, linkText } from './border-links.js';
 import { halfFlow } from './overlay-marks.js';
-import { buildingRate, formatHundredths, topSpeedWord } from './rates.js';
+import { buildingRate, formatHundredths } from './rates.js';
+import { cardStats } from './card-stats.js';
 import { playerName, screenText, screenTexts } from './texts.js';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
@@ -329,7 +337,7 @@ export function InspectorPanel(props: {
         b.owner,
       );
       const attached = team.conduits.filter((c) => conduitTouches(c, b.id));
-      const rate = buildingRate(def, b.tier, simConfig.ticksPerSecond);
+      const stats = cardStats(content, simConfig, def, b.tier);
       const supply = props.flow?.supply.find((x) => x.building === b.id);
       body = (
         <div data-inspector="building">
@@ -357,31 +365,11 @@ export function InspectorPanel(props: {
               ? ''
               : formatText(entry.description, content.resources)}
           </p>
-          <dl class="props">
-            {rate.collects !== null ? (
-              <>
-                <dt>{t('uiLblCollects')}</dt>
-                <dd data-field="collects">
-                  {screenText(screenTexts, 'inspectorCollects', {
-                    rate: formatHundredths(rate.collects),
-                  })}
-                </dd>
-              </>
-            ) : null}
-            {rate.needs !== null && rate.topSpeed !== null ? (
-              <>
-                <dt>{t('uiLblTopSpeed')}</dt>
-                <dd data-field="top-speed">
-                  {screenText(screenTexts, 'inspectorTopSpeed', {
-                    speed: formatHundredths(rate.topSpeed),
-                    unit: topSpeedWord(def),
-                  })}
-                </dd>
-                <dt>{t('uiLblNeeds')}</dt>
-                <dd data-field="needs-rate">
-                  {screenText(screenTexts, 'inspectorNeeds', {
-                    rate: formatHundredths(rate.needs),
-                  })}
+          {stats.uses !== null || stats.collects !== null ? (
+            <div class="insp-stats">
+              {stats.uses !== null ? (
+                <p data-field="uses">
+                  {stats.uses}
                   {supply === undefined
                     ? ''
                     : screenText(
@@ -391,51 +379,29 @@ export function InspectorPanel(props: {
                           : 'inspectorUnderSupplied',
                         { gets: formatHundredths(supply.gets) },
                       )}
-                </dd>
-              </>
-            ) : null}
-            {figs?.inputs.map((i) => (
-              <>
-                <dt>{screenText(screenTexts, 'uiInspectorInput')}</dt>
-                <dd>{resourceName(content, i.resource)}</dd>
-                <dt>{screenText(screenTexts, 'uiInspectorReceiving')}</dt>
-                <dd data-field="receiving">
-                  {i.connected
-                    ? screenText(screenTexts, 'uiInspectorReceivingEstimate', {
-                        resource: resourceName(content, i.resource),
-                        rate: fmtRate(i.arrivesPerSec),
-                      })
-                    : screenText(screenTexts, 'uiInspectorReceivingNothing')}
-                </dd>
-              </>
-            ))}
-            {figs?.produces != null ? (
-              <>
-                <dt>{screenText(screenTexts, 'uiInspectorMines')}</dt>
-                <dd>
-                  {screenText(screenTexts, 'uiInspectorMinesRate', {
-                    resource:
-                      figs.produces.resource === null
-                        ? '-'
-                        : resourceName(content, figs.produces.resource),
-                    rate: fmtRate(figs.produces.perSec),
-                  })}
-                  {figs.produces.lostPerSec > 0
+                </p>
+              ) : null}
+              {stats.collects !== null ? (
+                <p data-field="collects">
+                  {stats.collects}
+                  {figs?.produces != null && figs.produces.lostPerSec > 0
                     ? screenText(screenTexts, 'uiInspectorMinesLost', {
                         rate: fmtRate(figs.produces.lostPerSec),
                       })
                     : ''}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          <dl class="props">
+            {figs?.produces != null && figs.produces.stalledPercent !== null ? (
+              <>
+                <dt>{screenText(screenTexts, 'uiInspectorBackedUp')}</dt>
+                <dd data-field="stalled">
+                  {screenText(screenTexts, 'inspectorStalled', {
+                    percent: String(figs.produces.stalledPercent),
+                  })}
                 </dd>
-                {figs.produces.stalledPercent !== null ? (
-                  <>
-                    <dt>{screenText(screenTexts, 'uiInspectorBackedUp')}</dt>
-                    <dd data-field="stalled">
-                      {screenText(screenTexts, 'inspectorStalled', {
-                        percent: String(figs.produces.stalledPercent),
-                      })}
-                    </dd>
-                  </>
-                ) : null}
               </>
             ) : null}
             {figs?.derived != null ? (
@@ -563,6 +529,12 @@ export function OverlaysPanel(props: { model: Model; ctl: BuildController }) {
           t('uiOverlayDryTip'),
         )}
       </div>
+      {o.flow || o.paths ? (
+        <div class="overlay-legend muted" data-field="overlay-legend">
+          {o.paths ? <p data-legend="paths">{t('uiLegendPaths')}</p> : null}
+          {o.flow ? <p data-legend="flow">{t('uiLegendFlow')}</p> : null}
+        </div>
+      ) : null}
       <details class="overlay-advanced">
         <summary>{t('uiOverlayAdvanced')}</summary>
         <label class="inline-field">
@@ -570,12 +542,15 @@ export function OverlaysPanel(props: { model: Model; ctl: BuildController }) {
           <input
             type="number"
             id="dry-ticks"
-            min="0"
-            max="100000"
-            step="50"
+            min={DRY_TICKS_MIN}
+            max={DRY_TICKS_MAX}
+            step={DRY_TICKS_STEP}
             value={model.ui.dryTicks}
             onChange={(e) => {
-              ctl.setDryTicks(Math.floor(Number(e.currentTarget.value)));
+              const input = e.currentTarget;
+              ctl.setDryTicks(Number(input.value));
+              // Show the value in use, also when it did not change.
+              input.value = String(ctl.model.get().ui.dryTicks);
             }}
           />
           <span class="muted">
@@ -657,7 +632,9 @@ export function ProblemsPanel(props: {
           ) : null}
           <ul class="problems">
             {props.problems.map((p) =>
-              p.focus === null && p.building === null ? (
+              p.focus === null &&
+              p.building === null &&
+              p.pick === undefined ? (
                 // Nothing to jump to (a partner's summary): plain text, still read out.
                 <li key={p.id}>
                   <span class="problem" data-problem={p.kind}>
@@ -932,23 +909,27 @@ export function PartyPanel(props: {
       <div class="party-row">
         <span>{run.players[acting]?.name ?? 'You'}</span>
         <span class="muted">{screenText(screenTexts, 'uiPartyEditing')}</span>
-        <span data-field="ready-state">
-          {screenText(
-            screenTexts,
-            ready ? 'uiPartyReadyYes' : 'uiPartyReadyNo',
-          )}
-        </span>
+        {multi ? (
+          <span data-field="ready-state">
+            {screenText(
+              screenTexts,
+              ready ? 'uiPartyReadyYes' : 'uiPartyReadyNo',
+            )}
+          </span>
+        ) : null}
       </div>
-      <p class="muted party-next">
-        {t('uiPartyNext', {
-          leg:
-            run.step === 'shop' && run.leg === 'pve'
-              ? 'Rival party'
-              : 'Stronghold',
-          ready: String(readyCount),
-          total: String(run.players.length),
-        })}
-      </p>
+      {multi ? (
+        <p class="muted party-next">
+          {t('uiPartyNext', {
+            leg:
+              run.step === 'shop' && run.leg === 'pve'
+                ? 'Rival party'
+                : 'Stronghold',
+            ready: String(readyCount),
+            total: String(run.players.length),
+          })}
+        </p>
+      ) : null}
       <button
         type="button"
         class={ready ? 'ready-btn on' : 'ready-btn'}

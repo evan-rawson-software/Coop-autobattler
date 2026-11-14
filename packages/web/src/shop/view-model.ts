@@ -243,10 +243,11 @@ export function buildShopView(
 
 /**
  * "N of M ready" for the status bar, or null outside the steps where players
- * ready up to shop and build (the flags are reset when the step changes).
+ * ready up to shop and build (the flags are reset when the step changes), and
+ * for a solo run (nobody to wait for).
  */
 export function readyLabel(run: RunState): string | null {
-  if (!isEditStep(run.step)) return null;
+  if (!isEditStep(run.step) || run.players.length < 2) return null;
   const n = run.perPlayer.filter((p) => p.ready).length;
   return `${String(n)} of ${String(run.players.length)} ready`;
 }

@@ -374,9 +374,9 @@ describe('actions sent back to back', () => {
 });
 
 describe('the ready count', () => {
-  test('is shown in the shop step and hidden after Ready moves the run on', async () => {
+  test('is hidden in a solo run, before and after Ready moves it on', async () => {
     const { s } = await shopSession();
-    expect(readyLabel(s.run)).toBe('0 of 1 ready');
+    expect(readyLabel(s.run)).toBeNull();
     const r = await s.dispatch({ type: 'ready' });
     expect(r.ok).toBe(true);
     expect(s.run.step).not.toBe('shop');
