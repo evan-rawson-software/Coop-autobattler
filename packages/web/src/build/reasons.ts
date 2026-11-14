@@ -93,7 +93,7 @@ export interface SelectionCause {
 }
 
 /**
- * Message for a reason, with the offending cell when `core` gave one. For
+ * Message for a reason. For
  * `ghost_selection_pending` a known `cause` (why choosing the opponent
  * failed) is added.
  */
@@ -123,14 +123,8 @@ export function reasonMessage(
       number: String(Number(who[1]) + 1),
     });
   }
-  const cell = detail === undefined ? null : parseCell(detail);
-  return cell === null
-    ? text
-    : screenText(screenTexts, 'reasonAtCell', {
-        text,
-        x: String(cell.x),
-        y: String(cell.y),
-      });
+  // The offending cell (`detail` "(x, y)") is marked on the board, not worded.
+  return text;
 }
 
 /** A note for a dispatch that succeeded but left the opponent unchosen. */

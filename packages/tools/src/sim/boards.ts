@@ -33,11 +33,11 @@ export interface Board {
 export const BOARD_DESCRIPTIONS: Readonly<
   Record<AnyReferenceBoardName, string>
 > = {
-  rush: 'Three tier 1 extractors, each feeding a tier 1 barracks directly. Nothing else.',
+  rush: 'Two tier 3 barracks and a tier 1 barracks, each fed by its own extractor, behind five walls. Shop value 330.',
   fortify:
-    'Walls around the Core, three tier 2 turrets each powered by its own tier 2 extractor, one barracks and one armory.',
+    'Ten walls and two tier 2 turrets, each powered by its own extractor, in front of a tier 2 barracks and a tier 2 armory. Shop value 330.',
   siege:
-    'Heavy and slow: tier 3 extractors feed two tier 3 barracks and a tier 3 armory behind a tier 2 wall screen.',
+    'Few strong units: a tier 3 barracks, a tier 2 armory, a tier 2 range and a tier 1 hangar, each fed by its own extractor. No walls. Shop value 330.',
   poor: 'The starting kit placed badly: a far-away barracks, an unconnected extractor, an unpowered turret, walls in a corner.',
 };
 

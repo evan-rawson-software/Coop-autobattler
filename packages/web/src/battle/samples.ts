@@ -146,7 +146,7 @@ export function buildSample(sel: SampleSelection): Sample {
         kind: boss ? 'boss' : 'pve',
         label: boss ? bossLabel() : archetypeText(a).name,
       },
-      title: `Round ${String(round)} · PvE battle`,
+      title: `Round ${String(round)} · Stronghold battle`,
       reward: (w) => sampleReward('pve', w),
     };
   }
@@ -196,7 +196,7 @@ export function buildSample(sel: SampleSelection): Sample {
       name: `ghost of the "${ghostBoard}" board`,
       kind: 'ghost',
     },
-    title: 'Sample · PvP battle',
+    title: 'Sample · Rival party battle',
     reward: (w) => sampleReward('versus', w),
   };
 }

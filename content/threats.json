@@ -90,8 +90,8 @@
       "bossOnly": false,
       "waveSharePercent": 75,
       "waves": {
-        "firstTick": 150,
-        "intervalTicks": 150,
+        "firstTick": 100,
+        "intervalTicks": 75,
         "count": 8,
         "growthPercent": 160,
         "composition": [

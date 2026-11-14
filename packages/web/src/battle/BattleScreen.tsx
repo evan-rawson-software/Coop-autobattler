@@ -233,7 +233,9 @@ export function BattleView(props: BattleViewProps) {
               mismatchGate.current?.();
             }}
           >
-            {t(mismatchReady ? 'battleReadyDone' : 'battleReady')}
+            {mismatchReady
+              ? t('battleReadyDone')
+              : (props.continueText ?? t('battleContinue'))}
           </button>
         </div>
       </AppShell>
@@ -343,7 +345,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
   const [readyLocal, setReady] = useState(false);
   const ready = props.ready ?? readyLocal;
   const camera = useMemo(() => {
-    // Starts at the centre of the map (the neutral zone); "Fit battle" is a
+    // Starts at the centre of the map (the neutral zone); "Fit" is a
     // preset. A resize re-centres until the user pans or zooms.
     const c = new CameraController();
     c.startZoom = DEFAULT_ZOOM;
@@ -527,6 +529,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           won={won}
           tps={tps}
           ready={ready}
+          continueText={props.continueText}
           onWatchAgain={onWatchAgain}
           onReady={onReady}
         />
@@ -576,10 +579,6 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           onPause={onPause}
           onSkip={onSkip}
           onFocus={onFocus}
-          controller={camera}
-          onEnemyBase={() => {
-            if (prep.enemyCentre !== null) camera.focusAt(prep.enemyCentre);
-          }}
         />
       }
     >
@@ -594,6 +593,9 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           revealed ? 'battleNeutralZone' : 'battleNeutralZoneHidden',
         )}
         controller={camera}
+        onEnemyBase={() => {
+          if (prep.enemyCentre !== null) camera.focusAt(prep.enemyCentre);
+        }}
         resetKey={record}
         drawOverlay={drawOverlay.current}
         animate

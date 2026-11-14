@@ -204,3 +204,28 @@ button.event-card[data-affordable='false'] {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.choice-prompt {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.pve-fight {
+  margin-top: auto;
+  padding: 0.45rem 0.8rem;
+  text-align: center;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+}
+
+button.pve-card:hover:not(:disabled) .pve-fight,
+button.pve-card:focus-visible .pve-fight {
+  color: var(--surface);
+  background: var(--accent);
+  border-color: var(--accent);
+}

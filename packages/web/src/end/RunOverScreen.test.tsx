@@ -68,7 +68,7 @@ describe('RunOverScreen for parties', () => {
       expect(out).toContain(`First recorded run for ${label}`);
       expect(out).toContain(NAMES.slice(0, n).join(' + '));
       expect(out).toContain('Lives lost5');
-      expect(out).toContain('PvP battles0 won · 1 lost');
+      expect(out).toContain('Rival party battles0 won · 1 lost');
       expect(out).toContain(
         n === 1 ? 'Your last life was lost' : "Your party's last life was lost",
       );
@@ -84,7 +84,7 @@ describe('RunOverScreen for parties', () => {
         }),
       );
       expect(out).toContain('You abandoned this run.');
-      expect(out).toContain('PvP battles1 won · 0 lost');
+      expect(out).toContain('Rival party battles1 won · 0 lost');
       expect(out).toContain('Lives lost3');
       expect(out).toContain('Ghost · ');
     });

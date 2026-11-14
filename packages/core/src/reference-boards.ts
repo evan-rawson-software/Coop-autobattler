@@ -5,16 +5,27 @@
  * operations. They exist for tests and for later tuning tools; none of them is
  * a rule. See docs/rules-reference.md, "Reference boards".
  *
- * All three use `seed` 5 with party size 1 (a 24 x 16 board), the Core at
- * (11, 5), and tier 1 buildings except where stated:
+ * All use `seed` 5 with party size 1 (a 24 x 16 board) and the Core at
+ * (11, 5). `rush`, `fortify` and `siege` (see `reference-boards-siege.ts`)
+ * each have a shop value of 330 gold and beat each other in a circle (CB-21),
+ * every battle ending with a destroyed Core: rush beats siege, fortify beats
+ * rush, siege beats fortify.
  *
- * - `rush`: three extractors, each feeding a barracks directly. Nothing else.
- * - `fortify`: the Core ringed by seven walls (gap in the middle of the front
- *   side) and three tier 2 turrets, each fed by its own tier 2 extractor
- *   through a conduit; one barracks and one armory, fed directly.
- * - `poor`: the starting kit placed badly: one extractor feeds a far-away
- *   barracks through a long conduit, the other extractor has no conduit, the
- *   turret is unpowered and in a corner, the three walls stand in a corner.
+ * - `rush`: unit production and five walls. Tier 3 extractors on the Ore
+ *   nodes at (10, 1) and (21, 4) each feed a tier 3 barracks directly; a
+ *   tier 1 extractor on the Ore node at (8, 8) feeds a tier 1 barracks.
+ *   Walls: tier 2 at (10, 8), (13, 8), (9, 8) and (14, 8), tier 1 at (9, 7).
+ * - `fortify`: defences first, an army behind them. Tier 2 turrets at (13, 7)
+ *   and (16, 8), each fed through a conduit by its own tier 2 extractor on
+ *   the Power nodes at (19, 5) and (23, 6) (each turret fires at half rate);
+ *   a tier 2 extractor on the Ore node at (10, 1) feeds a tier 2 barracks and
+ *   one on (8, 8) feeds a tier 2 armory. Ten walls: tier 2 at (10, 8),
+ *   (13, 8) and (9, 8), tier 1 at (14, 8), (9, 7), (14, 7), (9, 4), (12, 8),
+ *   (11, 8) and (9, 6).
+ * - `poor`: the starting kit placed badly: one tier 1 extractor feeds a
+ *   far-away tier 1 barracks through a long conduit, the other extractor has
+ *   no conduit, the turret is unpowered and in a corner, the three walls
+ *   stand in a corner.
  */
 
 import type { ArenaContent } from './arena.js';
@@ -99,14 +110,23 @@ class Script {
 function rush(): TeamScript {
   const s = new Script();
   s.core(11, 5);
-  const e1 = s.put('bld_extractor', 10, 1);
-  const b1 = s.put('bld_barracks', 9, 2);
+  const e1 = s.put('bld_extractor', 10, 1, 3);
+  const b1 = s.put('bld_barracks', 9, 2, 3);
+  const e2 = s.put('bld_extractor', 21, 4, 3);
+  const b2 = s.put('bld_barracks', 21, 5, 3);
+  const e3 = s.put('bld_extractor', 8, 8, 1);
+  const b3 = s.put('bld_barracks', 8, 9, 1);
+  for (const [x, y, tier] of [
+    [10, 8, 2],
+    [13, 8, 2],
+    [9, 8, 2],
+    [14, 8, 2],
+    [9, 7, 1],
+  ] as const) {
+    s.put('bld_wall', x, y, tier);
+  }
   s.link(e1, 'north', b1, 'south');
-  const e2 = s.put('bld_extractor', 8, 8);
-  const b2 = s.put('bld_barracks', 8, 9);
   s.link(e2, 'north', b2, 'south');
-  const e3 = s.put('bld_extractor', 21, 4);
-  const b3 = s.put('bld_barracks', 21, 5);
   s.link(e3, 'north', b3, 'south');
   return s.script();
 }
@@ -114,41 +134,37 @@ function rush(): TeamScript {
 function fortify(): TeamScript {
   const s = new Script();
   s.core(11, 5);
-  for (const [x, y] of [
-    [9, 8],
-    [10, 8],
-    [13, 8],
-    [14, 8],
-    [9, 7],
-    [14, 7],
-    [9, 4],
-  ] as const) {
-    s.put('bld_wall', x, y);
-  }
-  const t1 = s.put('bld_turret', 13, 7, 2);
   const x1 = s.put('bld_extractor', 19, 5, 2);
+  const t1 = s.put('bld_turret', 13, 7, 2);
+  const x2 = s.put('bld_extractor', 23, 6, 2);
+  const t2 = s.put('bld_turret', 16, 8, 2);
+  const e1 = s.put('bld_extractor', 10, 1, 2);
+  const b1 = s.put('bld_barracks', 9, 2, 2);
+  const e2 = s.put('bld_extractor', 8, 8, 2);
+  const a1 = s.put('bld_armory', 8, 9, 2);
+  for (const [x, y, tier] of [
+    [10, 8, 2],
+    [13, 8, 2],
+    [9, 8, 2],
+    [14, 8, 1],
+    [9, 7, 1],
+    [14, 7, 1],
+    [9, 4, 1],
+    [12, 8, 1],
+    [11, 8, 1],
+    [9, 6, 1],
+  ] as const) {
+    s.put('bld_wall', x, y, tier);
+  }
   s.link(x1, 'north', t1, 'south', [
     [19, 6],
     [13, 6],
   ]);
-  const t2 = s.put('bld_turret', 16, 8, 2);
-  const x2 = s.put('bld_extractor', 23, 6, 2);
   s.link(x2, 'north', t2, 'south', [
     [23, 7],
     [16, 7],
   ]);
-  const t3 = s.put('bld_turret', 10, 7, 2);
-  const x3 = s.put('bld_extractor', 1, 2, 2);
-  s.link(x3, 'north', t3, 'south', [
-    [1, 3],
-    [1, 6],
-    [10, 6],
-  ]);
-  const e1 = s.put('bld_extractor', 10, 1);
-  const b1 = s.put('bld_barracks', 9, 2);
   s.link(e1, 'north', b1, 'south');
-  const e2 = s.put('bld_extractor', 8, 8);
-  const a1 = s.put('bld_armory', 8, 9);
   s.link(e2, 'north', a1, 'south');
   return s.script();
 }

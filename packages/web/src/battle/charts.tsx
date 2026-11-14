@@ -186,7 +186,6 @@ export function ChartLegend(props: {
         <li key={s}>
           <span class={`line-sample side-${String(s)}`} aria-hidden="true" />
           {props.labels[s]}
-          <span class="muted">{s === 0 ? ' (solid)' : ' (dashed)'}</span>
         </li>
       ))}
     </ul>

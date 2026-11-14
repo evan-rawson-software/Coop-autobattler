@@ -20,6 +20,7 @@ import {
   buildingEnd,
 } from '@game/core';
 import type { WebContent } from '../content.js';
+import { plural } from '../plural.js';
 import { brokenText, halfCell } from './border-links.js';
 import { backedUpSources } from './overlay-marks.js';
 import { formatHundredths, needSupply, type Supply } from './rates.js';
@@ -479,20 +480,22 @@ export function deriveProblems(
     (s) => content.buildings.get(s.def)?.kind === 'source',
   );
   if (freeNodes.length > 0 && sourceInStash !== undefined) {
-    const kinds = Array.from(
-      new Set(freeNodes.map((n) => resourceName(content, n.resource))),
-    );
+    const stashed = state.stash.filter(
+      (s) => s.def === sourceInStash.def,
+    ).length;
+    const name = buildingName(content, sourceInStash.def);
     const first = freeNodes[0];
     out.push({
       id: 'free_nodes',
       kind: 'free_nodes',
       text: screenText(
         texts,
-        freeNodes.length === 1 ? 'problemFreeNodesOne' : 'problemFreeNodesMany',
+        stashed === 1 ? 'problemFreeNodesOne' : 'problemFreeNodesMany',
         {
-          name: buildingName(content, sourceInStash.def),
+          name,
+          names: plural(stashed, name),
+          stashed: String(stashed),
           count: String(freeNodes.length),
-          kinds: kinds.join(', '),
         },
       ),
       focus: first === undefined ? null : { x: first.x, y: first.y },

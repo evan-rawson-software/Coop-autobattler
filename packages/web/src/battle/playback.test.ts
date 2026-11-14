@@ -556,6 +556,7 @@ describe('result reasons', () => {
     coresStanding: standing,
     coreHealth: hp,
     coreMaxHealth: max,
+    cores: [],
   });
   test('the result line names the deciding step of a time limit', () => {
     const byCount = reasonText('time_limit', 'Core', [

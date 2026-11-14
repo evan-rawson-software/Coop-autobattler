@@ -52,6 +52,8 @@ export interface BattleViewProps {
    * it was not, the button is available again.
    */
   readonly onReady: () => Promise<boolean>;
+  /** What the Ready button says; "Continue" when absent. */
+  readonly continueText?: string;
   /**
    * Whether the viewing player is Ready, as the run holds it. When given it
    * decides how the Ready button reads, so it survives the screen being

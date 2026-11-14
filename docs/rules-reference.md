@@ -3007,7 +3007,7 @@ composition: [{unit, weight}], signature?}` and `stronghold`
 | --- | --- | --- | --- | --- |
 | Rusher | 70 | 100, 120, 6, 115 | soldier 2 : raider 1 | 600, 0, 0, `open` |
 | Fortress | 20 | 600, 400, 3, 130 | soldier | 300, 30, 25, `ring` |
-| Escalator | 75 | 150, 150, 8, 160 | soldier 3 : raider 1 | 300, 25, 15, `line` |
+| Escalator | 75 | 100, 75, 8, 160 | soldier 3 : raider 1 | 300, 25, 15, `line` |
 | Boss | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 
 Rusher tests defence (early frequent waves, a small open Core); Fortress tests
@@ -3236,22 +3236,31 @@ section when their issue lands; none of them is in the code yet.
 
 | Rule | Change to this section | Status |
 | ---- | ---------------------- | ------ |
-| PP-6 | The boards are rebuilt as supply-limited boards (each building's need against its collectors' rates); the descriptions below, and every result measured on them, are void until then. Since issue #130 the production step caps every producer at its top speed, so the pinned results changed. | **not yet implemented** (issue #145): the numbers of the rebalance are shipped (part 1) but the boards are unchanged. With them, rush loses to fortify (0 of 20) and to siege (0 of 20) and siege beats fortify (20 of 20): no circle yet |
+| PP-6 | The boards are rebuilt as supply-limited boards (each building's need against its collectors' rates), all of one shop value. Since issue #130 the production step caps every producer at its top speed. | **implemented** (issue #145): rush, fortify and siege each cost 330 gold and form the circle of CB-21, every battle ending with a destroyed Core. Measured with `pnpm sim batch --count 20 --seed 1` (seeds 1 to 20, the first board is the party): rush beats siege 18 of 20 (siege first: rush wins 17 of 20), fortify beats rush 20 of 20 (rush first: fortify wins 20 of 20), siege beats fortify 17 of 20 (fortify first: siege wins 18 of 20) |
 
 `reference-boards.ts` and `reference-boards-siege.ts` (importable by later
 tools; not test modules): four solo boards as `team-state-ops` scripts on the
-map of seed 5 (party size 1), Core at (11, 5): **rush** (three tier 1
-extractors, each feeding a tier 1 barracks directly; nothing else), **fortify**
-(seven walls around the Core, three tier 2 turrets each powered by its own
-tier 2 extractor, one barracks and one armory fed directly), **siege** (all
-three extractors at tier 3, each feeding a tier 3 building directly: two
-barracks and one armory; six tier 2 walls in a row in front of the Core) and
-**poor** (the starting kit placed badly: one extractor far from its barracks
-over a 17-cell conduit, one extractor with no conduit, an unpowered turret and
-three walls in a back corner). No player building produces raiders (only the
-threat scripts do, see `content/units.json`), so siege is a build of few strong
-units: the armory raises the strength of every soldier spawned after it has
-charged. `ALL_REFERENCE_BOARDS` lists them in the order rush, fortify, siege,
+map of seed 5 (party size 1), Core at (11, 5). Rush, fortify and siege each have
+a shop value of 330 gold: **rush** (tier 3 extractors on the Ore nodes at
+(10, 1) and (21, 4), each feeding a tier 3 barracks directly, a tier 1
+extractor on (8, 8) feeding a tier 1 barracks, and five walls, four at tier 2
+and one at tier 1, in front of the Core), **fortify** (two tier 2 turrets, each
+powered through a conduit by its own tier 2 extractor on a Power node; a tier 2
+extractor feeding a tier 2 barracks and another feeding a tier 2 armory; ten
+walls around the Core, three at tier 2 and seven at tier 1) and **siege** (a
+tier 3 extractor feeding a tier 3 barracks, a tier 2 extractor feeding a tier 2
+armory, a tier 2 extractor feeding a tier 2 range and a tier 1 extractor on a
+Power node feeding a tier 1 hangar, each directly; no walls). **poor** is the
+starting kit placed badly: one extractor far from its barracks over a 17-cell
+conduit, one extractor with no conduit, an unpowered turret and three walls in
+a back corner. Supply: each collector feeds one producer of its own tier (tier 3
+one item per 10 ticks against five per 50 for the barracks; tier 2 one per 14
+ticks against five per 70 for the barracks and the armory and six per 75 for
+the range; tier 1 one per 20 ticks against five per 100 for the barracks and
+eight per 120 for the hangar), so the range and the hangar run at about 89 and
+75 percent of their top speed, and each turret has one collector, so it fires
+at half rate. The
+armory spends its Ore on a strength bonus for the soldiers spawned later. `ALL_REFERENCE_BOARDS` lists them in the order rush, fortify, siege,
 poor. `referenceBoardScript(name)` (the original three) and
 `anyReferenceBoardScript(name)` (all four) give the script,
 `buildReferenceBoard` and `buildAnyReferenceBoard` build the state.
@@ -4098,8 +4107,9 @@ dropped. "Oldest" is the store's own save sequence number (a counter kept in
 the store; re-saving the same run counts as newest), never the clock. The run's
 own snapshots and ghosts already fought stay excluded at selection. The
 player can still influence ghost versus boss (plant a weak run; clear the
-pool), which is acceptable for the prototype. "Clear ghost pool" stays under
-Developer on the main menu and is not on the run screens. The requirements of
+pool), which is acceptable for the prototype. "Clear saved opponents" stays under
+Developer on the main menu (shown only in development and debug builds, or with
+`?dev` in the URL) and is not on the run screens. The requirements of
 the shared Steam pool (identities, anti-tamper, abuse) are tracked in
 issue #79. The ghost database moved to version 2 for this change; the upgrade
 empties the local pool, which refills as runs are played.
@@ -4127,7 +4137,7 @@ In the web app the file is a second, read-only source behind the same store
 interface (`layerGhostStores`). It loads on the first read of the pool (the
 shop before a PvP battle), as its own chunk. A file that is missing, invalid
 or made for another game version (`major.minor`) is ignored: the pool is then
-the local one. `save` and "Clear ghost pool" act on the local pool only, and
+the local one. `save` and "Clear saved opponents" act on the local pool only, and
 the per-owner cap and eviction never see a bundled row.
 
 Candidate order. A listing is the union of the local rows and the bundled rows
@@ -4216,11 +4226,12 @@ player grows by raising tiers, by economy buildings or through a border link.
 | Shop | `economy.json` | `bld_armory` in `offerWeights` at weight 3, like the Overclocker; `bld_range` at 5 and `bld_hangar` at 3 (issue #59; placeholder unit numbers kept by owner decision) | |
 | Threat growth | `threats.json` | `growthPercent` 125 (+25 percent per round) | above 100 |
 | Stronghold caps | `threats.json` | `maxTurretsPerPlot` 6 (was 16); Fortress `turretSharePercent` 25 (was 40) and `coreHealthPerBudget` 300 (was 500); Boss `turretSharePercent` 20 (was 30) | the rest of a stronghold's budget becomes Core health |
+| Escalator wave timing | `threats.json` | `firstTick` 100 and `intervalTicks` 75 (was 150 and 150): the eighth wave comes at tick 625 instead of 1200 | its Core used to fall before its large late waves spawned; a full tier 1 board now beats hard Escalator through round 8 (was 12), against 7 for Rusher |
 | `minCoreHealth` (per Core) | `threats.json` | 30 (unchanged; never reached in rounds 1 to 12 at any party size) | |
 
 Not part of this table: Overload timing, shop prices and tier odds, wave sizes
-and `baseBudget` (all unchanged). The reference boards are not rebuilt yet
-(see "Reference boards").
+and `baseBudget` (all unchanged). The reference boards are rebuilt (PP-6; see
+"Reference boards").
 
 ### PP-1. Ownership and plots
 

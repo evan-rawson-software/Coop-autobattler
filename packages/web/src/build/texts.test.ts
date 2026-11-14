@@ -114,8 +114,9 @@ describe('reason and Core texts come from the presentation file', () => {
 
   test('the composed reason texts follow their templates', () => {
     expect(reasonMessage('made_up')).toBe('Not allowed (made_up).');
+    // The offending cell is marked on the board, not put into the text.
     expect(reasonMessage('crosses_conduit', '(3, 4)')).toBe(
-      `${screens['reason_crosses_conduit'] as string} At (3, 4).`,
+      screens['reason_crosses_conduit'] as string,
     );
     expect(reasonMessage('core_not_placed', 'player 1')).toMatch(
       /Player 2 has to pick a spot\.$/,

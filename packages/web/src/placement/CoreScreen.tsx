@@ -206,7 +206,7 @@ export function CoreScreen(props: { run: RunHandle }) {
   };
 
   const solo = view.run.players.length === 1;
-  const readyWho = solo ? 'you are Ready' : 'everyone is Ready';
+  const readyWho = solo ? 'you press Ready' : 'everyone presses Ready';
   const kit = kitRows(economy, content);
   const routeCount = paths?.length ?? 0;
 
@@ -215,7 +215,7 @@ export function CoreScreen(props: { run: RunHandle }) {
       title="New run · Place the Core"
       right={
         <Panel title="The Core" id="panel-core">
-          <p>It can't be moved once {readyWho}.</p>
+          <p>It can't be moved after {readyWho}.</p>
           <ul class="legend-list" aria-label="Map key">
             <li>
               <span class="swatch ok" aria-hidden="true" /> Fits
@@ -231,7 +231,7 @@ export function CoreScreen(props: { run: RunHandle }) {
             <p class="muted" data-field="route-count">
               {routeCount === 0
                 ? 'No enemy route reaches here.'
-                : count(routeCount, 'enemy route')}
+                : `Enemies have ${count(routeCount, 'way')} to reach this spot. Walls can block ${routeCount === 1 ? 'it' : 'some'}.`}
             </p>
           )}
           {isReady ? (

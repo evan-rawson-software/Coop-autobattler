@@ -5,7 +5,11 @@ import type { CameraController } from './controller.js';
 
 const t = (key: string): string => screenText(screenTexts, key);
 
-export function CameraControls(props: { controller: CameraController }) {
+export function CameraControls(props: {
+  controller: CameraController;
+  /** Battle screen: centre the camera on the enemy's base. */
+  onEnemyBase?: (() => void) | undefined;
+}) {
   const c = props.controller;
   return (
     <div class="camera-controls" role="group" aria-label={t('uiCameraPanel')}>
@@ -27,6 +31,15 @@ export function CameraControls(props: { controller: CameraController }) {
       >
         {t('uiCameraMyBase')}
       </button>
+      {props.onEnemyBase === undefined ? null : (
+        <button
+          type="button"
+          data-camera="enemy-base"
+          onClick={props.onEnemyBase}
+        >
+          {t('uiCameraTheirBase')}
+        </button>
+      )}
       <button
         type="button"
         data-camera="fit"

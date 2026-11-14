@@ -563,9 +563,9 @@ export async function runRunSmoke({
     /Round 1/.test(bar0) &&
       /Lives 5 \/ 5/.test(bar0) &&
       !/Gold/.test(bar0) &&
-      /Place the Core/.test(bar0) &&
-      (await page.locator('#menu-button').count()) === 1,
-    `top bar: round, lives, step (no gold before the kit) and Menu ("${bar0.replace(/\s+/g, ' ')}")`,
+      (await page.locator('#menu-button').count()) === 1 &&
+      /Place the Core/.test(await page.locator('.topbar-title').innerText()),
+    `top bar: round, lives (no gold before the kit) and Menu ("${bar0.replace(/\s+/g, ' ')}"), the step in the title`,
   );
   check(
     await page.locator('#core-confirm').isDisabled(),
@@ -686,9 +686,11 @@ export async function runRunSmoke({
     'the Core cannot be moved after it is confirmed (a drag changes nothing)',
   );
   check(
-    (await page.locator('.topbar-tabs button').allInnerTexts()).join() ===
-      'Build',
-    'first build: only the Build tab (there is no shop yet)',
+    (await page.locator('.topbar-tabs button').count()) === 0 &&
+      (await page.locator('.topbar-tabs .phase-label').allInnerTexts())
+        .join()
+        .toLowerCase() === 'build',
+    'first build: only a plain Build label, no tab buttons (there is no shop yet)',
   );
   await shot('run-4-first-build');
   const left = await placeKit();
@@ -797,7 +799,7 @@ export async function runRunSmoke({
   check(
     overloadLines.length === 3 &&
       overloadLines.every((t) =>
-        /^Overload at 3:00: (their Core falls first \(\d+:\d\d\)|your Core falls first \(\d+:\d\d\)|both Cores fall at \d+:\d\d|no Core falls before the time limit)/.test(
+        /^At 3:00 both Cores start losing health \(Overload\)\. (Theirs falls first, at \d+:\d\d|Yours falls first, at \d+:\d\d|Both fall at \d+:\d\d|Neither falls before the time limit)/.test(
           t.trim(),
         ),
       ) &&
@@ -809,6 +811,14 @@ export async function runRunSmoke({
   check(
     /no life/.test(await page.locator('.choice-banner').innerText()),
     'PvE choice: the stakes of losing are stated',
+  );
+  check(
+    /Pick an opponent/.test(
+      await page.locator('[data-field="choice-prompt"]').innerText(),
+    ) &&
+      (await page.locator('.pve-card [data-field="fight"]').allInnerTexts())
+        .length === 3,
+    'PvE choice: says what to do and each card has a Fight button look',
   );
   await shot('run-5-pve-choice');
   await shotDark('art2-pve-choice');
@@ -908,6 +918,12 @@ export async function runRunSmoke({
     !(await page.locator('#watch-again').isDisabled()),
     'battle summary: Watch again is available',
   );
+  check(
+    /^Continue/.test(await page.locator('#battle-ready').innerText()) &&
+      (await page.locator('#panel-enemy [data-field="opp-kind"]').count()) ===
+        0,
+    'battle summary: the button says Continue; no duplicate opponent tag',
+  );
   await shot('run-6-battle-summary');
   await reloadSame('the battle summary');
   await page.waitForFunction(
@@ -926,7 +942,7 @@ export async function runRunSmoke({
   // Event
   const header = await page.locator('#battle-result').innerText();
   check(
-    /^PvE battle (won|lost) · (Easy|Medium|Hard) · \w+/.test(header) &&
+    /^Stronghold battle (won|lost) · (Easy|Medium|Hard) · \w+/.test(header) &&
       /gold|No reward/.test(header),
     `event: opens with the battle just fought and what it paid ("${header.replace(/\s+/g, ' ')}")`,
   );
@@ -1091,7 +1107,7 @@ export async function runRunSmoke({
   );
   const header2 = await page.locator('#battle-result').innerText();
   check(
-    /^PvP battle (won|lost) · vs\. Bundled \w+ bot/.test(header2),
+    /^Rival party battle (won|lost) · vs\. Bundled \w+ bot/.test(header2),
     `event (after PvP): the header shows the PvP result ("${header2.replace(/\s+/g, ' ')}")`,
   );
 
@@ -1195,7 +1211,7 @@ export async function runRunSmoke({
   check(
     /Round 2/.test(rowA) &&
       /Lives \d \/ 5/.test(rowA) &&
-      /Choose a PvE battle/.test(rowA) &&
+      /Choose a Stronghold battle/.test(rowA) &&
       /Last played just now/.test(rowA),
     `main menu: the saved run shows round, lives, step and when it was played ("${rowA.replace(/\s+/g, ' ')}")`,
   );
@@ -1538,8 +1554,8 @@ export async function runRunSmoke({
     localStorage.removeItem('coop-autobattler:debug-force-opponent'),
   );
   check(
-    /PvP battles/.test(final) &&
-      /PvE battles/.test(final) &&
+    /Rival party battles/.test(final) &&
+      /Stronghold battles/.test(final) &&
       /vs\. bosses/.test(final),
     'Run over: battle records',
   );

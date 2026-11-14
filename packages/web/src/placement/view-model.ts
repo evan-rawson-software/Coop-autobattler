@@ -126,7 +126,7 @@ export function choiceAnnouncement(
   ready: boolean,
 ): string {
   if (selected === null) return '';
-  const at = `Core spot chosen: column ${String(selected.x)}, row ${String(selected.y)}.`;
+  const at = 'Core spot chosen.';
   return ready ? `${at} You are Ready.` : at;
 }
 
