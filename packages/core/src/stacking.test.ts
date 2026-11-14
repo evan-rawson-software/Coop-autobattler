@@ -164,7 +164,7 @@ describe('stacking duration', () => {
     expect(pileUnitTicks).toBe(0);
     expect(longestPile).toBe(0);
     expect(longPiles).toBe(0);
-    expect(maxInCell).toBeLessThanOrEqual(4);
+    expect(maxInCell).toBeLessThanOrEqual(5);
   }, 120_000);
 
   test('the dense four-plot battle (tier 1): same', () => {
@@ -226,7 +226,7 @@ describe('stacking duration, tier 3 and mixed', () => {
 // enemies, not at the Core. Their bounds are a ratchet: re-set when army sizes
 // are settled (#145) and when the test board is replaced by a legal one (#164).
 const LONGEST_REFERENCE = 2;
-const SHARE50_REFERENCE = 0.0005;
+const SHARE50_REFERENCE = 0.0007;
 const SHARE90_REFERENCE = 0.0005;
 const LONGEST_DENSE = 24;
 const SHARE50_DENSE = 0.06;
@@ -242,3 +242,7 @@ const SHARE90_DENSE = 0.0015;
 // over 90 (limits 24, 6, 0.15); tier 3: longest 29, 8.33 over 50, 0.39 over
 // 90 (limits 34, 9, 0.5); tier 1 against tier 3: longest 5, 0.39 over 50,
 // 0.0086 over 90. The dense boards are replaced by legal ones in #164.
+// Measured on the rebuilt reference boards (#145, PP-6: supply-limited,
+// 330 gold each; siege now fields drones, archers and an Armory): longest 2,
+// 0.068 percent over 50 (108 of 157868 unit-ticks), none over 90, at most 5
+// units of one side in one cell (limits 2, 0.07 percent, 0.05 percent, 5).
