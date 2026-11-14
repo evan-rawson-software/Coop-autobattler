@@ -62,6 +62,26 @@ describe('explainResult', () => {
     expect(w.tip).toMatch(/Power Extractor to the Turret/);
   });
 
+  test('no Extractor to draw from: say how to get one instead', () => {
+    const dry = { ...turret, sourceReady: false };
+    const w = explainResult({ ...base, dryTurrets: [dry] }, false, 'x');
+    expect(w.tip).toBe(
+      'You have no Extractor to spare. Pick one up from the board and move it onto a Power node, or buy one in the shop. Then draw a conduit to the Turret.',
+    );
+    const ready = explainResult(
+      { ...base, dryTurrets: [{ ...turret, sourceReady: true }] },
+      false,
+      'x',
+    );
+    expect(ready.tip).toMatch(/^Draw a conduit from a Power Extractor/);
+    const prod = explainResult(
+      { ...base, dryProducers: [{ ...barracks, sourceReady: false }] },
+      false,
+      'x',
+    );
+    expect(prod.tip).toMatch(/move it onto a Ore node/);
+  });
+
   test('a breach names the side and the time', () => {
     const w = explainResult(
       { ...base, breach: { side: 'right', time: '0:48' } },
@@ -166,6 +186,34 @@ describe('resultFacts from a record', () => {
     expect(f.dryProducers.length).toBeGreaterThan(0);
     expect(f.dryProducers[0]?.resource).not.toBeNull();
     expect(f.topUnits).toBeNull();
+  });
+
+  test('an Extractor in the inventory or on a node of the resource is ready', () => {
+    const team = rec.initialTeams[0];
+    const stashed = { id: 900, def: 'bld_extractor', tier: 1, owner: 0 };
+    const bare: BattleRecord = {
+      ...rec,
+      eventLog: [],
+      initialTeams: [
+        {
+          ...team,
+          buildings: team.buildings.filter((b) => b.def !== 'bld_extractor'),
+          stash: [],
+        },
+        rec.initialTeams[1],
+      ],
+    };
+    const dry = (r: BattleRecord) => factsOf(r).dryProducers[0]?.sourceReady;
+    expect(dry(bare)).toBe(false);
+    const withStash: BattleRecord = {
+      ...bare,
+      initialTeams: [
+        { ...bare.initialTeams[0], stash: [stashed] },
+        rec.initialTeams[1],
+      ],
+    };
+    expect(dry(withStash)).toBe(true);
+    expect(dry({ ...rec, eventLog: [] })).toBe(true);
   });
 
   test('a board with no buildings', () => {

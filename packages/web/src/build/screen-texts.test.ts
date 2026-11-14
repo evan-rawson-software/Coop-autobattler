@@ -778,6 +778,11 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     'Place buildings from the tray before pressing Ready.',
   ],
   [
+    'battleTipExtractor',
+    { resource: '<resource>', source: '<source>', building: '<building>' },
+    'You have no <source> to spare. Pick one up from the board and move it onto a <resource> node, or buy one in the shop. Then draw a conduit to the <building>.',
+  ],
+  [
     'battleTipConduit',
     { resource: '<resource>', source: '<source>', building: '<building>' },
     "Draw a conduit from a <resource> <source> to the <building>. The Build checklist turns green when it's connected.",
@@ -892,7 +897,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'tutStep2Body',
     {},
-    'Drag the **Extractor** from the tray below the board onto a glowing **Ore node**.',
+    'Drag **one Extractor** from the tray below the board onto a glowing **Ore node**. Keep the other one for later.',
   ],
   ['tutStep3Head', {}, 'Feed a Barracks with a conduit'],
   [
@@ -914,11 +919,26 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'tutStep4Power',
     {},
-    'A Turret shoots Power: run a conduit to it from a Power node.',
+    'A Turret shoots Power. Drag your second **Extractor** onto a ringed **Power node**.',
+  ],
+  [
+    'tutStep4Link',
+    {},
+    'Pick the **Conduit** tool, then drag from the Power Extractor to the Turret. The dashed line is one way to run it.',
+  ],
+  [
+    'tutStep4NoSpare',
+    {},
+    'A Turret shoots Power, and you have no Extractor left. Pick one up from the board and move it onto a ringed **Power node**.',
   ],
   ['tutStep4Skip', {}, 'Skip this step'],
   ['tutStep5Head', {}, 'Pick a fight'],
   ['tutStep5Ready', {}, 'Your base is ready. Press **Ready** to leave Build.'],
+  [
+    'tutStep5Warnings',
+    {},
+    '**Before you fight** still lists warnings. Fix what you can, then press **Ready**.',
+  ],
   [
     'tutStep5Choose',
     {},
@@ -954,14 +974,14 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'tutClosingLostStep4',
     {},
-    'You lost this one. Step 4 was not done: a Turret near your Core stops units that get through.',
+    'You lost this one. Step 4 was not done: a Turret near your Core only fires when a conduit brings it Power.',
   ],
   ['tutClosingDone', {}, 'Finish the tutorial'],
   ['tutListTitle', {}, 'Your first base'],
   ['tutList1', {}, 'Place your Core'],
   ['tutList2', {}, 'Mine Ore with an Extractor'],
   ['tutList3', {}, 'Feed a Barracks with a conduit'],
-  ['tutList4', {}, 'Guard the Core with a Turret'],
+  ['tutList4', {}, 'Power a Turret next to the Core'],
   ['tutList5', {}, 'Press Ready, pick a fight'],
   ['tutList6', {}, 'Watch the battle'],
   ['tutReadyLocked', {}, 'Unlocks at step 5'],

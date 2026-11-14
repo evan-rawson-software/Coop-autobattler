@@ -2,7 +2,7 @@ import type { Cell } from '@game/core';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { content } from '../content.js';
 import { proposePath } from './autoroute.js';
-import { deriveChecklist } from './checklist.js';
+import { deriveChecklist, unpowered } from './checklist.js';
 import { newStashIds, noteRound, resetNewItems } from './new-items.js';
 import { nextFightOf } from './next-fight.js';
 import { simConfig } from './setup.js';
@@ -25,6 +25,19 @@ async function placeAt(s: BuildSession, id: number, c: Cell): Promise<void> {
 }
 
 describe('the Before you fight checklist', () => {
+  test('a Turret with no conduit into its Power input is unpowered', async () => {
+    const s = await buildRun();
+    const tu = stashIds(s.run.team, 'bld_turret')[0] as number;
+    await placeAt(s, tu, firstFit(s.run.team, tu));
+    const problems = deriveProblems(s.run.team, content, null);
+    expect(unpowered(problems, tu)).toBe(true);
+    expect(unpowered(problems, tu + 1000)).toBe(false);
+    const w = listOf(s, false).items.find(
+      (i) => i.problem?.building === tu && i.state === 'warn',
+    );
+    expect(w?.text).toMatch(/Turret has no conduit into its Power input/);
+  });
+
   test('a fresh kit: a reminder to place it, nothing satisfied', async () => {
     const s = await buildRun();
     const list = listOf(s, true);

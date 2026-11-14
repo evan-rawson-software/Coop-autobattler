@@ -18,6 +18,11 @@ export interface DryBuilding {
   readonly resource: string | null;
   /** The plural of the unit it should have trained; null for turrets. */
   readonly units: string | null;
+  /**
+   * You can draw its conduit now: an Extractor for its resource is placed on a
+   * node or waits in the inventory. Omitted counts as true.
+   */
+  readonly sourceReady?: boolean;
 }
 
 export type BreachSide = 'left' | 'right' | 'middle';
@@ -83,6 +88,25 @@ export function resultFacts(
       lost.add(e.building);
     }
   }
+  const team0 = record.initialTeams[0];
+  const sourceDef = content.buildings.list().find((d) => d.kind === 'source');
+  const sourceReady = (def: {
+    readonly inputs: readonly { readonly resource?: string }[];
+  }): boolean => {
+    const need = def.inputs.find((i) => i.resource !== undefined)?.resource;
+    if (need === undefined || sourceDef === undefined) return true;
+    return (
+      team0.stash.some((s) => s.owner === 0 && s.def === sourceDef.id) ||
+      team0.buildings.some(
+        (b) =>
+          b.owner === 0 &&
+          b.def === sourceDef.id &&
+          team0.map.nodes.some(
+            (n) => n.x === b.x && n.y === b.y && n.resource === need,
+          ),
+      )
+    );
+  };
   const dryProducers: DryBuilding[] = [];
   const dryTurrets: DryBuilding[] = [];
   const unitCounts = new Map<string, number>();
@@ -100,6 +124,7 @@ export function resultFacts(
           building: buildingName(content, def),
           resource: inputName(content, def),
           units: plural(unit),
+          sourceReady: sourceReady(def),
         });
       }
     } else if (
@@ -113,6 +138,7 @@ export function resultFacts(
         building: buildingName(content, def),
         resource: inputName(content, def),
         units: null,
+        sourceReady: sourceReady(def),
       });
     }
   }
@@ -198,7 +224,7 @@ export function explainResult(
         });
   const lead = fell === '' ? '' : `${fell} `;
   const conduitTip = (d: DryBuilding & { resource: string }): string =>
-    t('battleTipConduit', {
+    t(d.sourceReady === false ? 'battleTipExtractor' : 'battleTipConduit', {
       resource: d.resource,
       source: facts.sourceName,
       building: d.building,

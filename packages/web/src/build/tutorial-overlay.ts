@@ -1,15 +1,24 @@
 /**
  * The tutorial's highlights on the board (issue #309): pulsing rings on the
- * Ore nodes to use (step 2) and a dashed suggested conduit path (step 3).
+ * Ore nodes to use (step 2), the Power nodes (step 4) and a dashed suggested
+ * conduit path (steps 3 and 4).
  * No dark overlay: the board stays fully visible. It draws what
  * `tutorialMarks` decided; nothing here changes the game.
  */
-import { occupancy, type Cell, type TeamState } from '@game/core';
+import {
+  occupancy,
+  type Cell,
+  type PlacedBuilding,
+  type TeamState,
+} from '@game/core';
 import type { OverlayContext } from '../board/BoardView.js';
 import { cellToView } from '../board/layout.js';
 import type { WebContent } from '../content.js';
 import {
   freeNodes,
+  freePowerNodes,
+  oreResource,
+  turretResource,
   tutorialDefs,
   type StepNo,
   type TutorialFacts,
@@ -23,6 +32,30 @@ export interface TutorialMarks {
   readonly path: readonly Cell[];
 }
 
+/** A suggested conduit path from an Extractor's output to a building's input. */
+function suggestPath(
+  team: TeamState,
+  content: WebContent,
+  player: number,
+  from: PlacedBuilding | undefined,
+  to: PlacedBuilding | undefined,
+): TutorialMarks | null {
+  if (from === undefined || to === undefined) return null;
+  const occ = occupancy(team, content);
+  const out = occ.absoluteSides(from).outputs[0];
+  const inp = occ.absoluteSides(to).inputs[0]?.side;
+  if (out === undefined || inp === undefined) return null;
+  const path = proposePath(
+    team,
+    content,
+    { building: from.id, side: out },
+    { building: to.id, side: inp },
+    [],
+    player,
+  );
+  return { rings: [], path: path ?? [] };
+}
+
 export function tutorialMarks(
   team: TeamState,
   content: WebContent,
@@ -30,30 +63,41 @@ export function tutorialMarks(
   n: StepNo | null,
   facts: TutorialFacts,
 ): TutorialMarks | null {
-  if (n === 2) return { rings: freeNodes(team, content), path: [] };
-  if (n === 3 && facts.barracksPlaced && team.conduits.length === 0) {
-    const defs = tutorialDefs(content);
-    const mine = team.buildings.filter((b) => b.owner === player);
-    const from = mine.find(
+  if (n === 2) return { rings: freeNodes(team, content, player), path: [] };
+  const defs = tutorialDefs(content);
+  const mine = team.buildings.filter((b) => b.owner === player);
+  const extractorOn = (resource: string | null): PlacedBuilding | undefined =>
+    mine.find(
       (b) =>
         b.def === defs.extractor &&
-        team.map.nodes.some((k) => k.x === b.x && k.y === b.y),
+        team.map.nodes.some(
+          (k) =>
+            k.x === b.x &&
+            k.y === b.y &&
+            (resource === null || k.resource === resource),
+        ),
     );
-    const to = mine.find((b) => b.def === defs.barracks);
-    if (from === undefined || to === undefined) return null;
-    const occ = occupancy(team, content);
-    const out = occ.absoluteSides(from).outputs[0];
-    const inp = occ.absoluteSides(to).inputs[0]?.side;
-    if (out === undefined || inp === undefined) return null;
-    const path = proposePath(
+  if (n === 3 && facts.barracksPlaced && team.conduits.length === 0) {
+    return suggestPath(
       team,
       content,
-      { building: from.id, side: out },
-      { building: to.id, side: inp },
-      [],
       player,
+      extractorOn(oreResource(content)),
+      mine.find((b) => b.def === defs.barracks),
     );
-    return { rings: [], path: path ?? [] };
+  }
+  if (n === 4 && facts.turret && !facts.turretPowered) {
+    // Ring the Power nodes until an Extractor sits on one, then show the way.
+    if (!facts.powerExtractor) {
+      return { rings: freePowerNodes(team, content, player), path: [] };
+    }
+    return suggestPath(
+      team,
+      content,
+      player,
+      extractorOn(turretResource(content)),
+      mine.find((b) => b.def === defs.turret),
+    );
   }
   return null;
 }

@@ -5,7 +5,7 @@
  * which lives in the tutorial store.
  *
  *   1 Place your Core          2 Mine Ore with an Extractor
- *   3 Feed a Barracks          4 Guard the Core with a Turret (skippable)
+ *   3 Feed a Barracks          4 Power a Turret next to the Core (skippable)
  *   5 Press Ready, pick a fight   6 Watch the battle
  */
 import {
@@ -16,7 +16,8 @@ import {
 } from '@game/core';
 import type { RunState } from '@game/session';
 import type { WebContent } from '../content.js';
-import type { FlowView } from '../build/view-model.js';
+import { unpowered } from '../build/checklist.js';
+import { deriveProblems, type FlowView } from '../build/view-model.js';
 
 export const TUTORIAL_STEP_COUNT = 6;
 
@@ -26,15 +27,24 @@ export const STEP_NUMBERS: readonly StepNo[] = [1, 2, 3, 4, 5, 6];
 /** How far from the Core a Turret still counts as guarding it. */
 export const TURRET_NEAR_CORE = 8;
 
+/** How many nodes the rings of steps 2 and 4 point at: the closest ones. */
+export const RING_COUNT = 3;
+
 /** What the board shows, as far as the tutorial cares. */
 export interface TutorialFacts {
-  /** An Extractor of the player sits on a resource node. */
+  /** An Extractor of the player sits on an Ore node. */
   readonly extractor: boolean;
+  /** An Extractor of the player sits on a node of the Turret's resource. */
+  readonly powerExtractor: boolean;
+  /** The player has an Extractor in the inventory. */
+  readonly spareExtractor: boolean;
   readonly barracksPlaced: boolean;
   /** A placed Barracks received its resource in the dry run. */
   readonly barracksFed: boolean;
   /** A Turret of the player stands near the Core. */
   readonly turret: boolean;
+  /** That Turret has a conduit into its Power input (as the checklist tests). */
+  readonly turretPowered: boolean;
 }
 
 /** The building defs the tutorial teaches, found by what they are. */
@@ -89,10 +99,22 @@ export function tutorialFacts(
 ): TutorialFacts {
   const defs = tutorialDefs(content);
   const mine = team.buildings.filter((b) => b.owner === player);
-  const extractor = mine.some(
-    (b) =>
-      b.def === defs.extractor &&
-      team.map.nodes.some((n) => n.x === b.x && n.y === b.y),
+  const onNode = (resource: string | null): boolean =>
+    mine.some(
+      (b) =>
+        b.def === defs.extractor &&
+        team.map.nodes.some(
+          (n) =>
+            n.x === b.x &&
+            n.y === b.y &&
+            (resource === null || n.resource === resource),
+        ),
+    );
+  const extractor = onNode(oreResource(content));
+  const power = turretResource(content);
+  const powerExtractor = power !== null && onNode(power);
+  const spareExtractor = team.stash.some(
+    (s) => s.owner === player && s.def === defs.extractor,
   );
   const barracks = mine.filter((b) => b.def === defs.barracks);
   const fed = barracks.some((b) =>
@@ -102,15 +124,22 @@ export function tutorialFacts(
   );
   const core = coreCellsOf(team, content, player);
   const occ = occupancy(team, content);
-  const turret = mine.some(
+  const near = mine.filter(
     (b) =>
       b.def === defs.turret &&
       occ
         .cellsOf(b)
         .some((c) => core.some((k) => chebyshev(c, k) <= TURRET_NEAR_CORE)),
   );
+  const turret = near.length > 0;
+  // The checklist's own test: no conduit into the Turret's Power input.
+  const problems = turret ? deriveProblems(team, content, null) : [];
+  const turretPowered = near.some((b) => !unpowered(problems, b.id));
   return {
     extractor,
+    powerExtractor,
+    spareExtractor,
+    turretPowered,
     barracksPlaced: barracks.length > 0,
     barracksFed: fed,
     turret,
@@ -143,7 +172,7 @@ export function stepsDone(i: TutorialInput): readonly boolean[] {
     s !== 'core_placement',
     i.facts.extractor || fought,
     i.facts.barracksFed || fought,
-    i.facts.turret || i.turretSkipped || fought,
+    i.facts.turretPowered || i.turretSkipped || fought,
     fought,
     (s === 'pve_summary' && i.battleDone) ||
       s === 'event_choice' ||
@@ -183,7 +212,7 @@ export function brokenStep(
 ): 2 | 3 | 4 | null {
   if (!facts.extractor) return 2;
   if (!facts.barracksFed) return 3;
-  if (!facts.turret && !turretSkipped) return 4;
+  if (!facts.turretPowered && !turretSkipped) return 4;
   return null;
 }
 
@@ -207,7 +236,10 @@ export function allowedDefs(
 export function highlightDef(n: StepNo, facts: TutorialFacts, d: TutorialDefs) {
   if (n === 2) return d.extractor;
   if (n === 3) return facts.barracksPlaced ? null : d.barracks;
-  if (n === 4) return d.turret;
+  if (n === 4) {
+    if (!facts.turret) return d.turret;
+    return facts.spareExtractor && !facts.powerExtractor ? d.extractor : null;
+  }
   return null;
 }
 
@@ -218,17 +250,64 @@ export function oreResource(content: WebContent): string | null {
   return def?.inputs[0]?.resource ?? null;
 }
 
-/** Ore nodes with nothing on them: the rings of step 2. */
-export function freeNodes(team: TeamState, content: WebContent): Cell[] {
+/** The resource the Turret works on (the tutorial's "Power"); null if unknown. */
+export function turretResource(content: WebContent): string | null {
+  const id = tutorialDefs(content).turret;
+  const def = id === null ? undefined : content.buildings.get(id);
+  return def?.inputs[0]?.resource ?? null;
+}
+
+/** The `count` free nodes of `resource` closest to the player's Core. */
+function closeFreeNodes(
+  team: TeamState,
+  content: WebContent,
+  player: number,
+  resource: string | null,
+  count: number,
+): Cell[] {
   const occ = occupancy(team, content);
-  const ore = oreResource(content);
+  const core = coreCellsOf(team, content, player);
+  const dist = (n: Cell): number =>
+    core.length === 0 ? 0 : Math.min(...core.map((c) => chebyshev(n, c)));
   return team.map.nodes
     .filter(
       (n) =>
-        (ore === null || n.resource === ore) &&
+        (resource === null || n.resource === resource) &&
         occ.buildingAt(n.x, n.y) === null,
     )
-    .map((n) => ({ x: n.x, y: n.y }));
+    .map((n) => ({ x: n.x, y: n.y }))
+    .sort((a, b) => dist(a) - dist(b))
+    .slice(0, count);
+}
+
+/** The Ore nodes to ring in step 2: free ones close to the Core. */
+export function freeNodes(
+  team: TeamState,
+  content: WebContent,
+  player: number,
+): Cell[] {
+  return closeFreeNodes(
+    team,
+    content,
+    player,
+    oreResource(content),
+    RING_COUNT,
+  );
+}
+
+/** The Power nodes to ring in step 4: free ones close to the Core. */
+export function freePowerNodes(
+  team: TeamState,
+  content: WebContent,
+  player: number,
+): Cell[] {
+  return closeFreeNodes(
+    team,
+    content,
+    player,
+    turretResource(content),
+    RING_COUNT,
+  );
 }
 
 /** Is there a node of the Turret's resource (Power) near the Core? */
@@ -237,13 +316,12 @@ export function powerNearCore(
   content: WebContent,
   player: number,
 ): boolean {
-  const id = tutorialDefs(content).turret;
-  const need = id === null ? undefined : content.buildings.get(id)?.inputs[0];
-  if (need === undefined) return false;
+  const need = turretResource(content);
+  if (need === null) return false;
   const core = coreCellsOf(team, content, player);
   return team.map.nodes.some(
     (n) =>
-      n.resource === need.resource &&
+      n.resource === need &&
       core.some((c) => chebyshev(n, c) <= TURRET_NEAR_CORE + 4),
   );
 }
