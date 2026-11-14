@@ -94,7 +94,7 @@ const CLOSED = 'The shop is closed.';
 
 export function shortOf(gold: number, price: number): string {
   const missing = price - gold;
-  return `Not enough gold: ${String(missing)} more needed.`;
+  return `Need ${String(missing)} more gold.`;
 }
 
 /** Stash grouped by building and tier, in content order. */
@@ -190,7 +190,7 @@ export function buildShopView(
     : lock('reroll') !== null
       ? lock('reroll')
       : data === null
-        ? 'There are no offers to re-roll.'
+        ? 'Nothing to re-roll.'
         : gold < cost
           ? shortOf(gold, cost)
           : null;
@@ -241,7 +241,7 @@ export function saleQuote(row: StashRow): SaleQuote {
     name: row.name,
     tier: row.tier,
     refund: row.refund,
-    text: `Sell ${row.name} (tier ${String(row.tier)}) for ${String(row.refund)} gold? This cannot be undone.`,
+    text: `Sell ${row.name} (tier ${String(row.tier)}) for ${String(row.refund)} gold?`,
   };
 }
 
@@ -320,10 +320,8 @@ export function opponentText(
   run: Pick<RunState, 'pvpOpponent' | 'round'>,
 ): string {
   const o = pvpOpponentInfo(run);
-  if (o === null) return 'Opponent unknown until the battle starts.';
+  if (o === null) return 'Opponent unknown';
   if (o.kind === 'boss') return 'Opponent: the boss';
   // Bundled ghosts ship with the game; their label says so (MM-12).
-  return o.label.startsWith('Bundled ')
-    ? `Opponent: a ghost of ${o.label} (shipped with the game)`
-    : `Opponent: a ghost of ${o.label}`;
+  return `Opponent: ghost of ${o.label}`;
 }

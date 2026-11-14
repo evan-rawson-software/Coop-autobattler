@@ -49,7 +49,7 @@ describe('legal and illegal Core positions', () => {
         const v = verdictAt(team, content, { x, y }, 0);
         if (v.ok) continue;
         expect(v.problem).not.toBeNull();
-        expect(v.text?.length).toBeGreaterThan(20);
+        expect(v.text?.length).toBeGreaterThan(10);
         seen.add(v.problem as string);
       }
     }
@@ -80,10 +80,8 @@ describe('legal and illegal Core positions', () => {
     expect(cells[0]).toEqual({ x: 3, y: 4 });
   });
 
-  test('problem texts name the size of the Core', () => {
-    expect(problemText('out_of_bounds', { width: 2, height: 2 })).toMatch(
-      /2 × 2/,
-    );
+  test('problem texts say what is wrong', () => {
+    expect(problemText('out_of_bounds')).toBe('Off the board edge.');
   });
 });
 
@@ -171,7 +169,7 @@ describe('hint line', () => {
   const legalCell = legalCore(run)[0] ?? { x: 0, y: 0 };
   const good = verdictAt(team, content, legalCell, 0);
   const bad = verdictAt(team, content, { x: width - 1, y: 0 }, 0);
-  const stale = 'The Core is 2 × 2 and would hang over the edge of the board.';
+  const stale = 'Off the board edge.';
 
   test('a stored refusal is not hidden by a hover left over after a tap', () => {
     expect(bad.ok).toBe(false);
@@ -180,7 +178,7 @@ describe('hint line', () => {
     );
     // The screen clears the message when the pointer moves to another cell.
     expect(hintText({ hover: good, selected: null, message: null })).toMatch(
-      /fits here/,
+      /Fits here/,
     );
   });
   test('hovering an illegal cell shows its own reason', () => {
@@ -188,16 +186,14 @@ describe('hint line', () => {
       bad.text,
     );
   });
-  test('nothing hovered: the selection, or a stored message', () => {
+  test('nothing hovered: a stored message, or nothing', () => {
     expect(
       hintText({ hover: null, selected: { x: 3, y: 4 }, message: null }),
-    ).toBe('Chosen: column 3, row 4.');
+    ).toBe('');
     expect(hintText({ hover: null, selected: null, message: 'No.' })).toBe(
       'No.',
     );
-    expect(hintText({ hover: null, selected: null, message: null })).toMatch(
-      /Point at the map/,
-    );
+    expect(hintText({ hover: null, selected: null, message: null })).toBe('');
   });
 });
 

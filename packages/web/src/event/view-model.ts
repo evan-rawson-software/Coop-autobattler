@@ -87,7 +87,7 @@ export function battleHeader(
         ? gold === undefined || gold === null
           ? 'Reward paid'
           : `+${String(gold)} gold`
-        : 'No reward, and no life lost',
+        : 'No reward',
     };
   }
   const rec = run.thisRound.pvp;
@@ -107,7 +107,7 @@ export function battleHeader(
       ? win === null
         ? 'Reward paid'
         : `+${String(win)} gold`
-      : `−${String(cost)} ${plural(cost, 'life', 'lives')}${loss === null ? '' : ` · +${String(loss)} gold consolation`}`,
+      : `−${String(cost)} ${plural(cost, 'life', 'lives')}${loss === null ? '' : ` · +${String(loss)} gold`}`,
   };
 }
 
@@ -128,8 +128,6 @@ export interface EventCard {
   readonly title: string;
   /** What it does, one sentence each, from the offer's data. */
   readonly lines: readonly string[];
-  /** For a Shrine: the modifiers on offer with their effects. */
-  readonly modifiers: readonly ModifierLine[];
   readonly icon: string;
   readonly flavour: string;
   readonly voted: boolean;
@@ -150,11 +148,7 @@ function num(v: Json | undefined, fallback: number): number {
 }
 
 /** The cards of the open event vote, in offer order (1 to 3 of them). */
-export function eventCards(
-  run: RunState,
-  config: EventsConfig,
-  player: number,
-): EventCard[] {
+export function eventCards(run: RunState, player: number): EventCard[] {
   const vote = openVote(run);
   const mine = vote?.choices[player] ?? null;
   const cards: EventCard[] = [];
@@ -163,23 +157,18 @@ export function eventCards(
     const type = typeof raw['type'] === 'string' ? raw['type'] : 'unknown';
     const text = eventText(type);
     let lines: string[];
-    let modifiers: ModifierLine[] = [];
     if (type === 'workshop') {
       const tiers = num(raw['tiers'], 1);
       lines = [
-        `Raise a building by ${count(tiers, 'tier')} (never above tier 3).`,
+        tiers === 1
+          ? 'Upgrade a building.'
+          : `Upgrade a building by ${count(tiers, 'tier')}.`,
       ];
     } else if (type === 'shrine') {
-      const ids = Array.isArray(raw['modifiers'])
-        ? raw['modifiers'].filter((m): m is string => typeof m === 'string')
-        : [];
-      modifiers = ids.map((id) => modifierLine(config, id));
-      lines = [
-        `Choose 1 of ${String(ids.length)} run ${plural(ids.length, 'modifier')}. It lasts until the run ends.`,
-      ];
+      lines = ['Gain a bonus for the rest of the run.'];
     } else if (type === 'windfall') {
       const gold = num(raw['gold'], 0);
-      lines = [`Each player gets ${String(gold)} gold.`];
+      lines = [`+${String(gold)} gold.`];
     } else {
       // An event type this screen does not know: show its data as it is.
       lines = Object.entries(raw)
@@ -191,7 +180,6 @@ export function eventCards(
       type,
       title: text.name,
       lines,
-      modifiers,
       icon: text.icon,
       flavour: text.flavour,
       voted: mine === raw['id'],
@@ -249,8 +237,8 @@ export interface FollowUpView {
 }
 
 const PROMPTS: Readonly<Record<string, string>> = {
-  workshop_building: 'Choose one of your buildings to raise, or skip',
-  shrine_modifier: 'Choose a run modifier',
+  workshop_building: 'Upgrade a building',
+  shrine_modifier: 'Choose a bonus',
 };
 
 function str(v: Json | undefined): string | null {
@@ -259,9 +247,7 @@ function str(v: Json | undefined): string | null {
 
 /** "Upgrade price: 16 gold, you have 9" style reason, or null when payable. */
 function goldReason(price: number, gold: number): string | null {
-  return price <= gold
-    ? null
-    : `Not enough gold: it costs ${String(price)}, you have ${String(gold)}.`;
+  return price <= gold ? null : 'Not enough gold';
 }
 
 /**
@@ -297,8 +283,8 @@ export function followUpView(
       const placedB = run.team.buildings.find((b) => b.id === raw['building']);
       const where =
         placedB === undefined
-          ? 'In your stash'
-          : `On the board at column ${String(placedB.x)}, row ${String(placedB.y)}`;
+          ? 'Stash'
+          : `Board (${String(placedB.x)}, ${String(placedB.y)})`;
       const name = buildingName(content, def);
       // The session's own affordability is from the owner's gold now.
       const reason = goldReason(price, gold);
@@ -307,8 +293,8 @@ export function followUpView(
         title: name,
         lines: [
           where,
-          `Tier ${String(tier)} → tier ${String(newTier)}`,
-          `Costs ${String(price)} gold`,
+          `Tier ${String(tier)} → ${String(newTier)}`,
+          `${String(price)} gold`,
         ],
         affordable: reason === null && raw['affordable'] !== false,
         disabledReason: reason,
@@ -328,7 +314,7 @@ export function followUpView(
       options.push({
         id,
         title: m.name,
-        lines: [...m.effects, ...(m.stacks ? ['Stacks if taken again.'] : [])],
+        lines: [...m.effects, ...(m.stacks ? ['Stacks'] : [])],
         affordable: true,
         disabledReason: null,
         skip: false,
@@ -350,7 +336,7 @@ export function followUpView(
     options.push({
       id: SKIP_CHOICE,
       title: 'Skip',
-      lines: ['Change nothing.'],
+      lines: [],
       affordable: true,
       disabledReason: null,
       skip: true,
@@ -419,15 +405,15 @@ export function appliedNotice(
       const def = str(a['def']) ?? '';
       const tier = typeof a['newTier'] === 'number' ? a['newTier'] : 0;
       const price = typeof a['price'] === 'number' ? a['price'] : 0;
-      return `Upgraded ${buildingName(content, def)} to tier ${String(tier)} for ${String(price)} gold.`;
+      return `Upgraded ${buildingName(content, def)} to tier ${String(tier)} (−${String(price)} gold).`;
     }
     if (a['dropped'] === true) {
       const why = str(a['reason']);
       return why === 'not_enough_gold'
-        ? 'Your upgrade could not be paid for and was skipped.'
-        : 'Your upgrade could not be applied and was skipped.';
+        ? 'Upgrade skipped: not enough gold.'
+        : 'Upgrade skipped.';
     }
-    return 'You skipped the Workshop.';
+    return 'Workshop skipped.';
   }
   return null;
 }

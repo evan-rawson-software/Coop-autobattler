@@ -9,7 +9,6 @@
  * come from `core`.
  */
 import type { Cell } from '@game/core';
-import { coreFootprint } from '@game/core';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { useStore } from '../app-state.js';
@@ -66,7 +65,6 @@ export function CoreScreen(props: { run: RunHandle }) {
   const selectedRef = useRef<Cell | null>(null);
   selectedRef.current = selected;
   const isReady = view.run.perPlayer[acting]?.ready === true;
-  const fp = useMemo(() => coreFootprint(content.buildings), []);
 
   const legal = useMemo(
     () => legalSet(team, content, acting, isReady),
@@ -217,34 +215,23 @@ export function CoreScreen(props: { run: RunHandle }) {
       title="New run · Place the Core"
       right={
         <Panel title="The Core" id="panel-core">
-          <p>
-            Pick a {fp.width} × {fp.height} spot for your Core in your own area.
-            You can change it until you are Ready; once {readyWho} it cannot be
-            moved for the rest of the run.
-          </p>
-          <p class="muted">
-            Deep is safer. Forward shortens your supply lines.
-          </p>
+          <p>It can't be moved once {readyWho}.</p>
           <ul class="legend-list" aria-label="Map key">
             <li>
-              <span class="swatch ok" aria-hidden="true" /> Green: the Core fits
-              there
+              <span class="swatch ok" aria-hidden="true" /> Fits
             </li>
             <li>
-              <span class="swatch bad" aria-hidden="true" /> Red: it does not
-              fit (point at a cell to see why)
+              <span class="swatch bad" aria-hidden="true" /> Doesn't fit
             </li>
             <li>
-              <span class="swatch path" aria-hidden="true" /> Solid line: the
-              shortest route; faint dashes: other routes. Where enemy units walk
-              to reach the Core
+              <span class="swatch path" aria-hidden="true" /> Enemy routes
             </li>
           </ul>
           {previewPos === null ? null : (
             <p class="muted" data-field="route-count">
               {routeCount === 0
-                ? 'No enemy route reaches this position.'
-                : `${count(routeCount, 'enemy route')} shown for this position.`}
+                ? 'No enemy route reaches here.'
+                : count(routeCount, 'enemy route')}
             </p>
           )}
           {isReady ? (
@@ -257,7 +244,7 @@ export function CoreScreen(props: { run: RunHandle }) {
               }}
             >
               <SpriteIcon name="ui_icon_ready" scale={1} class="ready-icon" />
-              Unready (change the Core)
+              Unready
             </button>
           ) : (
             <button
@@ -275,16 +262,12 @@ export function CoreScreen(props: { run: RunHandle }) {
         </Panel>
       }
       bottom={
-        <Panel title="Starting kit · in your stash when the run begins">
+        <Panel title="Starting kit">
           <ul class="kit-list" id="starting-kit">
             {kit.map((k) => (
               <li key={k.key}>{k.text}</li>
             ))}
           </ul>
-          <p class="muted">
-            {solo ? 'When you are Ready' : 'When every player is Ready'} you go
-            to the Build screen, then to the first PvE battle.
-          </p>
         </Panel>
       }
     >
@@ -316,7 +299,7 @@ export function CoreScreen(props: { run: RunHandle }) {
           own={team}
           controller={camera}
           resetKey={`${view.run.runId}:core`}
-          frontLabel="FRONT EDGE · enemy units enter here"
+          frontLabel="FRONT EDGE"
           cursor="crosshair"
           drawOverlay={drawOverlay.current}
           overlayKey={`${String(acting)}:${String(partners.length)}:${String(hover?.x)},${String(hover?.y)}|${String(selected?.x)},${String(selected?.y)}|${String(paths?.length)}`}

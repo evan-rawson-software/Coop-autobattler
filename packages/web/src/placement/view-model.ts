@@ -29,22 +29,18 @@ export interface Verdict {
   readonly cells: readonly Cell[];
 }
 
-export function problemText(
-  problem: CorePositionProblem,
-  size: { width: number; height: number },
-): string {
-  const dims = `${String(size.width)} × ${String(size.height)}`;
+export function problemText(problem: CorePositionProblem): string {
   switch (problem) {
     case 'out_of_bounds':
-      return `The Core is ${dims} and would hang over the edge of the board.`;
+      return 'Off the board edge.';
     case 'outside_own_plot':
-      return "The Core has to stand wholly inside its player's own area.";
+      return 'Outside your own area.';
     case 'blocked':
-      return 'Water and cliffs cannot be built on, so the Core cannot sit on them.';
+      return 'Not on water or cliffs.';
     case 'on_node':
-      return 'A resource node is under part of the Core. Nodes are kept for extractors.';
+      return 'Not on a resource node.';
     case 'too_far_forward':
-      return 'Too close to the front edge, where enemy units arrive.';
+      return 'Too close to the front.';
   }
 }
 
@@ -83,7 +79,6 @@ export function verdictAt(
   pos: Cell,
   player: number,
 ): Verdict {
-  const fp = coreFootprint(content.buildings);
   const r = validateCorePosition(
     team.map,
     content,
@@ -94,7 +89,7 @@ export function verdictAt(
   return {
     ok: r.ok,
     problem: r.ok ? null : r.reason,
-    text: r.ok ? null : problemText(r.reason, fp),
+    text: r.ok ? null : problemText(r.reason),
     cells: coreCells(content, pos),
   };
 }
@@ -115,13 +110,11 @@ export function hintText(input: {
   if (input.hover !== null) {
     return input.hover.ok
       ? input.ready === true
-        ? 'You are Ready. Unready to change your Core.'
-        : 'The Core fits here. Click to choose this spot.'
+        ? 'Unready to move your Core.'
+        : 'Fits here.'
       : (input.hover.text ?? '');
   }
-  return input.selected === null
-    ? 'Point at the map to try a position.'
-    : `Chosen: column ${String(input.selected.x)}, row ${String(input.selected.y)}.`;
+  return '';
 }
 
 /**

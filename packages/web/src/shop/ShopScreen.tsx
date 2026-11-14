@@ -128,7 +128,7 @@ function StashList(props: {
 }) {
   const { rows, pending, onPick, onDrag, blocked } = props;
   if (rows.length === 0) {
-    return <p class="muted">{screenText(screenTexts, 'uiStashEmpty')}</p>;
+    return null;
   }
   return (
     <ul class="shop-stash" id="shop-stash">
@@ -162,7 +162,7 @@ function StashList(props: {
               type="button"
               data-action="sell"
               disabled={blocked !== null}
-              title={blocked ?? `Sell one for ${String(r.refund)} gold`}
+              title={blocked ?? undefined}
               onClick={() => {
                 onPick(r);
               }}
@@ -187,9 +187,6 @@ function NextBattle(props: { view: NextBattleView | null }) {
         <h3 class="next-title" data-field="next-kind">
           {v.title} · round {v.round}
         </h3>
-        <p class="muted">
-          Three options. The party votes for one before the battle.
-        </p>
         <ul class="pve-options" id="next-options">
           {v.options.map((o) => (
             <li key={o.id} class="pve-option" data-difficulty={o.difficulty}>
@@ -217,9 +214,7 @@ function NextBattle(props: { view: NextBattleView | null }) {
         </span>
         <span>
           Lose: -{p.lifeCost} {p.lifeCost === 1 ? 'life' : 'lives'}
-          {p.lossGold === null
-            ? ''
-            : `, ${String(p.lossGold)} gold consolation`}
+          {p.lossGold === null ? '' : `, +${String(p.lossGold)} gold`}
         </span>
       </p>
     </>
@@ -244,7 +239,7 @@ export function ShopTab(props: {
     text: string;
     kind: 'info' | 'ok' | 'error';
   }>({
-    text: 'Buying, selling and re-rolling cannot be undone.',
+    text: '',
     kind: 'info',
   });
   const [mountId] = useState(() => ++mountCount);
@@ -310,18 +305,12 @@ export function ShopTab(props: {
   const onBuy = (slot: number): void => {
     const card = sv.offers[slot];
     if (card?.offer == null) return;
-    const { name, price } = card.offer;
-    void act(
-      { type: 'buy', slot },
-      `Bought ${name} for ${String(price)} gold. It is in your stash.`,
-    );
+    const { name } = card.offer;
+    void act({ type: 'buy', slot }, `Bought ${name}.`);
   };
 
   const onReroll = (): void => {
-    void act(
-      { type: 'reroll' },
-      `Re-rolled for ${String(sv.reroll.cost)} gold.`,
-    );
+    void act({ type: 'reroll' }, 'Re-rolled.');
   };
 
   const onSell = (): void => {
@@ -457,9 +446,7 @@ export function ShopTab(props: {
               }}
             >
               {pending === null ? (
-                <span class="muted">
-                  Drag a building here, or press its Sell button.
-                </span>
+                <span class="muted">Drop here to sell</span>
               ) : (
                 <>
                   <p id="sell-quote" data-refund={saleQuote(pending).refund}>
@@ -472,7 +459,7 @@ export function ShopTab(props: {
                       class="danger"
                       onClick={onSell}
                     >
-                      Sell for {saleQuote(pending).refund} gold
+                      Sell
                     </button>
                     <button
                       type="button"
@@ -481,26 +468,19 @@ export function ShopTab(props: {
                         setPending(null);
                       }}
                     >
-                      Keep it
+                      Cancel
                     </button>
                   </div>
                 </>
               )}
             </div>
-            <p class="muted fine">
-              {sv.placedCount} placed on the board. To sell a placed building,
-              return it to the stash on the Build tab first.
-            </p>
           </Panel>
         </div>
 
         <div class={solo ? 'shop-bottom solo' : 'shop-bottom'}>
           {solo ? null : (
             <Panel title="Party (co-op)" id="panel-party-shop">
-              <p class="muted">
-                Teammates' gold and stash will appear here. You only ever see
-                your own offers.
-              </p>
+              <p class="muted">{screenText(screenTexts, 'uiComingSoon')}</p>
             </Panel>
           )}
           <Panel title="Next battle" id="panel-next-battle">
@@ -532,11 +512,7 @@ export function ShopTab(props: {
                 data-field="ready-state"
                 data-blocked={sv.readyBlock === null ? 'false' : 'true'}
               >
-                {sv.readyBlock !== null
-                  ? sv.readyBlock
-                  : sv.ready
-                    ? screenText(screenTexts, 'readyLock')
-                    : screenText(screenTexts, 'uiShopReadyHint')}
+                {sv.readyBlock ?? ''}
               </span>
             </div>
           </Panel>

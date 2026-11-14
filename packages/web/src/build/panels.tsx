@@ -81,9 +81,7 @@ export function StashPanel(props: {
   const held = model.ui.held;
   return (
     <Panel title={t('uiPanelStash')} id="panel-stash">
-      {groups.length === 0 ? (
-        <p class="muted">{screenText(screenTexts, 'uiStashEmpty')}</p>
-      ) : (
+      {groups.length === 0 ? null : (
         <ul class="stash-list">
           {groups.map((g) => {
             const def = content.buildings.get(g.def);

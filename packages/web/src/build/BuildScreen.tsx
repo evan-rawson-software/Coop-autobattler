@@ -479,7 +479,7 @@ export function BuildView(props: {
             controller={camera}
             resetKey={`${run?.runId ?? ''}:${step}`}
             selection={selection}
-            frontLabel="FRONT EDGE · enemy units enter here"
+            frontLabel="FRONT EDGE"
             cursor={cursor}
             drawOverlay={drawOverlay.current}
             overlayKey={overlayKey}
@@ -510,8 +510,7 @@ export function BuildView(props: {
         </div>
         {gate?.sealed.reason == null ? null : (
           <div class="status-line error" id="sealed-warning" role="alert">
-            <strong>{gate.sealed.labels.join(', ')}</strong> — {SEALED_HINT}{' '}
-            Ready is disabled until a route to the front is open.
+            <strong>{gate.sealed.labels.join(', ')}</strong> — {SEALED_HINT}
           </div>
         )}
         {gate?.ready === true ? (
@@ -539,12 +538,7 @@ export function BuildView(props: {
         tallBottom
         bottom={
           <Panel title={screenText(screenTexts, 'uiCoreTitle')} id="panel-core">
-            <p>
-              {screenText(screenTexts, 'uiCoreClick', {
-                count: String(ctl.legalCorePositions.length),
-              })}
-            </p>
-            <p class="muted">{screenText(screenTexts, 'uiCoreEveryone')}</p>
+            <p>{screenText(screenTexts, 'uiCoreClick')}</p>
           </Panel>
         }
       >

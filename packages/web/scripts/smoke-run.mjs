@@ -256,14 +256,14 @@ export async function runRunSmoke({
           id: e.dataset.option,
           affordable: e.dataset.affordable === 'true',
           text: e.innerText,
-          disabled: e.querySelector('[data-action="choose-option"]').disabled,
+          disabled: e.disabled,
         })),
       );
     const parsed = opts.map((o) => ({
       ...o,
-      price: Number(/Costs (\d+) gold/.exec(o.text)?.[1]),
-      from: Number(/Tier (\d) → tier (\d)/.exec(o.text)?.[1]),
-      to: Number(/Tier (\d) → tier (\d)/.exec(o.text)?.[2]),
+      price: Number(/(\d+) gold/.exec(o.text)?.[1]),
+      from: Number(/Tier (\d) → (\d)/.exec(o.text)?.[1]),
+      to: Number(/Tier (\d) → (\d)/.exec(o.text)?.[2]),
       name: o.text.split('\n')[0].trim(),
     }));
     check(
@@ -302,7 +302,7 @@ export async function runRunSmoke({
       check(
         goldAfter === goldBefore - pickOpt.price + income &&
           new RegExp(
-            `Upgraded .+ to tier ${pickOpt.to} for ${pickOpt.price} gold`,
+            `Upgraded .+ to tier ${pickOpt.to} \\(−${pickOpt.price} gold\\)`,
           ).test(notice),
         `Workshop: bought "${pickOpt.name}" tier ${pickOpt.from} -> ${pickOpt.to}: gold ${goldBefore} -> ${goldAfter} (price ${pickOpt.price} + ${income} income), shop says "${notice.replace(/\s+/g, ' ').trim()}"`,
       );
@@ -459,7 +459,7 @@ export async function runRunSmoke({
       sealedIds.length === 1 &&
         sealedIds[0] === barracksId &&
         (await page.locator('#ready-button').isDisabled()) &&
-        /Ready is blocked: Barracks \(column \d+, row \d+\) is walled in\. Its units cannot reach the front/.test(
+        /Ready is blocked: Barracks \(column \d+, row \d+\) is walled in\. Open a path/.test(
           reason,
         ) &&
         (await page.locator('#sealed-warning').count()) === 1,
@@ -470,7 +470,7 @@ export async function runRunSmoke({
     await page.mouse.click(bp.x, bp.y);
     await page.waitForSelector('[data-field="sealed"]');
     check(
-      /Walled in\. Its units cannot reach the front — open a path or add a gate\./.test(
+      /Walled in\. Open a path or add a gate\./.test(
         await page.locator('[data-field="sealed"]').innerText(),
       ),
       'sealed: the inspector explains the sealed Barracks',
@@ -593,7 +593,7 @@ export async function runRunSmoke({
   await settle();
   const badHint = await page.locator('#core-hint').innerText();
   check(
-    /edge|Water|cliff|node|front/i.test(badHint),
+    /edge|water|cliff|node|front|area/i.test(badHint),
     `Core placement: an illegal cell is explained in words ("${badHint}")`,
   );
   await page.mouse.click(pBad.x, pBad.y);
@@ -626,7 +626,7 @@ export async function runRunSmoke({
   const goodHint = await page.locator('#core-hint').innerText();
   check(
     /fits here/i.test(goodHint) &&
-      !/edge|Water|cliff|node|front/i.test(goodHint),
+      !/edge|water|cliff|node|front|area/i.test(goodHint),
     `Core placement: the hint over a legal cell is not stale after an illegal click ("${goodHint}")`,
   );
   await page.mouse.click(pGood.x, pGood.y);
@@ -798,7 +798,7 @@ export async function runRunSmoke({
   check(
     overloadLines.length === 3 &&
       overloadLines.every((t) =>
-        /^Overload at 3:00 would (destroy (the stronghold's Core first at \d+:\d\d — outlasting it wins|your Core first at \d+:\d\d — break the stronghold before then|both Cores at \d+:\d\d)|not destroy either Core)/.test(
+        /^Overload at 3:00: (their Core falls first \(\d+:\d\d\)|your Core falls first \(\d+:\d\d\)|both Cores fall at \d+:\d\d|no Core falls before the time limit)/.test(
           t.trim(),
         ),
       ) &&
@@ -808,7 +808,7 @@ export async function runRunSmoke({
     `PvE choice: every card states which Core Overload destroys first ("${overloadLines[0]}")`,
   );
   check(
-    /no life lost/.test(await page.locator('.choice-banner').innerText()),
+    /no life/.test(await page.locator('.choice-banner').innerText()),
     'PvE choice: the stakes of losing are stated',
   );
   await shot('run-5-pve-choice');
@@ -973,11 +973,9 @@ export async function runRunSmoke({
         !/mod_|bld_/.test(resolveText) &&
         (withFollow.type === 'shrine'
           ? /\+\d+%/.test(resolveText)
-          : /Tier \d → tier \d/.test(resolveText) &&
-            /Costs \d+ gold/.test(resolveText) &&
-            /On the board at column \d+, row \d+|In your stash/.test(
-              resolveText,
-            )),
+          : /Tier \d → \d/.test(resolveText) &&
+            /\d+ gold/.test(resolveText) &&
+            /Board \(\d+, \d+\)|Stash/.test(resolveText)),
       `event follow-up (${withFollow.type}): ${nOpts} option(s) with their effects spelled out`,
     );
     await shot('run-8-event-follow-up');
@@ -1047,9 +1045,8 @@ export async function runRunSmoke({
   {
     const shopText = await page.locator('#shop-screen').innerText();
     check(
-      /Opponent: a ghost of Bundled \w+ bot \(shipped with the game\)/.test(
-        shopText,
-      ) && /Lose: -1 life/.test(shopText),
+      /Opponent: ghost of Bundled \w+ bot/.test(shopText) &&
+        /Lose: -1 life/.test(shopText),
       'shop (before the PvP battle): the opponent is a bundled ghost, and a loss costs 1 life',
     );
   }
@@ -1235,10 +1232,10 @@ export async function runRunSmoke({
   );
   await page.waitForSelector('#shop-screen');
   check(
-    /Opponent: a ghost of (Runner|Bundled)/.test(
+    /Opponent: ghost of (Runner|Bundled)/.test(
       await page.locator('#shop-screen').innerText(),
     ),
-    'shop: "Opponent: a ghost of ..." is shown before the PvP battle',
+    'shop: "Opponent: ghost of ..." is shown before the PvP battle',
   );
   {
     // The first run's snapshot is in this browser's own pool (#111): the
@@ -1379,7 +1376,7 @@ export async function runRunSmoke({
   await page.waitForSelector('#main-menu');
   await page.click(`[data-run="${runB}"] [data-action="abandon"]`);
   check(
-    /cannot be undone/.test(
+    /Abandon this run\?/.test(
       await page.locator(`[data-run="${runB}"]`).innerText(),
     ),
     'abandoning asks for confirmation first',
@@ -2202,9 +2199,9 @@ export async function runRunSmoke({
         )
     ).map((o) => ({
       ...o,
-      price: Number(/Costs (\d+) gold/.exec(o.text)?.[1]),
-      from: Number(/Tier (\d) → tier (\d)/.exec(o.text)?.[1]),
-      to: Number(/Tier (\d) → tier (\d)/.exec(o.text)?.[2]),
+      price: Number(/(\d+) gold/.exec(o.text)?.[1]),
+      from: Number(/Tier (\d) → (\d)/.exec(o.text)?.[1]),
+      to: Number(/Tier (\d) → (\d)/.exec(o.text)?.[2]),
       name: o.text.split('\n')[0].trim(),
     }));
   const picks = [];
@@ -2242,6 +2239,8 @@ export async function runRunSmoke({
     page.locator(
       `#event-resolve [data-action="choose-option"][data-option="${id}"]`,
     );
+  const isChosen = (id) =>
+    optionButton(id).evaluate((e) => e.classList.contains('selected'));
   await optionButton(picks[0].id).click();
   await page.waitForSelector('#event-resolve [data-field="waiting"]');
   const waitingText = await page
@@ -2249,7 +2248,7 @@ export async function runRunSmoke({
     .innerText();
   const lines = await chosenLines();
   check(
-    /waiting for other players/i.test(waitingText) &&
+    /waiting for/i.test(waitingText) &&
       /Player 2/.test(waitingText) &&
       lines.length === 2 &&
       /has chosen/.test(lines[0]) &&
@@ -2264,8 +2263,7 @@ export async function runRunSmoke({
     'two players: Workshop follow-up, the waiting note and the chosen list do not say what was chosen',
   );
   check(
-    (await R.state()).gold === golds[0] &&
-      (await optionButton(picks[0].id).innerText()) === 'Chosen',
+    (await R.state()).gold === golds[0] && (await isChosen(picks[0].id)),
     'two players: Workshop follow-up, nothing is paid until everyone has chosen',
   );
   await shot('run-two-player-workshop-waiting');
@@ -2273,9 +2271,11 @@ export async function runRunSmoke({
   await optionButton('skip').click();
   await page.waitForFunction(
     () =>
-      document.querySelector(
-        '#event-resolve [data-action="choose-option"][data-option="skip"]',
-      )?.textContent === 'Skipping (chosen)',
+      document
+        .querySelector(
+          '#event-resolve [data-action="choose-option"][data-option="skip"]',
+        )
+        ?.classList.contains('selected') === true,
     undefined,
     { timeout: slow(10000) },
   );
@@ -2285,7 +2285,7 @@ export async function runRunSmoke({
       /has chosen/.test(l[0]) &&
         /choosing/.test(l[1]) &&
         (await waitingCount()) === 1 &&
-        (await optionButton(picks[0].id).innerText()) === 'Choose' &&
+        !(await isChosen(picks[0].id)) &&
         (await R.state()).step === 'event_resolve' &&
         (await R.state()).gold === golds[0],
       'two players: Workshop follow-up, player 1 changed the choice to Skip while player 2 had not chosen',
@@ -2294,9 +2294,11 @@ export async function runRunSmoke({
   await optionButton(picks[0].id).click();
   await page.waitForFunction(
     (id) =>
-      document.querySelector(
-        `#event-resolve [data-action="choose-option"][data-option="${id}"]`,
-      )?.textContent === 'Chosen',
+      document
+        .querySelector(
+          `#event-resolve [data-action="choose-option"][data-option="${id}"]`,
+        )
+        ?.classList.contains('selected') === true,
     picks[0].id,
     { timeout: slow(10000) },
   );
@@ -2308,10 +2310,10 @@ export async function runRunSmoke({
     const l = await chosenLines();
     check(
       (await R.state()).step === 'event_resolve' &&
-        (await optionButton(picks[0].id).innerText()) === 'Chosen' &&
+        (await isChosen(picks[0].id)) &&
         /has chosen/.test(l[0]) &&
         /choosing/.test(l[1]) &&
-        /waiting for other players/i.test(
+        /waiting for/i.test(
           await page
             .locator('#event-resolve [data-field="waiting"]')
             .innerText(),
@@ -2326,7 +2328,7 @@ export async function runRunSmoke({
       (await waitingCount()) === 0 &&
         /has chosen/.test(l[0]) &&
         /choosing/.test(l[1]) &&
-        (await optionButton(picks[1].id).innerText()) === 'Choose',
+        !(await isChosen(picks[1].id)),
       'two players: Workshop follow-up, player 2 sees that player 1 has chosen, with no waiting note and nothing chosen yet',
     );
   }
@@ -2367,7 +2369,7 @@ export async function runRunSmoke({
   // the lock text; player 2, who is not Ready, is unaffected; Unready reopens
   // everything for player 1.
   {
-    const LOCK = 'Ready — press Unready to make changes.';
+    const LOCK = 'Ready. Unready to make changes.';
     const shopState = () => page.evaluate(() => window.__debug.shop.state());
     const shopTab = async () => {
       await page.click('.topbar-tabs button:has-text("Shop")');

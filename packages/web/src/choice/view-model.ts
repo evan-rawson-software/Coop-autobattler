@@ -22,7 +22,6 @@ export interface PveCard {
   readonly difficulty: string;
   readonly archetype: string;
   readonly description: string;
-  readonly tests: string;
   /** 1 to 3 red pips. */
   readonly level: number;
   readonly levelText: string;
@@ -38,7 +37,7 @@ export interface PveCard {
 export interface PveChoiceView {
   readonly round: number;
   readonly cards: readonly PveCard[];
-  /** "Win: take the reward. Lose: no reward, and no life lost." */
+  /** "Losing costs no life." */
   readonly stakes: string;
   readonly overloadAt: string;
 }
@@ -88,7 +87,6 @@ export function pveChoiceView(
       difficulty: capital(o.difficulty),
       archetype: text.name,
       description: text.description,
-      tests: text.tests,
       level: o.summary.level,
       levelText: LEVEL_WORDS[o.summary.level] ?? String(o.summary.level),
       facts: threatFacts(o, sim),
@@ -100,7 +98,7 @@ export function pveChoiceView(
   return {
     round: info.round,
     cards,
-    stakes: 'Win: take the reward. Lose: no reward, and no life lost.',
+    stakes: 'Losing costs no life.',
     overloadAt,
   };
 }

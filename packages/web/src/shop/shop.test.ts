@@ -169,10 +169,10 @@ describe('buying, selling, re-rolling', () => {
     const v = buildShopView(poor, ME, ctx);
     for (const c of v.offers) {
       expect(c.canBuy).toBe(false);
-      expect(c.reason).toMatch(/Not enough gold: \d+ more/);
+      expect(c.reason).toMatch(/Need \d+ more gold/);
     }
     expect(v.reroll.can).toBe(false);
-    expect(v.reroll.reason).toMatch(/Not enough gold/);
+    expect(v.reroll.reason).toMatch(/Need \d+ more gold/);
   });
 
   test('the session refuses what the view disabled, and the view follows', async () => {

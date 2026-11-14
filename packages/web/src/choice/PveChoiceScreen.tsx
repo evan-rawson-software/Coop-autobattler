@@ -44,10 +44,7 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
     );
   }
   return (
-    <AppShell
-      title={`Round ${String(v.round)} · PvE battle`}
-      status={<span class="muted">choose a difficulty</span>}
-    >
+    <AppShell title={`Round ${String(v.round)} · PvE battle`}>
       <div class="choice-screen" id="pve-choice">
         <div class="choice-banner panel">
           <p>
@@ -56,50 +53,10 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
         </div>
         <ul class="pve-cards">
           {v.cards.map((c) => (
-            <li
-              key={c.id}
-              class={c.voted ? 'pve-card selected' : 'pve-card'}
-              data-difficulty={c.id}
-            >
-              <header class="pve-card-head">
-                <h2 data-field="difficulty">{c.difficulty}</h2>
-                <span class="pve-archetype" data-field="archetype">
-                  {c.archetype}
-                </span>
-              </header>
-              <p class="pve-desc" data-field="description">
-                {c.description}
-              </p>
-              <p class="muted">Tests: {c.tests}</p>
-              <div class="pve-threat-box">
-                <span class="label">Threat</span>
-                <span
-                  class="pips"
-                  role="img"
-                  aria-label={`Threat level ${String(c.level)} of 3: ${c.levelText}`}
-                  data-level={c.level}
-                >
-                  {[1, 2, 3].map((i) => (
-                    <span key={i} class={i <= c.level ? 'pip on' : 'pip'} />
-                  ))}
-                </span>
-                <span data-field="threat-level">{c.levelText}</span>
-              </div>
-              <ul class="facts" data-field="facts">
-                {c.facts.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
-              <p class="deadline" data-field="overload">
-                {c.overload}
-              </p>
-              <div class="pve-reward">
-                <span class="label">Reward if you win</span>
-                <strong data-field="reward">{c.rewardText}</strong>
-              </div>
+            <li key={c.id}>
               <button
                 type="button"
-                class="primary"
+                class={c.voted ? 'pve-card selected' : 'pve-card'}
                 data-action="choose"
                 data-difficulty={c.id}
                 disabled={busy}
@@ -107,7 +64,41 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
                   choose(c.id);
                 }}
               >
-                Fight this one
+                <header class="pve-card-head">
+                  <h2 data-field="difficulty">{c.difficulty}</h2>
+                  <span class="pve-archetype" data-field="archetype">
+                    {c.archetype}
+                  </span>
+                </header>
+                <p class="pve-desc" data-field="description">
+                  {c.description}
+                </p>
+                <div class="pve-threat-box">
+                  <span class="label">Threat</span>
+                  <span
+                    class="pips"
+                    role="img"
+                    aria-label={`Threat level ${String(c.level)} of 3: ${c.levelText}`}
+                    data-level={c.level}
+                  >
+                    {[1, 2, 3].map((i) => (
+                      <span key={i} class={i <= c.level ? 'pip on' : 'pip'} />
+                    ))}
+                  </span>
+                  <span data-field="threat-level">{c.levelText}</span>
+                </div>
+                <ul class="facts" data-field="facts">
+                  {c.facts.map((f) => (
+                    <li key={f}>{f}</li>
+                  ))}
+                </ul>
+                <p class="deadline" data-field="overload">
+                  {c.overload}
+                </p>
+                <div class="pve-reward">
+                  <span class="label">Reward</span>
+                  <strong data-field="reward">{c.rewardText}</strong>
+                </div>
               </button>
             </li>
           ))}
@@ -117,10 +108,6 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
             {error}
           </p>
         )}
-        <p class="muted choice-foot">
-          No time limit. In a party, everyone votes: most votes wins, and a tie
-          is settled by a random pick among the votes.
-        </p>
       </div>
     </AppShell>
   );

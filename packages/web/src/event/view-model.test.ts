@@ -48,7 +48,7 @@ describe('the battle header', () => {
               (run.thisRound.pve?.difficulty ?? 'medium') as 'medium'
             ],
           )} gold`
-        : 'No reward, and no life lost',
+        : 'No reward',
     );
   });
 
@@ -85,7 +85,7 @@ describe('the battle header', () => {
     expect(h?.text).toMatch(/vs\. the boss( \(\w+\))?$/);
     expect(h?.text).not.toMatch(/the boss \(Boss\)/);
     if (!h?.won) {
-      expect(h?.payout).toMatch(/^−1 life · \+\d+ gold consolation$/);
+      expect(h?.payout).toMatch(/^−1 life · \+\d+ gold$/);
     } else {
       expect(h.payout).toMatch(/^\+\d+ gold$/);
     }
@@ -100,7 +100,7 @@ describe('event cards', () => {
   const run = reachStep('event_choice');
 
   test('one to three cards, each saying what it does from its data', () => {
-    const cards = eventCards(run, config, 0);
+    const cards = eventCards(run, 0);
     expect(cards.length).toBeGreaterThanOrEqual(1);
     expect(cards.length).toBeLessThanOrEqual(3);
     for (const c of cards) {
@@ -120,7 +120,6 @@ describe('event cards', () => {
           tiers: 2,
         },
       ]),
-      config,
       0,
     );
     expect(c?.title).toBe('Workshop');
@@ -134,21 +133,17 @@ describe('event cards', () => {
         { id: 'b', type: 'shrine', modifiers: ['mod_stout_walls'] },
         { id: 'c', type: 'windfall', gold: 3 },
       ]),
-      config,
       0,
     );
     expect(new Set(cards.map((c) => c.icon)).size).toBe(3);
-    const shrine = cards.find((c) => c.type === 'shrine');
-    const text = [...(shrine?.lines ?? []), shrine?.flavour ?? ''].join(' ');
-    expect(text.match(/lasts until the run ends/g)).toHaveLength(1);
     const workshop = cards.find((c) => c.type === 'workshop');
-    expect(workshop?.lines.join(' ')).toMatch(/by 1 tier \(/);
+    expect(workshop?.lines).toEqual(['Upgrade a building.']);
     expect(
       `${workshop?.lines.join(' ') ?? ''} ${workshop?.flavour ?? ''}`,
     ).not.toMatch(/party|You pick/);
   });
 
-  test('a Shrine lists the modifiers on offer with their effects', () => {
+  test('a Shrine says what it gives without listing the modifiers', () => {
     const [c] = eventCards(
       withOffers(run, [
         {
@@ -158,17 +153,9 @@ describe('event cards', () => {
           modifiers: ['mod_stout_walls', 'mod_drilled_troops'],
         },
       ]),
-      config,
       0,
     );
-    expect(c?.lines.join(' ')).toMatch(/Choose 1 of 2 run modifiers/);
-    expect(c?.modifiers.map((m) => m.id)).toEqual([
-      'mod_stout_walls',
-      'mod_drilled_troops',
-    ]);
-    expect(c?.modifiers[0]?.effects).toEqual(['Walls: +25% health']);
-    expect(c?.modifiers[1]?.effects).toEqual(['Your units: +10% strength']);
-    expect(c?.modifiers[1]?.stacks).toBe(true);
+    expect(c?.lines).toEqual(['Gain a bonus for the rest of the run.']);
   });
 
   test('a Windfall states its gold', () => {
@@ -181,10 +168,9 @@ describe('event cards', () => {
           gold: 4,
         },
       ]),
-      config,
       0,
     );
-    expect(c?.lines).toEqual(['Each player gets 4 gold.']);
+    expect(c?.lines).toEqual(['+4 gold.']);
   });
 
   test('the count can be 1, 2 or 3: the view never assumes three', () => {
@@ -196,7 +182,7 @@ describe('event cards', () => {
     });
     for (const n of [1, 2, 3]) {
       const offers = Array.from({ length: n }, (_, i) => offer(i + 1));
-      expect(eventCards(withOffers(run, offers), config, 0)).toHaveLength(n);
+      expect(eventCards(withOffers(run, offers), 0)).toHaveLength(n);
     }
   });
 
@@ -205,7 +191,6 @@ describe('event cards', () => {
       withOffers(run, [
         { id: 'evt_x', event: 'evt_x', type: 'mystery', depth: 3 },
       ]),
-      config,
       0,
     );
     expect(c?.lines).toEqual(['depth: 3']);
@@ -234,15 +219,13 @@ describe('follow-ups', () => {
     const v = followUpView(run, config, content, 0, realDeps());
     expect(v?.eventTitle).toBe('Workshop');
     expect(v?.perPlayer).toBe(true);
-    expect(v?.prompt).toMatch(/Choose one of your buildings/);
+    expect(v?.prompt).toMatch(/Upgrade a building/);
     const cards = (v?.options ?? []).filter((o) => !o.skip);
     expect(cards.length).toBeGreaterThan(0);
     for (const o of cards) {
-      expect(o.building?.where).toMatch(
-        /^(On the board at column \d+, row \d+|In your stash)$/,
-      );
+      expect(o.building?.where).toMatch(/^(Board \(\d+, \d+\)|Stash)$/);
       expect(o.building?.newTier).toBe((o.building?.tier ?? 0) + 1);
-      expect(o.lines).toContain(`Costs ${String(o.building?.price)} gold`);
+      expect(o.lines).toContain(`${String(o.building?.price)} gold`);
     }
     // The last option is always Skip, with the session's id.
     expect(v?.options.at(-1)).toMatchObject({
@@ -284,9 +267,7 @@ describe('follow-ups', () => {
     const v = followUpView(poor, config, content, 0, realDeps());
     const first = (v?.options ?? []).find((o) => !o.skip);
     expect(first?.affordable).toBe(false);
-    expect(first?.disabledReason).toMatch(
-      /^Not enough gold: it costs \d+, you have 0\./,
-    );
+    expect(first?.disabledReason).toBe('Not enough gold');
     expect(v?.options.at(-1)?.affordable).toBe(true);
   });
 
@@ -314,7 +295,7 @@ describe('follow-ups', () => {
     };
     const v = followUpView(two, config, content, 0, realDeps());
     expect(v?.voted).toBe(SKIP_CHOICE);
-    expect(v?.waiting).toMatch(/Waiting for other players: Ana/);
+    expect(v?.waiting).toBe('Waiting for Ana.');
     expect(v?.waiting).not.toMatch(/skip/i);
     expect(v?.chosen).toEqual([
       { player: 0, name: 'You', done: true, status: 'has chosen' },
@@ -341,7 +322,7 @@ describe('follow-ups', () => {
     const applied = (eff as unknown as { data: { applied: Json[] } }).data
       .applied;
     expect(appliedNotice(applied, 0, content)).toBe(
-      `Upgraded ${pick.building.name} to tier ${String(pick.building.newTier)} for ${String(pick.building.price)} gold.`,
+      `Upgraded ${pick.building.name} to tier ${String(pick.building.newTier)} (−${String(pick.building.price)} gold).`,
     );
     expect(applied[0]).toMatchObject({
       result: 'upgrade',
@@ -351,7 +332,7 @@ describe('follow-ups', () => {
 
   test('appliedNotice words a skip and a dropped pick', () => {
     expect(appliedNotice([{ player: 0, result: 'skip' }], 0, content)).toBe(
-      'You skipped the Workshop.',
+      'Workshop skipped.',
     );
     expect(
       appliedNotice(
@@ -366,7 +347,7 @@ describe('follow-ups', () => {
         0,
         content,
       ),
-    ).toBe('Your upgrade could not be paid for and was skipped.');
+    ).toBe('Upgrade skipped: not enough gold.');
     expect(
       appliedNotice([{ player: 1, result: 'skip' }], 0, content),
     ).toBeNull();
@@ -376,7 +357,7 @@ describe('follow-ups', () => {
     const s = pickEvent('shrine');
     expect(s).not.toBeNull();
     const v = followUpView(s as RunState, config, content, 0, realDeps());
-    expect(v?.prompt).toBe('Choose a run modifier');
+    expect(v?.prompt).toBe('Choose a bonus');
     expect(v?.options.length).toBeGreaterThan(0);
     for (const o of v?.options ?? []) {
       expect(o.title).not.toMatch(/mod_/);

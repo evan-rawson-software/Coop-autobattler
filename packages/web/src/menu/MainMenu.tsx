@@ -61,8 +61,7 @@ function RemoveConfirm(props: { onConfirm: () => void; onCancel: () => void }) {
   return (
     <div class="run-actions confirm" role="alertdialog">
       <p data-field="remove-warning">
-        Remove this save? It is deleted for good, with no summary and no record
-        of the run. This cannot be undone.
+        Delete this save? This cannot be undone.
       </p>
       <button
         type="button"
@@ -77,7 +76,7 @@ function RemoveConfirm(props: { onConfirm: () => void; onCancel: () => void }) {
         data-action="abandon-cancel"
         onClick={props.onCancel}
       >
-        Keep it
+        Cancel
       </button>
     </div>
   );
@@ -170,7 +169,7 @@ export function MainMenuScreen() {
         setNotice(r.message);
         refresh();
       } else if (r.state === null) {
-        setNotice('The run was removed from your saved runs.');
+        setNotice('Run removed.');
         refresh();
       } else navigate(runHash(runId));
     });
@@ -204,11 +203,7 @@ export function MainMenuScreen() {
           >
             New run
           </button>
-          <p class="muted fine">
-            A solo run. You place your Core, build a factory, then fight on
-            until your lives run out.
-            {seed === null ? '' : ` Seed ${String(seed)}.`}
-          </p>
+          {seed === null ? null : <p class="muted fine">Seed {seed}</p>}
           <Panel title="Records · deepest round" id="panel-records">
             <ul class="records" id="records">
               {(data?.records ?? []).map((r) => (
@@ -250,7 +245,7 @@ export function MainMenuScreen() {
         </section>
 
         <section class="menu-right panel">
-          <h2 class="panel-title">Saved runs · no limit</h2>
+          <h2 class="panel-title">Saved runs</h2>
           <div class="panel-body saved">
             {data?.services.storage === 'memory' ? (
               <p class="not-saved" id="not-saved-note" role="note">
@@ -274,12 +269,12 @@ export function MainMenuScreen() {
             )}
             {data === null && failure === null ? (
               <p class="muted" role="status">
-                Loading your saved runs.
+                Loading…
               </p>
             ) : null}
             {data !== null && data.rows.length === 0 ? (
               <p class="muted" id="no-runs">
-                No saved runs yet. Start a new run.
+                No saved runs.
               </p>
             ) : null}
             <ul class="run-list" id="run-list">
@@ -306,10 +301,7 @@ export function MainMenuScreen() {
                     {asking === row.runId ? (
                       row.blocked === null ? (
                         <div class="run-actions confirm" role="alertdialog">
-                          <p>
-                            Abandon this run? It ends now and shows its summary.
-                            This cannot be undone.
-                          </p>
+                          <p>Abandon this run?</p>
                           <button
                             type="button"
                             class="danger"
@@ -327,7 +319,7 @@ export function MainMenuScreen() {
                               setAsking(null);
                             }}
                           >
-                            Keep it
+                            Cancel
                           </button>
                         </div>
                       ) : (

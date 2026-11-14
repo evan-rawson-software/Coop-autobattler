@@ -204,9 +204,7 @@ export async function runShopSmoke({
     'after buying, disabled Buy buttons still explain why',
   );
   check(
-    /cannot be undone|Bought/.test(
-      await page.locator('#shop-status').innerText(),
-    ),
+    /Bought/.test(await page.locator('#shop-status').innerText()),
     'a status line confirms the purchase',
   );
 
@@ -241,7 +239,7 @@ export async function runShopSmoke({
   await wallRow.locator('[data-action="sell"]').click();
   const quote = await page.locator('#sell-quote').innerText();
   check(
-    quote.includes(String(wallRefund)) && /cannot be undone/.test(quote),
+    quote.includes(String(wallRefund)) && /^Sell /.test(quote),
     `sell: the amount returned (${wallRefund} gold) is shown before confirming`,
   );
   await shot('shop-3-sell-confirm');
@@ -737,7 +735,7 @@ export async function runShopSmoke({
   await page.keyboard.press('Control+z');
   await page.waitForFunction(
     (t) => window.__debug.build.status().text === t,
-    'Ready — press Unready to make changes.',
+    'Ready. Unready to make changes.',
   );
   check(
     (await B.team()).buildings.length === twoPlacedCount &&
@@ -748,7 +746,7 @@ export async function runShopSmoke({
   await page.keyboard.press('c');
   await page.waitForFunction(
     (t) => window.__debug.build.status().text === t,
-    'Ready — press Unready to make changes.',
+    'Ready. Unready to make changes.',
   );
   check(
     (await hookTool()) === 'select',

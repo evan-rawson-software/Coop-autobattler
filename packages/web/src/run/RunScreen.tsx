@@ -56,7 +56,7 @@ function MenuButton() {
         navigate('#/');
       }}
     >
-      Back to the menu
+      Main menu
     </button>
   );
 }
@@ -74,7 +74,7 @@ function Conflict(props: { runId: string }) {
             void reloadRun(props.runId);
           }}
         >
-          Reload the run
+          Reload
         </button>
         <MenuButton />
       </div>
@@ -92,11 +92,7 @@ function VersionPrompt(props: { onContinue: () => void }) {
         id="version-prompt"
       >
         <h2 id="version-title">Saved on an older version</h2>
-        <p>
-          This run was saved on an older version of the game. Some things may
-          have changed since. Offers and battle results you already have stay as
-          they are.
-        </p>
+        <p>Some things may have changed since this run was saved.</p>
         <div class="modal-buttons">
           <button
             type="button"
@@ -104,7 +100,7 @@ function VersionPrompt(props: { onContinue: () => void }) {
             id="version-continue"
             onClick={props.onContinue}
           >
-            Continue the run
+            Continue
           </button>
           <MenuButton />
         </div>
@@ -212,7 +208,7 @@ function ReadyRun(props: { run: ActiveRun }) {
       body = (
         <AppShell title="Battle">
           <p class="muted pad" role="status">
-            The battle is being resolved.
+            Resolving battle…
           </p>
         </AppShell>
       );
@@ -342,7 +338,7 @@ export function RunScreen() {
     return (
       <AppShell title="Run">
         <p class="muted pad" id="run-loading" role="status">
-          Opening your run.
+          Loading…
         </p>
       </AppShell>
     );
@@ -353,7 +349,7 @@ export function RunScreen() {
       return (
         <AppShell title="Run">
           <p class="muted pad" id="run-loading" role="status">
-            Opening your run.
+            Loading…
           </p>
         </AppShell>
       );
@@ -375,7 +371,7 @@ export function RunScreen() {
           <p data-field="reason">
             {st.entry === null
               ? 'This run is over.'
-              : `This run ended at round ${String(st.entry.round)}. Its depth is kept in your records.`}
+              : `This run ended at round ${String(st.entry.round)}.`}
           </p>
           <MenuButton />
         </Blocked>
@@ -383,10 +379,7 @@ export function RunScreen() {
     case 'missing':
       return (
         <Blocked title="Run not found">
-          <p data-field="reason">
-            There is no saved run with this address. It may have been abandoned
-            or finished.
-          </p>
+          <p data-field="reason">No saved run at this address.</p>
           <MenuButton />
         </Blocked>
       );

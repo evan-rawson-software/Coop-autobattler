@@ -158,6 +158,6 @@ describe('several Cores per side', () => {
 
   test('the time-limit text names the ladder', () => {
     expect(reasonText('time_limit', 'Core')).toMatch(/more Cores standing/);
-    expect(reasonText('time_limit', 'Core')).toMatch(/total Core health/);
+    expect(reasonText('time_limit', 'Core')).toMatch(/more Core health/);
   });
 });

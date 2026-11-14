@@ -156,7 +156,7 @@ describe('backed-up sources', () => {
     const p = problems.filter((x) => x.kind === 'stalled_output');
     expect(p).toHaveLength(1);
     expect(p[0]?.building).toBe(source);
-    expect(p[0]?.text).toMatch(/connected but stalled for \d+% of the dry run/);
+    expect(p[0]?.text).toMatch(/is stalled \d+% of the time/);
     // It is connected, so it is not the "no conduit" problem.
     expect(problems.some((x) => x.kind === 'lost_output')).toBe(false);
     const b = team.buildings.find((x) => x.id === source);

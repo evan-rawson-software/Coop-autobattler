@@ -399,7 +399,6 @@ export function RightPanels(props: {
             {t('uiCameraFitBattle')}
           </button>
         </div>
-        <p class="muted small">{t('uiCameraHint')}</p>
       </Panel>
     </>
   );
@@ -789,9 +788,6 @@ export function BattleSummaryView(props: SummaryProps) {
             {t(props.ready ? 'battleReadyDone' : 'battleReady')}
           </button>
         </div>
-        <p class="muted" data-field="ready-note">
-          {t(props.ready ? 'battleReadyYou' : 'battleReadyNote')}
-        </p>
       </Panel>
     </div>
   );

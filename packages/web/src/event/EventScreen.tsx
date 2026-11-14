@@ -14,29 +14,7 @@ import type { RunHandle } from '../run/handle.js';
 import { AppShell } from '../shell/AppShell.js';
 import '../choice/choice.css';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
-import {
-  battleHeader,
-  eventCards,
-  followUpView,
-  type ModifierLine,
-} from './view-model.js';
-
-function Modifiers(props: { list: readonly ModifierLine[] }) {
-  return (
-    <ul class="modifier-list">
-      {props.list.map((m) => (
-        <li key={m.id} data-modifier={m.id}>
-          <strong>{m.name}</strong>
-          <span class="muted">
-            {' '}
-            {m.effects.join(' · ')}
-            {m.stacks ? ' · stacks' : ''}
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
-}
+import { battleHeader, eventCards, followUpView } from './view-model.js';
 
 export function EventChoiceScreen(props: { run: RunHandle }) {
   const { session, deps } = props.run;
@@ -46,12 +24,7 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const header = useMemo(() => battleHeader(run, deps), [run, deps]);
-  const cards = useMemo(
-    () => eventCards(run, gameConfigs.events, acting),
-    [run, acting],
-  );
-  const word =
-    cards.length === 1 ? 'one event' : `pick one of ${String(cards.length)}`;
+  const cards = useMemo(() => eventCards(run, acting), [run, acting]);
 
   const choose = (id: string): void => {
     if (busy) return;
@@ -64,10 +37,7 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
   };
 
   return (
-    <AppShell
-      title={`Round ${String(run.round)} · Event`}
-      status={<span class="muted">{word}</span>}
-    >
+    <AppShell title={`Round ${String(run.round)} · Event`}>
       <div class="choice-screen" id="event-choice">
         {header === null ? null : (
           <div
@@ -80,42 +50,34 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
         )}
         <ul class="event-cards" data-count={cards.length}>
           {cards.map((c) => (
-            <li
-              key={c.id}
-              class={c.voted ? 'event-card selected' : 'event-card'}
-              data-offer={c.id}
-              data-type={c.type}
-            >
-              <header class="event-card-head">
-                <span class="event-icon" aria-hidden="true">
-                  <SpriteIcon
-                    name={`ui_event_${c.type}`}
-                    scale={2}
-                    fallback={c.icon}
-                  />
-                </span>
-                <h2 data-field="title">{c.title}</h2>
-              </header>
-              <div class="event-lines" data-field="does">
-                {c.lines.map((l) => (
-                  <p key={l}>{l}</p>
-                ))}
-                {c.modifiers.length > 0 ? (
-                  <Modifiers list={c.modifiers} />
-                ) : null}
-              </div>
-              {c.flavour === '' ? null : <p class="muted">{c.flavour}</p>}
+            <li key={c.id}>
               <button
                 type="button"
-                class="primary"
+                class={c.voted ? 'event-card selected' : 'event-card'}
                 data-action="choose-event"
                 data-offer={c.id}
+                data-type={c.type}
                 disabled={busy}
                 onClick={() => {
                   choose(c.id);
                 }}
               >
-                Take {c.title}
+                <header class="event-card-head">
+                  <span class="event-icon" aria-hidden="true">
+                    <SpriteIcon
+                      name={`ui_event_${c.type}`}
+                      scale={2}
+                      fallback={c.icon}
+                    />
+                  </span>
+                  <h2 data-field="title">{c.title}</h2>
+                </header>
+                <div class="event-lines" data-field="does">
+                  {c.lines.map((l) => (
+                    <p key={l}>{l}</p>
+                  ))}
+                </div>
+                {c.flavour === '' ? null : <p class="muted">{c.flavour}</p>}
               </button>
             </li>
           ))}
@@ -125,10 +87,6 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
             {error}
           </p>
         )}
-        <p class="muted choice-foot">
-          No time limit. In a party, everyone votes: most votes wins, and a tie
-          is settled by a random pick among the votes.
-        </p>
       </div>
     </AppShell>
   );
@@ -167,51 +125,40 @@ export function EventResolveScreen(props: { run: RunHandle }) {
       <div class="choice-screen" id="event-resolve">
         <div class="choice-banner panel">
           <strong data-field="prompt">{v?.prompt ?? 'Make a choice'}</strong>
-          {v?.perPlayer === true ? (
-            <span class="muted">
-              {' '}
-              Only your own buildings are listed. The price is charged when
-              everyone has chosen.
-            </span>
-          ) : null}
         </div>
         <ul class="event-cards follow" data-count={cards.length}>
           {cards.map((o) => (
-            <li
-              key={o.id}
-              class={v?.voted === o.id ? 'event-card selected' : 'event-card'}
-              data-option={o.id}
-              data-placed={o.building?.placed === true ? 'true' : 'false'}
-              data-affordable={o.affordable ? 'true' : 'false'}
-            >
-              <h2 data-field="title">{o.title}</h2>
-              {o.building === null ? null : (
-                <p class="workshop-where" data-field="where">
-                  {o.building.where}
-                </p>
-              )}
-              <div class="event-lines" data-field="does">
-                {(o.building === null ? o.lines : o.lines.slice(1)).map((l) => (
-                  <p key={l}>{l}</p>
-                ))}
-              </div>
-              {o.disabledReason === null ? null : (
-                <p class="error" data-field="disabled-reason">
-                  {o.disabledReason}
-                </p>
-              )}
+            <li key={o.id}>
               <button
                 type="button"
-                class="primary"
+                class={v?.voted === o.id ? 'event-card selected' : 'event-card'}
                 data-action="choose-option"
                 data-option={o.id}
+                data-placed={o.building?.placed === true ? 'true' : 'false'}
+                data-affordable={o.affordable ? 'true' : 'false'}
                 disabled={busy || !o.affordable}
-                title={o.disabledReason ?? undefined}
                 onClick={() => {
                   choose(o.id);
                 }}
               >
-                {v?.voted === o.id ? 'Chosen' : 'Choose'}
+                <h2 data-field="title">{o.title}</h2>
+                {o.building === null ? null : (
+                  <p class="workshop-where" data-field="where">
+                    {o.building.where}
+                  </p>
+                )}
+                <div class="event-lines" data-field="does">
+                  {(o.building === null ? o.lines : o.lines.slice(1)).map(
+                    (l) => (
+                      <p key={l}>{l}</p>
+                    ),
+                  )}
+                </div>
+                {o.disabledReason === null ? null : (
+                  <p class="error" data-field="disabled-reason">
+                    {o.disabledReason}
+                  </p>
+                )}
               </button>
             </li>
           ))}
@@ -228,9 +175,8 @@ export function EventResolveScreen(props: { run: RunHandle }) {
                 choose(skip.id);
               }}
             >
-              {v?.voted === skip.id ? 'Skipping (chosen)' : 'Skip'}
+              Skip
             </button>
-            <span class="muted"> Change nothing and keep your gold.</span>
           </p>
         )}
         {v?.waiting == null ? null : (

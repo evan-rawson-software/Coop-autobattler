@@ -126,6 +126,35 @@
     image-rendering: pixelated;
   }
 
+  /* A choice card is a button: keep the card frame, not the button's. */
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.pve-card,
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.event-card,
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.pve-card:hover:not(:disabled),
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.event-card:hover:not(:disabled),
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.pve-card:disabled,
+  :root[data-skin='pixel']:not([data-theme='light']):not(
+      [data-screen='debug']
+    ):not([data-screen='sprites'])
+    button.event-card:disabled {
+    border-image: var(--sprite-ui-card) 8 / 8px / 0 stretch;
+    color: inherit;
+  }
+
   :root[data-skin='pixel']:not([data-theme='light']) .pve-card.selected,
   :root[data-skin='pixel']:not([data-theme='light']) .event-card.selected {
     box-shadow: 0 0 0 3px var(--accent);
