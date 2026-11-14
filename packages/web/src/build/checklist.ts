@@ -56,6 +56,16 @@ export function isReminder(p: Problem): boolean {
   return p.kind === 'stash' || p.kind === 'free_nodes';
 }
 
+/** Does the building have an input with no conduit into it? */
+export function unpowered(
+  problems: readonly Problem[],
+  building: number,
+): boolean {
+  return problems.some(
+    (p) => p.kind === 'missing_input' && p.building === building,
+  );
+}
+
 export function deriveChecklist(
   team: TeamState,
   content: WebContent,

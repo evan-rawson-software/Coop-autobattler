@@ -9,7 +9,8 @@ import { createContext } from 'preact';
 import { useContext, useEffect, useMemo } from 'preact/hooks';
 import type { RunState } from '@game/session';
 import { useStore } from '../app-state.js';
-import { computeFlowView } from '../build/view-model.js';
+import { isReminder } from '../build/checklist.js';
+import { computeFlowView, deriveProblems } from '../build/view-model.js';
 import { simConfig } from '../build/setup.js';
 import { content } from '../content.js';
 import {
@@ -35,6 +36,12 @@ export interface TutorialInfo {
   readonly facts: TutorialFacts;
   readonly defs: TutorialDefs;
   readonly powerNear: boolean;
+  /**
+   * "Before you fight" still lists a warning that stops something working
+   * (not a reminder, and not under-supply: an under-supplied building still
+   * works, only slower).
+   */
+  readonly hasWarnings: boolean;
 }
 
 export const TutorialContext = createContext<TutorialInfo | null>(null);
@@ -144,6 +151,15 @@ export function useTutorialInfo(
     [team, player],
   );
 
+  const hasWarnings = useMemo(
+    () =>
+      watching &&
+      deriveProblems(team, content, flow).some(
+        (p) => !isReminder(p) && p.kind !== 'under_supplied',
+      ),
+    [watching, team, flow],
+  );
+
   const input = useMemo(
     () => ({ run: state, facts, turretSkipped }),
     [state, facts, turretSkipped],
@@ -156,7 +172,10 @@ export function useTutorialInfo(
   }, [off, runId]);
 
   return useMemo(
-    () => (active && !off ? { runId, input, facts, defs, powerNear } : null),
-    [active, off, runId, input, facts, defs, powerNear],
+    () =>
+      active && !off
+        ? { runId, input, facts, defs, powerNear, hasWarnings }
+        : null,
+    [active, off, runId, input, facts, defs, powerNear, hasWarnings],
   );
 }

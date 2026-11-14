@@ -1,12 +1,17 @@
 // The guided tutorial smoke (issue #309). Called from smoke.mjs with the
 // shared page and helpers. Plain Node ESM, not part of the bundle.
 //
-// Starts "Play the tutorial", walks its first steps (Place the Core, Mine
-// Ore), checks the coach card, the checklist, the locked slots and Ready,
-// reloads to see the step resume, then skips with confirmation. A plain
-// "New run" shows no tips at all.
+// Starts "Play the tutorial", walks its steps (Place the Core, Mine Ore, feed
+// a Barracks, power a Turret with the second Extractor on a Power node),
+// checks the coach card, the checklist, the locked slots and Ready, reloads
+// to see the step resume, asserts the Turret is powered and "Before you
+// fight" has no warnings before Ready (issue #322), then skips with
+// confirmation. A plain "New run" shows no tips at all.
 
 import { hookReady, slow } from './smoke-timing.mjs';
+
+const ORE = 'res_a';
+const POWER = 'res_b';
 
 export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
   const card = page.locator('[data-field="tutorial-card"]');
@@ -160,11 +165,19 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
 
   // Drag the Extractor onto an Ore node.
   const t0 = await team();
-  const barracksNeeds = null;
-  void barracksNeeds;
-  const nodes = t0.nodes.filter(
-    (n) => !t0.buildings.some((b) => b.x === n.x && b.y === n.y),
-  );
+  const core0 = t0.cores[0];
+  const byCore = (a, b) =>
+    Math.hypot(a.x - core0.x, a.y - core0.y) -
+    Math.hypot(b.x - core0.x, b.y - core0.y);
+  const freeOf = (t, resource) =>
+    t.nodes
+      .filter(
+        (n) =>
+          n.resource === resource &&
+          !t.buildings.some((b) => b.x === n.x && b.y === n.y),
+      )
+      .sort(byCore);
+  const nodes = freeOf(t0, ORE);
   let placed = false;
   for (const node of nodes) {
     const box = await extractor.boundingBox();
@@ -211,6 +224,166 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
       (await page.locator('.tut-checklist li.done').count()) === 2,
     'tutorial: a reload resumes at step 3',
   );
+
+  // Steps 3 and 4: Barracks fed by a conduit, Turret powered by the second
+  // Extractor on a Power node (issue #322).
+  const dragSlot = async (def, x, y) => {
+    const box = await page
+      .locator(`.stash-item[data-stash-def="${def}"]`)
+      .first()
+      .boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    const p = await at(x, y);
+    await page.mouse.move(p.x, p.y, { steps: 6 });
+    await page.mouse.up();
+    await settle();
+  };
+  // Place `def` on the first candidate cell where it fits and, if a conduit
+  // is wanted, can be wired (a cliff or water may be in the way): a building
+  // that cannot be wired goes back to the inventory.
+  const placeAny = async (def, cells, wire = null) => {
+    const n0 = (await team()).buildings.length;
+    for (const c of cells) {
+      await dragSlot(def, c.x, c.y);
+      const t = await team();
+      if (t.buildings.length <= n0) {
+        await page.keyboard.press('Escape');
+        continue;
+      }
+      if (wire === null) return c;
+      const built = t.buildings.find((b) => b.x === c.x && b.y === c.y);
+      if (await wire(built)) return c;
+      const p = await at(c.x, c.y);
+      await page.mouse.click(p.x, p.y);
+      await settle();
+      await page.click('#panel-inspector [data-action="to-stash"]');
+      await settle();
+    }
+    return null;
+  };
+  const around = (cx, cy, minDy, maxR) => {
+    const out = [];
+    for (let dy = minDy; dy <= maxR; dy++)
+      for (let dx = -maxR; dx <= maxR; dx++)
+        out.push({ x: cx + dx, y: cy + dy });
+    return out
+      .filter((c) => c.x >= 0 && c.y >= 0)
+      .sort(
+        (a, b) =>
+          Math.hypot(a.x - cx, a.y - cy - minDy) -
+          Math.hypot(b.x - cx, b.y - cy - minDy),
+      );
+  };
+  const connect = async (from, to) => {
+    const n0 = (await team()).conduits.length;
+    await page.click('[data-tool="conduit"]');
+    for (const c of [from, to]) {
+      const p = await at(c.x, c.y);
+      await page.mouse.move(p.x, p.y, { steps: 2 });
+      await page.mouse.down();
+      await page.mouse.up();
+      await settle();
+    }
+    const ok = (await team()).conduits.length > n0;
+    await page.click('[data-tool="select"]');
+    return ok;
+  };
+  const tdef = (t, def) => t.buildings.filter((b) => b.def === def);
+
+  const t1 = await team();
+  const ex1 = tdef(t1, 'bld_extractor')[0];
+  const bkAt = await placeAny(
+    'bld_barracks',
+    around(ex1.x, ex1.y, 2, 6),
+    (bk) => connect(ex1, bk),
+  );
+  check(
+    bkAt !== null,
+    'tutorial: a Barracks near the Extractor can be wired to it with a conduit',
+  );
+  await page.waitForFunction(
+    () => document.querySelector('.tut-checklist li.done:nth-child(3)'),
+    null,
+    { timeout: slow(5000) },
+  );
+  check(
+    /Tutorial · 4 of 6/.test(await title()) &&
+      (await page.locator('.tut-checklist li.done').count()) === 3,
+    `tutorial: a fed Barracks finishes step 3 (${await title()})`,
+  );
+
+  // Step 4: the Turret next to the Core, without Power it stays step 4.
+  const core = (await team()).cores[0];
+  const tuAt = await placeAny('bld_turret', around(core.x, core.y, 3, 5));
+  check(tuAt !== null, 'tutorial: a Turret can be placed next to the Core');
+  await settle();
+  const tu = tdef(await team(), 'bld_turret')[0];
+  check(
+    /Tutorial · 4 of 6/.test(await title()) &&
+      (await page.locator('.tut-checklist li.done').count()) === 3 &&
+      /Power a Turret next to the Core/.test(
+        await page.locator('.tut-checklist li[data-step="4"]').innerText(),
+      ),
+    'tutorial: a Turret without Power does not finish step 4',
+  );
+  check(
+    (await page.evaluate(() => window.__debug.build.problems())).some((p) =>
+      /Turret has no conduit into its Power input/.test(p.text),
+    ),
+    'tutorial: Before you fight warns the Turret has no conduit into its Power input',
+  );
+  await shot('tutorial-4-power-turret');
+
+  // The second Extractor goes on a Power node near the Core.
+  const powerNodes = freeOf(await team(), POWER);
+  check(powerNodes.length > 0, 'tutorial: a Power node is free on the map');
+  const pwAt = await placeAny('bld_extractor', powerNodes.slice(0, 3), (ex) =>
+    connect(ex, tu),
+  );
+  check(
+    pwAt !== null,
+    'tutorial: the second Extractor goes on a Power node and a conduit reaches the Turret',
+  );
+  await settle();
+  check(
+    !(await page.evaluate(() => window.__debug.build.problems())).some((p) =>
+      /Turret has no conduit/.test(p.text),
+    ),
+    'tutorial: the Turret receives Power before the fight',
+  );
+  check(
+    /Tutorial · 5 of 6/.test(await title()) &&
+      (await page.locator('.tut-checklist li.done').count()) === 4,
+    `tutorial: a powered Turret finishes step 4 (${await title()})`,
+  );
+  // The coach card never says the base is ready while a blocking warning is
+  // listed. Under-supply doesn't block: the tutorial's lone Power Extractor
+  // leaves the Turret under-supplied, and the card still says ready.
+  const warnings = await page.evaluate(
+    () =>
+      window.__debug.build
+        .problems()
+        .filter(
+          (p) =>
+            p.kind !== 'stash' &&
+            p.kind !== 'free_nodes' &&
+            p.kind !== 'under_supplied',
+        ).length,
+  );
+  const cardText = await card.innerText();
+  check(
+    warnings === 0
+      ? /Your base is ready/.test(cardText)
+      : /Before you fight/.test(cardText) &&
+          !/Your base is ready/.test(cardText),
+    `tutorial: "Your base is ready" only without blocking warnings (${warnings} listed)`,
+  );
+  check(
+    warnings === 0,
+    `tutorial: the tutorial's own path leaves no blocking warning (${warnings} listed)`,
+  );
+  await shot('tutorial-5-ready');
 
   // Skip asks first, then hides every tip and unlocks everything.
   await page.click('[data-action="tutorial-skip"]');

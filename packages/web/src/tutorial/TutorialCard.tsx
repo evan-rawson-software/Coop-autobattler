@@ -59,6 +59,15 @@ interface Text {
   readonly body: readonly string[];
 }
 
+/** Step 4: place the Turret, then power it with the second Extractor. */
+function step4Body(info: TutorialInfo): string[] {
+  const { facts } = info;
+  if (!facts.turret) return [t('tutStep4Body')];
+  if (facts.turretPowered || !info.powerNear) return [t('tutStep4Body')];
+  if (facts.powerExtractor) return [t('tutStep4Link')];
+  return [t(facts.spareExtractor ? 'tutStep4Power' : 'tutStep4NoSpare')];
+}
+
 function stepText(info: TutorialInfo, n: StepNo, runStep: string): Text {
   const { facts } = info;
   switch (n) {
@@ -77,16 +86,19 @@ function stepText(info: TutorialInfo, n: StepNo, runStep: string): Text {
     case 4:
       return {
         head: t('tutStep4Head'),
-        body: [
-          t('tutStep4Body'),
-          ...(info.powerNear ? [t('tutStep4Power')] : []),
-        ],
+        body: step4Body(info),
       };
     case 5:
       return {
         head: t('tutStep5Head'),
         body: [
-          t(runStep === 'pve_choice' ? 'tutStep5Choose' : 'tutStep5Ready'),
+          t(
+            runStep === 'pve_choice'
+              ? 'tutStep5Choose'
+              : info.hasWarnings
+                ? 'tutStep5Warnings'
+                : 'tutStep5Ready',
+          ),
         ],
       };
     case 6:
