@@ -18,7 +18,7 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_barracks t1 20", "1 bld_barracks t1 20", "2 bld_merger t1 5", "3 bld_barracks t1 20", "4 bld_turret t1 15"]
+              ["0 bld_turret t1 15", "1 bld_armory t1 30", "2 bld_range t1 24", "3 bld_merger t1 5", "4 bld_range t1 24"]
             ],
             "stream": [1270937713, 1349908313, 2239668247, 3700870493]
           }
@@ -45,10 +45,10 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_merger t1 5", "1 bld_wall t1 4", "2 bld_wall t1 4", "3 bld_armory t1 30", "4 bld_extractor t1 10"],
-              ["0 bld_barracks t1 20", "1 bld_barracks t1 20", "2 bld_extractor t1 10", "3 bld_barracks t1 20", "4 bld_range t1 24"],
-              ["0 bld_wall t1 4", "1 bld_armory t1 30", "2 bld_gate t1 8", "3 bld_turret t1 15", "4 bld_range t1 24"],
-              ["0 bld_barracks t1 20", "1 bld_splitter t1 5", "2 bld_barracks t1 20", "3 bld_splitter t1 5", "4 bld_armory t1 30"]
+              ["0 bld_armory t1 30", "1 bld_extractor t1 10", "2 bld_hangar t1 30", "3 bld_extractor t1 10", "4 bld_barracks t1 20"],
+              ["0 bld_range t1 24", "1 bld_wall t1 4", "2 bld_gate t1 8", "3 bld_wall t1 4", "4 bld_barracks t1 20"],
+              ["0 bld_barracks t1 20", "1 bld_armory t1 30", "2 bld_range t1 24", "3 bld_range t1 24", "4 bld_wall t1 4"],
+              ["0 bld_overclocker t1 30", "1 bld_extractor t1 10", "2 bld_wall t1 4", "3 bld_merger t1 5", "4 bld_extractor t1 10"]
             ],
             "stream": [2325993749, 1913672888, 892550834, 3907574456]
           }
@@ -75,15 +75,15 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_merger t1 5", "1 bld_merger t1 5", "2 bld_barracks t1 20", "3 bld_wall t1 4", "4 bld_extractor t1 10"],
-              ["0 bld_turret t1 15", "1 bld_extractor t1 10", "2 bld_turret t1 15", "3 bld_turret t1 15", "4 bld_turret t1 15"]
+              ["0 bld_wall t1 4", "1 bld_splitter t1 5", "2 bld_crossover t1 8", "3 bld_extractor t1 10", "4 bld_barracks t1 20"],
+              ["0 bld_crossover t1 8", "1 bld_merger t1 5", "2 bld_hangar t1 30", "3 bld_gate t1 8", "4 bld_barracks t1 20"]
             ],
             "stream": [881401161, 4062250805, 1106079493, 3740598569]
           },
           {
             "rolls": [
-              ["0 bld_merger t1 5", "1 bld_merger t1 5", "2 bld_overclocker t1 30", "3 bld_extractor t1 10", "4 bld_wall t1 4"],
-              ["0 bld_barracks t1 20", "1 bld_turret t1 15", "2 bld_barracks t1 20", "3 bld_extractor t1 10", "4 bld_gate t1 8"]
+              ["0 bld_barracks t1 20", "1 bld_armory t1 30", "2 bld_wall t1 4", "3 bld_barracks t1 20", "4 bld_extractor t1 10"],
+              ["0 bld_range t1 24", "1 bld_range t1 24", "2 bld_range t1 24", "3 bld_range t1 24", "4 bld_barracks t1 20"]
             ],
             "stream": [3177861261, 1124493327, 2306967310, 3923925590]
           }
@@ -110,25 +110,25 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_extractor t1 10", "1 bld_turret t1 15", "2 bld_splitter t1 5", "3 bld_wall t1 4", "4 bld_crossover t1 8"]
+              ["0 bld_extractor t1 10", "1 bld_range t1 24", "2 bld_extractor t1 10", "3 bld_turret t1 15", "4 bld_barracks t1 20"]
             ],
             "stream": [1710433063, 611572700, 3922961087, 2048148259]
           },
           {
             "rolls": [
-              ["0 bld_barracks t1 20", "1 bld_gate t1 8", "2 bld_range t1 24", "3 bld_merger t1 5", "4 bld_wall t1 4"]
+              ["0 bld_extractor t1 10", "1 bld_range t1 24", "2 bld_range t1 24", "3 bld_turret t1 15", "4 bld_armory t1 30"]
             ],
             "stream": [3823743355, 2373946275, 250548629, 796955230]
           },
           {
             "rolls": [
-              ["0 bld_gate t1 8", "1 bld_turret t1 15", "2 bld_merger t1 5", "3 bld_turret t1 15", "4 bld_merger t1 5"]
+              ["0 bld_hangar t1 30", "1 bld_wall t1 4", "2 bld_extractor t1 10", "3 bld_barracks t1 20", "4 bld_merger t1 5"]
             ],
             "stream": [981282020, 1138975495, 733878055, 1346842229]
           },
           {
             "rolls": [
-              ["0 bld_turret t1 15", "1 bld_barracks t1 20", "2 bld_turret t1 15", "3 bld_armory t1 30", "4 bld_crossover t1 8"]
+              ["0 bld_turret t1 15", "1 bld_barracks t1 20", "2 bld_barracks t1 20", "3 bld_turret t1 15", "4 bld_gate t1 8"]
             ],
             "stream": [1982222233, 2018113350, 3132720720, 389699613]
           }
@@ -155,7 +155,7 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_gate t1 8", "1 bld_wall t1 4", "2 bld_splitter t1 5", "3 bld_extractor t1 10", "4 bld_gate t1 8"]
+              ["0 bld_barracks t1 20", "1 bld_barracks t1 20", "2 bld_extractor t1 10", "3 bld_wall t1 4", "4 bld_extractor t1 10"]
             ],
             "stream": [2910254320, 1497439793, 608290343, 2298078492]
           }
@@ -182,25 +182,25 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_barracks t1 20", "1 bld_gate t1 8", "2 bld_extractor t1 10", "3 bld_hangar t1 30", "4 bld_wall t1 4"],
-              ["0 bld_barracks t1 20", "1 bld_crossover t1 8", "2 bld_splitter t1 5", "3 bld_wall t1 4", "4 bld_hangar t1 30"],
-              ["0 bld_turret t1 15", "1 bld_gate t1 8", "2 bld_crossover t1 8", "3 bld_barracks t1 20", "4 bld_wall t1 4"]
+              ["0 bld_splitter t1 5", "1 bld_merger t1 5", "2 bld_turret t1 15", "3 bld_barracks t1 20", "4 bld_splitter t1 5"],
+              ["0 bld_turret t1 15", "1 bld_turret t1 15", "2 bld_extractor t1 10", "3 bld_extractor t1 10", "4 bld_extractor t1 10"],
+              ["0 bld_wall t1 4", "1 bld_overclocker t1 30", "2 bld_turret t1 15", "3 bld_extractor t1 10", "4 bld_barracks t1 20"]
             ],
             "stream": [4082284504, 1246615528, 2421326979, 222664747]
           },
           {
             "rolls": [
-              ["0 bld_splitter t1 5", "1 bld_range t1 24", "2 bld_hangar t1 30", "3 bld_gate t1 8", "4 bld_range t1 24"],
-              ["0 bld_extractor t1 10", "1 bld_wall t1 4", "2 bld_barracks t1 20", "3 bld_splitter t1 5", "4 bld_overclocker t1 30"],
-              ["0 bld_turret t1 15", "1 bld_barracks t1 20", "2 bld_splitter t1 5", "3 bld_gate t1 8", "4 bld_range t1 24"]
+              ["0 bld_wall t1 4", "1 bld_extractor t1 10", "2 bld_splitter t1 5", "3 bld_armory t1 30", "4 bld_barracks t1 20"],
+              ["0 bld_splitter t1 5", "1 bld_wall t1 4", "2 bld_extractor t1 10", "3 bld_hangar t1 30", "4 bld_barracks t1 20"],
+              ["0 bld_hangar t1 30", "1 bld_wall t1 4", "2 bld_turret t1 15", "3 bld_barracks t1 20", "4 bld_splitter t1 5"]
             ],
             "stream": [1377751922, 1363642561, 3308590562, 2812818089]
           },
           {
             "rolls": [
-              ["0 bld_extractor t1 10", "1 bld_barracks t1 20", "2 bld_armory t1 30", "3 bld_turret t1 15", "4 bld_turret t1 15"],
-              ["0 bld_gate t1 8", "1 bld_gate t1 8", "2 bld_crossover t1 8", "3 bld_range t1 24", "4 bld_turret t1 15"],
-              ["0 bld_gate t1 8", "1 bld_hangar t1 30", "2 bld_splitter t1 5", "3 bld_turret t1 15", "4 bld_wall t1 4"]
+              ["0 bld_armory t1 30", "1 bld_turret t1 15", "2 bld_range t1 24", "3 bld_crossover t1 8", "4 bld_extractor t1 10"],
+              ["0 bld_armory t1 30", "1 bld_barracks t1 20", "2 bld_wall t1 4", "3 bld_range t1 24", "4 bld_range t1 24"],
+              ["0 bld_extractor t1 10", "1 bld_hangar t1 30", "2 bld_extractor t1 10", "3 bld_barracks t1 20", "4 bld_splitter t1 5"]
             ],
             "stream": [794474622, 2427705164, 4230207860, 2611801790]
           }
@@ -227,8 +227,8 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_hangar t2 60", "1 bld_gate t1 8", "2 bld_splitter t2 12", "3 bld_extractor t1 10", "4 bld_wall t1 4"],
-              ["0 bld_overclocker t1 30", "1 bld_extractor t2 25", "2 bld_barracks t1 20", "3 bld_overclocker t2 60", "4 bld_wall t2 9"]
+              ["0 bld_barracks t2 45", "1 bld_gate t1 8", "2 bld_barracks t2 45", "3 bld_hangar t1 30", "4 bld_extractor t1 10"],
+              ["0 bld_merger t1 5", "1 bld_extractor t2 25", "2 bld_armory t1 30", "3 bld_barracks t2 45", "4 bld_overclocker t2 60"]
             ],
             "stream": [716291332, 230979304, 1034140873, 1201362969]
           }
@@ -255,13 +255,13 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_range t1 24", "1 bld_barracks t3 80", "2 bld_range t3 90", "3 bld_barracks t2 45", "4 bld_barracks t1 20"]
+              ["0 bld_turret t1 15", "1 bld_gate t3 30", "2 bld_barracks t3 80", "3 bld_barracks t2 45", "4 bld_merger t1 5"]
             ],
             "stream": [3155416046, 449040429, 1627471564, 3228596691]
           },
           {
             "rolls": [
-              ["0 bld_wall t1 4", "1 bld_merger t2 12", "2 bld_turret t1 15", "3 bld_wall t1 4", "4 bld_turret t2 35"]
+              ["0 bld_extractor t1 10", "1 bld_barracks t2 45", "2 bld_merger t1 5", "3 bld_merger t1 5", "4 bld_range t2 50"]
             ],
             "stream": [2689204891, 1823835324, 3184180384, 1462441704]
           }
@@ -288,22 +288,22 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_gate t2 16", "1 bld_splitter t2 12", "2 bld_gate t1 8", "3 bld_barracks t3 80", "4 bld_extractor t1 10"],
-              ["0 bld_merger t3 25", "1 bld_extractor t2 25", "2 bld_wall t2 9", "3 bld_extractor t1 10", "4 bld_barracks t1 20"]
+              ["0 bld_splitter t2 12", "1 bld_barracks t2 45", "2 bld_barracks t1 20", "3 bld_barracks t3 80", "4 bld_hangar t1 30"],
+              ["0 bld_wall t3 18", "1 bld_barracks t2 45", "2 bld_barracks t2 45", "3 bld_extractor t1 10", "4 bld_wall t1 4"]
             ],
             "stream": [3023572215, 3480116702, 2107910352, 4165149210]
           },
           {
             "rolls": [
-              ["0 bld_turret t3 65", "1 bld_overclocker t1 30", "2 bld_gate t2 16", "3 bld_range t3 90", "4 bld_wall t1 4"],
-              ["0 bld_extractor t2 25", "1 bld_barracks t3 80", "2 bld_overclocker t2 60", "3 bld_wall t3 18", "4 bld_wall t3 18"]
+              ["0 bld_wall t3 18", "1 bld_merger t1 5", "2 bld_turret t2 35", "3 bld_armory t3 100", "4 bld_merger t1 5"],
+              ["0 bld_barracks t2 45", "1 bld_armory t3 100", "2 bld_overclocker t2 60", "3 bld_turret t3 65", "4 bld_barracks t3 80"]
             ],
             "stream": [2467628782, 562568050, 3992507445, 3751745097]
           },
           {
             "rolls": [
-              ["0 bld_armory t3 100", "1 bld_turret t2 35", "2 bld_extractor t3 50", "3 bld_extractor t1 10", "4 bld_extractor t3 50"],
-              ["0 bld_gate t2 16", "1 bld_wall t2 9", "2 bld_gate t2 16", "3 bld_barracks t2 45", "4 bld_armory t3 100"]
+              ["0 bld_range t3 90", "1 bld_range t2 50", "2 bld_turret t3 65", "3 bld_wall t1 4", "4 bld_barracks t3 80"],
+              ["0 bld_wall t2 9", "1 bld_armory t2 60", "2 bld_turret t2 35", "3 bld_gate t2 16", "4 bld_turret t3 65"]
             ],
             "stream": [263490785, 2863029878, 1326267165, 3761374636]
           }
@@ -330,7 +330,7 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_overclocker t1 30", "1 bld_wall t1 4", "2 bld_crossover t1 8", "3 bld_extractor t1 10", "4 bld_crossover t1 8"]
+              ["0 bld_wall t1 4", "1 bld_armory t1 30", "2 bld_splitter t1 5", "3 bld_barracks t1 20", "4 bld_overclocker t1 30"]
             ],
             "stream": [2579631144, 632324840, 1820094549, 3766616066]
           }
@@ -357,7 +357,7 @@
         "players": [
           {
             "rolls": [
-              ["0 bld_barracks t1 20", "1 bld_gate t1 8", "2 bld_extractor t1 10", "3 bld_wall t1 4", "4 bld_hangar t1 30"]
+              ["0 bld_barracks t1 20", "1 bld_wall t1 4", "2 bld_range t1 24", "3 bld_hangar t1 30", "4 bld_overclocker t1 30"]
             ],
             "stream": [428748656, 1272761018, 4116320486, 3052182135]
           }

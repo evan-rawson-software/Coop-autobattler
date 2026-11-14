@@ -64,10 +64,10 @@
         "actions": 7,
         "gold": [21],
         "shops": [
-          ["0 bld_armory t1 30", "1 bld_turret t1 15", "2 bld_turret t1 15", "3 bld_splitter t1 5", "4 bld_merger t1 5"]
+          ["0 bld_merger t1 5", "1 bld_barracks t1 20", "2 bld_barracks t1 20", "3 bld_extractor t1 10", "4 bld_wall t1 4"]
         ],
         "rng": [948592740, 1408725001, 4049329563, 240181589],
-        "stateHash": "63400e2b"
+        "stateHash": "060d6ae7"
       }
     }
   },
@@ -129,10 +129,10 @@
         "actions": 6,
         "gold": [25],
         "shops": [
-          ["0 bld_splitter t1 5", "1 bld_extractor t1 10", "2 bld_wall t1 4", "3 bld_overclocker t1 30", "4 bld_splitter t1 5"]
+          ["0 bld_range t1 24", "1 bld_merger t1 5", "2 bld_barracks t1 20", "3 bld_turret t1 15", "4 bld_turret t1 15"]
         ],
         "rng": [2374633939, 2579424794, 1610740903, 4078707704],
-        "stateHash": "ab2f18fe"
+        "stateHash": "bc66a1be"
       }
     }
   },
@@ -248,11 +248,11 @@
         "actions": 14,
         "gold": [21, 21],
         "shops": [
-          ["0 bld_extractor t1 10", "1 bld_merger t1 5", "2 bld_range t1 24", "3 bld_gate t1 8", "4 bld_range t1 24"],
-          ["0 bld_overclocker t1 30", "1 bld_splitter t1 5", "2 bld_barracks t1 20", "3 bld_crossover t1 8", "4 bld_turret t1 15"]
+          ["0 bld_barracks t1 20", "1 bld_armory t1 30", "2 bld_gate t1 8", "3 bld_extractor t1 10", "4 bld_range t1 24"],
+          ["0 bld_merger t1 5", "1 bld_splitter t1 5", "2 bld_turret t1 15", "3 bld_barracks t1 20", "4 bld_wall t1 4"]
         ],
         "rng": [3486712235, 93806043, 2284422817, 725360740],
-        "stateHash": "d5be2c59"
+        "stateHash": "e0527896"
       }
     }
   },
@@ -354,11 +354,11 @@
         "actions": 12,
         "gold": [28, 28],
         "shops": [
-          ["0 bld_wall t1 4", "1 bld_wall t1 4", "2 bld_armory t1 30", "3 bld_overclocker t1 30", "4 bld_splitter t1 5"],
-          ["0 bld_crossover t1 8", "1 bld_extractor t1 10", "2 bld_splitter t1 5", "3 bld_extractor t1 10", "4 bld_extractor t1 10"]
+          ["0 bld_gate t1 8", "1 bld_overclocker t1 30", "2 bld_turret t1 15", "3 bld_turret t1 15", "4 bld_barracks t1 20"],
+          ["0 bld_armory t1 30", "1 bld_barracks t1 20", "2 bld_barracks t1 20", "3 bld_extractor t1 10", "4 bld_merger t1 5"]
         ],
         "rng": [3495444511, 2074020531, 2024017816, 1059153629],
-        "stateHash": "fd54f503"
+        "stateHash": "6229e814"
       }
     }
   },
@@ -500,12 +500,12 @@
         "actions": 18,
         "gold": [28, 28, 28],
         "shops": [
-          ["0 bld_turret t1 15", "1 bld_barracks t1 20", "2 bld_extractor t1 10", "3 bld_extractor t1 10", "4 bld_extractor t1 10"],
-          ["0 bld_extractor t1 10", "1 bld_crossover t1 8", "2 bld_barracks t1 20", "3 bld_merger t1 5", "4 bld_wall t1 4"],
-          ["0 bld_turret t1 15", "1 bld_merger t1 5", "2 bld_extractor t1 10", "3 bld_hangar t1 30", "4 bld_range t1 24"]
+          ["0 bld_splitter t1 5", "1 bld_range t1 24", "2 bld_barracks t1 20", "3 bld_barracks t1 20", "4 bld_barracks t1 20"],
+          ["0 bld_splitter t1 5", "1 bld_gate t1 8", "2 bld_wall t1 4", "3 bld_merger t1 5", "4 bld_extractor t1 10"],
+          ["0 bld_barracks t1 20", "1 bld_range t1 24", "2 bld_merger t1 5", "3 bld_wall t1 4", "4 bld_range t1 24"]
         ],
         "rng": [2401453780, 1660996482, 2716312277, 2780469515],
-        "stateHash": "426ab820"
+        "stateHash": "7dc84611"
       }
     }
   },
@@ -668,12 +668,12 @@
         "actions": 21,
         "gold": [21, 21, 21],
         "shops": [
-          ["0 bld_gate t1 8", "1 bld_extractor t1 10", "2 bld_gate t1 8", "3 bld_extractor t1 10", "4 bld_merger t1 5"],
-          ["0 bld_armory t1 30", "1 bld_extractor t1 10", "2 bld_turret t1 15", "3 bld_wall t1 4", "4 bld_merger t1 5"],
-          ["0 bld_barracks t1 20", "1 bld_barracks t1 20", "2 bld_hangar t1 30", "3 bld_hangar t1 30", "4 bld_barracks t1 20"]
+          ["0 bld_hangar t1 30", "1 bld_range t1 24", "2 bld_wall t1 4", "3 bld_barracks t1 20", "4 bld_barracks t1 20"],
+          ["0 bld_turret t1 15", "1 bld_barracks t1 20", "2 bld_merger t1 5", "3 bld_turret t1 15", "4 bld_turret t1 15"],
+          ["0 bld_barracks t1 20", "1 bld_range t1 24", "2 bld_barracks t1 20", "3 bld_barracks t1 20", "4 bld_armory t1 30"]
         ],
         "rng": [4002323717, 2067507954, 1864822148, 510943459],
-        "stateHash": "08032187"
+        "stateHash": "5c86606a"
       }
     }
   },
@@ -767,10 +767,10 @@
         "actions": 11,
         "gold": [37],
         "shops": [
-          ["0 bld_extractor t1 10", "1 bld_wall t1 4", "2 bld_extractor t1 10", "3 bld_extractor t1 10", "4 bld_splitter t1 5"]
+          ["0 bld_barracks t1 20", "1 bld_barracks t1 20", "2 bld_overclocker t1 30", "3 bld_merger t1 5", "4 bld_turret t1 15"]
         ],
         "rng": [4017906222, 1048198776, 252071946, 525099987],
-        "stateHash": "0cc93f8a"
+        "stateHash": "d76ac2f2"
       }
     }
   },
@@ -936,13 +936,13 @@
         "step": "shop",
         "round": 1,
         "actions": 22,
-        "gold": [30, 23],
+        "gold": [18, 33],
         "shops": [
-          ["0 bld_hangar t1 30", "1 bld_wall t1 4", "2 bld_wall t1 4", "3 bld_armory t1 30", "4 bld_armory t1 30"],
-          ["0 bld_range t1 24", "1 bld_splitter t1 5", "2 bld_extractor t1 10", "3 bld_turret t1 15", "4 bld_wall t1 4"]
+          ["0 bld_barracks t1 20", "1 bld_crossover t1 8", "2 bld_barracks t1 20", "3 bld_gate t1 8", "4 bld_hangar t1 30"],
+          ["0 bld_extractor t1 10", "1 bld_extractor t1 10", "2 bld_merger t1 5", "3 bld_armory t1 30", "4 bld_hangar t1 30"]
         ],
         "rng": [3911408375, 943011303, 2874200482, 3627807379],
-        "stateHash": "cbef838a"
+        "stateHash": "a6629a8d"
       }
     }
   },
@@ -1194,14 +1194,14 @@
         "step": "shop",
         "round": 1,
         "actions": 35,
-        "gold": [33, 34, 29],
+        "gold": [33, 34, 14],
         "shops": [
-          ["0 bld_barracks t1 20", "1 bld_range t1 24", "2 bld_turret t1 15", "3 bld_merger t1 5", "4 bld_extractor t1 10"],
-          ["0 bld_crossover t1 8", "1 bld_range t1 24", "2 bld_extractor t1 10", "3 bld_extractor t1 10", "4 bld_crossover t1 8"],
-          ["0 bld_extractor t1 10", "1 bld_extractor t1 10", "2 bld_gate t1 8", "3 bld_range t1 24", "4 bld_armory t1 30"]
+          ["0 bld_wall t1 4", "1 bld_wall t1 4", "2 bld_turret t1 15", "3 bld_armory t1 30", "4 bld_extractor t1 10"],
+          ["0 bld_hangar t1 30", "1 bld_splitter t1 5", "2 bld_extractor t1 10", "3 bld_barracks t1 20", "4 bld_extractor t1 10"],
+          ["0 bld_extractor t1 10", "1 bld_barracks t1 20", "2 bld_range t1 24", "3 bld_barracks t1 20", "4 bld_wall t1 4"]
         ],
         "rng": [4183173375, 1530242370, 2692292519, 2946822902],
-        "stateHash": "ca55e412"
+        "stateHash": "ab0050d6"
       }
     }
   },
@@ -1294,12 +1294,12 @@
         "step": "shop",
         "round": 1,
         "actions": 11,
-        "gold": [28],
+        "gold": [23],
         "shops": [
-          ["0 bld_wall t1 4", "1 bld_armory t1 30", "2 bld_armory t1 30", "3 bld_wall t1 4", "4 bld_turret t1 15"]
+          ["0 bld_barracks t1 20", "1 bld_armory t1 30", "2 bld_extractor t1 10", "3 bld_armory t1 30", "4 bld_barracks t1 20"]
         ],
         "rng": [2782579401, 4181980959, 2945516258, 1625768006],
-        "stateHash": "43b4f2b5"
+        "stateHash": "f9d68f15"
       }
     }
   }
