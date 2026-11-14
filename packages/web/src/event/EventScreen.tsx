@@ -46,6 +46,7 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
             id="battle-result"
           >
             <strong data-field="result-text">{header.text}</strong>
+            {' · '}
             <span data-field="payout">{header.payout}</span>
           </div>
         )}

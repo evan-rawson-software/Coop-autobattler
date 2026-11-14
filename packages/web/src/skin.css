@@ -43,13 +43,6 @@
   object-fit: contain;
 }
 
-.offer-lock {
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  filter: drop-shadow(0 0 2px #000);
-}
-
 .stash-list .stash-item .swatch {
   display: inline-grid;
   place-items: center;

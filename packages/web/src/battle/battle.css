@@ -280,13 +280,19 @@ button:disabled {
   gap: 0.15rem;
 }
 
+.result-draw {
+  margin: 0.2rem 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
 .marker-n {
-  display: inline-grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  margin-right: 0.4rem;
-  border-radius: 50%;
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 0.4rem;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 9px;
   background: var(--ink);
   color: var(--surface);
   font-size: 0.7rem;

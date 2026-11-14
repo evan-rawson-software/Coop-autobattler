@@ -1452,8 +1452,15 @@ try {
         (await page
           .locator('[data-testid="chart-strength-summary"]')
           .count()) === 1 &&
-        (await page.locator('#panel-breaches canvas').count()) === 1,
-      'battle: summary has the chart, the breach map and the building table',
+        // A victory with nothing of yours destroyed has no breach panel.
+        (await page.locator('#panel-breaches canvas').count()) ===
+          ((await page.locator('#panel-breaches').count()) === 0 &&
+          /Victory/.test(
+            await page.locator('[data-field="result-word"]').innerText(),
+          )
+            ? 0
+            : 1),
+      'battle: summary has the chart, the breach map (unless a win lost nothing) and the building table',
     );
     await shot('battle-3-summary');
 

@@ -942,7 +942,7 @@ export async function runRunSmoke({
   // Event
   const header = await page.locator('#battle-result').innerText();
   check(
-    /^Stronghold battle (won|lost) · (Easy|Medium|Hard) · \w+/.test(header) &&
+    /^(Won against|Lost to) \w+ \((Easy|Medium|Hard)\) · /.test(header) &&
       /gold|No reward/.test(header),
     `event: opens with the battle just fought and what it paid ("${header.replace(/\s+/g, ' ')}")`,
   );
@@ -1110,7 +1110,7 @@ export async function runRunSmoke({
   );
   const header2 = await page.locator('#battle-result').innerText();
   check(
-    /^Rival party battle (won|lost) · vs\. Rival party/.test(header2),
+    /^(Won against|Lost to) Rival party/.test(header2),
     `event (after PvP): the header shows the PvP result ("${header2.replace(/\s+/g, ' ')}")`,
   );
 

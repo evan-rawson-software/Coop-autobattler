@@ -50,6 +50,20 @@ export interface OfferCard {
   readonly reason: string | null;
 }
 
+/**
+ * What the shop draws: identical offers (same building and tier) collapsed
+ * into one entry, and each sold slot as its own empty entry. Only a display
+ * grouping: the saved shop still holds one offer per slot.
+ */
+export interface OfferGroup {
+  /** The card shown; for a group, the first of its slots. */
+  readonly card: OfferCard;
+  /** The real offer slots still on sale in this group, lowest first. */
+  readonly slots: readonly number[];
+  /** How many copies can still be bought (`slots.length`; 0 when sold). */
+  readonly copies: number;
+}
+
 export interface StashRow {
   readonly def: string;
   readonly name: string;
@@ -65,6 +79,8 @@ export interface ShopView {
   readonly open: boolean;
   readonly gold: number;
   readonly offers: readonly OfferCard[];
+  /** `offers` as drawn: identical offers grouped (see `OfferGroup`). */
+  readonly groups: readonly OfferGroup[];
   readonly reroll: {
     readonly cost: number;
     readonly can: boolean;
@@ -95,6 +111,30 @@ const CLOSED = 'The shop is closed.';
 export function shortOf(gold: number, price: number): string {
   const missing = price - gold;
   return `Need ${String(missing)} more gold.`;
+}
+
+/** Group identical live offers; sold slots stay as single entries. */
+export function groupOffers(cards: readonly OfferCard[]): OfferGroup[] {
+  const slotsOf = new Map<string, number[]>();
+  const keyOf = (c: OfferCard): string | null =>
+    c.offer === null ? null : `${c.offer.def}:${String(c.offer.tier)}`;
+  for (const c of cards) {
+    const k = keyOf(c);
+    if (k !== null) slotsOf.set(k, [...(slotsOf.get(k) ?? []), c.slot]);
+  }
+  const groups: OfferGroup[] = [];
+  const done = new Set<string>();
+  for (const card of cards) {
+    const k = keyOf(card);
+    if (k === null) {
+      groups.push({ card, slots: [], copies: 0 });
+    } else if (!done.has(k)) {
+      done.add(k);
+      const slots = slotsOf.get(k) ?? [card.slot];
+      groups.push({ card, slots, copies: slots.length });
+    }
+  }
+  return groups;
 }
 
 /** Stash grouped by building and tier, in content order. */
@@ -199,6 +239,7 @@ export function buildShopView(
     open,
     gold,
     offers: cards,
+    groups: groupOffers(cards),
     reroll: { cost, can: rerollReason === null, reason: rerollReason },
     stash: stashRows({ ...run.team, stash: run.team.stash.filter(mine) }, ctx),
     stashCount: run.team.stash.filter(mine).length,
@@ -259,6 +300,10 @@ export interface NextBattleView {
     readonly threat: string;
     readonly rewardGold: number;
   }[];
+  /** True when the rival battle is against the generated boss (PvP leg). */
+  readonly boss: boolean;
+  /** One sentence on how the boss differs; '' unless `boss`. */
+  readonly bossNote: string;
   /** PvP only. */
   readonly pvp: {
     readonly opponent: string;
@@ -276,6 +321,10 @@ export function threatLine(o: PveOptionView): string {
   parts.push(`Core ${String(s.coreHealth)} health`);
   return parts.join(' · ');
 }
+
+/** What the boss really is: see "PvE threats" and "Ghosts" in the rules. */
+const BOSS_NOTE =
+  'A computer-made stronghold, not another party: waves of soldiers and fast raiders, with walls and turrets around its Core.';
 
 export function nextBattleView(
   run: RunState,
@@ -295,13 +344,18 @@ export function nextBattleView(
         threat: threatLine(o),
         rewardGold: o.reward.gold,
       })),
+      boss: false,
+      bossNote: '',
       pvp: null,
     };
   }
+  const boss = pvpOpponentInfo(run)?.kind === 'boss';
   return {
     kind: 'pvp',
     round: info.round,
-    title: 'Rival party',
+    title: boss ? 'Boss battle next' : 'Rival party',
+    boss,
+    bossNote: boss ? BOSS_NOTE : '',
     options: [],
     pvp: {
       opponent: opponentText(run),
