@@ -9,6 +9,7 @@ import {
   buildingEnd,
   conduitTouches,
 } from '@game/core';
+import type { ComponentChildren } from 'preact';
 import type { RunState } from '@game/session';
 import { content } from '../content.js';
 import { Panel } from '../shell/AppShell.js';
@@ -49,6 +50,18 @@ const fmt = (n: number): string =>
   Number.isInteger(n) ? String(n) : n.toFixed(1);
 
 /** A rate per second, always two decimals ("0.50"). */
+/** One row of an overlay key: a 28x16 sample of the mark, then its name. */
+function LegendItem(props: { label: string; children: ComponentChildren }) {
+  return (
+    <li>
+      <svg width="28" height="16" viewBox="0 0 28 16" aria-hidden="true">
+        {props.children}
+      </svg>
+      <span>{props.label}</span>
+    </li>
+  );
+}
+
 const fmtRate = (n: number): string => n.toFixed(2);
 
 // ---------------------------------------------------------------------------
@@ -366,6 +379,11 @@ export function InspectorPanel(props: {
       );
       const attached = team.conduits.filter((c) => conduitTouches(c, b.id));
       const stats = cardStats(content, simConfig, def, b.tier);
+      const collectRate = buildingRate(
+        def,
+        b.tier,
+        simConfig.ticksPerSecond,
+      ).collects;
       const supply = props.flow?.supply.find((x) => x.building === b.id);
       body = (
         <div data-inspector="building">
@@ -411,7 +429,12 @@ export function InspectorPanel(props: {
               ) : null}
               {stats.collects !== null ? (
                 <p data-field="collects">
-                  {stats.collects}
+                  {figs?.produces?.resource != null && collectRate !== null
+                    ? screenText(screenTexts, 'collectsResource', {
+                        resource: resourceName(content, figs.produces.resource),
+                        rate: formatHundredths(collectRate),
+                      })
+                    : stats.collects}
                   {figs?.produces != null && figs.produces.lostPerSec > 0
                     ? screenText(screenTexts, 'uiInspectorMinesLost', {
                         rate: fmtRate(figs.produces.lostPerSec),
@@ -572,8 +595,99 @@ export function OverlaysPanel(props: { model: Model; ctl: BuildController }) {
       </div>
       {o.flow || o.paths ? (
         <div class="overlay-legend muted" data-field="overlay-legend">
-          {o.paths ? <p data-legend="paths">{t('uiLegendPaths')}</p> : null}
-          {o.flow ? <p data-legend="flow">{t('uiLegendFlow')}</p> : null}
+          {o.paths ? (
+            <ul data-legend="paths">
+              <LegendItem label={t('uiLegendPathRoute')}>
+                <line
+                  x1="2"
+                  y1="8"
+                  x2="26"
+                  y2="8"
+                  stroke="var(--path-line)"
+                  stroke-width="2.5"
+                  stroke-dasharray="5 3.5"
+                  opacity="0.7"
+                />
+              </LegendItem>
+              <LegendItem label={t('uiLegendPathStart')}>
+                <polygon points="8,4 20,4 14,13" fill="var(--path-line)" />
+              </LegendItem>
+              <LegendItem label={t('uiLegendPathDetour')}>
+                <line
+                  x1="14"
+                  y1="14"
+                  x2="14"
+                  y2="3"
+                  stroke="var(--path-line)"
+                  stroke-width="2.5"
+                  stroke-dasharray="5 3.5"
+                  opacity="0.7"
+                />
+              </LegendItem>
+              <LegendItem label={t('uiLegendPathTarget')}>
+                <circle
+                  cx="14"
+                  cy="8"
+                  r="6"
+                  fill="none"
+                  stroke="var(--path-line)"
+                  stroke-width="2"
+                />
+                <path
+                  d="M11 5 L17 11 M17 5 L11 11"
+                  stroke="var(--path-line)"
+                  stroke-width="2"
+                />
+              </LegendItem>
+            </ul>
+          ) : null}
+          {o.flow ? (
+            <ul data-legend="flow">
+              <LegendItem label={t('uiLegendFlowMoving')}>
+                <g fill="var(--accent)" stroke="var(--ink)" stroke-width="1">
+                  <circle cx="5" cy="8" r="2.2" />
+                  <circle cx="14" cy="8" r="2.2" />
+                  <circle cx="23" cy="8" r="2.2" />
+                </g>
+              </LegendItem>
+              <LegendItem label={t('uiLegendFlowNone')}>
+                <line
+                  x1="2"
+                  y1="8"
+                  x2="26"
+                  y2="8"
+                  stroke="var(--bad)"
+                  stroke-width="2"
+                  stroke-dasharray="4 4"
+                  stroke-linecap="round"
+                />
+              </LegendItem>
+              <LegendItem label={t('uiLegendFlowStarved')}>
+                <rect
+                  x="4"
+                  y="2.5"
+                  width="20"
+                  height="11"
+                  fill="none"
+                  stroke="var(--bad)"
+                  stroke-width="2"
+                  stroke-dasharray="5 3"
+                />
+              </LegendItem>
+              <LegendItem label={t('uiLegendFlowLow')}>
+                <text
+                  x="14"
+                  y="12"
+                  text-anchor="middle"
+                  font-size="9"
+                  font-weight="700"
+                  fill="var(--warn)"
+                >
+                  LOW
+                </text>
+              </LegendItem>
+            </ul>
+          ) : null}
         </div>
       ) : null}
       <details class="overlay-advanced">

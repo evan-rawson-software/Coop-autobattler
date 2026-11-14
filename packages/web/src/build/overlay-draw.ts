@@ -249,6 +249,11 @@ export function drawBuildOverlay(
     ctx.strokeStyle = col.path;
     ctx.globalAlpha = 0.5;
     ctx.lineJoin = 'round';
+    // A stretch several routes share is drawn once, so overlapping dashes
+    // never read as a solid line: an edge or stub already drawn is skipped.
+    const seenEdges = new Set<string>();
+    const seenStubs = new Set<string>();
+    const key = (c: Cell): string => `${String(c.x)},${String(c.y)}`;
     for (const p of d.paths) {
       // One sub-path per run of adjacent cells: after an off-board detour
       // (`approach`) the next cell is not adjacent and no line crosses it.
@@ -256,14 +261,28 @@ export function drawBuildOverlay(
       for (const run of pathSegments(p.cells)) {
         run.forEach((c, i) => {
           const q = centre(c);
-          if (i === 0) ctx.moveTo(q.x, q.y);
-          else ctx.lineTo(q.x, q.y);
+          const prev = run[i - 1];
+          if (prev === undefined) {
+            ctx.moveTo(q.x, q.y);
+            return;
+          }
+          const a = key(prev);
+          const b = key(c);
+          const edge = a < b ? `${a}|${b}` : `${b}|${a}`;
+          if (seenEdges.has(edge)) {
+            ctx.moveTo(q.x, q.y);
+            return;
+          }
+          seenEdges.add(edge);
+          ctx.lineTo(q.x, q.y);
         });
       }
       // The detour itself: a short stub just outside the front edge at every
       // exit and re-entry, including a final exit when the walk ends off the
       // board.
       for (const stub of pathStubs(p.cells, p.approach)) {
+        if (seenStubs.has(key(stub.cell))) continue;
+        seenStubs.add(key(stub.cell));
         const a = centre(stub.cell);
         const b = centre({ x: stub.cell.x, y: stub.cell.y + 1 });
         ctx.moveTo(a.x, a.y);

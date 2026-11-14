@@ -295,6 +295,11 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['statusUndone', {}, 'Undone.'],
 
   ['collects', { rate: '@rate' }, 'Collects @rate/s'],
+  [
+    'collectsResource',
+    { resource: '@res', rate: '@rate' },
+    'Collects @res @rate/s',
+  ],
   ['coreLabel', { name: '@name' }, "@name's Core"],
   ['inspectorSupplied', { gets: '@gets' }, ' · supplied'],
   ['inspectorUnderSupplied', { gets: '@gets' }, ' · gets @gets/s'],
@@ -359,16 +364,14 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['unitsWord', {}, 'units'],
 
   ['uiInspectorMinesLost', { rate: '0.5' }, ' · 0.5/s lost (no conduit)'],
-  [
-    'uiLegendFlow',
-    {},
-    'Moving dots: resources travelling along a conduit. Red dashed conduit: nothing flows through it. Red outline: a building that gets nothing. LOW: it gets less than it needs. Numbers on buildings (zoom in to see them): items per second.',
-  ],
-  [
-    'uiLegendPaths',
-    {},
-    'Dashed line: the way enemy soldiers walk from the front edge to your Core (where several routes share a stretch, the dashes overlap and look solid). Triangle: where a route starts at the front edge. A short stub at the front edge: the route steps off the board to get around a wall. Ring and cross: the building the soldiers would attack when the way is sealed.',
-  ],
+  ['uiLegendFlowLow', {}, 'Gets too little'],
+  ['uiLegendFlowMoving', {}, 'Resource moving'],
+  ['uiLegendFlowNone', {}, 'Nothing flows'],
+  ['uiLegendFlowStarved', {}, 'Gets nothing'],
+  ['uiLegendPathDetour', {}, 'Detour round wall'],
+  ['uiLegendPathRoute', {}, 'Enemy route'],
+  ['uiLegendPathStart', {}, 'Route start'],
+  ['uiLegendPathTarget', {}, 'Attacked if sealed'],
   ['phaseBuild', {}, 'the build'],
   ['phaseCorePlacement', {}, 'the Core placement'],
   ['phaseEventChoice', {}, 'the event choice'],

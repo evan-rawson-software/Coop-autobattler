@@ -39,7 +39,7 @@
     },
     "bld_turret": {
       "name": "Turret",
-      "description": "Needs {res_b} to fire at enemy units on your side."
+      "description": "Uses {res_b} to shoot enemies that reach your board."
     },
     "bld_overclocker": {
       "name": "Overclocker",
@@ -140,16 +140,15 @@
   },
   "templates": {
     "effects": {
-      "source": "Mines its node",
       "splitter": "Splits one flow into {outs} outputs",
       "merger": "Merges {ins} inputs into one flow",
       "crossover": "Lets two flows cross without mixing",
       "unit_producer": "Trains 1 {unit} per {cost} {resource}",
       "wall": "Blocks movement",
       "gate": "Blocks enemies, lets your units pass",
-      "turret": "Fires {damage} damage up to {range} cells every {seconds} s, using {cost} {resource} per shot",
-      "source_speed": "+{step}% source speed per {cost} {resource} supplied, up to +{max}%",
-      "unit_strength": "+{step}% unit strength per {cost} {resource} supplied, up to +{max}%",
+      "turret": "Fires {damage} damage up to {range} cells every {seconds} s",
+      "source_speed": "+{step}% source speed up to +{max}%",
+      "unit_strength": "+{step}% unit strength up to +{max}%",
       "core": "Your party’s health"
     },
     "kinds": {
@@ -188,6 +187,7 @@
       "battleTimeLargerShare": "Time ran out: more {core} health left wins.",
       "battleTimeMoreCores": "Time ran out: more {core}s standing wins ({own} vs {foe}).",
       "collects": "Collects {rate}/s",
+      "collectsResource": "Collects {resource} {rate}/s",
       "coreLabel": "{name}'s Core",
       "eventChosenDone": "has chosen",
       "eventChosenPending": "choosing…",
@@ -421,8 +421,14 @@
       "uiLblErase": "Erase",
       "uiLblHealth": "Health",
       "uiLblLength": "Length",
-      "uiLegendFlow": "Moving dots: resources travelling along a conduit. Red dashed conduit: nothing flows through it. Red outline: a building that gets nothing. LOW: it gets less than it needs. Numbers on buildings (zoom in to see them): items per second.",
-      "uiLegendPaths": "Dashed line: the way enemy soldiers walk from the front edge to your Core (where several routes share a stretch, the dashes overlap and look solid). Triangle: where a route starts at the front edge. A short stub at the front edge: the route steps off the board to get around a wall. Ring and cross: the building the soldiers would attack when the way is sealed.",
+      "uiLegendFlowLow": "Gets too little",
+      "uiLegendFlowMoving": "Resource moving",
+      "uiLegendFlowNone": "Nothing flows",
+      "uiLegendFlowStarved": "Gets nothing",
+      "uiLegendPathDetour": "Detour round wall",
+      "uiLegendPathRoute": "Enemy route",
+      "uiLegendPathStart": "Route start",
+      "uiLegendPathTarget": "Attacked if sealed",
       "uiNoProblems": "✓ No problems",
       "uiOverlayDry": "Test run {secs} s",
       "uiOverlayDryTicks": "Test run length (ticks)",

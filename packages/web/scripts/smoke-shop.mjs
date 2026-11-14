@@ -128,10 +128,17 @@ export async function runShopSmoke({
       els.reduce((n, e) => n + Number(e.dataset.copies ?? 1), 0),
     )) === 5 &&
       (await page.locator('#offers .offer').count()) ===
-        (await page
-          .locator('#offers .offer[data-state] [data-field="effect"]')
-          .count()),
-    'five offers (identical ones grouped into one card), each card with a generated effect line',
+        (await page.$$eval(
+          '#offers .offer[data-state]',
+          // A source's card has no effect line: its Collects line is its effect.
+          (els) =>
+            els.filter(
+              (e) =>
+                e.querySelector('[data-field="effect"]') ||
+                e.querySelector('[data-field="rate"]'),
+            ).length,
+        )),
+    'five offers (identical ones grouped into one card), each card with a generated effect or Collects line',
   );
   const cardText = await page.locator('#offers .offer').first().innerText();
   check(
