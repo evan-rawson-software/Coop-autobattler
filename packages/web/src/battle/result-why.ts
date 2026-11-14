@@ -252,16 +252,17 @@ export function explainResult(
 }
 
 /**
- * The life outcome chip next to Victory/Defeat: "No life lost" for a
- * stronghold and for any win, and the life cost of a lost rival party battle,
+ * The life outcome chip next to Defeat: "No life lost" for a lost stronghold,
+ * nothing on a win, and the life cost of a lost rival party battle,
  * read from the first part of the reward line ("-1 life · +1 gold").
  */
 export function lifeChip(
   rivalParty: boolean,
   won: boolean,
   rewardText: string,
-): { readonly text: string; readonly lost: boolean } {
-  if (won || !rivalParty) return { text: t('battleLifeNone'), lost: false };
+): { readonly text: string; readonly lost: boolean } | null {
+  if (won) return null;
+  if (!rivalParty) return { text: t('battleLifeNone'), lost: false };
   const first = rewardText.split(' · ')[0] ?? '';
   return /life|lives/.test(first)
     ? { text: first, lost: true }

@@ -110,12 +110,13 @@ describe('explainResult', () => {
 });
 
 describe('lifeChip', () => {
-  test('a stronghold and any win cost no life', () => {
+  test('a lost stronghold costs no life; a win shows no chip', () => {
     expect(lifeChip(false, false, 'No reward')).toEqual({
       text: 'No life lost',
       lost: false,
     });
-    expect(lifeChip(true, true, '+3 gold').lost).toBe(false);
+    expect(lifeChip(true, true, '+3 gold')).toBeNull();
+    expect(lifeChip(false, true, 'x')).toBeNull();
   });
   test('a lost rival party battle shows its life cost', () => {
     expect(lifeChip(true, false, '−1 life · +1 gold')).toEqual({

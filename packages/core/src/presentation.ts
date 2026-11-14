@@ -548,6 +548,7 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   battlePanelBreachesWon: [],
   battlePanelBreaches: [],
   battleNoBreach: [],
+  battleCoreLost: ['core'],
   battleNoBuildings: [],
   battlePanelBuildings: [],
   battleColBuilding: [],
