@@ -30,7 +30,7 @@ import {
   isRepeatClick,
   visibleProblem,
   type StoredProblem,
-  kitRows,
+  kitSlots,
   coreCells,
   legalSet,
   routesFor,
@@ -207,9 +207,7 @@ export function CoreScreen(props: { run: RunHandle }) {
     });
   };
 
-  const solo = view.run.players.length === 1;
-  const readyWho = solo ? 'you press Ready' : 'everyone presses Ready';
-  const kit = kitRows(economy, content);
+  const kit = kitSlots(economy, content);
   const routeCount = paths?.length ?? 0;
 
   const primary = isReady
@@ -229,7 +227,14 @@ export function CoreScreen(props: { run: RunHandle }) {
       }
     : {
         id: 'core-confirm',
-        label: screenText(screenTexts, 'uiPrimaryPlaceCore'),
+        label: (
+          <>
+            {screenText(screenTexts, 'uiPrimaryPlaceCore')}
+            <span class="primary-sub">
+              {screenText(screenTexts, 'uiPrimaryPlaceCoreSub')}
+            </span>
+          </>
+        ),
         disabled: selected === null || busy,
         onPress: () => {
           setReady(true);
@@ -243,31 +248,65 @@ export function CoreScreen(props: { run: RunHandle }) {
       rail={{ camera }}
       primary={primary}
       tray={
-        <div class="tray-kit">
-          <span class="tray-label">
-            {screenText(screenTexts, 'uiTrayKitLabel')}
-          </span>
-          <ul class="kit-list" id="starting-kit">
+        <div class="tray-kit" id="starting-kit">
+          <div class="tray-kit-head">
+            <span class="tray-label">
+              {screenText(screenTexts, 'uiTrayKitLabel')}
+            </span>
+            <span class="tray-kit-sub">
+              {screenText(screenTexts, 'uiTrayKitPlace')}
+            </span>
+          </div>
+          <ul class="tray-slots kit-slots">
             {kit.map((k) => (
-              <li key={k.key}>{k.text}</li>
+              <li key={k.key}>
+                <div
+                  class="slot kit-slot"
+                  data-kit-def={k.def ?? 'random-wall'}
+                  title={
+                    k.def === null
+                      ? screenText(screenTexts, 'uiKitRandomWallTip')
+                      : undefined
+                  }
+                >
+                  <span
+                    class="swatch"
+                    style={{
+                      background: `var(--kind-${(content.buildings.get(k.def ?? 'bld_wall_o')?.kind ?? 'core').replace('_', '-')})`,
+                    }}
+                  >
+                    {k.def === null ? (
+                      <span aria-hidden="true">?</span>
+                    ) : (
+                      <SpriteIcon name={k.def} size={32} />
+                    )}
+                  </span>
+                  <span class="slot-name">
+                    {k.name ?? screenText(screenTexts, 'uiKitRandomWall')}
+                  </span>
+                  <span class="slot-meta">
+                    T{k.tier} × {k.count}
+                  </span>
+                </div>
+              </li>
             ))}
           </ul>
         </div>
       }
       info={
-        <Panel title="The Core" id="panel-core">
-          <p>It can't be moved after {readyWho}.</p>
-          <ul class="legend-list" aria-label="Map key">
-            <li>
-              <span class="swatch ok" aria-hidden="true" /> Fits
-            </li>
-            <li>
-              <span class="swatch bad" aria-hidden="true" /> Doesn't fit
-            </li>
-            <li>
-              <span class="swatch path" aria-hidden="true" /> Enemy routes
-            </li>
-          </ul>
+        <Panel
+          title={screenText(screenTexts, 'coreTitle')}
+          id="panel-core"
+          class="core-panel"
+        >
+          <p>{screenText(screenTexts, 'coreAbout')}</p>
+          <p>
+            {screenText(screenTexts, 'coreClickPre')}
+            <strong class="green-word">
+              {screenText(screenTexts, 'coreClickGreen')}
+            </strong>
+            {screenText(screenTexts, 'coreClickPost')}
+          </p>
           {previewPos === null ? null : (
             <p class="muted" data-field="route-count">
               {routeCount === 0
@@ -275,6 +314,16 @@ export function CoreScreen(props: { run: RunHandle }) {
                 : `Enemies have ${count(routeCount, 'way')} to reach this spot. Walls can block ${routeCount === 1 ? 'it' : 'some'}.`}
             </p>
           )}
+          <div class="core-next" data-field="core-next">
+            <h3 class="core-next-label">
+              {screenText(screenTexts, 'coreNextLabel')}
+            </h3>
+            <p>
+              {screenText(screenTexts, 'coreNextPre')}
+              <strong>{screenText(screenTexts, 'coreNextBuild')}</strong>
+              {screenText(screenTexts, 'coreNextPost')}
+            </p>
+          </div>
         </Panel>
       }
       board={
@@ -306,7 +355,7 @@ export function CoreScreen(props: { run: RunHandle }) {
             own={team}
             controller={camera}
             resetKey={`${view.run.runId}:core`}
-            frontLabel="FRONT EDGE"
+            frontLabel={screenText(screenTexts, 'coreFrontLabel')}
             cursor="crosshair"
             controls={false}
             drawOverlay={drawOverlay.current}

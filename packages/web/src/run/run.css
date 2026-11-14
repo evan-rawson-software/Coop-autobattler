@@ -75,41 +75,6 @@
   inset: 0;
 }
 
-.legend-list {
-  list-style: none;
-  margin: 0.5rem 0;
-  padding: 0;
-  display: grid;
-  gap: 0.3rem;
-  font-size: 0.85rem;
-}
-
-.legend-list li {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.45rem;
-}
-
-.legend-list .swatch {
-  flex: none;
-  margin-top: 0.1rem;
-}
-
-.swatch.ok {
-  background: color-mix(in srgb, var(--ok) 35%, transparent);
-  border-color: var(--ok);
-}
-
-.swatch.bad {
-  background: color-mix(in srgb, var(--bad) 22%, transparent);
-  border-color: var(--bad);
-}
-
-.swatch.path {
-  background: transparent;
-  border: 2px dashed var(--path-line);
-}
-
 /* One fixed line over the board, so the reason a cell is refused is always
    in the same place and never scrolls out of view. */
 .core-hint {
@@ -131,22 +96,6 @@
 
 .core-hint.bad {
   border-color: var(--bad);
-}
-
-.kit-list {
-  list-style: none;
-  margin: 0 0 0.4rem;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.kit-list li {
-  padding: 0.4rem 0.9rem;
-  background: var(--surface-2);
-  border: 2px solid var(--ink);
-  border-radius: 4px;
 }
 
 .sr-only {
@@ -192,7 +141,8 @@
   display: none;
 }
 
-/* Core placement in the frame: the starting kit sits in the action tray. */
+/* Core placement in the frame: the starting kit sits in the action tray as
+   faded slots, the same ones Build shows, not as buttons. */
 .tray-kit {
   display: flex;
   align-items: center;
@@ -200,13 +150,71 @@
   min-width: 0;
 }
 
-.tray-kit .kit-list {
-  margin: 0;
-  gap: 0.35rem;
+.tray-kit-head {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 7rem;
 }
 
-.tray-kit .kit-list li {
-  padding: 0.25rem 0.6rem;
-  border-width: 1px;
-  font-size: 0.85rem;
+.tray-kit-sub {
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.kit-slots {
+  align-items: center;
+}
+
+.kit-slot {
+  opacity: 0.6;
+  cursor: default;
+  pointer-events: none;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  background: var(--surface-2);
+}
+
+.primary-label:has(.primary-sub) {
+  flex-direction: column;
+  gap: 0;
+}
+
+.primary-sub {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+/* The Core panel fills the rail, so "What happens next" sits at its foot. */
+.frame-info > .core-panel {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.core-panel > .panel-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.core-panel .green-word {
+  color: var(--ok);
+}
+
+.core-next {
+  margin-top: auto;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+
+.core-next-label {
+  margin: 0 0 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
 }
