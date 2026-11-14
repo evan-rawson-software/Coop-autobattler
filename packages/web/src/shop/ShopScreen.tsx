@@ -107,9 +107,11 @@ function Card(props: { group: OfferGroup; onBuy: (slot: number) => void }) {
           {o.collects}
         </p>
       )}
-      <p class="offer-effect" data-field="effect">
-        {o.effect}
-      </p>
+      {o.effect === '' ? null : (
+        <p class="offer-effect" data-field="effect">
+          {o.effect}
+        </p>
+      )}
       <p class="offer-health" data-field="health">
         {o.health}
       </p>
@@ -255,6 +257,18 @@ export function ShopTab(props: {
   useNoticeTimeout(view.notice, dismissNotice);
   const [mountId] = useState(() => ++mountCount);
   const [flash, setFlash] = useState<string | null>(null);
+  // Escape cancels an open sale confirmation.
+  const sellOpen = pending !== null;
+  useEffect(() => {
+    if (!sellOpen) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setPending(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [sellOpen]);
   useEffect(() => {
     if (flash === null) return;
     const t = setTimeout(() => {

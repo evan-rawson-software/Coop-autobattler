@@ -30,7 +30,10 @@ describe('effect text', () => {
     for (const def of content.buildings.list()) {
       for (let tier = 1; tier <= def.tiers.length; tier++) {
         const text = effectText(content, simConfig, def, tier);
-        expect(text.trim(), `${def.id} tier ${String(tier)}`).not.toBe('');
+        // A source's card has no effect line: its Collects line says it all.
+        if (def.kind !== 'source') {
+          expect(text.trim(), `${def.id} tier ${String(tier)}`).not.toBe('');
+        }
         expect(text).not.toMatch(/[{}]/);
         expect(text).not.toMatch(/\d+ health/);
         expect(
@@ -49,12 +52,14 @@ describe('effect text', () => {
       const def = content.buildings.get(id);
       if (def === undefined) throw new Error(id);
       expect(content.presentation.get(id)?.name, id).toBeTruthy();
+      if (def.kind === 'source') continue;
       expect(effectText(content, simConfig, def, 1).trim(), id).not.toBe('');
     }
   });
 
   test('every building kind maps to an existing template', () => {
     for (const def of content.buildings.list()) {
+      if (def.kind === 'source') continue;
       expect(
         content.presentation.templates.effects[templateKey(def)],
       ).toBeTypeOf('string');
@@ -104,7 +109,7 @@ describe('effect text', () => {
     const extractor = stats('bld_extractor');
     expect(extractor.uses).toBeNull();
     expect(extractor.collects).toBe('Collects 0.50/s');
-    expect(extractor.effect).toBe('Mines its node');
+    expect(extractor.effect).toBe('');
     expect(stats('bld_wall').uses).toBeNull();
     expect(stats('bld_wall').collects).toBeNull();
     expect(stats('bld_splitter').uses).toBe('Uses: any resource');

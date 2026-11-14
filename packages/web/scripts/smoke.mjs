@@ -1157,7 +1157,7 @@ try {
   await clickCell(BUILD_PLAN.ex1.x, BUILD_PLAN.ex1.y);
   const exInsp = await page.locator('#panel-inspector').innerText();
   check(
-    /Collects [\d.]+\/s/.test(exInsp) && !/Mines/.test(exInsp),
+    /Collects \S+ [\d.]+\/s/.test(exInsp) && !/Mines/.test(exInsp),
     'inspector shows what an extractor collects, once',
   );
   const core = (await B.team()).cores[0];

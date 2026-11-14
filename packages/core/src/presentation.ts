@@ -66,16 +66,15 @@ export interface PresentationConfig {
  * The web fills them from the building's rules numbers.
  */
 export const TEMPLATE_SLOTS: Readonly<Record<string, readonly string[]>> = {
-  source: [],
   splitter: ['outs'],
   merger: ['ins'],
   crossover: [],
   unit_producer: ['unit', 'cost', 'resource'],
   wall: [],
   gate: [],
-  turret: ['damage', 'range', 'seconds', 'cost', 'resource'],
-  source_speed: ['step', 'cost', 'resource', 'max'],
-  unit_strength: ['step', 'cost', 'resource', 'max'],
+  turret: ['damage', 'range', 'seconds'],
+  source_speed: ['step', 'max'],
+  unit_strength: ['step', 'max'],
   core: [],
 };
 
@@ -136,6 +135,7 @@ export const REASON_TEXT_CODES: readonly string[] = [
  */
 export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   collects: ['rate'],
+  collectsResource: ['resource', 'rate'],
   usesRate: ['resource', 'rate'],
   unitsWord: [],
   stepsWord: [],
@@ -353,8 +353,14 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   uiLblErase: [],
   uiLblHealth: [],
   uiLblLength: [],
-  uiLegendFlow: [],
-  uiLegendPaths: [],
+  uiLegendFlowLow: [],
+  uiLegendFlowMoving: [],
+  uiLegendFlowNone: [],
+  uiLegendFlowStarved: [],
+  uiLegendPathDetour: [],
+  uiLegendPathRoute: [],
+  uiLegendPathStart: [],
+  uiLegendPathTarget: [],
   uiNoProblems: [],
   uiOverlayDry: ['secs'],
   uiOverlayDryTicks: [],
