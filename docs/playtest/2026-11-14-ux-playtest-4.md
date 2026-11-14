@@ -116,6 +116,38 @@ session, focused on build-phase interactions (conduits, moving, overlays, undo),
     the run is "1 player · round 6" under Records. There's no link back to that run's
     round-by-round summary, and no history of earlier runs.
 
+## Additional requested changes (from the project owner)
+
+### Build screen
+29. **Hide the ready status in solo games.** The Party panel shows "ready: no" and
+    "Next: Stronghold · 0 of 1 ready" even when playing alone. Only show the ready state and the
+    "N of M ready" count when the party has more than one player.
+
+### Shop screen
+30. **Hide "Needs: nothing".** When a building consumes nothing (Wall, Gate, Extractor…), leave
+    out the "Needs:" line entirely.
+31. **Say "Uses", not "Needs".** Replace "Needs: Ore" / "Needs: Flux" etc. with "Uses: Ore" /
+    "Uses: Flux".
+32. **Put building health on its own line.** Health is currently tacked onto the end of the effect
+    line ("… · 60 health"). Show it as a separate line.
+33. **Remove the duplicate rate descriptions, for every building.** The Extractor shows its output
+    twice: "Collects 0.50/s" and "Mines its node: 1 every 2 s". Remove the "Mines its node…" part,
+    and apply the same rule to every building: show each rate once. For a building that
+    consumes a resource, just say "Uses <resource> <rate>" (e.g. "Uses Ore 0.50/s"). Drop
+    "at top speed"; it's implied.
+34. **Remove the red "Need N more gold." text.** A disabled "Buy · 20 gold" button next to the
+    gold total is enough for the player to work it out.
+35. **Remove "Opponent: a recorded rival party" from Next battle.** The panel heading already
+    says "Rival party · round N", so the line repeats it.
+36. **Remove drag-to-sell.** Selling has two ways: the Sell button on each stash row and the
+    "Drag a building here from the stash to sell" drop zone. Keep the Sell button and remove the
+    drop zone.
+
+### Battle screen
+37. **Remove the walls text under the Core health.** Drop the "No walls" message and the
+    "Walls: N / N standing" count, on both the player's side and the opponent's (Stronghold /
+    Enemy) panel. The player can see walls on the board.
+
 ## Not covered
 Multiplayer and phone-sized screens (out of scope by request). Placing purchased route buildings
 (Splitter/Merger) and multi-conduit networks were only partly tried.
