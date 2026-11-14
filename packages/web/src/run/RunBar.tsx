@@ -52,15 +52,17 @@ export function RunBar(props: {
       {props.storage === undefined ? null : (
         <NotSavedNote run={{ storage: props.storage }} />
       )}
-      <button
-        type="button"
-        id="menu-button"
-        onClick={() => {
-          navigate('#/');
-        }}
-      >
-        Menu
-      </button>
+      {state.step === 'run_over' ? null : (
+        <button
+          type="button"
+          id="menu-button"
+          onClick={() => {
+            navigate('#/');
+          }}
+        >
+          Menu
+        </button>
+      )}
     </span>
   );
 }
