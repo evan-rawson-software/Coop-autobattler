@@ -116,6 +116,8 @@ export interface DraftView {
 export interface Status {
   readonly text: string;
   readonly kind: 'info' | 'ok' | 'error';
+  /** The step this message is about: it is dropped when the step changes. */
+  readonly step?: string;
 }
 
 export interface Overlays {
@@ -198,6 +200,27 @@ function many(
 
 function tx(key: string, values: Record<string, string> = {}): string {
   return screenText(screenTexts, key, values);
+}
+
+/** The words for a step ("the stronghold choice"), from the content. */
+function phaseText(step: string): string {
+  const key = `phase${step
+    .split('_')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join('')}`;
+  return tx(key);
+}
+
+/** Test run length limits (ticks): the number input's min, step and max. */
+export const DRY_TICKS_MIN = 50;
+export const DRY_TICKS_STEP = 50;
+export const DRY_TICKS_MAX = 10000;
+
+/** `ticks` rounded to the step and kept within the limits; `fallback` for NaN. */
+export function clampDryTicks(ticks: number, fallback: number): number {
+  if (!Number.isFinite(ticks)) return fallback;
+  const stepped = Math.round(ticks / DRY_TICKS_STEP) * DRY_TICKS_STEP;
+  return Math.min(DRY_TICKS_MAX, Math.max(DRY_TICKS_MIN, stepped));
 }
 
 /** "Undo refused: <why> History unchanged." (or "cleared"). */
@@ -674,14 +697,26 @@ export class BuildController {
     });
   }
 
+  /** Drops a message that was about another step than `step`. */
+  clearStaleStatus(step: string): void {
+    const st = this.ui.status;
+    if (st.step === undefined || st.step === step) return;
+    this.set({
+      status: {
+        text: isEditStep(step) ? tx('statusReadyToBuild') : '',
+        kind: 'info',
+      },
+    });
+  }
+
   setOverlay(key: keyof Overlays, on: boolean): void {
     this.set({ overlays: { ...this.ui.overlays, [key]: on } });
   }
 
+  /** Sets the test run length, clamped to the input's limits. */
   setDryTicks(ticks: number): void {
-    if (Number.isInteger(ticks) && ticks >= 0 && ticks <= 100000) {
-      this.set({ dryTicks: ticks });
-    }
+    const next = clampDryTicks(ticks, this.ui.dryTicks);
+    if (next !== this.ui.dryTicks) this.set({ dryTicks: next });
   }
 
   select(selection: Selection): void {
@@ -948,11 +983,9 @@ export class BuildController {
         moving: null,
         draft: null,
         status: {
-          text: tx('statusEveryoneReady', {
-            before,
-            after: s.run.step,
-          }),
+          text: tx('statusEveryoneReady', { after: phaseText(s.run.step) }),
           kind: 'ok',
+          step: s.run.step,
         },
       });
     } else {
@@ -1401,7 +1434,11 @@ export class BuildController {
     if (e.ctrlKey || e.metaKey) return false;
     if (!isEditStep(this.step())) return false;
     // A Ready player's edit tools are disabled; the keys must not reach them.
-    if (this.isReady() && (k === 'r' || k === 'c' || k === 'e')) {
+    const removing =
+      (k === 'backspace' || k === 'delete') &&
+      this.ui.draft === null &&
+      this.ui.selection?.kind === 'building';
+    if (this.isReady() && (k === 'r' || k === 'c' || k === 'e' || removing)) {
       this.say(READY_LOCK_TEXT, 'info');
       return true;
     }
@@ -1413,8 +1450,14 @@ export class BuildController {
         this.cancel();
         return true;
       case 'backspace':
+      case 'delete':
         if (this.ui.draft !== null) {
+          if (k === 'delete') return false;
           this.draftBack();
+          return true;
+        }
+        if (this.ui.selection?.kind === 'building') {
+          void this.returnSelected();
           return true;
         }
         return false;

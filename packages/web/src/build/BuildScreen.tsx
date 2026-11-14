@@ -117,6 +117,11 @@ export function BuildView(props: {
     }
   }, [shared?.session]);
 
+  // A message about a step does not outlive it.
+  useEffect(() => {
+    ctl.clearStaleStatus(step);
+  }, [step, ui.status.step]);
+
   // Camera focus for the problems list.
   useEffect(() => {
     ctl.focusCell = (c: Cell) => {
@@ -353,6 +358,7 @@ export function BuildView(props: {
 
   const onPick = (p: Problem): void => {
     if (p.building !== null) ctl.select({ kind: 'building', id: p.building });
+    if (p.pick !== undefined && gate?.ready !== true) ctl.pickFromStash(p.pick);
     if (p.focus !== null) ctl.focusCell(p.focus);
   };
 

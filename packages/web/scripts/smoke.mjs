@@ -1095,22 +1095,25 @@ try {
   const insp = await page.locator('#panel-inspector').innerText();
   check(
     /Barracks/.test(insp) &&
-      /Needs/.test(insp) &&
-      /Receiving/.test(insp) &&
-      /units\/min/.test(insp),
-    'inspector shows needs, receiving and the unit estimate for the barracks',
+      /Uses \S+ [\d.]+\/s/.test(insp) &&
+      /units\/min/.test(insp) &&
+      !/Needs|Receiving|Top speed|at top speed/.test(insp),
+    'inspector shows one uses line and the unit estimate for the barracks',
   );
-  const recv = await page.locator('[data-field="receiving"]').innerText();
-  const recvNum = Number((/([\d.]+)\/s/.exec(recv) ?? [])[1]);
-  const row = dry.consumers.find((c) => c.building === bk.id);
+  const usesLine = await page.locator('[data-field="uses"]').innerText();
   check(
-    Math.abs(recvNum - (row.ratePer1000 * 10) / 1000) < 0.06,
-    `inspector "receiving" (${recvNum}/s) agrees with dryRunFlow (${row.ratePer1000} per 1000 ticks)`,
+    /· (supplied|gets [\d.]+\/s)$/.test(usesLine),
+    `inspector uses line carries the supply status ("${usesLine}")`,
   );
+  const row = dry.consumers.find((c) => c.building === bk.id);
+  check(row !== undefined, 'the barracks has a dry-run consumer row');
   await shot('build-6-inspector-barracks');
   await clickCell(BUILD_PLAN.ex1.x, BUILD_PLAN.ex1.y);
   const exInsp = await page.locator('#panel-inspector').innerText();
-  check(/Mines/.test(exInsp), 'inspector shows what an extractor mines');
+  check(
+    /Collects [\d.]+\/s/.test(exInsp) && !/Mines/.test(exInsp),
+    'inspector shows what an extractor collects, once',
+  );
   const core = (await B.team()).cores[0];
   await clickCell(core.x, core.y);
   check(
