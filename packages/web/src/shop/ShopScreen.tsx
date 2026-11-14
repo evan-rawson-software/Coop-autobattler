@@ -7,7 +7,13 @@
  * Every change is an intent through the shared session, saved before the
  * screen updates. Buying, selling and re-rolling are never undoable.
  */
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'preact/hooks';
 import { useStore } from '../app-state.js';
 import { BoardView } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
@@ -20,6 +26,7 @@ import type { RunHandle } from '../run/handle.js';
 import { ensureShopRun, optionsFromUrl } from '../run/shop-run.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import { ActingSwitch } from '../shell/ActingSwitch.js';
+import { useNoticeTimeout, useStatus } from '../shell/status.js';
 import './shop.css';
 import { screenText, screenTexts } from '../build/texts.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
@@ -31,7 +38,7 @@ import {
   readyLabel,
   saleQuote,
   type NextBattleView,
-  type OfferCard,
+  type OfferGroup,
   type ShopView,
   type StashRow,
 } from './view-model.js';
@@ -55,20 +62,11 @@ export function ShopScreen() {
   return <RunGate>{(run) => <ShopTab run={run} standalone />}</RunGate>;
 }
 
-/** True when two offers are the same building at the same tier. */
-function duplicateOffers(sv: ShopView): boolean {
-  const seen = new Set<string>();
-  for (const c of sv.offers) {
-    if (c.offer === null) continue;
-    const key = `${c.offer.def}:${String(c.offer.tier)}`;
-    if (seen.has(key)) return true;
-    seen.add(key);
-  }
-  return false;
-}
-
-function Card(props: { card: OfferCard; onBuy: (slot: number) => void }) {
-  const { card, onBuy } = props;
+function Card(props: { group: OfferGroup; onBuy: (slot: number) => void }) {
+  const { group, onBuy } = props;
+  const { card } = group;
+  // Buying takes the first copy that is still on sale.
+  const slot = group.slots[0] ?? card.slot;
   const o = card.offer;
   if (o === null) {
     return (
@@ -82,6 +80,7 @@ function Card(props: { card: OfferCard; onBuy: (slot: number) => void }) {
       class={card.canBuy ? 'offer' : 'offer unaffordable'}
       data-slot={card.slot}
       data-def={o.def}
+      data-copies={group.copies}
       data-state={card.canBuy ? 'available' : 'locked'}
     >
       <div
@@ -90,23 +89,16 @@ function Card(props: { card: OfferCard; onBuy: (slot: number) => void }) {
         aria-hidden="true"
       >
         <SpriteIcon name={o.def} fit />
-        {card.canBuy ? null : (
-          <SpriteIcon
-            name="ui_icon_lock"
-            scale={1}
-            class="offer-lock"
-            title={
-              card.reason === null
-                ? 'Cannot be bought right now'
-                : `Cannot be bought right now: ${card.reason}`
-            }
-          />
-        )}
       </div>
       <h3 class="offer-name">{o.name}</h3>
       <p class="offer-kind">
         {o.kindLabel} · tier {o.tier}
       </p>
+      {group.copies > 1 ? (
+        <p class="offer-copies" data-field="copies" data-copies={group.copies}>
+          ×{group.copies} available
+        </p>
+      ) : null}
       <p class="offer-needs">
         {screenText(screenTexts, 'uiShopNeeds', { needs: o.needs })}
       </p>
@@ -126,7 +118,7 @@ function Card(props: { card: OfferCard; onBuy: (slot: number) => void }) {
           disabled={!card.canBuy}
           aria-describedby={`why-${String(card.slot)}`}
           onClick={() => {
-            onBuy(card.slot);
+            onBuy(slot);
           }}
         >
           Buy · {o.price} gold
@@ -228,6 +220,11 @@ function NextBattle(props: { view: NextBattleView | null }) {
       <h3 class="next-title" data-field="next-kind">
         {v.title} · round {v.round}
       </h3>
+      {v.boss ? (
+        <p class="boss-note" data-field="boss-note">
+          {v.bossNote}
+        </p>
+      ) : null}
       <p>{p.opponent}</p>
       <p class="stakes">
         <span>
@@ -256,13 +253,11 @@ export function ShopTab(props: {
   );
   const next = useMemo(() => nextBattleView(run, deps), [run, deps]);
   const [pending, setPending] = useState<StashRow | null>(null);
-  const [status, setStatus] = useState<{
-    text: string;
-    kind: 'info' | 'ok' | 'error';
-  }>({
-    text: '',
-    kind: 'info',
-  });
+  const [status, say, clearStatus] = useStatus();
+  const dismissNotice = useCallback(() => {
+    session.dismissNotice();
+  }, [session]);
+  useNoticeTimeout(view.notice, dismissNotice);
   const [mountId] = useState(() => ++mountCount);
   const dragged = useRef<StashRow | null>(null);
 
@@ -318,8 +313,11 @@ export function ShopTab(props: {
   ): Promise<boolean> => {
     // No guard against a second action in flight: the controller queues them
     // in order and a rejected one reports its own reason.
+    // The next action clears what the last one said (and the Workshop note).
+    clearStatus();
+    if (view.notice !== null) session.dismissNotice();
     const r = await performAction(session, intent, okText);
-    setStatus({ text: r.text, kind: r.kind });
+    say(r.text, r.kind);
     return r.ok;
   };
 
@@ -409,14 +407,9 @@ export function ShopTab(props: {
       <div class="shop" id="shop-screen">
         <section class="shop-offers panel" aria-label="Your offers">
           <h2 class="panel-title">Your offers</h2>
-          {duplicateOffers(sv) ? (
-            <p class="muted offers-note" data-field="offers-note">
-              The same building can be offered more than once.
-            </p>
-          ) : null}
           <ul class="offers" id="offers">
-            {sv.offers.map((c) => (
-              <Card key={c.slot} card={c} onBuy={onBuy} />
+            {sv.groups.map((g) => (
+              <Card key={g.card.slot} group={g} onBuy={onBuy} />
             ))}
           </ul>
         </section>
@@ -558,16 +551,7 @@ export function ShopTab(props: {
             role="status"
             data-field="notice"
           >
-            <span>{view.notice}</span>{' '}
-            <button
-              type="button"
-              data-action="dismiss-notice"
-              onClick={() => {
-                session.dismissNotice();
-              }}
-            >
-              Dismiss
-            </button>
+            <span>{view.notice}</span>
           </div>
         )}
         <div

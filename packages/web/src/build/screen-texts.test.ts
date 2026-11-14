@@ -589,6 +589,17 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ],
   ['battleRampSteps', { count: '@count' }, '▲ ramp steps taken: @count'],
   ['battlePanelSummaryChart', {}, 'Army strength over time'],
+  [
+    'battleSummaryDoubleFallWin',
+    { core: '@core', time: '@time' },
+    'Draw: both @cores fell at @time. You win the tiebreak.',
+  ],
+  [
+    'battleSummaryDoubleFallLoss',
+    { core: '@core', time: '@time' },
+    'Draw: both @cores fell at @time. They win the tiebreak.',
+  ],
+  ['battlePanelBreachesWon', {}, 'Where they got through'],
   ['battlePanelBreaches', {}, 'Where you were breached'],
   ['battleNoBreach', {}, 'Nothing of yours was destroyed.'],
   ['battlePanelBuildings', {}, 'Your buildings'],

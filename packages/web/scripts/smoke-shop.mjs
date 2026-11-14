@@ -124,11 +124,14 @@ export async function runShopSmoke({
     `next battle (PvP): opponent unknown and the stakes are stated ("${pvpText.replace(/\s+/g, ' ').slice(0, 120)}")`,
   );
   check(
-    (await page.locator('#offers .offer').count()) === 5 &&
-      (await page
-        .locator('#offers .offer[data-state] [data-field="effect"]')
-        .count()) === 5,
-    'five offer cards, each with a generated effect line',
+    (await page.$$eval('#offers .offer', (els) =>
+      els.reduce((n, e) => n + Number(e.dataset.copies ?? 1), 0),
+    )) === 5 &&
+      (await page.locator('#offers .offer').count()) ===
+        (await page
+          .locator('#offers .offer[data-state] [data-field="effect"]')
+          .count()),
+    'five offers (identical ones grouped into one card), each card with a generated effect line',
   );
   const cardText = await page.locator('#offers .offer').first().innerText();
   check(
@@ -164,8 +167,10 @@ export async function runShopSmoke({
   let slot = -1;
   s0.offers.forEach((def, i) => {
     const price = s0.offerPrices[i];
+    // Prefer an offer that is not duplicated: a grouped card stays after a buy.
     if (
       def !== null &&
+      s0.offers.filter((d) => d === def).length === 1 &&
       price <= g0 &&
       (slot < 0 || price < s0.offerPrices[slot])
     )
