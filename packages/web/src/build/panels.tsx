@@ -23,11 +23,13 @@ import {
   type Tool,
 } from './build-controller.js';
 import { halfStatuses, linkText } from './border-links.js';
+import type { CheckState, Checklist } from './checklist.js';
+import type { NextFight } from './next-fight.js';
 import { halfFlow } from './overlay-marks.js';
 import { buildingRate, formatHundredths } from './rates.js';
 import { cardStats } from './card-stats.js';
 import { playerName, screenText, screenTexts } from './texts.js';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect } from 'preact/hooks';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { simConfig } from './setup.js';
@@ -38,11 +40,6 @@ import {
   type FlowView,
   type Problem,
 } from './view-model.js';
-
-function humanize(id: string): string {
-  const s = id.replace(/_/g, ' ');
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
 
 const t = (key: string, values: Record<string, string> = {}): string =>
   screenText(screenTexts, key, values);
@@ -94,99 +91,118 @@ export function groupStash(team: TeamState, player: number): StashGroup[] {
   );
 }
 
-export function StashTray(props: {
+/** How many slots the tray row shows at least: the rest are dashed, empty. */
+const MIN_SLOTS = 6;
+
+/** The inventory: one slot per building type, 1-9 for the keys. */
+export function InventoryTray(props: {
   team: TeamState;
   model: Model;
   ctl: BuildController;
-  /** The player whose stash this is. */
+  /** The player whose inventory this is. */
   player: number;
   /** The player is Ready: no board changes until Unready. */
   locked?: boolean;
+  /** Stash ids that arrived this round: they get the NEW badge. */
+  fresh?: ReadonlySet<number>;
 }) {
   const { team, model, ctl } = props;
   const locked = props.locked === true;
   const groups = groupStash(team, props.player);
   const held = model.ui.held;
+  const empties = Math.max(1, MIN_SLOTS - groups.length);
   return (
     <div class="tray-stash" id="panel-stash">
-      <span class="tray-label">{t('uiTrayStashLabel')}</span>
-      {groups.length === 0 ? (
-        <p class="tray-empty" data-field="stash-empty">
-          {t('uiTrayNothing')}
-        </p>
-      ) : (
-        <ul class="tray-slots stash-list">
-          {groups.map((g, i) => {
-            const def = content.buildings.get(g.def);
-            const first = g.ids[0] as number;
-            const active = held !== null && g.ids.includes(held.id);
-            const name = buildingName(content, g.def);
-            return (
-              <li key={`${g.def}:${String(g.tier)}`}>
-                <button
-                  type="button"
-                  class={active ? 'slot stash-item active' : 'slot stash-item'}
-                  data-stash-def={g.def}
-                  data-stash-tier={g.tier}
-                  aria-pressed={active}
-                  aria-keyshortcuts={i < 9 ? String(i + 1) : undefined}
-                  disabled={locked}
-                  title={
-                    locked
-                      ? READY_LOCK_TEXT
-                      : content.presentation.get(g.def) === undefined
-                        ? name
-                        : formatText(
-                            content.presentation.get(g.def)?.description ?? '',
-                            content.resources,
-                          )
+      <span class="tray-label">{t('uiTrayInventoryLabel')}</span>
+      <ul class="tray-slots stash-list">
+        {groups.map((g, i) => {
+          const def = content.buildings.get(g.def);
+          const first = g.ids[0] as number;
+          const active = held !== null && g.ids.includes(held.id);
+          const name = buildingName(content, g.def);
+          const isNew = g.ids.some((id) => props.fresh?.has(id) === true);
+          return (
+            <li key={`${g.def}:${String(g.tier)}`}>
+              <button
+                type="button"
+                class={active ? 'slot stash-item active' : 'slot stash-item'}
+                data-stash-def={g.def}
+                data-stash-tier={g.tier}
+                aria-pressed={active}
+                aria-keyshortcuts={i < 9 ? String(i + 1) : undefined}
+                disabled={locked}
+                title={
+                  locked
+                    ? READY_LOCK_TEXT
+                    : content.presentation.get(g.def) === undefined
+                      ? name
+                      : formatText(
+                          content.presentation.get(g.def)?.description ?? '',
+                          content.resources,
+                        )
+                }
+                onPointerDown={(e) => {
+                  if (e.pointerType === 'mouse' && e.button !== 0) return;
+                  (e.currentTarget as HTMLElement).releasePointerCapture(
+                    e.pointerId,
+                  );
+                  ctl.beginDrag(first);
+                }}
+                onPointerUp={() => {
+                  ctl.stickHeld();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    ctl.pickFromStash(first);
                   }
-                  onPointerDown={(e) => {
-                    if (e.pointerType === 'mouse' && e.button !== 0) return;
-                    (e.currentTarget as HTMLElement).releasePointerCapture(
-                      e.pointerId,
-                    );
-                    ctl.beginDrag(first);
-                  }}
-                  onPointerUp={() => {
-                    ctl.stickHeld();
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      ctl.pickFromStash(first);
-                    }
+                }}
+              >
+                {i < 9 ? (
+                  <span class="slot-key" data-field="slot-key">
+                    {i + 1}
+                  </span>
+                ) : null}
+                <span class="slot-count stash-count">
+                  {t('uiSlotCount', { count: String(g.ids.length) })}
+                </span>
+                <span
+                  class="swatch"
+                  style={{
+                    background: `var(--kind-${(def?.kind ?? 'core').replace('_', '-')})`,
                   }}
                 >
-                  {i < 9 ? (
-                    <span class="slot-key" data-field="slot-key">
-                      {i + 1}
-                    </span>
-                  ) : null}
+                  <SpriteIcon name={g.def} size={32} />
+                </span>
+                <span class="slot-name stash-name">{name}</span>
+                {g.tier > 1 ? (
                   <span
-                    class="swatch"
-                    style={{
-                      background: `var(--kind-${(def?.kind ?? 'core').replace('_', '-')})`,
-                    }}
+                    class="slot-meta stash-tier"
+                    title={t('uiTierTip', { tier: String(g.tier) })}
                   >
-                    <SpriteIcon name={g.def} size={32} />
+                    T{g.tier}
                   </span>
-                  <span class="slot-name stash-name">{name}</span>
-                  <span class="slot-meta">
-                    <span
-                      class="stash-tier"
-                      title={t('uiTierTip', { tier: String(g.tier) })}
-                    >
-                      T{g.tier}
-                    </span>{' '}
-                    <span class="stash-count">× {g.ids.length}</span>
+                ) : null}
+                {isNew ? (
+                  <span class="slot-new" data-field="slot-new">
+                    {t('uiSlotNew')}
                   </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                ) : null}
+              </button>
+            </li>
+          );
+        })}
+        {Array.from({ length: empties }, (_, i) => (
+          <li key={`empty:${String(i)}`} class="slot-empty-cell">
+            <span
+              class="slot slot-empty"
+              data-field="slot-empty"
+              title={t('uiSlotEmpty')}
+              aria-hidden="true"
+            />
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -194,6 +210,42 @@ export function StashTray(props: {
 // ---------------------------------------------------------------------------
 // Tools
 
+const ICON_PROPS = {
+  width: 18,
+  height: 18,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  'stroke-width': 2,
+  'stroke-linecap': 'round',
+  'stroke-linejoin': 'round',
+  'aria-hidden': true,
+} as const;
+
+const TOOL_ICONS: Readonly<Record<string, ComponentChildren>> = {
+  select: <path d="M5 3l14 8-6 2-3 6z" />,
+  conduit: (
+    <>
+      <path d="M4 18h6V8h10" />
+      <circle cx="4" cy="18" r="1.5" />
+      <circle cx="20" cy="8" r="1.5" />
+    </>
+  ),
+  undo: (
+    <>
+      <path d="M9 14L4 9l5-5" />
+      <path d="M4 9h10a6 6 0 0 1 0 12h-3" />
+    </>
+  ),
+  redo: (
+    <>
+      <path d="M15 14l5-5-5-5" />
+      <path d="M20 9H10a6 6 0 0 0 0 12h3" />
+    </>
+  ),
+};
+
+/** Select, Conduit, Undo, Redo: a 2 x 2 group of icon buttons. */
 export function ToolsTray(props: {
   model: Model;
   ctl: BuildController;
@@ -202,52 +254,46 @@ export function ToolsTray(props: {
   const { model, ctl } = props;
   const locked = props.locked === true;
   const { ui, view } = model;
-  const tool = (id: Tool, label: string, key: string, tip?: string) => (
+  const tool = (id: Tool, label: string, key: string) => (
     <button
       type="button"
       class={ui.tool === id ? 'tool active' : 'tool'}
       data-tool={id}
       aria-pressed={ui.tool === id}
+      aria-label={label}
       aria-keyshortcuts={key}
       disabled={locked && id !== 'select'}
-      title={
-        locked && id !== 'select' ? READY_LOCK_TEXT : `${tip ?? label} (${key})`
-      }
+      title={locked && id !== 'select' ? READY_LOCK_TEXT : label}
       onClick={() => {
         ctl.setTool(id);
       }}
     >
-      {label} <Kbd>{key}</Kbd>
+      <svg {...ICON_PROPS}>{TOOL_ICONS[id]}</svg>
     </button>
   );
   return (
     <div class="tray-tools" id="panel-tools">
-      {tool('select', t('uiToolSelect'), 'V')}
-      {tool('conduit', t('uiToolConduit'), 'C', t('uiToolConduitTip'))}
-      {tool('erase', t('uiToolErase'), 'E')}
+      {tool('select', t('uiToolSelectAria'), 'V')}
+      {tool('conduit', t('uiToolConduitAria'), 'C')}
       <button
         type="button"
         data-action="undo"
+        aria-label={t('uiToolUndo')}
         disabled={locked || (view?.undoCount ?? 0) === 0}
         title={t('uiToolUndoTip')}
         onClick={() => void ctl.undo()}
       >
-        {t('uiToolUndo')}
-        {view !== null && view.undoCount > 0
-          ? ` (${String(view.undoCount)})`
-          : ''}
+        <svg {...ICON_PROPS}>{TOOL_ICONS['undo']}</svg>
       </button>
       <button
         type="button"
         data-action="redo"
+        aria-label={t('uiToolRedo')}
         disabled={locked || (view?.redoCount ?? 0) === 0}
         title={t('uiToolRedoTip')}
         onClick={() => void ctl.redo()}
       >
-        {t('uiToolRedo')}
-        {view !== null && view.redoCount > 0
-          ? ` (${String(view.redoCount)})`
-          : ''}
+        <svg {...ICON_PROPS}>{TOOL_ICONS['redo']}</svg>
       </button>
     </div>
   );
@@ -297,7 +343,7 @@ export function InspectorPanel(props: {
       ? ({ kind: 'building', id: draft.building } as const)
       : null;
   const sel = source ?? model.ui.selection;
-  let body = <p class="muted">{screenText(screenTexts, 'uiInspectorHint')}</p>;
+  let body: ComponentChildren = null;
 
   if (sel?.kind === 'core') {
     const def = content.buildings.list().find((d) => d.kind === 'core');
@@ -313,10 +359,11 @@ export function InspectorPanel(props: {
             ? ''
             : formatText(entry.description, content.resources)}
         </p>
-        <dl class="props">
-          <dt>{t('uiLblHealth')}</dt>
-          <dd>{def?.tiers[0]?.health ?? '-'}</dd>
-        </dl>
+        <p class="insp-health" data-field="health">
+          {screenText(screenTexts, 'uiShopHealth', {
+            health: String(def?.tiers[0]?.health ?? '-'),
+          })}
+        </p>
         <p class="notice">{screenText(screenTexts, 'uiInspectorCoreFixed')}</p>
       </div>
     );
@@ -402,11 +449,8 @@ export function InspectorPanel(props: {
         <div data-inspector="building">
           <h3 class="insp-name">
             <span data-field="name">{entry?.name ?? b.def}</span>
-            <span class="insp-meta">
-              {t('uiInspectorMeta', {
-                kind: humanize(def.kind),
-                tier: String(b.tier),
-              })}
+            <span class="insp-meta" data-field="tier">
+              {t('uiInspectorTier', { tier: String(b.tier) })}
               {(props.acting ?? b.owner) === b.owner
                 ? ''
                 : t('uiInspectorOwnedBy', { owner })}
@@ -419,44 +463,67 @@ export function InspectorPanel(props: {
               })}
             </p>
           ) : null}
-          <p class="muted insp-desc">
-            {entry === undefined
-              ? ''
-              : formatText(entry.description, content.resources)}
-          </p>
-          {stats.uses !== null || stats.collects !== null ? (
-            <div class="insp-stats">
-              {stats.uses !== null ? (
-                <p data-field="uses">
-                  {stats.uses}
-                  {supply === undefined
-                    ? ''
-                    : screenText(
-                        screenTexts,
-                        supply.state === 'full'
-                          ? 'inspectorSupplied'
-                          : 'inspectorUnderSupplied',
-                        { gets: formatHundredths(supply.gets) },
-                      )}
-                </p>
-              ) : null}
-              {stats.collects !== null ? (
-                <p data-field="collects">
-                  {figs?.produces?.resource != null && collectRate !== null
-                    ? screenText(screenTexts, 'collectsResource', {
-                        resource: resourceName(content, figs.produces.resource),
-                        rate: formatHundredths(collectRate),
-                      })
-                    : stats.collects}
-                  {figs?.produces != null && figs.produces.lostPerSec > 0
-                    ? screenText(screenTexts, 'uiInspectorMinesLost', {
-                        rate: fmtRate(figs.produces.lostPerSec),
-                      })
-                    : ''}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
+          <div class="insp-stats">
+            {stats.uses !== null ? (
+              <p data-field="uses">
+                {stats.uses}
+                {supply === undefined
+                  ? ''
+                  : screenText(
+                      screenTexts,
+                      supply.state === 'full'
+                        ? 'inspectorSupplied'
+                        : 'inspectorUnderSupplied',
+                      { gets: formatHundredths(supply.gets) },
+                    )}
+              </p>
+            ) : null}
+            {stats.collects !== null ? (
+              <p data-field="collects">
+                {figs?.produces?.resource != null && collectRate !== null
+                  ? screenText(screenTexts, 'collectsResource', {
+                      resource: resourceName(content, figs.produces.resource),
+                      rate: formatHundredths(collectRate),
+                    })
+                  : stats.collects}
+                {figs?.produces != null && figs.produces.lostPerSec > 0
+                  ? screenText(screenTexts, 'uiInspectorMinesLost', {
+                      rate: fmtRate(figs.produces.lostPerSec),
+                    })
+                  : ''}
+              </p>
+            ) : null}
+            {stats.effect !== '' ? (
+              <p data-field="effect">{stats.effect}</p>
+            ) : null}
+            {figs?.derived != null ? (
+              <p class="muted" data-field="derived">
+                {screenText(screenTexts, 'uiInspectorDerived', {
+                  rate: fmt(figs.derived.perMin),
+                  things: screenText(
+                    screenTexts,
+                    figs.derived.kind === 'units'
+                      ? 'unitsWord'
+                      : figs.derived.kind === 'shots'
+                        ? 'shotsWord'
+                        : 'stepsWord',
+                  ),
+                  cost: String(figs.derived.cost),
+                  resource:
+                    figs.inputs[0] === undefined
+                      ? '-'
+                      : resourceName(content, figs.inputs[0].resource),
+                  limit:
+                    figs.derived.maxPerMin === null
+                      ? ''
+                      : screenText(screenTexts, 'uiInspectorDerivedAtMost', {
+                          max: fmt(figs.derived.maxPerMin),
+                        }),
+                })}
+              </p>
+            ) : null}
+            <p data-field="health">{stats.health}</p>
+          </div>
           <dl class="props">
             {figs?.produces != null && figs.produces.stalledPercent !== null ? (
               <>
@@ -468,46 +535,6 @@ export function InspectorPanel(props: {
                 </dd>
               </>
             ) : null}
-            {figs?.derived != null ? (
-              <>
-                <dt>
-                  {screenText(
-                    screenTexts,
-                    figs.derived.kind === 'units'
-                      ? 'uiInspectorProduces'
-                      : figs.derived.kind === 'shots'
-                        ? 'uiInspectorFires'
-                        : 'uiInspectorSteps',
-                  )}
-                </dt>
-                <dd data-field="derived">
-                  {screenText(screenTexts, 'uiInspectorDerived', {
-                    rate: fmt(figs.derived.perMin),
-                    things: screenText(
-                      screenTexts,
-                      figs.derived.kind === 'units'
-                        ? 'unitsWord'
-                        : figs.derived.kind === 'shots'
-                          ? 'shotsWord'
-                          : 'stepsWord',
-                    ),
-                    cost: String(figs.derived.cost),
-                    resource:
-                      figs.inputs[0] === undefined
-                        ? '-'
-                        : resourceName(content, figs.inputs[0].resource),
-                    limit:
-                      figs.derived.maxPerMin === null
-                        ? ''
-                        : screenText(screenTexts, 'uiInspectorDerivedAtMost', {
-                            max: fmt(figs.derived.maxPerMin),
-                          }),
-                  })}
-                </dd>
-              </>
-            ) : null}
-            <dt>{t('uiLblHealth')}</dt>
-            <dd>{def.tiers[b.tier - 1]?.health ?? '-'}</dd>
             {attached.length > 0 ? (
               <>
                 <dt>{t('uiLblConduits')}</dt>
@@ -548,20 +575,22 @@ export function InspectorPanel(props: {
               title={t('uiToolRotateTip')}
               onClick={() => void ctl.rotate()}
             >
-              {t('uiToolRotateKey')}
+              {t('uiToolRotateButton')} <Kbd>R</Kbd>
             </button>
             <button
               type="button"
               data-action="to-stash"
               onClick={() => void ctl.returnSelected()}
             >
-              {t('uiToolReturnToStash')}
+              {t('uiToolPickUp')}
             </button>
           </div>
         </div>
       );
     }
   }
+  // Only while something is selected.
+  if (body === null) return null;
   return (
     <Panel title={t('uiPanelSelected')} id="panel-inspector">
       {body}
@@ -572,247 +601,206 @@ export function InspectorPanel(props: {
 // ---------------------------------------------------------------------------
 // Overlays and problems
 
-export function OverlaysPanel(props: { model: Model; ctl: BuildController }) {
-  const { model, ctl } = props;
-  const o = model.ui.overlays;
+export function OverlayLegend(props: { model: Model }) {
+  const o = props.model.ui.overlays;
+  if (!o.flow && !o.paths) return null;
   return (
-    <Panel title={t('uiPanelOverlays')} id="panel-overlays" class="fixed">
-      {o.flow || o.paths ? (
-        <div class="overlay-legend muted" data-field="overlay-legend">
-          {o.paths ? (
-            <ul data-legend="paths">
-              <LegendItem label={t('uiLegendPathRoute')}>
-                <line
-                  x1="2"
-                  y1="8"
-                  x2="26"
-                  y2="8"
-                  stroke="var(--path-line)"
-                  stroke-width="2.5"
-                  stroke-dasharray="5 3.5"
-                  opacity="0.7"
-                />
-              </LegendItem>
-              <LegendItem label={t('uiLegendPathStart')}>
-                <polygon points="8,4 20,4 14,13" fill="var(--path-line)" />
-              </LegendItem>
-              <LegendItem label={t('uiLegendPathDetour')}>
-                <line
-                  x1="14"
-                  y1="14"
-                  x2="14"
-                  y2="3"
-                  stroke="var(--path-line)"
-                  stroke-width="2.5"
-                  stroke-dasharray="5 3.5"
-                  opacity="0.7"
-                />
-              </LegendItem>
-              <LegendItem label={t('uiLegendPathTarget')}>
-                <circle
-                  cx="14"
-                  cy="8"
-                  r="6"
-                  fill="none"
-                  stroke="var(--path-line)"
-                  stroke-width="2"
-                />
-                <path
-                  d="M11 5 L17 11 M17 5 L11 11"
-                  stroke="var(--path-line)"
-                  stroke-width="2"
-                />
-              </LegendItem>
-            </ul>
-          ) : null}
-          {o.flow ? (
-            <ul data-legend="flow">
-              <LegendItem label={t('uiLegendFlowMoving')}>
-                <g fill="var(--accent)" stroke="var(--ink)" stroke-width="1">
-                  <circle cx="5" cy="8" r="2.2" />
-                  <circle cx="14" cy="8" r="2.2" />
-                  <circle cx="23" cy="8" r="2.2" />
-                </g>
-              </LegendItem>
-              <LegendItem label={t('uiLegendFlowNone')}>
-                <line
-                  x1="2"
-                  y1="8"
-                  x2="26"
-                  y2="8"
-                  stroke="var(--bad)"
-                  stroke-width="2"
-                  stroke-dasharray="4 4"
-                  stroke-linecap="round"
-                />
-              </LegendItem>
-              <LegendItem label={t('uiLegendFlowStarved')}>
-                <rect
-                  x="4"
-                  y="2.5"
-                  width="20"
-                  height="11"
-                  fill="none"
-                  stroke="var(--bad)"
-                  stroke-width="2"
-                  stroke-dasharray="5 3"
-                />
-              </LegendItem>
-              <LegendItem label={t('uiLegendFlowLow')}>
-                <text
-                  x="14"
-                  y="12"
-                  text-anchor="middle"
-                  font-size="9"
-                  font-weight="700"
-                  fill="var(--warn)"
-                >
-                  LOW
-                </text>
-              </LegendItem>
-            </ul>
-          ) : null}
-        </div>
-      ) : null}
-      <details class="overlay-advanced">
-        <summary>{t('uiOverlayAdvanced')}</summary>
-        <label class="inline-field">
-          {t('uiOverlayDryTicks')}
-          <input
-            type="number"
-            id="dry-ticks"
-            min={DRY_TICKS_MIN}
-            max={DRY_TICKS_MAX}
-            step={DRY_TICKS_STEP}
-            value={model.ui.dryTicks}
-            onChange={(e) => {
-              const input = e.currentTarget;
-              ctl.setDryTicks(Number(input.value));
-              // Show the value in use, also when it did not change.
-              input.value = String(ctl.model.get().ui.dryTicks);
-            }}
-          />
-          <span class="muted">
-            {t('uiOverlayTicksPerSecond', {
-              ticks: String(simConfig.ticksPerSecond),
-            })}
-          </span>
-        </label>
-      </details>
+    <Panel title={t('uiPanelLegend')} id="panel-overlay-legend" class="fixed">
+      <div class="overlay-legend muted" data-field="overlay-legend">
+        {o.paths ? (
+          <ul data-legend="paths">
+            <LegendItem label={t('uiLegendPathRoute')}>
+              <line
+                x1="2"
+                y1="8"
+                x2="26"
+                y2="8"
+                stroke="var(--path-line)"
+                stroke-width="2.5"
+                stroke-dasharray="5 3.5"
+                opacity="0.7"
+              />
+            </LegendItem>
+            <LegendItem label={t('uiLegendPathStart')}>
+              <polygon points="8,4 20,4 14,13" fill="var(--path-line)" />
+            </LegendItem>
+            <LegendItem label={t('uiLegendPathDetour')}>
+              <line
+                x1="14"
+                y1="14"
+                x2="14"
+                y2="3"
+                stroke="var(--path-line)"
+                stroke-width="2.5"
+                stroke-dasharray="5 3.5"
+                opacity="0.7"
+              />
+            </LegendItem>
+            <LegendItem label={t('uiLegendPathTarget')}>
+              <circle
+                cx="14"
+                cy="8"
+                r="6"
+                fill="none"
+                stroke="var(--path-line)"
+                stroke-width="2"
+              />
+              <path
+                d="M11 5 L17 11 M17 5 L11 11"
+                stroke="var(--path-line)"
+                stroke-width="2"
+              />
+            </LegendItem>
+          </ul>
+        ) : null}
+        {o.flow ? (
+          <ul data-legend="flow">
+            <LegendItem label={t('uiLegendFlowMoving')}>
+              <g fill="var(--accent)" stroke="var(--ink)" stroke-width="1">
+                <circle cx="5" cy="8" r="2.2" />
+                <circle cx="14" cy="8" r="2.2" />
+                <circle cx="23" cy="8" r="2.2" />
+              </g>
+            </LegendItem>
+            <LegendItem label={t('uiLegendFlowNone')}>
+              <line
+                x1="2"
+                y1="8"
+                x2="26"
+                y2="8"
+                stroke="var(--bad)"
+                stroke-width="2"
+                stroke-dasharray="4 4"
+                stroke-linecap="round"
+              />
+            </LegendItem>
+            <LegendItem label={t('uiLegendFlowStarved')}>
+              <rect
+                x="4"
+                y="2.5"
+                width="20"
+                height="11"
+                fill="none"
+                stroke="var(--bad)"
+                stroke-width="2"
+                stroke-dasharray="5 3"
+              />
+            </LegendItem>
+            <LegendItem label={t('uiLegendFlowLow')}>
+              <text
+                x="14"
+                y="12"
+                text-anchor="middle"
+                font-size="9"
+                font-weight="700"
+                fill="var(--warn)"
+              >
+                LOW
+              </text>
+            </LegendItem>
+          </ul>
+        ) : null}
+      </div>
     </Panel>
-  );
-}
-
-/**
- * "N more below" while the Problems list is scrolled short of its end. It
- * measures the panel body that holds it; nothing shows when all fit.
- */
-function ProblemsMore(props: { problems: readonly Problem[] }) {
-  const root = useRef<HTMLDivElement | null>(null);
-  const [below, setBelow] = useState(0);
-  useEffect(() => {
-    const scroller = root.current?.closest('.panel-body');
-    if (scroller === null || scroller === undefined) return;
-    const measure = (): void => {
-      const bottom = scroller.getBoundingClientRect().bottom;
-      let hidden = 0;
-      scroller.querySelectorAll('li').forEach((li) => {
-        const r = li.getBoundingClientRect();
-        if (r.top + r.height / 2 > bottom) hidden++;
-      });
-      setBelow(hidden);
-    };
-    measure();
-    scroller.addEventListener('scroll', measure);
-    const ro =
-      typeof ResizeObserver === 'undefined'
-        ? null
-        : new ResizeObserver(measure);
-    ro?.observe(scroller);
-    return () => {
-      scroller.removeEventListener('scroll', measure);
-      ro?.disconnect();
-    };
-  }, [props.problems]);
-  return (
-    <div ref={root} class="problems-more-slot">
-      {below > 0 ? (
-        <div class="problems-more" data-field="problems-more">
-          {t('uiProblemsMore', { n: String(below) })}
-        </div>
-      ) : null}
-    </div>
   );
 }
 
 const WARNING_TITLE = 'Warning: something is wrong with your factory';
 const HINT_TITLE = 'Reminder: something is not used yet (not an error)';
 
-function isHint(p: Problem): boolean {
-  return p.kind === 'stash' || p.kind === 'free_nodes';
+const TICK = <path d="M5 12l5 5 9-10" />;
+const WARN = (
+  <>
+    <path d="M12 3l10 18H2z" />
+    <path d="M12 10v5M12 18v.5" />
+  </>
+);
+
+function CheckMark(props: { state: CheckState }) {
+  const s = props.state;
+  return (
+    <svg
+      class={`check-mark ${s}`}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width={s === 'ok' ? 3 : 2}
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <title>
+        {s === 'warn' ? WARNING_TITLE : s === 'hint' ? HINT_TITLE : ''}
+      </title>
+      {s === 'ok' ? TICK : WARN}
+    </svg>
+  );
 }
 
-export function ProblemsPanel(props: {
-  problems: readonly Problem[];
+/** "Before you fight": warnings with a fix, then what is already fine. */
+export function ChecklistPanel(props: {
+  list: Checklist;
   onPick: (p: Problem) => void;
 }) {
+  const { items, okHidden } = props.list;
   return (
-    <Panel title={t('uiPanelProblems')} id="panel-problems">
-      {props.problems.length === 0 ? (
-        <p class="ok-text" data-field="no-problems">
-          {t('uiNoProblems')}
+    <Panel title={t('uiPanelChecklist')} id="panel-problems">
+      {items.length === 0 ? (
+        <p class="muted" data-field="no-checks">
+          {t('uiCheckNothingYet')}
         </p>
       ) : (
-        <>
-          {props.problems.some(isHint) && !props.problems.every(isHint) ? (
-            <p class="problems-legend muted" data-field="problems-legend">
-              ⚠ a warning · △ a reminder (not an error)
-            </p>
-          ) : null}
-          <ul class="problems">
-            {props.problems.map((p) =>
-              p.focus === null &&
-              p.building === null &&
-              p.pick === undefined ? (
-                // Nothing to jump to (a partner's summary): plain text, still read out.
-                <li key={p.id}>
-                  <span class="problem" data-problem={p.kind}>
-                    <span
-                      class="problem-mark"
-                      aria-hidden="true"
-                      title={isHint(p) ? HINT_TITLE : WARNING_TITLE}
-                    >
-                      {isHint(p) ? '△' : '⚠'}
-                    </span>
-                    {p.text}
+        <ul class="checklist">
+          {items.map((it) => {
+            const body = (
+              <>
+                <CheckMark state={it.state} />
+                <span class="check-text">
+                  <strong>{it.text}</strong>
+                  {it.fix === null ? null : (
+                    <span class="check-fix"> {it.fix}</span>
+                  )}
+                </span>
+              </>
+            );
+            const p = it.problem;
+            return (
+              <li key={it.id} data-check={it.state}>
+                {p === null ||
+                (p.focus === null &&
+                  p.building === null &&
+                  p.pick === undefined) ? (
+                  // Satisfied, or nothing to jump to (a partner's summary).
+                  <span
+                    class={it.state === 'ok' ? 'check' : 'check problem'}
+                    data-problem={p?.kind}
+                  >
+                    {body}
                   </span>
-                </li>
-              ) : (
-                <li key={p.id}>
+                ) : (
                   <button
                     type="button"
-                    class="problem"
+                    class="check problem"
                     data-problem={p.kind}
                     onClick={() => {
                       props.onPick(p);
                     }}
                   >
-                    <span
-                      class="problem-mark"
-                      aria-hidden="true"
-                      title={isHint(p) ? HINT_TITLE : WARNING_TITLE}
-                    >
-                      {isHint(p) ? '△' : '⚠'}
-                    </span>
-                    {p.text}
+                    {body}
                   </button>
-                </li>
-              ),
-            )}
-          </ul>
-        </>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
-      <ProblemsMore problems={props.problems} />
+      {okHidden > 0 ? (
+        <p class="muted check-more" data-field="checks-more">
+          {t('uiCheckMore', { n: String(okHidden) })}
+        </p>
+      ) : null}
     </Panel>
   );
 }
@@ -824,6 +812,9 @@ export function DryRunTable(props: {
   onClose: () => void;
   /** The building of the row under the pointer, or null. */
   onHover?: (building: number | null) => void;
+  /** The test run's length; `onTicks` sets it and returns the value in use. */
+  ticks?: number;
+  onTicks?: (n: number) => number;
 }) {
   const { team, flow } = props;
   const dry = flow.dry;
@@ -970,6 +961,29 @@ export function DryRunTable(props: {
           )}
         </tbody>
       </table>
+      {props.onTicks === undefined ? null : (
+        <label class="inline-field">
+          {t('uiOverlayDryTicks')}
+          <input
+            type="number"
+            id="dry-ticks"
+            min={DRY_TICKS_MIN}
+            max={DRY_TICKS_MAX}
+            step={DRY_TICKS_STEP}
+            value={props.ticks}
+            onChange={(e) => {
+              const input = e.currentTarget;
+              // Show the value in use, also when it did not change.
+              input.value = String(props.onTicks?.(Number(input.value)));
+            }}
+          />
+          <span class="muted">
+            {t('uiOverlayTicksPerSecond', {
+              ticks: String(simConfig.ticksPerSecond),
+            })}
+          </span>
+        </label>
+      )}
     </div>
   );
 }
@@ -1061,45 +1075,59 @@ export function PartyPanel(props: {
   const ready = me?.ready === true;
   const readyCount = run.perPlayer.filter((p) => p.ready).length;
   const block = props.gate?.readyBlock ?? null;
+  const note =
+    block !== null ? (
+      <p class="error" data-field="ready-blocked" role="alert">
+        {block}
+      </p>
+    ) : ready ? (
+      <p class="muted" data-field="ready-locked">
+        <SpriteIcon name="ui_icon_lock" scale={1} class="bar-icon" />
+        {READY_LOCK_TEXT}
+      </p>
+    ) : null;
+  // Solo has no party: only why Ready is off, when it is.
+  if (!multi) return note;
   return (
-    <Panel
-      title={t(multi ? 'uiPanelParty' : 'uiPanelPartySolo')}
-      id="panel-party"
-    >
+    <Panel title={t('uiPanelParty')} id="panel-party">
       <div class="party-row">
         <span>{run.players[acting]?.name ?? 'You'}</span>
         <span class="muted">{screenText(screenTexts, 'uiPartyEditing')}</span>
-        {multi ? (
-          <span data-field="ready-state">
-            {screenText(
-              screenTexts,
-              ready ? 'uiPartyReadyYes' : 'uiPartyReadyNo',
-            )}
-          </span>
-        ) : null}
+        <span data-field="ready-state">
+          {screenText(
+            screenTexts,
+            ready ? 'uiPartyReadyYes' : 'uiPartyReadyNo',
+          )}
+        </span>
       </div>
-      {multi ? (
-        <p class="muted party-next">
-          {t('uiPartyNext', {
-            leg:
-              run.step === 'shop' && run.leg === 'pve'
-                ? 'Rival party'
-                : 'Stronghold',
-            ready: String(readyCount),
-            total: String(run.players.length),
-          })}
-        </p>
-      ) : null}
-      {block !== null ? (
-        <p class="error" data-field="ready-blocked" role="alert">
-          {block}
-        </p>
-      ) : ready ? (
-        <p class="muted" data-field="ready-locked">
-          <SpriteIcon name="ui_icon_lock" scale={1} class="bar-icon" />
-          {READY_LOCK_TEXT}
-        </p>
-      ) : null}
+      <p class="muted party-next">
+        {t('uiPartyNext', {
+          leg:
+            run.step === 'shop' && run.leg === 'pve'
+              ? 'Rival party'
+              : 'Stronghold',
+          ready: String(readyCount),
+          total: String(run.players.length),
+        })}
+      </p>
+      {note}
+    </Panel>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Next fight
+
+/** Pinned to the bottom of the info rail. */
+export function NextFightPanel(props: { fight: NextFight }) {
+  return (
+    <Panel title={t('uiPanelNextFight')} id="panel-next-fight" class="pinned">
+      <p class="next-title" data-field="next-title">
+        {props.fight.title}
+      </p>
+      <p class="muted next-stakes" data-field="next-stakes">
+        {props.fight.stakes}
+      </p>
     </Panel>
   );
 }

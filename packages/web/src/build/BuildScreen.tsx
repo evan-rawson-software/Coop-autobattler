@@ -32,16 +32,20 @@ import './build.css';
 import { BuildController } from './build-controller.js';
 import { drawBuildOverlay } from './overlay-draw.js';
 import {
+  ChecklistPanel,
   DryRunTable,
   InspectorPanel,
-  OverlaysPanel,
+  InventoryTray,
+  NextFightPanel,
+  OverlayLegend,
   BorderLinksPanel,
   PartyPanel,
-  ProblemsPanel,
-  StashTray,
   ToolsTray,
   groupStash,
 } from './panels.js';
+import { deriveChecklist } from './checklist.js';
+import { newStashIds } from './new-items.js';
+import { nextFight } from './next-fight.js';
 import { readyPrimary } from './ready-primary.js';
 import { halfAlpha, halfStatuses } from './border-links.js';
 import { gateFor, READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
@@ -183,6 +187,25 @@ export function BuildView(props: {
         ? deriveProblems(team, content, flow, problemScope(run, acting))
         : [],
     [team, step, flow, run, acting],
+  );
+
+  const checklist = useMemo(
+    () =>
+      team === null || !isEditStep(step)
+        ? { items: [], okHidden: 0 }
+        : deriveChecklist(team, content, problems, flow, acting),
+    [team, step, problems, flow, acting],
+  );
+  const fresh = useMemo(
+    () => (run === null ? new Set<number>() : newStashIds(run)),
+    [run],
+  );
+  const next = useMemo(
+    () =>
+      shared === undefined || run === null || !isEditStep(step)
+        ? null
+        : nextFight(run, shared.deps),
+    [run, step, shared],
   );
 
   // What the session allows now: Ready lock and sealed unit producers. Only
@@ -616,12 +639,13 @@ export function BuildView(props: {
     run === null || team === null ? null : (
       <>
         <ToolsTray model={model} ctl={ctl} locked={gate?.ready === true} />
-        <StashTray
+        <InventoryTray
           team={team}
           model={model}
           ctl={ctl}
           player={acting}
           locked={gate?.ready === true}
+          fresh={fresh}
         />
       </>
     );
@@ -629,6 +653,16 @@ export function BuildView(props: {
   const info =
     run === null || team === null ? null : (
       <>
+        <ChecklistPanel list={checklist} onPick={onPick} />
+        <InspectorPanel
+          run={run}
+          model={model}
+          dry={flow?.dry ?? null}
+          flow={flow}
+          ctl={ctl}
+          sealed={sealedIds}
+          acting={acting}
+        />
         {ui.overlays.dry && flow !== null ? (
           // The test run is a table in the info rail: it never covers the board.
           <DryRunTable
@@ -640,19 +674,14 @@ export function BuildView(props: {
             onHover={(id) => {
               ctl.setHighlight(id === null ? null : { kind: 'building', id });
             }}
+            ticks={ui.dryTicks}
+            onTicks={(n) => {
+              ctl.setDryTicks(n);
+              return ctl.model.get().ui.dryTicks;
+            }}
           />
         ) : null}
-        <InspectorPanel
-          run={run}
-          model={model}
-          dry={flow?.dry ?? null}
-          flow={flow}
-          ctl={ctl}
-          sealed={sealedIds}
-          acting={acting}
-        />
-        <ProblemsPanel problems={problems} onPick={onPick} />
-        <OverlaysPanel model={model} ctl={ctl} />
+        <OverlayLegend model={model} />
         <BorderLinksPanel
           run={run}
           ctl={ctl}
@@ -661,7 +690,9 @@ export function BuildView(props: {
           flow={flow}
         />
         <PartyPanel run={run} ctl={ctl} gate={gate} acting={acting} />
+        <div class="info-spacer" />
         <KeyHints />
+        {next === null ? null : <NextFightPanel fight={next} />}
       </>
     );
 
