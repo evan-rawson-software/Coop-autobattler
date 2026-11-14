@@ -39,9 +39,9 @@ import { coreMaxima } from './derive.js';
 import { drawBattleOverlay, linkMap, makeDrawIndex } from './draw.js';
 import {
   BattleSummaryView,
-  LeftPanels,
-  RightPanels,
-  SpeedTray,
+  BattleRail,
+  PlaybackTray,
+  StatsDrawer,
 } from './panels.js';
 import {
   Playback,
@@ -342,21 +342,22 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
       makeDrawIndex(
         init,
         {
-          own: 'YOUR BOARD',
-          enemy: foeKind === 'ghost' ? 'ENEMY BOARD' : 'STRONGHOLD',
+          own: t('battleBoardYou'),
+          enemy: t('battleBoardThem', { name: opponent.name }),
         },
         [
           linkMap(record.initialTeams[0], content),
           linkMap(record.initialTeams[1], content),
         ],
       ),
-    [init, foeKind, record],
+    [init, opponent.name, record],
   );
   const tps = battleConfig.sim.ticksPerSecond;
   const [phase, setPhase] = useState<Phase>(
     pb.finished ? 'summary' : 'playing',
   );
   const [replay, setReplay] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   const [, setFrame] = useState(0);
   const [readyLocal, setReady] = useState(false);
   const ready = props.ready ?? readyLocal;
@@ -536,7 +537,9 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
         </span>
       ) : null}
       <span data-field="vs">vs. {opponent.name}</span>
-      <span data-field="battle-time">Battle time {timeText}</span>
+      {phase === 'summary' ? (
+        <span data-field="battle-time">Battle time {timeText}</span>
+      ) : null}
     </span>
   );
 
@@ -620,7 +623,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           coreMaxima(record, 0),
           coreMaxima(record, 1),
         );
-  const overloadTick = moments.find((m) => m.kind === 'overload')?.tick ?? null;
+  const overloadTick = battleConfig.sim.overloadStartTick;
 
   return (
     <GameFrame
@@ -629,30 +632,44 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
       status={status}
       rail={rail}
       board={board}
-      tray={<SpeedTray pb={pb} onSpeed={onSpeed} onPause={onPause} />}
+      tray={
+        <PlaybackTray
+          pb={pb}
+          overloadTick={overloadTick}
+          tps={tps}
+          onSpeed={onSpeed}
+          onPause={onPause}
+        />
+      }
       primary={{
         id: 'skip',
         label: t(replay ? 'battleBackToResults' : 'battleSkip'),
         onPress: onSkip,
       }}
       info={
-        <LeftPanels
+        <BattleRail
           pb={pb}
           mine={mine}
           theirs={theirs}
           content={content}
-          foeName={opponent.name}
+          moments={moments}
           overloadTick={overloadTick}
-          overloadNote={overloadNote}
           tps={tps}
-          afterSide={
-            <RightPanels
+          revealed={revealed}
+          statsOpen={statsOpen}
+          onToggleStats={() => {
+            setStatsOpen((o) => !o);
+          }}
+          drawer={
+            <StatsDrawer
               pb={pb}
-              content={content}
-              opponent={opponent}
-              foeWord={foeWord}
+              mine={mine}
               theirs={theirs}
+              content={content}
+              foeName={opponent.name}
               moments={moments}
+              overloadTick={overloadTick}
+              overloadNote={overloadNote}
               tps={tps}
               revealed={revealed}
               onFocus={onFocus}
