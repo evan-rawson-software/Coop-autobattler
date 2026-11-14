@@ -232,7 +232,7 @@ export function fillStagePlot(
     const b = put('bld_barracks', site.barracks);
     link(x, 'north', b, 'south');
   }
-  for (const w of WALL_SITES.slice(0, spec.walls)) put('bld_wall', w);
+  for (const w of WALL_SITES.slice(0, spec.walls)) put('bld_wall_block', w);
   return { state, value };
 }
 
@@ -272,9 +272,12 @@ export function buildStageBoard(
 
 /** The checks of the real starting kit against the `kit` board. */
 export function kitMatchesContent(ctx: SimContext): boolean {
+  // A `pick` entry (random wall shapes) stands for its single-cell wall on the
+  // `kit` board, so it is compared as that.
   const want = new Map<string, number>();
   for (const k of ctx.economy.startingKit) {
-    want.set(k.def, (want.get(k.def) ?? 0) + k.count);
+    const def = k.def ?? 'bld_wall_block';
+    want.set(def, (want.get(def) ?? 0) + k.count);
   }
   const board = buildStageBoard(ctx, 'kit');
   const have = new Map<string, number>();

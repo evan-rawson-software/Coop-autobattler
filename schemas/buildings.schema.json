@@ -146,13 +146,23 @@
           ]
         },
         "footprint": {
-          "description": "Width and height in cells at rotation 0.",
+          "description": "Width and height in cells at rotation 0. `cells` (optional) lists the covered cells as [x, y] pairs inside the box (y up, as on the board); omitted means every cell of the box. It must be non-empty, without duplicates, 4-connected, and use every row and column of the box (the loader checks this).",
           "type": "object",
           "required": ["width", "height"],
           "additionalProperties": false,
           "properties": {
             "width": { "$ref": "#/$defs/positive" },
-            "height": { "$ref": "#/$defs/positive" }
+            "height": { "$ref": "#/$defs/positive" },
+            "cells": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": { "type": "integer", "minimum": 0 }
+              }
+            }
           }
         },
         "tiers": { "type": "array" },

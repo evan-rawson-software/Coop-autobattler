@@ -748,7 +748,7 @@ describe('three players', () => {
     s = ok(s, 0, { type: 'ready' }).state;
     // A building stands on player 0's pending spot.
     const a = addToStash(s.team, baseDeps.content, {
-      def: 'bld_wall',
+      def: 'bld_wall_block',
       tier: 1,
       owner: 0,
     });

@@ -23,7 +23,7 @@ describe('undo stack (pure)', () => {
   test('inverse of each layout change is the opposite intents', async () => {
     const s = await buildRun();
     const team = s.run.team;
-    const id = stashIds(team, 'bld_wall')[0] as number;
+    const id = stashIds(team, 'bld_wall_block')[0] as number;
     const place: LayoutAction = { t: 'place', id, x: 3, y: 3, rotation: 0 };
     expect(inverseOf(team, place)).toEqual([{ t: 'return', id }]);
     expect(toIntent(team, place)).toEqual({
@@ -51,7 +51,15 @@ describe('undo stack (pure)', () => {
     const withConduit: TeamState = {
       ...t,
       buildings: [
-        { id: 50, def: 'bld_wall', tier: 1, x: 2, y: 2, rotation: 0, owner: 0 },
+        {
+          id: 50,
+          def: 'bld_wall_block',
+          tier: 1,
+          x: 2,
+          y: 2,
+          rotation: 0,
+          owner: 0,
+        },
       ],
       conduits: [
         {

@@ -207,7 +207,14 @@ describe('follow-ups', () => {
   /** Pick the first offer of `type` along the default path, if offered. */
   function pickEvent(type: string): RunState | null {
     for (let seed = 1; seed < 40; seed++) {
-      let s = playUntil(newRun(seed), (r) => r.step === 'event_choice');
+      // A tier 2 wall costs more than the gold of a first round (issue #291),
+      // and a Workshop is only offered when something is affordable.
+      let s = playUntil(newRun(seed), (r) => r.step === 'pve_choice');
+      s = {
+        ...s,
+        perPlayer: s.perPlayer.map((p) => ({ ...p, gold: 100 })),
+      };
+      s = playUntil(s, (r) => r.step === 'event_choice');
       const offer = (
         s.pending as unknown as { options: { id: string; type: string }[] }
       ).options.find((o) => o.type === type);
@@ -382,7 +389,9 @@ describe('follow-ups', () => {
 
   test('upgradeGains names health and one key stat of the kind', () => {
     const get = (id: string) => content.buildings.get(id) as BuildingDef;
-    expect(upgradeGains(get('bld_wall'), 1, 2, 10)).toBe('health 100 → 160');
+    expect(upgradeGains(get('bld_wall_block'), 1, 2, 10)).toBe(
+      'health 100 → 160',
+    );
     expect(upgradeGains(get('bld_extractor'), 1, 2, 10)).toBe(
       'health 30 → 45 · output 0.50/s → 0.71/s',
     );

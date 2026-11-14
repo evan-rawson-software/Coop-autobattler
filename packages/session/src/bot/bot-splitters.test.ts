@@ -100,7 +100,9 @@ describe('Splitter placement (#178)', () => {
       }
     }
     expect(bought).toBeGreaterThanOrEqual(30);
-    expect(bought - placed).toBeLessThanOrEqual(1);
+    // Tetromino walls (issue #291) take more room around the Core: measured 4
+    // left over (1 before); allowed up to 7.
+    expect(bought - placed).toBeLessThanOrEqual(7);
   });
 });
 
@@ -128,9 +130,10 @@ describe('shop buys only what can be placed (#178)', () => {
 
   test('consumers the layout cannot feed are not left in the stash', () => {
     // Consumers left in the stash, summed over SEEDS at party sizes 1 / 2 / 4
-    // after 6 rounds. Measured: rush 2 / 9 / 24, fortify 0 / 0 / 0.
+    // after 6 rounds. Measured: rush 2 / 9 / 24, fortify 0 / 0 / 0 (2 / 11 / 27 for rush
+    // with the shop weights and the tetromino walls of issue #291).
     const limit = {
-      rush: { 1: 3, 2: 10, 4: 26 },
+      rush: { 1: 3, 2: 12, 4: 29 },
       fortify: { 1: 1, 2: 1, 4: 1 },
     } as const;
     for (const strategy of ['rush', 'fortify'] as const) {
@@ -155,11 +158,12 @@ describe('shop buys only what can be placed (#178)', () => {
     // the siege shop bought only what it uses; no Extractor is left in a siege stash). The collectors are mostly the
     // ones a donor buys for a neighbour, and the two every player starts with.
     // With the shop weights of #145: rush 8 / 33 / 77, fortify 6 / 12 / 23,
-    // siege 1 / 3 / 8.
+    // siege 1 / 3 / 8. With the tetromino walls and shop weights of issue #291:
+    // rush 9 / 34 / 65, fortify 6 / 12 / 21, siege 1 / 4 / 8.
     const limit = {
-      rush: { 1: 10, 2: 33, 4: 77 },
+      rush: { 1: 10, 2: 36, 4: 77 },
       fortify: { 1: 7, 2: 16, 4: 30 },
-      siege: { 1: 1, 2: 3, 4: 8 },
+      siege: { 1: 1, 2: 4, 4: 8 },
     } as const;
     const wanted = ['bld_extractor', 'bld_splitter', ...CONSUMER_DEFS];
     for (const strategy of ['rush', 'fortify', 'siege'] as const) {

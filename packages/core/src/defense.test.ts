@@ -91,7 +91,7 @@ describe('walls', () => {
   test('a wall blocks both sides and has health', () => {
     const lab = new Lab(tiny());
     lab.core(5, 0);
-    const wall = lab.put('bld_wall', 3, 8);
+    const wall = lab.put('bld_wall_block', 3, 8);
     const { sim, ctx } = startArenaBattle(
       lab.state,
       coreOnly(),
@@ -120,7 +120,7 @@ describe('gates', () => {
     let gate = 0;
     for (let x = 0; x < W; x++) {
       if (x === 6) gate = lab.put('bld_gate', x, 8, 0, gateTier);
-      else lab.put('bld_wall', x, 8, 0, 3);
+      else lab.put('bld_wall_block', x, 8, 0, 3);
     }
     return { state: lab.state, gate };
   }
@@ -222,11 +222,11 @@ describe('gates', () => {
     // Gates on every free neighbour of the barracks except the west cell.
     lab.put('bld_gate', 4, 4);
     lab.put('bld_gate', 4, 5);
-    lab.put('bld_wall', 2, 6);
-    lab.put('bld_wall', 3, 6);
-    lab.put('bld_wall', 1, 4);
-    lab.put('bld_wall', 1, 5);
-    lab.put('bld_wall', 3, 3);
+    lab.put('bld_wall_block', 2, 6);
+    lab.put('bld_wall_block', 3, 6);
+    lab.put('bld_wall_block', 1, 4);
+    lab.put('bld_wall_block', 1, 5);
+    lab.put('bld_wall_block', 3, 3);
     const { sim, ctx } = startArenaBattle(
       lab.state,
       coreOnly(),
@@ -584,7 +584,7 @@ describe('funnelling', () => {
     if (funnel) {
       // Walls close the east side of rows 9..11; the only approach is x = 8.
       for (const x of [9, 10, 11])
-        for (let y = 9; y <= 11; y++) lab.put('bld_wall', x, y, 0, 3);
+        for (let y = 9; y <= 11; y++) lab.put('bld_wall_block', x, y, 0, 3);
     }
     return lab.state;
   }
@@ -942,10 +942,10 @@ describe('targeting rule b: a goal in reach', () => {
     // The pocket (4, 3) is walled in on every side; no route reaches it, but
     // the Core is within the reach of the unit.
     const walls = [
-      lab.put('bld_wall', 3, 3),
-      lab.put('bld_wall', 5, 3),
-      lab.put('bld_wall', 4, 2),
-      lab.put('bld_wall', 4, 4),
+      lab.put('bld_wall_block', 3, 3),
+      lab.put('bld_wall_block', 5, 3),
+      lab.put('bld_wall_block', 4, 2),
+      lab.put('bld_wall_block', 4, 4),
     ];
     const { sim, ctx, events } = startArenaBattle(
       lab.state,
@@ -1010,7 +1010,7 @@ describe('enemy-path preview', () => {
   test('walls and gates in the front row are not entries; turrets block too', () => {
     const lab = new Lab(tiny());
     lab.core(5, 0);
-    lab.put('bld_wall', 2, 15);
+    lab.put('bld_wall_block', 2, 15);
     lab.put('bld_gate', 3, 15);
     lab.put('bld_turret', 4, 15);
     const paths = previewEnemyPaths(lab.state, content, simConfig);
@@ -1022,8 +1022,8 @@ describe('enemy-path preview', () => {
     lab.core(5, 0);
     // Row 14 is walled from x = 0 to 9 and (5, 15) is walled too: a soldier
     // entering at x = 0..4 can only pass through the neutral zone, row 16.
-    for (let x = 0; x <= 9; x++) lab.put('bld_wall', x, 14);
-    lab.put('bld_wall', 5, 15);
+    for (let x = 0; x <= 9; x++) lab.put('bld_wall_block', x, 14);
+    lab.put('bld_wall_block', 5, 15);
     const paths = previewEnemyPaths(lab.state, content, simConfig);
     const at = (x: number) => got(paths.find((q) => q.entry.x === x));
     const text = (cs: readonly Cell[]): string =>
@@ -1050,7 +1050,7 @@ describe('enemy-path preview', () => {
     const lab = new Lab(tiny());
     lab.core(5, 0);
     for (let x = 0; x < W; x++) {
-      if (x !== 9) lab.put('bld_wall', x, 8, 0, 3);
+      if (x !== 9) lab.put('bld_wall_block', x, 8, 0, 3);
     }
     lab.put('bld_gate', 9, 8);
     const paths = previewEnemyPaths(lab.state, content, simConfig);
@@ -1068,12 +1068,12 @@ describe('enemy-path preview', () => {
     const lab = new Lab(tiny());
     lab.core(5, 0);
     // Ring of walls around the 2 x 2 Core; the weakest one is (6, 2).
-    lab.put('bld_wall', 4, 0, 0, 3);
-    lab.put('bld_wall', 4, 1, 0, 3);
-    lab.put('bld_wall', 7, 0, 0, 3);
-    lab.put('bld_wall', 7, 1, 0, 3);
-    lab.put('bld_wall', 5, 2, 0, 3);
-    const weak = lab.put('bld_wall', 6, 2, 0, 1);
+    lab.put('bld_wall_block', 4, 0, 0, 3);
+    lab.put('bld_wall_block', 4, 1, 0, 3);
+    lab.put('bld_wall_block', 7, 0, 0, 3);
+    lab.put('bld_wall_block', 7, 1, 0, 3);
+    lab.put('bld_wall_block', 5, 2, 0, 3);
+    const weak = lab.put('bld_wall_block', 6, 2, 0, 1);
     const paths = previewEnemyPaths(lab.state, content, simConfig);
     expect(paths.length).toBe(W);
     for (const p of paths) {
@@ -1087,9 +1087,9 @@ describe('enemy-path preview', () => {
   test('it agrees with a simulated soldier walking from the centre of the entry, on this one board', () => {
     const lab = new Lab(tiny([], [[5, 8]]));
     lab.core(5, 0);
-    lab.put('bld_wall', 6, 8, 0, 3);
-    lab.put('bld_wall', 4, 8, 0, 3);
-    lab.put('bld_wall', 3, 3);
+    lab.put('bld_wall_block', 6, 8, 0, 3);
+    lab.put('bld_wall_block', 4, 8, 0, 3);
+    lab.put('bld_wall_block', 3, 3);
     const paths = previewEnemyPaths(lab.state, content, simConfig);
     for (const x of [0, 3, 5, 9, 11]) {
       const p = got(paths.find((q) => q.entry.x === x));
@@ -1155,7 +1155,7 @@ describe('enemy-path preview', () => {
         const n = 2 + rng.nextInt(2);
         while (gaps.size < n) gaps.add(rng.nextInt(W));
         for (let x = 0; x < W; x++) {
-          if (!gaps.has(x)) lab.put('bld_wall', x, y, 0, 3);
+          if (!gaps.has(x)) lab.put('bld_wall_block', x, y, 0, 3);
         }
       }
       const paths = previewEnemyPaths(lab.state, content, simConfig);
@@ -1204,12 +1204,12 @@ describe('enemy-path preview', () => {
   test('a wall-health modifier changes the previewed breach point, as in the simulation', () => {
     const lab = new Lab(tiny());
     lab.core(5, 0);
-    lab.put('bld_wall', 4, 0, 0, 3);
-    lab.put('bld_wall', 4, 1, 0, 3);
-    lab.put('bld_wall', 7, 0, 0, 3);
-    lab.put('bld_wall', 7, 1, 0, 3);
+    lab.put('bld_wall_block', 4, 0, 0, 3);
+    lab.put('bld_wall_block', 4, 1, 0, 3);
+    lab.put('bld_wall_block', 7, 0, 0, 3);
+    lab.put('bld_wall_block', 7, 1, 0, 3);
     // Unmodified, the tier 1 wall (100) is cheaper than the tier 2 gate (130).
-    const wall = lab.put('bld_wall', 5, 2, 0, 1);
+    const wall = lab.put('bld_wall_block', 5, 2, 0, 1);
     const gate = lab.put('bld_gate', 6, 2, 0, 2);
     const stout: TeamModifier = {
       id: 'mod_test_stout',

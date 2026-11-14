@@ -79,17 +79,15 @@ describe('stepText', () => {
   });
 
   test('a double fall and the time limit read differently for each tie step', () => {
-    for (const r of [
-      'tiebreak_building_damage',
-      'tiebreak_kills',
-      'tiebreak_attacker',
-    ] as const) {
+    for (const r of ['tiebreak_building_damage', 'tiebreak_kills'] as const) {
       const time = stepText(r, 'Hub', alive);
       const double = stepText(r, 'Hub', bothDown);
       expect(time).toMatch(/^Time ran out/);
       expect(double).toMatch(/^Both (last )?Hubs fell at/);
       expect(time).not.toBe(double);
     }
+    // The full tie after a double fall is said by the summary's draw line.
+    expect(stepText('tiebreak_attacker', 'Hub', bothDown)).toBeNull();
   });
 
   test('each tie step says its own deciding figure', () => {

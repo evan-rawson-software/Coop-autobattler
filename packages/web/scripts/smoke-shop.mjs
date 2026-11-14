@@ -1,4 +1,5 @@
-// Shop + Build smoke checks (issue W2-7). Called from smoke.mjs with the
+// Shop + Build smoke checks (issues W2-7 and #302: the shop is a part of the
+// Build screen, opened from the top bar into the info rail). Called from smoke.mjs with the
 // shared page and helpers. Plain Node ESM, not part of the bundle.
 //
 // The shop route sets up a sample run (fixed seed, every battle won) that
@@ -7,7 +8,7 @@
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { frames, hookReady } from './smoke-timing.mjs';
+import { closeShop, frames, hookReady, openShop } from './smoke-timing.mjs';
 
 export async function runShopSmoke({
   page,
@@ -45,30 +46,11 @@ export async function runShopSmoke({
       ([cx, cy]) => window.__debug.build.cellToScreen(cx, cy),
       [x, y],
     );
+  // The shop starts closed; `goShop` leaves it closed, `openShop` opens it.
   const goShop = async (next) => {
     await page.goto(`${baseUrl}?next=${next}#shop`);
-    await page.waitForSelector('#shop-screen');
+    await page.waitForSelector('#shop-toggle');
     await page.waitForFunction(() => window.__debug?.shop?.state);
-    await settle();
-  };
-  const goBuildTab = async () => {
-    await page.click('.topbar-tabs button:has-text("Build")');
-    await page.waitForSelector('canvas');
-    await page.waitForFunction(() => window.__debug?.build?.step() === 'shop');
-    await settle();
-  };
-  // Each mount of the Shop tab has its own number, so waiting for a larger
-  // one cannot be satisfied by data left over from the previous mount.
-  const mounts = () =>
-    page.evaluate(() => window.__debug?.shop?.mounts?.() ?? 0);
-  const goShopTab = async () => {
-    const m0 = await mounts();
-    await page.click('.topbar-tabs button:has-text("Shop")');
-    await page.waitForSelector('#shop-screen');
-    await page.waitForFunction(
-      (m) => (window.__debug?.shop?.mounts?.() ?? 0) > m,
-      m0,
-    );
     await settle();
   };
   const gold = async () =>
@@ -94,18 +76,27 @@ export async function runShopSmoke({
     sPve.step === 'shop' && sPve.next === 'pve',
     'shop route: run is in a shop that leads into a PvE battle',
   );
-  const pveText = await page.locator('#panel-next-battle').innerText();
+  const pveText = await page.locator('#panel-next-fight').innerText();
   check(
-    (await page.locator('#next-options .pve-option').count()) === 3 &&
-      /easy/i.test(pveText) &&
-      /medium/i.test(pveText) &&
-      /hard/i.test(pveText) &&
-      /Win: \d+ gold/.test(pveText),
-    'next battle (PvE): three options with archetype, threat and gold reward',
+    /Stronghold/.test(pveText) && /3/.test(pveText),
+    `next fight (PvE) is in the info rail while the shop is closed ("${pveText.replace(/\s+/g, ' ').slice(0, 80)}")`,
   );
   check(
-    (await page.locator('#panel-party-shop').count()) === 0,
+    (await page.locator('#panel-party').count()) === 0,
     'solo: no party panel is shown',
+  );
+  check(
+    (await page.locator('.topbar-tabs button').count()) === 0 &&
+      (await page.locator('#shop-toggle').getAttribute('aria-pressed')) ===
+        'false' &&
+      /^Shop\s*\d+ offers?$/.test(
+        (await page.locator('#shop-toggle').innerText()).trim(),
+      ),
+    'no Shop/Build tabs: the top bar has a Shop button with an offer-count badge, not pressed',
+  );
+  check(
+    (await page.locator('#shop-screen').count()) === 0,
+    'the shop starts closed, the checklist and Next fight are in the rail',
   );
   await shot('shop-1-before-pve');
 
@@ -116,12 +107,36 @@ export async function runShopSmoke({
     s0.step === 'shop' && s0.next === 'pvp',
     'shop route: run is in a shop that leads into a PvP battle',
   );
-  const pvpText = await page.locator('#panel-next-battle').innerText();
+  const pvpText = await page.locator('#panel-next-fight').innerText();
   check(
     !/Opponent/i.test(pvpText) &&
-      /Win:/.test(pvpText) &&
-      /Lose:.*life/.test(pvpText),
-    `next battle (PvP): no opponent line, and the stakes are stated ("${pvpText.replace(/\s+/g, ' ').slice(0, 120)}")`,
+      /Win .*gold/.test(pvpText) &&
+      /Lose .*life/.test(pvpText),
+    `next fight (PvP): no opponent line, and the stakes are stated ("${pvpText.replace(/\s+/g, ' ').slice(0, 120)}")`,
+  );
+  const boardBefore = await page.locator('.frame-board canvas').boundingBox();
+  await page.click('#shop-toggle');
+  await page.waitForSelector('#shop-screen');
+  await settle();
+  check(
+    (await page.locator('#shop-toggle').getAttribute('aria-pressed')) ===
+      'true' &&
+      (await page.locator('.shop-badge').count()) === 0 &&
+      (await page.locator('#panel-next-fight').count()) === 0 &&
+      (await page.locator('#panel-problems').count()) === 0,
+    'opening the shop: the button looks pressed and loses its badge, and the shop replaces the checklist and Next fight',
+  );
+  const boardOpen = await page.locator('.frame-board canvas').boundingBox();
+  check(
+    boardOpen.width === boardBefore.width &&
+      boardOpen.height === boardBefore.height,
+    'the board keeps its size while the shop is open',
+  );
+  check(
+    /Bought buildings go into the tray below the board\. To sell one, select it and press Sell\./.test(
+      await page.locator('#shop-screen').innerText(),
+    ),
+    'the shop ends with the footnote about the tray and selling',
   );
   check(
     (await page.$$eval('#offers .offer', (els) =>
@@ -142,11 +157,11 @@ export async function runShopSmoke({
   );
   const cardText = await page.locator('#offers .offer').first().innerText();
   check(
-    /tier \d/.test(cardText) &&
+    /· T\d/.test(cardText) &&
       !/Needs/.test(cardText) &&
       /Health \d+/.test(cardText) &&
-      /Buy · \d+ gold/.test(cardText),
-    `offer card shows kind, tier, health and price (no Needs line) ("${cardText.replace(/\s+/g, ' ').slice(0, 110)}")`,
+      /\d+ g$/.test(cardText.trim()),
+    `offer row shows kind, tier, health and price (no Needs line) ("${cardText.replace(/\s+/g, ' ').slice(0, 110)}")`,
   );
   const sc = await noScroll(1920, 1080);
   check(
@@ -160,8 +175,7 @@ export async function runShopSmoke({
     page.evaluate(() =>
       [...document.querySelectorAll('#offers .offer[data-def]')].every((el) => {
         const btn = el.querySelector('button');
-        const why =
-          el.querySelector('[data-field="reason"]')?.textContent ?? '';
+        const why = btn.title ?? '';
         // No "Need N more gold." text: a reason shows only for a lock.
         return btn.disabled ? !/more gold/.test(why) : why === '';
       }),
@@ -172,22 +186,39 @@ export async function runShopSmoke({
   );
 
   // --- Buy the cheapest affordable offer
-  const g0 = await gold();
-  let slot = -1;
-  s0.offers.forEach((def, i) => {
-    const price = s0.offerPrices[i];
-    // Prefer an offer that is not duplicated: a grouped card stays after a buy.
-    if (
-      def !== null &&
-      s0.offers.filter((d) => d === def).length === 1 &&
-      price <= g0 &&
-      (slot < 0 || price < s0.offerPrices[slot])
-    )
-      slot = i;
-  });
+  let g0 = await gold();
+  let s0b = s0;
+  const pickSlot = () => {
+    let found = -1;
+    s0b.offers.forEach((def, i) => {
+      const price = s0b.offerPrices[i];
+      // Prefer an offer that is not duplicated: a grouped card stays after a buy.
+      if (
+        def !== null &&
+        s0b.offers.filter((d) => d === def).length === 1 &&
+        price <= g0 &&
+        (found < 0 || price < s0b.offerPrices[found])
+      )
+        found = i;
+    });
+    return found;
+  };
+  let slot = pickSlot();
+  // Offers are often grouped copies or dear; re-roll for a single affordable one.
+  for (let i = 0; i < 8 && slot < 0 && g0 > 1; i++) {
+    const before = g0;
+    await page.click('#reroll');
+    await page.waitForFunction(
+      (g) => window.__debug.shop.state().gold < g,
+      before,
+    );
+    s0b = await S.state();
+    g0 = await gold();
+    slot = pickSlot();
+  }
   check(slot >= 0, `an affordable offer exists (gold ${g0})`);
-  const price = s0.offerPrices[slot];
-  const boughtDef = s0.offers[slot];
+  const price = s0b.offerPrices[slot];
+  const boughtDef = s0b.offers[slot];
   await page
     .locator(`#offers .offer[data-slot="${slot}"] [data-action="buy"]`)
     .click();
@@ -219,23 +250,30 @@ export async function runShopSmoke({
   );
   check(
     (await page
-      .locator(`.stash-row.flash[data-stash-def="${boughtDef}"]`)
-      .count()) === 1,
-    'buy: the stash row that received the building is highlighted',
+      .locator(`.stash-item.flash[data-stash-def="${boughtDef}"]`)
+      .count()) === 1 &&
+      /JUST BOUGHT/.test(
+        await page
+          .locator(`.stash-item[data-stash-def="${boughtDef}"] .slot-new`)
+          .first()
+          .innerText(),
+      ),
+    'buy: the inventory slot that received the building is highlighted and says JUST BOUGHT',
   );
+  await shot('shop-2b-after-buy');
   check(
-    /Bought/.test(await page.locator('#shop-status').innerText()),
+    /Bought/.test(await page.locator('#status-line').innerText()),
     'a status line confirms the purchase',
   );
 
   // --- Re-roll
   const g1 = await gold();
   const rerollCost = Number(
-    (await page.locator('#reroll').innerText()).match(/(\d+) gold/)[1],
+    (await page.locator('#reroll').innerText()).match(/(\d+)\s*$/)[1],
   );
   check(
     rerollCost >= 1 && !(await page.locator('#reroll').isDisabled()),
-    `re-roll button shows its cost (${rerollCost} gold) and is enabled`,
+    `re-roll button shows its cost (${rerollCost}) and is enabled`,
   );
   await page.click('#reroll');
   await page.waitForFunction(
@@ -248,15 +286,20 @@ export async function runShopSmoke({
     're-roll: gold paid and every slot, including the sold one, has a new offer',
   );
 
-  // --- Sell: cancel first, then confirm
-  const wallRow = page.locator('.stash-row[data-stash-def="bld_wall"]').first();
+  // --- Sell: select the slot, press Sell, cancel first, then confirm
+  const wallRow = page
+    .locator('.stash-item[data-stash-def^="bld_wall_"]')
+    .first();
+  const wallCount = Number(await wallRow.getAttribute('data-count'));
+  const wallDef = await wallRow.getAttribute('data-stash-def');
+  await wallRow.click();
+  await page.waitForSelector('#sell-strip [data-action="sell"]');
   const wallRefund = Number(
-    (await wallRow.locator('[data-action="sell"]').innerText()).match(
-      /(\d+)/,
+    (await page.locator('#sell-strip [data-action="sell"]').innerText()).match(
+      /Sell · (\d+)/,
     )[1],
   );
-  const wallCount = Number(await wallRow.getAttribute('data-count'));
-  await wallRow.locator('[data-action="sell"]').click();
+  await page.click('#sell-strip [data-action="sell"]');
   const quote = await page.locator('#sell-quote').innerText();
   check(
     quote.includes(String(wallRefund)) && /^Sell /.test(quote),
@@ -269,13 +312,23 @@ export async function runShopSmoke({
       (await S.state()).stash.length === s2.stash.length,
     'sell: cancelling changes nothing',
   );
+  // Escape cancels the sale too, and leaves the shop open.
+  await page.click('#sell-strip [data-action="sell"]');
+  await page.waitForSelector('#sell-confirm');
+  await page.keyboard.press('Escape');
+  check(
+    (await page.locator('#sell-confirm').count()) === 0 &&
+      (await page.locator('#shop-screen').count()) === 1 &&
+      (await gold()) === s2.gold,
+    'sell: Escape cancels the sale, the shop stays open and nothing changes',
+  );
   // There is no drop zone to drag onto; the Sell button opens the quote again.
   check(
     (await page.locator('#sell-target').count()) === 0 &&
       (await wallRow.getAttribute('draggable')) === null,
-    'sell: no drag-to-sell drop zone, and stash rows are not draggable',
+    'sell: no drag-to-sell drop zone, and inventory slots are not draggable',
   );
-  await wallRow.locator('[data-action="sell"]').click();
+  await page.click('#sell-strip [data-action="sell"]');
   await page.waitForSelector('#sell-confirm');
   await page.click('#sell-confirm');
   await page.waitForFunction(
@@ -287,39 +340,30 @@ export async function runShopSmoke({
     s3.gold === s2.gold + wallRefund,
     `sell: gold ${s2.gold} -> ${s3.gold} (+${wallRefund})`,
   );
-  const wallRowAfter = page.locator('.stash-row[data-stash-def="bld_wall"]');
+  const wallRowAfter = page.locator(`.stash-item[data-stash-def="${wallDef}"]`);
   check(
     wallCount === 1
       ? (await wallRowAfter.count()) === 0
       : Number(await wallRowAfter.first().getAttribute('data-count')) ===
           wallCount - 1,
-    'sell: the stash list lost one wall',
+    'sell: the inventory lost one wall',
   );
 
-  // --- Build tab: place the purchase
-  await page.click('.topbar-tabs button:has-text("Build")');
-  await page.waitForFunction(() => window.__debug?.build?.step() === 'shop');
-  await page.waitForSelector('canvas');
-  await settle();
+  // --- The board works while the shop is open: place the purchase
   check(
-    (await B.step()) === 'shop',
-    'the header Build tab shows the Build tab of the same step',
-  );
-  const tabs = await page.locator('.topbar-tabs button').allInnerTexts();
-  check(
-    tabs.join(',') === 'Shop,Build' &&
-      !(await page.locator('.topbar-tabs button').first().isDisabled()),
-    'both tabs are available in the top bar',
+    (await B.step()) === 'shop' &&
+      (await page.locator('#shop-screen').count()) === 1,
+    'the shop is still open on the Build screen of the same step',
   );
   const t0 = await B.team();
   check(
     t0.stash.length === s3.stash.length &&
       t0.stash.some((x) => x.def === boughtDef),
-    'Build tab sees the same stash, including the purchase',
+    'the board sees the same stash, including the purchase',
   );
   check(
     await page.locator('[data-action="undo"]').isDisabled(),
-    'Build tab: undo is empty after buying, selling and re-rolling',
+    'undo is empty after buying, selling and re-rolling',
   );
   const bought = t0.stash.find((x) => x.def === boughtDef);
 
@@ -401,7 +445,7 @@ export async function runShopSmoke({
   );
   await shot('shop-4-build-after-placing');
 
-  // --- Switch tabs repeatedly: nothing is lost
+  // --- Close and open the shop repeatedly: nothing is lost
   const snapshot = async () => {
     const s = await S.state();
     const t = await B.team();
@@ -413,59 +457,54 @@ export async function runShopSmoke({
       conduits: t.conduits,
     });
   };
-  await goShopTab();
   const snap0 = await snapshot();
   const roundTrips = [];
-  await goBuildTab();
+  await page.click('#shop-close');
+  await page.waitForSelector('#shop-screen', { state: 'detached' });
   check(
-    await page.evaluate(() => window.__debug?.shop === undefined),
-    'the Shop debug hook is unregistered when the tab is left',
+    (await page.locator('#panel-next-fight').count()) === 1 &&
+      (await page.locator('#shop-toggle').getAttribute('aria-pressed')) ===
+        'false' &&
+      (await page.locator('.shop-badge').count()) === 0,
+    'closing the shop (x): the rail shows the checklist and Next fight again, the button is not pressed',
   );
-  await goShopTab();
+  await shot('shop-3b-closed');
   for (let i = 0; i < 3; i++) {
-    await goBuildTab();
-    await goShopTab();
+    await openShop(page);
+    await closeShop(page);
     roundTrips.push(await snapshot());
   }
   check(
     roundTrips.every((x) => x === snap0),
-    'switching Shop and Build three times loses no gold, offers, stash or board state',
+    'opening and closing the shop three times loses no gold, offers, stash or board state',
   );
-  check(
-    /1 building placed/.test(
-      await page.locator('[data-field="factory-counts"]').innerText(),
-    ),
-    'the mini factory view counts the placed building',
-  );
+  await openShop(page);
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('#shop-screen', { state: 'detached' });
+  check(true, 'Escape closes the shop');
+  await openShop(page);
 
-  // --- Reload: gold, offers, stash and board survive
+  // --- Reload: gold, offers, stash and board survive; the shop starts closed
   const before = await snapshot();
   await page.reload();
-  await page.waitForSelector('#shop-screen');
+  await page.waitForSelector('#shop-toggle');
   await page.waitForFunction(() => window.__debug?.shop?.state);
   await settle();
-  // The Build debug hook registers when the Build tab is first shown.
-  await goBuildTab();
-  await goShopTab();
+  check(
+    (await page.locator('#shop-screen').count()) === 0,
+    'after a reload the shop is closed again',
+  );
   const afterReload = await snapshot();
   check(
     before === afterReload,
     'after a page reload gold, offers, stash and the board are as they were',
   );
-  await shot('shop-5-after-reload');
-
-  // Reload directly on the Build tab: the board is back.
-  await goBuildTab();
-  await page.reload();
-  await page.waitForSelector('canvas');
-  await page.waitForFunction(() => window.__debug?.build?.step() === 'shop');
-  await settle();
-  const buildReload = await B.team();
   check(
-    buildReload.buildings.some((b) => b.id === bought.id),
-    'reload on the Build tab restores the placed building',
+    (await B.team()).buildings.some((b) => b.id === bought.id),
+    'reload restores the placed building',
   );
-  await goShopTab();
+  await openShop(page);
+  await shot('shop-5-after-reload');
 
   // --- 1366x768
   await page.setViewportSize({ width: 1366, height: 768 });
@@ -473,14 +512,16 @@ export async function runShopSmoke({
   await frames(page, 9);
   const sc2 = await noScroll(1366, 768);
   check(sc2.ok, `shop has no page scroll at 1366x768 (${JSON.stringify(sc2)})`);
+  // The offers are in the info rail, which scrolls when they do not all fit:
+  // none may be cut off at the side, and every Buy button can be reached.
   const clipped = await page.evaluate(() => {
-    const box = document.querySelector('#offers').getBoundingClientRect();
+    const box = document.querySelector('.frame-info').getBoundingClientRect();
     return [...document.querySelectorAll('#offers .offer')].filter((el) => {
       const r = el.getBoundingClientRect();
       return (
-        r.bottom > box.bottom + 1 ||
         r.right > box.right + 1 ||
-        el.scrollHeight > el.clientHeight + 1
+        r.left < box.left - 1 ||
+        el.scrollWidth > el.clientWidth + 1
       );
     }).length;
   });
@@ -489,15 +530,22 @@ export async function runShopSmoke({
     `no offer card is clipped at 1366x768 (${clipped} clipped)`,
   );
   const buyVisible = await page.evaluate(() => {
-    const box = document.querySelector('#offers').getBoundingClientRect();
-    return [...document.querySelectorAll('#offers [data-action="buy"]')].every(
-      (b) => {
-        const r = b.getBoundingClientRect();
-        return r.bottom <= box.bottom + 1;
-      },
+    const rail = document.querySelector('.frame-info');
+    const box = rail.getBoundingClientRect();
+    const canScroll =
+      getComputedStyle(rail).overflowY === 'auto' ||
+      rail.scrollHeight <= rail.clientHeight;
+    return (
+      canScroll &&
+      [...document.querySelectorAll('#offers [data-action="buy"]')].every(
+        (b) => {
+          const r = b.getBoundingClientRect();
+          return r.right <= box.right + 1 && r.left >= box.left - 1;
+        },
+      )
     );
   });
-  check(buyVisible, 'Buy buttons are fully visible at 1366x768');
+  check(buyVisible, 'Buy buttons are inside the info rail at 1366x768');
   await shot('shop-6-1366x768');
   await shotDark('art2-shop-1366x768');
   await page.setViewportSize({ width: 1920, height: 1080 });
@@ -516,7 +564,7 @@ export async function runShopSmoke({
   });
   await tabB.setViewportSize({ width: 1920, height: 1080 });
   await tabB.goto(`${baseUrl}?next=pvp#shop`);
-  await tabB.waitForSelector('#shop-screen');
+  await openShop(tabB);
   await tabB.waitForFunction(() => window.__debug?.shop?.state);
   const a0 = await S.state();
   const b0 = await stateOf(tabB);
@@ -526,7 +574,7 @@ export async function runShopSmoke({
     'two tabs: both open on the same saved run',
   );
   const rerollGold = Number(
-    (await page.locator('#reroll').innerText()).match(/(\d+) gold/)[1],
+    (await page.locator('#reroll').innerText()).match(/(\d+)\s*$/)[1],
   );
   await page.click('#reroll');
   await page.waitForFunction(
@@ -550,7 +598,7 @@ export async function runShopSmoke({
     'two tabs: the refused purchase stops tab B and offers Reload',
   );
   await page.reload();
-  await page.waitForSelector('#shop-screen');
+  await openShop(page);
   await page.waitForFunction(() => window.__debug?.shop?.state);
   const aAfter = await S.state();
   check(
@@ -561,7 +609,7 @@ export async function runShopSmoke({
     `two tabs: after reload gold (${aAfter.gold}) and offers are tab A's re-roll and tab B's buy was refused`,
   );
   await tabB.click('#run-reload');
-  await tabB.waitForSelector('#shop-screen');
+  await openShop(tabB);
   await tabB.waitForFunction(() => window.__debug?.shop?.state);
   const bReloaded = await stateOf(tabB);
   check(
@@ -579,7 +627,7 @@ export async function runShopSmoke({
     'two tabs: a save from another tab stops tab A with a Reload button',
   );
   await page.click('#run-reload');
-  await page.waitForSelector('#shop-screen');
+  await openShop(page);
   await page.waitForFunction(() => window.__debug?.shop?.state);
   check(
     JSON.stringify((await S.state()).offers) ===
@@ -589,15 +637,18 @@ export async function runShopSmoke({
   await tabB.close();
   await shot('shop-6b-two-tabs');
 
-  // --- Ready from the Shop tab
-  const readyBefore = await page.locator('#shop-ready').innerText();
-  check(readyBefore === 'Ready', 'Ready is available on the Shop tab');
-  await page.click('#shop-ready');
+  // --- Ready, with the shop open
+  const readyBefore = await page.locator('#ready-button').innerText();
+  check(
+    /^Ready\s+Space$/.test(readyBefore),
+    `Ready is at the end of the tray with the shop open ("${readyBefore.replace(/\s+/g, ' ')}")`,
+  );
+  await page.click('#ready-button');
   await page.waitForSelector('#step-placeholder');
   const ph = await page.locator('#step-placeholder').innerText();
   check(
-    /Ready, waiting to continue/i.test(ph) && /pvp_summary/.test(ph),
-    `ready from the Shop tab: the run advances and a placeholder names the step ("${ph.replace(/\s+/g, ' ').slice(0, 100)}")`,
+    /pvp_summary/.test(ph),
+    `ready: the run advances and a placeholder names the step ("${ph.replace(/\s+/g, ' ').slice(0, 100)}")`,
   );
   await shot('shop-7-ready');
   check(
@@ -628,7 +679,7 @@ export async function runShopSmoke({
   );
   await page.click('#dev-new-run');
   await page.click('#dev-new-run-confirm');
-  await page.waitForSelector('#shop-screen');
+  await page.waitForSelector('#shop-toggle');
   await page.waitForFunction(() => window.__debug?.shop?.state);
   // The new run is written to storage as the screen mounts; wait for it.
   await page.waitForFunction(
@@ -672,7 +723,7 @@ export async function runShopSmoke({
     'a damaged save: the reason is shown and the save is not deleted',
   );
   await page.click('#run-discard');
-  await page.waitForSelector('#shop-screen');
+  await page.waitForSelector('#shop-toggle');
   await page.waitForFunction(() => window.__debug?.shop?.state);
   check(
     (await S.state()).step === 'shop' &&
@@ -689,17 +740,11 @@ export async function runShopSmoke({
   });
   await noStore.setViewportSize({ width: 1920, height: 1080 });
   await noStore.goto(`${baseUrl}?next=pvp#shop`);
-  await noStore.waitForSelector('#shop-screen');
+  await noStore.waitForSelector('#shop-toggle');
   const note = 'Not saved — progress is lost on reload';
   check(
     (await noStore.locator('#not-saved-note').innerText()) === note,
-    'unsaved run: the Shop tab shows "Not saved — progress is lost on reload"',
-  );
-  await noStore.click('.topbar-tabs button:has-text("Build")');
-  await noStore.waitForSelector('canvas');
-  check(
-    (await noStore.locator('#not-saved-note').innerText()) === note,
-    'unsaved run: the Build tab shows the same note',
+    'unsaved run: the Build screen shows "Not saved — progress is lost on reload"',
   );
   await noStore.close();
   check(
@@ -709,14 +754,13 @@ export async function runShopSmoke({
 
   // --- Two players (?players=2): the Ready lock with the partner not ready
   await page.goto(`${baseUrl}?next=pvp&players=2#shop`);
-  await page.waitForSelector('#shop-screen');
+  await page.waitForSelector('#shop-toggle');
   await page.waitForFunction(() => window.__debug?.shop?.state);
   await page.waitForFunction(() => window.__debug?.partner !== undefined);
   check(
     (await S.state()).runId === 'shop-sample-pvp-2p',
     'two players: the ?players=2 route starts its own sample run',
   );
-  await goBuildTab();
   const undoBtn = page.locator('[data-action="undo"]');
   const redoBtn = page.locator('[data-action="redo"]');
   // Make a real edit first, so Undo is enabled and a lock has something to hold back.
@@ -726,7 +770,7 @@ export async function runShopSmoke({
     for (let x = 1; x < twoTeam.width - 2 && twoPlaced === null; x++) {
       const before = (await B.team()).buildings.length;
       const b = await page
-        .locator('[data-stash-def="bld_wall"]')
+        .locator('[data-stash-def^="bld_wall_"]')
         .first()
         .boundingBox();
       await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
@@ -749,7 +793,7 @@ export async function runShopSmoke({
   await page.click('#ready-button');
   await page.waitForSelector('[data-field="ready-locked"]');
   check(
-    (await page.locator('#ready-button').innerText()) === 'Unready' &&
+    /^Unready\s+Space$/.test(await page.locator('#ready-button').innerText()) &&
       (await B.step()) === 'shop',
     'two players: Ready locks this player and the run stays in the shop',
   );

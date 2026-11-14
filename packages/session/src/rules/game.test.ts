@@ -961,9 +961,9 @@ describe('the upcomingPve invariant (validateRunState)', () => {
 describe('the run-state format version', () => {
   const deps = fixedDeps(true, true);
 
-  test('a new run has version 8; version 1 and other versions are rejected clearly', () => {
+  test('a new run has version 10; version 1 and other versions are rejected clearly', () => {
     const s = start(deps);
-    expect(s.formatVersion).toBe(9);
+    expect(s.formatVersion).toBe(10);
     expect(validateRunState(clone(s), deps).ok).toBe(true);
     // A version-1 state: the old version, and no upcomingPve field.
     const old = clone(s) as unknown as Record<string, unknown>;
@@ -974,7 +974,7 @@ describe('the run-state format version', () => {
     if (r.ok) return;
     expect(r.errors).toHaveLength(1);
     expect(r.errors[0]).toMatch(/unsupported format version 1/);
-    for (const v of [2, 3, 4, 5, 6, 7, '8', null, 0]) {
+    for (const v of [2, 3, 4, 5, 6, 7, 8, 9, '10', null, 0]) {
       const o = clone(s) as unknown as Record<string, unknown>;
       o['formatVersion'] = v;
       const x = validateRunState(o, deps);
@@ -1364,10 +1364,10 @@ describe('event follow-ups', () => {
 describe('a Shrine modifier changes the outcome of a real battle', () => {
   // A modifier far stronger than the shipped ones, so that the party's thin
   // board (it never wins without help) wins a battle it would have lost. The
-  // seed was found by searching seeds 1 to 40 at test-writing time: at this
+  // seed was found by searching seeds 1 to 40 (again for issue #291, when the kit walls became random shapes): at this
   // seed the Shrine offers it and the second PvE battle flips from a loss to
   // a win.
-  const SEED = 8;
+  const SEED = 23;
   const events = loadEventsOrThrow({
     offerCount: 3,
     events: gameConfigs.events.events.map((e) => ({ ...e })),
@@ -1398,7 +1398,12 @@ describe('a Shrine modifier changes the outcome of a real battle', () => {
     const dist = (c: { x: number; y: number }) =>
       Math.abs(c.x - core.x) + Math.abs(c.y - core.y);
     cells.sort((a, b) => dist(a) - dist(b) || a.x - b.x || a.y - b.y);
-    const order = ['bld_turret', 'bld_barracks', 'bld_wall', 'bld_extractor'];
+    const order = [
+      'bld_turret',
+      'bld_barracks',
+      'bld_wall_block',
+      'bld_extractor',
+    ];
     const stash = [...s.team.stash].sort(
       (a, b) => order.indexOf(a.def) - order.indexOf(b.def),
     );

@@ -19,7 +19,7 @@ export interface ChartSeries {
 
 export interface ChartMarker {
   readonly x: number;
-  /** Shown in the circle at the top of the marker line (a number or a range such as "2–3"). */
+  /** Shown in the circle at the top of the marker line (such as "#1", or a range such as "#2–3"). */
   readonly label: string;
 }
 
@@ -101,7 +101,7 @@ export function LineChart(props: LineChartProps) {
       ctx.lineTo(x, padT + gh);
       ctx.stroke();
       ctx.setLineDash([]);
-      // A pill that grows with its label ("2–3" is wider than "2").
+      // A pill that grows with its label ("#2–3" is wider than "#2").
       const halfW = Math.max(7.5, ctx.measureText(m.label).width / 2 + 4);
       // Kept inside the canvas near the ends; the line stays at the moment.
       const cxPill = Math.min(Math.max(x, halfW), w - halfW);

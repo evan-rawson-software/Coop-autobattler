@@ -5,6 +5,7 @@
 import { classify, type HistoryEntry, type SaveListItem } from '@game/session';
 import { stepLabel } from '../run/router.js';
 import { INSTALLED_VERSION } from '../run/version.js';
+import { localIsoDate } from '../date.js';
 import { count } from '../plural.js';
 
 export interface SavedRunRow {
@@ -139,8 +140,13 @@ export function recentRunRows(
     if (!has(h.runId)) continue;
     rows.push({
       runId: h.runId,
-      text: `${count(h.partySize, 'player')} · round ${String(h.round)} · ${new Date(h.finishedAt).toISOString().slice(0, 10)}`,
+      text: `${count(h.partySize, 'player')} · round ${String(h.round)} · ${localIsoDate(h.finishedAt)}`,
     });
   }
   return rows;
+}
+
+/** Has any party size a deepest round yet? Until then the records stay one line. */
+export function hasRecords(best: Readonly<Record<number, number>>): boolean {
+  return Object.keys(best).length > 0;
 }

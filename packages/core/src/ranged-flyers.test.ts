@@ -519,7 +519,7 @@ describe('Hangar spawning, flyer targeting by distance, test-only units (issue #
       [3, 7],
       [3, 4],
     ] as const) {
-      lab.put('bld_wall', x, y);
+      lab.put('bld_wall_block', x, y);
     }
     return lab.state;
   }
@@ -530,13 +530,13 @@ describe('Hangar spawning, flyer targeting by distance, test-only units (issue #
     lab.core(8, 0);
     lab.put(producer, 3, 5);
     for (let x = 2; x <= 5; x++) {
-      lab.put('bld_wall', x, 4);
-      lab.put('bld_wall', x, 7);
+      lab.put('bld_wall_block', x, 4);
+      lab.put('bld_wall_block', x, 7);
     }
-    lab.put('bld_wall', 2, 5);
-    lab.put('bld_wall', 2, 6);
-    lab.put('bld_wall', 5, 5);
-    lab.put('bld_wall', 5, 6);
+    lab.put('bld_wall_block', 2, 5);
+    lab.put('bld_wall_block', 2, 6);
+    lab.put('bld_wall_block', 5, 5);
+    lab.put('bld_wall_block', 5, 6);
     return lab.state;
   }
 
@@ -645,7 +645,7 @@ describe('Hangar spawning, flyer targeting by distance, test-only units (issue #
       [15, 7],
       [15, 4],
     ] as const) {
-      lab.put('bld_wall', x, y);
+      lab.put('bld_wall_block', x, y);
     }
     return lab.state;
   }
@@ -688,7 +688,7 @@ describe('Hangar spawning, flyer targeting by distance, test-only units (issue #
     const board = (): TeamState => {
       const lab = new Lab(map1());
       lab.core(5, 0);
-      for (let x = 0; x < 12; x++) lab.put('bld_wall', x, 8);
+      for (let x = 0; x < 12; x++) lab.put('bld_wall_block', x, 8);
       for (let x = 0; x < 12; x += 2) lab.put('bld_barracks', x, 5);
       return lab.state;
     };

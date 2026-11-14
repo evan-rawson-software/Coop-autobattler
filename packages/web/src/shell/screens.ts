@@ -7,7 +7,6 @@ import { ShopBuildScreen } from '../build/ShopBuildScreen.js';
 import { MainMenuScreen } from '../menu/MainMenu.js';
 import { RunScreen } from '../run/RunScreen.js';
 import { DebugScreen } from '../screens/DebugScreen.js';
-import { ShopScreen } from '../shop/ShopScreen.js';
 import type { ScreenId } from '../app-state.js';
 import { lazyScreen } from './lazy-screen.js';
 
@@ -22,8 +21,7 @@ export const screens: readonly ScreenDef[] = [
   { id: 'run', name: 'Run', component: RunScreen },
   { id: 'debug', name: 'Debug', component: DebugScreen },
   { id: 'build', name: 'Build', component: BuildScreen },
-  { id: 'shop', name: 'Shop', component: ShopScreen },
-  { id: 'shop-build', name: 'Shop · Build tab', component: ShopBuildScreen },
+  { id: 'shop', name: 'Shop + Build', component: ShopBuildScreen },
   { id: 'battle', name: 'Battle', component: BattleSampleScreen },
   {
     id: 'sprites',

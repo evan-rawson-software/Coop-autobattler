@@ -3,7 +3,12 @@ import { reachStep, realDeps, send } from '../run/test-run.js';
 import { simConfig } from '../build/setup.js';
 import { coreMaxHealth } from '@game/core';
 import { overloadLine } from './overload.js';
-import { overloadClock, pveChoiceView, threatFacts } from './view-model.js';
+import {
+  cardFacts,
+  overloadClock,
+  pveChoiceView,
+  threatFacts,
+} from './view-model.js';
 
 describe('PvE choice cards', () => {
   const run = reachStep('pve_choice');
@@ -32,8 +37,7 @@ describe('PvE choice cards', () => {
     expect(gold[0]).toBeLessThan(gold[2] as number);
   });
 
-  test('the stakes and the Overload start are stated', () => {
-    expect(view?.stakes).toBe('Losing costs no life.');
+  test('the Overload start is stated', () => {
     expect(view?.overloadAt).toBe(overloadClock(simConfig));
     expect(overloadClock(simConfig)).toBe('3:00');
   });
@@ -122,5 +126,31 @@ describe('the Overload line', () => {
   test('the party Core is read from content', () => {
     const run = reachStep('pve_choice');
     expect(coreMaxHealth(run.team, realDeps().content)).toBe(500);
+  });
+});
+
+describe('the three card facts', () => {
+  test('units, defenses with the Core, first wave', () => {
+    const o = (walls: number, turrets: number, first: number | null) =>
+      ({
+        summary: {
+          totalUnits: 8,
+          walls,
+          turrets,
+          coreHealth: 42,
+          firstWaveTick: first,
+        },
+      }) as never;
+    expect(cardFacts(o(1, 0, 0), simConfig)).toEqual([
+      '8 enemy units',
+      '1 wall · Core 42 health',
+      'First wave at 0:00',
+    ]);
+    expect(cardFacts(o(0, 0, null), simConfig)[1]).toBe(
+      'No walls · Core 42 health',
+    );
+    expect(cardFacts(o(8, 1, 600), simConfig)[1]).toBe(
+      '8 walls, 1 turret · Core 42 health',
+    );
   });
 });

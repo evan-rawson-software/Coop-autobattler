@@ -4,7 +4,18 @@
   "startingKit": [
     { "def": "bld_extractor", "tier": 1, "count": 2 },
     { "def": "bld_barracks", "tier": 1, "count": 1 },
-    { "def": "bld_wall", "tier": 1, "count": 3 },
+    {
+      "pick": [
+        "bld_wall_o",
+        "bld_wall_t",
+        "bld_wall_s",
+        "bld_wall_z",
+        "bld_wall_l",
+        "bld_wall_j"
+      ],
+      "tier": 1,
+      "count": 3
+    },
     { "def": "bld_turret", "tier": 1, "count": 1 }
   ],
   "baseIncomePerShop": 5,
@@ -17,18 +28,24 @@
     "pvpLoss": 4
   },
   "offerWeights": [
-    { "def": "bld_extractor", "weight": 12 },
-    { "def": "bld_splitter", "weight": 6 },
-    { "def": "bld_merger", "weight": 6 },
-    { "def": "bld_crossover", "weight": 2 },
-    { "def": "bld_barracks", "weight": 16 },
-    { "def": "bld_wall", "weight": 8 },
-    { "def": "bld_gate", "weight": 3 },
-    { "def": "bld_turret", "weight": 8 },
-    { "def": "bld_overclocker", "weight": 3 },
-    { "def": "bld_armory", "weight": 6 },
-    { "def": "bld_range", "weight": 8 },
-    { "def": "bld_hangar", "weight": 6 }
+    { "def": "bld_extractor", "weight": 24 },
+    { "def": "bld_splitter", "weight": 12 },
+    { "def": "bld_merger", "weight": 12 },
+    { "def": "bld_crossover", "weight": 4 },
+    { "def": "bld_barracks", "weight": 32 },
+    { "def": "bld_wall_i", "weight": 1 },
+    { "def": "bld_wall_o", "weight": 2 },
+    { "def": "bld_wall_t", "weight": 2 },
+    { "def": "bld_wall_s", "weight": 2 },
+    { "def": "bld_wall_z", "weight": 2 },
+    { "def": "bld_wall_l", "weight": 2 },
+    { "def": "bld_wall_j", "weight": 2 },
+    { "def": "bld_gate", "weight": 6 },
+    { "def": "bld_turret", "weight": 16 },
+    { "def": "bld_overclocker", "weight": 6 },
+    { "def": "bld_armory", "weight": 12 },
+    { "def": "bld_range", "weight": 16 },
+    { "def": "bld_hangar", "weight": 12 }
   ],
   "tierOdds": [
     { "fromRound": 1, "weights": [100, 0, 0] },

@@ -70,7 +70,7 @@ function errorsOf(...defs: Record<string, unknown>[]): string {
 describe('real content', () => {
   test('loads everything through loadAllContent', () => {
     const content = loadAllContentOrThrow(raw);
-    expect(content.buildings.list().length).toBe(13);
+    expect(content.buildings.list().length).toBe(20);
     expect(content.units.list().length).toBe(4);
     expect(content.terrain.list().length).toBe(2);
     const turret = content.buildings.get('bld_turret');
@@ -517,10 +517,10 @@ describe('loadPresentation', () => {
       units: Record<string, unknown>;
       terrain: Record<string, unknown>;
     };
-    delete data.buildings['bld_wall'];
+    delete data.buildings['bld_wall_block'];
     data.units['unit_extra'] = { name: 'X', description: 'Y' };
     const text = presentationErrors(data);
-    expect(text).toMatch(/buildings: missing entry for "bld_wall"/);
+    expect(text).toMatch(/buildings: missing entry for "bld_wall_block"/);
     expect(text).toMatch(/"unit_extra"\]: not a defined unit ID/);
   });
 
@@ -528,7 +528,7 @@ describe('loadPresentation', () => {
     const data = clone(raw.presentation) as {
       buildings: Record<string, Record<string, unknown>>;
     };
-    data.buildings['bld_wall'] = {
+    data.buildings['bld_wall_block'] = {
       name: ' ',
       description: 'Uses {res_nope}.',
       rules: 1,

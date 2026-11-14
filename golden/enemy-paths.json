@@ -57,7 +57,7 @@
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 1,
           "owner": 0
         },
@@ -71,7 +71,7 @@
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 1,
           "owner": 0
         },
@@ -394,7 +394,7 @@
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 3,
           "owner": 0
         },
@@ -408,7 +408,7 @@
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 3,
           "owner": 0
         },
@@ -422,7 +422,7 @@
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 3,
           "owner": 0
         },
@@ -436,7 +436,7 @@
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 3,
           "owner": 0
         },
@@ -450,7 +450,7 @@
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 3,
           "owner": 0
         },
@@ -464,7 +464,7 @@
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 1,
           "owner": 0
         },

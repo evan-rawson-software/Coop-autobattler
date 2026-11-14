@@ -180,7 +180,7 @@
       },
       {
         "id": 4,
-        "def": "bld_wall",
+        "def": "bld_wall_block",
         "tier": 1,
         "x": 0,
         "y": 0,
@@ -189,7 +189,7 @@
       },
       {
         "id": 5,
-        "def": "bld_wall",
+        "def": "bld_wall_block",
         "tier": 1,
         "x": 1,
         "y": 0,
@@ -198,7 +198,7 @@
       },
       {
         "id": 6,
-        "def": "bld_wall",
+        "def": "bld_wall_block",
         "tier": 1,
         "x": 2,
         "y": 0,

@@ -1,0 +1,220 @@
+/* The guided tutorial (issue #309): the coach card and checklist in the info
+   rail, and rings or pulses on the thing to use. No dark overlay: the board
+   stays fully visible. */
+
+.tutorial-card {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0.6rem 0.75rem;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.tut-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tut-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.tutorial-card .text-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  min-height: 0;
+  color: var(--ink-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.tut-progress {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tut-progress li {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border);
+}
+
+.tut-progress li.done {
+  background: var(--ok, #1f9d55);
+}
+
+.tut-progress li.current {
+  background: var(--accent);
+}
+
+/* The phase box nested in the card: no second frame. */
+.tutorial-card .phase-box {
+  border-color: var(--border);
+}
+
+.tut-heading {
+  margin: 4px 0 0;
+  font-size: 1.05rem;
+}
+
+.tut-body {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.tut-body strong {
+  color: var(--accent);
+}
+
+.tut-skip-step {
+  align-self: flex-start;
+}
+
+.tut-confirm p {
+  margin: 0 0 6px;
+  font-size: 0.88rem;
+}
+
+.tut-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tut-finish {
+  align-self: flex-start;
+}
+
+/* ---- Checklist ---- */
+
+.tut-checklist {
+  flex: 0 0 auto;
+  margin-top: auto;
+  /* Pinned to the foot of the rail even when the rail scrolls. */
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.tut-list-title {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.tut-checklist ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tut-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.tut-mark {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.tut-checklist li.done {
+  color: var(--ink-muted);
+}
+
+.tut-checklist li.done .tut-mark {
+  border-color: var(--ok, #1f9d55);
+  background: var(--ok, #1f9d55);
+  color: #fff;
+}
+
+.tut-checklist li.current {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.tut-checklist li.current .tut-mark {
+  border-color: var(--accent);
+}
+
+/* ---- Highlights ---- */
+
+@keyframes tut-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 70%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 9px color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
+.slot.tut-target,
+.game-frame[data-tut-target='ready'] #ready-button,
+.game-frame[data-tut-target='paths'] [data-overlay='paths'],
+.game-frame[data-tut-target='conduit'] [data-tool='conduit'],
+.game-frame[data-tut-target='fight'] #pve-fight,
+.game-frame[data-tut-target='fight'] .pve-card.selected,
+.game-frame[data-tut-target='speed'] #panel-speed {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  animation: tut-pulse 1.6s ease-out infinite;
+}
+
+/* Not taught yet: faded and out of reach. */
+.slot.tut-locked {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot.tut-target,
+  .game-frame[data-tut-target] #ready-button,
+  .game-frame[data-tut-target] [data-overlay='paths'],
+  .game-frame[data-tut-target] [data-tool='conduit'],
+  .game-frame[data-tut-target] #pve-fight,
+  .game-frame[data-tut-target] .pve-card.selected,
+  .game-frame[data-tut-target] #panel-speed {
+    animation: none;
+  }
+}

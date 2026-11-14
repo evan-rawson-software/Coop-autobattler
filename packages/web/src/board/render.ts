@@ -411,7 +411,7 @@ function drawBoard(
       // The sprite is in the static layer.
     } else if (b.solid) {
       ctx.fillStyle = theme.wall;
-      ctx.fillRect(sx(b.rect.x), sy(b.rect.y), b.rect.w * z, b.rect.h * z);
+      for (const c of b.cells) ctx.fillRect(sx(c.x), sy(c.y), z, z);
     } else {
       ctx.fillStyle = theme.kinds[b.def.kind] ?? theme.boardBg;
       ctx.fillRect(x, y, w, h);

@@ -82,7 +82,7 @@ describe('the movement field (8 directions)', () => {
     // A wall of side 1 on arena (5, 32): board (6, 3).
     const lab = new Lab(tiny());
     lab.core(5, 0);
-    lab.put('bld_wall', 6, 3);
+    lab.put('bld_wall_block', 6, 3);
     const { arena, f } = field(lab.state);
     // (4, 32) cannot step diagonally to (5, 33): the wall at (5, 32) is in the
     // way of the corner, so it goes through (4, 33): 10 + 10.

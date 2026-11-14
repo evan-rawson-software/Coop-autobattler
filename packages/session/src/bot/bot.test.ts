@@ -46,6 +46,13 @@ function counts(r: BotRunResult): Record<string, number> {
   return out;
 }
 
+/** Walls of any shape in a `counts` result (issue #291). */
+function wallsOf(c: Record<string, number>): number {
+  return Object.entries(c)
+    .filter(([def]) => def.startsWith('bld_wall_'))
+    .reduce((n, [, k]) => n + k, 0);
+}
+
 describe('bot player', () => {
   for (const strategy of BOT_STRATEGIES) {
     for (const party of [1, 4]) {
@@ -101,12 +108,12 @@ describe('bot player', () => {
     const fortify = counts(play('fortify', 1, 5));
     const siege = counts(play('siege', 1, 5));
     const weak = play('weak', 1, 5);
-    expect(rush['bld_wall'] ?? 0).toBe(0);
-    expect(fortify['bld_wall'] ?? 0).toBeGreaterThan(0);
+    expect(wallsOf(rush)).toBe(0);
+    expect(wallsOf(fortify)).toBeGreaterThan(0);
     expect(rush['bld_barracks'] ?? 0).toBeGreaterThan(
       fortify['bld_barracks'] ?? 0,
     );
-    expect(siege['bld_wall'] ?? 0).toBeGreaterThan(0);
+    expect(wallsOf(siege)).toBeGreaterThan(0);
     // The weak bot never draws a conduit; the others do.
     expect(weak.state.team.conduits).toHaveLength(0);
     expect(rushRun.state.team.conduits.length).toBeGreaterThan(0);

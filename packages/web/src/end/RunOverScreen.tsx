@@ -14,6 +14,7 @@ import { content } from '../content.js';
 import { clearRunTicks } from '../battle/run-battle.js';
 import { registerDebug, unregisterDebug } from '../debug-hook.js';
 import { createNewRun, randomSeed } from '../run/run-store.js';
+import { localIsoDate } from '../date.js';
 import { runHash, seedFromHash } from '../run/router.js';
 import { getServices } from '../run/services.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
@@ -48,6 +49,8 @@ export function RunOverScreen(props: {
   startingLives: number;
   /** A finished run reopened from the menu: Back to menu only, no New run. */
   readOnly?: boolean;
+  /** When the run ended; a reopened summary shows its date in the title. */
+  finishedAt?: number;
 }) {
   const { state, startingLives } = props;
   const readOnly = props.readOnly === true;
@@ -104,6 +107,11 @@ export function RunOverScreen(props: {
     () => runStats(state, startingLives),
     [state, startingLives],
   );
+  // Sub-rows only when they say more than the total above them.
+  const showBosses = stats.pvpBosses.won + stats.pvpBosses.lost > 0;
+  const showGhosts =
+    stats.pvpGhosts.won !== stats.pvp.won ||
+    stats.pvpGhosts.lost !== stats.pvp.lost;
   const rows = useMemo(() => roundRows(state.history), [state]);
   const counts = factoryCounts(state.team);
   const names = state.players.map((p) => p.name).join(' + ');
@@ -122,7 +130,13 @@ export function RunOverScreen(props: {
 
   return (
     <AppShell
-      title={screenText(screenTexts, 'runOverTitle')}
+      title={
+        readOnly && props.finishedAt !== undefined
+          ? screenText(screenTexts, 'runOverTitleReview', {
+              date: localIsoDate(props.finishedAt),
+            })
+          : screenText(screenTexts, 'runOverTitle')
+      }
       status={
         state.players.length > 1 ? <span class="muted">{names}</span> : null
       }
@@ -156,18 +170,26 @@ export function RunOverScreen(props: {
               <dd data-field="pvp">
                 <Tally {...stats.pvp} />
               </dd>
-              <dt class="sub">
-                {screenText(screenTexts, 'runOverStatGhosts')}
-              </dt>
-              <dd>
-                <Tally {...stats.pvpGhosts} />
-              </dd>
-              <dt class="sub">
-                {screenText(screenTexts, 'runOverStatBosses')}
-              </dt>
-              <dd>
-                <Tally {...stats.pvpBosses} />
-              </dd>
+              {showGhosts ? (
+                <>
+                  <dt class="sub">
+                    {screenText(screenTexts, 'runOverStatGhosts')}
+                  </dt>
+                  <dd>
+                    <Tally {...stats.pvpGhosts} />
+                  </dd>
+                </>
+              ) : null}
+              {showBosses ? (
+                <>
+                  <dt class="sub">
+                    {screenText(screenTexts, 'runOverStatBosses')}
+                  </dt>
+                  <dd>
+                    <Tally {...stats.pvpBosses} />
+                  </dd>
+                </>
+              ) : null}
               <dt>{screenText(screenTexts, 'runOverStatPve')}</dt>
               <dd data-field="pve">
                 <Tally {...stats.pve} />

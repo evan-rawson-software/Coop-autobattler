@@ -79,19 +79,28 @@ export function economyHooks(
   economy: EconomyConfig,
 ): Pick<RunHooks, 'startingKit' | 'onShopEnter'> {
   return {
-    startingKit(state: RunState): StatePatch {
+    startingKit(state: RunState, rng: Rng): StatePatch {
       let team = state.team;
       for (let owner = 0; owner < state.players.length; owner++) {
         for (const entry of economy.startingKit) {
           for (let n = 0; n < entry.count; n++) {
+            // A `pick` entry draws each copy from the "kit" stream
+            // (`nextInt(pick.length)`), in player, entry, copy order.
+            const def =
+              entry.pick === undefined
+                ? entry.def
+                : entry.pick[rng.nextInt(entry.pick.length)];
+            if (def === undefined) {
+              throw new Error('starting kit: an entry has no building.');
+            }
             const r = addToStash(team, content, {
-              def: entry.def,
+              def,
               tier: entry.tier,
               owner,
             });
             if (!r.ok) {
               throw new Error(
-                `starting kit: cannot add "${entry.def}" tier ${String(entry.tier)}: ${r.reason}`,
+                `starting kit: cannot add "${def}" tier ${String(entry.tier)}: ${r.reason}`,
               );
             }
             team = r.state;

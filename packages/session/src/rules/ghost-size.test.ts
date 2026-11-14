@@ -208,7 +208,7 @@ function maximalBoard(round: number): GhostSnapshot {
   // Walls on every other free cell, while the value bound pays for them.
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      if (free(x, y)) put('bld_wall', x, y);
+      if (free(x, y)) put('bld_wall_block', x, y);
     }
   }
   expect(team.conduits.length).toBeGreaterThan(0);
@@ -230,7 +230,7 @@ function maximalBoard(round: number): GhostSnapshot {
     expect(
       perOwner - spendOf,
       `round ${String(round)} owner ${String(owner)}: spend ${String(spendOf)} of ${String(perOwner)}`,
-    ).toBeLessThan(price('bld_wall') + 1e-9);
+    ).toBeLessThan(price('bld_wall_block') + 1e-9);
   }
   return {
     ...snap,
@@ -276,7 +276,7 @@ describe('size limit derived from board capacity', () => {
     const limit = ghostMaxSerializedSize(4, 23, ctx);
     const entry = canonicalJson({
       id: 1_000_000,
-      def: 'bld_wall',
+      def: 'bld_wall_block',
       tier: 1,
       owner: 0,
     }).length;
@@ -289,7 +289,7 @@ describe('size limit derived from board capacity', () => {
       for (let i = 0; i < extra; i++) {
         copy.team.stash.push({
           id: 1_000_000 + i,
-          def: 'bld_wall',
+          def: 'bld_wall_block',
           tier: 1,
           owner: 0,
         });
@@ -555,7 +555,7 @@ describe('replay accepts what selection accepted', () => {
     for (let i = 0; i < extraStash; i++) {
       snap.team.stash.push({
         id: 1_000_000 + i,
-        def: 'bld_wall',
+        def: 'bld_wall_block',
         tier: 1,
         owner: 0,
       });

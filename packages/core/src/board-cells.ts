@@ -3,6 +3,7 @@
  * of a building or the Core, and the cell index key. Pure.
  */
 import {
+  footprintCellList,
   rotateBuilding,
   type BuildingDef,
   type Rotation,
@@ -24,7 +25,11 @@ export function boxCells(x: number, y: number, w: number, h: number): Cell[] {
   return out;
 }
 
-/** Cells covered by a definition at a position and rotation. */
+/**
+ * Cells covered by a definition at a position and rotation, in `(y, x)`
+ * order: the rotated cell mask when the footprint has one (tetromino walls),
+ * else the whole box.
+ */
 export function defCells(
   def: BuildingDef,
   x: number,
@@ -32,7 +37,22 @@ export function defCells(
   rotation: Rotation,
 ): Cell[] {
   const fp = rotateBuilding(def, rotation).footprint;
-  return boxCells(x, y, fp.width, fp.height);
+  if (fp.cells === undefined) return boxCells(x, y, fp.width, fp.height);
+  return footprintCellList(fp).map((c) => ({ x: x + c.x, y: y + c.y }));
+}
+
+/** `defCells` under the name the rules reference uses: the cells a building covers. */
+export const footCells = defCells;
+
+/** The rotated bounding box of a definition anchored at `(x, y)`. */
+export function defBox(
+  def: BuildingDef,
+  x: number,
+  y: number,
+  rotation: Rotation,
+): { x: number; y: number; w: number; h: number } {
+  const fp = rotateBuilding(def, rotation).footprint;
+  return { x, y, w: fp.width, h: fp.height };
 }
 
 export function coreCells(

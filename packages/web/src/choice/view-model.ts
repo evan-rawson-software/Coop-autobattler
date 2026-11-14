@@ -14,6 +14,7 @@ import {
 import { clock } from '../battle/derive.js';
 import { archetypeText } from '../run/display-text.js';
 import { count } from '../plural.js';
+import { screenText, screenTexts } from '../build/texts.js';
 import { overloadLine } from './overload.js';
 
 export interface PveCard {
@@ -28,6 +29,10 @@ export interface PveCard {
   /** Plain facts about the threat: units, defenses, Core, first wave. */
   readonly facts: readonly string[];
   readonly rewardText: string;
+  /** The big number: "+6". */
+  readonly rewardAmount: string;
+  /** The words under it: "gold if you win", "gold each if you win". */
+  readonly rewardUnit: string;
   /** Which Core Overload destroys first against this stronghold, and when. */
   readonly overload: string;
   /** True when this is the player's current vote. */
@@ -37,8 +42,6 @@ export interface PveCard {
 export interface PveChoiceView {
   readonly round: number;
   readonly cards: readonly PveCard[];
-  /** "Losing costs no life." */
-  readonly stakes: string;
   readonly overloadAt: string;
 }
 
@@ -61,6 +64,25 @@ export function threatFacts(o: PveOptionView, sim: SimConfig): string[] {
       : `first wave at ${clock(s.firstWaveTick, sim.ticksPerSecond)}`,
   );
   return facts;
+}
+
+/**
+ * The three short facts at the foot of a card: how many units, the defenses
+ * and the Core, and when the first wave comes.
+ */
+export function cardFacts(o: PveOptionView, sim: SimConfig): string[] {
+  const s = o.summary;
+  const defenses = [
+    s.walls > 0 ? count(s.walls, 'wall') : null,
+    s.turrets > 0 ? count(s.turrets, 'turret') : null,
+  ].filter((x): x is string => x !== null);
+  return [
+    count(s.totalUnits, 'enemy unit'),
+    `${defenses.length === 0 ? 'No walls' : defenses.join(', ')} · Core ${String(s.coreHealth)} health`,
+    s.firstWaveTick === null
+      ? 'No waves'
+      : `First wave at ${clock(s.firstWaveTick, sim.ticksPerSecond)}`,
+  ];
 }
 
 /** The Overload start as `m:ss` from the sim config (a deadline for PvE). */
@@ -89,8 +111,13 @@ export function pveChoiceView(
       description: text.description,
       level: o.summary.level,
       levelText: LEVEL_WORDS[o.summary.level] ?? String(o.summary.level),
-      facts: threatFacts(o, sim),
+      facts: cardFacts(o, sim),
       rewardText: `+${String(o.reward.gold)} gold${run.players.length > 1 ? ' each' : ''}`,
+      rewardAmount: `+${String(o.reward.gold)}`,
+      rewardUnit: screenText(
+        screenTexts,
+        run.players.length > 1 ? 'choiceRewardUnitEach' : 'choiceRewardUnit',
+      ),
       overload: overloadLine(sim, partyMax, o.summary.coreHealth),
       voted: mine === o.id,
     };
@@ -98,7 +125,6 @@ export function pveChoiceView(
   return {
     round: info.round,
     cards,
-    stakes: 'Losing costs no life.',
     overloadAt,
   };
 }

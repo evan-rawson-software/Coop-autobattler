@@ -653,12 +653,35 @@ clockwise as drawn with the front row on top: north to east to south to west.
   south, south to east, east to north. Input and output lists keep their
   order (`rotateBuilding`).
 - Footprint: a definition's footprint `(w, h)` is its size at rotation 0
-  (`w` along x, `h` along y). At 90 and 270 it is `(h, w)`. A building at
-  `(x, y)` covers every cell `(x + i, y + j)` with `0 <= i < w'` and
-  `0 <= j < h'` (the rotated size). The rotated box is always anchored at its
-  lowest-x, lowest-y cell; rotating in place keeps `(x, y)` and so can change
-  which cells are covered. All footprints are full rectangles, so there is no
-  finer mapping of "which cell is which".
+  (`w` along x, `h` along y). At 90 and 270 it is `(h, w)`. The rotated box is
+  always anchored at its lowest-x, lowest-y cell; rotating in place keeps
+  `(x, y)` and so can change which cells are covered. A footprint without a
+  cell mask is a full rectangle: a building at `(x, y)` covers every cell
+  `(x + i, y + j)` with `0 <= i < w'` and `0 <= j < h'` (the rotated size).
+  A footprint **with a cell mask** (the wall shapes, below) covers only the
+  mask's cells; the box is still the bounds check.
+- **Footprint cell masks (issue #291).** A footprint may carry `cells`, a list
+  of `[x, y]` pairs at rotation 0 inside the `w` x `h` box (`x` along x, `y`
+  along y, `y` growing north as everywhere on the board; a shape written north
+  on top is therefore listed with its top row at the highest `y`). The loader
+  (`loadBuildings`, error text `... footprint: ...`) rejects a mask that is
+  empty or not a list of integer pairs, has a cell outside the box or a
+  duplicate, does not use every row and every column of the box (the box must
+  be the mask's bounding box), or is not 4-connected. Loaded masks are sorted
+  by `(y, x)`. Without `cells` the footprint is the full box.
+  `rotateBuilding(def, r).footprint` rotates the mask with the box: clockwise
+  as drawn with north on top, a mask cell `(x, y)` of a `w` x `h` box becomes
+  at 90 `(y, w - 1 - x)`, at 180 `(w - 1 - x, h - 1 - y)`, at 270
+  `(h - 1 - y, x)`, in a box of the rotated size, which keeps the mask
+  normalised to the rotated box's lowest-x, lowest-y corner (every row and
+  column is still used). A building at `(x, y)` covers `(x + cx, y + cy)` for
+  each rotated mask cell; `cellsOf` lists them in `(y, x)` order. Every rule
+  that talks about a building's cells (overlap with buildings, Cores,
+  conduits and nodes, plot and terrain checks, occupancy, sealed producers,
+  the arena's solid cells and the enemy-path preview) uses these cells, never
+  the bounding box. The bounds check (`out_of_bounds`) uses the rotated box.
+  A conduit's edge geometry (`box`) is the rotated box and only matters to
+  buildings with sides; the masked buildings have none.
 - A Core is never rotated: Core `p` covers `cores[p].x .. cores[p].x + w - 1`
   by `cores[p].y .. cores[p].y + h - 1`.
 - `cellsOf` lists a building's cells in `(y, x)` order. `absoluteSides` gives
@@ -3017,7 +3040,9 @@ every-Nth-wave signature being all raiders (a fast swarm of small, weak units; s
 prices for spending wave budget are `unitCost` in `threats.json` (soldier 10,
 raider 8, archer 14, drone 16; about 2 times the producer's tier 1 `costPerUnit`
 of 5, 4, 7 and 8, rounded). Building prices for the stronghold are the **tier 1** prices of the
-first building of defense type `wall` and of defense type `turret` in the
+first building of defense type `wall` **with a one-cell footprint** (strongholds
+place walls cell by cell, so the tetromino shapes are not used; `bld_wall_block`)
+and of the first building of defense type `turret` in the
 building content (tier 1 only for now).
 
 ### Generation: `generateThreat({seed, round, type, partySize, archetype}, content, {threats, mapgen})`
@@ -3423,6 +3448,9 @@ step machine draws them in a round:
 | `ghost:r<r>`               | when the PvP opponent is selected                                       | the ghost draw (see "Ghost snapshots")    |
 | `battle:pvp:r<r>`          | when the PvP battle starts                                              | the PvP battle                            |
 
+The `kit` stream also draws the random wall shapes of the starting kit (see
+"Gold").
+
 The order of draws matters because each draw advances `g`. A shop re-roll
 does not draw a new run stream: it continues the player's stored shop stream.
 Golden vectors: `shop-roll` and `run-replay` (see "Golden vectors") pin the
@@ -3441,6 +3469,19 @@ only at shops, on buildings and re-rolls. It never appears in the battle
 simulation. Each player starts the run with `startingGold` and, once per
 player, the `startingKit` buildings in their stash (owner = that player); this
 happens when the Core is placed, on entering the first `build` step.
+
+A kit entry is `{def, tier, count}` (`count` copies of one building) or
+`{pick, tier, count}` (issue #291), where `pick` is a non-empty list of
+distinct building IDs: each of the `count` copies is drawn **uniformly** from
+the list, with the `kit` stream (the generator `g.child("kit")` of "Streams"):
+one `nextInt(len(pick))` per copy, taking `pick[x]`. Draw order: players in
+index order, entries in file order, copies in order; `def` entries draw
+nothing. Each copy is its own stash entry (a stash id from the player's
+sequence), so three copies of the same shape are three rows. The shipped kit
+is 2 Extractors, 1 Barracks, a `pick` of `bld_wall_o`, `bld_wall_t`,
+`bld_wall_s`, `bld_wall_z`, `bld_wall_l`, `bld_wall_j` (never the I) with
+`count` 3, and 1 Turret, all tier 1. For the ghost value bound, the price of a
+`pick` entry is its dearest choice.
 
 ### Income
 
@@ -3466,6 +3507,20 @@ order. Per slot, exactly two draws, in this order:
 Duplicates across slots are allowed. The offer is `{slot, def, tier, price}`
 where `price` is that tier's `price` in `buildings.json`. Buildings not in
 `offerWeights` are never offered; the Core cannot be listed.
+
+**Wall shape limit (issue #291).** A *wall def* is a building of kind `defense`
+with `defenseType` `wall`; the Gate (`gate`) is not one. One set of offers (a
+first roll, and every re-roll on its own) never holds more than 2 different
+wall defs (`MAX_WALL_SHAPES_PER_SHOP`; copies of one def count once, at any
+tier). While rolling, keep the set `W` of wall defs of the slots already
+rolled in this set (empty at slot 0). For each slot, after draw 1: if the
+picked def is a wall def, is not in `W`, and `|W| >= 2`, make **one extra
+draw**: `pickWeightedIndex` over `offerWeights` in file order with every wall
+def not in `W` removed (the weights of the remaining entries unchanged: one
+`nextInt` of their sum); that second pick replaces the first and stands, with
+no further check (it cannot be a wall def outside `W`). Then draw 2 (the tier)
+as usual. So a slot costs 2 draws, or 3 when the limit redraws. Golden vectors
+`shop-roll.12` and `shop-roll.13` pin it.
 
 ### Tier odds lookup
 
@@ -3548,7 +3603,7 @@ compounded, so each extra stack is worth relatively less than the one before:
 
 | Kind | Applied |
 | --- | --- |
-| `building_health_percent` (`target`: `all`, `wall`, `gate`, `turret`, `source`, `route`, `unit_producer`, `economy`) | to the maximum (and so the starting) health of matching placed buildings (not the Core; a defense matches its defense type, others their kind; `all` matches every building); at tick 0 in `createArenaSim` |
+| `building_health_percent` (`target`: `all`, `wall`, `gate`, `turret`, `source`, `route`, `unit_producer`, `economy`) | to the maximum (and so the starting) health of matching placed buildings (not the Core; a defense matches its defense type, so `wall` matches every wall shape, issue #291; others their kind; `all` matches every building); at tick 0 in `createArenaSim` |
 | `core_health_percent` | to the maximum (and so the starting) Core health (after a side-option Core override) |
 | `unit_strength_percent` | added to the unit strength percent at each spawn (health and damage, see the unit stats seam in "The arena"); side-wide, and it comes only from run modifiers, never from an economy building (PP-8) |
 | `turret_damage_percent` | to the damage of each of the side's turrets, when the arena context is built |
@@ -4049,7 +4104,7 @@ Implemented (issues #135, #131, #139, #160).
   emptied, as for any major release (TA-8). There is no migration.
 - **Team state**: `cores` in place of `core` (PP-2); `owner` on every conduit
   (PP-1); conduit ends may be border spots (PP-4).
-- **Formats.** Ghost snapshot `formatVersion` 6, run state format 9. Older
+- **Formats.** Ghost snapshot `formatVersion` 7, run state format 10 (both raised by issue #291, which replaced the wall `bld_wall` by seven shapes). Older
   values are rejected (a logged `chosen` snapshot of another format is
   refused in `select_ghost` and in `replayRun`).
 - **Ghost validation** (`validateGhostSnapshot`) adds, through
@@ -4233,6 +4288,7 @@ player grows by raising tiers, by economy buildings or through a border link.
 | Core health | `buildings.json` | 500 (decided) | per Core |
 | `nodesPerPlot` | `mapgen.json` | 3 common, 1 rare (unchanged) | the same for every plot |
 | Gold | `economy.json` | `baseIncomePerShop` 5; `rewards.pveWin` easy / medium / hard 6 / 9 / 13; `pvpWin` 8; `pvpLoss` 4 (9 to 26 gold per round) | strictly increasing `pveWin` |
+| Walls (issue #291) | `buildings.json`, `economy.json` | seven tetromino shapes (I, O, T, S, Z, L, J), 4 cells each, tier 1 / 2 / 3 health 250 / 400 / 600 and price 8 / 18 / 36 (the old single wall: 100 / 160 / 240 and 4 / 9 / 18, now `bld_wall_block`, kept for strongholds and reference boards, not sold); `offerWeights`: every non-wall weight doubled (collector 24, Splitter 12, Merger 12, Crossover 4, Barracks 32, gate 6, turret 16, Overclocker 6, Armory 12, Range 16, Hangar 12), walls O, T, S, Z, L, J 2 each and I 1 (13 of 161 against 8 of 82 before); at most 2 wall shapes per shop; the kit's 3 walls are random shapes, never I | four cells for a price of 8 is 2 per cell (4 per cell before); the shop limit keeps a set of offers from being all walls |
 | Shop | `economy.json` | `offerWeights`: collector 12 (was 10), Splitter 6, Merger 6, Crossover 2 (was 4), Barracks 16 (was 10), wall 8, gate 3 (was 5), turret 8, Overclocker 3, Armory 6 (was 3; it was not offered before the rebalance), Range 8 (was 5), Hangar 6 (was 3); placeholder unit numbers of Range and Hangar kept by owner decision (issue #59) | unit producers and the Armory are offered more often, routing parts less; with 8 bot runs per strategy this changes no strategy's depth by more than a round (fortify at party 4: 12.5 to 14.8) |
 | Threat growth | `threats.json` | `growthPercent` 125 (+25 percent per round) | above 100 |
 | Stronghold caps | `threats.json` | `maxTurretsPerPlot` 6 (was 16); Fortress `turretSharePercent` 25 (was 40) and `coreHealthPerBudget` 300 (was 500); Boss `turretSharePercent` 20 (was 30) | the rest of a stronghold's budget becomes Core health |

@@ -14,6 +14,7 @@
  */
 import {
   Rng,
+  type BuildingConfig,
   listLegalCorePositions,
   sealedProducers,
   tierPrice,
@@ -92,6 +93,30 @@ interface Strategy {
   readonly pairReserve?: number;
 }
 
+/** The wall shapes the shop sells (issue #291); the I is the rare one. */
+const WALL_SHAPES: readonly string[] = [
+  'bld_wall_o',
+  'bld_wall_t',
+  'bld_wall_s',
+  'bld_wall_z',
+  'bld_wall_l',
+  'bld_wall_j',
+  'bld_wall_i',
+];
+
+/** Every wall shape wanted equally much. */
+function wantWalls(n: number): Record<string, number> {
+  return Object.fromEntries(WALL_SHAPES.map((id) => [id, n]));
+}
+
+function isWallDef(
+  content: { readonly buildings: BuildingConfig },
+  def: string,
+): boolean {
+  const d = content.buildings.get(def);
+  return d !== undefined && d.kind === 'defense' && d.defenseType === 'wall';
+}
+
 const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
   rush: {
     description: 'Extractors feeding barracks, no defenses, hard PvE.',
@@ -132,7 +157,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
     core: 'back',
     want: {
       bld_turret: 10,
-      bld_wall: 8,
+      ...wantWalls(8),
       bld_extractor: 7,
       bld_gate: 4,
       bld_overclocker: 5,
@@ -171,7 +196,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       bld_barracks: 9,
       bld_armory: 8,
       bld_extractor: 7,
-      bld_wall: 5,
+      ...wantWalls(5),
       bld_turret: 3,
       bld_overclocker: 2,
       bld_hangar: 3,
@@ -436,7 +461,9 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       const sources = owned.filter((b) => b.def === 'bld_extractor').length;
       const users = owned.filter((b) => CONSUMERS.includes(b.def)).length;
       const splitters = owned.filter((b) => b.def === 'bld_splitter').length;
-      const walls = owned.filter((b) => b.def === 'bld_wall').length;
+      const walls = owned.filter((b) =>
+        isWallDef(d.deps.content, b.def),
+      ).length;
       const room = plotRoom(
         d.state.team,
         p,
@@ -642,7 +669,7 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
         }
         if (
           s.wallCap !== undefined &&
-          o.def === 'bld_wall' &&
+          isWallDef(d.deps.content, o.def) &&
           walls >= s.wallCap
         ) {
           score = 0;

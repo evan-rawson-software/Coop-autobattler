@@ -165,7 +165,7 @@ the bundled ghosts use the same `major.minor`, `BUNDLED_GAME_VERSION`). The
 run state, the ghost snapshot and the save record each carry a format number
 (`RUN_STATE_FORMAT_VERSION`, `GHOST_SNAPSHOT_FORMAT_VERSION`,
 `SAVE_FORMAT_VERSION`). The per-player design (issue #124) is major version 1
-(run state format 9, ghost snapshot format 6; 8 / 5 had one shared id counter for conduits, issue #38; 7 / 4 had one Core per player, 6 / 3 added border links, issue #135); everything older is wiped at
+(run state format 10, ghost snapshot format 7; 9 / 6 had the one 1×1 wall `bld_wall`, before the seven tetromino wall shapes, issue #291; 8 / 5 had one shared id counter for conduits, issue #38; 7 / 4 had one Core per player, 6 / 3 added border links, issue #135); everything older is wiped at
 start-up with a notice, with no migration (TA-8).
 
 The rule for a change that makes saved data unreadable:
@@ -218,4 +218,4 @@ from a sub-path and on any other static host.
 - One-time setup for the repository owner: Settings -> Pages -> Build and
   deployment -> Source: "GitHub Actions".
 
-The Build screen (`#build`, `packages/web/src/build/`) is where the layout is edited. It starts a solo run in memory with a fixed seed (change it in the dev strip), asks for a Core position, then offers the stash, tools, inspector, overlays and problems list. Everything it knows about legality comes from `core` (pure operations called on the current state) and every change is an intent through the run controller; `reasons.ts` is the only place reason codes become text.
+The Build screen (`#build`, `packages/web/src/build/`) is where the layout is edited. It starts a solo run in memory with a fixed seed (change it in the dev strip), asks for a Core position, then offers the action tray (tools and inventory), the "Before you fight" checklist and Selected in the info rail, and the overlays as map rail toggles. Everything it knows about legality comes from `core` (pure operations called on the current state) and every change is an intent through the run controller; `reasons.ts` is the only place reason codes become text.

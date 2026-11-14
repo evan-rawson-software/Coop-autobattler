@@ -207,7 +207,11 @@ export function deriveMoments(
       const side: Side = e.side === 0 ? 0 : 1;
       const ref = index[side].get(e.building);
       if (ref === undefined) continue;
-      const name = buildingName(content, ref.def).toLowerCase();
+      // Every wall shape reads as "wall" (issue #291).
+      const name =
+        ref.def.kind === 'defense' && ref.def.defenseType === 'wall'
+          ? 'wall'
+          : buildingName(content, ref.def).toLowerCase();
       const who = labels.side[side];
       const focus = buildingFocus(record, content, g, side, ref);
       if (isWallLike(ref.def)) {
@@ -645,7 +649,7 @@ export function liveAxisMaxTick(tick: number, ticksPerSecond: number): number {
 /**
  * Chart markers for moments at the given ticks (in order), numbered from 1
  * like the list below the chart. Moments at the same tick share one marker
- * labelled with the range, e.g. "2–3".
+ * labelled with the range, e.g. "#2–3"; the labels match the list.
  */
 export function mergeMarkers(
   ticks: readonly number[],
@@ -657,7 +661,8 @@ export function mergeMarkers(
     while (j + 1 < ticks.length && ticks[j + 1] === ticks[i]) j += 1;
     out.push({
       x: ticks[i] ?? 0,
-      label: j === i ? String(i + 1) : `${String(i + 1)}–${String(j + 1)}`,
+      label:
+        j === i ? `#${String(i + 1)}` : `#${String(i + 1)}–${String(j + 1)}`,
     });
     i = j + 1;
   }
@@ -690,10 +695,16 @@ export function breachEntries(
     if (ref === undefined || !(isWallLike(ref.def) || isTurret(ref.def))) {
       continue;
     }
-    let g = groups.get(ref.def.id);
+    // Every wall shape is one group, "walls" (issue #291).
+    const isWall = ref.def.kind === 'defense' && ref.def.defenseType === 'wall';
+    const key = isWall ? 'defense:wall' : ref.def.id;
+    let g = groups.get(key);
     if (g === undefined) {
-      g = { name: buildingName(content, ref.def).toLowerCase(), ticks: [] };
-      groups.set(ref.def.id, g);
+      g = {
+        name: isWall ? 'wall' : buildingName(content, ref.def).toLowerCase(),
+        ticks: [],
+      };
+      groups.set(key, g);
     }
     g.ticks.push(e.tick + 1);
   }

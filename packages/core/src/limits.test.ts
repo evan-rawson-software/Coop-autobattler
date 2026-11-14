@@ -46,7 +46,7 @@ function rawWith(health: number[]): {
   presentation: unknown;
 } {
   const buildings = clone(buildingsJson) as { buildings: RawBuilding[] };
-  const wall = got(buildings.buildings.find((b) => b.id === 'bld_wall'));
+  const wall = got(buildings.buildings.find((b) => b.id === 'bld_wall_block'));
   wall.tiers.forEach((t, i) => {
     t['health'] = got(health[i]);
   });
@@ -79,7 +79,7 @@ function ringedLab(variant: typeof content): {
     [11, 2],
     [12, 2],
   ] as const) {
-    walls.push(lab.put('bld_wall', x, y, 0, 3));
+    walls.push(lab.put('bld_wall_block', x, y, 0, 3));
   }
   return { lab, walls };
 }
@@ -106,12 +106,13 @@ describe('bounds: loaders reject content above the cap', () => {
 
   test('a building tier health above the cap', () => {
     const b = clone(buildingsJson) as { buildings: RawBuilding[] };
-    got(got(b.buildings.find((x) => x.id === 'bld_wall')).tiers[2])['health'] =
-      3_000_000_000_000;
+    got(got(b.buildings.find((x) => x.id === 'bld_wall_block')).tiers[2])[
+      'health'
+    ] = 3_000_000_000_000;
     const r = loadBuildings(b, { resources, units });
     if (r.ok) throw new Error('expected failure');
     expect(r.errors.join('\n')).toMatch(
-      /bld_wall.*tiers\[2\]: "health" must be at most 1000000000000 \(got 3000000000000\)/,
+      /bld_wall_block.*tiers\[2\]: "health" must be at most 1000000000000 \(got 3000000000000\)/,
     );
   });
 
@@ -300,7 +301,7 @@ describe('bounds: the (distance, cell) heap', () => {
         const x = next(24);
         const y = 1 + next(15);
         try {
-          lab.put('bld_wall', x, y, 0, 1);
+          lab.put('bld_wall_block', x, y, 0, 1);
         } catch {
           // The cell is taken or invalid: try another layout.
         }

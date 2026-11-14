@@ -731,10 +731,11 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   four-player battle at about 20.
 - **CB-47 [PROPOSED]** The board is viewed through a **camera that pans and
   zooms**, from the first playable version, with presets (center, own base —
-  the player's own plot and Core — and fit the whole battle). Interface panels are docked around the
-  view — along the bottom when building; at the sides during battle
-  where there is room, and over the view otherwise —
-  rather than laid out around a fixed-size board. Map size can then be
+  the player's own plot and Core — and fit the whole battle). Interface zones sit
+  against the view's edges and keep their places in every phase — a map rail on
+  the left, an action tray below (with the primary button at its right end), an
+  info rail on the right — rather than being laid out around a fixed-size
+  board. Map size can then be
   increased later as a tuning change, not a redesign.
 - **CB-47a [DECIDED]** The camera **starts at the center of the map**.
   Proposed reading: when building, the center of the player's own plot; in

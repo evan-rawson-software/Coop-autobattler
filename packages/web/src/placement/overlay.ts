@@ -4,7 +4,7 @@
  * and the routes enemy units would take to it. It draws what the view model
  * already decided.
  */
-import { coreLabel } from '../build/texts.js';
+import { coreLabel, screenText, screenTexts } from '../build/texts.js';
 import type { Cell, EnemyPath, TeamState } from '@game/core';
 import type { OverlayContext } from '../board/BoardView.js';
 import { cellToView } from '../board/layout.js';
@@ -225,8 +225,12 @@ export function drawCoreOverlay(
     }
     ctx.globalAlpha = 1;
     ring(v.cells, color, 2.5);
-    if (!v.ok && v.problem !== null) {
-      label(v.cells, shortProblem(v.problem), col.bad);
-    }
+    label(
+      v.cells,
+      v.ok || v.problem === null
+        ? screenText(screenTexts, 'coreFits')
+        : `${screenText(screenTexts, 'coreNoFit')} · ${shortProblem(v.problem)}`,
+      color,
+    );
   }
 }

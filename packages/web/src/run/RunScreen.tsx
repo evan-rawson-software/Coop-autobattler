@@ -19,9 +19,16 @@ import { RunOverScreen } from '../end/RunOverScreen.js';
 import { EventChoiceScreen, EventResolveScreen } from '../event/EventScreen.js';
 import { CoreScreen } from '../placement/CoreScreen.js';
 import { AppShell, Panel, RunBarContext } from '../shell/AppShell.js';
-import { ShopTab } from '../shop/ShopScreen.js';
+import { GameFrame } from '../shell/GameFrame.js';
+import {
+  PhaseContext,
+  nextPhaseAfterResult,
+  phaseForStep,
+  type PhaseInfo,
+} from '../shell/phase.js';
+import { markTipSeen } from '../shell/phase-tips.js';
+import { TutorialContext, useTutorialInfo } from '../tutorial/context.js';
 import { screenText, screenTexts } from '../build/texts.js';
-import { stepTabStore } from '../shop/tabs.js';
 import { RunBar } from './RunBar.js';
 import { isReviewHash, screenForStep, runIdFromHash } from './router.js';
 import {
@@ -113,21 +120,11 @@ function ReadyRun(props: { run: ActiveRun }) {
   const { run } = props;
   const view = useStore(run.session.store);
   const conflict = useStore(run.conflict);
-  const tab = useStore(stepTabStore);
   const [, bump] = useState(0);
   const state = view.run;
   const maxLives = run.deps.rules.startingLives;
 
-  // Each shop step opens on its Shop tab.
-  const stepKey = `${String(state.round)}:${state.leg}:${state.step}`;
-  useEffect(() => {
-    stepTabStore.set('shop');
-  }, [stepKey]);
-
-  const screen = screenForStep(
-    state.step,
-    tab === 'shop-build' ? 'shop_build' : 'shop',
-  );
+  const screen = screenForStep(state.step);
 
   useEffect(() => {
     registerDebug({
@@ -175,6 +172,29 @@ function ReadyRun(props: { run: ActiveRun }) {
     [state, maxLives, run.storage],
   );
 
+  // The phase for the stepper and the tips. A tip counts as seen once the
+  // player has moved on from its phase (or left the run), or dismissed it.
+  const tutorial = useTutorialInfo(run.runId, state, run.session.acting);
+  const phase = phaseForStep(state.step);
+  useEffect(() => {
+    if (phase === null) return undefined;
+    return () => {
+      markTipSeen(phase);
+    };
+  }, [phase]);
+  const runEnds =
+    state.thisRound.pvp?.won === false &&
+    state.lives - run.deps.rules.pvpLossLifeCost <= 0;
+  const phaseInfo: PhaseInfo | null =
+    phase === null
+      ? null
+      : {
+          phase,
+          round: state.round,
+          leg: state.leg,
+          next: nextPhaseAfterResult(state.step, runEnds),
+        };
+
   if (conflict) return <Conflict runId={run.runId} />;
 
   let body: ComponentChildren;
@@ -183,11 +203,7 @@ function ReadyRun(props: { run: ActiveRun }) {
       body = <CoreScreen run={run} />;
       break;
     case 'build':
-    case 'shop_build':
       body = <BuildView shared={run} />;
-      break;
-    case 'shop':
-      body = <ShopTab run={run} />;
       break;
     case 'pve_choice':
       body = <PveChoiceScreen run={run} />;
@@ -206,17 +222,26 @@ function ReadyRun(props: { run: ActiveRun }) {
       break;
     case 'transient':
       body = (
-        <AppShell title="Battle">
-          <p class="muted pad" role="status">
-            Resolving battle…
-          </p>
-        </AppShell>
+        <GameFrame
+          phase="battle"
+          title="Battle"
+          primary={null}
+          board={
+            <p class="muted pad" role="status">
+              Resolving battle…
+            </p>
+          }
+        />
       );
       break;
   }
   return (
     <RunBarContext.Provider value={bar}>
-      {body}
+      <PhaseContext.Provider value={phaseInfo}>
+        <TutorialContext.Provider value={tutorial}>
+          {body}
+        </TutorialContext.Provider>
+      </PhaseContext.Provider>
       {needsVersionPrompt(run) ? (
         <VersionPrompt
           onContinue={() => {
@@ -357,15 +382,22 @@ export function RunScreen() {
       return <ReadyRun run={st.run} />;
     case 'over': {
       const maxLives = gameDeps().rules.startingLives;
+      // A reopened summary is not the live run: no Lives/Gold bar.
+      if (isReviewHash(hash)) {
+        return (
+          <RunOverScreen
+            state={st.state}
+            startingLives={maxLives}
+            readOnly
+            finishedAt={st.finishedAt}
+          />
+        );
+      }
       return (
         <RunBarContext.Provider
           value={<RunBar state={st.state} maxLives={maxLives} />}
         >
-          <RunOverScreen
-            state={st.state}
-            startingLives={maxLives}
-            readOnly={isReviewHash(hash)}
-          />
+          <RunOverScreen state={st.state} startingLives={maxLives} />
         </RunBarContext.Provider>
       );
     }

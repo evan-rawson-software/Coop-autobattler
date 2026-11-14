@@ -182,8 +182,8 @@ describe('Workshop, one player', () => {
   });
 
   test('an upgrade the player cannot afford is rejected; skip still works', () => {
-    // Enough for a wall (7) but not a turret (28).
-    const s = workshopStep(players, [8]);
+    // Enough for a wall (14) but not a turret (28).
+    const s = workshopStep(players, [15]);
     const dear = mineOf(s, 0).find((o) => o['affordable'] === false) as Opt;
     expect(dear).toBeDefined();
     const r = choose(s, 0, dear['id'] as string);

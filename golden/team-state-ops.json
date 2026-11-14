@@ -21,7 +21,7 @@
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 1,
           "owner": 0
         },
@@ -33,13 +33,13 @@
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 4,
           "owner": 0
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 1,
           "owner": 1
         },
@@ -332,7 +332,7 @@
             },
             {
               "id": 3,
-              "def": "bld_wall",
+              "def": "bld_wall_block",
               "tier": 1,
               "owner": 0
             }
@@ -341,7 +341,7 @@
           "nextConduitId": [1],
           "conduits": []
         },
-        "hash": "1f27cc8d"
+        "hash": "e2ce9dc3"
       }
     }
   },
@@ -367,7 +367,7 @@
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 1,
           "owner": 0
         },
@@ -713,7 +713,7 @@
             },
             {
               "id": 3,
-              "def": "bld_wall",
+              "def": "bld_wall_block",
               "tier": 1,
               "x": 6,
               "y": 6,
@@ -726,7 +726,7 @@
           "nextConduitId": [1],
           "conduits": []
         },
-        "hash": "6f1f1bcc"
+        "hash": "f27278b6"
       }
     }
   },
@@ -752,7 +752,7 @@
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 1,
           "owner": 0
         },
@@ -1183,25 +1183,25 @@
       "ops": [
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 1,
           "owner": 1
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 3,
           "owner": 0
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 1,
           "owner": 2
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 1,
           "owner": -1
         },
@@ -1550,13 +1550,13 @@
           "stash": [
             {
               "id": 1,
-              "def": "bld_wall",
+              "def": "bld_wall_block",
               "tier": 1,
               "owner": 1
             },
             {
               "id": 2,
-              "def": "bld_wall",
+              "def": "bld_wall_block",
               "tier": 3,
               "owner": 0
             }
@@ -1565,7 +1565,7 @@
           "nextConduitId": [1, 1],
           "conduits": []
         },
-        "hash": "82a9c9b3"
+        "hash": "7811bf63"
       }
     }
   },
@@ -1579,13 +1579,13 @@
       "ops": [
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 1,
           "owner": 0
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 1,
           "owner": 1
         },
@@ -2145,7 +2145,7 @@
           "buildings": [
             {
               "id": 1,
-              "def": "bld_wall",
+              "def": "bld_wall_block",
               "tier": 1,
               "x": 23,
               "y": 4,
@@ -2174,7 +2174,7 @@
           "stash": [
             {
               "id": 2,
-              "def": "bld_wall",
+              "def": "bld_wall_block",
               "tier": 1,
               "owner": 1
             }
@@ -2183,7 +2183,7 @@
           "nextConduitId": [2, 1],
           "conduits": []
         },
-        "hash": "d374cfae"
+        "hash": "2b150f46"
       }
     }
   },
@@ -2365,7 +2365,7 @@
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 1,
           "owner": 0
         },
@@ -3503,7 +3503,7 @@
             },
             {
               "id": 13,
-              "def": "bld_wall",
+              "def": "bld_wall_block",
               "tier": 1,
               "x": 6,
               "y": 10,
@@ -3537,7 +3537,7 @@
             }
           ]
         },
-        "hash": "7fc6c8d3"
+        "hash": "72c6f741"
       }
     }
   },
@@ -5307,7 +5307,7 @@
         },
         {
           "op": "addToStash",
-          "def": "bld_wall",
+          "def": "bld_wall_block",
           "tier": 1,
           "owner": 1
         },
@@ -5674,7 +5674,7 @@
           "buildings": [
             {
               "id": 1,
-              "def": "bld_wall",
+              "def": "bld_wall_block",
               "tier": 1,
               "x": 33,
               "y": 1,
@@ -5687,7 +5687,7 @@
           "nextConduitId": [1, 1],
           "conduits": []
         },
-        "hash": "4f05999a"
+        "hash": "733d6a14"
       }
     }
   },

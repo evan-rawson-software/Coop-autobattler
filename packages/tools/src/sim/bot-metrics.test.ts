@@ -102,16 +102,16 @@ describe('bot shop counts', () => {
 
   test('the lines of known counts, sorted by definition', () => {
     const a: ShopTally = new Map([
-      ['bld_wall', { offered: 4, bought: 2, placed: 1 }],
+      ['bld_wall_block', { offered: 4, bought: 2, placed: 1 }],
       ['bld_armory', { offered: 1, bought: 0, placed: 0 }],
     ]);
     const b: ShopTally = new Map([
-      ['bld_wall', { offered: 1, bought: 1, placed: 1 }],
+      ['bld_wall_block', { offered: 1, bought: 1, placed: 1 }],
     ]);
     addTally(a, b);
     expect(shopLines(a).slice(1)).toEqual([
-      '    bld_armory  offered 1, bought 0, placed 0',
-      '    bld_wall    offered 5, bought 3, placed 2',
+      '    bld_armory      offered 1, bought 0, placed 0',
+      '    bld_wall_block  offered 5, bought 3, placed 2',
     ]);
   });
 });

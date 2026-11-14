@@ -50,7 +50,13 @@ export interface Notch {
 export interface SceneBuilding {
   readonly instance: PlacedBuilding;
   readonly def: BuildingDef;
+  /** The bounding box of the building's cells. */
   readonly rect: ViewRect;
+  /**
+   * The building's own cells, view-space top-left of each (a full box for
+   * most buildings, the rotated shape for walls, issue #291).
+   */
+  readonly cells: readonly { readonly x: number; readonly y: number }[];
   readonly label: string;
   readonly solid: boolean;
   readonly notches: readonly Notch[];
@@ -251,6 +257,7 @@ function buildBoard(
       instance: b,
       def,
       rect,
+      cells: cells.map((c) => cellToView(frame, c.x, c.y)),
       label: shortLabel(name),
       solid: def.kind === 'defense' && def.defenseType === 'wall',
       notches,

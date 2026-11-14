@@ -117,7 +117,7 @@ describe('erase with reclaimId', () => {
     const added = addConduit(team, content, args);
     if (!added.ok) throw new Error(added.reason);
     const later = addToStash(added.state, content, {
-      def: 'bld_wall',
+      def: 'bld_wall_block',
       tier: 1,
       owner: 0,
     });

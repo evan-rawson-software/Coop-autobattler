@@ -1,6 +1,6 @@
 /**
- * The Build tab of the Shop step: the Build screen on the shared run. Loads
- * the run if this page was opened directly on this tab (a reload).
+ * The sample route `#shop`: the Build screen on the shared run, with the shop
+ * of the shop step. Loads the run if this page was opened directly (a reload).
  */
 import { useEffect } from 'preact/hooks';
 import { RunGate } from '../run/RunGate.js';

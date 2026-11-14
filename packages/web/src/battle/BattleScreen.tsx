@@ -10,6 +10,7 @@ import { Component, type ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
+import { describeUnitAt } from './unit-hover.js';
 import {
   buildScene,
   enemyCoreCentre,
@@ -24,7 +25,7 @@ import {
   registerDebug,
   unregisterDebug,
 } from '../debug-hook.js';
-import { AppShell } from '../shell/AppShell.js';
+import { GameFrame } from '../shell/GameFrame.js';
 import './battle.css';
 import {
   coreNameOf,
@@ -36,7 +37,12 @@ import {
 } from './derive.js';
 import { coreMaxima } from './derive.js';
 import { drawBattleOverlay, linkMap, makeDrawIndex } from './draw.js';
-import { BattleSummaryView, LeftPanels, RightPanels } from './panels.js';
+import {
+  BattleSummaryView,
+  BattleRail,
+  PlaybackTray,
+  StatsDrawer,
+} from './panels.js';
 import {
   Playback,
   replayMatches,
@@ -54,6 +60,7 @@ import { screenText, screenTexts } from '../build/texts.js';
 import { overloadLine } from '../choice/overload.js';
 import { simClient, type RecordOutcome } from '../sim-worker/client.js';
 import { CannotShow } from './CannotShow.js';
+import { ResultCard } from './ResultCard.js';
 import { readFailPlayback } from './cannot-show.js';
 import { createReadyGate } from './ready-gate.js';
 import { battleConfig } from './setup.js';
@@ -209,35 +216,39 @@ export function BattleView(props: BattleViewProps) {
     const stored = props.stored;
     const won = stored?.won === true;
     return (
-      <AppShell title={props.title} status={props.topBarExtra}>
-        <div class="battle-preparing" id="battle-mismatch" role="status">
-          <h2 class="result-title">
-            <span data-field="result-word">
-              {t(won ? 'battleVictory' : 'battleDefeat')}
-            </span>
-            {t('battleVsOpponent', { name: props.opponent.name })}
-          </h2>
-          <p data-field="mismatch">
-            {t('battleMismatch', {
-              result: t(won ? 'battleVictory' : 'battleDefeat'),
-            })}
-            <span data-field="reward">{props.reward(won)}</span>
-          </p>
-          <button
-            type="button"
-            class="primary"
-            id="battle-ready"
-            disabled={mismatchReady}
-            onClick={() => {
-              mismatchGate.current?.();
-            }}
-          >
-            {mismatchReady
-              ? t('battleReadyDone')
-              : (props.continueText ?? t('battleContinue'))}
-          </button>
-        </div>
-      </AppShell>
+      <GameFrame
+        phase="result"
+        title={props.title}
+        status={props.topBarExtra}
+        primary={{
+          id: 'battle-ready',
+          label: mismatchReady
+            ? t('battleReadyDone')
+            : (props.continueText ?? t('battleContinue')),
+          disabled: mismatchReady,
+          onPress: () => {
+            mismatchGate.current?.();
+          },
+        }}
+        board={
+          <div class="battle-preparing" id="battle-mismatch" role="status">
+            <div>
+              <h2 class="result-title">
+                <span data-field="result-word">
+                  {t(won ? 'battleVictory' : 'battleDefeat')}
+                </span>
+                {t('battleVsOpponent', { name: props.opponent.name })}
+              </h2>
+              <p data-field="mismatch">
+                {t('battleMismatch', {
+                  result: t(won ? 'battleVictory' : 'battleDefeat'),
+                })}
+                <span data-field="reward">{props.reward(won)}</span>
+              </p>
+            </div>
+          </div>
+        }
+      />
     );
   }
   if (typeof prep === 'string') {
@@ -245,11 +256,17 @@ export function BattleView(props: BattleViewProps) {
   }
   if (prep === null) {
     return (
-      <AppShell title={props.title} status={props.topBarExtra}>
-        <div class="battle-preparing" id="battle-preparing" role="status">
-          Preparing the battle…
-        </div>
-      </AppShell>
+      <GameFrame
+        phase="battle"
+        title={props.title}
+        status={props.topBarExtra}
+        primary={null}
+        board={
+          <div class="battle-preparing" id="battle-preparing" role="status">
+            Preparing the battle…
+          </div>
+        }
+      />
     );
   }
   return (
@@ -268,18 +285,18 @@ export function BattleView(props: BattleViewProps) {
 function CannotShowScreen(props: BattleViewProps & { message: string }) {
   const stored = props.stored;
   return (
-    <AppShell title={props.title} status={props.topBarExtra}>
-      <CannotShow
-        message={props.message}
-        outcome={
-          stored === undefined
-            ? null
-            : { won: stored.won, reason: stored.reason ?? null }
-        }
-        rewardText={stored === undefined ? undefined : props.reward(stored.won)}
-        onContinue={props.onReady}
-      />
-    </AppShell>
+    <CannotShow
+      title={props.title}
+      status={props.topBarExtra}
+      message={props.message}
+      outcome={
+        stored === undefined
+          ? null
+          : { won: stored.won, reason: stored.reason ?? null }
+      }
+      rewardText={stored === undefined ? undefined : props.reward(stored.won)}
+      onContinue={props.onReady}
+    />
   );
 }
 
@@ -326,21 +343,22 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
       makeDrawIndex(
         init,
         {
-          own: 'YOUR BOARD',
-          enemy: foeKind === 'ghost' ? 'ENEMY BOARD' : 'STRONGHOLD',
+          own: t('battleBoardYou'),
+          enemy: t('battleBoardThem', { name: opponent.name }),
         },
         [
           linkMap(record.initialTeams[0], content),
           linkMap(record.initialTeams[1], content),
         ],
       ),
-    [init, foeKind, record],
+    [init, opponent.name, record],
   );
   const tps = battleConfig.sim.ticksPerSecond;
   const [phase, setPhase] = useState<Phase>(
     pb.finished ? 'summary' : 'playing',
   );
   const [replay, setReplay] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   const [, setFrame] = useState(0);
   const [readyLocal, setReady] = useState(false);
   const ready = props.ready ?? readyLocal;
@@ -520,28 +538,93 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
         </span>
       ) : null}
       <span data-field="vs">vs. {opponent.name}</span>
-      <span data-field="battle-time">Battle time {timeText}</span>
+      {phase === 'summary' ? (
+        <span data-field="battle-time">Battle time {timeText}</span>
+      ) : null}
     </span>
   );
 
+  const board = (
+    <>
+      <BoardView
+        content={content}
+        own={pb.sim.teams[0]}
+        enemy={pb.sim.teams[1]}
+        basePlayer={props.acting}
+        neutralHeight={record.zone.depth}
+        neutral={neutral}
+        neutralLabel={t(
+          revealed ? 'battleNeutralZone' : 'battleNeutralZoneHidden',
+        )}
+        controller={camera}
+        controls={false}
+        resetKey={record}
+        drawOverlay={drawOverlay.current}
+        describeAt={(v) => describeUnitAt(pb, geo, content, v)}
+        animate={phase === 'playing'}
+      />
+      {phase === 'playing' && !revealed ? (
+        <div class="intro-banner" id="intro-banner" role="status">
+          {t('battleIntro')}
+        </div>
+      ) : null}
+    </>
+  );
+  const rail = {
+    camera,
+    onEnemyBase: () => {
+      if (prep.enemyCentre !== null) camera.focusAt(prep.enemyCentre);
+    },
+  };
+
   if (phase === 'summary') {
     return (
-      <AppShell title={`${props.title} · Summary`} status={status}>
-        <BattleSummaryView
-          pb={pb}
-          content={content}
-          opponent={opponent}
-          title={props.title}
-          moments={moments}
-          rewardText={props.reward(won)}
-          won={won}
-          tps={tps}
-          ready={ready}
-          continueText={props.continueText}
-          onWatchAgain={onWatchAgain}
-          onReady={onReady}
-        />
-      </AppShell>
+      <GameFrame
+        phase="result"
+        title={`${props.title} · Summary`}
+        status={status}
+        rail={rail}
+        board={
+          <>
+            {board}
+            <div class="result-scrim">
+              <ResultCard
+                pb={pb}
+                content={content}
+                opponent={opponent}
+                moments={moments}
+                rewardText={props.reward(won)}
+                won={won}
+                tps={tps}
+              />
+            </div>
+          </>
+        }
+        tray={
+          <button type="button" id="watch-again" onClick={onWatchAgain}>
+            {t('battleWatchAgain')}
+          </button>
+        }
+        primary={{
+          id: 'battle-ready',
+          label: ready
+            ? t('battleReadyDone')
+            : (props.continueText ?? t('battleContinue')),
+          disabled: ready,
+          onPress: onReady,
+        }}
+        info={
+          <BattleSummaryView
+            pb={pb}
+            content={content}
+            opponent={opponent}
+            title={props.title}
+            moments={moments}
+            won={won}
+            tps={tps}
+          />
+        }
+      />
     );
   }
 
@@ -555,66 +638,61 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           coreMaxima(record, 0),
           coreMaxima(record, 1),
         );
-  const overloadTick = moments.find((m) => m.kind === 'overload')?.tick ?? null;
+  const overloadTick = battleConfig.sim.overloadStartTick;
 
   return (
-    <AppShell
+    <GameFrame
+      phase="battle"
       title={props.title}
       status={status}
-      left={
-        <LeftPanels
+      rail={rail}
+      board={board}
+      tray={
+        <PlaybackTray
+          pb={pb}
+          overloadTick={overloadTick}
+          tps={tps}
+          onSpeed={onSpeed}
+          onPause={onPause}
+        />
+      }
+      primary={{
+        id: 'skip',
+        label: t(replay ? 'battleBackToResults' : 'battleSkip'),
+        onPress: onSkip,
+      }}
+      info={
+        <BattleRail
           pb={pb}
           mine={mine}
           theirs={theirs}
           content={content}
-          foeName={opponent.name}
-          overloadTick={overloadTick}
-          overloadNote={overloadNote}
-          tps={tps}
-        />
-      }
-      right={
-        <RightPanels
-          pb={pb}
-          content={content}
-          opponent={opponent}
-          foeWord={foeWord}
-          theirs={theirs}
           moments={moments}
+          overloadTick={overloadTick}
           tps={tps}
           revealed={revealed}
-          onSpeed={onSpeed}
-          onPause={onPause}
-          onSkip={onSkip}
-          replay={replay}
-          onFocus={onFocus}
+          statsOpen={statsOpen}
+          onToggleStats={() => {
+            setStatsOpen((o) => !o);
+          }}
+          drawer={
+            <StatsDrawer
+              pb={pb}
+              mine={mine}
+              theirs={theirs}
+              content={content}
+              foeName={opponent.name}
+              moments={moments}
+              overloadTick={overloadTick}
+              overloadNote={overloadNote}
+              tps={tps}
+              revealed={revealed}
+              onFocus={onFocus}
+            />
+          }
         />
       }
-    >
-      <BoardView
-        content={content}
-        own={pb.sim.teams[0]}
-        enemy={pb.sim.teams[1]}
-        basePlayer={props.acting}
-        neutralHeight={record.zone.depth}
-        neutral={neutral}
-        neutralLabel={t(
-          revealed ? 'battleNeutralZone' : 'battleNeutralZoneHidden',
-        )}
-        controller={camera}
-        onEnemyBase={() => {
-          if (prep.enemyCentre !== null) camera.focusAt(prep.enemyCentre);
-        }}
-        resetKey={record}
-        drawOverlay={drawOverlay.current}
-        animate
-      />
-      {!revealed ? (
-        <div class="intro-banner" id="intro-banner" role="status">
-          {t('battleIntro')}
-        </div>
-      ) : null}
-    </AppShell>
+    />
   );
 }
 

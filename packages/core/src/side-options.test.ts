@@ -123,7 +123,7 @@ describe('side options: scheduled waves', () => {
     const lab = new Lab(board([]));
     lab.core(11, 0);
     // Walls on the front row (board y = 15) of side 1, own-frame columns 12, 11, 13.
-    for (const x of [11, 12, 13]) lab.put('bld_wall', x, 15);
+    for (const x of [11, 12, 13]) lab.put('bld_wall_block', x, 15);
     const { sim, ctx, events } = start(lab.state, {
       scheduledWaves: [{ tick: 0, unit: 'unit_soldier', count: 1 }],
     });
@@ -139,7 +139,7 @@ describe('side options: scheduled waves', () => {
   test('a wave of a fully blocked row waits in the queue, none is dropped', () => {
     const lab = new Lab(board([]));
     lab.core(11, 0);
-    for (let x = 0; x < W; x++) lab.put('bld_wall', x, 15);
+    for (let x = 0; x < W; x++) lab.put('bld_wall_block', x, 15);
     const { sim, ctx } = start(lab.state, {
       scheduledWaves: [{ tick: 0, unit: 'unit_soldier', count: 3 }],
     });

@@ -1021,7 +1021,7 @@ describe('Overload damage (criterion 6)', () => {
     // hits it for 12; a soldier beside a wall hits the wall for 12.
     const lab = new Lab(tinyMap());
     lab.core(5, 6);
-    const wall = lab.put('bld_wall', 1, 6);
+    const wall = lab.put('bld_wall_block', 1, 6);
     const b = startArenaBattle(
       lab.state,
       coreOnlyTeam(),
@@ -1080,12 +1080,12 @@ describe('Overload ends walled stand-offs (criterion 5)', () => {
     const lab = new Lab(tinyMap());
     lab.core(5, 3);
     for (let x = 4; x <= 7; x++) {
-      lab.put('bld_wall', x, 2);
-      lab.put('bld_wall', x, 5);
+      lab.put('bld_wall_block', x, 2);
+      lab.put('bld_wall_block', x, 5);
     }
     for (const y of [3, 4]) {
-      lab.put('bld_wall', 4, y);
-      lab.put('bld_wall', 7, y);
+      lab.put('bld_wall_block', 4, y);
+      lab.put('bld_wall_block', 7, y);
     }
     return lab.state;
   }

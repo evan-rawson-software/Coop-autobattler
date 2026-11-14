@@ -8,7 +8,13 @@
  */
 
 import { sortedInts } from './collections.js';
-import { allCoreCells, cellKey, coreCells, defCells } from './board-cells.js';
+import {
+  allCoreCells,
+  cellKey,
+  coreCells,
+  defBox,
+  defCells,
+} from './board-cells.js';
 import {
   rotateBuilding,
   type BuildingDef,
@@ -295,15 +301,12 @@ function checkPlacement(
     return { ok: false, reason: 'out_of_bounds' };
   }
   const cells = defCells(def, x, y, rotation);
-  const first = cells[0];
-  const last = cells[cells.length - 1];
+  const box = defBox(def, x, y, rotation);
   if (
-    first === undefined ||
-    last === undefined ||
-    first.x < 0 ||
-    first.y < 0 ||
-    last.x >= map.width ||
-    last.y >= map.height
+    box.x < 0 ||
+    box.y < 0 ||
+    box.x + box.w > map.width ||
+    box.y + box.h > map.height
   ) {
     return { ok: false, reason: 'out_of_bounds' };
   }

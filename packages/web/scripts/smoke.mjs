@@ -19,10 +19,12 @@ import { createServer } from 'node:http';
 import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkFrame } from './smoke-frame.mjs';
 import { runShopSmoke } from './smoke-shop.mjs';
 import { runSpritesSmoke } from './smoke-sprites.mjs';
 import { runArtSmoke, spritesInfo } from './smoke-art.mjs';
 import { runRunSmoke } from './smoke-run.mjs';
+import { runTutorialSmoke } from './smoke-tutorial.mjs';
 import { runWorkerSmoke } from './smoke-worker.mjs';
 import {
   CPU_THROTTLE,
@@ -649,14 +651,13 @@ try {
   check(
     /Extractor/.test(stashText) &&
       /Barracks/.test(stashText) &&
-      /×\s*3/.test(stashText),
-    'stash panel groups the kit with counts',
+      /Wall \([IOTSZLJ]\)/.test(stashText),
+    'stash panel lists the kit, each wall shape as its own row',
   );
   check(
-    (await page.locator('.topbar-tabs button').allInnerTexts()).join(',') ===
-      'Shop,Build' &&
-      (await page.locator('.topbar-tabs button').first().isDisabled()),
-    'Shop tab is present and disabled',
+    (await page.locator('.topbar-tabs button').count()) === 0 &&
+      (await page.locator('#shop-toggle').count()) === 0,
+    'the dev Build route has no tabs and no shop (there is no shop in it)',
   );
   const noScroll = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth,
@@ -780,8 +781,24 @@ try {
   await page.click('[data-camera="fit"]');
   await settle();
 
-  // --- Rotate the held building, and a placed one
-  await dragStash('bld_wall', BUILD_PLAN.wall.x, BUILD_PLAN.wall.y, {
+  // --- Rotate the held building, and a placed one. The walls are shapes
+  // (issue #291): the preview and the fit check use the rotated cells.
+  const wallsOf = (t) =>
+    t.buildings.filter((b) => b.def.startsWith('bld_wall_'));
+  const WALL = team.stash.find((s) => s.def.startsWith('bld_wall_')).def;
+  const selectBuilding = async (b) => {
+    for (let dy = 0; dy < 4; dy++) {
+      for (let dx = 0; dx < 4; dx++) {
+        if (b.y + dy > 15) continue;
+        await clickCell(b.x + dx, b.y + dy);
+        const sel = (await B.ui()).selection;
+        if (sel?.kind === 'building' && sel.id === b.id) return true;
+      }
+    }
+    return false;
+  };
+  const WALL_X = 16; // free ground at the front, away from the lakes
+  await dragStash(WALL, WALL_X, 12, {
     rotate: true,
     release: false,
   });
@@ -789,21 +806,40 @@ try {
     (await B.ui()).held.rotation === 90,
     'R rotates the building being dragged',
   );
+  // Move up until the preview reaches the front row: the box is anchored
+  // under the cursor, so this keeps the rotated shape inside the board.
+  let ghost = (await B.ui()).ghost;
+  const dyFront = team.height - 1 - Math.max(...ghost.cells.map((c) => c.y));
+  const pFront = await at(WALL_X, 12 + dyFront);
+  await page.mouse.move(pFront.x, pFront.y, { steps: 4 });
+  await settle();
+  await pause();
+  ghost = (await B.ui()).ghost;
+  check(
+    ghost.ok === true &&
+      ghost.cells.length === 4 &&
+      Math.max(...ghost.cells.map((c) => c.y)) === team.height - 1,
+    `the preview shows the rotated shape (${ghost.cells.length} cells, fits: ${ghost.ok} ${ghost.message ?? ''})`,
+  );
+  await shot('build-4-wall-rotated-preview');
   await page.mouse.up();
   await pause();
   team = await B.team();
-  const wall = buildingOf(team, 'bld_wall')[0];
+  const wall = wallsOf(team)[0];
   check(
-    wall && wall.rotation === 90,
+    wall && wall.def === WALL && wall.rotation === 90,
     'the wall was dropped with the chosen rotation',
   );
   await pushHash();
-  await clickCell(BUILD_PLAN.wall.x, BUILD_PLAN.wall.y);
+  check(
+    await selectBuilding(wall),
+    'a cell of the placed shape selects the wall',
+  );
   await page.keyboard.press('r');
   await pause();
   team = await B.team();
   check(
-    buildingOf(team, 'bld_wall')[0].rotation === 180,
+    wallsOf(team)[0].rotation === 180,
     'R rotates the selected building in place',
   );
   await pushHash();
@@ -811,19 +847,48 @@ try {
     (await B.status()).text === 'Rotated.',
     'status line confirms the rotation',
   );
+  // One more turn: the box is tall again and reaches the front row.
+  await page.keyboard.press('r');
+  await pause();
+  team = await B.team();
+  check(
+    wallsOf(team)[0].rotation === 270,
+    'R rotates the selected building again',
+  );
+  await pushHash();
 
-  // --- Enemy paths overlay follows walls
+  // --- Enemy paths overlay follows walls. The wall goes back on the front
+  // row first (its top edge there), so that it blocks a front-row start cell.
+  await selectBuilding(wallsOf(await B.team())[0]);
+  await page.click('#panel-inspector [data-action="to-stash"]');
+  await pause();
+  await pushHash();
+  await dragStash(WALL, WALL_X, 12, { release: false });
+  ghost = (await B.ui()).ghost;
+  const dyBack =
+    (await B.team()).height - 1 - Math.max(...ghost.cells.map((c) => c.y));
+  const pBack = await at(WALL_X, 12 + dyBack);
+  await page.mouse.move(pBack.x, pBack.y, { steps: 4 });
+  await settle();
+  await pause();
+  await page.mouse.up();
+  await pause();
+  await pushHash();
+  check(
+    wallsOf(await B.team()).length === 1,
+    'the wall is back on the front row',
+  );
   await page.click('[data-overlay="paths"]');
   await settle();
   const pathsWith = await B.paths();
   await shot('build-5-enemy-paths');
   await page.click('[data-tool="select"]');
-  await clickCell(BUILD_PLAN.wall.x, BUILD_PLAN.wall.y);
+  await selectBuilding(wallsOf(await B.team())[0]);
   await page.click('#panel-inspector [data-action="to-stash"]');
   await pause();
   const pathsWithout = await B.paths();
   check(
-    pathsWith > 0 && pathsWithout === pathsWith + 1,
+    pathsWith > 0 && pathsWithout >= pathsWith + 1,
     `enemy-path overlay updates when a front-row wall is removed (${pathsWith} -> ${pathsWithout} entries)`,
   );
   await pushHash();
@@ -953,7 +1018,7 @@ try {
 
   // --- Erase: a conduit goes, undo brings it back
   const hashFull = await B.hash();
-  await page.click('[data-tool="erase"]');
+  await page.keyboard.press('e');
   await clickCell(
     (await B.team()).conduits[1].cells[0].x,
     (await B.team()).conduits[1].cells[0].y,
@@ -1024,7 +1089,7 @@ try {
   // on the input side; exactly the dragged cells are built (issue #275).
   const hashDrag0 = await B.hash();
   const drawn = (await B.team()).conduits[1].cells;
-  await page.click('[data-tool="erase"]');
+  await page.keyboard.press('e');
   await clickCell(drawn[0].x, drawn[0].y);
   check(
     (await B.team()).conduits.length === 1,
@@ -1067,7 +1132,7 @@ try {
   await page.click('[data-tool="select"]');
 
   // --- Click-to-pick, then click-to-place (touch and keyboard friendly)
-  await page.click('[data-stash-def="bld_wall"]');
+  await page.click('[data-stash-def^="bld_wall_"]');
   await pause();
   check(
     (await B.ui()).held?.mode === 'sticky',
@@ -1076,19 +1141,33 @@ try {
   await page.keyboard.press('Escape');
   await pause();
   check((await B.ui()).held === null, 'Escape puts a picked-up building down');
-  await page.click('[data-stash-def="bld_wall"]');
+  await page.click('[data-stash-def^="bld_wall_"]');
   await pause();
-  await clickCell(7, 15);
+  // The first cell, among a few free ones, where the held shape fits.
+  let stickyAt = null;
+  for (const [cx, cy] of [
+    [7, 12],
+    [8, 12],
+    [7, 10],
+    [3, 12],
+    [3, 9],
+  ]) {
+    await moveTo(cx, cy);
+    await pause();
+    if ((await B.ui()).ghost?.ok === true) {
+      stickyAt = { x: cx, y: cy };
+      break;
+    }
+  }
+  check(stickyAt !== null, 'the held shape has a free spot to go to');
+  await clickCell(stickyAt.x, stickyAt.y);
   check(
-    buildingOf(await B.team(), 'bld_wall').length === 2,
+    wallsOf(await B.team()).length === 2,
     'click-to-place puts the held building on the clicked cell',
   );
   await page.click('#panel-tools [data-action="undo"]');
   await pause();
-  check(
-    buildingOf(await B.team(), 'bld_wall').length === 1,
-    'undo takes that placement back',
-  );
+  check(wallsOf(await B.team()).length === 1, 'undo takes that placement back');
 
   // --- Flow overlay and dry run
   await page.click('[data-overlay="flow"]');
@@ -1118,14 +1197,18 @@ try {
   await waitFrames(page, 18);
   await shot('build-4-factory-flow');
   await shotDark('art2-build-conduits');
-  // The test run sits in the bottom dock, not over the board.
+  // The test run sits in the info rail (beside the board), not over it.
   check(
     await page.evaluate(() => {
       const t = document.querySelector('#dry-table')?.getBoundingClientRect();
-      const b = document.querySelector('.main-view')?.getBoundingClientRect();
-      return t !== undefined && b !== undefined && t.top >= b.bottom - 1;
+      const b = document.querySelector('.frame-board')?.getBoundingClientRect();
+      return (
+        t !== undefined &&
+        b !== undefined &&
+        (t.top >= b.bottom - 1 || t.left >= b.right - 1)
+      );
     }),
-    'dry-run table is in the dock below the board, not over it',
+    'dry-run table is in the info rail beside the board, not over it',
   );
   await page.click('#dry-table button');
   await page.waitForSelector('#dry-table', { state: 'detached' });
@@ -1329,17 +1412,18 @@ try {
         Math.abs(cam.cy - rows.height / 2) < 1.5,
         `battle: the camera starts on the neutral zone (cy ${cam.cy.toFixed(1)} of ${rows.height} rows)`,
       );
-      // One set of camera buttons, over the board, with every action.
+      // One set of camera buttons, in the map rail, with every action.
       check(
         (await page.locator('#panel-camera').count()) === 0 &&
-          (await page.locator('.camera-controls').count()) === 1 &&
+          (await page.locator('.camera-controls').count()) === 0 &&
           (
             await page
-              .locator('.camera-controls [data-camera]')
+              .locator('.frame-rail [data-camera]')
               .evaluateAll((els) => els.map((e) => e.dataset.camera))
-          ).join() === 'center,base,enemy-base,fit,zoom-in,zoom-out',
-        'battle: a single camera control set over the board (Center, My base, Their base, Fit, zoom)',
+          ).join() === 'zoom-in,zoom-out,fit,center,base,enemy-base',
+        'battle: a single camera control set in the map rail (zoom, Fit, Center, My base, Their base)',
       );
+      await checkFrame(page, check, 'Battle playback');
       const before = await camera();
       await page.click('[data-camera="enemy-base"]');
       await settle();
@@ -1496,6 +1580,13 @@ try {
       `battle: summary shows the reward line ("${reward}")`,
     );
     check(
+      (await page.locator('#panel-buildings').count()) === 0 &&
+        (await page.locator('#result-banner [data-field="cause"]').innerText())
+          .length > 0,
+      'battle: the result card gives a cause and the detailed panels are hidden by default',
+    );
+    await page.click('#show-details');
+    check(
       (await page.locator('#panel-buildings tbody tr').count()) > 0 &&
         (await page
           .locator('[data-testid="chart-strength-summary"]')
@@ -1576,12 +1667,23 @@ try {
         rew === 'No reward',
         `battle: a lost PvE battle shows no cost and no reward ("${rew}")`,
       );
+      const cause = await page
+        .locator('#result-banner [data-field="cause"]')
+        .innerText();
+      const tip = await page
+        .locator('#result-banner [data-field="tip"]')
+        .innerText();
+      check(
+        cause.length > 10 && /Try this next round/.test(tip),
+        `battle: a defeat gives a cause and a next step ("${cause.slice(0, 70)}", "${tip.replace(/\s+/g, ' ').slice(0, 60)}")`,
+      );
+      await page.click('#show-details');
       const reasonText = await page
-        .locator('#result-banner .result-detail')
+        .locator('#result-facts .result-detail')
         .innerText();
       check(
         /destroyed/.test(reasonText) && !/more health left/.test(reasonText),
-        `battle: the summary explains the result ("${reasonText.slice(0, 70)}...")`,
+        `battle: the full breakdown explains the result ("${reasonText.slice(0, 70)}...")`,
       );
     }
 
@@ -1638,6 +1740,7 @@ try {
         `battle: skipping and watching again on a ghost battle raises no page errors (${consoleErrors.slice(errorsBefore).join(' | ')})`,
       );
       // Summary chart markers of moments at the same tick are merged.
+      await page.click('#show-details');
       const labels = (
         await page
           .locator('[data-testid="chart-strength-summary"]')
@@ -1821,6 +1924,9 @@ try {
     context,
     consoleErrors,
   });
+
+  // The guided tutorial (issue #309)
+  await runTutorialSmoke({ page, baseUrl, check, shot, settle });
 
   check(
     consoleErrors.length === 0,

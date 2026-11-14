@@ -123,7 +123,7 @@ function rush(): TeamScript {
     [14, 8, 2],
     [9, 7, 1],
   ] as const) {
-    s.put('bld_wall', x, y, tier);
+    s.put('bld_wall_block', x, y, tier);
   }
   s.link(e1, 'north', b1, 'south');
   s.link(e2, 'north', b2, 'south');
@@ -154,7 +154,7 @@ function fortify(): TeamScript {
     [11, 8, 1],
     [9, 6, 1],
   ] as const) {
-    s.put('bld_wall', x, y, tier);
+    s.put('bld_wall_block', x, y, tier);
   }
   s.link(x1, 'north', t1, 'south', [
     [19, 6],
@@ -180,9 +180,9 @@ function poor(): TeamScript {
     [3, 11],
   ]);
   s.put('bld_extractor', 21, 4);
-  s.put('bld_wall', 0, 0);
-  s.put('bld_wall', 1, 0);
-  s.put('bld_wall', 2, 0);
+  s.put('bld_wall_block', 0, 0);
+  s.put('bld_wall_block', 1, 0);
+  s.put('bld_wall_block', 2, 0);
   s.put('bld_turret', 22, 0);
   return s.script();
 }

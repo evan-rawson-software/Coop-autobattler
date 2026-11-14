@@ -304,8 +304,32 @@ function wallFrame(mask: number): Pix {
   return p;
 }
 
-function wallSprite(): Pix {
-  return wallFrame(0);
+/**
+ * A wall shape (issue #291): the wall autotile cell by cell over the shape's
+ * cells (`[x, y]`, y up), transparent elsewhere. Neighbours inside the shape
+ * join.
+ */
+function wallShapeSprite(
+  width: number,
+  height: number,
+  cells: readonly (readonly [number, number])[],
+): Pix {
+  const out = new Pix(width * 16, height * 16);
+  const has = (x: number, y: number): boolean =>
+    cells.some((c) => c[0] === x && c[1] === y);
+  for (const [cx, cy] of cells) {
+    const mask =
+      (has(cx, cy + 1) ? WALL_N : 0) |
+      (has(cx + 1, cy) ? WALL_E : 0) |
+      (has(cx, cy - 1) ? WALL_S : 0) |
+      (has(cx - 1, cy) ? WALL_W : 0);
+    const f = wallFrame(mask);
+    const ox = cx * 16;
+    const oy = (height - 1 - cy) * 16;
+    for (let y = 0; y < 16; y++)
+      for (let x = 0; x < 16; x++) out.setRgba(ox + x, oy + y, f.get(x, y));
+  }
+  return out;
 }
 
 function gateSprite(): Pix {
@@ -558,7 +582,6 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_merger: mergerSprite,
   bld_crossover: crossoverSprite,
   bld_barracks: barracksSprite,
-  bld_wall: wallSprite,
   bld_gate: gateSprite,
   bld_turret: turretSprite,
   bld_overclocker: () => economySprite(gearIcon),
@@ -582,7 +605,18 @@ export function buildingSprites(
     out.push(sprite(d));
   };
   for (const b of content) {
-    const make = MAKERS[b.id];
+    const cells =
+      b.defenseType === 'wall'
+        ? (b.cells ??
+          Array.from(
+            { length: b.width * b.height },
+            (_, i): [number, number] => [i % b.width, Math.floor(i / b.width)],
+          ))
+        : undefined;
+    const make =
+      cells === undefined
+        ? MAKERS[b.id]
+        : () => wallShapeSprite(b.width, b.height, cells);
     if (!make) continue; // The coverage test names the missing one.
     const frame = make();
     if (frame.w !== b.width * 16 || frame.h !== b.height * 16)
@@ -651,7 +685,7 @@ export function buildingSprites(
     category: 'building',
     frames: Array.from({ length: 16 }, (_, m) => wallFrame(m)),
     columns: 8,
-    note: 'Wall autotile, 16 static frames in 2 rows of 8. Frame index = 4-bit mask of the cardinal neighbours that are also walls: bit0 N, bit1 E, bit2 S, bit3 W (N=1, E=2, S=4, W=8). Frame 0 is the single block. No diagonals. Shop cards and icons use bld_wall.',
+    note: 'Wall autotile, 16 static frames in 2 rows of 8. Frame index = 4-bit mask of the cardinal neighbours that are also walls: bit0 N, bit1 E, bit2 S, bit3 W (N=1, E=2, S=4, W=8). Frame 0 is the single block. No diagonals. Shop cards and icons use the shape sprites bld_wall_i, bld_wall_o, bld_wall_t, ...',
   });
   const c = (name: string, open: Open, note: string): void => {
     add({

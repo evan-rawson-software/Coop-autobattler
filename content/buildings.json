@@ -137,7 +137,143 @@
       ]
     },
     {
-      "id": "bld_wall",
+      "id": "bld_wall_i",
+      "kind": "defense",
+      "defenseType": "wall",
+      "footprint": { "width": 4, "height": 1 },
+      "inputs": [],
+      "outputs": [],
+      "tiers": [
+        { "health": 250, "price": 8 },
+        { "health": 400, "price": 18 },
+        { "health": 600, "price": 36 }
+      ]
+    },
+    {
+      "id": "bld_wall_o",
+      "kind": "defense",
+      "defenseType": "wall",
+      "footprint": { "width": 2, "height": 2 },
+      "inputs": [],
+      "outputs": [],
+      "tiers": [
+        { "health": 250, "price": 8 },
+        { "health": 400, "price": 18 },
+        { "health": 600, "price": 36 }
+      ]
+    },
+    {
+      "id": "bld_wall_t",
+      "kind": "defense",
+      "defenseType": "wall",
+      "footprint": {
+        "width": 3,
+        "height": 2,
+        "cells": [
+          [1, 0],
+          [0, 1],
+          [1, 1],
+          [2, 1]
+        ]
+      },
+      "inputs": [],
+      "outputs": [],
+      "tiers": [
+        { "health": 250, "price": 8 },
+        { "health": 400, "price": 18 },
+        { "health": 600, "price": 36 }
+      ]
+    },
+    {
+      "id": "bld_wall_s",
+      "kind": "defense",
+      "defenseType": "wall",
+      "footprint": {
+        "width": 3,
+        "height": 2,
+        "cells": [
+          [0, 0],
+          [1, 0],
+          [1, 1],
+          [2, 1]
+        ]
+      },
+      "inputs": [],
+      "outputs": [],
+      "tiers": [
+        { "health": 250, "price": 8 },
+        { "health": 400, "price": 18 },
+        { "health": 600, "price": 36 }
+      ]
+    },
+    {
+      "id": "bld_wall_z",
+      "kind": "defense",
+      "defenseType": "wall",
+      "footprint": {
+        "width": 3,
+        "height": 2,
+        "cells": [
+          [1, 0],
+          [2, 0],
+          [0, 1],
+          [1, 1]
+        ]
+      },
+      "inputs": [],
+      "outputs": [],
+      "tiers": [
+        { "health": 250, "price": 8 },
+        { "health": 400, "price": 18 },
+        { "health": 600, "price": 36 }
+      ]
+    },
+    {
+      "id": "bld_wall_l",
+      "kind": "defense",
+      "defenseType": "wall",
+      "footprint": {
+        "width": 2,
+        "height": 3,
+        "cells": [
+          [0, 0],
+          [1, 0],
+          [0, 1],
+          [0, 2]
+        ]
+      },
+      "inputs": [],
+      "outputs": [],
+      "tiers": [
+        { "health": 250, "price": 8 },
+        { "health": 400, "price": 18 },
+        { "health": 600, "price": 36 }
+      ]
+    },
+    {
+      "id": "bld_wall_j",
+      "kind": "defense",
+      "defenseType": "wall",
+      "footprint": {
+        "width": 2,
+        "height": 3,
+        "cells": [
+          [0, 0],
+          [1, 0],
+          [1, 1],
+          [1, 2]
+        ]
+      },
+      "inputs": [],
+      "outputs": [],
+      "tiers": [
+        { "health": 250, "price": 8 },
+        { "health": 400, "price": 18 },
+        { "health": 600, "price": 36 }
+      ]
+    },
+    {
+      "id": "bld_wall_block",
       "kind": "defense",
       "defenseType": "wall",
       "footprint": { "width": 1, "height": 1 },

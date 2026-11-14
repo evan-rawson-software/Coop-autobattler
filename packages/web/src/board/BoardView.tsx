@@ -5,7 +5,7 @@
  */
 
 import type { TeamState } from '@game/core';
-import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { WebContent } from '../content.js';
 import { registerDebug } from '../debug-hook.js';
 import { screenToWorld, type Camera, type Viewport } from './camera.js';
@@ -34,6 +34,8 @@ import {
 } from './scene.js';
 import { readTheme } from './theme.js';
 import { CameraControls } from './CameraControls.js';
+import { describeHit, describeNeutral, type HoverInfo } from './hover-info.js';
+import { BoardTooltip, HOVER_DELAY_MS, type Tip } from './BoardTooltip.js';
 
 export type { Selection } from './render.js';
 
@@ -95,6 +97,13 @@ export interface BoardViewProps {
    */
   readonly onBoardPointer?: (ev: BoardPointerEvent) => boolean;
   readonly cursor?: string | undefined;
+  /**
+   * Show the hover tooltip (default true). A screen turns it off while it
+   * shows its own labels, such as a building being dragged (issue #308).
+   */
+  readonly hoverInfo?: boolean;
+  /** Describes something drawn over the board, by view point (battle units). */
+  readonly describeAt?: (view: { x: number; y: number }) => HoverInfo | null;
 }
 
 function sameHit(a: Hit | null, b: Hit | null): boolean {
@@ -115,6 +124,10 @@ export function BoardView(props: BoardViewProps) {
   } = props;
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const [tip, setTip] = useState<Tip | null>(null);
+  const tipTimer = useRef<number | undefined>(undefined);
+  const tipKey = useRef('');
+  const hoverOn = props.hoverInfo !== false;
 
   const scene = useMemo(
     () => buildScene(own, enemy, neutralHeight, content, neutral),
@@ -263,12 +276,22 @@ export function BoardView(props: BoardViewProps) {
     };
   }, [controller]);
 
+  useEffect(
+    () => () => {
+      window.clearTimeout(tipTimer.current);
+    },
+    [],
+  );
+
   // Wheel needs a non-passive listener to stop the page from scrolling.
   useEffect(() => {
     const cv = canvas.current;
     if (!cv) return;
     const onWheel = (e: WheelEvent): void => {
       e.preventDefault();
+      window.clearTimeout(tipTimer.current);
+      tipKey.current = '';
+      setTip(null);
       const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
       const k = e.ctrlKey ? 0.01 : 0.0015;
       const r = cv.getBoundingClientRect();
@@ -353,6 +376,43 @@ export function BoardView(props: BoardViewProps) {
     }
   };
 
+  const clearTip = (): void => {
+    window.clearTimeout(tipTimer.current);
+    tipKey.current = '';
+    setTip((t) => (t === null ? t : null));
+  };
+
+  // Show the tooltip after the pointer rests on one thing for a moment.
+  const trackTip = (e: PointerEvent, p: { x: number; y: number }): void => {
+    if (!hoverOn || e.pointerType !== 'mouse' || e.buttons !== 0) {
+      clearTip();
+      return;
+    }
+    const s = live.current;
+    const w = screenToWorld(controller.camera, controller.viewport, p);
+    const hit = hitTest(s.scene, w.x, w.y);
+    const info = (): HoverInfo | null =>
+      s.props.describeAt?.(w) ??
+      (hit === null
+        ? describeNeutral(s.scene.neutralFeatures, w.x, w.y, content)
+        : describeHit(s.scene, hit, content, {
+            basePlayer: s.props.basePlayer,
+          }));
+    const key =
+      hit === null
+        ? `n:${String(Math.floor(w.x))},${String(Math.floor(w.y))}`
+        : `${hit.board}:${String(hit.x)},${String(hit.y)}`;
+    const extra = s.props.describeAt?.(w);
+    const full = extra == null ? key : `${key}|${extra.title}`;
+    if (full === tipKey.current) return;
+    clearTip();
+    tipKey.current = full;
+    tipTimer.current = window.setTimeout(() => {
+      const found = info();
+      if (found !== null) setTip({ info: found, x: p.x, y: p.y });
+    }, HOVER_DELAY_MS);
+  };
+
   const feed = (ev: Parameters<typeof gestureReduce>[1]): void => {
     const r = gestureReduce(live.current.gesture, ev);
     live.current.gesture = r.state;
@@ -373,6 +433,7 @@ export function BoardView(props: BoardViewProps) {
           (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
           const p = localPoint(e);
           const hit = hitAt(p);
+          clearTip();
           // Touch has no hover: keep the hovered cell current.
           if (e.pointerType !== 'mouse') setHover(hit);
           const taken = live.current.props.onBoardPointer?.({
@@ -391,6 +452,7 @@ export function BoardView(props: BoardViewProps) {
           const p = localPoint(e);
           const hit = hitAt(p);
           if (live.current.captured === e.pointerId) {
+            clearTip();
             if (e.pointerType !== 'mouse') setHover(hit);
             live.current.props.onBoardPointer?.({
               type: 'move',
@@ -403,6 +465,7 @@ export function BoardView(props: BoardViewProps) {
           }
           feed({ type: 'move', id: e.pointerId, x: p.x, y: p.y });
           if (e.pointerType === 'mouse') setHover(hit);
+          trackTip(e, p);
         }}
         onPointerUp={(e) => {
           const p = localPoint(e);
@@ -424,8 +487,16 @@ export function BoardView(props: BoardViewProps) {
         }}
         onPointerLeave={(e) => {
           if (e.pointerType === 'mouse') setHover(null);
+          clearTip();
         }}
       />
+      {tip !== null && hoverOn ? (
+        <BoardTooltip
+          tip={tip}
+          width={controller.viewport.w}
+          height={controller.viewport.h}
+        />
+      ) : null}
       {props.controls === false ? null : (
         <CameraControls
           controller={controller}

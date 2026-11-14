@@ -66,7 +66,7 @@ function walledIn(
       const b = put(clear, 'bld_barracks', c.bx, 0, owner);
       let team = b.team;
       for (const [x, y] of c.sides)
-        team = put(team, 'bld_wall', x, y, owner).team;
+        team = put(team, 'bld_wall_block', x, y, owner).team;
       return { run: { ...run, team }, barracks: b.id };
     } catch {
       // This corner is taken (the Core); try the other one.
@@ -105,7 +105,7 @@ describe('sealed producers', () => {
       [6, 2],
       [7, 2],
     ] as const) {
-      team = put(team, 'bld_wall', x, y).team;
+      team = put(team, 'bld_wall_block', x, y).team;
     }
     const two = { run: { ...one.run, team } };
     const i1 = sealedInfo(one.run, realDeps(), content, 0);

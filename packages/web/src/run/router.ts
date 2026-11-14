@@ -8,8 +8,6 @@ import type { Step } from '@game/session';
 export type RunScreenId =
   | 'core'
   | 'build'
-  | 'shop'
-  | 'shop_build'
   | 'pve_choice'
   | 'battle'
   | 'event_choice'
@@ -18,18 +16,14 @@ export type RunScreenId =
   /** `pve_battle` and `pvp_battle` are never saved; no screen of their own. */
   | 'transient';
 
-/** The two tabs of the shop step. */
-export type ShopTab = 'shop' | 'shop_build';
-
-/** The screen for a step. In the shop step `tab` picks Shop or Build. */
-export function screenForStep(step: Step, tab: ShopTab = 'shop'): RunScreenId {
+/** The screen for a step. The shop step is the Build screen, shop open or not. */
+export function screenForStep(step: Step): RunScreenId {
   switch (step) {
     case 'core_placement':
       return 'core';
     case 'build':
-      return 'build';
     case 'shop':
-      return tab;
+      return 'build';
     case 'pve_choice':
       return 'pve_choice';
     case 'pve_summary':

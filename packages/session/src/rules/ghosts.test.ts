@@ -177,7 +177,7 @@ describe('taking snapshots', () => {
     expect(canonicalJson(JSON.parse(JSON.stringify(snap)))).toBe(
       canonicalJson(snap),
     );
-    expect(snap.formatVersion).toBe(6);
+    expect(snap.formatVersion).toBe(7);
     expect(snap.gameVersion).toBe('0.1');
     expect(snap.partySize).toBe(1);
     expect(snap.mapSeed).toBe(7);
@@ -511,7 +511,7 @@ describe('validation', () => {
     const t4 = loose(good);
     t4.team.stash.push({
       id: t4.team.nextId,
-      def: 'bld_wall',
+      def: 'bld_wall_block',
       tier: 4,
       owner: 0,
     });
@@ -602,7 +602,7 @@ describe('validation', () => {
     const bad = loose(good);
     bad.team.stash.push({
       id: bad.team.nextId,
-      def: 'bld_wall',
+      def: 'bld_wall_block',
       tier: 4,
       owner: 0,
     });
@@ -635,8 +635,8 @@ describe('validation', () => {
     expect(table[0]?.[1]).toBe(32);
     // round 2: 10 + 5*3 + 13*2 + 8*1 + 4*3 = 71.
     expect(table[1]?.[1]).toBe(71);
-    // No margin: the limit is players * (gold + kit) = 71 + 67.
-    expect(table[1]?.[3]).toBe(71 + 67);
+    // No margin: the limit is players * (gold + kit) = 71 + 79.
+    expect(table[1]?.[3]).toBe(71 + 79);
     // A party of two has twice the bound.
     const two = ghostValueBound(3, 2, content, e, gameConfigs.events);
     const one = ghostValueBound(3, 1, content, e, gameConfigs.events);
@@ -827,7 +827,7 @@ describe('run state validation of the ghost fields', () => {
     const lifted = loose(o);
     lifted.ghost.team.stash.push({
       id: lifted.ghost.team.nextId,
-      def: 'bld_wall',
+      def: 'bld_wall_block',
       tier: 4,
       owner: 0,
     });

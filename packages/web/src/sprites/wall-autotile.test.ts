@@ -60,6 +60,6 @@ describe('wall autotile', () => {
     const sp = atlasJson.sprites.bld_wall_auto;
     expect(sp.frames).toBe(16);
     expect(sp.fps).toBe(0);
-    expect(sp.w).toBe(atlasJson.sprites.bld_wall.w);
+    expect(sp.w).toBe(atlasJson.sprites.bld_wall_block.w);
   });
 });

@@ -76,11 +76,11 @@ describe('reference boards', () => {
       'bld_extractor',
       'bld_extractor',
       'bld_extractor',
-      'bld_wall',
-      'bld_wall',
-      'bld_wall',
-      'bld_wall',
-      'bld_wall',
+      'bld_wall_block',
+      'bld_wall_block',
+      'bld_wall_block',
+      'bld_wall_block',
+      'bld_wall_block',
     ]);
     expect(
       boards.fortify.buildings.filter((p) => p.def === 'bld_turret'),

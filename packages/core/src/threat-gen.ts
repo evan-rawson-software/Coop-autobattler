@@ -111,13 +111,21 @@ function ceilDiv(a: number, b: number): number {
   return -divFloor(-a, b);
 }
 
-/** Tier-1 price and ID of the first building of a defense type. */
+/**
+ * Tier-1 price and ID of the first building of a defense type; for walls the
+ * first one that covers a single cell (strongholds place walls cell by cell).
+ */
 function defenseOf(
   buildings: BuildingConfig,
   type: 'wall' | 'turret',
 ): { id: BuildingId; price: number } {
   for (const b of buildings.list()) {
-    if (b.kind === 'defense' && b.defenseType === type) {
+    if (b.kind !== 'defense' || b.defenseType !== type) continue;
+    if (
+      type === 'turret' ||
+      (b.footprint.cells?.length ?? b.footprint.width * b.footprint.height) ===
+        1
+    ) {
       const tier = b.tiers[0];
       return { id: b.id, price: tier.price };
     }

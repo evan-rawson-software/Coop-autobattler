@@ -34,7 +34,7 @@ import { isEditStep } from './session.js';
 import { simConfig } from './setup.js';
 import { sideMarkers, type SideMarker } from './sides.js';
 import { coreLabel, screenText, screenTexts } from './texts.js';
-import type { FlowView } from './view-model.js';
+import { buildingName, type FlowView } from './view-model.js';
 
 export interface OverlayData {
   readonly ui: Ui;
@@ -747,8 +747,25 @@ export function drawBuildOverlay(
   const dv = d.ui.draftView;
   if (dv !== null) {
     const color = dv.ok === null ? col.accent : dv.ok ? col.ok : col.bad;
-    for (const c of dv.cells) fillCell(c, color, 0.4);
-    ring([...dv.cells], color, 2);
+    for (const c of dv.cells) fillCell(c, color, 0.3);
+    ring([...dv.cells], color, 1.5);
+    // The preview path: a dashed line through the cells.
+    if (dv.cells.length > 0) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(3, Math.min(8, z * 0.18));
+      ctx.setLineDash([Math.max(6, z * 0.3), Math.max(4, z * 0.2)]);
+      ctx.lineCap = 'butt';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      dv.cells.forEach((c, i) => {
+        const p = centre(c);
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.stroke();
+      ctx.restore();
+    }
     if (dv.offending !== null) {
       fillCell(dv.offending, col.bad, 0.55);
       cross(dv.offending, col.bad);
@@ -756,8 +773,31 @@ export function drawBuildOverlay(
     const last = dv.cells[dv.cells.length - 1];
     if (dv.message !== null && last !== undefined)
       label(dv.offending ?? last, dv.message, col.bad);
-    else if (dv.ok === true && last !== undefined)
-      label(last, 'Click to connect', col.ok);
+    else if (dv.ok === true && last !== undefined) {
+      const dragging = d.ui.draft?.pressed === true && d.ui.draft.dragged;
+      const tb =
+        dv.target === null
+          ? undefined
+          : d.team.buildings.find((b) => b.id === dv.target?.building);
+      const n = dv.cells.length;
+      label(
+        last,
+        dragging && tb !== undefined
+          ? screenText(screenTexts, 'uiDraftRelease', {
+              name: buildingName(d.content, tb.def),
+              tiles:
+                n === 0
+                  ? screenText(screenTexts, 'uiTilesNone')
+                  : screenText(
+                      screenTexts,
+                      n === 1 ? 'uiTilesOne' : 'uiTilesMany',
+                      { count: String(n) },
+                    ),
+            })
+          : 'Click to connect',
+        col.ok,
+      );
+    }
   }
   if (d.ui.attempt !== null) {
     for (const c of d.ui.attempt.cells) fillCell(c, col.bad, 0.3);

@@ -18,6 +18,7 @@ import {
   type TeamState,
   conduitTouches,
   isBorderEnd,
+  rotateBuilding,
 } from '@game/core';
 import { screenText, screenTexts } from './texts.js';
 import { createStore, type Store } from '../app-state.js';
@@ -57,6 +58,7 @@ import {
 } from './sides.js';
 import { buildingName } from './view-model.js';
 import { DEFAULT_SEED } from './setup.js';
+import { shopReason } from '../shop/messages.js';
 import { READY_LOCK_TEXT } from './lock.js';
 import type { LayoutAction } from './undo.js';
 
@@ -868,6 +870,20 @@ export class BuildController {
     this.stickHeld();
   }
 
+  /**
+   * A slot key (1-9): hold the first building of that stash slot. A Ready
+   * player cannot (the lock says so); a key past the last slot does nothing.
+   */
+  pickSlot(id: number | undefined): boolean {
+    if (id === undefined || !isEditStep(this.step())) return false;
+    if (this.isReady()) {
+      this.say(READY_LOCK_TEXT, 'info');
+      return true;
+    }
+    this.pickFromStash(id);
+    return true;
+  }
+
   /** "Placed X.", with a warning when its output faces the board edge. */
   private placedStatus(team: TeamState, id: number, defId: string): Status {
     const b = team.buildings.find((x) => x.id === id);
@@ -943,23 +959,56 @@ export class BuildController {
     const b = s.run.team.buildings.find((x) => x.id === sel.id);
     if (b === undefined) return;
     const rotation = nextRotation(b.rotation);
-    const v = previewMove(
+    // The rotated box is anchored at the building's own corner. When that
+    // does not fit (a shape against the board edge, issue #291), the same turn
+    // is tried with the box centred on the old one, then against its far
+    // corners; the first spot core accepts is used, else the first refusal.
+    const bdef = content.buildings.get(b.def);
+    const before =
+      bdef === undefined ? null : rotateBuilding(bdef, b.rotation).footprint;
+    const after =
+      bdef === undefined ? null : rotateBuilding(bdef, rotation).footprint;
+    const spots: Cell[] = [{ x: b.x, y: b.y }];
+    if (before !== null && after !== null) {
+      const ex = before.width - after.width;
+      const ey = before.height - after.height;
+      spots.push(
+        { x: b.x + Math.floor(ex / 2), y: b.y + Math.floor(ey / 2) },
+        { x: b.x + ex, y: b.y + ey },
+        { x: b.x + ex, y: b.y },
+        { x: b.x, y: b.y + ey },
+      );
+    }
+    let at = spots[0] as Cell;
+    const first = previewMove(
       s.run.team,
       content,
-      {
-        id: b.id,
-        x: b.x,
-        y: b.y,
-        rotation,
-      },
+      { id: b.id, x: at.x, y: at.y, rotation },
       this.actor(),
     );
+    let v = first;
+    for (const spot of spots.slice(1)) {
+      if (v.ok) break;
+      const w = previewMove(
+        s.run.team,
+        content,
+        { id: b.id, x: spot.x, y: spot.y, rotation },
+        this.actor(),
+      );
+      if (w.ok) {
+        v = w;
+        at = spot;
+      }
+    }
     if (!v.ok) {
-      this.refuse(v.reason, v.detail);
+      this.refuse(
+        first.ok ? 'out_of_bounds' : first.reason,
+        first.ok ? undefined : first.detail,
+      );
       return;
     }
     const n = attachedCount(s.run.team, b.id);
-    const r = await s.act({ t: 'move', id: b.id, x: b.x, y: b.y, rotation });
+    const r = await s.act({ t: 'move', id: b.id, x: at.x, y: at.y, rotation });
     if (r.ok) {
       this.say(
         n > 0 ? many(n, 'statusRotatedDetached') : tx('statusRotated'),
@@ -997,6 +1046,63 @@ export class BuildController {
         },
       });
     } else this.refuse(r.reason, r.detail);
+  }
+
+  // ---- Shop (issue #302) ---------------------------------------------------
+  // Buying, selling and re-rolling are never undoable. Nothing here waits for
+  // an earlier action: the controller queues intents, so a second buy right
+  // after a first is judged against the gold that is really left.
+
+  /** Dispatch one shop intent and say the outcome in the status line. */
+  private async shopIntent(
+    intent: Parameters<BuildSession['dispatch']>[0],
+    okText: string,
+  ): Promise<boolean> {
+    const s = this.session;
+    if (s === null) return false;
+    // The next action clears what the last one said (and the Workshop note).
+    if (this.model.get().view?.notice != null) s.dismissNotice();
+    const r = await s.dispatch(intent);
+    if (!r.ok) {
+      this.say(shopReason(r.reason, r.detail, r.selectionFailure), 'error');
+      return false;
+    }
+    if (r.selectionFailure === undefined) this.say(okText, 'ok');
+    else {
+      this.say(`${okText} ${selectionNote(r.selectionFailure)}`, 'error');
+    }
+    return true;
+  }
+
+  /** Buy offer `slot` (the building lands in the inventory). */
+  async buy(slot: number, name: string): Promise<boolean> {
+    return this.shopIntent({ type: 'buy', slot }, tx('statusBought', { name }));
+  }
+
+  async reroll(): Promise<boolean> {
+    return this.shopIntent({ type: 'reroll' }, tx('statusRerolled'));
+  }
+
+  /**
+   * Sell a building: one in the inventory, or one on the board (it is picked
+   * up first). Returns true when it was sold.
+   */
+  async sell(id: number, name: string, refund: number): Promise<boolean> {
+    const s = this.session;
+    if (s === null) return false;
+    if (s.run.team.buildings.some((b) => b.id === id)) {
+      const picked = await s.act({ t: 'return', id });
+      if (!picked.ok) {
+        this.refuse(picked.reason, picked.detail);
+        return false;
+      }
+    }
+    const ok = await this.shopIntent(
+      { type: 'sell', id },
+      tx('statusSold', { name, refund: String(refund) }),
+    );
+    if (ok) this.set({ selection: null, held: null });
+    return ok;
   }
 
   async eraseConduit(id: number): Promise<void> {
