@@ -1060,7 +1060,9 @@ export async function runRunSmoke({
     'battle summary: Watch again is available',
   );
   check(
-    /^Continue/.test(await page.locator('#battle-ready').innerText()) &&
+    /^Continue to reward/.test(
+      await page.locator('#battle-ready').innerText(),
+    ) &&
       (await page.locator('#panel-enemy [data-field="opp-kind"]').count()) ===
         0,
     'battle summary: the button says Continue; no duplicate opponent tag',
@@ -1988,6 +1990,7 @@ export async function runRunSmoke({
     const won =
       (await page.locator('[data-field="result-word"]').innerText()) ===
       'Victory';
+    await page.click('#show-details');
     const own = await page.locator('[data-field="standing-own"]').innerText();
     const foe = await page.locator('[data-field="standing-foe"]').innerText();
     ngCheck(

@@ -2,7 +2,7 @@
 
 import type { BattleReason, BattleSideSummary } from '@game/core';
 import type { ComponentChildren } from 'preact';
-import { useMemo } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
 import { Panel } from '../shell/AppShell.js';
@@ -24,6 +24,7 @@ import {
   type CoreNow,
 } from './derive.js';
 import type { Playback, PlaybackSpeed } from './playback.js';
+import { resultFacts } from './result-why.js';
 import { SPEEDS } from './playback.js';
 import type { OpponentInfo } from './types.js';
 
@@ -574,7 +575,6 @@ export interface SummaryProps {
   readonly opponent: OpponentInfo;
   readonly title: string;
   readonly moments: readonly Moment[];
-  readonly rewardText: string;
   /** The stored outcome, when the run state has one. */
   readonly won?: boolean | undefined;
   readonly tps: number;
@@ -601,15 +601,14 @@ export function BattleSummaryView(props: SummaryProps) {
     () => breachEntries(rec, content, moments, 0, props.tps),
     [rec, content, moments, props.tps],
   );
-  // Both sides lost every Core and a tiebreak decided it: say so first, so
-  // the result is not read as "your Core was destroyed" and then a win.
   const doubleFallTiebreak =
     own.coresStanding === 0 &&
     foe.coresStanding === 0 &&
     rec.result.reason.startsWith('tiebreak_');
-  const lastFall = Math.max(
-    0,
-    ...[...own.cores, ...foe.cores].map((c) => c.destroyedTick ?? 0),
+  const [details, setDetails] = useState(false);
+  const firstBreach = useMemo(
+    () => resultFacts(rec, content, moments, props.tps).breach,
+    [rec, content, moments, props.tps],
   );
   const camera = useMemo(() => {
     const c = new CameraController();
@@ -687,212 +686,236 @@ export function BattleSummaryView(props: SummaryProps) {
 
   return (
     <div class="summary" data-testid="battle-summary">
-      <section
-        class={`result-banner ${won ? 'won' : 'lost'}`}
-        id="result-banner"
-      >
-        <h2 class="result-title">
-          <span data-field="result-word">
-            {t(won ? 'battleVictory' : 'battleDefeat')}
-          </span>
-          {t('battleVsOpponent', { name: opponent.name })}
-        </h2>
-        {doubleFallTiebreak ? (
-          <p class="result-draw" data-field="double-fall">
-            {t(
-              won
-                ? 'battleSummaryDoubleFallWin'
-                : 'battleSummaryDoubleFallLoss',
-              {
-                core: coreName,
-                time: clock(lastFall, props.tps),
-              },
-            )}
-          </p>
-        ) : null}
-        <p class="result-reward" data-field="reward">
-          {props.rewardText}
-        </p>
-        <p class="result-detail">
-          {screenNodes(screenTexts, 'battleSummaryDetail', {
-            reason:
-              doubleFallTiebreak && rec.result.reason === 'tiebreak_attacker'
-                ? ''
-                : reasonText(rec.result.reason, coreName, [own, foe]),
-            time: clock(rec.result.endTick, props.tps),
-            core: coreName,
-            own: (
-              <strong data-field="final-core-own">
-                {own.coreHealth} / {own.coreMaxHealth}
-              </strong>
-            ),
-            foe: (
-              <strong data-field="final-core-foe">
-                {foe.coreHealth} / {foe.coreMaxHealth}
-              </strong>
-            ),
-          })}
-        </p>
-        {own.cores.length + foe.cores.length > 2 ? (
-          <p class="muted" data-field="cores-standing">
-            {screenNodes(screenTexts, 'battleSummaryCoresStanding', {
-              core: coreName,
-              own: (
-                <strong data-field="standing-own">
-                  {own.coresStanding} / {own.cores.length}
-                </strong>
-              ),
-              foe: (
-                <strong data-field="standing-foe">
-                  {foe.coresStanding} / {foe.cores.length}
-                </strong>
-              ),
-              fell: [
-                ...own.cores.map((c) => [t('battleSideYour'), c] as const),
-                ...foe.cores.map((c) => [t('battleSideTheir'), c] as const),
-              ]
-                .filter(([, c]) => c.destroyedTick !== null)
-                .map(([who, c]) =>
-                  t('battleSummaryCoreFell', {
-                    who,
-                    core: coreName,
-                    number: String(c.player + 1),
-                    time: clock(c.destroyedTick ?? 0, props.tps),
-                  }),
-                )
-                .join(' '),
+      <section class="panel summary-lines" id="panel-battle-summary">
+        <h2 class="panel-title">{t('battleSumTitle')}</h2>
+        <ul class="plain summary-list">
+          <li data-field="sum-breach">
+            {firstBreach === null
+              ? t('battleNoBreach')
+              : t('battleSumBreach', {
+                  side: t(
+                    firstBreach.side === 'left'
+                      ? 'battleSideLeft'
+                      : firstBreach.side === 'right'
+                        ? 'battleSideRight'
+                        : 'battleSideMiddle',
+                  ),
+                  time: firstBreach.time,
+                })}
+          </li>
+          <li data-field="sum-units">
+            {t('battleSumUnits', {
+              own: String(own.unitsSpawned),
+              foe: String(foe.unitsSpawned),
             })}
-          </p>
-        ) : null}
-        <p class="muted" data-field="tiebreak-counters">
-          {t('battleSummaryTiebreak', {
-            ownbuild: String(own.buildingDamageDealt),
-            foebuild: String(foe.buildingDamageDealt),
-            ownkills: String(own.unitsKilled),
-            foekills: String(foe.unitsKilled),
-          })}
-        </p>
+          </li>
+          <li data-field="sum-damage">
+            {t('battleSumDamage', {
+              own: String(own.buildingDamageDealt),
+              foe: String(foe.buildingDamageDealt),
+            })}
+          </li>
+        </ul>
+        <button
+          type="button"
+          class="link-button"
+          id="show-details"
+          aria-expanded={details}
+          aria-controls="battle-details"
+          onClick={() => {
+            setDetails((d) => !d);
+          }}
+        >
+          {t(details ? 'battleHideDetails' : 'battleShowDetails')}
+        </button>
       </section>
 
-      <Panel title={t('battlePanelSummaryChart')} id="panel-summary-chart">
-        <p class="muted small" data-field="strength-unit">
-          {t('battleStrengthUnit')}
-        </p>
-        <LineChart
-          series={[
-            { side: 0, points: chart.own },
-            { side: 1, points: chart.foe },
-          ]}
-          xMax={pb.endTick}
-          yMax={chart.yMax}
-          markers={markers}
-          height={340}
-          ariaLabel="Army strength over time, you against the opponent, with notable moments marked"
-          formatX={(x) => clock(x, props.tps)}
-          testId="chart-strength-summary"
-        />
-        <ChartLegend labels={[t('battleColYou'), opponent.name]} />
-        <ol class="marker-list">
-          {marked.map((m, i) => (
-            <li key={`${String(m.tick)}-${String(i)}`}>
-              <span class="marker-n">#{i + 1}</span>
-              <span class="marker-text">
-                {' · '}
-                {clock(m.tick, props.tps)} {m.text}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </Panel>
-
-      {won && breaches.length === 0 ? null : (
-        <Panel
-          title={t(won ? 'battlePanelBreachesWon' : 'battlePanelBreaches')}
-          id="panel-breaches"
-        >
-          <div class="mini-board">
-            <BoardView
-              content={content}
-              own={rec.initialTeams[0]}
-              controller={camera}
-              resetKey={rec}
-              drawOverlay={overlay}
-              overlayKey={destroyed}
-              controls={false}
-            />
-          </div>
-          {breaches.length === 0 ? (
-            <p class="muted" data-field="no-breach">
-              {t('battleNoBreach')}
+      {details ? (
+        <div class="summary-details" id="battle-details">
+          <section class="result-banner" id="result-facts">
+            <p class="result-detail" data-field="result-detail">
+              {screenNodes(screenTexts, 'battleSummaryDetail', {
+                reason:
+                  doubleFallTiebreak &&
+                  rec.result.reason === 'tiebreak_attacker'
+                    ? ''
+                    : reasonText(rec.result.reason, coreName, [own, foe]),
+                time: clock(rec.result.endTick, props.tps),
+                core: coreName,
+                own: (
+                  <strong>
+                    {own.coreHealth} / {own.coreMaxHealth}
+                  </strong>
+                ),
+                foe: (
+                  <strong>
+                    {foe.coreHealth} / {foe.coreMaxHealth}
+                  </strong>
+                ),
+              })}
             </p>
-          ) : (
-            <ul class="plain breach-list" data-field="breach-list">
-              {breaches.map((b, i) => (
-                <li key={`${String(b.tick)}-${String(i)}`}>{b.text}</li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-      )}
+            {own.cores.length + foe.cores.length > 2 ? (
+              <p class="muted" data-field="cores-standing">
+                {screenNodes(screenTexts, 'battleSummaryCoresStanding', {
+                  core: coreName,
+                  own: (
+                    <strong data-field="standing-own">
+                      {own.coresStanding} / {own.cores.length}
+                    </strong>
+                  ),
+                  foe: (
+                    <strong data-field="standing-foe">
+                      {foe.coresStanding} / {foe.cores.length}
+                    </strong>
+                  ),
+                  fell: [
+                    ...own.cores.map((c) => [t('battleSideYour'), c] as const),
+                    ...foe.cores.map((c) => [t('battleSideTheir'), c] as const),
+                  ]
+                    .filter(([, c]) => c.destroyedTick !== null)
+                    .map(([who, c]) =>
+                      t('battleSummaryCoreFell', {
+                        who,
+                        core: coreName,
+                        number: String(c.player + 1),
+                        time: clock(c.destroyedTick ?? 0, props.tps),
+                      }),
+                    )
+                    .join(' '),
+                })}
+              </p>
+            ) : null}
+            <p class="muted" data-field="tiebreak-counters">
+              {t('battleSummaryTiebreak', {
+                ownbuild: String(own.buildingDamageDealt),
+                foebuild: String(foe.buildingDamageDealt),
+                ownkills: String(own.unitsKilled),
+                foekills: String(foe.unitsKilled),
+              })}
+            </p>
+          </section>
 
-      <Panel title={t('battlePanelBuildings')} id="panel-buildings">
-        {rows.length === 0 ? (
-          <p class="muted" data-field="no-buildings">
-            {t('battleNoBuildings')}
-          </p>
-        ) : (
-          <table class="stat-table buildings-table" data-field="buildings">
-            <thead>
-              <tr>
-                <th>{t('battleColBuilding')}</th>
-                {cols.produced ? <th>{t('battleColProduced')}</th> : null}
-                {cols.delivered ? <th>{t('battleColReceived')}</th> : null}
-                {cols.trained ? <th>{t('battleColUnits')}</th> : null}
-                {cols.damage ? <th>{t('battleColDamage')}</th> : null}
-                {cols.upgrades ? <th>{t('battleColUpgrades')}</th> : null}
-                <th>{t('battleColLost')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.key}>
-                  <th scope="row">
-                    {r.name}
-                    {r.count > 1
-                      ? t('battleCountSuffix', { count: String(r.count) })
-                      : ''}
-                    {r.note === null ? null : (
-                      <span class="muted fine" data-field="idle-note">
-                        {' '}
-                        · {r.note}
-                      </span>
-                    )}
-                  </th>
-                  {cols.produced ? <td>{r.produced || '–'}</td> : null}
-                  {cols.delivered ? <td>{r.delivered || '–'}</td> : null}
-                  {cols.trained ? <td>{r.trained || '–'}</td> : null}
-                  {cols.damage ? <td>{r.damage || '–'}</td> : null}
-                  {cols.upgrades ? <td>{r.upgrades || '–'}</td> : null}
-                  <td>
-                    {r.lost === 0
-                      ? '–'
-                      : r.firstLostTick === null
-                        ? t('battleLostOf', {
-                            lost: String(r.lost),
-                            count: String(r.count),
-                          })
-                        : t('battleLostOfFirst', {
-                            lost: String(r.lost),
-                            count: String(r.count),
-                            time: clock(r.firstLostTick, props.tps),
-                          })}
-                  </td>
-                </tr>
+          <Panel title={t('battlePanelSummaryChart')} id="panel-summary-chart">
+            <p class="muted small" data-field="strength-unit">
+              {t('battleStrengthUnit')}
+            </p>
+            <LineChart
+              series={[
+                { side: 0, points: chart.own },
+                { side: 1, points: chart.foe },
+              ]}
+              xMax={pb.endTick}
+              yMax={chart.yMax}
+              markers={markers}
+              height={340}
+              ariaLabel="Army strength over time, you against the opponent, with notable moments marked"
+              formatX={(x) => clock(x, props.tps)}
+              testId="chart-strength-summary"
+            />
+            <ChartLegend labels={[t('battleColYou'), opponent.name]} />
+            <ol class="marker-list">
+              {marked.map((m, i) => (
+                <li key={`${String(m.tick)}-${String(i)}`}>
+                  <span class="marker-n">#{i + 1}</span>
+                  <span class="marker-text">
+                    {' · '}
+                    {clock(m.tick, props.tps)} {m.text}
+                  </span>
+                </li>
               ))}
-            </tbody>
-          </table>
-        )}
-      </Panel>
+            </ol>
+          </Panel>
+
+          {won && breaches.length === 0 ? null : (
+            <Panel
+              title={t(won ? 'battlePanelBreachesWon' : 'battlePanelBreaches')}
+              id="panel-breaches"
+            >
+              <div class="mini-board">
+                <BoardView
+                  content={content}
+                  own={rec.initialTeams[0]}
+                  controller={camera}
+                  resetKey={rec}
+                  drawOverlay={overlay}
+                  overlayKey={destroyed}
+                  controls={false}
+                />
+              </div>
+              {breaches.length === 0 ? (
+                <p class="muted" data-field="no-breach">
+                  {t('battleNoBreach')}
+                </p>
+              ) : (
+                <ul class="plain breach-list" data-field="breach-list">
+                  {breaches.map((b, i) => (
+                    <li key={`${String(b.tick)}-${String(i)}`}>{b.text}</li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+          )}
+
+          <Panel title={t('battlePanelBuildings')} id="panel-buildings">
+            {rows.length === 0 ? (
+              <p class="muted" data-field="no-buildings">
+                {t('battleNoBuildings')}
+              </p>
+            ) : (
+              <table class="stat-table buildings-table" data-field="buildings">
+                <thead>
+                  <tr>
+                    <th>{t('battleColBuilding')}</th>
+                    {cols.produced ? <th>{t('battleColProduced')}</th> : null}
+                    {cols.delivered ? <th>{t('battleColReceived')}</th> : null}
+                    {cols.trained ? <th>{t('battleColUnits')}</th> : null}
+                    {cols.damage ? <th>{t('battleColDamage')}</th> : null}
+                    {cols.upgrades ? <th>{t('battleColUpgrades')}</th> : null}
+                    <th>{t('battleColLost')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r.key}>
+                      <th scope="row">
+                        {r.name}
+                        {r.count > 1
+                          ? t('battleCountSuffix', { count: String(r.count) })
+                          : ''}
+                        {r.note === null ? null : (
+                          <span class="muted fine" data-field="idle-note">
+                            {' '}
+                            · {r.note}
+                          </span>
+                        )}
+                      </th>
+                      {cols.produced ? <td>{r.produced || '–'}</td> : null}
+                      {cols.delivered ? <td>{r.delivered || '–'}</td> : null}
+                      {cols.trained ? <td>{r.trained || '–'}</td> : null}
+                      {cols.damage ? <td>{r.damage || '–'}</td> : null}
+                      {cols.upgrades ? <td>{r.upgrades || '–'}</td> : null}
+                      <td>
+                        {r.lost === 0
+                          ? '–'
+                          : r.firstLostTick === null
+                            ? t('battleLostOf', {
+                                lost: String(r.lost),
+                                count: String(r.count),
+                              })
+                            : t('battleLostOfFirst', {
+                                lost: String(r.lost),
+                                count: String(r.count),
+                                time: clock(r.firstLostTick, props.tps),
+                              })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </Panel>
+        </div>
+      ) : null}
     </div>
   );
 }

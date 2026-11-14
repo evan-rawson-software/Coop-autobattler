@@ -567,3 +567,153 @@ button:disabled {
 .frame-info .buildings-table {
   font-size: 0.8rem;
 }
+
+/* The result card over the dimmed final board (issue #304). */
+.result-scrim {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  overflow: auto;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+}
+
+.result-card {
+  width: min(540px, 100%);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.4rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-top: 6px solid var(--owner-0);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgb(0 0 0 / 22%);
+}
+
+.result-card.lost {
+  border-top-color: var(--owner-1);
+}
+
+.result-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.result-word {
+  margin: 0;
+  font-size: 2.2rem;
+  line-height: 1.1;
+}
+
+.result-card.won .result-word {
+  color: var(--owner-0);
+}
+
+.result-card.lost .result-word {
+  color: var(--owner-1);
+}
+
+.life-chip {
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: #dcefe3;
+  color: #14602f;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.life-chip.life-lost {
+  background: #f6dcd3;
+  color: #8f2d0b;
+}
+
+.result-cause {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.result-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-2));
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.result-card .result-reward {
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+}
+
+.result-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.stat-tile strong {
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* The rail's short summary and its details toggle. */
+.summary-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.summary-lines .panel-title {
+  margin: 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+
+.summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.summary-lines .link-button {
+  align-self: flex-start;
+}
+
+.summary-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
