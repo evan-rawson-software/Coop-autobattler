@@ -14,10 +14,6 @@
   color: var(--ink-muted);
 }
 
-.run-bar .saved-hint {
-  margin: 0;
-}
-
 .topbar-status {
   display: flex;
   align-items: center;

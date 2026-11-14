@@ -60,14 +60,12 @@ export function RunBar(props: {
       <button
         type="button"
         id="menu-button"
-        title="Your run is saved after every action, so leaving is always safe."
         onClick={() => {
           navigate('#/');
         }}
       >
         Menu
       </button>
-      <span class="muted fine saved-hint">Saved after every action</span>
     </span>
   );
 }

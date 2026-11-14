@@ -182,9 +182,7 @@ describe('the Overload line against the simulation', () => {
         const line = overloadLine(sim, maxA, maxB);
         expect(line).toContain(clock(lastFall, sim.ticksPerSecond));
         expect(line).toContain(
-          loser === 0
-            ? 'would destroy your Core first'
-            : "would destroy the stronghold's Core first",
+          loser === 0 ? 'your Core falls first' : 'their Core falls first',
         );
       },
       120_000,

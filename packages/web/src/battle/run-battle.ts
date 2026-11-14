@@ -103,17 +103,17 @@ export function rewardLine(
   if (kind === 'pve') {
     return won
       ? pveGold === null
-        ? 'Reward paid when you continue'
-        : `+${String(pveGold)} gold when you continue`
-      : 'No reward, and no life lost';
+        ? 'Reward paid'
+        : `+${String(pveGold)} gold`
+      : 'No reward';
   }
   const cost = deps.rules.pvpLossLifeCost;
   if (won) {
     return rewards === undefined
-      ? 'Reward paid when you continue'
-      : `+${String(rewards.pvpWin)} gold when you continue`;
+      ? 'Reward paid'
+      : `+${String(rewards.pvpWin)} gold`;
   }
-  return `−${count(cost, 'life', 'lives')}${rewards === undefined ? '' : ` · +${String(rewards.pvpLoss)} gold consolation`}`;
+  return `−${count(cost, 'life', 'lives')}${rewards === undefined ? '' : ` · +${String(rewards.pvpLoss)} gold`}`;
 }
 
 /** Never throws: any failure becomes a result that cannot be shown. */

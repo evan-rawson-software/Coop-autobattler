@@ -540,17 +540,14 @@ describe('live chart axes', () => {
 
 describe('result reasons', () => {
   test('every reason is worded after the rules of the core battle', () => {
-    expect(reasonText('time_limit', 'Core')).toMatch(/share of its total/);
+    expect(reasonText('time_limit', 'Core')).toMatch(/more Core health/);
     expect(reasonText('time_limit', 'Core')).not.toMatch(/defender/i);
     expect(reasonText('tiebreak_overkill', 'Core')).toMatch(/less overkill/);
-    expect(reasonText('tiebreak_overkill', 'Core')).toMatch(/same tick/);
+    expect(reasonText('tiebreak_overkill', 'Core')).toMatch(/fell at once/);
     expect(reasonText('tiebreak_building_damage', 'Core')).toMatch(
-      /equal overkill/,
+      /more damage to buildings/,
     );
-    expect(reasonText('tiebreak_building_damage', 'Core')).toMatch(
-      /more damage to the enemy's buildings/,
-    );
-    expect(reasonText('tiebreak_kills', 'Core')).toMatch(/killed more/);
+    expect(reasonText('tiebreak_kills', 'Core')).toMatch(/more kills/);
     expect(reasonText('tiebreak_attacker', 'Core')).toMatch(/attacker/);
     expect(reasonText('core_destroyed', 'Heart')).toMatch(/Heart/);
   });
@@ -565,23 +562,22 @@ describe('result reasons', () => {
       side(2, 10),
       side(1, 90),
     ]);
-    expect(byCount).toMatch(/more Cores standing wins: yours 2, theirs 1/);
+    expect(byCount).toMatch(/more Cores standing wins \(2 vs 1\)/);
     const byHealth = reasonText('time_limit', 'Core', [
       side(1, 80),
       side(1, 30),
     ]);
-    expect(byHealth).toMatch(/equal Cores standing/);
-    expect(byHealth).toMatch(/yours 80 \/ 100, theirs 30 \/ 100/);
+    expect(byHealth).toMatch(/more Core health left wins/);
   });
   test('a tie says whether it came from a double fall or the time limit', () => {
     const fall = reasonText('tiebreak_kills', 'Core', [side(0, 0), side(0, 0)]);
-    expect(fall).toMatch(/same tick/);
+    expect(fall).toMatch(/fell at once/);
     const limit = reasonText('tiebreak_kills', 'Core', [
       side(1, 50),
       side(1, 50),
     ]);
-    expect(limit).toMatch(/Time ran out with equal Cores standing/);
-    expect(limit).not.toMatch(/same tick/);
+    expect(limit).toMatch(/^Time ran out with Cores and building damage even/);
+    expect(limit).not.toMatch(/fell at once/);
     expect(
       reasonText('tiebreak_overkill', 'Core', [side(0, 0), side(0, 0)]),
     ).toMatch(/less overkill/);

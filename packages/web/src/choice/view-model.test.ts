@@ -33,14 +33,14 @@ describe('PvE choice cards', () => {
   });
 
   test('the stakes and the Overload start are stated', () => {
-    expect(view?.stakes).toMatch(/Lose: no reward, and no life lost/);
+    expect(view?.stakes).toBe('Losing costs no life.');
     expect(view?.overloadAt).toBe(overloadClock(simConfig));
     expect(overloadClock(simConfig)).toBe('3:00');
   });
 
   test('each card says which Core Overload destroys first', () => {
     for (const c of view?.cards ?? []) {
-      expect(c.overload).toMatch(/^Overload at 3:00 would /);
+      expect(c.overload).toMatch(/^Overload at 3:00: /);
       expect(c.overload).not.toMatch(/Destroy the stronghold before/);
     }
   });
@@ -91,32 +91,30 @@ describe('the Overload line', () => {
   test('a smaller stronghold Core falls first: outlasting it wins', () => {
     // The small (stronghold) Core falls at 3:30; the larger one would fall later.
     expect(overloadLine(simConfig, 500, 42)).toBe(
-      "Overload at 3:00 would destroy the stronghold's Core first at 3:30 — outlasting it wins.",
+      'Overload at 3:00: their Core falls first (3:30).',
     );
   });
   test('a larger stronghold Core: the party Core falls first', () => {
     expect(overloadLine(simConfig, 500, 2140)).toMatch(
-      /would destroy your Core first at \d+:\d\d — break the stronghold before then\.$/,
+      /your Core falls first \(\d+:\d\d\)\.$/,
     );
   });
   test('equal Cores fall together', () => {
-    expect(overloadLine(simConfig, 500, 500)).toMatch(/both Cores at/);
+    expect(overloadLine(simConfig, 500, 500)).toMatch(/both Cores fall at/);
   });
   test('a Core the decay cannot destroy in time is not named', () => {
-    expect(overloadLine(simConfig, 50000, 60000)).toMatch(
-      /would not destroy either Core/,
-    );
+    expect(overloadLine(simConfig, 50000, 60000)).toMatch(/no Core falls/);
   });
   test('a side falls with its last Core: several Cores per side', () => {
     // Each side's last-Core tick is its largest deadline, so the strongest Core counts.
     expect(overloadLine(simConfig, [500, 42, 42], [500, 500, 42, 42])).toMatch(
-      /both Cores at/,
+      /both Cores fall at/,
     );
     expect(overloadLine(simConfig, [500, 500, 500], [42, 42])).toBe(
-      "Overload at 3:00 would destroy the stronghold's Core first at 3:30 — outlasting it wins.",
+      'Overload at 3:00: their Core falls first (3:30).',
     );
     expect(overloadLine(simConfig, [42], [500, 42, 42, 42])).toMatch(
-      /would destroy your Core first/,
+      /your Core falls first/,
     );
   });
   test('the party Core is read from content', () => {

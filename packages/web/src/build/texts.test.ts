@@ -108,7 +108,7 @@ describe('reason and Core texts come from the presentation file', () => {
       expect(reasonMessage(code)).toBe(screens[`reason_${code}`]);
     }
     expect(reasonMessage('outside_own_plot')).toBe(
-      "Everything has to stand wholly inside its player's own area.",
+      'Must be inside your own area.',
     );
   });
 
@@ -121,7 +121,7 @@ describe('reason and Core texts come from the presentation file', () => {
       /Player 2 has to pick a spot\.$/,
     );
     expect(selectionNote({ reason: 'wrong_step' })).toBe(
-      'Your next opponent could not be chosen yet: Not possible in this step. It is tried again on your next action.',
+      'Next opponent not chosen yet: Not possible in this step. Retrying on your next action.',
     );
   });
 
@@ -144,13 +144,13 @@ describe('status texts come from the presentation file', () => {
     }
   });
 
-  test('the wording is what players saw before', () => {
+  test('the wording is pinned', () => {
     expect(screens['statusStarting']).toBe('Starting a run.');
     expect(screens['statusFromSide']).toBe(
       "From {name}'s {side} side: click an input side or a building.",
     );
     expect(screens['statusBorderHalf']).toBe(
-      'Border half added: it is not connected until your neighbour draws theirs.',
+      'Border link added. Waiting for your neighbour.',
     );
     expect(screens['statusConduitAddedOne']).toBe(
       'Conduit added ({count} cell).',
@@ -164,9 +164,7 @@ describe('status texts come from the presentation file', () => {
     const ctl = new BuildController();
     expect(ctl.model.get().ui.status.text).toBe('Starting a run.');
     ctl.setTool('erase');
-    expect(ctl.model.get().ui.status.text).toBe(
-      'Erase conduit: click a conduit.',
-    );
+    expect(ctl.model.get().ui.status.text).toBe('Click a conduit to erase it.');
     expect(
       screenText(screenTexts, 'statusUndoRefused', {
         cause: 'Nope.',

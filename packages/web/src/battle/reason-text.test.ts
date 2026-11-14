@@ -25,20 +25,18 @@ const bothDown = [side(0, 0), side(0, 0)] as const;
 describe('genericReasonText', () => {
   const texts = REASONS.map((r) => genericReasonText(r, 'Hub'));
 
-  test('every reason has its own text with the Core name filled in', () => {
+  test('every reason has its own text with no slot left unfilled', () => {
     expect(new Set(texts).size).toBe(REASONS.length);
-    for (const t of texts) {
-      expect(t).toContain('Hub');
-      expect(t).not.toMatch(/[{}]/);
-    }
+    for (const t of texts) expect(t).not.toMatch(/[{}]/);
+    expect(texts[0]).toContain('Hub');
   });
 
   test('each text says what decided the battle', () => {
     const by = Object.fromEntries(REASONS.map((r, i) => [r, texts[i]]));
-    expect(by['core_destroyed']).toMatch(/last Hub was destroyed/);
+    expect(by['core_destroyed']).toMatch(/Last Hub destroyed/);
     expect(by['tiebreak_overkill']).toMatch(/overkill/);
-    expect(by['tiebreak_building_damage']).toMatch(/damage to the enemy/);
-    expect(by['tiebreak_kills']).toMatch(/killed more/);
+    expect(by['tiebreak_building_damage']).toMatch(/damage to buildings/);
+    expect(by['tiebreak_kills']).toMatch(/more kills/);
     expect(by['tiebreak_attacker']).toMatch(/attacker/);
     expect(by['time_limit']).toMatch(/Time ran out/);
   });
@@ -52,10 +50,9 @@ describe('stepText', () => {
   test('the time limit names the figure that decided it', () => {
     const cores = stepText('time_limit', 'Hub', [side(2), side(1)]);
     expect(cores).toMatch(/more Hubs standing/);
-    expect(cores).toContain('yours 2, theirs 1');
+    expect(cores).toContain('(2 vs 1)');
     const share = stepText('time_limit', 'Hub', [side(1, 80), side(1, 120)]);
-    expect(share).toMatch(/larger share/);
-    expect(share).toContain('yours 80 / 200, theirs 120 / 200');
+    expect(share).toMatch(/more Hub health left/);
   });
 
   test('a double fall and the time limit read differently for each tie step', () => {
@@ -67,20 +64,16 @@ describe('stepText', () => {
       const time = stepText(r, 'Hub', alive);
       const double = stepText(r, 'Hub', bothDown);
       expect(time).toMatch(/^Time ran out/);
-      expect(double).toMatch(
-        /^Both sides lost their last Hub in the same tick/,
-      );
+      expect(double).toMatch(/^Both last Hubs fell at once/);
       expect(time).not.toBe(double);
     }
   });
 
   test('each tie step says its own deciding figure', () => {
     expect(stepText('tiebreak_building_damage', 'Hub', alive)).toMatch(
-      /more damage to the enemy's buildings/,
+      /more damage to buildings/,
     );
-    expect(stepText('tiebreak_kills', 'Hub', bothDown)).toMatch(
-      /killed more enemy units/,
-    );
+    expect(stepText('tiebreak_kills', 'Hub', bothDown)).toMatch(/more kills/);
     expect(stepText('tiebreak_attacker', 'Hub', alive)).toMatch(/attacker/);
   });
 

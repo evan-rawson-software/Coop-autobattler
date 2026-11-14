@@ -274,7 +274,6 @@ export function RunOverScreen(props: {
               {error}
             </p>
           )}
-          <p class="muted">{screenText(screenTexts, 'runOverNote')}</p>
         </section>
       </div>
     </AppShell>

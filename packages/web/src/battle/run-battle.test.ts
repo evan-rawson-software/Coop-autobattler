@@ -80,7 +80,7 @@ describe('the battle of a run', () => {
     if (!r.ok) return;
     expect(r.value.won).toBe(!pending.battle.won);
     expect(r.value.reward(true)).toMatch(/gold/);
-    expect(r.value.reward(false)).toBe('No reward, and no life lost');
+    expect(r.value.reward(false)).toBe('No reward');
   });
 
   test('a stored hash that the replay does not reach is a mismatch', () => {
@@ -148,17 +148,15 @@ describe('the battle of a run', () => {
 describe('reward lines', () => {
   const deps = realDeps();
   test('PvE: gold on a win, nothing and no life lost on a loss', () => {
-    expect(rewardLine('pve', true, deps, 5)).toBe('+5 gold when you continue');
-    expect(rewardLine('pve', false, deps, 5)).toBe(
-      'No reward, and no life lost',
-    );
+    expect(rewardLine('pve', true, deps, 5)).toBe('+5 gold');
+    expect(rewardLine('pve', false, deps, 5)).toBe('No reward');
   });
   test('PvP: gold on a win; a life and consolation gold on a loss', () => {
     expect(rewardLine('pvp', true, deps, null)).toBe(
-      `+${String(deps.rewards?.pvpWin)} gold when you continue`,
+      `+${String(deps.rewards?.pvpWin)} gold`,
     );
     expect(rewardLine('pvp', false, deps, null)).toBe(
-      `−1 life · +${String(deps.rewards?.pvpLoss)} gold consolation`,
+      `−1 life · +${String(deps.rewards?.pvpLoss)} gold`,
     );
   });
 });
