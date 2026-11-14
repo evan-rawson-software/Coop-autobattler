@@ -25,7 +25,7 @@ import { isEditStep } from '../build/session.js';
 import { buildingName } from '../build/view-model.js';
 import { rateText } from '../build/rates.js';
 import { effectText, kindLabel, needsText } from './effect-text.js';
-import { archetypeText } from '../run/display-text.js';
+import { archetypeText, ghostDisplayName } from '../run/display-text.js';
 import { count } from '../plural.js';
 import { gateFor, type Gate, type LockDeps } from '../build/lock.js';
 import { screenText, screenTexts } from '../build/texts.js';
@@ -322,8 +322,5 @@ export function opponentText(
   const o = pvpOpponentInfo(run);
   if (o === null) return 'Opponent unknown';
   if (o.kind === 'boss') return 'Opponent: the boss';
-  // Internal ghost names are not shown; only a strength word when the label
-  // carries one ("Bundled weak bot").
-  const word = /\b(weak|medium|strong)\b/i.exec(o.label)?.[1]?.toLowerCase();
-  return `Opponent: a recorded rival party${word === undefined ? '' : ` (${word})`}`;
+  return `Opponent: ${ghostDisplayName(o.label)}`;
 }

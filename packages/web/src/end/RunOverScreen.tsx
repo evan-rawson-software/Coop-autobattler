@@ -181,8 +181,6 @@ export function RunOverScreen(props: {
                 <SpriteIcon name="ui_icon_heart" scale={1} class="bar-icon" />
                 {stats.livesLost}
               </dd>
-              <dt>{screenText(screenTexts, 'runOverStatVersion')}</dt>
-              <dd>{state.runVersion}</dd>
             </dl>
           </Panel>
 

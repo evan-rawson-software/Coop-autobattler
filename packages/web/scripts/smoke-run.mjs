@@ -1064,8 +1064,7 @@ export async function runRunSmoke({
   {
     const shopText = await page.locator('#shop-screen').innerText();
     check(
-      /Opponent: a recorded rival party/.test(shopText) &&
-        /Lose: -1 life/.test(shopText),
+      /Opponent: Rival party/.test(shopText) && /Lose: -1 life/.test(shopText),
       'shop (before the PvP battle): the opponent is a bundled ghost, and a loss costs 1 life',
     );
   }
@@ -1078,7 +1077,7 @@ export async function runRunSmoke({
   });
   const vs = await page.locator('[data-field="vs"]').innerText();
   check(
-    /Bundled \w+ bot/.test(vs),
+    /^vs\. Rival party/.test(vs),
     `PvP battle: the opponent is a bundled ghost ("${vs}")`,
   );
   {
@@ -1111,7 +1110,7 @@ export async function runRunSmoke({
   );
   const header2 = await page.locator('#battle-result').innerText();
   check(
-    /^Rival party battle (won|lost) · vs\. Bundled \w+ bot/.test(header2),
+    /^Rival party battle (won|lost) · vs\. Rival party/.test(header2),
     `event (after PvP): the header shows the PvP result ("${header2.replace(/\s+/g, ' ')}")`,
   );
 
@@ -1251,10 +1250,10 @@ export async function runRunSmoke({
   );
   await page.waitForSelector('#shop-screen');
   check(
-    /Opponent: a recorded rival party/.test(
+    /Opponent: Rival party/.test(
       await page.locator('#shop-screen').innerText(),
     ),
-    'shop: "Opponent: a recorded rival party" is shown before the PvP battle',
+    'shop: "Opponent: Rival party" is shown before the PvP battle',
   );
   {
     // The first run's snapshot is in this browser's own pool (#111): the
@@ -1545,8 +1544,9 @@ export async function runRunSmoke({
       .locator('#round-table tbody tr td:nth-child(5)')
       .allInnerTexts();
     check(
-      pvpCells.some((t) => /^Ghost · Bundled \w+ bot \(bundled\)$/.test(t)) &&
-        pvpCells.some((t) => /^the boss/.test(t)),
+      pvpCells.some((t) =>
+        /^Rival party( \((weak|medium|strong)\))?$/.test(t),
+      ) && pvpCells.some((t) => /^the boss/.test(t)),
       `Run over: the table names each round's opponent, a bundled ghost and the boss (${pvpCells.join(' | ')})`,
     );
     check(
@@ -1560,7 +1560,7 @@ export async function runRunSmoke({
   check(
     /Rival party battles/.test(final) &&
       /Stronghold battles/.test(final) &&
-      /vs\. bosses/.test(final),
+      /vs\. the boss/.test(final),
     'Run over: battle records',
   );
   await shot('run-14-run-over');

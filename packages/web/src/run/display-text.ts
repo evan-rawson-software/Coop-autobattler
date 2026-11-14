@@ -90,6 +90,15 @@ export function bossName(archetype: string): string {
     : `the boss (${archetype})`;
 }
 
+/**
+ * What a ghost opponent is called on screen: never its internal label
+ * ("Bundled weak bot"), only a strength word when the label carries one.
+ */
+export function ghostDisplayName(label: string): string {
+  const word = /\b(weak|medium|strong)\b/i.exec(label)?.[1]?.toLowerCase();
+  return word === undefined ? 'Rival party' : `Rival party (${word})`;
+}
+
 /** The label of a boss opponent: the Boss archetype's display name. */
 export function bossLabel(): string {
   return archetypeText('arch_boss').name;

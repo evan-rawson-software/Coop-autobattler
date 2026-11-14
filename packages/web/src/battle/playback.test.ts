@@ -543,12 +543,14 @@ describe('result reasons', () => {
     expect(reasonText('time_limit', 'Core')).toMatch(/more Core health/);
     expect(reasonText('time_limit', 'Core')).not.toMatch(/defender/i);
     expect(reasonText('tiebreak_overkill', 'Core')).toMatch(/less overkill/);
-    expect(reasonText('tiebreak_overkill', 'Core')).toMatch(/fell at once/);
+    expect(reasonText('tiebreak_overkill', 'Core')).toMatch(
+      /fell at the same moment/,
+    );
     expect(reasonText('tiebreak_building_damage', 'Core')).toMatch(
       /more damage to buildings/,
     );
     expect(reasonText('tiebreak_kills', 'Core')).toMatch(/more kills/);
-    expect(reasonText('tiebreak_attacker', 'Core')).toMatch(/attacker/);
+    expect(reasonText('tiebreak_attacker', 'Core')).toMatch(/you win/);
     expect(reasonText('core_destroyed', 'Heart')).toMatch(/Heart/);
   });
 
@@ -572,13 +574,13 @@ describe('result reasons', () => {
   });
   test('a tie says whether it came from a double fall or the time limit', () => {
     const fall = reasonText('tiebreak_kills', 'Core', [side(0, 0), side(0, 0)]);
-    expect(fall).toMatch(/fell at once/);
+    expect(fall).toMatch(/fell at the same moment/);
     const limit = reasonText('tiebreak_kills', 'Core', [
       side(1, 50),
       side(1, 50),
     ]);
     expect(limit).toMatch(/^Time ran out with Cores and building damage even/);
-    expect(limit).not.toMatch(/fell at once/);
+    expect(limit).not.toMatch(/fell at the same moment/);
     expect(
       reasonText('tiebreak_overkill', 'Core', [side(0, 0), side(0, 0)]),
     ).toMatch(/less overkill/);

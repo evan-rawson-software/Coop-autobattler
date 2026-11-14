@@ -111,13 +111,7 @@ export function roundRows(history: readonly RoundRecord[]): RoundRow[] {
           ? none
           : pvp.opponent.kind === 'boss'
             ? bossName(opponentName('boss', pvp.opponent.label))
-            : pvp.opponent.label.startsWith('Bundled ')
-              ? screenText(screenTexts, 'runOverGhostBundled', {
-                  label: pvp.opponent.label,
-                })
-              : screenText(screenTexts, 'runOverGhost', {
-                  label: opponentName(pvp.opponent.kind, pvp.opponent.label),
-                }),
+            : opponentName(pvp.opponent.kind, pvp.opponent.label),
       pvpResult: mark(pvp),
     };
   });

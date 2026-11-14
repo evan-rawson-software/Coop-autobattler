@@ -28,11 +28,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     'The factory changed since the battle, so it cannot be shown again.',
   ],
   ['battleFailWrongStep', {}, 'There is no battle to show in this step.'],
-  [
-    'battleGenericAttacker',
-    { core: 'Core' },
-    'Full tie: the attacker (the party) wins.',
-  ],
+  ['battleGenericAttacker', { core: 'Core' }, 'Full tie: you win.'],
   [
     'battleGenericBuildingDamage',
     { core: 'Core' },
@@ -53,7 +49,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'battleGenericOverkill',
     { core: 'Core' },
-    'Both last Cores fell at once: less overkill damage wins.',
+    'Both Cores fell at the same moment: less overkill damage wins.',
   ],
   [
     'battleGenericTimeLimit',
@@ -63,17 +59,17 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'battleTieAttackerDouble',
     { core: 'Core' },
-    'Both last Cores fell at once and every tiebreak was even: the attacker (the party) wins.',
+    'Both Cores fell at the same moment and every tiebreak was even, so you win.',
   ],
   [
     'battleTieAttackerTime',
     { core: 'Core' },
-    'Time ran out and every tiebreak was even: the attacker (the party) wins.',
+    'Time ran out and every tiebreak was even, so you win.',
   ],
   [
     'battleTieBuildingDamageDouble',
     { core: 'Core' },
-    'Both last Cores fell at once: more damage to buildings wins.',
+    'Both Cores fell at the same moment: more damage to buildings wins.',
   ],
   [
     'battleTieBuildingDamageTime',
@@ -83,7 +79,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'battleTieKillsDouble',
     { core: 'Core' },
-    'Both last Cores fell at once, building damage even: more kills wins.',
+    'Both Cores fell at the same moment, building damage even: more kills wins.',
   ],
   [
     'battleTieKillsTime',
@@ -684,12 +680,6 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['runOverWon', {}, 'won'],
   ['runOverLost', {}, 'lost'],
   ['runOverPveRow', { difficulty: 'Hard', name: 'Rusher' }, 'Hard · Rusher'],
-  [
-    'runOverGhostBundled',
-    { label: 'Bundled 1' },
-    'Ghost · Bundled 1 (bundled)',
-  ],
-  ['runOverGhost', { label: 'Kai' }, 'Ghost · Kai'],
   ['runOverTally', { won: '2', lost: '1' }, '2 won · 1 lost'],
   [
     'runOverByDifficultyCounts',
@@ -698,12 +688,11 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ],
   ['runOverPanelThisRun', {}, 'This run'],
   ['runOverStatPvp', {}, 'Rival party battles'],
-  ['runOverStatGhosts', {}, 'vs. ghosts'],
-  ['runOverStatBosses', {}, 'vs. bosses'],
+  ['runOverStatGhosts', {}, 'vs. rival parties'],
+  ['runOverStatBosses', {}, 'vs. the boss'],
   ['runOverStatPve', {}, 'Stronghold battles'],
   ['runOverStatByDifficulty', {}, 'by difficulty'],
   ['runOverStatLivesLost', {}, 'Lives lost'],
-  ['runOverStatVersion', {}, 'Version'],
   ['runOverPanelFactory', {}, 'Final factory'],
   [
     'runOverFactoryCountsOne',

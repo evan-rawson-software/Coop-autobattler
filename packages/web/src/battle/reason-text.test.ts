@@ -38,7 +38,7 @@ describe('genericReasonText', () => {
     expect(by['tiebreak_overkill']).toMatch(/overkill/);
     expect(by['tiebreak_building_damage']).toMatch(/damage to buildings/);
     expect(by['tiebreak_kills']).toMatch(/more kills/);
-    expect(by['tiebreak_attacker']).toMatch(/attacker/);
+    expect(by['tiebreak_attacker']).toMatch(/you win/);
     expect(by['time_limit']).toMatch(/Time ran out/);
   });
 });
@@ -87,7 +87,7 @@ describe('stepText', () => {
       const time = stepText(r, 'Hub', alive);
       const double = stepText(r, 'Hub', bothDown);
       expect(time).toMatch(/^Time ran out/);
-      expect(double).toMatch(/^Both last Hubs fell at once/);
+      expect(double).toMatch(/^Both (last )?Hubs fell at/);
       expect(time).not.toBe(double);
     }
   });
@@ -97,7 +97,7 @@ describe('stepText', () => {
       /more damage to buildings/,
     );
     expect(stepText('tiebreak_kills', 'Hub', bothDown)).toMatch(/more kills/);
-    expect(stepText('tiebreak_attacker', 'Hub', alive)).toMatch(/attacker/);
+    expect(stepText('tiebreak_attacker', 'Hub', alive)).toMatch(/you win/);
   });
 
   test('overkill is a time-limit step only; a double fall falls back to the generic text', () => {

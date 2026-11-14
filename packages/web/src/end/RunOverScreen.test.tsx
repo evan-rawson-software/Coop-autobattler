@@ -86,7 +86,7 @@ describe('RunOverScreen for parties', () => {
       expect(out).toContain('You abandoned this run.');
       expect(out).toContain('Rival party battles1 won · 0 lost');
       expect(out).toContain('Lives lost3');
-      expect(out).toContain('Ghost · ');
+      expect(out).toContain('Rival party');
     });
   }
 });

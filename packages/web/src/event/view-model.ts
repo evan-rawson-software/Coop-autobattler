@@ -23,6 +23,7 @@ import { simConfig } from '../build/setup.js';
 import {
   archetypeText,
   bossName,
+  ghostDisplayName,
   effectLine,
   eventText,
   modifierName,
@@ -58,7 +59,7 @@ export function opponentName(
   kind: 'pve' | 'ghost' | 'boss',
   label: string,
 ): string {
-  return kind === 'ghost' ? label : archetypeText(label).name;
+  return kind === 'ghost' ? ghostDisplayName(label) : archetypeText(label).name;
 }
 
 /**
