@@ -1072,7 +1072,17 @@ try {
   await waitFrames(page, 18);
   await shot('build-4-factory-flow');
   await shotDark('art2-build-conduits');
-  await page.click('[data-overlay="dry"]');
+  // The test run sits in the bottom dock, not over the board.
+  check(
+    await page.evaluate(() => {
+      const t = document.querySelector('#dry-table')?.getBoundingClientRect();
+      const b = document.querySelector('.main-view')?.getBoundingClientRect();
+      return t !== undefined && b !== undefined && t.top >= b.bottom - 1;
+    }),
+    'dry-run table is in the dock below the board, not over it',
+  );
+  await page.click('#dry-table button');
+  await page.waitForSelector('#dry-table', { state: 'detached' });
   check(
     (await page.locator('[data-field="no-problems"]').count()) === 0 ||
       (await B.problems()).length === 0,

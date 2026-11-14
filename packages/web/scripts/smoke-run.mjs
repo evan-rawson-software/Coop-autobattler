@@ -295,7 +295,7 @@ export async function runRunSmoke({
     await page.waitForSelector('#shop-screen');
     await settle();
     const goldAfter = Number(
-      await page.locator('#gold').getAttribute('data-gold'),
+      await page.locator('[data-field="bar-gold"]').getAttribute('data-gold'),
     );
     const notice = await page.locator('#shop-notice').innerText();
     if (pickOpt !== undefined) {
@@ -560,12 +560,12 @@ export async function runRunSmoke({
   const runA = s0.runId;
   const bar0 = await page.locator('#run-bar').innerText();
   check(
-    /Round 1/.test(bar0) &&
+    !/Round/.test(bar0) &&
       /Lives 5 \/ 5/.test(bar0) &&
       !/Gold/.test(bar0) &&
       (await page.locator('#menu-button').count()) === 1 &&
       /Place the Core/.test(await page.locator('.topbar-title').innerText()),
-    `top bar: round, lives (no gold before the kit) and Menu ("${bar0.replace(/\s+/g, ' ')}"), the step in the title`,
+    `top bar: lives (no gold before the kit) and Menu, no round ("${bar0.replace(/\s+/g, ' ')}"); the step is in the title`,
   );
   check(
     await page.locator('#core-confirm').isDisabled(),
@@ -1014,7 +1014,9 @@ export async function runRunSmoke({
   // Shop: buy one thing, reload.
   await page.waitForSelector('#shop-screen');
   await settle();
-  const g0 = Number(await page.locator('#gold').getAttribute('data-gold'));
+  const g0 = Number(
+    await page.locator('[data-field="bar-gold"]').getAttribute('data-gold'),
+  );
   const buy = page
     .locator('#offers [data-action="buy"]:not([disabled])')
     .first();
@@ -1027,7 +1029,9 @@ export async function runRunSmoke({
       stash0 + 1,
     );
     check(
-      Number(await page.locator('#gold').getAttribute('data-gold')) < g0,
+      Number(
+        await page.locator('[data-field="bar-gold"]').getAttribute('data-gold'),
+      ) < g0,
       'shop: a purchase pays gold and lands in the stash',
     );
   } else {
@@ -1196,7 +1200,7 @@ export async function runRunSmoke({
     (s) => s.round === 2 && s.step === 'pve_choice',
   );
   check(
-    /Round 2/.test(await page.locator('#run-bar').innerText()),
+    /Round 2/.test(await page.locator('.topbar-title').innerText()),
     'round 1 is complete: round 2 opens on the PvE choice',
   );
   void atRound2Choice;

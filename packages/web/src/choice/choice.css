@@ -196,6 +196,8 @@ button.event-card[data-affordable='false'] {
 
 .event-cards.follow {
   align-content: start;
+  /* Many options scroll the screen; they must not shrink over the Skip button. */
+  flex-shrink: 0;
 }
 
 @media (max-width: 1100px) {

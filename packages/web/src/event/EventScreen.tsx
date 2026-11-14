@@ -120,7 +120,6 @@ export function EventResolveScreen(props: { run: RunHandle }) {
   return (
     <AppShell
       title={`Round ${String(run.round)} · ${v?.eventTitle ?? 'Event'}`}
-      status={<span class="muted">{v?.prompt ?? ''}</span>}
     >
       <div class="choice-screen" id="event-resolve">
         <div class="choice-banner panel">
