@@ -3,8 +3,7 @@
  * docs/rules-reference.md ("Map generation"); keep the two in sync.
  */
 
-import type { Json } from './hash.js';
-import { hashJson } from './hash.js';
+import { sortedIntEntries } from './collections.js';
 import {
   compareCells,
   listLegalCorePositions,
@@ -16,7 +15,6 @@ import {
 } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
 import { Rng } from './rng.js';
-import type { SimulationFn } from './golden-kinds.js';
 
 /** Direction steps used by lake growth and cliffs, in fixed order. */
 const DIRS: readonly (readonly [number, number])[] = [
@@ -218,12 +216,12 @@ function attempt(
   }
 
   const features: FeatureCell[] = [];
-  for (const [k, feature] of b.features) {
+  for (const [k, feature] of sortedIntEntries(b.features)) {
     features.push({ x: k % width, y: Math.floor(k / width), feature });
   }
   features.sort(compareCells);
   const nodes: ResourceNode[] = [];
-  for (const [k, resource] of b.nodes) {
+  for (const [k, resource] of sortedIntEntries(b.nodes)) {
     nodes.push({ x: k % width, y: Math.floor(k / width), resource });
   }
   nodes.sort(compareCells);
@@ -379,35 +377,4 @@ export function generateMap(
   config: MapgenConfig,
 ): GameMap {
   return generateMapWithStats(seed, partySize, content, config).map;
-}
-
-/**
- * Golden-vector kind `map-gen`. Input `{ seed, partySize }`; the result is
- * `{ map, hash, attempts }` with `hash = hashJson(map)`. The content and
- * configuration are supplied by the package that registers the kind.
- */
-export function makeMapGenKind(
-  content: MapContent,
-  config: MapgenConfig,
-): SimulationFn {
-  return (input: Json) => {
-    if (input === null || typeof input !== 'object' || Array.isArray(input)) {
-      throw new TypeError('map-gen: input must be an object');
-    }
-    const o = input as Record<string, Json>;
-    const seed = o['seed'];
-    const partySize = o['partySize'];
-    if (typeof seed !== 'number' || typeof partySize !== 'number') {
-      throw new TypeError('map-gen: seed and partySize must be numbers');
-    }
-    const { map, attempts } = generateMapWithStats(
-      seed,
-      partySize,
-      content,
-      config,
-    );
-    return {
-      result: { map, hash: hashJson(map), attempts },
-    };
-  };
 }

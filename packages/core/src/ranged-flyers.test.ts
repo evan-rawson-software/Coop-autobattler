@@ -29,7 +29,7 @@ import {
   got,
   overlapStats,
   simConfig,
-} from './test-support.js';
+} from './testing/support.js';
 import { sealedProducers } from './sealed-producers.js';
 import { loadUnitsOrThrow } from './units.js';
 

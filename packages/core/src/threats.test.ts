@@ -18,7 +18,7 @@ import {
   type ThreatType,
   type ThreatsConfig,
 } from './threats.js';
-import { content, got, mapgen, threats } from './test-support.js';
+import { content, got, mapgen, threats } from './testing/support.js';
 
 /** The budget formula computed independently with BigInt. */
 function bigBudget(

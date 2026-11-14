@@ -24,7 +24,7 @@ import {
   postContent,
   simConfig,
   walk,
-} from './test-support.js';
+} from './testing/support.js';
 import { loadUnitsOrThrow } from './units.js';
 
 // ---------------------------------------------------------------------------

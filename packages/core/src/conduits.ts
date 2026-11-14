@@ -4,6 +4,7 @@
  * All functions are pure. See docs/rules-reference.md, "Conduits".
  */
 
+import { sortedInts } from './collections.js';
 import { decodeConduitId, encodeConduitId } from './conduit-ids.js';
 import { allCoreCells, cellKey, defCells } from './board-cells.js';
 import {
@@ -13,8 +14,7 @@ import {
   type BuildingId,
   type Side,
 } from './buildings.js';
-import { sortedKeys } from './hash.js';
-import { isRecord } from './load-util.js';
+import { isRecord, rejectUnknownKeys } from './load-util.js';
 import { queryMap, type Cell, type GameMap, type MapQuery } from './map.js';
 import type { ResourceId } from './resources.js';
 import {
@@ -477,11 +477,14 @@ interface Candidate {
   readonly y: number;
   /** The receiving half's building end. */
   readonly to: BEnd;
+  /** Position in the order found: the last tie-break of the sort. */
+  readonly seq: number;
 }
 
 /**
  * The links that could join: a sending and a receiving half at one spot,
- * sorted by border, then row (the fixed order of the derivation).
+ * sorted by border, then row, then the order of the sending halves in
+ * `conduits` (the fixed order of the derivation).
  */
 function candidatesOf(conduits: readonly Conduit[]): Candidate[] {
   const halves = new Map<string, Conduit>();
@@ -502,9 +505,16 @@ function candidatesOf(conduits: readonly Conduit[]): Candidate[] {
     if (other === undefined || ote === null || !isBorderEnd(other.from)) {
       continue;
     }
-    out.push({ send: c, recv: other, border: sp.border, y: sp.y, to: ote });
+    out.push({
+      send: c,
+      recv: other,
+      border: sp.border,
+      y: sp.y,
+      to: ote,
+      seq: out.length,
+    });
   }
-  return out.sort((a, b) => a.border - b.border || a.y - b.y);
+  return out.sort((a, b) => a.border - b.border || a.y - b.y || a.seq - b.seq);
 }
 
 /** The edges, in conduit order, with exactly the links in `joined` joined. */
@@ -620,7 +630,7 @@ export function conduitsLostWith(
       gone.add(k.recv.id);
     }
   }
-  return [...gone].sort((a, b) => a - b);
+  return sortedInts(gone);
 }
 
 // ---------------------------------------------------------------------------
@@ -632,11 +642,11 @@ export function conduitsLostWith(
  * `"<id>.<input side of the channel>"`. A channel is an input side and the
  * output side opposite it.
  */
-function nodeKey(
+function nodeRef(
   view: View,
   end: { building: number; side: Side },
   role: 'in' | 'out',
-): string {
+): NodeRef {
   const e = view.byId.get(end.building);
   if (
     e !== undefined &&
@@ -644,9 +654,21 @@ function nodeKey(
     e.def.routeType === 'crossover'
   ) {
     const channel = role === 'in' ? end.side : oppositeSide(end.side);
-    return `${String(end.building)}.${channel}`;
+    return {
+      key: `${String(end.building)}.${channel}`,
+      building: end.building,
+      channel,
+    };
   }
-  return String(end.building);
+  return { key: String(end.building), building: end.building, channel: null };
+}
+
+function nodeKey(
+  view: View,
+  end: { building: number; side: Side },
+  role: 'in' | 'out',
+): string {
+  return nodeRef(view, end, role).key;
 }
 
 export interface NodeRef {
@@ -734,16 +756,6 @@ export function topoOrder(
   return order;
 }
 
-function nodeRefOf(key: string): NodeRef {
-  const dot = key.indexOf('.');
-  if (dot < 0) return { key, building: Number(key), channel: null };
-  return {
-    key,
-    building: Number(key.slice(0, dot)),
-    channel: key.slice(dot + 1) as Side,
-  };
-}
-
 /** The usable edges: both ends (when there is one) are known buildings. */
 function usable(view: View, edges: readonly Edge[]): Edge[] {
   return edges.filter(
@@ -755,19 +767,19 @@ function usable(view: View, edges: readonly Edge[]): Edge[] {
 
 function hasLoop(view: View, edges: readonly Edge[]): boolean {
   const list: { from: string; to: string }[] = [];
+  const keys = new Set<string>();
+  const nodes: NodeRef[] = []; // each node once, in first-seen order
   for (const c of usable(view, edges)) {
     if (c.to === null) continue;
-    list.push({
-      from: nodeKey(view, c.from, 'out'),
-      to: nodeKey(view, c.to, 'in'),
-    });
+    const from = nodeRef(view, c.from, 'out');
+    const to = nodeRef(view, c.to, 'in');
+    list.push({ from: from.key, to: to.key });
+    for (const n of [from, to]) {
+      if (keys.has(n.key)) continue;
+      keys.add(n.key);
+      nodes.push(n);
+    }
   }
-  const keys = new Set<string>();
-  for (const e of list) {
-    keys.add(e.from);
-    keys.add(e.to);
-  }
-  const nodes = [...keys].map(nodeRefOf);
   return topoOrder(nodes, list).length < nodes.length;
 }
 
@@ -845,7 +857,10 @@ function findMismatch(
     const k = `${String(to.building)}:${to.side}`;
     if (!firstInto.has(k)) firstInto.set(k, x);
   }
-  for (const e of view.byId.values()) {
+  // Buildings in state order: the order `byId` was filled in.
+  for (const b of view.state.buildings) {
+    const e = view.byId.get(b.id);
+    if (e === undefined) continue;
     if (e.def.kind !== 'route' || e.def.routeType !== 'merger') continue;
     let first: ResourceId | null = null;
     for (const side of SIDE_ORDER) {
@@ -1192,10 +1207,7 @@ export function buildFlowGraph(
       resource: res.get(c.id) ?? null,
     });
   }
-  const order = topoOrder(
-    nodes.map((n) => nodeRefOf(n.key)),
-    edges,
-  );
+  const order = topoOrder(nodes, edges);
   if (order.length < nodes.length) {
     throw new Error('The conduit network contains a loop.');
   }
@@ -1209,17 +1221,6 @@ const CONDUIT_KEYS = new Set(['id', 'owner', 'from', 'to', 'cells']);
 const END_KEYS = new Set(['building', 'side']);
 const BORDER_KEYS = new Set(['border', 'y']);
 const CELL_KEYS = new Set(['x', 'y']);
-
-function extraKeys(
-  rec: Record<string, unknown>,
-  allowed: ReadonlySet<string>,
-  at: string,
-  errors: string[],
-): void {
-  for (const key of sortedKeys(rec)) {
-    if (!allowed.has(key)) errors.push(`${at}: unknown field "${key}".`);
-  }
-}
 
 /**
  * Parse the raw `conduits` value, reporting every shape problem and keeping
@@ -1237,7 +1238,7 @@ export function parseConduits(raw: unknown, errors: string[]): Conduit[] {
       errors.push(`${at}: must be an object.`);
       return;
     }
-    extraKeys(entry, CONDUIT_KEYS, at, errors);
+    rejectUnknownKeys(entry, CONDUIT_KEYS, at, errors);
     let ok = true;
     const id = entry['id'];
     if (!isInt(id) || id < 1) {
@@ -1260,7 +1261,7 @@ export function parseConduits(raw: unknown, errors: string[]): Conduit[] {
         continue;
       }
       if ('border' in e) {
-        extraKeys(e, BORDER_KEYS, `${at}.${name}`, errors);
+        rejectUnknownKeys(e, BORDER_KEYS, `${at}.${name}`, errors);
         const border = e['border'];
         const y = e['y'];
         if (!isInt(border) || !isInt(y)) {
@@ -1271,7 +1272,7 @@ export function parseConduits(raw: unknown, errors: string[]): Conduit[] {
         ends.push({ border, y });
         continue;
       }
-      extraKeys(e, END_KEYS, `${at}.${name}`, errors);
+      rejectUnknownKeys(e, END_KEYS, `${at}.${name}`, errors);
       const building = e['building'];
       const side = e['side'];
       if (!isInt(building) || !isSide(side)) {
@@ -1297,7 +1298,7 @@ export function parseConduits(raw: unknown, errors: string[]): Conduit[] {
           ok = false;
           return;
         }
-        extraKeys(c, CELL_KEYS, `${at}.cells[${String(j)}]`, errors);
+        rejectUnknownKeys(c, CELL_KEYS, `${at}.cells[${String(j)}]`, errors);
         cells.push({ x: c['x'], y: c['y'] });
       });
     }

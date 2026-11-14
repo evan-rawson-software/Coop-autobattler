@@ -20,8 +20,8 @@ import {
   content,
   mapgen,
   simConfig,
-} from './test-support.js';
-import { randomTeam } from './test-teams.js';
+} from './testing/support.js';
+import { randomTeam } from './testing/teams.js';
 
 const config = { sim: simConfig, mapgen };
 

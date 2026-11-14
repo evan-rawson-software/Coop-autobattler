@@ -13,7 +13,7 @@ import { simulatePveBattle } from './pve-battle.js';
 import { buildReferenceBoard } from './reference-boards.js';
 import { addToStash, raiseTier, validateTeamState } from './team-state.js';
 import { generateThreat } from './threat-gen.js';
-import { content, mapgen, simConfig, threats } from './test-support.js';
+import { content, mapgen, simConfig, threats } from './testing/support.js';
 import economyJson from '../../../content/economy.json';
 import eventsJson from '../../../content/events.json';
 

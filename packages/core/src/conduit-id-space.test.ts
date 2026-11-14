@@ -12,7 +12,7 @@ import {
   stepFlow,
 } from './flow-sim.js';
 import type { GameMap } from './map.js';
-import { content, mapgen, simConfig } from './test-support.js';
+import { content, mapgen, simConfig } from './testing/support.js';
 import {
   addToStash,
   createTeamState,

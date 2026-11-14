@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import { reachStep, realDeps, send } from '../run/test-run.js';
 import { simConfig } from '../build/setup.js';
-import { overloadLine, partyCoreMax } from './overload.js';
+import { coreMaxHealth } from '@game/core';
+import { overloadLine } from './overload.js';
 import { overloadClock, pveChoiceView, threatFacts } from './view-model.js';
 
 describe('PvE choice cards', () => {
@@ -120,6 +121,6 @@ describe('the Overload line', () => {
   });
   test('the party Core is read from content', () => {
     const run = reachStep('pve_choice');
-    expect(partyCoreMax(run.team, realDeps().content.buildings)).toBe(500);
+    expect(coreMaxHealth(run.team, realDeps().content)).toBe(500);
   });
 });

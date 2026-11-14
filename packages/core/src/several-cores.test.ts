@@ -23,7 +23,7 @@ import { overloadDeadline, overloadOutcome } from './ramp.js';
 import type { SideOptions } from './arena-sim.js';
 import type { SimConfig } from './sim-config.js';
 import type { TeamState } from './team-state.js';
-import { Lab, content, mapgen, simConfig } from './test-support.js';
+import { Lab, content, mapgen, simConfig } from './testing/support.js';
 
 const config = { sim: simConfig, mapgen };
 const zoneOf = (width: number): NeutralZone => ({

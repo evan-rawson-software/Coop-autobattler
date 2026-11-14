@@ -4,27 +4,9 @@
  * beat for both Cores, so the smaller Core falls first. Pure; the rules answer
  * in core (`overloadOutcome`), this only words them.
  */
-import {
-  mulPct,
-  modifierPercent,
-  overloadOutcome,
-  type BuildingConfig,
-  type SimConfig,
-  type TeamState,
-} from '@game/core';
+import { overloadOutcome, type SimConfig } from '@game/core';
 import { clock } from '../battle/derive.js';
 import { screenText, screenTexts } from '../build/texts.js';
-
-/** The party Core's maximum health: its tier, raised by the team's modifiers. */
-export function partyCoreMax(
-  team: TeamState,
-  buildings: Pick<BuildingConfig, 'list'>,
-): number {
-  const core = buildings.list().find((b) => b.kind === 'core');
-  const base = core?.tiers[0]?.health ?? 0;
-  const pct = modifierPercent(team, 'core_health_percent');
-  return pct > 0 ? mulPct(base, 100 + pct) : base;
-}
 
 /** Plain words for which Core Overload destroys first, and when. */
 export function overloadLine(

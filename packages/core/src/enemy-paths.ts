@@ -75,7 +75,7 @@ export function previewEnemyPaths(
   const { width, boardHeight } = arena.geom;
   const side = 1;
   const hpOf = (ref: number): number => {
-    const b = arena.buildings[ref];
+    const b = ref >= 0 ? arena.buildings[ref] : undefined;
     if (b === undefined) return 0;
     // The same maximum health the simulation prices a breach by, with the
     // team's health modifiers (a building not placed by the team has none).
@@ -156,7 +156,7 @@ export function previewEnemyPaths(
         if (next < 0) break;
         if (!openFor(arena, side, next)) {
           const ref = arena.occupant[next] ?? -1;
-          const b = arena.buildings[ref];
+          const b = ref >= 0 ? arena.buildings[ref] : undefined;
           if (b !== undefined && breachPassable(arena, side, next, goal)) {
             found = { building: b.id, cell: cellOf(next) };
           }

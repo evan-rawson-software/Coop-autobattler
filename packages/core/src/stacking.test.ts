@@ -14,7 +14,7 @@ import {
   got,
   mapgen,
   simConfig,
-} from './test-support.js';
+} from './testing/support.js';
 import { CELL_UNITS } from './limits.js';
 import type { TeamState } from './team-state.js';
 

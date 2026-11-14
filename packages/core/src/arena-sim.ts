@@ -7,6 +7,7 @@
  * "One battle tick".
  */
 
+import { sortedInts } from './collections.js';
 import {
   createArena,
   removeFromArena,
@@ -397,8 +398,9 @@ export interface ArenaOptions {
 // Unit stats seam (W1-7)
 
 /**
- * The stats a unit of `side` and type `def` fights with. Every read of unit
- * health, damage, range and cooldowns goes through here. With a
+ * The stats a unit of type `def` fights with (`_side` is unused). The
+ * spawned health and damage and the attack cooldown are read through here;
+ * the decisions read `def.reach` and `def.radius` directly. With a
  * `strengthPercent` P above 0 (the side's capped `unit_strength` bonus at the
  * moment of spawning), health and damage become `mulPct(base, 100 + P)`
  * (rounded down); everything else is unchanged. Units keep the result they
@@ -501,7 +503,8 @@ export interface ArenaContext {
   breach: (Float64Array | undefined)[][];
   /**
    * Cached `spawnCells` per (producer `ref`, target Core), key
-   * `ref * SPAWN_KEY + core`; dropped with the fields.
+   * `ref * SPAWN_KEY + core + 1` (`core` may be -1: no target); dropped with
+   * the fields.
    */
   spawnCells: Map<number, Int32Array>;
   // Scratch buffers reused across ticks (rebuilt from the state every tick).
@@ -516,7 +519,8 @@ export interface ArenaContext {
   motion: MotionScratch;
   /**
    * Per side, per target Core, per cell: cached `fieldStep` (-1 none, -2 not
-   * computed yet); allocated with the field.
+   * computed yet). Allocated on first use by `stepFor`; refilled with -2 (not
+   * dropped) when a building is destroyed.
    */
   readonly steps: (Int32Array | undefined)[][];
   /**
@@ -535,7 +539,11 @@ export interface ArenaContext {
   nearCell: Int32Array;
   action: Uint8Array;
   arg: Int32Array;
-  /** Per unit: 1 if it attacks this tick (decided before any unit moves). */
+  /**
+   * Per unit: 1 if it chose a unit or a Core to attack this tick (contact or
+   * aim), even while its attack cools down; a breach attack on a covering
+   * building leaves it 0. Read by `moveAlong` to tell holders from walkers.
+   */
   holds: Uint8Array;
   /**
    * Damage accumulated this tick. Float64Array holding integers, summed with
@@ -1459,8 +1467,27 @@ function spawnPosition(
   return null;
 }
 
+/**
+ * Intake (PP-6): take items from `building`'s input buffers, input by input
+ * in their order, at most `need` in all; returns how many were taken. A
+ * building that is not a consumer of the board takes nothing.
+ */
+function intake(board: BoardSim, building: number, need: number): number {
+  const consumer = board.consumers.find((c) => c.building === building);
+  if (consumer === undefined) return 0;
+  let taken = 0;
+  for (const input of consumer.inputs) {
+    const n = Math.min(input.count, need - taken);
+    if (n > 0 && takeFromBuffer(board, building, input.side, n)) taken += n;
+  }
+  return taken;
+}
+
+/**
+ * Step 2: unit producers take their inputs and spawn, then scheduled waves
+ * are queued and enter. The unit grid is current when this runs.
+ */
 function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
-  buildUnitGrid(sim, ctx);
   for (const p of sim.producers) {
     const info = ctx.producers.get(bkey(p.side, p.building));
     const board = sim.boards[p.side === 0 ? 0 : 1];
@@ -1469,15 +1496,7 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     // exceeds the cost. A producer holding a finished unit takes nothing: its
     // buffers fill and its conduits back up.
     if (p.progress < info.cost) {
-      const consumer = board.consumers.find((c) => c.building === p.building);
-      if (consumer !== undefined) {
-        for (const input of consumer.inputs) {
-          const n = Math.min(input.count, info.cost - p.progress);
-          if (n > 0 && takeFromBuffer(board, p.building, input.side, n)) {
-            p.progress += n;
-          }
-        }
-      }
+      p.progress += intake(board, p.building, info.cost - p.progress);
     }
     // A unit is made only when the cost is there and the cooldown is over.
     if (p.progress < info.cost || p.cooldown > 0) continue;
@@ -1730,14 +1749,7 @@ function chargeTurrets(sim: ArenaSim, ctx: ArenaContext): void {
       continue;
     }
     const board = sim.boards[t.side === 0 ? 0 : 1];
-    const consumer = board.consumers.find((c) => c.building === t.building);
-    if (consumer === undefined) continue;
-    for (const input of consumer.inputs) {
-      const take = Math.min(input.count, info.costPerShot - t.charge);
-      if (take > 0 && takeFromBuffer(board, t.building, input.side, take)) {
-        t.charge += take;
-      }
-    }
+    t.charge += intake(board, t.building, info.costPerShot - t.charge);
   }
 }
 
@@ -1754,14 +1766,8 @@ function chargeRamps(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     const info = ctx.ramps.get(bkey(r.side, r.building));
     if (info === undefined || r.steps >= info.maxSteps) continue;
     const board = sim.boards[r.side === 0 ? 0 : 1];
-    const consumer = board.consumers.find((c) => c.building === r.building);
-    if (consumer === undefined) continue;
-    for (const input of consumer.inputs) {
-      const take = Math.min(input.count, info.costPerStep - r.charge);
-      if (take > 0 && takeFromBuffer(board, r.building, input.side, take)) {
-        r.charge += take;
-      }
-    }
+    if (!board.consumers.some((c) => c.building === r.building)) continue;
+    r.charge += intake(board, r.building, info.costPerStep - r.charge);
     if (r.charge >= info.costPerStep && r.cooldown === 0) {
       r.charge = 0;
       r.steps += 1;
@@ -1816,7 +1822,7 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
         bestD = d; // units are in ID order, so a tie keeps the lower ID
       }
     }
-    const target = units[best];
+    const target = best >= 0 ? units[best] : undefined;
     if (target === undefined) continue;
     t.charge = 0;
     t.cooldown = info.cooldownTicks;
@@ -1985,7 +1991,7 @@ function nearestContact(
     const list = ctx.bySide[1 - u.side];
     for (let q = 0; q < few; q++) {
       const j = list?.[q] ?? -1;
-      const e = sim.units[j];
+      const e = j >= 0 ? sim.units[j] : undefined;
       if (e === undefined) continue;
       const dx = e.px - u.px;
       const dy = e.py - u.py;
@@ -2094,7 +2100,7 @@ function nearestVisible(
     const list = ctx.bySide[1 - u.side];
     for (let q = 0; q < few; q++) {
       const j = list?.[q] ?? -1;
-      const e = sim.units[j];
+      const e = j >= 0 ? sim.units[j] : undefined;
       if (e === undefined) continue;
       const dx = e.px - u.px;
       const dy = e.py - u.py;
@@ -2361,7 +2367,8 @@ function decideMove(
   const reachR = def.reach + def.radius;
   const act = ctx.action[i];
   if (act === ACT_AGGRO) {
-    const e = sim.units[ctx.arg[i] ?? -1];
+    const j = ctx.arg[i] ?? -1;
+    const e = j >= 0 ? sim.units[j] : undefined;
     ctx.action[i] = ACT_NONE;
     if (e === undefined) return;
     const hx = e.px - u.px;
@@ -2444,7 +2451,7 @@ function destroyBuilding(
   ref: number,
   tick: number,
 ): void {
-  const b = ctx.arena.buildings[ref];
+  const b = ref >= 0 ? ctx.arena.buildings[ref] : undefined;
   if (b === undefined || !b.alive) return;
   removeFromArena(ctx.arena, ref);
   if (b.kind === 'core') {
@@ -2465,7 +2472,7 @@ function destroyBuilding(
   const team = sim.teams[b.side === 0 ? 0 : 1];
   const open = new Set(brokenLinks(team, ctx.content).map((l) => l.sending));
   const lost = new Set(conduitsLostWith(team.conduits, b.id, open));
-  for (const id of [...lost].sort((x, y) => x - y)) {
+  for (const id of sortedInts(lost)) {
     ctx.events?.push({
       tick,
       type: 'conduit_destroyed',
@@ -2505,26 +2512,63 @@ function destroyBuilding(
 // The step
 
 /**
- * Advance the battle by one tick, in place. Order: (1) flow on both boards;
- * (2) production and turret charging; (3) decisions from a snapshot, then
- * turret fire; (4) simultaneous attacks;
- * (5) moves and separation; (6) deaths and destruction; (7) cooldowns and the tick counter.
+ * Advance the battle by one tick, in place. Order: (0) the Overload level;
+ * (1) flow on both boards; (2) the unit grid, production (unit producers,
+ * then scheduled waves), turret and ramp charging; (3) decisions from a
+ * snapshot, then
+ * turret fire; (4) simultaneous attacks and the Overload Core decay, then
+ * damage; (5) moves and separation; (6) deaths and destruction; (7) cooldowns
+ * and the tick counter.
  */
 export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   const tick = sim.tick;
-  const events = ctx.events;
-  const arena = ctx.arena;
+  const cfg = ctx.simConfig;
 
   // 0. Overload level (derived from the tick; events on the ticks it rises).
-  const cfg = ctx.simConfig;
   const level = overloadLevel(tick, cfg);
   const beat = isOverloadBeat(tick, cfg);
   if (beat) {
-    if (level === 1) events?.push({ tick, type: 'overload_started' });
-    events?.push({ tick, type: 'overload_level', level });
+    if (level === 1) ctx.events?.push({ tick, type: 'overload_started' });
+    ctx.events?.push({ tick, type: 'overload_level', level });
   }
 
   // 1. Flow.
+  stepBothFlows(sim, ctx);
+
+  // 2. Production (unit producers, then scheduled waves), then turret and
+  // ramp charging. The per-side cell grid is rebuilt first; new units are
+  // linked into it as they are placed.
+  buildUnitGrid(sim, ctx);
+  produce(sim, ctx, tick);
+  chargeTurrets(sim, ctx);
+  chargeRamps(sim, ctx, tick);
+
+  // 3. Decide, from a snapshot. `units` stays this tick's list until step 6.
+  const units = sim.units;
+  decideAll(sim, ctx, units);
+  fireTurrets(sim, ctx, tick);
+
+  // 4. Resolve attacks simultaneously, with the Overload Core decay, then
+  // apply the damage.
+  resolveAttacks(ctx, units, tick, level);
+  if (beat) addOverloadDecay(ctx, tick, level);
+  applyDamage(sim, ctx, units);
+
+  // 5. Move and separate.
+  moveUnits(ctx, units);
+
+  // 6. Deaths and destruction.
+  removeDeadUnits(sim, ctx, units, tick);
+  destroyFallenBuildings(sim, ctx, tick);
+
+  // 7. Cooldowns, then the tick counter.
+  tickCooldowns(sim);
+  sim.tick += 1;
+}
+
+/** Step 1: each board's flow, side 0 then side 1, events tagged with the side. */
+function stepBothFlows(sim: ArenaSim, ctx: ArenaContext): void {
+  const events = ctx.events;
   for (const side of [0, 1] as const) {
     const buf = ctx.flowEvents[side];
     if (buf !== undefined) buf.length = 0;
@@ -2549,16 +2593,14 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
       }
     }
   }
+}
 
-  // 2. Production (unit producers, then turret charging).
-  produce(sim, ctx, tick);
-  chargeTurrets(sim, ctx);
-  chargeRamps(sim, ctx, tick);
-
-  // 3. Decide, from a snapshot.
-  // (The per-side cell grid was built in the Production step, new units
-  // linked as they were placed.)
-  const units = sim.units;
+/** Step 3: every unit's contact, then aim, then move decision, in unit order. */
+function decideAll(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  units: readonly UnitSim[],
+): void {
   const n = units.length;
   ensureUnitCapacity(ctx, n);
   ctx.unitDamage.fill(0, 0, n);
@@ -2575,9 +2617,22 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     const u = units[i];
     if (u !== undefined) decideMove(sim, ctx, i, u);
   }
-  fireTurrets(sim, ctx, tick);
+}
 
-  // 4. Resolve attacks simultaneously.
+/**
+ * Step 4: every attack ready this tick, in unit order, is summed into the
+ * damage tables (nothing is applied yet) and logged.
+ */
+function resolveAttacks(
+  ctx: ArenaContext,
+  units: readonly UnitSim[],
+  tick: number,
+  level: number,
+): void {
+  const events = ctx.events;
+  const arena = ctx.arena;
+  const cfg = ctx.simConfig;
+  const n = units.length;
   ctx.buildingDamage.fill(0);
   ctx.attackDamage.fill(0);
   for (let i = 0; i < n; i++) {
@@ -2616,28 +2671,42 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
       damage,
     });
   }
-  // Overload Core decay, applied together with the damage above.
-  if (beat) {
-    const decay = level * cfg.overloadCoreDamageStep;
-    // Every living Core takes the full amount: side 0 then side 1, players in
-    // ascending order (PP-9).
-    for (const side of [0, 1]) {
-      (arena.coreRef[side] ?? []).forEach((ref, core) => {
-        if (ref < 0 || arena.buildings[ref]?.alive !== true) return;
-        ctx.buildingDamage[ref] = addDamage(
-          ctx.buildingDamage[ref] ?? 0,
-          decay,
-        );
-        events?.push({
-          tick,
-          type: 'overload_core_damage',
-          side,
-          core,
-          damage: decay,
-        });
+}
+
+/** Step 4, on an Overload beat: every living Core takes the decay. */
+function addOverloadDecay(
+  ctx: ArenaContext,
+  tick: number,
+  level: number,
+): void {
+  const events = ctx.events;
+  const arena = ctx.arena;
+  const cfg = ctx.simConfig;
+  const decay = level * cfg.overloadCoreDamageStep;
+  // Every living Core takes the full amount: side 0 then side 1, players in
+  // ascending order (PP-9).
+  for (const side of [0, 1]) {
+    (arena.coreRef[side] ?? []).forEach((ref, core) => {
+      if (ref < 0 || arena.buildings[ref]?.alive !== true) return;
+      ctx.buildingDamage[ref] = addDamage(ctx.buildingDamage[ref] ?? 0, decay);
+      events?.push({
+        tick,
+        type: 'overload_core_damage',
+        side,
+        core,
+        damage: decay,
       });
-    }
+    });
   }
+}
+
+/** Step 4: apply the summed damage to units, then to buildings and Cores. */
+function applyDamage(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  units: readonly UnitSim[],
+): void {
+  const n = units.length;
   for (let i = 0; i < n; i++) {
     const dmg = ctx.unitDamage[i] ?? 0;
     const u = units[i];
@@ -2666,8 +2735,12 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     }
     h.hp = Math.max(0, remaining);
   }
+}
 
-  // 5. Move and separate.
+/** Step 5: hand this tick's motion inputs to the solver and run it. */
+function moveUnits(ctx: ArenaContext, units: readonly UnitSim[]): void {
+  const cfg = ctx.simConfig;
+  const n = units.length;
   for (let i = 0; i < n; i++) {
     const u = units[i];
     if (u === undefined) continue;
@@ -2687,8 +2760,16 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     ctx.maxRadius,
     ctx.air,
   );
+}
 
-  // 6. Deaths and destruction.
+/** Step 6: units at 0 health or less die, in unit order. */
+function removeDeadUnits(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  units: readonly UnitSim[],
+  tick: number,
+): void {
+  const events = ctx.events;
   let died = false;
   for (const u of units) {
     if (u.hp <= 0) {
@@ -2698,6 +2779,20 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
     }
   }
   if (died) sim.units = units.filter((u) => u.hp > 0);
+}
+
+/**
+ * Step 6: buildings at 0 health are destroyed, in health-list order. When any
+ * fell, every cache that depends on the buildings is dropped and units whose
+ * target Core fell choose a new one.
+ */
+function destroyFallenBuildings(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  tick: number,
+): void {
+  const events = ctx.events;
+  const arena = ctx.arena;
   let destroyed = false;
   for (const h of sim.health) {
     if (h.hp > 0) continue;
@@ -2739,8 +2834,10 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
       });
     }
   }
+}
 
-  // 7. Cooldowns, then the tick counter.
+/** Step 7: every cooldown above zero goes down by one. */
+function tickCooldowns(sim: ArenaSim): void {
   for (const t of sim.turrets) {
     if (t.cooldown > 0) t.cooldown -= 1;
   }
@@ -2753,7 +2850,6 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   for (const u of sim.units) {
     if (u.attackCooldown > 0) u.attackCooldown -= 1;
   }
-  sim.tick += 1;
 }
 
 /**

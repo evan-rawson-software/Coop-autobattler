@@ -5,6 +5,7 @@
  * docs/rules-reference.md, "PvE threats".
  */
 
+import { sortedInts } from './collections.js';
 import type { Cell } from './map.js';
 import type { Rng } from './rng.js';
 import type { LayoutId, ThreatsConfig } from './threats.js';
@@ -39,7 +40,7 @@ interface Candidate extends Cell {
  * cells are still needed when it is reached.
  */
 function pickTurrets(cands: readonly Candidate[], n: number, rng: Rng): Cell[] {
-  const keys = [...new Set(cands.map((c) => c.key))].sort((a, b) => a - b);
+  const keys = sortedInts(new Set(cands.map((c) => c.key)));
   const out: Cell[] = [];
   for (const key of keys) {
     if (out.length >= n) break;
@@ -116,7 +117,7 @@ function ring(
   };
   const midX2 = 2 * core.x + b.coreWidth - 1;
   const walls: Cell[] = [];
-  const gaps = new Set<string>();
+  const gaps: string[] = [];
   for (let k = 1; walls.length < nWalls && k <= 200; k++) {
     const d = cfg.firstRingDistance + (k - 1) * cfg.ringSpacing;
     const x0 = core.x - d;
@@ -134,7 +135,7 @@ function ring(
       seen.add(key({ x, y }));
       const gap = y === y0 || y === y1 ? inGapX(x) : inGapY(y);
       if (!inBoard(b, x, y)) return;
-      if (gap) gaps.add(key({ x, y }));
+      if (gap) gaps.push(key({ x, y }));
       else cells.push({ x, y });
     };
     for (let x = x0; x <= x1; x++) add(x, y1);

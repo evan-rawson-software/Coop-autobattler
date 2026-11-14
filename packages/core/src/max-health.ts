@@ -63,3 +63,23 @@ export function maxHealthOf(
   }
   return hp;
 }
+
+/**
+ * The maximum health of a Core of `team` with no side options: the Core
+ * definition's tier, raised by `core_health_percent` (as `maxHealthOf`).
+ */
+export function coreMaxHealth(team: TeamState, content: ArenaContent): number {
+  const coreDef = content.buildings.list().find((d) => d.kind === 'core');
+  const core: ArenaBuilding = {
+    ref: 0,
+    side: 0,
+    id: 0,
+    player: 0,
+    kind: 'core',
+    defenseType: null,
+    def: coreDef?.id ?? 'core',
+    cells: [],
+    alive: true,
+  };
+  return maxHealthOf(team, core, content);
+}

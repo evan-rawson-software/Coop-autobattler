@@ -1,6 +1,7 @@
 /**
  * Goal sets and movement fields for units (W1-5, CB-14, CB-15, CB-19, CB-20).
- * A field is a breadth-first distance map; the breach field is a least-cost
+ * A field is a least-cost distance map (Dijkstra, step costs 10 straight and
+ * 14 diagonal; see `computeField`); the breach field is a least-cost
  * map used when a base is sealed. Fields never depend on unit positions.
  * See docs/rules-reference.md, "Goals and movement fields".
  */
@@ -341,7 +342,7 @@ export function breachPassable(
   if (arena.blocked[cell] === 1) return false;
   if (openFor(arena, side, cell)) return true;
   const ref = arena.occupant[cell] ?? -1;
-  const b = arena.buildings[ref];
+  const b = ref >= 0 ? arena.buildings[ref] : undefined;
   return b !== undefined && b.side !== side && ref !== goal;
 }
 

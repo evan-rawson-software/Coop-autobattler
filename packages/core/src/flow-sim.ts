@@ -306,6 +306,9 @@ function compile(
     (n) =>
       n.kind === 'splitter' || n.kind === 'merger' || n.kind === 'crossover',
   );
+  // The building of each node key (keys are never parsed back).
+  const buildingOfNode = new Map<string, number>();
+  for (const n of graph.nodes) buildingOfNode.set(n.key, n.building);
   const routeIndex = new Map<string, number>();
   routeNodes.forEach((n, i) => routeIndex.set(n.key, i));
 
@@ -348,8 +351,7 @@ function compile(
         ),
       };
     }
-    const building = Number(e.to);
-    const ci = consumerIndex.get(building);
+    const ci = consumerIndex.get(buildingOfNode.get(e.to) ?? -1);
     if (ci === undefined)
       throw new Error(`Conduit ${String(conduitId)} ends at a non-consumer.`);
     return {
@@ -391,7 +393,7 @@ function compile(
     if (e === undefined || e.length > 0) return [-1, -1];
     return [
       routeIndex.get(e.from) ?? -1,
-      sourceIndex.get(Number(e.from)) ?? -1,
+      sourceIndex.get(buildingOfNode.get(e.from) ?? -1) ?? -1,
     ];
   };
   const planRoutes: PlanRoute[] = routeNodes.map((n) => ({

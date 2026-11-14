@@ -12,7 +12,7 @@ import {
   validateTeamState,
   type TeamState,
 } from './team-state.js';
-import { board, content, mapgen } from './test-support.js';
+import { board, content, mapgen } from './testing/support.js';
 
 // Two plots of 12 columns: plot 0 is x 0..11, plot 1 is x 12..23.
 const NODES: [number, number, string][] = [

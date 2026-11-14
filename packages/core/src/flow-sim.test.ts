@@ -11,8 +11,7 @@ import {
   type FlowContext,
   type SimEvent,
 } from './flow-sim.js';
-import { makeFlowSimKind } from './flow-sim-kind.js';
-import { hashJson, type Json } from './hash.js';
+import { hashJson } from './hash.js';
 import { loadSimConfig, loadSimConfigOrThrow } from './sim-config.js';
 import {
   Lab,
@@ -20,12 +19,11 @@ import {
   board,
   content,
   got,
-  mapgen,
   randomNetwork,
   simConfig,
   type Pairs,
   TIMING,
-} from './test-support.js';
+} from './testing/support.js';
 import type { TeamState } from './team-state.js';
 interface Run {
   sim: BoardSim;
@@ -899,30 +897,4 @@ describe('performance', () => {
       expect(d.consumers).toHaveLength(96);
     },
   );
-});
-
-describe('golden kind flow-sim: take validation', () => {
-  const run = makeFlowSimKind(content, mapgen, simConfig);
-  const base = { seed: 1, partySize: 1, ops: [], ticks: 0, consumers: 'hold' };
-  const withTake = (take: Json): Json => ({ ...base, take });
-
-  test('a valid take is accepted', () => {
-    expect(() =>
-      run(withTake({ building: 4, side: 'south', every: 25 })),
-    ).not.toThrow();
-  });
-
-  test.each([
-    ['a fractional building', { building: 1.5, side: 'south', every: 2 }],
-    ['a string building', { building: '4', side: 'south', every: 2 }],
-    ['a missing building', { side: 'south', every: 2 }],
-    ['an unknown side', { building: 4, side: 'up', every: 2 }],
-    ['a numeric side', { building: 4, side: 3, every: 2 }],
-    ['a fractional every', { building: 4, side: 'south', every: 2.5 }],
-    ['every below 1', { building: 4, side: 'south', every: 0 }],
-    ['a non-object take', 7],
-    ['a null take', null],
-  ] as [string, Json][])('%s is rejected', (_name, take) => {
-    expect(() => run(withTake(take))).toThrow(TypeError);
-  });
 });

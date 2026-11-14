@@ -9,12 +9,13 @@
  * `validateGhostSnapshot` first. See docs/rules-reference.md, "Ghosts".
  */
 
+import { sortedIntEntries } from './collections.js';
 import { canonicalJson, sortedKeys } from './hash.js';
 import type { Content } from './content.js';
 import type { EconomyConfig } from './economy.js';
 import { findModifier, type EventsConfig } from './events.js';
 import { generateMap } from './generate-map.js';
-import { isRecord } from './load-util.js';
+import { isRecord, isSafeInt } from './load-util.js';
 import type { MapgenConfig } from './mapgen.js';
 import { tierPrice } from './shop.js';
 import { validateTeamState, type TeamState } from './team-state.js';
@@ -410,12 +411,8 @@ const KEYS = new Set([
   'pvpRecord',
 ]);
 
-function isInt(v: unknown): v is number {
-  return typeof v === 'number' && Number.isSafeInteger(v);
-}
-
 function isU32(v: unknown): v is number {
-  return isInt(v) && v >= 0 && v < 2 ** 32;
+  return isSafeInt(v) && v >= 0 && v < 2 ** 32;
 }
 
 // Printable text: no control characters, no leading/trailing space.
@@ -593,9 +590,9 @@ function shapeInner(
   const declared = raw['partySize'];
   const declaredRound = raw['round'];
   const sizeOk =
-    isInt(declared) && declared >= 1 && declared <= mapgen.maxPartySize;
+    isSafeInt(declared) && declared >= 1 && declared <= mapgen.maxPartySize;
   const roundOk =
-    isInt(declaredRound) &&
+    isSafeInt(declaredRound) &&
     declaredRound >= 1 &&
     declaredRound <= GHOST_MAX_ROUND;
   if (!sizeOk || !roundOk) {
@@ -647,7 +644,11 @@ function shapeInner(
     errors.push('gameVersion: must look like "major.minor".');
   }
   const partySize = raw['partySize'];
-  if (!isInt(partySize) || partySize < 1 || partySize > mapgen.maxPartySize) {
+  if (
+    !isSafeInt(partySize) ||
+    partySize < 1 ||
+    partySize > mapgen.maxPartySize
+  ) {
     errors.push(
       `partySize: must be an integer from 1 to ${String(mapgen.maxPartySize)}.`,
     );
@@ -674,15 +675,15 @@ function shapeInner(
   }
 
   const lives = raw['lives'];
-  if (!isInt(lives) || lives < 1)
+  if (!isSafeInt(lives) || lives < 1)
     errors.push('lives: must be an integer >= 1.');
   const record = raw['pvpRecord'];
   let wins = -1;
   let losses = -1;
   if (
     !isRecord(record) ||
-    !isInt(record['wins']) ||
-    !isInt(record['losses']) ||
+    !isSafeInt(record['wins']) ||
+    !isSafeInt(record['losses']) ||
     record['wins'] < 0 ||
     record['losses'] < 0
   ) {
@@ -842,7 +843,7 @@ function plausibility(
       (values.get(b.owner) ?? 0) + tierPrice(ctx.content, b.def, b.tier),
     );
   }
-  for (const [owner, value] of [...values].sort((x, y) => x[0] - y[0])) {
+  for (const [owner, value] of sortedIntEntries(values)) {
     if (value > ownerLimit) {
       errors.push(
         `owner ${String(owner)}: building value ${String(value)} is more than the ${String(ownerLimit)} possible by round ${String(s.round)}.`,
@@ -856,7 +857,7 @@ function plausibility(
       excess.set(b.owner, (excess.get(b.owner) ?? 0) + b.tier - tiers.shopTier);
     }
   }
-  for (const [owner, n] of [...excess].sort((a, b) => a[0] - b[0])) {
+  for (const [owner, n] of sortedIntEntries(excess)) {
     if (n > tiers.upgradesPerOwner) {
       errors.push(
         `team: player ${String(owner)} has ${String(n)} tiers above the shop's tier ${String(tiers.shopTier)}, at most ${String(tiers.upgradesPerOwner)} possible by round ${String(s.round)} (Workshop raises).`,

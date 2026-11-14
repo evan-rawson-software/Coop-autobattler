@@ -24,7 +24,7 @@ import { CELL_UNITS } from './limits.js';
 import type { GameMap } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
 import { addToStash, placeFromStash, type TeamState } from './team-state.js';
-import { Lab, board, content, mapgen, simConfig } from './test-support.js';
+import { Lab, board, content, mapgen, simConfig } from './testing/support.js';
 
 const GAP = 4;
 /** Arena rows: 16 + 4 + 16. */

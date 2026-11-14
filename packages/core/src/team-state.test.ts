@@ -1,3 +1,4 @@
+import { renderTeamStateAscii } from './ascii-render.js';
 import { describe, expect, test } from 'vitest';
 import buildingsJson from '../../../content/buildings.json';
 import mapgenJson from '../../../content/mapgen.json';
@@ -25,7 +26,6 @@ import {
   placeCore,
   placeFromStash,
   removeFromStash,
-  renderTeamStateAscii,
   returnToStash,
   validateTeamState,
   type TeamState,

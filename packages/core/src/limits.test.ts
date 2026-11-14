@@ -26,7 +26,7 @@ import {
 import { loadSimConfig } from './sim-config.js';
 import { loadUnits, loadUnitsOrThrow } from './units.js';
 import { loadResourcesOrThrow } from './resources.js';
-import { Lab, board, content, got, simConfig } from './test-support.js';
+import { Lab, board, content, got, simConfig } from './testing/support.js';
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;

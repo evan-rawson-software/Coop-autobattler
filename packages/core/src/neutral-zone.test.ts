@@ -1,3 +1,4 @@
+import { renderNeutralZoneAscii } from './ascii-render.js';
 import { describe, expect, test } from 'vitest';
 import { hashJson } from './hash.js';
 import {
@@ -5,14 +6,13 @@ import {
   generateNeutralZone,
   generateNeutralZoneWithStats,
   neutralZoneProblem,
-  renderNeutralZoneAscii,
   zoneBlockedCells,
   type NeutralZone,
 } from './neutral-zone.js';
 import { loadMapgen } from './mapgen.js';
 import mapgenJson from '../../../content/mapgen.json';
 import { Rng } from './rng.js';
-import { content, mapgen } from './test-support.js';
+import { content, mapgen } from './testing/support.js';
 
 const W = mapgen.plotWidth;
 

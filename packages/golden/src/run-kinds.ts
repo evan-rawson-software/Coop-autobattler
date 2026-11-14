@@ -11,8 +11,8 @@ import {
   type Content,
   type Json,
   type ShopOffer,
-  type SimulationFn,
 } from '@game/core';
+import type { SimulationFn } from './kinds/prng.js';
 import {
   createGameDeps,
   drawStream,

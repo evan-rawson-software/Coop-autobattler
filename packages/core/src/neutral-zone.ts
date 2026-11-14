@@ -5,9 +5,8 @@
  * keep the two in sync.
  */
 
+import { sortedIntEntries } from './collections.js';
 import type { Json } from './hash.js';
-import { hashJson } from './hash.js';
-import type { SimulationFn } from './golden-kinds.js';
 import type { Cell, FeatureCell } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
 import { Rng } from './rng.js';
@@ -48,12 +47,6 @@ const DIRS: readonly (readonly [number, number])[] = [
   [-1, 0],
 ];
 
-class AttemptFailed extends Error {}
-
-function fail(why: string): never {
-  throw new AttemptFailed(why);
-}
-
 /** Draw an integer in [min, max]; always consumes one `nextInt`. */
 function between(rng: Rng, min: number, max: number): number {
   return min + rng.nextInt(max - min + 1);
@@ -73,6 +66,7 @@ interface Grid {
   readonly features: Map<number, string>;
 }
 
+/** Place the lakes; returns why it failed, or null. */
 function placeLakes(
   g: Grid,
   rng: Rng,
@@ -80,7 +74,7 @@ function placeLakes(
   count: number,
   config: MapgenConfig,
   feature: string,
-): void {
+): string | null {
   const c = config.neutralZone.lakes;
   for (let i = 0; i < count; i++) {
     let placed = false;
@@ -130,10 +124,12 @@ function placeLakes(
       for (const [cx, cy] of cells) g.features.set(cy * g.width + cx, feature);
       placed = true;
     }
-    if (!placed) fail('could not place a lake');
+    if (!placed) return 'could not place a lake';
   }
+  return null;
 }
 
+/** Place the cliffs; returns why it failed, or null. */
 function placeCliffs(
   g: Grid,
   rng: Rng,
@@ -141,7 +137,7 @@ function placeCliffs(
   count: number,
   config: MapgenConfig,
   feature: string,
-): void {
+): string | null {
   const c = config.neutralZone.cliffs;
   for (let i = 0; i < count; i++) {
     let placed = false;
@@ -182,8 +178,9 @@ function placeCliffs(
       for (const [x, y] of cells) g.features.set(y * g.width + x, feature);
       placed = true;
     }
-    if (!placed) fail('could not place a cliff');
+    if (!placed) return 'could not place a cliff';
   }
+  return null;
 }
 
 /** True when `blocked(x, y)` leaves every open cell 4-connected. */
@@ -224,6 +221,7 @@ function openCellsConnected(
   return reached === open;
 }
 
+/** One attempt: the zone, or why it failed (the reason is a string). */
 function attempt(
   zoneRng: Rng,
   attemptIndex: number,
@@ -231,7 +229,7 @@ function attempt(
   plots: number,
   content: NeutralZoneContent,
   config: MapgenConfig,
-): NeutralZone {
+): NeutralZone | string {
   const nz = config.neutralZone;
   const grid: Grid = { width, depth: nz.depth, features: new Map() };
   const attemptRng = zoneRng.child(attemptIndex);
@@ -253,7 +251,15 @@ function attempt(
     nz.lakes.countMaxPerPlot * plots,
   );
   if (room) {
-    placeLakes(grid, lakesRng, region, lakeCount, config, config.lakes.feature);
+    const why = placeLakes(
+      grid,
+      lakesRng,
+      region,
+      lakeCount,
+      config,
+      config.lakes.feature,
+    );
+    if (why !== null) return why;
   }
   const cliffCount = between(
     cliffsRng,
@@ -261,7 +267,7 @@ function attempt(
     nz.cliffs.countMaxPerPlot * plots,
   );
   if (room) {
-    placeCliffs(
+    const why = placeCliffs(
       grid,
       cliffsRng,
       region,
@@ -269,10 +275,11 @@ function attempt(
       config,
       config.cliffs.feature,
     );
+    if (why !== null) return why;
   }
 
   const features: FeatureCell[] = [];
-  for (const [k, feature] of grid.features) {
+  for (const [k, feature] of sortedIntEntries(grid.features)) {
     features.push({ x: k % width, y: Math.floor(k / width), feature });
   }
   features.sort((p, q) => p.y - q.y || p.x - q.x);
@@ -281,7 +288,7 @@ function attempt(
     return f !== undefined && content.terrain.get(f)?.blocksMovement === true;
   };
   if (!openCellsConnected(width, nz.depth, blocked)) {
-    fail('the open cells of the zone are not connected');
+    return 'the open cells of the zone are not connected';
   }
   return { width, depth: nz.depth, features, pointsOfInterest: [] };
 }
@@ -308,15 +315,9 @@ export function generateNeutralZoneWithStats(
   const zoneRng = Rng.fromSeed(battleSeed).child(NEUTRAL_ZONE_STREAM);
   let last = 'no attempt made';
   for (let a = 0; a < config.neutralZone.maxAttempts; a++) {
-    try {
-      return {
-        zone: attempt(zoneRng, a, width, plots, content, config),
-        attempts: a + 1,
-      };
-    } catch (error) {
-      if (!(error instanceof AttemptFailed)) throw error;
-      last = error.message;
-    }
+    const zone = attempt(zoneRng, a, width, plots, content, config);
+    if (typeof zone !== 'string') return { zone, attempts: a + 1 };
+    last = zone;
   }
   throw new Error(
     `generateNeutralZone: no valid zone for seed ${String(battleSeed)}, width ${String(width)} after ${String(config.neutralZone.maxAttempts)} attempts (last failure: ${last})`,
@@ -402,63 +403,4 @@ export function zoneBlockedCells(
     }
   }
   return out;
-}
-
-/** ASCII picture of a zone, `y = 0` (side 0's edge) first: `~` lake, `#` cliff, `?` other, `.` open. */
-export function renderNeutralZoneAscii(
-  zone: NeutralZone,
-  lakeFeature: string,
-  cliffFeature: string,
-): string {
-  const rows: string[] = [];
-  for (let y = 0; y < zone.depth; y++) {
-    let row = '';
-    for (let x = 0; x < zone.width; x++) {
-      const f = zone.features.find((c) => c.x === x && c.y === y)?.feature;
-      row +=
-        f === undefined
-          ? '.'
-          : f === lakeFeature
-            ? '~'
-            : f === cliffFeature
-              ? '#'
-              : '?';
-    }
-    rows.push(row);
-  }
-  return rows.join('\n');
-}
-
-/**
- * Golden-vector kind `neutral-zone`. Input `{ seed, partySize }`; the width is
- * `partySize * plotWidth`. Result `{ zone, hash, attempts }`.
- */
-export function makeNeutralZoneKind(
-  content: NeutralZoneContent,
-  config: MapgenConfig,
-): SimulationFn {
-  return (input: Json) => {
-    if (input === null || typeof input !== 'object' || Array.isArray(input)) {
-      throw new TypeError('neutral-zone: input must be an object');
-    }
-    const o = input as Record<string, Json>;
-    const seed = o['seed'];
-    const partySize = o['partySize'];
-    if (typeof seed !== 'number' || typeof partySize !== 'number') {
-      throw new TypeError('neutral-zone: seed and partySize must be numbers');
-    }
-    const { zone, attempts } = generateNeutralZoneWithStats(
-      seed,
-      partySize * config.plotWidth,
-      content,
-      config,
-    );
-    return {
-      result: {
-        zone: zone as unknown as Json,
-        hash: hashJson(zone),
-        attempts,
-      },
-    };
-  };
 }

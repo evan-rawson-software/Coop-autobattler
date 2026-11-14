@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { generateMap } from './generate-map.js';
 import { queryMap } from './map.js';
-import { content, mapgen } from './test-support.js';
+import { content, mapgen } from './testing/support.js';
 
 /** Walkable cells of plot `p`, and how many are reached from its front row inside it. */
 function reachedInPlot(

@@ -18,9 +18,15 @@ import {
   type BoardSim,
   type SimEvent,
 } from './flow-sim.js';
-import { Lab, board, content, simConfig, type Pairs } from './test-support.js';
+import {
+  Lab,
+  board,
+  content,
+  simConfig,
+  type Pairs,
+} from './testing/support.js';
 import { eraseConduit, validateTeamState } from './team-state.js';
-import { mapgen } from './test-support.js';
+import { mapgen } from './testing/support.js';
 
 const cells = (pairs: Pairs) => pairs.map(([x, y]) => ({ x, y }));
 

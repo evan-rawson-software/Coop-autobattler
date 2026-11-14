@@ -122,6 +122,64 @@ const determinismProperties = [
       'Object key order is not portable; iterate a sorted or explicit list of keys.',
   })),
 ];
+/**
+ * Bans iterating a Map or Set in rules code. JavaScript iterates them in
+ * insertion order; a C# Dictionary or HashSet does not promise any order, so a
+ * result that depends on it would not port. Lookups (`get`, `has`), `size`
+ * and mutation are fine; to iterate, keep an array alongside or sort the keys.
+ */
+const noCollectionIteration = {
+  meta: {
+    type: 'problem',
+    messages: {
+      iterate:
+        'Iterating a {{name}} relies on insertion order, which a port does not keep; iterate an array or sorted keys.',
+    },
+    schema: [],
+  },
+  create(context) {
+    const services = context.sourceCode.parserServices;
+    const checker = services.program.getTypeChecker();
+    const collectionName = (node) => {
+      const type = checker.getTypeAtLocation(
+        services.esTreeNodeToTSNodeMap.get(node),
+      );
+      const parts = type.isUnion() ? type.types : [type];
+      for (const t of parts) {
+        const name = (t.aliasSymbol ?? t.getSymbol())?.getName();
+        if (
+          name === 'Map' ||
+          name === 'Set' ||
+          name === 'ReadonlyMap' ||
+          name === 'ReadonlySet'
+        ) {
+          return name;
+        }
+      }
+      return null;
+    };
+    const check = (node) => {
+      const name = collectionName(node);
+      if (name !== null) {
+        context.report({ node, messageId: 'iterate', data: { name } });
+      }
+    };
+    return {
+      ForOfStatement: (node) => check(node.right),
+      SpreadElement: (node) => check(node.argument),
+      'CallExpression[callee.object.name="Array"][callee.property.name="from"]':
+        (node) => {
+          if (node.arguments[0] !== undefined) check(node.arguments[0]);
+        },
+      'CallExpression > MemberExpression.callee[property.name=/^(keys|values|entries|forEach)$/]':
+        (node) => check(node.object),
+    };
+  },
+};
+const determinismPlugin = {
+  rules: { 'no-collection-iteration': noCollectionIteration },
+};
+
 const determinismSyntax = [
   {
     selector: 'ForInStatement',
@@ -198,6 +256,7 @@ export default tseslint.config(
     // Non-test core code: the layer globals above plus the determinism rules.
     files: ['packages/core/src/**/*.ts'],
     ignores: ['**/*.test.ts'],
+    plugins: { determinism: determinismPlugin },
     rules: {
       'no-restricted-globals': [
         'error',
@@ -210,6 +269,7 @@ export default tseslint.config(
       ],
       'no-restricted-properties': ['error', ...determinismProperties],
       'no-restricted-syntax': ['error', ...determinismSyntax],
+      'determinism/no-collection-iteration': 'error',
     },
   },
   {
@@ -223,6 +283,30 @@ export default tseslint.config(
         'error',
         ...restrictedGlobals(domGlobalNames, 'Browser/DOM'),
       ],
+    },
+  },
+  {
+    // Session rules and the bot: the same determinism rules as core. The
+    // app glue (src/app: controller, saves, stores) and the test support are
+    // replaced by a port, not ported.
+    files: [
+      'packages/session/src/rules/**/*.ts',
+      'packages/session/src/bot/**/*.ts',
+    ],
+    ignores: ['**/*.test.ts'],
+    plugins: { determinism: determinismPlugin },
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        ...restrictedGlobals(domGlobalNames, 'Browser/DOM'),
+        ...restrictedGlobals(
+          clockAndTimerGlobalNames,
+          'Clock, timer and locale (non-deterministic)',
+        ),
+      ],
+      'no-restricted-properties': ['error', ...determinismProperties],
+      'no-restricted-syntax': ['error', ...determinismSyntax],
+      'determinism/no-collection-iteration': 'error',
     },
   },
 );

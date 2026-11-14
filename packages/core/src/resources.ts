@@ -1,6 +1,7 @@
 /** Resource configuration (TA-27a): loaded from already-parsed data. */
 
 import { sortedKeys } from './hash.js';
+import { isRecord } from './load-util.js';
 
 export type ResourceId = string;
 export type Rarity = 'common' | 'rare';
@@ -41,10 +42,6 @@ const KNOWN_KEYS = new Set([
   'icon',
   'refinedFrom',
 ]);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function makeConfig(defs: readonly ResourceDef[]): ResourceConfig {
   const byId = new Map(defs.map((d) => [d.id, d]));

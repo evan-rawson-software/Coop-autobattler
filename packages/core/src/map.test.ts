@@ -1,3 +1,4 @@
+import { renderMapAscii } from './ascii-render.js';
 import { describe, expect, test } from 'vitest';
 import buildingsJson from '../../../content/buildings.json';
 import mapgenJson from '../../../content/mapgen.json';
@@ -13,7 +14,6 @@ import {
   loadMap,
   loadMapOrThrow,
   queryMap,
-  renderMapAscii,
   validateCorePosition,
   type GameMap,
 } from './map.js';

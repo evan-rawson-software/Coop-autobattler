@@ -21,7 +21,7 @@ import {
   simConfig,
   threats,
   TIMING,
-} from './test-support.js';
+} from './testing/support.js';
 
 const config = { sim: simConfig, mapgen };
 const configs = { threats, mapgen };

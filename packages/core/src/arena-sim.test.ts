@@ -1,3 +1,4 @@
+import { renderArenaAscii } from './ascii-render.js';
 import { describe, expect, test } from 'vitest';
 import {
   createArena,
@@ -7,7 +8,6 @@ import {
   type ArenaContent,
 } from './arena.js';
 import { computeBreach, openFor } from './arena-paths.js';
-import { renderArenaAscii } from './arena-render.js';
 import {
   createArenaContext,
   createArenaSim,
@@ -41,7 +41,7 @@ import {
   simConfig,
   walk,
   TIMING,
-} from './test-support.js';
+} from './testing/support.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
