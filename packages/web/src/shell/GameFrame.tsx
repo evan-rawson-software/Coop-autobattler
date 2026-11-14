@@ -22,6 +22,7 @@ import { StorageNotes } from '../run/StorageNotes.js';
 import { screenText, screenTexts } from '../build/texts.js';
 import { MapRail, type MapRailProps } from './MapRail.js';
 import { TopBar, type TabDef } from './AppShell.js';
+import { PhaseInfoTop } from './PhaseStepper.js';
 import './frame.css';
 
 const t = (key: string): string => screenText(screenTexts, key);
@@ -178,6 +179,7 @@ export function GameFrame(props: GameFrameProps) {
           {props.board}
         </main>
         <aside class="frame-info" aria-label={t('uiInfoLabel')}>
+          <PhaseInfoTop />
           {props.info}
         </aside>
         <div class="frame-tray" role="group" aria-label="Actions">

@@ -75,3 +75,42 @@ export async function checkFrame(page, check, label) {
     `${label}: no page scroll (${m.scrollW}x${m.scrollH} in ${m.vw}x${m.vh})`,
   );
 }
+
+/**
+ * The phase stepper (issue #300): the current step is the one expected, and
+ * the round-1 stepper starts with Set up. `expected` is `{ phase, round1,
+ * battle? }`. Returns what the page shows, for further checks.
+ */
+export async function checkStepper(page, check, label, expected) {
+  const m = await page.evaluate(() => {
+    const items = [...document.querySelectorAll('.phase-step')].map((e) => ({
+      id: e.dataset.phase,
+      state: e.dataset.state,
+      text: e.textContent,
+    }));
+    return {
+      items,
+      tip: document.querySelector('[data-field="phase-tip"]')?.dataset.phase,
+      tipFirst:
+        document.querySelector('.frame-info')?.firstElementChild?.dataset
+          .field === 'phase-tip',
+      next: document.querySelector('[data-field="next-phase"]')?.textContent,
+    };
+  });
+  const current = m.items.filter((i) => i.state === 'current');
+  check(
+    current.length === 1 && current[0].id === expected.phase,
+    `${label}: the stepper highlights ${expected.phase} (${m.items.map((i) => `${i.id}:${i.state}`).join(' ')})`,
+  );
+  check(
+    (m.items[0]?.id === 'setup') === expected.round1,
+    `${label}: Set up ${expected.round1 ? 'is' : 'is not'} in the stepper`,
+  );
+  if (expected.battle !== undefined) {
+    check(
+      current[0]?.text.includes(`Battle ${expected.battle} of 2`),
+      `${label}: the Fight step says Battle ${expected.battle} of 2`,
+    );
+  }
+  return m;
+}

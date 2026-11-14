@@ -21,6 +21,7 @@ import {
 import { getServices, type GameServices } from '../run/services.js';
 import { registerDebug, unregisterDebug } from '../debug-hook.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
+import { resetTips } from '../shell/phase-tips.js';
 import './menu.css';
 import {
   menuRows,
@@ -136,6 +137,7 @@ export function MainMenuScreen() {
   const [asking, setAsking] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [ghostNote, setGhostNote] = useState<string | null>(null);
+  const [tipsNote, setTipsNote] = useState(false);
   const hash = useStore(hashStore);
   const seed = seedFromHash(hash);
   const alive = useRef(true);
@@ -322,6 +324,22 @@ export function MainMenuScreen() {
             </>
           )}
           {seed === null ? null : <p class="muted fine">Seed {seed}</p>}
+          <button
+            type="button"
+            id="show-tips"
+            class="text-link"
+            onClick={() => {
+              resetTips();
+              setTipsNote(true);
+            }}
+          >
+            {text('menuShowTips')}
+          </button>
+          {tipsNote ? (
+            <p class="muted fine" role="status" data-field="tips-note">
+              {text('menuShowTipsDone')}
+            </p>
+          ) : null}
           {data === null || data.anyRecords ? (
             <Panel title="Records · deepest round" id="panel-records">
               <ul class="records" id="records">

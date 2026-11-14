@@ -7,6 +7,7 @@
 import { createContext, type ComponentChildren } from 'preact';
 import { useContext } from 'preact/hooks';
 import { StorageNotes } from '../run/StorageNotes.js';
+import { PhaseStepper } from './PhaseStepper.js';
 
 export interface TabDef {
   readonly id: string;
@@ -54,7 +55,10 @@ export function TopBar(props: {
     <header class={runBar ? 'topbar has-run-bar' : 'topbar'}>
       <div class="topbar-left">
         {runBar ? null : switcher}
-        <h1 class="topbar-title">{props.title}</h1>
+        <h1 class="topbar-title" title={props.title}>
+          {props.title}
+        </h1>
+        <PhaseStepper />
       </div>
       <nav class="topbar-tabs" aria-label="Sections">
         {tabs.map((t) =>

@@ -170,6 +170,11 @@ select {
   margin: 0;
   font-size: 1.15rem;
   font-weight: 600;
+  /* One line next to the phase stepper: a long title is cut, not wrapped. */
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .topbar-tabs {
