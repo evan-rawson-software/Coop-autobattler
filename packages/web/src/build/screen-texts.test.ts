@@ -521,8 +521,6 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['uiPartyUnready', {}, 'Unready'],
   ['uiShopSoldOut', {}, 'Sold'],
   ['uiShopTitle', {}, 'Shop'],
-  ['uiShopBadgeOne', {}, '1 offer'],
-  ['uiShopBadgeMany', { count: '4' }, '4 offers'],
   ['uiShopReroll', { cost: '1' }, 'Re-roll · 1'],
   ['uiShopClose', {}, 'Close shop'],
   ['uiShopPrice', { price: '30' }, '30 g'],

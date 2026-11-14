@@ -398,8 +398,6 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   uiPartyUnready: [],
   uiShopSoldOut: [],
   uiShopTitle: [],
-  uiShopBadgeOne: [],
-  uiShopBadgeMany: ['count'],
   uiShopReroll: ['cost'],
   uiShopClose: [],
   uiShopPrice: ['price'],

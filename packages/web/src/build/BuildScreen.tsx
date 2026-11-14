@@ -256,15 +256,13 @@ export function BuildView(props: {
   // ---- The shop (issue #302): offers in the info rail, in the shop step ----
   const inShop = shared !== undefined && step === 'shop';
   const [shopOpen, setShopOpen] = useState(false);
-  const [shopSeen, setShopSeen] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
   const [sellAsk, setSellAsk] = useState(false);
   const [mountId] = useState(() => ++mountCount);
   const stepKey = `${String(run?.round ?? 0)}:${run?.leg ?? ''}:${step}`;
-  // Each round's shop starts closed, with its offer count on the button.
+  // Each round's shop starts closed.
   useEffect(() => {
     setShopOpen(false);
-    setShopSeen(false);
   }, [stepKey]);
   useEffect(() => {
     if (flash === null) return undefined;
@@ -342,8 +340,6 @@ export function BuildView(props: {
             setSellAsk(false);
           },
         };
-  const offersOnSale =
-    sv === null ? 0 : sv.offers.filter((c) => c.offer !== null).length;
 
   // The tutorial's rings and suggested path (issue #309).
   const tutMarks = useMemo(
@@ -953,10 +949,8 @@ export function BuildView(props: {
           {inShop && sv !== null ? (
             <ShopToggle
               open={open}
-              badge={shopSeen || offersOnSale === 0 ? null : offersOnSale}
               onToggle={() => {
                 setShopOpen(!shopOpen);
-                setShopSeen(true);
               }}
             />
           ) : null}

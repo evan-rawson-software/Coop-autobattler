@@ -269,16 +269,6 @@ button.danger {
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
 }
 
-.shop-badge {
-  padding: 0 0.45rem;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-size: 0.72rem;
-  font-weight: 800;
-  line-height: 1.5;
-}
-
 /* A slot that just received a bought building. */
 .slot.flash {
   animation: slot-flash 1.2s ease-out;

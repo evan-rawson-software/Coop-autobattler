@@ -89,10 +89,8 @@ export async function runShopSmoke({
     (await page.locator('.topbar-tabs button').count()) === 0 &&
       (await page.locator('#shop-toggle').getAttribute('aria-pressed')) ===
         'false' &&
-      /^Shop\s*\d+ offers?$/.test(
-        (await page.locator('#shop-toggle').innerText()).trim(),
-      ),
-    'no Shop/Build tabs: the top bar has a Shop button with an offer-count badge, not pressed',
+      (await page.locator('#shop-toggle').innerText()).trim() === 'Shop',
+    'no Shop/Build tabs: the top bar has a Shop button that just says Shop, not pressed',
   );
   check(
     (await page.locator('#shop-screen').count()) === 0,
@@ -121,10 +119,10 @@ export async function runShopSmoke({
   check(
     (await page.locator('#shop-toggle').getAttribute('aria-pressed')) ===
       'true' &&
-      (await page.locator('.shop-badge').count()) === 0 &&
+      (await page.locator('#shop-toggle').innerText()).trim() === 'Shop' &&
       (await page.locator('#panel-next-fight').count()) === 0 &&
       (await page.locator('#panel-problems').count()) === 0,
-    'opening the shop: the button looks pressed and loses its badge, and the shop replaces the checklist and Next fight',
+    'opening the shop: the button looks pressed and still says Shop, and the shop replaces the checklist and Next fight',
   );
   const boardOpen = await page.locator('.frame-board canvas').boundingBox();
   check(
@@ -465,8 +463,8 @@ export async function runShopSmoke({
     (await page.locator('#panel-next-fight').count()) === 1 &&
       (await page.locator('#shop-toggle').getAttribute('aria-pressed')) ===
         'false' &&
-      (await page.locator('.shop-badge').count()) === 0,
-    'closing the shop (x): the rail shows the checklist and Next fight again, the button is not pressed',
+      (await page.locator('#shop-toggle').innerText()).trim() === 'Shop',
+    'closing the shop (x): the rail shows the checklist and Next fight again, the button is not pressed and still says Shop',
   );
   await shot('shop-3b-closed');
   for (let i = 0; i < 3; i++) {
