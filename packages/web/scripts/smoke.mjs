@@ -654,10 +654,9 @@ try {
     'stash panel lists the kit, each wall shape as its own row',
   );
   check(
-    (await page.locator('.topbar-tabs button').allInnerTexts()).join(',') ===
-      'Shop,Build' &&
-      (await page.locator('.topbar-tabs button').first().isDisabled()),
-    'Shop tab is present and disabled',
+    (await page.locator('.topbar-tabs button').count()) === 0 &&
+      (await page.locator('#shop-toggle').count()) === 0,
+    'the dev Build route has no tabs and no shop (there is no shop in it)',
   );
   const noScroll = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth,

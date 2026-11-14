@@ -105,6 +105,8 @@ export function InventoryTray(props: {
   locked?: boolean;
   /** Stash ids that arrived this round: they get the NEW badge. */
   fresh?: ReadonlySet<number>;
+  /** The slot (`def:tier`) that just received a bought building. */
+  flash?: string | null;
 }) {
   const { team, model, ctl } = props;
   const locked = props.locked === true;
@@ -121,13 +123,15 @@ export function InventoryTray(props: {
           const active = held !== null && g.ids.includes(held.id);
           const name = buildingName(content, g.def);
           const isNew = g.ids.some((id) => props.fresh?.has(id) === true);
+          const flashing = props.flash === `${g.def}:${String(g.tier)}`;
           return (
             <li key={`${g.def}:${String(g.tier)}`}>
               <button
                 type="button"
-                class={active ? 'slot stash-item active' : 'slot stash-item'}
+                class={`slot stash-item${active ? ' active' : ''}${flashing ? ' flash' : ''}`}
                 data-stash-def={g.def}
                 data-stash-tier={g.tier}
+                data-count={g.ids.length}
                 aria-pressed={active}
                 aria-keyshortcuts={i < 9 ? String(i + 1) : undefined}
                 disabled={locked}
@@ -185,7 +189,7 @@ export function InventoryTray(props: {
                 ) : null}
                 {isNew ? (
                   <span class="slot-new" data-field="slot-new">
-                    {t('uiSlotNew')}
+                    {t(flashing ? 'uiSlotJustBought' : 'uiSlotNew')}
                   </span>
                 ) : null}
               </button>
@@ -330,6 +334,8 @@ export function InspectorPanel(props: {
   sealed?: readonly number[];
   /** The acting player: a partner's source shows no backed-up line. */
   acting?: number;
+  /** The Sell control of a selected building (shop step only). */
+  sell?: ComponentChildren;
 }) {
   const { run, model, dry, ctl } = props;
   const team = run.team;
@@ -585,6 +591,7 @@ export function InspectorPanel(props: {
               {t('uiToolPickUp')}
             </button>
           </div>
+          {props.sell}
         </div>
       );
     }

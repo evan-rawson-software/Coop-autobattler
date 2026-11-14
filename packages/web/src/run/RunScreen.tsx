@@ -27,9 +27,7 @@ import {
   type PhaseInfo,
 } from '../shell/phase.js';
 import { markTipSeen } from '../shell/phase-tips.js';
-import { ShopTab } from '../shop/ShopScreen.js';
 import { screenText, screenTexts } from '../build/texts.js';
-import { stepTabStore } from '../shop/tabs.js';
 import { RunBar } from './RunBar.js';
 import { isReviewHash, screenForStep, runIdFromHash } from './router.js';
 import {
@@ -121,21 +119,11 @@ function ReadyRun(props: { run: ActiveRun }) {
   const { run } = props;
   const view = useStore(run.session.store);
   const conflict = useStore(run.conflict);
-  const tab = useStore(stepTabStore);
   const [, bump] = useState(0);
   const state = view.run;
   const maxLives = run.deps.rules.startingLives;
 
-  // Each shop step opens on its Shop tab.
-  const stepKey = `${String(state.round)}:${state.leg}:${state.step}`;
-  useEffect(() => {
-    stepTabStore.set('shop');
-  }, [stepKey]);
-
-  const screen = screenForStep(
-    state.step,
-    tab === 'shop-build' ? 'shop_build' : 'shop',
-  );
+  const screen = screenForStep(state.step);
 
   useEffect(() => {
     registerDebug({
@@ -213,11 +201,7 @@ function ReadyRun(props: { run: ActiveRun }) {
       body = <CoreScreen run={run} />;
       break;
     case 'build':
-    case 'shop_build':
       body = <BuildView shared={run} />;
-      break;
-    case 'shop':
-      body = <ShopTab run={run} />;
       break;
     case 'pve_choice':
       body = <PveChoiceScreen run={run} />;

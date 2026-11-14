@@ -58,6 +58,7 @@ import {
 } from './sides.js';
 import { buildingName } from './view-model.js';
 import { DEFAULT_SEED } from './setup.js';
+import { shopReason } from '../shop/messages.js';
 import { READY_LOCK_TEXT } from './lock.js';
 import type { LayoutAction } from './undo.js';
 
@@ -1045,6 +1046,63 @@ export class BuildController {
         },
       });
     } else this.refuse(r.reason, r.detail);
+  }
+
+  // ---- Shop (issue #302) ---------------------------------------------------
+  // Buying, selling and re-rolling are never undoable. Nothing here waits for
+  // an earlier action: the controller queues intents, so a second buy right
+  // after a first is judged against the gold that is really left.
+
+  /** Dispatch one shop intent and say the outcome in the status line. */
+  private async shopIntent(
+    intent: Parameters<BuildSession['dispatch']>[0],
+    okText: string,
+  ): Promise<boolean> {
+    const s = this.session;
+    if (s === null) return false;
+    // The next action clears what the last one said (and the Workshop note).
+    if (this.model.get().view?.notice != null) s.dismissNotice();
+    const r = await s.dispatch(intent);
+    if (!r.ok) {
+      this.say(shopReason(r.reason, r.detail, r.selectionFailure), 'error');
+      return false;
+    }
+    if (r.selectionFailure === undefined) this.say(okText, 'ok');
+    else {
+      this.say(`${okText} ${selectionNote(r.selectionFailure)}`, 'error');
+    }
+    return true;
+  }
+
+  /** Buy offer `slot` (the building lands in the inventory). */
+  async buy(slot: number, name: string): Promise<boolean> {
+    return this.shopIntent({ type: 'buy', slot }, tx('statusBought', { name }));
+  }
+
+  async reroll(): Promise<boolean> {
+    return this.shopIntent({ type: 'reroll' }, tx('statusRerolled'));
+  }
+
+  /**
+   * Sell a building: one in the inventory, or one on the board (it is picked
+   * up first). Returns true when it was sold.
+   */
+  async sell(id: number, name: string, refund: number): Promise<boolean> {
+    const s = this.session;
+    if (s === null) return false;
+    if (s.run.team.buildings.some((b) => b.id === id)) {
+      const picked = await s.act({ t: 'return', id });
+      if (!picked.ok) {
+        this.refuse(picked.reason, picked.detail);
+        return false;
+      }
+    }
+    const ok = await this.shopIntent(
+      { type: 'sell', id },
+      tx('statusSold', { name, refund: String(refund) }),
+    );
+    if (ok) this.set({ selection: null, held: null });
+    return ok;
   }
 
   async eraseConduit(id: number): Promise<void> {
