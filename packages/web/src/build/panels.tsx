@@ -37,6 +37,9 @@ const t = (key: string, values: Record<string, string> = {}): string =>
 const fmt = (n: number): string =>
   Number.isInteger(n) ? String(n) : n.toFixed(1);
 
+/** A rate per second, always two decimals ("0.50"). */
+const fmtRate = (n: number): string => n.toFixed(2);
+
 // ---------------------------------------------------------------------------
 // Stash
 
@@ -353,8 +356,10 @@ export function InspectorPanel(props: {
               {t('uiInspectorMeta', {
                 kind: humanize(def.kind),
                 tier: String(b.tier),
-                owner,
               })}
+              {(props.acting ?? b.owner) === b.owner
+                ? ''
+                : t('uiInspectorOwnedBy', { owner })}
             </span>
           </h3>
           {props.sealed?.includes(b.id) === true ? (
@@ -415,7 +420,7 @@ export function InspectorPanel(props: {
                   {i.connected
                     ? screenText(screenTexts, 'uiInspectorReceivingEstimate', {
                         resource: resourceName(content, i.resource),
-                        rate: fmt(i.arrivesPerSec),
+                        rate: fmtRate(i.arrivesPerSec),
                       })
                     : screenText(screenTexts, 'uiInspectorReceivingNothing')}
                 </dd>
@@ -430,11 +435,11 @@ export function InspectorPanel(props: {
                       figs.produces.resource === null
                         ? '-'
                         : resourceName(content, figs.produces.resource),
-                    rate: fmt(figs.produces.perSec),
+                    rate: fmtRate(figs.produces.perSec),
                   })}
                   {figs.produces.lostPerSec > 0
                     ? screenText(screenTexts, 'uiInspectorMinesLost', {
-                        rate: fmt(figs.produces.lostPerSec),
+                        rate: fmtRate(figs.produces.lostPerSec),
                       })
                     : ''}
                 </dd>
@@ -474,14 +479,10 @@ export function InspectorPanel(props: {
                           : 'stepsWord',
                     ),
                     cost: String(figs.derived.cost),
-                    thing: screenText(
-                      screenTexts,
-                      figs.derived.kind === 'units'
-                        ? 'uiUnitWord'
-                        : figs.derived.kind === 'shots'
-                          ? 'uiShotWord'
-                          : 'uiStepWord',
-                    ),
+                    resource:
+                      figs.inputs[0] === undefined
+                        ? '-'
+                        : resourceName(content, figs.inputs[0].resource),
                     limit:
                       figs.derived.maxPerMin === null
                         ? ''
@@ -573,9 +574,7 @@ export function OverlaysPanel(props: { model: Model; ctl: BuildController }) {
         {toggle(
           'dry',
           t('uiOverlayDry', {
-            secs: String(
-              Math.round(model.ui.dryTicks / simConfig.ticksPerSecond),
-            ),
+            secs: fmt(model.ui.dryTicks / simConfig.ticksPerSecond),
           }),
           t('uiOverlayDryTip'),
         )}
@@ -678,7 +677,6 @@ export function DryRunTable(props: {
       <div class="dry-head">
         <strong>
           {screenText(screenTexts, 'uiDryRunTitle', {
-            ticks: String(dry.ticks),
             secs: fmt(secs),
           })}
         </strong>

@@ -322,6 +322,8 @@ export function opponentText(
   const o = pvpOpponentInfo(run);
   if (o === null) return 'Opponent unknown';
   if (o.kind === 'boss') return 'Opponent: the boss';
-  // Bundled ghosts ship with the game; their label says so (MM-12).
-  return `Opponent: ghost of ${o.label}`;
+  // Internal ghost names are not shown; only a strength word when the label
+  // carries one ("Bundled weak bot").
+  const word = /\b(weak|medium|strong)\b/i.exec(o.label)?.[1]?.toLowerCase();
+  return `Opponent: a recorded rival party${word === undefined ? '' : ` (${word})`}`;
 }

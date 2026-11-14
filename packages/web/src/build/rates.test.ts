@@ -19,8 +19,7 @@ describe('Range and Hangar are presented like other unit producers', () => {
         expect(r.needs, `${id} tier ${String(tier)}`).toBeGreaterThan(0);
         expect(r.topSpeed).toBeGreaterThan(0);
         const text = rateText(def, tier, tps);
-        expect(text).toContain(`Needs ${formatHundredths(r.needs ?? 0)} / s`);
-        expect(text).toContain('units');
+        expect(text).toContain(`Needs ${formatHundredths(r.needs ?? 0)}/s`);
       }
     });
   }

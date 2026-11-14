@@ -1060,7 +1060,7 @@ export async function runRunSmoke({
   {
     const shopText = await page.locator('#shop-screen').innerText();
     check(
-      /Opponent: ghost of Bundled \w+ bot/.test(shopText) &&
+      /Opponent: a recorded rival party/.test(shopText) &&
         /Lose: -1 life/.test(shopText),
       'shop (before the PvP battle): the opponent is a bundled ghost, and a loss costs 1 life',
     );
@@ -1247,10 +1247,10 @@ export async function runRunSmoke({
   );
   await page.waitForSelector('#shop-screen');
   check(
-    /Opponent: ghost of (Runner|Bundled)/.test(
+    /Opponent: a recorded rival party/.test(
       await page.locator('#shop-screen').innerText(),
     ),
-    'shop: "Opponent: ghost of ..." is shown before the PvP battle',
+    'shop: "Opponent: a recorded rival party" is shown before the PvP battle',
   );
   {
     // The first run's snapshot is in this browser's own pool (#111): the

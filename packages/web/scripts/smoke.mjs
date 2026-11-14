@@ -1087,11 +1087,11 @@ try {
     /Barracks/.test(insp) &&
       /Needs/.test(insp) &&
       /Receiving/.test(insp) &&
-      /units \/ min/.test(insp),
+      /units\/min/.test(insp),
     'inspector shows needs, receiving and the unit estimate for the barracks',
   );
   const recv = await page.locator('[data-field="receiving"]').innerText();
-  const recvNum = Number((/([\d.]+) \/ sec/.exec(recv) ?? [])[1]);
+  const recvNum = Number((/([\d.]+)\/s/.exec(recv) ?? [])[1]);
   const row = dry.consumers.find((c) => c.building === bk.id);
   check(
     Math.abs(recvNum - (row.ratePer1000 * 10) / 1000) < 0.06,
