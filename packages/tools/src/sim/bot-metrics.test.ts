@@ -11,7 +11,12 @@ import {
   measureBattle,
   measureRecord,
   metricLines,
+  addTally,
+  noteBoard,
   recordingDeps,
+  shopLines,
+  shopTallyDeps,
+  type ShopTally,
   type BattleMetrics,
   type BattleRecord,
 } from './bot-metrics.js';
@@ -70,6 +75,46 @@ function fake(over: Partial<BattleMetrics>): BattleMetrics {
     ...over,
   };
 }
+
+describe('bot shop counts', () => {
+  test('a played run is counted and bought never exceeds offered', () => {
+    const tally: ShopTally = new Map();
+    const result = playBotRun(
+      shopTallyDeps(botDeps(ctx), tally),
+      { runId: 's', runVersion: '1.0', seed: 3, players: ['A'], host: 0 },
+      { strategy: 'rush', seed: 3, maxRounds: 3 },
+    );
+    noteBoard(tally, result.state);
+    let bought = 0;
+    for (const c of tally.values()) {
+      expect(c.bought).toBeLessThanOrEqual(c.offered);
+      bought += c.bought;
+    }
+    expect(bought).toBeGreaterThan(0);
+    // The wrapper gives the same run as the plain deps.
+    const plain = playBotRun(
+      botDeps(ctx),
+      { runId: 's', runVersion: '1.0', seed: 3, players: ['A'], host: 0 },
+      { strategy: 'rush', seed: 3, maxRounds: 3 },
+    );
+    expect(result.state).toEqual(plain.state);
+  });
+
+  test('the lines of known counts, sorted by definition', () => {
+    const a: ShopTally = new Map([
+      ['bld_wall', { offered: 4, bought: 2, placed: 1 }],
+      ['bld_armory', { offered: 1, bought: 0, placed: 0 }],
+    ]);
+    const b: ShopTally = new Map([
+      ['bld_wall', { offered: 1, bought: 1, placed: 1 }],
+    ]);
+    addTally(a, b);
+    expect(shopLines(a).slice(1)).toEqual([
+      '    bld_armory  offered 1, bought 0, placed 0',
+      '    bld_wall    offered 5, bought 3, placed 2',
+    ]);
+  });
+});
 
 describe('bot battle measurements', () => {
   for (const party of [1, 2]) {
@@ -179,6 +224,8 @@ describe('bot battle measurements', () => {
       'Under-supply',
       'top-speed output',
       'First Core lost',
+      'Shop by building',
+      'bld_barracks',
     ]) {
       expect(out).toContain(part);
     }

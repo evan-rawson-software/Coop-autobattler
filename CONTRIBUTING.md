@@ -94,6 +94,9 @@ pnpm sim --help
   parties of 2 or more, how often the side that lost a Core first lost the
   battle. Counting needs only the tool: it wraps the run's battle resolver and
   replays each battle, so it adds the time of one more simulation per battle.
+  It also prints, per strategy, shop counts by building definition (sorted):
+  offers shown (at each shop entry and after each re-roll), bought, and on the
+  board at the end of the run, summed over runs and players.
 - `stage` builds five solo boards by hand on the map of seed 5 with the Core at
   (11, 5): `kit` (the starting kit), `half`, and `full1`, `full2`, `full3` (all
   six Ore and Power nodes used, 3 Barracks, 3 turrets, 7 walls, at tier 1, 2
