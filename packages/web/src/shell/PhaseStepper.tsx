@@ -13,6 +13,8 @@ import {
   type PhaseId,
 } from './phase.js';
 import { markTipSeen, seenTipsStore } from './phase-tips.js';
+import { TutorialContext } from '../tutorial/context.js';
+import { TutorialCard } from '../tutorial/TutorialCard.js';
 
 const t = (key: string, values: Record<string, string> = {}): string =>
   screenText(screenTexts, key, values);
@@ -74,35 +76,50 @@ export function PhaseStepper() {
   );
 }
 
-/** The top of the info rail: the first-visit box, and on a result the next phase. */
-export function PhaseInfoTop() {
+/** The first-visit box of a phase: what the phase is, and "Got it". */
+export function PhaseBox(props: { phase: PhaseId }) {
+  const { phase } = props;
+  return (
+    <section class="phase-box" data-field="phase-tip" data-phase={phase}>
+      <span class="phase-box-title">
+        {t('uiPhaseNewTitle', { phase: phaseName(phase) })}
+      </span>
+      <p>{phaseText(phase)}</p>
+      <button
+        type="button"
+        class="text-link"
+        data-action="dismiss-tip"
+        onClick={() => {
+          markTipSeen(phase);
+        }}
+      >
+        {t('uiPhaseGotIt')}
+      </button>
+    </section>
+  );
+}
+
+/**
+ * The top of the info rail: the tutorial's coach card in a tutorial run (it
+ * holds the phase box itself), else the first-visit box; and on a result the
+ * next phase.
+ */
+export function PhaseInfoTop(props: { framePhase?: string }) {
   const info = useContext(PhaseContext);
+  const tutorial = useContext(TutorialContext);
   const seen = useStore(seenTipsStore);
   if (info === null) return null;
   const showTip = !seen.includes(info.phase);
   return (
     <>
-      {showTip ? (
-        <section
-          class="phase-box"
-          data-field="phase-tip"
-          data-phase={info.phase}
-        >
-          <span class="phase-box-title">
-            {t('uiPhaseNewTitle', { phase: phaseName(info.phase) })}
-          </span>
-          <p>{phaseText(info.phase)}</p>
-          <button
-            type="button"
-            class="text-link"
-            data-action="dismiss-tip"
-            onClick={() => {
-              markTipSeen(info.phase);
-            }}
-          >
-            {t('uiPhaseGotIt')}
-          </button>
-        </section>
+      {tutorial !== null ? (
+        <TutorialCard
+          info={tutorial}
+          framePhase={props.framePhase ?? ''}
+          phase={info.phase}
+        />
+      ) : showTip ? (
+        <PhaseBox phase={info.phase} />
       ) : null}
       {info.next === null ? null : (
         <p class="phase-next" data-field="next-phase">

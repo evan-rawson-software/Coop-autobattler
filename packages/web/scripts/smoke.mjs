@@ -24,6 +24,7 @@ import { runShopSmoke } from './smoke-shop.mjs';
 import { runSpritesSmoke } from './smoke-sprites.mjs';
 import { runArtSmoke, spritesInfo } from './smoke-art.mjs';
 import { runRunSmoke } from './smoke-run.mjs';
+import { runTutorialSmoke } from './smoke-tutorial.mjs';
 import { runWorkerSmoke } from './smoke-worker.mjs';
 import {
   CPU_THROTTLE,
@@ -1923,6 +1924,9 @@ try {
     context,
     consoleErrors,
   });
+
+  // The guided tutorial (issue #309)
+  await runTutorialSmoke({ page, baseUrl, check, shot, settle });
 
   check(
     consoleErrors.length === 0,

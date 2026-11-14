@@ -39,6 +39,7 @@ import {
   hasFinishedFirstRun,
   markTutorialRun,
 } from '../tutorial/tutorial-flag.js';
+import { completedStore } from '../tutorial/tutorial-store.js';
 
 const text = (key: string, values: Record<string, string> = {}): string =>
   screenText(screenTexts, key, values);
@@ -245,7 +246,9 @@ export function MainMenuScreen() {
     (r): r is Extract<MenuRow, { kind: 'run' }> =>
       r.kind === 'run' && r.blocked === null,
   );
-  const firstRunDone = hasFinishedFirstRun(data?.finishedRuns ?? 0);
+  const tutorialDone = useStore(completedStore);
+  const firstRunDone =
+    tutorialDone || hasFinishedFirstRun(data?.finishedRuns ?? 0);
 
   const wiped = [
     ...(data?.services.init.wiped ?? []),
