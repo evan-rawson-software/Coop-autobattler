@@ -171,7 +171,8 @@ describe('modifiers travel in team state and change battles', () => {
 
 describe('raiseTier (Workshop)', () => {
   test('raises a placed or stashed building by one, never above 3, adds nothing', () => {
-    const base = buildReferenceBoard('rush', content, mapgen);
+    // The poor board is all tier 1, so its first building climbs 1 -> 3.
+    const base = buildReferenceBoard('poor', content, mapgen);
     const placed = base.buildings[0];
     if (placed === undefined) throw new Error('no building');
     const r1 = raiseTier(base, { id: placed.id });
