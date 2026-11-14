@@ -342,24 +342,226 @@ button:disabled {
   flex: none;
 }
 
-.speed-tray {
+.side-0-text {
+  color: var(--owner-0);
+}
+
+.side-1-text {
+  color: var(--owner-1);
+}
+
+.core-label.side-0-text,
+.core-label.side-1-text,
+.alive-line .side-0-text,
+.alive-line .side-1-text {
+  font-weight: 700;
+}
+
+/* Playback controls in the action tray. */
+.playback-tray {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.8rem;
+  width: 100%;
+  min-width: 0;
 }
 
-.speed-tray .btn-row {
+.pause-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 6.5rem;
+  align-self: stretch;
+  font-weight: 600;
+}
+
+.pause-icon {
+  font-size: 0.7rem;
+  letter-spacing: -0.1em;
+}
+
+.pause-button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.segmented {
+  display: inline-flex;
+  align-self: stretch;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--board-grid);
+}
+
+.segmented button {
+  min-width: 2.8rem;
+  border: 0;
+  background: transparent;
+  font-weight: 600;
+}
+
+.segmented button.on {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.timeline {
+  flex: 1 1 auto;
+  min-width: 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0 0.3rem;
+}
+
+.timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-bar {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--board-grid);
+  border: 1px solid var(--border);
+  box-sizing: content-box;
+}
+
+.timeline-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--ink);
+}
+
+.timeline-overload {
+  position: absolute;
+  top: -5px;
+  width: 2px;
+  height: 16px;
+  margin-left: -1px;
+  background: var(--owner-1);
+}
+
+/* The info rail while playing. */
+.battle-rail {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.rail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.clock-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.clock {
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-note {
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+}
+
+.alive-line {
   margin: 0;
-  flex-wrap: nowrap;
+  font-size: 0.85rem;
 }
 
-.speed-tray .btn-row button {
+.feed-section {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--border);
+}
+
+.rail-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.feed li {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.feed .log-time {
   flex: none;
-  min-width: 3rem;
+  min-width: 2.4rem;
 }
 
-.frame-info #panel-log .panel-body {
-  max-height: 13rem;
+/* Show stats: a drawer over the feed, so the Cores stay in view. */
+.stats-drawer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0.6rem 0 0;
+  overflow-y: auto;
+  background: var(--surface);
+}
+
+.stats-drawer > .panel {
+  flex: none;
+}
+
+.show-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  width: 100%;
+  padding: 0.5rem;
+  font-weight: 600;
+}
+
+.show-stats-hint {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--ink-muted);
 }
 
 .frame-info .buildings-table {
