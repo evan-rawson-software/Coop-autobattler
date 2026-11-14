@@ -280,8 +280,6 @@ export function RightPanels(props: {
   readonly onPause: () => void;
   readonly onSkip: () => void;
   readonly onFocus: (m: Moment) => void;
-  readonly controller: CameraController;
-  readonly onEnemyBase: () => void;
 }) {
   const { pb, opponent, theirs, content } = props;
   const coreName = coreNameOf(content);
@@ -366,37 +364,6 @@ export function RightPanels(props: {
             onClick={props.onPause}
           >
             {t(pb.paused ? 'battlePlay' : 'battlePause')}
-          </button>
-        </div>
-      </Panel>
-      <Panel title={t('uiCameraPanel')} id="panel-camera">
-        <div class="btn-row">
-          <button
-            type="button"
-            onClick={() => {
-              props.controller.preset('center');
-            }}
-          >
-            {t('uiCameraCenter')}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              props.controller.preset('base');
-            }}
-          >
-            {t('uiCameraMyBase')}
-          </button>
-          <button type="button" onClick={props.onEnemyBase}>
-            {t('uiCameraTheirBase')}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              props.controller.preset('fit');
-            }}
-          >
-            {t('uiCameraFitBattle')}
           </button>
         </div>
       </Panel>

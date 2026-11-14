@@ -563,9 +563,9 @@ export async function runRunSmoke({
     /Round 1/.test(bar0) &&
       /Lives 5 \/ 5/.test(bar0) &&
       !/Gold/.test(bar0) &&
-      /Place the Core/.test(bar0) &&
-      (await page.locator('#menu-button').count()) === 1,
-    `top bar: round, lives, step (no gold before the kit) and Menu ("${bar0.replace(/\s+/g, ' ')}")`,
+      (await page.locator('#menu-button').count()) === 1 &&
+      /Place the Core/.test(await page.locator('.topbar-title').innerText()),
+    `top bar: round, lives (no gold before the kit) and Menu ("${bar0.replace(/\s+/g, ' ')}"), the step in the title`,
   );
   check(
     await page.locator('#core-confirm').isDisabled(),
@@ -686,9 +686,11 @@ export async function runRunSmoke({
     'the Core cannot be moved after it is confirmed (a drag changes nothing)',
   );
   check(
-    (await page.locator('.topbar-tabs button').allInnerTexts()).join() ===
-      'Build',
-    'first build: only the Build tab (there is no shop yet)',
+    (await page.locator('.topbar-tabs button').count()) === 0 &&
+      (await page.locator('.topbar-tabs .phase-label').allInnerTexts())
+        .join()
+        .toLowerCase() === 'build',
+    'first build: only a plain Build label, no tab buttons (there is no shop yet)',
   );
   await shot('run-4-first-build');
   const left = await placeKit();

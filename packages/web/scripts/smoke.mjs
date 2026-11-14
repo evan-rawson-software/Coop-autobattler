@@ -1252,7 +1252,7 @@ try {
     }
     {
       // The camera starts at the centre of the map (the neutral zone), at a
-      // readable zoom; "Fit battle" is a preset.
+      // readable zoom; "Fit" is a preset.
       const cam = await camera();
       const vp = await viewport();
       const mid = await page.evaluate(() => {
@@ -1270,6 +1270,25 @@ try {
       check(
         Math.abs(cam.cy - rows.height / 2) < 1.5,
         `battle: the camera starts on the neutral zone (cy ${cam.cy.toFixed(1)} of ${rows.height} rows)`,
+      );
+      // One set of camera buttons, over the board, with every action.
+      check(
+        (await page.locator('#panel-camera').count()) === 0 &&
+          (await page.locator('.camera-controls').count()) === 1 &&
+          (
+            await page
+              .locator('.camera-controls [data-camera]')
+              .evaluateAll((els) => els.map((e) => e.dataset.camera))
+          ).join() === 'center,base,enemy-base,fit,zoom-in,zoom-out',
+        'battle: a single camera control set over the board (Center, My base, Their base, Fit, zoom)',
+      );
+      const before = await camera();
+      await page.click('[data-camera="enemy-base"]');
+      await settle();
+      const after = await camera();
+      check(
+        Math.abs(after.cy - before.cy) > 1,
+        `battle: Their base moves the camera (cy ${before.cy.toFixed(1)} -> ${after.cy.toFixed(1)})`,
       );
     }
     {

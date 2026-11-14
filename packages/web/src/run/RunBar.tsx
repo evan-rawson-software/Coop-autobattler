@@ -9,7 +9,6 @@ import type { RunHandle } from './handle.js';
 import { createStore, useStore } from '../app-state.js';
 import { ActingSwitch } from '../shell/ActingSwitch.js';
 import type { BuildSession } from '../build/session.js';
-import { stepLabel } from './router.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 
 const noStore = createStore<{ acting: number }>({ acting: 0 });
@@ -51,9 +50,6 @@ export function RunBar(props: {
           }}
         />
       )}
-      <span data-field="bar-step" class="bar-step">
-        {stepLabel(state.step)}
-      </span>
       {props.storage === undefined ? null : (
         <NotSavedNote run={{ storage: props.storage }} />
       )}

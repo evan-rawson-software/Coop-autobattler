@@ -53,19 +53,26 @@ export function AppShell(props: AppShellProps) {
           <h1 class="topbar-title">{props.title}</h1>
         </div>
         <nav class="topbar-tabs" aria-label="Sections">
-          {tabs.map((t) => (
-            <button
-              type="button"
-              key={t.id}
-              class={t.id === props.activeTab ? 'tab active' : 'tab'}
-              aria-pressed={t.id === props.activeTab}
-              disabled={t.disabled === true}
-              title={t.hint}
-              onClick={() => props.onTab?.(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
+          {tabs.map((t) =>
+            // A lone tab goes nowhere: it is a plain phase label, not a button.
+            tabs.length === 1 ? (
+              <span key={t.id} class="phase-label" data-field="phase">
+                {t.label}
+              </span>
+            ) : (
+              <button
+                type="button"
+                key={t.id}
+                class={t.id === props.activeTab ? 'tab active' : 'tab'}
+                aria-pressed={t.id === props.activeTab}
+                disabled={t.disabled === true}
+                title={t.hint}
+                onClick={() => props.onTab?.(t.id)}
+              >
+                {t.label}
+              </button>
+            ),
+          )}
         </nav>
         <div class="topbar-status">
           {props.status}
