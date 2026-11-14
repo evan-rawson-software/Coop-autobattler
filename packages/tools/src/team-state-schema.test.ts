@@ -183,7 +183,7 @@ describe('team-state.schema.json', () => {
     expect(
       validate({
         ...good,
-        stash: [{ id: 1, def: 'bld_wall', tier: 4, owner: 0 }],
+        stash: [{ id: 1, def: 'bld_wall_block', tier: 4, owner: 0 }],
       }),
     ).toBe(false);
     expect(
@@ -192,7 +192,7 @@ describe('team-state.schema.json', () => {
         buildings: [
           {
             id: 1,
-            def: 'bld_wall',
+            def: 'bld_wall_block',
             tier: 1,
             x: 0,
             y: 0,

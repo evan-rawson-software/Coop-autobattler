@@ -37,9 +37,57 @@ export type RouteType = 'splitter' | 'merger' | 'crossover';
 export type DefenseType = 'wall' | 'gate' | 'turret';
 export type EconomyEffectType = 'source_speed' | 'unit_strength';
 
+/** One cell of a footprint, relative to the footprint's top-left corner. */
+export interface FootprintCell {
+  readonly x: number;
+  readonly y: number;
+}
+
 export interface Footprint {
   readonly width: number;
   readonly height: number;
+  /**
+   * Cells actually covered inside the `width` x `height` box (tetromino walls,
+   * issue #291). Omitted = every cell of the box. When present: sorted by
+   * `(y, x)`, non-empty, no duplicates, 4-connected, every row and column of
+   * the box used.
+   */
+  readonly cells?: readonly FootprintCell[];
+}
+
+/** The covered cells of a footprint in `(y, x)` order (the full box when it has no mask). */
+export function footprintCellList(fp: Footprint): FootprintCell[] {
+  if (fp.cells !== undefined) return fp.cells.map((c) => ({ x: c.x, y: c.y }));
+  const out: FootprintCell[] = [];
+  for (let y = 0; y < fp.height; y++) {
+    for (let x = 0; x < fp.width; x++) out.push({ x, y });
+  }
+  return out;
+}
+
+/**
+ * A footprint rotated clockwise (as drawn with north, increasing `y`, at the
+ * top) by `rotation` degrees. Width and height swap
+ * at 90 and 270; a mask is rotated cell by cell and stays normalised to the
+ * rotated box's top-left corner (the box is anchored at the building's
+ * position). A footprint without a mask stays without one.
+ */
+export function rotateFootprint(fp: Footprint, rotation: Rotation): Footprint {
+  const swap = rotation === 90 || rotation === 270;
+  const width = swap ? fp.height : fp.width;
+  const height = swap ? fp.width : fp.height;
+  if (fp.cells === undefined) return { width, height };
+  const w = fp.width;
+  const h = fp.height;
+  const cells = fp.cells
+    .map((c) => {
+      if (rotation === 90) return { x: c.y, y: w - 1 - c.x };
+      if (rotation === 180) return { x: w - 1 - c.x, y: h - 1 - c.y };
+      if (rotation === 270) return { x: h - 1 - c.y, y: c.x };
+      return { x: c.x, y: c.y };
+    })
+    .sort((a, b) => a.y - b.y || a.x - b.x);
+  return { width, height, cells };
 }
 
 export interface BuildingInput {
@@ -192,11 +240,8 @@ export function rotateBuilding(
   def: Pick<BuildingDef, 'footprint' | 'inputs' | 'outputs'>,
   rotation: Rotation,
 ): RotatedBuilding {
-  const swap = rotation === 90 || rotation === 270;
   return {
-    footprint: swap
-      ? { width: def.footprint.height, height: def.footprint.width }
-      : { width: def.footprint.width, height: def.footprint.height },
+    footprint: rotateFootprint(def.footprint, rotation),
     inputs: def.inputs.map((input) => ({
       ...input,
       side: rotateSide(input.side, rotation),
@@ -207,6 +252,92 @@ export function rotateBuilding(
 
 // ---------------------------------------------------------------------------
 // Loading
+
+/**
+ * Reads and checks a footprint cell mask: pairs `[x, y]` inside the box, no
+ * duplicates, 4-connected, every row and column used. Returns the cells sorted
+ * by `(y, x)`; failures are appended to `errors`.
+ */
+function readCellMask(
+  value: unknown,
+  width: number | undefined,
+  height: number | undefined,
+  label: string,
+  errors: string[],
+): FootprintCell[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) {
+    errors.push(`${label}: "cells" must be a non-empty array of [x, y] pairs.`);
+    return undefined;
+  }
+  const cells: FootprintCell[] = [];
+  let ok = true;
+  for (const [i, raw] of (value as unknown[]).entries()) {
+    if (
+      !Array.isArray(raw) ||
+      raw.length !== 2 ||
+      !Number.isInteger(raw[0]) ||
+      !Number.isInteger(raw[1])
+    ) {
+      errors.push(
+        `${label}: cells[${String(i)}] must be an [x, y] pair of integers.`,
+      );
+      ok = false;
+      continue;
+    }
+    const x = raw[0] as number;
+    const y = raw[1] as number;
+    if (
+      width !== undefined &&
+      height !== undefined &&
+      (x < 0 || y < 0 || x >= width || y >= height)
+    ) {
+      errors.push(
+        `${label}: cell [${String(x)}, ${String(y)}] is outside the ${String(width)}x${String(height)} box.`,
+      );
+      ok = false;
+      continue;
+    }
+    if (cells.some((c) => c.x === x && c.y === y)) {
+      errors.push(`${label}: duplicate cell [${String(x)}, ${String(y)}].`);
+      ok = false;
+      continue;
+    }
+    cells.push({ x, y });
+  }
+  if (!ok || width === undefined || height === undefined) return undefined;
+  const rows = new Set(cells.map((c) => c.y));
+  const cols = new Set(cells.map((c) => c.x));
+  if (rows.size !== height || cols.size !== width) {
+    errors.push(
+      `${label}: "cells" must use every row and column of the ${String(width)}x${String(height)} box.`,
+    );
+    return undefined;
+  }
+  const first = cells[0] as FootprintCell;
+  const seen = new Set<string>([`${String(first.x)},${String(first.y)}`]);
+  const stack: FootprintCell[] = [first];
+  while (stack.length > 0) {
+    const c = stack.pop() as FootprintCell;
+    for (const [dx, dy] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ] as const) {
+      const nx = c.x + dx;
+      const ny = c.y + dy;
+      const k = `${String(nx)},${String(ny)}`;
+      if (seen.has(k) || !cells.some((o) => o.x === nx && o.y === ny)) continue;
+      seen.add(k);
+      stack.push({ x: nx, y: ny });
+    }
+  }
+  if (seen.size !== cells.length) {
+    errors.push(`${label}: "cells" must be 4-connected.`);
+    return undefined;
+  }
+  return cells.sort((a, b) => a.y - b.y || a.x - b.x);
+}
 
 const ID_PATTERN = /^bld_[a-z0-9_]+$/;
 const RESOURCE_ID_PATTERN = /^res_[a-z0-9_]+$/;
@@ -433,12 +564,23 @@ function parseBuilding(
     const width = readInt(fp, 'width', 1, `${label} footprint`, errors);
     const height = readInt(fp, 'height', 1, `${label} footprint`, errors);
     for (const key of sortedKeys(fp)) {
-      if (key !== 'width' && key !== 'height') {
+      if (key !== 'width' && key !== 'height' && key !== 'cells') {
         errors.push(`${label} footprint: unknown field "${key}".`);
       }
     }
+    let cells: FootprintCell[] | undefined;
+    if (fp['cells'] !== undefined) {
+      cells = readCellMask(
+        fp['cells'],
+        width,
+        height,
+        `${label} footprint`,
+        errors,
+      );
+    }
     if (width !== undefined && height !== undefined) {
-      footprint = { width, height };
+      footprint =
+        cells === undefined ? { width, height } : { width, height, cells };
     }
   }
 

@@ -21,6 +21,8 @@ export interface BuildingInfo {
   routeType?: string;
   defenseType?: string;
   effectType?: string;
+  /** Footprint cell mask `[x, y]` (y up), when the footprint is not a full box. */
+  cells?: [number, number][];
 }
 export interface ResourceInfo {
   id: string;
@@ -33,7 +35,11 @@ interface RawBuilding {
   routeType?: string;
   defenseType?: string;
   effect?: { type: string };
-  footprint: { width: number; height: number };
+  footprint: {
+    width: number;
+    height: number;
+    cells?: [number, number][];
+  };
 }
 
 export function loadBuildings(): BuildingInfo[] {
@@ -45,6 +51,7 @@ export function loadBuildings(): BuildingInfo[] {
       width: b.footprint.width,
       height: b.footprint.height,
     };
+    if (b.footprint.cells) info.cells = b.footprint.cells;
     if (b.routeType) info.routeType = b.routeType;
     if (b.defenseType) info.defenseType = b.defenseType;
     if (b.effect) info.effectType = b.effect.type;

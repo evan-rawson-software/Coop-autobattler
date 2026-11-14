@@ -67,7 +67,7 @@ describe('effect text', () => {
   });
 
   test('numbers come from rules data and change with the tier', () => {
-    const wall = content.buildings.get('bld_wall');
+    const wall = content.buildings.get('bld_wall_block');
     if (wall === undefined) throw new Error('no wall');
     const t1 = cardStats(content, simConfig, wall, 1).health;
     const t3 = cardStats(content, simConfig, wall, 3).health;
@@ -87,7 +87,7 @@ describe('effect text', () => {
   });
 
   test('needs: nothing for walls, any resource for routes', () => {
-    const wall = content.buildings.get('bld_wall');
+    const wall = content.buildings.get('bld_wall_block');
     const splitter = content.buildings.get('bld_splitter');
     if (wall === undefined || splitter === undefined) throw new Error('def');
     expect(needsText(wall, content)).toBe('nothing');
@@ -110,8 +110,8 @@ describe('effect text', () => {
     expect(extractor.uses).toBeNull();
     expect(extractor.collects).toBe('Collects 0.50/s');
     expect(extractor.effect).toBe('');
-    expect(stats('bld_wall').uses).toBeNull();
-    expect(stats('bld_wall').collects).toBeNull();
+    expect(stats('bld_wall_block').uses).toBeNull();
+    expect(stats('bld_wall_block').collects).toBeNull();
     expect(stats('bld_splitter').uses).toBe('Uses: any resource');
     for (const def of content.buildings.list()) {
       const st = cardStats(content, simConfig, def, 1);
@@ -120,7 +120,7 @@ describe('effect text', () => {
   });
 
   test('unknown tier gives empty text', () => {
-    const wall = content.buildings.get('bld_wall');
+    const wall = content.buildings.get('bld_wall_block');
     if (wall === undefined) throw new Error('no wall');
     expect(effectText(content, simConfig, wall, 9)).toBe('');
   });

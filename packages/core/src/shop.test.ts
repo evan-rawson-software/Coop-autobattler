@@ -211,10 +211,10 @@ describe('rollOffers', () => {
 
 describe('buy, sell, reroll', () => {
   const offers = [
-    { slot: 0, def: 'bld_wall', tier: 1, price: 4 },
+    { slot: 0, def: 'bld_wall_block', tier: 1, price: 4 },
     { slot: 1, def: 'bld_turret', tier: 3, price: 65 },
-    { slot: 2, def: 'bld_wall', tier: 1, price: 4 },
-    { slot: 3, def: 'bld_wall', tier: 1, price: 4 },
+    { slot: 2, def: 'bld_wall_block', tier: 1, price: 4 },
+    { slot: 3, def: 'bld_wall_block', tier: 1, price: 4 },
   ];
   const shop: PlayerShop = { gold: 10, offers };
 
@@ -225,7 +225,7 @@ describe('buy, sell, reroll', () => {
     expect(r.shop.gold).toBe(6);
     expect(r.shop.offers[0]).toBeNull();
     expect(r.team.stash).toEqual([
-      { id: 1, def: 'bld_wall', tier: 1, owner: 1 },
+      { id: 1, def: 'bld_wall_block', tier: 1, owner: 1 },
     ]);
     expect(shop.gold).toBe(10);
     const again = buyOffer(r.shop, r.team, content, { slot: 0, owner: 1 });
@@ -263,25 +263,29 @@ describe('buy, sell, reroll', () => {
     }
     expect(team.stash).toHaveLength(3);
     expect(new Set(team.stash.map((e) => e.id)).size).toBe(3);
-    expect(team.stash.every((e) => e.def === 'bld_wall' && e.tier === 1)).toBe(
-      true,
-    );
+    expect(
+      team.stash.every((e) => e.def === 'bld_wall_block' && e.tier === 1),
+    ).toBe(true);
     expect(s.gold).toBe(8);
   });
 
   test('selling refunds the rounded-down percent; only own stash entries', () => {
     let team = newTeam();
-    const a = addToStash(team, content, { def: 'bld_wall', tier: 2, owner: 0 });
+    const a = addToStash(team, content, {
+      def: 'bld_wall_block',
+      tier: 2,
+      owner: 0,
+    });
     if (!a.ok) throw new Error(a.reason);
     const b = addToStash(a.state, content, {
-      def: 'bld_wall',
+      def: 'bld_wall_block',
       tier: 1,
       owner: 1,
     });
     if (!b.ok) throw new Error(b.reason);
     team = b.state;
-    expect(sellValue(content, economy, 'bld_wall', 1)).toBe(2);
-    expect(sellValue(content, economy, 'bld_wall', 2)).toBe(4);
+    expect(sellValue(content, economy, 'bld_wall_block', 1)).toBe(2);
+    expect(sellValue(content, economy, 'bld_wall_block', 2)).toBe(4);
     expect(sellValue(content, economy, 'bld_extractor', 1)).toBe(5);
     expect(sellValue(content, economy, 'bld_splitter', 1)).toBe(2);
     expect(
@@ -305,7 +309,7 @@ describe('buy, sell, reroll', () => {
     const c = placeCore(createTeamState(map), content, mapgen, 0, pos);
     if (!c.ok) throw new Error(c.reason);
     const a = addToStash(c.state, content, {
-      def: 'bld_wall',
+      def: 'bld_wall_block',
       tier: 1,
       owner: 0,
     });

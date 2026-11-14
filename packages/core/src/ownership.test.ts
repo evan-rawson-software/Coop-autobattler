@@ -56,7 +56,7 @@ const empty = (): TeamState => createTeamState(board(NODES, 24, 2));
 
 describe('buildings: not_owner', () => {
   test('placing, moving, rotating, returning and removing need the owner', () => {
-    const a = stash(empty(), 'bld_wall', 0);
+    const a = stash(empty(), 'bld_wall_block', 0);
     expect(
       placeFromStash(a.state, content, {
         actor: 1,
@@ -70,7 +70,7 @@ describe('buildings: not_owner', () => {
       ok: false,
       reason: 'not_owner',
     });
-    const p = put(empty(), 'bld_wall', 0, 5, 5);
+    const p = put(empty(), 'bld_wall_block', 0, 5, 5);
     for (const rotation of [0, 90]) {
       expect(
         moveBuilding(p.state, content, {
@@ -100,7 +100,7 @@ describe('buildings: not_owner', () => {
   });
 
   test('unknown_building comes first, then invalid_owner, then not_owner', () => {
-    const a = stash(empty(), 'bld_wall', 0);
+    const a = stash(empty(), 'bld_wall_block', 0);
     expect(returnToStash(a.state, content, { actor: 5, id: 99 })).toMatchObject(
       { reason: 'unknown_building' },
     );
@@ -114,7 +114,7 @@ describe('buildings: not_owner', () => {
 
 describe('buildings: outside_own_plot', () => {
   test('a footprint cell in a neighbour plot is rejected, also on a move', () => {
-    const a = stash(empty(), 'bld_wall', 0);
+    const a = stash(empty(), 'bld_wall_block', 0);
     const args = { actor: 0, id: a.id, y: 5, rotation: 0 };
     expect(placeFromStash(a.state, content, { ...args, x: 12 })).toMatchObject({
       ok: false,
@@ -132,7 +132,7 @@ describe('buildings: outside_own_plot', () => {
         rotation: 0,
       }),
     ).toMatchObject({ ok: false, reason: 'outside_own_plot' });
-    const p = put(empty(), 'bld_wall', 0, 11, 5);
+    const p = put(empty(), 'bld_wall_block', 0, 11, 5);
     expect(
       moveBuilding(p.state, content, {
         actor: 0,
@@ -143,7 +143,7 @@ describe('buildings: outside_own_plot', () => {
       }),
     ).toMatchObject({ ok: false, reason: 'outside_own_plot' });
     // Player 1 builds in plot 1 and not in plot 0.
-    const c = stash(empty(), 'bld_wall', 1);
+    const c = stash(empty(), 'bld_wall_block', 1);
     expect(
       placeFromStash(c.state, content, {
         actor: 1,
@@ -177,7 +177,7 @@ describe('buildings: outside_own_plot', () => {
       }),
     ).toMatchObject({ reason: 'outside_own_plot' });
     // A wall on a node of the own plot is still node_reserved.
-    const w = stash(empty(), 'bld_wall', 0);
+    const w = stash(empty(), 'bld_wall_block', 0);
     expect(
       placeFromStash(w.state, content, {
         actor: 0,
@@ -191,7 +191,7 @@ describe('buildings: outside_own_plot', () => {
 
   test('a solo board accepts everything it accepted before', () => {
     const solo = createTeamState(board(NODES, 24, 1));
-    const a = stash(solo, 'bld_wall', 0);
+    const a = stash(solo, 'bld_wall_block', 0);
     for (const x of [0, 12, 23]) {
       must(
         placeFromStash(a.state, content, {
@@ -289,7 +289,7 @@ describe('validateTeamState: ownership and plots', () => {
   };
 
   test('a building outside its owner plot is rejected', () => {
-    const s = put(empty(), 'bld_wall', 0, 5, 5).state;
+    const s = put(empty(), 'bld_wall_block', 0, 5, 5).state;
     expect(errorsOf(s)).toEqual([]);
     const j = clone(s) as unknown as { buildings: { owner: number }[] };
     (j.buildings[0] as { owner: number }).owner = 1;

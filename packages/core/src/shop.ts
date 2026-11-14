@@ -76,11 +76,25 @@ export function tierPrice(
   return (t as { readonly price: number }).price;
 }
 
+/** The most different wall shapes one set of offers may hold (issue #291). */
+export const MAX_WALL_SHAPES_PER_SHOP = 2;
+
+function isWallDef(content: ShopContent, def: BuildingId): boolean {
+  const d = content.buildings.get(def);
+  return d !== undefined && d.kind === 'defense' && d.defenseType === 'wall';
+}
+
 /**
  * Roll a full set of offers. For slot 0 up to `shopOfferCount - 1`, in this
  * order: one draw picks the building by `offerWeights` (one `nextInt(sum of
- * weights)`), then one draw picks the tier by the applicable `tierOdds` row
- * (one `nextInt(sum of its weights)`). Duplicates across slots are allowed.
+ * weights)`); if that building is a wall (a `defense` of `defenseType`
+ * `wall`) that is not yet among the earlier offers' defs and two different
+ * wall defs are already offered, one more draw picks again by `offerWeights`
+ * with every wall def not already offered removed (one `nextInt(sum of the
+ * remaining weights)`), and that second pick stands. Then one draw picks the
+ * tier by the applicable `tierOdds` row (one `nextInt(sum of its weights)`).
+ * Duplicates across slots are allowed. Each roll (first roll and re-roll)
+ * starts with no offers, so the limit holds per set of offers.
  */
 export function rollOffers(
   rng: Rng,
@@ -91,10 +105,29 @@ export function rollOffers(
   const buildingWeights = economy.offerWeights.map((w) => w.weight);
   const tierWeights = tierOddsFor(round, economy.tierOdds).weights;
   const offers: ShopOffer[] = [];
+  const wallDefs = new Set<BuildingId>();
   for (let slot = 0; slot < economy.shopOfferCount; slot++) {
-    const entry = economy.offerWeights[pickWeightedIndex(rng, buildingWeights)];
-    const tier = pickWeightedIndex(rng, tierWeights) + 1;
+    let entry = economy.offerWeights[pickWeightedIndex(rng, buildingWeights)];
     if (entry === undefined) throw new RangeError('offerWeights is empty');
+    if (
+      isWallDef(content, entry.def) &&
+      !wallDefs.has(entry.def) &&
+      wallDefs.size >= MAX_WALL_SHAPES_PER_SHOP
+    ) {
+      const allowed = economy.offerWeights.filter(
+        (w) => !isWallDef(content, w.def) || wallDefs.has(w.def),
+      );
+      entry =
+        allowed[
+          pickWeightedIndex(
+            rng,
+            allowed.map((w) => w.weight),
+          )
+        ];
+      if (entry === undefined) throw new RangeError('offerWeights is empty');
+    }
+    if (isWallDef(content, entry.def)) wallDefs.add(entry.def);
+    const tier = pickWeightedIndex(rng, tierWeights) + 1;
     offers.push({
       slot,
       def: entry.def,

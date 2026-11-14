@@ -28,8 +28,12 @@ function depsFor(eco: EconomyConfig = economy): RunDeps {
   });
 }
 
-function start(deps: RunDeps, players: readonly string[] = ['Ann']): RunState {
-  const r = createRun(runArgs(players), deps);
+function start(
+  deps: RunDeps,
+  players: readonly string[] = ['Ann'],
+  seed = 7,
+): RunState {
+  const r = createRun(runArgs(players, seed), deps);
   if (!r.ok) throw new Error(r.detail);
   return placeCoreAll(r.state, deps);
 }
@@ -62,6 +66,8 @@ function shopOf(s: RunState, p = 0) {
   return d;
 }
 
+const KIT_SHAPES = ['o', 't', 's', 'z', 'l', 'j'].map((x) => `bld_wall_${x}`);
+
 describe('starting kit', () => {
   test('gold and kit are present in the first build', () => {
     const deps = depsFor();
@@ -70,17 +76,50 @@ describe('starting kit', () => {
     expect(s.perPlayer[0]?.gold).toBe(10);
     expect(s.perPlayer[0]?.shop).toBeNull();
     const counts = new Map<string, number>();
+    const walls: string[] = [];
     for (const e of s.team.stash) {
       expect(e.tier).toBe(1);
       expect(e.owner).toBe(0);
-      counts.set(e.def, (counts.get(e.def) ?? 0) + 1);
+      if (e.def.startsWith('bld_wall_')) walls.push(e.def);
+      else counts.set(e.def, (counts.get(e.def) ?? 0) + 1);
     }
     expect([...counts.entries()].sort()).toEqual([
       ['bld_barracks', 1],
       ['bld_extractor', 2],
       ['bld_turret', 1],
-      ['bld_wall', 3],
     ]);
+    // Three walls of random shapes (issue #291), never the I.
+    expect(walls).toHaveLength(3);
+    for (const w of walls) expect(KIT_SHAPES).toContain(w);
+  });
+
+  test('the kit walls are drawn from the run seed: same seed, same shapes; never the I', () => {
+    const shapes = (seed: number): string[] =>
+      start(depsFor(), ['Ann'], seed)
+        .team.stash.filter((e) => e.def.startsWith('bld_wall_'))
+        .map((e) => e.def);
+    expect(shapes(5)).toEqual(shapes(5));
+    const seen = new Set<string>();
+    let differs = false;
+    for (let seed = 1; seed <= 60; seed++) {
+      const a = shapes(seed);
+      expect(a).toHaveLength(3);
+      for (const d of a) seen.add(d);
+      if (a.join() !== shapes(1).join()) differs = true;
+    }
+    expect(differs).toBe(true);
+    expect(seen.has('bld_wall_i')).toBe(false);
+    expect([...seen].sort()).toEqual([...KIT_SHAPES].sort());
+  });
+
+  test('each player draws their own copies in player, entry, copy order', () => {
+    const s = start(depsFor(), ['Ann', 'Bo'], 9);
+    for (const owner of [0, 1]) {
+      const walls = s.team.stash.filter(
+        (e) => e.owner === owner && e.def.startsWith('bld_wall_'),
+      );
+      expect(walls).toHaveLength(3);
+    }
   });
 
   test('with several players each gets the whole kit and their own gold', () => {
@@ -98,9 +137,10 @@ describe('the first build', () => {
     const s = start(deps);
     expect(reject(s, 0, { type: 'buy', slot: 0 }, deps)).toBe('wrong_step');
     expect(reject(s, 0, { type: 'reroll' }, deps)).toBe('wrong_step');
-    const wall = s.team.stash.find((e) => e.def === 'bld_wall');
+    const wall = s.team.stash.find((e) => e.def.startsWith('bld_wall_'));
     const sold = ok(s, 0, { type: 'sell', id: wall?.id ?? -1 }, deps).state;
-    expect(sold.perPlayer[0]?.gold).toBe(12);
+    // Half of a tier 1 wall's price of 8.
+    expect(sold.perPlayer[0]?.gold).toBe(14);
     expect(sold.team.stash).toHaveLength(s.team.stash.length - 1);
     expect(allowedIntents(s, 0, deps)).toContain('sell');
     expect(allowedIntents(s, 0, deps)).not.toContain('buy');
@@ -225,15 +265,15 @@ describe('shop step', () => {
     const eco: EconomyConfig = {
       ...economy,
       startingGold: 100,
-      offerWeights: [{ def: 'bld_wall', weight: 1 }],
+      offerWeights: [{ def: 'bld_wall_block', weight: 1 }],
     };
     const deps = depsFor(eco);
     let s = toShop(start(deps), deps);
-    const walls = s.team.stash.filter((e) => e.def === 'bld_wall').length;
+    const walls = s.team.stash.filter((e) => e.def === 'bld_wall_block').length;
     for (const slot of [0, 1, 2]) {
       s = ok(s, 0, { type: 'buy', slot }, deps).state;
     }
-    const after = s.team.stash.filter((e) => e.def === 'bld_wall');
+    const after = s.team.stash.filter((e) => e.def === 'bld_wall_block');
     expect(after).toHaveLength(walls + 3);
     expect(new Set(after.map((e) => e.id)).size).toBe(walls + 3);
   });
@@ -285,7 +325,7 @@ describe('a scripted solo run', () => {
           s = placeAnywhere(s, 0, entry?.id ?? -1, deps);
           expect(s.team.buildings.some((b) => b.id === entry?.id)).toBe(true);
         }
-        const wall = s.team.stash.find((e) => e.def === 'bld_wall');
+        const wall = s.team.stash.find((e) => e.def === 'bld_wall_block');
         if (wall !== undefined) {
           const g = s.perPlayer[0]?.gold ?? 0;
           s = ok(s, 0, { type: 'sell', id: wall.id }, deps).state;

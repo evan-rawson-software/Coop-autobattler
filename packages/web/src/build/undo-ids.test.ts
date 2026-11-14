@@ -61,7 +61,7 @@ function base() {
   const e1 = stash(team, 'bld_extractor');
   const e2 = stash(e1.state, 'bld_extractor');
   const b = stash(e2.state, 'bld_barracks');
-  const w = stash(b.state, 'bld_wall');
+  const w = stash(b.state, 'bld_wall_block');
   team = put(put(put(w.state, e1.id, 2, 2), e2.id, 8, 2), b.id, 5, 4);
   return { team, e1: e1.id, e2: e2.id, b: b.id, w: w.id };
 }
@@ -151,7 +151,7 @@ describe('undo restores the full state hash', () => {
   const placedWall = put(r.team, r.w, 10, 8);
   // Both conduits have ids that are not the newest, plus a second stash entry.
   const wired = withConduits(placedWall, [direct, half]);
-  const lateStash = stash(wired, 'bld_wall').state;
+  const lateStash = stash(wired, 'bld_wall_block').state;
 
   test('place', async () => {
     await roundTrip(r.team, { t: 'place', id: r.w, x: 10, y: 8, rotation: 0 });

@@ -82,7 +82,12 @@ function sealIn(
     const walls: number[] = [];
     let good = true;
     for (const [i, [x, y]] of sides.entries()) {
-      const r = put(team, gate && i === 0 ? 'bld_gate' : 'bld_wall', x, y);
+      const r = put(
+        team,
+        gate && i === 0 ? 'bld_gate' : 'bld_wall_block',
+        x,
+        y,
+      );
       if (r === null) {
         good = false;
         break;

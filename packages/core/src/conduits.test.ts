@@ -304,7 +304,7 @@ describe('rejections, one per reason', () => {
     expect(l.why(s, 'north', s, 'south', column)).toBe('not_an_input'); // sources have no input
     // from is checked before to
     expect(l.why(s, 'east', b, 'north', column)).toBe('not_an_output');
-    const w = l.put('bld_wall', 8, 8);
+    const w = l.put('bld_wall_block', 8, 8);
     const g = l.put('bld_gate', 9, 8);
     for (const id of [w, g]) {
       expect(l.why(id, 'north', b, 'south', column)).toBe('not_an_output');
@@ -439,7 +439,7 @@ describe('rejections, one per reason', () => {
 
   test('overlaps_building and overlaps_core', () => {
     const { l, s, b } = base();
-    const w = l.put('bld_wall', 2, 4);
+    const w = l.put('bld_wall_block', 2, 4);
     expect(l.why(s, 'north', b, 'south', column)).toBe('overlaps_building');
     // The wall moves away; the Core takes that spot instead.
     const m = moveBuilding(l.state, content, {
@@ -485,7 +485,7 @@ describe('rejections, one per reason', () => {
     const l = new Lab();
     const s = l.put('bld_extractor', 2, 2);
     const b = l.put('bld_barracks', 4, 6);
-    l.put('bld_wall', 3, 3);
+    l.put('bld_wall_block', 3, 3);
     // Wall (overlaps_building) and lake (blocked_by_feature): the feature wins.
     expect(
       l.why(s, 'north', b, 'south', [
@@ -775,7 +775,7 @@ describe('placement and detaching', () => {
     const [, , b1] = ids;
     // Conduit 12 lies on (3,3), (4,3), (5,3).
     const wall = addToStash(l.state, content, {
-      def: 'bld_wall',
+      def: 'bld_wall_block',
       tier: 1,
       owner: 0,
     });
@@ -1114,7 +1114,7 @@ describe('flow graph', () => {
 
   test('buildings without conduits are left out; an empty board has an empty graph', () => {
     const l = new Lab();
-    l.put('bld_wall', 3, 3);
+    l.put('bld_wall_block', 3, 3);
     expect(buildFlowGraph(l.state, content)).toEqual({
       nodes: [],
       edges: [],
@@ -1500,11 +1500,15 @@ describe('property: random operations', () => {
     () => {
       const defs = content.buildings
         .list()
-        // The Range and the Hangar have the Barracks' shape; leaving them out
-        // keeps the seeded operation sequence of this test unchanged.
+        // The Range and the Hangar have the Barracks' shape, and the wall
+        // shapes only stand for the single wall; leaving them out keeps the
+        // seeded operation sequence of this test unchanged.
         .filter(
           (b) =>
-            b.kind !== 'core' && b.id !== 'bld_range' && b.id !== 'bld_hangar',
+            b.kind !== 'core' &&
+            b.id !== 'bld_range' &&
+            b.id !== 'bld_hangar' &&
+            !/^bld_wall_[a-z]$/.test(b.id),
         )
         .map((b) => b.id);
       const reasons = new Map<string, number>();

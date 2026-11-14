@@ -18,6 +18,7 @@ import {
   type TeamState,
   conduitTouches,
   isBorderEnd,
+  rotateBuilding,
 } from '@game/core';
 import { screenText, screenTexts } from './texts.js';
 import { createStore, type Store } from '../app-state.js';
@@ -943,23 +944,56 @@ export class BuildController {
     const b = s.run.team.buildings.find((x) => x.id === sel.id);
     if (b === undefined) return;
     const rotation = nextRotation(b.rotation);
-    const v = previewMove(
+    // The rotated box is anchored at the building's own corner. When that
+    // does not fit (a shape against the board edge, issue #291), the same turn
+    // is tried with the box centred on the old one, then against its far
+    // corners; the first spot core accepts is used, else the first refusal.
+    const bdef = content.buildings.get(b.def);
+    const before =
+      bdef === undefined ? null : rotateBuilding(bdef, b.rotation).footprint;
+    const after =
+      bdef === undefined ? null : rotateBuilding(bdef, rotation).footprint;
+    const spots: Cell[] = [{ x: b.x, y: b.y }];
+    if (before !== null && after !== null) {
+      const ex = before.width - after.width;
+      const ey = before.height - after.height;
+      spots.push(
+        { x: b.x + Math.floor(ex / 2), y: b.y + Math.floor(ey / 2) },
+        { x: b.x + ex, y: b.y + ey },
+        { x: b.x + ex, y: b.y },
+        { x: b.x, y: b.y + ey },
+      );
+    }
+    let at = spots[0] as Cell;
+    const first = previewMove(
       s.run.team,
       content,
-      {
-        id: b.id,
-        x: b.x,
-        y: b.y,
-        rotation,
-      },
+      { id: b.id, x: at.x, y: at.y, rotation },
       this.actor(),
     );
+    let v = first;
+    for (const spot of spots.slice(1)) {
+      if (v.ok) break;
+      const w = previewMove(
+        s.run.team,
+        content,
+        { id: b.id, x: spot.x, y: spot.y, rotation },
+        this.actor(),
+      );
+      if (w.ok) {
+        v = w;
+        at = spot;
+      }
+    }
     if (!v.ok) {
-      this.refuse(v.reason, v.detail);
+      this.refuse(
+        first.ok ? 'out_of_bounds' : first.reason,
+        first.ok ? undefined : first.detail,
+      );
       return;
     }
     const n = attachedCount(s.run.team, b.id);
-    const r = await s.act({ t: 'move', id: b.id, x: b.x, y: b.y, rotation });
+    const r = await s.act({ t: 'move', id: b.id, x: at.x, y: at.y, rotation });
     if (r.ok) {
       this.say(
         n > 0 ? many(n, 'statusRotatedDetached') : tx('statusRotated'),

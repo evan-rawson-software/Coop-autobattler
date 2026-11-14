@@ -6,6 +6,7 @@
  */
 import {
   coreFootprint,
+  kitChoices,
   listLegalCorePositions,
   placeCore,
   previewEnemyPaths,
@@ -221,8 +222,9 @@ export interface KitRow {
 /** The starting kit: "Extractor × 2", ..., "10 gold". Names from content. */
 export function kitRows(economy: EconomyConfig, content: WebContent): KitRow[] {
   const rows: KitRow[] = economy.startingKit.map((k) => ({
-    key: `${k.def}:${String(k.tier)}`,
-    text: `${buildingName(content, k.def)}${k.tier > 1 ? ` (tier ${String(k.tier)})` : ''} × ${String(k.count)}`,
+    key: `${kitChoices(k).join('|')}:${String(k.tier)}`,
+    // A random pick shows as "Wall (random shape) × 3", never the shapes.
+    text: `${k.def === undefined ? 'Wall (random shape)' : buildingName(content, k.def)}${k.tier > 1 ? ` (tier ${String(k.tier)})` : ''} × ${String(k.count)}`,
   }));
   rows.push({ key: 'gold', text: `${String(economy.startingGold)} gold` });
   return rows;

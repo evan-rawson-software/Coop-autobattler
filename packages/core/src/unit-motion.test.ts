@@ -705,7 +705,7 @@ function corridorBoard(rng: Rng): TeamState {
     for (let x = 0; x < 12; x++) {
       if (x >= at && x < at + gap) continue;
       try {
-        lab.put('bld_wall', x, row, 0, 3);
+        lab.put('bld_wall_block', x, row, 0, 3);
       } catch {
         // occupied
       }
@@ -713,7 +713,7 @@ function corridorBoard(rng: Rng): TeamState {
   }
   for (let k = rng.nextInt(5); k > 0; k--) {
     try {
-      lab.put('bld_wall', rng.nextInt(12), 4 + rng.nextInt(11), 0, 3);
+      lab.put('bld_wall_block', rng.nextInt(12), 4 + rng.nextInt(11), 0, 3);
     } catch {
       // occupied
     }
@@ -892,7 +892,7 @@ describe('overlap is bounded', () => {
     const lab = new Lab(tinyMap());
     lab.core(5, 0);
     for (let x = 0; x < W; x++) {
-      if (!gaps.includes(x)) lab.put('bld_wall', x, row, 0, 3);
+      if (!gaps.includes(x)) lab.put('bld_wall_block', x, row, 0, 3);
     }
     return lab.state;
   }

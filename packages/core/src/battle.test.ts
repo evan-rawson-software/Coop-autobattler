@@ -65,8 +65,8 @@ function farmTeam(): TeamState {
     [8, 4],
     [8, 5],
   ]);
-  lab.put('bld_wall', 4, 12);
-  lab.put('bld_wall', 7, 12);
+  lab.put('bld_wall_block', 4, 12);
+  lab.put('bld_wall_block', 7, 12);
   return lab.state;
 }
 

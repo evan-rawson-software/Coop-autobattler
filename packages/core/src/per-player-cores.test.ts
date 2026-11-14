@@ -141,7 +141,7 @@ describe('every placed Core is an obstacle', () => {
     expect(occ.buildingAt(c0.x, c0.y)).toEqual({ core: 0 });
 
     const stash = addToStash(s, content, {
-      def: 'bld_wall',
+      def: 'bld_wall_block',
       tier: 1,
       owner: 2,
     });

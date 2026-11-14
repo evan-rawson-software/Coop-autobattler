@@ -649,8 +649,8 @@ try {
   check(
     /Extractor/.test(stashText) &&
       /Barracks/.test(stashText) &&
-      /×\s*3/.test(stashText),
-    'stash panel groups the kit with counts',
+      /Wall \([IOTSZLJ]\)/.test(stashText),
+    'stash panel lists the kit, each wall shape as its own row',
   );
   check(
     (await page.locator('.topbar-tabs button').allInnerTexts()).join(',') ===
@@ -780,8 +780,24 @@ try {
   await page.click('[data-camera="fit"]');
   await settle();
 
-  // --- Rotate the held building, and a placed one
-  await dragStash('bld_wall', BUILD_PLAN.wall.x, BUILD_PLAN.wall.y, {
+  // --- Rotate the held building, and a placed one. The walls are shapes
+  // (issue #291): the preview and the fit check use the rotated cells.
+  const wallsOf = (t) =>
+    t.buildings.filter((b) => b.def.startsWith('bld_wall_'));
+  const WALL = team.stash.find((s) => s.def.startsWith('bld_wall_')).def;
+  const selectBuilding = async (b) => {
+    for (let dy = 0; dy < 4; dy++) {
+      for (let dx = 0; dx < 4; dx++) {
+        if (b.y + dy > 15) continue;
+        await clickCell(b.x + dx, b.y + dy);
+        const sel = (await B.ui()).selection;
+        if (sel?.kind === 'building' && sel.id === b.id) return true;
+      }
+    }
+    return false;
+  };
+  const WALL_X = 16; // free ground at the front, away from the lakes
+  await dragStash(WALL, WALL_X, 12, {
     rotate: true,
     release: false,
   });
@@ -789,21 +805,40 @@ try {
     (await B.ui()).held.rotation === 90,
     'R rotates the building being dragged',
   );
+  // Move up until the preview reaches the front row: the box is anchored
+  // under the cursor, so this keeps the rotated shape inside the board.
+  let ghost = (await B.ui()).ghost;
+  const dyFront = team.height - 1 - Math.max(...ghost.cells.map((c) => c.y));
+  const pFront = await at(WALL_X, 12 + dyFront);
+  await page.mouse.move(pFront.x, pFront.y, { steps: 4 });
+  await settle();
+  await pause();
+  ghost = (await B.ui()).ghost;
+  check(
+    ghost.ok === true &&
+      ghost.cells.length === 4 &&
+      Math.max(...ghost.cells.map((c) => c.y)) === team.height - 1,
+    `the preview shows the rotated shape (${ghost.cells.length} cells, fits: ${ghost.ok} ${ghost.message ?? ''})`,
+  );
+  await shot('build-4-wall-rotated-preview');
   await page.mouse.up();
   await pause();
   team = await B.team();
-  const wall = buildingOf(team, 'bld_wall')[0];
+  const wall = wallsOf(team)[0];
   check(
-    wall && wall.rotation === 90,
+    wall && wall.def === WALL && wall.rotation === 90,
     'the wall was dropped with the chosen rotation',
   );
   await pushHash();
-  await clickCell(BUILD_PLAN.wall.x, BUILD_PLAN.wall.y);
+  check(
+    await selectBuilding(wall),
+    'a cell of the placed shape selects the wall',
+  );
   await page.keyboard.press('r');
   await pause();
   team = await B.team();
   check(
-    buildingOf(team, 'bld_wall')[0].rotation === 180,
+    wallsOf(team)[0].rotation === 180,
     'R rotates the selected building in place',
   );
   await pushHash();
@@ -811,19 +846,48 @@ try {
     (await B.status()).text === 'Rotated.',
     'status line confirms the rotation',
   );
+  // One more turn: the box is tall again and reaches the front row.
+  await page.keyboard.press('r');
+  await pause();
+  team = await B.team();
+  check(
+    wallsOf(team)[0].rotation === 270,
+    'R rotates the selected building again',
+  );
+  await pushHash();
 
-  // --- Enemy paths overlay follows walls
+  // --- Enemy paths overlay follows walls. The wall goes back on the front
+  // row first (its top edge there), so that it blocks a front-row start cell.
+  await selectBuilding(wallsOf(await B.team())[0]);
+  await page.click('#panel-inspector [data-action="to-stash"]');
+  await pause();
+  await pushHash();
+  await dragStash(WALL, WALL_X, 12, { release: false });
+  ghost = (await B.ui()).ghost;
+  const dyBack =
+    (await B.team()).height - 1 - Math.max(...ghost.cells.map((c) => c.y));
+  const pBack = await at(WALL_X, 12 + dyBack);
+  await page.mouse.move(pBack.x, pBack.y, { steps: 4 });
+  await settle();
+  await pause();
+  await page.mouse.up();
+  await pause();
+  await pushHash();
+  check(
+    wallsOf(await B.team()).length === 1,
+    'the wall is back on the front row',
+  );
   await page.click('[data-overlay="paths"]');
   await settle();
   const pathsWith = await B.paths();
   await shot('build-5-enemy-paths');
   await page.click('[data-tool="select"]');
-  await clickCell(BUILD_PLAN.wall.x, BUILD_PLAN.wall.y);
+  await selectBuilding(wallsOf(await B.team())[0]);
   await page.click('#panel-inspector [data-action="to-stash"]');
   await pause();
   const pathsWithout = await B.paths();
   check(
-    pathsWith > 0 && pathsWithout === pathsWith + 1,
+    pathsWith > 0 && pathsWithout >= pathsWith + 1,
     `enemy-path overlay updates when a front-row wall is removed (${pathsWith} -> ${pathsWithout} entries)`,
   );
   await pushHash();
@@ -1067,7 +1131,7 @@ try {
   await page.click('[data-tool="select"]');
 
   // --- Click-to-pick, then click-to-place (touch and keyboard friendly)
-  await page.click('[data-stash-def="bld_wall"]');
+  await page.click('[data-stash-def^="bld_wall_"]');
   await pause();
   check(
     (await B.ui()).held?.mode === 'sticky',
@@ -1076,19 +1140,33 @@ try {
   await page.keyboard.press('Escape');
   await pause();
   check((await B.ui()).held === null, 'Escape puts a picked-up building down');
-  await page.click('[data-stash-def="bld_wall"]');
+  await page.click('[data-stash-def^="bld_wall_"]');
   await pause();
-  await clickCell(7, 15);
+  // The first cell, among a few free ones, where the held shape fits.
+  let stickyAt = null;
+  for (const [cx, cy] of [
+    [7, 12],
+    [8, 12],
+    [7, 10],
+    [3, 12],
+    [3, 9],
+  ]) {
+    await moveTo(cx, cy);
+    await pause();
+    if ((await B.ui()).ghost?.ok === true) {
+      stickyAt = { x: cx, y: cy };
+      break;
+    }
+  }
+  check(stickyAt !== null, 'the held shape has a free spot to go to');
+  await clickCell(stickyAt.x, stickyAt.y);
   check(
-    buildingOf(await B.team(), 'bld_wall').length === 2,
+    wallsOf(await B.team()).length === 2,
     'click-to-place puts the held building on the clicked cell',
   );
   await page.click('#panel-tools [data-action="undo"]');
   await pause();
-  check(
-    buildingOf(await B.team(), 'bld_wall').length === 1,
-    'undo takes that placement back',
-  );
+  check(wallsOf(await B.team()).length === 1, 'undo takes that placement back');
 
   // --- Flow overlay and dry run
   await page.click('[data-overlay="flow"]');

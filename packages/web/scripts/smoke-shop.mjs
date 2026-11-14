@@ -172,22 +172,39 @@ export async function runShopSmoke({
   );
 
   // --- Buy the cheapest affordable offer
-  const g0 = await gold();
-  let slot = -1;
-  s0.offers.forEach((def, i) => {
-    const price = s0.offerPrices[i];
-    // Prefer an offer that is not duplicated: a grouped card stays after a buy.
-    if (
-      def !== null &&
-      s0.offers.filter((d) => d === def).length === 1 &&
-      price <= g0 &&
-      (slot < 0 || price < s0.offerPrices[slot])
-    )
-      slot = i;
-  });
+  let g0 = await gold();
+  let s0b = s0;
+  const pickSlot = () => {
+    let found = -1;
+    s0b.offers.forEach((def, i) => {
+      const price = s0b.offerPrices[i];
+      // Prefer an offer that is not duplicated: a grouped card stays after a buy.
+      if (
+        def !== null &&
+        s0b.offers.filter((d) => d === def).length === 1 &&
+        price <= g0 &&
+        (found < 0 || price < s0b.offerPrices[found])
+      )
+        found = i;
+    });
+    return found;
+  };
+  let slot = pickSlot();
+  // Offers are often grouped copies or dear; re-roll for a single affordable one.
+  for (let i = 0; i < 8 && slot < 0 && g0 > 1; i++) {
+    const before = g0;
+    await page.click('#reroll');
+    await page.waitForFunction(
+      (g) => window.__debug.shop.state().gold < g,
+      before,
+    );
+    s0b = await S.state();
+    g0 = await gold();
+    slot = pickSlot();
+  }
   check(slot >= 0, `an affordable offer exists (gold ${g0})`);
-  const price = s0.offerPrices[slot];
-  const boughtDef = s0.offers[slot];
+  const price = s0b.offerPrices[slot];
+  const boughtDef = s0b.offers[slot];
   await page
     .locator(`#offers .offer[data-slot="${slot}"] [data-action="buy"]`)
     .click();
@@ -249,13 +266,16 @@ export async function runShopSmoke({
   );
 
   // --- Sell: cancel first, then confirm
-  const wallRow = page.locator('.stash-row[data-stash-def="bld_wall"]').first();
+  const wallRow = page
+    .locator('.stash-row[data-stash-def^="bld_wall_"]')
+    .first();
   const wallRefund = Number(
     (await wallRow.locator('[data-action="sell"]').innerText()).match(
       /(\d+)/,
     )[1],
   );
   const wallCount = Number(await wallRow.getAttribute('data-count'));
+  const wallDef = await wallRow.getAttribute('data-stash-def');
   await wallRow.locator('[data-action="sell"]').click();
   const quote = await page.locator('#sell-quote').innerText();
   check(
@@ -287,7 +307,7 @@ export async function runShopSmoke({
     s3.gold === s2.gold + wallRefund,
     `sell: gold ${s2.gold} -> ${s3.gold} (+${wallRefund})`,
   );
-  const wallRowAfter = page.locator('.stash-row[data-stash-def="bld_wall"]');
+  const wallRowAfter = page.locator(`.stash-row[data-stash-def="${wallDef}"]`);
   check(
     wallCount === 1
       ? (await wallRowAfter.count()) === 0
@@ -726,7 +746,7 @@ export async function runShopSmoke({
     for (let x = 1; x < twoTeam.width - 2 && twoPlaced === null; x++) {
       const before = (await B.team()).buildings.length;
       const b = await page
-        .locator('[data-stash-def="bld_wall"]')
+        .locator('[data-stash-def^="bld_wall_"]')
         .first()
         .boundingBox();
       await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);

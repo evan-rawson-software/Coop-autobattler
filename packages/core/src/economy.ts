@@ -9,10 +9,22 @@ import {
   type LoadResult,
 } from './load-util.js';
 
+/**
+ * One starting-kit line: `count` copies of tier `tier` of a fixed building
+ * (`def`), or, with `pick`, of a building drawn per copy from the list
+ * (issue #291). Exactly one of `def` and `pick` is set.
+ */
 export interface KitEntry {
-  readonly def: BuildingId;
+  readonly def?: BuildingId;
+  /** Each copy is one of these, drawn uniformly (one `nextInt(pick.length)` per copy). */
+  readonly pick?: readonly BuildingId[];
   readonly tier: number;
   readonly count: number;
+}
+
+/** Every building a kit entry can give. */
+export function kitChoices(entry: KitEntry): readonly BuildingId[] {
+  return entry.pick ?? (entry.def === undefined ? [] : [entry.def]);
 }
 
 export interface OfferWeight {
@@ -197,15 +209,43 @@ export function loadEconomy(
       errors.push(`${at}: must be an object.`);
       return;
     }
-    rejectUnknownKeys(e, new Set(['def', 'tier', 'count']), at, errors);
-    const def = checkDef(e['def'], at, context, errors);
+    rejectUnknownKeys(e, new Set(['def', 'pick', 'tier', 'count']), at, errors);
+    let def: BuildingId | undefined;
+    let pick: BuildingId[] | undefined;
+    if (e['pick'] !== undefined) {
+      if (e['def'] !== undefined) {
+        errors.push(`${at}: give either "def" or "pick", not both.`);
+      }
+      const raw: unknown = e['pick'];
+      if (!Array.isArray(raw) || raw.length === 0) {
+        errors.push(`${at}: "pick" must be a non-empty array of building IDs.`);
+      } else {
+        const ids: BuildingId[] = [];
+        raw.forEach((id: unknown, j) => {
+          const checked = checkDef(
+            id,
+            `${at}.pick[${String(j)}]`,
+            context,
+            errors,
+          );
+          if (checked !== undefined) ids.push(checked);
+        });
+        if (new Set(ids).size !== ids.length) {
+          errors.push(`${at}: "pick" must not list a building twice.`);
+        }
+        if (ids.length === raw.length) pick = ids;
+      }
+    } else {
+      def = checkDef(e['def'], at, context, errors);
+    }
     const tier = readInt(e, 'tier', 1, at, errors);
     if (tier !== undefined && tier > 3) {
       errors.push(`${at}: "tier" must be 1 to 3 (got ${String(tier)}).`);
     }
     const count = readInt(e, 'count', 1, at, errors);
-    if (def !== undefined && tier !== undefined && count !== undefined) {
-      startingKit.push({ def, tier, count });
+    if (tier !== undefined && count !== undefined) {
+      if (def !== undefined) startingKit.push({ def, tier, count });
+      else if (pick !== undefined) startingKit.push({ pick, tier, count });
     }
   });
 

@@ -13,7 +13,7 @@
     "buildings": {
       "file": "buildings.png",
       "w": 320,
-      "h": 68
+      "h": 116
     },
     "units": {
       "file": "units.png",
@@ -783,10 +783,122 @@
       "id": "bld_hangar",
       "note": "2x2 tiles."
     },
-    "bld_wall": {
+    "bld_wall_i": {
       "sheet": "buildings",
       "x": 167,
       "y": 0,
+      "w": 64,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        32,
+        8
+      ],
+      "category": "building",
+      "id": "bld_wall_i",
+      "note": "4x1 tiles."
+    },
+    "bld_wall_o": {
+      "sheet": "buildings",
+      "x": 232,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        16,
+        16
+      ],
+      "category": "building",
+      "id": "bld_wall_o",
+      "note": "2x2 tiles."
+    },
+    "bld_wall_t": {
+      "sheet": "buildings",
+      "x": 265,
+      "y": 0,
+      "w": 48,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        24,
+        16
+      ],
+      "category": "building",
+      "id": "bld_wall_t",
+      "note": "3x2 tiles."
+    },
+    "bld_wall_s": {
+      "sheet": "buildings",
+      "x": 0,
+      "y": 33,
+      "w": 48,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        24,
+        16
+      ],
+      "category": "building",
+      "id": "bld_wall_s",
+      "note": "3x2 tiles."
+    },
+    "bld_wall_z": {
+      "sheet": "buildings",
+      "x": 49,
+      "y": 33,
+      "w": 48,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        24,
+        16
+      ],
+      "category": "building",
+      "id": "bld_wall_z",
+      "note": "3x2 tiles."
+    },
+    "bld_wall_l": {
+      "sheet": "buildings",
+      "x": 98,
+      "y": 33,
+      "w": 32,
+      "h": 48,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        16,
+        24
+      ],
+      "category": "building",
+      "id": "bld_wall_l",
+      "note": "2x3 tiles."
+    },
+    "bld_wall_j": {
+      "sheet": "buildings",
+      "x": 131,
+      "y": 33,
+      "w": 32,
+      "h": 48,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        16,
+        24
+      ],
+      "category": "building",
+      "id": "bld_wall_j",
+      "note": "2x3 tiles."
+    },
+    "bld_wall_block": {
+      "sheet": "buildings",
+      "x": 164,
+      "y": 33,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -796,13 +908,13 @@
         8
       ],
       "category": "building",
-      "id": "bld_wall",
+      "id": "bld_wall_block",
       "note": "1x1 tiles."
     },
     "bld_gate": {
       "sheet": "buildings",
-      "x": 184,
-      "y": 0,
+      "x": 181,
+      "y": 33,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -817,8 +929,8 @@
     },
     "bld_turret": {
       "sheet": "buildings",
-      "x": 201,
-      "y": 0,
+      "x": 198,
+      "y": 33,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -833,8 +945,8 @@
     },
     "bld_overclocker": {
       "sheet": "buildings",
-      "x": 218,
-      "y": 0,
+      "x": 215,
+      "y": 33,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -849,8 +961,8 @@
     },
     "bld_armory": {
       "sheet": "buildings",
-      "x": 235,
-      "y": 0,
+      "x": 232,
+      "y": 33,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -865,8 +977,8 @@
     },
     "bld_core": {
       "sheet": "buildings",
-      "x": 252,
-      "y": 0,
+      "x": 249,
+      "y": 33,
       "w": 32,
       "h": 32,
       "frames": 1,
@@ -881,8 +993,8 @@
     },
     "bld_turret_base": {
       "sheet": "buildings",
-      "x": 285,
-      "y": 0,
+      "x": 282,
+      "y": 33,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -896,8 +1008,8 @@
     },
     "bld_turret_head": {
       "sheet": "buildings",
-      "x": 302,
-      "y": 0,
+      "x": 299,
+      "y": 33,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -912,7 +1024,7 @@
     "tier_pips": {
       "sheet": "buildings",
       "x": 0,
-      "y": 33,
+      "y": 82,
       "w": 16,
       "h": 16,
       "frames": 3,
@@ -927,7 +1039,7 @@
     "tier_trim_1x1": {
       "sheet": "buildings",
       "x": 49,
-      "y": 33,
+      "y": 82,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -942,7 +1054,7 @@
     "tier_trim_2x2": {
       "sheet": "buildings",
       "x": 82,
-      "y": 33,
+      "y": 82,
       "w": 32,
       "h": 32,
       "frames": 2,
@@ -957,7 +1069,7 @@
     "bld_wall_auto": {
       "sheet": "buildings",
       "x": 147,
-      "y": 33,
+      "y": 82,
       "w": 16,
       "h": 16,
       "frames": 16,
@@ -968,7 +1080,7 @@
       ],
       "category": "building",
       "columns": 8,
-      "note": "Wall autotile, 16 static frames in 2 rows of 8. Frame index = 4-bit mask of the cardinal neighbours that are also walls: bit0 N, bit1 E, bit2 S, bit3 W (N=1, E=2, S=4, W=8). Frame 0 is the single block. No diagonals. Shop cards and icons use bld_wall."
+      "note": "Wall autotile, 16 static frames in 2 rows of 8. Frame index = 4-bit mask of the cardinal neighbours that are also walls: bit0 N, bit1 E, bit2 S, bit3 W (N=1, E=2, S=4, W=8). Frame 0 is the single block. No diagonals. Shop cards and icons use the shape sprites bld_wall_i, bld_wall_o, bld_wall_t, ..."
     },
     "unit_soldier": {
       "sheet": "units",

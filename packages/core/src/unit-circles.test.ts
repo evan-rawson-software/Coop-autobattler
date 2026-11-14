@@ -115,7 +115,7 @@ function wallLine(row: number, gaps: readonly number[], tier = 3): TeamState {
   const lab = new Lab(tiny());
   lab.core(5, 0);
   for (let x = 0; x < 12; x++) {
-    if (!gaps.includes(x)) lab.put('bld_wall', x, row, 0, tier);
+    if (!gaps.includes(x)) lab.put('bld_wall_block', x, row, 0, tier);
   }
   return lab.state;
 }
@@ -463,7 +463,7 @@ describe('save and restore at any tick', () => {
       [3, 7],
       [3, 4],
     ] as const) {
-      lab.put('bld_wall', x, y);
+      lab.put('bld_wall_block', x, y);
     }
     const make = () => {
       const b = startArenaBattle(
@@ -497,7 +497,9 @@ describe('save and restore at any tick', () => {
     ): void => {
       if (tick === 300) {
         const wall = got(
-          ctx.arena.buildings.find((x) => x.def === 'bld_wall' && x.side === 0),
+          ctx.arena.buildings.find(
+            (x) => x.def === 'bld_wall_block' && x.side === 0,
+          ),
         );
         const h = got(
           sim.health.find(
@@ -704,7 +706,7 @@ describe('producers hold, waves queue', () => {
       [3, 7],
       [3, 4],
     ] as const) {
-      lab.put('bld_wall', x, y);
+      lab.put('bld_wall_block', x, y);
     }
     return { lab, bar };
   }
@@ -870,7 +872,7 @@ describe('producers hold, waves queue', () => {
       [2, 7],
       [3, 7],
     ] as const) {
-      lab.put('bld_wall', x, y);
+      lab.put('bld_wall_block', x, y);
     }
     const { sim, ctx, events } = startArenaBattle(
       lab.state,

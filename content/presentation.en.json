@@ -29,9 +29,37 @@
       "name": "Hangar",
       "description": "Consumes {res_b} to build drones, flying units that cross walls and lakes and shoot ground and air targets."
     },
-    "bld_wall": {
-      "name": "Wall",
-      "description": "Blocks enemy movement."
+    "bld_wall_i": {
+      "name": "Wall (I)",
+      "description": "Blocks enemy movement. Covers four cells in a I shape; rotate it to fit."
+    },
+    "bld_wall_o": {
+      "name": "Wall (O)",
+      "description": "Blocks enemy movement. Covers four cells in a O shape; rotate it to fit."
+    },
+    "bld_wall_t": {
+      "name": "Wall (T)",
+      "description": "Blocks enemy movement. Covers four cells in a T shape; rotate it to fit."
+    },
+    "bld_wall_s": {
+      "name": "Wall (S)",
+      "description": "Blocks enemy movement. Covers four cells in a S shape; rotate it to fit."
+    },
+    "bld_wall_z": {
+      "name": "Wall (Z)",
+      "description": "Blocks enemy movement. Covers four cells in a Z shape; rotate it to fit."
+    },
+    "bld_wall_l": {
+      "name": "Wall (L)",
+      "description": "Blocks enemy movement. Covers four cells in a L shape; rotate it to fit."
+    },
+    "bld_wall_j": {
+      "name": "Wall (J)",
+      "description": "Blocks enemy movement. Covers four cells in a J shape; rotate it to fit."
+    },
+    "bld_wall_block": {
+      "name": "Wall (single)",
+      "description": "A one-cell wall that enemy strongholds and the reference boards use. It is not sold in the shop."
     },
     "bld_gate": {
       "name": "Gate",

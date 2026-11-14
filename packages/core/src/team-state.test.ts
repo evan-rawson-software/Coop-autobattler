@@ -53,7 +53,7 @@ function deepFreeze<T>(value: T): T {
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
 const SOURCE = 'bld_extractor'; // 1x1 source
-const WALL = 'bld_wall'; // 1x1
+const WALL = 'bld_wall_block'; // 1x1
 const BARRACKS = 'bld_barracks'; // 2x2
 const MERGER = 'bld_merger';
 

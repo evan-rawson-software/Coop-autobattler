@@ -24,14 +24,24 @@
       "minimum": 0
     },
     "startingKit": {
-      "description": "Buildings given to each player at the start of the run.",
+      "description": "Buildings given to each player at the start of the run. An entry names one building (`def`), or lists buildings to draw from (`pick`): each copy is drawn uniformly with the run's seeded 'kit' stream.",
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["def", "tier", "count"],
+        "required": ["tier", "count"],
+        "oneOf": [
+          { "required": ["def"], "properties": { "def": true } },
+          { "required": ["pick"], "properties": { "pick": true } }
+        ],
         "additionalProperties": false,
         "properties": {
           "def": { "type": "string", "pattern": "^bld_[a-z0-9_]+$" },
+          "pick": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^bld_[a-z0-9_]+$" }
+          },
           "tier": { "type": "integer", "minimum": 1, "maximum": 3 },
           "count": { "type": "integer", "minimum": 1 }
         }

@@ -53,9 +53,9 @@ const OBJECTS: Obj[] = [
   { name: 'bld_crossover', x: 10, y: 7 },
   { name: 'bld_turret', x: 3, y: 3, tier: 3 },
   { name: 'bld_turret', x: 7, y: 2 },
-  { name: 'bld_wall', x: 4, y: 3 },
+  { name: 'bld_wall_block', x: 4, y: 3 },
   { name: 'bld_gate', x: 5, y: 3 },
-  { name: 'bld_wall', x: 6, y: 3 },
+  { name: 'bld_wall_block', x: 6, y: 3 },
   { name: 'bld_armory', x: 2, y: 5, tier: 2 },
   { name: 'bld_overclocker', x: 8, y: 2, tier: 3 },
 ];

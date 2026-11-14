@@ -107,6 +107,9 @@ export {
   type EconomyEffectType,
   type EconomyTier,
   type Footprint,
+  type FootprintCell,
+  footprintCellList,
+  rotateFootprint,
   loadBuildings,
   loadBuildingsOrThrow,
   needHundredthsPerSecond,
@@ -151,6 +154,7 @@ export {
   type EconomyLoadContext,
   type EconomyLoadResult,
   type KitEntry,
+  kitChoices,
   loadEconomy,
   loadEconomyOrThrow,
   type OfferWeight,
@@ -222,6 +226,7 @@ export {
   TEMPLATE_SLOTS,
 } from './presentation.js';
 export { formatText, placeholderIds } from './text.js';
+export { defCells, defBox } from './board-cells.js';
 
 // ---------------------------------------------------------------------------
 // Maps and the team state (see "Map generation", "Team state and placement", "Conduits")

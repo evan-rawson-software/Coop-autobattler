@@ -110,7 +110,7 @@ describe('helpers (PP-5, PP-6)', () => {
       Math.floor((1000 * got(shot).costPerShot) / got(shot).cooldownTicks),
     );
     // A building that consumes nothing needs nothing.
-    expect(needPer1000(bld('bld_wall'), 1)).toBe(0);
+    expect(needPer1000(bld('bld_wall_block'), 1)).toBe(0);
     expect(needPer1000(bld('bld_splitter'), 1)).toBe(0);
     expect(needPer1000(bld('bld_core'), 1)).toBe(0);
   });

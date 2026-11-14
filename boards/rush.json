@@ -207,7 +207,7 @@
       },
       {
         "id": 7,
-        "def": "bld_wall",
+        "def": "bld_wall_block",
         "tier": 2,
         "x": 10,
         "y": 8,
@@ -216,7 +216,7 @@
       },
       {
         "id": 8,
-        "def": "bld_wall",
+        "def": "bld_wall_block",
         "tier": 2,
         "x": 13,
         "y": 8,
@@ -225,7 +225,7 @@
       },
       {
         "id": 9,
-        "def": "bld_wall",
+        "def": "bld_wall_block",
         "tier": 2,
         "x": 9,
         "y": 8,
@@ -234,7 +234,7 @@
       },
       {
         "id": 10,
-        "def": "bld_wall",
+        "def": "bld_wall_block",
         "tier": 2,
         "x": 14,
         "y": 8,
@@ -243,7 +243,7 @@
       },
       {
         "id": 11,
-        "def": "bld_wall",
+        "def": "bld_wall_block",
         "tier": 1,
         "x": 9,
         "y": 7,

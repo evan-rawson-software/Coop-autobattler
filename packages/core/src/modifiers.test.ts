@@ -188,7 +188,7 @@ describe('raiseTier (Workshop)', () => {
     expect(r3.ok).toBe(false);
 
     const stashed = addToStash(base, content, {
-      def: 'bld_wall',
+      def: 'bld_wall_block',
       tier: 1,
       owner: 0,
     });
