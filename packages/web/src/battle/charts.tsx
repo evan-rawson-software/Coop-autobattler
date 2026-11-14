@@ -132,12 +132,16 @@ export function LineChart(props: LineChartProps) {
 
     if (p.now !== undefined) {
       const x = Math.round(xs(p.now)) + 0.5;
+      ctx.save();
+      ctx.globalAlpha = 0.45;
       ctx.strokeStyle = theme.ink;
       ctx.lineWidth = 1;
+      ctx.setLineDash([3, 4]);
       ctx.beginPath();
       ctx.moveTo(x, padT);
       ctx.lineTo(x, padT + gh);
       ctx.stroke();
+      ctx.restore();
     }
   };
 

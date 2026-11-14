@@ -324,8 +324,6 @@ export interface SideStats {
   readonly coreMax: number;
   /** Each placed Core's health now, by player. */
   readonly cores: readonly CoreNow[];
-  readonly wallsStanding: number;
-  readonly wallsTotal: number;
   readonly unitsAlive: number;
   readonly unitsLost: number;
   readonly rampSteps: number;
@@ -380,16 +378,6 @@ function computeSideStats(
   const sim = pb.sim;
   const rec = pb.record;
   const tick = pb.tick;
-  let wallsStanding = 0;
-  for (const b of sim.teams[side].buildings) {
-    const def = content.buildings.get(b.def);
-    if (def !== undefined && isWallLike(def)) wallsStanding += 1;
-  }
-  let wallsTotal = 0;
-  for (const b of rec.initialTeams[side].buildings) {
-    const def = content.buildings.get(b.def);
-    if (def !== undefined && isWallLike(def)) wallsTotal += 1;
-  }
   let alive = 0;
   for (const u of sim.units) if (u.side === side) alive += 1;
 
@@ -426,8 +414,6 @@ function computeSideStats(
     coreHp,
     coreMax: rec.coreMax[side],
     cores,
-    wallsStanding,
-    wallsTotal,
     unitsAlive: alive,
     unitsLost: sim.unitsDied[side],
     rampSteps: ramp,
@@ -740,18 +726,6 @@ export function breachEntries(
     }
   }
   return out.sort((a, b) => a.tick - b.tick);
-}
-
-/**
- * The content's name for the walls of a board, plural ("Walls"): the wall
- * building's presentation name, or its ID if it has none.
- */
-export function wallsWord(content: WebContent): string {
-  const def = content.buildings
-    .list()
-    .find((d) => d.kind === 'defense' && d.defenseType === 'wall');
-  const name = def === undefined ? 'wall' : buildingName(content, def);
-  return /s$/i.test(name) ? name : `${name}s`;
 }
 
 /** The content's name for the Core. */
