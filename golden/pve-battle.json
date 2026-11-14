@@ -4869,9 +4869,9 @@
     }
   },
   {
-    "id": "pve-battle.rush-vs-rusher-r9-loses",
+    "id": "pve-battle.rush-vs-fortress-r9-loses",
     "kind": "pve-battle",
-    "description": "A round 9 hard Rusher: the rush board loses.",
+    "description": "A round 9 medium Fortress: the rush board loses.",
     "input": {
       "team": {
         "seed": 5,
@@ -5079,13 +5079,13 @@
         ]
       },
       "threat": {
-        "seed": 109,
+        "seed": 1,
         "round": 9,
-        "type": "hard",
+        "type": "medium",
         "partySize": 1,
-        "archetype": "arch_rusher"
+        "archetype": "arch_fortress"
       },
-      "seed": 15
+      "seed": 1
     },
     "expected": {
       "result": {
@@ -5093,86 +5093,91 @@
         "result": {
           "winner": 1,
           "reason": "core_destroyed",
-          "endTick": 633
+          "endTick": 2801
         },
         "summary": {
           "sides": [
             {
-              "unitsSpawned": 30,
-              "unitsLost": 26,
+              "unitsSpawned": 140,
+              "unitsLost": 133,
               "buildingsLost": 0,
               "cores": [
                 {
                   "player": 0,
                   "health": 0,
                   "maxHealth": 500,
-                  "overkill": 7,
-                  "destroyedTick": 632
+                  "overkill": 51,
+                  "destroyedTick": 2800
                 }
               ],
               "coresStanding": 0,
               "coreHealth": 0,
               "coreMaxHealth": 500,
-              "coreOverkill": 7,
+              "coreOverkill": 51,
               "rampSteps": 0,
-              "buildingDamageDealt": 552,
-              "unitsKilled": 13
+              "buildingDamageDealt": 364,
+              "unitsKilled": 8
             },
             {
-              "unitsSpawned": 35,
-              "unitsLost": 13,
+              "unitsSpawned": 9,
+              "unitsLost": 8,
               "buildingsLost": 0,
               "cores": [
                 {
                   "player": 0,
-                  "health": 936,
-                  "maxHealth": 1488,
+                  "health": 32,
+                  "maxHealth": 726,
                   "overkill": 0,
                   "destroyedTick": null
                 }
               ],
               "coresStanding": 1,
-              "coreHealth": 936,
-              "coreMaxHealth": 1488,
+              "coreHealth": 32,
+              "coreMaxHealth": 726,
               "coreOverkill": 0,
               "rampSteps": 0,
-              "buildingDamageDealt": 500,
-              "unitsKilled": 26
+              "buildingDamageDealt": 221,
+              "unitsKilled": 133
             }
           ]
         },
-        "threatHash": "26da281c",
+        "threatHash": "6aadc427",
         "zone": {
           "width": 24,
           "depth": 7,
           "features": [
             {
-              "x": 9,
+              "x": 16,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 7,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 16,
               "y": 3,
               "feature": "ter_lake"
             },
             {
-              "x": 10,
+              "x": 17,
               "y": 3,
-              "feature": "ter_lake"
-            },
-            {
-              "x": 9,
-              "y": 4,
-              "feature": "ter_lake"
-            },
-            {
-              "x": 10,
-              "y": 4,
               "feature": "ter_lake"
             }
           ],
           "pointsOfInterest": []
         },
-        "stateHash": "ba29f463",
-        "events": 943
+        "stateHash": "c17f9874",
+        "events": 2916
       },
-      "eventLogHash": "f2097694"
+      "eventLogHash": "6c1d47a2"
     }
   },
   {
