@@ -797,7 +797,7 @@ export async function runRunSmoke({
   check(
     overloadLines.length === 3 &&
       overloadLines.every((t) =>
-        /^Overload at 3:00: (their Core falls first \(\d+:\d\d\)|your Core falls first \(\d+:\d\d\)|both Cores fall at \d+:\d\d|no Core falls before the time limit)/.test(
+        /^At 3:00 both Cores start losing health \(Overload\)\. (Theirs falls first, at \d+:\d\d|Yours falls first, at \d+:\d\d|Both fall at \d+:\d\d|Neither falls before the time limit)/.test(
           t.trim(),
         ),
       ) &&
@@ -926,7 +926,7 @@ export async function runRunSmoke({
   // Event
   const header = await page.locator('#battle-result').innerText();
   check(
-    /^PvE battle (won|lost) · (Easy|Medium|Hard) · \w+/.test(header) &&
+    /^Stronghold battle (won|lost) · (Easy|Medium|Hard) · \w+/.test(header) &&
       /gold|No reward/.test(header),
     `event: opens with the battle just fought and what it paid ("${header.replace(/\s+/g, ' ')}")`,
   );
@@ -1091,7 +1091,7 @@ export async function runRunSmoke({
   );
   const header2 = await page.locator('#battle-result').innerText();
   check(
-    /^PvP battle (won|lost) · vs\. Bundled \w+ bot/.test(header2),
+    /^Rival party battle (won|lost) · vs\. Bundled \w+ bot/.test(header2),
     `event (after PvP): the header shows the PvP result ("${header2.replace(/\s+/g, ' ')}")`,
   );
 
@@ -1195,7 +1195,7 @@ export async function runRunSmoke({
   check(
     /Round 2/.test(rowA) &&
       /Lives \d \/ 5/.test(rowA) &&
-      /Choose a PvE battle/.test(rowA) &&
+      /Choose a Stronghold battle/.test(rowA) &&
       /Last played just now/.test(rowA),
     `main menu: the saved run shows round, lives, step and when it was played ("${rowA.replace(/\s+/g, ' ')}")`,
   );
@@ -1538,8 +1538,8 @@ export async function runRunSmoke({
     localStorage.removeItem('coop-autobattler:debug-force-opponent'),
   );
   check(
-    /PvP battles/.test(final) &&
-      /PvE battles/.test(final) &&
+    /Rival party battles/.test(final) &&
+      /Stronghold battles/.test(final) &&
       /vs\. bosses/.test(final),
     'Run over: battle records',
   );

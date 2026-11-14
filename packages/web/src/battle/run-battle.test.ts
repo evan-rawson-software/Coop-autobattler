@@ -29,7 +29,7 @@ describe('the battle of a run', () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.kind).toBe('pve');
-    expect(r.value.title).toBe('Round 1 · PvE battle');
+    expect(r.value.title).toBe('Round 1 · Stronghold battle');
     expect(r.value.opponent.kind).toBe('pve');
     expect(r.value.opponent.name).toMatch(/\(\w+\)$/);
 

@@ -38,7 +38,7 @@ describe('the battle header', () => {
     const h = battleHeader(run, realDeps());
     expect(h?.kind).toBe('pve');
     expect(h?.text).toMatch(
-      /^PvE battle (won|lost) · (Easy|Medium|Hard) · \w+/,
+      /^Stronghold battle (won|lost) · (Easy|Medium|Hard) · \w+/,
     );
     expect(h?.text).not.toMatch(/arch_/);
     expect(h?.payout).toBe(

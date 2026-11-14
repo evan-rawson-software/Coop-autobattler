@@ -82,7 +82,7 @@ export function battleHeader(
     return {
       kind: 'pve',
       won: rec.won,
-      text: `PvE battle ${rec.won ? 'won' : 'lost'} · ${capital(rec.difficulty)} · ${opponentName(rec.opponent.kind, rec.opponent.label)}`,
+      text: `Stronghold battle ${rec.won ? 'won' : 'lost'} · ${capital(rec.difficulty)} · ${opponentName(rec.opponent.kind, rec.opponent.label)}`,
       payout: rec.won
         ? gold === undefined || gold === null
           ? 'Reward paid'
@@ -102,7 +102,7 @@ export function battleHeader(
   return {
     kind: 'pvp',
     won: rec.won,
-    text: `PvP battle ${rec.won ? 'won' : 'lost'} · vs. ${who}`,
+    text: `Rival party battle ${rec.won ? 'won' : 'lost'} · vs. ${who}`,
     payout: rec.won
       ? win === null
         ? 'Reward paid'

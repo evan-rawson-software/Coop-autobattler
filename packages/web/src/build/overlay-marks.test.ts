@@ -470,10 +470,10 @@ describe('problem texts agree with their count', () => {
     expect(stash(2)[0]).toMatch(/^2 buildings in the stash/);
   });
 
-  test('free nodes: nothing at 0, singular at 1, plural at 2', () => {
-    const nodes = (n: number): string[] => {
+  test('free nodes: nothing at 0; the noun follows the stashed count', () => {
+    const nodes = (n: number, stashed = 1): string[] => {
       const t: TeamState = {
-        ...stashOf(base, 'bld_extractor', 1),
+        ...stashOf(base, 'bld_extractor', stashed),
         map: {
           ...base.map,
           nodes: Array.from({ length: n }, (_, i) => ({
@@ -488,7 +488,9 @@ describe('problem texts agree with their count', () => {
         .map((p) => p.text);
     };
     expect(nodes(0)).toEqual([]);
-    expect(nodes(1)[0]).toMatch(/: 1 free node \(/);
-    expect(nodes(2)[0]).toMatch(/: 2 free nodes \(/);
+    expect(nodes(1)[0]).toMatch(/^You have 1 Extractor to place\..*\(1 free\)/);
+    expect(nodes(3, 2)[0]).toBe(
+      'You have 2 Extractors to place. Put them on a resource node (3 free).',
+    );
   });
 });

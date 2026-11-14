@@ -36,7 +36,7 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
 
   if (v === null) {
     return (
-      <AppShell title={`Round ${String(run.round)} · PvE battle`}>
+      <AppShell title={`Round ${String(run.round)} · Stronghold battle`}>
         <p class="muted pad" role="status">
           The battle options are not available.
         </p>
@@ -44,7 +44,7 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
     );
   }
   return (
-    <AppShell title={`Round ${String(v.round)} · PvE battle`}>
+    <AppShell title={`Round ${String(v.round)} · Stronghold battle`}>
       <div class="choice-screen" id="pve-choice">
         <div class="choice-banner panel">
           <p>

@@ -228,7 +228,7 @@ function describeStoredBattle(
       storedEventLogHash: replay.storedEventLogHash,
       opponent,
       kind,
-      title: `Round ${round} · ${kind === 'pve' ? 'PvE' : 'PvP'} battle`,
+      title: `Round ${round} · ${kind === 'pve' ? 'Stronghold' : 'Rival party'} battle`,
       // `won` passed in is the stored outcome (see BattleViewProps.stored).
       reward: (w) => rewardLine(kind, w, deps, pveGold),
     },
