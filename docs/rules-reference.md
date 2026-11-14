@@ -3254,10 +3254,12 @@ Power node feeding a tier 1 hangar, each directly; no walls). **poor** is the
 starting kit placed badly: one extractor far from its barracks over a 17-cell
 conduit, one extractor with no conduit, an unpowered turret and three walls in
 a back corner. Supply: each collector feeds one producer of its own tier (tier 3
-one item per 10 ticks against six or five per 60 or 50 ticks; tier 2 one per 14
-ticks against five per 70, six per 75 for the range; the tier 1 collectors give
-one per 20 ticks, against five per 100 for the barracks and eight per 120 for
-the hangar), and each turret has one collector, so it fires at half rate. The
+one item per 10 ticks against five per 50 for the barracks; tier 2 one per 14
+ticks against five per 70 for the barracks and the armory and six per 75 for
+the range; tier 1 one per 20 ticks against five per 100 for the barracks and
+eight per 120 for the hangar), so the range and the hangar run at about 89 and
+75 percent of their top speed, and each turret has one collector, so it fires
+at half rate. The
 armory spends its Ore on a strength bonus for the soldiers spawned later. `ALL_REFERENCE_BOARDS` lists them in the order rush, fortify, siege,
 poor. `referenceBoardScript(name)` (the original three) and
 `anyReferenceBoardScript(name)` (all four) give the script,
