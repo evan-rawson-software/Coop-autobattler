@@ -643,11 +643,11 @@ export function conduitsLostWith(
  * `"<id>.<input side of the channel>"`. A channel is an input side and the
  * output side opposite it.
  */
-function nodeKey(
+function nodeRef(
   view: View,
   end: { building: number; side: Side },
   role: 'in' | 'out',
-): string {
+): NodeRef {
   const e = view.byId.get(end.building);
   if (
     e !== undefined &&
@@ -655,9 +655,21 @@ function nodeKey(
     e.def.routeType === 'crossover'
   ) {
     const channel = role === 'in' ? end.side : oppositeSide(end.side);
-    return `${String(end.building)}.${channel}`;
+    return {
+      key: `${String(end.building)}.${channel}`,
+      building: end.building,
+      channel,
+    };
   }
-  return String(end.building);
+  return { key: String(end.building), building: end.building, channel: null };
+}
+
+function nodeKey(
+  view: View,
+  end: { building: number; side: Side },
+  role: 'in' | 'out',
+): string {
+  return nodeRef(view, end, role).key;
 }
 
 export interface NodeRef {
@@ -745,16 +757,6 @@ export function topoOrder(
   return order;
 }
 
-function nodeRefOf(key: string): NodeRef {
-  const dot = key.indexOf('.');
-  if (dot < 0) return { key, building: Number(key), channel: null };
-  return {
-    key,
-    building: Number(key.slice(0, dot)),
-    channel: key.slice(dot + 1) as Side,
-  };
-}
-
 /** The usable edges: both ends (when there is one) are known buildings. */
 function usable(view: View, edges: readonly Edge[]): Edge[] {
   return edges.filter(
@@ -766,23 +768,19 @@ function usable(view: View, edges: readonly Edge[]): Edge[] {
 
 function hasLoop(view: View, edges: readonly Edge[]): boolean {
   const list: { from: string; to: string }[] = [];
+  const keys = new Set<string>();
+  const nodes: NodeRef[] = []; // each node once, in first-seen order
   for (const c of usable(view, edges)) {
     if (c.to === null) continue;
-    list.push({
-      from: nodeKey(view, c.from, 'out'),
-      to: nodeKey(view, c.to, 'in'),
-    });
-  }
-  const keys = new Set<string>();
-  const nodeKeys: string[] = []; // each key once, in first-seen order
-  for (const e of list) {
-    for (const k of [e.from, e.to]) {
-      if (keys.has(k)) continue;
-      keys.add(k);
-      nodeKeys.push(k);
+    const from = nodeRef(view, c.from, 'out');
+    const to = nodeRef(view, c.to, 'in');
+    list.push({ from: from.key, to: to.key });
+    for (const n of [from, to]) {
+      if (keys.has(n.key)) continue;
+      keys.add(n.key);
+      nodes.push(n);
     }
   }
-  const nodes = nodeKeys.map(nodeRefOf);
   return topoOrder(nodes, list).length < nodes.length;
 }
 
@@ -1210,10 +1208,7 @@ export function buildFlowGraph(
       resource: res.get(c.id) ?? null,
     });
   }
-  const order = topoOrder(
-    nodes.map((n) => nodeRefOf(n.key)),
-    edges,
-  );
+  const order = topoOrder(nodes, edges);
   if (order.length < nodes.length) {
     throw new Error('The conduit network contains a loop.');
   }
