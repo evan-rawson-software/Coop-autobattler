@@ -2558,14 +2558,35 @@ export async function runRunSmoke({
     await actAs(1);
     {
       const ready = await readyOf();
+      const offers = () =>
+        page.$$eval('#offers > li', (els) =>
+          els.map((e) => ({
+            disabled: e.querySelector('[data-action="buy"]')?.disabled ?? true,
+            reason: e.querySelector('[data-field="reason"]')?.textContent ?? '',
+            slot: Number(e.dataset.slot),
+          })),
+        );
+      let affordable = await offers();
+      // Whether this seed's offers fit player 2's gold depends on the shop
+      // weights; re-roll (also an action player 1's Ready must not block)
+      // until one does, at most three times.
+      for (
+        let tries = 0;
+        tries < 3 &&
+        !affordable.some((o) => !o.disabled) &&
+        !(await page.locator('#reroll').isDisabled());
+        tries++
+      ) {
+        const g = (await shopState()).gold;
+        await page.click('#reroll');
+        await page.waitForFunction(
+          (n) => window.__debug.shop.state().gold < n,
+          g,
+          { timeout: slow(10000) },
+        );
+        affordable = await offers();
+      }
       const s1 = await shopState();
-      const affordable = await page.$$eval('#offers > li', (els) =>
-        els.map((e) => ({
-          disabled: e.querySelector('[data-action="buy"]')?.disabled ?? true,
-          reason: e.querySelector('[data-field="reason"]')?.textContent ?? '',
-          slot: Number(e.dataset.slot),
-        })),
-      );
       const canBuy = affordable.find((o) => !o.disabled);
       check(
         ready[0] === true &&
