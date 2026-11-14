@@ -135,11 +135,7 @@
   }
 }
 
-.recent {
-  margin-top: 1.5rem;
-}
-
-.recent-title {
-  margin: 0;
-  font-size: 1.05rem;
+.recent [data-field='recent-text'],
+.recent button {
+  white-space: nowrap;
 }

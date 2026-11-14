@@ -42,6 +42,8 @@ export type RunScreenState =
       readonly status: 'over';
       readonly runId: string;
       readonly state: RunState;
+      /** When the final state was kept (ms since the epoch). */
+      readonly finishedAt: number;
     }
   /** The run ended but its final state is not kept (only its history entry). */
   | {
@@ -220,7 +222,12 @@ export async function showRun(
     const kept = await services.finished.get(runId).catch(() => null);
     if (stale()) return;
     if (kept !== null) {
-      runStore.set({ status: 'over', runId, state: kept.state });
+      runStore.set({
+        status: 'over',
+        runId,
+        state: kept.state,
+        finishedAt: kept.finishedAt,
+      });
       return;
     }
     const history = await services.saves.listHistory().catch(() => []);

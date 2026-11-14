@@ -694,11 +694,11 @@ describe('breaches and markers from synthetic event logs', () => {
 
   test('markers at the same tick are merged into one labelled with the range', () => {
     expect(mergeMarkers([10, 20, 20, 30])).toEqual([
-      { x: 10, label: '1' },
-      { x: 20, label: '2–3' },
-      { x: 30, label: '4' },
+      { x: 10, label: '#1' },
+      { x: 20, label: '#2–3' },
+      { x: 30, label: '#4' },
     ]);
-    expect(mergeMarkers([5, 5, 5]).map((m) => m.label)).toEqual(['1–3']);
+    expect(mergeMarkers([5, 5, 5]).map((m) => m.label)).toEqual(['#1–3']);
     expect(mergeMarkers([])).toEqual([]);
   });
 });

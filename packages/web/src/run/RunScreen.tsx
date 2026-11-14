@@ -357,15 +357,22 @@ export function RunScreen() {
       return <ReadyRun run={st.run} />;
     case 'over': {
       const maxLives = gameDeps().rules.startingLives;
+      // A reopened summary is not the live run: no Lives/Gold bar.
+      if (isReviewHash(hash)) {
+        return (
+          <RunOverScreen
+            state={st.state}
+            startingLives={maxLives}
+            readOnly
+            finishedAt={st.finishedAt}
+          />
+        );
+      }
       return (
         <RunBarContext.Provider
           value={<RunBar state={st.state} maxLives={maxLives} />}
         >
-          <RunOverScreen
-            state={st.state}
-            startingLives={maxLives}
-            readOnly={isReviewHash(hash)}
-          />
+          <RunOverScreen state={st.state} startingLives={maxLives} />
         </RunBarContext.Provider>
       );
     }
