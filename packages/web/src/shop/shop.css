@@ -4,7 +4,7 @@
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(260px, 22vw, 360px);
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 22vw, 360px);
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 8px;
   padding: 8px;
@@ -187,6 +187,12 @@ button:disabled {
 
 .stash-label {
   min-width: 0;
+  white-space: nowrap;
+}
+
+.stash-row button {
+  white-space: nowrap;
+  flex: none;
 }
 
 .stash-tier {
