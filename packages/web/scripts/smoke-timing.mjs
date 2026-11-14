@@ -40,3 +40,24 @@ export const frames = (page, n = 6) =>
       }),
     n,
   );
+
+/**
+ * Open the shop in the Build screen's info rail (issue #302), if it is not
+ * open already, and wait for it. The shop starts closed in every round.
+ */
+export const openShop = async (page) => {
+  await page.waitForSelector('#shop-toggle');
+  if ((await page.locator('#shop-screen').count()) === 0) {
+    await page.click('#shop-toggle');
+  }
+  await page.waitForSelector('#shop-screen');
+};
+
+/** Close the shop if it is open. */
+export const closeShop = async (page) => {
+  await page.waitForSelector('#shop-toggle');
+  if ((await page.locator('#shop-screen').count()) > 0) {
+    await page.click('#shop-toggle');
+  }
+  await page.waitForSelector('#shop-screen', { state: 'detached' });
+};

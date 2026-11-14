@@ -28,11 +28,9 @@ describe('the step decides the screen', () => {
     expect(screenForStep('run_over')).toBe('run_over');
   });
 
-  test('the shop step has two tabs, the other steps ignore the tab', () => {
-    expect(screenForStep('shop')).toBe('shop');
-    expect(screenForStep('shop', 'shop_build')).toBe('shop_build');
-    expect(screenForStep('pve_choice', 'shop_build')).toBe('pve_choice');
-    expect(screenForStep('build', 'shop_build')).toBe('build');
+  test('the shop step is the Build screen: the shop opens inside it', () => {
+    expect(screenForStep('shop')).toBe('build');
+    expect(screenForStep('build')).toBe('build');
   });
 
   test('battles are never a screen: they are resolved inside one intent', () => {

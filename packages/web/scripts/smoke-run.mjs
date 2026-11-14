@@ -10,7 +10,13 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { checkFrame, checkStepper } from './smoke-frame.mjs';
-import { frames, hookReady, slow } from './smoke-timing.mjs';
+import {
+  closeShop,
+  frames,
+  hookReady,
+  openShop,
+  slow,
+} from './smoke-timing.mjs';
 
 const SEED = 7;
 
@@ -332,7 +338,7 @@ export async function runRunSmoke({
       await page.click('#event-resolve [data-option="skip"]');
     }
     await waitStep('shop');
-    await page.waitForSelector('#shop-screen');
+    await page.waitForSelector('#shop-toggle');
     await settle();
     const goldAfter = Number(
       await page.locator('[data-field="bar-gold"]').getAttribute('data-gold'),
@@ -347,7 +353,6 @@ export async function runRunSmoke({
         `Workshop: bought "${pickOpt.name}" tier ${pickOpt.from} -> ${pickOpt.to}: gold ${goldBefore} -> ${goldAfter} (price ${pickOpt.price} + ${income} income), shop says "${notice.replace(/\s+/g, ' ').trim()}"`,
       );
       await shot('run-8b-workshop-notice');
-      await page.click('.topbar-tabs button:has-text("Build")');
       await page.waitForFunction(
         () => window.__debug?.build?.step() === 'shop',
       );
@@ -359,8 +364,6 @@ export async function runRunSmoke({
         b !== undefined && b.tier === pickOpt.to,
         `Workshop: building ${id} is now tier ${b?.tier} (was ${pickOpt.from})`,
       );
-      await page.click('.topbar-tabs button:has-text("Shop")');
-      await page.waitForSelector('#shop-screen');
     } else {
       check(
         goldAfter === goldBefore + income && /skipped/.test(notice),
@@ -579,22 +582,19 @@ export async function runRunSmoke({
       'sealed: the inspector explains the sealed Barracks',
     );
     await shot('run-8c-sealed-build');
-    // The same on the Shop tab.
-    await page.click('.topbar-tabs button:has-text("Shop")');
-    await page.waitForSelector('#shop-screen');
+    // The same with the shop open.
+    await openShop(page);
     await settle();
-    const shopReason = await page
-      .locator('[data-field="ready-state"]')
-      .innerText();
+    const shopReason =
+      (await page.locator('#ready-button').getAttribute('title')) ?? '';
     check(
-      (await page.locator('#shop-ready').isDisabled()) &&
+      (await page.locator('#ready-button').isDisabled()) &&
         /Ready is blocked: Barracks/.test(shopReason),
-      `sealed: Ready is disabled on the Shop tab too ("${shopReason}")`,
+      `sealed: Ready is disabled with the shop open too ("${shopReason}")`,
     );
     await shot('run-8d-sealed-shop');
     // Open a way out: the turret goes to the stash and back on the front row.
-    await page.click('.topbar-tabs button:has-text("Build")');
-    await page.waitForFunction(() => window.__debug?.build?.step() === 'shop');
+    await closeShop(page);
     await settle();
     const tt = await B.team();
     const turret = tt.buildings.find((b) => b.def === 'bld_turret');
@@ -1166,8 +1166,8 @@ export async function runRunSmoke({
     );
   }
 
-  // Shop: buy one thing, reload.
-  await page.waitForSelector('#shop-screen');
+  // Shop: open it, buy one thing, reload.
+  await openShop(page);
   await settle();
   const g0 = Number(
     await page.locator('[data-field="bar-gold"]').getAttribute('data-gold'),
@@ -1193,41 +1193,40 @@ export async function runRunSmoke({
     check(true, `shop: nothing affordable at ${g0} gold`);
   }
   check(
-    (await page.locator('.topbar-tabs button').allInnerTexts()).join() ===
-      'Shop,Build',
-    'shop step: Shop and Build are two tabs of one step',
+    (await page.locator('.topbar-tabs button').count()) === 0 &&
+      (await page.locator('#shop-toggle').count()) === 1,
+    'shop step: the shop is a button of the one Build screen, there are no tabs',
   );
   await reloadSame('the shop');
-  // Build tab: placing the purchase.
-  await page.click('.topbar-tabs button:has-text("Build")');
+  await page.waitForSelector('#shop-toggle');
+  check(
+    (await page.locator('#shop-screen').count()) === 0,
+    'shop step: after a reload the shop is closed, the Build screen shows',
+  );
   await page.waitForFunction(() => window.__debug?.build?.step() === 'shop');
   await settle();
-  await page.waitForFunction(
-    () => window.__debug?.run?.screen() === 'shop_build',
-  );
   check(
-    (await R.screen()) === 'shop_build' &&
+    (await R.screen()) === 'build' &&
       (await page.locator('#run-bar').count()) === 1,
-    'shop step: the Build tab shows on the same run',
+    'shop step: the Build screen shows on the same run',
   );
   await placeKit();
   await sealedScenario();
-  await page.click('.topbar-tabs button:has-text("Shop")');
-  await page.waitForSelector('#shop-screen');
+  {
+    const nextText = await page.locator('#panel-next-fight').innerText();
+    check(
+      /Rival party/.test(nextText) &&
+        !/Opponent/.test(nextText) &&
+        /Lose [-−]1 life/.test(nextText),
+      'shop step (before the PvP battle): Next fight says "Rival party" with no Opponent line, and a loss costs 1 life',
+    );
+  }
+  await openShop(page);
   await shot('run-9-shop');
   await checkFrame(page, check, 'Shop');
   await checkStepper(page, check, 'Shop', { phase: 'build', round1: true });
   await shotDark('art2-shop');
-  {
-    const shopText = await page.locator('#shop-screen').innerText();
-    check(
-      /Rival party/.test(shopText) &&
-        !/Opponent/.test(shopText) &&
-        /Lose: -1 life/.test(shopText),
-      'shop (before the PvP battle): headed "Rival party" with no Opponent line, and a loss costs 1 life',
-    );
-  }
-  await page.click('#shop-ready');
+  await page.click('#ready-button');
   await waitStep('pvp_summary');
 
   // PvP battle against a bundled ghost (a fresh install has no local ones).
@@ -1331,8 +1330,8 @@ export async function runRunSmoke({
         break;
       }
       case 'shop':
-        await page.waitForSelector('#shop-ready');
-        await page.click('#shop-ready');
+        await page.waitForSelector('#ready-button');
+        await page.click('#ready-button');
         break;
       default:
         throw new Error(`cannot advance from ${step}`);
@@ -1407,9 +1406,9 @@ export async function runRunSmoke({
       /^(Runner |Bundled )/.test(ghostState.pvpOpponent.label),
     `second run: the PvP opponent is a ghost of round ${ghostState.round} (${JSON.stringify(ghostState.pvpOpponent)})`,
   );
-  await page.waitForSelector('#shop-screen');
+  await page.waitForSelector('#panel-next-fight');
   check(
-    /Rival party/.test(await page.locator('#shop-screen').innerText()),
+    /Rival party/.test(await page.locator('#panel-next-fight').innerText()),
     'shop: "Rival party" is shown before the PvP battle',
   );
   {
@@ -1677,14 +1676,14 @@ export async function runRunSmoke({
     }
     livesSeen = s.lives;
     if (s.step === 'shop' && s.leg === 'pve' && s.pvpOpponent !== null) {
-      await page.waitForSelector('#shop-screen');
-      const t = await page.locator('#shop-screen').innerText();
+      await page.waitForSelector('#panel-next-fight');
+      const t = await page.locator('#panel-next-fight').innerText();
       if (s.pvpOpponent.kind === 'boss') {
         bossShops++;
         check(
           /Boss battle next/.test(t) &&
             !/Opponent/.test(t) &&
-            /Lose: -1 life/.test(t),
+            /Lose [-−]1 life/.test(t),
           `shop (round ${s.round}): the boss is announced before the battle, a loss costs 1 life`,
         );
       }
@@ -1788,7 +1787,7 @@ export async function runRunSmoke({
   // Hash routes keep working.
   for (const hash of ['#debug', '#build', '#battle', '#shop']) {
     await page.goto(baseUrl + hash);
-    await page.waitForSelector('canvas, #shop-screen, #battle-preparing');
+    await page.waitForSelector('canvas, #shop-toggle, #battle-preparing');
   }
   await page.goto(`${baseUrl}#run/does-not-exist`);
   await page.waitForSelector('.run-blocked');
@@ -1922,12 +1921,12 @@ export async function runRunSmoke({
           shopNow.pvpOpponent?.kind === 'boss' && shopNow.round >= 7,
           `no-ghost boss: the browser's own read of the empty pool gives the boss at round ${shopNow.round}`,
         );
-        await page.waitForSelector('#shop-screen');
-        const t = await page.locator('#shop-screen').innerText();
+        await page.waitForSelector('#panel-next-fight');
+        const t = await page.locator('#panel-next-fight').innerText();
         ngCheck(
           /Boss battle next/.test(t) &&
             !/Opponent/.test(t) &&
-            /Lose: -1 life/.test(t),
+            /Lose [-−]1 life/.test(t),
           'no-ghost boss: the shop announces the boss, a loss costs 1 life',
         );
       }
@@ -1956,8 +1955,8 @@ export async function runRunSmoke({
               : '[data-action="choose-option"]:not([disabled])',
           );
         } else if (s.step === 'shop') {
-          await page.waitForSelector('#shop-ready');
-          await page.click('#shop-ready');
+          await page.waitForSelector('#ready-button');
+          await page.click('#ready-button');
         } else {
           throw new Error(`no-ghost boss: unexpected step ${s.step}`);
         }
@@ -2396,7 +2395,7 @@ export async function runRunSmoke({
     );
     await takeOffer(offer);
     await waitStep('shop');
-    await page.waitForSelector('#shop-screen');
+    await page.waitForSelector('#shop-toggle');
     await settle();
   } else {
     check(
@@ -2570,7 +2569,7 @@ export async function runRunSmoke({
     await optionButton(picks[1].id).click();
     await page.click('#event-resolve [data-action="confirm-upgrade"]');
     await waitStep('shop');
-    await page.waitForSelector('#shop-screen');
+    await page.waitForSelector('#shop-toggle');
     await settle();
     for (const p of [0, 1]) {
       await actAs(p);
@@ -2580,7 +2579,6 @@ export async function runRunSmoke({
         `two players: Workshop follow-up, player ${p + 1} paid ${picks[p].price} gold (${golds[p]} -> ${g} with ${income} income)`,
       );
     }
-    await page.click('.topbar-tabs button:has-text("Build")');
     await page.waitForFunction(() => window.__debug?.build?.step() === 'shop');
     await settle();
     {
@@ -2594,8 +2592,6 @@ export async function runRunSmoke({
         `two players: Workshop follow-up, both chosen buildings rose a tier (${picks[0].from}->${tierOf(picks[0].id)}, ${picks[1].from}->${tierOf(picks[1].id)})`,
       );
     }
-    await page.click('.topbar-tabs button:has-text("Shop")');
-    await page.waitForSelector('#shop-screen');
     check(
       (await R.state()).step === 'shop',
       'two players: both Workshop choices made, the run moves on to the shop',
@@ -2608,14 +2604,15 @@ export async function runRunSmoke({
   {
     const LOCK = 'Ready. Unready to make changes.';
     const shopState = () => page.evaluate(() => window.__debug.shop.state());
+    // The shop is a part of the Build screen: "the shop tab" is the shop open
+    // in the info rail, "the build tab" is the same screen with it closed.
     const shopTab = async () => {
-      await page.click('.topbar-tabs button:has-text("Shop")');
-      await page.waitForSelector('#shop-screen');
+      await openShop(page);
       await hookReady(page, 'shop');
       await settle();
     };
     const buildTab = async () => {
-      await page.click('.topbar-tabs button:has-text("Build")');
+      await closeShop(page);
       await page.waitForFunction(
         () => window.__debug?.build?.step() === 'shop',
       );
@@ -2681,7 +2678,7 @@ export async function runRunSmoke({
       `two players: shop of player 1 before Ready: gold ${start.gold}, offers ${JSON.stringify(start.offers)} at ${JSON.stringify(start.offerPrices)}, stash ${start.stash.length}, placed ${start.placed}`,
     );
 
-    await page.click('#shop-ready');
+    await page.click('#ready-button');
     await page.waitForFunction(
       () => window.__debug?.run?.state().ready[0],
       null,
@@ -2691,7 +2688,9 @@ export async function runRunSmoke({
     );
     await page.waitForFunction(
       () =>
-        document.querySelector('#shop-ready')?.textContent?.includes('Unready'),
+        document
+          .querySelector('#ready-button')
+          ?.textContent?.includes('Unready'),
       null,
       { timeout: slow(10000) },
     );
@@ -2702,7 +2701,7 @@ export async function runRunSmoke({
       els.map((e) => ({
         sold: e.dataset.state === 'sold',
         disabled: e.querySelector('[data-action="buy"]')?.disabled ?? true,
-        reason: e.querySelector('[data-field="reason"]')?.textContent ?? '',
+        reason: e.querySelector('[data-action="buy"]')?.title ?? '',
       })),
     );
     const live = offerState.filter((o) => !o.sold);
@@ -2712,19 +2711,21 @@ export async function runRunSmoke({
     );
     check(
       (await page.locator('#reroll').isDisabled()) &&
-        (await page.locator('[data-field="reroll-reason"]').innerText()) ===
-          LOCK,
+        (await page.locator('#reroll').getAttribute('title')) === LOCK,
       'two players: while Ready, Re-roll is off and says why',
     );
-    const sellBtns = page.locator('#shop-stash [data-action="sell"]');
-    const sellCount = await sellBtns.count();
+    // Selling starts from a selected inventory slot: while Ready they are all off.
+    const sellSlots = page.locator('.stash-item');
+    const sellCount = await sellSlots.count();
     let sellOff = true;
     for (let i = 0; i < sellCount; i++) {
-      sellOff = sellOff && (await sellBtns.nth(i).isDisabled());
+      sellOff = sellOff && (await sellSlots.nth(i).isDisabled());
     }
     check(
-      sellCount > 0 && sellOff,
-      `two players: while Ready, Sell is off on all ${sellCount} stash rows`,
+      sellCount > 0 &&
+        sellOff &&
+        (await page.locator('#sell-strip').count()) === 0,
+      `two players: while Ready, none of the ${sellCount} inventory slots can be selected, so there is nothing to sell`,
     );
     // Attempts anyway: forced clicks on the disabled buttons.
     for (let i = 0; i < live.length; i++) {
@@ -2734,7 +2735,7 @@ export async function runRunSmoke({
         .click({ force: true, timeout: slow(3000) });
     }
     await page.locator('#reroll').click({ force: true, timeout: slow(3000) });
-    await sellBtns.first().click({ force: true, timeout: slow(3000) });
+    await sellSlots.first().click({ force: true, timeout: slow(3000) });
     await settle();
     await frames(page, 6);
     check(
@@ -2743,8 +2744,8 @@ export async function runRunSmoke({
       'two players: while Ready, buy, re-roll and sell attempts change nothing (gold, offers, stash, board, action count)',
     );
     check(
-      (await page.locator('#shop-ready').innerText()).includes('Unready'),
-      'two players: while Ready, the Shop shows Unready',
+      (await page.locator('#ready-button').innerText()).includes('Unready'),
+      'two players: while Ready, the button reads Unready',
     );
     await shot('run-two-player-shop-ready-locked');
 
@@ -2789,7 +2790,7 @@ export async function runRunSmoke({
         page.$$eval('#offers > li', (els) =>
           els.map((e) => ({
             disabled: e.querySelector('[data-action="buy"]')?.disabled ?? true,
-            reason: e.querySelector('[data-field="reason"]')?.textContent ?? '',
+            reason: e.querySelector('[data-action="buy"]')?.title ?? '',
             slot: Number(e.dataset.slot),
           })),
         );
@@ -2819,12 +2820,11 @@ export async function runRunSmoke({
         ready[0] === true &&
           ready[1] === false &&
           affordable.every((o) => o.reason !== LOCK) &&
-          !(await page
-            .locator('#shop-stash [data-action="sell"]')
-            .first()
-            .isDisabled()) &&
-          (await page.locator('#shop-ready').innerText()).includes('Ready') &&
-          !(await page.locator('#shop-ready').innerText()).includes('Unready'),
+          !(await page.locator('.stash-item').first().isDisabled()) &&
+          (await page.locator('#ready-button').innerText()).includes('Ready') &&
+          !(await page.locator('#ready-button').innerText()).includes(
+            'Unready',
+          ),
         'two players: player 2 is not locked while player 1 is Ready (no lock text on their offers, their button reads Ready)',
       );
       check(
@@ -2856,7 +2856,7 @@ export async function runRunSmoke({
     // Unready reopens everything for player 1.
     await actAs(0);
     await shopTab();
-    await page.click('#shop-ready');
+    await page.click('#ready-button');
     await page.waitForFunction(
       () => !window.__debug?.run?.state().ready[0],
       null,
@@ -2867,7 +2867,7 @@ export async function runRunSmoke({
     await page.waitForFunction(
       () =>
         !document
-          .querySelector('#shop-ready')
+          .querySelector('#ready-button')
           ?.textContent?.includes('Unready'),
       null,
       { timeout: slow(10000) },
@@ -2877,29 +2877,24 @@ export async function runRunSmoke({
       els.map((e) => ({
         sold: e.dataset.state === 'sold',
         disabled: e.querySelector('[data-action="buy"]')?.disabled ?? true,
-        reason: e.querySelector('[data-field="reason"]')?.textContent ?? '',
+        reason: e.querySelector('[data-action="buy"]')?.title ?? '',
         slot: Number(e.dataset.slot),
       })),
     );
     check(
       openOffers.every((o) => o.reason !== LOCK) &&
-        (await page.locator('[data-field="reroll-reason"]').innerText()) !==
-          LOCK &&
-        (await page.locator('#shop-stash [data-action="sell"]').count()) > 0 &&
-        !(await page
-          .locator('#shop-stash [data-action="sell"]')
-          .first()
-          .isDisabled()),
+        (await page.locator('#reroll').getAttribute('title')) !== LOCK &&
+        (await page.locator('.stash-item').count()) > 0 &&
+        !(await page.locator('.stash-item').first().isDisabled()),
       'two players: after Unready, the lock text is gone and Sell is on again',
     );
     // Sell one stash row (gold goes up), then buy (gold goes down).
     // Not a wall: the wall is dropped on the board below.
     await page
-      .locator(
-        '#shop-stash .stash-row:not([data-stash-def^="bld_wall_"]) [data-action="sell"]',
-      )
+      .locator('.stash-item:not([data-stash-def^="bld_wall_"])')
       .first()
       .click();
+    await page.click('#sell-strip [data-action="sell"]');
     await page.waitForSelector('#sell-confirm');
     await page.click('#sell-confirm');
     await page.waitForFunction(
@@ -2951,8 +2946,7 @@ export async function runRunSmoke({
       check(true, 'two players: after Unready, re-rolling works');
     } else {
       check(
-        (await page.locator('[data-field="reroll-reason"]').innerText()) !==
-          LOCK,
+        (await page.locator('#reroll').getAttribute('title')) !== LOCK,
         'two players: after Unready, Re-roll is off only for lack of gold, not for the lock',
       );
     }

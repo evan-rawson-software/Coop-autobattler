@@ -1,147 +1,12 @@
-/* Shop tab. Plain CSS on the shared custom properties. */
+/* The shop in the Build screen's info rail (issue #302), and the helpers other
+   screens share (not-saved note, run-blocked boxes, danger buttons). */
 
-.offer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  min-width: 0;
-  padding: 0.5rem;
-  background: var(--surface-2);
-  border: 2px solid var(--ink);
-  border-radius: 4px;
-}
-
-.offer.unaffordable {
-  border-color: var(--border);
-}
-
-.offer.sold {
-  align-items: center;
-  justify-content: center;
-  border-style: dashed;
-  border-color: var(--border);
-  background: transparent;
-}
-
-.offer-empty {
-  margin: 0;
-  text-align: center;
-  color: var(--ink-muted);
-}
-
-.offer-name {
-  margin: 0.15rem 0 0;
-  font-size: 1.05rem;
-}
-
-.offer-kind,
-.offer-needs,
-.offer-rate,
-.offer-health,
-.offer-effect {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--ink-muted);
-}
-
-.offer-needs {
-  color: var(--ink);
-}
-
-.offer-effect {
-  color: var(--ink);
-  flex: 1 1 auto;
-}
-
-.offer-buy {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.buy-btn {
-  width: 100%;
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
-  font-weight: 600;
-  padding: 0.4rem 0.5rem;
-}
-
-.buy-btn:disabled,
-#reroll:disabled,
 button:disabled {
   background: var(--surface);
   border-color: var(--border);
   color: var(--ink-muted);
   cursor: not-allowed;
   opacity: 0.85;
-}
-
-.why {
-  display: block;
-  min-height: 1.1em;
-  font-size: 0.78rem;
-  color: var(--bad, #c62828);
-}
-
-#reroll {
-  width: 100%;
-}
-
-.stash-row.flash {
-  animation: stash-flash 1s ease-out;
-}
-
-@keyframes stash-flash {
-  0% {
-    background: var(--accent);
-    border-color: var(--accent);
-  }
-  100% {
-    background: var(--surface-2);
-    border-color: var(--border);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .stash-row.flash {
-    animation-duration: 0.01s;
-  }
-}
-
-.stash-row.selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
-}
-
-.stash-tier {
-  font-size: 0.72rem;
-  color: var(--ink-muted);
-}
-
-/* The confirm box that appears after Sell · N is pressed. */
-.sell-target {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  padding: 0.5rem;
-  border: 2px solid var(--border);
-  border-radius: 4px;
-  text-align: left;
-}
-
-.sell-target.active {
-  border-color: var(--warn, #b26a00);
-}
-
-.sell-target p {
-  margin: 0;
-}
-
-.sell-actions {
-  display: flex;
-  gap: 0.5rem;
 }
 
 button.danger {
@@ -154,62 +19,6 @@ button.danger {
 .fine {
   font-size: 0.78rem;
   margin: 0.5rem 0 0;
-}
-
-.next-title {
-  margin: 0 0 0.3rem;
-  font-size: 1.15rem;
-}
-
-.pve-options {
-  list-style: none;
-  margin: 0 0 0.4rem;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.pve-option {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.1rem 0.5rem;
-  align-items: baseline;
-  padding: 0.25rem 0.4rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--surface-2);
-  font-size: 0.85rem;
-}
-
-.pve-threat {
-  grid-column: 1 / -1;
-  grid-row: 2;
-}
-
-.pve-name strong {
-  text-transform: capitalize;
-}
-
-.pve-threat {
-  color: var(--ink-muted);
-}
-
-.pve-reward {
-  font-weight: 600;
-}
-
-.stakes {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.ready-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
 }
 
 .placeholder {
@@ -241,52 +50,51 @@ button.danger {
   margin: 0;
 }
 
-.offer-copies {
-  margin: 0;
-  font-weight: 700;
-}
-
-.boss-note {
-  margin: 0 0 0.3rem;
-}
-
-.bonus-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.25rem;
-}
-
-.bonus-list li {
-  cursor: help;
-}
-
-/* The Shop in the frame: offers and re-roll in the info rail, the stash in
-   the action tray, the factory on the board. */
-.shop-board {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-}
-
-.shop-board .mini-board {
-  position: relative;
-  height: auto;
+.shop-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 auto;
   min-height: 0;
-  border: 0;
-  border-radius: 0;
+  padding: 10px;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: 4px;
 }
 
-#shop-status:empty {
-  display: none;
+.shop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.shop-title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.shop-head-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.shop-head-buttons button {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.shop-head-buttons .shop-close {
+  width: 2rem;
+  padding: 0.15rem 0;
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 .offers {
   list-style: none;
   margin: 0;
-  padding: 0.4rem;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -294,102 +102,201 @@ button.danger {
 
 .offer {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  column-gap: 0.5rem;
-  align-items: start;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  column-gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--ink);
+  border-radius: 4px;
 }
 
-.offer > * {
-  grid-column: 2;
-}
-
-.offer .offer-art {
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-}
-
-.offer .offer-buy {
-  grid-column: 1 / -1;
-  margin-top: 0.2rem;
+.offer.unaffordable {
+  border-color: var(--border);
 }
 
 .offer.sold {
   display: flex;
+  justify-content: center;
   min-height: 2.4rem;
+  border-style: dashed;
+  border-color: var(--border);
+  background: transparent;
+}
+
+.offer-empty {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.offer .offer-art {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.offer-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.offer-text > p {
+  margin: 0;
+}
+
+.offer-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
 }
 
 .offer-name {
-  font-size: 0.98rem;
+  margin: 0;
+  font-size: 0.95rem;
 }
 
 .offer-kind,
-.offer-needs,
 .offer-rate,
 .offer-health,
-.offer-effect {
-  font-size: 0.8rem;
+.offer-copies {
+  color: var(--ink-muted);
 }
 
-.shop-offers > .offers {
-  overflow: visible;
-}
-
-#reroll {
-  width: 100%;
-}
-
-.shop-stash {
-  align-items: stretch;
-}
-
-.shop-stash .stash-row {
-  position: relative;
-  flex: none;
-  width: 118px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2px;
-  padding: 0.2rem 0.3rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--surface-2);
-  text-align: center;
-}
-
-.shop-stash .stash-label {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 0;
-  max-width: 100%;
-  line-height: 1.15;
-}
-
-.shop-stash .stash-row button {
-  width: 100%;
-  padding: 0.05rem 0.3rem;
-  font-size: 0.78rem;
+.offer-kind {
+  font-size: 0.72rem;
   white-space: nowrap;
 }
 
-.ready-row {
-  margin-top: 0.4rem;
-  font-size: 0.85rem;
+.offer-copies {
+  font-weight: 700;
 }
 
-.shop-info {
+.buy-btn {
+  min-width: 3.4rem;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  padding: 0.4rem 0.5rem;
+}
+
+.buy-btn:disabled {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink-muted);
+}
+
+.shop-bonuses {
+  font-size: 0.8rem;
+}
+
+.shop-bonuses h3 {
+  margin: 0 0 0.2rem;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+}
+
+.bonus-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+
+.bonus-list li {
+  cursor: help;
+}
+
+.shop-foot {
+  margin: auto 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+
+/* Sell: the button, then its confirm. In Selected, and under the shop. */
+.sell-box {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  flex: none;
+  gap: 0.4rem;
 }
 
-.shop-info > .panel {
-  flex: 0 0 auto;
+.sell-box.confirming {
+  padding: 0.5rem;
+  border: 2px solid var(--warn, #b26a00);
+  border-radius: 4px;
+}
+
+.sell-box p {
+  margin: 0;
+}
+
+.sell-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sell-strip {
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.sell-strip-name {
+  margin: 0 0 0.3rem;
+  font-weight: 700;
+}
+
+/* The Shop button of the top bar. */
+.shop-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.shop-toggle[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.shop-badge {
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+/* A slot that just received a bought building. */
+.slot.flash {
+  animation: slot-flash 1.2s ease-out;
+}
+
+@keyframes slot-flash {
+  0% {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  100% {
+    background: var(--surface-2);
+    border-color: var(--border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot.flash {
+    animation-duration: 0.01s;
+  }
 }

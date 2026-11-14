@@ -7,27 +7,46 @@
 import {
   hashJson,
   previewEnemyPaths,
+  sellValue,
   type Cell,
   type EnemyPath,
 } from '@game/core';
 import type { RunState } from '@game/session';
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'preact/hooks';
 import { useStore } from '../app-state.js';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
 import { cellToView } from '../board/layout.js';
 import type { Selection } from '../board/render.js';
 import { content } from '../content.js';
-import { registerDebug } from '../debug-hook.js';
+import { registerDebug, unregisterDebug } from '../debug-hook.js';
 import { NotSavedNote, RestartButton } from '../run/RunGate.js';
 import type { RunHandle } from '../run/handle.js';
 import { Panel } from '../shell/AppShell.js';
 import { GameFrame, KeyHints } from '../shell/GameFrame.js';
 import type { MapRailProps } from '../shell/MapRail.js';
 import { ActingSwitch } from '../shell/ActingSwitch.js';
-import { useFading } from '../shell/status.js';
-import { BUILD_TAB_SCREEN, onStepTab, stepTabs } from '../shop/tabs.js';
-import { readyLabel } from '../shop/view-model.js';
+import { useFading, useNoticeTimeout } from '../shell/status.js';
+import { heldBonuses } from '../event/view-model.js';
+import {
+  SellControl,
+  SellStrip,
+  ShopPanel,
+  ShopToggle,
+  type SellTarget,
+} from '../shop/ShopPanel.js';
+import {
+  buildShopView,
+  nextBattleView,
+  readyLabel,
+  type ShopView,
+} from '../shop/view-model.js';
 import './build.css';
 import { BuildController } from './build-controller.js';
 import { drawBuildOverlay } from './overlay-draw.js';
@@ -51,16 +70,25 @@ import { halfAlpha, halfStatuses } from './border-links.js';
 import { gateFor, READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { ME, isEditStep } from './session.js';
-import { DEFAULT_SEED, simConfig } from './setup.js';
+import { DEFAULT_SEED, economy, gameConfigs, simConfig } from './setup.js';
 import { layoutHash } from './undo.js';
 import { screenText, screenTexts } from './texts.js';
 import {
+  buildingName,
   computeFlowView,
   deriveProblems,
   type FlowView,
   type Problem,
   type ProblemScope,
 } from './view-model.js';
+
+/** How long a slot keeps its "just bought" highlight. */
+const FLASH_MS = 1200;
+
+/** Counts mounts of the Build screen, so the smoke script can wait for a new one. */
+let mountCount = 0;
+
+const shopCtx = { content, economy, sim: simConfig };
 
 const camera = new CameraController();
 camera.resetPreset = 'fit';
@@ -96,7 +124,7 @@ export function BuildScreen() {
 
 export function BuildView(props: {
   shared: RunHandle | undefined;
-  /** Opened on its own (`#shop-build`), outside the run bar: show the switcher. */
+  /** Opened on its own (`#shop`), outside the run bar: show the switcher. */
   standalone?: boolean;
 }) {
   const shared = props.shared;
@@ -219,6 +247,98 @@ export function BuildView(props: {
   );
   const sealedIds = gate?.sealed.ids ?? [];
   const sealedKey = sealedIds.join(',');
+
+  // ---- The shop (issue #302): offers in the info rail, in the shop step ----
+  const inShop = shared !== undefined && step === 'shop';
+  const [shopOpen, setShopOpen] = useState(false);
+  const [shopSeen, setShopSeen] = useState(false);
+  const [flash, setFlash] = useState<string | null>(null);
+  const [sellAsk, setSellAsk] = useState(false);
+  const [mountId] = useState(() => ++mountCount);
+  const stepKey = `${String(run?.round ?? 0)}:${run?.leg ?? ''}:${step}`;
+  // Each round's shop starts closed, with its offer count on the button.
+  useEffect(() => {
+    setShopOpen(false);
+    setShopSeen(false);
+  }, [stepKey]);
+  useEffect(() => {
+    if (flash === null) return undefined;
+    const id = setTimeout(() => {
+      setFlash(null);
+    }, FLASH_MS);
+    return () => {
+      clearTimeout(id);
+    };
+  }, [flash]);
+  const dismissNotice = useCallback(() => {
+    (shared?.session ?? ctl.session)?.dismissNotice();
+  }, [shared?.session]);
+  useNoticeTimeout(view?.notice ?? null, dismissNotice);
+  const open = inShop && shopOpen;
+  const sv: ShopView | null = useMemo(
+    () =>
+      inShop && run !== null
+        ? buildShopView(run, acting, shopCtx, shared.deps)
+        : null,
+    [inShop, run, acting, shared],
+  );
+  const bonuses = useMemo(
+    () => (inShop && run !== null ? heldBonuses(run, gameConfigs.events) : []),
+    [inShop, run],
+  );
+  // What Sell would remove: the selected building, or the picked slot.
+  const sellTarget: SellTarget | null = useMemo(() => {
+    if (!inShop || team === null) return null;
+    const sel = ui.selection;
+    const item =
+      sel?.kind === 'building'
+        ? team.buildings.find((x) => x.id === sel.id)
+        : sel === null && ui.held !== null
+          ? team.stash.find((x) => x.id === ui.held?.id)
+          : undefined;
+    if (item === undefined || item.owner !== acting) return null;
+    return {
+      id: item.id,
+      name: buildingName(content, item.def),
+      tier: item.tier,
+      refund: sellValue(content, economy, item.def, item.tier),
+    };
+  }, [inShop, team, ui.selection, ui.held, acting]);
+  const sellId = sellTarget?.id ?? null;
+  useEffect(() => {
+    setSellAsk(false);
+  }, [sellId]);
+  const onBuy = (slot: number): void => {
+    const o = sv?.offers[slot]?.offer;
+    if (o == null) return;
+    setFlash(null);
+    void ctl.buy(slot, o.name).then((ok) => {
+      if (ok) setFlash(`${o.def}:${String(o.tier)}`);
+    });
+  };
+  const sellControl =
+    sellTarget === null || sv === null
+      ? null
+      : {
+          target: sellTarget,
+          asking: sellAsk,
+          blocked: sv.sellBlock,
+          onAsk: () => {
+            setSellAsk(true);
+          },
+          onConfirm: () => {
+            void ctl
+              .sell(sellTarget.id, sellTarget.name, sellTarget.refund)
+              .then(() => {
+                setSellAsk(false);
+              });
+          },
+          onCancel: () => {
+            setSellAsk(false);
+          },
+        };
+  const offersOnSale =
+    sv === null ? 0 : sv.offers.filter((c) => c.offer !== null).length;
 
   // Latest data for the overlay drawer and the debug hook.
   const data = useRef({
@@ -353,6 +473,43 @@ export function BuildView(props: {
     });
   }, []);
 
+  // The shop's debug hook (the smoke scripts read it): the state of the
+  // offers, the inventory and the run. It belongs to this mount.
+  useEffect(() => {
+    if (!inShop || run === null || sv === null) {
+      return undefined;
+    }
+    const nb = nextBattleView(run, shared.deps);
+    registerDebug({
+      shop: {
+        mounts: () => mountId,
+        state: () =>
+          plain({
+            step: run.step,
+            round: run.round,
+            leg: run.leg,
+            gold: sv.gold,
+            offers: sv.offers.map((c) => c.offer?.def ?? null),
+            offerPrices: sv.offers.map((c) => c.offer?.price ?? null),
+            stash: run.team.stash.map((x) => ({
+              id: x.id,
+              def: x.def,
+              tier: x.tier,
+            })),
+            placed: run.team.buildings.length,
+            ready: sv.ready,
+            actions: run.actionLog.length,
+            undo: view?.undoCount ?? 0,
+            runId: run.runId,
+            next: nb === null ? null : nb.kind,
+          }),
+      },
+    });
+    return () => {
+      unregisterDebug('shop');
+    };
+  }, [inShop, run, sv, shared, view?.undoCount, mountId]);
+
   const selection: Selection | null = useMemo(() => {
     const s = ui.selection;
     if (s === null || s.kind === 'conduit') return null;
@@ -443,20 +600,8 @@ export function BuildView(props: {
     </span>
   );
 
-  // The first Build (before the first battle) has no shop to go with it.
-  const tabs = shared
-    ? step === 'build'
-      ? [{ id: BUILD_TAB_SCREEN, label: 'Build' }]
-      : stepTabs()
-    : [
-        {
-          id: 'shop',
-          label: 'Shop',
-          disabled: true,
-          hint: screenText(screenTexts, 'uiComingSoon'),
-        },
-        { id: 'build', label: 'Build' },
-      ];
+  // One Build screen: a lone phase label (the shop is a button, not a tab).
+  const tabs = [{ id: 'build', label: 'Build' }];
 
   // The frame's map rail: the same buttons in every phase. Flow, enemy paths
   // and the test run belong to the factory, so they are on while editing.
@@ -501,8 +646,17 @@ export function BuildView(props: {
       const group = groupStash(team, acting)[Number(e.key) - 1];
       return ctl.pickSlot(group?.ids[0]);
     }
+    if (e.key === 'Escape' && sellAsk) {
+      setSellAsk(false);
+      return true;
+    }
     if (e.key === 'Escape') {
       const u = ctl.model.get().ui;
+      // Esc closes the shop unless a piece is in hand (that is cancelled first).
+      if (open && u.held === null && u.moving === null && u.draft === null) {
+        setShopOpen(false);
+        return true;
+      }
       if (
         u.overlays.dry &&
         u.held === null &&
@@ -604,6 +758,16 @@ export function BuildView(props: {
             {READY_LOCK_TEXT}
           </div>
         ) : null}
+        {view?.notice == null ? null : (
+          <div
+            class="status-line ok"
+            id="shop-notice"
+            role="status"
+            data-field="notice"
+          >
+            <span>{view.notice}</span>
+          </div>
+        )}
         <div
           class={`status-line ${shownStatus.kind}`}
           id="status-line"
@@ -646,12 +810,31 @@ export function BuildView(props: {
           player={acting}
           locked={gate?.ready === true}
           fresh={fresh}
+          flash={flash}
         />
       </>
     );
 
+  const sellNode =
+    sellControl === null ? null : <SellControl {...sellControl} />;
   const info =
-    run === null || team === null ? null : (
+    run === null || team === null ? null : open && sv !== null ? (
+      // The shop replaces the checklist and Selected; the rest of the screen
+      // stays as it is, so pieces can be placed while it is open.
+      <ShopPanel
+        sv={sv}
+        bonuses={bonuses}
+        onBuy={onBuy}
+        onReroll={() => {
+          void ctl.reroll();
+        }}
+        onClose={() => {
+          setShopOpen(false);
+        }}
+      >
+        {sellControl === null ? null : <SellStrip {...sellControl} />}
+      </ShopPanel>
+    ) : (
       <>
         <ChecklistPanel list={checklist} onPick={onPick} />
         <InspectorPanel
@@ -662,7 +845,20 @@ export function BuildView(props: {
           ctl={ctl}
           sealed={sealedIds}
           acting={acting}
+          sell={ui.selection?.kind === 'building' ? sellNode : null}
         />
+        {sellTarget !== null && ui.selection === null && ui.held !== null ? (
+          <Panel
+            title={screenText(screenTexts, 'uiPanelSelected')}
+            id="panel-inspector"
+          >
+            <h3 class="insp-name" data-field="name">
+              {sellTarget.name}
+              {sellTarget.tier > 1 ? ` · T${String(sellTarget.tier)}` : ''}
+            </h3>
+            {sellNode}
+          </Panel>
+        ) : null}
         {ui.overlays.dry && flow !== null ? (
           // The test run is a table in the info rail: it never covers the board.
           <DryRunTable
@@ -699,17 +895,24 @@ export function BuildView(props: {
   return (
     <GameFrame
       phase="build"
-      title={
-        run === null
-          ? 'Build'
-          : step === 'build'
-            ? `Round ${String(run.round)}`
-            : `Round ${String(run.round)} · Shop + Build`
-      }
+      title={run === null ? 'Build' : `Round ${String(run.round)}`}
       tabs={tabs}
-      activeTab={shared ? 'shop-build' : 'build'}
-      {...(shared ? { onTab: onStepTab } : {})}
-      status={devStrip}
+      activeTab="build"
+      status={
+        <>
+          {inShop && sv !== null ? (
+            <ShopToggle
+              open={open}
+              badge={shopSeen || offersOnSale === 0 ? null : offersOnSale}
+              onToggle={() => {
+                setShopOpen(!shopOpen);
+                setShopSeen(true);
+              }}
+            />
+          ) : null}
+          {devStrip}
+        </>
+      }
       rail={rail}
       board={boardArea}
       tray={tray}
