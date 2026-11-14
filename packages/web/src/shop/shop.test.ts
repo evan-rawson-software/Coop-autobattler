@@ -175,7 +175,9 @@ describe('the shop route setup', () => {
     expect(v.open).toBe(true);
     expect(v.offers).toHaveLength(economy.shopOfferCount);
     for (const card of v.offers) {
-      expect(card.offer?.effect).toBeTruthy();
+      // A source's card has no effect line: its Collects line says it all.
+      if (card.offer?.kind !== 'source')
+        expect(card.offer?.effect).toBeTruthy();
       expect(card.offer?.health).toBeTruthy();
     }
   });
