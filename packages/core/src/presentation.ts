@@ -473,6 +473,8 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   battleWatchAgain: [],
   choiceFight: [],
   choiceSubtitle: [],
+  eventSubtitle: [],
+  eventChoose: [],
   battleReady: [],
   battleContinueEvent: [],
   battleContinue: [],

@@ -14,6 +14,7 @@ import type { RunHandle } from '../run/handle.js';
 import { AppShell } from '../shell/AppShell.js';
 import '../choice/choice.css';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
+import { screenText, screenTexts } from '../build/texts.js';
 import { battleHeader, eventCards, followUpView } from './view-model.js';
 
 export function EventChoiceScreen(props: { run: RunHandle }) {
@@ -48,6 +49,9 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
             <span data-field="payout">{header.payout}</span>
           </div>
         )}
+        <h2 class="choice-prompt" data-field="event-prompt">
+          {screenText(screenTexts, 'eventSubtitle')}
+        </h2>
         <ul class="event-cards" data-count={cards.length}>
           {cards.map((c) => (
             <li key={c.id}>
@@ -78,6 +82,9 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
                   ))}
                 </div>
                 {c.flavour === '' ? null : <p class="muted">{c.flavour}</p>}
+                <span class="pve-fight" data-field="choose">
+                  {screenText(screenTexts, 'eventChoose')}
+                </span>
               </button>
             </li>
           ))}
@@ -152,6 +159,15 @@ export function EventResolveScreen(props: { run: RunHandle }) {
                       <p key={l}>{l}</p>
                     ),
                   )}
+                  {o.stacks ? (
+                    <p
+                      class="stacks-tag"
+                      data-field="stacks"
+                      title="You can take this bonus again; the bonuses add up."
+                    >
+                      Stacks (can be taken again)
+                    </p>
+                  ) : null}
                 </div>
                 {o.disabledReason === null ? null : (
                   <p class="error" data-field="disabled-reason">
@@ -174,7 +190,7 @@ export function EventResolveScreen(props: { run: RunHandle }) {
                 choose(skip.id);
               }}
             >
-              Skip
+              Skip (no upgrade)
             </button>
           </p>
         )}

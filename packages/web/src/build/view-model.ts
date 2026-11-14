@@ -316,6 +316,8 @@ export function deriveProblems(
 ): Problem[] {
   const texts = content.presentation.templates.screens;
   const out: Problem[] = [];
+  /** Buildings with an input that has no conduit. */
+  const noConduit = new Set<number>();
   const occ = occupancy(state, content);
   const name = (b: PlacedBuilding): string => buildingName(content, b.def);
 
@@ -338,6 +340,7 @@ export function deriveProblems(
     } else if (def.kind !== 'source') {
       for (const inp of sides.inputs) {
         if (inputConnected(state, b.id, inp.side)) continue;
+        noConduit.add(b.id);
         out.push({
           id: `missing:${String(b.id)}:${inp.side}`,
           kind: 'missing_input',
@@ -418,6 +421,9 @@ export function deriveProblems(
     for (const u of flow.supply) {
       // Nothing at all is reported as "starved" above.
       if (u.state !== 'under' || flow.starved.has(u.building)) continue;
+      // No conduit into an input is already listed; do not repeat it as a
+      // shortage of 0 for the same building.
+      if (u.gets === 0 && noConduit.has(u.building)) continue;
       const b = state.buildings.find((x) => x.id === u.building);
       if (b === undefined) continue;
       if (scope !== undefined && b.owner !== scope.acting) {

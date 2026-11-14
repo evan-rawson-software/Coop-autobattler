@@ -55,6 +55,18 @@ export function ShopScreen() {
   return <RunGate>{(run) => <ShopTab run={run} standalone />}</RunGate>;
 }
 
+/** True when two offers are the same building at the same tier. */
+function duplicateOffers(sv: ShopView): boolean {
+  const seen = new Set<string>();
+  for (const c of sv.offers) {
+    if (c.offer === null) continue;
+    const key = `${c.offer.def}:${String(c.offer.tier)}`;
+    if (seen.has(key)) return true;
+    seen.add(key);
+  }
+  return false;
+}
+
 function Card(props: { card: OfferCard; onBuy: (slot: number) => void }) {
   const { card, onBuy } = props;
   const o = card.offer;
@@ -79,7 +91,16 @@ function Card(props: { card: OfferCard; onBuy: (slot: number) => void }) {
       >
         <SpriteIcon name={o.def} fit />
         {card.canBuy ? null : (
-          <SpriteIcon name="ui_icon_lock" scale={1} class="offer-lock" />
+          <SpriteIcon
+            name="ui_icon_lock"
+            scale={1}
+            class="offer-lock"
+            title={
+              card.reason === null
+                ? 'Cannot be bought right now'
+                : `Cannot be bought right now: ${card.reason}`
+            }
+          />
         )}
       </div>
       <h3 class="offer-name">{o.name}</h3>
@@ -388,6 +409,11 @@ export function ShopTab(props: {
       <div class="shop" id="shop-screen">
         <section class="shop-offers panel" aria-label="Your offers">
           <h2 class="panel-title">Your offers</h2>
+          {duplicateOffers(sv) ? (
+            <p class="muted offers-note" data-field="offers-note">
+              The same building can be offered more than once.
+            </p>
+          ) : null}
           <ul class="offers" id="offers">
             {sv.offers.map((c) => (
               <Card key={c.slot} card={c} onBuy={onBuy} />
@@ -436,7 +462,9 @@ export function ShopTab(props: {
               }}
             >
               {pending === null ? (
-                <span class="muted">Drop here to sell</span>
+                <span class="muted">
+                  Drag a building here from the stash to sell
+                </span>
               ) : (
                 <>
                   <p id="sell-quote" data-refund={saleQuote(pending).refund}>

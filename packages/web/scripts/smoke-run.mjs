@@ -990,7 +990,7 @@ export async function runRunSmoke({
           ? /\+\d+%/.test(resolveText)
           : /Tier \d → \d/.test(resolveText) &&
             /\d+ gold/.test(resolveText) &&
-            /Board \(\d+, \d+\)|Stash/.test(resolveText)),
+            /Board \(\d+, \d+\)|In stash/.test(resolveText)),
       `event follow-up (${withFollow.type}): ${nOpts} option(s) with their effects spelled out`,
     );
     await shot('run-8-event-follow-up');
