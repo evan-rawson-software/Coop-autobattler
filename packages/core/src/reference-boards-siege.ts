@@ -4,12 +4,12 @@
  * same map (seed 5, party size 1) and Core position as the others. See
  * docs/rules-reference.md, "Reference boards".
  *
- * - `siege`: a slow, heavy build. All three tier 3 extractors feed tier 3
- *   buildings directly: two barracks (4 resource units per soldier) and one
- *   armory (a stacking strength bonus for every soldier spawned later), with
- *   a tier 2 wall screen in front of the Core. No player building produces
- *   raiders (only the threat scripts do), so "siege" here means few, strong
- *   units that build up their bonus over a long battle rather than rushing.
+ * - `siege`: few, strong units. A tier 3 extractor on the Ore node at
+ *   (10, 1) feeds a tier 3 barracks, a tier 2 extractor on (8, 8) feeds a
+ *   tier 2 armory (a strength bonus for the soldiers spawned later), and a
+ *   tier 2 extractor on (21, 4) feeds a tier 2 range (archers); a tier 1
+ *   extractor on the Power node at (19, 5) feeds a tier 1 hangar (drones).
+ *   No walls. Shop value 330 gold, the same as `rush` and `fortify`.
  */
 
 import type { ArenaContent } from './arena.js';
@@ -57,11 +57,12 @@ function siegeScript(): TeamScript {
   };
   const e1 = put('bld_extractor', 10, 1, 3);
   feed(e1, put('bld_barracks', 9, 2, 3));
-  const e2 = put('bld_extractor', 8, 8, 3);
-  feed(e2, put('bld_armory', 8, 9, 3));
-  const e3 = put('bld_extractor', 21, 4, 3);
-  feed(e3, put('bld_barracks', 21, 5, 3));
-  for (const x of [9, 10, 11, 12, 13, 14]) put('bld_wall', x, 8, 2);
+  const e2 = put('bld_extractor', 8, 8, 2);
+  feed(e2, put('bld_armory', 8, 9, 2));
+  const e3 = put('bld_extractor', 19, 5, 1);
+  feed(e3, put('bld_hangar', 19, 6, 1));
+  const e4 = put('bld_extractor', 21, 4, 2);
+  feed(e4, put('bld_range', 21, 5, 2));
   return { seed: REFERENCE_SEED, partySize: 1, ops };
 }
 

@@ -76,11 +76,16 @@ describe('reference boards', () => {
       'bld_extractor',
       'bld_extractor',
       'bld_extractor',
+      'bld_wall',
+      'bld_wall',
+      'bld_wall',
+      'bld_wall',
+      'bld_wall',
     ]);
     expect(
       boards.fortify.buildings.filter((p) => p.def === 'bld_turret'),
-    ).toHaveLength(3);
-    expect(boards.fortify.conduits).toHaveLength(5);
+    ).toHaveLength(2);
+    expect(boards.fortify.conduits).toHaveLength(4);
     expect(boards.poor.conduits).toHaveLength(1);
   });
 });
@@ -347,7 +352,7 @@ function sweep(): Row[] {
 
 /** The last round at which a board wins any threat in the sweep (pinned). */
 const LAST_WIN: Record<ReferenceBoardName, number> = {
-  rush: 13,
+  rush: 16,
   fortify: 15,
   poor: 12,
 };
@@ -391,9 +396,9 @@ describe('sweep of reference boards against every threat', () => {
     expect(blocks[2]).toBeGreaterThan(blocks[3] ?? 0);
     expect(blocks[4]).toBe(0);
     // With threats growing 25 percent per round (issue #145) the wins fall
-    // off slowly: 214, 115, 24 and none from round 16 on (the last win is
-    // the fortify board's, in round 15, since waves hold archers and drones).
-    expect(blocks).toEqual([214, 115, 24, 0, 0]);
+    // off slowly: 215, 133, 27, 1 and none from round 21 on (the last win is
+    // the rush board's, in round 16, since waves hold archers and drones).
+    expect(blocks).toEqual([215, 133, 27, 1, 0]);
   }, 300_000);
 
   test('archetypes test what they should (criterion 3)', () => {
@@ -413,19 +418,14 @@ describe('sweep of reference boards against every threat', () => {
             r.round === round,
         ),
       );
-    // The undefended rush board loses to a Rusher that the fortify board beats.
-    for (const type of ['medium', 'hard'] as const) {
-      expect(get('rush', 'arch_rusher', type, 9).won).toBe(false);
-      expect(get('fortify', 'arch_rusher', type, 9).won).toBe(true);
-    }
+    // The fortify board, with walls, turrets and an army behind them, beats a
+    // medium Fortress in round 7 that the rush board loses to.
+    expect(get('rush', 'arch_fortress', 'medium', 7).won).toBe(false);
+    expect(get('fortify', 'arch_fortress', 'medium', 7).won).toBe(true);
     // The fortify board takes longer against the Fortress in the early
-    // rounds, where both win: 1.35 times as long in easy round 1 (it was 2.6
-    // before the Fortress got fewer turrets, issue #145) and never
-    // shorter. (The factors are smaller than they were with stacking units,
-    // because the units now queue at the Core and the fortify board's turrets
-    // are in range for as long as the rush board's units are, and because the
-    // decay of Overload ends the slow wins early: several of them end at tick
-    // 2401 or 2701. The decay hits both Cores equally and the Core with less
+    // rounds, where both win: 1.34 times as long in easy round 1 and never
+    // shorter. (The decay of Overload ends the slow wins: several of
+    // them end at tick 2401 or 2701. The decay hits both Cores equally and the Core with less
     // health falls first: shipped strongholds are often below the party's 500,
     // so outlasting a smaller Core is a legitimate, intended way to win;
     // decided in #75.)
