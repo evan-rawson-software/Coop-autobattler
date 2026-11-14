@@ -118,10 +118,10 @@ export async function runShopSmoke({
   );
   const pvpText = await page.locator('#panel-next-battle').innerText();
   check(
-    /unknown/i.test(pvpText) &&
+    !/Opponent/i.test(pvpText) &&
       /Win:/.test(pvpText) &&
       /Lose:.*life/.test(pvpText),
-    `next battle (PvP): opponent unknown and the stakes are stated ("${pvpText.replace(/\s+/g, ' ').slice(0, 120)}")`,
+    `next battle (PvP): no opponent line, and the stakes are stated ("${pvpText.replace(/\s+/g, ' ').slice(0, 120)}")`,
   );
   check(
     (await page.$$eval('#offers .offer', (els) =>
@@ -136,9 +136,10 @@ export async function runShopSmoke({
   const cardText = await page.locator('#offers .offer').first().innerText();
   check(
     /tier \d/.test(cardText) &&
-      /Needs:/.test(cardText) &&
+      !/Needs/.test(cardText) &&
+      /Health \d+/.test(cardText) &&
       /Buy · \d+ gold/.test(cardText),
-    `offer card shows kind, tier, needs and price ("${cardText.replace(/\s+/g, ' ').slice(0, 110)}")`,
+    `offer card shows kind, tier, health and price (no Needs line) ("${cardText.replace(/\s+/g, ' ').slice(0, 110)}")`,
   );
   const sc = await noScroll(1920, 1080);
   check(
@@ -154,12 +155,13 @@ export async function runShopSmoke({
         const btn = el.querySelector('button');
         const why =
           el.querySelector('[data-field="reason"]')?.textContent ?? '';
-        return btn.disabled ? why.length > 5 : why === '';
+        // No "Need N more gold." text: a reason shows only for a lock.
+        return btn.disabled ? !/more gold/.test(why) : why === '';
       }),
     );
   check(
     await allDisabledExplained(),
-    'every disabled Buy button shows a reason; enabled ones show none',
+    'enabled Buy buttons show no reason, and no card says "Need N more gold"',
   );
 
   // --- Buy the cheapest affordable offer
@@ -206,7 +208,13 @@ export async function runShopSmoke({
   );
   check(
     await allDisabledExplained(),
-    'after buying, disabled Buy buttons still explain why',
+    'after buying, no Buy button shows a gold-shortage reason',
+  );
+  check(
+    (await page
+      .locator(`.stash-row.flash[data-stash-def="${boughtDef}"]`)
+      .count()) === 1,
+    'buy: the stash row that received the building is highlighted',
   );
   check(
     /Bought/.test(await page.locator('#shop-status').innerText()),
@@ -254,8 +262,13 @@ export async function runShopSmoke({
       (await S.state()).stash.length === s2.stash.length,
     'sell: cancelling changes nothing',
   );
-  // Drag onto the sell target, then confirm.
-  await wallRow.dragTo(page.locator('#sell-target'));
+  // There is no drop zone to drag onto; the Sell button opens the quote again.
+  check(
+    (await page.locator('#sell-target').count()) === 0 &&
+      (await wallRow.getAttribute('draggable')) === null,
+    'sell: no drag-to-sell drop zone, and stash rows are not draggable',
+  );
+  await wallRow.locator('[data-action="sell"]').click();
   await page.waitForSelector('#sell-confirm');
   await page.click('#sell-confirm');
   await page.waitForFunction(

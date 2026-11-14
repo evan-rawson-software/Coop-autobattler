@@ -74,6 +74,7 @@
 .offer-kind,
 .offer-needs,
 .offer-rate,
+.offer-health,
 .offer-effect {
   margin: 0;
   font-size: 0.85rem;
@@ -156,7 +157,27 @@ button:disabled {
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--surface-2);
-  cursor: grab;
+}
+
+.stash-row.flash {
+  animation: stash-flash 1s ease-out;
+}
+
+@keyframes stash-flash {
+  0% {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  100% {
+    background: var(--surface-2);
+    border-color: var(--border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stash-row.flash {
+    animation-duration: 0.01s;
+  }
 }
 
 .stash-row.selected {
@@ -173,20 +194,19 @@ button:disabled {
   color: var(--ink-muted);
 }
 
+/* The confirm box that appears after Sell · N is pressed. */
 .sell-target {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
   padding: 0.5rem;
-  border: 2px dashed var(--border);
+  border: 2px solid var(--border);
   border-radius: 4px;
-  text-align: center;
+  text-align: left;
 }
 
 .sell-target.active {
-  border-style: solid;
   border-color: var(--warn, #b26a00);
-  text-align: left;
 }
 
 .sell-target p {

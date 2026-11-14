@@ -1064,8 +1064,10 @@ export async function runRunSmoke({
   {
     const shopText = await page.locator('#shop-screen').innerText();
     check(
-      /Opponent: Rival party/.test(shopText) && /Lose: -1 life/.test(shopText),
-      'shop (before the PvP battle): the opponent is a bundled ghost, and a loss costs 1 life',
+      /Rival party/.test(shopText) &&
+        !/Opponent/.test(shopText) &&
+        /Lose: -1 life/.test(shopText),
+      'shop (before the PvP battle): headed "Rival party" with no Opponent line, and a loss costs 1 life',
     );
   }
   await page.click('#shop-ready');
@@ -1250,10 +1252,8 @@ export async function runRunSmoke({
   );
   await page.waitForSelector('#shop-screen');
   check(
-    /Opponent: Rival party/.test(
-      await page.locator('#shop-screen').innerText(),
-    ),
-    'shop: "Opponent: Rival party" is shown before the PvP battle',
+    /Rival party/.test(await page.locator('#shop-screen').innerText()),
+    'shop: "Rival party" is shown before the PvP battle',
   );
   {
     // The first run's snapshot is in this browser's own pool (#111): the
@@ -1504,7 +1504,9 @@ export async function runRunSmoke({
       if (s.pvpOpponent.kind === 'boss') {
         bossShops++;
         check(
-          /Opponent: the boss/.test(t) && /Lose: -1 life/.test(t),
+          /Boss battle next/.test(t) &&
+            !/Opponent/.test(t) &&
+            /Lose: -1 life/.test(t),
           `shop (round ${s.round}): the boss is announced before the battle, a loss costs 1 life`,
         );
       }
@@ -1745,7 +1747,9 @@ export async function runRunSmoke({
         await page.waitForSelector('#shop-screen');
         const t = await page.locator('#shop-screen').innerText();
         ngCheck(
-          /Opponent: the boss/.test(t) && /Lose: -1 life/.test(t),
+          /Boss battle next/.test(t) &&
+            !/Opponent/.test(t) &&
+            /Lose: -1 life/.test(t),
           'no-ghost boss: the shop announces the boss, a loss costs 1 life',
         );
       }
@@ -2508,8 +2512,7 @@ export async function runRunSmoke({
       sellCount > 0 && sellOff,
       `two players: while Ready, Sell is off on all ${sellCount} stash rows`,
     );
-    // Attempts anyway: forced clicks on the disabled buttons, and a drag of a
-    // stash row to the sell target.
+    // Attempts anyway: forced clicks on the disabled buttons.
     for (let i = 0; i < live.length; i++) {
       await page
         .locator('#offers [data-action="buy"]')
@@ -2518,13 +2521,6 @@ export async function runRunSmoke({
     }
     await page.locator('#reroll').click({ force: true, timeout: slow(3000) });
     await sellBtns.first().click({ force: true, timeout: slow(3000) });
-    await page
-      .locator('#shop-stash .stash-row')
-      .first()
-      .dragTo(page.locator('#sell-target'), {
-        force: true,
-        timeout: slow(3000),
-      });
     await settle();
     await frames(page, 6);
     check(
@@ -2610,7 +2606,10 @@ export async function runRunSmoke({
         ready[0] === true &&
           ready[1] === false &&
           affordable.every((o) => o.reason !== LOCK) &&
-          !(await page.locator('#sell-target').isHidden()) &&
+          !(await page
+            .locator('#shop-stash [data-action="sell"]')
+            .first()
+            .isDisabled()) &&
           (await page.locator('#shop-ready').innerText()).includes('Ready') &&
           !(await page.locator('#shop-ready').innerText()).includes('Unready'),
         'two players: player 2 is not locked while player 1 is Ready (no lock text on their offers, their button reads Ready)',

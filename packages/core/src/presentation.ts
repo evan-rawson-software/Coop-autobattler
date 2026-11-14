@@ -66,17 +66,17 @@ export interface PresentationConfig {
  * The web fills them from the building's rules numbers.
  */
 export const TEMPLATE_SLOTS: Readonly<Record<string, readonly string[]>> = {
-  source: ['seconds', 'health'],
-  splitter: ['outs', 'health'],
-  merger: ['ins', 'health'],
-  crossover: ['health'],
-  unit_producer: ['unit', 'cost', 'resource', 'health'],
-  wall: ['health'],
-  gate: ['health'],
-  turret: ['damage', 'range', 'seconds', 'cost', 'resource', 'health'],
-  source_speed: ['step', 'cost', 'resource', 'max', 'health'],
-  unit_strength: ['step', 'cost', 'resource', 'max', 'health'],
-  core: ['health'],
+  source: [],
+  splitter: ['outs'],
+  merger: ['ins'],
+  crossover: [],
+  unit_producer: ['unit', 'cost', 'resource'],
+  wall: [],
+  gate: [],
+  turret: ['damage', 'range', 'seconds', 'cost', 'resource'],
+  source_speed: ['step', 'cost', 'resource', 'max'],
+  unit_strength: ['step', 'cost', 'resource', 'max'],
+  core: [],
 };
 
 /** Rejection reason codes that have a message (`reason_<code>`). */
@@ -136,7 +136,7 @@ export const REASON_TEXT_CODES: readonly string[] = [
  */
 export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   collects: ['rate'],
-  needsTopSpeed: ['rate', 'speed', 'unit'],
+  usesRate: ['resource', 'rate'],
   unitsWord: [],
   stepsWord: [],
   shotsWord: [],
@@ -322,7 +322,8 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   uiRunRemoveWarning: [],
   uiRunUnopenableKept: [],
   uiRunUnopenableTitle: [],
-  uiShopNeeds: ['needs'],
+  uiShopUses: ['needs'],
+  uiShopHealth: ['health'],
   uiCellsDirect: [],
   uiCellsMany: ['count'],
   uiCellsOne: ['count'],

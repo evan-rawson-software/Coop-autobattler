@@ -3858,11 +3858,11 @@ detail like any ghost, and clears `pvpOpponent` afterwards (the ghost's key
 joins `ghostsFought`). A reload before the battle reads the same
 `pvpOpponent` from the save. If a run was saved after entering the shop but
 before the selection, `RunController.prepare` finishes it when the run is
-opened. Players are told before the battle: "Opponent: Rival party"
-(with "(weak)", "(medium)" or "(strong)" added when the ghost's label names
-that strength; the label itself is not shown) or "Opponent: the boss" (MM-11).
-When the opponent is the boss, the shop's Next battle panel also says "Boss
-battle next" and that it is a computer-made stronghold, not another party.
+opened. Players are told before the battle only whether it is the boss (MM-11):
+the shop's Next battle panel is headed "Rival party" for a ghost and "Boss
+battle next" for the boss; there is no "Opponent:" line, and the ghost's label
+is not shown. When the opponent is the boss, the panel also says that it is a
+computer-made stronghold, not another party.
 Presentation only: whether the next opponent is the boss follows from
 `pvpOpponent` alone, so no "boss in N rounds" is shown (there is no fixed boss
 round).
