@@ -8,9 +8,10 @@ import { useStore } from '../app-state.js';
 import { screenText, screenTexts } from '../build/texts.js';
 import {
   PhaseContext,
-  battleNumber,
+  phaseOfStepId,
   stepperItems,
   type PhaseId,
+  type StepId,
 } from './phase.js';
 import { markTipSeen, seenTipsStore } from './phase-tips.js';
 import { TutorialContext } from '../tutorial/context.js';
@@ -26,14 +27,27 @@ const CAP: Record<PhaseId, string> = {
   reward: 'Reward',
 };
 
+const STEP_KEY: Record<StepId, string> = {
+  setup: 'uiPhaseSetup',
+  build1: 'uiPhaseBuild',
+  stronghold: 'uiStepStronghold',
+  reward1: 'uiPhaseReward',
+  build2: 'uiPhaseBuild',
+  rival: 'uiStepRival',
+  reward2: 'uiPhaseReward',
+};
+
 export const phaseName = (id: PhaseId): string => t(`uiPhase${CAP[id]}`);
 export const phaseText = (id: PhaseId): string => t(`uiPhaseDesc${CAP[id]}`);
 
-/** `Set up › Build › Fight › Reward`; the current step is a filled pill. */
+/**
+ * `Set up › Build › Stronghold › Reward › Build › Rival › Reward`; the current
+ * step is a filled pill (Set up only in round 1).
+ */
 export function PhaseStepper() {
   const info = useContext(PhaseContext);
   if (info === null) return null;
-  const items = stepperItems(info.round, info.phase);
+  const items = stepperItems(info.round, info.stepId);
   return (
     <nav
       class="phase-stepper"
@@ -58,15 +72,10 @@ export function PhaseStepper() {
               tabIndex={0}
               aria-current={it.state === 'current' ? 'step' : undefined}
             >
-              {phaseName(it.id)}
+              {t(STEP_KEY[it.id])}
               {it.state === 'done' ? ' ✓' : ''}
-              {it.id === 'fight' && it.state === 'current' ? (
-                <span class="phase-battle" data-field="battle-number">
-                  {t('uiPhaseBattleOf', { n: String(battleNumber(info.leg)) })}
-                </span>
-              ) : null}
               <span class="phase-pop" role="tooltip">
-                {phaseText(it.id)}
+                {phaseText(phaseOfStepId(it.id))}
               </span>
             </span>
           </li>

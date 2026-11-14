@@ -78,8 +78,7 @@ export async function checkFrame(page, check, label) {
 
 /**
  * The phase stepper (issue #300): the current step is the one expected, and
- * the round-1 stepper starts with Set up. `expected` is `{ phase, round1,
- * battle? }`. Returns what the page shows, for further checks.
+ * the round-1 stepper starts with Set up. `expected` is `{ phase, round1 }`. Returns what the page shows, for further checks.
  */
 export async function checkStepper(page, check, label, expected) {
   const m = await page.evaluate(() => {
@@ -106,11 +105,5 @@ export async function checkStepper(page, check, label, expected) {
     (m.items[0]?.id === 'setup') === expected.round1,
     `${label}: Set up ${expected.round1 ? 'is' : 'is not'} in the stepper`,
   );
-  if (expected.battle !== undefined) {
-    check(
-      current[0]?.text.includes(`Battle ${expected.battle} of 2`),
-      `${label}: the Fight step says Battle ${expected.battle} of 2`,
-    );
-  }
   return m;
 }

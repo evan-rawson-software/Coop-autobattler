@@ -1674,7 +1674,7 @@ try {
         .locator('#result-banner [data-field="tip"]')
         .innerText();
       check(
-        cause.length > 10 && /Try this next round/.test(tip),
+        cause.length > 10 && /Try this next time/.test(tip),
         `battle: a defeat gives a cause and a next step ("${cause.slice(0, 70)}", "${tip.replace(/\s+/g, ' ').slice(0, 60)}")`,
       );
       await page.click('#show-details');

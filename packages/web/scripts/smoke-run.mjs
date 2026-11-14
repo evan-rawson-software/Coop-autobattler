@@ -814,7 +814,7 @@ export async function runRunSmoke({
   );
   await shot('run-4-first-build');
   await checkFrame(page, check, 'Build');
-  await checkStepper(page, check, 'Build', { phase: 'build', round1: true });
+  await checkStepper(page, check, 'Build', { phase: 'build1', round1: true });
   const left = await placeKit();
   check(
     left === 0,
@@ -958,9 +958,8 @@ export async function runRunSmoke({
   await shot('run-5-pve-choice');
   await checkFrame(page, check, 'Choose opponent');
   await checkStepper(page, check, 'Choose opponent', {
-    phase: 'fight',
+    phase: 'stronghold',
     round1: true,
-    battle: 1,
   });
   await shotDark('art2-pve-choice');
   await reloadSame('PvE choice');
@@ -1070,9 +1069,8 @@ export async function runRunSmoke({
   await shot('run-6-battle-summary');
   await checkFrame(page, check, 'Battle result');
   const resultStep = await checkStepper(page, check, 'Battle result', {
-    phase: 'fight',
+    phase: 'stronghold',
     round1: true,
-    battle: 1,
   });
   check(
     resultStep.next === 'Next phase: Reward',
@@ -1114,7 +1112,7 @@ export async function runRunSmoke({
   );
   await shot('run-7-event-choice');
   await checkFrame(page, check, 'Event');
-  await checkStepper(page, check, 'Event', { phase: 'reward', round1: true });
+  await checkStepper(page, check, 'Event', { phase: 'reward1', round1: true });
   await shotDark('art2-event');
   await reloadSame('the event choice');
   // Prefer an event with a follow-up.
@@ -1224,7 +1222,7 @@ export async function runRunSmoke({
   await openShop(page);
   await shot('run-9-shop');
   await checkFrame(page, check, 'Shop');
-  await checkStepper(page, check, 'Shop', { phase: 'build', round1: true });
+  await checkStepper(page, check, 'Shop', { phase: 'build2', round1: true });
   await shotDark('art2-shop');
   await page.click('#ready-button');
   await waitStep('pvp_summary');
@@ -1248,6 +1246,14 @@ export async function runRunSmoke({
   await page.click('#skip');
   await page.waitForFunction(
     () => window.__debug?.battle?.phase() === 'summary',
+  );
+  const rivalStep = await checkStepper(page, check, 'Rival result', {
+    phase: 'rival',
+    round1: true,
+  });
+  check(
+    rivalStep.next === 'Next phase: Reward',
+    `Rival result: says the next phase is Reward (${rivalStep.next})`,
   );
   const pvpReward = await page.locator('[data-field="reward"]').innerText();
   const pvpWon =

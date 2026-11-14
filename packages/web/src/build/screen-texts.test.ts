@@ -773,7 +773,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['battleSideLeft', {}, 'left'],
   ['battleSideRight', {}, 'right'],
   ['battleSideMiddle', {}, 'middle'],
-  ['battleTipTitle', {}, 'Try this next round'],
+  ['battleTipTitle', {}, 'Try this next time'],
   [
     'battleTipNoBuildings',
     {},
@@ -870,7 +870,8 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     {},
     'Pick one event (gold, an upgrade or a bonus). Then shop and build for the next battle.',
   ],
-  ['uiPhaseBattleOf', { n: 'X' }, 'Battle X of 2'],
+  ['uiStepStronghold', {}, 'Stronghold'],
+  ['uiStepRival', {}, 'Rival'],
   ['uiPhaseNewTitle', { phase: 'X' }, 'New phase: X'],
   ['uiPhaseGotIt', {}, 'Got it'],
   ['uiPhaseNext', { phase: 'X' }, 'Next phase: X'],
