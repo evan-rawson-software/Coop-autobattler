@@ -1580,6 +1580,13 @@ try {
       `battle: summary shows the reward line ("${reward}")`,
     );
     check(
+      (await page.locator('#panel-buildings').count()) === 0 &&
+        (await page.locator('#result-banner [data-field="cause"]').innerText())
+          .length > 0,
+      'battle: the result card gives a cause and the detailed panels are hidden by default',
+    );
+    await page.click('#show-details');
+    check(
       (await page.locator('#panel-buildings tbody tr').count()) > 0 &&
         (await page
           .locator('[data-testid="chart-strength-summary"]')
@@ -1660,12 +1667,23 @@ try {
         rew === 'No reward',
         `battle: a lost PvE battle shows no cost and no reward ("${rew}")`,
       );
+      const cause = await page
+        .locator('#result-banner [data-field="cause"]')
+        .innerText();
+      const tip = await page
+        .locator('#result-banner [data-field="tip"]')
+        .innerText();
+      check(
+        cause.length > 10 && /Try this next round/.test(tip),
+        `battle: a defeat gives a cause and a next step ("${cause.slice(0, 70)}", "${tip.replace(/\s+/g, ' ').slice(0, 60)}")`,
+      );
+      await page.click('#show-details');
       const reasonText = await page
-        .locator('#result-banner .result-detail')
+        .locator('#result-facts .result-detail')
         .innerText();
       check(
         /destroyed/.test(reasonText) && !/more health left/.test(reasonText),
-        `battle: the summary explains the result ("${reasonText.slice(0, 70)}...")`,
+        `battle: the full breakdown explains the result ("${reasonText.slice(0, 70)}...")`,
       );
     }
 
@@ -1722,6 +1740,7 @@ try {
         `battle: skipping and watching again on a ghost battle raises no page errors (${consoleErrors.slice(errorsBefore).join(' | ')})`,
       );
       // Summary chart markers of moments at the same tick are merged.
+      await page.click('#show-details');
       const labels = (
         await page
           .locator('[data-testid="chart-strength-summary"]')

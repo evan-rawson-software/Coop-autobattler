@@ -60,6 +60,7 @@ import { screenText, screenTexts } from '../build/texts.js';
 import { overloadLine } from '../choice/overload.js';
 import { simClient, type RecordOutcome } from '../sim-worker/client.js';
 import { CannotShow } from './CannotShow.js';
+import { ResultCard } from './ResultCard.js';
 import { readFailPlayback } from './cannot-show.js';
 import { createReadyGate } from './ready-gate.js';
 import { battleConfig } from './setup.js';
@@ -583,7 +584,22 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
         title={`${props.title} · Summary`}
         status={status}
         rail={rail}
-        board={board}
+        board={
+          <>
+            {board}
+            <div class="result-scrim">
+              <ResultCard
+                pb={pb}
+                content={content}
+                opponent={opponent}
+                moments={moments}
+                rewardText={props.reward(won)}
+                won={won}
+                tps={tps}
+              />
+            </div>
+          </>
+        }
         tray={
           <button type="button" id="watch-again" onClick={onWatchAgain}>
             {t('battleWatchAgain')}
@@ -604,7 +620,6 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
             opponent={opponent}
             title={props.title}
             moments={moments}
-            rewardText={props.reward(won)}
             won={won}
             tps={tps}
           />
