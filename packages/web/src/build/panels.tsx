@@ -15,6 +15,7 @@ import { halfStatuses, linkText } from './border-links.js';
 import { halfFlow } from './overlay-marks.js';
 import { buildingRate, formatHundredths, topSpeedWord } from './rates.js';
 import { playerName, screenText, screenTexts } from './texts.js';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { simConfig } from './setup.js';
@@ -187,24 +188,6 @@ export function ToolsPanel(props: {
         {tool('select', t('uiToolSelect'), 'V')}
         {tool('conduit', t('uiToolConduit'), 'C', t('uiToolConduitTip'))}
         {tool('erase', t('uiToolErase'), 'E')}
-        <button
-          type="button"
-          data-action="rotate"
-          disabled={locked}
-          title={t('uiToolRotateTip')}
-          onClick={() => void ctl.rotate()}
-        >
-          {t('uiToolRotateKey')}
-        </button>
-        <button
-          type="button"
-          data-action="to-stash"
-          disabled={locked || ui.selection?.kind !== 'building'}
-          onClick={() => void ctl.returnSelected()}
-        >
-          {t('uiToolToStash')}
-        </button>
-        <span />
         <button
           type="button"
           data-action="undo"
@@ -519,9 +502,10 @@ export function InspectorPanel(props: {
             <button
               type="button"
               data-action="rotate"
+              title={t('uiToolRotateTip')}
               onClick={() => void ctl.rotate()}
             >
-              {t('uiToolRotate')}
+              {t('uiToolRotateKey')}
             </button>
             <button
               type="button"
@@ -605,6 +589,48 @@ export function OverlaysPanel(props: { model: Model; ctl: BuildController }) {
   );
 }
 
+/**
+ * "N more below" while the Problems list is scrolled short of its end. It
+ * measures the panel body that holds it; nothing shows when all fit.
+ */
+function ProblemsMore(props: { problems: readonly Problem[] }) {
+  const root = useRef<HTMLDivElement | null>(null);
+  const [below, setBelow] = useState(0);
+  useEffect(() => {
+    const scroller = root.current?.closest('.panel-body');
+    if (scroller === null || scroller === undefined) return;
+    const measure = (): void => {
+      const bottom = scroller.getBoundingClientRect().bottom;
+      let hidden = 0;
+      scroller.querySelectorAll('li').forEach((li) => {
+        const r = li.getBoundingClientRect();
+        if (r.top + r.height / 2 > bottom) hidden++;
+      });
+      setBelow(hidden);
+    };
+    measure();
+    scroller.addEventListener('scroll', measure);
+    const ro =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(measure);
+    ro?.observe(scroller);
+    return () => {
+      scroller.removeEventListener('scroll', measure);
+      ro?.disconnect();
+    };
+  }, [props.problems]);
+  return (
+    <div ref={root} class="problems-more-slot">
+      {below > 0 ? (
+        <div class="problems-more" data-field="problems-more">
+          {t('uiProblemsMore', { n: String(below) })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function ProblemsPanel(props: {
   problems: readonly Problem[];
   onPick: (p: Problem) => void;
@@ -648,6 +674,7 @@ export function ProblemsPanel(props: {
           )}
         </ul>
       )}
+      <ProblemsMore problems={props.problems} />
     </Panel>
   );
 }

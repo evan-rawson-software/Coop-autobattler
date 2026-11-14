@@ -334,10 +334,6 @@ export function ShopTab(props: {
     );
   };
 
-  const goBuild = (): void => {
-    onStepTab('shop-build');
-  };
-
   const solo = sv.playerCount === 1;
   const stepOpen = run.step === 'shop';
 
@@ -345,7 +341,7 @@ export function ShopTab(props: {
   const status_bar = (
     <>
       <span data-field="run-info">
-        Round {run.round} · Lives {run.lives} / {deps.rules.startingLives}
+        Lives {run.lives} / {deps.rules.startingLives}
         {ready === null ? '' : ` · ${ready}`}
       </span>
       {props.standalone === true ? (
@@ -400,14 +396,8 @@ export function ShopTab(props: {
         </section>
 
         <div class="shop-side">
-          <Panel title="Gold" id="panel-gold">
-            <div class="gold-row">
-              <SpriteIcon name="ui_icon_coin" scale={2} class="gold-icon" />
-              <strong class="gold" id="gold" data-gold={sv.gold}>
-                {sv.gold}
-              </strong>
-              <span class="muted">gold</span>
-            </div>
+          {/* The gold amount is in the header; this panel is the re-roll. */}
+          <Panel title="Re-roll" id="panel-gold">
             <button
               type="button"
               id="reroll"
@@ -530,9 +520,6 @@ export function ShopTab(props: {
               {sv.placedCount} {sv.placedCount === 1 ? 'building' : 'buildings'}{' '}
               placed · {sv.stashCount} in stash
             </p>
-            <button type="button" id="go-build" onClick={goBuild}>
-              Open Build
-            </button>
           </Panel>
         </div>
 

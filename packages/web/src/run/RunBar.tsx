@@ -1,5 +1,5 @@
 /**
- * The bar every run screen shows: round, lives, gold, the step, and a Menu
+ * The bar every run screen shows: lives, gold (the round is in the title), the step, and a Menu
  * button. The run is saved after every action, so leaving is always safe.
  */
 import type { RunState } from '@game/session';
@@ -30,13 +30,12 @@ export function RunBar(props: {
   const showGold = state.team.cores.some((c) => c !== null);
   return (
     <span class="run-bar" id="run-bar">
-      <span data-field="bar-round">Round {state.round}</span>
       <span data-field="bar-lives">
         <SpriteIcon name="ui_icon_heart" scale={1} class="bar-icon" />
         Lives {state.lives} / {props.maxLives}
       </span>
       {showGold ? (
-        <span data-field="bar-gold">
+        <span data-field="bar-gold" data-gold={gold}>
           <SpriteIcon name="ui_icon_coin" scale={1} class="bar-icon" />
           Gold {gold}
         </span>
