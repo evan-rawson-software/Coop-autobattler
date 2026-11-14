@@ -1072,7 +1072,17 @@ try {
   await waitFrames(page, 18);
   await shot('build-4-factory-flow');
   await shotDark('art2-build-conduits');
-  await page.click('[data-overlay="dry"]');
+  // The test run sits in the bottom dock, not over the board.
+  check(
+    await page.evaluate(() => {
+      const t = document.querySelector('#dry-table')?.getBoundingClientRect();
+      const b = document.querySelector('.main-view')?.getBoundingClientRect();
+      return t !== undefined && b !== undefined && t.top >= b.bottom - 1;
+    }),
+    'dry-run table is in the dock below the board, not over it',
+  );
+  await page.click('#dry-table button');
+  await page.waitForSelector('#dry-table', { state: 'detached' });
   check(
     (await page.locator('[data-field="no-problems"]').count()) === 0 ||
       (await B.problems()).length === 0,
@@ -1087,11 +1097,11 @@ try {
     /Barracks/.test(insp) &&
       /Needs/.test(insp) &&
       /Receiving/.test(insp) &&
-      /units \/ min/.test(insp),
+      /units\/min/.test(insp),
     'inspector shows needs, receiving and the unit estimate for the barracks',
   );
   const recv = await page.locator('[data-field="receiving"]').innerText();
-  const recvNum = Number((/([\d.]+) \/ sec/.exec(recv) ?? [])[1]);
+  const recvNum = Number((/([\d.]+)\/s/.exec(recv) ?? [])[1]);
   const row = dry.consumers.find((c) => c.building === bk.id);
   check(
     Math.abs(recvNum - (row.ratePer1000 * 10) / 1000) < 0.06,

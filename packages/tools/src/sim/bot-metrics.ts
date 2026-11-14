@@ -9,7 +9,12 @@
  * (`measureBattle`). Nothing in core or session changes.
  */
 import type { ArenaEvent, Battle, BattleReason, Content } from '@game/core';
-import type { Json, RunDeps, RunState } from '@game/session';
+import {
+  readShop,
+  type Json,
+  type RunDeps,
+  type RunState,
+} from '@game/session';
 
 export const BATTLE_REASONS: readonly BattleReason[] = [
   'core_destroyed',
@@ -89,6 +94,113 @@ export function recordingDeps(deps: RunDeps, sink: BattleRecord[]): RunDeps {
       },
     },
   };
+}
+
+/** Shop counts of one building definition. */
+export interface ShopCount {
+  offered: number;
+  bought: number;
+  placed: number;
+}
+
+/** Shop counts by building definition. */
+export type ShopTally = Map<string, ShopCount>;
+
+function countOf(tally: ShopTally, def: string): ShopCount {
+  let c = tally.get(def);
+  if (c === undefined) {
+    c = { offered: 0, bought: 0, placed: 0 };
+    tally.set(def, c);
+  }
+  return c;
+}
+
+/** Count every offer of a player's shop (an offer slot shown). */
+function noteOffers(tally: ShopTally, state: RunState, player: number): void {
+  const me = state.perPlayer[player];
+  const data = me === undefined ? null : readShop(me);
+  if (data === null) return;
+  for (const o of data.offers) if (o !== null) countOf(tally, o.def).offered++;
+}
+
+/**
+ * The run dependencies with shop hooks that count into `tally`: offers shown
+ * when a shop is entered and after each re-roll, and offers bought. Results
+ * are those of the original.
+ */
+export function shopTallyDeps(deps: RunDeps, tally: ShopTally): RunDeps {
+  const onShopEnter: RunDeps['hooks']['onShopEnter'] = (state, rng) => {
+    const patch = deps.hooks.onShopEnter(state, rng);
+    const next: RunState = { ...state, ...patch };
+    for (let p = 0; p < next.perPlayer.length; p++) noteOffers(tally, next, p);
+    return patch;
+  };
+  const handlers: Record<string, RunDeps['handlers'][string]> = {
+    ...deps.handlers,
+  };
+  const reroll = deps.handlers['reroll'];
+  if (reroll !== undefined) {
+    handlers['reroll'] = {
+      ...reroll,
+      handle(ctx) {
+        const r = reroll.handle(ctx);
+        if (r.ok) noteOffers(tally, r.state, ctx.player);
+        return r;
+      },
+    };
+  }
+  const buy = deps.handlers['buy'];
+  if (buy !== undefined) {
+    handlers['buy'] = {
+      ...buy,
+      handle(ctx) {
+        const r = buy.handle(ctx);
+        const slot = ctx.intent['slot'];
+        const me = ctx.state.perPlayer[ctx.player];
+        const offer =
+          r.ok && me !== undefined && typeof slot === 'number'
+            ? readShop(me)?.offers[slot]
+            : null;
+        if (offer !== null && offer !== undefined) {
+          countOf(tally, offer.def).bought++;
+        }
+        return r;
+      },
+    };
+  }
+  return { ...deps, hooks: { ...deps.hooks, onShopEnter }, handlers };
+}
+
+/** Count the buildings on the board (not in the stash) at the end of a run. */
+export function noteBoard(tally: ShopTally, state: RunState): void {
+  for (const b of state.team.buildings) countOf(tally, b.def).placed++;
+}
+
+/** Add the counts of `from` into `into`. */
+export function addTally(into: ShopTally, from: ShopTally): void {
+  for (const [def, c] of from) {
+    const t = countOf(into, def);
+    t.offered += c.offered;
+    t.bought += c.bought;
+    t.placed += c.placed;
+  }
+}
+
+/** Shop lines of one strategy: a header and one line per definition. */
+export function shopLines(tally: ShopTally): string[] {
+  const defs = [...tally.keys()].sort();
+  const lines = [
+    '  Shop by building (summed over runs and players; placed = on the board at the end of the run):',
+  ];
+  if (defs.length === 0) return [...lines, '    -'];
+  const w = Math.max(...defs.map((d) => d.length));
+  for (const def of defs) {
+    const c = tally.get(def) as ShopCount;
+    lines.push(
+      `    ${def.padEnd(w)}  offered ${String(c.offered)}, bought ${String(c.bought)}, placed ${String(c.placed)}`,
+    );
+  }
+  return lines;
 }
 
 interface Tracked {

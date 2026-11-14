@@ -17,18 +17,18 @@
     "pvpLoss": 4
   },
   "offerWeights": [
-    { "def": "bld_extractor", "weight": 10 },
+    { "def": "bld_extractor", "weight": 12 },
     { "def": "bld_splitter", "weight": 6 },
     { "def": "bld_merger", "weight": 6 },
-    { "def": "bld_crossover", "weight": 4 },
-    { "def": "bld_barracks", "weight": 10 },
+    { "def": "bld_crossover", "weight": 2 },
+    { "def": "bld_barracks", "weight": 16 },
     { "def": "bld_wall", "weight": 8 },
-    { "def": "bld_gate", "weight": 5 },
+    { "def": "bld_gate", "weight": 3 },
     { "def": "bld_turret", "weight": 8 },
     { "def": "bld_overclocker", "weight": 3 },
-    { "def": "bld_armory", "weight": 3 },
-    { "def": "bld_range", "weight": 5 },
-    { "def": "bld_hangar", "weight": 3 }
+    { "def": "bld_armory", "weight": 6 },
+    { "def": "bld_range", "weight": 8 },
+    { "def": "bld_hangar", "weight": 6 }
   ],
   "tierOdds": [
     { "fromRound": 1, "weights": [100, 0, 0] },

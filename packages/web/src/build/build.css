@@ -110,8 +110,7 @@
 }
 
 /* A panel body that scrolls shows a fade at the edge with more behind it. */
-#panel-stash .panel-body,
-#panel-problems .panel-body {
+#panel-stash .panel-body {
   background:
     linear-gradient(var(--surface) 30%, transparent) top / 100% 1.4rem no-repeat
       local,
@@ -257,6 +256,28 @@ ul.problems {
   padding: 0;
 }
 
+/* The list scrolls: keep the scrollbar visible and say what is below. */
+#panel-problems .panel-body {
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-muted) var(--surface-2);
+}
+
+.problems-more-slot {
+  display: contents;
+}
+
+.problems-more {
+  position: sticky;
+  bottom: -0.5rem;
+  margin: 0.2rem -0.7rem -0.5rem;
+  padding: 0.15rem 0.7rem;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+
 span.problem {
   display: block;
   padding: 0.12rem 0;
@@ -320,18 +341,17 @@ button.problem:hover {
   color: var(--ink);
 }
 
-.dry-table {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  max-height: calc(100% - 60px);
+/* The test run sits in the bottom dock (over the Selected and Overlays
+   columns) while it is open, so the board stays visible. */
+.dock-bottom.tall > .dry-table {
+  grid-column: 2 / 4;
+  min-height: 0;
   overflow: auto;
   padding: 0.5rem 0.7rem;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 0.8rem;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.2);
 }
 
 .dry-head {
@@ -351,7 +371,7 @@ button.problem:hover {
 .dry-table th,
 .dry-table td {
   text-align: left;
-  padding: 0.1rem 0.6rem 0.1rem 0;
+  padding: 0.1rem 0.8rem 0.1rem 0;
   font-variant-numeric: tabular-nums;
 }
 
@@ -388,4 +408,9 @@ button.problem:hover {
   align-items: center;
   justify-content: space-between;
   gap: 0.4rem;
+}
+
+.problems-legend {
+  margin: 0 0 0.25rem;
+  font-size: 0.85rem;
 }

@@ -100,7 +100,7 @@ describe('browser ghost pool', () => {
           ghost: null,
         },
       }),
-    ).toBe('Opponent: ghost of Runner ab12');
+    ).toBe('Opponent: a recorded rival party');
     expect(
       opponentText({
         round: 1,
@@ -117,7 +117,7 @@ describe('browser ghost pool', () => {
           ghost: null,
         },
       }),
-    ).toBe('Opponent: ghost of Bundled Rusher bot');
+    ).toBe('Opponent: a recorded rival party');
   });
 });
 

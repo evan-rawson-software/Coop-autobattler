@@ -603,7 +603,10 @@ describe('crossover: ramp versus the same resources elsewhere (criterion 1)', ()
   // same either way, and the barracks has no top speed, so the test is about
   // supply. With the speed-up capped at +25 percent, the ramp can only pay
   // off on a wide board: 5 * 1.25 = 6.25 against 5 + 1 = 6 barracks (with 3
-  // barracks 3.75 would stay below 4 for ever).
+  // barracks 3.75 would stay below 4 for ever). A plot has 3 Ore nodes, so in
+  // play an Overclocker never beats one more Barracks; SC-10 is reworded to
+  // say so (owner decision, issue #145): it pays off for turrets and for
+  // consumers of a higher tier than their collector.
   //
   // Y (no ramp): an item every 20 ticks, produced at ticks 19, 39, ..., the
   // fifth at tick 99; a direct link delivers it in the same tick and the

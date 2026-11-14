@@ -15,6 +15,7 @@ import { halfStatuses, linkText } from './border-links.js';
 import { halfFlow } from './overlay-marks.js';
 import { buildingRate, formatHundredths, topSpeedWord } from './rates.js';
 import { playerName, screenText, screenTexts } from './texts.js';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { simConfig } from './setup.js';
@@ -36,6 +37,9 @@ const t = (key: string, values: Record<string, string> = {}): string =>
 
 const fmt = (n: number): string =>
   Number.isInteger(n) ? String(n) : n.toFixed(1);
+
+/** A rate per second, always two decimals ("0.50"). */
+const fmtRate = (n: number): string => n.toFixed(2);
 
 // ---------------------------------------------------------------------------
 // Stash
@@ -184,24 +188,6 @@ export function ToolsPanel(props: {
         {tool('select', t('uiToolSelect'), 'V')}
         {tool('conduit', t('uiToolConduit'), 'C', t('uiToolConduitTip'))}
         {tool('erase', t('uiToolErase'), 'E')}
-        <button
-          type="button"
-          data-action="rotate"
-          disabled={locked}
-          title={t('uiToolRotateTip')}
-          onClick={() => void ctl.rotate()}
-        >
-          {t('uiToolRotateKey')}
-        </button>
-        <button
-          type="button"
-          data-action="to-stash"
-          disabled={locked || ui.selection?.kind !== 'building'}
-          onClick={() => void ctl.returnSelected()}
-        >
-          {t('uiToolToStash')}
-        </button>
-        <span />
         <button
           type="button"
           data-action="undo"
@@ -353,8 +339,10 @@ export function InspectorPanel(props: {
               {t('uiInspectorMeta', {
                 kind: humanize(def.kind),
                 tier: String(b.tier),
-                owner,
               })}
+              {(props.acting ?? b.owner) === b.owner
+                ? ''
+                : t('uiInspectorOwnedBy', { owner })}
             </span>
           </h3>
           {props.sealed?.includes(b.id) === true ? (
@@ -415,7 +403,7 @@ export function InspectorPanel(props: {
                   {i.connected
                     ? screenText(screenTexts, 'uiInspectorReceivingEstimate', {
                         resource: resourceName(content, i.resource),
-                        rate: fmt(i.arrivesPerSec),
+                        rate: fmtRate(i.arrivesPerSec),
                       })
                     : screenText(screenTexts, 'uiInspectorReceivingNothing')}
                 </dd>
@@ -430,11 +418,11 @@ export function InspectorPanel(props: {
                       figs.produces.resource === null
                         ? '-'
                         : resourceName(content, figs.produces.resource),
-                    rate: fmt(figs.produces.perSec),
+                    rate: fmtRate(figs.produces.perSec),
                   })}
                   {figs.produces.lostPerSec > 0
                     ? screenText(screenTexts, 'uiInspectorMinesLost', {
-                        rate: fmt(figs.produces.lostPerSec),
+                        rate: fmtRate(figs.produces.lostPerSec),
                       })
                     : ''}
                 </dd>
@@ -474,14 +462,10 @@ export function InspectorPanel(props: {
                           : 'stepsWord',
                     ),
                     cost: String(figs.derived.cost),
-                    thing: screenText(
-                      screenTexts,
-                      figs.derived.kind === 'units'
-                        ? 'uiUnitWord'
-                        : figs.derived.kind === 'shots'
-                          ? 'uiShotWord'
-                          : 'uiStepWord',
-                    ),
+                    resource:
+                      figs.inputs[0] === undefined
+                        ? '-'
+                        : resourceName(content, figs.inputs[0].resource),
                     limit:
                       figs.derived.maxPerMin === null
                         ? ''
@@ -518,9 +502,10 @@ export function InspectorPanel(props: {
             <button
               type="button"
               data-action="rotate"
+              title={t('uiToolRotateTip')}
               onClick={() => void ctl.rotate()}
             >
-              {t('uiToolRotate')}
+              {t('uiToolRotateKey')}
             </button>
             <button
               type="button"
@@ -573,9 +558,7 @@ export function OverlaysPanel(props: { model: Model; ctl: BuildController }) {
         {toggle(
           'dry',
           t('uiOverlayDry', {
-            secs: String(
-              Math.round(model.ui.dryTicks / simConfig.ticksPerSecond),
-            ),
+            secs: fmt(model.ui.dryTicks / simConfig.ticksPerSecond),
           }),
           t('uiOverlayDryTip'),
         )}
@@ -606,6 +589,55 @@ export function OverlaysPanel(props: { model: Model; ctl: BuildController }) {
   );
 }
 
+/**
+ * "N more below" while the Problems list is scrolled short of its end. It
+ * measures the panel body that holds it; nothing shows when all fit.
+ */
+function ProblemsMore(props: { problems: readonly Problem[] }) {
+  const root = useRef<HTMLDivElement | null>(null);
+  const [below, setBelow] = useState(0);
+  useEffect(() => {
+    const scroller = root.current?.closest('.panel-body');
+    if (scroller === null || scroller === undefined) return;
+    const measure = (): void => {
+      const bottom = scroller.getBoundingClientRect().bottom;
+      let hidden = 0;
+      scroller.querySelectorAll('li').forEach((li) => {
+        const r = li.getBoundingClientRect();
+        if (r.top + r.height / 2 > bottom) hidden++;
+      });
+      setBelow(hidden);
+    };
+    measure();
+    scroller.addEventListener('scroll', measure);
+    const ro =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(measure);
+    ro?.observe(scroller);
+    return () => {
+      scroller.removeEventListener('scroll', measure);
+      ro?.disconnect();
+    };
+  }, [props.problems]);
+  return (
+    <div ref={root} class="problems-more-slot">
+      {below > 0 ? (
+        <div class="problems-more" data-field="problems-more">
+          {t('uiProblemsMore', { n: String(below) })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+const WARNING_TITLE = 'Warning: something is wrong with your factory';
+const HINT_TITLE = 'Reminder: something is not used yet (not an error)';
+
+function isHint(p: Problem): boolean {
+  return p.kind === 'stash' || p.kind === 'free_nodes';
+}
+
 export function ProblemsPanel(props: {
   problems: readonly Problem[];
   onPick: (p: Problem) => void;
@@ -617,38 +649,54 @@ export function ProblemsPanel(props: {
           {t('uiNoProblems')}
         </p>
       ) : (
-        <ul class="problems">
-          {props.problems.map((p) =>
-            p.focus === null && p.building === null ? (
-              // Nothing to jump to (a partner's summary): plain text, still read out.
-              <li key={p.id}>
-                <span class="problem" data-problem={p.kind}>
-                  <span class="problem-mark" aria-hidden="true">
-                    {p.kind === 'stash' ? '△' : '⚠'}
+        <>
+          {props.problems.some(isHint) && !props.problems.every(isHint) ? (
+            <p class="problems-legend muted" data-field="problems-legend">
+              ⚠ a warning · △ a reminder (not an error)
+            </p>
+          ) : null}
+          <ul class="problems">
+            {props.problems.map((p) =>
+              p.focus === null && p.building === null ? (
+                // Nothing to jump to (a partner's summary): plain text, still read out.
+                <li key={p.id}>
+                  <span class="problem" data-problem={p.kind}>
+                    <span
+                      class="problem-mark"
+                      aria-hidden="true"
+                      title={isHint(p) ? HINT_TITLE : WARNING_TITLE}
+                    >
+                      {isHint(p) ? '△' : '⚠'}
+                    </span>
+                    {p.text}
                   </span>
-                  {p.text}
-                </span>
-              </li>
-            ) : (
-              <li key={p.id}>
-                <button
-                  type="button"
-                  class="problem"
-                  data-problem={p.kind}
-                  onClick={() => {
-                    props.onPick(p);
-                  }}
-                >
-                  <span class="problem-mark" aria-hidden="true">
-                    {p.kind === 'stash' || p.kind === 'free_nodes' ? '△' : '⚠'}
-                  </span>
-                  {p.text}
-                </button>
-              </li>
-            ),
-          )}
-        </ul>
+                </li>
+              ) : (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    class="problem"
+                    data-problem={p.kind}
+                    onClick={() => {
+                      props.onPick(p);
+                    }}
+                  >
+                    <span
+                      class="problem-mark"
+                      aria-hidden="true"
+                      title={isHint(p) ? HINT_TITLE : WARNING_TITLE}
+                    >
+                      {isHint(p) ? '△' : '⚠'}
+                    </span>
+                    {p.text}
+                  </button>
+                </li>
+              ),
+            )}
+          </ul>
+        </>
       )}
+      <ProblemsMore problems={props.problems} />
     </Panel>
   );
 }
@@ -678,7 +726,6 @@ export function DryRunTable(props: {
       <div class="dry-head">
         <strong>
           {screenText(screenTexts, 'uiDryRunTitle', {
-            ticks: String(dry.ticks),
             secs: fmt(secs),
           })}
         </strong>

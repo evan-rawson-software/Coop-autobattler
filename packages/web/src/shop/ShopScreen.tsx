@@ -55,6 +55,18 @@ export function ShopScreen() {
   return <RunGate>{(run) => <ShopTab run={run} standalone />}</RunGate>;
 }
 
+/** True when two offers are the same building at the same tier. */
+function duplicateOffers(sv: ShopView): boolean {
+  const seen = new Set<string>();
+  for (const c of sv.offers) {
+    if (c.offer === null) continue;
+    const key = `${c.offer.def}:${String(c.offer.tier)}`;
+    if (seen.has(key)) return true;
+    seen.add(key);
+  }
+  return false;
+}
+
 function Card(props: { card: OfferCard; onBuy: (slot: number) => void }) {
   const { card, onBuy } = props;
   const o = card.offer;
@@ -79,7 +91,16 @@ function Card(props: { card: OfferCard; onBuy: (slot: number) => void }) {
       >
         <SpriteIcon name={o.def} fit />
         {card.canBuy ? null : (
-          <SpriteIcon name="ui_icon_lock" scale={1} class="offer-lock" />
+          <SpriteIcon
+            name="ui_icon_lock"
+            scale={1}
+            class="offer-lock"
+            title={
+              card.reason === null
+                ? 'Cannot be bought right now'
+                : `Cannot be bought right now: ${card.reason}`
+            }
+          />
         )}
       </div>
       <h3 class="offer-name">{o.name}</h3>
@@ -334,10 +355,6 @@ export function ShopTab(props: {
     );
   };
 
-  const goBuild = (): void => {
-    onStepTab('shop-build');
-  };
-
   const solo = sv.playerCount === 1;
   const stepOpen = run.step === 'shop';
 
@@ -345,7 +362,7 @@ export function ShopTab(props: {
   const status_bar = (
     <>
       <span data-field="run-info">
-        Round {run.round} · Lives {run.lives} / {deps.rules.startingLives}
+        Lives {run.lives} / {deps.rules.startingLives}
         {ready === null ? '' : ` · ${ready}`}
       </span>
       {props.standalone === true ? (
@@ -392,6 +409,11 @@ export function ShopTab(props: {
       <div class="shop" id="shop-screen">
         <section class="shop-offers panel" aria-label="Your offers">
           <h2 class="panel-title">Your offers</h2>
+          {duplicateOffers(sv) ? (
+            <p class="muted offers-note" data-field="offers-note">
+              The same building can be offered more than once.
+            </p>
+          ) : null}
           <ul class="offers" id="offers">
             {sv.offers.map((c) => (
               <Card key={c.slot} card={c} onBuy={onBuy} />
@@ -400,14 +422,8 @@ export function ShopTab(props: {
         </section>
 
         <div class="shop-side">
-          <Panel title="Gold" id="panel-gold">
-            <div class="gold-row">
-              <SpriteIcon name="ui_icon_coin" scale={2} class="gold-icon" />
-              <strong class="gold" id="gold" data-gold={sv.gold}>
-                {sv.gold}
-              </strong>
-              <span class="muted">gold</span>
-            </div>
+          {/* The gold amount is in the header; this panel is the re-roll. */}
+          <Panel title="Re-roll" id="panel-gold">
             <button
               type="button"
               id="reroll"
@@ -446,7 +462,9 @@ export function ShopTab(props: {
               }}
             >
               {pending === null ? (
-                <span class="muted">Drop here to sell</span>
+                <span class="muted">
+                  Drag a building here from the stash to sell
+                </span>
               ) : (
                 <>
                   <p id="sell-quote" data-refund={saleQuote(pending).refund}>
@@ -530,9 +548,6 @@ export function ShopTab(props: {
               {sv.placedCount} {sv.placedCount === 1 ? 'building' : 'buildings'}{' '}
               placed · {sv.stashCount} in stash
             </p>
-            <button type="button" id="go-build" onClick={goBuild}>
-              Open Build
-            </button>
           </Panel>
         </div>
 

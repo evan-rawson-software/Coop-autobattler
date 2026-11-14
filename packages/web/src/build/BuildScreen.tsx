@@ -370,7 +370,6 @@ export function BuildView(props: {
     run === null ? null : (
       <>
         <span class="muted" data-field="run-info">
-          Round {run.round} ·{' '}
           <SpriteIcon name="ui_icon_heart" scale={1} class="bar-icon" />
           Lives {run.lives}
           {readyText === null ? '' : ` · ${readyText}`}
@@ -408,7 +407,6 @@ export function BuildView(props: {
       </button>
       {run !== null ? (
         <span class="muted" data-field="run-info">
-          Round {run.round} ·{' '}
           <SpriteIcon name="ui_icon_heart" scale={1} class="bar-icon" />
           Lives {run.lives}
           {readyText === null ? '' : ` · ${readyText}`}
@@ -498,15 +496,6 @@ export function BuildView(props: {
             }}
             onBoardPointer={(ev) => ctl.onBoardPointer(ev)}
           />
-          {ui.overlays.dry && flow !== null ? (
-            <DryRunTable
-              team={team}
-              flow={flow}
-              onClose={() => {
-                ctl.setOverlay('dry', false);
-              }}
-            />
-          ) : null}
         </div>
         {gate?.sealed.reason == null ? null : (
           <div class="status-line error" id="sealed-warning" role="alert">
@@ -560,28 +549,42 @@ export function BuildView(props: {
           />
           <ToolsPanel model={model} ctl={ctl} locked={gate?.ready === true} />
         </div>
-        <div class="dock-col">
-          <InspectorPanel
-            run={run}
-            model={model}
-            dry={flow?.dry ?? null}
+        {ui.overlays.dry && flow !== null ? (
+          // The test run takes the place of the Selected and Overlays/Problems
+          // columns while it is open, so it never covers the board.
+          <DryRunTable
+            team={team}
             flow={flow}
-            ctl={ctl}
-            sealed={sealedIds}
-            acting={acting}
+            onClose={() => {
+              ctl.setOverlay('dry', false);
+            }}
           />
-        </div>
-        <div class="dock-col">
-          <OverlaysPanel model={model} ctl={ctl} />
-          <BorderLinksPanel
-            run={run}
-            ctl={ctl}
-            acting={acting}
-            locked={gate?.ready === true}
-            flow={flow}
-          />
-          <ProblemsPanel problems={problems} onPick={onPick} />
-        </div>
+        ) : (
+          <>
+            <div class="dock-col">
+              <InspectorPanel
+                run={run}
+                model={model}
+                dry={flow?.dry ?? null}
+                flow={flow}
+                ctl={ctl}
+                sealed={sealedIds}
+                acting={acting}
+              />
+            </div>
+            <div class="dock-col">
+              <OverlaysPanel model={model} ctl={ctl} />
+              <BorderLinksPanel
+                run={run}
+                ctl={ctl}
+                acting={acting}
+                locked={gate?.ready === true}
+                flow={flow}
+              />
+              <ProblemsPanel problems={problems} onPick={onPick} />
+            </div>
+          </>
+        )}
         <div class="dock-col">
           <PartyPanel run={run} ctl={ctl} gate={gate} acting={acting} />
         </div>

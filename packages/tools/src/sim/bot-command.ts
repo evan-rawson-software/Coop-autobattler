@@ -20,9 +20,14 @@ import {
   type RunState,
 } from '@game/session';
 import {
+  addTally,
   measureRecord,
   metricLines,
+  noteBoard,
   recordingDeps,
+  shopLines,
+  shopTallyDeps,
+  type ShopTally,
   type BattleMetrics,
   type BattleRecord,
 } from './bot-metrics.js';
@@ -87,6 +92,8 @@ interface Played {
   readonly result: BotRunResult | null;
   /** Measurements of every battle of the run (empty if it crashed). */
   readonly metrics: readonly BattleMetrics[];
+  /** Shop counts of the run by building definition. */
+  readonly shop: ShopTally;
   readonly problems: string[];
 }
 
@@ -129,8 +136,13 @@ function playOne(
   };
   const problems: string[] = [];
   const records: BattleRecord[] = [];
+  const shop: ShopTally = new Map();
   try {
-    const result = playBotRun(recordingDeps(deps, records), run, options);
+    const result = playBotRun(
+      recordingDeps(shopTallyDeps(deps, shop), records),
+      run,
+      options,
+    );
     for (const r of result.rejected) {
       problems.push(
         `rejected ${r.intent} (${r.reason}${r.detail === '' ? '' : `: ${r.detail}`}) from player ${String(r.player)} in ${r.step}, round ${String(r.round)}`,
@@ -151,10 +163,11 @@ function playOne(
     const metrics = records.map((r) =>
       measureRecord(r, deps, ctx.content, ctx.sim.overloadStartTick),
     );
-    return { seed, result, metrics, problems };
+    noteBoard(shop, result.state);
+    return { seed, result, metrics, shop, problems };
   } catch (e) {
     problems.push(`crash: ${e instanceof Error ? e.message : String(e)}`);
-    return { seed, result: null, metrics: [], problems };
+    return { seed, result: null, metrics: [], shop, problems };
   }
 }
 
@@ -221,11 +234,14 @@ export function botCommand(
     const links = done.map((r) =>
       joinedLinks((r.result as BotRunResult).state, ctx.content),
     );
+    const shop: ShopTally = new Map();
+    for (const r of runs) addTally(shop, r.shop);
     lines.push(
       `  Battle length (ticks) by party size ${String(args.party)}: pve mean ${meanOf(battles.filter((b) => b.kind === 'pve').map((b) => b.endTick))}, pvp mean ${meanOf(battles.filter((b) => b.kind === 'pvp').map((b) => b.endTick))} (${String(battles.length)} battles)`,
       `  Cores standing at the end: party mean ${meanOf(battles.map((b) => b.coresStanding[0]))}, opponent mean ${meanOf(battles.map((b) => b.coresStanding[1]))}`,
       `  Border links joined at the end of the run: mean ${meanOf(links)}`,
       ...metricLines(battles, ctx.sim.overloadStartTick),
+      ...shopLines(shop),
       '  Runs:',
     );
     for (const r of runs) {

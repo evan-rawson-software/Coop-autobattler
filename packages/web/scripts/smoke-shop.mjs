@@ -72,7 +72,7 @@ export async function runShopSmoke({
     await settle();
   };
   const gold = async () =>
-    Number(await page.locator('#gold').getAttribute('data-gold'));
+    (await page.evaluate(() => window.__debug.shop.state())).gold;
   const noScroll = (w, h) =>
     page.evaluate(
       ([iw, ih]) => ({
@@ -272,13 +272,13 @@ export async function runShopSmoke({
   );
 
   // --- Build tab: place the purchase
-  await page.click('#go-build');
+  await page.click('.topbar-tabs button:has-text("Build")');
   await page.waitForFunction(() => window.__debug?.build?.step() === 'shop');
   await page.waitForSelector('canvas');
   await settle();
   check(
     (await B.step()) === 'shop',
-    'Open Build shows the Build tab of the same step',
+    'the header Build tab shows the Build tab of the same step',
   );
   const tabs = await page.locator('.topbar-tabs button').allInnerTexts();
   check(

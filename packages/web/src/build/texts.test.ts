@@ -31,7 +31,7 @@ describe('texts come from the presentation file', () => {
     if (def === undefined) throw new Error('no extractor');
     const texts = { ...screenTexts, collects: 'Mines {rate} per s' };
     expect(rateText(def, 1, 20, texts)).toMatch(/^Mines \d+\.\d\d per s$/);
-    expect(rateText(def, 1, 20)).toMatch(/^Collects \d+\.\d\d \/ s$/);
+    expect(rateText(def, 1, 20)).toMatch(/^Collects \d+\.\d\d\/s$/);
   });
 
   test('the link state follows the template', () => {

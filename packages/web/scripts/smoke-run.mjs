@@ -295,7 +295,7 @@ export async function runRunSmoke({
     await page.waitForSelector('#shop-screen');
     await settle();
     const goldAfter = Number(
-      await page.locator('#gold').getAttribute('data-gold'),
+      await page.locator('[data-field="bar-gold"]').getAttribute('data-gold'),
     );
     const notice = await page.locator('#shop-notice').innerText();
     if (pickOpt !== undefined) {
@@ -560,12 +560,12 @@ export async function runRunSmoke({
   const runA = s0.runId;
   const bar0 = await page.locator('#run-bar').innerText();
   check(
-    /Round 1/.test(bar0) &&
+    !/Round/.test(bar0) &&
       /Lives 5 \/ 5/.test(bar0) &&
       !/Gold/.test(bar0) &&
       (await page.locator('#menu-button').count()) === 1 &&
       /Place the Core/.test(await page.locator('.topbar-title').innerText()),
-    `top bar: round, lives (no gold before the kit) and Menu ("${bar0.replace(/\s+/g, ' ')}"), the step in the title`,
+    `top bar: lives (no gold before the kit) and Menu, no round ("${bar0.replace(/\s+/g, ' ')}"); the step is in the title`,
   );
   check(
     await page.locator('#core-confirm').isDisabled(),
@@ -990,7 +990,7 @@ export async function runRunSmoke({
           ? /\+\d+%/.test(resolveText)
           : /Tier \d → \d/.test(resolveText) &&
             /\d+ gold/.test(resolveText) &&
-            /Board \(\d+, \d+\)|Stash/.test(resolveText)),
+            /Board \(\d+, \d+\)|In stash/.test(resolveText)),
       `event follow-up (${withFollow.type}): ${nOpts} option(s) with their effects spelled out`,
     );
     await shot('run-8-event-follow-up');
@@ -1014,7 +1014,9 @@ export async function runRunSmoke({
   // Shop: buy one thing, reload.
   await page.waitForSelector('#shop-screen');
   await settle();
-  const g0 = Number(await page.locator('#gold').getAttribute('data-gold'));
+  const g0 = Number(
+    await page.locator('[data-field="bar-gold"]').getAttribute('data-gold'),
+  );
   const buy = page
     .locator('#offers [data-action="buy"]:not([disabled])')
     .first();
@@ -1027,7 +1029,9 @@ export async function runRunSmoke({
       stash0 + 1,
     );
     check(
-      Number(await page.locator('#gold').getAttribute('data-gold')) < g0,
+      Number(
+        await page.locator('[data-field="bar-gold"]').getAttribute('data-gold'),
+      ) < g0,
       'shop: a purchase pays gold and lands in the stash',
     );
   } else {
@@ -1060,7 +1064,7 @@ export async function runRunSmoke({
   {
     const shopText = await page.locator('#shop-screen').innerText();
     check(
-      /Opponent: ghost of Bundled \w+ bot/.test(shopText) &&
+      /Opponent: a recorded rival party/.test(shopText) &&
         /Lose: -1 life/.test(shopText),
       'shop (before the PvP battle): the opponent is a bundled ghost, and a loss costs 1 life',
     );
@@ -1196,7 +1200,7 @@ export async function runRunSmoke({
     (s) => s.round === 2 && s.step === 'pve_choice',
   );
   check(
-    /Round 2/.test(await page.locator('#run-bar').innerText()),
+    /Round 2/.test(await page.locator('.topbar-title').innerText()),
     'round 1 is complete: round 2 opens on the PvE choice',
   );
   void atRound2Choice;
@@ -1247,10 +1251,10 @@ export async function runRunSmoke({
   );
   await page.waitForSelector('#shop-screen');
   check(
-    /Opponent: ghost of (Runner|Bundled)/.test(
+    /Opponent: a recorded rival party/.test(
       await page.locator('#shop-screen').innerText(),
     ),
-    'shop: "Opponent: ghost of ..." is shown before the PvP battle',
+    'shop: "Opponent: a recorded rival party" is shown before the PvP battle',
   );
   {
     // The first run's snapshot is in this browser's own pool (#111): the
@@ -2572,14 +2576,35 @@ export async function runRunSmoke({
     await actAs(1);
     {
       const ready = await readyOf();
+      const offers = () =>
+        page.$$eval('#offers > li', (els) =>
+          els.map((e) => ({
+            disabled: e.querySelector('[data-action="buy"]')?.disabled ?? true,
+            reason: e.querySelector('[data-field="reason"]')?.textContent ?? '',
+            slot: Number(e.dataset.slot),
+          })),
+        );
+      let affordable = await offers();
+      // Whether this seed's offers fit player 2's gold depends on the shop
+      // weights; re-roll (also an action player 1's Ready must not block)
+      // until one does, at most three times.
+      for (
+        let tries = 0;
+        tries < 3 &&
+        !affordable.some((o) => !o.disabled) &&
+        !(await page.locator('#reroll').isDisabled());
+        tries++
+      ) {
+        const g = (await shopState()).gold;
+        await page.click('#reroll');
+        await page.waitForFunction(
+          (n) => window.__debug.shop.state().gold < n,
+          g,
+          { timeout: slow(10000) },
+        );
+        affordable = await offers();
+      }
       const s1 = await shopState();
-      const affordable = await page.$$eval('#offers > li', (els) =>
-        els.map((e) => ({
-          disabled: e.querySelector('[data-action="buy"]')?.disabled ?? true,
-          reason: e.querySelector('[data-field="reason"]')?.textContent ?? '',
-          slot: Number(e.dataset.slot),
-        })),
-      );
       const canBuy = affordable.find((o) => !o.disabled);
       check(
         ready[0] === true &&
