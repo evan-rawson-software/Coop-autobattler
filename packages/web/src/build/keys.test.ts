@@ -6,6 +6,7 @@ import {
   clampDryTicks,
 } from './build-controller.js';
 import { buildRun, firstFit, stashIds } from './test-helpers.js';
+import { groupStash } from './panels.js';
 import { content } from '../content.js';
 import { deriveProblems } from './view-model.js';
 
@@ -96,5 +97,36 @@ describe('Status message', () => {
     expect(ctl.model.get().ui.status.text).not.toMatch(/_/);
     ctl.clearStaleStatus('pve_battle');
     expect(ctl.model.get().ui.status.text).toBe('');
+  });
+});
+
+describe('Slot keys (1-9)', () => {
+  test('a slot key holds the first building of that stash slot', async () => {
+    const s = await buildRun();
+    const ctl = new BuildController();
+    ctl.attach(s);
+    const groups = groupStash(s.run.team, 0);
+    expect(groups.length).toBeGreaterThan(1);
+    expect(ctl.pickSlot(groups[1]?.ids[0])).toBe(true);
+    const held = ctl.model.get().ui.held;
+    expect(held?.id).toBe(groups[1]?.ids[0]);
+    expect(held?.mode).toBe('sticky');
+  });
+
+  test('a key past the last slot does nothing', async () => {
+    const s = await buildRun();
+    const ctl = new BuildController();
+    ctl.attach(s);
+    expect(ctl.pickSlot(undefined)).toBe(false);
+    expect(ctl.model.get().ui.held).toBeNull();
+  });
+
+  test('Escape drops the held building', async () => {
+    const s = await buildRun();
+    const ctl = new BuildController();
+    ctl.attach(s);
+    ctl.pickSlot(groupStash(s.run.team, 0)[0]?.ids[0]);
+    expect(ctl.key(key('Escape'))).toBe(true);
+    expect(ctl.model.get().ui.held).toBeNull();
   });
 });

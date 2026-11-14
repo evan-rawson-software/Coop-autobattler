@@ -20,7 +20,9 @@ import { reasonMessage } from '../build/reasons.js';
 import { content } from '../content.js';
 import { registerDebug, unregisterDebug } from '../debug-hook.js';
 import type { RunHandle } from '../run/handle.js';
-import { AppShell, Panel } from '../shell/AppShell.js';
+import { Panel } from '../shell/AppShell.js';
+import { GameFrame } from '../shell/GameFrame.js';
+import { screenText, screenTexts } from '../build/texts.js';
 import { drawCoreOverlay, type Candidate } from './overlay.js';
 import {
   choiceAnnouncement,
@@ -210,10 +212,49 @@ export function CoreScreen(props: { run: RunHandle }) {
   const kit = kitRows(economy, content);
   const routeCount = paths?.length ?? 0;
 
+  const primary = isReady
+    ? {
+        id: 'core-unready',
+        label: (
+          <>
+            <SpriteIcon name="ui_icon_ready" scale={1} class="ready-icon" />
+            Unready
+          </>
+        ),
+        class: 'on',
+        disabled: busy,
+        onPress: () => {
+          setReady(false);
+        },
+      }
+    : {
+        id: 'core-confirm',
+        label: screenText(screenTexts, 'uiPrimaryPlaceCore'),
+        disabled: selected === null || busy,
+        onPress: () => {
+          setReady(true);
+        },
+      };
+
   return (
-    <AppShell
+    <GameFrame
+      phase="core"
       title="New run · Place the Core"
-      right={
+      rail={{ camera }}
+      primary={primary}
+      tray={
+        <div class="tray-kit">
+          <span class="tray-label">
+            {screenText(screenTexts, 'uiTrayKitLabel')}
+          </span>
+          <ul class="kit-list" id="starting-kit">
+            {kit.map((k) => (
+              <li key={k.key}>{k.text}</li>
+            ))}
+          </ul>
+        </div>
+      }
+      info={
         <Panel title="The Core" id="panel-core">
           <p>It can't be moved after {readyWho}.</p>
           <ul class="legend-list" aria-label="Map key">
@@ -234,90 +275,59 @@ export function CoreScreen(props: { run: RunHandle }) {
                 : `Enemies have ${count(routeCount, 'way')} to reach this spot. Walls can block ${routeCount === 1 ? 'it' : 'some'}.`}
             </p>
           )}
-          {isReady ? (
-            <button
-              type="button"
-              id="core-unready"
-              disabled={busy}
-              onClick={() => {
-                setReady(false);
-              }}
-            >
-              <SpriteIcon name="ui_icon_ready" scale={1} class="ready-icon" />
-              Unready
-            </button>
-          ) : (
-            <button
-              type="button"
-              id="core-confirm"
-              class="primary"
-              disabled={selected === null || busy}
-              onClick={() => {
-                setReady(true);
-              }}
-            >
-              Ready
-            </button>
-          )}
         </Panel>
       }
-      bottom={
-        <Panel title="Starting kit">
-          <ul class="kit-list" id="starting-kit">
-            {kit.map((k) => (
-              <li key={k.key}>{k.text}</li>
-            ))}
-          </ul>
-        </Panel>
+      board={
+        <div class="core-board" ref={wrap}>
+          <p
+            class={
+              hoverCand !== null && !hoverCand.verdict.ok
+                ? 'core-hint bad'
+                : 'core-hint'
+            }
+            id="core-hint"
+            data-field="core-hint"
+            role="status"
+          >
+            {hintText({
+              hover: hoverCand?.verdict ?? null,
+              selected,
+              message: problem,
+              ready: isReady,
+            })}
+          </p>
+
+          <p class="sr-only" aria-live="polite" data-field="core-choice">
+            {choiceAnnouncement(selected, isReady)}
+          </p>
+
+          <BoardView
+            content={content}
+            own={team}
+            controller={camera}
+            resetKey={`${view.run.runId}:core`}
+            frontLabel="FRONT EDGE"
+            cursor="crosshair"
+            controls={false}
+            drawOverlay={drawOverlay.current}
+            overlayKey={`${String(acting)}:${String(partners.length)}:${String(hover?.x)},${String(hover?.y)}|${String(selected?.x)},${String(selected?.y)}|${String(paths?.length)}`}
+            onHover={(hit) => {
+              const next =
+                hit === null || hit.board !== 'own'
+                  ? null
+                  : { x: hit.x, y: hit.y };
+              setHover((prev) => {
+                if (prev?.x !== next?.x || prev?.y !== next?.y)
+                  setProblem(null);
+                return next;
+              });
+            }}
+            onSelect={(s) => {
+              if (s !== null && s.board === 'own') onSelect({ x: s.x, y: s.y });
+            }}
+          />
+        </div>
       }
-    >
-      <div class="core-board" ref={wrap}>
-        <p
-          class={
-            hoverCand !== null && !hoverCand.verdict.ok
-              ? 'core-hint bad'
-              : 'core-hint'
-          }
-          id="core-hint"
-          data-field="core-hint"
-          role="status"
-        >
-          {hintText({
-            hover: hoverCand?.verdict ?? null,
-            selected,
-            message: problem,
-            ready: isReady,
-          })}
-        </p>
-
-        <p class="sr-only" aria-live="polite" data-field="core-choice">
-          {choiceAnnouncement(selected, isReady)}
-        </p>
-
-        <BoardView
-          content={content}
-          own={team}
-          controller={camera}
-          resetKey={`${view.run.runId}:core`}
-          frontLabel="FRONT EDGE"
-          cursor="crosshair"
-          drawOverlay={drawOverlay.current}
-          overlayKey={`${String(acting)}:${String(partners.length)}:${String(hover?.x)},${String(hover?.y)}|${String(selected?.x)},${String(selected?.y)}|${String(paths?.length)}`}
-          onHover={(hit) => {
-            const next =
-              hit === null || hit.board !== 'own'
-                ? null
-                : { x: hit.x, y: hit.y };
-            setHover((prev) => {
-              if (prev?.x !== next?.x || prev?.y !== next?.y) setProblem(null);
-              return next;
-            });
-          }}
-          onSelect={(s) => {
-            if (s !== null && s.board === 'own') onSelect({ x: s.x, y: s.y });
-          }}
-        />
-      </div>
-    </AppShell>
+    />
   );
 }

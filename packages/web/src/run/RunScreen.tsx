@@ -19,6 +19,7 @@ import { RunOverScreen } from '../end/RunOverScreen.js';
 import { EventChoiceScreen, EventResolveScreen } from '../event/EventScreen.js';
 import { CoreScreen } from '../placement/CoreScreen.js';
 import { AppShell, Panel, RunBarContext } from '../shell/AppShell.js';
+import { GameFrame } from '../shell/GameFrame.js';
 import { ShopTab } from '../shop/ShopScreen.js';
 import { screenText, screenTexts } from '../build/texts.js';
 import { stepTabStore } from '../shop/tabs.js';
@@ -206,11 +207,16 @@ function ReadyRun(props: { run: ActiveRun }) {
       break;
     case 'transient':
       body = (
-        <AppShell title="Battle">
-          <p class="muted pad" role="status">
-            Resolving battle…
-          </p>
-        </AppShell>
+        <GameFrame
+          phase="battle"
+          title="Battle"
+          primary={null}
+          board={
+            <p class="muted pad" role="status">
+              Resolving battle…
+            </p>
+          }
+        />
       );
       break;
   }

@@ -19,6 +19,7 @@ import { createServer } from 'node:http';
 import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkFrame } from './smoke-frame.mjs';
 import { runShopSmoke } from './smoke-shop.mjs';
 import { runSpritesSmoke } from './smoke-sprites.mjs';
 import { runArtSmoke, spritesInfo } from './smoke-art.mjs';
@@ -1196,19 +1197,18 @@ try {
   await waitFrames(page, 18);
   await shot('build-4-factory-flow');
   await shotDark('art2-build-conduits');
-  // The test run sits in the dock (below the board, or beside it on wide
-  // windows), not over the board.
+  // The test run sits in the info rail (beside the board), not over it.
   check(
     await page.evaluate(() => {
       const t = document.querySelector('#dry-table')?.getBoundingClientRect();
-      const b = document.querySelector('.main-view')?.getBoundingClientRect();
+      const b = document.querySelector('.frame-board')?.getBoundingClientRect();
       return (
         t !== undefined &&
         b !== undefined &&
         (t.top >= b.bottom - 1 || t.left >= b.right - 1)
       );
     }),
-    'dry-run table is in the dock beside or below the board, not over it',
+    'dry-run table is in the info rail beside the board, not over it',
   );
   await page.click('#dry-table button');
   await page.waitForSelector('#dry-table', { state: 'detached' });
@@ -1412,17 +1412,18 @@ try {
         Math.abs(cam.cy - rows.height / 2) < 1.5,
         `battle: the camera starts on the neutral zone (cy ${cam.cy.toFixed(1)} of ${rows.height} rows)`,
       );
-      // One set of camera buttons, over the board, with every action.
+      // One set of camera buttons, in the map rail, with every action.
       check(
         (await page.locator('#panel-camera').count()) === 0 &&
-          (await page.locator('.camera-controls').count()) === 1 &&
+          (await page.locator('.camera-controls').count()) === 0 &&
           (
             await page
-              .locator('.camera-controls [data-camera]')
+              .locator('.frame-rail [data-camera]')
               .evaluateAll((els) => els.map((e) => e.dataset.camera))
-          ).join() === 'center,base,enemy-base,fit,zoom-in,zoom-out',
-        'battle: a single camera control set over the board (Center, My base, Their base, Fit, zoom)',
+          ).join() === 'zoom-in,zoom-out,fit,center,base,enemy-base',
+        'battle: a single camera control set in the map rail (zoom, Fit, Center, My base, Their base)',
       );
+      await checkFrame(page, check, 'Battle playback');
       const before = await camera();
       await page.click('[data-camera="enemy-base"]');
       await settle();

@@ -9,7 +9,6 @@ import { useStore } from '../app-state.js';
 import { reasonMessage } from '../build/reasons.js';
 import { screenText, screenTexts } from '../build/texts.js';
 import type { RunHandle } from '../run/handle.js';
-import { AppShell } from '../shell/AppShell.js';
 import { CannotShow } from './CannotShow.js';
 import { BattleView } from './BattleScreen.js';
 import {
@@ -52,14 +51,13 @@ export function RunBattleScreen(props: { run: RunHandle }) {
 
   if (!built.ok) {
     return (
-      <AppShell title={`Round ${String(run.round)} · Battle`}>
-        <CannotShow
-          message={built.message}
-          outcome={built.outcome}
-          onContinue={built.outcome === null ? undefined : ready}
-          error={error}
-        />
-      </AppShell>
+      <CannotShow
+        title={`Round ${String(run.round)} · Battle`}
+        message={built.message}
+        outcome={built.outcome}
+        onContinue={built.outcome === null ? undefined : ready}
+        error={error}
+      />
     );
   }
   const b = built.value;
