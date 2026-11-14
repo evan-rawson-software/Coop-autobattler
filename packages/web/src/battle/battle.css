@@ -19,6 +19,7 @@
   inset: 0;
   display: grid;
   place-items: center;
+  padding: 1rem;
   font-size: 1.1rem;
   color: var(--ink-muted);
 }
@@ -34,10 +35,6 @@
   border-radius: 6px;
   color: var(--ink-muted);
   pointer-events: none;
-}
-
-.dock-right > .panel.grow {
-  flex: 1 1 0;
 }
 
 .core-row {
@@ -219,24 +216,9 @@ button:disabled {
 
 /* Summary (wireframe 8) */
 
-.summary {
-  position: absolute;
-  inset: 0;
-  overflow: auto;
-  padding: 8px;
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr) minmax(0, 1.1fr);
-  grid-template-rows: auto auto auto;
-  align-content: start;
-  align-items: start;
-  gap: 8px;
-}
-
 .result-banner {
-  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: baseline;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.2rem 1rem;
   padding: 0.6rem 1rem;
   background: var(--surface);
@@ -251,7 +233,7 @@ button:disabled {
 
 .result-title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
 }
 
 .result-reward {
@@ -264,10 +246,6 @@ button:disabled {
   grid-column: 1 / -1;
   margin: 0;
   color: var(--ink-muted);
-}
-
-.summary > .panel {
-  min-height: 0;
 }
 
 .marker-list {
@@ -301,7 +279,7 @@ button:disabled {
 
 .mini-board {
   position: relative;
-  height: 360px;
+  height: 240px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -316,22 +294,6 @@ button:disabled {
 .buildings-table th,
 .buildings-table td {
   padding-right: 0.7rem;
-}
-
-/* The Next panel sits right under the banner, as one row of buttons. */
-.ready-panel {
-  grid-column: 1 / -1;
-}
-
-.btn-col {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.7rem;
-}
-
-.btn-col button {
-  min-width: 10rem;
-  padding: 0.55rem 1.2rem;
 }
 
 .core-sub {
@@ -365,4 +327,41 @@ button:disabled {
 
 .log-entry {
   display: inline;
+}
+
+/* The battle in the frame: playback controls in the tray, the panels in the
+   info rail, the summary as a column of panels. */
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: none;
+}
+
+.summary > .panel {
+  flex: none;
+}
+
+.speed-tray {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.speed-tray .btn-row {
+  margin: 0;
+  flex-wrap: nowrap;
+}
+
+.speed-tray .btn-row button {
+  flex: none;
+  min-width: 3rem;
+}
+
+.frame-info #panel-log .panel-body {
+  max-height: 13rem;
+}
+
+.frame-info .buildings-table {
+  font-size: 0.8rem;
 }

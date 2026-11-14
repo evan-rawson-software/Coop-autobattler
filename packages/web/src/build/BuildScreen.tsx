@@ -21,7 +21,9 @@ import { content } from '../content.js';
 import { registerDebug } from '../debug-hook.js';
 import { NotSavedNote, RestartButton } from '../run/RunGate.js';
 import type { RunHandle } from '../run/handle.js';
-import { AppShell, Panel } from '../shell/AppShell.js';
+import { Panel } from '../shell/AppShell.js';
+import { GameFrame, KeyHints } from '../shell/GameFrame.js';
+import type { MapRailProps } from '../shell/MapRail.js';
 import { ActingSwitch } from '../shell/ActingSwitch.js';
 import { useFading } from '../shell/status.js';
 import { BUILD_TAB_SCREEN, onStepTab, stepTabs } from '../shop/tabs.js';
@@ -36,9 +38,11 @@ import {
   BorderLinksPanel,
   PartyPanel,
   ProblemsPanel,
-  StashPanel,
-  ToolsPanel,
+  StashTray,
+  ToolsTray,
+  groupStash,
 } from './panels.js';
+import { readyPrimary } from './ready-primary.js';
 import { halfAlpha, halfStatuses } from './border-links.js';
 import { gateFor, READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
@@ -60,13 +64,10 @@ camera.refitOnResize = true;
 const ctl = new BuildController();
 let started = false;
 
-const plain = (v: unknown): unknown => JSON.parse(JSON.stringify(v)) as unknown;
+const fmtSecs = (n: number): string =>
+  Number.isInteger(n) ? String(n) : n.toFixed(1);
 
-function isTyping(t: EventTarget | null): boolean {
-  const el = t as HTMLElement | null;
-  const tag = el?.tagName ?? '';
-  return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
-}
+const plain = (v: unknown): unknown => JSON.parse(JSON.stringify(v)) as unknown;
 
 /**
  * The Build screen. On its own (`#build`) it starts a dev run. Given a
@@ -140,22 +141,17 @@ export function BuildView(props: {
     };
   }, []);
 
-  // Keyboard.
+  // A drag from the stash that ends off the board. (Keys go through the
+  // frame's one key listener: `onKey` below.)
   useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => {
-      if (isTyping(e.target) && e.key !== 'Escape') return;
-      if (ctl.key(e)) e.preventDefault();
-    };
     const onUp = (e: PointerEvent): void => {
       // A press on the stash that ended off the board cancels the drag.
       const t = e.target as HTMLElement | null;
       if (t?.closest('canvas') || t?.closest('.stash-item')) return;
       ctl.dropOutside();
     };
-    window.addEventListener('keydown', onKey);
     window.addEventListener('pointerup', onUp);
     return () => {
-      window.removeEventListener('keydown', onKey);
       window.removeEventListener('pointerup', onUp);
     };
   }, []);
@@ -439,38 +435,102 @@ export function BuildView(props: {
         { id: 'build', label: 'Build' },
       ];
 
+  // The frame's map rail: the same buttons in every phase. Flow, enemy paths
+  // and the test run belong to the factory, so they are on while editing.
+  const editing = run !== null && isEditStep(step);
+  const toggle = (
+    key: 'flow' | 'paths' | 'dry',
+    label: string,
+  ): NonNullable<MapRailProps['flow']> => ({
+    on: ui.overlays[key],
+    label,
+    onToggle: () => {
+      ctl.setOverlay(key, !ui.overlays[key]);
+    },
+  });
+  const rail: MapRailProps = {
+    camera,
+    ...(editing
+      ? {
+          flow: toggle('flow', screenText(screenTexts, 'uiOverlayFlow')),
+          paths: toggle('paths', screenText(screenTexts, 'uiOverlayPaths')),
+          testRun: toggle(
+            'dry',
+            screenText(screenTexts, 'uiOverlayDry', {
+              secs: fmtSecs(ui.dryTicks / simConfig.ticksPerSecond),
+            }),
+          ),
+        }
+      : {}),
+  };
+
+  // Keys of the Build phase (Space is the frame's): 1-9 pick a stash slot,
+  // R rotates, C is the conduit tool, Esc cancels, closes the test run, or
+  // deselects.
+  const onKey = (e: KeyboardEvent): boolean => {
+    if (
+      /^[1-9]$/.test(e.key) &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      team !== null &&
+      isEditStep(step)
+    ) {
+      const group = groupStash(team, acting)[Number(e.key) - 1];
+      return ctl.pickSlot(group?.ids[0]);
+    }
+    if (e.key === 'Escape') {
+      const u = ctl.model.get().ui;
+      if (
+        u.overlays.dry &&
+        u.held === null &&
+        u.moving === null &&
+        u.draft === null &&
+        u.selection === null
+      ) {
+        ctl.setOverlay('dry', false);
+        return true;
+      }
+    }
+    return ctl.key(e);
+  };
+
   // ---- Other steps: a placeholder ----------------------------------------
   if (run !== null && !isEditStep(step) && step !== 'core_placement') {
     return (
-      <AppShell
+      <GameFrame
+        phase="other"
         title={`Round ${String(run.round)} · ${step}`}
         status={devStrip}
-      >
-        <div class="placeholder" id="step-placeholder">
-          <Panel title="Next step" id="panel-next-step">
-            <p>
-              The run is now in step <strong data-field="step">{step}</strong>{' '}
-              (round {run.round}). There is no screen for it yet.
-            </p>
-            <p class="muted" data-field="status-line">
-              {ui.status.text}
-            </p>
-            {shared !== undefined ? (
-              <RestartButton />
-            ) : (
-              <button
-                type="button"
-                id="dev-new-run"
-                onClick={() => {
-                  void ctl.newRun(model.seed);
-                }}
-              >
-                {`Start a new run (seed ${String(model.seed)})`}
-              </button>
-            )}
-          </Panel>
-        </div>
-      </AppShell>
+        rail={rail}
+        primary={null}
+        onKey={onKey}
+        board={
+          <div class="placeholder" id="step-placeholder">
+            <Panel title="Next step" id="panel-next-step">
+              <p>
+                The run is now in step <strong data-field="step">{step}</strong>{' '}
+                (round {run.round}). There is no screen for it yet.
+              </p>
+              <p class="muted" data-field="status-line">
+                {ui.status.text}
+              </p>
+              {shared !== undefined ? (
+                <RestartButton />
+              ) : (
+                <button
+                  type="button"
+                  id="dev-new-run"
+                  onClick={() => {
+                    void ctl.newRun(model.seed);
+                  }}
+                >
+                  {`Start a new run (seed ${String(model.seed)})`}
+                </button>
+              )}
+            </Panel>
+          </div>
+        }
+      />
     );
   }
 
@@ -491,6 +551,7 @@ export function BuildView(props: {
             hoverInfo={
               ui.held === null && ui.moving === null && ui.draft === null
             }
+            controls={false}
             drawOverlay={drawOverlay.current}
             overlayKey={overlayKey}
             animate={ui.overlays.flow}
@@ -533,37 +594,43 @@ export function BuildView(props: {
 
   if (step === 'core_placement') {
     return (
-      <AppShell
+      <GameFrame
+        phase="core"
         title={screenText(screenTexts, 'uiCoreTitle')}
         status={devStrip}
-        tallBottom
-        bottom={
+        rail={rail}
+        primary={null}
+        onKey={onKey}
+        board={boardArea}
+        tray={<p class="tray-text">{screenText(screenTexts, 'uiCoreClick')}</p>}
+        info={
           <Panel title={screenText(screenTexts, 'uiCoreTitle')} id="panel-core">
             <p>{screenText(screenTexts, 'uiCoreClick')}</p>
           </Panel>
         }
-      >
-        {boardArea}
-      </AppShell>
+      />
     );
   }
 
-  const bottom =
+  const tray =
     run === null || team === null ? null : (
       <>
-        <div class="dock-col">
-          <StashPanel
-            team={team}
-            model={model}
-            ctl={ctl}
-            player={acting}
-            locked={gate?.ready === true}
-          />
-          <ToolsPanel model={model} ctl={ctl} locked={gate?.ready === true} />
-        </div>
+        <ToolsTray model={model} ctl={ctl} locked={gate?.ready === true} />
+        <StashTray
+          team={team}
+          model={model}
+          ctl={ctl}
+          player={acting}
+          locked={gate?.ready === true}
+        />
+      </>
+    );
+
+  const info =
+    run === null || team === null ? null : (
+      <>
         {ui.overlays.dry && flow !== null ? (
-          // The test run takes the place of the Selected and Overlays/Problems
-          // columns while it is open, so it never covers the board.
+          // The test run is a table in the info rail: it never covers the board.
           <DryRunTable
             team={team}
             flow={flow}
@@ -574,40 +641,33 @@ export function BuildView(props: {
               ctl.setHighlight(id === null ? null : { kind: 'building', id });
             }}
           />
-        ) : (
-          <>
-            <div class="dock-col">
-              <InspectorPanel
-                run={run}
-                model={model}
-                dry={flow?.dry ?? null}
-                flow={flow}
-                ctl={ctl}
-                sealed={sealedIds}
-                acting={acting}
-              />
-            </div>
-            <div class="dock-col">
-              <OverlaysPanel model={model} ctl={ctl} />
-              <BorderLinksPanel
-                run={run}
-                ctl={ctl}
-                acting={acting}
-                locked={gate?.ready === true}
-                flow={flow}
-              />
-              <ProblemsPanel problems={problems} onPick={onPick} />
-            </div>
-          </>
-        )}
-        <div class="dock-col">
-          <PartyPanel run={run} ctl={ctl} gate={gate} acting={acting} />
-        </div>
+        ) : null}
+        <InspectorPanel
+          run={run}
+          model={model}
+          dry={flow?.dry ?? null}
+          flow={flow}
+          ctl={ctl}
+          sealed={sealedIds}
+          acting={acting}
+        />
+        <ProblemsPanel problems={problems} onPick={onPick} />
+        <OverlaysPanel model={model} ctl={ctl} />
+        <BorderLinksPanel
+          run={run}
+          ctl={ctl}
+          acting={acting}
+          locked={gate?.ready === true}
+          flow={flow}
+        />
+        <PartyPanel run={run} ctl={ctl} gate={gate} acting={acting} />
+        <KeyHints />
       </>
     );
 
   return (
-    <AppShell
+    <GameFrame
+      phase="build"
       title={
         run === null
           ? 'Build'
@@ -619,10 +679,12 @@ export function BuildView(props: {
       activeTab={shared ? 'shop-build' : 'build'}
       {...(shared ? { onTab: onStepTab } : {})}
       status={devStrip}
-      bottom={bottom}
-      tallBottom
-    >
-      {boardArea}
-    </AppShell>
+      rail={rail}
+      board={boardArea}
+      tray={tray}
+      primary={run === null ? null : readyPrimary(run, ctl, gate, acting)}
+      info={info}
+      onKey={onKey}
+    />
   );
 }

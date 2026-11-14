@@ -869,6 +869,20 @@ export class BuildController {
     this.stickHeld();
   }
 
+  /**
+   * A slot key (1-9): hold the first building of that stash slot. A Ready
+   * player cannot (the lock says so); a key past the last slot does nothing.
+   */
+  pickSlot(id: number | undefined): boolean {
+    if (id === undefined || !isEditStep(this.step())) return false;
+    if (this.isReady()) {
+      this.say(READY_LOCK_TEXT, 'info');
+      return true;
+    }
+    this.pickFromStash(id);
+    return true;
+  }
+
   /** "Placed X.", with a warning when its output faces the board edge. */
   private placedStatus(team: TeamState, id: number, defId: string): Status {
     const b = team.buildings.find((x) => x.id === id);

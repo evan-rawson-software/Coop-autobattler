@@ -16,32 +16,6 @@
   }
 }
 
-.dock-bottom.tall {
-  display: grid;
-  grid-template-columns: 1.5fr 1.2fr 1.5fr 0.8fr;
-  height: clamp(264px, 31vh, 320px);
-}
-
-.dock-col {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-  min-height: 0;
-}
-
-.dock-col > .panel {
-  flex: 1 1 auto;
-}
-
-.dock-col > .panel:first-child:not(:only-child):not(.fixed) {
-  flex: 1 1 0;
-}
-
-.dock-col > .panel.fixed {
-  flex: 0 0 auto;
-}
-
 .dev-strip {
   display: inline-flex;
   align-items: center;
@@ -59,13 +33,6 @@
 
 .pad {
   padding: 1rem;
-}
-
-.build-board {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
 }
 
 .build-canvas {
@@ -94,61 +61,7 @@
   border-top-color: var(--ok);
 }
 
-/* Two columns where they fit, so the whole stash shows in the dock. */
-.stash-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
-  gap: 0.35rem;
-}
-
-.stash-list .stash-item {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Narrow desktop windows: give the stash the width for two columns of rows
-   (the Selected panel is mostly empty), and tighten the rows. */
-@media (max-width: 1200px) {
-  .dock-bottom.tall {
-    grid-template-columns: 2fr 1fr 1.4fr 0.8fr;
-  }
-
-  .stash-list {
-    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
-    gap: 0.25rem;
-  }
-
-  .stash-item {
-    gap: 0.3rem;
-    padding: 0.15rem 0.4rem;
-    white-space: nowrap;
-  }
-}
-
-/* A panel body that scrolls shows a fade at the edge with more behind it. */
-#panel-stash .panel-body {
-  overflow-y: scroll;
-  scrollbar-width: thin;
-  scrollbar-color: var(--ink-muted) var(--surface-2);
-  background:
-    linear-gradient(var(--surface) 30%, transparent) top / 100% 1.4rem no-repeat
-      local,
-    linear-gradient(transparent, var(--surface) 70%) bottom / 100% 1.4rem
-      no-repeat local,
-    radial-gradient(farthest-side at 50% 0, rgb(0 0 0 / 0.28), transparent)
-      top / 100% 0.5rem no-repeat scroll,
-    radial-gradient(farthest-side at 50% 100%, rgb(0 0 0 / 0.28), transparent)
-      bottom / 100% 0.5rem no-repeat scroll;
-}
-
 .stash-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.2rem 0.5rem;
   touch-action: none;
   user-select: none;
   cursor: grab;
@@ -162,11 +75,6 @@
   color: var(--accent-ink);
 }
 
-.stash-item .swatch {
-  width: 14px;
-  height: 14px;
-}
-
 .stash-tier {
   font-size: 0.7rem;
   color: var(--ink-muted);
@@ -174,26 +82,6 @@
 
 .stash-item.active .stash-tier {
   color: inherit;
-}
-
-.tool-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.35rem;
-}
-
-.tool-grid button {
-  padding: 0.18rem 0.3rem;
-  font-size: 0.82rem;
-  white-space: nowrap;
-}
-
-/* Large windows: the Tools buttons are easier targets. */
-@media (min-width: 1600px) and (min-height: 900px) {
-  .tool-grid button {
-    padding: 0.4rem 0.5rem;
-    font-size: 0.95rem;
-  }
 }
 
 button:disabled {
@@ -390,34 +278,6 @@ button.problem:hover {
   font-size: 0.8rem;
 }
 
-.ready-btn {
-  width: 100%;
-  padding: 0.5rem;
-  font-weight: 700;
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
-}
-
-.ready-btn.on {
-  background: var(--surface-2);
-  border-color: var(--border);
-  color: var(--ink);
-}
-
-/* The test run sits in the bottom dock (over the Selected and Overlays
-   columns) while it is open, so the board stays visible. */
-.dock-bottom.tall > .dry-table {
-  grid-column: 2 / 4;
-  min-height: 0;
-  overflow: auto;
-  padding: 0.5rem 0.7rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  font-size: 0.8rem;
-}
-
 .dry-head {
   display: flex;
   justify-content: space-between;
@@ -453,10 +313,6 @@ button.problem:hover {
   max-width: 40rem;
 }
 
-.dock-bottom.tall > .panel:only-child {
-  grid-column: 1 / -1;
-}
-
 .link-list {
   list-style: none;
   margin: 0;
@@ -479,35 +335,31 @@ button.problem:hover {
   font-size: 0.85rem;
 }
 
-/* Wide windows: the board is height-bound (it keeps its proportions), so a
-   bottom dock only wastes the width. Move the panels into a column at the
-   right and give the board the full height. */
-@media (min-width: 1600px) and (min-aspect-ratio: 16/10) {
-  .main:has(.dock-bottom.tall .dock-col) {
-    grid-template-columns: minmax(0, 1fr) clamp(380px, 24vw, 520px);
-    grid-template-rows: minmax(0, 1fr);
-    grid-template-areas: 'view bottom';
-  }
+/* The Build board: the canvas over the status lines. */
+.build-board {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
 
-  .main:has(.dock-bottom.tall .dock-col) > .dock-bottom.tall {
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    overflow-y: auto;
-  }
+/* The test run is a table in the info rail. */
+.frame-info .dry-table {
+  flex: none;
+  padding: 0.5rem 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  overflow-x: auto;
+}
 
-  .dock-bottom.tall > .dock-col {
-    flex: 0 0 auto;
-  }
+/* The Problems list scrolls inside its panel; the rest of the rail scrolls
+   as a whole. */
+.frame-info #panel-problems .panel-body {
+  max-height: 11rem;
+}
 
-  .dock-bottom.tall > .dock-col > .panel {
-    flex: 0 0 auto;
-  }
-
-  .dock-bottom.tall
-    > .dock-col
-    > .panel:first-child:not(:only-child):not(.fixed) {
-    flex: 0 0 auto;
-    max-height: 16rem;
-  }
+.frame-info .overlay-legend ul {
+  grid-template-columns: 1fr;
 }

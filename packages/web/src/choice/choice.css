@@ -6,6 +6,7 @@
   overflow: auto;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 0.9rem;
   padding: 0.9rem 1.25rem;
 }
@@ -244,4 +245,34 @@ button.event-card:focus-visible .pve-fight {
   flex-wrap: wrap;
   gap: 0.6rem;
   margin: 0;
+}
+
+/* A card's number key, in its corner; the card the primary button will take. */
+.pve-card,
+.event-card {
+  position: relative;
+}
+
+.pve-card .slot-key,
+.event-card .slot-key {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.pve-card.marked,
+.event-card.marked {
+  border-color: var(--accent);
+}
+
+.frame-info .choice-banner {
+  padding: 0.5rem 0.7rem;
+}
+
+.frame-info .choice-prompt {
+  margin: 0 0 0.3rem;
+  font-size: 1rem;
 }

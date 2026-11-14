@@ -18,9 +18,11 @@ import { registerDebug, unregisterDebug } from '../debug-hook.js';
 import { NotSavedNote, RestartButton, RunGate } from '../run/RunGate.js';
 import type { RunHandle } from '../run/handle.js';
 import { ensureShopRun, optionsFromUrl } from '../run/shop-run.js';
-import { AppShell, Panel } from '../shell/AppShell.js';
+import { Panel } from '../shell/AppShell.js';
+import { GameFrame, KeyHints } from '../shell/GameFrame.js';
 import { ActingSwitch } from '../shell/ActingSwitch.js';
 import { useNoticeTimeout, useStatus } from '../shell/status.js';
+import '../build/build.css';
 import './shop.css';
 import { screenText, screenTexts } from '../build/texts.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
@@ -147,32 +149,44 @@ function StashList(props: {
 }) {
   const { rows, pending, onPick, flash, blocked } = props;
   if (rows.length === 0) {
-    return null;
+    return (
+      <p class="tray-empty" data-field="stash-empty">
+        {screenText(screenTexts, 'uiTrayNothing')}
+      </p>
+    );
   }
   return (
-    <ul class="shop-stash" id="shop-stash">
-      {rows.map((r) => {
+    <ul class="shop-stash tray-slots" id="shop-stash">
+      {rows.map((r, i) => {
         const key = `${r.def}:${String(r.tier)}`;
         const selected =
           pending !== null && pending.def === r.def && pending.tier === r.tier;
         return (
           <li
             key={key}
-            class={`stash-row${selected ? ' selected' : ''}${flash === key ? ' flash' : ''}`}
+            class={`stash-row slot${selected ? ' selected' : ''}${flash === key ? ' flash' : ''}`}
             data-stash-def={r.def}
             data-stash-tier={r.tier}
             data-count={r.ids.length}
           >
+            {i < 9 ? (
+              <span class="slot-key" data-field="slot-key">
+                {i + 1}
+              </span>
+            ) : null}
             <span class="stash-label">
               <SpriteIcon name={r.def} size={32} class="stash-sprite" />
-              {r.name} <span class="stash-tier">T{r.tier}</span> ×{' '}
-              {r.ids.length}
+              <span class="slot-name">{r.name}</span>
+              <span class="slot-meta">
+                <span class="stash-tier">T{r.tier}</span> × {r.ids.length}
+              </span>
             </span>
             <button
               type="button"
               data-action="sell"
               disabled={blocked !== null}
               title={blocked ?? undefined}
+              aria-keyshortcuts={i < 9 ? String(i + 1) : undefined}
               onClick={() => {
                 onPick(r);
               }}
@@ -257,18 +271,6 @@ export function ShopTab(props: {
   useNoticeTimeout(view.notice, dismissNotice);
   const [mountId] = useState(() => ++mountCount);
   const [flash, setFlash] = useState<string | null>(null);
-  // Escape cancels an open sale confirmation.
-  const sellOpen = pending !== null;
-  useEffect(() => {
-    if (!sellOpen) return;
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setPending(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [sellOpen]);
   useEffect(() => {
     if (flash === null) return;
     const t = setTimeout(() => {
@@ -397,80 +399,124 @@ export function ShopTab(props: {
     </>
   );
 
+  // Keys of the Shop phase (Space is the frame's): 1-9 pick a stash slot to
+  // sell, Esc cancels the sale.
+  const onKey = (e: KeyboardEvent): boolean => {
+    if (/^[1-9]$/.test(e.key) && !e.ctrlKey && !e.metaKey) {
+      const row = sv.stash[Number(e.key) - 1];
+      if (row === undefined || sv.sellBlock !== null) return false;
+      setPending(row);
+      return true;
+    }
+    if (e.key === 'Escape' && pending !== null) {
+      setPending(null);
+      return true;
+    }
+    return false;
+  };
+
   if (!stepOpen) {
     return (
-      <AppShell
+      <GameFrame
+        phase="other"
         title={`Round ${String(run.round)} · ${run.step}`}
         status={status_bar}
-      >
-        <div class="placeholder" id="step-placeholder">
-          <Panel title="Ready, waiting to continue" id="panel-next-step">
-            <p>
-              Everyone is ready. The run moved on to{' '}
-              <strong data-field="step">{run.step}</strong> (round {run.round}).
-              There is no screen for it yet.
-            </p>
-            <RestartButton />
-          </Panel>
-        </div>
-      </AppShell>
+        rail={{ camera: miniCamera }}
+        primary={null}
+        board={
+          <div class="placeholder" id="step-placeholder">
+            <Panel title="Ready, waiting to continue" id="panel-next-step">
+              <p>
+                Everyone is ready. The run moved on to{' '}
+                <strong data-field="step">{run.step}</strong> (round {run.round}
+                ). There is no screen for it yet.
+              </p>
+              <RestartButton />
+            </Panel>
+          </div>
+        }
+      />
     );
   }
 
+  const primary = {
+    id: 'shop-ready',
+    label: (
+      <>
+        {sv.ready ? (
+          <SpriteIcon name="ui_icon_ready" scale={1} class="ready-icon" />
+        ) : null}
+        {screenText(screenTexts, sv.ready ? 'uiPartyUnready' : 'uiPartyReady')}
+      </>
+    ),
+    class: sv.ready ? 'on' : '',
+    disabled: sv.readyBlock !== null,
+    title: sv.readyBlock ?? undefined,
+    attrs: { 'data-action': 'ready' },
+    onPress: onReady,
+  };
+
   return (
-    <AppShell
+    <GameFrame
+      phase="shop"
       title={`Round ${String(run.round)} · Shop + Build`}
       tabs={stepTabs()}
       activeTab="shop"
       onTab={onStepTab}
       status={status_bar}
-    >
-      <div class="shop" id="shop-screen">
-        <section class="shop-offers panel" aria-label="Your offers">
-          <h2 class="panel-title">Your offers</h2>
-          <ul class="offers" id="offers">
-            {sv.groups.map((g) => (
-              <Card key={g.card.slot} group={g} onBuy={onBuy} />
-            ))}
-          </ul>
-        </section>
-
-        <div class="shop-side">
-          {/* The gold amount is in the header; this panel is the re-roll. */}
-          <Panel title="Re-roll" id="panel-gold">
-            <button
-              type="button"
-              id="reroll"
-              data-action="reroll"
-              disabled={!sv.reroll.can}
-              onClick={onReroll}
-            >
-              Re-roll · {sv.reroll.cost} gold
-            </button>
-            <span class="why" data-field="reroll-reason">
-              {sv.reroll.reason ?? ''}
-            </span>
-          </Panel>
-          {bonuses.length === 0 ? null : (
-            <Panel title="Bonuses" id="panel-bonuses">
-              <ul class="bonus-list">
-                {bonuses.map((b) => (
-                  <li key={b.id} data-bonus={b.id} title={b.effects.join('\n')}>
-                    {b.count > 1 ? `${b.name} ×${String(b.count)}` : b.name}
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-          )}
-          <Panel title="Your stash" id="panel-shop-stash">
-            <StashList
-              rows={sv.stash}
-              pending={pending}
-              onPick={setPending}
-              blocked={sv.sellBlock}
-              flash={flash}
+      rail={{ camera: miniCamera }}
+      primary={primary}
+      onKey={onKey}
+      board={
+        <div class="shop-board">
+          <div class="build-canvas mini-board" id="mini-board">
+            <BoardView
+              content={content}
+              own={run.team}
+              controller={miniCamera}
+              resetKey={`${run.runId}:mini`}
+              frontLabel="FRONT EDGE"
+              controls={false}
             />
-            {pending === null ? null : (
+          </div>
+          {view.notice === null ? null : (
+            <div
+              class="status-line ok"
+              id="shop-notice"
+              role="status"
+              data-field="notice"
+            >
+              <span>{view.notice}</span>
+            </div>
+          )}
+          <div
+            class={`status-line ${status.kind}`}
+            id="shop-status"
+            role="status"
+            data-kind={status.kind}
+          >
+            {status.text}
+          </div>
+        </div>
+      }
+      tray={
+        <div class="tray-stash" id="panel-shop-stash">
+          <span class="tray-label">
+            {screenText(screenTexts, 'uiTrayStashLabel')}
+          </span>
+          <StashList
+            rows={sv.stash}
+            pending={pending}
+            onPick={setPending}
+            blocked={sv.sellBlock}
+            flash={flash}
+          />
+        </div>
+      }
+      info={
+        <div class="shop-info" id="shop-screen">
+          {pending === null ? null : (
+            <Panel title="Sell" id="panel-sell">
               <div class="sell-target active" id="sell-target">
                 <p id="sell-quote" data-refund={saleQuote(pending).refund}>
                   {saleQuote(pending).text}
@@ -495,11 +541,42 @@ export function ShopTab(props: {
                   </button>
                 </div>
               </div>
-            )}
+            </Panel>
+          )}
+          {/* The gold amount is in the header; this panel is the re-roll. */}
+          <Panel title="Re-roll" id="panel-gold">
+            <button
+              type="button"
+              id="reroll"
+              data-action="reroll"
+              disabled={!sv.reroll.can}
+              onClick={onReroll}
+            >
+              Re-roll · {sv.reroll.cost} gold
+            </button>
+            <span class="why" data-field="reroll-reason">
+              {sv.reroll.reason ?? ''}
+            </span>
           </Panel>
-        </div>
-
-        <div class={solo ? 'shop-bottom solo' : 'shop-bottom'}>
+          <section class="shop-offers panel" aria-label="Your offers">
+            <h2 class="panel-title">Your offers</h2>
+            <ul class="offers" id="offers">
+              {sv.groups.map((g) => (
+                <Card key={g.card.slot} group={g} onBuy={onBuy} />
+              ))}
+            </ul>
+          </section>
+          {bonuses.length === 0 ? null : (
+            <Panel title="Bonuses" id="panel-bonuses">
+              <ul class="bonus-list">
+                {bonuses.map((b) => (
+                  <li key={b.id} data-bonus={b.id} title={b.effects.join('\n')}>
+                    {b.count > 1 ? `${b.name} ×${String(b.count)}` : b.name}
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
           {solo ? null : (
             <Panel title="Party (co-op)" id="panel-party-shop">
               <p class="muted">{screenText(screenTexts, 'uiComingSoon')}</p>
@@ -508,27 +585,6 @@ export function ShopTab(props: {
           <Panel title="Next battle" id="panel-next-battle">
             <NextBattle view={next} />
             <div class="ready-row">
-              <button
-                type="button"
-                id="shop-ready"
-                class={sv.ready ? 'ready-btn on' : 'ready-btn'}
-                data-action="ready"
-                disabled={sv.readyBlock !== null}
-                title={sv.readyBlock ?? undefined}
-                onClick={onReady}
-              >
-                {sv.ready ? (
-                  <SpriteIcon
-                    name="ui_icon_ready"
-                    scale={1}
-                    class="ready-icon"
-                  />
-                ) : null}
-                {screenText(
-                  screenTexts,
-                  sv.ready ? 'uiPartyUnready' : 'uiPartyReady',
-                )}
-              </button>
               <span
                 class={sv.readyBlock === null ? 'muted' : 'error'}
                 data-field="ready-state"
@@ -539,41 +595,14 @@ export function ShopTab(props: {
             </div>
           </Panel>
           <Panel title="Your factory" id="panel-factory">
-            <div class="mini-board" id="mini-board">
-              <BoardView
-                content={content}
-                own={run.team}
-                controller={miniCamera}
-                resetKey={`${run.runId}:mini`}
-                frontLabel="FRONT EDGE"
-              />
-            </div>
             <p class="muted fine" data-field="factory-counts">
               {sv.placedCount} {sv.placedCount === 1 ? 'building' : 'buildings'}{' '}
               placed · {sv.stashCount} in stash
             </p>
           </Panel>
+          <KeyHints />
         </div>
-
-        {view.notice === null ? null : (
-          <div
-            class="status-line ok"
-            id="shop-notice"
-            role="status"
-            data-field="notice"
-          >
-            <span>{view.notice}</span>
-          </div>
-        )}
-        <div
-          class={`status-line ${status.kind}`}
-          id="shop-status"
-          role="status"
-          data-kind={status.kind}
-        >
-          {status.text}
-        </div>
-      </div>
-    </AppShell>
+      }
+    />
   );
 }

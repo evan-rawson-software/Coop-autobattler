@@ -9,6 +9,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { checkFrame } from './smoke-frame.mjs';
 import { frames, hookReady, slow } from './smoke-timing.mjs';
 
 const SEED = 7;
@@ -747,6 +748,7 @@ export async function runRunSmoke({
     `Core placement: choosing a legal position enables Confirm (${pick.x}, ${pick.y})`,
   );
   await shot('run-3-core-selected');
+  await checkFrame(page, check, 'Place Core');
   await shotDark('art2-core-placement');
   await checkAt1366(
     'Core placement',
@@ -764,7 +766,8 @@ export async function runRunSmoke({
   );
   await page.mouse.click(pPick.x, pPick.y);
   await settle();
-  await page.click('#core-confirm');
+  // Space presses the primary button in every phase.
+  await page.keyboard.press('Space');
   await waitStep('build');
   await page.waitForFunction(() => window.__debug?.build?.step() === 'build');
   await settle();
@@ -802,6 +805,7 @@ export async function runRunSmoke({
     'first build: only a plain Build label, no tab buttons (there is no shop yet)',
   );
   await shot('run-4-first-build');
+  await checkFrame(page, check, 'Build');
   const left = await placeKit();
   check(
     left === 0,
@@ -918,7 +922,7 @@ export async function runRunSmoke({
     `PvE choice: every card states which Core Overload destroys first ("${overloadLines[0]}")`,
   );
   check(
-    /no life/.test(await page.locator('.choice-banner').innerText()),
+    /no life/.test(await page.locator('[data-field="stakes"]').innerText()),
     'PvE choice: the stakes of losing are stated',
   );
   check(
@@ -930,6 +934,7 @@ export async function runRunSmoke({
     'PvE choice: says what to do and each card has a Fight button look',
   );
   await shot('run-5-pve-choice');
+  await checkFrame(page, check, 'Choose opponent');
   await shotDark('art2-pve-choice');
   await reloadSame('PvE choice');
   await page.click('[data-action="choose"][data-difficulty="easy"]');
@@ -1034,6 +1039,7 @@ export async function runRunSmoke({
     'battle summary: the button says Continue; no duplicate opponent tag',
   );
   await shot('run-6-battle-summary');
+  await checkFrame(page, check, 'Battle result');
   await reloadSame('the battle summary');
   await page.waitForFunction(
     () => window.__debug?.battle?.phase() === 'summary',
@@ -1069,6 +1075,7 @@ export async function runRunSmoke({
     'event: every card says what it does in words',
   );
   await shot('run-7-event-choice');
+  await checkFrame(page, check, 'Event');
   await shotDark('art2-event');
   await reloadSame('the event choice');
   // Prefer an event with a follow-up.
@@ -1169,6 +1176,7 @@ export async function runRunSmoke({
   await page.click('.topbar-tabs button:has-text("Shop")');
   await page.waitForSelector('#shop-screen');
   await shot('run-9-shop');
+  await checkFrame(page, check, 'Shop');
   await shotDark('art2-shop');
   {
     const shopText = await page.locator('#shop-screen').innerText();

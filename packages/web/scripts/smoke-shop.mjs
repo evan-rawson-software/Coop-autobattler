@@ -493,14 +493,16 @@ export async function runShopSmoke({
   await frames(page, 9);
   const sc2 = await noScroll(1366, 768);
   check(sc2.ok, `shop has no page scroll at 1366x768 (${JSON.stringify(sc2)})`);
+  // The offers are in the info rail, which scrolls when they do not all fit:
+  // none may be cut off at the side, and every Buy button can be reached.
   const clipped = await page.evaluate(() => {
-    const box = document.querySelector('#offers').getBoundingClientRect();
+    const box = document.querySelector('.frame-info').getBoundingClientRect();
     return [...document.querySelectorAll('#offers .offer')].filter((el) => {
       const r = el.getBoundingClientRect();
       return (
-        r.bottom > box.bottom + 1 ||
         r.right > box.right + 1 ||
-        el.scrollHeight > el.clientHeight + 1
+        r.left < box.left - 1 ||
+        el.scrollWidth > el.clientWidth + 1
       );
     }).length;
   });
@@ -509,15 +511,22 @@ export async function runShopSmoke({
     `no offer card is clipped at 1366x768 (${clipped} clipped)`,
   );
   const buyVisible = await page.evaluate(() => {
-    const box = document.querySelector('#offers').getBoundingClientRect();
-    return [...document.querySelectorAll('#offers [data-action="buy"]')].every(
-      (b) => {
-        const r = b.getBoundingClientRect();
-        return r.bottom <= box.bottom + 1;
-      },
+    const rail = document.querySelector('.frame-info');
+    const box = rail.getBoundingClientRect();
+    const canScroll =
+      getComputedStyle(rail).overflowY === 'auto' ||
+      rail.scrollHeight <= rail.clientHeight;
+    return (
+      canScroll &&
+      [...document.querySelectorAll('#offers [data-action="buy"]')].every(
+        (b) => {
+          const r = b.getBoundingClientRect();
+          return r.right <= box.right + 1 && r.left >= box.left - 1;
+        },
+      )
     );
   });
-  check(buyVisible, 'Buy buttons are fully visible at 1366x768');
+  check(buyVisible, 'Buy buttons are inside the info rail at 1366x768');
   await shot('shop-6-1366x768');
   await shotDark('art2-shop-1366x768');
   await page.setViewportSize({ width: 1920, height: 1080 });
@@ -611,7 +620,10 @@ export async function runShopSmoke({
 
   // --- Ready from the Shop tab
   const readyBefore = await page.locator('#shop-ready').innerText();
-  check(readyBefore === 'Ready', 'Ready is available on the Shop tab');
+  check(
+    /^Ready\s+Space$/.test(readyBefore),
+    `Ready is available on the Shop tab ("${readyBefore.replace(/\s+/g, ' ')}")`,
+  );
   await page.click('#shop-ready');
   await page.waitForSelector('#step-placeholder');
   const ph = await page.locator('#step-placeholder').innerText();
@@ -769,7 +781,7 @@ export async function runShopSmoke({
   await page.click('#ready-button');
   await page.waitForSelector('[data-field="ready-locked"]');
   check(
-    (await page.locator('#ready-button').innerText()) === 'Unready' &&
+    /^Unready\s+Space$/.test(await page.locator('#ready-button').innerText()) &&
       (await B.step()) === 'shop',
     'two players: Ready locks this player and the run stays in the shop',
   );

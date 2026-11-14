@@ -1,6 +1,7 @@
 /** The panels of the battle screen (left, right) and its summary. */
 
 import type { BattleReason, BattleSideSummary } from '@game/core';
+import type { ComponentChildren } from 'preact';
 import { useMemo } from 'preact/hooks';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
@@ -134,6 +135,8 @@ export function LeftPanels(props: {
   /** PvE: which Core Overload destroys first; null against a ghost. */
   readonly overloadNote?: string | null;
   readonly tps: number;
+  /** Panels shown right after the player's side (the opponent's, the log). */
+  readonly afterSide?: ComponentChildren;
 }) {
   const { pb, mine, theirs, content } = props;
   const resName = (id: string): string => content.resources.get(id)?.name ?? id;
@@ -163,6 +166,7 @@ export function LeftPanels(props: {
           side={0}
         />
       </Panel>
+      {props.afterSide}
       <Panel title={t('battlePanelProduction')} id="panel-production">
         <table class="stat-table">
           <tbody>
@@ -255,11 +259,6 @@ export function RightPanels(props: {
   readonly moments: readonly Moment[];
   readonly tps: number;
   readonly revealed: boolean;
-  readonly onSpeed: (s: PlaybackSpeed) => void;
-  readonly onPause: () => void;
-  readonly onSkip: () => void;
-  /** Watching again: Skip becomes "Back to results". */
-  readonly replay: boolean;
   readonly onFocus: (m: Moment) => void;
 }) {
   const { pb, opponent, theirs, content } = props;
@@ -313,39 +312,46 @@ export function RightPanels(props: {
           </ol>
         )}
       </Panel>
-      <Panel title={t('battlePanelSpeed')} id="panel-speed">
-        <div class="btn-row">
-          {SPEEDS.map((s) => (
-            <button
-              type="button"
-              key={s}
-              id={`speed-${String(s)}`}
-              class={pb.speed === s ? 'on' : ''}
-              aria-pressed={pb.speed === s}
-              onClick={() => {
-                props.onSpeed(s);
-              }}
-            >
-              {s}×
-            </button>
-          ))}
-          <button type="button" id="skip" onClick={props.onSkip}>
-            {t(props.replay ? 'battleBackToResults' : 'battleSkip')}
-          </button>
-        </div>
-        <div class="btn-row">
+    </>
+  );
+}
+
+/** The playback controls in the action tray: speed and pause. */
+export function SpeedTray(props: {
+  readonly pb: Playback;
+  readonly onSpeed: (s: PlaybackSpeed) => void;
+  readonly onPause: () => void;
+}) {
+  const { pb } = props;
+  return (
+    <div class="speed-tray" id="panel-speed">
+      <span class="tray-label">{t('battlePanelSpeed')}</span>
+      <div class="btn-row">
+        <button
+          type="button"
+          id="pause"
+          aria-pressed={pb.paused}
+          class={pb.paused ? 'on' : ''}
+          onClick={props.onPause}
+        >
+          {t(pb.paused ? 'battlePlay' : 'battlePause')}
+        </button>
+        {SPEEDS.map((s) => (
           <button
             type="button"
-            id="pause"
-            aria-pressed={pb.paused}
-            class={pb.paused ? 'on' : ''}
-            onClick={props.onPause}
+            key={s}
+            id={`speed-${String(s)}`}
+            class={pb.speed === s ? 'on' : ''}
+            aria-pressed={pb.speed === s}
+            onClick={() => {
+              props.onSpeed(s);
+            }}
           >
-            {t(pb.paused ? 'battlePlay' : 'battlePause')}
+            {s}×
           </button>
-        </div>
-      </Panel>
-    </>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -458,11 +464,6 @@ export interface SummaryProps {
   /** The stored outcome, when the run state has one. */
   readonly won?: boolean | undefined;
   readonly tps: number;
-  readonly ready: boolean;
-  /** What the Ready button says before it is pressed; "Continue" by default. */
-  readonly continueText?: string | undefined;
-  readonly onWatchAgain: () => void;
-  readonly onReady: () => void;
 }
 
 export function BattleSummaryView(props: SummaryProps) {
@@ -659,25 +660,6 @@ export function BattleSummaryView(props: SummaryProps) {
         </p>
       </section>
 
-      <Panel title={t('battlePanelNext')} id="panel-ready" class="ready-panel">
-        <div class="btn-col">
-          <button type="button" id="watch-again" onClick={props.onWatchAgain}>
-            {t('battleWatchAgain')}
-          </button>
-          <button
-            type="button"
-            id="battle-ready"
-            class="primary"
-            disabled={props.ready}
-            onClick={props.onReady}
-          >
-            {props.ready
-              ? t('battleReadyDone')
-              : (props.continueText ?? t('battleContinue'))}
-          </button>
-        </div>
-      </Panel>
-
       <Panel title={t('battlePanelSummaryChart')} id="panel-summary-chart">
         <p class="muted small" data-field="strength-unit">
           {t('battleStrengthUnit')}
@@ -722,6 +704,7 @@ export function BattleSummaryView(props: SummaryProps) {
               resetKey={rec}
               drawOverlay={overlay}
               overlayKey={destroyed}
+              controls={false}
             />
           </div>
           {breaches.length === 0 ? (

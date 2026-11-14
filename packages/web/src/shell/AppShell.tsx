@@ -23,8 +23,6 @@ export interface AppShellProps {
   readonly onTab?: (id: string) => void;
   /** Right side of the top bar, e.g. round, lives, ready count. */
   readonly status?: ComponentChildren;
-  /** Taller bottom dock for screens with several panel rows. */
-  readonly tallBottom?: boolean;
   readonly left?: ComponentChildren;
   readonly right?: ComponentChildren;
   readonly bottom?: ComponentChildren;
@@ -41,54 +39,70 @@ export const SwitcherContext = createContext<ComponentChildren>(null);
  */
 export const RunBarContext = createContext<ComponentChildren>(null);
 
-export function AppShell(props: AppShellProps) {
-  const { tabs = [], left, right, bottom } = props;
+/** The top bar: title, tabs or phase label, status and the run bar. */
+export function TopBar(props: {
+  title: string;
+  tabs?: readonly TabDef[] | undefined;
+  activeTab?: string | undefined;
+  onTab?: ((id: string) => void) | undefined;
+  status?: ComponentChildren;
+}) {
+  const { tabs = [] } = props;
   const switcher = useContext(SwitcherContext);
   const runBar = useContext(RunBarContext);
   return (
+    <header class={runBar ? 'topbar has-run-bar' : 'topbar'}>
+      <div class="topbar-left">
+        {runBar ? null : switcher}
+        <h1 class="topbar-title">{props.title}</h1>
+      </div>
+      <nav class="topbar-tabs" aria-label="Sections">
+        {tabs.map((t) =>
+          // A lone tab goes nowhere: it is a plain phase label, not a button.
+          tabs.length === 1 ? (
+            <span key={t.id} class="phase-label" data-field="phase">
+              {t.label}
+            </span>
+          ) : (
+            <button
+              type="button"
+              key={t.id}
+              class={t.id === props.activeTab ? 'tab active' : 'tab'}
+              aria-pressed={t.id === props.activeTab}
+              disabled={t.disabled === true}
+              title={t.hint}
+              onClick={() => props.onTab?.(t.id)}
+            >
+              {t.label}
+            </button>
+          ),
+        )}
+      </nav>
+      <div class="topbar-status">
+        {props.status}
+        {runBar}
+      </div>
+    </header>
+  );
+}
+
+export function AppShell(props: AppShellProps) {
+  const { left, right, bottom } = props;
+  return (
     <div class="app">
-      <header class={runBar ? 'topbar has-run-bar' : 'topbar'}>
-        <div class="topbar-left">
-          {runBar ? null : switcher}
-          <h1 class="topbar-title">{props.title}</h1>
-        </div>
-        <nav class="topbar-tabs" aria-label="Sections">
-          {tabs.map((t) =>
-            // A lone tab goes nowhere: it is a plain phase label, not a button.
-            tabs.length === 1 ? (
-              <span key={t.id} class="phase-label" data-field="phase">
-                {t.label}
-              </span>
-            ) : (
-              <button
-                type="button"
-                key={t.id}
-                class={t.id === props.activeTab ? 'tab active' : 'tab'}
-                aria-pressed={t.id === props.activeTab}
-                disabled={t.disabled === true}
-                title={t.hint}
-                onClick={() => props.onTab?.(t.id)}
-              >
-                {t.label}
-              </button>
-            ),
-          )}
-        </nav>
-        <div class="topbar-status">
-          {props.status}
-          {runBar}
-        </div>
-      </header>
+      <TopBar
+        title={props.title}
+        tabs={props.tabs}
+        activeTab={props.activeTab}
+        onTab={props.onTab}
+        status={props.status}
+      />
       <StorageNotes />
       <div class="main">
         <main class="main-view">{props.children}</main>
         {left ? <Dock region="left">{left}</Dock> : null}
         {right ? <Dock region="right">{right}</Dock> : null}
-        {bottom ? (
-          <Dock region="bottom" tall={props.tallBottom}>
-            {bottom}
-          </Dock>
-        ) : null}
+        {bottom ? <Dock region="bottom">{bottom}</Dock> : null}
       </div>
       <footer class="build-id" id="build-id">
         Build {__BUILD_COMMIT__} · {__BUILD_DATE__}
@@ -102,14 +116,10 @@ export type DockRegion = 'left' | 'right' | 'bottom';
 /** A named dock region; screens put `Panel`s in it. */
 export function Dock(props: {
   region: DockRegion;
-  tall?: boolean | undefined;
   children?: ComponentChildren;
 }) {
   return (
-    <aside
-      class={`dock dock-${props.region}${props.tall === true ? ' tall' : ''}`}
-      data-dock={props.region}
-    >
+    <aside class={`dock dock-${props.region}`} data-dock={props.region}>
       {props.children}
     </aside>
   );

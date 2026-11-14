@@ -13,6 +13,7 @@ import type { ComponentChildren } from 'preact';
 import type { RunState } from '@game/session';
 import { content } from '../content.js';
 import { Panel } from '../shell/AppShell.js';
+import { Kbd } from '../shell/GameFrame.js';
 import {
   DRY_TICKS_MAX,
   DRY_TICKS_MIN,
@@ -93,7 +94,7 @@ export function groupStash(team: TeamState, player: number): StashGroup[] {
   );
 }
 
-export function StashPanel(props: {
+export function StashTray(props: {
   team: TeamState;
   model: Model;
   ctl: BuildController;
@@ -107,10 +108,15 @@ export function StashPanel(props: {
   const groups = groupStash(team, props.player);
   const held = model.ui.held;
   return (
-    <Panel title={t('uiPanelStash')} id="panel-stash">
-      {groups.length === 0 ? null : (
-        <ul class="stash-list">
-          {groups.map((g) => {
+    <div class="tray-stash" id="panel-stash">
+      <span class="tray-label">{t('uiTrayStashLabel')}</span>
+      {groups.length === 0 ? (
+        <p class="tray-empty" data-field="stash-empty">
+          {t('uiTrayNothing')}
+        </p>
+      ) : (
+        <ul class="tray-slots stash-list">
+          {groups.map((g, i) => {
             const def = content.buildings.get(g.def);
             const first = g.ids[0] as number;
             const active = held !== null && g.ids.includes(held.id);
@@ -119,10 +125,11 @@ export function StashPanel(props: {
               <li key={`${g.def}:${String(g.tier)}`}>
                 <button
                   type="button"
-                  class={active ? 'stash-item active' : 'stash-item'}
+                  class={active ? 'slot stash-item active' : 'slot stash-item'}
                   data-stash-def={g.def}
                   data-stash-tier={g.tier}
                   aria-pressed={active}
+                  aria-keyshortcuts={i < 9 ? String(i + 1) : undefined}
                   disabled={locked}
                   title={
                     locked
@@ -145,12 +152,17 @@ export function StashPanel(props: {
                     ctl.stickHeld();
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if (e.key === 'Enter') {
                       e.preventDefault();
                       ctl.pickFromStash(first);
                     }
                   }}
                 >
+                  {i < 9 ? (
+                    <span class="slot-key" data-field="slot-key">
+                      {i + 1}
+                    </span>
+                  ) : null}
                   <span
                     class="swatch"
                     style={{
@@ -159,28 +171,30 @@ export function StashPanel(props: {
                   >
                     <SpriteIcon name={g.def} size={32} />
                   </span>
-                  <span class="stash-name">{name}</span>
-                  <span
-                    class="stash-tier"
-                    title={t('uiTierTip', { tier: String(g.tier) })}
-                  >
-                    T{g.tier}
+                  <span class="slot-name stash-name">{name}</span>
+                  <span class="slot-meta">
+                    <span
+                      class="stash-tier"
+                      title={t('uiTierTip', { tier: String(g.tier) })}
+                    >
+                      T{g.tier}
+                    </span>{' '}
+                    <span class="stash-count">× {g.ids.length}</span>
                   </span>
-                  <span class="stash-count">× {g.ids.length}</span>
                 </button>
               </li>
             );
           })}
         </ul>
       )}
-    </Panel>
+    </div>
   );
 }
 
 // ---------------------------------------------------------------------------
 // Tools
 
-export function ToolsPanel(props: {
+export function ToolsTray(props: {
   model: Model;
   ctl: BuildController;
   locked?: boolean;
@@ -194,6 +208,7 @@ export function ToolsPanel(props: {
       class={ui.tool === id ? 'tool active' : 'tool'}
       data-tool={id}
       aria-pressed={ui.tool === id}
+      aria-keyshortcuts={key}
       disabled={locked && id !== 'select'}
       title={
         locked && id !== 'select' ? READY_LOCK_TEXT : `${tip ?? label} (${key})`
@@ -202,41 +217,39 @@ export function ToolsPanel(props: {
         ctl.setTool(id);
       }}
     >
-      {label}
+      {label} <Kbd>{key}</Kbd>
     </button>
   );
   return (
-    <Panel title={t('uiPanelTools')} id="panel-tools" class="fixed">
-      <div class="tool-grid">
-        {tool('select', t('uiToolSelect'), 'V')}
-        {tool('conduit', t('uiToolConduit'), 'C', t('uiToolConduitTip'))}
-        {tool('erase', t('uiToolErase'), 'E')}
-        <button
-          type="button"
-          data-action="undo"
-          disabled={locked || (view?.undoCount ?? 0) === 0}
-          title={t('uiToolUndoTip')}
-          onClick={() => void ctl.undo()}
-        >
-          {t('uiToolUndo')}
-          {view !== null && view.undoCount > 0
-            ? ` (${String(view.undoCount)})`
-            : ''}
-        </button>
-        <button
-          type="button"
-          data-action="redo"
-          disabled={locked || (view?.redoCount ?? 0) === 0}
-          title={t('uiToolRedoTip')}
-          onClick={() => void ctl.redo()}
-        >
-          {t('uiToolRedo')}
-          {view !== null && view.redoCount > 0
-            ? ` (${String(view.redoCount)})`
-            : ''}
-        </button>
-      </div>
-    </Panel>
+    <div class="tray-tools" id="panel-tools">
+      {tool('select', t('uiToolSelect'), 'V')}
+      {tool('conduit', t('uiToolConduit'), 'C', t('uiToolConduitTip'))}
+      {tool('erase', t('uiToolErase'), 'E')}
+      <button
+        type="button"
+        data-action="undo"
+        disabled={locked || (view?.undoCount ?? 0) === 0}
+        title={t('uiToolUndoTip')}
+        onClick={() => void ctl.undo()}
+      >
+        {t('uiToolUndo')}
+        {view !== null && view.undoCount > 0
+          ? ` (${String(view.undoCount)})`
+          : ''}
+      </button>
+      <button
+        type="button"
+        data-action="redo"
+        disabled={locked || (view?.redoCount ?? 0) === 0}
+        title={t('uiToolRedoTip')}
+        onClick={() => void ctl.redo()}
+      >
+        {t('uiToolRedo')}
+        {view !== null && view.redoCount > 0
+          ? ` (${String(view.redoCount)})`
+          : ''}
+      </button>
+    </div>
   );
 }
 
@@ -562,37 +575,8 @@ export function InspectorPanel(props: {
 export function OverlaysPanel(props: { model: Model; ctl: BuildController }) {
   const { model, ctl } = props;
   const o = model.ui.overlays;
-  const toggle = (
-    key: 'flow' | 'paths' | 'dry',
-    label: string,
-    tip?: string,
-  ) => (
-    <button
-      type="button"
-      title={tip}
-      class={o[key] ? 'toggle active' : 'toggle'}
-      data-overlay={key}
-      aria-pressed={o[key]}
-      onClick={() => {
-        ctl.setOverlay(key, !o[key]);
-      }}
-    >
-      {label}
-    </button>
-  );
   return (
     <Panel title={t('uiPanelOverlays')} id="panel-overlays" class="fixed">
-      <div class="overlay-row">
-        {toggle('flow', t('uiOverlayFlow'))}
-        {toggle('paths', t('uiOverlayPaths'))}
-        {toggle(
-          'dry',
-          t('uiOverlayDry', {
-            secs: fmt(model.ui.dryTicks / simConfig.ticksPerSecond),
-          }),
-          t('uiOverlayDryTip'),
-        )}
-      </div>
       {o.flow || o.paths ? (
         <div class="overlay-legend muted" data-field="overlay-legend">
           {o.paths ? (
@@ -1071,7 +1055,7 @@ export function PartyPanel(props: {
   /** The player this device acts as. */
   acting: number;
 }) {
-  const { run, ctl, acting } = props;
+  const { run, acting } = props;
   const me = run.perPlayer[acting];
   const multi = run.players.length > 1;
   const ready = me?.ready === true;
@@ -1106,20 +1090,6 @@ export function PartyPanel(props: {
           })}
         </p>
       ) : null}
-      <button
-        type="button"
-        class={ready ? 'ready-btn on' : 'ready-btn'}
-        id="ready-button"
-        data-action="ready"
-        disabled={block !== null}
-        title={block ?? undefined}
-        onClick={() => void ctl.toggleReady()}
-      >
-        {ready ? (
-          <SpriteIcon name="ui_icon_ready" scale={1} class="ready-icon" />
-        ) : null}
-        {t(ready ? 'uiPartyUnready' : 'uiPartyReady')}
-      </button>
       {block !== null ? (
         <p class="error" data-field="ready-blocked" role="alert">
           {block}
