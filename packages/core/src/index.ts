@@ -1,108 +1,15 @@
-export { isCoreHealth } from './arena-sim.js';
-export { sumOverkill } from './battle.js';
+/**
+ * The public surface of @game/core, grouped by area. Each source file appears
+ * once. Section names refer to docs/rules-reference.md.
+ */
+
+// ---------------------------------------------------------------------------
+// Integer maths, hashing and random numbers (see "The PRNG", "Integer math conventions", "Canonical JSON and the hash")
 export {
-  assertWithin,
-  MAX_ARENA_CELLS,
-  MAX_BREACH_BASE_COST,
-  MAX_DAMAGE,
-  MAX_HEALTH,
-  MAX_HIT,
-  MAX_TICK_DAMAGE,
-} from './limits.js';
-export { loadResources, loadResourcesOrThrow } from './resources.js';
-export type {
-  Rarity,
-  ResourceConfig,
-  ResourceDef,
-  ResourceId,
-  ResourceLoadResult,
-} from './resources.js';
-export { loadTerrain, loadTerrainOrThrow } from './terrain.js';
-export type {
-  TerrainConfig,
-  TerrainFeatureDef,
-  TerrainFeatureId,
-  TerrainLoadResult,
-} from './terrain.js';
-export {
-  loadUnits,
-  loadUnitsOrThrow,
-  maxStrengthPercent,
-  unitSpeed,
-} from './units.js';
-export type {
-  AttackType,
-  UnitConfig,
-  UnitDef,
-  UnitId,
-  UnitLoadResult,
-} from './units.js';
-export {
-  loadBuildings,
-  loadBuildingsOrThrow,
-  needHundredthsPerSecond,
-  needPer1000,
-  oppositeSide,
-  productionOf,
-  rotateBuilding,
-  rotateSide,
-} from './buildings.js';
-export type {
-  BuildingConfig,
-  BuildingDef,
-  BuildingId,
-  BuildingInput,
-  BuildingKind,
-  BuildingLoadContext,
-  BuildingLoadResult,
-  CoreBuildingDef,
-  CoreTier,
-  DefenseBuildingDef,
-  DefenseType,
-  EconomyBuildingDef,
-  EconomyEffectType,
-  EconomyTier,
-  Footprint,
-  RotatedBuilding,
-  Rotation,
-  RouteBuildingDef,
-  RouteType,
-  Side,
-  SourceBuildingDef,
-  SourceTier,
-  TierBase,
-  Tiers3,
-  TurretBuildingDef,
-  TurretTier,
-  UnitProducerBuildingDef,
-  UnitProducerTier,
-  WallOrGateBuildingDef,
-} from './buildings.js';
-export {
-  loadPresentation,
-  loadPresentationOrThrow,
-  TEMPLATE_SLOTS,
-  SCREEN_TEXT_SLOTS,
-  REASON_TEXT_CODES,
-} from './presentation.js';
-export type {
-  ArchetypeEntry,
-  EventEntry,
-  PresentationConfig,
-  PresentationTemplates,
-  PresentationEntry,
-  PresentationLoadContext,
-  PresentationLoadResult,
-} from './presentation.js';
-export { formatText, placeholderIds } from './text.js';
-export { loadAllContent, loadAllContentOrThrow } from './content.js';
-export type { Content, ContentLoadResult, RawContent } from './content.js';
-export { Rng } from './rng.js';
-export {
-  BPS_SCALE,
-  assertInt,
-  clamp,
   addSaturating,
+  assertInt,
+  BPS_SCALE,
+  clamp,
   compareFractions,
   divFloor,
   maxInt,
@@ -114,182 +21,18 @@ export {
   mulPct,
 } from './int.js';
 export {
-  canonicalJson,
-  canonicalJsonOrNull,
-  fnv1a32,
-  hashJson,
-  sortedKeys,
-  toHex8,
-  type Json,
-} from './hash.js';
-export { loadMapgen, loadMapgenOrThrow } from './mapgen.js';
-export type {
-  MapgenCliffs,
-  MapgenConfig,
-  MapgenLakes,
-  MapgenLoadContext,
-  MapgenLoadResult,
-} from './mapgen.js';
-export {
-  compareCells,
-  coreFootprint,
-  listLegalCorePositions,
-  loadMap,
-  loadMapOrThrow,
-  queryMap,
-  validateCorePosition,
-} from './map.js';
-export type {
-  Cell,
-  CorePositionProblem,
-  CorePositionResult,
-  FeatureCell,
-  GameMap,
-  MapContent,
-  MapLoadResult,
-  MapQuery,
-  ResourceNode,
-} from './map.js';
-export { generateMap, generateMapWithStats } from './generate-map.js';
-export type { GeneratedMap } from './generate-map.js';
-export {
-  ROTATIONS,
-  addToStash,
-  createTeamState,
-  buildingEnd,
-  conduitTouches,
-  detachConduits,
-  eraseConduit,
-  moveBuilding,
-  occupancy,
-  placeCore,
-  placeFromStash,
-  removeFromStash,
-  isBorderEnd,
-  returnToStash,
-  validateTeamState,
-} from './team-state.js';
-export type {
-  AddToStashResult,
-  AnyReason,
-  Conduit,
-  BorderEnd,
-  ConduitEnd,
-  CoreReason,
-  Occupancy,
-  OpFailure,
-  OpResult,
-  PlacedBuilding,
-  PlacementReason,
-  StashReason,
-  StashedBuilding,
-  TeamContent,
-  TeamState,
-  ValidateTeamStateResult,
-} from './team-state.js';
-export {
-  MAX_PARTY_SIZE,
-  decodeConduitId,
-  encodeConduitId,
-} from './conduit-ids.js';
-export {
-  SIDE_ORDER,
-  addConduit,
-  brokenLinks,
-  buildFlowGraph,
-  conduitResource,
-  conduitsLostWith,
-} from './conduits.js';
-export type {
-  AddConduitResult,
-  BrokenLink,
-  ConduitEndArg,
-  ConduitReason,
-  FlowEdge,
-  FlowGraph,
-  FlowInput,
-  FlowNode,
-  FlowNodeKind,
-  FlowOutput,
-} from './conduits.js';
-export { runTeamStateOps } from './team-state-ops.js';
-export { loadSimConfig, loadSimConfigOrThrow } from './sim-config.js';
-export type { SimConfig, SimConfigLoadResult } from './sim-config.js';
-export {
-  cloneBoardSim,
-  createBoardSim,
-  createFlowContext,
-  dryRunFlow,
-  flowTotals,
-  rebuildFlow,
-  stepFlow,
-  takeFromBuffer,
-} from './flow-sim.js';
-export type {
-  BoardSim,
-  ConduitSim,
-  ConsumerInputSim,
-  ConsumerMode,
-  ConsumerPacer,
-  ConsumerSim,
-  DryRunConsumerInput,
-  DryRunNeed,
-  DryRunResult,
-  DryRunRoute,
-  DryRunSource,
-  FlowContext,
-  FlowPlan,
-  FlowTotals,
-  RetiredTotals,
-  RouteSim,
-  SimEvent,
-  SourceSim,
-} from './flow-sim.js';
-export {
-  createArena,
-  removeFromArena,
-  toArena,
-  toBoard,
-  cellIndex,
-} from './arena.js';
-export type {
-  Arena,
-  ArenaBuilding,
-  ArenaContent,
-  ArenaGeometry,
-} from './arena.js';
-export {
-  computeBreach,
-  computeField,
-  goalBuildings,
-  blocksUnit,
-  openFor,
-} from './arena-paths.js';
-export type { Field } from './arena-paths.js';
-export {
-  arenaOf,
-  createArenaContext,
-  createArenaSim,
-  runArena,
-  spawnUnitForTest,
-  startArenaBattle,
-  stepArena,
-  unitStats,
-} from './arena-sim.js';
-export type {
-  ArenaContext,
-  ArenaEvent,
-  ArenaOptions,
-  ArenaSim,
-  EnteringSim,
-  HealthSim,
-  CoreHealthSim,
-  BuildingHealthSim,
-  ProducerSim,
-  TurretSim,
-  UnitSim,
-  UnitTarget,
-} from './arena-sim.js';
+  assertWithin,
+  CELL_UNITS,
+  MAX_ARENA_CELLS,
+  MAX_BREACH_BASE_COST,
+  MAX_DAMAGE,
+  MAX_HEALTH,
+  MAX_HIT,
+  MAX_SEPARATION_CAP,
+  MAX_TICK_DAMAGE,
+  MAX_UNIT_RADIUS,
+  MAX_UNIT_REACH,
+} from './limits.js';
 export {
   boxDist2,
   buildingDist2,
@@ -297,249 +40,504 @@ export {
   cellCoord,
   fits,
   pushOutSolid,
+  type World,
 } from './geometry.js';
-export type { World } from './geometry.js';
 export {
-  CELL_UNITS,
-  MAX_SEPARATION_CAP,
-  MAX_UNIT_RADIUS,
-  MAX_UNIT_REACH,
-} from './limits.js';
+  canonicalJson,
+  canonicalJsonOrNull,
+  fnv1a32,
+  hashJson,
+  type Json,
+  sortedKeys,
+  toHex8,
+} from './hash.js';
+export { Rng } from './rng.js';
+export { pickWeightedIndex } from './weighted.js';
+
+// ---------------------------------------------------------------------------
+// Content: loaders and configuration types (see "Content bounds")
+export {
+  type Content,
+  type ContentLoadResult,
+  loadAllContent,
+  loadAllContentOrThrow,
+  type RawContent,
+} from './content.js';
+export {
+  loadResources,
+  loadResourcesOrThrow,
+  type Rarity,
+  type ResourceConfig,
+  type ResourceDef,
+  type ResourceId,
+  type ResourceLoadResult,
+} from './resources.js';
+export {
+  loadTerrain,
+  loadTerrainOrThrow,
+  type TerrainConfig,
+  type TerrainFeatureDef,
+  type TerrainFeatureId,
+  type TerrainLoadResult,
+} from './terrain.js';
+export {
+  type AttackType,
+  loadUnits,
+  loadUnitsOrThrow,
+  maxStrengthPercent,
+  type UnitConfig,
+  type UnitDef,
+  type UnitId,
+  type UnitLoadResult,
+  unitSpeed,
+} from './units.js';
+export {
+  type BuildingConfig,
+  type BuildingDef,
+  type BuildingId,
+  type BuildingInput,
+  type BuildingKind,
+  type BuildingLoadContext,
+  type BuildingLoadResult,
+  type CoreBuildingDef,
+  type CoreTier,
+  type DefenseBuildingDef,
+  type DefenseType,
+  type EconomyBuildingDef,
+  type EconomyEffectType,
+  type EconomyTier,
+  type Footprint,
+  loadBuildings,
+  loadBuildingsOrThrow,
+  needHundredthsPerSecond,
+  needPer1000,
+  oppositeSide,
+  productionOf,
+  rotateBuilding,
+  type RotatedBuilding,
+  rotateSide,
+  type Rotation,
+  type RouteBuildingDef,
+  type RouteType,
+  type Side,
+  type SourceBuildingDef,
+  type SourceTier,
+  type TierBase,
+  type Tiers3,
+  type TurretBuildingDef,
+  type TurretTier,
+  type UnitProducerBuildingDef,
+  type UnitProducerTier,
+  type WallOrGateBuildingDef,
+} from './buildings.js';
+export {
+  loadMapgen,
+  loadMapgenOrThrow,
+  type MapgenCliffs,
+  type MapgenConfig,
+  type MapgenLakes,
+  type MapgenLoadContext,
+  type MapgenLoadResult,
+  type NeutralZoneConfig,
+} from './mapgen.js';
+export {
+  loadSimConfig,
+  loadSimConfigOrThrow,
+  type SimConfig,
+  type SimConfigLoadResult,
+} from './sim-config.js';
+export {
+  type EconomyConfig,
+  type EconomyLoadContext,
+  type EconomyLoadResult,
+  type KitEntry,
+  loadEconomy,
+  loadEconomyOrThrow,
+  type OfferWeight,
+  type RewardsConfig,
+  type TierOddsRow,
+} from './economy.js';
+export {
+  type EventDef,
+  type EventParams,
+  type EventsConfig,
+  type EventsLoadResult,
+  findEvent,
+  findModifier,
+  loadEvents,
+  loadEventsOrThrow,
+  type ModifierDef,
+} from './events.js';
+export {
+  type ArchetypeDef,
+  type ArchetypeId,
+  budgetLimit,
+  findArchetype,
+  type LayoutId,
+  loadThreats,
+  loadThreatsOrThrow,
+  maxThreatRound,
+  type StrongholdTemplate,
+  THREAT_TYPES,
+  threatBudget,
+  type ThreatsConfig,
+  type ThreatsLoadContext,
+  type ThreatsLoadResult,
+  type ThreatType,
+  type UnitCost,
+  type WaveComposition,
+  type WaveTemplate,
+} from './threats.js';
+export {
+  type HasModifiers,
+  heldModifierIds,
+  MAX_MODIFIER_PERCENT,
+  MODIFIER_EFFECT_KINDS,
+  MODIFIER_ID,
+  MODIFIER_TARGETS,
+  type ModifierEffect,
+  type ModifierEffectKind,
+  modifierPercent,
+  type ModifierTarget,
+  parseModifierEffect,
+  parseTeamModifiers,
+  type TeamModifier,
+  withModifier,
+} from './modifiers.js';
+
+// ---------------------------------------------------------------------------
+// Presentation text (display only; never read by the rules)
+export {
+  type ArchetypeEntry,
+  type EventEntry,
+  loadPresentation,
+  loadPresentationOrThrow,
+  type PresentationConfig,
+  type PresentationEntry,
+  type PresentationLoadContext,
+  type PresentationLoadResult,
+  type PresentationTemplates,
+  REASON_TEXT_CODES,
+  SCREEN_TEXT_SLOTS,
+  TEMPLATE_SLOTS,
+} from './presentation.js';
+export { formatText, placeholderIds } from './text.js';
+
+// ---------------------------------------------------------------------------
+// Maps and the team state (see "Map generation", "Team state and placement", "Conduits")
+export {
+  type Cell,
+  compareCells,
+  coreFootprint,
+  type CorePositionProblem,
+  type CorePositionResult,
+  type FeatureCell,
+  type GameMap,
+  listLegalCorePositions,
+  loadMap,
+  loadMapOrThrow,
+  type MapContent,
+  type MapLoadResult,
+  type MapQuery,
+  queryMap,
+  type ResourceNode,
+  validateCorePosition,
+} from './map.js';
+export {
+  type GeneratedMap,
+  generateMap,
+  generateMapWithStats,
+} from './generate-map.js';
+export {
+  addToStash,
+  type AddToStashResult,
+  type AnyReason,
+  type BorderEnd,
+  buildingEnd,
+  type Conduit,
+  type ConduitEnd,
+  conduitTouches,
+  type CoreReason,
+  createTeamState,
+  detachConduits,
+  eraseConduit,
+  isBorderEnd,
+  moveBuilding,
+  type Occupancy,
+  occupancy,
+  type OpFailure,
+  type OpResult,
+  placeCore,
+  type PlacedBuilding,
+  placeFromStash,
+  type PlacementReason,
+  raiseTier,
+  type RaiseTierReason,
+  removeFromStash,
+  returnToStash,
+  ROTATIONS,
+  type StashedBuilding,
+  type StashReason,
+  type TeamContent,
+  type TeamState,
+  validateTeamState,
+  type ValidateTeamStateResult,
+} from './team-state.js';
+export { runTeamStateOps } from './team-state-ops.js';
+export {
+  addConduit,
+  type AddConduitResult,
+  type BrokenLink,
+  brokenLinks,
+  buildFlowGraph,
+  type ConduitEndArg,
+  type ConduitReason,
+  conduitResource,
+  conduitsLostWith,
+  type FlowEdge,
+  type FlowGraph,
+  type FlowInput,
+  type FlowNode,
+  type FlowNodeKind,
+  type FlowOutput,
+  SIDE_ORDER,
+} from './conduits.js';
+export {
+  decodeConduitId,
+  encodeConduitId,
+  MAX_PARTY_SIZE,
+} from './conduit-ids.js';
+export { sealedProducers } from './sealed-producers.js';
+
+// ---------------------------------------------------------------------------
+// Flow of one board (see "Tick order")
+export {
+  type BoardSim,
+  cloneBoardSim,
+  collectorHundredthsPerSecond,
+  collectorRatePer1000,
+  type ConduitSim,
+  type ConsumerInputSim,
+  type ConsumerMode,
+  type ConsumerPacer,
+  type ConsumerSim,
+  createBoardSim,
+  createFlowContext,
+  type DryRunConsumerInput,
+  dryRunFlow,
+  type DryRunNeed,
+  type DryRunResult,
+  type DryRunRoute,
+  type DryRunSource,
+  type FlowContext,
+  type FlowPlan,
+  type FlowTotals,
+  flowTotals,
+  rebuildFlow,
+  type RetiredTotals,
+  type RouteSim,
+  scaledInterval,
+  type SimEvent,
+  type SourceSim,
+  stepFlow,
+  takeFromBuffer,
+} from './flow-sim.js';
+
+// ---------------------------------------------------------------------------
+// Battles (see "The arena", "One battle tick", "The neutral zone", "Battles")
+export {
+  type Arena,
+  type ArenaBuilding,
+  type ArenaContent,
+  type ArenaGeometry,
+  cellIndex,
+  createArena,
+  removeFromArena,
+  toArena,
+  toBoard,
+} from './arena.js';
+export {
+  type ArenaContext,
+  type ArenaEvent,
+  arenaOf,
+  type ArenaOptions,
+  type ArenaSim,
+  type BuildingHealthSim,
+  type CoreHealthSim,
+  createArenaContext,
+  createArenaSim,
+  type EnteringSim,
+  type HealthSim,
+  isCoreHealth,
+  type ProducerSim,
+  rampBonus,
+  type RampSim,
+  runArena,
+  type ScheduledWave,
+  type SideOptions,
+  spawnUnitForTest,
+  startArenaBattle,
+  stepArena,
+  type TurretSim,
+  type UnitSim,
+  unitStats,
+  type UnitTarget,
+} from './arena-sim.js';
+export {
+  blocksUnit,
+  computeBreach,
+  computeField,
+  type Field,
+  goalBuildings,
+  openFor,
+} from './arena-paths.js';
+export {
+  type GeneratedNeutralZone,
+  generateNeutralZone,
+  generateNeutralZoneWithStats,
+  NEUTRAL_ZONE_STREAM,
+  type NeutralZone,
+  type NeutralZoneContent,
+  neutralZoneProblem,
+  zoneBlockedCells,
+} from './neutral-zone.js';
+export {
+  cappedBonus,
+  isOverloadBeat,
+  type OverloadDeadline,
+  overloadDeadline,
+  overloadLevel,
+  type OverloadOutcome,
+  overloadOutcome,
+} from './ramp.js';
+export { coreMaxHealth } from './max-health.js';
+export {
+  type Battle,
+  type BattleConfig,
+  type BattleError,
+  type BattleErrorCode,
+  type BattleInput,
+  type BattleOptions,
+  type BattleReason,
+  type BattleResult,
+  type BattleSideSummary,
+  type BattleSummary,
+  type CoreSummary,
+  simulateBattle,
+  type SimulateBattleResult,
+  startBattle,
+  type StartBattleResult,
+  sumOverkill,
+  type TimelineSample,
+  type TimelineSide,
+} from './battle.js';
+export { type EnemyPath, previewEnemyPaths } from './enemy-paths.js';
+
+// ---------------------------------------------------------------------------
+// PvE threats (see "PvE threats")
+export {
+  type ArchetypePick,
+  buildStronghold,
+  generateThreat,
+  pickArchetypes,
+  scaleShare,
+  type Stronghold,
+  type StrongholdBuilding,
+  type ThreatConfigs,
+  type ThreatContent,
+  type ThreatInput,
+  type ThreatProfile,
+  type ThreatSummary,
+  threatSummary,
+  type ThreatWave,
+} from './threat-gen.js';
+export { layoutStronghold } from './threat-layouts.js';
+export {
+  type PveBattle,
+  type PveBattleInput,
+  simulatePveBattle,
+  type SimulatePveBattleResult,
+  startPveBattle,
+  type StartPveBattleResult,
+  threatSideOptions,
+} from './pve-battle.js';
+
+// ---------------------------------------------------------------------------
+// Shops and the Workshop (see "Shops and gold")
+export {
+  buyOffer,
+  type PlayerShop,
+  rerollOffers,
+  rollOffers,
+  sellFromStash,
+  sellValue,
+  type ShopContent,
+  type ShopFailure,
+  type ShopOffer,
+  type ShopReason,
+  type ShopResult,
+  tierOddsFor,
+  tierPrice,
+} from './shop.js';
+export {
+  type WorkshopOption,
+  workshopOptions,
+  workshopPrice,
+  workshopPriceOrNull,
+} from './workshop.js';
+
+// ---------------------------------------------------------------------------
+// Ghosts (see "Ghosts")
+export {
+  checkGhostSnapshotShape,
+  compareGhosts,
+  GHOST_MAX_BYTES_MARGIN,
+  GHOST_MAX_DEPTH,
+  GHOST_MAX_ERRORS,
+  GHOST_MAX_ID_LENGTH,
+  GHOST_MAX_LABEL_LENGTH,
+  GHOST_MAX_ROUND,
+  GHOST_MAX_SERIALIZED_BYTES,
+  GHOST_MAX_STRING_LENGTH,
+  GHOST_SNAPSHOT_FORMAT_VERSION,
+  type GhostBucket,
+  ghostBucketKey,
+  ghostBucketOf,
+  ghostKey,
+  ghostMaxSerializedSize,
+  type GhostOwner,
+  type GhostPvpRecord,
+  type GhostSizeContext,
+  type GhostSnapshot,
+  type GhostTierBound,
+  ghostTierBound,
+  type GhostValidationContext,
+  type GhostValidationResult,
+  type GhostValueBound,
+  ghostValueBound,
+  teamBuildingValue,
+  validateGhostSnapshot,
+} from './ghost-snapshot.js';
+
+// ---------------------------------------------------------------------------
+// Reference boards and ASCII pictures (tools, tests and debugging; not rules)
+export {
+  buildReferenceBoard,
+  REFERENCE_BOARDS,
+  REFERENCE_SEED,
+  type ReferenceBoardName,
+  referenceBoardScript,
+  type TeamScript,
+} from './reference-boards.js';
+export {
+  ALL_REFERENCE_BOARDS,
+  type AnyReferenceBoardName,
+  anyReferenceBoardScript,
+  buildAnyReferenceBoard,
+} from './reference-boards-siege.js';
 export {
   renderArenaAscii,
   renderMapAscii,
   renderNeutralZoneAscii,
   renderTeamStateAscii,
 } from './ascii-render.js';
-export { previewEnemyPaths } from './enemy-paths.js';
-export type { EnemyPath } from './enemy-paths.js';
-export { pickWeightedIndex } from './weighted.js';
-export { loadEconomy, loadEconomyOrThrow } from './economy.js';
-export type {
-  EconomyConfig,
-  EconomyLoadContext,
-  EconomyLoadResult,
-  KitEntry,
-  OfferWeight,
-  TierOddsRow,
-} from './economy.js';
-export {
-  buyOffer,
-  rerollOffers,
-  rollOffers,
-  sellFromStash,
-  sellValue,
-  tierOddsFor,
-  tierPrice,
-} from './shop.js';
-export type {
-  PlayerShop,
-  ShopContent,
-  ShopFailure,
-  ShopOffer,
-  ShopReason,
-  ShopResult,
-} from './shop.js';
-
-// Sealed unit producers (issue #37).
-export { sealedProducers } from './sealed-producers.js';
-
-// Workshop event rules (issue #50).
-export {
-  workshopOptions,
-  workshopPrice,
-  workshopPriceOrNull,
-} from './workshop.js';
-export type { WorkshopOption } from './workshop.js';
-
-// In-battle ramp (economy buildings) and Overload (W1-7).
-export { rampBonus } from './arena-sim.js';
-export type { RampSim } from './arena-sim.js';
-export {
-  collectorHundredthsPerSecond,
-  collectorRatePer1000,
-  scaledInterval,
-} from './flow-sim.js';
-export {
-  cappedBonus,
-  isOverloadBeat,
-  overloadDeadline,
-  overloadLevel,
-  overloadOutcome,
-  type OverloadDeadline,
-  type OverloadOutcome,
-} from './ramp.js';
-
-// The neutral zone and whole battles (W1-8).
-export {
-  NEUTRAL_ZONE_STREAM,
-  generateNeutralZone,
-  generateNeutralZoneWithStats,
-  neutralZoneProblem,
-  zoneBlockedCells,
-} from './neutral-zone.js';
-export type {
-  GeneratedNeutralZone,
-  NeutralZone,
-  NeutralZoneContent,
-} from './neutral-zone.js';
-export type { NeutralZoneConfig } from './mapgen.js';
-export { simulateBattle, startBattle } from './battle.js';
-export type {
-  Battle,
-  BattleConfig,
-  BattleError,
-  BattleErrorCode,
-  BattleInput,
-  BattleOptions,
-  BattleReason,
-  BattleResult,
-  BattleSideSummary,
-  CoreSummary,
-  BattleSummary,
-  SimulateBattleResult,
-  StartBattleResult,
-  TimelineSample,
-  TimelineSide,
-} from './battle.js';
-
-// PvE threats (W1-9).
-export {
-  THREAT_TYPES,
-  budgetLimit,
-  findArchetype,
-  loadThreats,
-  loadThreatsOrThrow,
-  maxThreatRound,
-  threatBudget,
-} from './threats.js';
-export type {
-  ArchetypeDef,
-  ArchetypeId,
-  LayoutId,
-  StrongholdTemplate,
-  ThreatType,
-  ThreatsConfig,
-  ThreatsLoadContext,
-  ThreatsLoadResult,
-  UnitCost,
-  WaveComposition,
-  WaveTemplate,
-} from './threats.js';
-export {
-  buildStronghold,
-  generateThreat,
-  pickArchetypes,
-  scaleShare,
-  threatSummary,
-} from './threat-gen.js';
-export type {
-  ArchetypePick,
-  Stronghold,
-  StrongholdBuilding,
-  ThreatConfigs,
-  ThreatContent,
-  ThreatInput,
-  ThreatProfile,
-  ThreatSummary,
-  ThreatWave,
-} from './threat-gen.js';
-export { layoutStronghold } from './threat-layouts.js';
-export {
-  simulatePveBattle,
-  startPveBattle,
-  threatSideOptions,
-} from './pve-battle.js';
-export type {
-  PveBattle,
-  PveBattleInput,
-  SimulatePveBattleResult,
-  StartPveBattleResult,
-} from './pve-battle.js';
-export type { ScheduledWave, SideOptions } from './arena-sim.js';
-export {
-  REFERENCE_BOARDS,
-  REFERENCE_SEED,
-  buildReferenceBoard,
-  referenceBoardScript,
-} from './reference-boards.js';
-export type { ReferenceBoardName, TeamScript } from './reference-boards.js';
-
-// Events and run modifiers (W2-3).
-export {
-  findEvent,
-  findModifier,
-  loadEvents,
-  loadEventsOrThrow,
-} from './events.js';
-export type {
-  EventDef,
-  EventParams,
-  EventsConfig,
-  EventsLoadResult,
-  ModifierDef,
-} from './events.js';
-export {
-  MAX_MODIFIER_PERCENT,
-  MODIFIER_EFFECT_KINDS,
-  MODIFIER_ID,
-  MODIFIER_TARGETS,
-  heldModifierIds,
-  modifierPercent,
-  parseModifierEffect,
-  parseTeamModifiers,
-  withModifier,
-} from './modifiers.js';
-export type {
-  HasModifiers,
-  ModifierEffect,
-  ModifierEffectKind,
-  ModifierTarget,
-  TeamModifier,
-} from './modifiers.js';
-export { raiseTier } from './team-state.js';
-export type { RaiseTierReason } from './team-state.js';
-export type { RewardsConfig } from './economy.js';
-
-// Reference boards, including the siege board (W1-10).
-export {
-  ALL_REFERENCE_BOARDS,
-  anyReferenceBoardScript,
-  buildAnyReferenceBoard,
-} from './reference-boards-siege.js';
-export type { AnyReferenceBoardName } from './reference-boards-siege.js';
-
-// Ghost snapshots (W3-1).
-export {
-  GHOST_MAX_ID_LENGTH,
-  GHOST_MAX_LABEL_LENGTH,
-  GHOST_SNAPSHOT_FORMAT_VERSION,
-  GHOST_MAX_BYTES_MARGIN,
-  GHOST_MAX_ROUND,
-  GHOST_MAX_SERIALIZED_BYTES,
-  GHOST_MAX_ERRORS,
-  GHOST_MAX_DEPTH,
-  GHOST_MAX_STRING_LENGTH,
-  ghostMaxSerializedSize,
-  ghostTierBound,
-  checkGhostSnapshotShape,
-  compareGhosts,
-  ghostBucketKey,
-  ghostBucketOf,
-  ghostKey,
-  ghostValueBound,
-  teamBuildingValue,
-  validateGhostSnapshot,
-} from './ghost-snapshot.js';
-export type {
-  GhostBucket,
-  GhostOwner,
-  GhostPvpRecord,
-  GhostSnapshot,
-  GhostValidationContext,
-  GhostSizeContext,
-  GhostValidationResult,
-  GhostTierBound,
-  GhostValueBound,
-} from './ghost-snapshot.js';
-export { coreMaxHealth } from './max-health.js';
