@@ -7,13 +7,7 @@
  * Every change is an intent through the shared session, saved before the
  * screen updates. Buying, selling and re-rolling are never undoable.
  */
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'preact/hooks';
+import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
 import { useStore } from '../app-state.js';
 import { BoardView } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
@@ -51,6 +45,9 @@ const ctx = { content, economy, sim: simConfig };
 
 /** Counts mounts of the Shop tab, so the smoke script can wait for a new one. */
 let mountCount = 0;
+
+/** How long a stash row stays highlighted after a purchase. */
+const FLASH_MS = 1000;
 
 const plain = (v: unknown): unknown => JSON.parse(JSON.stringify(v)) as unknown;
 
@@ -99,16 +96,21 @@ function Card(props: { group: OfferGroup; onBuy: (slot: number) => void }) {
           ×{group.copies} available
         </p>
       ) : null}
-      <p class="offer-needs">
-        {screenText(screenTexts, 'uiShopNeeds', { needs: o.needs })}
-      </p>
-      {o.rate === '' ? null : (
+      {o.uses === null ? null : (
+        <p class="offer-needs" data-field="uses">
+          {o.uses}
+        </p>
+      )}
+      {o.collects === null ? null : (
         <p class="offer-rate" data-field="rate">
-          {o.rate}
+          {o.collects}
         </p>
       )}
       <p class="offer-effect" data-field="effect">
         {o.effect}
+      </p>
+      <p class="offer-health" data-field="health">
+        {o.health}
       </p>
       <div class="offer-buy">
         <button
@@ -135,11 +137,12 @@ function StashList(props: {
   rows: readonly StashRow[];
   pending: StashRow | null;
   onPick: (row: StashRow) => void;
-  onDrag: (row: StashRow | null) => void;
+  /** The row that just received a bought building (flashes briefly). */
+  flash: string | null;
   /** Why selling is refused right now; null when it is open. */
   blocked: string | null;
 }) {
-  const { rows, pending, onPick, onDrag, blocked } = props;
+  const { rows, pending, onPick, flash, blocked } = props;
   if (rows.length === 0) {
     return null;
   }
@@ -152,19 +155,10 @@ function StashList(props: {
         return (
           <li
             key={key}
-            class={selected ? 'stash-row selected' : 'stash-row'}
+            class={`stash-row${selected ? ' selected' : ''}${flash === key ? ' flash' : ''}`}
             data-stash-def={r.def}
             data-stash-tier={r.tier}
             data-count={r.ids.length}
-            draggable={blocked === null}
-            onDragStart={(e) => {
-              e.dataTransfer?.setData('text/plain', key);
-              if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
-              onDrag(r);
-            }}
-            onDragEnd={() => {
-              onDrag(null);
-            }}
           >
             <span class="stash-label">
               <SpriteIcon name={r.def} size={32} class="stash-sprite" />
@@ -225,7 +219,6 @@ function NextBattle(props: { view: NextBattleView | null }) {
           {v.bossNote}
         </p>
       ) : null}
-      <p>{p.opponent}</p>
       <p class="stakes">
         <span>
           Win: {p.winGold === null ? 'gold' : `${String(p.winGold)} gold`}
@@ -259,7 +252,16 @@ export function ShopTab(props: {
   }, [session]);
   useNoticeTimeout(view.notice, dismissNotice);
   const [mountId] = useState(() => ++mountCount);
-  const dragged = useRef<StashRow | null>(null);
+  const [flash, setFlash] = useState<string | null>(null);
+  useEffect(() => {
+    if (flash === null) return;
+    const t = setTimeout(() => {
+      setFlash(null);
+    }, FLASH_MS);
+    return () => {
+      clearTimeout(t);
+    };
+  }, [flash]);
 
   // Drop a pending sale when its row is gone (sold, or the state changed).
   useEffect(() => {
@@ -324,8 +326,11 @@ export function ShopTab(props: {
   const onBuy = (slot: number): void => {
     const card = sv.offers[slot];
     if (card?.offer == null) return;
-    const { name } = card.offer;
-    void act({ type: 'buy', slot }, `Bought ${name}.`);
+    const { name, def, tier } = card.offer;
+    setFlash(null);
+    void act({ type: 'buy', slot }, `Bought ${name}.`).then((ok) => {
+      if (ok) setFlash(`${def}:${String(tier)}`);
+    });
   };
 
   const onReroll = (): void => {
@@ -436,55 +441,34 @@ export function ShopTab(props: {
               pending={pending}
               onPick={setPending}
               blocked={sv.sellBlock}
-              onDrag={(r) => {
-                dragged.current = r;
-              }}
+              flash={flash}
             />
-            <div
-              class={pending === null ? 'sell-target' : 'sell-target active'}
-              id="sell-target"
-              onDragOver={(e) => {
-                e.preventDefault();
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                // The drop is only a request: the player still confirms.
-                if (dragged.current !== null && sv.sellBlock === null) {
-                  setPending(dragged.current);
-                }
-              }}
-            >
-              {pending === null ? (
-                <span class="muted">
-                  Drag a building here from the stash to sell
-                </span>
-              ) : (
-                <>
-                  <p id="sell-quote" data-refund={saleQuote(pending).refund}>
-                    {saleQuote(pending).text}
-                  </p>
-                  <div class="sell-actions">
-                    <button
-                      type="button"
-                      id="sell-confirm"
-                      class="danger"
-                      onClick={onSell}
-                    >
-                      Sell
-                    </button>
-                    <button
-                      type="button"
-                      id="sell-cancel"
-                      onClick={() => {
-                        setPending(null);
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+            {pending === null ? null : (
+              <div class="sell-target active" id="sell-target">
+                <p id="sell-quote" data-refund={saleQuote(pending).refund}>
+                  {saleQuote(pending).text}
+                </p>
+                <div class="sell-actions">
+                  <button
+                    type="button"
+                    id="sell-confirm"
+                    class="danger"
+                    onClick={onSell}
+                  >
+                    Sell
+                  </button>
+                  <button
+                    type="button"
+                    id="sell-cancel"
+                    onClick={() => {
+                      setPending(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </Panel>
         </div>
 

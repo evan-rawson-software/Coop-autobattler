@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import { content } from '../content.js';
 import { effectText } from '../shop/effect-text.js';
-import { buildingRate, formatHundredths, rateText, supplyOf } from './rates.js';
+import { cardStats } from './card-stats.js';
+import { buildingRate, formatHundredths, supplyOf } from './rates.js';
 import { simConfig } from './setup.js';
 import { reasonMessage } from './reasons.js';
 
@@ -18,8 +19,9 @@ describe('Range and Hangar are presented like other unit producers', () => {
         const r = buildingRate(def, tier, tps);
         expect(r.needs, `${id} tier ${String(tier)}`).toBeGreaterThan(0);
         expect(r.topSpeed).toBeGreaterThan(0);
-        const text = rateText(def, tier, tps);
-        expect(text).toContain(`Needs ${formatHundredths(r.needs ?? 0)}/s`);
+        const text = cardStats(content, simConfig, def, tier).uses;
+        expect(text).toMatch(/^Uses \S+ /);
+        expect(text).toContain(`${formatHundredths(r.needs ?? 0)}/s`);
       }
     });
   }

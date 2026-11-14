@@ -287,9 +287,9 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ],
   ['linkSending', {}, 'sending'],
   [
-    'needsTopSpeed',
-    { rate: '@rate', speed: '@speed', unit: '@unit' },
-    'Needs @rate/s at top speed',
+    'usesRate',
+    { resource: '@resource', rate: '@rate' },
+    'Uses @resource @rate/s',
   ],
   [
     'partnerUnderSuppliedMany',
@@ -655,7 +655,8 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     { at: '@at' },
     'At @at both Cores start losing health (Overload). Neither falls before the time limit.',
   ],
-  ['uiShopNeeds', { needs: 'Ore' }, 'Needs: Ore'],
+  ['uiShopUses', { needs: 'Ore' }, 'Uses: Ore'],
+  ['uiShopHealth', { health: '60' }, 'Health 60'],
   ['rateGetsNeeds', { gets: '0.25', needs: '0.50' }, '0.25/0.50/s'],
   ['runOverTitle', {}, 'Run over'],
   ['runOverReached', { round: '4' }, 'Reached round 4'],

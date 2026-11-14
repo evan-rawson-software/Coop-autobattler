@@ -155,26 +155,3 @@ export function needSupply(
   needCache.set(team, out);
   return out;
 }
-
-/** One line for a shop offer: "Needs 0.50 / s at top speed", "Collects 0.40 / s". */
-export function rateText(
-  def: BuildingDef,
-  tier: number,
-  ticksPerSecond: number,
-  texts: ScreenTexts = screenTexts,
-): string {
-  const r = buildingRate(def, tier, ticksPerSecond);
-  if (r.collects !== null) {
-    return screenText(texts, 'collects', {
-      rate: formatHundredths(r.collects),
-    });
-  }
-  if (r.needs !== null && r.topSpeed !== null) {
-    return screenText(texts, 'needsTopSpeed', {
-      rate: formatHundredths(r.needs),
-      speed: formatHundredths(r.topSpeed),
-      unit: topSpeedWord(def, texts),
-    });
-  }
-  return '';
-}

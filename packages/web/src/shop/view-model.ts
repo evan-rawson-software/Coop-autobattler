@@ -23,9 +23,9 @@ import {
 import type { WebContent } from '../content.js';
 import { isEditStep } from '../build/session.js';
 import { buildingName } from '../build/view-model.js';
-import { rateText } from '../build/rates.js';
-import { effectText, kindLabel, needsText } from './effect-text.js';
-import { archetypeText, ghostDisplayName } from '../run/display-text.js';
+import { cardStats } from '../build/card-stats.js';
+import { kindLabel } from './effect-text.js';
+import { archetypeText } from '../run/display-text.js';
 import { count } from '../plural.js';
 import { gateFor, type Gate, type LockDeps } from '../build/lock.js';
 import { screenText, screenTexts } from '../build/texts.js';
@@ -39,10 +39,13 @@ export interface OfferCard {
     readonly kind: string;
     readonly kindLabel: string;
     readonly tier: number;
-    readonly needs: string;
-    /** Need per second at top speed, or collector rate; '' for neither. */
-    readonly rate: string;
+    /** "Uses Ore 0.50/s"; null when it consumes nothing. */
+    readonly uses: string | null;
+    /** "Collects 0.50/s" for an extractor; null otherwise. */
+    readonly collects: string | null;
     readonly effect: string;
+    /** "Health 60". */
+    readonly health: string;
     readonly price: number;
   } | null;
   readonly canBuy: boolean;
@@ -107,11 +110,6 @@ export type ShopContext = {
 };
 
 const CLOSED = 'The shop is closed.';
-
-export function shortOf(gold: number, price: number): string {
-  const missing = price - gold;
-  return `Need ${String(missing)} more gold.`;
-}
 
 /** Group identical live offers; sold slots stay as single entries. */
 export function groupOffers(cards: readonly OfferCard[]): OfferGroup[] {
@@ -189,13 +187,11 @@ export function buildShopView(
   const cards: OfferCard[] = (data?.offers ?? []).map((o, slot) => {
     if (o === null) return { slot, offer: null, canBuy: false, reason: null };
     const def = ctx.content.buildings.get(o.def);
-    const reason = !open
-      ? CLOSED
-      : lock('buy') !== null
-        ? lock('buy')
-        : gold < o.price
-          ? shortOf(gold, o.price)
-          : null;
+    const stats =
+      def === undefined
+        ? undefined
+        : cardStats(ctx.content, ctx.sim, def, o.tier);
+    const reason = !open ? CLOSED : lock('buy');
     return {
       slot,
       offer: {
@@ -204,23 +200,13 @@ export function buildShopView(
         kind: def?.kind ?? 'core',
         kindLabel: kindLabel(ctx.content, def?.kind ?? 'core'),
         tier: o.tier,
-        needs: def === undefined ? '' : needsText(def, ctx.content),
-        rate:
-          def === undefined
-            ? ''
-            : rateText(
-                def,
-                o.tier,
-                ctx.sim.ticksPerSecond,
-                ctx.content.presentation.templates.screens,
-              ),
-        effect:
-          def === undefined
-            ? ''
-            : effectText(ctx.content, ctx.sim, def, o.tier),
+        uses: stats?.uses ?? null,
+        collects: stats?.collects ?? null,
+        effect: stats?.effect ?? '',
+        health: stats?.health ?? '',
         price: o.price,
       },
-      canBuy: reason === null,
+      canBuy: reason === null && gold >= o.price,
       reason,
     };
   });
@@ -231,16 +217,18 @@ export function buildShopView(
       ? lock('reroll')
       : data === null
         ? 'Nothing to re-roll.'
-        : gold < cost
-          ? shortOf(gold, cost)
-          : null;
+        : null;
   const mine = (b: { owner: number }): boolean => b.owner === player;
   return {
     open,
     gold,
     offers: cards,
     groups: groupOffers(cards),
-    reroll: { cost, can: rerollReason === null, reason: rerollReason },
+    reroll: {
+      cost,
+      can: rerollReason === null && gold >= cost,
+      reason: rerollReason,
+    },
     stash: stashRows({ ...run.team, stash: run.team.stash.filter(mine) }, ctx),
     stashCount: run.team.stash.filter(mine).length,
     placedCount: run.team.buildings.filter(mine).length,
@@ -306,7 +294,6 @@ export interface NextBattleView {
   readonly bossNote: string;
   /** PvP only. */
   readonly pvp: {
-    readonly opponent: string;
     readonly winGold: number | null;
     readonly lossGold: number | null;
     readonly lifeCost: number;
@@ -358,23 +345,9 @@ export function nextBattleView(
     bossNote: boss ? BOSS_NOTE : '',
     options: [],
     pvp: {
-      opponent: opponentText(run),
       winGold: info.stakes.winGold,
       lossGold: info.stakes.lossGold,
       lifeCost: info.stakes.lifeCost,
     },
   };
-}
-
-/**
- * Who the PvP battle is against (MM-11): known once the party is in the shop
- * before it; the opponent is fixed there, before the battle is revealed.
- */
-export function opponentText(
-  run: Pick<RunState, 'pvpOpponent' | 'round'>,
-): string {
-  const o = pvpOpponentInfo(run);
-  if (o === null) return 'Opponent unknown';
-  if (o.kind === 'boss') return 'Opponent: the boss';
-  return `Opponent: ${ghostDisplayName(o.label)}`;
 }
