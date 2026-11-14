@@ -206,6 +206,52 @@ describe('dragging a conduit with the controller', () => {
   });
 });
 
+describe('dragging from a building body', () => {
+  test('a drag from the body to another building connects on release', async () => {
+    const { s, ctl, ex, bk } = await factory();
+    const team = s.run.team;
+    const a = team.buildings.find((b) => b.id === ex) as {
+      x: number;
+      y: number;
+    };
+    const b = team.buildings.find((x) => x.id === bk) as {
+      x: number;
+      y: number;
+    };
+    ctl.setTool('conduit');
+    pointer(ctl, 'down', { x: a.x, y: a.y });
+    pointer(ctl, 'move', { x: a.x, y: a.y + 1 });
+    pointer(ctl, 'move', { x: b.x, y: b.y });
+    pointer(ctl, 'up', { x: b.x, y: b.y });
+    await settle();
+    expect(s.run.team.conduits).toHaveLength(1);
+    expect(ctl.model.get().ui.status.text).toContain('Conduit added');
+  });
+
+  test('a plain click on the body still needs a second click', async () => {
+    const { s, ctl, ex, bk } = await factory();
+    const team = s.run.team;
+    const a = team.buildings.find((b) => b.id === ex) as {
+      x: number;
+      y: number;
+    };
+    const b = team.buildings.find((x) => x.id === bk) as {
+      x: number;
+      y: number;
+    };
+    ctl.setTool('conduit');
+    pointer(ctl, 'down', { x: a.x, y: a.y });
+    pointer(ctl, 'up', { x: a.x, y: a.y });
+    await settle();
+    expect(s.run.team.conduits).toHaveLength(0);
+    expect(ctl.model.get().ui.draft?.from).not.toBeNull();
+    pointer(ctl, 'down', { x: b.x, y: b.y });
+    pointer(ctl, 'up', { x: b.x, y: b.y });
+    await settle();
+    expect(s.run.team.conduits).toHaveLength(1);
+  });
+});
+
 describe('why there is no route', () => {
   /** The team with building `id` moved to (x, y); no validation is run. */
   const moved = (
