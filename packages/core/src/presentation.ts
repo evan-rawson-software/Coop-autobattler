@@ -412,6 +412,7 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   runOverColPvp: [],
   runOverNewRun: [],
   runOverMainMenu: [],
+  runOverBackToMenu: [],
   battleCoresCount: ['label', 'standing', 'total'],
   battleCoreStanding: ['label', 'number'],
   battleCoreFallen: ['label', 'number'],

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import type { SaveListItem } from '@game/session';
-import { agoText, menuRows, recordRows } from './view-model.js';
+import type { HistoryEntry, SaveListItem } from '@game/session';
+import { agoText, menuRows, recentRunRows, recordRows } from './view-model.js';
 
 const NOW = 1_000_000_000_000;
 
@@ -151,6 +151,36 @@ describe('recordRows', () => {
       { label: '2 players', value: '—' },
       { label: '3 players', value: 'round 7' },
       { label: '4 players', value: '—' },
+    ]);
+  });
+});
+
+describe('recentRunRows', () => {
+  const entry = (runId: string, partySize: number, round: number, at: number) =>
+    ({
+      runId,
+      partySize,
+      round,
+      reason: 'defeated',
+      pvpWon: 0,
+      pvpLost: 0,
+      runVersion: '1.0',
+      finishedAt: at,
+    }) as HistoryEntry;
+  const DAY = 86_400_000;
+  const T = Date.UTC(2026, 10, 14, 12);
+
+  test('newest first, only runs with a kept summary, at most the limit', () => {
+    const history = [
+      entry('old', 2, 3, T - 3 * DAY),
+      entry('new', 1, 6, T),
+      entry('gone', 1, 9, T - DAY),
+      entry('mid', 3, 4, T - 2 * DAY),
+    ];
+    const rows = recentRunRows(history, (id) => id !== 'gone', 2);
+    expect(rows).toEqual([
+      { runId: 'new', text: '1 player · round 6 · 2026-11-14' },
+      { runId: 'mid', text: '3 players · round 4 · 2026-11-12' },
     ]);
   });
 });

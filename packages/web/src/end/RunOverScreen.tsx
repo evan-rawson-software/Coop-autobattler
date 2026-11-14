@@ -46,8 +46,11 @@ function Tally(props: { won: number; lost: number }) {
 export function RunOverScreen(props: {
   state: RunState;
   startingLives: number;
+  /** A finished run reopened from the menu: Back to menu only, no New run. */
+  readOnly?: boolean;
 }) {
   const { state, startingLives } = props;
+  const readOnly = props.readOnly === true;
   const [history, setHistory] = useState<readonly HistoryEntry[] | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -255,23 +258,29 @@ export function RunOverScreen(props: {
 
         <section class="panel over-next">
           <div class="over-buttons">
-            <button
-              type="button"
-              class="primary"
-              id="over-new-run"
-              disabled={starting}
-              onClick={newRun}
-            >
-              {screenText(screenTexts, 'runOverNewRun')}
-            </button>
+            {readOnly ? null : (
+              <button
+                type="button"
+                class="primary"
+                id="over-new-run"
+                disabled={starting}
+                onClick={newRun}
+              >
+                {screenText(screenTexts, 'runOverNewRun')}
+              </button>
+            )}
             <button
               type="button"
               id="over-menu"
+              class={readOnly ? 'primary' : undefined}
               onClick={() => {
                 navigate('#/');
               }}
             >
-              {screenText(screenTexts, 'runOverMainMenu')}
+              {screenText(
+                screenTexts,
+                readOnly ? 'runOverBackToMenu' : 'runOverMainMenu',
+              )}
             </button>
           </div>
           {error === null ? null : (

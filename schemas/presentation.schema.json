@@ -480,7 +480,8 @@
             "runOverColPve",
             "runOverColPvp",
             "runOverNewRun",
-            "runOverMainMenu"
+            "runOverMainMenu",
+            "runOverBackToMenu"
           ],
           "additionalProperties": false,
           "properties": {
@@ -888,7 +889,8 @@
             "runOverColPve": { "$ref": "#/$defs/screenText" },
             "runOverColPvp": { "$ref": "#/$defs/screenText" },
             "runOverNewRun": { "$ref": "#/$defs/screenText" },
-            "runOverMainMenu": { "$ref": "#/$defs/screenText" }
+            "runOverMainMenu": { "$ref": "#/$defs/screenText" },
+            "runOverBackToMenu": { "$ref": "#/$defs/screenText" }
           }
         },
         "needs": {
