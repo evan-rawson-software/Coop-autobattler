@@ -17,6 +17,7 @@ import {
 import { createStore, type Store } from '../app-state.js';
 import { appliedNotice } from '../event/view-model.js';
 import { content } from '../content.js';
+import { noteRound } from './new-items.js';
 import { economy } from './setup.js';
 import {
   UndoStack,
@@ -140,6 +141,7 @@ export class BuildSession {
   }
 
   private view(): SessionView {
+    noteRound(this.controller.state);
     return {
       run: this.controller.state,
       undoCount: this.stack.undoCount,

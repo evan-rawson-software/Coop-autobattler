@@ -867,7 +867,7 @@ export async function runRunSmoke({
   }
   await checkAt1366(
     'first build',
-    ['#ready-button', '#panel-stash', '#panel-tools', '#panel-inspector'],
+    ['#ready-button', '#panel-stash', '#panel-tools', '#panel-problems'],
     'run-4-first-build-1366x768',
   );
   const placedCount = (await B.team()).buildings.length;
@@ -2204,7 +2204,7 @@ export async function runRunSmoke({
     );
     // A neighbour's half cannot be erased; removing your own half returns the
     // other to "open".
-    await page.click('[data-tool="erase"]');
+    await page.keyboard.press('e');
     await clickCell(w - 1, node.y + 1);
     await settle();
     check(
@@ -2734,9 +2734,8 @@ export async function runRunSmoke({
     );
     check(
       (await page.locator('[data-field="ready-locked"]').count()) === 1 &&
-        (await page.locator('[data-tool="conduit"]').isDisabled()) &&
-        (await page.locator('[data-tool="erase"]').isDisabled()),
-      'two players: while Ready, the Build tab shows the lock and disables the conduit and erase tools',
+        (await page.locator('[data-tool="conduit"]').isDisabled()),
+      'two players: while Ready, the Build tab shows the lock and disables the conduit tool',
     );
     await shot('run-two-player-build-ready-locked');
 

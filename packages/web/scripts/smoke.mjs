@@ -1018,7 +1018,7 @@ try {
 
   // --- Erase: a conduit goes, undo brings it back
   const hashFull = await B.hash();
-  await page.click('[data-tool="erase"]');
+  await page.keyboard.press('e');
   await clickCell(
     (await B.team()).conduits[1].cells[0].x,
     (await B.team()).conduits[1].cells[0].y,
@@ -1089,7 +1089,7 @@ try {
   // on the input side; exactly the dragged cells are built (issue #275).
   const hashDrag0 = await B.hash();
   const drawn = (await B.team()).conduits[1].cells;
-  await page.click('[data-tool="erase"]');
+  await page.keyboard.press('e');
   await clickCell(drawn[0].x, drawn[0].y);
   check(
     (await B.team()).conduits.length === 1,

@@ -4,7 +4,8 @@ import { content } from '../content.js';
 import type { WebContent } from '../content.js';
 import { linkText, type HalfStatus } from './border-links.js';
 import { BuildSession } from './session.js';
-import { ProblemsPanel } from './panels.js';
+import { ChecklistPanel } from './panels.js';
+import { deriveChecklist } from './checklist.js';
 import { cardStats } from './card-stats.js';
 import { REASON_TEXT_CODES } from '@game/core';
 import { KNOWN_REASONS, reasonMessage, selectionNote } from './reasons.js';
@@ -180,7 +181,7 @@ describe('status texts come from the presentation file', () => {
   });
 });
 
-describe('ProblemsPanel', () => {
+describe('ChecklistPanel', () => {
   function walk(n: unknown, out: VNode[] = []): VNode[] {
     if (Array.isArray(n)) n.forEach((x) => walk(x, out));
     else if (typeof n === 'object' && n !== null && 'props' in n) {
@@ -191,24 +192,26 @@ describe('ProblemsPanel', () => {
   }
 
   test('a line with nothing to jump to is plain text, not a button', () => {
+    const problems = [
+      {
+        id: 'under-partner:1',
+        kind: 'under_supplied' as const,
+        text: 'Bo has 2 under-supplied buildings.',
+        focus: null,
+        building: null,
+      },
+      {
+        id: 'under:3',
+        kind: 'under_supplied' as const,
+        text: 'x',
+        focus: { x: 1, y: 1 },
+        building: 3,
+      },
+    ];
+    const team = { buildings: [], stash: [] } as never;
     const nodes = walk(
-      ProblemsPanel({
-        problems: [
-          {
-            id: 'under-partner:1',
-            kind: 'under_supplied',
-            text: 'Bo has 2 under-supplied buildings.',
-            focus: null,
-            building: null,
-          },
-          {
-            id: 'under:3',
-            kind: 'under_supplied',
-            text: 'x',
-            focus: { x: 1, y: 1 },
-            building: 3,
-          },
-        ],
+      ChecklistPanel({
+        list: deriveChecklist(team, content, problems, null, 0),
         onPick: () => undefined,
       }),
     );
@@ -216,7 +219,7 @@ describe('ProblemsPanel', () => {
     const plain = nodes.filter(
       (n) =>
         n.type === 'span' &&
-        (n.props as Record<string, unknown>)['class'] === 'problem',
+        (n.props as Record<string, unknown>)['class'] === 'check problem',
     );
     expect(plain).toHaveLength(1);
   });
