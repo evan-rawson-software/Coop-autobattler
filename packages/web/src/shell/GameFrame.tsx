@@ -191,10 +191,10 @@ export function GameFrame(props: GameFrameProps) {
         </main>
         <aside class="frame-info" aria-label={t('uiInfoLabel')}>
           <PhaseInfoTop framePhase={props.phase} />
-          {props.info}
           {tutorial === null ? null : (
             <TutorialChecklist info={tutorial} framePhase={props.phase} />
           )}
+          {props.info}
         </aside>
         <div class="frame-tray" role="group" aria-label="Actions">
           <div class="tray-content">

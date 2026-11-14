@@ -136,15 +136,19 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
   }
   check(lockedAll, `tutorial: the other ${nOthers} slots are faded and locked`);
   check(
-    (await page.locator('.frame-info > .tut-checklist').count()) === 1 &&
-      (await page.evaluate(() => {
-        const l = document
-          .querySelector('.tut-checklist')
-          .getBoundingClientRect();
-        const i = document.querySelector('.frame-info').getBoundingClientRect();
-        return Math.abs(l.bottom - i.bottom) < 24;
-      })),
-    'tutorial: the checklist is pinned to the bottom of the info rail',
+    (await page
+      .locator('.frame-info > [data-field="tutorial-card"] + .tut-checklist')
+      .count()) === 1 &&
+      (await page
+        .locator('.tut-checklist')
+        .evaluate((e) => getComputedStyle(e).position === 'static')),
+    'tutorial: the checklist flows in the rail right under the coach card',
+  );
+  check(
+    (await page.locator('#panel-overlay-legend').count()) === 0 &&
+      (await page.locator('.key-hints').count()) === 0 &&
+      (await page.locator('#panel-next-fight').count()) === 0,
+    'tutorial: Map key, Keys and Next fight are hidden before step 5',
   );
   await shot('tutorial-2-mine-ore');
   await page.setViewportSize({ width: 1920, height: 1080 });
@@ -206,6 +210,27 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
       /Feed a Barracks/.test(await card.locator('h3').innerText()) &&
       (await page.locator('.tut-checklist li.done').count()) === 2,
     `tutorial: the Extractor on a node finishes step 2 (${await title()})`,
+  );
+  // Select the new Extractor: the checklist must not cover the Selected panel.
+  const placedAt = (await team()).buildings.find(
+    (b) => b.x === nodes.find((n) => n.x === b.x && n.y === b.y)?.x,
+  );
+  if (placedAt !== undefined) {
+    const cp = await at(placedAt.x, placedAt.y);
+    await page.mouse.click(cp.x, cp.y);
+    await settle();
+  }
+  const overlap = await page.evaluate(() => {
+    const l = document.querySelector('.tut-checklist')?.getBoundingClientRect();
+    const s = document
+      .querySelector('#panel-inspector')
+      ?.getBoundingClientRect();
+    if (!l || !s) return null;
+    return !(l.bottom <= s.top || s.bottom <= l.top);
+  });
+  check(
+    overlap === false,
+    `tutorial: the checklist box does not intersect the Selected panel (${String(overlap)})`,
   );
   const barracks = page.locator('.stash-item[data-stash-def="bld_barracks"]');
   check(

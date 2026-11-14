@@ -105,11 +105,6 @@
 
 .tut-checklist {
   flex: 0 0 auto;
-  margin-top: auto;
-  /* Pinned to the foot of the rail even when the rail scrolls. */
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: 8px;

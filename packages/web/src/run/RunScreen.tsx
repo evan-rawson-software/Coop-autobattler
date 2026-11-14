@@ -198,6 +198,9 @@ function ReadyRun(props: { run: ActiveRun }) {
           round: displayRound(state),
           leg: state.leg,
           next: nextPhaseAfterResult(state.step, runEnds),
+          placed: state.team.buildings.some(
+            (b) => b.owner === run.session.acting,
+          ),
         };
 
   if (conflict) return <Conflict runId={run.runId} />;
