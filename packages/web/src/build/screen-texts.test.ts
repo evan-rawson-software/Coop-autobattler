@@ -49,7 +49,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'battleGenericOverkill',
     { core: 'Core' },
-    'Both last Cores fell at once: less overkill damage wins.',
+    'Both Cores fell at the same moment: less overkill damage wins.',
   ],
   [
     'battleGenericTimeLimit',
@@ -69,7 +69,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'battleTieBuildingDamageDouble',
     { core: 'Core' },
-    'Both last Cores fell at once: more damage to buildings wins.',
+    'Both Cores fell at the same moment: more damage to buildings wins.',
   ],
   [
     'battleTieBuildingDamageTime',
@@ -79,7 +79,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'battleTieKillsDouble',
     { core: 'Core' },
-    'Both last Cores fell at once, building damage even: more kills wins.',
+    'Both Cores fell at the same moment, building damage even: more kills wins.',
   ],
   [
     'battleTieKillsTime',

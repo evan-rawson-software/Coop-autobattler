@@ -3859,7 +3859,7 @@ joins `ghostsFought`). A reload before the battle reads the same
 `pvpOpponent` from the save. If a run was saved after entering the shop but
 before the selection, `RunController.prepare` finishes it when the run is
 opened. Players are told before the battle: "Opponent: Rival party"
-(with " (weak)", "(medium)" or "(strong)" added when the ghost's label names
+(with "(weak)", "(medium)" or "(strong)" added when the ghost's label names
 that strength; the label itself is not shown) or "Opponent: the boss" (MM-11).
 
 If the automatic selection fails (`save_failed`, or `invalid_state` from the
