@@ -3734,6 +3734,10 @@ any number of offers from 1 to `offerCount`. More event types will come later.
     affordable when the offer was made) can be changed like any other choice. A choice is stored at once and may be changed until
     the last player has chosen; nothing is applied before that. There is no
     party vote on the building and no random draw.
+    The web screen sends `event_choose` for an upgrade only when the player
+    presses the confirm button ("Upgrade · N gold", N the selected row's
+    price): clicking a row only selects it and sends nothing. Skip is sent at
+    once.
   - *Applying.* When every player has chosen, the choices are applied in
     player order (price taken from the player's gold, `raiseTier` on the
     building) and the run goes to the shop. With one player the first choice
