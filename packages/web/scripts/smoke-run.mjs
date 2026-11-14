@@ -883,6 +883,11 @@ export async function runRunSmoke({
   check(placedCount >= 4, `placed buildings survive a reload (${placedCount})`);
 
   // ---------------------------------------------------------------------
+  // Choose an opponent: select its card, then press Fight (the primary button).
+  const fightOpponent = async (pg, difficulty) => {
+    await pg.click(`[data-action="select"][data-difficulty="${difficulty}"]`);
+    await pg.click('#pve-fight:not([disabled])');
+  };
   // Round 1
   const clickReady = async () => {
     await page.click('#ready-button');
@@ -898,8 +903,7 @@ export async function runRunSmoke({
     cardTexts.every(
       (t) =>
         /Easy|Medium|Hard/.test(t) &&
-        /Threat/i.test(t) &&
-        /\+\d+ gold/.test(t) &&
+        /\+\d+\s+gold/.test(t) &&
         /Core \d+ health/.test(t),
     ),
     'PvE choice: each card has difficulty, threat and a gold reward',
@@ -916,31 +920,40 @@ export async function runRunSmoke({
     'PvE choice: archetype names and plain-language descriptions (no ids)',
   );
   const overloadLines = await page
-    .locator('.pve-card [data-field="overload"]')
-    .allInnerTexts();
+    .locator('.pve-card')
+    .evaluateAll((els) => els.map((e) => e.getAttribute('title') ?? ''));
   check(
     overloadLines.length === 3 &&
       overloadLines.every((t) =>
         /^At 3:00 both Cores start losing health \(Overload\)\. (Theirs falls first, at \d+:\d\d|Yours falls first, at \d+:\d\d|Both fall at \d+:\d\d|Neither falls before the time limit)/.test(
           t.trim(),
         ),
-      ) &&
-      !(await page.locator('#pve-choice').innerText()).includes(
-        'Destroy the stronghold before Overload',
       ),
-    `PvE choice: every card states which Core Overload destroys first ("${overloadLines[0]}")`,
+    `PvE choice: each card's tooltip states which Core Overload destroys first ("${overloadLines[0]}")`,
+  );
+  const choiceText = await page.locator('#pve-choice').innerText();
+  const trayText = await page.locator('[data-field="stakes"]').innerText();
+  check(
+    /no life/.test(trayText) &&
+      !/no life|Overload/.test(choiceText) &&
+      (await page.locator('[data-field="overload-shared"]').count()) === 1,
+    'PvE choice: the stakes and Overload are said once, not on every card',
   );
   check(
-    /no life/.test(await page.locator('[data-field="stakes"]').innerText()),
-    'PvE choice: the stakes of losing are stated',
-  );
-  check(
-    /Pick an opponent/.test(
+    /Choose an opponent/.test(
       await page.locator('[data-field="choice-prompt"]').innerText(),
     ) &&
-      (await page.locator('.pve-card [data-field="fight"]').allInnerTexts())
-        .length === 3,
-    'PvE choice: says what to do and each card has a Fight button look',
+      (await page.locator('.pve-card [data-field="fight"]').count()) === 0 &&
+      (await page.locator('#pve-fight').isDisabled()),
+    'PvE choice: heading shown; no per-card Fight; Fight waits for a selection',
+  );
+  await page.click('[data-action="select"][data-difficulty="easy"]');
+  check(
+    (await page.locator('#pve-fight').innerText()).includes('Fight Easy') &&
+      (await page
+        .locator('.pve-card.selected')
+        .evaluateAll((e) => e.length)) === 1,
+    'PvE choice: selecting a card selects it and names it on the Fight button',
   );
   await shot('run-5-pve-choice');
   await checkFrame(page, check, 'Choose opponent');
@@ -951,7 +964,7 @@ export async function runRunSmoke({
   });
   await shotDark('art2-pve-choice');
   await reloadSame('PvE choice');
-  await page.click('[data-action="choose"][data-difficulty="easy"]');
+  await fightOpponent(page, 'easy');
   await waitStep('pve_summary');
 
   // Battle: reload while playing resumes it. Wait until a position past a
@@ -1279,8 +1292,8 @@ export async function runRunSmoke({
         await page.click('#ready-button');
         break;
       case 'pve_choice':
-        await page.waitForSelector('[data-action="choose"]');
-        await page.click('[data-action="choose"][data-difficulty="easy"]');
+        await page.waitForSelector('[data-action="select"]');
+        await fightOpponent(page, 'easy');
         break;
       case 'pve_summary':
       case 'pvp_summary': {
@@ -1489,7 +1502,7 @@ export async function runRunSmoke({
   tab2.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
   await tab2.goto(`${baseUrl}#run/${encodeURIComponent(runA)}`);
   await tab2.waitForFunction(() => window.__debug?.run?.state);
-  await tab2.click('[data-action="choose"][data-difficulty="medium"]');
+  await fightOpponent(tab2, 'medium');
   await waitStep('pve_summary', tab2);
   await page.waitForSelector('#run-conflict', { timeout: slow(8000) });
   check(
@@ -1922,8 +1935,8 @@ export async function runRunSmoke({
         await actAs2(p);
         if ((await R.state()).step !== s.step) break;
         if (s.step === 'pve_choice') {
-          await page.waitForSelector('[data-action="choose"]');
-          await page.click('[data-action="choose"][data-difficulty="easy"]');
+          await page.waitForSelector('[data-action="select"]');
+          await fightOpponent(page, 'easy');
         } else if (s.step === 'pve_summary') {
           await finishBattle();
           await page.click('#battle-ready');
@@ -2256,9 +2269,9 @@ export async function runRunSmoke({
   await page.waitForSelector('#pve-choice');
   await bothReady('pve_summary', async () => {
     await page.waitForSelector(
-      '[data-action="choose"][data-difficulty="easy"]',
+      '[data-action="select"][data-difficulty="easy"]',
     );
-    await page.click('[data-action="choose"][data-difficulty="easy"]');
+    await fightOpponent(page, 'easy');
   });
   check(
     (await R.screen()) === 'battle',

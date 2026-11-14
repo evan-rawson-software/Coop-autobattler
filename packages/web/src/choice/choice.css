@@ -7,8 +7,103 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 0.9rem;
-  padding: 0.9rem 1.25rem;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  /* The board, dimmed: a faint grid under a wash of the surface colour. */
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(
+      color-mix(in srgb, var(--border) 45%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--border) 45%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 36px 36px;
+}
+
+.pve-cards > li {
+  display: flex;
+}
+
+.choice-head {
+  flex: none;
+  text-align: center;
+}
+
+.choice-head h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.choice-head p {
+  margin: 0.2rem 0 0;
+  color: var(--ink-muted);
+}
+
+.pve-reward {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 0.2rem 0 0.3rem;
+}
+
+.pve-reward strong {
+  font-size: 2.6rem;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.pve-reward span {
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
+h4.pve-archetype {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.pve-badge {
+  margin-left: auto;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.pve-card .facts {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.pve-fight {
+  margin-top: auto;
+  padding: 0.45rem 0.8rem;
+  text-align: center;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+}
+
+button.event-card:hover:not(:disabled) .pve-fight,
+button.event-card:focus-visible .pve-fight {
+  color: var(--surface);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.pve-card.voted {
+  border-color: var(--ink-muted);
 }
 
 .choice-banner {
@@ -71,10 +166,14 @@
   border-radius: 4px;
 }
 
-.pve-card.selected,
 .event-card.selected {
   border-color: var(--accent);
   border-width: 4px;
+}
+
+.pve-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .pve-card-head,
@@ -108,12 +207,6 @@
   margin: 0;
 }
 
-.pve-threat-box {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
 .label {
   font-size: 0.72rem;
   letter-spacing: 0.08em;
@@ -142,12 +235,6 @@
   padding: 0;
   color: var(--ink-muted);
   font-size: 0.9rem;
-}
-
-.pve-reward {
-  display: flex;
-  flex-direction: column;
-  margin-top: 0.4rem;
 }
 
 .event-icon {
@@ -210,28 +297,6 @@ button.event-card[data-affordable='false'] {
   font-size: 1.25rem;
 }
 
-.pve-fight {
-  margin-top: auto;
-  padding: 0.45rem 0.8rem;
-  text-align: center;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink);
-  background: var(--surface);
-  border: 2px solid var(--ink);
-  border-radius: 4px;
-}
-
-button.pve-card:hover:not(:disabled) .pve-fight,
-button.pve-card:focus-visible .pve-fight,
-button.event-card:hover:not(:disabled) .pve-fight,
-button.event-card:focus-visible .pve-fight {
-  color: var(--surface);
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
 .event-card .stacks-tag {
   flex: 0 0 auto;
   font-size: 0.85rem;
@@ -275,4 +340,8 @@ button.event-card:focus-visible .pve-fight {
 .frame-info .choice-prompt {
   margin: 0 0 0.3rem;
   font-size: 1rem;
+}
+
+.pve-cards {
+  align-items: stretch;
 }
