@@ -70,83 +70,88 @@ session, focused on build-phase interactions (conduits, moving, overlays, undo),
     costly action has no confirmation or undo.
 16. **Status messages are dismissed in different ways.** The Workshop result has a "Dismiss"
     button. Other status messages ("Re-rolled.", "Bought Turret.") have none and linger.
-17. **No way back from Workshop or Shrine to the event choice.** Clicking Workshop or Shrine by
-    mistake commits you. Workshop offers only "Skip (no upgrade)", and Shrine has no back or skip
-    at all.
 
 ### Shrine
-18. **Shrine cards don't match the event cards.** The event screen now has a "Choose one" heading,
+17. **Shrine cards don't match the event cards.** The event screen now has a "Choose one" heading,
     icons and CHOOSE buttons. The Shrine's bonus cards have no button and no icons, under a plain
     "Choose a bonus" banner.
-19. **Chosen bonuses aren't shown anywhere afterwards.** After picking "Sharp turrets", the name
+18. **Chosen bonuses aren't shown anywhere afterwards.** After picking "Sharp turrets", the name
     or effect doesn't appear on the Shop, Build or Battle screens. Players can't review which
     bonuses they've taken, and "Stacks (can be taken again)" is hard to use without seeing the
     current stack count.
 
 ### Saved runs
-20. **Abandon confirmation doesn't say what's lost.** "Abandon this run? Abandon it / Cancel"
+19. **Abandon confirmation doesn't say what's lost.** "Abandon this run? Abandon it / Cancel"
     doesn't say whether the run is deleted for good or whether its progress still counts toward
     Records.
 
 ### Battle and results
-21. **"The battle is about to begin…" toast covers the camera controls.** At 1024×768 it sits on
+20. **"The battle is about to begin…" toast covers the camera controls.** At 1024×768 it sits on
     top of the Fit / + / − buttons at the start of every battle.
-22. **"Continue (choose a reward)" right after "No reward".** On a lost stronghold battle the
+21. **"Continue (choose a reward)" right after "No reward".** On a lost stronghold battle the
     results banner says "No reward", and the button below says "Continue (choose a reward)".
     The event pick is a separate thing, but the wording contradicts the banner.
-23. **Battle-log entries are rendered as disabled buttons.** "0:00 Battle starts" is a `<button
+22. **Battle-log entries are rendered as disabled buttons.** "0:00 Battle starts" is a `<button
     disabled>`, which suggests it's clickable (jump to time?) but does nothing.
 
-24. **The live Army Strength chart's "now" marker looks like a data spike.** During a battle a
+23. **The live Army Strength chart's "now" marker looks like a data spike.** During a battle a
     tall solid black vertical line is drawn at the current time on the small chart (axis
     0:00–1:00). It reads as a sudden jump in strength, not a time cursor.
-25. **The default battle camera cuts off the bottom of the player's own board.** At 1280×800 the
+24. **The default battle camera cuts off the bottom of the player's own board.** At 1280×800 the
     initial view shows the stronghold in full, but the bottom rows of "Your board" are cut off.
     The player has to press Fit to see their own base.
 
 ### Smaller desktop window (1024×768)
-26. **The Stash is clipped again at 1024 wide.** It switches to one column and shows only
+25. **The Stash is clipped again at 1024 wide.** It switches to one column and shows only
     Extractor, Barracks and Wall. Turret is hidden below the fold, with no scroll cue (#257 fixed
     this at 1280×800 only).
-27. **Shop stash rows wrap badly at 1024 wide.** "Extractor T1" and "× 2" end up on separate
+26. **Shop stash rows wrap badly at 1024 wide.** "Extractor T1" and "× 2" end up on separate
     lines, and the Sell buttons wrap to "Sell · / 5" and "Sell · / 10".
 
 ### Main menu after a finished run
-28. **The run summary can't be revisited.** Once you leave the Run over screen, the only trace of
+27. **The run summary can't be revisited.** Once you leave the Run over screen, the only trace of
     the run is "1 player · round 6" under Records. There's no link back to that run's
     round-by-round summary, and no history of earlier runs.
 
 ## Additional requested changes (from the project owner)
 
 ### Build screen
-29. **Hide the ready status in solo games.** The Party panel shows "ready: no" and
+28. **Hide the ready status in solo games.** The Party panel shows "ready: no" and
     "Next: Stronghold · 0 of 1 ready" even when playing alone. Only show the ready state and the
     "N of M ready" count when the party has more than one player.
 
 ### Shop screen
-30. **Hide "Needs: nothing".** When a building consumes nothing (Wall, Gate, Extractor…), leave
+29. **Hide "Needs: nothing".** When a building consumes nothing (Wall, Gate, Extractor…), leave
     out the "Needs:" line entirely.
-31. **Say "Uses", not "Needs".** Replace "Needs: Ore" / "Needs: Flux" etc. with "Uses: Ore" /
-    "Uses: Flux".
-32. **Put building health on its own line.** Health is currently tacked onto the end of the effect
+30. **Say "Uses", not "Needs".** Replace "Needs: Ore" / "Needs: Flux" etc. with "Uses: Ore" /
+    "Uses: Flux". Apply this to the Build screen's Selected panel as well as the Shop.
+31. **Put building health on its own line.** Health is currently tacked onto the end of the effect
     line ("… · 60 health"). Show it as a separate line.
-33. **Remove the duplicate rate descriptions, for every building.** The Extractor shows its output
+32. **Remove the duplicate rate descriptions, for every building.** The Extractor shows its output
     twice: "Collects 0.50/s" and "Mines its node: 1 every 2 s". Remove the "Mines its node…" part,
     and apply the same rule to every building: show each rate once. For a building that
     consumes a resource, just say "Uses <resource> <rate>" (e.g. "Uses Ore 0.50/s"). Drop
-    "at top speed"; it's implied.
-34. **Remove the red "Need N more gold." text.** A disabled "Buy · 20 gold" button next to the
+    "at top speed"; it's implied. Apply this to the Build screen's Selected panel as well
+    as the Shop.
+33. **Remove the red "Need N more gold." text.** A disabled "Buy · 20 gold" button next to the
     gold total is enough for the player to work it out.
-35. **Remove "Opponent: a recorded rival party" from Next battle.** The panel heading already
+34. **Remove "Opponent: a recorded rival party" from Next battle.** The panel heading already
     says "Rival party · round N", so the line repeats it.
-36. **Remove drag-to-sell.** Selling has two ways: the Sell button on each stash row and the
+35. **Remove drag-to-sell.** Selling has two ways: the Sell button on each stash row and the
     "Drag a building here from the stash to sell" drop zone. Keep the Sell button and remove the
     drop zone.
+
+### Conduits
+36. **Support click-and-drag conduit placement.** Let players drag from an output side to draw
+    their own conduit path cell by cell, instead of only having the route picked for them
+    (see finding 5).
 
 ### Battle screen
 37. **Remove the walls text under the Core health.** Drop the "No walls" message and the
     "Walls: N / N standing" count, on both the player's side and the opponent's (Stronghold /
     Enemy) panel. The player can see walls on the board.
+
+Note: event choices (Workshop/Shrine) are intentionally final; no back button is wanted.
 
 ## Not covered
 Multiplayer and phone-sized screens (out of scope by request). Placing purchased route buildings
