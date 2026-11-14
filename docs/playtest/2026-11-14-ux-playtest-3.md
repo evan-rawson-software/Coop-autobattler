@@ -5,7 +5,7 @@ multiplayer, phone-sized screens, unexplained state changes, and anything alread
 marked "ignore". The focus was the shop, rival-party battles and later rounds.
 Setup: GitHub Pages is still unreachable from the test environment, so `main` @ eecffe3 was
 built locally and played via `vite preview` in headless Chromium at 1280×800. A solo run was
-played through round 5 (stronghold battle → event → shop → rival battle → event → shop, per round).
+played to the end of the run at round 7 (stronghold battle → event → shop → rival battle → event → shop, per round).
 
 ## Findings
 
@@ -48,11 +48,20 @@ played through round 5 (stronghold battle → event → shop → rival battle �
    destroyed" and so on in text and screen readers. The number badge needs separating, e.g.
    "① 3:00".
 
-### Saved runs
-10. **The saved-run entry may not update.** After a scripted run through several rounds, the
-    main menu's Saved runs entry still read "Round 1 · Lives 5 / 5 · Choose a Stronghold battle
-    · Last played just now". Not confirmed — this needs checking by hand.
+### Run over screen (reached round 7, out of lives)
+10. **Round-by-round table breaks words mid-word.** The columns are so narrow that "lost" wraps
+    as "lo / st", "won" as "wo / n", and the header "Stronghold" as "Strong / hold".
+11. **Internal names fill the round-by-round table.** Rows read "Ghost · Bundled weak bot
+    (bundled)", with "bundled" twice. The This run panel adds "vs. ghosts" and "vs. bosses";
+    neither term is used anywhere else in the game.
+12. **The boss appears without warning.** Round 7's rival battle is just "vs. the boss". Nothing
+    earlier told the player a boss round was coming, or that it is different.
+13. **"Version 1.0" is listed among the run stats.** It's build info, not a player stat.
+14. **The Final factory caption is cut off.** "0 buildings placed · 0 at tier 3 · 7 in stash" is
+    clipped at the bottom of its panel, while the board image above it has large empty margins.
+    "0 at tier 3" also doesn't say why tier 3 matters.
+15. **Odd header and duplicate exit buttons.** The header shows a lone "You" before Lives/Gold.
+    "Menu" in the header and "Main menu" at the bottom go to the same place.
 
 ## Not covered (time limit)
-The end of a run (out of lives), and buying items. Purchases succeeded only in part, because
-offers are random each run.
+Buying and placing purchased items. Offers are random each run, so purchases were tried only in part.
