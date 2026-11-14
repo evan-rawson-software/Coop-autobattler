@@ -18,8 +18,8 @@
   },
   "offerWeights": [
     { "def": "bld_extractor", "weight": 12 },
-    { "def": "bld_splitter", "weight": 3 },
-    { "def": "bld_merger", "weight": 3 },
+    { "def": "bld_splitter", "weight": 6 },
+    { "def": "bld_merger", "weight": 6 },
     { "def": "bld_crossover", "weight": 2 },
     { "def": "bld_barracks", "weight": 16 },
     { "def": "bld_wall", "weight": 8 },
