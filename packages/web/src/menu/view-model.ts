@@ -145,3 +145,8 @@ export function recentRunRows(
   }
   return rows;
 }
+
+/** Has any party size a deepest round yet? Until then the records stay one line. */
+export function hasRecords(best: Readonly<Record<number, number>>): boolean {
+  return Object.keys(best).length > 0;
+}

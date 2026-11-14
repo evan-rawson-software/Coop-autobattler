@@ -641,9 +641,12 @@ export async function runRunSmoke({
   );
   check(
     /No saved runs/.test(await page.locator('#main-menu').innerText()) &&
-      (await page.locator('#records li').count()) === 4 &&
-      (await page.locator('#records').innerText()).split('—').length === 5,
-    'main menu: no saved runs yet, and the records are empty',
+      (await page.locator('#records').count()) === 0 &&
+      /Deepest round: none yet · Saved runs: none/.test(
+        await page.locator('#records-line').innerText(),
+      ) &&
+      (await page.locator('#tutorial-button.primary').count()) === 1,
+    'main menu: no saved runs yet, the records are one line, the tutorial is primary',
   );
   check(
     (await page.locator('#main-menu a[href="#debug"]').count()) === 1,

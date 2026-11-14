@@ -615,7 +615,25 @@
       "runOverColPvp": "Rival party",
       "runOverNewRun": "New run",
       "runOverMainMenu": "Main menu",
-      "runOverBackToMenu": "Back to menu"
+      "runOverBackToMenu": "Back to menu",
+      "menuEyebrow": "Co-op factory autobattler · 1–4 players",
+      "menuPitch": "Build a factory. It trains an army. The army fights for you. Survive as many rounds as you can.",
+      "menuPlayTutorial": "Play the tutorial",
+      "menuPlayTutorialHint": "Your first real run, with tips · about 5 minutes",
+      "menuNewRun": "New run",
+      "menuNewRunSkip": "New run (skip the tips)",
+      "menuContinue": "Continue",
+      "menuRecordsLine": "Deepest round: {deepest} · Saved runs: {saved}",
+      "menuRecordsNoneYet": "none yet",
+      "menuRecordsNone": "none",
+      "menuRoundTitle": "How a round works",
+      "menuStepBuildTitle": "Build",
+      "menuStepBuildBody": "Place buildings around your Core. Extractors mine resources, conduits carry them, and other buildings turn them into units and turret fire.",
+      "menuStepFightTitle": "Fight",
+      "menuStepFightBody": "The battle plays itself. You watch. The first side to destroy the other’s Core wins.",
+      "menuStepRewardTitle": "Reward",
+      "menuStepRewardBody": "Earn gold, pick one event, and buy new buildings. Then build again.",
+      "menuLivesRule": "You start with {lives} lives. Losing to a rival party costs one. The run ends at 0."
     }
   }
 }
