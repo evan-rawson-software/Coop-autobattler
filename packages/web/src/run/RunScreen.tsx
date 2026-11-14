@@ -165,11 +165,12 @@ function ReadyRun(props: { run: ActiveRun }) {
       <RunBar
         state={state}
         maxLives={maxLives}
+        lifeCost={run.deps.rules.pvpLossLifeCost}
         storage={run.storage}
         session={run.session}
       />
     ),
-    [state, maxLives, run.storage],
+    [state, maxLives, run.deps.rules.pvpLossLifeCost, run.storage],
   );
 
   // The phase for the stepper and the tips. A tip counts as seen once the

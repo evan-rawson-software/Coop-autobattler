@@ -9,6 +9,7 @@ import type { RunHandle } from './handle.js';
 import { createStore, useStore } from '../app-state.js';
 import { ActingSwitch } from '../shell/ActingSwitch.js';
 import type { BuildSession } from '../build/session.js';
+import { barLivesText } from './bar-lives.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 
 const noStore = createStore<{ acting: number }>({ acting: 0 });
@@ -16,6 +17,8 @@ const noStore = createStore<{ acting: number }>({ acting: 0 });
 export function RunBar(props: {
   state: RunState;
   maxLives: number;
+  /** Lives a lost rival battle costs (the rules' `pvpLossLifeCost`). */
+  lifeCost?: number;
   storage?: RunHandle['storage'];
   /** The run's session: gives the acting player and the switcher. */
   session?: BuildSession;
@@ -32,7 +35,7 @@ export function RunBar(props: {
     <span class="run-bar" id="run-bar">
       <span data-field="bar-lives">
         <SpriteIcon name="ui_icon_heart" scale={1} class="bar-icon" />
-        Lives {state.lives} / {props.maxLives}
+        {barLivesText(state, props.lifeCost ?? 1, props.maxLives)}
       </span>
       {showGold ? (
         <span data-field="bar-gold" data-gold={gold}>

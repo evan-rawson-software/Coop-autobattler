@@ -690,18 +690,25 @@ export function BattleSummaryView(props: SummaryProps) {
         <h2 class="panel-title">{t('battleSumTitle')}</h2>
         <ul class="plain summary-list">
           <li data-field="sum-breach">
-            {firstBreach === null
-              ? t('battleNoBreach')
-              : t('battleSumBreach', {
-                  side: t(
-                    firstBreach.side === 'left'
-                      ? 'battleSideLeft'
-                      : firstBreach.side === 'right'
-                        ? 'battleSideRight'
-                        : 'battleSideMiddle',
-                  ),
-                  time: firstBreach.time,
-                })}
+            {[
+              destroyed.cores.length > 0
+                ? t('battleCoreLost', { core: coreName })
+                : null,
+              firstBreach === null
+                ? null
+                : t('battleSumBreach', {
+                    side: t(
+                      firstBreach.side === 'left'
+                        ? 'battleSideLeft'
+                        : firstBreach.side === 'right'
+                          ? 'battleSideRight'
+                          : 'battleSideMiddle',
+                    ),
+                    time: firstBreach.time,
+                  }),
+            ]
+              .filter((x) => x !== null)
+              .join(' ') || t('battleNoBreach')}
           </li>
           <li data-field="sum-units">
             {t('battleSumUnits', {
@@ -844,7 +851,9 @@ export function BattleSummaryView(props: SummaryProps) {
               </div>
               {breaches.length === 0 ? (
                 <p class="muted" data-field="no-breach">
-                  {t('battleNoBreach')}
+                  {destroyed.cores.length > 0
+                    ? t('battleCoreLost', { core: coreName })
+                    : t('battleNoBreach')}
                 </p>
               ) : (
                 <ul class="plain breach-list" data-field="breach-list">

@@ -595,6 +595,7 @@
       "battlePanelBreachesWon": "Where they got through",
       "battlePanelBreaches": "Where you were breached",
       "battleNoBreach": "Nothing of yours was destroyed.",
+      "battleCoreLost": "Your {core} was destroyed.",
       "battleNoBuildings": "You had no buildings on the board.",
       "battlePanelBuildings": "Your buildings",
       "battleColBuilding": "Building",

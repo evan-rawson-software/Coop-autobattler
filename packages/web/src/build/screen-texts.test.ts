@@ -715,6 +715,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['battlePanelBreachesWon', {}, 'Where they got through'],
   ['battlePanelBreaches', {}, 'Where you were breached'],
   ['battleNoBreach', {}, 'Nothing of yours was destroyed.'],
+  ['battleCoreLost', { core: '<core>' }, 'Your <core> was destroyed.'],
   ['battlePanelBuildings', {}, 'Your buildings'],
   ['battleColBuilding', {}, 'Building'],
   ['battleColProduced', {}, 'Produced'],

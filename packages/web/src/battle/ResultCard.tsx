@@ -58,9 +58,11 @@ export function ResultCard(props: ResultCardProps) {
         <h2 class="result-word" data-field="result-word">
           {t(won ? 'battleVictory' : 'battleDefeat')}
         </h2>
-        <span class={`life-chip${chip.lost ? ' life-lost' : ''}`}>
-          {chip.text}
-        </span>
+        {chip === null ? null : (
+          <span class={`life-chip${chip.lost ? ' life-lost' : ''}`}>
+            {chip.text}
+          </span>
+        )}
       </div>
       <p class="result-cause" data-field="cause">
         {why.cause}
