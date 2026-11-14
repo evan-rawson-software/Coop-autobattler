@@ -1461,6 +1461,22 @@ function spawnPosition(
 }
 
 /**
+ * Intake (PP-6): take items from `building`'s input buffers, input by input
+ * in their order, at most `need` in all; returns how many were taken. A
+ * building that is not a consumer of the board takes nothing.
+ */
+function intake(board: BoardSim, building: number, need: number): number {
+  const consumer = board.consumers.find((c) => c.building === building);
+  if (consumer === undefined) return 0;
+  let taken = 0;
+  for (const input of consumer.inputs) {
+    const n = Math.min(input.count, need - taken);
+    if (n > 0 && takeFromBuffer(board, building, input.side, n)) taken += n;
+  }
+  return taken;
+}
+
+/**
  * Step 2: unit producers take their inputs and spawn, then scheduled waves
  * are queued and enter. The unit grid is current when this runs.
  */
@@ -1473,15 +1489,7 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     // exceeds the cost. A producer holding a finished unit takes nothing: its
     // buffers fill and its conduits back up.
     if (p.progress < info.cost) {
-      const consumer = board.consumers.find((c) => c.building === p.building);
-      if (consumer !== undefined) {
-        for (const input of consumer.inputs) {
-          const n = Math.min(input.count, info.cost - p.progress);
-          if (n > 0 && takeFromBuffer(board, p.building, input.side, n)) {
-            p.progress += n;
-          }
-        }
-      }
+      p.progress += intake(board, p.building, info.cost - p.progress);
     }
     // A unit is made only when the cost is there and the cooldown is over.
     if (p.progress < info.cost || p.cooldown > 0) continue;
@@ -1734,14 +1742,7 @@ function chargeTurrets(sim: ArenaSim, ctx: ArenaContext): void {
       continue;
     }
     const board = sim.boards[t.side === 0 ? 0 : 1];
-    const consumer = board.consumers.find((c) => c.building === t.building);
-    if (consumer === undefined) continue;
-    for (const input of consumer.inputs) {
-      const take = Math.min(input.count, info.costPerShot - t.charge);
-      if (take > 0 && takeFromBuffer(board, t.building, input.side, take)) {
-        t.charge += take;
-      }
-    }
+    t.charge += intake(board, t.building, info.costPerShot - t.charge);
   }
 }
 
@@ -1758,14 +1759,8 @@ function chargeRamps(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     const info = ctx.ramps.get(bkey(r.side, r.building));
     if (info === undefined || r.steps >= info.maxSteps) continue;
     const board = sim.boards[r.side === 0 ? 0 : 1];
-    const consumer = board.consumers.find((c) => c.building === r.building);
-    if (consumer === undefined) continue;
-    for (const input of consumer.inputs) {
-      const take = Math.min(input.count, info.costPerStep - r.charge);
-      if (take > 0 && takeFromBuffer(board, r.building, input.side, take)) {
-        r.charge += take;
-      }
-    }
+    if (!board.consumers.some((c) => c.building === r.building)) continue;
+    r.charge += intake(board, r.building, info.costPerStep - r.charge);
     if (r.charge >= info.costPerStep && r.cooldown === 0) {
       r.charge = 0;
       r.steps += 1;
