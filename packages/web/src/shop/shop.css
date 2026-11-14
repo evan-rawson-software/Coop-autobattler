@@ -24,7 +24,8 @@
   margin: 0;
   padding: 0.5rem;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  /* Cards share the whole row and grow when there are fewer of them. */
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
   gap: 8px;
   min-height: 0;
   flex: 1 1 auto;
@@ -61,7 +62,7 @@
 }
 
 .offer-art {
-  height: clamp(36px, 7vh, 80px);
+  height: clamp(36px, 7vh, 110px);
   border: 1px solid var(--border);
   border-radius: 3px;
 }
@@ -240,13 +241,19 @@ button.danger {
   grid-column: 1;
   grid-row: 2;
   display: grid;
-  grid-template-columns: 1fr 1.4fr 1fr;
+  /* The Next battle panel has a few short lines: it keeps a readable width
+     and the factory preview gets the rest. */
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 24rem) minmax(0, 2.2fr);
   gap: 8px;
   min-height: 0;
 }
 
 .shop-bottom.solo {
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: minmax(16rem, 24rem) minmax(0, 1fr);
+}
+
+#panel-next-battle {
+  align-self: start;
 }
 
 .next-title {
@@ -301,6 +308,8 @@ button.danger {
 }
 
 .ready-btn {
+  flex: 0 1 20rem;
+  max-width: 20rem;
   min-width: 9rem;
   padding: 0.5rem 1rem;
   background: var(--accent);
@@ -359,9 +368,6 @@ button.danger {
   }
   .offer-name {
     font-size: 0.98rem;
-  }
-  .shop-bottom {
-    grid-template-columns: 1fr 1.6fr 1fr;
   }
 }
 

@@ -1118,14 +1118,19 @@ try {
   await waitFrames(page, 18);
   await shot('build-4-factory-flow');
   await shotDark('art2-build-conduits');
-  // The test run sits in the bottom dock, not over the board.
+  // The test run sits in the dock (below the board, or beside it on wide
+  // windows), not over the board.
   check(
     await page.evaluate(() => {
       const t = document.querySelector('#dry-table')?.getBoundingClientRect();
       const b = document.querySelector('.main-view')?.getBoundingClientRect();
-      return t !== undefined && b !== undefined && t.top >= b.bottom - 1;
+      return (
+        t !== undefined &&
+        b !== undefined &&
+        (t.top >= b.bottom - 1 || t.left >= b.right - 1)
+      );
     }),
-    'dry-run table is in the dock below the board, not over it',
+    'dry-run table is in the dock beside or below the board, not over it',
   );
   await page.click('#dry-table button');
   await page.waitForSelector('#dry-table', { state: 'detached' });
