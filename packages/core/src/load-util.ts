@@ -10,6 +10,11 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** A safe integer (a JSON number a port reads as an int64). */
+export function isSafeInt(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value);
+}
+
 /** Unwrap a load result or throw one Error listing every problem. */
 export function unwrapOrThrow<C>(what: string, result: LoadResult<C>): C {
   if (!result.ok) {

@@ -39,6 +39,7 @@ import type {
   RunDeps,
   RunState,
 } from '../rules/types.js';
+import { isRecord } from '../rules/json-guards.js';
 
 export const BOT_STRATEGIES = ['rush', 'fortify', 'siege', 'weak'] as const;
 export type BotStrategyName = (typeof BOT_STRATEGIES)[number];
@@ -291,10 +292,6 @@ export interface BotRunResult {
   readonly battles: readonly BattleStat[];
 }
 
-function isObj(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
-
 class Driver {
   state: RunState;
   accepted = 0;
@@ -381,13 +378,13 @@ function preferred(
 ): string | undefined {
   for (const want of order) {
     for (const o of options) {
-      if (isObj(o) && o[field] === want && typeof o['id'] === 'string') {
+      if (isRecord(o) && o[field] === want && typeof o['id'] === 'string') {
         return o['id'];
       }
     }
   }
   const first = options[0];
-  return isObj(first) && typeof first['id'] === 'string'
+  return isRecord(first) && typeof first['id'] === 'string'
     ? first['id']
     : undefined;
 }
@@ -813,7 +810,7 @@ function workshopPick(
   let best: string = SKIP_CHOICE;
   let bestScore = -1;
   for (const o of options) {
-    if (!isObj(o) || o['player'] !== player || o['affordable'] !== true) {
+    if (!isRecord(o) || o['player'] !== player || o['affordable'] !== true) {
       continue;
     }
     const id = o['id'];

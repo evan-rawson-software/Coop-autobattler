@@ -14,6 +14,7 @@ import {
   type RunDeps,
   type RunState,
 } from '../rules/types.js';
+import { isInteger, isRecord } from '../rules/json-guards.js';
 
 export const SAVE_FORMAT_VERSION = 1;
 
@@ -119,7 +120,7 @@ export class StaleSaveError extends Error {
  */
 export function isStaleWrite(have: unknown, next: unknown): boolean {
   const field = (v: unknown, k: string): unknown =>
-    isRec(v) ? v[k] : undefined;
+    isRecord(v) ? v[k] : undefined;
   const a = field(have, 'startedAt');
   const b = field(next, 'startedAt');
   if (typeof a === 'number' && typeof b === 'number' && a !== b) return true;
@@ -244,16 +245,6 @@ export type ParseSaveResult =
   | { readonly ok: true; readonly record: SaveRecord }
   | { readonly ok: false; readonly errors: readonly string[] };
 
-type Rec = Record<string, unknown>;
-
-function isRec(v: unknown): v is Rec {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
-
-function isInt(v: unknown): v is number {
-  return typeof v === 'number' && Number.isInteger(v);
-}
-
 const KEYS = [
   'saveFormatVersion',
   'runId',
@@ -278,7 +269,7 @@ function checkShape(raw: unknown, errors: string[]): void {
   const err = (m: string): void => {
     errors.push(`save: ${m}`);
   };
-  if (!isRec(raw)) {
+  if (!isRecord(raw)) {
     err('must be an object.');
     return;
   }
@@ -298,7 +289,7 @@ function checkShape(raw: unknown, errors: string[]): void {
   }
   if (
     'startedAt' in raw &&
-    (!isInt(raw['startedAt']) || raw['startedAt'] < 0)
+    (!isInteger(raw['startedAt']) || raw['startedAt'] < 0)
   ) {
     err('startedAt must be an integer of at least 0.');
   }
@@ -312,7 +303,7 @@ function checkShape(raw: unknown, errors: string[]): void {
   if (parseVersion(raw['installedVersionAtSave']) === null) {
     err('installedVersionAtSave must be a version.');
   }
-  if (!isInt(raw['actionCounter']) || raw['actionCounter'] < 0) {
+  if (!isInteger(raw['actionCounter']) || raw['actionCounter'] < 0) {
     err('actionCounter must be an integer of at least 0.');
   }
   if (typeof raw['hostName'] !== 'string') err('hostName must be a string.');
@@ -325,44 +316,44 @@ function checkShape(raw: unknown, errors: string[]): void {
   ) {
     err('playerNames must be 1 to 4 strings.');
   }
-  if (!isInt(raw['updatedAt']) || raw['updatedAt'] < 0) {
+  if (!isInteger(raw['updatedAt']) || raw['updatedAt'] < 0) {
     err('updatedAt must be an integer of at least 0.');
   }
   const ca = raw['createArgs'];
   if (
-    !isRec(ca) ||
+    !isRecord(ca) ||
     typeof ca['runId'] !== 'string' ||
     typeof ca['runVersion'] !== 'string' ||
-    !isInt(ca['seed']) ||
+    !isInteger(ca['seed']) ||
     !Array.isArray(ca['players']) ||
     !ca['players'].every((p) => typeof p === 'string') ||
-    !isInt(ca['host'])
+    !isInteger(ca['host'])
   ) {
     err('createArgs must be {runId, runVersion, seed, players, host}.');
   }
   const st = raw['state'];
   if (
-    !isRec(st) ||
+    !isRecord(st) ||
     typeof st['runId'] !== 'string' ||
     typeof st['runVersion'] !== 'string' ||
-    !isInt(st['actionCounter']) ||
+    !isInteger(st['actionCounter']) ||
     !Array.isArray(st['actionLog']) ||
-    !isInt(st['seed']) ||
+    !isInteger(st['seed']) ||
     !Array.isArray(st['players']) ||
-    !isInt(st['round']) ||
+    !isInteger(st['round']) ||
     typeof st['step'] !== 'string' ||
-    !isInt(st['lives']) ||
-    !isInt(st['host']) ||
+    !isInteger(st['lives']) ||
+    !isInteger(st['host']) ||
     !Array.isArray(st['history']) ||
-    !isRec(st['thisRound'])
+    !isRecord(st['thisRound'])
   ) {
     err('state must be a run state with seed, action log and counters.');
   }
   const sm = raw['summary'];
   if (
-    !isRec(sm) ||
-    !isInt(sm['round']) ||
-    !isInt(sm['lives']) ||
+    !isRecord(sm) ||
+    !isInteger(sm['round']) ||
+    !isInteger(sm['lives']) ||
     typeof sm['step'] !== 'string' ||
     !(
       sm['outcome'] === null ||
@@ -372,11 +363,12 @@ function checkShape(raw: unknown, errors: string[]): void {
   ) {
     err('summary must be {round, lives, step, outcome}.');
   }
-  if (errors.length > 0 || !isRec(st) || !isRec(ca) || !isRec(sm)) return;
+  if (errors.length > 0 || !isRecord(st) || !isRecord(ca) || !isRecord(sm))
+    return;
 
   // Cross-field consistency.
   const pl = (st['players'] as unknown[]).map((p) =>
-    isRec(p) ? p['name'] : undefined,
+    isRecord(p) ? p['name'] : undefined,
   );
   if (st['runId'] !== raw['runId'] || ca['runId'] !== raw['runId']) {
     err('runId differs between record, createArgs and state.');
@@ -403,7 +395,7 @@ function checkShape(raw: unknown, errors: string[]): void {
     err('host does not match.');
   }
   const o = st['outcome'];
-  const outcome = isRec(o) ? o['reason'] : null;
+  const outcome = isRecord(o) ? o['reason'] : null;
   if (
     sm['round'] !== st['round'] ||
     sm['lives'] !== st['lives'] ||
@@ -473,11 +465,11 @@ export function hasUnsupportedFormat(record: SaveRecord): boolean {
 export function summarizeStored(runId: string, raw: unknown): SaveListItem {
   const shape = checkSaveShape(raw);
   if (!shape.ok) {
-    const u = isRec(raw) ? raw['updatedAt'] : undefined;
+    const u = isRecord(raw) ? raw['updatedAt'] : undefined;
     return {
       corrupt: true,
       runId,
-      updatedAt: isInt(u) && u >= 0 ? u : 0,
+      updatedAt: isInteger(u) && u >= 0 ? u : 0,
       errors: shape.errors,
     };
   }

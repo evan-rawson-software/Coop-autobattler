@@ -14,8 +14,7 @@ import {
   type BuildingId,
   type Side,
 } from './buildings.js';
-import { sortedKeys } from './hash.js';
-import { isRecord } from './load-util.js';
+import { isRecord, rejectUnknownKeys } from './load-util.js';
 import { queryMap, type Cell, type GameMap, type MapQuery } from './map.js';
 import type { ResourceId } from './resources.js';
 import {
@@ -1223,17 +1222,6 @@ const END_KEYS = new Set(['building', 'side']);
 const BORDER_KEYS = new Set(['border', 'y']);
 const CELL_KEYS = new Set(['x', 'y']);
 
-function extraKeys(
-  rec: Record<string, unknown>,
-  allowed: ReadonlySet<string>,
-  at: string,
-  errors: string[],
-): void {
-  for (const key of sortedKeys(rec)) {
-    if (!allowed.has(key)) errors.push(`${at}: unknown field "${key}".`);
-  }
-}
-
 /**
  * Parse the raw `conduits` value, reporting every shape problem and keeping
  * the well-formed entries (in the given order). Never throws.
@@ -1250,7 +1238,7 @@ export function parseConduits(raw: unknown, errors: string[]): Conduit[] {
       errors.push(`${at}: must be an object.`);
       return;
     }
-    extraKeys(entry, CONDUIT_KEYS, at, errors);
+    rejectUnknownKeys(entry, CONDUIT_KEYS, at, errors);
     let ok = true;
     const id = entry['id'];
     if (!isInt(id) || id < 1) {
@@ -1273,7 +1261,7 @@ export function parseConduits(raw: unknown, errors: string[]): Conduit[] {
         continue;
       }
       if ('border' in e) {
-        extraKeys(e, BORDER_KEYS, `${at}.${name}`, errors);
+        rejectUnknownKeys(e, BORDER_KEYS, `${at}.${name}`, errors);
         const border = e['border'];
         const y = e['y'];
         if (!isInt(border) || !isInt(y)) {
@@ -1284,7 +1272,7 @@ export function parseConduits(raw: unknown, errors: string[]): Conduit[] {
         ends.push({ border, y });
         continue;
       }
-      extraKeys(e, END_KEYS, `${at}.${name}`, errors);
+      rejectUnknownKeys(e, END_KEYS, `${at}.${name}`, errors);
       const building = e['building'];
       const side = e['side'];
       if (!isInt(building) || !isSide(side)) {
@@ -1310,7 +1298,7 @@ export function parseConduits(raw: unknown, errors: string[]): Conduit[] {
           ok = false;
           return;
         }
-        extraKeys(c, CELL_KEYS, `${at}.cells[${String(j)}]`, errors);
+        rejectUnknownKeys(c, CELL_KEYS, `${at}.cells[${String(j)}]`, errors);
         cells.push({ x: c['x'], y: c['y'] });
       });
     }

@@ -47,6 +47,7 @@ import {
   type Step,
   type VoteTopic,
 } from './types.js';
+import { isInteger, isRecord } from './json-guards.js';
 
 // ---------------------------------------------------------------------------
 // Small helpers
@@ -62,14 +63,6 @@ function fail(reason: RejectReason, detail?: string): Fail {
   return detail === undefined
     ? { ok: false, reason }
     : { ok: false, reason, detail };
-}
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
-
-function isInt(v: unknown): v is number {
-  return typeof v === 'number' && Number.isInteger(v);
 }
 
 function isBuiltinType(type: string): type is BuiltinIntentType {
@@ -134,7 +127,7 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
   if (parsedVersion === null || parsedVersion.patch !== null) {
     return bad('runVersion must look like "major.minor"');
   }
-  if (!isInt(args.seed) || args.seed < 0 || args.seed >= 2 ** 32) {
+  if (!isInteger(args.seed) || args.seed < 0 || args.seed >= 2 ** 32) {
     return bad('seed must be a u32 integer');
   }
   const n = args.players.length;
@@ -142,7 +135,7 @@ export function createRun(args: CreateRunArgs, deps: RunDeps): CreateRunResult {
   if (!args.players.every((p) => typeof p === 'string')) {
     return bad('player names must be strings');
   }
-  if (!isInt(args.host) || args.host < 0 || args.host >= n) {
+  if (!isInteger(args.host) || args.host < 0 || args.host >= n) {
     return bad('host must be a player index');
   }
   const map = generateMap(args.seed, n, deps.content, deps.mapgenConfig);
@@ -441,7 +434,8 @@ function placePending(
   const positions = pendingList(s, 'positions');
   for (let p = 0; p < s.players.length; p++) {
     const pos = positions[p];
-    if (!isRecord(pos) || !isInt(pos['x']) || !isInt(pos['y'])) continue;
+    if (!isRecord(pos) || !isInteger(pos['x']) || !isInteger(pos['y']))
+      continue;
     const r = placeCore(team, deps.content, deps.mapgenConfig, p, {
       x: pos['x'],
       y: pos['y'],
@@ -725,7 +719,8 @@ function applyBuiltin(
     }
 
     case 'place_core': {
-      if (!isInt(intent.x) || !isInt(intent.y)) return fail('invalid_intent');
+      if (!isInteger(intent.x) || !isInteger(intent.y))
+        return fail('invalid_intent');
       const pos = { x: intent.x, y: intent.y };
       // No Core is on the board during this step, so this checks the
       // position (PP-2) for this player's plot only.
@@ -757,10 +752,10 @@ function applyBuiltin(
     case 'place_building':
     case 'move_building': {
       if (
-        !isInt(intent.id) ||
-        !isInt(intent.x) ||
-        !isInt(intent.y) ||
-        !isInt(intent.rotation)
+        !isInteger(intent.id) ||
+        !isInteger(intent.x) ||
+        !isInteger(intent.y) ||
+        !isInteger(intent.rotation)
       ) {
         return fail('invalid_intent');
       }
@@ -778,12 +773,12 @@ function applyBuiltin(
       );
     }
     case 'return_building':
-      if (!isInt(intent.id)) return fail('invalid_intent');
+      if (!isInteger(intent.id)) return fail('invalid_intent');
       return withTeam(
         returnToStash(s.team, content, { actor: player, id: intent.id }),
       );
     case 'erase_conduit': {
-      if (!isInt(intent.id)) return fail('invalid_intent');
+      if (!isInteger(intent.id)) return fail('invalid_intent');
       const reclaim: unknown = intent.reclaimId;
       if (reclaim !== undefined && typeof reclaim !== 'boolean') {
         return fail('invalid_intent');
@@ -802,7 +797,7 @@ function applyBuiltin(
         isRecord(intent.to) &&
         Array.isArray(intent.cells);
       if (!ok) return fail('invalid_intent');
-      if (intent.id !== undefined && !isInt(intent.id)) {
+      if (intent.id !== undefined && !isInteger(intent.id)) {
         return fail('invalid_intent');
       }
       const restore: unknown = intent.restore;
@@ -848,7 +843,7 @@ function applyIntentAs(
   deps: RunDeps,
   replay: boolean,
 ): IntentResult {
-  if (!isInt(player) || player < 0 || player >= state.players.length) {
+  if (!isInteger(player) || player < 0 || player >= state.players.length) {
     return fail('not_a_player');
   }
   if (!isRecord(intent) || typeof intent.type !== 'string') {

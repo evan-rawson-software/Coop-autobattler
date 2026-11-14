@@ -25,6 +25,7 @@ import {
   GHOST_LIST_LIMIT,
   type GhostStore,
 } from './ghost-store.js';
+import { recordOrNull } from '../rules/json-guards.js';
 
 /** The layout of the bundled file. */
 export const BUNDLED_GHOST_FORMAT = 1;
@@ -40,12 +41,6 @@ export interface BundledGhostFile {
   readonly ghosts: readonly unknown[];
 }
 
-function rec(v: unknown): Record<string, unknown> | null {
-  return typeof v === 'object' && v !== null && !Array.isArray(v)
-    ? (v as Record<string, unknown>)
-    : null;
-}
-
 /**
  * The snapshots of a loaded bundled file for the running version, or an
  * empty list when the file is not a bundled file or was made for another
@@ -56,7 +51,7 @@ export function bundledGhostsOf(
   runningVersion: string,
 ): readonly unknown[] {
   try {
-    const f = rec(raw);
+    const f = recordOrNull(raw);
     if (f === null || f['format'] !== BUNDLED_GHOST_FORMAT) return [];
     if (f['gameVersion'] !== runningVersion) return [];
     const ghosts = f['ghosts'];
@@ -67,7 +62,7 @@ export function bundledGhostsOf(
 }
 
 function bucketKeyOf(v: unknown): string | null {
-  const r = rec(v);
+  const r = recordOrNull(v);
   if (r === null) return null;
   const { gameVersion, partySize, round } = r;
   return typeof gameVersion === 'string' &&
@@ -78,8 +73,8 @@ function bucketKeyOf(v: unknown): string | null {
 }
 
 function identityOf(v: unknown): { owner: string; runId: string } | null {
-  const r = rec(v);
-  const owner = rec(r?.['owner']);
+  const r = recordOrNull(v);
+  const owner = recordOrNull(r?.['owner']);
   const id = owner?.['id'];
   const runId = r?.['runId'];
   return typeof id === 'string' && typeof runId === 'string'

@@ -12,6 +12,7 @@ import {
   currentWorkshopPrice,
 } from './workshop-option.js';
 import type { Json, RunDeps, RunState, VoteTopic } from './types.js';
+import { isRecord } from './json-guards.js';
 
 /** Indices of the players who are currently ready. */
 export function whoIsReady(state: RunState): number[] {
@@ -64,10 +65,6 @@ export function openVote(state: RunState): OpenVoteView | null {
     choices: votes.choices,
     waitingFor,
   };
-}
-
-function isObj(v: unknown): boolean {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
 export interface FollowUpView {
@@ -128,7 +125,7 @@ export function eventFollowUp(
         )
       : options;
   const mine = player === undefined ? undefined : votes[player];
-  const percentRaw = isObj(rec['offer'])
+  const percentRaw = isRecord(rec['offer'])
     ? (rec['offer'] as Record<string, Json>)['workshopPricePercent']
     : undefined;
   const percent =
@@ -136,7 +133,7 @@ export function eventFollowUp(
   const shown =
     deps !== undefined && f['prompt'] === 'workshop_building'
       ? mineOptions.map((o): Json => {
-          if (!isObj(o)) return o;
+          if (!isRecord(o)) return o;
           const r = o as Record<string, Json>;
           const owner = r['player'];
           const price =

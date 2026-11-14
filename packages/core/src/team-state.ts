@@ -16,8 +16,7 @@ import {
   type Rotation,
   type Side,
 } from './buildings.js';
-import { sortedKeys } from './hash.js';
-import { isRecord } from './load-util.js';
+import { isRecord, isSafeInt, rejectUnknownKeys } from './load-util.js';
 import {
   loadMap,
   queryMap,
@@ -811,21 +810,6 @@ const PLACED_KEYS = new Set([
 ]);
 const STASH_KEYS = new Set(['id', 'def', 'tier', 'owner']);
 
-function isInt(v: unknown): v is number {
-  return typeof v === 'number' && Number.isSafeInteger(v);
-}
-
-function unknownKeys(
-  rec: Record<string, unknown>,
-  allowed: ReadonlySet<string>,
-  at: string,
-  errors: string[],
-): void {
-  for (const key of sortedKeys(rec)) {
-    if (!allowed.has(key)) errors.push(`${at}: unknown field "${key}".`);
-  }
-}
-
 /** Checks the fields shared by placed and stashed entries. */
 function checkEntryCommon(
   rec: Record<string, unknown>,
@@ -835,7 +819,7 @@ function checkEntryCommon(
   errors: string[],
 ): BuildingDef | undefined {
   let def: BuildingDef | undefined;
-  if (!isInt(rec['id']) || rec['id'] < 1) {
+  if (!isSafeInt(rec['id']) || rec['id'] < 1) {
     errors.push(`${at}: "id" must be a positive integer.`);
   }
   const defId = rec['def'];
@@ -890,7 +874,7 @@ function validateInner(
     errors.push('state: must be an object.');
     return undefined;
   }
-  unknownKeys(data, STATE_KEYS, 'state', errors);
+  rejectUnknownKeys(data, STATE_KEYS, 'state', errors);
 
   const mapResult = loadMap(data['map'], content);
   if (!mapResult.ok) {
@@ -913,14 +897,23 @@ function validateInner(
     rawCores.forEach((raw: unknown, p) => {
       if (raw === null) {
         cores.push(null);
-      } else if (!isRecord(raw) || !isInt(raw['x']) || !isInt(raw['y'])) {
+      } else if (
+        !isRecord(raw) ||
+        !isSafeInt(raw['x']) ||
+        !isSafeInt(raw['y'])
+      ) {
         errors.push(
           `cores[${String(p)}]: must be null or { x, y } of integers.`,
         );
         cores.push(null);
         coresOk = false;
       } else {
-        unknownKeys(raw, new Set(['x', 'y']), `cores[${String(p)}]`, errors);
+        rejectUnknownKeys(
+          raw,
+          new Set(['x', 'y']),
+          `cores[${String(p)}]`,
+          errors,
+        );
         const core = { x: raw['x'], y: raw['y'] };
         cores.push(core);
         const check = validateCorePosition(map, content, config, p, core);
@@ -948,9 +941,9 @@ function validateInner(
         errors.push(`${at}: must be an object.`);
         return;
       }
-      unknownKeys(entry, PLACED_KEYS, at, errors);
+      rejectUnknownKeys(entry, PLACED_KEYS, at, errors);
       const def = checkEntryCommon(entry, at, map.partySize, content, errors);
-      if (!isInt(entry['x']) || !isInt(entry['y'])) {
+      if (!isSafeInt(entry['x']) || !isSafeInt(entry['y'])) {
         errors.push(`${at}: "x" and "y" must be integers.`);
       }
       if (!isRotation(entry['rotation'])) {
@@ -959,13 +952,13 @@ function validateInner(
       if (
         def !== undefined &&
         def.kind !== 'core' &&
-        isInt(entry['id']) &&
-        isInt(entry['x']) &&
-        isInt(entry['y']) &&
+        isSafeInt(entry['id']) &&
+        isSafeInt(entry['x']) &&
+        isSafeInt(entry['y']) &&
         isRotation(entry['rotation']) &&
         isTier(entry['tier']) &&
         typeof entry['def'] === 'string' &&
-        isInt(entry['owner'])
+        isSafeInt(entry['owner'])
       ) {
         placed.push({
           id: entry['id'],
@@ -990,13 +983,13 @@ function validateInner(
         errors.push(`${at}: must be an object.`);
         return;
       }
-      unknownKeys(entry, STASH_KEYS, at, errors);
+      rejectUnknownKeys(entry, STASH_KEYS, at, errors);
       checkEntryCommon(entry, at, map.partySize, content, errors);
       if (
-        isInt(entry['id']) &&
+        isSafeInt(entry['id']) &&
         typeof entry['def'] === 'string' &&
         isTier(entry['tier']) &&
-        isInt(entry['owner'])
+        isSafeInt(entry['owner'])
       ) {
         stash.push({
           id: entry['id'],
@@ -1031,7 +1024,7 @@ function validateInner(
   ordered(placed, 'buildings');
   ordered(stash, 'stash');
   const nextId = data['nextId'];
-  if (!isInt(nextId) || nextId < 1) {
+  if (!isSafeInt(nextId) || nextId < 1) {
     errors.push('nextId: must be a positive integer.');
   } else {
     let max = 0;
@@ -1105,7 +1098,7 @@ function validateInner(
   if (
     !Array.isArray(rawCounters) ||
     rawCounters.length !== map.partySize ||
-    !rawCounters.every((n) => isInt(n) && n >= 1)
+    !rawCounters.every((n) => isSafeInt(n) && n >= 1)
   ) {
     errors.push(
       `nextConduitId: must be a list of ${String(map.partySize)} positive integers.`,
@@ -1130,13 +1123,13 @@ function validateInner(
     cores: coresOk ? cores : cores.map(() => null),
     buildings: placed,
     stash,
-    nextId: isInt(nextId) ? nextId : 1,
+    nextId: isSafeInt(nextId) ? nextId : 1,
     nextConduitId: nextConduitId ?? new Array<number>(map.partySize).fill(1),
     conduits,
   };
   checkConduitList(partial, content, errors);
 
-  if (errors.length > 0 || !isInt(nextId) || nextConduitId === undefined) {
+  if (errors.length > 0 || !isSafeInt(nextId) || nextConduitId === undefined) {
     return undefined;
   }
   return {

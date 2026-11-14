@@ -25,6 +25,7 @@ import {
   DEFAULT_WORKSHOP_PERCENT,
   workshopOptionProblem,
 } from './workshop-option.js';
+import { isInteger, isRecord } from './json-guards.js';
 
 export type ValidateRunStateResult =
   | { readonly ok: true; readonly state: RunState }
@@ -32,16 +33,8 @@ export type ValidateRunStateResult =
 
 type Rec = Record<string, unknown>;
 
-function isRec(v: unknown): v is Rec {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
-
-function isInt(v: unknown): v is number {
-  return typeof v === 'number' && Number.isInteger(v);
-}
-
 function isU32(v: unknown): v is number {
-  return isInt(v) && v >= 0 && v < 2 ** 32;
+  return isInteger(v) && v >= 0 && v < 2 ** 32;
 }
 
 function isJson(v: unknown, depth = 0): boolean {
@@ -50,14 +43,18 @@ function isJson(v: unknown, depth = 0): boolean {
     return true;
   if (typeof v === 'number') return Number.isFinite(v);
   if (Array.isArray(v)) return v.every((x) => isJson(x, depth + 1));
-  if (isRec(v)) return sortedKeys(v).every((k) => isJson(v[k], depth + 1));
+  if (isRecord(v)) return sortedKeys(v).every((k) => isJson(v[k], depth + 1));
   return false;
 }
 
 /** Shop data: null, or {offers: (offer | null)[], stream: 4 u32}. */
 function validShop(v: unknown): boolean {
   if (v === null) return true;
-  if (!isRec(v) || !Array.isArray(v['offers']) || !Array.isArray(v['stream'])) {
+  if (
+    !isRecord(v) ||
+    !Array.isArray(v['offers']) ||
+    !Array.isArray(v['stream'])
+  ) {
     return false;
   }
   const stream = v['stream'] as unknown[];
@@ -65,13 +62,13 @@ function validShop(v: unknown): boolean {
   return (v['offers'] as unknown[]).every(
     (o, slot) =>
       o === null ||
-      (isRec(o) &&
+      (isRecord(o) &&
         o['slot'] === slot &&
         typeof o['def'] === 'string' &&
-        isInt(o['tier']) &&
+        isInteger(o['tier']) &&
         o['tier'] >= 1 &&
         o['tier'] <= 3 &&
-        isInt(o['price']) &&
+        isInteger(o['price']) &&
         o['price'] >= 0),
   );
 }
@@ -131,7 +128,7 @@ function check(
   deps: Pick<RunDeps, 'content' | 'mapgenConfig' | 'rules' | 'ghosts'>,
   errors: string[],
 ): void {
-  if (!isRec(data)) {
+  if (!isRecord(data)) {
     errors.push('run state: must be an object.');
     return;
   }
@@ -186,14 +183,14 @@ function check(
   } else {
     n = players.length;
     players.forEach((p, i) => {
-      if (!isRec(p) || p['index'] !== i || typeof p['name'] !== 'string') {
+      if (!isRecord(p) || p['index'] !== i || typeof p['name'] !== 'string') {
         err(
           `players[${String(i)}]: must be {index: ${String(i)}, name: string}.`,
         );
       }
     });
   }
-  if (!isInt(data['host']) || data['host'] < 0 || data['host'] >= n) {
+  if (!isInteger(data['host']) || data['host'] < 0 || data['host'] >= n) {
     err('host: must be a player index.');
   }
 
@@ -210,13 +207,13 @@ function check(
   if (TRANSIENT_STEPS.includes(st)) {
     err(`step: "${st}" is transient and cannot be saved.`);
   }
-  if (!isInt(data['round']) || data['round'] < 1) {
+  if (!isInteger(data['round']) || data['round'] < 1) {
     err('round: must be an integer of at least 1.');
   }
   const leg = data['leg'];
   if (leg !== 'pve' && leg !== 'pvp') err('leg: must be "pve" or "pvp".');
   const lives = data['lives'];
-  if (!isInt(lives) || lives < 0 || lives > deps.rules.startingLives) {
+  if (!isInteger(lives) || lives < 0 || lives > deps.rules.startingLives) {
     err(
       `lives: must be an integer from 0 to ${String(deps.rules.startingLives)}.`,
     );
@@ -251,8 +248,8 @@ function check(
   } else {
     perPlayer.forEach((p, i) => {
       if (
-        !isRec(p) ||
-        !isInt(p['gold']) ||
+        !isRecord(p) ||
+        !isInteger(p['gold']) ||
         p['gold'] < 0 ||
         typeof p['ready'] !== 'boolean' ||
         !('shop' in p) ||
@@ -281,7 +278,7 @@ function check(
   if (topic === undefined) {
     if (votes !== null) err(`votes: must be null in step "${st}".`);
   } else if (
-    !isRec(votes) ||
+    !isRecord(votes) ||
     votes['topic'] !== topic ||
     !Array.isArray(votes['choices']) ||
     votes['choices'].length !== n
@@ -307,8 +304,8 @@ function check(
     (st === 'shop' && leg === 'pvp');
   if (upcoming !== null) {
     if (
-      !isRec(upcoming) ||
-      !isInt(upcoming['round']) ||
+      !isRecord(upcoming) ||
+      !isInteger(upcoming['round']) ||
       upcoming['round'] < 1 ||
       !Array.isArray(upcoming['options']) ||
       !isJson(upcoming['options'])
@@ -319,7 +316,7 @@ function check(
         `upcomingPve: must be null in step "${st}" (leg "${leg as string}").`,
       );
     } else if (
-      isInt(data['round']) &&
+      isInteger(data['round']) &&
       upcoming['round'] !== (leg === 'pvp' ? data['round'] + 1 : data['round'])
     ) {
       err('upcomingPve: round does not match the coming PvE battle.');
@@ -330,7 +327,7 @@ function check(
   checkGhostFields(data, st, n, deps, err);
   const pending = data['pending'];
   if (!isJson(pending)) err('pending: must be JSON.');
-  const p = isRec(pending) ? pending : {};
+  const p = isRecord(pending) ? pending : {};
   if (st === 'core_placement') {
     const positions = p['positions'];
     if (!Array.isArray(positions) || positions.length !== n) {
@@ -343,7 +340,8 @@ function check(
       // terrain, plot, buildings and conduits), or the step could not end.
       let board = team.state;
       positions.forEach((pos, i) => {
-        if (!isRec(pos) || !isInt(pos['x']) || !isInt(pos['y'])) return;
+        if (!isRecord(pos) || !isInteger(pos['x']) || !isInteger(pos['y']))
+          return;
         const r = placeCore(board, deps.content, deps.mapgenConfig, i, {
           x: pos['x'],
           y: pos['y'],
@@ -358,12 +356,16 @@ function check(
       positions.forEach((pos, i) => {
         if (pos === null) {
           const row = Array.isArray(ready) ? (ready[i] as unknown) : null;
-          if (isRec(row) && row['ready'] === true) {
+          if (isRecord(row) && row['ready'] === true) {
             err(
               `pending.positions[${String(i)}]: a ready player needs a position.`,
             );
           }
-        } else if (!isRec(pos) || !isInt(pos['x']) || !isInt(pos['y'])) {
+        } else if (
+          !isRecord(pos) ||
+          !isInteger(pos['x']) ||
+          !isInteger(pos['y'])
+        ) {
           err(`pending.positions[${String(i)}]: must be null or {x, y}.`);
         }
       });
@@ -380,8 +382,8 @@ function check(
   if (st === 'event_resolve') {
     const fu = p['followUp'];
     if (
-      !isRec(p['offer']) ||
-      !isRec(fu) ||
+      !isRecord(p['offer']) ||
+      !isRecord(fu) ||
       !Array.isArray(fu['options']) ||
       !Array.isArray(fu['votes']) ||
       fu['votes'].length !== n
@@ -389,9 +391,9 @@ function check(
       err(
         'pending: must hold {offer, followUp: {options, votes}} in step "event_resolve".',
       );
-    } else if (isRec(fu)) {
+    } else if (isRecord(fu)) {
       const opts = fu['options'] as unknown[];
-      const ids = opts.map((o) => (isRec(o) ? o['id'] : undefined));
+      const ids = opts.map((o) => (isRecord(o) ? o['id'] : undefined));
       if (!ids.every((id) => typeof id === 'string')) {
         err('pending.followUp.options: every option needs a string id.');
       }
@@ -405,13 +407,13 @@ function check(
         }
         const offer = p['offer'];
         const pct = offer['workshopPricePercent'] ?? DEFAULT_WORKSHOP_PERCENT;
-        if (!isInt(pct) || pct < 1 || pct > 100) {
+        if (!isInteger(pct) || pct < 1 || pct > 100) {
           err('pending.offer.workshopPricePercent: must be an integer 1-100.');
         } else if (team.ok) {
           opts.forEach((o, i) => {
-            const player = isRec(o) ? o['player'] : undefined;
+            const player = isRecord(o) ? o['player'] : undefined;
             const problem =
-              isInt(player) && player >= 0 && player < n
+              isInteger(player) && player >= 0 && player < n
                 ? workshopOptionProblem(team.state, player, o)
                 : 'player: must be a player index';
             if (problem !== null) {
@@ -426,7 +428,9 @@ function check(
           typeof v === 'string' &&
           (per
             ? v === 'skip' ||
-              opts.some((o) => isRec(o) && o['id'] === v && o['player'] === i)
+              opts.some(
+                (o) => isRecord(o) && o['id'] === v && o['player'] === i,
+              )
             : ids.includes(v));
         if (!known) {
           err(
@@ -438,7 +442,11 @@ function check(
   }
   if (st === 'pve_summary' || st === 'pvp_summary') {
     const b = p['battle'];
-    if (!isRec(b) || typeof b['won'] !== 'boolean' || !isRec(b['opponent'])) {
+    if (
+      !isRecord(b) ||
+      typeof b['won'] !== 'boolean' ||
+      !isRecord(b['opponent'])
+    ) {
       err(`pending.battle: must hold the battle result in step "${st}".`);
     }
   }
@@ -463,8 +471,8 @@ function check(
     let last = 0;
     history.forEach((h, i) => {
       if (
-        !isRec(h) ||
-        !isInt(h['round']) ||
+        !isRecord(h) ||
+        !isInteger(h['round']) ||
         h['round'] <= last ||
         !validBattleRecord(h['pve'], true) ||
         !validBattleRecord(h['pvp'], false)
@@ -477,7 +485,7 @@ function check(
   }
   const tr = data['thisRound'];
   if (
-    !isRec(tr) ||
+    !isRecord(tr) ||
     !validBattleRecord(tr['pve'], true) ||
     !validBattleRecord(tr['pvp'], false)
   ) {
@@ -491,12 +499,12 @@ function check(
   } else {
     log.forEach((a, i) => {
       if (
-        !isRec(a) ||
+        !isRecord(a) ||
         a['n'] !== i + 1 ||
-        !isInt(a['player']) ||
+        !isInteger(a['player']) ||
         a['player'] < 0 ||
         a['player'] >= n ||
-        !isRec(a['intent']) ||
+        !isRecord(a['intent']) ||
         typeof a['intent']['type'] !== 'string' ||
         !isJson(a['intent'])
       ) {
@@ -514,9 +522,9 @@ function check(
   const outcome = data['outcome'];
   if (st === 'run_over') {
     if (
-      !isRec(outcome) ||
+      !isRecord(outcome) ||
       (outcome['reason'] !== 'defeated' && outcome['reason'] !== 'abandoned') ||
-      !isInt(outcome['round'])
+      !isInteger(outcome['round'])
     ) {
       err('outcome: must be {reason, round} when the run is over.');
     } else if (outcome['reason'] === 'defeated' && lives !== 0) {
@@ -529,7 +537,7 @@ function check(
 
 function validBattleRecord(v: unknown, pve: boolean): boolean {
   if (v === null) return true;
-  if (!isRec(v) || typeof v['won'] !== 'boolean') return false;
+  if (!isRecord(v) || typeof v['won'] !== 'boolean') return false;
   if (pve && typeof v['difficulty'] !== 'string') return false;
   const gp = v['goldPaid'];
   if (
@@ -539,7 +547,7 @@ function validBattleRecord(v: unknown, pve: boolean): boolean {
     return false;
   const o = v['opponent'];
   return (
-    isRec(o) &&
+    isRecord(o) &&
     (o['kind'] === 'pve' || o['kind'] === 'ghost' || o['kind'] === 'boss') &&
     typeof o['label'] === 'string'
   );
@@ -573,8 +581,8 @@ function checkGhostFields(
     return;
   }
   if (
-    !isRec(o) ||
-    !isInt(o['round']) ||
+    !isRecord(o) ||
+    !isInteger(o['round']) ||
     (o['kind'] !== 'ghost' && o['kind'] !== 'boss') ||
     typeof o['label'] !== 'string' ||
     !('ghost' in o)

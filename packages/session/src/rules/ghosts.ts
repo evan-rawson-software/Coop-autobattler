@@ -43,6 +43,7 @@ import type {
   RunDeps,
   RunState,
 } from './types.js';
+import { recordOrNull } from './json-guards.js';
 
 /** The most candidates a `select_ghost` intent may carry. */
 export const MAX_GHOST_CANDIDATES = 16;
@@ -139,15 +140,9 @@ export function ghostContext(
   };
 }
 
-function rec(v: unknown): Record<string, unknown> | null {
-  return typeof v === 'object' && v !== null && !Array.isArray(v)
-    ? (v as Record<string, unknown>)
-    : null;
-}
-
 /** True if the snapshot is in the bucket and is not this run's own. */
 function cheapEligible(raw: unknown, state: RunState): boolean {
-  const r = rec(raw);
+  const r = recordOrNull(raw);
   if (r === null) return false;
   const b = ghostBucketFor(state);
   return (
@@ -221,8 +216,8 @@ export function presentCandidates(
   for (const item of raw) {
     try {
       if (!cheapEligible(item, state)) continue;
-      const r = rec(item);
-      const owner = rec(r?.['owner']);
+      const r = recordOrNull(item);
+      const owner = recordOrNull(r?.['owner']);
       const id = owner?.['id'];
       const runId = r?.['runId'];
       if (typeof id !== 'string' || typeof runId !== 'string') continue;
