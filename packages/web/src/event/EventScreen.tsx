@@ -11,7 +11,6 @@ import { reasonMessage } from '../build/reasons.js';
 import { gameConfigs } from '../build/setup.js';
 import { content } from '../content.js';
 import type { RunHandle } from '../run/handle.js';
-import { Panel } from '../shell/AppShell.js';
 import { GameFrame } from '../shell/GameFrame.js';
 import '../choice/choice.css';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
@@ -38,8 +37,9 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
     });
   };
 
-  // The card the primary button (Space) takes: the vote, or the one marked
-  // with a click or a number key. A click still votes at once.
+  // The card the primary button (Space) takes: the one selected with a click
+  // or a number key, else the standing vote, else the first. Nothing is voted
+  // until the button is pressed.
   const [marked, setMarked] = useState<string | null>(null);
   const votedId = cards.find((c) => c.voted)?.id ?? null;
   const target = marked ?? votedId ?? cards[0]?.id ?? null;
@@ -69,6 +69,11 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
         },
       }}
       onKey={onKey}
+      tray={
+        <p class="tray-text" data-field="tray-hint">
+          {screenText(screenTexts, 'eventTrayPick')}
+        </p>
+      }
       info={
         <>
           {header === null ? null : (
@@ -81,16 +86,17 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
               <span data-field="payout">{header.payout}</span>
             </div>
           )}
-          <Panel title="Choose an event" id="panel-event">
-            <h2 class="choice-prompt" data-field="event-prompt">
-              {screenText(screenTexts, 'eventSubtitle')}
-            </h2>
-            {error === null ? null : (
-              <p class="error" role="alert">
-                {error}
-              </p>
+          <p class="tray-text" data-field="next">
+            {screenText(
+              screenTexts,
+              run.leg === 'pve' ? 'eventNextRival' : 'eventNextBuild',
             )}
-          </Panel>
+          </p>
+          {error === null ? null : (
+            <p class="error" role="alert">
+              {error}
+            </p>
+          )}
         </>
       }
       board={
@@ -101,19 +107,19 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
                 <button
                   type="button"
                   class={
-                    c.voted
+                    c.id === target
                       ? 'event-card selected'
-                      : c.id === target
-                        ? 'event-card marked'
+                      : c.voted
+                        ? 'event-card voted'
                         : 'event-card'
                   }
                   data-action="choose-event"
                   data-offer={c.id}
                   data-type={c.type}
+                  aria-pressed={c.id === target}
                   disabled={busy}
                   onClick={() => {
                     setMarked(c.id);
-                    choose(c.id);
                   }}
                 >
                   <span class="slot-key">{i + 1}</span>
@@ -133,9 +139,6 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
                     ))}
                   </div>
                   {c.flavour === '' ? null : <p class="muted">{c.flavour}</p>}
-                  <span class="pve-fight" data-field="choose">
-                    {screenText(screenTexts, 'eventChoose')}
-                  </span>
                 </button>
               </li>
             ))}
@@ -227,7 +230,11 @@ export function EventResolveScreen(props: { run: RunHandle }) {
       primary={shrine ? shrinePrimary : upgradePrimary}
       onKey={onKey}
       tray={
-        shrine || skip === undefined ? null : (
+        shrine ? (
+          <p class="tray-text" data-field="tray-hint">
+            {screenText(screenTexts, 'eventTrayShrine')}
+          </p>
+        ) : skip === undefined ? null : (
           <button
             type="button"
             data-action="choose-option"
@@ -245,11 +252,7 @@ export function EventResolveScreen(props: { run: RunHandle }) {
       }
       info={
         <>
-          {shrine ? (
-            <h2 class="choice-prompt" data-field="prompt">
-              {screenText(screenTexts, 'eventSubtitle')}
-            </h2>
-          ) : (
+          {shrine ? null : (
             <div class="choice-banner panel">
               <strong data-field="prompt">
                 {v?.prompt ?? 'Make a choice'}
@@ -285,11 +288,9 @@ export function EventResolveScreen(props: { run: RunHandle }) {
                 <button
                   type="button"
                   class={
-                    selected === o.id
+                    selected === o.id || (shrine && shrineId === o.id)
                       ? 'event-card selected'
-                      : shrine && shrineId === o.id
-                        ? 'event-card marked'
-                        : 'event-card'
+                      : 'event-card'
                   }
                   data-action="choose-option"
                   data-option={o.id}
@@ -298,7 +299,6 @@ export function EventResolveScreen(props: { run: RunHandle }) {
                   disabled={busy || !o.affordable}
                   onClick={() => {
                     setPicked(o.id);
-                    if (shrine) choose(o.id);
                   }}
                 >
                   <span class="slot-key">{i + 1}</span>
@@ -342,11 +342,6 @@ export function EventResolveScreen(props: { run: RunHandle }) {
                       {o.disabledReason}
                     </p>
                   )}
-                  {shrine ? (
-                    <span class="pve-fight" data-field="choose">
-                      {screenText(screenTexts, 'eventChoose')}
-                    </span>
-                  ) : null}
                 </button>
               </li>
             ))}

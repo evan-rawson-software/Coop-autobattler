@@ -1128,6 +1128,7 @@ export async function runRunSmoke({
   await page.click(
     `[data-action="choose-event"][data-offer="${withFollow.id}"]`,
   );
+  await page.click('#event-choose:not([disabled])');
   await page.waitForFunction(() =>
     ['event_resolve', 'shop'].includes(window.__debug?.run?.state().step),
   );
@@ -1155,6 +1156,7 @@ export async function runRunSmoke({
       await page.click(
         '#event-resolve [data-action="choose-option"]:not([disabled])',
       );
+      await page.click('#event-choose:not([disabled])');
       await waitStep('shop');
     }
   } else {
@@ -1322,6 +1324,7 @@ export async function runRunSmoke({
       case 'event_choice':
         await page.waitForSelector('[data-action="choose-event"]');
         await page.click('[data-action="choose-event"]');
+        await page.click('#event-choose:not([disabled])');
         break;
       case 'event_resolve': {
         await page.waitForSelector('[data-action="choose-option"]');
@@ -1333,6 +1336,9 @@ export async function runRunSmoke({
             ? '[data-action="choose-option"][data-option="skip"]'
             : '[data-action="choose-option"]:not([disabled])',
         );
+        if ((await skip.count()) === 0) {
+          await page.click('#event-choose:not([disabled])');
+        }
         break;
       }
       case 'shop':
@@ -1950,6 +1956,7 @@ export async function runRunSmoke({
         } else if (s.step === 'event_choice') {
           await page.waitForSelector('[data-action="choose-event"]');
           await page.click('[data-action="choose-event"]');
+          await page.click('#event-choose:not([disabled])');
         } else if (s.step === 'event_resolve') {
           await page.waitForSelector('[data-action="choose-option"]');
           const skip = page.locator(
@@ -1960,6 +1967,9 @@ export async function runRunSmoke({
               ? '[data-action="choose-option"][data-option="skip"]'
               : '[data-action="choose-option"]:not([disabled])',
           );
+          if ((await skip.count()) === 0) {
+            await page.click('#event-choose:not([disabled])');
+          }
         } else if (s.step === 'shop') {
           await page.waitForSelector('#ready-button');
           await page.click('#ready-button');
@@ -2380,6 +2390,7 @@ export async function runRunSmoke({
     for (const p of [0, 1]) {
       await actAs(p);
       await page.click(`[data-action="choose-event"][data-offer="${offer}"]`);
+      await page.click('#event-choose:not([disabled])');
       if (p === 0) {
         await page.waitForFunction(
           () => window.__debug?.run?.state().voted?.[0] === true,
