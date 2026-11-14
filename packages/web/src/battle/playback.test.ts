@@ -543,7 +543,9 @@ describe('result reasons', () => {
     expect(reasonText('time_limit', 'Core')).toMatch(/more Core health/);
     expect(reasonText('time_limit', 'Core')).not.toMatch(/defender/i);
     expect(reasonText('tiebreak_overkill', 'Core')).toMatch(/less overkill/);
-    expect(reasonText('tiebreak_overkill', 'Core')).toMatch(/fell at the same moment/);
+    expect(reasonText('tiebreak_overkill', 'Core')).toMatch(
+      /fell at the same moment/,
+    );
     expect(reasonText('tiebreak_building_damage', 'Core')).toMatch(
       /more damage to buildings/,
     );
