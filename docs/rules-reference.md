@@ -4108,7 +4108,8 @@ the store; re-saving the same run counts as newest), never the clock. The run's
 own snapshots and ghosts already fought stay excluded at selection. The
 player can still influence ghost versus boss (plant a weak run; clear the
 pool), which is acceptable for the prototype. "Clear saved opponents" stays under
-Developer on the main menu and is not on the run screens. The requirements of
+Developer on the main menu (shown only in development and debug builds, or with
+`?dev` in the URL) and is not on the run screens. The requirements of
 the shared Steam pool (identities, anti-tamper, abuse) are tracked in
 issue #79. The ghost database moved to version 2 for this change; the upgrade
 empties the local pool, which refills as runs are played.
