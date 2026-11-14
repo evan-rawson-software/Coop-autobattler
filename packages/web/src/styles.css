@@ -303,6 +303,40 @@ select {
   cursor: grabbing;
 }
 
+.board-tip {
+  position: absolute;
+  z-index: 5;
+  max-width: 260px;
+  padding: 6px 9px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.18);
+  font-size: 13px;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.board-tip p {
+  margin: 2px 0 0;
+  color: var(--ink-muted);
+}
+
+.board-tip-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.board-tip-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+}
+
 .camera-controls {
   position: absolute;
   top: 8px;

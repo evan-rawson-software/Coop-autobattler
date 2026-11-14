@@ -488,6 +488,9 @@ export function BuildView(props: {
             selection={selection}
             frontLabel="FRONT EDGE"
             cursor={cursor}
+            hoverInfo={
+              ui.held === null && ui.moving === null && ui.draft === null
+            }
             drawOverlay={drawOverlay.current}
             overlayKey={overlayKey}
             animate={ui.overlays.flow}
