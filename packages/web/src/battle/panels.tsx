@@ -17,7 +17,6 @@ import {
   liveAxisMaxTick,
   mergeMarkers,
   strengthSeries,
-  wallsWord,
   type Moment,
   type Side,
   type SideStats,
@@ -29,15 +28,6 @@ import type { OpponentInfo } from './types.js';
 
 const t = (key: string, values: Record<string, string> = {}): string =>
   screenText(screenTexts, key, values);
-
-const wallsLine = (walls: string, standing: number, total: number): string =>
-  total === 0
-    ? t('battleWallsNone', { walls: walls.toLowerCase() })
-    : t('battleWallsStanding', {
-        walls,
-        standing: String(standing),
-        total: String(total),
-      });
 
 /**
  * A side's Core health: one bar for a lone Core, as before; with several, one
@@ -149,7 +139,6 @@ export function LeftPanels(props: {
   const resName = (id: string): string => content.resources.get(id)?.name ?? id;
   const tick = pb.tick;
   const coreName = coreNameOf(content);
-  const walls = wallsWord(content);
   // Only what has happened so far: the axes grow with the playback position.
   const chart = strengthSeries(pb.record.summary.timeline, tick);
   const nowOwn = sumHealth(pb, 0);
@@ -173,9 +162,6 @@ export function LeftPanels(props: {
           max={mine.coreMax}
           side={0}
         />
-        <p class="stat-line" data-field="walls-own">
-          {wallsLine(walls, mine.wallsStanding, mine.wallsTotal)}
-        </p>
       </Panel>
       <Panel title={t('battlePanelProduction')} id="panel-production">
         <table class="stat-table">
@@ -272,11 +258,12 @@ export function RightPanels(props: {
   readonly onSpeed: (s: PlaybackSpeed) => void;
   readonly onPause: () => void;
   readonly onSkip: () => void;
+  /** Watching again: Skip becomes "Back to results". */
+  readonly replay: boolean;
   readonly onFocus: (m: Moment) => void;
 }) {
   const { pb, opponent, theirs, content } = props;
   const coreName = coreNameOf(content);
-  const walls = wallsWord(content);
   const shown = props.moments
     .filter((m) => m.tick <= pb.tick && (m.kind !== 'zone' || props.revealed))
     .reverse();
@@ -293,9 +280,6 @@ export function RightPanels(props: {
           max={theirs.coreMax}
           side={1}
         />
-        <p class="stat-line" data-field="walls-foe">
-          {wallsLine(walls, theirs.wallsStanding, theirs.wallsTotal)}
-        </p>
       </Panel>
       <Panel title={t('battlePanelLog')} id="panel-log" class="grow">
         {shown.length === 0 ? (
@@ -307,17 +291,23 @@ export function RightPanels(props: {
                 key={`${String(m.tick)}-${String(i)}`}
                 class={`log-${m.kind}`}
               >
-                <button
-                  type="button"
-                  class="link-button"
-                  disabled={m.focus === null}
-                  onClick={() => {
-                    props.onFocus(m);
-                  }}
-                >
-                  <span class="log-time">{clock(m.tick, props.tps)}</span>{' '}
-                  {m.text}
-                </button>
+                {m.focus === null ? (
+                  <span class="log-entry">
+                    <span class="log-time">{clock(m.tick, props.tps)}</span>{' '}
+                    {m.text}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    class="link-button"
+                    onClick={() => {
+                      props.onFocus(m);
+                    }}
+                  >
+                    <span class="log-time">{clock(m.tick, props.tps)}</span>{' '}
+                    {m.text}
+                  </button>
+                )}
               </li>
             ))}
           </ol>
@@ -340,7 +330,7 @@ export function RightPanels(props: {
             </button>
           ))}
           <button type="button" id="skip" onClick={props.onSkip}>
-            {t('battleSkip')}
+            {t(props.replay ? 'battleBackToResults' : 'battleSkip')}
           </button>
         </div>
         <div class="btn-row">

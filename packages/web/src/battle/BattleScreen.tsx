@@ -9,7 +9,6 @@ import { hashJson, type TeamState } from '@game/core';
 import { Component, type ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
-import { DEFAULT_ZOOM } from '../board/camera.js';
 import { CameraController } from '../board/controller.js';
 import {
   buildScene,
@@ -341,14 +340,15 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
   const [phase, setPhase] = useState<Phase>(
     pb.finished ? 'summary' : 'playing',
   );
+  const [replay, setReplay] = useState(false);
   const [, setFrame] = useState(0);
   const [readyLocal, setReady] = useState(false);
   const ready = props.ready ?? readyLocal;
   const camera = useMemo(() => {
-    // Starts at the centre of the map (the neutral zone); "Fit" is a
-    // preset. A resize re-centres until the user pans or zooms.
+    // Starts at Fit, so the whole map (both boards) is in view; a resize
+    // refits until the user pans or zooms.
     const c = new CameraController();
-    c.startZoom = DEFAULT_ZOOM;
+    c.resetPreset = 'fit';
     c.refitOnResize = true;
     return c;
   }, []);
@@ -437,6 +437,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
       pb.advance(dt);
       if (pb.finished) {
         latest.current.props.onTick?.(pb.tick);
+        setReplay(false);
         setPhase('summary');
         return;
       }
@@ -482,10 +483,12 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
   const onSkip = (): void => {
     pb.skip();
     props.onTick?.(pb.tick);
+    setReplay(false);
     setPhase('summary');
   };
   const onWatchAgain = (): void => {
     pb.restart();
+    setReplay(true);
     props.onTick?.(0);
     setPhase('playing');
   };
@@ -511,6 +514,11 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
   const status = (
     <span class="battle-status">
       {props.topBarExtra}
+      {replay ? (
+        <span class="replay-label" data-field="replay">
+          {t('battleReplay')}
+        </span>
+      ) : null}
       <span data-field="vs">vs. {opponent.name}</span>
       <span data-field="battle-time">Battle time {timeText}</span>
     </span>
@@ -578,6 +586,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           onSpeed={onSpeed}
           onPause={onPause}
           onSkip={onSkip}
+          replay={replay}
           onFocus={onFocus}
         />
       }

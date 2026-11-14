@@ -1264,8 +1264,7 @@ try {
       );
     }
     {
-      // The camera starts at the centre of the map (the neutral zone), at a
-      // readable zoom; "Fit" is a preset.
+      // The camera starts at Fit: the whole map, both boards, in view.
       const cam = await camera();
       const vp = await viewport();
       const mid = await page.evaluate(() => {
@@ -1276,8 +1275,8 @@ try {
         `battle camera at start: cx ${cam.cx.toFixed(2)} cy ${cam.cy.toFixed(2)} zoom ${cam.zoom.toFixed(1)} viewport ${vp.w}x${vp.h} (${mid.h})`,
       );
       check(
-        cam.zoom >= 30 && cam.zoom <= 34 && Math.abs(cam.cx - 12) < 1.5,
-        `battle: the camera starts centred at a readable zoom (zoom ${cam.zoom.toFixed(1)}, centre ${cam.cx.toFixed(1)}, ${cam.cy.toFixed(1)})`,
+        cam.zoom >= 10 && cam.zoom <= 34 && Math.abs(cam.cx - 12) < 1.5,
+        `battle: the camera starts centred at Fit (whole map in view) (zoom ${cam.zoom.toFixed(1)}, centre ${cam.cx.toFixed(1)}, ${cam.cy.toFixed(1)})`,
       );
       const rows = await page.evaluate(() => window.__debug.battle.geometry());
       check(
