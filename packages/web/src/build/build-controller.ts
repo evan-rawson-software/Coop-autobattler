@@ -1410,7 +1410,8 @@ export class BuildController {
           building: b.id,
           from: { building: b.id, side: outs[0] as ConduitEnd['side'] },
           cells: [],
-          pressed: false,
+          // Pressed, so a drag from the body goes on like one from the arrow.
+          pressed: true,
           dragged: false,
         },
         attempt: null,
@@ -1530,7 +1531,7 @@ export class BuildController {
             : occupancy(team, content).buildingAt(cell.x, cell.y);
         if (hit !== null && !('core' in hit) && hit.id !== d.building) {
           void this.finishDraft(hit);
-        } else if (d.blocked == null) {
+        } else if (d.blocked == null && d.cells.length > 0) {
           this.say(tx('statusDragEnded'), 'info');
         }
       }
