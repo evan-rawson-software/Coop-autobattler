@@ -3861,9 +3861,11 @@ before the selection, `RunController.prepare` finishes it when the run is
 opened. Players are told before the battle: "Opponent: Rival party"
 (with "(weak)", "(medium)" or "(strong)" added when the ghost's label names
 that strength; the label itself is not shown) or "Opponent: the boss" (MM-11).
-When the opponent is the boss, the shop's Next battle panel also says "Boss battle next" and that it is a
-computer-made stronghold, not another party. Presentation only: whether the next opponent is the boss follows
-from `pvpOpponent` alone, so no "boss in N rounds" is shown (there is no fixed boss round).
+When the opponent is the boss, the shop's Next battle panel also says "Boss
+battle next" and that it is a computer-made stronghold, not another party.
+Presentation only: whether the next opponent is the boss follows from
+`pvpOpponent` alone, so no "boss in N rounds" is shown (there is no fixed boss
+round).
 
 If the automatic selection fails (`save_failed`, or `invalid_state` from the
 validation before the save), nothing is chosen and the failure is reported, not
