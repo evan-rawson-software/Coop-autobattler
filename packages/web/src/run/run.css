@@ -166,3 +166,34 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* The top bar keeps one row in every phase on a desktop-width window: the
+   stats never wrap onto a row of their own. */
+@media (min-width: 1000px) {
+  .topbar-status,
+  .run-bar {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  .topbar-status {
+    gap: 0.9rem;
+  }
+}
+
+/* The phase name: a plain label, not a button. */
+.phase-label {
+  padding: 0.25rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  cursor: default;
+  user-select: none;
+}
+
+/* Nothing to say yet: no empty box under the board. */
+.core-hint:empty {
+  display: none;
+}

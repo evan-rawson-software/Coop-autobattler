@@ -593,7 +593,9 @@ export function BuildView(props: {
       title={
         run === null
           ? 'Build'
-          : `Round ${String(run.round)} · ${step === 'build' ? 'Build' : 'Shop + Build'}`
+          : step === 'build'
+            ? `Round ${String(run.round)}`
+            : `Round ${String(run.round)} · Shop + Build`
       }
       tabs={tabs}
       activeTab={shared ? 'shop-build' : 'build'}

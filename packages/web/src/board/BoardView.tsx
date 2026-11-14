@@ -64,6 +64,8 @@ export interface BoardViewProps {
   readonly enemy?: TeamState | null;
   /** Show the zoom / fit buttons over the board (default true). */
   readonly controls?: boolean;
+  /** Adds a "Their base" button to those controls (battle screen). */
+  readonly onEnemyBase?: (() => void) | undefined;
   /** Height in cells of the empty strip between the boards. */
   readonly neutralHeight?: number;
   /** Terrain of the neutral strip (battle screen); hidden until revealed. */
@@ -425,7 +427,10 @@ export function BoardView(props: BoardViewProps) {
         }}
       />
       {props.controls === false ? null : (
-        <CameraControls controller={controller} />
+        <CameraControls
+          controller={controller}
+          onEnemyBase={props.onEnemyBase}
+        />
       )}
     </div>
   );
