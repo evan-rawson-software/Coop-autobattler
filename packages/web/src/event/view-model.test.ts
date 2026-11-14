@@ -40,7 +40,7 @@ describe('the battle header', () => {
     const h = battleHeader(run, realDeps());
     expect(h?.kind).toBe('pve');
     expect(h?.text).toMatch(
-      /^Stronghold battle (won|lost) · (Easy|Medium|Hard) · \w+/,
+      /^(Won against|Lost to) \w+ \((Easy|Medium|Hard)\)$/,
     );
     expect(h?.text).not.toMatch(/arch_/);
     expect(h?.payout).toBe(
@@ -84,7 +84,7 @@ describe('the battle header', () => {
     );
     const h = battleHeader(run, realDeps());
     expect(h?.kind).toBe('pvp');
-    expect(h?.text).toMatch(/vs\. the boss( \(\w+\))?$/);
+    expect(h?.text).toMatch(/^(Won against|Lost to) the boss( \(\w+\))?$/);
     expect(h?.text).not.toMatch(/the boss \(Boss\)/);
     if (!h?.won) {
       expect(h?.payout).toMatch(/^−1 life · \+\d+ gold$/);

@@ -2,7 +2,7 @@
  * View model of the main menu: the saved runs as rows, and the records. Pure:
  * it reads what the save store lists and decides nothing.
  */
-import { classify, type SaveListItem } from '@game/session';
+import { classify, type HistoryEntry, type SaveListItem } from '@game/session';
 import { stepLabel } from '../run/router.js';
 import { INSTALLED_VERSION } from '../run/version.js';
 import { count } from '../plural.js';
@@ -112,4 +112,35 @@ export function recordRows(
     label: count(n, 'player'),
     value: best[n] === undefined ? '—' : `round ${String(best[n])}`,
   }));
+}
+
+/** How many finished runs the menu lists (and the web layer keeps a summary for). */
+export const RECENT_RUNS_SHOWN = 5;
+
+export interface RecentRunRow {
+  readonly runId: string;
+  /** "1 player · round 6 · 2026-11-14" (the date is UTC). */
+  readonly text: string;
+}
+
+/**
+ * The newest finished runs whose Run over summary is still kept (`has`), at
+ * most `limit`, newest first. A run whose summary is gone is left out.
+ */
+export function recentRunRows(
+  history: readonly HistoryEntry[],
+  has: (runId: string) => boolean,
+  limit: number = RECENT_RUNS_SHOWN,
+): RecentRunRow[] {
+  const newest = [...history].sort((a, b) => b.finishedAt - a.finishedAt);
+  const rows: RecentRunRow[] = [];
+  for (const h of newest) {
+    if (rows.length >= limit) break;
+    if (!has(h.runId)) continue;
+    rows.push({
+      runId: h.runId,
+      text: `${count(h.partySize, 'player')} · round ${String(h.round)} · ${new Date(h.finishedAt).toISOString().slice(0, 10)}`,
+    });
+  }
+  return rows;
 }

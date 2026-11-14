@@ -14,7 +14,6 @@ import {
 } from './ghost-pool.js';
 import { DB_NAME, openDb } from './idb-store.js';
 import { createMemoryStorage } from './local-storage-store.js';
-import { opponentText } from '../shop/view-model.js';
 
 Object.assign(globalThis, { IDBKeyRange });
 
@@ -86,38 +85,6 @@ describe('browser ghost pool', () => {
     expect(installOwnerId(ls)).toBe(id);
     expect(installOwnerId(null)).not.toBe('');
     expect(ownerLabelFor(id)).toMatch(/^Runner /);
-  });
-
-  test('the opponent line says ghost or boss, or that it is not known yet', () => {
-    expect(opponentText({ pvpOpponent: null, round: 1 })).toMatch(/unknown/i);
-    expect(
-      opponentText({
-        round: 1,
-        pvpOpponent: {
-          round: 1,
-          kind: 'ghost',
-          label: 'Runner ab12',
-          ghost: null,
-        },
-      }),
-    ).toBe('Opponent: a recorded rival party');
-    expect(
-      opponentText({
-        round: 1,
-        pvpOpponent: { round: 1, kind: 'boss', label: 'the boss', ghost: null },
-      }),
-    ).toBe('Opponent: the boss');
-    expect(
-      opponentText({
-        round: 1,
-        pvpOpponent: {
-          round: 1,
-          kind: 'ghost',
-          label: 'Bundled Rusher bot',
-          ghost: null,
-        },
-      }),
-    ).toBe('Opponent: a recorded rival party');
   });
 });
 

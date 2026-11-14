@@ -23,6 +23,7 @@ import { simConfig } from '../build/setup.js';
 import {
   archetypeText,
   bossName,
+  ghostDisplayName,
   effectLine,
   eventText,
   modifierName,
@@ -47,7 +48,7 @@ function capital(s: string): string {
 export interface BattleHeader {
   readonly kind: 'pve' | 'pvp';
   readonly won: boolean;
-  /** "PvE battle won · Hard · Rusher". */
+  /** "Won against Fortress (Easy)"; the payout follows after " · ". */
   readonly text: string;
   /** "+8 gold", or what a loss costs. */
   readonly payout: string;
@@ -58,7 +59,7 @@ export function opponentName(
   kind: 'pve' | 'ghost' | 'boss',
   label: string,
 ): string {
-  return kind === 'ghost' ? label : archetypeText(label).name;
+  return kind === 'ghost' ? ghostDisplayName(label) : archetypeText(label).name;
 }
 
 /**
@@ -84,7 +85,7 @@ export function battleHeader(
     return {
       kind: 'pve',
       won: rec.won,
-      text: `Stronghold battle ${rec.won ? 'won' : 'lost'} · ${capital(rec.difficulty)} · ${opponentName(rec.opponent.kind, rec.opponent.label)}`,
+      text: `${rec.won ? 'Won against' : 'Lost to'} ${opponentName(rec.opponent.kind, rec.opponent.label)} (${capital(rec.difficulty)})`,
       payout: rec.won
         ? gold === undefined || gold === null
           ? 'Reward paid'
@@ -104,7 +105,7 @@ export function battleHeader(
   return {
     kind: 'pvp',
     won: rec.won,
-    text: `Rival party battle ${rec.won ? 'won' : 'lost'} · vs. ${who}`,
+    text: `${rec.won ? 'Won against' : 'Lost to'} ${who}`,
     payout: rec.won
       ? win === null
         ? 'Reward paid'

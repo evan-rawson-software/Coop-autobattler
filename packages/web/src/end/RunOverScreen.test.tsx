@@ -66,7 +66,9 @@ describe('RunOverScreen for parties', () => {
       const label = n === 1 ? '1 player' : `${String(n)} players`;
       expect(out).toContain('Reached round 4');
       expect(out).toContain(`First recorded run for ${label}`);
-      expect(out).toContain(NAMES.slice(0, n).join(' + '));
+      // A solo run shows no bare player name in the header.
+      if (n > 1) expect(out).toContain(NAMES.slice(0, n).join(' + '));
+      else expect(out).not.toContain(NAMES[0]);
       expect(out).toContain('Lives lost5');
       expect(out).toContain('Rival party battles0 won · 1 lost');
       expect(out).toContain(
@@ -86,7 +88,18 @@ describe('RunOverScreen for parties', () => {
       expect(out).toContain('You abandoned this run.');
       expect(out).toContain('Rival party battles1 won · 0 lost');
       expect(out).toContain('Lives lost3');
-      expect(out).toContain('Ghost · ');
+      expect(out).toContain('Rival party');
     });
   }
+
+  test('a reopened finished run offers only Back to menu', () => {
+    const state = finished(1, 'defeated', false);
+    const full = text(RunOverScreen({ state, startingLives: 5 }));
+    expect(full).toContain('New run');
+    const out = text(
+      RunOverScreen({ state, startingLives: 5, readOnly: true }),
+    );
+    expect(out).toContain('Back to menu');
+    expect(out).not.toContain('New run');
+  });
 });

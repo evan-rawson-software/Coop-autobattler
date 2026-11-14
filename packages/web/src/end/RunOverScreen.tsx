@@ -23,6 +23,7 @@ import {
   factoryCounts,
   headline,
   resultText,
+  resultTip,
   roundRows,
   runStats,
 } from './view-model.js';
@@ -45,8 +46,11 @@ function Tally(props: { won: number; lost: number }) {
 export function RunOverScreen(props: {
   state: RunState;
   startingLives: number;
+  /** A finished run reopened from the menu: Back to menu only, no New run. */
+  readOnly?: boolean;
 }) {
   const { state, startingLives } = props;
+  const readOnly = props.readOnly === true;
   const [history, setHistory] = useState<readonly HistoryEntry[] | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +123,9 @@ export function RunOverScreen(props: {
   return (
     <AppShell
       title={screenText(screenTexts, 'runOverTitle')}
-      status={<span class="muted">{names}</span>}
+      status={
+        state.players.length > 1 ? <span class="muted">{names}</span> : null
+      }
     >
       <div class="run-over" id="run-over">
         <section class="panel over-head">
@@ -181,8 +187,6 @@ export function RunOverScreen(props: {
                 <SpriteIcon name="ui_icon_heart" scale={1} class="bar-icon" />
                 {stats.livesLost}
               </dd>
-              <dt>{screenText(screenTexts, 'runOverStatVersion')}</dt>
-              <dd>{state.runVersion}</dd>
             </dl>
           </Panel>
 
@@ -237,9 +241,13 @@ export function RunOverScreen(props: {
                     <tr key={r.round} data-round={r.round}>
                       <td>{r.round}</td>
                       <td>{r.pve}</td>
-                      <td class={r.pveResult}>{resultText(r.pveResult)}</td>
+                      <td class={r.pveResult} title={resultTip(r.pveResult)}>
+                        {resultText(r.pveResult)}
+                      </td>
                       <td>{r.pvp}</td>
-                      <td class={r.pvpResult}>{resultText(r.pvpResult)}</td>
+                      <td class={r.pvpResult} title={resultTip(r.pvpResult)}>
+                        {resultText(r.pvpResult)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -250,23 +258,29 @@ export function RunOverScreen(props: {
 
         <section class="panel over-next">
           <div class="over-buttons">
-            <button
-              type="button"
-              class="primary"
-              id="over-new-run"
-              disabled={starting}
-              onClick={newRun}
-            >
-              {screenText(screenTexts, 'runOverNewRun')}
-            </button>
+            {readOnly ? null : (
+              <button
+                type="button"
+                class="primary"
+                id="over-new-run"
+                disabled={starting}
+                onClick={newRun}
+              >
+                {screenText(screenTexts, 'runOverNewRun')}
+              </button>
+            )}
             <button
               type="button"
               id="over-menu"
+              class={readOnly ? 'primary' : undefined}
               onClick={() => {
                 navigate('#/');
               }}
             >
-              {screenText(screenTexts, 'runOverMainMenu')}
+              {screenText(
+                screenTexts,
+                readOnly ? 'runOverBackToMenu' : 'runOverMainMenu',
+              )}
             </button>
           </div>
           {error === null ? null : (

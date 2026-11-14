@@ -4,7 +4,7 @@
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(260px, 22vw, 360px);
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 22vw, 360px);
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 8px;
   padding: 8px;
@@ -74,6 +74,7 @@
 .offer-kind,
 .offer-needs,
 .offer-rate,
+.offer-health,
 .offer-effect {
   margin: 0;
   font-size: 0.85rem;
@@ -156,7 +157,27 @@ button:disabled {
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--surface-2);
-  cursor: grab;
+}
+
+.stash-row.flash {
+  animation: stash-flash 1s ease-out;
+}
+
+@keyframes stash-flash {
+  0% {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  100% {
+    background: var(--surface-2);
+    border-color: var(--border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stash-row.flash {
+    animation-duration: 0.01s;
+  }
 }
 
 .stash-row.selected {
@@ -166,6 +187,12 @@ button:disabled {
 
 .stash-label {
   min-width: 0;
+  white-space: nowrap;
+}
+
+.stash-row button {
+  white-space: nowrap;
+  flex: none;
 }
 
 .stash-tier {
@@ -173,20 +200,19 @@ button:disabled {
   color: var(--ink-muted);
 }
 
+/* The confirm box that appears after Sell · N is pressed. */
 .sell-target {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
   padding: 0.5rem;
-  border: 2px dashed var(--border);
+  border: 2px solid var(--border);
   border-radius: 4px;
-  text-align: center;
+  text-align: left;
 }
 
 .sell-target.active {
-  border-style: solid;
   border-color: var(--warn, #b26a00);
-  text-align: left;
 }
 
 .sell-target p {
@@ -363,8 +389,11 @@ button.danger {
   margin: 0;
 }
 
-.offers-note {
+.offer-copies {
   margin: 0;
-  padding: 0.35rem 0.5rem 0;
-  flex: none;
+  font-weight: 700;
+}
+
+.boss-note {
+  margin: 0 0 0.3rem;
 }

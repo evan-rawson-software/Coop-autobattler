@@ -109,8 +109,30 @@
   box-sizing: border-box;
 }
 
+/* Narrow desktop windows: give the stash the width for two columns of rows
+   (the Selected panel is mostly empty), and tighten the rows. */
+@media (max-width: 1200px) {
+  .dock-bottom.tall {
+    grid-template-columns: 2fr 1fr 1.4fr 0.8fr;
+  }
+
+  .stash-list {
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+    gap: 0.25rem;
+  }
+
+  .stash-item {
+    gap: 0.3rem;
+    padding: 0.15rem 0.4rem;
+    white-space: nowrap;
+  }
+}
+
 /* A panel body that scrolls shows a fade at the edge with more behind it. */
 #panel-stash .panel-body {
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-muted) var(--surface-2);
   background:
     linear-gradient(var(--surface) 30%, transparent) top / 100% 1.4rem no-repeat
       local,
@@ -191,6 +213,15 @@ button:disabled {
   font-size: 0.82rem;
 }
 
+.insp-stats {
+  margin: 0 0 0.3rem;
+  font-size: 0.85rem;
+}
+
+.insp-stats p {
+  margin: 0;
+}
+
 dl.props {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -235,6 +266,16 @@ button.link {
 .overlay-row button {
   font-size: 0.82rem;
   padding: 0.25rem 0.5rem;
+}
+
+.overlay-legend {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.overlay-legend p {
+  margin: 0 0 0.25rem;
 }
 
 .inline-field {

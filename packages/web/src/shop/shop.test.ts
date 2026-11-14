@@ -3,6 +3,7 @@ import { openRun, startRun, type RunState } from '@game/session';
 import { describe, expect, test } from 'vitest';
 import { ME, BuildSession } from '../build/session.js';
 import { economy, simConfig } from '../build/setup.js';
+import { cardStats } from '../build/card-stats.js';
 import { firstFit } from '../build/test-helpers.js';
 import { layoutHash } from '../build/undo.js';
 import { content } from '../content.js';
@@ -31,7 +32,11 @@ describe('effect text', () => {
         const text = effectText(content, simConfig, def, tier);
         expect(text.trim(), `${def.id} tier ${String(tier)}`).not.toBe('');
         expect(text).not.toMatch(/[{}]/);
-        expect(text).toMatch(/\d/);
+        expect(text).not.toMatch(/\d+ health/);
+        expect(
+          cardStats(content, simConfig, def, tier).health,
+          `${def.id} tier ${String(tier)}`,
+        ).toMatch(/^Health \d+$/);
       }
     }
   });
@@ -59,10 +64,10 @@ describe('effect text', () => {
   test('numbers come from rules data and change with the tier', () => {
     const wall = content.buildings.get('bld_wall');
     if (wall === undefined) throw new Error('no wall');
-    const t1 = effectText(content, simConfig, wall, 1);
-    const t3 = effectText(content, simConfig, wall, 3);
-    expect(t1).toContain(String(wall.tiers[0].health));
-    expect(t3).toContain(String(wall.tiers[2]?.health));
+    const t1 = cardStats(content, simConfig, wall, 1).health;
+    const t3 = cardStats(content, simConfig, wall, 3).health;
+    expect(t1).toBe(`Health ${String(wall.tiers[0].health)}`);
+    expect(t3).toBe(`Health ${String(wall.tiers[2]?.health)}`);
     expect(t1).not.toBe(t3);
   });
 
@@ -82,6 +87,31 @@ describe('effect text', () => {
     if (wall === undefined || splitter === undefined) throw new Error('def');
     expect(needsText(wall, content)).toBe('nothing');
     expect(needsText(splitter, content)).toBe('any resource');
+  });
+
+  test('each rate shows once, on one line, and health on its own line', () => {
+    const stats = (id: string) => {
+      const def = content.buildings.get(id);
+      if (def === undefined) throw new Error(id);
+      return cardStats(content, simConfig, def, 1);
+    };
+    const ore = content.resources.get('res_a')?.name ?? '';
+    const barracks = stats('bld_barracks');
+    expect(barracks.uses).toBe(`Uses ${ore} 0.50/s`);
+    expect(barracks.collects).toBeNull();
+    expect(barracks.effect).toBe(`Trains 1 Soldier per 5 ${ore}`);
+    expect(barracks.health).toBe('Health 60');
+    const extractor = stats('bld_extractor');
+    expect(extractor.uses).toBeNull();
+    expect(extractor.collects).toBe('Collects 0.50/s');
+    expect(extractor.effect).toBe('Mines its node');
+    expect(stats('bld_wall').uses).toBeNull();
+    expect(stats('bld_wall').collects).toBeNull();
+    expect(stats('bld_splitter').uses).toBe('Uses: any resource');
+    for (const def of content.buildings.list()) {
+      const st = cardStats(content, simConfig, def, 1);
+      expect(st.effect, def.id).not.toMatch(/ at top speed|\d+\.\d\d\/s/);
+    }
   });
 
   test('unknown tier gives empty text', () => {
@@ -128,7 +158,7 @@ describe('the shop route setup', () => {
       expect(view?.kind).toBe(next);
       if (next === 'pve') expect(view?.options).toHaveLength(3);
       else {
-        expect(view?.pvp?.opponent).toMatch(/unknown/i);
+        expect(view?.pvp).not.toHaveProperty('opponent');
         expect(view?.pvp?.lifeCost).toBeGreaterThan(0);
       }
     }
@@ -141,7 +171,7 @@ describe('the shop route setup', () => {
     expect(v.offers).toHaveLength(economy.shopOfferCount);
     for (const card of v.offers) {
       expect(card.offer?.effect).toBeTruthy();
-      expect(card.offer?.needs).toBeTruthy();
+      expect(card.offer?.health).toBeTruthy();
     }
   });
 });
@@ -160,7 +190,7 @@ describe('buying, selling, re-rolling', () => {
     expect(after.offers[card.slot]?.offer).toBeNull();
   });
 
-  test('an unaffordable offer is disabled with a reason that says how much', async () => {
+  test('an unaffordable offer is disabled with no gold-shortage text', async () => {
     const { s } = await shopSession();
     const poor: RunState = {
       ...s.run,
@@ -169,10 +199,10 @@ describe('buying, selling, re-rolling', () => {
     const v = buildShopView(poor, ME, ctx);
     for (const c of v.offers) {
       expect(c.canBuy).toBe(false);
-      expect(c.reason).toMatch(/Need \d+ more gold/);
+      expect(c.reason).toBeNull();
     }
     expect(v.reroll.can).toBe(false);
-    expect(v.reroll.reason).toMatch(/Need \d+ more gold/);
+    expect(v.reroll.reason).toBeNull();
   });
 
   test('the session refuses what the view disabled, and the view follows', async () => {
@@ -344,9 +374,9 @@ describe('actions sent back to back', () => {
 });
 
 describe('the ready count', () => {
-  test('is shown in the shop step and hidden after Ready moves the run on', async () => {
+  test('is hidden in a solo run, before and after Ready moves it on', async () => {
     const { s } = await shopSession();
-    expect(readyLabel(s.run)).toBe('0 of 1 ready');
+    expect(readyLabel(s.run)).toBeNull();
     const r = await s.dispatch({ type: 'ready' });
     expect(r.ok).toBe(true);
     expect(s.run.step).not.toBe('shop');

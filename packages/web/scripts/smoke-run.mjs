@@ -942,7 +942,7 @@ export async function runRunSmoke({
   // Event
   const header = await page.locator('#battle-result').innerText();
   check(
-    /^Stronghold battle (won|lost) · (Easy|Medium|Hard) · \w+/.test(header) &&
+    /^(Won against|Lost to) \w+ \((Easy|Medium|Hard)\) · /.test(header) &&
       /gold|No reward/.test(header),
     `event: opens with the battle just fought and what it paid ("${header.replace(/\s+/g, ' ')}")`,
   );
@@ -1064,9 +1064,10 @@ export async function runRunSmoke({
   {
     const shopText = await page.locator('#shop-screen').innerText();
     check(
-      /Opponent: a recorded rival party/.test(shopText) &&
+      /Rival party/.test(shopText) &&
+        !/Opponent/.test(shopText) &&
         /Lose: -1 life/.test(shopText),
-      'shop (before the PvP battle): the opponent is a bundled ghost, and a loss costs 1 life',
+      'shop (before the PvP battle): headed "Rival party" with no Opponent line, and a loss costs 1 life',
     );
   }
   await page.click('#shop-ready');
@@ -1078,7 +1079,7 @@ export async function runRunSmoke({
   });
   const vs = await page.locator('[data-field="vs"]').innerText();
   check(
-    /Bundled \w+ bot/.test(vs),
+    /^vs\. Rival party/.test(vs),
     `PvP battle: the opponent is a bundled ghost ("${vs}")`,
   );
   {
@@ -1111,7 +1112,7 @@ export async function runRunSmoke({
   );
   const header2 = await page.locator('#battle-result').innerText();
   check(
-    /^Rival party battle (won|lost) · vs\. Bundled \w+ bot/.test(header2),
+    /^(Won against|Lost to) Rival party/.test(header2),
     `event (after PvP): the header shows the PvP result ("${header2.replace(/\s+/g, ' ')}")`,
   );
 
@@ -1251,10 +1252,8 @@ export async function runRunSmoke({
   );
   await page.waitForSelector('#shop-screen');
   check(
-    /Opponent: a recorded rival party/.test(
-      await page.locator('#shop-screen').innerText(),
-    ),
-    'shop: "Opponent: a recorded rival party" is shown before the PvP battle',
+    /Rival party/.test(await page.locator('#shop-screen').innerText()),
+    'shop: "Rival party" is shown before the PvP battle',
   );
   {
     // The first run's snapshot is in this browser's own pool (#111): the
@@ -1434,6 +1433,27 @@ export async function runRunSmoke({
     `records: the abandoned run's depth is kept ("${records.replace(/\s+/g, ' ')}")`,
   );
 
+  // The abandoned run is listed under Recent runs; opening it shows its
+  // Run over summary read-only, with Back to menu and no New run.
+  check(
+    (await page.locator(`[data-recent="${runB}"]`).count()) === 1 &&
+      /1 player · round \d+ · \d{4}-\d\d-\d\d/.test(
+        await page.locator(`[data-recent="${runB}"]`).innerText(),
+      ),
+    'main menu: the abandoned run is listed under Recent runs',
+  );
+  await page.click(`[data-recent="${runB}"] [data-action="open-summary"]`);
+  await page.waitForSelector('#run-over');
+  check(
+    (await page.locator('#over-new-run').count()) === 0 &&
+      (await page.locator('#over-menu').innerText()) === 'Back to menu' &&
+      (await page.locator('#final-factory canvas').count()) === 1,
+    'a recent run reopens its summary read-only (Back to menu, no New run)',
+  );
+  await page.click('#over-menu');
+  await page.waitForSelector('#main-menu');
+  await page.waitForFunction(() => window.__debug?.menu?.runIds().length === 1);
+
   // ---------------------------------------------------------------------
   // Play run A to its end: lives reach 0 against the boss.
   await page.click(`[data-run="${runA}"] [data-action="resume"]`);
@@ -1505,7 +1525,9 @@ export async function runRunSmoke({
       if (s.pvpOpponent.kind === 'boss') {
         bossShops++;
         check(
-          /Opponent: the boss/.test(t) && /Lose: -1 life/.test(t),
+          /Boss battle next/.test(t) &&
+            !/Opponent/.test(t) &&
+            /Lose: -1 life/.test(t),
           `shop (round ${s.round}): the boss is announced before the battle, a loss costs 1 life`,
         );
       }
@@ -1545,12 +1567,13 @@ export async function runRunSmoke({
       .locator('#round-table tbody tr td:nth-child(5)')
       .allInnerTexts();
     check(
-      pvpCells.some((t) => /^Ghost · Bundled \w+ bot \(bundled\)$/.test(t)) &&
-        pvpCells.some((t) => /^the boss/.test(t)),
+      pvpCells.some((t) =>
+        /^Rival party( \((weak|medium|strong)\))?$/.test(t),
+      ) && pvpCells.some((t) => /^the boss/.test(t)),
       `Run over: the table names each round's opponent, a bundled ghost and the boss (${pvpCells.join(' | ')})`,
     );
     check(
-      pvpResults.filter((r) => r === 'lost').length === 5,
+      pvpResults.filter((r) => r === 'L').length === 5,
       `Run over: 5 lost PvP battles for 5 lives (${pvpResults.join(', ')})`,
     );
   }
@@ -1560,7 +1583,7 @@ export async function runRunSmoke({
   check(
     /Rival party battles/.test(final) &&
       /Stronghold battles/.test(final) &&
-      /vs\. bosses/.test(final),
+      /vs\. the boss/.test(final),
     'Run over: battle records',
   );
   await shot('run-14-run-over');
@@ -1745,7 +1768,9 @@ export async function runRunSmoke({
         await page.waitForSelector('#shop-screen');
         const t = await page.locator('#shop-screen').innerText();
         ngCheck(
-          /Opponent: the boss/.test(t) && /Lose: -1 life/.test(t),
+          /Boss battle next/.test(t) &&
+            !/Opponent/.test(t) &&
+            /Lose: -1 life/.test(t),
           'no-ghost boss: the shop announces the boss, a loss costs 1 life',
         );
       }
@@ -2508,8 +2533,7 @@ export async function runRunSmoke({
       sellCount > 0 && sellOff,
       `two players: while Ready, Sell is off on all ${sellCount} stash rows`,
     );
-    // Attempts anyway: forced clicks on the disabled buttons, and a drag of a
-    // stash row to the sell target.
+    // Attempts anyway: forced clicks on the disabled buttons.
     for (let i = 0; i < live.length; i++) {
       await page
         .locator('#offers [data-action="buy"]')
@@ -2518,13 +2542,6 @@ export async function runRunSmoke({
     }
     await page.locator('#reroll').click({ force: true, timeout: slow(3000) });
     await sellBtns.first().click({ force: true, timeout: slow(3000) });
-    await page
-      .locator('#shop-stash .stash-row')
-      .first()
-      .dragTo(page.locator('#sell-target'), {
-        force: true,
-        timeout: slow(3000),
-      });
     await settle();
     await frames(page, 6);
     check(
@@ -2610,7 +2627,10 @@ export async function runRunSmoke({
         ready[0] === true &&
           ready[1] === false &&
           affordable.every((o) => o.reason !== LOCK) &&
-          !(await page.locator('#sell-target').isHidden()) &&
+          !(await page
+            .locator('#shop-stash [data-action="sell"]')
+            .first()
+            .isDisabled()) &&
           (await page.locator('#shop-ready').innerText()).includes('Ready') &&
           !(await page.locator('#shop-ready').innerText()).includes('Unready'),
         'two players: player 2 is not locked while player 1 is Ready (no lock text on their offers, their button reads Ready)',

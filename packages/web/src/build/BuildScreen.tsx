@@ -23,6 +23,7 @@ import { NotSavedNote, RestartButton } from '../run/RunGate.js';
 import type { RunHandle } from '../run/handle.js';
 import { AppShell, Panel } from '../shell/AppShell.js';
 import { ActingSwitch } from '../shell/ActingSwitch.js';
+import { useFading } from '../shell/status.js';
 import { BUILD_TAB_SCREEN, onStepTab, stepTabs } from '../shop/tabs.js';
 import { readyLabel } from '../shop/view-model.js';
 import './build.css';
@@ -96,6 +97,8 @@ export function BuildView(props: {
   const shared = props.shared;
   const model = useStore(ctl.model);
   const { ui, view } = model;
+  // A result message ('ok') times out like the shop's; hints and errors stay.
+  const shownStatus = useFading(ui.status, ['ok']);
   const run = view?.run ?? null;
   const team = run?.team ?? null;
   const step = run?.step ?? 'none';
@@ -113,6 +116,11 @@ export function BuildView(props: {
       void ctl.enterDev(DEFAULT_SEED);
     }
   }, [shared?.session]);
+
+  // A message about a step does not outlive it.
+  useEffect(() => {
+    ctl.clearStaleStatus(step);
+  }, [step, ui.status.step]);
 
   // Camera focus for the problems list.
   useEffect(() => {
@@ -350,6 +358,7 @@ export function BuildView(props: {
 
   const onPick = (p: Problem): void => {
     if (p.building !== null) ctl.select({ kind: 'building', id: p.building });
+    if (p.pick !== undefined && gate?.ready !== true) ctl.pickFromStash(p.pick);
     if (p.focus !== null) ctl.focusCell(p.focus);
   };
 
@@ -509,12 +518,12 @@ export function BuildView(props: {
           </div>
         ) : null}
         <div
-          class={`status-line ${ui.status.kind}`}
+          class={`status-line ${shownStatus.kind}`}
           id="status-line"
           role="status"
-          data-kind={ui.status.kind}
+          data-kind={shownStatus.kind}
         >
-          {ui.status.text}
+          {shownStatus.text}
         </div>
       </div>
     );

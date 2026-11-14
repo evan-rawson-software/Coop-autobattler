@@ -17,7 +17,6 @@ import {
   liveAxisMaxTick,
   mergeMarkers,
   strengthSeries,
-  wallsWord,
   type Moment,
   type Side,
   type SideStats,
@@ -29,15 +28,6 @@ import type { OpponentInfo } from './types.js';
 
 const t = (key: string, values: Record<string, string> = {}): string =>
   screenText(screenTexts, key, values);
-
-const wallsLine = (walls: string, standing: number, total: number): string =>
-  total === 0
-    ? t('battleWallsNone', { walls: walls.toLowerCase() })
-    : t('battleWallsStanding', {
-        walls,
-        standing: String(standing),
-        total: String(total),
-      });
 
 /**
  * A side's Core health: one bar for a lone Core, as before; with several, one
@@ -149,7 +139,6 @@ export function LeftPanels(props: {
   const resName = (id: string): string => content.resources.get(id)?.name ?? id;
   const tick = pb.tick;
   const coreName = coreNameOf(content);
-  const walls = wallsWord(content);
   // Only what has happened so far: the axes grow with the playback position.
   const chart = strengthSeries(pb.record.summary.timeline, tick);
   const nowOwn = sumHealth(pb, 0);
@@ -173,9 +162,6 @@ export function LeftPanels(props: {
           max={mine.coreMax}
           side={0}
         />
-        <p class="stat-line" data-field="walls-own">
-          {wallsLine(walls, mine.wallsStanding, mine.wallsTotal)}
-        </p>
       </Panel>
       <Panel title={t('battlePanelProduction')} id="panel-production">
         <table class="stat-table">
@@ -272,11 +258,12 @@ export function RightPanels(props: {
   readonly onSpeed: (s: PlaybackSpeed) => void;
   readonly onPause: () => void;
   readonly onSkip: () => void;
+  /** Watching again: Skip becomes "Back to results". */
+  readonly replay: boolean;
   readonly onFocus: (m: Moment) => void;
 }) {
   const { pb, opponent, theirs, content } = props;
   const coreName = coreNameOf(content);
-  const walls = wallsWord(content);
   const shown = props.moments
     .filter((m) => m.tick <= pb.tick && (m.kind !== 'zone' || props.revealed))
     .reverse();
@@ -293,9 +280,6 @@ export function RightPanels(props: {
           max={theirs.coreMax}
           side={1}
         />
-        <p class="stat-line" data-field="walls-foe">
-          {wallsLine(walls, theirs.wallsStanding, theirs.wallsTotal)}
-        </p>
       </Panel>
       <Panel title={t('battlePanelLog')} id="panel-log" class="grow">
         {shown.length === 0 ? (
@@ -307,17 +291,23 @@ export function RightPanels(props: {
                 key={`${String(m.tick)}-${String(i)}`}
                 class={`log-${m.kind}`}
               >
-                <button
-                  type="button"
-                  class="link-button"
-                  disabled={m.focus === null}
-                  onClick={() => {
-                    props.onFocus(m);
-                  }}
-                >
-                  <span class="log-time">{clock(m.tick, props.tps)}</span>{' '}
-                  {m.text}
-                </button>
+                {m.focus === null ? (
+                  <span class="log-entry">
+                    <span class="log-time">{clock(m.tick, props.tps)}</span>{' '}
+                    {m.text}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    class="link-button"
+                    onClick={() => {
+                      props.onFocus(m);
+                    }}
+                  >
+                    <span class="log-time">{clock(m.tick, props.tps)}</span>{' '}
+                    {m.text}
+                  </button>
+                )}
               </li>
             ))}
           </ol>
@@ -340,7 +330,7 @@ export function RightPanels(props: {
             </button>
           ))}
           <button type="button" id="skip" onClick={props.onSkip}>
-            {t('battleSkip')}
+            {t(props.replay ? 'battleBackToResults' : 'battleSkip')}
           </button>
         </div>
         <div class="btn-row">
@@ -495,6 +485,16 @@ export function BattleSummaryView(props: SummaryProps) {
     () => breachEntries(rec, content, moments, 0, props.tps),
     [rec, content, moments, props.tps],
   );
+  // Both sides lost every Core and a tiebreak decided it: say so first, so
+  // the result is not read as "your Core was destroyed" and then a win.
+  const doubleFallTiebreak =
+    own.coresStanding === 0 &&
+    foe.coresStanding === 0 &&
+    rec.result.reason.startsWith('tiebreak_');
+  const lastFall = Math.max(
+    0,
+    ...[...own.cores, ...foe.cores].map((c) => c.destroyedTick ?? 0),
+  );
   const camera = useMemo(() => {
     const c = new CameraController();
     c.resetPreset = 'fit';
@@ -581,6 +581,19 @@ export function BattleSummaryView(props: SummaryProps) {
           </span>
           {t('battleVsOpponent', { name: opponent.name })}
         </h2>
+        {doubleFallTiebreak ? (
+          <p class="result-draw" data-field="double-fall">
+            {t(
+              won
+                ? 'battleSummaryDoubleFallWin'
+                : 'battleSummaryDoubleFallLoss',
+              {
+                core: coreName,
+                time: clock(lastFall, props.tps),
+              },
+            )}
+          </p>
+        ) : null}
         <p class="result-reward" data-field="reward">
           {props.rewardText}
         </p>
@@ -663,36 +676,44 @@ export function BattleSummaryView(props: SummaryProps) {
         <ol class="marker-list">
           {marked.map((m, i) => (
             <li key={`${String(m.tick)}-${String(i)}`}>
-              <span class="marker-n">{i + 1}</span>
-              {clock(m.tick, props.tps)} {m.text}
+              <span class="marker-n">#{i + 1}</span>
+              <span class="marker-text">
+                {' · '}
+                {clock(m.tick, props.tps)} {m.text}
+              </span>
             </li>
           ))}
         </ol>
       </Panel>
 
-      <Panel title={t('battlePanelBreaches')} id="panel-breaches">
-        <div class="mini-board">
-          <BoardView
-            content={content}
-            own={rec.initialTeams[0]}
-            controller={camera}
-            resetKey={rec}
-            drawOverlay={overlay}
-            overlayKey={destroyed}
-          />
-        </div>
-        {breaches.length === 0 ? (
-          <p class="muted" data-field="no-breach">
-            {t('battleNoBreach')}
-          </p>
-        ) : (
-          <ul class="plain breach-list" data-field="breach-list">
-            {breaches.map((b, i) => (
-              <li key={`${String(b.tick)}-${String(i)}`}>{b.text}</li>
-            ))}
-          </ul>
-        )}
-      </Panel>
+      {won && breaches.length === 0 ? null : (
+        <Panel
+          title={t(won ? 'battlePanelBreachesWon' : 'battlePanelBreaches')}
+          id="panel-breaches"
+        >
+          <div class="mini-board">
+            <BoardView
+              content={content}
+              own={rec.initialTeams[0]}
+              controller={camera}
+              resetKey={rec}
+              drawOverlay={overlay}
+              overlayKey={destroyed}
+            />
+          </div>
+          {breaches.length === 0 ? (
+            <p class="muted" data-field="no-breach">
+              {t('battleNoBreach')}
+            </p>
+          ) : (
+            <ul class="plain breach-list" data-field="breach-list">
+              {breaches.map((b, i) => (
+                <li key={`${String(b.tick)}-${String(i)}`}>{b.text}</li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      )}
 
       <Panel title={t('battlePanelBuildings')} id="panel-buildings">
         {rows.length === 0 ? (

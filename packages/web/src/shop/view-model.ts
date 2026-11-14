@@ -23,8 +23,8 @@ import {
 import type { WebContent } from '../content.js';
 import { isEditStep } from '../build/session.js';
 import { buildingName } from '../build/view-model.js';
-import { rateText } from '../build/rates.js';
-import { effectText, kindLabel, needsText } from './effect-text.js';
+import { cardStats } from '../build/card-stats.js';
+import { kindLabel } from './effect-text.js';
 import { archetypeText } from '../run/display-text.js';
 import { count } from '../plural.js';
 import { gateFor, type Gate, type LockDeps } from '../build/lock.js';
@@ -39,15 +39,32 @@ export interface OfferCard {
     readonly kind: string;
     readonly kindLabel: string;
     readonly tier: number;
-    readonly needs: string;
-    /** Need per second at top speed, or collector rate; '' for neither. */
-    readonly rate: string;
+    /** "Uses Ore 0.50/s"; null when it consumes nothing. */
+    readonly uses: string | null;
+    /** "Collects 0.50/s" for an extractor; null otherwise. */
+    readonly collects: string | null;
     readonly effect: string;
+    /** "Health 60". */
+    readonly health: string;
     readonly price: number;
   } | null;
   readonly canBuy: boolean;
   /** Why Buy is disabled; null when it is enabled or the slot is empty. */
   readonly reason: string | null;
+}
+
+/**
+ * What the shop draws: identical offers (same building and tier) collapsed
+ * into one entry, and each sold slot as its own empty entry. Only a display
+ * grouping: the saved shop still holds one offer per slot.
+ */
+export interface OfferGroup {
+  /** The card shown; for a group, the first of its slots. */
+  readonly card: OfferCard;
+  /** The real offer slots still on sale in this group, lowest first. */
+  readonly slots: readonly number[];
+  /** How many copies can still be bought (`slots.length`; 0 when sold). */
+  readonly copies: number;
 }
 
 export interface StashRow {
@@ -65,6 +82,8 @@ export interface ShopView {
   readonly open: boolean;
   readonly gold: number;
   readonly offers: readonly OfferCard[];
+  /** `offers` as drawn: identical offers grouped (see `OfferGroup`). */
+  readonly groups: readonly OfferGroup[];
   readonly reroll: {
     readonly cost: number;
     readonly can: boolean;
@@ -92,9 +111,28 @@ export type ShopContext = {
 
 const CLOSED = 'The shop is closed.';
 
-export function shortOf(gold: number, price: number): string {
-  const missing = price - gold;
-  return `Need ${String(missing)} more gold.`;
+/** Group identical live offers; sold slots stay as single entries. */
+export function groupOffers(cards: readonly OfferCard[]): OfferGroup[] {
+  const slotsOf = new Map<string, number[]>();
+  const keyOf = (c: OfferCard): string | null =>
+    c.offer === null ? null : `${c.offer.def}:${String(c.offer.tier)}`;
+  for (const c of cards) {
+    const k = keyOf(c);
+    if (k !== null) slotsOf.set(k, [...(slotsOf.get(k) ?? []), c.slot]);
+  }
+  const groups: OfferGroup[] = [];
+  const done = new Set<string>();
+  for (const card of cards) {
+    const k = keyOf(card);
+    if (k === null) {
+      groups.push({ card, slots: [], copies: 0 });
+    } else if (!done.has(k)) {
+      done.add(k);
+      const slots = slotsOf.get(k) ?? [card.slot];
+      groups.push({ card, slots, copies: slots.length });
+    }
+  }
+  return groups;
 }
 
 /** Stash grouped by building and tier, in content order. */
@@ -149,13 +187,11 @@ export function buildShopView(
   const cards: OfferCard[] = (data?.offers ?? []).map((o, slot) => {
     if (o === null) return { slot, offer: null, canBuy: false, reason: null };
     const def = ctx.content.buildings.get(o.def);
-    const reason = !open
-      ? CLOSED
-      : lock('buy') !== null
-        ? lock('buy')
-        : gold < o.price
-          ? shortOf(gold, o.price)
-          : null;
+    const stats =
+      def === undefined
+        ? undefined
+        : cardStats(ctx.content, ctx.sim, def, o.tier);
+    const reason = !open ? CLOSED : lock('buy');
     return {
       slot,
       offer: {
@@ -164,23 +200,13 @@ export function buildShopView(
         kind: def?.kind ?? 'core',
         kindLabel: kindLabel(ctx.content, def?.kind ?? 'core'),
         tier: o.tier,
-        needs: def === undefined ? '' : needsText(def, ctx.content),
-        rate:
-          def === undefined
-            ? ''
-            : rateText(
-                def,
-                o.tier,
-                ctx.sim.ticksPerSecond,
-                ctx.content.presentation.templates.screens,
-              ),
-        effect:
-          def === undefined
-            ? ''
-            : effectText(ctx.content, ctx.sim, def, o.tier),
+        uses: stats?.uses ?? null,
+        collects: stats?.collects ?? null,
+        effect: stats?.effect ?? '',
+        health: stats?.health ?? '',
         price: o.price,
       },
-      canBuy: reason === null,
+      canBuy: reason === null && gold >= o.price,
       reason,
     };
   });
@@ -191,15 +217,18 @@ export function buildShopView(
       ? lock('reroll')
       : data === null
         ? 'Nothing to re-roll.'
-        : gold < cost
-          ? shortOf(gold, cost)
-          : null;
+        : null;
   const mine = (b: { owner: number }): boolean => b.owner === player;
   return {
     open,
     gold,
     offers: cards,
-    reroll: { cost, can: rerollReason === null, reason: rerollReason },
+    groups: groupOffers(cards),
+    reroll: {
+      cost,
+      can: rerollReason === null && gold >= cost,
+      reason: rerollReason,
+    },
     stash: stashRows({ ...run.team, stash: run.team.stash.filter(mine) }, ctx),
     stashCount: run.team.stash.filter(mine).length,
     placedCount: run.team.buildings.filter(mine).length,
@@ -214,10 +243,11 @@ export function buildShopView(
 
 /**
  * "N of M ready" for the status bar, or null outside the steps where players
- * ready up to shop and build (the flags are reset when the step changes).
+ * ready up to shop and build (the flags are reset when the step changes), and
+ * for a solo run (nobody to wait for).
  */
 export function readyLabel(run: RunState): string | null {
-  if (!isEditStep(run.step)) return null;
+  if (!isEditStep(run.step) || run.players.length < 2) return null;
   const n = run.perPlayer.filter((p) => p.ready).length;
   return `${String(n)} of ${String(run.players.length)} ready`;
 }
@@ -259,9 +289,12 @@ export interface NextBattleView {
     readonly threat: string;
     readonly rewardGold: number;
   }[];
+  /** True when the rival battle is against the generated boss (PvP leg). */
+  readonly boss: boolean;
+  /** One sentence on how the boss differs; '' unless `boss`. */
+  readonly bossNote: string;
   /** PvP only. */
   readonly pvp: {
-    readonly opponent: string;
     readonly winGold: number | null;
     readonly lossGold: number | null;
     readonly lifeCost: number;
@@ -276,6 +309,10 @@ export function threatLine(o: PveOptionView): string {
   parts.push(`Core ${String(s.coreHealth)} health`);
   return parts.join(' · ');
 }
+
+/** What the boss really is: see "PvE threats" and "Ghosts" in the rules. */
+const BOSS_NOTE =
+  'A computer-made stronghold, not another party: waves of soldiers and fast raiders, with walls and turrets around its Core.';
 
 export function nextBattleView(
   run: RunState,
@@ -295,35 +332,23 @@ export function nextBattleView(
         threat: threatLine(o),
         rewardGold: o.reward.gold,
       })),
+      boss: false,
+      bossNote: '',
       pvp: null,
     };
   }
+  const boss = pvpOpponentInfo(run)?.kind === 'boss';
   return {
     kind: 'pvp',
     round: info.round,
-    title: 'Rival party',
+    title: boss ? 'Boss battle next' : 'Rival party',
+    boss,
+    bossNote: boss ? BOSS_NOTE : '',
     options: [],
     pvp: {
-      opponent: opponentText(run),
       winGold: info.stakes.winGold,
       lossGold: info.stakes.lossGold,
       lifeCost: info.stakes.lifeCost,
     },
   };
-}
-
-/**
- * Who the PvP battle is against (MM-11): known once the party is in the shop
- * before it; the opponent is fixed there, before the battle is revealed.
- */
-export function opponentText(
-  run: Pick<RunState, 'pvpOpponent' | 'round'>,
-): string {
-  const o = pvpOpponentInfo(run);
-  if (o === null) return 'Opponent unknown';
-  if (o.kind === 'boss') return 'Opponent: the boss';
-  // Internal ghost names are not shown; only a strength word when the label
-  // carries one ("Bundled weak bot").
-  const word = /\b(weak|medium|strong)\b/i.exec(o.label)?.[1]?.toLowerCase();
-  return `Opponent: a recorded rival party${word === undefined ? '' : ` (${word})`}`;
 }

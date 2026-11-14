@@ -5,7 +5,7 @@ import type { WebContent } from '../content.js';
 import { linkText, type HalfStatus } from './border-links.js';
 import { BuildSession } from './session.js';
 import { ProblemsPanel } from './panels.js';
-import { rateText } from './rates.js';
+import { cardStats } from './card-stats.js';
 import { REASON_TEXT_CODES } from '@game/core';
 import { KNOWN_REASONS, reasonMessage, selectionNote } from './reasons.js';
 import { coreLabel, playerName, screenText, screenTexts } from './texts.js';
@@ -30,8 +30,13 @@ describe('texts come from the presentation file', () => {
     const def = content.buildings.get('bld_extractor');
     if (def === undefined) throw new Error('no extractor');
     const texts = { ...screenTexts, collects: 'Mines {rate} per s' };
-    expect(rateText(def, 1, 20, texts)).toMatch(/^Mines \d+\.\d\d per s$/);
-    expect(rateText(def, 1, 20)).toMatch(/^Collects \d+\.\d\d\/s$/);
+    const sim = { ticksPerSecond: 20 };
+    expect(cardStats(content, sim, def, 1, texts).collects).toMatch(
+      /^Mines \d+\.\d\d per s$/,
+    );
+    expect(cardStats(content, sim, def, 1).collects).toMatch(
+      /^Collects \d+\.\d\d\/s$/,
+    );
   });
 
   test('the link state follows the template', () => {
