@@ -1467,6 +1467,14 @@ try {
     // Watch again, then skip: the same result.
     await page.click('#watch-again');
     await waitPhase('playing');
+    // The phase changes before the board re-renders its scene (BoardView
+    // sets it during render), so wait for the replay's first frame to drop
+    // the neutral zone instead of reading the previous scene.
+    await page
+      .waitForFunction(() => window.__debug.neutralFeatureCount() === 0, null, {
+        timeout: slow(5000),
+      })
+      .catch(() => {});
     const again = await page.evaluate(() => ({
       tick: window.__debug.battle.tick(),
       revealed: window.__debug.battle.revealed(),
