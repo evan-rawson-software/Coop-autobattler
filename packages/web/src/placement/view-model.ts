@@ -214,18 +214,31 @@ export function routesFor(
   }
 }
 
-export interface KitRow {
+/** One slot of the starting kit as the tray shows it. */
+export interface KitSlot {
   readonly key: string;
-  readonly text: string;
+  /** The building, or null for a pick of random wall shapes. */
+  readonly def: string | null;
+  /** Display name; null for the random wall (the screen words it). */
+  readonly name: string | null;
+  readonly tier: number;
+  readonly count: number;
 }
 
-/** The starting kit: "Extractor × 2", ..., "10 gold". Names from content. */
-export function kitRows(economy: EconomyConfig, content: WebContent): KitRow[] {
-  const rows: KitRow[] = economy.startingKit.map((k) => ({
+/**
+ * The starting kit, as the slots Build will show. A random pick (the walls)
+ * has no building yet: the shape is drawn when the kit is granted, after the
+ * Core is placed, so it shows as a random wall and never a shape.
+ */
+export function kitSlots(
+  economy: EconomyConfig,
+  content: WebContent,
+): KitSlot[] {
+  return economy.startingKit.map((k) => ({
     key: `${kitChoices(k).join('|')}:${String(k.tier)}`,
-    // A random pick shows as "Wall (random shape) × 3", never the shapes.
-    text: `${k.def === undefined ? 'Wall (random shape)' : buildingName(content, k.def)}${k.tier > 1 ? ` (tier ${String(k.tier)})` : ''} × ${String(k.count)}`,
+    def: k.def ?? null,
+    name: k.def === undefined ? null : buildingName(content, k.def),
+    tier: k.tier,
+    count: k.count,
   }));
-  rows.push({ key: 'gold', text: `${String(economy.startingGold)} gold` });
-  return rows;
 }

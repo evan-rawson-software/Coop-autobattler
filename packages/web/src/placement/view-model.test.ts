@@ -11,7 +11,7 @@ import {
   hintText,
   isRepeatClick,
   visibleProblem,
-  kitRows,
+  kitSlots,
   legalSet,
   problemText,
   routesFor,
@@ -142,12 +142,16 @@ describe('routes to a position', () => {
 });
 
 describe('starting kit', () => {
-  test('lists each kit entry by its display name, then the gold', () => {
-    const rows = kitRows(economy, content);
-    expect(rows.at(-1)?.text).toBe(`${String(economy.startingGold)} gold`);
-    expect(rows.length).toBe(economy.startingKit.length + 1);
-    for (const r of rows.slice(0, -1)) expect(r.text).toMatch(/ × \d+$/);
-    expect(rows.map((r) => r.text).join(' ')).not.toMatch(/bld_/);
+  test('one slot per kit entry; a random pick has no name or building', () => {
+    const slots = kitSlots(economy, content);
+    expect(slots.length).toBe(economy.startingKit.length);
+    for (const [i, k] of economy.startingKit.entries()) {
+      const slot = slots[i];
+      expect(slot?.count).toBe(k.count);
+      expect(slot?.def === null).toBe(k.def === undefined);
+      expect(slot?.name === null).toBe(k.def === undefined);
+      expect(slot?.name ?? '').not.toMatch(/bld_/);
+    }
   });
 });
 
