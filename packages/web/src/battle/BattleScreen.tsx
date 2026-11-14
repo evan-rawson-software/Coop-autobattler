@@ -10,6 +10,7 @@ import { Component, type ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
+import { describeUnitAt } from './unit-hover.js';
 import {
   buildScene,
   enemyCoreCentre,
@@ -607,6 +608,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
         }}
         resetKey={record}
         drawOverlay={drawOverlay.current}
+        describeAt={(v) => describeUnitAt(pb, geo, content, v)}
         animate
       />
       {!revealed ? (
