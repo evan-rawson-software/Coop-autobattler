@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
 import { useStore } from '../app-state.js';
 import { BoardView } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
-import { economy, simConfig } from '../build/setup.js';
+import { economy, gameConfigs, simConfig } from '../build/setup.js';
 import { type SessionView } from '../build/session.js';
 import { content } from '../content.js';
 import { registerDebug, unregisterDebug } from '../debug-hook.js';
@@ -24,6 +24,7 @@ import { useNoticeTimeout, useStatus } from '../shell/status.js';
 import './shop.css';
 import { screenText, screenTexts } from '../build/texts.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
+import { heldBonuses } from '../event/view-model.js';
 import { performAction } from './actions.js';
 import { onStepTab, stepTabs } from './tabs.js';
 import {
@@ -245,6 +246,7 @@ export function ShopTab(props: {
     [run, view.acting, deps],
   );
   const next = useMemo(() => nextBattleView(run, deps), [run, deps]);
+  const bonuses = useMemo(() => heldBonuses(run, gameConfigs.events), [run]);
   const [pending, setPending] = useState<StashRow | null>(null);
   const [status, say, clearStatus] = useStatus();
   const dismissNotice = useCallback(() => {
@@ -435,6 +437,17 @@ export function ShopTab(props: {
               {sv.reroll.reason ?? ''}
             </span>
           </Panel>
+          {bonuses.length === 0 ? null : (
+            <Panel title="Bonuses" id="panel-bonuses">
+              <ul class="bonus-list">
+                {bonuses.map((b) => (
+                  <li key={b.id} data-bonus={b.id} title={b.effects.join('\n')}>
+                    {b.count > 1 ? `${b.name} ×${String(b.count)}` : b.name}
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
           <Panel title="Your stash" id="panel-shop-stash">
             <StashList
               rows={sv.stash}

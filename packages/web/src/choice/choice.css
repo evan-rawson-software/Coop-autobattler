@@ -238,3 +238,10 @@ button.event-card:focus-visible .pve-fight {
   color: var(--ink-muted);
   cursor: help;
 }
+
+.follow-skip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0;
+}
