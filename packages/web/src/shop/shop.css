@@ -362,3 +362,9 @@ button.danger {
   flex-basis: 100%;
   margin: 0;
 }
+
+.offers-note {
+  margin: 0;
+  padding: 0.35rem 0.5rem 0;
+  flex: none;
+}

@@ -7,7 +7,7 @@
  * hard-coded number. There can be one, two or three cards.
  */
 import { playerName, screenText, screenTexts } from '../build/texts.js';
-import { findModifier, type EventsConfig } from '@game/core';
+import { findModifier, type BuildingDef, type EventsConfig } from '@game/core';
 import {
   SKIP_CHOICE,
   eventFollowUp,
@@ -18,6 +18,8 @@ import {
 } from '@game/session';
 import type { WebContent } from '../content.js';
 import { buildingName } from '../build/view-model.js';
+import { buildingRate, formatHundredths } from '../build/rates.js';
+import { simConfig } from '../build/setup.js';
 import {
   archetypeText,
   bossName,
@@ -161,11 +163,11 @@ export function eventCards(run: RunState, player: number): EventCard[] {
       const tiers = num(raw['tiers'], 1);
       lines = [
         tiers === 1
-          ? 'Upgrade a building.'
-          : `Upgrade a building by ${count(tiers, 'tier')}.`,
+          ? 'Pay gold to upgrade a building one tier.'
+          : `Pay gold to upgrade a building by ${count(tiers, 'tier')}.`,
       ];
     } else if (type === 'shrine') {
-      lines = ['Gain a bonus for the rest of the run.'];
+      lines = ['Gain a lasting bonus for your walls, turrets, units or Core.'];
     } else if (type === 'windfall') {
       const gold = num(raw['gold'], 0);
       lines = [`+${String(gold)} gold.`];
@@ -204,6 +206,8 @@ export interface FollowOption {
   readonly skip: boolean;
   /** A building to raise: where it is, its tiers and what it costs. */
   readonly building: BuildingOption | null;
+  /** A bonus that can be taken again, the bonuses adding up. */
+  readonly stacks: boolean;
 }
 
 export interface BuildingOption {
@@ -215,6 +219,8 @@ export interface BuildingOption {
   readonly tier: number;
   readonly newTier: number;
   readonly price: number;
+  /** How many identical buildings this row stands for (stash rows group). */
+  readonly count: number;
 }
 
 export interface FollowUpView {
@@ -234,6 +240,44 @@ export interface FollowUpView {
   }[];
   /** Shown once this player has chosen and others have not; else null. */
   readonly waiting: string | null;
+}
+
+/**
+ * What an upgrade improves, from content numbers: health always, then one key
+ * stat of the building kind (output rate, shots or units per second, damage).
+ * "health 100 → 160 · output 0.50/s → 0.71/s".
+ */
+export function upgradeGains(
+  def: BuildingDef,
+  tier: number,
+  newTier: number,
+  ticksPerSecond: number,
+): string {
+  const parts: string[] = [];
+  const a = def.tiers[tier - 1];
+  const b = def.tiers[newTier - 1];
+  if (a === undefined || b === undefined) return '';
+  parts.push(`health ${String(a.health)} → ${String(b.health)}`);
+  const ra = buildingRate(def, tier, ticksPerSecond);
+  const rb = buildingRate(def, newTier, ticksPerSecond);
+  if (ra.collects !== null && rb.collects !== null) {
+    parts.push(
+      `output ${formatHundredths(ra.collects)}/s → ${formatHundredths(rb.collects)}/s`,
+    );
+  } else if (def.kind === 'unit_producer') {
+    if (ra.topSpeed !== null && rb.topSpeed !== null) {
+      parts.push(
+        `output ${formatHundredths(ra.topSpeed)}/s → ${formatHundredths(rb.topSpeed)}/s`,
+      );
+    }
+  } else if (def.kind === 'defense' && def.defenseType === 'turret') {
+    const da = def.tiers[tier - 1];
+    const db = def.tiers[newTier - 1];
+    if (da !== undefined && db !== undefined) {
+      parts.push(`damage ${String(da.damage)} → ${String(db.damage)}`);
+    }
+  }
+  return parts.join(' · ');
 }
 
 const PROMPTS: Readonly<Record<string, string>> = {
@@ -283,17 +327,46 @@ export function followUpView(
       const placedB = run.team.buildings.find((b) => b.id === raw['building']);
       const where =
         placedB === undefined
-          ? 'Stash'
+          ? 'In stash'
           : `Board (${String(placedB.x)}, ${String(placedB.y)})`;
       const name = buildingName(content, def);
+      // Identical stash buildings are one row that upgrades the first of them.
+      if (placedB === undefined) {
+        const same = options.find(
+          (o) =>
+            o.building !== null &&
+            !o.building.placed &&
+            o.building.name === name &&
+            o.building.tier === tier &&
+            o.building.newTier === newTier &&
+            o.building.price === price,
+        );
+        if (same?.building != null) {
+          const b = same.building;
+          const n = b.count + 1;
+          const i = options.indexOf(same);
+          options[i] = {
+            ...same,
+            title: `${name} ×${String(n)}`,
+            building: { ...b, count: n },
+          };
+          continue;
+        }
+      }
       // The session's own affordability is from the owner's gold now.
       const reason = goldReason(price, gold);
+      const bdef = content.buildings.get(def);
+      const gains =
+        bdef === undefined
+          ? ''
+          : upgradeGains(bdef, tier, newTier, simConfig.ticksPerSecond);
       options.push({
         id,
         title: name,
         lines: [
           where,
           `Tier ${String(tier)} → ${String(newTier)}`,
+          ...(gains === '' ? [] : [gains]),
           `${String(price)} gold`,
         ],
         affordable: reason === null && raw['affordable'] !== false,
@@ -307,18 +380,21 @@ export function followUpView(
           tier,
           newTier,
           price,
+          count: 1,
         },
+        stacks: false,
       });
     } else if (findModifier(config, id) !== undefined) {
       const m = modifierLine(config, id);
       options.push({
         id,
         title: m.name,
-        lines: [...m.effects, ...(m.stacks ? ['Stacks'] : [])],
+        lines: m.effects,
         affordable: true,
         disabledReason: null,
         skip: false,
         building: null,
+        stacks: m.stacks,
       });
     } else {
       options.push({
@@ -329,18 +405,20 @@ export function followUpView(
         disabledReason: null,
         skip: false,
         building: null,
+        stacks: false,
       });
     }
   }
   if (f.perPlayer) {
     options.push({
       id: SKIP_CHOICE,
-      title: 'Skip',
+      title: 'Skip (no upgrade)',
       lines: [],
       affordable: true,
       disabledReason: null,
       skip: true,
       building: null,
+      stacks: false,
     });
   }
   const chosen = f.chosen.map((done, i) => ({

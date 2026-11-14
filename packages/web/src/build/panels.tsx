@@ -631,6 +631,13 @@ function ProblemsMore(props: { problems: readonly Problem[] }) {
   );
 }
 
+const WARNING_TITLE = 'Warning: something is wrong with your factory';
+const HINT_TITLE = 'Reminder: something is not used yet (not an error)';
+
+function isHint(p: Problem): boolean {
+  return p.kind === 'stash' || p.kind === 'free_nodes';
+}
+
 export function ProblemsPanel(props: {
   problems: readonly Problem[];
   onPick: (p: Problem) => void;
@@ -642,37 +649,52 @@ export function ProblemsPanel(props: {
           {t('uiNoProblems')}
         </p>
       ) : (
-        <ul class="problems">
-          {props.problems.map((p) =>
-            p.focus === null && p.building === null ? (
-              // Nothing to jump to (a partner's summary): plain text, still read out.
-              <li key={p.id}>
-                <span class="problem" data-problem={p.kind}>
-                  <span class="problem-mark" aria-hidden="true">
-                    {p.kind === 'stash' ? '△' : '⚠'}
+        <>
+          {props.problems.some(isHint) && !props.problems.every(isHint) ? (
+            <p class="problems-legend muted" data-field="problems-legend">
+              ⚠ a warning · △ a reminder (not an error)
+            </p>
+          ) : null}
+          <ul class="problems">
+            {props.problems.map((p) =>
+              p.focus === null && p.building === null ? (
+                // Nothing to jump to (a partner's summary): plain text, still read out.
+                <li key={p.id}>
+                  <span class="problem" data-problem={p.kind}>
+                    <span
+                      class="problem-mark"
+                      aria-hidden="true"
+                      title={isHint(p) ? HINT_TITLE : WARNING_TITLE}
+                    >
+                      {isHint(p) ? '△' : '⚠'}
+                    </span>
+                    {p.text}
                   </span>
-                  {p.text}
-                </span>
-              </li>
-            ) : (
-              <li key={p.id}>
-                <button
-                  type="button"
-                  class="problem"
-                  data-problem={p.kind}
-                  onClick={() => {
-                    props.onPick(p);
-                  }}
-                >
-                  <span class="problem-mark" aria-hidden="true">
-                    {p.kind === 'stash' || p.kind === 'free_nodes' ? '△' : '⚠'}
-                  </span>
-                  {p.text}
-                </button>
-              </li>
-            ),
-          )}
-        </ul>
+                </li>
+              ) : (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    class="problem"
+                    data-problem={p.kind}
+                    onClick={() => {
+                      props.onPick(p);
+                    }}
+                  >
+                    <span
+                      class="problem-mark"
+                      aria-hidden="true"
+                      title={isHint(p) ? HINT_TITLE : WARNING_TITLE}
+                    >
+                      {isHint(p) ? '△' : '⚠'}
+                    </span>
+                    {p.text}
+                  </button>
+                </li>
+              ),
+            )}
+          </ul>
+        </>
       )}
       <ProblemsMore problems={props.problems} />
     </Panel>

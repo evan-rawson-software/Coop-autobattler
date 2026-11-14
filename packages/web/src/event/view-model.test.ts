@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import type { BuildingDef } from '@game/core';
 import {
   SKIP_CHOICE,
   applyIntent,
@@ -19,6 +20,7 @@ import {
   battleHeader,
   eventCards,
   followUpView,
+  upgradeGains,
 } from './view-model.js';
 
 const config = gameConfigs.events;
@@ -137,7 +139,9 @@ describe('event cards', () => {
     );
     expect(new Set(cards.map((c) => c.icon)).size).toBe(3);
     const workshop = cards.find((c) => c.type === 'workshop');
-    expect(workshop?.lines).toEqual(['Upgrade a building.']);
+    expect(workshop?.lines).toEqual([
+      'Pay gold to upgrade a building one tier.',
+    ]);
     expect(
       `${workshop?.lines.join(' ') ?? ''} ${workshop?.flavour ?? ''}`,
     ).not.toMatch(/party|You pick/);
@@ -155,7 +159,9 @@ describe('event cards', () => {
       ]),
       0,
     );
-    expect(c?.lines).toEqual(['Gain a bonus for the rest of the run.']);
+    expect(c?.lines).toEqual([
+      'Gain a lasting bonus for your walls, turrets, units or Core.',
+    ]);
   });
 
   test('a Windfall states its gold', () => {
@@ -223,14 +229,14 @@ describe('follow-ups', () => {
     const cards = (v?.options ?? []).filter((o) => !o.skip);
     expect(cards.length).toBeGreaterThan(0);
     for (const o of cards) {
-      expect(o.building?.where).toMatch(/^(Board \(\d+, \d+\)|Stash)$/);
+      expect(o.building?.where).toMatch(/^(Board \(\d+, \d+\)|In stash)$/);
       expect(o.building?.newTier).toBe((o.building?.tier ?? 0) + 1);
       expect(o.lines).toContain(`${String(o.building?.price)} gold`);
     }
     // The last option is always Skip, with the session's id.
     expect(v?.options.at(-1)).toMatchObject({
       id: SKIP_CHOICE,
-      title: 'Skip',
+      title: 'Skip (no upgrade)',
       skip: true,
     });
   });
@@ -365,6 +371,43 @@ describe('follow-ups', () => {
     }
   });
 
+  test('only a stackable bonus carries the stacks flag', () => {
+    const s = pickEvent('shrine') as RunState;
+    const v = followUpView(s, config, content, 0, realDeps());
+    for (const o of v?.options ?? []) {
+      expect(o.stacks).toBe(o.id === 'mod_drilled_troops');
+      expect(o.lines).not.toContain('Stacks');
+    }
+  });
+
+  test('upgradeGains names health and one key stat of the kind', () => {
+    const get = (id: string) => content.buildings.get(id) as BuildingDef;
+    expect(upgradeGains(get('bld_wall'), 1, 2, 10)).toBe('health 100 → 160');
+    expect(upgradeGains(get('bld_extractor'), 1, 2, 10)).toBe(
+      'health 30 → 45 · output 0.50/s → 0.71/s',
+    );
+    expect(upgradeGains(get('bld_turret'), 1, 2, 10)).toBe(
+      'health 50 → 75 · damage 5 → 8',
+    );
+  });
+
+  test('identical stash buildings are one row that upgrades the first of them', () => {
+    const s = pickEvent('workshop') as RunState;
+    const v = followUpView(s, config, content, 0, realDeps());
+    const stash = (v?.options ?? []).filter(
+      (o) => o.building !== null && !o.building.placed,
+    );
+    const keys = stash.map(
+      (o) => `${o.building?.name ?? ''}:${String(o.building?.tier)}`,
+    );
+    expect(new Set(keys).size).toBe(keys.length);
+    for (const o of stash) {
+      const n = o.building?.count ?? 1;
+      const name = o.building?.name ?? '';
+      expect(o.title).toBe(n > 1 ? `${name} ×${String(n)}` : name);
+    }
+  });
+
   test('options it has never seen still show up, by id', () => {
     const s = pickEvent('shrine') as RunState;
     const odd: RunState = {
@@ -389,6 +432,7 @@ describe('follow-ups', () => {
         disabledReason: null,
         skip: false,
         building: null,
+        stacks: false,
       },
     ]);
   });

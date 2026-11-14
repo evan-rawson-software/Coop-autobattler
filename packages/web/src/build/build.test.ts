@@ -380,6 +380,12 @@ describe('flow, inspector and problems', () => {
     const problems = deriveProblems(team, content, flow);
     expect(problems.some((p) => p.kind === 'missing_input')).toBe(true);
     expect(problems.some((p) => p.kind === 'lost_output')).toBe(true);
+    // No conduit in is not repeated as a supply of 0 for the same building.
+    expect(
+      problems.some(
+        (p) => p.kind === 'under_supplied' && p.id === `under:${String(bk)}`,
+      ),
+    ).toBe(false);
   });
 
   test('problems: stash, free nodes, starved; none when solved', async () => {
