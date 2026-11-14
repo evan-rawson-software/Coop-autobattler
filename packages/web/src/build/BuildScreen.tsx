@@ -69,6 +69,9 @@ import { readyPrimary } from './ready-primary.js';
 import { halfAlpha, halfStatuses } from './border-links.js';
 import { gateFor, READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
+import { useBuildTutorial } from '../tutorial/context.js';
+import { highlightDef } from '../tutorial/steps.js';
+import { drawTutorialMarks, tutorialMarks } from './tutorial-overlay.js';
 import { ME, isEditStep } from './session.js';
 import { DEFAULT_SEED, economy, gameConfigs, simConfig } from './setup.js';
 import { layoutHash } from './undo.js';
@@ -245,6 +248,7 @@ export function BuildView(props: {
         : gateFor(run, acting, shared.deps, content),
     [run, step, shared, acting],
   );
+  const tut = useBuildTutorial();
   const sealedIds = gate?.sealed.ids ?? [];
   const sealedKey = sealedIds.join(',');
 
@@ -340,6 +344,22 @@ export function BuildView(props: {
   const offersOnSale =
     sv === null ? 0 : sv.offers.filter((c) => c.offer !== null).length;
 
+  // The tutorial's rings and suggested path (issue #309).
+  const tutMarks = useMemo(
+    () =>
+      tut === null || team === null || !isEditStep(step)
+        ? null
+        : tutorialMarks(team, content, acting, tut.n, tut.info.facts),
+    [tut?.n, tut?.info.facts, team, step, acting],
+  );
+  // Step 4 turns the Enemy paths on, once; the player may turn them off.
+  const pathsShown = useRef<string | null>(null);
+  useEffect(() => {
+    if (tut?.n !== 4 || pathsShown.current === tut.info.runId) return;
+    pathsShown.current = tut.info.runId;
+    if (!ctl.model.get().ui.overlays.paths) ctl.setOverlay('paths', true);
+  }, [tut?.n, tut?.info.runId]);
+
   // Latest data for the overlay drawer and the debug hook.
   const data = useRef({
     ui,
@@ -349,11 +369,21 @@ export function BuildView(props: {
     paths,
     sealed: sealedIds,
     acting,
+    tutMarks,
   });
-  data.current = { ui, team, step, flow, paths, sealed: sealedIds, acting };
+  data.current = {
+    ui,
+    team,
+    step,
+    flow,
+    paths,
+    sealed: sealedIds,
+    acting,
+    tutMarks,
+  };
   const overlayKey = useMemo(
-    () => ({ ui, sealedKey, acting, run }),
-    [ui, sealedKey, acting, run],
+    () => ({ ui, sealedKey, acting, run, tutMarks }),
+    [ui, sealedKey, acting, run, tutMarks],
   );
 
   const drawOverlay = useRef(
@@ -372,6 +402,7 @@ export function BuildView(props: {
         partnerCores: ctl.partnerCores(),
         content,
       });
+      if (d.tutMarks !== null) drawTutorialMarks(ctx, o, d.tutMarks);
     },
   );
 
@@ -644,6 +675,13 @@ export function BuildView(props: {
       isEditStep(step)
     ) {
       const group = groupStash(team, acting)[Number(e.key) - 1];
+      // A slot the tutorial has not taught yet cannot be picked.
+      if (
+        group !== undefined &&
+        tut?.allowed != null &&
+        !tut.allowed.has(group.def)
+      )
+        return true;
       return ctl.pickSlot(group?.ids[0]);
     }
     if (e.key === 'Escape' && sellAsk) {
@@ -731,7 +769,7 @@ export function BuildView(props: {
             controls={false}
             drawOverlay={drawOverlay.current}
             overlayKey={overlayKey}
-            animate={ui.overlays.flow}
+            animate={ui.overlays.flow || tutMarks !== null}
             onHover={(hit) => {
               ctl.hover(hit === null ? null : { x: hit.x, y: hit.y });
             }}
@@ -811,6 +849,17 @@ export function BuildView(props: {
           locked={gate?.ready === true}
           fresh={fresh}
           flash={flash}
+          tutorial={
+            tut === null
+              ? null
+              : {
+                  allowed: tut.allowed,
+                  highlight:
+                    tut.n === null
+                      ? null
+                      : highlightDef(tut.n, tut.info.facts, tut.info.defs),
+                }
+          }
         />
       </>
     );
@@ -916,7 +965,19 @@ export function BuildView(props: {
       rail={rail}
       board={boardArea}
       tray={tray}
-      primary={run === null ? null : readyPrimary(run, ctl, gate, acting)}
+      primary={
+        run === null
+          ? null
+          : readyPrimary(
+              run,
+              ctl,
+              gate,
+              acting,
+              tut?.readyLocked === true
+                ? screenText(screenTexts, 'tutReadyLocked')
+                : null,
+            )
+      }
       info={info}
       onKey={onKey}
     />

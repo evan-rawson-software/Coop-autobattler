@@ -107,6 +107,11 @@ export function InventoryTray(props: {
   fresh?: ReadonlySet<number>;
   /** The slot (`def:tier`) that just received a bought building. */
   flash?: string | null;
+  /** The guided tutorial (issue #309): slots not taught yet, and the one to use. */
+  tutorial?: {
+    readonly allowed: ReadonlySet<string> | null;
+    readonly highlight: string | null;
+  } | null;
 }) {
   const { team, model, ctl } = props;
   const locked = props.locked === true;
@@ -124,26 +129,31 @@ export function InventoryTray(props: {
           const name = buildingName(content, g.def);
           const isNew = g.ids.some((id) => props.fresh?.has(id) === true);
           const flashing = props.flash === `${g.def}:${String(g.tier)}`;
+          const tut = props.tutorial;
+          const notYet = tut?.allowed != null && !tut.allowed.has(g.def);
+          const pointed = tut?.highlight === g.def;
           return (
             <li key={`${g.def}:${String(g.tier)}`}>
               <button
                 type="button"
-                class={`slot stash-item${active ? ' active' : ''}${flashing ? ' flash' : ''}`}
+                class={`slot stash-item${active ? ' active' : ''}${flashing ? ' flash' : ''}${notYet ? ' tut-locked' : ''}${pointed ? ' tut-target' : ''}`}
                 data-stash-def={g.def}
                 data-stash-tier={g.tier}
                 data-count={g.ids.length}
                 aria-pressed={active}
                 aria-keyshortcuts={i < 9 ? String(i + 1) : undefined}
-                disabled={locked}
+                disabled={locked || notYet}
                 title={
                   locked
                     ? READY_LOCK_TEXT
-                    : content.presentation.get(g.def) === undefined
-                      ? name
-                      : formatText(
-                          content.presentation.get(g.def)?.description ?? '',
-                          content.resources,
-                        )
+                    : notYet
+                      ? t('tutSlotLocked')
+                      : content.presentation.get(g.def) === undefined
+                        ? name
+                        : formatText(
+                            content.presentation.get(g.def)?.description ?? '',
+                            content.resources,
+                          )
                 }
                 onPointerDown={(e) => {
                   if (e.pointerType === 'mouse' && e.button !== 0) return;

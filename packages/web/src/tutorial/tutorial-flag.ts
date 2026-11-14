@@ -1,7 +1,7 @@
 /**
  * Which runs were started with "Play the tutorial". A small web-side record in
  * `localStorage`; it is not part of the run state or the saves. The guided
- * tutorial itself comes later: for now a tutorial run plays like any other.
+ * tutorial (issue #309, `tutorial/`) shows its tips only for these runs.
  */
 import { DEFAULT_PREFIX } from '../run/local-storage-store.js';
 
