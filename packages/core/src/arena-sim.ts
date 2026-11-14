@@ -398,8 +398,9 @@ export interface ArenaOptions {
 // Unit stats seam (W1-7)
 
 /**
- * The stats a unit of `side` and type `def` fights with. Every read of unit
- * health, damage, range and cooldowns goes through here. With a
+ * The stats a unit of type `def` fights with (`_side` is unused). The
+ * spawned health and damage and the attack cooldown are read through here;
+ * the decisions read `def.reach` and `def.radius` directly. With a
  * `strengthPercent` P above 0 (the side's capped `unit_strength` bonus at the
  * moment of spawning), health and damage become `mulPct(base, 100 + P)`
  * (rounded down); everything else is unchanged. Units keep the result they
@@ -502,7 +503,8 @@ export interface ArenaContext {
   breach: (Float64Array | undefined)[][];
   /**
    * Cached `spawnCells` per (producer `ref`, target Core), key
-   * `ref * SPAWN_KEY + core`; dropped with the fields.
+   * `ref * SPAWN_KEY + core + 1` (`core` may be -1: no target); dropped with
+   * the fields.
    */
   spawnCells: Map<number, Int32Array>;
   // Scratch buffers reused across ticks (rebuilt from the state every tick).
@@ -517,7 +519,8 @@ export interface ArenaContext {
   motion: MotionScratch;
   /**
    * Per side, per target Core, per cell: cached `fieldStep` (-1 none, -2 not
-   * computed yet); allocated with the field.
+   * computed yet). Allocated on first use by `stepFor`; refilled with -2 (not
+   * dropped) when a building is destroyed.
    */
   readonly steps: (Int32Array | undefined)[][];
   /**
@@ -536,7 +539,11 @@ export interface ArenaContext {
   nearCell: Int32Array;
   action: Uint8Array;
   arg: Int32Array;
-  /** Per unit: 1 if it attacks this tick (decided before any unit moves). */
+  /**
+   * Per unit: 1 if it chose a unit or a Core to attack this tick (contact or
+   * aim), even while its attack cools down; a breach attack on a covering
+   * building leaves it 0. Read by `moveAlong` to tell holders from walkers.
+   */
   holds: Uint8Array;
   /**
    * Damage accumulated this tick. Float64Array holding integers, summed with

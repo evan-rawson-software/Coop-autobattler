@@ -28,9 +28,9 @@ export interface SimConfig {
   readonly separationPercent: number;
   /** Most a pair of overlapping units is moved apart in one tick, sub-cell units (issue #82). */
   readonly separationCap: number;
-  /** Global cap on the summed `source_speed` bonus of one side, percent (SC-8). */
+  /** Global cap on the summed `source_speed` bonus of one player (each owner on a side is capped on their own), percent (SC-8, PP-8). */
   readonly maxSourceSpeedPercent: number;
-  /** Global cap on the summed `unit_strength` bonus of one side, percent (SC-8). */
+  /** Global cap on the summed `unit_strength` bonus of one player (each owner on a side is capped on their own), percent (SC-8, PP-8). */
   readonly maxUnitStrengthPercent: number;
   /** First tick at which Overload applies (CB-12). */
   readonly overloadStartTick: number;

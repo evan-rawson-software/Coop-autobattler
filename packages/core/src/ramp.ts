@@ -32,7 +32,7 @@ export function isOverloadBeat(tick: number, config: SimConfig): boolean {
   );
 }
 
-/** The percent bonus of a side for one effect: the raw sum, capped. */
+/** The percent bonus of one player for one effect: the raw sum, capped. */
 export function cappedBonus(rawPercent: number, capPercent: number): number {
   return Math.min(rawPercent, capPercent);
 }
