@@ -1020,6 +1020,52 @@ try {
   team = await B.team();
   check(team.conduits.length === 2, 'the factory is complete again after redo');
 
+  // --- Conduit by dragging: press an output side, follow the cells, release
+  // on the input side; exactly the dragged cells are built (issue #275).
+  const hashDrag0 = await B.hash();
+  const drawn = (await B.team()).conduits[1].cells;
+  await page.click('[data-tool="erase"]');
+  await clickCell(drawn[0].x, drawn[0].y);
+  check(
+    (await B.team()).conduits.length === 1,
+    'drag setup: the second conduit was erased',
+  );
+  await page.click('[data-tool="conduit"]');
+  {
+    const p0 = await at(drawn[0].x, drawn[0].y);
+    await page.mouse.move(p0.x, p0.y);
+    await page.mouse.down();
+    for (const c of drawn.slice(1, -1)) {
+      await moveTo(c.x, c.y, 2);
+    }
+    const mid = (await B.ui()).draftView;
+    check(
+      mid !== null && mid.cells.length === drawn.length - 1,
+      `mid-drag the draft holds the cells followed so far (${mid?.cells.length})`,
+    );
+    await shot('build-8c-conduit-drag');
+    const pl = await at(drawn[drawn.length - 1].x, drawn[drawn.length - 1].y);
+    await page.mouse.move(pl.x, pl.y, { steps: 2 });
+    await settle();
+    await page.mouse.up();
+    await pause();
+  }
+  team = await B.team();
+  check(
+    team.conduits.length === 2 &&
+      JSON.stringify(team.conduits[1].cells) === JSON.stringify(drawn),
+    'dragging from an output to an input side builds exactly the dragged cells',
+  );
+  await page.click('#panel-tools [data-action="undo"]');
+  await pause();
+  await page.click('#panel-tools [data-action="undo"]');
+  await pause();
+  check(
+    (await B.hash()) === hashDrag0,
+    'undo of the dragged conduit and the erase restores the layout',
+  );
+  await page.click('[data-tool="select"]');
+
   // --- Click-to-pick, then click-to-place (touch and keyboard friendly)
   await page.click('[data-stash-def="bld_wall"]');
   await pause();
