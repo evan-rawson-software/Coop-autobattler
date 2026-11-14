@@ -24,6 +24,8 @@ import { createStore, type Store } from '../app-state.js';
 import type { BoardPointerEvent } from '../board/BoardView.js';
 import { content } from '../content.js';
 import { extendPath, proposePath } from './autoroute.js';
+import { dragStep, type DragBlock } from './drag-path.js';
+import { noRouteMessage, placedMessage } from './route-reasons.js';
 import { ownHalfAt, ownSpotAt } from './border-links.js';
 import {
   anchorUnderCursor,
@@ -48,6 +50,7 @@ import { pendingCoreSpots } from './view-model.js';
 import { BuildSession, ME, isEditStep, type SessionView } from './session.js';
 import {
   chooseInput,
+  outputFacesEdge,
   freeOutputSides,
   markerAt,
   sideMarkers,
@@ -94,7 +97,15 @@ export interface Draft {
   readonly cells: readonly Cell[];
   readonly pressed: boolean;
   readonly dragged: boolean;
+  /** The cell the dragged path stopped at, and why; null when it did not. */
+  readonly blocked?: DragBlock | null;
 }
+
+/** A building or conduit lit up because the pointer is on its name. */
+export type Highlight =
+  | { readonly kind: 'building'; readonly id: number }
+  | { readonly kind: 'conduit'; readonly id: number }
+  | null;
 
 export interface Ghost {
   readonly defId: string | null;
@@ -133,6 +144,8 @@ export interface Ui {
   readonly moving: Moving | null;
   readonly draft: Draft | null;
   readonly hover: Cell | null;
+  /** Lit up from a panel (a name under the pointer), not from the board. */
+  readonly highlight: Highlight;
   readonly overlays: Overlays;
   /** Ticks for the dry run (10 ticks are one second). */
   readonly dryTicks: number;
@@ -161,6 +174,7 @@ const INITIAL_UI: Ui = {
   moving: null,
   draft: null,
   hover: null,
+  highlight: null,
   overlays: { flow: false, paths: false, dry: false },
   dryTicks: 600,
   status: { text: tx('statusStarting'), kind: 'info' },
@@ -580,6 +594,7 @@ export class BuildController {
   private computeDraftView(team: TeamState, ui: Ui): DraftView | null {
     const d = ui.draft;
     if (ui.tool !== 'conduit' || d === null || d.from === null) return null;
+    if (d.pressed && d.dragged) return this.draggedView(team, d);
     const hover = ui.hover;
     if (hover === null) {
       return {
@@ -597,7 +612,13 @@ export class BuildController {
         return {
           cells: d.cells,
           ok: false,
-          message: tx('statusNoRouteBorder'),
+          message: noRouteMessage(
+            'statusNoRouteBorder',
+            team,
+            content,
+            d.from,
+            null,
+          ),
           offending: null,
           target: null,
         };
@@ -625,7 +646,13 @@ export class BuildController {
         return {
           cells: d.cells,
           ok: false,
-          message: tx('statusNoRouteSide'),
+          message: noRouteMessage(
+            'statusNoRouteSide',
+            team,
+            content,
+            d.from,
+            target,
+          ),
           offending: null,
           target,
         };
@@ -660,6 +687,50 @@ export class BuildController {
       offending: null,
       target: null,
     };
+  }
+
+  /** The view of a path being dragged: the cells so far and where it stopped. */
+  private draggedView(team: TeamState, d: Draft): DraftView {
+    const from = d.from as ConduitEnd | BorderEnd;
+    const last = d.cells[d.cells.length - 1];
+    const m =
+      last === undefined
+        ? null
+        : markerAt(sideMarkers(team, content, 'in', null, d.building), last);
+    if (m !== null && d.blocked == null) {
+      const target = { building: m.building, side: m.side };
+      const v = previewConduit(
+        team,
+        content,
+        from,
+        target,
+        d.cells,
+        this.actor(),
+      );
+      return {
+        cells: d.cells,
+        ok: v.ok,
+        message: v.ok ? null : reasonMessage(v.reason, v.detail),
+        offending: !v.ok && v.detail !== undefined ? parseCell(v.detail) : null,
+        target,
+      };
+    }
+    return {
+      cells: d.cells,
+      ok: null,
+      message: d.blocked == null ? null : this.blockText(d.blocked),
+      offending: d.blocked == null ? null : d.blocked.cell,
+      target: null,
+    };
+  }
+
+  /** Why a dragged path stopped at a cell. */
+  private blockText(b: DragBlock): string {
+    return b.building === null
+      ? reasonMessage(b.reason)
+      : tx('statusDragBlocked', {
+          name: buildingName(content, b.building.def),
+        });
   }
 
   // ---- Status -------------------------------------------------------------
@@ -707,6 +778,16 @@ export class BuildController {
         kind: 'info',
       },
     });
+  }
+
+  /** Light up a building or conduit while its name is under the pointer. */
+  setHighlight(h: Highlight): void {
+    const cur = this.ui.highlight;
+    if (cur === h) return;
+    if (cur !== null && h !== null && cur.kind === h.kind && cur.id === h.id) {
+      return;
+    }
+    this.set({ highlight: h });
   }
 
   setOverlay(key: keyof Overlays, on: boolean): void {
@@ -787,6 +868,19 @@ export class BuildController {
     this.stickHeld();
   }
 
+  /** "Placed X.", with a warning when its output faces the board edge. */
+  private placedStatus(team: TeamState, id: number, defId: string): Status {
+    const b = team.buildings.find((x) => x.id === id);
+    if (b === undefined) {
+      return {
+        text: tx('statusPlaced', { name: buildingName(content, defId) }),
+        kind: 'ok',
+      };
+    }
+    const m = placedMessage(team, content, b);
+    return { text: m.text, kind: m.warn ? 'error' : 'ok' };
+  }
+
   private async dropHeld(cell: Cell | null): Promise<void> {
     const s = this.session;
     const h = this.ui.held;
@@ -811,10 +905,7 @@ export class BuildController {
       this.set({
         held: null,
         selection: { kind: 'building', id: item.id },
-        status: {
-          text: tx('statusPlaced', { name: buildingName(content, def.id) }),
-          kind: 'ok',
-        },
+        status: this.placedStatus(s.run.team, item.id, def.id),
       });
     } else {
       const msg = reasonMessage(r.reason, r.detail);
@@ -1183,7 +1274,10 @@ export class BuildController {
     }
     const ext = extendPath(team, content, d.from, d.cells, cell);
     if (ext === null) {
-      this.say(tx('statusNoRouteCell'), 'error');
+      this.say(
+        noRouteMessage('statusNoRouteCell', team, content, d.from, null),
+        'error',
+      );
       return true;
     }
     this.set({
@@ -1198,6 +1292,10 @@ export class BuildController {
     const name = buildingName(content, b.def);
     if (outs.length === 0) {
       this.say(tx('statusNoFreeOutput', { name }), 'error');
+      return;
+    }
+    if (outputFacesEdge(team, content, b)) {
+      this.say(tx('statusOutputFacesEdge', { name }), 'error');
       return;
     }
     if (outs.length === 1) {
@@ -1258,13 +1356,25 @@ export class BuildController {
     const d = u.draft;
     if (d !== null && d.pressed && d.from !== null && cell !== null) {
       const team = s.run.team;
-      const occ = occupancy(team, content);
-      if (occ.buildingAt(cell.x, cell.y) !== null) return;
       const last = d.cells[d.cells.length - 1];
-      if (last !== undefined && sameCell(last, cell)) return;
-      const ext = extendPath(team, content, d.from, d.cells, cell);
-      if (ext !== null)
-        this.set({ draft: { ...d, cells: ext, dragged: true } });
+      if (last !== undefined && sameCell(last, cell) && !d.dragged) return;
+      const from = d.from;
+      const src = isBorderEnd(from)
+        ? undefined
+        : team.buildings.find((b) => b.id === from.building);
+      const starts =
+        src === undefined || isBorderEnd(from)
+          ? []
+          : outsideCells(occupancy(team, content).cellsOf(src), from.side);
+      const r = dragStep(team, content, this.actor(), d.cells, cell, starts);
+      this.set({
+        draft: { ...d, cells: r.cells, dragged: true, blocked: r.blocked },
+        attempt: null,
+        status:
+          r.blocked === null
+            ? { text: tx('statusConduitDrag'), kind: 'info' }
+            : { text: this.blockText(r.blocked), kind: 'error' },
+      });
     }
   }
 
@@ -1289,10 +1399,33 @@ export class BuildController {
     const d = u.draft;
     if (d !== null && d.pressed) {
       this.set({ draft: { ...d, pressed: false } });
-      if (d.dragged && cell !== null && d.from !== null) {
-        const hit = occupancy(s.run.team, content).buildingAt(cell.x, cell.y);
+      if (d.dragged && d.from !== null) {
+        const team = s.run.team;
+        // The path ends on an input side: build exactly the drawn cells.
+        const last = d.cells[d.cells.length - 1];
+        const m =
+          last === undefined || d.blocked != null
+            ? null
+            : markerAt(
+                sideMarkers(team, content, 'in', null, d.building),
+                last,
+              );
+        const end =
+          m === null
+            ? undefined
+            : team.buildings.find((b) => b.id === m.building);
+        if (m !== null && end !== undefined) {
+          void this.finishDraft(end, { building: m.building, side: m.side });
+          return;
+        }
+        const hit =
+          cell === null
+            ? null
+            : occupancy(team, content).buildingAt(cell.x, cell.y);
         if (hit !== null && !('core' in hit) && hit.id !== d.building) {
           void this.finishDraft(hit);
+        } else if (d.blocked == null) {
+          this.say(tx('statusDragEnded'), 'info');
         }
       }
     }
@@ -1324,7 +1457,10 @@ export class BuildController {
     const team = s.run.team;
     const cells = extendPath(team, content, d.from, d.cells, cell);
     if (cells === null) {
-      this.say(tx('statusNoRouteBorder'), 'error');
+      this.say(
+        noRouteMessage('statusNoRouteBorder', team, content, d.from, null),
+        'error',
+      );
       return;
     }
     const v = previewConduit(team, content, d.from, spot, cells, this.actor());
@@ -1364,7 +1500,10 @@ export class BuildController {
       chooseInput(team, content, b, d.cells[d.cells.length - 1] ?? null);
     const r = this.resolveFinish(team, d, target);
     if (r.cells === null) {
-      this.say(tx('statusNoRouteSide'), 'error');
+      this.say(
+        noRouteMessage('statusNoRouteSide', team, content, d.from, r.to),
+        'error',
+      );
       return;
     }
     const act: LayoutAction = {
@@ -1384,7 +1523,7 @@ export class BuildController {
         status: {
           text:
             v === null
-              ? tx('statusNoRoute')
+              ? noRouteMessage('statusNoRoute', team, content, d.from, r.to)
               : reasonMessage(v.reason, v.detail),
           kind: 'error',
         },

@@ -24,6 +24,7 @@ import { plural } from '../plural.js';
 import { brokenText, halfCell } from './border-links.js';
 import { backedUpSources } from './overlay-marks.js';
 import { formatHundredths, needSupply, type Supply } from './rates.js';
+import { outputFacesEdge } from './sides.js';
 import { playerName, screenText } from './texts.js';
 
 // ---------------------------------------------------------------------------
@@ -282,6 +283,7 @@ export type ProblemKind =
   | 'starved'
   | 'under_supplied'
   | 'lost_output'
+  | 'output_faces_edge'
   | 'stalled_output'
   | 'broken_link'
   | 'stash'
@@ -362,7 +364,15 @@ export function deriveProblems(
       const hasOut = state.conduits.some(
         (c) => buildingEnd(c.from)?.building === b.id,
       );
-      if (!hasOut) {
+      if (!hasOut && outputFacesEdge(state, content, b)) {
+        out.push({
+          id: `edge:${String(b.id)}`,
+          kind: 'output_faces_edge',
+          text: screenText(texts, 'statusOutputFacesEdge', { name: name(b) }),
+          focus: first,
+          building: b.id,
+        });
+      } else if (!hasOut) {
         const res = occ.sourceResource(b);
         out.push({
           id: `lost:${String(b.id)}`,

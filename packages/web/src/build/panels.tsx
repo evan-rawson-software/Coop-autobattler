@@ -3,8 +3,10 @@
 import {
   conduitResource,
   formatText,
+  type Conduit,
   type DryRunResult,
   type TeamState,
+  buildingEnd,
   conduitTouches,
 } from '@game/core';
 import type { RunState } from '@game/session';
@@ -228,6 +230,23 @@ export function ToolsPanel(props: {
 // ---------------------------------------------------------------------------
 // Inspector
 
+/** "Conduit to Barracks": a conduit of building `at`, named by its far end. */
+function conduitLabel(team: TeamState, at: number, c: Conduit): string {
+  const f = buildingEnd(c.from);
+  const outgoing = f !== null && f.building === at;
+  const far = buildingEnd(outgoing ? c.to : c.from);
+  const farDef =
+    far === null
+      ? undefined
+      : team.buildings.find((x) => x.id === far.building)?.def;
+  if (farDef === undefined) {
+    return t(outgoing ? 'uiConduitToBorder' : 'uiConduitFromBorder');
+  }
+  return t(outgoing ? 'uiConduitTo' : 'uiConduitFrom', {
+    name: buildingName(content, farDef),
+  });
+}
+
 export function InspectorPanel(props: {
   run: RunState;
   model: Model;
@@ -242,7 +261,16 @@ export function InspectorPanel(props: {
 }) {
   const { run, model, dry, ctl } = props;
   const team = run.team;
-  const sel = model.ui.selection;
+  const draft = model.ui.draft;
+  // With the conduit tool, the picked source is what the panel shows.
+  const source =
+    model.ui.tool === 'conduit' &&
+    draft !== null &&
+    draft.building >= 0 &&
+    team.buildings.some((x) => x.id === draft.building)
+      ? ({ kind: 'building', id: draft.building } as const)
+      : null;
+  const sel = source ?? model.ui.selection;
   let body = <p class="muted">{screenText(screenTexts, 'uiInspectorHint')}</p>;
 
   if (sel?.kind === 'core') {
@@ -453,11 +481,24 @@ export function InspectorPanel(props: {
                       type="button"
                       class="link"
                       key={c.id}
+                      data-conduit={c.id}
                       onClick={() => {
                         ctl.select({ kind: 'conduit', id: c.id });
                       }}
+                      onMouseEnter={() => {
+                        ctl.setHighlight({ kind: 'conduit', id: c.id });
+                      }}
+                      onMouseLeave={() => {
+                        ctl.setHighlight(null);
+                      }}
+                      onFocus={() => {
+                        ctl.setHighlight({ kind: 'conduit', id: c.id });
+                      }}
+                      onBlur={() => {
+                        ctl.setHighlight(null);
+                      }}
                     >
-                      #{c.id}
+                      {conduitLabel(team, b.id, c)}
                     </button>
                   ))}
                 </dd>
@@ -683,15 +724,35 @@ export function DryRunTable(props: {
   team: TeamState;
   flow: FlowView;
   onClose: () => void;
+  /** The building of the row under the pointer, or null. */
+  onHover?: (building: number | null) => void;
 }) {
   const { team, flow } = props;
   const dry = flow.dry;
+  const hover = props.onHover;
+  // Two buildings can share a name: the row under the pointer lights up its
+  // building on the board instead of showing an internal number.
   const name = (id: number): string => {
     const b = team.buildings.find((x) => x.id === id);
-    return b === undefined
-      ? `#${String(id)}`
-      : `${buildingName(content, b.def)} #${String(id)}`;
+    return b === undefined ? '' : buildingName(content, b.def);
   };
+  const rowHover = (id: number) =>
+    hover === undefined
+      ? {}
+      : {
+          onMouseEnter: () => {
+            hover(id);
+          },
+          onMouseLeave: () => {
+            hover(null);
+          },
+        };
+  useEffect(
+    () => () => {
+      hover?.(null);
+    },
+    [],
+  );
   const secs = dry.ticks / simConfig.ticksPerSecond;
   return (
     <div
@@ -741,7 +802,7 @@ export function DryRunTable(props: {
                   ? null
                   : buildingRate(sd, sb.tier, simConfig.ticksPerSecond);
               return (
-                <tr key={s.building}>
+                <tr key={s.building} {...rowHover(s.building)}>
                   <td>{name(s.building)}</td>
                   <td>{resourceName(content, s.resource)}</td>
                   <td data-field="produced">{s.produced}</td>
@@ -780,6 +841,7 @@ export function DryRunTable(props: {
                 <tr
                   key={`${String(c.building)}${c.side}`}
                   class={c.delivered === 0 ? 'bad' : ''}
+                  {...rowHover(c.building)}
                 >
                   <td>{name(c.building)}</td>
                   <td>{resourceName(content, c.resource)}</td>
