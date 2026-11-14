@@ -17,12 +17,14 @@
  * `onKey`, so there is one key listener for the whole frame.
  */
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef } from 'preact/hooks';
+import { useContext, useEffect, useRef } from 'preact/hooks';
 import { StorageNotes } from '../run/StorageNotes.js';
 import { screenText, screenTexts } from '../build/texts.js';
 import { MapRail, type MapRailProps } from './MapRail.js';
 import { TopBar, type TabDef } from './AppShell.js';
 import { PhaseInfoTop } from './PhaseStepper.js';
+import { TutorialContext, targetOf } from '../tutorial/context.js';
+import { TutorialChecklist } from '../tutorial/TutorialCard.js';
 import './frame.css';
 
 const t = (key: string): string => screenText(screenTexts, key);
@@ -127,6 +129,7 @@ export function PrimaryButton(props: { spec: PrimarySpec | null }) {
 }
 
 export function GameFrame(props: GameFrameProps) {
+  const tutorial = useContext(TutorialContext);
   const latest = useRef(props);
   latest.current = props;
 
@@ -164,7 +167,15 @@ export function GameFrame(props: GameFrameProps) {
   }, []);
 
   return (
-    <div class="app game-frame" data-phase={props.phase}>
+    <div
+      class="app game-frame"
+      data-phase={props.phase}
+      data-tut-target={
+        tutorial === null
+          ? undefined
+          : (targetOf(tutorial, props.phase) ?? undefined)
+      }
+    >
       <TopBar
         title={props.title}
         tabs={props.tabs}
@@ -179,8 +190,11 @@ export function GameFrame(props: GameFrameProps) {
           {props.board}
         </main>
         <aside class="frame-info" aria-label={t('uiInfoLabel')}>
-          <PhaseInfoTop />
+          <PhaseInfoTop framePhase={props.phase} />
           {props.info}
+          {tutorial === null ? null : (
+            <TutorialChecklist info={tutorial} framePhase={props.phase} />
+          )}
         </aside>
         <div class="frame-tray" role="group" aria-label="Actions">
           <div class="tray-content">

@@ -27,6 +27,7 @@ import {
   type PhaseInfo,
 } from '../shell/phase.js';
 import { markTipSeen } from '../shell/phase-tips.js';
+import { TutorialContext, useTutorialInfo } from '../tutorial/context.js';
 import { screenText, screenTexts } from '../build/texts.js';
 import { RunBar } from './RunBar.js';
 import { isReviewHash, screenForStep, runIdFromHash } from './router.js';
@@ -173,6 +174,7 @@ function ReadyRun(props: { run: ActiveRun }) {
 
   // The phase for the stepper and the tips. A tip counts as seen once the
   // player has moved on from its phase (or left the run), or dismissed it.
+  const tutorial = useTutorialInfo(run.runId, state, run.session.acting);
   const phase = phaseForStep(state.step);
   useEffect(() => {
     if (phase === null) return undefined;
@@ -235,7 +237,11 @@ function ReadyRun(props: { run: ActiveRun }) {
   }
   return (
     <RunBarContext.Provider value={bar}>
-      <PhaseContext.Provider value={phaseInfo}>{body}</PhaseContext.Provider>
+      <PhaseContext.Provider value={phaseInfo}>
+        <TutorialContext.Provider value={tutorial}>
+          {body}
+        </TutorialContext.Provider>
+      </PhaseContext.Provider>
       {needsVersionPrompt(run) ? (
         <VersionPrompt
           onContinue={() => {
