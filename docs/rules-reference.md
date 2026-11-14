@@ -3007,7 +3007,7 @@ composition: [{unit, weight}], signature?}` and `stronghold`
 | --- | --- | --- | --- | --- |
 | Rusher | 70 | 100, 120, 6, 115 | soldier 2 : raider 1 | 600, 0, 0, `open` |
 | Fortress | 20 | 600, 400, 3, 130 | soldier | 300, 30, 25, `ring` |
-| Escalator | 75 | 150, 150, 8, 160 | soldier 3 : raider 1 | 300, 25, 15, `line` |
+| Escalator | 75 | 100, 75, 8, 160 | soldier 3 : raider 1 | 300, 25, 15, `line` |
 | Boss | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 
 Rusher tests defence (early frequent waves, a small open Core); Fortress tests
@@ -4225,6 +4225,7 @@ player grows by raising tiers, by economy buildings or through a border link.
 | Shop | `economy.json` | `bld_armory` in `offerWeights` at weight 3, like the Overclocker; `bld_range` at 5 and `bld_hangar` at 3 (issue #59; placeholder unit numbers kept by owner decision) | |
 | Threat growth | `threats.json` | `growthPercent` 125 (+25 percent per round) | above 100 |
 | Stronghold caps | `threats.json` | `maxTurretsPerPlot` 6 (was 16); Fortress `turretSharePercent` 25 (was 40) and `coreHealthPerBudget` 300 (was 500); Boss `turretSharePercent` 20 (was 30) | the rest of a stronghold's budget becomes Core health |
+| Escalator wave timing | `threats.json` | `firstTick` 100 and `intervalTicks` 75 (was 150 and 150): the eighth wave comes at tick 625 instead of 1200 | its Core used to fall before its large late waves spawned; a full tier 1 board now beats hard Escalator through round 8 (was 12), against 7 for Rusher |
 | `minCoreHealth` (per Core) | `threats.json` | 30 (unchanged; never reached in rounds 1 to 12 at any party size) | |
 
 Not part of this table: Overload timing, shop prices and tier odds, wave sizes
