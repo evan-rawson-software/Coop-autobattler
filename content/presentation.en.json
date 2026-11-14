@@ -483,8 +483,6 @@
       "uiRunUnopenableTitle": "The saved run cannot be opened",
       "uiShopSoldOut": "Sold",
       "uiShopTitle": "Shop",
-      "uiShopBadgeOne": "1 offer",
-      "uiShopBadgeMany": "{count} offers",
       "uiShopReroll": "Re-roll · {cost}",
       "uiShopClose": "Close shop",
       "uiShopPrice": "{price} g",

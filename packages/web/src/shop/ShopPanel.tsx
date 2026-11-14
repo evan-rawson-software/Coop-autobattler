@@ -13,14 +13,8 @@ import type { OfferGroup, ShopView } from './view-model.js';
 const t = (key: string, values: Record<string, string> = {}): string =>
   screenText(screenTexts, key, values);
 
-/** "4 offers" while the shop has not been opened this round. */
-export function ShopToggle(props: {
-  open: boolean;
-  /** Offers still on sale; shown until the shop was opened this round. */
-  badge: number | null;
-  onToggle: () => void;
-}) {
-  const { badge } = props;
+/** The top-bar Shop button; it looks pressed while the shop is open. */
+export function ShopToggle(props: { open: boolean; onToggle: () => void }) {
   return (
     <button
       type="button"
@@ -31,13 +25,6 @@ export function ShopToggle(props: {
       onClick={props.onToggle}
     >
       {t('uiShopTitle')}
-      {badge === null ? null : (
-        <span class="shop-badge" data-field="shop-badge">
-          {badge === 1
-            ? t('uiShopBadgeOne')
-            : t('uiShopBadgeMany', { count: String(badge) })}
-        </span>
-      )}
     </button>
   );
 }
