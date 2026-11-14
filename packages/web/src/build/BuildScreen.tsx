@@ -65,6 +65,7 @@ import {
 import { deriveChecklist } from './checklist.js';
 import { newStashIds } from './new-items.js';
 import { nextFight } from './next-fight.js';
+import { displayRound } from '../shell/phase.js';
 import { readyPrimary } from './ready-primary.js';
 import { halfAlpha, halfStatuses } from './border-links.js';
 import { gateFor, READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
@@ -714,7 +715,7 @@ export function BuildView(props: {
     return (
       <GameFrame
         phase="other"
-        title={`Round ${String(run.round)} · ${step}`}
+        title={`Round ${String(displayRound(run))} · ${step}`}
         status={devStrip}
         rail={rail}
         primary={null}
@@ -944,7 +945,7 @@ export function BuildView(props: {
   return (
     <GameFrame
       phase="build"
-      title={run === null ? 'Build' : `Round ${String(run.round)}`}
+      title={run === null ? 'Build' : `Round ${String(displayRound(run))}`}
       tabs={tabs}
       activeTab="build"
       status={

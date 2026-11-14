@@ -22,8 +22,10 @@ import { AppShell, Panel, RunBarContext } from '../shell/AppShell.js';
 import { GameFrame } from '../shell/GameFrame.js';
 import {
   PhaseContext,
+  displayRound,
   nextPhaseAfterResult,
   phaseForStep,
+  stepIdFor,
   type PhaseInfo,
 } from '../shell/phase.js';
 import { markTipSeen } from '../shell/phase-tips.js';
@@ -186,12 +188,14 @@ function ReadyRun(props: { run: ActiveRun }) {
   const runEnds =
     state.thisRound.pvp?.won === false &&
     state.lives - run.deps.rules.pvpLossLifeCost <= 0;
+  const stepId = stepIdFor(state);
   const phaseInfo: PhaseInfo | null =
-    phase === null
+    phase === null || stepId === null
       ? null
       : {
           phase,
-          round: state.round,
+          stepId,
+          round: displayRound(state),
           leg: state.leg,
           next: nextPhaseAfterResult(state.step, runEnds),
         };

@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  battleNumber,
+  STEP_ORDER,
+  displayRound,
+  phaseOfStepId,
+  stepIdFor,
   nextPhaseAfterResult,
   phaseForStep,
   stepperItems,
@@ -26,33 +29,65 @@ describe('phase mapping', () => {
     expect(phaseForStep('run_over')).toBeNull();
   });
 
+  it('shows the Build after the rival battle as the next round', () => {
+    expect(displayRound({ round: 1, step: 'shop', leg: 'pvp' })).toBe(2);
+    expect(displayRound({ round: 1, step: 'shop', leg: 'pve' })).toBe(1);
+    expect(displayRound({ round: 1, step: 'event_choice', leg: 'pvp' })).toBe(
+      1,
+    );
+    expect(displayRound({ round: 2, step: 'build', leg: 'pve' })).toBe(2);
+  });
+
+  it('maps run places to the stepper steps', () => {
+    expect(stepIdFor({ step: 'core_placement', leg: 'pve' })).toBe('setup');
+    expect(stepIdFor({ step: 'build', leg: 'pve' })).toBe('build1');
+    expect(stepIdFor({ step: 'shop', leg: 'pvp' })).toBe('build1');
+    expect(stepIdFor({ step: 'pve_summary', leg: 'pve' })).toBe('stronghold');
+    expect(stepIdFor({ step: 'event_choice', leg: 'pve' })).toBe('reward1');
+    expect(stepIdFor({ step: 'shop', leg: 'pve' })).toBe('build2');
+    expect(stepIdFor({ step: 'pvp_battle', leg: 'pvp' })).toBe('rival');
+    expect(stepIdFor({ step: 'event_resolve', leg: 'pvp' })).toBe('reward2');
+    expect(stepIdFor({ step: 'run_over', leg: 'pvp' })).toBeNull();
+    expect(phaseOfStepId('build2')).toBe('build');
+    expect(phaseOfStepId('rival')).toBe('fight');
+  });
+
   it('lists Set up only in round 1', () => {
-    expect(stepperPhases(1)).toEqual(['setup', 'build', 'fight', 'reward']);
-    expect(stepperPhases(2)).toEqual(['build', 'fight', 'reward']);
+    expect(stepperPhases(1)).toEqual([
+      'setup',
+      'build1',
+      'stronghold',
+      'reward1',
+      'build2',
+      'rival',
+      'reward2',
+    ]);
+    expect(stepperPhases(2)).toEqual(STEP_ORDER.slice(1));
   });
 
   it('marks finished, current and upcoming steps', () => {
-    expect(stepperItems(1, 'build').map((i) => i.state)).toEqual([
+    expect(stepperItems(1, 'build1').map((i) => i.state)).toEqual([
       'done',
       'current',
       'upcoming',
       'upcoming',
+      'upcoming',
+      'upcoming',
+      'upcoming',
     ]);
-    expect(stepperItems(3, 'reward').map((i) => i.state)).toEqual([
+    expect(stepperItems(3, 'rival').map((i) => i.state)).toEqual([
+      'done',
+      'done',
       'done',
       'done',
       'current',
+      'upcoming',
     ]);
-  });
-
-  it('numbers the battles', () => {
-    expect(battleNumber('pve')).toBe(1);
-    expect(battleNumber('pvp')).toBe(2);
   });
 
   it('names the phase after a result', () => {
     expect(nextPhaseAfterResult('pve_summary', false)).toBe('reward');
-    expect(nextPhaseAfterResult('pvp_summary', false)).toBe('build');
+    expect(nextPhaseAfterResult('pvp_summary', false)).toBe('reward');
     expect(nextPhaseAfterResult('pvp_summary', true)).toBeNull();
     expect(nextPhaseAfterResult('build', false)).toBeNull();
   });

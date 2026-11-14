@@ -159,6 +159,12 @@ select {
   min-height: 44px;
 }
 
+/* In a run the title and the phase stepper share the left side; the middle
+   is usually empty, so the left column takes the free width. */
+.topbar.has-run-bar {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
 .topbar-left {
   display: flex;
   align-items: center;
