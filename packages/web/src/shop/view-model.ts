@@ -287,7 +287,7 @@ export function nextBattleView(
     return {
       kind: 'pve',
       round: info.round,
-      title: 'PvE',
+      title: 'Stronghold',
       options: info.options.map((o) => ({
         id: o.id,
         difficulty: o.difficulty,
@@ -301,7 +301,7 @@ export function nextBattleView(
   return {
     kind: 'pvp',
     round: info.round,
-    title: 'PvP',
+    title: 'Rival party',
     options: [],
     pvp: {
       opponent: opponentText(run),

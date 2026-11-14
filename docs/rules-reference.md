@@ -4107,7 +4107,7 @@ dropped. "Oldest" is the store's own save sequence number (a counter kept in
 the store; re-saving the same run counts as newest), never the clock. The run's
 own snapshots and ghosts already fought stay excluded at selection. The
 player can still influence ghost versus boss (plant a weak run; clear the
-pool), which is acceptable for the prototype. "Clear ghost pool" stays under
+pool), which is acceptable for the prototype. "Clear saved opponents" stays under
 Developer on the main menu and is not on the run screens. The requirements of
 the shared Steam pool (identities, anti-tamper, abuse) are tracked in
 issue #79. The ghost database moved to version 2 for this change; the upgrade
@@ -4136,7 +4136,7 @@ In the web app the file is a second, read-only source behind the same store
 interface (`layerGhostStores`). It loads on the first read of the pool (the
 shop before a PvP battle), as its own chunk. A file that is missing, invalid
 or made for another game version (`major.minor`) is ignored: the pool is then
-the local one. `save` and "Clear ghost pool" act on the local pool only, and
+the local one. `save` and "Clear saved opponents" act on the local pool only, and
 the per-owner cap and eviction never see a bundled row.
 
 Candidate order. A listing is the union of the local rows and the bundled rows

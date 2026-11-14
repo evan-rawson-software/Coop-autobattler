@@ -85,7 +85,7 @@ describe('depth and new best', () => {
   test('the headline gives the depth and why the run ended', () => {
     expect(headline(finished())).toEqual({
       title: 'Reached round 3',
-      reason: 'Your last life was lost in a PvP battle.',
+      reason: 'Your last life was lost in a battle against a rival party.',
     });
     expect(
       headline(finished({ outcome: { reason: 'abandoned', round: 2 } })),

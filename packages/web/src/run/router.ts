@@ -55,10 +55,10 @@ export function stepLabel(step: Step): string {
     case 'build':
       return 'Build';
     case 'pve_choice':
-      return 'Choose a PvE battle';
+      return 'Choose a Stronghold battle';
     case 'pve_battle':
     case 'pve_summary':
-      return 'PvE battle';
+      return 'Stronghold battle';
     case 'event_choice':
       return 'Event';
     case 'event_resolve':
@@ -67,7 +67,7 @@ export function stepLabel(step: Step): string {
       return 'Shop and build';
     case 'pvp_battle':
     case 'pvp_summary':
-      return 'PvP battle';
+      return 'Rival party battle';
     case 'run_over':
       return 'Run over';
   }

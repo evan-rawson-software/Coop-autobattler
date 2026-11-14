@@ -133,7 +133,12 @@ export function StashPanel(props: {
                     <SpriteIcon name={g.def} size={32} />
                   </span>
                   <span class="stash-name">{name}</span>
-                  <span class="stash-tier">T{g.tier}</span>
+                  <span
+                    class="stash-tier"
+                    title={t('uiTierTip', { tier: String(g.tier) })}
+                  >
+                    T{g.tier}
+                  </span>
                   <span class="stash-count">× {g.ids.length}</span>
                 </button>
               </li>
@@ -156,14 +161,16 @@ export function ToolsPanel(props: {
   const { model, ctl } = props;
   const locked = props.locked === true;
   const { ui, view } = model;
-  const tool = (id: Tool, label: string, key: string) => (
+  const tool = (id: Tool, label: string, key: string, tip?: string) => (
     <button
       type="button"
       class={ui.tool === id ? 'tool active' : 'tool'}
       data-tool={id}
       aria-pressed={ui.tool === id}
       disabled={locked && id !== 'select'}
-      title={locked && id !== 'select' ? READY_LOCK_TEXT : `${label} (${key})`}
+      title={
+        locked && id !== 'select' ? READY_LOCK_TEXT : `${tip ?? label} (${key})`
+      }
       onClick={() => {
         ctl.setTool(id);
       }}
@@ -175,7 +182,7 @@ export function ToolsPanel(props: {
     <Panel title={t('uiPanelTools')} id="panel-tools" class="fixed">
       <div class="tool-grid">
         {tool('select', t('uiToolSelect'), 'V')}
-        {tool('conduit', t('uiToolConduit'), 'C')}
+        {tool('conduit', t('uiToolConduit'), 'C', t('uiToolConduitTip'))}
         {tool('erase', t('uiToolErase'), 'E')}
         <button
           type="button"
@@ -540,9 +547,14 @@ export function InspectorPanel(props: {
 export function OverlaysPanel(props: { model: Model; ctl: BuildController }) {
   const { model, ctl } = props;
   const o = model.ui.overlays;
-  const toggle = (key: 'flow' | 'paths' | 'dry', label: string) => (
+  const toggle = (
+    key: 'flow' | 'paths' | 'dry',
+    label: string,
+    tip?: string,
+  ) => (
     <button
       type="button"
+      title={tip}
       class={o[key] ? 'toggle active' : 'toggle'}
       data-overlay={key}
       aria-pressed={o[key]}
@@ -565,27 +577,31 @@ export function OverlaysPanel(props: { model: Model; ctl: BuildController }) {
               Math.round(model.ui.dryTicks / simConfig.ticksPerSecond),
             ),
           }),
+          t('uiOverlayDryTip'),
         )}
       </div>
-      <label class="inline-field">
-        {t('uiOverlayDryTicks')}
-        <input
-          type="number"
-          id="dry-ticks"
-          min="0"
-          max="100000"
-          step="50"
-          value={model.ui.dryTicks}
-          onChange={(e) => {
-            ctl.setDryTicks(Math.floor(Number(e.currentTarget.value)));
-          }}
-        />
-        <span class="muted">
-          {t('uiOverlayTicksPerSecond', {
-            ticks: String(simConfig.ticksPerSecond),
-          })}
-        </span>
-      </label>
+      <details class="overlay-advanced">
+        <summary>{t('uiOverlayAdvanced')}</summary>
+        <label class="inline-field">
+          {t('uiOverlayDryTicks')}
+          <input
+            type="number"
+            id="dry-ticks"
+            min="0"
+            max="100000"
+            step="50"
+            value={model.ui.dryTicks}
+            onChange={(e) => {
+              ctl.setDryTicks(Math.floor(Number(e.currentTarget.value)));
+            }}
+          />
+          <span class="muted">
+            {t('uiOverlayTicksPerSecond', {
+              ticks: String(simConfig.ticksPerSecond),
+            })}
+          </span>
+        </label>
+      </details>
     </Panel>
   );
 }
@@ -878,7 +894,10 @@ export function PartyPanel(props: {
       </div>
       <p class="muted party-next">
         {t('uiPartyNext', {
-          leg: run.step === 'shop' && run.leg === 'pve' ? 'PvP' : 'PvE',
+          leg:
+            run.step === 'shop' && run.leg === 'pve'
+              ? 'Rival party'
+              : 'Stronghold',
           ready: String(readyCount),
           total: String(run.players.length),
         })}

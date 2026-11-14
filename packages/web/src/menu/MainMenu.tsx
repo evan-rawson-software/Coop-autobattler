@@ -32,6 +32,17 @@ interface MenuData {
   readonly now: number;
 }
 
+/** The developer tools show in dev and debug builds, or with `?dev` in the URL. */
+export function devToolsVisible(
+  isDevBuild: boolean,
+  search: string,
+  hash: string,
+): boolean {
+  if (isDevBuild) return true;
+  const inHash = hash.includes('?') ? hash.slice(hash.indexOf('?')) : '';
+  return [search, inHash].some((q) => new URLSearchParams(q).has('dev'));
+}
+
 const DEV_LINKS: readonly { readonly hash: string; readonly label: string }[] =
   [
     { hash: '#debug', label: 'Debug board' },
@@ -136,16 +147,22 @@ export function MainMenuScreen() {
     };
   }, [data]);
 
+  const showDev = devToolsVisible(
+    import.meta.env.DEV || import.meta.env.MODE === 'debug',
+    typeof window === 'undefined' ? '' : window.location.search,
+    hash,
+  );
+
   const clearGhosts = (): void => {
     void getServices()
       .then((sv) => sv.ghosts.clear())
       .then(
         () => {
-          setGhostNote('The ghost pool is empty.');
+          setGhostNote('Saved opponents cleared.');
         },
         (e: unknown) => {
           setGhostNote(
-            `The ghost pool could not be cleared (${e instanceof Error ? e.message : String(e)}).`,
+            `Saved opponents could not be cleared (${e instanceof Error ? e.message : String(e)}).`,
           );
         },
       );
@@ -214,34 +231,37 @@ export function MainMenuScreen() {
               ))}
             </ul>
           </Panel>
-          <details class="developer">
-            <summary>Developer</summary>
-            <ul class="plain">
-              {DEV_LINKS.map((l) => (
-                <li key={l.hash}>
-                  <a href={l.hash}>{l.label}</a>
-                </li>
-              ))}
-            </ul>
-            <p>
-              <button
-                type="button"
-                data-action="clear-ghosts"
-                onClick={clearGhosts}
-              >
-                Clear ghost pool
-              </button>
-            </p>
-            {ghostNote === null ? null : (
-              <p class="muted fine" role="status" data-field="ghost-note">
-                {ghostNote}
+          {showDev ? (
+            <details class="developer">
+              <summary>Developer</summary>
+              <ul class="plain">
+                {DEV_LINKS.map((l) => (
+                  <li key={l.hash}>
+                    <a href={l.hash}>{l.label}</a>
+                  </li>
+                ))}
+              </ul>
+              <p>
+                <button
+                  type="button"
+                  data-action="clear-ghosts"
+                  title="Deletes the opponents saved from earlier runs. New runs start with the built-in ones."
+                  onClick={clearGhosts}
+                >
+                  Clear saved opponents
+                </button>
               </p>
-            )}
-            <p class="muted fine">
-              Add <code>?seed=5</code> after <code>#/</code> to start the next
-              run with that seed.
-            </p>
-          </details>
+              {ghostNote === null ? null : (
+                <p class="muted fine" role="status" data-field="ghost-note">
+                  {ghostNote}
+                </p>
+              )}
+              <p class="muted fine">
+                Add <code>?seed=5</code> after <code>#/</code> to start the next
+                run with that seed.
+              </p>
+            </details>
+          ) : null}
         </section>
 
         <section class="menu-right panel">
