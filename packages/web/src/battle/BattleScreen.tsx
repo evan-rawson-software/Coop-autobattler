@@ -233,7 +233,9 @@ export function BattleView(props: BattleViewProps) {
               mismatchGate.current?.();
             }}
           >
-            {t(mismatchReady ? 'battleReadyDone' : 'battleReady')}
+            {mismatchReady
+              ? t('battleReadyDone')
+              : (props.continueText ?? t('battleContinue'))}
           </button>
         </div>
       </AppShell>
@@ -527,6 +529,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           won={won}
           tps={tps}
           ready={ready}
+          continueText={props.continueText}
           onWatchAgain={onWatchAgain}
           onReady={onReady}
         />

@@ -6,6 +6,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { useStore } from '../app-state.js';
 import { reasonMessage } from '../build/reasons.js';
+import { screenText, screenTexts } from '../build/texts.js';
 import { simConfig } from '../build/setup.js';
 import type { RunHandle } from '../run/handle.js';
 import { AppShell } from '../shell/AppShell.js';
@@ -47,6 +48,9 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
     <AppShell title={`Round ${String(v.round)} · Stronghold battle`}>
       <div class="choice-screen" id="pve-choice">
         <div class="choice-banner panel">
+          <h2 class="choice-prompt" data-field="choice-prompt">
+            {screenText(screenTexts, 'choiceSubtitle')}
+          </h2>
           <p>
             <strong>{v.stakes}</strong>
           </p>
@@ -99,6 +103,9 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
                   <span class="label">Reward</span>
                   <strong data-field="reward">{c.rewardText}</strong>
                 </div>
+                <span class="pve-fight" data-field="fight">
+                  {screenText(screenTexts, 'choiceFight')}
+                </span>
               </button>
             </li>
           ))}

@@ -812,6 +812,14 @@ export async function runRunSmoke({
     /no life/.test(await page.locator('.choice-banner').innerText()),
     'PvE choice: the stakes of losing are stated',
   );
+  check(
+    /Pick an opponent/.test(
+      await page.locator('[data-field="choice-prompt"]').innerText(),
+    ) &&
+      (await page.locator('.pve-card [data-field="fight"]').allInnerTexts())
+        .length === 3,
+    'PvE choice: says what to do and each card has a Fight button look',
+  );
   await shot('run-5-pve-choice');
   await shotDark('art2-pve-choice');
   await reloadSame('PvE choice');
@@ -909,6 +917,12 @@ export async function runRunSmoke({
   check(
     !(await page.locator('#watch-again').isDisabled()),
     'battle summary: Watch again is available',
+  );
+  check(
+    /^Continue/.test(await page.locator('#battle-ready').innerText()) &&
+      (await page.locator('#panel-enemy [data-field="opp-kind"]').count()) ===
+        0,
+    'battle summary: the button says Continue; no duplicate opponent tag',
   );
   await shot('run-6-battle-summary');
   await reloadSame('the battle summary');

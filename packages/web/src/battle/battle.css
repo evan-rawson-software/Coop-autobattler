@@ -118,15 +118,6 @@
   font-weight: 600;
 }
 
-.kind-chip {
-  display: inline-block;
-  padding: 0.05rem 0.5rem;
-  border: 1px solid var(--owner-1);
-  border-radius: 999px;
-  color: var(--ink);
-  font-size: 0.78rem;
-}
-
 .small {
   font-size: 0.78rem;
   margin: 0.4rem 0 0;

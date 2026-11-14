@@ -7,7 +7,6 @@ import { CameraController } from '../board/controller.js';
 import { Panel } from '../shell/AppShell.js';
 import type { WebContent } from '../content.js';
 import { screenNodes, screenText, screenTexts } from '../build/texts.js';
-import { bossLabel } from '../run/display-text.js';
 import { ChartLegend, LineChart, type ChartMarker } from './charts.js';
 import {
   breachEntries,
@@ -39,15 +38,6 @@ const wallsLine = (walls: string, standing: number, total: number): string =>
         standing: String(standing),
         total: String(total),
       });
-
-export const KIND_LABEL: Readonly<Record<OpponentInfo['kind'], string>> = {
-  ghost: t('battleKindGhost'),
-  boss: bossLabel(),
-  pve: t('battleKindPve'),
-};
-
-export const opponentKindLabel = (o: OpponentInfo): string =>
-  o.label ?? KIND_LABEL[o.kind];
 
 /**
  * A side's Core health: one bar for a lone Core, as before; with several, one
@@ -229,6 +219,9 @@ export function LeftPanels(props: {
         </table>
       </Panel>
       <Panel title={t('battlePanelStrength')} id="panel-strength">
+        <p class="muted small" data-field="strength-unit">
+          {t('battleStrengthUnit')}
+        </p>
         <LineChart
           series={[
             { side: 0, points: live.own },
@@ -292,11 +285,6 @@ export function RightPanels(props: {
       <Panel title={props.foeWord} id="panel-enemy">
         <p class="opp-name" data-field="opp-name">
           {opponent.name}
-        </p>
-        <p class="stat-line">
-          <span class="kind-chip" data-field="opp-kind">
-            {opponentKindLabel(opponent)}
-          </span>
         </p>
         <CoreBars
           label={coreName}
@@ -398,7 +386,7 @@ export function reasonText(
 /** The figures of a battle summary that name the ladder step. */
 export type StepSide = Pick<
   BattleSideSummary,
-  'coresStanding' | 'coreHealth' | 'coreMaxHealth'
+  'coresStanding' | 'coreHealth' | 'coreMaxHealth' | 'cores'
 >;
 
 /**
@@ -428,7 +416,21 @@ export function stepText(
           foemax: String(foe.coreMaxHealth),
         });
   }
-  if (reason === 'core_destroyed') return null;
+  if (reason === 'core_destroyed') {
+    // One Core on the side that fell: say whose, instead of "Last Core".
+    const fell =
+      own.coresStanding === 0 && foe.coresStanding > 0
+        ? own
+        : foe.coresStanding === 0 && own.coresStanding > 0
+          ? foe
+          : null;
+    if (fell === null || fell.cores.length !== 1) return null;
+    return tx(
+      fell === own
+        ? 'battleGenericCoreDestroyedYours'
+        : 'battleGenericCoreDestroyedTheirs',
+    );
+  }
   const doubleFall = own.coresStanding === 0 && foe.coresStanding === 0;
   const form = doubleFall ? 'Double' : 'Time';
   switch (reason) {
@@ -466,6 +468,8 @@ export interface SummaryProps {
   readonly won?: boolean | undefined;
   readonly tps: number;
   readonly ready: boolean;
+  /** What the Ready button says before it is pressed; "Continue" by default. */
+  readonly continueText?: string | undefined;
   readonly onWatchAgain: () => void;
   readonly onReady: () => void;
 }
@@ -639,6 +643,9 @@ export function BattleSummaryView(props: SummaryProps) {
       </section>
 
       <Panel title={t('battlePanelSummaryChart')} id="panel-summary-chart">
+        <p class="muted small" data-field="strength-unit">
+          {t('battleStrengthUnit')}
+        </p>
         <LineChart
           series={[
             { side: 0, points: chart.own },
@@ -688,56 +695,62 @@ export function BattleSummaryView(props: SummaryProps) {
       </Panel>
 
       <Panel title={t('battlePanelBuildings')} id="panel-buildings">
-        <table class="stat-table buildings-table" data-field="buildings">
-          <thead>
-            <tr>
-              <th>{t('battleColBuilding')}</th>
-              {cols.produced ? <th>{t('battleColProduced')}</th> : null}
-              {cols.delivered ? <th>{t('battleColReceived')}</th> : null}
-              {cols.trained ? <th>{t('battleColUnits')}</th> : null}
-              {cols.damage ? <th>{t('battleColDamage')}</th> : null}
-              {cols.upgrades ? <th>{t('battleColUpgrades')}</th> : null}
-              <th>{t('battleColLost')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.key}>
-                <th scope="row">
-                  {r.name}
-                  {r.count > 1
-                    ? t('battleCountSuffix', { count: String(r.count) })
-                    : ''}
-                  {r.note === null ? null : (
-                    <span class="muted fine" data-field="idle-note">
-                      {' '}
-                      · {r.note}
-                    </span>
-                  )}
-                </th>
-                {cols.produced ? <td>{r.produced || '–'}</td> : null}
-                {cols.delivered ? <td>{r.delivered || '–'}</td> : null}
-                {cols.trained ? <td>{r.trained || '–'}</td> : null}
-                {cols.damage ? <td>{r.damage || '–'}</td> : null}
-                {cols.upgrades ? <td>{r.upgrades || '–'}</td> : null}
-                <td>
-                  {r.lost === 0
-                    ? '–'
-                    : r.firstLostTick === null
-                      ? t('battleLostOf', {
-                          lost: String(r.lost),
-                          count: String(r.count),
-                        })
-                      : t('battleLostOfFirst', {
-                          lost: String(r.lost),
-                          count: String(r.count),
-                          time: clock(r.firstLostTick, props.tps),
-                        })}
-                </td>
+        {rows.length === 0 ? (
+          <p class="muted" data-field="no-buildings">
+            {t('battleNoBuildings')}
+          </p>
+        ) : (
+          <table class="stat-table buildings-table" data-field="buildings">
+            <thead>
+              <tr>
+                <th>{t('battleColBuilding')}</th>
+                {cols.produced ? <th>{t('battleColProduced')}</th> : null}
+                {cols.delivered ? <th>{t('battleColReceived')}</th> : null}
+                {cols.trained ? <th>{t('battleColUnits')}</th> : null}
+                {cols.damage ? <th>{t('battleColDamage')}</th> : null}
+                {cols.upgrades ? <th>{t('battleColUpgrades')}</th> : null}
+                <th>{t('battleColLost')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.key}>
+                  <th scope="row">
+                    {r.name}
+                    {r.count > 1
+                      ? t('battleCountSuffix', { count: String(r.count) })
+                      : ''}
+                    {r.note === null ? null : (
+                      <span class="muted fine" data-field="idle-note">
+                        {' '}
+                        · {r.note}
+                      </span>
+                    )}
+                  </th>
+                  {cols.produced ? <td>{r.produced || '–'}</td> : null}
+                  {cols.delivered ? <td>{r.delivered || '–'}</td> : null}
+                  {cols.trained ? <td>{r.trained || '–'}</td> : null}
+                  {cols.damage ? <td>{r.damage || '–'}</td> : null}
+                  {cols.upgrades ? <td>{r.upgrades || '–'}</td> : null}
+                  <td>
+                    {r.lost === 0
+                      ? '–'
+                      : r.firstLostTick === null
+                        ? t('battleLostOf', {
+                            lost: String(r.lost),
+                            count: String(r.count),
+                          })
+                        : t('battleLostOfFirst', {
+                            lost: String(r.lost),
+                            count: String(r.count),
+                            time: clock(r.firstLostTick, props.tps),
+                          })}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </Panel>
 
       <Panel title={t('battlePanelNext')} id="panel-ready" class="ready-panel">
@@ -752,7 +765,9 @@ export function BattleSummaryView(props: SummaryProps) {
             disabled={props.ready}
             onClick={props.onReady}
           >
-            {t(props.ready ? 'battleReadyDone' : 'battleReady')}
+            {props.ready
+              ? t('battleReadyDone')
+              : (props.continueText ?? t('battleContinue'))}
           </button>
         </div>
       </Panel>

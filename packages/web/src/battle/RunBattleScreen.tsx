@@ -7,6 +7,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { useStore } from '../app-state.js';
 import { reasonMessage } from '../build/reasons.js';
+import { screenText, screenTexts } from '../build/texts.js';
 import type { RunHandle } from '../run/handle.js';
 import { AppShell } from '../shell/AppShell.js';
 import { CannotShow } from './CannotShow.js';
@@ -62,6 +63,13 @@ export function RunBattleScreen(props: { run: RunHandle }) {
     );
   }
   const b = built.value;
+  // After a Stronghold summary comes the event; after a Rival party loss that
+  // costs the last life the run ends, and Continue is all there is to say.
+  const endsRun =
+    b.kind === 'pvp' && !b.won && run.lives - deps.rules.pvpLossLifeCost <= 0;
+  const continueText = endsRun
+    ? screenText(screenTexts, 'battleContinue')
+    : screenText(screenTexts, 'battleContinueEvent');
   return (
     <BattleView
       key={battleId}
@@ -81,6 +89,7 @@ export function RunBattleScreen(props: { run: RunHandle }) {
         writeTick(key, t);
       }}
       onReady={ready}
+      continueText={continueText}
       topBarExtra={
         error === null ? undefined : (
           <span class="error" role="alert">
