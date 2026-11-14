@@ -288,6 +288,12 @@ export async function runRunSmoke({
       await page.click(
         `#event-resolve [data-action="choose-option"][data-option="${pickOpt.id}"]`,
       );
+      // A row is only selected: nothing is paid until the button confirms.
+      check(
+        (await R.state()).gold === goldBefore,
+        'Workshop: selecting a row does not spend gold',
+      );
+      await page.click('#event-resolve [data-action="confirm-upgrade"]');
     } else {
       await page.click('#event-resolve [data-option="skip"]');
     }
@@ -2286,6 +2292,7 @@ export async function runRunSmoke({
   const isChosen = (id) =>
     optionButton(id).evaluate((e) => e.classList.contains('selected'));
   await optionButton(picks[0].id).click();
+  await page.click('#event-resolve [data-action="confirm-upgrade"]');
   await page.waitForSelector('#event-resolve [data-field="waiting"]');
   const waitingText = await page
     .locator('#event-resolve [data-field="waiting"]')
@@ -2336,6 +2343,18 @@ export async function runRunSmoke({
     );
   }
   await optionButton(picks[0].id).click();
+  await page.click('#event-resolve [data-action="confirm-upgrade"]');
+  // Skip stops being the stored choice once the upgrade choice is stored.
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector(
+          '#event-resolve [data-action="choose-option"][data-option="skip"]',
+        )
+        ?.classList.contains('selected') === false,
+    undefined,
+    { timeout: slow(10000) },
+  );
   await page.waitForFunction(
     (id) =>
       document
@@ -2377,6 +2396,7 @@ export async function runRunSmoke({
     );
   }
   await optionButton(picks[1].id).click();
+  await page.click('#event-resolve [data-action="confirm-upgrade"]');
   await waitStep('shop');
   await page.waitForSelector('#shop-screen');
   await settle();

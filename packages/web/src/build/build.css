@@ -274,8 +274,23 @@ button.link {
   line-height: 1.3;
 }
 
-.overlay-legend p {
+.overlay-legend ul {
+  list-style: none;
   margin: 0 0 0.25rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.1rem 0.5rem;
+}
+
+.overlay-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.overlay-legend svg {
+  flex: none;
 }
 
 .inline-field {

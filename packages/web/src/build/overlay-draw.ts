@@ -4,7 +4,7 @@
  * draws what the controller and `core` already decided; it decides nothing.
  */
 
-import { coreFootprint } from '@game/core';
+import { coreFootprint, occupancy } from '@game/core';
 import type { Cell, EnemyPath, TeamState } from '@game/core';
 import type { OverlayContext } from '../board/BoardView.js';
 import { cellToView } from '../board/layout.js';
@@ -28,6 +28,7 @@ import {
   suppliedShortText,
   type RateMark,
 } from './overlay-marks.js';
+import { STEP } from './geometry.js';
 import { pathSegments, pathStubs } from './path-segments.js';
 import { isEditStep } from './session.js';
 import { simConfig } from './setup.js';
@@ -248,6 +249,11 @@ export function drawBuildOverlay(
     ctx.strokeStyle = col.path;
     ctx.globalAlpha = 0.5;
     ctx.lineJoin = 'round';
+    // A stretch several routes share is drawn once, so overlapping dashes
+    // never read as a solid line: an edge or stub already drawn is skipped.
+    const seenEdges = new Set<string>();
+    const seenStubs = new Set<string>();
+    const key = (c: Cell): string => `${String(c.x)},${String(c.y)}`;
     for (const p of d.paths) {
       // One sub-path per run of adjacent cells: after an off-board detour
       // (`approach`) the next cell is not adjacent and no line crosses it.
@@ -255,14 +261,28 @@ export function drawBuildOverlay(
       for (const run of pathSegments(p.cells)) {
         run.forEach((c, i) => {
           const q = centre(c);
-          if (i === 0) ctx.moveTo(q.x, q.y);
-          else ctx.lineTo(q.x, q.y);
+          const prev = run[i - 1];
+          if (prev === undefined) {
+            ctx.moveTo(q.x, q.y);
+            return;
+          }
+          const a = key(prev);
+          const b = key(c);
+          const edge = a < b ? `${a}|${b}` : `${b}|${a}`;
+          if (seenEdges.has(edge)) {
+            ctx.moveTo(q.x, q.y);
+            return;
+          }
+          seenEdges.add(edge);
+          ctx.lineTo(q.x, q.y);
         });
       }
       // The detour itself: a short stub just outside the front edge at every
       // exit and re-entry, including a final exit when the walk ends off the
       // board.
       for (const stub of pathStubs(p.cells, p.approach)) {
+        if (seenStubs.has(key(stub.cell))) continue;
+        seenStubs.add(key(stub.cell));
         const a = centre(stub.cell);
         const b = centre({ x: stub.cell.x, y: stub.cell.y + 1 });
         ctx.moveTo(a.x, a.y);
@@ -652,33 +672,73 @@ export function drawBuildOverlay(
   if (sel?.kind === 'conduit') highlight(sel.id, col.accent);
   if (hotConduit !== undefined) highlight(hotConduit, col.bad);
 
+  // ---- Panel highlight (a name under the pointer in a panel) ----------------
+  const hl = d.ui.highlight;
+  if (hl?.kind === 'conduit') highlight(hl.id, col.accent);
+  if (hl?.kind === 'building') {
+    const hb = d.team.buildings.find((x) => x.id === hl.id);
+    if (hb !== undefined) {
+      const cells = occupancy(d.team, d.content).cellsOf(hb);
+      for (const c of cells) fillCell(c, col.accent, 0.3);
+      ring(cells, col.accent, 4);
+    }
+  }
+
   // ---- Side markers for the conduit tool -----------------------------------
+  // Arrows in the cell outside a side: an output points away from its
+  // building (orange), an input points into it (green), so the two never read
+  // alike. Before a source is picked both show, inputs fainter.
   if (d.ui.tool === 'conduit') {
     const dr = d.ui.draft;
-    let markers: SideMarker[];
-    let kind: 'out' | 'in' = 'out';
-    if (dr === null || dr.from === null) {
-      markers = sideMarkers(d.team, d.content, 'out', dr?.building ?? null);
-    } else {
-      kind = 'in';
-      markers = sideMarkers(d.team, d.content, 'in', null, dr.building);
-    }
-    for (const m of markers) {
+    const arrow = (m: SideMarker, kind: 'out' | 'in', alpha: number): void => {
+      const color = kind === 'out' ? col.accent : col.ok;
       for (const c of m.cells) {
         const p = centre(c);
-        const r = Math.max(5, z * 0.28);
-        ctx.fillStyle = col.surface;
-        ctx.strokeStyle = kind === 'out' ? col.accent : col.ok;
-        ctx.lineWidth = 2;
+        const q = centre({ x: c.x + STEP[m.side].x, y: c.y + STEP[m.side].y });
+        // Screen direction of "away from the building".
+        let dx = q.x - p.x;
+        let dy = q.y - p.y;
+        if (kind === 'in') {
+          dx = -dx;
+          dy = -dy;
+        }
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len;
+        const uy = dy / len;
+        const h = Math.max(9, z * 0.46); // half length
+        const w = Math.max(8, z * 0.4); // half width
+        ctx.save();
+        ctx.globalAlpha = alpha;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.moveTo(p.x + ux * h, p.y + uy * h);
+        ctx.lineTo(p.x - ux * h * 0.7 - uy * w, p.y - uy * h * 0.7 + ux * w);
+        ctx.lineTo(p.x - ux * h * 0.7 + uy * w, p.y - uy * h * 0.7 - ux * w);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.strokeStyle = col.ink;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
         ctx.fill();
         ctx.stroke();
-        ctx.fillStyle = kind === 'out' ? col.accent : col.ok;
-        ctx.font = `700 ${String(Math.max(9, r * 1.3))}px ui-monospace, monospace`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(kind === 'out' ? '>' : '<', p.x, p.y + 0.5);
+        ctx.restore();
+      }
+    };
+    if (dr === null || dr.from === null) {
+      for (const m of sideMarkers(
+        d.team,
+        d.content,
+        'out',
+        dr?.building ?? null,
+      )) {
+        arrow(m, 'out', 1);
+      }
+      if (dr === null) {
+        for (const m of sideMarkers(d.team, d.content, 'in'))
+          arrow(m, 'in', 0.6);
+      }
+    } else {
+      for (const m of sideMarkers(d.team, d.content, 'in', null, dr.building)) {
+        arrow(m, 'in', 1);
       }
     }
   }

@@ -118,37 +118,64 @@ export function EventResolveScreen(props: { run: RunHandle }) {
     setError(null);
     void session.dispatch({ type: 'event_choose', choice: id }).then((r) => {
       setBusy(false);
+      if (r.ok) setPicked(null);
       if (!r.ok) setError(reasonMessage(r.reason, r.detail));
     });
   };
   const options = v?.options ?? [];
   const cards = options.filter((o) => !o.skip);
   const skip = options.find((o) => o.skip);
+  const shrine = cards.length > 0 && cards.every((o) => o.building === null);
+  // Workshop: a row is only selected until the button confirms it.
+  const [picked, setPicked] = useState<string | null>(null);
+  const selected = picked ?? v?.voted ?? null;
+  const selectedRow = cards.find((o) => o.id === selected);
+  const confirmPrice = selectedRow?.building?.price ?? null;
 
   return (
     <AppShell
       title={`Round ${String(run.round)} · ${v?.eventTitle ?? 'Event'}`}
     >
       <div class="choice-screen" id="event-resolve">
-        <div class="choice-banner panel">
-          <strong data-field="prompt">{v?.prompt ?? 'Make a choice'}</strong>
-        </div>
+        {shrine ? (
+          <h2 class="choice-prompt" data-field="prompt">
+            {screenText(screenTexts, 'eventSubtitle')}
+          </h2>
+        ) : (
+          <div class="choice-banner panel">
+            <strong data-field="prompt">{v?.prompt ?? 'Make a choice'}</strong>
+          </div>
+        )}
         <ul class="event-cards follow" data-count={cards.length}>
           {cards.map((o) => (
             <li key={o.id}>
               <button
                 type="button"
-                class={v?.voted === o.id ? 'event-card selected' : 'event-card'}
+                class={selected === o.id ? 'event-card selected' : 'event-card'}
                 data-action="choose-option"
                 data-option={o.id}
                 data-placed={o.building?.placed === true ? 'true' : 'false'}
                 data-affordable={o.affordable ? 'true' : 'false'}
                 disabled={busy || !o.affordable}
                 onClick={() => {
-                  choose(o.id);
+                  if (shrine) choose(o.id);
+                  else setPicked(o.id);
                 }}
               >
-                <h2 data-field="title">{o.title}</h2>
+                {shrine ? (
+                  <header class="event-card-head">
+                    <span class="event-icon" aria-hidden="true">
+                      <SpriteIcon
+                        name="ui_event_shrine"
+                        scale={2}
+                        fallback="✦"
+                      />
+                    </span>
+                    <h2 data-field="title">{o.title}</h2>
+                  </header>
+                ) : (
+                  <h2 data-field="title">{o.title}</h2>
+                )}
                 {o.building === null ? null : (
                   <p class="workshop-where" data-field="where">
                     {o.building.where}
@@ -175,24 +202,49 @@ export function EventResolveScreen(props: { run: RunHandle }) {
                     {o.disabledReason}
                   </p>
                 )}
+                {shrine ? (
+                  <span class="pve-fight" data-field="choose">
+                    {screenText(screenTexts, 'eventChoose')}
+                  </span>
+                ) : null}
               </button>
             </li>
           ))}
         </ul>
-        {skip === undefined ? null : (
+        {shrine ? null : (
           <p class="follow-skip">
             <button
               type="button"
-              data-action="choose-option"
-              data-option={skip.id}
-              class={v?.voted === skip.id ? 'selected' : undefined}
-              disabled={busy}
+              data-action="confirm-upgrade"
+              class="primary"
+              disabled={
+                busy ||
+                selectedRow === undefined ||
+                (picked === null && v?.voted === selected)
+              }
               onClick={() => {
-                choose(skip.id);
+                if (selected !== null) choose(selected);
               }}
             >
-              Skip (no upgrade)
+              {confirmPrice === null
+                ? 'Upgrade'
+                : `Upgrade · ${String(confirmPrice)} gold`}
             </button>
+            {skip === undefined ? null : (
+              <button
+                type="button"
+                data-action="choose-option"
+                data-option={skip.id}
+                class={v?.voted === skip.id ? 'selected' : undefined}
+                disabled={busy}
+                onClick={() => {
+                  setPicked(null);
+                  choose(skip.id);
+                }}
+              >
+                Skip (no upgrade)
+              </button>
+            )}
           </p>
         )}
         {v?.waiting == null ? null : (

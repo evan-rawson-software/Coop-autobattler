@@ -116,3 +116,33 @@ export function chooseInput(
   for (const s of pool) if (dist(s) < dist(best)) best = s;
   return { building: b.id, side: best };
 }
+
+function inBoundsOf(team: TeamState, c: Cell): boolean {
+  return c.x >= 0 && c.y >= 0 && c.x < team.map.width && c.y < team.map.height;
+}
+
+/** Whether every cell just outside `side` of `b` is off the board. */
+export function facesBoardEdge(
+  team: TeamState,
+  content: WebContent,
+  b: PlacedBuilding,
+  side: Side,
+): boolean {
+  const out = outsideCells(occupancy(team, content).cellsOf(b), side);
+  return out.length > 0 && out.every((c) => !inBoundsOf(team, c));
+}
+
+/**
+ * A building that sends something out, none of whose output sides can reach
+ * a conduit because they all face the board edge.
+ */
+export function outputFacesEdge(
+  team: TeamState,
+  content: WebContent,
+  b: PlacedBuilding,
+): boolean {
+  const outs = occupancy(team, content).absoluteSides(b).outputs;
+  return (
+    outs.length > 0 && outs.every((s) => facesBoardEdge(team, content, b, s))
+  );
+}

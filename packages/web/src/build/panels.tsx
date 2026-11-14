@@ -3,10 +3,13 @@
 import {
   conduitResource,
   formatText,
+  type Conduit,
   type DryRunResult,
   type TeamState,
+  buildingEnd,
   conduitTouches,
 } from '@game/core';
+import type { ComponentChildren } from 'preact';
 import type { RunState } from '@game/session';
 import { content } from '../content.js';
 import { Panel } from '../shell/AppShell.js';
@@ -47,6 +50,18 @@ const fmt = (n: number): string =>
   Number.isInteger(n) ? String(n) : n.toFixed(1);
 
 /** A rate per second, always two decimals ("0.50"). */
+/** One row of an overlay key: a 28x16 sample of the mark, then its name. */
+function LegendItem(props: { label: string; children: ComponentChildren }) {
+  return (
+    <li>
+      <svg width="28" height="16" viewBox="0 0 28 16" aria-hidden="true">
+        {props.children}
+      </svg>
+      <span>{props.label}</span>
+    </li>
+  );
+}
+
 const fmtRate = (n: number): string => n.toFixed(2);
 
 // ---------------------------------------------------------------------------
@@ -228,6 +243,23 @@ export function ToolsPanel(props: {
 // ---------------------------------------------------------------------------
 // Inspector
 
+/** "Conduit to Barracks": a conduit of building `at`, named by its far end. */
+function conduitLabel(team: TeamState, at: number, c: Conduit): string {
+  const f = buildingEnd(c.from);
+  const outgoing = f !== null && f.building === at;
+  const far = buildingEnd(outgoing ? c.to : c.from);
+  const farDef =
+    far === null
+      ? undefined
+      : team.buildings.find((x) => x.id === far.building)?.def;
+  if (farDef === undefined) {
+    return t(outgoing ? 'uiConduitToBorder' : 'uiConduitFromBorder');
+  }
+  return t(outgoing ? 'uiConduitTo' : 'uiConduitFrom', {
+    name: buildingName(content, farDef),
+  });
+}
+
 export function InspectorPanel(props: {
   run: RunState;
   model: Model;
@@ -242,7 +274,16 @@ export function InspectorPanel(props: {
 }) {
   const { run, model, dry, ctl } = props;
   const team = run.team;
-  const sel = model.ui.selection;
+  const draft = model.ui.draft;
+  // With the conduit tool, the picked source is what the panel shows.
+  const source =
+    model.ui.tool === 'conduit' &&
+    draft !== null &&
+    draft.building >= 0 &&
+    team.buildings.some((x) => x.id === draft.building)
+      ? ({ kind: 'building', id: draft.building } as const)
+      : null;
+  const sel = source ?? model.ui.selection;
   let body = <p class="muted">{screenText(screenTexts, 'uiInspectorHint')}</p>;
 
   if (sel?.kind === 'core') {
@@ -338,6 +379,11 @@ export function InspectorPanel(props: {
       );
       const attached = team.conduits.filter((c) => conduitTouches(c, b.id));
       const stats = cardStats(content, simConfig, def, b.tier);
+      const collectRate = buildingRate(
+        def,
+        b.tier,
+        simConfig.ticksPerSecond,
+      ).collects;
       const supply = props.flow?.supply.find((x) => x.building === b.id);
       body = (
         <div data-inspector="building">
@@ -383,7 +429,12 @@ export function InspectorPanel(props: {
               ) : null}
               {stats.collects !== null ? (
                 <p data-field="collects">
-                  {stats.collects}
+                  {figs?.produces?.resource != null && collectRate !== null
+                    ? screenText(screenTexts, 'collectsResource', {
+                        resource: resourceName(content, figs.produces.resource),
+                        rate: formatHundredths(collectRate),
+                      })
+                    : stats.collects}
                   {figs?.produces != null && figs.produces.lostPerSec > 0
                     ? screenText(screenTexts, 'uiInspectorMinesLost', {
                         rate: fmtRate(figs.produces.lostPerSec),
@@ -453,11 +504,24 @@ export function InspectorPanel(props: {
                       type="button"
                       class="link"
                       key={c.id}
+                      data-conduit={c.id}
                       onClick={() => {
                         ctl.select({ kind: 'conduit', id: c.id });
                       }}
+                      onMouseEnter={() => {
+                        ctl.setHighlight({ kind: 'conduit', id: c.id });
+                      }}
+                      onMouseLeave={() => {
+                        ctl.setHighlight(null);
+                      }}
+                      onFocus={() => {
+                        ctl.setHighlight({ kind: 'conduit', id: c.id });
+                      }}
+                      onBlur={() => {
+                        ctl.setHighlight(null);
+                      }}
                     >
-                      #{c.id}
+                      {conduitLabel(team, b.id, c)}
                     </button>
                   ))}
                 </dd>
@@ -531,8 +595,99 @@ export function OverlaysPanel(props: { model: Model; ctl: BuildController }) {
       </div>
       {o.flow || o.paths ? (
         <div class="overlay-legend muted" data-field="overlay-legend">
-          {o.paths ? <p data-legend="paths">{t('uiLegendPaths')}</p> : null}
-          {o.flow ? <p data-legend="flow">{t('uiLegendFlow')}</p> : null}
+          {o.paths ? (
+            <ul data-legend="paths">
+              <LegendItem label={t('uiLegendPathRoute')}>
+                <line
+                  x1="2"
+                  y1="8"
+                  x2="26"
+                  y2="8"
+                  stroke="var(--path-line)"
+                  stroke-width="2.5"
+                  stroke-dasharray="5 3.5"
+                  opacity="0.7"
+                />
+              </LegendItem>
+              <LegendItem label={t('uiLegendPathStart')}>
+                <polygon points="8,4 20,4 14,13" fill="var(--path-line)" />
+              </LegendItem>
+              <LegendItem label={t('uiLegendPathDetour')}>
+                <line
+                  x1="14"
+                  y1="14"
+                  x2="14"
+                  y2="3"
+                  stroke="var(--path-line)"
+                  stroke-width="2.5"
+                  stroke-dasharray="5 3.5"
+                  opacity="0.7"
+                />
+              </LegendItem>
+              <LegendItem label={t('uiLegendPathTarget')}>
+                <circle
+                  cx="14"
+                  cy="8"
+                  r="6"
+                  fill="none"
+                  stroke="var(--path-line)"
+                  stroke-width="2"
+                />
+                <path
+                  d="M11 5 L17 11 M17 5 L11 11"
+                  stroke="var(--path-line)"
+                  stroke-width="2"
+                />
+              </LegendItem>
+            </ul>
+          ) : null}
+          {o.flow ? (
+            <ul data-legend="flow">
+              <LegendItem label={t('uiLegendFlowMoving')}>
+                <g fill="var(--accent)" stroke="var(--ink)" stroke-width="1">
+                  <circle cx="5" cy="8" r="2.2" />
+                  <circle cx="14" cy="8" r="2.2" />
+                  <circle cx="23" cy="8" r="2.2" />
+                </g>
+              </LegendItem>
+              <LegendItem label={t('uiLegendFlowNone')}>
+                <line
+                  x1="2"
+                  y1="8"
+                  x2="26"
+                  y2="8"
+                  stroke="var(--bad)"
+                  stroke-width="2"
+                  stroke-dasharray="4 4"
+                  stroke-linecap="round"
+                />
+              </LegendItem>
+              <LegendItem label={t('uiLegendFlowStarved')}>
+                <rect
+                  x="4"
+                  y="2.5"
+                  width="20"
+                  height="11"
+                  fill="none"
+                  stroke="var(--bad)"
+                  stroke-width="2"
+                  stroke-dasharray="5 3"
+                />
+              </LegendItem>
+              <LegendItem label={t('uiLegendFlowLow')}>
+                <text
+                  x="14"
+                  y="12"
+                  text-anchor="middle"
+                  font-size="9"
+                  font-weight="700"
+                  fill="var(--warn)"
+                >
+                  LOW
+                </text>
+              </LegendItem>
+            </ul>
+          ) : null}
         </div>
       ) : null}
       <details class="overlay-advanced">
@@ -683,15 +838,35 @@ export function DryRunTable(props: {
   team: TeamState;
   flow: FlowView;
   onClose: () => void;
+  /** The building of the row under the pointer, or null. */
+  onHover?: (building: number | null) => void;
 }) {
   const { team, flow } = props;
   const dry = flow.dry;
+  const hover = props.onHover;
+  // Two buildings can share a name: the row under the pointer lights up its
+  // building on the board instead of showing an internal number.
   const name = (id: number): string => {
     const b = team.buildings.find((x) => x.id === id);
-    return b === undefined
-      ? `#${String(id)}`
-      : `${buildingName(content, b.def)} #${String(id)}`;
+    return b === undefined ? '' : buildingName(content, b.def);
   };
+  const rowHover = (id: number) =>
+    hover === undefined
+      ? {}
+      : {
+          onMouseEnter: () => {
+            hover(id);
+          },
+          onMouseLeave: () => {
+            hover(null);
+          },
+        };
+  useEffect(
+    () => () => {
+      hover?.(null);
+    },
+    [],
+  );
   const secs = dry.ticks / simConfig.ticksPerSecond;
   return (
     <div
@@ -741,7 +916,7 @@ export function DryRunTable(props: {
                   ? null
                   : buildingRate(sd, sb.tier, simConfig.ticksPerSecond);
               return (
-                <tr key={s.building}>
+                <tr key={s.building} {...rowHover(s.building)}>
                   <td>{name(s.building)}</td>
                   <td>{resourceName(content, s.resource)}</td>
                   <td data-field="produced">{s.produced}</td>
@@ -780,6 +955,7 @@ export function DryRunTable(props: {
                 <tr
                   key={`${String(c.building)}${c.side}`}
                   class={c.delivered === 0 ? 'bad' : ''}
+                  {...rowHover(c.building)}
                 >
                   <td>{name(c.building)}</td>
                   <td>{resourceName(content, c.resource)}</td>

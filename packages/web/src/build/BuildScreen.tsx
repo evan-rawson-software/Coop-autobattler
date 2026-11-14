@@ -567,6 +567,9 @@ export function BuildView(props: {
             onClose={() => {
               ctl.setOverlay('dry', false);
             }}
+            onHover={(id) => {
+              ctl.setHighlight(id === null ? null : { kind: 'building', id });
+            }}
           />
         ) : (
           <>

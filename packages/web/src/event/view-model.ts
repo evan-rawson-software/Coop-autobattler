@@ -7,7 +7,12 @@
  * hard-coded number. There can be one, two or three cards.
  */
 import { playerName, screenText, screenTexts } from '../build/texts.js';
-import { findModifier, type BuildingDef, type EventsConfig } from '@game/core';
+import {
+  findModifier,
+  heldModifierIds,
+  type BuildingDef,
+  type EventsConfig,
+} from '@game/core';
 import {
   SKIP_CHOICE,
   eventFollowUp,
@@ -144,6 +149,37 @@ function modifierLine(config: EventsConfig, id: string): ModifierLine {
     effects: def === undefined ? [] : def.effects.map(effectLine),
     stacks: def?.stackable === true,
   };
+}
+
+export interface HeldBonus {
+  readonly id: string;
+  readonly name: string;
+  readonly count: number;
+  /** The effect lines of one copy; the tooltip says how many copies stack. */
+  readonly effects: readonly string[];
+}
+
+/** The shrine bonuses the party holds, one row per bonus with its count. */
+export function heldBonuses(
+  run: RunState,
+  config: EventsConfig,
+): readonly HeldBonus[] {
+  const out: HeldBonus[] = [];
+  for (const id of heldModifierIds(run.team)) {
+    const seen = out.findIndex((b) => b.id === id);
+    const prev = seen < 0 ? undefined : out[seen];
+    if (prev !== undefined) {
+      out[seen] = { ...prev, count: prev.count + 1 };
+    } else {
+      out.push({
+        id,
+        name: modifierName(id),
+        count: 1,
+        effects: modifierLine(config, id).effects,
+      });
+    }
+  }
+  return out;
 }
 
 function num(v: Json | undefined, fallback: number): number {
