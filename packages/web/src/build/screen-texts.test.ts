@@ -677,8 +677,10 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     'Best for 1 player: round 3',
   ],
   ['runOverNone', {}, '—'],
-  ['runOverWon', {}, 'won'],
-  ['runOverLost', {}, 'lost'],
+  ['runOverWon', {}, 'W'],
+  ['runOverLost', {}, 'L'],
+  ['runOverWonTip', {}, 'Won'],
+  ['runOverLostTip', {}, 'Lost'],
   ['runOverPveRow', { difficulty: 'Hard', name: 'Rusher' }, 'Hard · Rusher'],
   ['runOverTally', { won: '2', lost: '1' }, '2 won · 1 lost'],
   [

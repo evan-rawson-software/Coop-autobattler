@@ -91,6 +91,15 @@ export function resultText(result: 'won' | 'lost' | '—'): string {
   );
 }
 
+/** The tooltip spelling out a result mark; none for the empty mark. */
+export function resultTip(result: 'won' | 'lost' | '—'): string | undefined {
+  return result === 'won'
+    ? screenText(screenTexts, 'runOverWonTip')
+    : result === 'lost'
+      ? screenText(screenTexts, 'runOverLostTip')
+      : undefined;
+}
+
 export function roundRows(history: readonly RoundRecord[]): RoundRow[] {
   const none = screenText(screenTexts, 'runOverNone');
   return history.map((r): RoundRow => {

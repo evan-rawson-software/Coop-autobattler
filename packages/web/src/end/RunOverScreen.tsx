@@ -23,6 +23,7 @@ import {
   factoryCounts,
   headline,
   resultText,
+  resultTip,
   roundRows,
   runStats,
 } from './view-model.js';
@@ -119,7 +120,9 @@ export function RunOverScreen(props: {
   return (
     <AppShell
       title={screenText(screenTexts, 'runOverTitle')}
-      status={<span class="muted">{names}</span>}
+      status={
+        state.players.length > 1 ? <span class="muted">{names}</span> : null
+      }
     >
       <div class="run-over" id="run-over">
         <section class="panel over-head">
@@ -235,9 +238,13 @@ export function RunOverScreen(props: {
                     <tr key={r.round} data-round={r.round}>
                       <td>{r.round}</td>
                       <td>{r.pve}</td>
-                      <td class={r.pveResult}>{resultText(r.pveResult)}</td>
+                      <td class={r.pveResult} title={resultTip(r.pveResult)}>
+                        {resultText(r.pveResult)}
+                      </td>
                       <td>{r.pvp}</td>
-                      <td class={r.pvpResult}>{resultText(r.pvpResult)}</td>
+                      <td class={r.pvpResult} title={resultTip(r.pvpResult)}>
+                        {resultText(r.pvpResult)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

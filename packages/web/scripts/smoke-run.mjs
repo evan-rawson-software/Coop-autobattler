@@ -1550,7 +1550,7 @@ export async function runRunSmoke({
       `Run over: the table names each round's opponent, a bundled ghost and the boss (${pvpCells.join(' | ')})`,
     );
     check(
-      pvpResults.filter((r) => r === 'lost').length === 5,
+      pvpResults.filter((r) => r === 'L').length === 5,
       `Run over: 5 lost PvP battles for 5 lives (${pvpResults.join(', ')})`,
     );
   }
