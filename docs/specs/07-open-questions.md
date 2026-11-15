@@ -145,12 +145,9 @@ multiplayer on Steam with Steam features as the backend (TA-0, TA-1).
 Remaining:
 
 - Decided: the proof of concept is written in TypeScript (TA-45).
-- **Alternative to a separate web prototype:** build the prototype in Godot
-  and use Godot's web export for browser playtests. No port and no throwaway
-  code, but slower iteration while the design is still changing, and harder
-  for coding agents to build and verify. Current plan keeps the separate web
-  prototype; worth a conscious yes/no.
-- **Godot language:** typed GDScript *(recommended)* or C# (TA-28).
+- Settled: the separate web prototype was built (TA-45) and the port to
+  Godot follows it (issue #365), rather than building the prototype in Godot.
+- Decided: the Godot game is written in typed GDScript (TA-28).
 - **Steamworks spike** (TA-30): confirm leaderboards with attached files work
   as the ghost pool, and learn the limits.
 - Decided: full anti-cheat using a server will be completed before final

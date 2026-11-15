@@ -4,7 +4,7 @@
 
 Battles are deterministic (CB-30): the outcome is a pure function of
 `(team, opponent, seed, game version)`. The simulation will be re-implemented
-in another language (GDScript or C#, TA-49/TA-50). This document is the
+in typed GDScript for the Godot port (TA-28, TA-49/TA-50). This document is the
 language-neutral statement of the rules; the golden vectors in `golden/` are
 the proof.
 

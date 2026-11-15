@@ -436,9 +436,10 @@ is deliberate.
 
 ## Language
 
-- **TA-28 [OPEN]** GDScript or C#. Recommended: **typed GDScript**
-  throughout — simplest path with GodotSteam, one language for coding agents,
-  no .NET export requirements. The simulation is discrete (fixed ticks on a grid) but includes
+- **TA-28 [DECIDED]** **Typed GDScript** throughout (static types on every
+  variable, parameter and return value), not C#: the simplest path with
+  GodotSteam, one language for coding agents, no .NET export requirements.
+  The simulation is discrete (fixed ticks on a grid) but includes
   pathfinding for many units, so performance is not a given; measure it
   against the performance budget (CB-36) and revisit only if the balance
   harness is too slow. See Q6.

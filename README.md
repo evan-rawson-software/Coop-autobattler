@@ -7,12 +7,28 @@ against a mix of PvE encounters and asynchronous PvP "ghost" parties. PvE diffic
 exponentially, so every run eventually ends in defeat — the question is how far
 you get.
 
-The project is in the **specification phase**. Only the repository scaffolding
-for the web proof of concept exists; no game logic is implemented yet.
+## Status
 
-Plan: (1) an offline, single-player **web proof of concept** for early
-playtesting, (2) a port to **Godot**, (3) co-op and online ghost PvP on
-**Steam**.
+The project is in three phases (TA-0):
+
+1. **Web proof of concept** (offline, single player, TypeScript): playable.
+   A whole run works in the browser: Core placement, building the factory,
+   PvE battles at three difficulties, events, shops, and PvP battles against
+   a local ghost pool, bundled bot ghosts or the boss. It is used for
+   playtesting and tuning. Every change to `main` is published at
+   <https://evan-rawson-software.github.io/Coop-autobattler/>.
+2. **Port to Godot** (typed GDScript, TA-28): next. Tracked in
+   [#365](https://github.com/evan-rawson-software/Coop-autobattler/issues/365).
+   The port is written from [`docs/rules-reference.md`](docs/rules-reference.md)
+   and must reproduce the golden vectors in [`golden/`](golden/) exactly. It
+   loads the same [`content/`](content/) files.
+3. **Multiplayer and Steam**: after the port.
+   [#366](https://github.com/evan-rawson-software/Coop-autobattler/issues/366)
+   Steam integration,
+   [#367](https://github.com/evan-rawson-software/Coop-autobattler/issues/367)
+   multiplayer lobbies,
+   [#368](https://github.com/evan-rawson-software/Coop-autobattler/issues/368)
+   enemy ghosts (online ghost PvP).
 
 ## Development
 
