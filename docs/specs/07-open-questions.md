@@ -125,7 +125,8 @@ life and gives no reward; a PvP loss costs a life. Remaining details:
   same type (RS-4b). The
   starting event types are those in RS-4a, to be refined later.
 - **Boss fallback stakes.** Proposed: same as a PvP battle, costs a life on
-  defeat (RS-5a).
+  defeat (RS-5a). Decided (issue #394): this holds for every boss; the boss
+  roster and its rules are MM-9a–MM-9e.
 - **Regaining lives.** Proposed: not possible initially (RS-7c).
 - **Ghost-only endgame guard.** See SC-7.
 
