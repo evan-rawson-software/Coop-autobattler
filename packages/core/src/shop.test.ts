@@ -79,6 +79,28 @@ describe('loadEconomy', () => {
       }),
     ).toContain('"weight"');
   });
+  test('fromRound defaults to 1 and is validated', () => {
+    const r = loadEconomy(economyJson, ctx);
+    expect(r.ok && r.config.offerWeights.every((w) => w.fromRound === 1)).toBe(
+      true,
+    );
+    const ok = clone(economyJson) as unknown as Record<string, unknown>;
+    at(ok['offerWeights'] as Rows, 0)['fromRound'] = 4;
+    const loaded = loadEconomy(ok, ctx);
+    expect(loaded.ok && loaded.config.offerWeights[0]?.fromRound).toBe(4);
+    for (const bad of [0, -1, 1.5, '2', null]) {
+      expect(
+        errorsFor((d) => {
+          at(d['offerWeights'] as Rows, 1)['fromRound'] = bad;
+        }),
+      ).toContain('"fromRound"');
+    }
+    expect(
+      errorsFor((d) => {
+        for (const w of d['offerWeights'] as Rows) w['fromRound'] = 2;
+      }),
+    ).toContain('from round 1');
+  });
   test('rejects a tierOdds table that does not start at round 1', () => {
     expect(
       errorsFor((d) => {
@@ -124,6 +146,55 @@ describe('pickWeightedIndex', () => {
     }
     expect(counts[1]).toBe(0);
     expect(a.getState()).toEqual(b.getState());
+  });
+});
+
+describe('fromRound gating', () => {
+  const gate = (fromRound: number): EconomyConfig => ({
+    ...economy,
+    shopOfferCount: 5,
+    offerWeights: [
+      { def: 'bld_extractor', weight: 3, fromRound: 1 },
+      { def: 'bld_gate', weight: 2, fromRound: 1 },
+      { def: 'bld_turret', weight: 5, fromRound },
+    ],
+  });
+  test('an entry is never offered before its round', () => {
+    for (let seed = 0; seed < 100; seed++) {
+      for (const o of rollOffers(Rng.fromSeed(seed), 2, content, gate(3))) {
+        expect(o.def).not.toBe('bld_turret');
+      }
+    }
+  });
+  test('a gated roll equals the roll without the entry (same draws)', () => {
+    const without: EconomyConfig = {
+      ...gate(3),
+      offerWeights: gate(3).offerWeights.slice(0, 2),
+    };
+    const a = Rng.fromSeed(7);
+    const b = Rng.fromSeed(7);
+    expect(rollOffers(a, 2, content, gate(3))).toEqual(
+      rollOffers(b, 2, content, without),
+    );
+    expect(a.getState()).toEqual(b.getState());
+  });
+  test('from its round on the entry is offered', () => {
+    const seen = new Set<string>();
+    for (let seed = 0; seed < 100; seed++) {
+      for (const o of rollOffers(Rng.fromSeed(seed), 3, content, gate(3))) {
+        seen.add(o.def);
+      }
+    }
+    expect(seen.has('bld_turret')).toBe(true);
+  });
+  test('a zero weight at the end of the list never changes a pick', () => {
+    for (let seed = 0; seed < 50; seed++) {
+      const a = Rng.fromSeed(seed);
+      const b = Rng.fromSeed(seed);
+      expect(pickWeightedIndex(a, [3, 2, 0])).toBe(
+        pickWeightedIndex(b, [3, 2]),
+      );
+    }
   });
 });
 
@@ -350,7 +421,7 @@ describe('alternate configuration', () => {
       shopOfferCount: 2,
       rerollCost: 7,
       sellRefundPercent: 100,
-      offerWeights: [{ def: 'bld_gate', weight: 1 }],
+      offerWeights: [{ def: 'bld_gate', weight: 1, fromRound: 1 }],
       tierOdds: [{ fromRound: 1, weights: [0, 0, 1] }],
     };
     const offers = rollOffers(Rng.fromSeed(1), 1, content, alt);

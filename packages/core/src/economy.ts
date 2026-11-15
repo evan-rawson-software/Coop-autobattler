@@ -30,6 +30,11 @@ export function kitChoices(entry: KitEntry): readonly BuildingId[] {
 export interface OfferWeight {
   readonly def: BuildingId;
   readonly weight: number;
+  /**
+   * The first round in which the building can be offered (at least 1,
+   * default 1). In an earlier round its weight is 0 for the roll.
+   */
+  readonly fromRound: number;
 }
 
 export interface TierOddsRow {
@@ -261,17 +266,29 @@ export function loadEconomy(
       errors.push(`${at}: must be an object.`);
       return;
     }
-    rejectUnknownKeys(e, new Set(['def', 'weight']), at, errors);
+    rejectUnknownKeys(e, new Set(['def', 'weight', 'fromRound']), at, errors);
     const def = checkDef(e['def'], at, context, errors);
     if (def !== undefined) {
       if (seenDefs.has(def)) errors.push(`${at}: duplicate entry "${def}".`);
       seenDefs.add(def);
     }
     const weight = readInt(e, 'weight', 1, at, errors);
-    if (def !== undefined && weight !== undefined) {
-      offerWeights.push({ def, weight });
+    let fromRound: number | undefined = 1;
+    if (e['fromRound'] !== undefined) {
+      fromRound = readInt(e, 'fromRound', 1, at, errors);
+    }
+    if (def !== undefined && weight !== undefined && fromRound !== undefined) {
+      offerWeights.push({ def, weight, fromRound });
     }
   });
+  if (
+    weightEntries.length > 0 &&
+    !weightEntries.some((e) => isRecord(e) && (e['fromRound'] ?? 1) === 1)
+  ) {
+    errors.push(
+      'economy: "offerWeights" needs at least one entry offered from round 1.',
+    );
+  }
 
   const tierOdds: TierOddsRow[] = [];
   const oddsEntries = list(data, 'tierOdds', errors);

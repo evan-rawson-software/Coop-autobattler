@@ -93,7 +93,7 @@
       }
     },
     "offerWeights": {
-      "description": "How likely each building is to be offered. Buildings not listed are never offered.",
+      "description": "How likely each building is to be offered. Buildings not listed are never offered. An entry with fromRound has weight 0 in rounds before it. At least one entry must start at round 1.",
       "type": "array",
       "minItems": 1,
       "items": {
@@ -102,7 +102,12 @@
         "additionalProperties": false,
         "properties": {
           "def": { "type": "string", "pattern": "^bld_[a-z0-9_]+$" },
-          "weight": { "type": "integer", "minimum": 1 }
+          "weight": { "type": "integer", "minimum": 1 },
+          "fromRound": {
+            "description": "First round in which the building can be offered (default 1).",
+            "type": "integer",
+            "minimum": 1
+          }
         }
       }
     },

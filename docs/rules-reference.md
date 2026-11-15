@@ -39,6 +39,10 @@ that way.
   every tie, down to an id, a cell, or the item's position in the list it
   came from (written as an explicit `seq` or index tie-break). Port each
   comparator with all of its keys.
+- **Gated offers.** Do not remove an entry with `fromRound` above the round
+  from the list before a shop draw and do not skip it: keep it at weight 0 in
+  its place (the result is the same as removing it, but the wall-shape redraw
+  and any later entry stay in file order).
 - **Map and Set order.** JavaScript iterates a `Map` or `Set` in insertion
   order; a C# `Dictionary` or `HashSet` has no order. Rules code never
   iterates one: it keeps an array alongside, or reads the keys sorted
@@ -275,6 +279,11 @@ on purpose: PvE threats (below) are not limited by them in rounds 1 to
 | `MAX_UNIT_REACH`       | 1 920               | `reach` of a unit (eight cells)                                           |
 | `MAX_SEPARATION_CAP`   | 480                 | `separationCap` in `sim.json` (`separationPercent` is 0 to 100)           |
 
+`offerWeights[].fromRound` in `economy.json` is an integer of at least 1 (no
+upper bound; a value above the last round just never offers the entry); the
+loader and `economy.schema.json` reject 0, negative and non-integer values, and
+the loader also rejects a list in which no entry has `fromRound` 1.
+
 A loader reports a value above its cap like any other bad field (for example
 `"health" must be at most 1000000000000 (got 3000000000000)`), and the schemas
 carry the same `maximum`. The caps apply to the numbers as declared; they are
@@ -391,7 +400,8 @@ same list, and the final state), `prng-child` (the parent state and the first
 `pve-battle` (see "PvE threats").
 
 `shop-roll` (see "Run random streams" and "Shops and gold"): input `{seed,
-before, round, leg, players, rerolls}`. Start at `rootRng(seed)`, draw each
+before, round, leg, players, rerolls}` and optionally `offerWeights` (a list of
+`{def, weight, fromRound?}` that replaces the shipped list for this vector). Start at `rootRng(seed)`, draw each
 label in `before` in order, then draw `shop:r<round>:<leg>`. For each player
 `i`, roll the offers from that stream's child `p<i>`, then re-roll `rerolls`
 times from the same child. The result lists each player's rolls (offers as
@@ -3500,13 +3510,31 @@ positive sum `T`. Draw `x = rng.nextInt(T)` (one draw). Return the first index
 `rollOffers(rng, round)` makes `shopOfferCount` offers, for slot 0, 1, ... in
 order. Per slot, exactly two draws, in this order:
 
-1. the building: `pickWeightedIndex` over `offerWeights` (file order);
+1. the building: `pickWeightedIndex` over `offerWeights` (file order), where
+   an entry whose `fromRound` is greater than the current round has weight 0
+   (see "Offer weights from a round" below);
 2. the tier: `pickWeightedIndex` over the weights `[w1, w2, w3]` of the
    applicable `tierOdds` row; the result plus 1 is the tier.
 
 Duplicates across slots are allowed. The offer is `{slot, def, tier, price}`
 where `price` is that tier's `price` in `buildings.json`. Buildings not in
 `offerWeights` are never offered; the Core cannot be listed.
+
+**Offer weights from a round (issue #383).** An `offerWeights` entry may have
+`fromRound` (integer, at least 1; default 1 when absent). In a roll for round
+`r`, every entry with `fromRound > r` has weight 0 in every draw of that roll,
+the wall-shape redraw below included; the entry keeps its place in the list,
+so file order and the draw count do not change. Because `pickWeightedIndex`
+never picks a zero weight (and a zero weight, also at the end of the list,
+does not move the draw `x` or the running totals of the others), a gated roll
+gives exactly the result of a roll over the list without the gated entries.
+The round is the round of the shop being entered (re-rolls use the same
+round). At least one entry must have `fromRound` 1, so that the sum of the
+weights is positive in every round. Nothing else reads `offerWeights`: the
+starting kit and the events do not draw from it. The shipped content sets no
+`fromRound`; `shop-roll.14` to `shop-roll.16` pin it with a test list given in
+the vector input as `offerWeights` (`{def, weight, fromRound?}` entries that
+replace the shipped list).
 
 **Wall shape limit (issue #291).** A *wall def* is a building of kind `defense`
 with `defenseType` `wall`; the Gate (`gate`) is not one. One set of offers (a

@@ -53,7 +53,29 @@ const offerRow = (o: ShopOffer | null): Json =>
   o === null ? null : `${String(o.slot)} ${o.def} t${String(o.tier)} ${String(o.price)}`;
 
 /**
- * `shop-roll`: input `{seed, before, round, leg, players, rerolls}`. The run
+ * The economy of a `shop-roll` vector: the shipped one, or, when the input
+ * has `offerWeights` (a list of `{def, weight, fromRound?}`), one with that
+ * list in place of the shipped one (a test economy).
+ */
+function shopEconomy(
+  o: Record<string, Json>,
+  base: GameConfigs['economy'],
+): GameConfigs['economy'] {
+  if (o['offerWeights'] === undefined) return base;
+  const offerWeights = list(o, 'offerWeights').map((e) => {
+    const w = obj(e, 'offerWeights entry');
+    return {
+      def: str(w, 'def'),
+      weight: num(w, 'weight'),
+      fromRound: w['fromRound'] === undefined ? 1 : num(w, 'fromRound'),
+    };
+  });
+  return { ...base, offerWeights };
+}
+
+/**
+ * `shop-roll`: input `{seed, before, round, leg, players, rerolls}` and optionally
+ * `offerWeights` (a test economy, see `shopEconomy`). The run
  * generator starts at `rootRng(seed)`; each label in `before` is drawn from it
  * in order (as the step machine does earlier in a run); then the shop stream
  * `shop:r<round>:<leg>` is drawn. Player `i` rolls from its child `p<i>`, then
@@ -66,6 +88,7 @@ export function makeShopRollKind(
   return (input) => {
     const o = obj(input, 'input');
     const round = num(o, 'round');
+    const economy = shopEconomy(o, configs.economy);
     let state = {
       rng: Rng.fromSeed(num(o, 'seed')).child('run').getState(),
     } as unknown as RunState;
@@ -79,7 +102,7 @@ export function makeShopRollKind(
     for (let p = 0; p < num(o, 'players'); p++) {
       const rng = drawn.stream.child(`p${String(p)}`);
       const rolls: Json[] = [
-        rollOffers(rng, round, content, configs.economy).map(offerRow),
+        rollOffers(rng, round, content, economy).map(offerRow),
       ];
       for (let r = 0; r < num(o, 'rerolls'); r++) {
         const again = rerollOffers(
@@ -87,7 +110,7 @@ export function makeShopRollKind(
           rng,
           round,
           content,
-          configs.economy,
+          economy,
         );
         if (!again.ok) throw new Error(again.reason);
         rolls.push(again.shop.offers.map(offerRow));

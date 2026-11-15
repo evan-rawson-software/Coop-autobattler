@@ -265,7 +265,7 @@ describe('shop step', () => {
     const eco: EconomyConfig = {
       ...economy,
       startingGold: 100,
-      offerWeights: [{ def: 'bld_wall_block', weight: 1 }],
+      offerWeights: [{ def: 'bld_wall_block', weight: 1, fromRound: 1 }],
     };
     const deps = depsFor(eco);
     let s = toShop(start(deps), deps);
@@ -352,7 +352,7 @@ describe('configuration', () => {
       shopOfferCount: 3,
       rerollCost: 4,
       sellRefundPercent: 100,
-      offerWeights: [{ def: 'bld_merger', weight: 1 }],
+      offerWeights: [{ def: 'bld_merger', weight: 1, fromRound: 1 }],
       tierOdds: [{ fromRound: 1, weights: [0, 1, 0] }],
     };
     const deps = depsFor(alt);
