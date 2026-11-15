@@ -18,7 +18,7 @@
     "units": {
       "file": "units.png",
       "w": 320,
-      "h": 84
+      "h": 104
     },
     "effects": {
       "file": "effects.png",
@@ -1049,9 +1049,25 @@
       "id": "bld_golem_forge",
       "note": "2x2 tiles."
     },
-    "bld_refinery_ab": {
+    "bld_spire": {
       "sheet": "buildings",
       "x": 33,
+      "y": 82,
+      "w": 32,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        16,
+        16
+      ],
+      "category": "building",
+      "id": "bld_spire",
+      "note": "2x2 tiles."
+    },
+    "bld_refinery_ab": {
+      "sheet": "buildings",
+      "x": 66,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1067,7 +1083,7 @@
     },
     "bld_refinery_bc": {
       "sheet": "buildings",
-      "x": 66,
+      "x": 99,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1083,7 +1099,7 @@
     },
     "bld_core": {
       "sheet": "buildings",
-      "x": 99,
+      "x": 132,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1099,7 +1115,7 @@
     },
     "bld_turret_base": {
       "sheet": "buildings",
-      "x": 132,
+      "x": 165,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1114,7 +1130,7 @@
     },
     "bld_turret_head": {
       "sheet": "buildings",
-      "x": 149,
+      "x": 182,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1129,7 +1145,7 @@
     },
     "tier_pips": {
       "sheet": "buildings",
-      "x": 166,
+      "x": 199,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1144,7 +1160,7 @@
     },
     "tier_trim_1x1": {
       "sheet": "buildings",
-      "x": 215,
+      "x": 248,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1159,8 +1175,8 @@
     },
     "tier_trim_2x2": {
       "sheet": "buildings",
-      "x": 248,
-      "y": 82,
+      "x": 0,
+      "y": 115,
       "w": 32,
       "h": 32,
       "frames": 2,
@@ -1174,7 +1190,7 @@
     },
     "bld_wall_auto": {
       "sheet": "buildings",
-      "x": 0,
+      "x": 65,
       "y": 115,
       "w": 16,
       "h": 16,
@@ -2069,6 +2085,153 @@
       "category": "unit",
       "id": "unit_drone",
       "note": "Flying unit; place fx_shadow under it. Side B, faces south (flipped vertically), wide bone horns."
+    },
+    "unit_caster": {
+      "sheet": "units",
+      "x": 282,
+      "y": 68,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_caster",
+      "tintable": true,
+      "note": "Fragile ranged ground unit with area damage (archer art for now). Neutral greys in the team parts (tint keys)."
+    },
+    "unit_caster.walk": {
+      "sheet": "units",
+      "x": 0,
+      "y": 85,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_caster",
+      "tintable": true,
+      "note": "Fragile ranged ground unit with area damage (archer art for now). Neutral greys in the team parts (tint keys)."
+    },
+    "unit_caster.attack": {
+      "sheet": "units",
+      "x": 33,
+      "y": 85,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_caster",
+      "tintable": true,
+      "note": "Fragile ranged ground unit with area damage (archer art for now). Neutral greys in the team parts (tint keys)."
+    },
+    "unit_caster@a": {
+      "sheet": "units",
+      "x": 66,
+      "y": 85,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_caster",
+      "note": "Fragile ranged ground unit with area damage (archer art for now). Side A, faces north (up the screen), narrow gold plume."
+    },
+    "unit_caster@a.walk": {
+      "sheet": "units",
+      "x": 83,
+      "y": 85,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_caster",
+      "note": "Fragile ranged ground unit with area damage (archer art for now). Side A, faces north (up the screen), narrow gold plume."
+    },
+    "unit_caster@a.attack": {
+      "sheet": "units",
+      "x": 116,
+      "y": 85,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_caster",
+      "note": "Fragile ranged ground unit with area damage (archer art for now). Side A, faces north (up the screen), narrow gold plume."
+    },
+    "unit_caster@b": {
+      "sheet": "units",
+      "x": 149,
+      "y": 85,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_caster",
+      "note": "Fragile ranged ground unit with area damage (archer art for now). Side B, faces south (flipped vertically), wide bone horns."
+    },
+    "unit_caster@b.walk": {
+      "sheet": "units",
+      "x": 166,
+      "y": 85,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_caster",
+      "note": "Fragile ranged ground unit with area damage (archer art for now). Side B, faces south (flipped vertically), wide bone horns."
+    },
+    "unit_caster@b.attack": {
+      "sheet": "units",
+      "x": 199,
+      "y": 85,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_caster",
+      "note": "Fragile ranged ground unit with area damage (archer art for now). Side B, faces south (flipped vertically), wide bone horns."
     },
     "fx_hit_spark": {
       "sheet": "effects",

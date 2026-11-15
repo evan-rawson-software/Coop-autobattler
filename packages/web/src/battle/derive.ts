@@ -524,6 +524,13 @@ export function buildingRows(
       case 'turret_fired':
         if (e.side === side) get(e.building).damage += e.damage;
         break;
+      case 'splash': {
+        const home = unitHome.get(e.attacker);
+        if (home !== undefined) {
+          for (const t of e.targets) get(home).damage += t.damage;
+        }
+        break;
+      }
       case 'ramp_step':
         if (e.side === side) get(e.building).upgrades += 1;
         break;

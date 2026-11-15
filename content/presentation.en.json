@@ -45,6 +45,10 @@
       "name": "Golem forge",
       "description": "Consumes {res_ab_refined} to raise golems: huge, slow, armored units that shrug off weak hits."
     },
+    "bld_spire": {
+      "name": "Spire",
+      "description": "Consumes {res_bc_refined} to raise casters: fragile ranged units whose hits also splash the enemies standing around the target."
+    },
     "bld_wall_i": {
       "name": "Wall (I)",
       "description": "Blocks enemy movement. Covers four cells in a I shape; rotate it to fit."
@@ -114,6 +118,10 @@
     "unit_golem": {
       "name": "Golem",
       "description": "Huge and slow, with armor 3: every hit on it deals 3 less (at least 1). Marches on the enemy Core and attacks whatever blocks the way."
+    },
+    "unit_caster": {
+      "name": "Caster",
+      "description": "Fragile, shoots from a distance, flying enemies too. Its hit on a unit also deals half as much to every other enemy unit within one cell of the target."
     },
     "unit_archer": {
       "name": "Archer",

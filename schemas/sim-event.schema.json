@@ -303,6 +303,52 @@
       }
     },
     {
+      "title": "splash",
+      "description": "A unit with `splash` attacked a unit (its `unit_attacked` event comes first): `x`, `y` are the primary target's centre in sub-cell units, `targets` the other opposing units hit within the splash radius, in unit ID order, each with the damage it took after its own armor (possibly empty). The damage joins the tick's pending damage like any attack.",
+      "type": "object",
+      "required": ["tick", "type", "attacker", "x", "y", "targets"],
+      "additionalProperties": false,
+      "properties": {
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "splash"
+        },
+        "attacker": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["unit", "damage"],
+            "additionalProperties": false,
+            "properties": {
+              "unit": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "damage": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "title": "turret_fired",
       "description": "A turret fired at an enemy unit standing on the turret owner's own side of the front edge, adding `damage` to that unit's pending damage (resolved simultaneously with unit attacks). `side` is the turret owner's side, `building` the turret's instance ID, `unit` the target.",
       "type": "object",

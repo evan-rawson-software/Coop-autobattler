@@ -238,3 +238,18 @@ Still on the main thread (not measured here, only known to exist): generating
 a four-plot map, ghost validation, enemy path previews, and the playback
 engine re-stepping a battle to the saved tick after a mid-battle reload
 (`Playback.seekTo`).
+
+## Area damage (issue #387)
+
+A unit with `splash` (the caster) looks up the opposing side's cell grid
+around its target for every attack on a unit (`splashHits` in `arena-sim.ts`;
+a window of at most 5 x 5 cells for the largest allowed radius, 2 cells), not
+the whole unit list, and sorts the few hits it finds by unit index. No budget
+board contains casters, so the budget above is unchanged. A packed test
+(800 units, 400 ticks, two blocks of 24-wide columns facing each other on one
+board, median of 3 runs on the shared sandbox, event log recorded): archers
+187 ms (459 units left at the end), casters 83 ms (274 left: the splash kills
+faster, so later ticks have fewer units). 3,791 secondary hits in all and at
+most 444 in one tick. The bound in the rules is the product (casters x opposing
+units), at most about 10^6 hits per tick, which no battle within the unit
+budget reaches because units that are packed that closely are mostly dead.

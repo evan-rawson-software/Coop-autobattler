@@ -4,6 +4,7 @@ import { addInt, divFloor, mulInt } from './int.js';
 import {
   CELL_UNITS,
   MAX_ARMOR,
+  MAX_SPLASH_RADIUS,
   MAX_DAMAGE,
   MAX_HEALTH,
   MAX_UNIT_RADIUS,
@@ -58,6 +59,20 @@ export interface UnitDef {
    * (CB-5h). Optional in the file; 0 when absent.
    */
   readonly armor: number;
+  /**
+   * Area damage (CB-5h, issue #387). Optional in the file and absent from the
+   * definition when not given; never part of a unit's saved state. When this
+   * unit attacks a unit, every other opposing unit whose centre is within
+   * `radiusSub` (sub-cell units) of the target's centre takes `percent`
+   * percent of the hit, rounded down, before its own armor.
+   */
+  readonly splash?: SplashDef;
+}
+
+/** The `splash` field of a unit definition. */
+export interface SplashDef {
+  readonly radiusSub: number;
+  readonly percent: number;
 }
 
 /** Sub-cell units a unit walks per tick: `floor(CELL_UNITS / moveCooldownTicks)`. */
@@ -101,7 +116,10 @@ const KNOWN_KEYS = new Set([
   'flying',
   'attackType',
   'armor',
+  'splash',
 ]);
+
+const SPLASH_KEYS = new Set(['radiusSub', 'percent']);
 
 /** Validate parsed unit data (the contents of units.json). */
 export function loadUnits(data: unknown): UnitLoadResult {
@@ -165,6 +183,28 @@ export function loadUnits(data: unknown): UnitLoadResult {
       entry['armor'] === undefined
         ? 0
         : readInt(entry, 'armor', 0, label, errors, MAX_ARMOR);
+    let splash: SplashDef | undefined;
+    const rawSplash = entry['splash'];
+    if (rawSplash !== undefined) {
+      if (!isRecord(rawSplash)) {
+        errors.push(`${label}: "splash" must be an object.`);
+      } else {
+        const sl = `${label} splash`;
+        const radiusSub = readInt(
+          rawSplash,
+          'radiusSub',
+          1,
+          sl,
+          errors,
+          MAX_SPLASH_RADIUS,
+        );
+        const percent = readInt(rawSplash, 'percent', 1, sl, errors, 100);
+        rejectUnknownKeys(rawSplash, SPLASH_KEYS, sl, errors);
+        if (radiusSub !== undefined && percent !== undefined) {
+          splash = { radiusSub, percent };
+        }
+      }
+    }
     rejectUnknownKeys(entry, KNOWN_KEYS, label, errors);
     if (
       errors.length === before &&
@@ -192,6 +232,7 @@ export function loadUnits(data: unknown): UnitLoadResult {
         flying,
         attackType,
         armor,
+        ...(splash === undefined ? {} : { splash }),
       });
     }
   });

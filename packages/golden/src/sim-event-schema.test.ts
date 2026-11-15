@@ -102,6 +102,7 @@ describe('sim-event.schema.json', () => {
       'overload_started',
       'produced',
       'ramp_step',
+      'splash',
       'stalled',
       'turret_fired',
       'unit_attacked',

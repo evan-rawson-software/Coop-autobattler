@@ -161,6 +161,20 @@ export type ArenaEvent =
     }
   | {
       readonly tick: number;
+      readonly type: 'splash';
+      /** The unit with `splash` that attacked a unit (its `unit_attacked` comes first). */
+      readonly attacker: number;
+      /** The primary target's centre, in sub-cell units (the blast centre). */
+      readonly x: number;
+      readonly y: number;
+      /** The secondary targets hit, in unit id order, with the damage each took (after armor). */
+      readonly targets: readonly {
+        readonly unit: number;
+        readonly damage: number;
+      }[];
+    }
+  | {
+      readonly tick: number;
       readonly type: 'turret_fired';
       readonly side: number;
       readonly building: number;
@@ -2698,17 +2712,26 @@ function resolveAttacks(
     if (u === undefined || (act !== ACT_UNIT && act !== ACT_BUILDING)) continue;
     if (u.attackCooldown > 0) continue; // holds position
     const stats = unitStats(u.side, defOf(ctx, u));
-    // Damage order (CB-5h): spawn damage, then Overload, then (later) the
-    // splash percent, then the target's armor (only for a hit on a unit).
-    let damage = mulPct(u.damage, 100 + level * cfg.overloadDamageStepPercent);
+    // Damage order (CB-5h): spawn damage, then Overload, then the splash
+    // percent (secondary targets only), then each target's armor (only for a
+    // hit on a unit).
+    const hit = mulPct(u.damage, 100 + level * cfg.overloadDamageStepPercent);
+    let damage = hit;
     const arg = ctx.arg[i] ?? 0;
     let target: UnitTarget;
+    let splash: SplashHit[] | undefined;
+    let centre: UnitSim | undefined;
     if (act === ACT_UNIT) {
       const t = units[arg];
       if (t === undefined) continue;
-      damage = armorHit(damage, defOf(ctx, t).armor);
+      damage = armorHit(hit, defOf(ctx, t).armor);
       ctx.unitDamage[arg] = addDamage(ctx.unitDamage[arg] ?? 0, damage);
       target = { kind: 'unit', unit: t.id };
+      const sp = defOf(ctx, u).splash;
+      if (sp !== undefined) {
+        splash = splashHits(ctx, units, u, t, arg, hit, sp);
+        centre = t;
+      }
     } else {
       const b = arena.buildings[arg];
       if (b === undefined) continue;
@@ -2727,7 +2750,77 @@ function resolveAttacks(
       target,
       damage,
     });
+    if (splash !== undefined && centre !== undefined) {
+      events?.push({
+        tick,
+        type: 'splash',
+        attacker: u.id,
+        x: centre.px,
+        y: centre.py,
+        targets: splash,
+      });
+    }
   }
+}
+
+interface SplashHit {
+  readonly unit: number;
+  readonly damage: number;
+}
+
+/**
+ * The secondary hits of one attack by a unit with `splash` on the unit at
+ * index `arg` (CB-5h): every other unit of the opposing side whose centre is
+ * within `radiusSub` of the target's centre (squared distance <= radiusSub^2)
+ * takes `mulPct(hit, percent)` (skipped when that is 0), reduced by its own
+ * armor, summed into this tick's damage. Found through the opposing side's
+ * cell grid, returned in unit id order (the list is in id order, so index
+ * order is id order).
+ */
+function splashHits(
+  ctx: ArenaContext,
+  units: readonly UnitSim[],
+  attacker: UnitSim,
+  primary: UnitSim,
+  arg: number,
+  hit: number,
+  sp: { readonly radiusSub: number; readonly percent: number },
+): SplashHit[] {
+  const out: SplashHit[] = [];
+  const part = mulPct(hit, sp.percent);
+  if (part <= 0) return out;
+  const { width, height } = ctx.arena.geom;
+  const heads = ctx.heads[attacker.side === 0 ? 1 : 0];
+  if (heads === undefined) return out;
+  const r2 = sp.radiusSub * sp.radiusSub;
+  const gx0 = cellCoord(primary.px - sp.radiusSub, width);
+  const gx1 = cellCoord(primary.px + sp.radiusSub, width);
+  const gy0 = cellCoord(primary.py - sp.radiusSub, height);
+  const gy1 = cellCoord(primary.py + sp.radiusSub, height);
+  const found: number[] = [];
+  for (let y = gy0; y <= gy1; y++) {
+    for (let x = gx0; x <= gx1; x++) {
+      let j = heads[y * width + x] ?? -1;
+      while (j !== -1) {
+        const e = units[j];
+        if (e !== undefined && j !== arg) {
+          const dx = e.px - primary.px;
+          const dy = e.py - primary.py;
+          if (dx * dx + dy * dy <= r2) found.push(j);
+        }
+        j = ctx.next[j] ?? -1;
+      }
+    }
+  }
+  found.sort((a, b) => a - b);
+  for (const j of found) {
+    const e = units[j];
+    if (e === undefined) continue;
+    const dealt = armorHit(part, defOf(ctx, e).armor);
+    ctx.unitDamage[j] = addDamage(ctx.unitDamage[j] ?? 0, dealt);
+    out.push({ unit: e.id, damage: dealt });
+  }
+  return out;
 }
 
 /** Step 4, on an Overload beat: every living Core takes the decay. */

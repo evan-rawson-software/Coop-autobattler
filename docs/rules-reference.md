@@ -66,9 +66,20 @@ that way.
   `{id, side, def, px, py, hp, damage, attackCooldown, owner, target}`), so
   every existing state hash is unchanged. It is read from the definition
   when a hit is dealt, as the last step of the damage order of CB-5h
-  (after Overload and, later, the splash percent), one hit at a time:
+  (after Overload and the splash percent), one hit at a time:
   `max(1, hit - armor)` for `hit > 0`, never on the sum of a tick. The
   `unit_attacked` and `turret_fired` events carry the reduced value.
+- **Splash.** `splash` (`{radiusSub, percent}`) is optional in `units.json`
+  and absent from the definition when not given; like `armor` it is never
+  written into a saved or hashed unit, so every existing state hash is
+  unchanged. A port finds the secondary targets through its per-side cell grid
+  (the grid of the opposing side, cells `cellCoord(px -+ radiusSub)` in each
+  axis, the same grid that is current in step 4) and not by scanning every unit;
+  the result must be in unit `id` order, which is list order. The test is
+  integer: `dx*dx + dy*dy <= radiusSub*radiusSub` on the centres. All secondary
+  hits join the per-tick damage accumulation of step 4 exactly like the
+  primary hit; none is applied early. The `splash` event is recorded right
+  after the `unit_attacked` event of the same attacker.
 - **Resources without a rarity.** A resource is a *base* resource exactly when
   it has no `refinedFrom`. Only base resources have a `rarity` and only base
   resources are placed on maps (`listBase`, in file order); a port must not
@@ -299,6 +310,7 @@ on purpose: PvE threats (below) are not limited by them in rounds 1 to
 | `MAX_TIER_COST`        | 1 000 000           | each value of `costs` of a unit producer tier (CB-5e); at most four of them |
 | `MAX_OUTPUT_PER_BATCH` | 1 000               | `outputPerBatch` of a refinery tier (CB-5d)                               |
 | `MAX_ARMOR`            | 1 000               | `armor` of a unit (CB-5h); 0 when absent                                  |
+| `MAX_SPLASH_RADIUS`    | 480                 | `splash.radiusSub` of a unit (CB-5h): 1 to 480 sub-cell units (two cells); `splash.percent` is 1 to 100 |
 | `MAX_ARENA_CELLS`      | 8 192               | arena cells (`width * height`) for which a breach field is computed       |
 | `MAX_TICK_DAMAGE`      | 2^52                | most damage one target takes in one tick (the sum saturates here)         |
 | `MAX_HIT`              | 2^51                | most one hit may deal after Overload scaling                              |
@@ -1696,6 +1708,21 @@ never scaled: it is read from the definition each time a hit on the unit is
 dealt (see "Units, combat and destruction", "Order of damage modifiers"), and
 `unitStats` returns it unchanged.
 
+**Splash** (issue #387). A unit definition may give `splash`, an object
+`{radiusSub, percent}`: `radiusSub` an integer from 1 to `MAX_SPLASH_RADIUS`
+(480, two cells; 240 sub-cell units per cell), `percent` an integer from 1 to
+100. Absent means no splash, so the unit files and every saved state and state
+hash of a unit without it are unchanged (the field is part of the definition,
+never of a unit's state). Content: `unit_caster` (health 28, damage 9, attack
+cooldown 20, move cooldown 6, radius 66, collision radius 43, reach 720,
+ranged, splash 240 / 50) made by `bld_spire`. See "Units, combat and
+destruction", "Splash damage". The worst case is bounded by the units alive: one
+attack hits at most every opposing unit alive (at most 1000 per side, the unit
+budget of `docs/performance-budget.md`), so a tick has at most
+`(attackers with splash) * (opposing units)` secondary hits, at most about 10^6;
+a battle packed with casters measured a peak of 444 secondary hits per tick (see
+the performance budget).
+
 **Armor** (issue #382). A unit definition may give `armor`, an integer from 0
 to `MAX_ARMOR` (1000); absent means 0, so the unit files and every saved state
 and state hash of a unit without armor are unchanged. Every hit on a unit deals
@@ -1734,6 +1761,7 @@ units unless noted):
 | `reach` | Most the gap between the unit's circle and its target may be for it to attack (0 to 1920). |
 | `moveCooldownTicks` | Ticks the unit needs to walk one cell. `speed = floor(240 / moveCooldownTicks)` sub-cell units per tick (1 to 240; at least 1 results). Soldier 6 -> 40, raider 4 -> 60: the same crossing time per cell as the earlier one-cell-per-cooldown rule. |
 | `armor` | Optional integer 0 to `MAX_ARMOR` (1000), default 0: taken off every hit on this unit, at least 1 left for a hit above 0 ("Units, combat and destruction"). Not scaled by `unit_strength`. |
+| `splash` | Optional `{radiusSub, percent}` (`radiusSub` 1 to `MAX_SPLASH_RADIUS` = 480, `percent` 1 to 100): area damage around the unit it attacks ("Units, combat and destruction", "Splash damage"). Not scaled by `unit_strength`. |
 | `flying` | Boolean. A flying unit ignores walls, lakes and cliffs and collides only with other flying units ("Ranged units and flyers"). A flying unit must be `ranged` (the loader rejects a melee flyer). |
 | `attackType` | `"melee"` or `"ranged"`. A melee unit cannot hit a flying unit; a ranged unit can. For a ranged unit `reach` is its range (edge to edge, as for melee). |
 
@@ -1813,6 +1841,10 @@ Implemented in `arena-sim.ts` (decisions, spawn) and `unit-motion.ts`
   sight for an attack: archers shoot over walls and over allies. An archer
   behind a soldier in a corridor can block the units behind it only while it
   fires (the others slide round a holder when they can, step 3 "Steering").
+- **Splash and flyers.** A ranged unit with `splash` (the caster) can hit a
+  flyer like any ranged unit, and its splash includes flyers: the splash
+  search takes every unit of the opposing side, ground or flying, whose centre
+  is within the radius, regardless of layer.
 - **Flying units** fly in a separate layer. They are not solid for anything
   except the arena rectangle: `fits` and the push-out use a copy of the world
   in which no cell is solid (`ctx.air`), so walls, buildings, lakes and
@@ -2106,6 +2138,26 @@ exactly like the original.
    reduced by the target's armor (`armorHit`, "Order of damage modifiers"), and
    the `unit_attacked` event carries the value actually dealt (after Overload
    and armor for a unit target; after Overload only for a building or Core).
+   **Splash damage.** When the attacker's definition has `splash` and its
+   target is a unit (not a building or a Core; turrets and buildings never
+   splash), the target takes the hit as above, and then every other unit of the
+   **opposing** side (the other side's units, ground or flying; neutral guards do
+   not exist yet; the attacker's own side is never hurt) whose centre is
+   within the radius takes `part = mulPct(hit, percent)`, where `hit` is the
+   damage after Overload and before the primary target's armor. The test is
+   exact, in integers on the centres: `dx*dx + dy*dy <= radiusSub*radiusSub`
+   (a unit exactly `radiusSub` away is hit). A `part` of 0 is skipped (no hit,
+   no entry); otherwise each secondary target's own armor applies,
+   `armorHit(part, armor)`, and the result is added to that target's pending
+   damage. Secondary targets are processed in unit `id` order. All hits of one
+   attack, primary and secondary, are added in this same step to the
+   same per-tick accumulation as all other damage, and nobody dies before the
+   destruction step ("Resolution order"); a unit that is itself dying this tick
+   may still be a primary or secondary target and still attack (simultaneous
+   attacks). The attack is recorded as `unit_attacked` (the primary hit) and,
+   straight after it, one `splash` event with the targets and the damage each
+   took. The search uses the opposing side's cell grid and visits only the
+   cells within `radiusSub` of the target's centre.
    Damage from all
    attackers, and from turret shots, is summed per target with the saturating
    rule of "Integer math conventions" (`addSaturating(sum, hit,
@@ -2627,6 +2679,7 @@ shot is recorded in step 3, before the step 4 attack events):
 | `unit_spawned`       | `unit`, `side`, `def`, `px`, `py` (the centre, sub-cell units), `building` (the producer's ID, or 0 for a scheduled wave, see "Side options"), `owner`, `target` (PP-11) |
 | `unit_retargeted`    | `unit`, `target` (the new target Core, a player index, or -1); recorded after the destruction events of step 6 |
 | `unit_attacked`      | `unit`, `target`, `damage`                                      |
+| `splash`             | `attacker` (the unit with `splash`), `x`, `y` (the primary target's centre, sub-cell units), `targets` (a list of `{unit, damage}` of the secondary targets in unit id order, damage after their armor; may be empty); recorded right after the attacker's `unit_attacked` event, only when the attack was on a unit |
 | `turret_fired`       | `side` (the owner), `building` (the turret), `unit`, `damage`   |
 | `unit_died`          | `unit`                                                          |
 | `building_destroyed` | `side`, `building`                                              |
@@ -2685,7 +2738,7 @@ corner cell between a healthy and a damaged wall of equal maximum health that
 attacks the healthy one because the breach step prices buildings by maximum
 health).
 
-Vectors added with the circle model (issue #59): `arena-sim.separation-converging-soldiers` (four soldiers converging on one target: equal and unequal priority in the separation pass), `arena-sim.choke-point` (twelve soldiers through a wall line with a one-cell gap), `arena-sim.producer-held-at-blocked-exit` (a barracks whose only exit is occupied holds its unit, stops drawing, the source stalls) and `arena-sim.wide-unit-blocked-by-gap` (an ogre with a collision diameter of 320 waits in front of a one-cell gap that a soldier passes). Vectors added with ranged units and flyers (issue #59 part 2): `arena-sim.ranged-fires-from-range-and-holds`, `arena-sim.flyer-crosses-lake-line`, `arena-sim.melee-cannot-hit-flyer` and `arena-sim.ranged-and-flyers-mirror-restore` (mirrored rosters with all four unit types, saved and restored three times). Vectors added with the flyer follow-ups: `arena-sim.walled-hangar-spawns-drones` (a Hangar walled in on every side spawns drones that fly out), `arena-sim.flyer-crosses-walls-and-buildings` (a drone passes a wall line and a row of Barracks without attacking them) and `arena-sim.flyer-retargets-by-distance` (after its Core falls a drone takes the nearer Core where the ground tie rule would take the higher index). Two optional inputs make them possible: `extraUnits`, a list of unit definitions in the format of `content/units.json` added to the content for the run, and `report: "positions"`, which adds `positions` (`[[id, px, py], ...]` of the living units) to the result. Vectors added with two-input consumers (issue #380, CB-5e): `arena-sim.foundry-spawns-heavies`, `arena-sim.foundry-ore-only-spawns-nothing`, `arena-sim.foundry-mixed-network` (a Foundry and a Barracks sharing Ore through a splitter; saved and restored twice), `arena-sim.foundry-border-link-feeds-power` (Power over a border link, PP-4; saved and restored) and `arena-sim.foundry-destroyed-mid-battle` (the Foundry is the weak point of a sealed base and is destroyed while holding a full Power counter; "Mid-battle removal"; saved and restored twice). Vectors added with the refineries (issue #381, CB-5d), each with a test consumer defined by `extraBuildings` (a list of building definitions in the format of `content/buildings.json`, added to the content for the run, because no shipped building takes a refined resource): `arena-sim.refinery-ab-feeds-units` and `arena-sim.refinery-bc-feeds-units` (a chain of two collectors, a refinery and the consumer, which spawns soldiers; saved and restored) and `arena-sim.refinery-destroyed-mid-battle` (a refinery is the weak point of a sealed base, stalled and holding two items when it is destroyed; the items are lost with two `lost` events and its conduits go with it; saved and restored twice). Vectors added with the Golem (issue #382, CB-5h; `bld_golem_forge` is shipped content, so none needs `extraBuildings`): `arena-sim.golem-chain-push` (Ore and Power collectors, a Composite refinery and a Golem forge, Golems marching with the soldiers of a Barracks against a base making soldiers; saved and restored), `arena-sim.golem-turrets-armor` (the turret-kills-wave board with Golems: every shot takes 3 less), `arena-sim.golem-passes-one-cell-gap` (a Golem and a soldier cross a wall line with a one-cell gap) and `arena-sim.golem-armor-vs-unit-hits` (a Golem against a soldier, an archer and a raider: hits of 3, 2 and 5).
+Vectors added with the circle model (issue #59): `arena-sim.separation-converging-soldiers` (four soldiers converging on one target: equal and unequal priority in the separation pass), `arena-sim.choke-point` (twelve soldiers through a wall line with a one-cell gap), `arena-sim.producer-held-at-blocked-exit` (a barracks whose only exit is occupied holds its unit, stops drawing, the source stalls) and `arena-sim.wide-unit-blocked-by-gap` (an ogre with a collision diameter of 320 waits in front of a one-cell gap that a soldier passes). Vectors added with ranged units and flyers (issue #59 part 2): `arena-sim.ranged-fires-from-range-and-holds`, `arena-sim.flyer-crosses-lake-line`, `arena-sim.melee-cannot-hit-flyer` and `arena-sim.ranged-and-flyers-mirror-restore` (mirrored rosters with all four unit types, saved and restored three times). Vectors added with the flyer follow-ups: `arena-sim.walled-hangar-spawns-drones` (a Hangar walled in on every side spawns drones that fly out), `arena-sim.flyer-crosses-walls-and-buildings` (a drone passes a wall line and a row of Barracks without attacking them) and `arena-sim.flyer-retargets-by-distance` (after its Core falls a drone takes the nearer Core where the ground tie rule would take the higher index). Two optional inputs make them possible: `extraUnits`, a list of unit definitions in the format of `content/units.json` added to the content for the run, and `report: "positions"`, which adds `positions` (`[[id, px, py], ...]` of the living units) to the result. Vectors added with two-input consumers (issue #380, CB-5e): `arena-sim.foundry-spawns-heavies`, `arena-sim.foundry-ore-only-spawns-nothing`, `arena-sim.foundry-mixed-network` (a Foundry and a Barracks sharing Ore through a splitter; saved and restored twice), `arena-sim.foundry-border-link-feeds-power` (Power over a border link, PP-4; saved and restored) and `arena-sim.foundry-destroyed-mid-battle` (the Foundry is the weak point of a sealed base and is destroyed while holding a full Power counter; "Mid-battle removal"; saved and restored twice). Vectors added with the refineries (issue #381, CB-5d), each with a test consumer defined by `extraBuildings` (a list of building definitions in the format of `content/buildings.json`, added to the content for the run, because no shipped building takes a refined resource): `arena-sim.refinery-ab-feeds-units` and `arena-sim.refinery-bc-feeds-units` (a chain of two collectors, a refinery and the consumer, which spawns soldiers; saved and restored) and `arena-sim.refinery-destroyed-mid-battle` (a refinery is the weak point of a sealed base, stalled and holding two items when it is destroyed; the items are lost with two `lost` events and its conduits go with it; saved and restored twice). Vectors added with the Golem (issue #382, CB-5h; `bld_golem_forge` is shipped content, so none needs `extraBuildings`): `arena-sim.golem-chain-push` (Ore and Power collectors, a Composite refinery and a Golem forge, Golems marching with the soldiers of a Barracks against a base making soldiers; saved and restored), `arena-sim.golem-turrets-armor` (the turret-kills-wave board with Golems: every shot takes 3 less), `arena-sim.golem-passes-one-cell-gap` (a Golem and a soldier cross a wall line with a one-cell gap) and `arena-sim.golem-armor-vs-unit-hits` (a Golem against a soldier, an archer and a raider: hits of 3, 2 and 5). Vectors added with the Spire and the caster (issue #387, CB-5h; `bld_spire` is shipped content): `arena-sim.spire-chain-casters` (a Power and a Flux collector, an Aether refinery and a Spire; casters against a base that makes soldiers; saved and restored), `arena-sim.caster-splash-cluster` (a caster hits a soldier in a tight group: neighbours within one cell, a drone and a Golem included, take their share; a soldier 241 away and the caster's own soldier do not) and `arena-sim.caster-hits-wall-only` (casters against a closed wall line: only the wall is hit, no splash event).
 
 The team scripts of this kind and of `team-state-ops` may give an explicit
 `map` (in the map format) instead of `seed` and `partySize`; the vectors that
@@ -3163,7 +3216,7 @@ equal overkill, `battle.tiebreak-building-damage` (a soldier wave hits a turret
 and dies: side 1 has the building damage although side 0 has the kill),
 `battle.tiebreak-kills` (free-power turrets kill a wave: side 1 wins on kills
 with no building damage on either side) and `battle.tiebreak-attacker` (two
-bare Cores), `battle.wave-queue` (a wave of 80 soldiers larger than the front row: the units that find no room wait in the `entering` queue and come in later); party sizes 1 and 2 refused; for several Cores (issue #132) `battle.two-plot-core-falls` (one Core falls at tick 2000 and the battle goes on; an earlier fall adds no overkill), `battle.walled-four-cores-overload` (eight walled Cores fall at tick 3100), `battle.time-limit-cores-standing-side0` and `-side1` (rung 1, the defender can win), `battle.time-limit-core-share` (rung 2) and `battle.overkill-two-cores` (rung 3); `battle.golem-chain-push` (issue #382: the Golem chain of `arena-sim.golem-chain-push` as a whole battle).
+bare Cores), `battle.wave-queue` (a wave of 80 soldiers larger than the front row: the units that find no room wait in the `entering` queue and come in later); party sizes 1 and 2 refused; for several Cores (issue #132) `battle.two-plot-core-falls` (one Core falls at tick 2000 and the battle goes on; an earlier fall adds no overkill), `battle.walled-four-cores-overload` (eight walled Cores fall at tick 3100), `battle.time-limit-cores-standing-side0` and `-side1` (rung 1, the defender can win), `battle.time-limit-core-share` (rung 2) and `battle.overkill-two-cores` (rung 3); `battle.golem-chain-push` (issue #382: the Golem chain of `arena-sim.golem-chain-push` as a whole battle); `battle.spire-chain-push` (issue #387: the Spire chain of `arena-sim.spire-chain-casters` as a whole battle).
 
 ### Decided simplifications
 
@@ -3688,11 +3741,16 @@ broken as follows:
   in this order, each on the result of the one before: (1) the attacker's
   damage, fixed at spawn with `unit_strength` (`unitStats`); (2) Overload
   escalation, `mulPct(damage, 100 + level * overloadDamageStepPercent)`; (3)
-  the splash percent for a secondary target (reserved for a later rule, issue
-  #387; it is applied here, before armor, and does not exist yet); (4) the
+  the splash percent for a secondary target, `mulPct(hit, percent)` rounded
+  down, where `hit` is the damage after step 2 and **before** the primary
+  target's armor (a secondary target's share never depends on the primary's
+  armor); a primary target skips this step; (4) the
   target's armor, once per hit: `max(1, hit - armor)` for a hit above 0, a
-  hit of 0 staying 0. One helper (`armorHit`) does step 4 and is applied
-  where a hit on a unit is dealt: a unit attack (step 4 of the tick) and a
+  hit of 0 staying 0 (each secondary target applies its own armor to its own
+  share, so a share of 1 or more is at least 1 after armor). One helper
+  (`armorHit`) does step 4 and is applied
+  where a hit on a unit is dealt: a unit attack (step 4 of the tick, primary
+  and secondary hits) and a
   turret shot (step 3), after Overload, before the hit joins the target's
   summed damage. The armor of a unit is on its definition and is not scaled
   by `unit_strength`. Hits on buildings and Cores are not reduced (they have
@@ -4599,6 +4657,7 @@ player grows by raising tiers, by economy buildings or through a border link.
 | Barracks `costPerUnit` / `productionIntervalTicks` | `buildings.json` | 5 / 5 / 5 items per 100 / 70 / 50 ticks (need 0.50 / 0.71 / 1.00 per second) | integers >= 1 |
 | Foundry `costs` / `productionIntervalTicks` (issue #380, proposed, to be tuned) | `buildings.json` | `res_a` 5 and `res_b` 5 per unit, every tier, per 100 / 70 / 50 ticks (need 0.50 / 0.71 / 1.00 per resource per second, 50 / 71 / 100 per 1000 ticks); price 40 / 85 / 150, health 70 / 105 / 140; makes `unit_heavy` (health 70, damage 14, attack cooldown 10, move cooldown 6, radius 84, collision radius 55, reach 66) | each cost an integer from 1 to `MAX_TIER_COST`; not in the shop yet |
 | Golem forge `bld_golem_forge` and `unit_golem` (issue #382, proposed, to be tuned) | `buildings.json`, `units.json` | `res_ab_refined` 4 per Golem, every tier, per 120 / 84 / 60 ticks; price 45 / 90 / 160, health 70 / 105 / 140; 2x2, Composite on the south side; Golem health 260, damage 6, attack cooldown 14, move cooldown 10 (speed 24), radius 110, collision radius 80 (diameter 160, under one cell), reach 80, melee, armor 3 | `armor` an integer from 0 to `MAX_ARMOR`; a Golem with the largest strength bonus stays within `MAX_HEALTH`; not in the shop or the bot |
+| Spire `bld_spire` and `unit_caster` (issue #387, proposed, to be tuned) | `buildings.json`, `units.json` | `res_bc_refined` 4 per caster, every tier, per 120 / 84 / 60 ticks; price 50 / 95 / 170, health 70 / 105 / 140; 2x2, Aether on the south side; caster health 28, damage 9, attack cooldown 20, move cooldown 6, radius 66, collision radius 43, reach 720, ranged, splash radius 240 sub-cell units and 50 percent | `splash.radiusSub` 1 to `MAX_SPLASH_RADIUS`, `splash.percent` 1 to 100; not in the shop or the bot |
 | Refineries `bld_refinery_ab` (Composite from `res_a` + `res_b`) and `bld_refinery_bc` (Aether from `res_b` + `res_c`): `costs` / `productionIntervalTicks` / `outputPerBatch` (issue #381, proposed, to be tuned) | `buildings.json` | 3 of each input per batch of 2 items, every tier, per 60 / 42 / 30 ticks (need 50 / 71 / 100 per input per 1000 ticks, output 33 / 47 / 66 per 1000 ticks); price 35 / 75 / 130, health 60 / 90 / 120; 2x2, the first input south, the second west, the output north | `costs` as for the Foundry, `outputPerBatch` 1 to `MAX_OUTPUT_PER_BATCH`; not in the shop or the bot yet |
 | Turret `cooldownTicks` / `costPerShot` / `damage` | `buildings.json` | 10 / 7 / 5 ticks, 1 item per shot, damage 5 / 8 / 10 (need 1.00 / 1.42 / 2.00 while firing: two collectors of its tier) | integers >= 1 |
 | Overclocker `costPerStep` / `stepIntervalTicks` / `stepPercent` x `maxSteps` | `buildings.json` | 2 / 3 / 4 items per step, a step per 40 / 42 / 40 ticks, 2x5 / 3x5 / 5x5 = +10 / +15 / +25 percent | fits under `maxSourceSpeedPercent` |

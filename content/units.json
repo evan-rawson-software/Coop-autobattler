@@ -73,6 +73,19 @@
       "reach": 600,
       "flying": true,
       "attackType": "ranged"
+    },
+    {
+      "id": "unit_caster",
+      "health": 28,
+      "damage": 9,
+      "attackCooldownTicks": 20,
+      "moveCooldownTicks": 6,
+      "radius": 66,
+      "collisionRadius": 43,
+      "reach": 720,
+      "flying": false,
+      "attackType": "ranged",
+      "splash": { "radiusSub": 240, "percent": 50 }
     }
   ]
 }
