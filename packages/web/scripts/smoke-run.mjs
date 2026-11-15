@@ -105,6 +105,31 @@ export async function runRunSmoke({
       w,
     );
 
+  // The top bar title must not be cut off on a battle screen at 1280 wide
+  // (issue #350): scrollWidth <= clientWidth, at 1280x800 and 1280x720. The
+  // viewport is restored afterwards.
+  const checkTitleAt1280 = async (label, shotName) => {
+    for (const h of [800, 720]) {
+      await page.setViewportSize({ width: 1280, height: h });
+      await settle();
+      const m = await page.evaluate(() => {
+        const el = document.querySelector('.topbar-title');
+        return {
+          text: el.textContent,
+          sw: el.scrollWidth,
+          cw: el.clientWidth,
+        };
+      });
+      check(
+        m.sw <= m.cw,
+        `${label}: the top bar title is not truncated at 1280x${h} ("${m.text}", ${m.sw} <= ${m.cw})`,
+      );
+      await shot(`${shotName}-1280x${h}`);
+    }
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await settle();
+  };
+
   // The 1366x768 laptop check: no page scroll, the primary controls inside the
   // viewport and not covered, and the board drawn from the atlas at the zoom
   // the screen opens with. The viewport is restored afterwards.
@@ -1074,6 +1099,7 @@ export async function runRunSmoke({
     'battle summary: the button says Continue; no duplicate opponent tag',
   );
   await shot('run-6-battle-summary');
+  await checkTitleAt1280('Battle result', 'run-6b-stronghold-result');
   await checkFrame(page, check, 'Battle result');
   const resultStep = await checkStepper(page, check, 'Battle result', {
     phase: 'stronghold',
@@ -1263,6 +1289,7 @@ export async function runRunSmoke({
   await page.waitForFunction(
     () => window.__debug?.battle?.phase() === 'summary',
   );
+  await checkTitleAt1280('Rival result', 'run-6c-rival-result');
   const rivalStep = await checkStepper(page, check, 'Rival result', {
     phase: 'rival',
     round1: true,

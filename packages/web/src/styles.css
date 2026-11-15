@@ -165,6 +165,18 @@ select {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
+/* Up to laptop widths the title, the seven-step stepper and the run bar share
+   one line: a smaller title and tighter steps keep the whole title visible. */
+@media (max-width: 1440px) {
+  .topbar.has-run-bar .topbar-title {
+    font-size: 1rem;
+  }
+
+  .topbar.has-run-bar .phase-step-name {
+    padding: 0.15rem 0.3rem;
+  }
+}
+
 .topbar-left {
   display: flex;
   align-items: center;

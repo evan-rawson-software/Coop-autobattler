@@ -32,7 +32,6 @@ import {
   coreNameOf,
   deriveMoments,
   geometryOf,
-  clock,
   sideStats,
   type Moment,
 } from './derive.js';
@@ -540,7 +539,6 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
     if (m.focus !== null) camera.focusAt(m.focus);
   };
 
-  const timeText = clock(pb.tick, tps);
   const status = (
     <span class="battle-status">
       {props.topBarExtra}
@@ -550,9 +548,6 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
         </span>
       ) : null}
       <span data-field="vs">vs. {opponent.name}</span>
-      {phase === 'summary' ? (
-        <span data-field="battle-time">Battle time {timeText}</span>
-      ) : null}
     </span>
   );
 
@@ -593,7 +588,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
     return (
       <GameFrame
         phase="result"
-        title={`${props.title} · Summary`}
+        title={props.title}
         status={status}
         rail={rail}
         board={
