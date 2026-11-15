@@ -17,7 +17,7 @@ The project is in three phases (TA-0):
    a local ghost pool, bundled bot ghosts or the boss. It is used for
    playtesting and tuning. Every change to `main` is published at
    <https://evan-rawson-software.github.io/Coop-autobattler/>.
-2. **Port to Godot** (typed GDScript, TA-28): next. Tracked in
+2. **Port to Godot** (Godot 4.7, typed GDScript, in `godot/`; TA-28, TA-56): next. Tracked in
    [#365](https://github.com/evan-rawson-software/Coop-autobattler/issues/365).
    The port is written from [`docs/rules-reference.md`](docs/rules-reference.md)
    and must reproduce the golden vectors in [`golden/`](golden/) exactly. It

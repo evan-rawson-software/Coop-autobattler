@@ -443,6 +443,14 @@ is deliberate.
   pathfinding for many units, so performance is not a given; measure it
   against the performance budget (CB-36) and revisit only if the balance
   harness is too slow. See Q6.
+- **TA-56 [DECIDED]** **Engine version and location.** The Godot project
+  lives in `godot/` in this repository, next to `content/`, `schemas/` and
+  `golden/`, which stay the single source of those files (no edited copies
+  inside `godot/`). It uses the latest stable Godot at the
+  start of the port: **Godot 4.7.2** (pre-releases are not used). The exact
+  version is pinned in CI. Patch upgrades are routine; moving to a newer
+  minor (4.8 and later) is a deliberate change of its own, made only when
+  the golden vectors still pass and GodotSteam (TA-3) supports it.
 - **TA-29 [PROPOSED]** Core uses integer math and an explicit seeded PRNG so
   battles are reproducible from `(teams, seed, installed version)` for tests,
   replays, and bug reports. Golden test vectors (stored inputs → expected
