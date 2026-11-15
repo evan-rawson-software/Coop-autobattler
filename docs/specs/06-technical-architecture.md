@@ -597,7 +597,7 @@ Still unconfirmed:
   fallback; scripted bot; bundled bot ghosts.
 - **W3b — Refining (issue #378) and points of interest** (TA-41a).
 - **W4 — Tune:** balance harness, content iteration, more event types,
-  playtests. Ends at the exit criteria (TA-53).
+  the boss roster (MM-9a–MM-9e), playtests. Ends at the exit criteria (TA-53).
 
 **Phase 2 — Godot port**
 

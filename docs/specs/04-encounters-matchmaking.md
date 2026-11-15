@@ -97,22 +97,72 @@ rows. See `docs/rules-reference.md`, "Bundled ghosts".
   `(game version, party size, round number, seed)`:
   1. Compute a **power budget** from the round number using the PvE scaling
      curve (`05-scaling-economy.md` SC-1).
-  2. Pick a **boss template** valid for that depth band: a threat profile
-     (CB-29): a wave schedule and a stronghold with a signature mechanic.
+  2. Pick a **boss template** from the bosses **unlocked** at that round
+     (MM-9b): a threat profile (CB-29): a wave schedule and a stronghold
+     with a signature mechanic. Unlocks are cumulative: a boss stays in the
+     draw once it is unlocked.
   3. Spend the budget on wave size and composition over time and on the
      stronghold's health and defenses, multiplied by party size (CP-7). The
      stronghold has one Core per player, and its total Core health is split
      evenly between them (CB-29).
   4. Emit a threat profile (CB-34). Bosses are scripted threats, not
      factories.
-- **MM-10 [PROPOSED]** A boss should be tuned to be roughly as dangerous as
+- **MM-9a [DECIDED]** **A boss mechanic changes only the boss's own side**:
+  its stronghold and its units. It never changes how the party's factory
+  works: no effect on party buildings, production, flow, ramp or turrets.
+  Reason: the party gives no orders during a battle (pillar 4), so a
+  mechanic that breaks their factory mid-fight cannot be answered. Rejected
+  for this reason: jammers that stop party buildings, siege units that
+  target the factory, and waves that switch lanes. Party units may change
+  what they walk to because of a building on the boss's side (MM-9d,
+  Pylons); that is not a change to the factory.
+- **MM-9b [DECIDED]** **Roster and unlocks.** Each boss has a first round
+  and a minimum party size. The boss is a uniform draw (from the seed)
+  among the bosses that are unlocked at the round and fit the party size.
+  Linked Cores needs 2 or more players, so it is skipped in solo and the
+  draw picks another unlocked boss. A boss with only a data signature (a
+  different wave mix and nothing new in the arena) was rejected as too close
+  to ordinary PvE.
+- **MM-9c [DECIDED]** **No back-to-back repeats.** The boss met in the run's
+  previous boss battle is left out of the draw when another boss is
+  eligible. If it is the only eligible one, it is drawn again.
+- **MM-9d [PROPOSED]** **The bosses.** Each has one new arena rule, boss side
+  only (MM-9a). Names are working names; theme issue #393 renames them. All
+  numbers here are [PROPOSED].
+
+  | Boss | ID | From round | Party size | Mechanic (boss side only) | Counter |
+  |------|----|-----------|------------|---------------------------|---------|
+  | Today's boss | `arch_boss` | 1 | any | Every third wave is all raiders (unchanged). The early, cold-start boss (MM-12). | Defence against swarms |
+  | Brood stronghold | `arch_boss_brood` | 3 | any | Each boss Core releases a burst of units when it falls below 75%, 50% and 25% of its starting health. A hit that crosses several thresholds releases each of them; destroying a Core releases any left. | Keep defence at home; do not go all-in on attack |
+  | Linked Cores | `arch_boss_linked` | 5 | 2–4 | The boss Cores share one health pool: damage to any of them comes off the pool, and they all fall together when it is empty. | Co-op: a strong lane carries a weak one; total pressure matters |
+  | Pylons | `arch_boss_pylons` | 7 | any | Each boss plot has a few shield pylons around its Core. That Core takes no damage while any of its pylons stands. Party units treat a shielded Core's pylons as their targets until they are down. | Enough units to break through; ranged units to reach pylons |
+  | Warlord | `arch_boss_warlord` | 9 | any | Every wave is led by one champion per boss plot: a Golem with many times a Golem's health, paid for out of the wave budget. | Focused damage and walls that delay it; Golem armor shrugs off splash |
+
+  - Boss waves may use refining's units (Golem, caster, heavy). Only the
+    Warlord depends on them.
+  - Pylons: the party's units change what they walk to only because of a
+    building on the boss's side. The party's factory works as always, so
+    this fits MM-9a. Pylons are boss-only buildings (CB-29), never in a shop.
+  - Out of scope: boss-only units the party can never get; boss rewards
+    different from a ghost's; an endgame guard that forces bosses (SC-7);
+    PvE threats that use these mechanics.
+- **MM-9e [DECIDED]** **Every mechanic is paid from the boss's existing
+  budget** (SC-1, boss multiplier). A mechanic does not raise the curve:
+  the pylons, the burst units or the champion come out of the same total
+  the boss would have had. Stakes are unchanged: losing to any boss costs 1
+  life (RS-5a).
+- **MM-10 [PROPOSED]** **Each boss** (every entry in MM-9d, not just "the
+  boss") should be tuned to be roughly as dangerous as
   the *median* ghost at that round while ghosts exist at that depth, and to
   follow the exponential curve beyond it. In practice the snapshot pool thins
   out at high rounds, so deep runs naturally transition from ghosts to
   ever-harder bosses — this is the mechanism that ends every run (V-5).
 - **MM-11 [PROPOSED]** Players are told whether a PvP battle is a ghost or a
   boss, before or at fight start. Bosses are presented as bosses, never
-  disguised as players.
+  disguised as players. When the opponent is a boss, the shop before the PvP
+  battle names the boss and explains its mechanic and a counter, so the party
+  can build against it. A ghost is still described only as a "rival party"
+  (MM-7 is unchanged for ghosts).
 
 ## Pool health
 

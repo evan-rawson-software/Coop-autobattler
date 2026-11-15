@@ -46,7 +46,10 @@ the specification.
     (e.g. round ~18–20).
 - **SC-5 [PROPOSED]** Bosses that replace a ghost early in a run (pool
   cold-start) must not be harsher than a typical ghost at that depth (MM-10),
-  so early boss fallbacks do not punish players for an empty pool.
+  so early boss fallbacks do not punish players for an empty pool. This
+  holds for **each** boss unlocked at that round (MM-9d), not only for one
+  of them. A boss mechanic is paid from the boss's budget (MM-9e) and so
+  does not make the boss harsher than the curve.
 - **SC-6 [PROPOSED]** A headless **balance harness** runs many simulated
   fights of reference teams against generated PvE at each round and difficulty to chart win
   rate by depth. This is the tool that sets `B0` and `g`, and it should exist

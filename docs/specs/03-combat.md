@@ -650,6 +650,12 @@ Everything below is [PROPOSED] detail unless marked otherwise.
     are; Overload, ties and the time limit work as in any battle.
   - The stronghold's defenses are laid out plot by plot, around each plot's
     Core.
+  - **Boss strongholds may differ in two ways** [DECIDED] (MM-9a–MM-9d):
+    a boss stronghold may contain **boss-only buildings** (pylons) that are
+    never in a shop, and its Cores may share one health pool (Linked Cores)
+    instead of splitting it. Party units target the pylons of a shielded
+    Core until they are down (Pylons); this is the only targeting change.
+    Nothing a boss does changes the party's factory.
 
   Archetypes test the three strategies:
   - **Rusher** — heavy early waves; tests defense.

@@ -112,7 +112,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     <p>Nobody gives orders here. The party watches its factory start cold, ramp up, and send units across the neutral zone while the enemy does the same. Each player has their own Core, so each side shows one health bar per Core under a total. The sketch is a three-player party; a solo battle shows one bar per side.</p>
     <div class="sheet"><svg id="s-battle" class="big" viewBox="0 0 1280 720" role="img" aria-label="Battle screen wireframe: the stronghold board at the top, a neutral zone in the middle, the party's board at the bottom with three Cores, one of them fallen, and status panels on both sides with a health bar for each Core."></svg></div>
     <ol class="notes">
-      <li>Who you are fighting and what kind of battle it is. A ghost shows the other party's names; a boss says so.</li>
+      <li>Who you are fighting and what kind of battle it is. A ghost shows the other party's names; a boss says so and names the boss. Boss-only marks are in sketch 1b.</li>
       <li>Your board, at the bottom, exactly as you built it. Conduits light up as resources flow.</li>
       <li>The neutral zone. Its lakes and cliffs are generated for this battle and revealed when it starts. Buildings do nothing here; only units fight.</li>
       <li>The enemy board, at the top, with one Core per player. Your units attack buildings in their way and finally the Cores: first the one opposite their owner’s plot, then the nearest still standing.</li>
@@ -126,6 +126,18 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>Camera presets (Center, My base, Their base, Fit battle). It starts at the center of the map, and the view pans and zooms, so a larger map or a four-player battle still works on the same screen.</li>
       <li>A Golem leads the push. It is drawn bigger than other units: huge health and flat armor, but slow and weak in attack.</li>
       <li>A caster’s blast hits a group: units near the target take part of the hit. Units only, no buildings, no friendly fire.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>1b. Battle: boss marks</h2>
+    <p>A boss battle looks like screen 1, with one extra mark for the boss in play. Each boss changes only its own side, never the party's factory. Four marks are sketched together here; a real battle shows only the one for its boss. All names are placeholders.</p>
+    <div class="sheet"><svg id="s-boss" viewBox="0 0 960 540" role="img" aria-label="Boss marks on the battle screen: Core health bars with threshold ticks, one shared health bar for linked Cores, a Core ringed by shield pylons, and a champion leading a wave."></svg></div>
+    <ol class="notes">
+      <li>Brood stronghold: each boss Core bar has ticks at 75%, 50% and 25%. When a Core falls below one, it releases a burst of units, and the log says so.</li>
+      <li>Linked Cores: one shared bar for all the boss Cores, with the Cores listed under it. Damage to any Core comes off the bar, and they all fall together.</li>
+      <li>Pylons: the shield pylons drawn around a boss Core, a shield ring on the Core while any stands, and a count (“Pylons 2/4”). Your units go for the pylons first.</li>
+      <li>Warlord: the champion leading each wave, drawn bigger than a Golem and marked as the champion, with its own health bar.</li>
     </ol>
   </section>
 
@@ -151,7 +163,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>Gold buys buildings and re-rolls, nothing else.</li>
       <li>Your stash: buildings you own that are not on the board. Drag here to sell.</li>
       <li>Teammates' gold and stash, for information only. You do not see their offers. Hidden in solo.</li>
-      <li>What comes next. PvE options are shown ahead of time; a PvP opponent never is.</li>
+      <li>What comes next. PvE options are shown ahead of time. A ghost opponent never is. When the opponent is a boss, this panel names the boss, gives one line on its mechanic and one line of counter advice, so you can build against it (the sketch shows a boss; names are placeholders).</li>
       <li>A small live view of the board that jumps to the Build tab.</li>
       <li>Ready is available on both tabs.</li>
     </ol>
@@ -421,6 +433,49 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     mark(s, rx + pw - 18, 442, 10, 11); mark(s, rx + pw - 18, 252, 11, 11); mark(s, rx + pw - 18, 564, 12, 11);
   })();
 
+  // ================= 1b. BOSS MARKS =================
+  (function () {
+    var s = document.getElementById("s-boss");
+    topbar(s, "Round 5 · PvP battle", "vs. Boss: working name", "Battle time 1:24  ·  Lives 4 / 5");
+    function quad(x, y, title, n) { R(s, x, y, 456, 236, "panel"); T(s, x + 12, y + 24, title, "th"); mark(s, x + 436, y + 20, n); }
+    // 1. Brood: threshold ticks
+    quad(24, 52, "BROOD STRONGHOLD · boss Core bars", 1);
+    [["Core 1", 300, 500], ["Core 2", 190, 500], ["Core 3", 460, 500]].forEach(function (r, i) {
+      var y = 76 + i * 34, x = 36;
+      T(s, x, y + 22, r[0], "ts"); R(s, x + 60, y + 10, 300, 14, "hp"); R(s, x + 60, y + 10, Math.round(300 * r[1] / r[2]), 14, "hp-e");
+      [0.75, 0.5, 0.25].forEach(function (f) { el(s, "line", { x1: x + 60 + 300 * f, y1: y + 6, x2: x + 60 + 300 * f, y2: y + 28, class: "rule", "stroke-width": 2, style: "stroke:var(--ink)" }); });
+      T(s, x + 372, y + 22, r[1] + " / " + r[2], "ts", "start");
+    });
+    T(s, 36, 188, "ticks: 75% · 50% · 25%", "ts tm");
+    [[300, 214], [310, 220], [320, 212], [330, 219], [340, 213]].forEach(function (u) { el(s, "circle", { cx: u[0] + 20, cy: u[1], r: 3.5, class: "u-e" }); });
+    T(s, 36, 222, "Burst released below a tick:", "ts"); T(s, 36, 236, "Core 2 fell below 50% at 1:10", "ts tm");
+    // 2. Linked: one bar
+    quad(480, 52, "LINKED CORES · one shared bar", 2);
+    T(s, 492, 100, "Cores 3/3 · shared pool", "ts"); R(s, 492, 108, 330, 16, "hp"); R(s, 492, 108, 240, 16, "hp-e"); T(s, 832, 121, "1210 / 1500", "ts");
+    ["Core 1", "Core 2", "Core 3"].forEach(function (c, i) { R(s, 492 + i * 110, 142, 100, 28, "box"); T(s, 542 + i * 110, 160, c, "ts", "middle"); el(s, "line", { x1: 542 + i * 110, y1: 142, x2: 542 + i * 110, y2: 124, class: "rule" }); });
+    T(s, 492, 196, "A hit on any Core comes off the pool.", "ts"); T(s, 492, 210, "All Cores fall together at 0. Not drawn in solo.", "ts tm");
+    // 3. Pylons
+    quad(24, 296, "PYLONS · shielded Core", 3);
+    var cx = 150, cy = 420;
+    el(s, "circle", { cx: cx, cy: cy, r: 58, class: "blast" });
+    R(s, cx - 16, cy - 16, 32, 32, "core e"); T(s, cx, cy + 3, "C1", "core-t", "middle");
+    [[-48, -36, 0], [48, -36, 0], [-48, 36, 1], [48, 36, 0]].forEach(function (q) {
+      var px = cx + q[0], py = cy + q[1];
+      el(s, "polygon", { points: [px, py - 9, px + 8, py, px, py + 9, px - 8, py].join(","), class: q[2] ? "fell-x e" : "bld e", style: q[2] ? "fill:none" : "" });
+      if (q[2]) { el(s, "line", { x1: px - 6, y1: py - 6, x2: px + 6, y2: py + 6, class: "fell-x e" }); el(s, "line", { x1: px + 6, y1: py - 6, x2: px - 6, y2: py + 6, class: "fell-x e" }); }
+    });
+    [[cx - 100, cy + 76], [cx - 90, cy + 56]].forEach(function (u) { el(s, "circle", { cx: u[0], cy: u[1], r: 4, class: "u-a" }); });
+    el(s, "line", { x1: cx - 86, y1: cy + 54, x2: cx - 52, y2: cy + 38, class: "shot" });
+    lines(s, 250, 392, ["Pylons 3/4", "", "Core takes no damage", "while any pylon stands.", "", "Your units attack the", "pylons first."], "ts", 14);
+    // 4. Warlord
+    quad(480, 296, "WARLORD · champion per wave", 4);
+    el(s, "circle", { cx: 560, cy: 410, r: 22, class: "golem", style: "fill:var(--enemy)" });
+    T(s, 560, 414, "★", "t", "middle"); T(s, 560, 446, "Champion", "ts", "middle");
+    R(s, 534, 456, 52, 8, "hp"); R(s, 534, 456, 44, 8, "hp-e");
+    [[620, 396], [630, 412], [622, 426], [650, 402], [655, 420], [680, 410]].forEach(function (u) { el(s, "circle", { cx: u[0], cy: u[1], r: 4, class: "u-e" }); });
+    lines(s, 720, 392, ["One champion per", "boss plot leads", "each wave.", "", "A Golem with many", "times Golem health,", "paid from the wave", "budget."], "ts", 14);
+  })();
+
   // ================= 2. EVENT =================
   (function () {
     var s = document.getElementById("s-event");
@@ -488,8 +543,11 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     T(s, 36, 508, "You see only your own offers. Help a partner over a border link.", "ts tm");
     // next battle
     R(s, 476, 318, 216, 206, "panel"); T(s, 488, 338, "NEXT BATTLE", "ts tm");
-    T(s, 488, 362, "PvP", "tb"); lines(s, 488, 384, ["Opponent unknown until", "the battle starts.", "", "Lose: −1 life", "Win: gold"], "ts", 15);
-    btn(s, 488, 478, 192, 34, "Ready", true);
+    T(s, 488, 362, "PvP · Boss: Pylons", "tb");
+    lines(s, 488, 380, ["Shield pylons guard each", "boss Core. A Core takes no", "damage while its pylons", "stand."], "ts", 12);
+    T(s, 488, 436, "Counter: enough units to", "ts tm"); T(s, 488, 448, "break through, and ranged", "ts tm"); T(s, 488, 460, "units to reach pylons.", "ts tm");
+    T(s, 488, 473, "Lose: −1 life", "ts");
+    btn(s, 488, 480, 192, 32, "Ready", true);
     // mini board
     R(s, 704, 318, 232, 206, "panel"); T(s, 716, 338, "YOUR FACTORY", "ts tm");
     var mg = el(s, "g", { transform: "translate(716,348) rotate(0)" });

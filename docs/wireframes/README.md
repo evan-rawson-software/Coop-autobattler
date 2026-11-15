@@ -27,7 +27,7 @@ battle (1, 8) → 2 event → 3 shop + 4 build → … → 9 run over.
 - `screens.html` — all the wireframes on one page, with the callouts. Open
   it in a browser. The screens are drawn by a script in the page, so edit
   that script to change them, then re-export the images.
-- `1-battle.png` to `9-run-over.png` — the same screens as images.
+- `1-battle.png` to `9-run-over.png` — the same screens as images, plus `1b-battle-boss.png` (the boss marks, after the Battle screen).
 
 Not drawn: the lobby for forming a party, settings, and the screens for the
 deferred feature of points of interest. Refining (issue #378) is drawn on the
@@ -46,7 +46,7 @@ Nobody gives orders here. The party watches its factory start cold, ramp up, and
 
 ![Battle screen wireframe](1-battle.png)
 
-1. Who you are fighting and what kind of battle it is. A ghost shows the other party's names; a boss says so.
+1. Who you are fighting and what kind of battle it is. A ghost shows the other party's names; a boss says so and names the boss. The marks a boss adds are in 1b below.
 2. Your board, at the bottom, exactly as you built it. Conduits light up as resources flow.
 3. The neutral zone. Its lakes and cliffs are generated for this battle and revealed when it starts. Nothing can be built here. Turrets can shoot enemy units in it; otherwise only units fight here.
 4. The enemy board, at the top, with one Core per player. Your units attack buildings in their way and finally the enemy Cores: first the one opposite their owner's plot, then the nearest still standing.
@@ -60,6 +60,17 @@ Nobody gives orders here. The party watches its factory start cold, ramp up, and
 12. Camera presets: Center, My base, Their base and Fit battle. It starts at the center of the map, and the view pans and zooms, so a larger map or a four-player battle still works on the same screen.
 13. A Golem leads the push. It is drawn bigger than other units: huge health and flat armor, but slow and weak in attack.
 14. A caster's blast hits a group: units near the target take part of the hit (area damage). Units only, no buildings, no friendly fire.
+
+## 1b. Battle: boss marks
+
+A boss battle looks like screen 1 plus one extra mark for the boss in play (MM-9d). Each boss changes only its own side, never the party's factory (MM-9a). The image shows all four marks together; a real battle shows only one. Names are placeholders.
+
+![Boss marks wireframe](1b-battle-boss.png)
+
+1. Brood stronghold: ticks at 75%, 50% and 25% on each boss Core bar. Below a tick the Core releases a burst of units, and the log says so.
+2. Linked Cores: one shared bar for all boss Cores, with the Cores listed under it. Damage to any Core comes off the bar, and they all fall together. Not used in solo.
+3. Pylons: shield pylons around a boss Core, a shield ring while any stands, and a count ("Pylons 3/4"). Your units go for the pylons first.
+4. Warlord: the champion leading each wave, drawn bigger than a Golem, with its own health bar.
 
 ## 2. Event choice
 
@@ -83,7 +94,7 @@ The shop always follows the event. Each player has their own offers and their ow
 3. Gold buys buildings and re-rolls, nothing else.
 4. Your stash: buildings you own that are not on the board. Drag here to sell.
 5. Teammates' gold and stash. You do not see their offers, and gold and buildings cannot be given (CP-29). Hidden in solo.
-6. What comes next. PvE options are shown ahead of time; a PvP opponent never is.
+6. What comes next. PvE options are shown ahead of time. A ghost opponent never is. When the opponent is a boss, the panel names the boss, gives one line on its mechanic and one line of counter advice, so you can build against it (MM-11). The image shows a boss; names are placeholders.
 7. A small live view of the board that jumps to the Build tab.
 8. Ready is available on both tabs.
 

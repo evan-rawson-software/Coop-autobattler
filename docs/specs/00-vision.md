@@ -156,5 +156,5 @@ does not block systems work.
 | Threat | A PvE opponent: scripted waves of units plus a stronghold to attack, not a factory. |
 | Snapshot | A saved copy of a party's board (every plot), taken at the start of a PvP battle. |
 | Ghost | A snapshot being used as another party's opponent. |
-| Boss | A generated PvE opponent used when no ghost is available. |
+| Boss | A generated PvE opponent used when no ghost is available. There are several, each with a signature mechanic on its own side; later rounds unlock more (MM-9a–MM-9e). |
 | Depth | The highest round a party reached; the primary score. |
