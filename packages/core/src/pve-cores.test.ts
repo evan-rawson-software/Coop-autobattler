@@ -84,8 +84,14 @@ describe('one Core per player (PP-14)', () => {
             const total = hs.reduce((a, h) => a + h, 0);
             // The expected total, worked out on its own from the budget, the
             // price of the placed walls and turrets and the archetype.
-            const stronghold =
+            const full =
               p.budget - Math.floor((p.budget * arch.waveSharePercent) / 100);
+            // A Brood boss sets its burst share aside first (MM-9d).
+            const stronghold =
+              full -
+              (arch.brood === undefined
+                ? 0
+                : Math.floor((full * arch.brood.sharePercent) / 100));
             const spent = p.stronghold.buildings.reduce(
               (a, b) =>
                 a +

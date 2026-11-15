@@ -200,6 +200,37 @@
       }
     },
     {
+      "title": "burst_released",
+      "description": "A boss Core's health fell to a burst threshold (MM-9d): the units it releases enter from the next tick on. One event per Core and threshold, highest threshold first, recorded in step 4 after the damage.",
+      "type": "object",
+      "required": ["tick", "type", "side", "core", "thresholdPercent", "units"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "burst_released" },
+        "side": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "core": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The player index of the Core that released the burst."
+        },
+        "thresholdPercent": { "type": "integer", "minimum": 1, "maximum": 99 },
+        "units": {
+          "type": "array",
+          "description": "The units released, in composition order.",
+          "items": {
+            "type": "object",
+            "required": ["unit", "count"],
+            "additionalProperties": false,
+            "properties": {
+              "unit": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" },
+              "count": { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
       "title": "unit_retargeted",
       "description": "A unit's target Core was destroyed and it chose a new one (the nearest remaining enemy Core), recorded after the destruction events of the tick.",
       "type": "object",

@@ -68,6 +68,25 @@
             }
           }
         },
+        "bursts": {
+          "description": "Optional (absent for every archetype without `brood`). Units each Core releases when its health falls to a threshold: ordered by core, then threshold (descending, as listed in the archetype), then composition order. One entry per unit type with a count above 0.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["core", "thresholdPercent", "unit", "count"],
+            "additionalProperties": false,
+            "properties": {
+              "core": { "type": "integer", "minimum": 0 },
+              "thresholdPercent": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 99
+              },
+              "unit": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" },
+              "count": { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
         "buildings": {
           "description": "Buildings sorted by (y, x); they get instance IDs 1, 2, ... in this order.",
           "type": "array",

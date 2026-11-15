@@ -59,6 +59,10 @@ export function threatSideOptions(threat: ThreatProfile): SideOptions {
     freePower: true,
     unitStrengthPercent: threat.unitStrengthPercent,
     coreHealths: threat.stronghold.cores.map((c) => c.health),
+    ...(threat.stronghold.bursts === undefined ||
+    threat.stronghold.bursts.length === 0
+      ? {}
+      : { bursts: threat.stronghold.bursts.map((b) => ({ ...b })) }),
   };
 }
 

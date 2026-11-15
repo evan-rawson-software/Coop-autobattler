@@ -5792,6 +5792,1436 @@
     }
   },
   {
+    "id": "pve-battle.party4-vs-brood-r3",
+    "kind": "pve-battle",
+    "description": "The four-plot party against a round 3 boss Brood stronghold with four Cores: each Core releases one burst at 75, 50 and 25 percent of its health, a tick after it crosses the line.",
+    "input": {
+      "team": {
+        "seed": 5,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 11,
+            "y": 5
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 36,
+            "y": 5
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 59,
+            "y": 5
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 83,
+            "y": 5
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 21,
+            "y": 7,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 21,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 15,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 15,
+            "y": 9,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 7,
+            "y": 12,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 7,
+            "y": 13,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 5,
+              "side": "north"
+            },
+            "to": {
+              "building": 6,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 7,
+            "x": 35,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 8,
+            "x": 35,
+            "y": 9,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 1,
+            "from": {
+              "building": 7,
+              "side": "north"
+            },
+            "to": {
+              "building": 8,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 9,
+            "x": 51,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 10,
+            "x": 51,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 2,
+            "from": {
+              "building": 9,
+              "side": "north"
+            },
+            "to": {
+              "building": 10,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 11,
+            "x": 90,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 12,
+            "x": 90,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 3,
+            "from": {
+              "building": 11,
+              "side": "north"
+            },
+            "to": {
+              "building": 12,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 13,
+            "x": 85,
+            "y": 11,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 14,
+            "x": 85,
+            "y": 12,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 3,
+            "from": {
+              "building": 13,
+              "side": "north"
+            },
+            "to": {
+              "building": 14,
+              "side": "south"
+            },
+            "cells": []
+          }
+        ]
+      },
+      "threat": {
+        "seed": 101,
+        "round": 3,
+        "type": "boss",
+        "partySize": 4,
+        "archetype": "arch_boss_brood"
+      },
+      "seed": 101
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "core_destroyed",
+          "endTick": 699
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 42,
+              "unitsLost": 20,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                },
+                {
+                  "player": 1,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 4,
+                  "destroyedTick": 662
+                },
+                {
+                  "player": 2,
+                  "health": 86,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                },
+                {
+                  "player": 3,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 3,
+              "coreHealth": 1086,
+              "coreMaxHealth": 2000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 588,
+              "unitsKilled": 12
+            },
+            {
+              "unitsSpawned": 19,
+              "unitsLost": 12,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 147,
+                  "overkill": 3,
+                  "destroyedTick": 662
+                },
+                {
+                  "player": 1,
+                  "health": 0,
+                  "maxHealth": 147,
+                  "overkill": 9,
+                  "destroyedTick": 698
+                },
+                {
+                  "player": 2,
+                  "health": 0,
+                  "maxHealth": 147,
+                  "overkill": 3,
+                  "destroyedTick": 534
+                },
+                {
+                  "player": 3,
+                  "health": 0,
+                  "maxHealth": 147,
+                  "overkill": 3,
+                  "destroyedTick": 356
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 588,
+              "coreOverkill": 9,
+              "rampSteps": 0,
+              "buildingDamageDealt": 914,
+              "unitsKilled": 20
+            }
+          ]
+        },
+        "threatHash": "b0ad851a",
+        "zone": {
+          "width": 96,
+          "depth": 7,
+          "features": [
+            {
+              "x": 12,
+              "y": 1,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 13,
+              "y": 1,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 14,
+              "y": 1,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 80,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 81,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 82,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 83,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 84,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 9,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 69,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 70,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 80,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 82,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 9,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 47,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 82,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 9,
+              "y": 4,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 10,
+              "y": 4,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 45,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 46,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 47,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 45,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 46,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 47,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 48,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 49,
+              "y": 5,
+              "feature": "ter_cliff"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "615fe524",
+        "events": 1161
+      },
+      "eventLogHash": "467c88dc"
+    }
+  },
+  {
+    "id": "pve-battle.rush-vs-brood-r1-two-thresholds-one-tick",
+    "kind": "pve-battle",
+    "description": "The rush board against a round 1 boss Brood stronghold whose Core is set to 12 health (test override): one tick takes it from above the 75 percent line (9) to below the 50 percent line (6), so two bursts are released in that tick, highest threshold first; the 25 percent burst follows later.",
+    "input": {
+      "team": {
+        "seed": 5,
+        "partySize": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 11,
+            "y": 5
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 10,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 9,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 21,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 21,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 8,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 8,
+            "y": 9,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 7,
+            "x": 10,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 8,
+            "x": 13,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 9,
+            "x": 9,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 10,
+            "x": 14,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 11,
+            "x": 9,
+            "y": 7,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 5,
+              "side": "north"
+            },
+            "to": {
+              "building": 6,
+              "side": "south"
+            },
+            "cells": []
+          }
+        ]
+      },
+      "threat": {
+        "seed": 101,
+        "round": 1,
+        "type": "boss",
+        "partySize": 1,
+        "archetype": "arch_boss_brood"
+      },
+      "seed": 101,
+      "coreHealths": [12]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "core_destroyed",
+          "endTick": 300
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 15,
+              "unitsLost": 1,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
+              "coreHealth": 500,
+              "coreMaxHealth": 500,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 12,
+              "unitsKilled": 3
+            },
+            {
+              "unitsSpawned": 3,
+              "unitsLost": 3,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 12,
+                  "overkill": 6,
+                  "destroyedTick": 299
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 12,
+              "coreOverkill": 6,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 1
+            }
+          ]
+        },
+        "threatHash": "004da162",
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [],
+          "pointsOfInterest": []
+        },
+        "stateHash": "a9a7e2e4",
+        "events": 233
+      },
+      "eventLogHash": "48f12cc8"
+    }
+  },
+  {
+    "id": "pve-battle.party4-vs-brood-r1-cores-fall-with-thresholds-left",
+    "kind": "pve-battle",
+    "description": "The four-plot party against a Brood stronghold whose Cores are set to 7, 10, 3 and 12 health (test override): Core 2 is destroyed by a hit that crosses all three lines at once and Core 0 loses all three in one tick; the others fall in steps.",
+    "input": {
+      "team": {
+        "seed": 5,
+        "partySize": 4,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 11,
+            "y": 5
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 36,
+            "y": 5
+          },
+          {
+            "op": "placeCore",
+            "actor": 2,
+            "x": 59,
+            "y": 5
+          },
+          {
+            "op": "placeCore",
+            "actor": 3,
+            "x": 83,
+            "y": 5
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 21,
+            "y": 7,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 21,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 15,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 15,
+            "y": 9,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 7,
+            "y": 12,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 7,
+            "y": 13,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 5,
+              "side": "north"
+            },
+            "to": {
+              "building": 6,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 7,
+            "x": 35,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 8,
+            "x": 35,
+            "y": 9,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 1,
+            "from": {
+              "building": 7,
+              "side": "north"
+            },
+            "to": {
+              "building": 8,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 9,
+            "x": 51,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 2
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 2,
+            "id": 10,
+            "x": 51,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 2,
+            "from": {
+              "building": 9,
+              "side": "north"
+            },
+            "to": {
+              "building": 10,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 11,
+            "x": 90,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 12,
+            "x": 90,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 3,
+            "from": {
+              "building": 11,
+              "side": "north"
+            },
+            "to": {
+              "building": 12,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 13,
+            "x": 85,
+            "y": 11,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 3
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 3,
+            "id": 14,
+            "x": 85,
+            "y": 12,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 3,
+            "from": {
+              "building": 13,
+              "side": "north"
+            },
+            "to": {
+              "building": 14,
+              "side": "south"
+            },
+            "cells": []
+          }
+        ]
+      },
+      "threat": {
+        "seed": 101,
+        "round": 1,
+        "type": "boss",
+        "partySize": 4,
+        "archetype": "arch_boss_brood"
+      },
+      "seed": 101,
+      "coreHealths": [7, 10, 3, 12]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "core_destroyed",
+          "endTick": 532
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 35,
+              "unitsLost": 15,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                },
+                {
+                  "player": 1,
+                  "health": 206,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                },
+                {
+                  "player": 2,
+                  "health": 434,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                },
+                {
+                  "player": 3,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 4,
+              "coreHealth": 1640,
+              "coreMaxHealth": 2000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 32,
+              "unitsKilled": 8
+            },
+            {
+              "unitsSpawned": 15,
+              "unitsLost": 8,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 7,
+                  "overkill": 5,
+                  "destroyedTick": 531
+                },
+                {
+                  "player": 1,
+                  "health": 0,
+                  "maxHealth": 10,
+                  "overkill": 2,
+                  "destroyedTick": 373
+                },
+                {
+                  "player": 2,
+                  "health": 0,
+                  "maxHealth": 3,
+                  "overkill": 3,
+                  "destroyedTick": 225
+                },
+                {
+                  "player": 3,
+                  "health": 0,
+                  "maxHealth": 12,
+                  "overkill": 0,
+                  "destroyedTick": 293
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 32,
+              "coreOverkill": 5,
+              "rampSteps": 0,
+              "buildingDamageDealt": 360,
+              "unitsKilled": 15
+            }
+          ]
+        },
+        "threatHash": "6db74e2b",
+        "zone": {
+          "width": 96,
+          "depth": 7,
+          "features": [
+            {
+              "x": 12,
+              "y": 1,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 13,
+              "y": 1,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 14,
+              "y": 1,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 80,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 81,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 82,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 83,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 84,
+              "y": 1,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 9,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 69,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 70,
+              "y": 2,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 80,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 82,
+              "y": 2,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 9,
+              "y": 3,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 47,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 82,
+              "y": 3,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 9,
+              "y": 4,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 10,
+              "y": 4,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 45,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 46,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 47,
+              "y": 4,
+              "feature": "ter_lake"
+            },
+            {
+              "x": 45,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 46,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 47,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 48,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 49,
+              "y": 5,
+              "feature": "ter_cliff"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "048984b9",
+        "events": 760
+      },
+      "eventLogHash": "d79838a0"
+    }
+  },
+  {
     "id": "pve-battle.party4-vs-fortress-r2",
     "kind": "pve-battle",
     "description": "The same four-plot party against a round 2 medium arch_fortress stronghold with four ring sets.",

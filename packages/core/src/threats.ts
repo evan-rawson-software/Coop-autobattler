@@ -52,6 +52,21 @@ export interface StrongholdTemplate {
   readonly layout: LayoutId;
 }
 
+/**
+ * A boss's Core bursts (MM-9d): `sharePercent` of the stronghold budget is set
+ * aside for units that each boss Core releases when its health falls to each
+ * threshold (percent of its starting health, strictly descending).
+ */
+export interface BroodTemplate {
+  readonly thresholdsPercent: readonly number[];
+  readonly sharePercent: number;
+}
+
+/** The most thresholds one archetype may list. */
+export const MAX_BROOD_THRESHOLDS = 5;
+/** The largest `brood.sharePercent`. */
+export const MAX_BROOD_SHARE_PERCENT = 60;
+
 export interface ArchetypeDef {
   readonly id: ArchetypeId;
   readonly bossOnly: boolean;
@@ -62,6 +77,8 @@ export interface ArchetypeDef {
   readonly waveSharePercent: number;
   readonly waves: WaveTemplate;
   readonly stronghold: StrongholdTemplate;
+  /** Boss-only archetypes: Core bursts at health thresholds (MM-9d). */
+  readonly brood?: BroodTemplate;
 }
 
 export interface RingLayoutConfig {
@@ -511,6 +528,7 @@ export function loadThreats(
         'waveSharePercent',
         'waves',
         'stronghold',
+        'brood',
       ]),
       at,
       errors,
@@ -542,6 +560,62 @@ export function loadThreats(
       for (const k of ['fromRound', 'minPartySize']) {
         if (k in e) {
           errors.push(`${at}: "${k}" is only allowed when "bossOnly" is true.`);
+        }
+      }
+    }
+    let brood: BroodTemplate | undefined;
+    if (e['brood'] !== undefined) {
+      const b = e['brood'];
+      const bat = `${at}.brood`;
+      if (e['bossOnly'] !== true) {
+        errors.push(`${at}: "brood" is only allowed when "bossOnly" is true.`);
+      } else if (!isRecord(b)) {
+        errors.push(`${bat}: must be an object.`);
+      } else {
+        rejectUnknownKeys(
+          b,
+          new Set(['thresholdsPercent', 'sharePercent']),
+          bat,
+          errors,
+        );
+        const share = readInt(b, 'sharePercent', 1, bat, errors);
+        if (share !== undefined && share > MAX_BROOD_SHARE_PERCENT) {
+          errors.push(
+            `${bat}: "sharePercent" must be at most ${String(MAX_BROOD_SHARE_PERCENT)}.`,
+          );
+        }
+        const list = readArray(b, 'thresholdsPercent', bat, errors);
+        const ths: number[] = [];
+        let listOk = true;
+        list.forEach((t, j) => {
+          if (
+            !Number.isSafeInteger(t) ||
+            (t as number) < 1 ||
+            (t as number) > 99
+          ) {
+            errors.push(
+              `${bat}.thresholdsPercent[${String(j)}]: must be an integer from 1 to 99.`,
+            );
+            listOk = false;
+            return;
+          }
+          const prev = ths[ths.length - 1];
+          if (prev !== undefined && (t as number) >= prev) {
+            errors.push(
+              `${bat}.thresholdsPercent: must be strictly descending.`,
+            );
+            listOk = false;
+          }
+          ths.push(t as number);
+        });
+        if (list.length === 0 || list.length > MAX_BROOD_THRESHOLDS) {
+          errors.push(
+            `${bat}: "thresholdsPercent" must list 1 to ${String(MAX_BROOD_THRESHOLDS)} thresholds.`,
+          );
+          listOk = false;
+        }
+        if (share !== undefined && listOk) {
+          brood = { thresholdsPercent: ths, sharePercent: share };
         }
       }
     }
@@ -697,6 +771,7 @@ export function loadThreats(
         waveSharePercent: waveShare,
         waves,
         stronghold,
+        ...(brood === undefined ? {} : { brood }),
       });
     }
   });

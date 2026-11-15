@@ -54,10 +54,24 @@ export interface StrongholdCore {
   readonly health: number;
 }
 
+/**
+ * Units a boss Core releases when its health falls to `thresholdPercent` of
+ * its starting health (MM-9d, "Brood"): one entry per unit type.
+ */
+export interface StrongholdBurst {
+  /** The player index of the boss Core (plot) that releases them. */
+  readonly core: number;
+  readonly thresholdPercent: number;
+  readonly unit: UnitId;
+  readonly count: number;
+}
+
 export interface Stronghold {
   /** `cores[p]` is the Core of plot `p` (PP-14). */
   readonly cores: readonly StrongholdCore[];
   readonly buildings: readonly StrongholdBuilding[];
+  /** Absent for an archetype without `brood`. */
+  readonly bursts?: readonly StrongholdBurst[];
 }
 
 export interface ThreatProfile {
@@ -148,7 +162,9 @@ function defenseOf(
  *    composition entry of each non-signature wave, in wave then entry order),
  *    unit counts and the strength conversion.
  * 4. Stronghold: wall and turret totals shared between the plots, one layout
- *    per plot (stream `holdRng.child(p)`), Core health split evenly.
+ *    per plot (stream `holdRng.child(p)`), Core health split evenly. An
+ *    archetype with `brood` first sets `sharePercent` of `S` aside for the
+ *    bursts (turned into units in step 3's strength conversion).
  * 5. Content bounds (a safety net): `unitStrengthPercent` is clamped to the
  *    largest value that keeps every unit type within MAX_HEALTH / MAX_DAMAGE,
  *    and the Core health to MAX_HEALTH. With the shipped content no threat of
@@ -175,7 +191,14 @@ export function generateThreat(
   }
   const budget = threatBudget(threats, round, type, partySize);
   const waveBudget = mulPct(budget, arch.waveSharePercent);
-  const strongholdBudget = budget - waveBudget;
+  const fullStrongholdBudget = budget - waveBudget;
+  // Brood (MM-9d): the burst budget is set aside before walls, turrets and
+  // Core health, which share the rest.
+  const broodBudget =
+    arch.brood === undefined
+      ? 0
+      : mulPct(fullStrongholdBudget, arch.brood.sharePercent);
+  const strongholdBudget = fullStrongholdBudget - broodBudget;
 
   const root = Rng.fromSeed(seed).child('threat').child(round);
   const wavesRng = root.child('waves');
@@ -272,15 +295,52 @@ export function generateThreat(
     planned.push({ tick: tpl.firstTick + k * tpl.intervalTicks, entries });
   });
 
-  // Strength conversion: cap the largest wave at maxUnitsPerWavePerPlot * party.
+  // Bursts (MM-9d): the burst budget is split evenly over partySize Cores x
+  // thresholds (slot `core * T + t`, `shareOf` like Core health), and each
+  // share becomes units with the archetype's composition (no jitter, no ranged
+  // mix) and the wave step's rules. A burst then counts as a wave below.
+  interface PlannedBurst {
+    core: number;
+    threshold: number;
+    wave: PlannedWave;
+  }
+  const bursts: PlannedBurst[] = [];
+  if (arch.brood !== undefined) {
+    const ths = arch.brood.thresholdsPercent;
+    const slots = partySize * ths.length;
+    const comp = tpl.composition;
+    const weightSum = comp.reduce((a, c) => a + c.weight, 0);
+    for (let core = 0; core < partySize; core++) {
+      ths.forEach((threshold, t) => {
+        const bb = shareOf(broodBudget, core * ths.length + t, slots);
+        const entries = comp.map((c) => ({
+          unit: c.unit,
+          n: divFloor(scaleShare(bb, c.weight, weightSum), costOf(c.unit)),
+        }));
+        if (entries.every((e) => e.n === 0)) {
+          let best = 0;
+          comp.forEach((c, i) => {
+            if (c.weight > (comp[best]?.weight ?? 0)) best = i;
+          });
+          const e = entries[best];
+          if (e !== undefined) e.n = 1;
+        }
+        bursts.push({ core, threshold, wave: { tick: 0, entries } });
+      });
+    }
+  }
+
+  // Strength conversion: cap the largest wave (or burst) at
+  // maxUnitsPerWavePerPlot * party.
   const cap = threats.maxUnitsPerWavePerPlot * partySize;
+  const scaled = [...planned, ...bursts.map((b) => b.wave)];
   const largest = Math.max(
-    ...planned.map((w) => w.entries.reduce((a, e) => a + e.n, 0)),
+    ...scaled.map((w) => w.entries.reduce((a, e) => a + e.n, 0)),
   );
   let unitStrengthPercent = 0;
   if (largest > cap) {
     unitStrengthPercent = ceilDiv(100 * largest, cap) - 100;
-    for (const w of planned) {
+    for (const w of scaled) {
       const before = w.entries.map((e) => e.n);
       for (const e of w.entries) e.n = divFloor(e.n * cap, largest);
       // The few ranged units of a mixed wave are not scaled away, as long as
@@ -316,6 +376,19 @@ export function generateThreat(
   for (const w of planned) {
     for (const e of w.entries) {
       if (e.n > 0) waves.push({ tick: w.tick, unit: e.unit, count: e.n });
+    }
+  }
+  const burstList: StrongholdBurst[] = [];
+  for (const b of bursts) {
+    for (const e of b.wave.entries) {
+      if (e.n > 0) {
+        burstList.push({
+          core: b.core,
+          thresholdPercent: b.threshold,
+          unit: e.unit,
+          count: e.n,
+        });
+      }
     }
   }
 
@@ -390,6 +463,7 @@ export function generateThreat(
         health: Math.min(MAX_HEALTH, shareOf(coreTotal, p, partySize)),
       })),
       buildings,
+      ...(arch.brood === undefined ? {} : { bursts: burstList }),
     },
   };
 }

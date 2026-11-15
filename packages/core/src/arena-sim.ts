@@ -147,6 +147,23 @@ export type ArenaEvent =
     }
   | {
       readonly tick: number;
+      /**
+       * A boss Core's health fell to a burst threshold (MM-9d, "Brood"): the
+       * units it releases (they enter on the next tick, or later when there is
+       * no room), in composition order.
+       */
+      readonly type: 'burst_released';
+      readonly side: number;
+      /** The player index of the Core that released it. */
+      readonly core: number;
+      readonly thresholdPercent: number;
+      readonly units: readonly {
+        readonly unit: UnitId;
+        readonly count: number;
+      }[];
+    }
+  | {
+      readonly tick: number;
       readonly type: 'unit_retargeted';
       readonly unit: number;
       /** The new target: a player index of the enemy side, or -1. */
@@ -338,6 +355,27 @@ export interface EnteringSim {
   readonly col: number;
 }
 
+/**
+ * A burst-unit that has not found room yet (see `SideOptions.bursts`): the
+ * unit type and the Core (player index of its own side) it comes out of.
+ */
+export interface BurstingSim {
+  readonly side: number;
+  readonly core: number;
+  readonly unit: UnitId;
+}
+
+/**
+ * Units a Core of the side releases when its health falls to a threshold (see
+ * `SideOptions.bursts`). One entry per unit type.
+ */
+export interface SideBurst {
+  readonly core: number;
+  readonly thresholdPercent: number;
+  readonly unit: UnitId;
+  readonly count: number;
+}
+
 /** One scheduled wave of a side (see `SideOptions.scheduledWaves`). */
 export interface ScheduledWave {
   /** The tick on which the units spawn (in the Production step). */
@@ -369,6 +407,11 @@ export interface SideOptions {
    * entry has the definition's (PP-9).
    */
   readonly coreHealths?: readonly number[];
+  /**
+   * Core bursts (MM-9d): see the rules reference, "Core bursts". Entries are
+   * in release order within a Core and threshold: the order of the profile.
+   */
+  readonly bursts?: readonly SideBurst[];
 }
 
 export interface ArenaSim {
@@ -394,6 +437,11 @@ export interface ArenaSim {
   units: UnitSim[];
   /** Scheduled-wave units waiting for room, in queue order. */
   entering: EnteringSim[];
+  /**
+   * Burst units released and waiting to spawn, in release order. Present only
+   * when a side has `bursts` (so every other state is unchanged).
+   */
+  bursting?: BurstingSim[];
   /** Units spawned, by side. */
   readonly spawned: [number, number];
   /** Units that died, by side. */
@@ -926,6 +974,9 @@ export function createArenaSim(
   const sideOptions: { sideOptions?: [SideOptions, SideOptions] } = hasOptions
     ? { sideOptions: [given[0] ?? {}, given[1] ?? {}] }
     : {};
+  const hasBursts =
+    given !== undefined &&
+    [given[0], given[1]].some((o) => (o?.bursts?.length ?? 0) > 0);
   return {
     tick: 0,
     nextUnitId: 1,
@@ -943,6 +994,7 @@ export function createArenaSim(
     ramps,
     units: [],
     entering: [],
+    ...(hasBursts ? { bursting: [] } : {}),
     spawned: [0, 0],
     unitsDied: [0, 0],
     buildingDamageDealt: [0, 0],
@@ -1557,27 +1609,10 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     const producer = ctx.arena.buildings[info.ref];
     if (producer === undefined) continue;
     const fly = unitDef.flying;
-    const gw = ctx.arena.geom.width;
     // The target Core: the opposite one if it stands (the spawn cells are
     // ordered by its fields), else the nearest by the first spawn cell.
     const owner = info.owner;
-    const n = ctx.arena.coreRef[1 - p.side]?.length ?? 0;
-    const opp = n - 1 - owner;
-    const target = coreAlive(ctx.arena, p.side, opp)
-      ? opp
-      : bestCore(ctx, p.side, owner, (q) => {
-          const first = spawnCells(ctx, p.side, q, info.ref, producer, fly)[0];
-          if (first === undefined) return null;
-          return fly
-            ? flyRank(
-                ctx,
-                p.side,
-                q,
-                (first % gw) * S + S / 2,
-                divFloor(first, gw) * S + S / 2,
-              )
-            : cellRank(ctx, p.side, q, first);
-        });
+    const target = exitTarget(ctx, p.side, owner, info.ref, producer, fly);
     const cells = spawnCells(ctx, p.side, target, info.ref, producer, fly);
     const pos = spawnPosition(sim, ctx, p.side, cells, unitDef);
     if (pos === null) continue; // held: no free position at the exit
@@ -1597,8 +1632,81 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
       info.owner,
     );
   }
+  enterBursts(sim, ctx, tick);
   queueWaves(sim, tick);
   enterWaves(sim, ctx, tick);
+}
+
+/**
+ * The enemy Core a unit leaving building `ref` (`owner`'s plot) heads for: the
+ * opposite one if it stands, else the nearest by the first spawn cell.
+ */
+function exitTarget(
+  ctx: ArenaContext,
+  side: number,
+  owner: number,
+  ref: number,
+  building: ArenaBuilding,
+  fly: boolean,
+): number {
+  const gw = ctx.arena.geom.width;
+  const n = ctx.arena.coreRef[1 - side]?.length ?? 0;
+  const opp = n - 1 - owner;
+  if (coreAlive(ctx.arena, side, opp)) return opp;
+  return bestCore(ctx, side, owner, (q) => {
+    const first = spawnCells(ctx, side, q, ref, building, fly)[0];
+    if (first === undefined) return null;
+    return fly
+      ? flyRank(
+          ctx,
+          side,
+          q,
+          (first % gw) * S + S / 2,
+          divFloor(first, gw) * S + S / 2,
+        )
+      : cellRank(ctx, side, q, first);
+  });
+}
+
+/**
+ * Burst units (side options), after the unit producers: walk the `bursting`
+ * queue once in order. A unit leaves its Core like a producer's unit does:
+ * its target, spawn cells and position are those of `produce` with the Core as
+ * the building and the Core's plot as owner; it has no producer and no ramp
+ * bonus. With no free position it stays in the queue, in its place.
+ */
+function enterBursts(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
+  const queue = sim.bursting;
+  if (queue === undefined || queue.length === 0) return;
+  const rest: BurstingSim[] = [];
+  for (const e of queue) {
+    const unitDef = ctx.content.units.get(e.unit);
+    if (unitDef === undefined) throw new Error(`Unknown unit "${e.unit}".`);
+    const ref = ctx.arena.coreRef[e.side]?.[e.core] ?? -1;
+    const core = ref >= 0 ? ctx.arena.buildings[ref] : undefined;
+    if (core === undefined) continue; // no such Core: nothing to release from
+    const fly = unitDef.flying;
+    const target = exitTarget(ctx, e.side, e.core, ref, core, fly);
+    const cells = spawnCells(ctx, e.side, target, ref, core, fly);
+    const pos = spawnPosition(sim, ctx, e.side, cells, unitDef);
+    if (pos === null) {
+      rest.push(e);
+      continue;
+    }
+    addUnit(
+      sim,
+      ctx,
+      e.side,
+      unitDef,
+      pos.x,
+      pos.y,
+      0,
+      tick,
+      { owner: e.core, target },
+      null,
+    );
+  }
+  sim.bursting = rest;
 }
 
 /**
@@ -2623,7 +2731,7 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
   // apply the damage.
   resolveAttacks(ctx, units, tick, level);
   if (beat) addOverloadDecay(ctx, tick, level);
-  applyDamage(sim, ctx, units);
+  applyDamage(sim, ctx, units, tick);
 
   // 5. Move and separate.
   moveUnits(ctx, units);
@@ -2855,7 +2963,9 @@ function applyDamage(
   sim: ArenaSim,
   ctx: ArenaContext,
   units: readonly UnitSim[],
+  tick: number,
 ): void {
+  const before = sim.bursting === undefined ? undefined : coreHealths(sim);
   const n = units.length;
   for (let i = 0; i < n; i++) {
     const dmg = ctx.unitDamage[i] ?? 0;
@@ -2884,6 +2994,77 @@ function applyDamage(
       h.remaining = remaining;
     }
     h.hp = Math.max(0, remaining);
+  }
+  if (before !== undefined) releaseBursts(sim, ctx, before, tick);
+}
+
+/** Every Core's current health, by side and player index. */
+function coreHealths(sim: ArenaSim): number[][] {
+  const out: number[][] = [[], []];
+  for (const h of sim.health) {
+    if (isCoreHealth(h)) (out[h.side] ??= [])[h.core] = h.hp;
+  }
+  return out;
+}
+
+/**
+ * Step 4, after the damage (MM-9d): for each side with `bursts`, each Core in
+ * player order, each threshold in the order the profile lists them (highest
+ * first) whose line the Core crossed this tick releases its units: the line is
+ * `floor(starting * threshold / 100)` with `starting` the Core's starting
+ * health; crossed means its health before this tick's damage was above the
+ * line and is now at or below it. A Core reduced to 0 has crossed every line
+ * it was still above. The units join the `bursting` queue in release order
+ * and spawn from the next tick on; one `burst_released` is logged per release.
+ */
+function releaseBursts(
+  sim: ArenaSim,
+  ctx: ArenaContext,
+  before: readonly (readonly number[])[],
+  tick: number,
+): void {
+  const queue = sim.bursting;
+  if (queue === undefined) return;
+  for (const side of [0, 1] as const) {
+    const bursts = sim.sideOptions?.[side].bursts;
+    if (bursts === undefined || bursts.length === 0) continue;
+    const cores: number[] = [];
+    for (const b of bursts) if (!cores.includes(b.core)) cores.push(b.core);
+    cores.sort((a, b) => a - b);
+    for (const core of cores) {
+      const ref = ctx.arena.coreRef[side]?.[core] ?? -1;
+      const h = sim.health[ctx.healthIndex[ref] ?? 0];
+      if (ref < 0 || h === undefined) continue;
+      const old = before[side]?.[core] ?? 0;
+      const starting = ctx.maxHealth[ref] ?? 0;
+      const thresholds: number[] = [];
+      for (const b of bursts) {
+        if (b.core === core && !thresholds.includes(b.thresholdPercent)) {
+          thresholds.push(b.thresholdPercent);
+        }
+      }
+      thresholds.sort((a, b) => b - a);
+      for (const t of thresholds) {
+        const line = divFloor(starting * t, 100);
+        if (!(old > line && h.hp <= line)) continue;
+        const units: { unit: UnitId; count: number }[] = [];
+        for (const b of bursts) {
+          if (b.core !== core || b.thresholdPercent !== t) continue;
+          units.push({ unit: b.unit, count: b.count });
+          for (let i = 0; i < b.count; i++) {
+            queue.push({ side, core, unit: b.unit });
+          }
+        }
+        ctx.events?.push({
+          tick,
+          type: 'burst_released',
+          side,
+          core,
+          thresholdPercent: t,
+          units,
+        });
+      }
+    }
   }
 }
 

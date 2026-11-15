@@ -7,6 +7,7 @@ import {
   loadAllContentOrThrow,
   loadMapgenOrThrow,
   loadSimConfigOrThrow,
+  loadThreatsOrThrow,
 } from '@game/core';
 import {
   rawBuildings,
@@ -15,11 +16,13 @@ import {
   rawResources,
   rawSim,
   rawTerrain,
+  rawThreats,
   rawUnits,
 } from '@game/content';
 import { makeArenaSimKind } from './kinds/arena-sim.js';
 import { makeBattleKind } from './kinds/battle.js';
 import { makeFlowSimKind } from './kinds/flow-sim.js';
+import { makePveBattleKind } from './kinds/threat.js';
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -145,6 +148,46 @@ describe('sim-event.schema.json', () => {
         tick: 0,
         type: 'zone_revealed',
         zone: { width: 1, depth: 1, features: [] },
+      }),
+    ).toBe(false);
+  }, 60_000);
+
+  test('every event of the Brood pve-battle vectors validates, burst_released included', () => {
+    const content = loadAllContentOrThrow({
+      resources: rawResources,
+      terrain: rawTerrain,
+      units: rawUnits,
+      buildings: rawBuildings,
+      presentation: rawPresentationEn,
+    });
+    const kind = makePveBattleKind(
+      content,
+      loadMapgenOrThrow(rawMapgen, { terrain: content.terrain }),
+      loadSimConfigOrThrow(rawSim),
+      loadThreatsOrThrow(rawThreats, {
+        units: content.units,
+        buildings: content.buildings,
+      }),
+    );
+    const pve = JSON.parse(
+      readFileSync(path.join(repoRoot, 'golden', 'pve-battle.json'), 'utf8'),
+    ) as { id: string; input: never }[];
+    const seen = new Set<string>();
+    for (const v of pve.filter((x) => x.id.includes('-brood-'))) {
+      for (const e of kind(v.input).eventLog ?? []) {
+        expect(validate(e), JSON.stringify(e)).toBe(true);
+        seen.add((e as { type: string }).type);
+      }
+    }
+    expect(seen.has('burst_released')).toBe(true);
+    expect(
+      validate({
+        tick: 5,
+        type: 'burst_released',
+        side: 1,
+        core: 0,
+        thresholdPercent: 75,
+        units: [{ unit: 'unit_soldier', count: 0 }],
       }),
     ).toBe(false);
   }, 60_000);

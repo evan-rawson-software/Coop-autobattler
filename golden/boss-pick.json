@@ -2,7 +2,7 @@
   {
     "id": "boss-pick.01-shipped-r1",
     "kind": "boss-pick",
-    "description": "The shipped content has one boss, so it is drawn in round 1.",
+    "description": "The shipped bosses unlocked in round 1: only arch_boss, so it is drawn.",
     "input": {
       "seed": 1,
       "round": 1,
@@ -17,7 +17,7 @@
   {
     "id": "boss-pick.02-shipped-r7-p4",
     "kind": "boss-pick",
-    "description": "The shipped boss in round 7 with four players.",
+    "description": "Round 7 with four players, the previous boss being arch_boss: the other shipped boss, arch_boss_brood, is drawn.",
     "input": {
       "seed": 2,
       "round": 7,
@@ -26,7 +26,7 @@
     },
     "expected": {
       "result": {
-        "boss": "arch_boss"
+        "boss": "arch_boss_brood"
       }
     }
   },

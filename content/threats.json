@@ -129,6 +129,31 @@
         "turretSharePercent": 20,
         "layout": "ring"
       }
+    },
+    {
+      "id": "arch_boss_brood",
+      "bossOnly": true,
+      "fromRound": 3,
+      "minPartySize": 1,
+      "waveSharePercent": 55,
+      "waves": {
+        "firstTick": 200,
+        "intervalTicks": 250,
+        "count": 6,
+        "growthPercent": 125,
+        "composition": [
+          { "unit": "unit_soldier", "weight": 3 },
+          { "unit": "unit_raider", "weight": 1 }
+        ],
+        "signature": { "everyNthWave": 3, "unit": "unit_raider" }
+      },
+      "stronghold": {
+        "coreHealthPerBudget": 400,
+        "wallSharePercent": 20,
+        "turretSharePercent": 20,
+        "layout": "ring"
+      },
+      "brood": { "thresholdsPercent": [75, 50, 25], "sharePercent": 30 }
     }
   ]
 }
