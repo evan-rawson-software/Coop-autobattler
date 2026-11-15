@@ -203,12 +203,23 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
         if (ghost !== null) {
           source = { type: 'ghost', label: ghost.label, team: ghost.team };
         } else {
+          // The boss fixed in the shop (issue #397); a state without one
+          // (an older save) draws the archetype here as before.
+          const fixedBoss =
+            fixed !== null &&
+            fixed.round === state.round &&
+            fixed.kind === 'boss' &&
+            fixed.boss !== undefined &&
+            setup.threats.archetypes.some((a) => a.id === fixed.boss)
+              ? fixed.boss
+              : undefined;
           const threatInput: ThreatInput = {
             seed: rng.child('threat').nextU32(),
             round: state.round,
             type: 'boss',
             partySize: state.players.length,
-            archetype: rng.child('archetype').pick(bossArchetypes()),
+            archetype:
+              fixedBoss ?? rng.child('archetype').pick(bossArchetypes()),
           };
           source = {
             type: 'generated',
@@ -240,6 +251,9 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
           kind:
             kind === 'pve' ? 'pve' : source.type === 'ghost' ? 'ghost' : 'boss',
           label: started.label,
+          ...(kind !== 'pve' && source.type === 'generated'
+            ? { boss: source.input.archetype }
+            : {}),
         },
         detail: detail as unknown as Json,
       };

@@ -36,7 +36,11 @@ import {
   makeFlowGraphKind,
   makeTeamStateOpsKind,
 } from './kinds/team-state-ops.js';
-import { makePveBattleKind, makeThreatGenKind } from './kinds/threat.js';
+import {
+  makeBossPickKind,
+  makePveBattleKind,
+  makeThreatGenKind,
+} from './kinds/threat.js';
 import { makeRunReplayKind, makeShopRollKind } from './run-kinds.js';
 
 export const content = loadAllContentOrThrow({
@@ -73,6 +77,7 @@ export const goldenKinds: Readonly<Record<string, SimulationFn>> = {
   'neutral-zone': makeNeutralZoneKind(content, mapgen),
   battle: makeBattleKind(content, mapgen, simConfig),
   'threat-gen': makeThreatGenKind(content, mapgen, threats),
+  'boss-pick': makeBossPickKind(threats),
   'pve-battle': makePveBattleKind(content, mapgen, simConfig, threats),
   'shop-roll': makeShopRollKind(content, gameConfigs),
   'run-replay': makeRunReplayKind(content, gameConfigs),

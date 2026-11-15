@@ -247,6 +247,10 @@
                 { "type": "null" },
                 { "$ref": "ghost-snapshot.schema.json" }
               ]
+            },
+            "boss": {
+              "description": "The archetype ID of the boss, fixed with the opponent (issue #397); optional, absent in older saves. Only with kind boss, checked by validateRunState.",
+              "type": "string"
             }
           },
           "allOf": [
@@ -342,7 +346,11 @@
       "additionalProperties": false,
       "properties": {
         "kind": { "enum": ["pve", "ghost", "boss"] },
-        "label": { "type": "string" }
+        "label": { "type": "string" },
+        "boss": {
+          "description": "The archetype ID of a boss battle (issue #397); optional, absent in older saves. Only with kind boss, checked by validateRunState.",
+          "type": "string"
+        }
       }
     },
     "pveRecord": {

@@ -55,6 +55,10 @@ export interface StrongholdTemplate {
 export interface ArchetypeDef {
   readonly id: ArchetypeId;
   readonly bossOnly: boolean;
+  /** Boss-only archetypes: the first round this boss can be met. */
+  readonly fromRound?: number;
+  /** Boss-only archetypes: the smallest party size that can meet this boss. */
+  readonly minPartySize?: number;
   readonly waveSharePercent: number;
   readonly waves: WaveTemplate;
   readonly stronghold: StrongholdTemplate;
@@ -499,7 +503,15 @@ export function loadThreats(
     }
     rejectUnknownKeys(
       e,
-      new Set(['id', 'bossOnly', 'waveSharePercent', 'waves', 'stronghold']),
+      new Set([
+        'id',
+        'bossOnly',
+        'fromRound',
+        'minPartySize',
+        'waveSharePercent',
+        'waves',
+        'stronghold',
+      ]),
       at,
       errors,
     );
@@ -511,6 +523,27 @@ export function loadThreats(
     }
     if (typeof e['bossOnly'] !== 'boolean') {
       errors.push(`${at}: "bossOnly" must be true or false.`);
+    }
+    let fromRound: number | undefined;
+    let minPartySize: number | undefined;
+    if (e['bossOnly'] === true) {
+      fromRound = readInt(e, 'fromRound', 1, at, errors);
+      minPartySize = readInt(e, 'minPartySize', 1, at, errors);
+      if (
+        minPartySize !== undefined &&
+        maxPartySize !== undefined &&
+        minPartySize > maxPartySize
+      ) {
+        errors.push(
+          `${at}: "minPartySize" must be at most maxPartySize (${String(maxPartySize)}).`,
+        );
+      }
+    } else if (e['bossOnly'] === false) {
+      for (const k of ['fromRound', 'minPartySize']) {
+        if (k in e) {
+          errors.push(`${at}: "${k}" is only allowed when "bossOnly" is true.`);
+        }
+      }
     }
     const waveShare = readInt(e, 'waveSharePercent', 0, at, errors);
     if (waveShare !== undefined && waveShare > 100) {
@@ -656,12 +689,27 @@ export function loadThreats(
       archetypes.push({
         id,
         bossOnly: e['bossOnly'],
+        ...(e['bossOnly'] &&
+        fromRound !== undefined &&
+        minPartySize !== undefined
+          ? { fromRound, minPartySize }
+          : {}),
         waveSharePercent: waveShare,
         waves,
         stronghold,
       });
     }
   });
+
+  const bosses = archetypes.filter((a) => a.bossOnly);
+  if (
+    bosses.length > 0 &&
+    !bosses.some((a) => a.fromRound === 1 && a.minPartySize === 1)
+  ) {
+    errors.push(
+      'threats: a boss-only archetype needs "fromRound" 1 and "minPartySize" 1, so a boss can always be drawn.',
+    );
+  }
 
   if (
     errors.length > 0 ||

@@ -1,0 +1,522 @@
+[
+  {
+    "id": "boss-pick.01-shipped-r1",
+    "kind": "boss-pick",
+    "description": "The shipped content has one boss, so it is drawn in round 1.",
+    "input": {
+      "seed": 1,
+      "round": 1,
+      "partySize": 1
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_boss"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.02-shipped-r7-p4",
+    "kind": "boss-pick",
+    "description": "The shipped boss in round 7 with four players.",
+    "input": {
+      "seed": 2,
+      "round": 7,
+      "partySize": 4,
+      "previousBoss": "arch_boss"
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_boss"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.03-round-gate-r1",
+    "kind": "boss-pick",
+    "description": "Only the boss from round 1 is eligible in round 1.",
+    "input": {
+      "seed": 3,
+      "round": 1,
+      "partySize": 4,
+      "archetypes": [
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_a"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.04-round-gate-r3",
+    "kind": "boss-pick",
+    "description": "Round 3: arch_a and arch_b are eligible, arch_c (from round 5) is not.",
+    "input": {
+      "seed": 4,
+      "round": 3,
+      "partySize": 4,
+      "archetypes": [
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_a"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.05-round-gate-r5-p4",
+    "kind": "boss-pick",
+    "description": "Round 5 with four players: all three are eligible.",
+    "input": {
+      "seed": 5,
+      "round": 5,
+      "partySize": 4,
+      "archetypes": [
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_b"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.06-party-gate-solo",
+    "kind": "boss-pick",
+    "description": "Round 5, solo: arch_c needs two players, so it is not eligible.",
+    "input": {
+      "seed": 6,
+      "round": 5,
+      "partySize": 1,
+      "archetypes": [
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_b"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.07-party-gate-duo",
+    "kind": "boss-pick",
+    "description": "Round 5, two players: arch_c is eligible.",
+    "input": {
+      "seed": 7,
+      "round": 5,
+      "partySize": 2,
+      "archetypes": [
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_a"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.08-no-repeat",
+    "kind": "boss-pick",
+    "description": "Two eligible bosses: the previous boss is excluded, so the other is drawn.",
+    "input": {
+      "seed": 8,
+      "round": 3,
+      "partySize": 1,
+      "previousBoss": "arch_a",
+      "archetypes": [
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_b"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.09-no-repeat-other",
+    "kind": "boss-pick",
+    "description": "As 08 with the other boss as the previous one.",
+    "input": {
+      "seed": 8,
+      "round": 3,
+      "partySize": 1,
+      "previousBoss": "arch_b",
+      "archetypes": [
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_a"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.10-no-repeat-three",
+    "kind": "boss-pick",
+    "description": "Three eligible: the previous boss is removed and the draw is from the remaining two.",
+    "input": {
+      "seed": 9,
+      "round": 5,
+      "partySize": 4,
+      "previousBoss": "arch_b",
+      "archetypes": [
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_c"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.11-single-repeats",
+    "kind": "boss-pick",
+    "description": "Only one eligible boss: it repeats even though it was the previous one.",
+    "input": {
+      "seed": 10,
+      "round": 1,
+      "partySize": 4,
+      "previousBoss": "arch_a",
+      "archetypes": [
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_a"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.12-previous-not-eligible",
+    "kind": "boss-pick",
+    "description": "The previous boss is not in the eligible list, so nothing is removed.",
+    "input": {
+      "seed": 11,
+      "round": 3,
+      "partySize": 1,
+      "previousBoss": "arch_c",
+      "archetypes": [
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_a"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.13-non-boss-ignored",
+    "kind": "boss-pick",
+    "description": "An archetype with bossOnly false is never a boss.",
+    "input": {
+      "seed": 12,
+      "round": 5,
+      "partySize": 4,
+      "archetypes": [
+        {
+          "id": "arch_x",
+          "bossOnly": false
+        },
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_c"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.14-spread-20",
+    "kind": "boss-pick",
+    "description": "Same eligible list (arch_a, arch_b, arch_c) over different seeds.",
+    "input": {
+      "seed": 20,
+      "round": 5,
+      "partySize": 4,
+      "archetypes": [
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_c"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.15-spread-21",
+    "kind": "boss-pick",
+    "description": "Same eligible list (arch_a, arch_b, arch_c) over different seeds.",
+    "input": {
+      "seed": 21,
+      "round": 5,
+      "partySize": 4,
+      "archetypes": [
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_a"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.16-spread-22",
+    "kind": "boss-pick",
+    "description": "Same eligible list (arch_a, arch_b, arch_c) over different seeds.",
+    "input": {
+      "seed": 22,
+      "round": 5,
+      "partySize": 4,
+      "archetypes": [
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_c"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.17-spread-23",
+    "kind": "boss-pick",
+    "description": "Same eligible list (arch_a, arch_b, arch_c) over different seeds.",
+    "input": {
+      "seed": 23,
+      "round": 5,
+      "partySize": 4,
+      "archetypes": [
+        {
+          "id": "arch_a",
+          "fromRound": 1,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_b",
+          "fromRound": 3,
+          "minPartySize": 1
+        },
+        {
+          "id": "arch_c",
+          "fromRound": 5,
+          "minPartySize": 2
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_c"
+      }
+    }
+  }
+]

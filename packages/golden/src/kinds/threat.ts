@@ -13,8 +13,11 @@
 import {
   generateThreat,
   hashJson,
+  pickBoss,
+  Rng,
   runTeamStateOps,
   startPveBattle,
+  type ArchetypeDef,
   type ArenaContent,
   type Json,
   type MapgenConfig,
@@ -120,5 +123,66 @@ export function makePveBattleKind(
       },
       eventLog: battle.eventLog as unknown as Json[],
     };
+  };
+}
+
+/**
+ * `boss-pick`: input `{ seed, round, partySize, previousBoss?, archetypes? }`.
+ * `rng = Rng.fromSeed(seed).child("boss")`; the result is `{ boss }` from
+ * `pickBoss`. `archetypes` (a test list of `{id, bossOnly?, fromRound?,
+ * minPartySize?}`, `bossOnly` default true) replaces the shipped archetypes
+ * (each takes the waves and stronghold of the first shipped archetype).
+ */
+export function makeBossPickKind(threats: ThreatsConfig): SimulationFn {
+  return (input: Json) => {
+    const o = obj(input, 'input');
+    const { seed, round, partySize, previousBoss, archetypes } = o;
+    if (
+      typeof seed !== 'number' ||
+      typeof round !== 'number' ||
+      typeof partySize !== 'number' ||
+      (previousBoss !== undefined && typeof previousBoss !== 'string')
+    ) {
+      throw new TypeError('boss-pick: seed, round and partySize are required');
+    }
+    let config = threats;
+    if (archetypes !== undefined) {
+      if (!Array.isArray(archetypes)) {
+        throw new TypeError('boss-pick: archetypes must be an array');
+      }
+      const template = threats.archetypes[0] as ArchetypeDef;
+      config = {
+        ...threats,
+        archetypes: (archetypes as Json[]).map((e): ArchetypeDef => {
+          const a = obj(e, 'archetype');
+          const id = a['id'];
+          if (typeof id !== 'string') throw new TypeError('archetype: id');
+          const bossOnly = a['bossOnly'] !== false;
+          const from = a['fromRound'];
+          const min = a['minPartySize'];
+          return {
+            ...template,
+            id,
+            bossOnly,
+            ...(bossOnly
+              ? {
+                  fromRound: typeof from === 'number' ? from : 1,
+                  minPartySize: typeof min === 'number' ? min : 1,
+                }
+              : {}),
+          };
+        }),
+      };
+    }
+    const boss = pickBoss(
+      {
+        round,
+        partySize,
+        ...(previousBoss === undefined ? {} : { previousBoss }),
+      },
+      config,
+      Rng.fromSeed(seed).child('boss'),
+    );
+    return { result: { boss } };
   };
 }

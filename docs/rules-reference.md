@@ -43,6 +43,10 @@ that way.
   from the list before a shop draw and do not skip it: keep it at weight 0 in
   its place (the result is the same as removing it, but the wall-shape redraw
   and any later entry stay in file order).
+- **Boss draw.** The boss list keeps file order and the previous boss is
+  removed before the single `nextInt` (never after it), only when more than
+  one boss is eligible; the draw is on the child `boss` of `ghost:r<round>`,
+  which a child does without advancing its parent.
 - **Map and Set order.** JavaScript iterates a `Map` or `Set` in insertion
   order; a C# `Dictionary` or `HashSet` has no order. Rules code never
   iterates one: it keeps an array alongside, or reads the keys sorted
@@ -324,6 +328,15 @@ upper bound; a value above the last round just never offers the entry); the
 loader and `economy.schema.json` reject 0, negative and non-integer values, and
 the loader also rejects a list in which no entry has `fromRound` 1.
 
+In `threats.json`, a boss-only archetype (`bossOnly` true) must have `fromRound`
+(integer, at least 1; no upper bound) and `minPartySize` (integer from 1 to
+`maxPartySize`); an archetype with `bossOnly` false must have neither. The
+loader and `threats.schema.json` enforce this, and the loader also rejects a
+file that has boss-only archetypes but none with `fromRound` 1 and
+`minPartySize` 1, so a boss can always be drawn. A file with no boss-only
+archetype at all is still accepted: every archetype is then a boss candidate,
+with no gating.
+
 A tier's `costs` (CB-5e) holds one integer from 1 to `MAX_TIER_COST` per
 resource, at most one resource per input (so at most four); the combined cost
 `costPerUnit` the loader derives from it is their sum, at most
@@ -450,7 +463,7 @@ same list, and the final state), `prng-child` (the parent state and the first
 `count` outputs of `child(label)`), `map-gen` (see Map generation),
 `team-state-ops` (see Team state and placement), `flow-graph` (see Conduits), `flow-sim` (see Tick order), `arena-sim` (see
 "Golden kind `arena-sim`"), `enemy-paths` (see "Enemy-path preview"),
-`neutral-zone` and `battle` (see "The neutral zone" and "Battles"), `threat-gen` and
+`neutral-zone` and `battle` (see "The neutral zone" and "Battles"), `threat-gen`, `boss-pick` and
 `pve-battle` (see "PvE threats").
 
 `shop-roll` (see "Run random streams" and "Shops and gold"): input `{seed,
@@ -3360,7 +3373,9 @@ An archetype has `waveSharePercent` (the rest of the budget goes to the
 stronghold), `waves` `{firstTick, intervalTicks, count, growthPercent,
 composition: [{unit, weight}], signature?}` and `stronghold`
 `{coreHealthPerBudget, wallSharePercent, turretSharePercent, layout}`.
-`bossOnly` archetypes are never offered by `pickArchetypes`. Shipped values:
+`bossOnly` archetypes are never offered by `pickArchetypes`; they have
+`fromRound` and `minPartySize` (see "Choosing and summarising", `pickBoss`).
+Shipped values:
 
 | Archetype | Wave share | Waves (first tick, interval, count, growth) | Composition | Stronghold (Core per budget, walls, turrets, layout) |
 | --- | --- | --- | --- | --- |
@@ -3535,7 +3550,20 @@ throws: a threat whose stronghold cannot be built is a generator bug.
 are not `bossOnly`, in file order; `rng = Rng.fromSeed(seed).child("archetypes")
 .child(round)`; the list is shuffled once and `easy`, `medium`, `hard` take
 positions 0, 1, 2 (wrapping around if there are fewer than three; with three or
-more they are distinct). `threatSummary(profile, content)` returns `{archetype,
+more they are distinct). 
+`pickBoss({round, partySize, previousBoss?}, threats, rng)` (MM-9b, MM-9c)
+chooses the boss of a PvP round with no ghost. Eligible: the archetypes with
+`bossOnly` true, `fromRound <= round` and `minPartySize <= partySize`, in file
+order (if the file has no boss-only archetype, every archetype, in file order).
+If more than one is eligible, `previousBoss` is removed from the list (if it is
+not in it, nothing is removed); if exactly one is eligible it is kept even when
+it is the previous boss. The result is `list[rng.nextInt(list.length)]`, one
+draw from `rng`. Pure. Golden kind `boss-pick`: input `{seed, round, partySize,
+previousBoss?, archetypes?}`, `rng = Rng.fromSeed(seed).child("boss")`, result
+`{boss}`; `archetypes` (`{id, bossOnly?, fromRound?, minPartySize?}`, `bossOnly`
+default true, the others default 1) replaces the shipped archetypes in that
+vector (each takes the waves and stronghold of the first shipped one).
+`threatSummary(profile, content)` returns `{archetype,
 type, level (easy 1, medium 2, hard and boss 3), totalUnits, firstWaveTick
 (null if no waves), coreHealth (the total over the Cores), cores (their
 number), walls, turrets}`.
@@ -4207,8 +4235,13 @@ Workshop) is not a vote: see the Workshop above.
 `createBattleResolver` runs `simulatePveBattle` with the voted option's threat
 (PvE), or, for PvP, the ghost fixed in `state.pvpOpponent` (see "Ghosts"; or
 the team `findPvpOpponent` returns), else a
-generated `boss` threat for the round (archetype drawn from the boss-only
-archetypes; opponent kind `boss`). The battle seed is the first `nextU32` of
+generated `boss` threat for the round (opponent kind `boss`). The archetype is
+no longer drawn here: it is `state.pvpOpponent.boss`, chosen in the shop (see
+"Ghosts", "Selection"). Only a state whose `pvpOpponent` has no `boss` (a save
+made before issue #397, or a run without `threats` in its ghost rules) keeps
+the old draw: `rng.child("archetype").pick(list)` on the battle stream, `list`
+being the boss-only archetypes in file order, else all archetypes. The result's
+`opponent` then carries `boss: <archetype id>` and the round record stores it. The battle seed is the first `nextU32` of
 the battle stream. `BattleResult.detail` is `{ version, kind, round, seed,
 source, teamHash, summary }`: no event log. `source` is `{type: "option"}`
 (threat in `pending.option.threat`), `{type: "generated", input, threat}` (the
@@ -4282,9 +4315,20 @@ shop until it has been applied (`ghost_selection_pending`). The handler:
 2. takes the stream `ghost:r<round>` (`drawStream`, which advances the run
    generator by exactly one output whatever the payload holds);
 3. with `n >= 1` candidates picks `candidates[stream.nextInt(n)]`; with none,
-   the boss;
+   the boss, chosen with `pickBoss` (MM-9b, MM-9c; "Choosing and summarising")
+   with `round` the run's round, `partySize` the number of players, `previousBoss`
+   the boss ID of the run's most recent boss battle (the latest round record,
+   this round's last, whose PvP opponent is a boss with a `boss` ID; not just
+   the previous round), and the generator `stream.child("boss")` (a child draws
+   nothing from the stream, so the ghost draw above is the same whatever the
+   boss);
 4. stores the whole chosen snapshot in `state.pvpOpponent = { round, kind:
-   'ghost' | 'boss', label, ghost }`.
+   'ghost' | 'boss', label, ghost, boss? }`; `boss` is the archetype ID, only
+   for a boss.
+
+The boss thus has the same stream as the ghost draw, and `pickBoss` is the one
+place that decides it. MM-11: the shop before a boss battle can name the boss
+(web text comes later).
 
 Skipping an invalid snapshot and drawing another is therefore done by
 filtering before the single draw, which is the deterministic form of that
@@ -4333,7 +4377,9 @@ refused with `invalid_intent`):
       hash,         // hashJson of the canonical candidate list (audit / signing)
       chosenHash }  // hashJson(chosen); null for the boss
 
-`replayRun` takes the stream `ghost:r<round>` as the live path did, checks that
+`replayRun` takes the stream `ghost:r<round>` as the live path did (for `n = 0`
+it chooses the boss exactly as the live path, so the log needs no boss field),
+checks that
 `nextInt(n) === index`, checks `chosen` for structure only
 (`checkGhostSnapshotShape` with no rules, no economy and no events: the fixed
 size cap `GHOST_MAX_SERIALIZED_BYTES` (2 MiB) is the only size limit), checks
@@ -4594,9 +4640,15 @@ never read the pool: the logged opponent is replayed as it was.
 ### Fallback
 
 With no eligible valid snapshot, `pvpOpponent` is `{ round, kind: 'boss',
-label: 'the boss', ghost: null }` and the battle generates the boss for the
-round from the battle stream, as before. The run's round record shows the
-opponent as `ghost` (label: the owner's label) or `boss`.
+label: 'the boss', ghost: null, boss: <archetype id> }` and the battle
+generates the boss threat of that archetype for the round. `boss` is optional
+in the saved format (like `startedAt`, no format number changed): a
+`pvpOpponent` or round-record opponent without it is valid and means the old
+behaviour, the archetype drawn at battle time. Validation requires a string,
+a boss-only archetype when the content is known, and rejects `boss` on a ghost
+opponent. The run's round record shows the opponent as `ghost` (label: the
+owner's label) or `boss` (with the archetype ID in `boss`). The ghost snapshot
+does not contain it.
 
 ## Appendix: the per-player design (issue #124)
 

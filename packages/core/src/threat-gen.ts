@@ -492,6 +492,42 @@ export function pickArchetypes(
   return { easy: at(0), medium: at(1), hard: at(2) };
 }
 
+export interface BossPickInput {
+  readonly round: number;
+  readonly partySize: number;
+  /** The boss met in the run's previous boss battle, if any. */
+  readonly previousBoss?: ArchetypeId | undefined;
+}
+
+/**
+ * The boss of a PvP round with no ghost. Eligible: the archetypes with
+ * `bossOnly` true, `fromRound <= round` and `minPartySize <= partySize`, in
+ * file order (with no boss-only archetype at all, every archetype). When more
+ * than one is eligible, `previousBoss` is removed; if it is the only one it
+ * stays. The result is `list[rng.nextInt(list.length)]`. Pure.
+ */
+export function pickBoss(
+  input: BossPickInput,
+  threats: ThreatsConfig,
+  rng: Rng,
+): ArchetypeId {
+  const bosses = threats.archetypes.filter((a) => a.bossOnly);
+  let list =
+    bosses.length === 0
+      ? threats.archetypes.map((a) => a.id)
+      : bosses
+          .filter(
+            (a) =>
+              (a.fromRound ?? 1) <= input.round &&
+              (a.minPartySize ?? 1) <= input.partySize,
+          )
+          .map((a) => a.id);
+  if (list.length > 1 && input.previousBoss !== undefined) {
+    list = list.filter((id) => id !== input.previousBoss);
+  }
+  return list[rng.nextInt(list.length)] ?? '';
+}
+
 export interface ThreatSummary {
   readonly archetype: ArchetypeId;
   readonly type: ThreatType;

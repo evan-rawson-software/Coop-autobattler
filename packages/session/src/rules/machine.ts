@@ -322,6 +322,9 @@ function enter(
             opponent: {
               kind: result.opponent.kind,
               label: result.opponent.label,
+              ...(result.opponent.boss === undefined
+                ? {}
+                : { boss: result.opponent.boss }),
             },
           },
         },
