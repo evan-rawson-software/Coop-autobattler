@@ -101,7 +101,9 @@ describe('Splitter placement (#178)', () => {
         bought += s.placed + s.stashed;
       }
     }
-    expect(bought).toBeGreaterThanOrEqual(30);
+    // Issue #384: siege re-rolls for a Foundry and its gold goes there too:
+    // 20 bought now.
+    expect(bought).toBeGreaterThanOrEqual(15);
     // Tetromino walls (issue #291) take more room around the Core: measured 4
     // left over (1 before); allowed up to 7.
     expect(bought - placed).toBeLessThanOrEqual(7);
@@ -163,7 +165,9 @@ describe('shop buys only what can be placed (#178)', () => {
     // siege 1 / 3 / 8. With the tetromino walls and shop weights of issue #291:
     // rush 9 / 34 / 65, fortify 6 / 12 / 21, siege 1 / 4 / 8.
     const limit = {
-      rush: { 1: 10, 2: 36, 4: 77 },
+      // Issue #384: collectors bought for a chain wait in the stash until
+      // its pieces arrive (rush party 2 measures 42, party 4 86).
+      rush: { 1: 10, 2: 45, 4: 90 },
       fortify: { 1: 7, 2: 16, 4: 30 },
       // Issue #383: the five refining buildings dilute the shop from round 3;
       // siege party 2 now measures 7, party 4 9.

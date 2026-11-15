@@ -104,6 +104,29 @@ pnpm sim --help
   It also prints, per strategy, shop counts by building definition (sorted):
   offers shown (at each shop entry and after each re-roll), bought, and on the
   board at the end of the run, summed over runs and players.
+  Refining chains built, by type, are the `bld_refinery_*` rows (`placed`), and
+  a line lists the units made by type (soldiers, heavies, Golems, casters).
+- The bot also builds the Foundry and the refining chains (issue #384; from
+  round 3, when they are offered). A Foundry takes an Ore and a Power
+  collector; the Composite chain takes an Ore and a Power collector, the
+  Composite refinery and a Golem forge; the Aether chain takes a Power and a
+  Flux collector, the Aether refinery and a Spire. A chain is a multi-round goal:
+  the bot buys either piece when offered and keeps it in the stash, re-rolls
+  (cheaply, keeping the gold to buy the other piece and its two collectors,
+  and for a few rounds saves gold for it) while the chain is incomplete, and
+  places the whole chain once both pieces are owned. The layout wires a chain
+  all or nothing (every conduit is routed around the others, so none cross;
+  no Crossover is used), inside the bot's own plot; if it does not fit, the
+  pieces stay in the stash and nothing is half-wired. The strategies: `rush`
+  uses Golems as a front line (the Composite chain, also a Foundry), `fortify`
+  prefers the Aether chain (casters; it buys no Overclocker, since the plot's
+  single Flux node goes to the Spire chain; also a Foundry), `siege` buys a
+  Foundry sometimes (heavies), and `weak` buys one at random and scatters it
+  unconnected like everything else. While a chain-minded strategy has none
+  built (until round 9), its layout keeps one Ore, one Power (`rush`) or one
+  Power, one Flux node (`fortify`) and the cells around it free of plain
+  collectors and walls. The bot draws no border link for a chain (no Flux
+  sharing).
 - `stage` builds five solo boards by hand on the map of seed 5 with the Core at
   (11, 5): `kit` (the starting kit), `half`, and `full1`, `full2`, `full3` (all
   six Ore and Power nodes used, 3 Barracks, 3 turrets, 7 walls, at tier 1, 2

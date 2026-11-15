@@ -82,6 +82,14 @@ export function bundledProblems(
   return shape.ok ? [] : [...shape.errors];
 }
 
+const CHAIN_DEFS = ['bld_foundry', 'bld_refinery_ab', 'bld_refinery_bc'];
+
+/** Which of the Foundry and the refineries a snapshot has on its board. */
+function chainKinds(g: GhostSnapshot): string[] {
+  const defs = new Set(g.team.buildings.map((b) => b.def));
+  return CHAIN_DEFS.filter((d) => defs.has(d));
+}
+
 /** The bundled file, as the object that is written. */
 export function buildBundledGhostFile(ctx: SimContext): BundledGhostFile {
   const all: GhostSnapshot[] = [];
@@ -149,9 +157,22 @@ export function buildBundledGhostFile(ctx: SimContext): BundledGhostFile {
   for (const party of BUNDLED_PARTY_SIZES) {
     for (let round = BUNDLED_LAST_ROUND; round >= 1; round--) {
       let have = 0;
-      for (const snapshot of all) {
+      // Ghosts that carry a Foundry or a refinery come first, one of each
+      // kind before any repeat (issue #384), then generation order.
+      const fresh = all.filter(
+        (g) => g.partySize === party && g.round === round && !used.has(g.runId),
+      );
+      const seen = new Set<string>();
+      const ranked = [
+        ...fresh.filter((g) => {
+          const kinds = chainKinds(g).filter((k) => !seen.has(k));
+          for (const k of kinds) seen.add(k);
+          return kinds.length > 0;
+        }),
+        ...fresh,
+      ];
+      for (const snapshot of ranked) {
         if (have >= BUNDLED_PER_BUCKET) break;
-        if (snapshot.partySize !== party || snapshot.round !== round) continue;
         if (used.has(snapshot.runId)) continue;
         used.add(snapshot.runId);
         ghosts.push(snapshot);

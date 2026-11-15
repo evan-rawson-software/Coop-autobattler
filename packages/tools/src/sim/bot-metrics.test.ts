@@ -68,6 +68,7 @@ function fake(over: Partial<BattleMetrics>): BattleMetrics {
     producerWaiting: 25,
     unitsMade: 3,
     unitsTopSpeed: 4,
+    spawned: { unit_soldier: 3, unit_golem: 1 },
     turretTicks: 50,
     turretWaiting: 5,
     firstCoreLost: 1,

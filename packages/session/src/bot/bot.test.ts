@@ -110,7 +110,8 @@ describe('bot player', () => {
     const weak = play('weak', 1, 5);
     expect(wallsOf(rush)).toBe(0);
     expect(wallsOf(fortify)).toBeGreaterThan(0);
-    expect(rush['bld_barracks'] ?? 0).toBeGreaterThan(
+    // Issue #384: rush also spends on its Composite chain, so it ties.
+    expect(rush['bld_barracks'] ?? 0).toBeGreaterThanOrEqual(
       fortify['bld_barracks'] ?? 0,
     );
     expect(wallsOf(siege)).toBeGreaterThan(0);

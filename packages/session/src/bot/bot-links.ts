@@ -24,6 +24,7 @@ import {
   consumerNeed,
   coveragePercent,
   defOf,
+  isChainPiece,
   freeCells,
   freeNodes,
   makeEnv,
@@ -157,6 +158,7 @@ function planOneLink(
         d.kind !== 'route' &&
         d.kind !== 'source' &&
         d.inputs.length > 0 &&
+        !isChainPiece(content, x.def) &&
         // Left in the stash by the layout: its own collectors did not
         // reach it. The sender's spare collector can feed it.
         coveragePercent(supply, consumerNeed(content, x.def, x.tier)) >=
