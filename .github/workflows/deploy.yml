@@ -14,11 +14,6 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
-# Shared runners are slow and noisy: the wall-time limits in the tests are
-# loosened here as they are in ci.yml.
-env:
-  CI_RELAXED_TIMING: '1'
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,10 +25,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm lint
-      - run: pnpm format:check
-      - run: pnpm test
+      # Typecheck, lint and tests already ran in CI on the pull request (and
+      # run again in CI on main); here only the content check and the build.
       - run: pnpm validate:content
       - run: pnpm build
       - uses: actions/configure-pages@v5
