@@ -181,9 +181,7 @@ describe('hint line', () => {
       stale,
     );
     // The screen clears the message when the pointer moves to another cell.
-    expect(hintText({ hover: good, selected: null, message: null })).toMatch(
-      /Fits here/,
-    );
+    expect(hintText({ hover: good, selected: null, message: null })).toBe('');
   });
   test('hovering an illegal cell shows its own reason', () => {
     expect(hintText({ hover: bad, selected: null, message: null })).toBe(

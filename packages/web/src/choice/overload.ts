@@ -14,7 +14,6 @@ export function overloadLine(
   partyMax: number | readonly number[],
   strongholdMax: number | readonly number[],
 ): string {
-  const at = clock(sim.overloadStartTick, sim.ticksPerSecond);
   const out = overloadOutcome(
     sim,
     typeof partyMax === 'number' ? [partyMax] : partyMax,
@@ -29,5 +28,5 @@ export function overloadLine(
         : out.first === 'both'
           ? 'overloadBoth'
           : 'overloadNeither';
-  return screenText(screenTexts, key, { at, when });
+  return screenText(screenTexts, key, { when });
 }

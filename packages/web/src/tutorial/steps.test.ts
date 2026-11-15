@@ -17,6 +17,7 @@ import {
   coreCellsOf,
   highlightDef,
   turretResource,
+  withoutHeldReminders,
   oreResource,
   stepsDone,
   tutorialDefs,
@@ -283,5 +284,25 @@ describe('facts from a real board', () => {
       n: 4,
     });
     expect(brokenStep(placed, false)).toBe(4);
+  });
+});
+
+describe('held-item reminders', () => {
+  const list = [
+    { kind: 'free_nodes' },
+    { kind: 'stash' },
+    { kind: 'missing_input' },
+  ];
+  test('steps 1 to 3 drop the inventory reminders, keep real problems', () => {
+    for (const n of [1, 2, 3] as const) {
+      expect(withoutHeldReminders(list, n)).toEqual([
+        { kind: 'missing_input' },
+      ]);
+    }
+  });
+  test('step 4 on, and outside the tutorial, they show', () => {
+    expect(withoutHeldReminders(list, 4)).toEqual(list);
+    expect(withoutHeldReminders(list, 5)).toEqual(list);
+    expect(withoutHeldReminders(list, null)).toEqual(list);
   });
 });

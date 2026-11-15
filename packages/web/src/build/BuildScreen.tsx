@@ -71,7 +71,7 @@ import { halfAlpha, halfStatuses } from './border-links.js';
 import { gateFor, READY_LOCK_TEXT, SEALED_HINT, type Gate } from './lock.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { useBuildTutorial } from '../tutorial/context.js';
-import { highlightDef } from '../tutorial/steps.js';
+import { highlightDef, withoutHeldReminders } from '../tutorial/steps.js';
 import { drawTutorialMarks, tutorialMarks } from './tutorial-overlay.js';
 import { ME, isEditStep } from './session.js';
 import { DEFAULT_SEED, economy, gameConfigs, simConfig } from './setup.js';
@@ -221,12 +221,19 @@ export function BuildView(props: {
     [team, step, flow, run, acting],
   );
 
+  const tut = useBuildTutorial();
   const checklist = useMemo(
     () =>
       team === null || !isEditStep(step)
         ? { items: [], okHidden: 0 }
-        : deriveChecklist(team, content, problems, flow, acting),
-    [team, step, problems, flow, acting],
+        : deriveChecklist(
+            team,
+            content,
+            tut === null ? problems : withoutHeldReminders(problems, tut.n),
+            flow,
+            acting,
+          ),
+    [team, step, problems, flow, acting, tut?.n],
   );
   const fresh = useMemo(
     () => (run === null ? new Set<number>() : newStashIds(run)),
@@ -249,7 +256,6 @@ export function BuildView(props: {
         : gateFor(run, acting, shared.deps, content),
     [run, step, shared, acting],
   );
-  const tut = useBuildTutorial();
   // The coach card covers the map key and the keys; the next fight waits for step 5.
   const inTutorialBuild = tut !== null;
   const sealedIds = gate?.sealed.ids ?? [];

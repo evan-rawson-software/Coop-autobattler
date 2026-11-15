@@ -734,7 +734,7 @@ export async function runRunSmoke({
   // After the illegal click, the hint follows the pointer to a legal cell.
   const goodHint = await page.locator('#core-hint').innerText();
   check(
-    /fits here/i.test(goodHint) &&
+    goodHint.trim() === '' &&
       !/edge|water|cliff|node|front|area/i.test(goodHint),
     `Core placement: the hint over a legal cell is not stale after an illegal click ("${goodHint}")`,
   );
@@ -921,17 +921,24 @@ export async function runRunSmoke({
   );
   const overloadLines = await page
     .locator('.pve-card')
-    .evaluateAll((els) => els.map((e) => e.getAttribute('title') ?? ''));
+    .evaluateAll((els) =>
+      els.map(
+        (e) => e.querySelector('[data-field="overload"]')?.textContent ?? '',
+      ),
+    );
   check(
     overloadLines.length === 3 &&
       overloadLines.every((t) =>
-        /^At 3:00 both Cores start losing health \(Overload\)\. (Theirs falls first, at \d+:\d\d|Yours falls first, at \d+:\d\d|Both fall at \d+:\d\d|Neither falls before the time limit)/.test(
+        /^Overload: (theirs falls first, at \d+:\d\d|yours falls first, at \d+:\d\d|both fall at \d+:\d\d|neither falls before the time limit)\.$/.test(
           t.trim(),
         ),
       ),
-    `PvE choice: each card's tooltip states which Core Overload destroys first ("${overloadLines[0]}")`,
+    `PvE choice: each card prints which Core Overload destroys first ("${overloadLines[0]}")`,
   );
-  const choiceText = await page.locator('#pve-choice').innerText();
+  const choiceText = (await page.locator('#pve-choice').innerText()).replace(
+    /At 3:00 both Cores start losing health \(Overload\)\.|Overload: [^.]*\./g,
+    '',
+  );
   const trayText = await page.locator('[data-field="stakes"]').innerText();
   check(
     /no life/.test(trayText) &&

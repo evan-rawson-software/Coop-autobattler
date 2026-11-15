@@ -112,7 +112,7 @@ export function hintText(input: {
     return input.hover.ok
       ? input.ready === true
         ? 'Unready to move your Core.'
-        : 'Fits here.'
+        : ''
       : (input.hover.text ?? '');
   }
   return '';
