@@ -68,6 +68,8 @@ export function templateKey(def: BuildingDef): EffectTemplateKey {
       return def.defenseType;
     case 'economy':
       return def.effect.type;
+    case 'refinery':
+      return 'refinery';
     case 'core':
       return 'core';
   }
@@ -103,6 +105,15 @@ export function effectText(
       const x = def.tiers[tier - 1];
       if (x !== undefined) values['cost'] = String(x.costPerUnit);
       values['unit'] = content.presentation.get(def.unit)?.name ?? def.unit;
+      break;
+    }
+    case 'refinery': {
+      const x = def.tiers[tier - 1];
+      if (x !== undefined) {
+        values['count'] = String(x.outputPerBatch);
+        values['seconds'] = seconds(x.productionIntervalTicks);
+      }
+      values['output'] = `{${def.output}}`;
       break;
     }
     case 'defense': {

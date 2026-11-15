@@ -30,6 +30,7 @@
   --kind-unit-producer: #e6cbc4;
   --kind-defense: #cdd5e8;
   --kind-economy: #dccde6;
+  --kind-refinery: #e6d3b8;
   --kind-core: #0f6b78;
   --owner-0: #1d6fd1;
   --owner-1: #d1551d;
@@ -77,6 +78,7 @@
     --kind-unit-producer: #8a4a3c;
     --kind-defense: #3f5486;
     --kind-economy: #66488a;
+    --kind-refinery: #8a6a3a;
     --kind-core: #1b8fa0;
     --owner-0: #5aa2ff;
     --owner-1: #ff8a52;

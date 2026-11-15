@@ -21,19 +21,31 @@
     },
     "resource": {
       "type": "object",
-      "required": ["id", "name", "rarity"],
+      "description": "A resource is base exactly when it has no refinedFrom. A base resource needs a rarity; a refined resource has none.",
+      "required": ["id", "name"],
+      "if": {
+        "type": "object",
+        "properties": { "refinedFrom": true },
+        "required": ["refinedFrom"]
+      },
+      "then": { "type": "object", "properties": { "rarity": false } },
+      "else": {
+        "type": "object",
+        "required": ["rarity"],
+        "properties": { "rarity": true }
+      },
       "additionalProperties": false,
       "properties": {
         "id": { "$ref": "#/$defs/resourceId" },
         "name": { "type": "string", "minLength": 1, "pattern": "\\S" },
         "rarity": {
-          "description": "Hint for map generation (CB-5c).",
+          "description": "Base resources only: hint for map generation (CB-5c).",
           "enum": ["common", "rare"]
         },
         "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
         "icon": { "type": "string", "minLength": 1 },
         "refinedFrom": {
-          "description": "Refined resources only: the one or two resources this is made from. Not used yet.",
+          "description": "Refined resources only: the one or two resources this is made from (CB-5f). The `refinery` building that makes it must take exactly these resources.",
           "type": "array",
           "minItems": 1,
           "maxItems": 2,

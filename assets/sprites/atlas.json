@@ -292,6 +292,16 @@
         "#493382",
         "#8a5cf6",
         "#bfa5fa"
+      ],
+      "res_ab_refined": [
+        "#713824",
+        "#d9663a",
+        "#eaab93"
+      ],
+      "res_bc_refined": [
+        "#246967",
+        "#3fc7c0",
+        "#95e0dc"
       ]
     }
   },
@@ -575,9 +585,41 @@
       "id": "res_c",
       "note": "Resource node, pre-tinted from the resource colour; shape differs per resource."
     },
-    "conduit_straight": {
+    "node_res_ab_refined": {
       "sheet": "tiles",
       "x": 32,
+      "y": 112,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 2,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "node",
+      "id": "res_ab_refined",
+      "note": "Resource node, pre-tinted from the resource colour; shape differs per resource."
+    },
+    "node_res_bc_refined": {
+      "sheet": "tiles",
+      "x": 64,
+      "y": 112,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 2,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "node",
+      "id": "res_bc_refined",
+      "note": "Resource node, pre-tinted from the resource colour; shape differs per resource."
+    },
+    "conduit_straight": {
+      "sheet": "tiles",
+      "x": 96,
       "y": 112,
       "w": 16,
       "h": 16,
@@ -593,7 +635,7 @@
     },
     "conduit_corner": {
       "sheet": "tiles",
-      "x": 48,
+      "x": 112,
       "y": 112,
       "w": 16,
       "h": 16,
@@ -609,7 +651,7 @@
     },
     "conduit_t": {
       "sheet": "tiles",
-      "x": 64,
+      "x": 128,
       "y": 112,
       "w": 16,
       "h": 16,
@@ -625,7 +667,7 @@
     },
     "conduit_cross": {
       "sheet": "tiles",
-      "x": 80,
+      "x": 144,
       "y": 112,
       "w": 16,
       "h": 16,
@@ -641,7 +683,7 @@
     },
     "conduit_end": {
       "sheet": "tiles",
-      "x": 96,
+      "x": 160,
       "y": 112,
       "w": 16,
       "h": 16,
@@ -657,7 +699,7 @@
     },
     "conduit_item": {
       "sheet": "tiles",
-      "x": 112,
+      "x": 176,
       "y": 112,
       "w": 16,
       "h": 16,
@@ -991,9 +1033,41 @@
       "id": "bld_armory",
       "note": "1x1 tiles."
     },
-    "bld_core": {
+    "bld_refinery_ab": {
       "sheet": "buildings",
       "x": 0,
+      "y": 82,
+      "w": 32,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        16,
+        16
+      ],
+      "category": "building",
+      "id": "bld_refinery_ab",
+      "note": "2x2 tiles."
+    },
+    "bld_refinery_bc": {
+      "sheet": "buildings",
+      "x": 33,
+      "y": 82,
+      "w": 32,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        16,
+        16
+      ],
+      "category": "building",
+      "id": "bld_refinery_bc",
+      "note": "2x2 tiles."
+    },
+    "bld_core": {
+      "sheet": "buildings",
+      "x": 66,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1009,7 +1083,7 @@
     },
     "bld_turret_base": {
       "sheet": "buildings",
-      "x": 33,
+      "x": 99,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1024,7 +1098,7 @@
     },
     "bld_turret_head": {
       "sheet": "buildings",
-      "x": 50,
+      "x": 116,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1039,7 +1113,7 @@
     },
     "tier_pips": {
       "sheet": "buildings",
-      "x": 67,
+      "x": 133,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1054,7 +1128,7 @@
     },
     "tier_trim_1x1": {
       "sheet": "buildings",
-      "x": 116,
+      "x": 182,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1069,7 +1143,7 @@
     },
     "tier_trim_2x2": {
       "sheet": "buildings",
-      "x": 149,
+      "x": 215,
       "y": 82,
       "w": 32,
       "h": 32,

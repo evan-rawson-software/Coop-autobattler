@@ -32,3 +32,9 @@ A unit producer tier gives either `costPerUnit` (one cost for every resource it
 takes, counted alike) or `costs` (a cost per resource, for a building with one
 input per resource, such as the Foundry); never both. Every resource in `costs`
 needs an input and every input resource needs a cost.
+A `refinery` building names an `output` (a refined resource: one with
+`refinedFrom` in `resources.json`, whose `refinedFrom` is the set of the
+resources of its inputs) and each tier gives `costs` (a cost for every input
+resource), `productionIntervalTicks` and `outputPerBatch`. Resources without
+`refinedFrom` are base resources and need a `rarity`; refined resources have
+none and are never placed on maps.

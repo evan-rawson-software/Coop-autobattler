@@ -15,7 +15,12 @@
 
 import { sortedKeys } from './hash.js';
 import { mulDiv } from './int.js';
-import { MAX_DAMAGE, MAX_HEALTH, MAX_TIER_COST } from './limits.js';
+import {
+  MAX_DAMAGE,
+  MAX_HEALTH,
+  MAX_OUTPUT_PER_BATCH,
+  MAX_TIER_COST,
+} from './limits.js';
 import type { ResourceConfig, ResourceId } from './resources.js';
 import type { UnitConfig, UnitId } from './units.js';
 import {
@@ -32,7 +37,13 @@ export type BuildingId = string;
 export type Side = 'north' | 'east' | 'south' | 'west';
 export type Rotation = 0 | 90 | 180 | 270;
 export type BuildingKind =
-  'source' | 'route' | 'unit_producer' | 'defense' | 'economy' | 'core';
+  | 'source'
+  | 'route'
+  | 'unit_producer'
+  | 'defense'
+  | 'economy'
+  | 'refinery'
+  | 'core';
 export type RouteType = 'splitter' | 'merger' | 'crossover';
 export type DefenseType = 'wall' | 'gate' | 'turret';
 export type EconomyEffectType = 'source_speed' | 'unit_strength';
@@ -137,6 +148,17 @@ export interface EconomyTier extends TierBase {
   /** Cap on steps (SC-8). */
   readonly maxSteps: number;
 }
+export interface RefineryTier extends TierBase {
+  /**
+   * Resource units consumed per batch, one entry per input resource (CB-5d,
+   * CB-5e). Read it sorted by resource ID (`costEntries`).
+   */
+  readonly costs: Readonly<Record<ResourceId, number>>;
+  /** Minimum ticks between two batches. */
+  readonly productionIntervalTicks: number;
+  /** Items of the building's `output` resource made per batch. */
+  readonly outputPerBatch: number;
+}
 export interface CoreTier {
   readonly health: number;
 }
@@ -182,6 +204,12 @@ export interface EconomyBuildingDef extends BuildingCommon {
   readonly effect: { readonly type: EconomyEffectType };
   readonly tiers: Tiers3<EconomyTier>;
 }
+export interface RefineryBuildingDef extends BuildingCommon {
+  readonly kind: 'refinery';
+  /** The refined resource it makes; its `refinedFrom` is the set of its input resources. */
+  readonly output: ResourceId;
+  readonly tiers: Tiers3<RefineryTier>;
+}
 export interface CoreBuildingDef extends BuildingCommon {
   readonly kind: 'core';
   readonly tiers: readonly [CoreTier];
@@ -195,6 +223,7 @@ export type BuildingDef =
   | UnitProducerBuildingDef
   | DefenseBuildingDef
   | EconomyBuildingDef
+  | RefineryBuildingDef
   | CoreBuildingDef;
 
 export interface BuildingConfig {
@@ -357,6 +386,7 @@ const KINDS: readonly string[] = [
   'unit_producer',
   'defense',
   'economy',
+  'refinery',
   'core',
 ];
 const ROUTE_TYPES: readonly string[] = ['splitter', 'merger', 'crossover'];
@@ -370,12 +400,14 @@ const KIND_FIELDS: Readonly<Record<string, string>> = {
   unit: 'unit_producer',
   defenseType: 'defense',
   effect: 'economy',
+  output: 'refinery',
 };
 
 /** Upper bounds of per-tier fields (see `limits.ts`). */
 const TIER_MAX: Readonly<Record<string, number>> = {
   health: MAX_HEALTH,
   damage: MAX_DAMAGE,
+  outputPerBatch: MAX_OUTPUT_PER_BATCH,
 };
 
 /** Per-tier integer fields (name -> minimum) by kind, beyond the common ones. */
@@ -409,6 +441,8 @@ function tierFields(
         stepPercent: 1,
         maxSteps: 1,
       };
+    case 'refinery':
+      return { ...bought, productionIntervalTicks: 1, outputPerBatch: 1 };
     case 'core':
       return { health: 1 };
     default:
@@ -499,6 +533,13 @@ function ioRule(kind: string, subtype: string | undefined): IoRule | undefined {
         inputs: [1, 4],
         outputs: none,
         what: 'an economy building',
+      };
+    case 'refinery':
+      return {
+        resource: 'required',
+        inputs: [1, 2],
+        outputs: [1, 1],
+        what: 'a refinery',
       };
     case 'core':
       return {
@@ -665,6 +706,21 @@ function parseBuilding(
       errors.push(`${label}: unknown unit ID "${v}" in "unit".`);
     } else {
       unit = v;
+    }
+  }
+  let output: ResourceId | undefined;
+  if (kind === 'refinery') {
+    const v = entry['output'];
+    if (typeof v !== 'string' || !RESOURCE_ID_PATTERN.test(v)) {
+      errors.push(`${label}: a refinery needs an "output" resource ID.`);
+    } else if (ctx.resources.get(v) === undefined) {
+      errors.push(`${label}: unknown resource ID "${v}" in "output".`);
+    } else if (ctx.resources.get(v)?.refinedFrom === undefined) {
+      errors.push(
+        `${label}: output "${v}" is not a refined resource (it has no "refinedFrom").`,
+      );
+    } else {
+      output = v;
     }
   }
   if (kind === 'defense') {
@@ -854,7 +910,15 @@ function parseBuilding(
         let ok = true;
         let costs: Record<string, number> | undefined;
         let fields = wantedFields;
-        if (kind === 'unit_producer' && 'costs' in raw) {
+        if (kind === 'refinery') {
+          // A refinery tier always has `costs` (CB-5d).
+          if ('costs' in raw) {
+            costs = readCosts(raw['costs'], inputs, where, ctx, errors);
+          } else {
+            errors.push(`${where}: a refinery tier needs "costs".`);
+          }
+          if (costs === undefined) ok = false;
+        } else if (kind === 'unit_producer' && 'costs' in raw) {
           // Exactly one of `costPerUnit` and `costs` (CB-5e).
           if ('costPerUnit' in raw) {
             ok = false;
@@ -875,8 +939,16 @@ function parseBuilding(
           else rec[key] = value;
         }
         for (const key of sortedKeys(raw)) {
-          if (key === 'costs' && kind === 'unit_producer') continue;
-          if (!(key in fields) && !(key === 'costPerUnit' && costs)) {
+          if (
+            key === 'costs' &&
+            (kind === 'unit_producer' || kind === 'refinery')
+          ) {
+            continue;
+          }
+          if (
+            !(key in fields) &&
+            !(key === 'costPerUnit' && costs && kind === 'unit_producer')
+          ) {
             ok = false;
             errors.push(
               `${where}: field "${key}" is not valid for ${kind === 'defense' && defenseType !== undefined ? defenseType : String(kind)}; expected ${sortedKeys(wantedFields).join(', ')}.`,
@@ -891,12 +963,30 @@ function parseBuilding(
     }
   }
 
-  if (kind === 'unit_producer' && tierCosts.length === wantedCount) {
+  if (
+    (kind === 'unit_producer' || kind === 'refinery') &&
+    tierCosts.length === wantedCount
+  ) {
     // One form for the whole building, and the same resources in every tier.
     const keys = tierCosts.map((c) => (c ? sortedKeys(c).join(',') : null));
     if (keys.some((k) => k !== keys[0])) {
       errors.push(
         `${label}: every tier must use the same cost form ("costPerUnit" or "costs") and, for "costs", the same resources.`,
+      );
+    }
+  }
+
+  // The output of a refinery is made from exactly its input resources (CB-5f).
+  if (kind === 'refinery' && output !== undefined && ioWellFormed) {
+    const keysOf = (ids: readonly string[]): string[] =>
+      sortedKeys(Object.fromEntries(ids.map((id) => [id, true])));
+    const from = keysOf(ctx.resources.get(output)?.refinedFrom ?? []);
+    const taken = keysOf(
+      inputs.flatMap((i) => (i.resource === undefined ? [] : [i.resource])),
+    );
+    if (from.join(',') !== taken.join(',')) {
+      errors.push(
+        `${label}: output "${output}" is refined from [${from.join(', ')}] but the inputs take [${taken.join(', ')}]; they must be the same set.`,
       );
     }
   }
@@ -956,6 +1046,28 @@ function parseBuilding(
           }),
         ),
       };
+    case 'refinery': {
+      if (output === undefined) return undefined;
+      return {
+        ...common,
+        kind,
+        output,
+        tiers: toTiers3(
+          tierRecords.map((t, i): RefineryTier => {
+            const costs = tierCosts[i];
+            if (costs === undefined) {
+              throw new Error('Internal error: refinery tier without costs.');
+            }
+            return {
+              ...base(t),
+              costs,
+              productionIntervalTicks: num(t, 'productionIntervalTicks'),
+              outputPerBatch: num(t, 'outputPerBatch'),
+            };
+          }),
+        ),
+      };
+    }
     case 'defense':
       if (defenseType === 'turret') {
         return {
@@ -1071,12 +1183,22 @@ export function productionOf(
       const t = def.tiers[tier - 1];
       return t && { cost: t.costPerShot, interval: t.cooldownTicks };
     }
+    case 'refinery': {
+      // The summed cost of one batch (a combined figure; see `costEntries`).
+      const t = def.tiers[tier - 1];
+      return (
+        t && {
+          cost: sortedKeys(t.costs).reduce((n, k) => n + (t.costs[k] ?? 0), 0),
+          interval: t.productionIntervalTicks,
+        }
+      );
+    }
     default:
       return undefined;
   }
 }
 
-/** One resource of a two-input consumer and what it costs per production. */
+/** One resource of a two-input consumer (or a refinery) and what it costs per production. */
 export interface CostEntry {
   readonly resource: ResourceId;
   readonly cost: number;
@@ -1092,7 +1214,7 @@ export function costEntries(
   def: BuildingDef,
   tier: number,
 ): readonly CostEntry[] | undefined {
-  if (def.kind !== 'unit_producer') return undefined;
+  if (def.kind !== 'unit_producer' && def.kind !== 'refinery') return undefined;
   const costs = def.tiers[tier - 1]?.costs;
   if (costs === undefined) return undefined;
   return sortedKeys(costs).map((resource) => ({
@@ -1117,6 +1239,19 @@ export function needPer1000By(
     resource: e.resource,
     needPer1000: mulDiv(1000, e.cost, p.interval),
   }));
+}
+
+/**
+ * Items of its output resource a refinery makes per 1000 ticks at its top
+ * speed (every input kept full): `floor(1000 * outputPerBatch / interval)`;
+ * 0 for any other building or a tier that does not exist.
+ */
+export function refineryOutputPer1000(def: BuildingDef, tier: number): number {
+  if (def.kind !== 'refinery') return 0;
+  const t = def.tiers[tier - 1];
+  return t === undefined
+    ? 0
+    : mulDiv(1000, t.outputPerBatch, t.productionIntervalTicks);
 }
 
 /**

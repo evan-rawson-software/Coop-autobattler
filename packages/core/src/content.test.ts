@@ -70,7 +70,7 @@ function errorsOf(...defs: Record<string, unknown>[]): string {
 describe('real content', () => {
   test('loads everything through loadAllContent', () => {
     const content = loadAllContentOrThrow(raw);
-    expect(content.buildings.list().length).toBe(21);
+    expect(content.buildings.list().length).toBe(23);
     expect(content.units.list().length).toBe(5);
     expect(content.terrain.list().length).toBe(2);
     const turret = content.buildings.get('bld_turret');
@@ -236,10 +236,10 @@ describe('loadBuildings', () => {
     const text = errorsOf(
       building({}),
       building({}),
-      building({ id: 'bld_r', kind: 'refinery' }),
+      building({ id: 'bld_r', kind: 'harvester' }),
     );
     expect(text).toMatch(/duplicate id "bld_test"/);
-    expect(text).toMatch(/unknown kind "refinery"/);
+    expect(text).toMatch(/unknown kind "harvester"/);
   });
 
   test('requires exactly three tiers, or one for the core', () => {

@@ -8,7 +8,6 @@ const valid = {
     {
       id: 'res_b_refined',
       name: 'Gamma',
-      rarity: 'rare',
       refinedFrom: ['res_a', 'res_b'],
     },
   ],
@@ -82,7 +81,7 @@ describe('loadResources', () => {
     const errors = errorsFor(
       withResources(
         { id: 'res_a', name: 'A', rarity: 'common' },
-        { id: 'res_b', name: 'B', rarity: 'common', refinedFrom: ['res_zzz'] },
+        { id: 'res_b', name: 'B', refinedFrom: ['res_zzz'] },
       ),
     );
     expect(errors.join('\n')).toMatch(/unknown resource ID "res_zzz"/);
@@ -93,7 +92,6 @@ describe('loadResources', () => {
       withResources({
         id: 'res_a',
         name: 'A',
-        rarity: 'common',
         refinedFrom: ['res_a'],
       }),
     );
@@ -109,12 +107,24 @@ describe('loadResources', () => {
         {
           id: 'res_d',
           name: 'D',
-          rarity: 'common',
           refinedFrom: ['res_a', 'res_b', 'res_c'],
         },
       ),
     );
     expect(errors.join('\n')).toMatch(/at most 2/);
+  });
+
+  test('a base resource needs a rarity and a refined one has none', () => {
+    expect(
+      errorsFor(withResources({ id: 'res_a', name: 'A' })).join('\n'),
+    ).toMatch(/unknown rarity undefined/);
+    const errors = errorsFor(
+      withResources(
+        { id: 'res_a', name: 'A', rarity: 'common' },
+        { id: 'res_r', name: 'R', rarity: 'rare', refinedFrom: ['res_a'] },
+      ),
+    );
+    expect(errors.join('\n')).toMatch(/refined resource .* has no "rarity"/);
   });
 
   test('rejects unknown rarity values', () => {

@@ -243,6 +243,7 @@ export function deriveMoments(
       } else if (
         ref.def.kind === 'source' ||
         ref.def.kind === 'unit_producer' ||
+        ref.def.kind === 'refinery' ||
         ref.def.kind === 'economy'
       ) {
         out.push({

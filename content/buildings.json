@@ -432,6 +432,74 @@
       ]
     },
     {
+      "id": "bld_refinery_ab",
+      "kind": "refinery",
+      "output": "res_ab_refined",
+      "footprint": { "width": 2, "height": 2 },
+      "inputs": [
+        { "resource": "res_a", "side": "south" },
+        { "resource": "res_b", "side": "west" }
+      ],
+      "outputs": ["north"],
+      "tiers": [
+        {
+          "health": 60,
+          "price": 35,
+          "costs": { "res_a": 3, "res_b": 3 },
+          "productionIntervalTicks": 60,
+          "outputPerBatch": 2
+        },
+        {
+          "health": 90,
+          "price": 75,
+          "costs": { "res_a": 3, "res_b": 3 },
+          "productionIntervalTicks": 42,
+          "outputPerBatch": 2
+        },
+        {
+          "health": 120,
+          "price": 130,
+          "costs": { "res_a": 3, "res_b": 3 },
+          "productionIntervalTicks": 30,
+          "outputPerBatch": 2
+        }
+      ]
+    },
+    {
+      "id": "bld_refinery_bc",
+      "kind": "refinery",
+      "output": "res_bc_refined",
+      "footprint": { "width": 2, "height": 2 },
+      "inputs": [
+        { "resource": "res_b", "side": "south" },
+        { "resource": "res_c", "side": "west" }
+      ],
+      "outputs": ["north"],
+      "tiers": [
+        {
+          "health": 60,
+          "price": 35,
+          "costs": { "res_b": 3, "res_c": 3 },
+          "productionIntervalTicks": 60,
+          "outputPerBatch": 2
+        },
+        {
+          "health": 90,
+          "price": 75,
+          "costs": { "res_b": 3, "res_c": 3 },
+          "productionIntervalTicks": 42,
+          "outputPerBatch": 2
+        },
+        {
+          "health": 120,
+          "price": 130,
+          "costs": { "res_b": 3, "res_c": 3 },
+          "productionIntervalTicks": 30,
+          "outputPerBatch": 2
+        }
+      ]
+    },
+    {
       "id": "bld_core",
       "kind": "core",
       "footprint": { "width": 2, "height": 2 },

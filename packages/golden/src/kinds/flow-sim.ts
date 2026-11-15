@@ -9,7 +9,12 @@
  * consumers }` where `stateHash` is the hash of the final `BoardSim`, `flow`
  * the item accounting and the lists the per-building totals. The event log
  * (all events, in order) is returned as the vector's `eventLog`, so its hash
- * is the vector's `eventLogHash`.
+ * is the vector's `eventLogHash`. On a board with a refinery the result also has
+ * `refineries`: per refinery `{building, resource, counters, cooldown, store,
+ * stalled, produced, lost, batches, stalledTicks}`. An optional `extraBuildings`
+ * list (building definitions in the format of `content/buildings.json`) is
+ * added to the content for the run, for a building the shipped content lacks
+ * (a consumer of a refined resource).
  */
 import {
   createBoardSim,
@@ -24,7 +29,9 @@ import {
   type MapgenConfig,
   type SimConfig,
   type SimEvent,
+  type UnitConfig,
 } from '@game/core';
+import { withExtraBuildings } from './extra-buildings.js';
 import type { SimulationFn } from './prng.js';
 
 const TAKE_SIDES: readonly string[] = ['north', 'east', 'south', 'west'];
@@ -37,11 +44,12 @@ function field(input: Json, key: string): Json | undefined {
 }
 
 export function makeFlowSimKind(
-  content: MapContent,
+  shipped: MapContent & { readonly units: UnitConfig },
   mapgen: MapgenConfig,
   simConfig: SimConfig,
 ): SimulationFn {
   return (input: Json) => {
+    const content = withExtraBuildings(shipped, field(input, 'extraBuildings'));
     const ticks = field(input, 'ticks');
     const mode = field(input, 'consumers');
     if (typeof ticks !== 'number' || !Number.isInteger(ticks) || ticks < 0) {
@@ -123,6 +131,20 @@ export function makeFlowSimKind(
         ...(p.counters === undefined ? {} : { counters: [...p.counters] }),
         cooldown: p.cooldown,
         productions: p.productions,
+      }));
+    }
+    if (sim.refineries !== undefined) {
+      result['refineries'] = sim.refineries.map((r) => ({
+        building: r.building,
+        resource: r.resource,
+        counters: [...r.counters],
+        cooldown: r.cooldown,
+        store: r.store,
+        stalled: r.stalled,
+        produced: r.produced,
+        lost: r.lost,
+        batches: r.batches,
+        stalledTicks: r.stalledTicks,
       }));
     }
     return { result, eventLog: events };

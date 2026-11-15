@@ -58,6 +58,10 @@ export const MAX_DAMAGE = MAX_HEALTH;
  * four inputs, so the sum stays far below 2^53. */
 export const MAX_TIER_COST = 1_000_000;
 
+/** Largest `outputPerBatch` of a refinery tier (CB-5d): the items of one batch
+ * wait in its output store and leave one per tick. */
+export const MAX_OUTPUT_PER_BATCH = 1000;
+
 /** Largest `breachBaseCost` and `breachHealthPerCost` in `sim.json`. */
 export const MAX_BREACH_BASE_COST = 1_000_000;
 

@@ -15,6 +15,7 @@ import {
   needPer1000,
   needPer1000By,
   productionOf,
+  refineryOutputPer1000,
   rotateBuilding,
   type CostEntry,
 } from './buildings.js';
@@ -87,6 +88,36 @@ export interface RouteSim {
   lost: number;
 }
 
+/**
+ * A refinery (CB-5d): a consumer that makes a refined resource and puts it on
+ * a conduit. It takes its inputs into one counter per resource (as a
+ * two-input consumer, CB-5e), makes a batch when every counter is full, and
+ * releases the batch's items one per tick from its output store.
+ */
+export interface RefinerySim {
+  readonly building: number;
+  /** The refined resource it makes. */
+  readonly resource: ResourceId;
+  /**
+   * One counter per input resource, sorted by resource ID (the order of the
+   * tier's `costs` entries); each 0 .. that resource's cost.
+   */
+  counters: number[];
+  /** Ticks until the next batch may start. */
+  cooldown: number;
+  /** Items made and not yet released (the output store). */
+  store: number;
+  /** 1 while the first item of the store cannot be placed, else 0. */
+  stalled: number;
+  /** Items made so far (`outputPerBatch` per batch). */
+  produced: number;
+  /** Items released into nothing (no conduit attached) so far. */
+  lost: number;
+  /** Batches made so far. */
+  batches: number;
+  stalledTicks: number;
+}
+
 export interface ConsumerInputSim {
   readonly side: Side;
   readonly resource: ResourceId;
@@ -126,6 +157,11 @@ export interface BoardSim {
   readonly routes: RouteSim[];
   /** By building ID. */
   readonly consumers: ConsumerSim[];
+  /**
+   * In building order. Present only on a board with a refinery, so the state
+   * of every other board is unchanged.
+   */
+  refineries?: RefinerySim[];
   /** Present only after a mid-battle removal (see `rebuildFlow`). */
   retired?: RetiredTotals;
 }
@@ -159,6 +195,8 @@ interface PlanRoute {
   readonly inputRoute: readonly number[];
   /** Per input: the source index feeding it directly, else -1. */
   readonly inputSource: readonly number[];
+  /** Per input: the refinery index feeding it directly, else -1. */
+  readonly inputRefinery: readonly number[];
   /** Conduit index per output (clockwise from north), or -1. */
   readonly outputs: readonly number[];
 }
@@ -171,6 +209,15 @@ interface PlanSource {
   readonly owner: number;
 }
 
+interface PlanRefinery {
+  /** Conduit index per output (clockwise from north), or -1. */
+  readonly outputs: readonly number[];
+  /** The cost of each input resource, sorted by ID. */
+  readonly costs: readonly CostEntry[];
+  readonly interval: number;
+  readonly outputPerBatch: number;
+}
+
 export interface FlowPlan {
   readonly conduits: readonly PlanConduit[];
   /** Conduit indices in processing order (step 1). */
@@ -181,6 +228,8 @@ export interface FlowPlan {
   /** Route indices that are mergers. */
   readonly mergers: readonly number[];
   readonly sources: readonly PlanSource[];
+  /** In `sim.refineries` order (empty without refineries). */
+  readonly refineries: readonly PlanRefinery[];
 }
 
 export type ConsumerMode = 'hold' | 'drain' | 'need';
@@ -400,14 +449,23 @@ function compile(
   for (const b of state.buildings) {
     if (defOf(b.def).kind === 'source') sourceIndex.set(b.id, sourceIndex.size);
   }
-  /** The route or source behind a direct (zero-length) input conduit. */
-  const directOrigin = (conduit: number | null): [number, number] => {
-    if (conduit === null) return [-1, -1];
+  // Refinery index (in sim.refineries order) by building ID.
+  const refineryIndex = new Map<number, number>();
+  for (const b of state.buildings) {
+    if (defOf(b.def).kind === 'refinery') {
+      refineryIndex.set(b.id, refineryIndex.size);
+    }
+  }
+  /** The route, source or refinery behind a direct (zero-length) input conduit. */
+  const directOrigin = (conduit: number | null): [number, number, number] => {
+    if (conduit === null) return [-1, -1, -1];
     const e = edgeOfAny.get(conduit);
-    if (e === undefined || e.length > 0) return [-1, -1];
+    if (e === undefined || e.length > 0) return [-1, -1, -1];
+    const building = buildingOfNode.get(e.from) ?? -1;
     return [
       routeIndex.get(e.from) ?? -1,
-      sourceIndex.get(buildingOfNode.get(e.from) ?? -1) ?? -1,
+      sourceIndex.get(building) ?? -1,
+      refineryIndex.get(building) ?? -1,
     ];
   };
   const planRoutes: PlanRoute[] = routeNodes.map((n) => ({
@@ -416,6 +474,7 @@ function compile(
     inputs: n.inputs.map((i) => idxOf(i.conduit)),
     inputRoute: n.inputs.map((i) => directOrigin(i.conduit)[0]),
     inputSource: n.inputs.map((i) => directOrigin(i.conduit)[1]),
+    inputRefinery: n.inputs.map((i) => directOrigin(i.conduit)[2]),
     outputs: n.outputs.map(outIdx),
   }));
   const routeOrder: number[] = [];
@@ -464,6 +523,43 @@ function compile(
     });
   }
 
+  // Refineries: every placed refinery, connected or not (building order).
+  const refinerySims: RefinerySim[] = [];
+  const planRefineries: PlanRefinery[] = [];
+  for (const b of state.buildings) {
+    const def = defOf(b.def);
+    if (def.kind !== 'refinery') continue;
+    const tier = def.tiers[b.tier - 1];
+    const costs = costEntries(def, b.tier);
+    if (tier === undefined || costs === undefined) {
+      throw new Error(`Refinery ${String(b.id)} has an invalid tier.`);
+    }
+    const outs = rotateBuilding(def, b.rotation).outputs;
+    planRefineries.push({
+      outputs: SIDE_ORDER.filter((s) => outs.includes(s)).map((s) => {
+        const o = nodeOfBuilding
+          .get(String(b.id))
+          ?.outputs.find((x) => x.side === s);
+        return o === undefined ? -1 : outIdx(o);
+      }),
+      costs,
+      interval: tier.productionIntervalTicks,
+      outputPerBatch: tier.outputPerBatch,
+    });
+    refinerySims.push({
+      building: b.id,
+      resource: def.output,
+      counters: costs.map(() => 0),
+      cooldown: 0,
+      store: 0,
+      stalled: 0,
+      produced: 0,
+      lost: 0,
+      batches: 0,
+      stalledTicks: 0,
+    });
+  }
+
   const sim: BoardSim = {
     tick: 0,
     bufferCapacity: simConfig.inputBufferUnits,
@@ -480,6 +576,7 @@ function compile(
       lost: 0,
     })),
     consumers: consumerSims,
+    ...(refinerySims.length === 0 ? {} : { refineries: refinerySims }),
   };
   return {
     sim,
@@ -490,6 +587,7 @@ function compile(
       routeOrder,
       mergers,
       sources: planSources,
+      refineries: planRefineries,
     },
   };
 }
@@ -520,6 +618,8 @@ function makePacers(
     const def = b && content.buildings.get(b.def);
     const p = b && def && productionOf(def, b.tier);
     if (b === undefined || def === undefined || p === undefined) continue;
+    // A refinery paces itself in every mode (`stepFlow`, step 3a).
+    if (def.kind === 'refinery') continue;
     const tier = def.kind === 'economy' ? def.tiers[b.tier - 1] : undefined;
     const costs = costEntries(def, b.tier);
     pacers.push({
@@ -597,6 +697,27 @@ export function rebuildFlow(
       s.stalledTicks = o.stalledTicks;
     }
   }
+  const refineryAt = new Map(
+    (sim.refineries ?? []).map((r) => [r.building, r]),
+  );
+  for (const o of old.refineries ?? []) {
+    const r = refineryAt.get(o.building);
+    if (r === undefined) {
+      // A destroyed refinery loses its output store (CB-9a); the items it
+      // made and lost move to `retired`. Its counters were consumed already.
+      retired.produced += o.produced;
+      retired.lost += o.lost + o.store;
+    } else {
+      r.counters = [...o.counters];
+      r.cooldown = o.cooldown;
+      r.store = o.store;
+      r.stalled = o.stalled;
+      r.produced = o.produced;
+      r.lost = o.lost;
+      r.batches = o.batches;
+      r.stalledTicks = o.stalledTicks;
+    }
+  }
   const conduitAt = new Map(sim.conduits.map((c) => [c.id, c]));
   for (const o of old.conduits) {
     const c = conduitAt.get(o.id);
@@ -656,6 +777,12 @@ export function cloneBoardSim(sim: BoardSim): BoardSim {
       inputs: c.inputs.map((i) => ({ ...i })),
     })),
   };
+  if (sim.refineries !== undefined) {
+    copy.refineries = sim.refineries.map((r) => ({
+      ...r,
+      counters: [...r.counters],
+    }));
+  }
   if (sim.retired !== undefined) copy.retired = { ...sim.retired };
   return copy;
 }
@@ -718,7 +845,8 @@ function pushOnto(
 /**
  * Advance the simulation by one tick, in place. Order: (1) conduits deliver
  * and advance, downstream first; (2) route buildings push; (3) sources
- * produce; (4) the tick counter increments. With `consumers: 'drain'` all
+ * produce; (3a) refineries take, release and batch; (4) the tick counter
+ * increments. With `consumers: 'drain'` all
  * consumer buffers are emptied after step 3.
  */
 export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
@@ -745,6 +873,9 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
         ready = at(sim.routes, at(pr.inputRoute, input)).held !== null;
       } else if (at(pr.inputSource, input) >= 0) {
         ready = at(sim.sources, at(pr.inputSource, input)).countdown <= 1;
+      } else if (at(pr.inputRefinery, input) >= 0) {
+        // A refinery releases the first item of its store this tick.
+        ready = (sim.refineries?.[at(pr.inputRefinery, input)]?.store ?? 0) > 0;
       } else {
         ready = false;
       }
@@ -859,12 +990,27 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
     }
   }
 
+  // 3a. Refineries: intake, release, batch, in building order.
+  if (sim.refineries !== undefined) {
+    for (let ri = 0; ri < sim.refineries.length; ri++) {
+      stepRefinery(
+        sim,
+        ctx,
+        winners,
+        at(sim.refineries, ri),
+        at(plan.refineries, ri),
+      );
+    }
+  }
+
   // Consumers (test and dry-run mode only).
   if (ctx.consumers === 'need' && ctx.pacers !== undefined) {
     for (const pacer of ctx.pacers) paceConsumer(sim, pacer);
   }
   if (ctx.consumers === 'drain') {
     for (const c of sim.consumers) {
+      // A refinery takes its own items (step 3a); draining would starve it.
+      if (sim.refineries?.some((r) => r.building === c.building)) continue;
       for (const input of c.inputs) {
         input.consumed += input.count;
         input.count = 0;
@@ -874,6 +1020,82 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
 
   // 4. The tick counter.
   sim.tick += 1;
+}
+
+/**
+ * One tick of a refinery (step 3a): (1) intake as a two-input consumer
+ * (`intakeByResource`); (2) release: when the store is not empty, one item is
+ * offered to the output conduit by the rule a source uses for its waiting
+ * item (an unconnected output sends it into nothing: lost), and a refused item
+ * waits and the refinery is stalled; (3) batch: when every counter is full,
+ * the cooldown is 0 and the store is empty, counters go to 0, the cooldown is
+ * set and `outputPerBatch` items enter the store (a `produced` event each);
+ * (4) the cooldown counts down.
+ */
+function stepRefinery(
+  sim: BoardSim,
+  ctx: FlowContext,
+  winners: Int32Array,
+  r: RefinerySim,
+  pr: PlanRefinery,
+): void {
+  const events = ctx.events;
+  intakeByResource(sim, r.building, pr.costs, r.counters);
+  if (r.store > 0) {
+    const n = pr.outputs.length;
+    let connected = false;
+    let placed = false;
+    for (let o = 0; o < n; o++) {
+      const c = at(pr.outputs, o);
+      if (c === NO_OUTPUT) continue;
+      connected = true;
+      if (c === OPEN_HALF) continue;
+      if (pushOnto(sim, ctx, winners, c, r.resource)) {
+        placed = true;
+        break;
+      }
+    }
+    if (placed) {
+      r.store -= 1;
+      r.stalled = 0;
+    } else if (!connected) {
+      r.store -= 1;
+      r.lost += 1;
+      r.stalled = 0;
+      events?.push({
+        tick: sim.tick,
+        type: 'lost',
+        building: r.building,
+        resource: r.resource,
+      });
+    } else {
+      if (r.stalled === 0) {
+        r.stalled = 1;
+        events?.push({ tick: sim.tick, type: 'stalled', building: r.building });
+      }
+      r.stalledTicks += 1;
+    }
+  }
+  if (
+    r.store === 0 &&
+    r.cooldown === 0 &&
+    pr.costs.every((e, k) => r.counters[k] === e.cost)
+  ) {
+    r.counters.fill(0);
+    r.cooldown = pr.interval;
+    r.store = pr.outputPerBatch;
+    r.produced += pr.outputPerBatch;
+    r.batches += 1;
+    for (let i = 0; i < pr.outputPerBatch; i++) {
+      events?.push({
+        tick: sim.tick,
+        type: 'produced',
+        building: r.building,
+        resource: r.resource,
+      });
+    }
+  }
+  if (r.cooldown > 0) r.cooldown -= 1;
 }
 
 /**
@@ -1011,7 +1233,10 @@ export interface FlowTotals {
 
 /**
  * Item accounting. Conservation: `produced = inConduits + held + inBuffers +
- * consumed + lost` at the end of every tick.
+ * consumed + lost` at the end of every tick. `held` is the items in route
+ * holding cells and in refinery output stores; the items a refinery takes
+ * count as consumed (when taken from a buffer), the items it makes as
+ * produced.
  */
 export function flowTotals(sim: BoardSim): FlowTotals {
   let produced = sim.retired?.produced ?? 0;
@@ -1028,6 +1253,13 @@ export function flowTotals(sim: BoardSim): FlowTotals {
   for (const r of sim.routes) {
     lost += r.lost;
     if (r.held !== null) held += 1;
+  }
+  // A refinery's items count as produced when its batch is made, and those in
+  // its output store are held (CB-5d).
+  for (const r of sim.refineries ?? []) {
+    produced += r.produced;
+    lost += r.lost;
+    held += r.store;
   }
   let inBuffers = 0;
   let consumed = sim.retired?.consumed ?? 0;
@@ -1079,8 +1311,30 @@ export interface DryRunNeed {
     readonly resource: ResourceId;
     readonly needPer1000: number;
   }[];
-  /** Productions made during the run. */
+  /** Productions made during the run (batches, for a refinery). */
   readonly productions: number;
+  /**
+   * Refinery only (CB-5d): items of its output resource per 1000 ticks at top
+   * speed (`refineryOutputPer1000`); absent for every other consumer.
+   */
+  readonly outputPer1000?: number;
+}
+
+/** A refinery's output in a dry run (CB-5d, CB-43). */
+export interface DryRunRefinery {
+  readonly building: number;
+  /** The refined resource it makes. */
+  readonly resource: ResourceId;
+  /** Items made and batches made during the run. */
+  readonly produced: number;
+  readonly batches: number;
+  readonly lost: number;
+  readonly stalledTicks: number;
+  /**
+   * Items made per 1000 ticks over the second half of the run (floored),
+   * like `ratePer1000` of an input: limited by the slowest input.
+   */
+  readonly ratePer1000: number;
 }
 
 export interface DryRunResult {
@@ -1090,6 +1344,8 @@ export interface DryRunResult {
   readonly consumers: readonly DryRunConsumerInput[];
   /** Only in `'need'` mode: one entry per consumer, in building order. */
   readonly needs?: readonly DryRunNeed[];
+  /** Only on a board with a refinery: one entry per refinery, in building order. */
+  readonly refineries?: readonly DryRunRefinery[];
 }
 
 /**
@@ -1117,6 +1373,7 @@ export function dryRunFlow(
   const half = divFloor(ticks, 2);
   for (let t = 0; t < half; t++) stepFlow(sim, ctx);
   const atHalf = sim.consumers.map((c) => c.inputs.map((i) => i.delivered));
+  const refAtHalf = (sim.refineries ?? []).map((r) => r.produced);
   for (let t = half; t < ticks; t++) stepFlow(sim, ctx);
   const window = ticks - half;
   const consumers: DryRunConsumerInput[] = [];
@@ -1132,18 +1389,32 @@ export function dryRunFlow(
       });
     });
   });
-  const needs: DryRunNeed[] = (ctx.pacers ?? []).map((p) => {
-    const b = state.buildings.find((x) => x.id === p.building);
+  const needs: DryRunNeed[] = [];
+  for (const c of sim.consumers) {
+    const b = state.buildings.find((x) => x.id === c.building);
     const def = b && content.buildings.get(b.def);
-    return {
+    const r = sim.refineries?.find((x) => x.building === c.building);
+    if (r !== undefined && b && def) {
+      needs.push({
+        building: r.building,
+        needPer1000: needPer1000(def, b.tier),
+        needPer1000By: needPer1000By(def, b.tier),
+        productions: r.batches,
+        outputPer1000: refineryOutputPer1000(def, b.tier),
+      });
+      continue;
+    }
+    const p = ctx.pacers?.find((x) => x.building === c.building);
+    if (p === undefined) continue;
+    needs.push({
       building: p.building,
       needPer1000: b && def ? needPer1000(def, b.tier) : 0,
       ...(p.costs !== undefined && b && def
         ? { needPer1000By: needPer1000By(def, b.tier) }
         : {}),
       productions: p.productions,
-    };
-  });
+    });
+  }
   return {
     ticks,
     sources: sim.sources.map((s) => ({
@@ -1160,5 +1431,21 @@ export function dryRunFlow(
     })),
     consumers,
     ...(mode === 'need' ? { needs } : {}),
+    ...(sim.refineries === undefined
+      ? {}
+      : {
+          refineries: sim.refineries.map((r, i) => ({
+            building: r.building,
+            resource: r.resource,
+            produced: r.produced,
+            batches: r.batches,
+            lost: r.lost,
+            stalledTicks: r.stalledTicks,
+            ratePer1000:
+              window === 0
+                ? 0
+                : divFloor((r.produced - (refAtHalf[i] ?? 0)) * 1000, window),
+          })),
+        }),
   };
 }

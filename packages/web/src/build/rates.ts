@@ -71,6 +71,7 @@ export function topSpeedWord(
 ): string {
   if (def.kind === 'unit_producer') return screenText(texts, 'unitsWord');
   if (def.kind === 'economy') return screenText(texts, 'stepsWord');
+  if (def.kind === 'refinery') return screenText(texts, 'batchesWord');
   return screenText(texts, 'shotsWord');
 }
 

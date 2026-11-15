@@ -811,6 +811,9 @@ function computeResources(
     if (e !== undefined) {
       if (e.def.kind === 'source') {
         r = view.q.nodeAt(e.b.x, e.b.y) ?? null;
+      } else if (e.def.kind === 'refinery') {
+        // A conduit leaving a refinery carries its output resource (CB-5b).
+        r = e.def.output;
       } else if (e.def.kind === 'route') {
         if (e.def.routeType === 'crossover') {
           const up = upstream(e.b.id, oppositeSide(c.from.side));
@@ -1039,7 +1042,7 @@ export function conduitResource(
 // Flow graph
 
 export type FlowNodeKind =
-  'source' | 'splitter' | 'merger' | 'crossover' | 'consumer';
+  'source' | 'splitter' | 'merger' | 'crossover' | 'consumer' | 'refinery';
 
 export interface FlowInput {
   readonly side: Side;
@@ -1178,7 +1181,9 @@ export function buildFlowGraph(
           ? e.def.routeType === 'merger'
             ? 'merger'
             : 'splitter'
-          : 'consumer';
+          : e.def.kind === 'refinery'
+            ? 'refinery'
+            : 'consumer';
     nodes.push({
       key: String(b.id),
       building: b.id,
