@@ -291,7 +291,10 @@ export function BattleRail(props: {
           </span>
         </p>
       </section>
-      <section class="rail-section feed-section" aria-label="Happening now">
+      <section
+        class={`rail-section feed-section${props.statsOpen ? ' stats-open' : ''}`}
+        aria-label="Happening now"
+      >
         <h2 class="rail-label">{t('battleHappeningNow')}</h2>
         {feed.length === 0 ? (
           <p class="muted">{t('battleLogEmpty')}</p>

@@ -1324,6 +1324,41 @@ try {
       `board stays usable at 1280x720 (${cam720.zoom.toFixed(1)} px/cell)`,
     );
     await shot('build-7-1280x720');
+    // Issue #351: a selected building's Rotate and Pick up buttons are in the
+    // window, or reachable by scrolling the info rail.
+    {
+      const bkAt = await at(bk.x, bk.y);
+      await page.mouse.click(bkAt.x, bkAt.y);
+      await settle();
+      const reach = await page.evaluate(() => {
+        const rail = document.querySelector('.frame-info');
+        const btns = [...document.querySelectorAll('#panel-inspector button')];
+        const scrollable =
+          getComputedStyle(rail).overflowY === 'auto' &&
+          rail.scrollHeight > rail.clientHeight;
+        const r = rail.getBoundingClientRect();
+        const inView = (e) => {
+          const b = e.getBoundingClientRect();
+          return b.top >= r.top - 1 && b.bottom <= r.bottom + 1;
+        };
+        const before = btns.map(inView);
+        rail.scrollTop = rail.scrollHeight;
+        const after = btns.map(inView);
+        const win = btns.map(
+          (e) => e.getBoundingClientRect().bottom <= window.innerHeight,
+        );
+        return { n: btns.length, before, after, win, scrollable };
+      });
+      check(
+        reach.n >= 2 &&
+          reach.after.every(Boolean) &&
+          reach.win.every(Boolean) &&
+          (reach.before.every(Boolean) || reach.scrollable),
+        `build at 1280x720: the Selected panel's buttons are in view or reachable by scrolling the rail (${JSON.stringify(reach)})`,
+      );
+      await page.keyboard.press('Escape');
+      await settle();
+    }
     await page.setViewportSize({ width: 1920, height: 1080 });
     await settle();
 
@@ -1418,6 +1453,37 @@ try {
         !hiddenBefore.revealed && hiddenBefore.features === 0,
         `battle: neutral zone is hidden before the battle starts (${JSON.stringify(hiddenBefore)})`,
       );
+
+      // Issue #351: Show stats must not sit on top of the log's first line,
+      // and the rail's panels fit the window or scroll inside the rail.
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await settle();
+      const statsBox = await page.evaluate(() => {
+        const box = (sel) => {
+          const e = document.querySelector(sel);
+          if (e === null) return null;
+          const r = e.getBoundingClientRect();
+          return { top: r.top, bottom: r.bottom };
+        };
+        const rail = document.querySelector('.frame-info');
+        return {
+          stats: box('#show-stats'),
+          line: box('.feed li, .feed-section .muted'),
+          railScrolls:
+            getComputedStyle(rail).overflowY === 'auto' &&
+            rail.scrollHeight >= rail.clientHeight,
+        };
+      });
+      check(
+        statsBox.stats !== null &&
+          statsBox.line !== null &&
+          statsBox.railScrolls &&
+          (statsBox.stats.top >= statsBox.line.bottom ||
+            statsBox.stats.bottom <= statsBox.line.top),
+        `battle at 1280x720: Show stats does not overlap the first log line (${JSON.stringify(statsBox)})`,
+      );
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      await settle();
       await shot('battle-0-before-start');
       {
         // A solo battle looks as it always did: one Core bar per side.

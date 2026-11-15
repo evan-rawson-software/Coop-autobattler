@@ -554,6 +554,20 @@ export function BuildView(props: {
     };
   }, [inShop, run, sv, shared, view?.undoCount, mountId]);
 
+  // The info rail scrolls; bring the Selected panel (and its Rotate and Pick
+  // up buttons) into view when something is selected (issue #351).
+  useEffect(() => {
+    if (ui.selection === null) return;
+    const rail = document.querySelector<HTMLElement>('.frame-info');
+    const panel = document.getElementById('panel-inspector');
+    if (rail === null || panel === null) return;
+    const r = rail.getBoundingClientRect();
+    const b = panel.getBoundingClientRect();
+    if (b.bottom > r.bottom) {
+      rail.scrollTop += Math.min(b.bottom - r.bottom, b.top - r.top);
+    }
+  }, [ui.selection]);
+
   const selection: Selection | null = useMemo(() => {
     const s = ui.selection;
     if (s === null || s.kind === 'conduit') return null;
