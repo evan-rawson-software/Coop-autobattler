@@ -1245,6 +1245,13 @@ export async function runRunSmoke({
       `PvP battle: the ghost's factory is on the field (${scene[1].buildings} buildings)`,
     );
   }
+  {
+    const playing = await page.locator('[data-field="bar-lives"]').innerText();
+    check(
+      /Lives 5 \/ 5$/.test(playing.trim()),
+      `PvP battle: the bar keeps the lives from before the battle while it plays ("${playing.trim()}")`,
+    );
+  }
   await page.click('#skip');
   await page.waitForFunction(
     () => window.__debug?.battle?.phase() === 'summary',
@@ -1266,6 +1273,15 @@ export async function runRunSmoke({
     `PvP summary: ${pvpWon ? 'a win pays gold' : 'a loss states the life it costs'} ("${pvpReward}")`,
   );
   const lives0 = (await R.state()).lives;
+  {
+    const shown = await page.locator('[data-field="bar-lives"]').innerText();
+    check(
+      pvpWon
+        ? /Lives \d \/ 5$/.test(shown.trim()) && !/\(/.test(shown)
+        : /\(−1\)/.test(shown),
+      `PvP summary: the bar shows the change once the result is open ("${shown.trim()}")`,
+    );
+  }
   await page.click('#battle-ready');
   await waitStep('event_choice');
   await page.waitForSelector('#event-choice');

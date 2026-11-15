@@ -1,13 +1,16 @@
 /**
  * The lives the top bar shows. The session takes the life for a lost rival
- * battle only when leaving `pvp_summary`, so while that step is shown after a
- * loss the bar already shows the lives after the loss, with the change.
+ * battle only when leaving `pvp_summary`, so once the result card is open after
+ * a loss the bar shows the lives after the loss, with the change. While the
+ * battle plays back (also "Watch again") the result is not revealed yet, so
+ * the bar shows the lives from before the battle.
  */
 import type { RunState } from '@game/session';
 
 export function barLives(
   state: Pick<RunState, 'step' | 'lives' | 'pending'>,
   lifeCost: number,
+  resultShown = true,
 ): { readonly lives: number; readonly change: number } {
   const pending = state.pending;
   const battle =
@@ -18,7 +21,7 @@ export function barLives(
     typeof battle === 'object' &&
     battle !== null &&
     (battle as Record<string, unknown>)['won'] === false;
-  if (state.step !== 'pvp_summary' || !lost) {
+  if (state.step !== 'pvp_summary' || !lost || !resultShown) {
     return { lives: state.lives, change: 0 };
   }
   const lives = Math.max(0, state.lives - lifeCost);
@@ -29,8 +32,9 @@ export function barLivesText(
   state: Pick<RunState, 'step' | 'lives' | 'pending'>,
   lifeCost: number,
   maxLives: number,
+  resultShown = true,
 ): string {
-  const { lives, change } = barLives(state, lifeCost);
+  const { lives, change } = barLives(state, lifeCost, resultShown);
   const base = `Lives ${String(lives)} / ${String(maxLives)}`;
   return change === 0 ? base : `${base} (−${String(-change)})`;
 }
