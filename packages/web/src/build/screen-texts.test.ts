@@ -851,7 +851,6 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['choiceTitle', {}, 'Choose an opponent'],
   ['choiceRewardUnit', {}, 'gold if you win'],
   ['choiceRewardUnitEach', {}, 'gold each if you win'],
-  ['choiceBest', {}, 'Best for your first fight'],
   [
     'choiceStakes',
     {},
