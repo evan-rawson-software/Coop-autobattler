@@ -67,9 +67,10 @@ player's Core fixed for the run, everything else movable by its owner. Open:
   resource type; some rarer buildings need more than one type (CB-5a,
   CB-5b). Refined resources exist and the
   rarer, stronger buildings need them (CB-5d). Common refineries take one resource;
-  rarer ones take two to make a single refined resource. Open: the exact
-  list of refined resources, and whether refining stays one step deep
-  (proposed).
+  rarer ones take two to make a single refined resource. Decided (issue
+  #378): refining stays one step deep, and the first version has only two
+  compounds, Composite (Ore + Power) and Aether (Power + Flux). Open: the
+  later refined resources (Alloy, Surge, Essence, and Ore + Flux).
 - Decided: PvE enemies are scripted waves plus a stronghold (CB-29).
 - Decided: the board never expands; it starts fairly large and its size
   is an endgame constraint (CB-25).

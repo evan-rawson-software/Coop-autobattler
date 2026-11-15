@@ -10,7 +10,7 @@
 :root {
   --bg: #f3f5f7; --sheet: #ffffff; --panel: #eef1f4; --ink: #18222d; --muted: #5b6876; --line: #c3ccd6; --grid: #e4e9ee;
   --ally: #0f6f78; --ally-soft: #d9eff0; --enemy: #a8323a; --enemy-soft: #f6dfe1; --neutral: #7a6a3a;
-  --ok: #1f8a4c; --ore: #b86a00; --power: #2a62b8; --flux: #7a3fa6;
+  --ok: #1f8a4c; --ore: #b86a00; --power: #2a62b8; --flux: #7a3fa6; --comp: #5f7f10; --aeth: #c0267e;
   --water: #cfe3f5; --cliff: #b9b2a6; --accent: #c77700; --accent-ink: #ffffff;
   --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -20,14 +20,14 @@
   :root:not([data-theme="light"]) {
     --bg: #11171d; --sheet: #19212a; --panel: #212b36; --ink: #e6ebf0; --muted: #9aa7b4; --line: #3a4653; --grid: #26313c;
     --ally: #5cc4cc; --ally-soft: #153438; --enemy: #ef7f86; --enemy-soft: #3b1d20; --neutral: #c9b26a;
-    --ok: #5cc98a; --ore: #f2a93b; --power: #7fb0f5; --flux: #c394ea;
+    --ok: #5cc98a; --ore: #f2a93b; --power: #7fb0f5; --flux: #c394ea; --comp: #b7d94f; --aeth: #f27ac0;
     --water: #1f3a52; --cliff: #5a554c; --accent: #f2a93b; --accent-ink: #11171d; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #11171d; --sheet: #19212a; --panel: #212b36; --ink: #e6ebf0; --muted: #9aa7b4; --line: #3a4653; --grid: #26313c;
   --ally: #5cc4cc; --ally-soft: #153438; --enemy: #ef7f86; --enemy-soft: #3b1d20; --neutral: #c9b26a;
-  --ok: #5cc98a; --ore: #f2a93b; --power: #7fb0f5; --flux: #c394ea;
+  --ok: #5cc98a; --ore: #f2a93b; --power: #7fb0f5; --flux: #c394ea; --comp: #b7d94f; --aeth: #f27ac0;
   --water: #1f3a52; --cliff: #5a554c; --accent: #f2a93b; --accent-ink: #11171d; color-scheme: dark;
 }
 body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
@@ -67,11 +67,12 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
 .core { fill: var(--ally); stroke: var(--ink); stroke-width: 2; } .core.e { fill: var(--enemy); }
 .core-t { fill: var(--sheet); font-size: 8.5px; font-weight: 500; }
 .core-fell { fill: var(--muted); opacity: 0.6; stroke: var(--ink); stroke-width: 1.5; } .fell-x { stroke: var(--ally); stroke-width: 3; } .fell-x.e { stroke: var(--enemy); }
-.c-ore { stroke: var(--ore); } .c-power { stroke: var(--power); } .c-flux { stroke: var(--flux); }
+.c-ore { stroke: var(--ore); } .c-power { stroke: var(--power); } .c-flux { stroke: var(--flux); } .c-comp { stroke: var(--comp); } .c-aeth { stroke: var(--aeth); }
 .cond { fill: none; stroke-width: 4; stroke-linejoin: round; opacity: 0.85; }
 .n-ore { fill: var(--ore); } .n-power { fill: var(--power); } .n-flux { fill: var(--flux); }
 .node-t { fill: var(--sheet); font-size: 8px; font-weight: 500; }
 .path { fill: none; stroke: var(--enemy); stroke-width: 1.6; stroke-dasharray: 5 4; }
+.golem { fill: var(--ally); stroke: var(--ink); stroke-width: 2; } .blast { fill: var(--accent); fill-opacity: 0.25; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 4 3; } .shot { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 4 3; } .caster { fill: var(--ally); stroke: var(--accent); stroke-width: 2; }
 .u-a { fill: var(--ally); } .u-e { fill: var(--enemy); } .u-n { fill: var(--neutral); }
 .hp { fill: var(--line); } .hp-a { fill: var(--ally); } .hp-e { fill: var(--enemy); }
 .mark { fill: var(--ink); } .mark-t { fill: var(--sheet); font-size: 10px; font-weight: 500; }
@@ -102,7 +103,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <span>5 Main menu</span><i>→</i><span>6 Core placement</span><i>→</i><span>4 Build</span><i>→</i><span>7 PvE choice</span><i>→</i><span class="on">1 Battle</span><i>→</i><span>8 Summary</span><i>→</i><span class="on">2 Event</span><i>→</i><span class="on">3 Shop</span><i>+</i><span class="on">4 Build</span><i>→</i><span>PvP battle …</span><i>→</i><span>9 Run over</span>
     </div>
     <div class="legend" aria-label="Map legend">
-      <span><b>Ex</b> extractor</span><span><b>Bk</b> barracks</span><span><b>Fo</b> foundry</span><span><b>Tu</b> turret</span><span><b>Sp</b> splitter</span><span><b>Ar</b> armory (economy)</span><span><b>■</b> wall</span><span><b>O / P / F</b> Ore, Power, Flux node</span>
+      <span><b>Ex</b> extractor</span><span><b>Bk</b> barracks</span><span><b>Fo</b> foundry</span><span><b>Tu</b> turret</span><span><b>Sp</b> splitter</span><span><b>Ar</b> armory (economy)</span><span><b>Rc</b> Composite refinery (Ore + Power)</span><span><b>Ra</b> Aether refinery (Power + Flux)</span><span><b>Gf</b> Golem forge</span><span><b>Sr</b> Spire</span><span><b>■</b> wall</span><span><b>O / P / F</b> Ore, Power, Flux node</span>
     </div>
   </header>
 
@@ -123,6 +124,8 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>Speed controls. In co-op, a change applies once everyone agrees.</li>
       <li>A log of the moments that mattered, such as a junction being destroyed or a Core falling (“Your Core 2 fell”).</li>
       <li>Camera presets (Center, My base, Their base, Fit battle). It starts at the center of the map, and the view pans and zooms, so a larger map or a four-player battle still works on the same screen.</li>
+      <li>A Golem leads the push. It is drawn bigger than other units: huge health and flat armor, but slow and weak in attack.</li>
+      <li>A caster’s blast hits a group: units near the target take part of the hit. Units only, no buildings, no friendly fire.</li>
     </ol>
   </section>
 
@@ -141,10 +144,10 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
   <section>
     <h2>3. Shop</h2>
     <p>The shop always follows the event. Each player has their own offers and their own gold. Shop and Build are two tabs of the same step, so you can buy, place, and come back. Nothing is timed: the party moves on when every player has pressed Ready.</p>
-    <div class="sheet"><svg id="s-shop" viewBox="0 0 960 540" role="img" aria-label="Shop screen wireframe: five building offers, gold and re-roll, the player's stash, teammates, and a small view of the board."></svg></div>
+    <div class="sheet"><svg id="s-shop" viewBox="0 0 960 540" role="img" aria-label="Shop screen wireframe: five building offers including a refinery, gold and re-roll, the player's stash, teammates, and a small view of the board."></svg></div>
     <ol class="notes">
       <li>Tabs for the two halves of this step.</li>
-      <li>Your offers. A card shows the kind, what it needs, its rate per second (a consumer's need at top speed, an extractor's collect rate), what it does, and its price.</li>
+      <li>Your offers. A card shows the kind, what it needs, its rate per second (a consumer's need at top speed, an extractor's collect rate), what it does, and its price. A refinery card shows its two inputs and what it makes.</li>
       <li>Gold buys buildings and re-rolls, nothing else.</li>
       <li>Your stash: buildings you own that are not on the board. Drag here to sell.</li>
       <li>Teammates' gold and stash, for information only. You do not see their offers. Hidden in solo.</li>
@@ -172,6 +175,9 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>In co-op each extra player adds a plot to the side. A four-player board still fits the width of a 1080p screen, and everything below the board stays free for panels.</li>
       <li>Border links: each of your own halves with its state, what it carries, and a Remove my half button.</li>
       <li>A border spot, where a conduit crosses into the neighbour's plot, with the neighbour's dimmed half beside it.</li>
+      <li>A Composite chain: an Ore conduit and a Power conduit come into the refinery (Rc) from two sides, and a Composite conduit, in its own colour, goes to the Golem forge (Gf). The Foundry (Fo) also takes Ore and Power. The small text on each shows its need per second for each input (O = Ore, P = Power, F = Flux).</li>
+      <li>An Aether chain: Power and Flux go into the refinery (Ra), and an Aether conduit goes to the Spire (Sr).</li>
+      <li>The one Flux node feeds this chain; an Overclocker would need to share it, for example over a border link.</li>
     </ol>
   </section>
 
@@ -358,7 +364,13 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     function side(label, y) { var x = bx - 9; T(s, x, y, label, "ts tm", "middle").setAttribute("transform", "rotate(-90 " + x + " " + y + ")"); }
     side("STRONGHOLD", by + W * S / 2); side("YOUR BOARD", my + W * S / 2);
     function U(list, cls) { units(s, list.map(function (u) { return [bx + u[0] * S, by + u[1] * S]; }), cls, 4); }
-    U([[9,21.5],[10,20.6],[11,21],[12,21.4],[8,22.4],[13,22],[10,24],[12,25.2],[3,19.6],[4,20.6],[18,10],[19,11]], "u-a");
+    U([[9,21.5],[14.5,21.6],[8,22.4],[10,24],[12,25.2],[3,19.6],[4,20.6],[18,10],[19,11]], "u-a");
+    // a caster's blast on the enemy group, and a Golem (drawn bigger) leading the push
+    var gx = bx + 10.5 * S, gy = by + 18.6 * S;
+    el(s, "circle", { cx: gx, cy: gy, r: 28, class: "blast" });
+    el(s, "line", { x1: bx + 13.2 * S, y1: by + 23 * S, x2: gx, y2: gy, class: "shot" });
+    el(s, "circle", { cx: bx + 13.2 * S, cy: by + 23 * S, r: 5, class: "caster" });
+    el(s, "circle", { cx: bx + 10.5 * S, cy: by + 20.7 * S, r: 10, class: "golem" });
     U([[9.5,19.6],[10.5,19],[11.5,19.7],[12.5,19.2],[11,18],[10,17.4],[3.5,18.6],[4.5,18],[20,27],[21,28.2]], "u-e");
     var lx = 16, pw = 400, rx = 864;
     // One Core bar row: label, bar, numbers. A fallen Core is dimmed and reads "(fallen)".
@@ -404,7 +416,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     T(s, rx + 12, 654, "Drag to pan · scroll to zoom.", "ts tm");
     // marks
     mark(s, 478, 20, 1, 11); mark(s, bx + 30, my + W * S - 24, 2, 11); mark(s, bx + 30, zy + 24, 3, 11); mark(s, bx + 30, by + 16, 4, 11);
-    mark(s, bx + 15 * S, by + 20.4 * S, 5, 11); mark(s, bx + 14 * S + 8, my + 12 * S + 16, 6, 11);
+    mark(s, bx + 15 * S, by + 20.4 * S, 5, 11); mark(s, bx + 7.9 * S, by + 20.7 * S, 13, 11); mark(s, bx + 8 * S, by + 17.2 * S, 14, 11); mark(s, bx + 14 * S + 8, my + 12 * S + 16, 6, 11);
     mark(s, lx + pw - 18, 68, 7, 11); mark(s, lx + pw - 18, 252, 8, 11); mark(s, lx + pw - 18, 538, 9, 11);
     mark(s, rx + pw - 18, 442, 10, 11); mark(s, rx + pw - 18, 252, 11, 11); mark(s, rx + pw - 18, 564, 12, 11);
   })();
@@ -447,7 +459,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     var offers = [
       ["Turret", "Defense · tier 1", "Needs: Power", ["Needs 0.50 / s at", "top speed (0.25", "shots / s)"], ["Shoots enemy units", "on your side."], "4"],
       ["Barracks", "Units · tier 1", "Needs: Ore", ["Needs 0.40 / s at", "top speed (0.25", "units / s)"], ["Spawns a soldier", "every few seconds."], "5"],
-      ["Wall", "Defense · tier 1", "Needs: nothing", [], ["Blocks movement.", "Has health."], "2"],
+      ["Refinery", "Composite · tier 2", "Needs: Ore + Power", ["Ore 0.30 / s and", "Power 0.30 / s at", "top speed"], ["Makes Composite", "for a Golem forge."], "9"],
       ["Extractor", "Source · tier 1", "Needs: nothing", ["Collects 0.50 / s"], ["Mines the resource", "node under it."], "3"],
       ["Armory", "Economy · tier 2", "Needs: Ore", ["Needs 0.30 / s at", "top speed (0.10", "steps / s)"], ["Units spawn stronger", "as battle goes on."], "8"]
     ];
@@ -495,13 +507,28 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     T(s, bx + bw / 2, by - 8, "FRONT EDGE · enemy units enter here", "ts tm", "middle");
     R(s, 16, by, 368, bh, "plot"); T(s, 200, by + bh / 2, "co-op: another player’s plot", "ts tm", "middle"); T(s, 200, by + bh / 2 + 18, "joins the board here", "ts tm", "middle");
     R(s, 896, by, 368, bh, "plot"); T(s, 1080, by + bh / 2, "co-op: another player’s plot", "ts tm", "middle"); T(s, 1080, by + bh / 2 + 18, "joins the board here", "ts tm", "middle");
-    board(s, bx, by, S, mine, false);
+    // the build screen adds refining to the factory: Composite chain at the back, Aether chain on the right, a two-input Foundry
+    var bb = Object.assign({}, mine, {
+      nodes: mine.nodes.concat([[1,14,"ore"],[8,20,"power"]]),
+      cond: mine.cond.concat([
+        ["power", [[13,13],[13,17]]],
+        ["ore", [[1,14],[1,17]]], ["comp", [[1,18],[2,18],[2,19]]],
+        ["power", [[8,20],[10,20]]], ["flux", [[11,22],[11,20]]], ["aeth", [[11,19],[13,19],[13,21],[14,21]]]]),
+      bld: mine.bld.concat([[13,13,1,1,"Ex"],[1,14,1,1,"Ex"],[8,20,1,1,"Ex"],[11,22,1,1,"Ex"],
+        [0,17,2,2,"Rc"],[2,19,2,2,"Gf"],[10,19,2,2,"Ra"],[14,21,2,2,"Sr"]])
+    });
+    board(s, bx, by, S, bb, false);
+    // need per second, per resource, on the two-input buildings (Foundry, both refineries)
+    [[12,17,2,"0.4","0.4"],[0,17,2,"0.3","0.3"],[10,19,2,"0.3","0.3"]].forEach(function (b, i) {
+      var x = bx + b[1] * S, y = by + (W - b[0] - 2) * S;
+      T(s, x + S, y + 31, i === 0 ? "O.4 P.4" : i === 1 ? "O.3 P.3" : "P.3 F.3", "tag", "middle");
+    });
     // owner tags: every building carries the owner's P-number, not colour only
-    mine.bld.forEach(function (b) { if (b[4] === "Bk") T(s, bx + (b[1] + b[3]) * S - 2, by + (W - b[0]) * S + 14, "P1", "tag", "end"); else T(s, bx + b[1] * S + 2, by + (W - b[0] - b[2]) * S - 2, "P1", "tag"); });
+    bb.bld.forEach(function (b) { if (b[4] === "Bk") T(s, bx + (b[1] + b[3]) * S - 2, by + (W - b[0]) * S + 14, "P1", "tag", "end"); else T(s, bx + b[1] * S + 2, by + (W - b[0] - b[2]) * S - 2, "P1", "tag"); });
     // border links: spots on the plot edge, my own halves solid, the neighbour's half dimmed
     function edge(fr, dp) { return [bx + fr * S, by + (W - dp - 0.5) * S]; }
     function half(res, pts) { el(s, "polyline", { class: "cond c-" + res, points: pts.map(function (q) { return q.join(","); }).join(" ") }); }
-    var l1 = edge(0, 6), r1 = edge(24, 12);
+    var l1 = edge(0, 6), r1 = edge(24, 0);
     half("ore", [l1, [bx + 12.5 * S, l1[1]], [bx + 12.5 * S, by + (W - 8 - 0.5) * S]]);
     half("power", [r1, [bx + 19 * S, r1[1]]]);
     var nb = el(s, "g", { opacity: 0.35 });
@@ -512,7 +539,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     el(s, "rect", { x: bx + 8 * S - 6, y: by + 2 * S - 6, width: 2 * S + 12, height: 2 * S + 12, class: "low" });
     T(s, bx + 10 * S - 4, by + 2 * S + 11, "LOW", "lowt", "end");
     function path(pts) { el(s, "polyline", { class: "path", points: pts.map(function (q) { return (bx + q[1] * S) + "," + (by + (W - q[0]) * S); }).join(" ") }); }
-    path([[16,20],[10.5,20],[10.5,16.5],[4.5,16.5],[4.5,12.5],[4,12.5]]);
+    path([[16,23.5],[4.5,23.5],[4.5,12.5],[4,12.5]]);
     path([[16,9.5],[14.5,9.5],[14.5,10.5],[11.5,10.5],[11.5,11.5],[4,11.5]]);
     R(s, bx + 8 * S - 2, by + 2 * S - 2, 2 * S + 4, 2 * S + 4, "sel");
     // dock A: stash + tools
@@ -538,14 +565,14 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     R(s, 816, 404, 448, 156, "panel"); T(s, 828, 426, "OVERLAYS", "ts tm");
     btn(s, 828, 436, 136, 30, "Resource flow"); btn(s, 972, 436, 136, 30, "Enemy paths", true); btn(s, 1116, 436, 136, 30, "Dry run 60s");
     T(s, 828, 492, "PROBLEMS", "ts tm");
-    lines(s, 828, 512, ["⚠ Barracks gets 0.30/s of the 0.40/s it needs.", "⚠ Extractor in stash: 2 free nodes (Power, Flux)", "⚠ Ana has 2 under-supplied buildings."], "ts", 18);
+    lines(s, 828, 512, ["⚠ Barracks gets 0.30/s of the 0.40/s it needs.", "⚠ Extractor in stash: no free node left.", "⚠ Ana has 2 under-supplied buildings."], "ts", 18);
     R(s, 816, 568, 448, 140, "panel"); T(s, 828, 590, "PARTY (co-op) · each edits their own plot", "ts tm");
     lines(s, 828, 614, ["You   placing walls near the front    ready: no", "Ana   routing Power to turrets        ready: yes", "Bo    in Shop                         ready: no"], "ts", 18);
     T(s, 828, 690, "Next: PvP · opponent unknown", "ts tm");
     btn(s, 1104, 668, 148, 30, "Ready", true);
     // marks
     mark(s, 318, 420, 1, 11); mark(s, 318, 584, 2, 11); mark(s, bx + 450, by + 290, 3, 11); mark(s, bx + 150, by + 165, 4, 11); mark(s, bx + 284, by + 262, 5, 11);
-    mark(s, 790, by - 12, 6, 11); mark(s, bx + 424, by + 38, 7, 11); mark(s, 782, 420, 8, 11); mark(s, 782, 626, 12, 11); mark(s, 1246, 420, 9, 11); mark(s, 1246, 584, 10, 11); mark(s, 200, by + 40, 11, 11); mark(s, l1[0] - 14, l1[1] + 20, 13, 11);
+    mark(s, 790, by - 12, 6, 11); mark(s, bx + 424, by + 38, 7, 11); mark(s, 782, 420, 8, 11); mark(s, 782, 626, 12, 11); mark(s, 1246, 420, 9, 11); mark(s, 1246, 584, 10, 11); mark(s, 200, by + 40, 11, 11); mark(s, l1[0] - 14, l1[1] + 20, 13, 11); mark(s, bx + 15.2 * S, by + 15.2 * S, 14, 11); mark(s, bx + 18.2 * S, by + 4.7 * S, 15, 11); mark(s, bx + 23.3 * S, by + 6.2 * S, 16, 11);
   })();
 
   // ================= 5. MAIN MENU =================

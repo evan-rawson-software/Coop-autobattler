@@ -30,10 +30,13 @@ battle (1, 8) → 2 event → 3 shop + 4 build → … → 9 run over.
 - `1-battle.png` to `9-run-over.png` — the same screens as images.
 
 Not drawn: the lobby for forming a party, settings, and the screens for the
-deferred features (refining, points of interest).
+deferred feature of points of interest. Refining (issue #378) is drawn on the
+Shop, Build and Battle screens.
 
 Map legend: **Ex** extractor, **Bk** barracks, **Fo** foundry, **Tu** turret,
-**Sp** splitter, **Ar** armory (an economy building), solid blocks are
+**Sp** splitter, **Ar** armory (an economy building), **Rc** Composite refinery
+(Ore + Power), **Ra** Aether refinery (Power + Flux), **Gf** Golem forge, **Sr**
+Spire, solid blocks are
 walls, and **O / P / F** diamonds are Ore, Power, and Flux nodes. Conduits
 are coloured by resource.
 
@@ -55,6 +58,8 @@ Nobody gives orders here. The party watches its factory start cold, ramp up, and
 10. Speed controls. In co-op, a change applies once everyone agrees.
 11. A log of the moments that mattered, such as a junction being destroyed or a Core falling ("Your Core 2 fell"; with a single Core, "Your Core destroyed").
 12. Camera presets: Center, My base, Their base and Fit battle. It starts at the center of the map, and the view pans and zooms, so a larger map or a four-player battle still works on the same screen.
+13. A Golem leads the push. It is drawn bigger than other units: huge health and flat armor, but slow and weak in attack.
+14. A caster's blast hits a group: units near the target take part of the hit (area damage). Units only, no buildings, no friendly fire.
 
 ## 2. Event choice
 
@@ -74,7 +79,7 @@ The shop always follows the event. Each player has their own offers and their ow
 ![Shop screen wireframe](3-shop.png)
 
 1. Tabs for the two halves of this step.
-2. Your offers, bought for your own plot. A card shows the kind, what it needs (which resource), its rate per second (a consumer's need at top speed, an extractor's collect rate), what it does, and its price.
+2. Your offers, bought for your own plot. A card shows the kind, what it needs (which resource), its rate per second (a consumer's need at top speed, an extractor's collect rate), what it does, and its price. A refinery card shows its two inputs and what it makes.
 3. Gold buys buildings and re-rolls, nothing else.
 4. Your stash: buildings you own that are not on the board. Drag here to sell.
 5. Teammates' gold and stash. You do not see their offers, and gold and buildings cannot be given (CP-29). Hidden in solo.
@@ -102,6 +107,9 @@ Where the factory is laid out. Everything of yours except your Core can be moved
 11. In co-op each extra player adds a plot of their own to the side. A four-player board still fits the width of a 1080p screen, and everything below the board stays free for panels.
 12. Border links (co-op): a list of your own halves, each with its state (linked, waiting for your neighbour, or cannot join), what it carries, and a Remove my half button.
 13. A border spot on the plot edge, where your conduit meets the neighbour's. The neighbour's half is drawn dimmed beside it. Buildings carry their owner's tag (P1, P2), and a consumer that gets less than it needs is marked LOW.
+14. A Composite chain: an Ore conduit and a Power conduit come into the refinery (Rc) from two sides, and a Composite conduit, in its own colour, goes to the Golem forge (Gf). The Power here comes over a border link. The small text on each two-input building (Foundry, both refineries) is its need per second for each input (O = Ore, P = Power, F = Flux).
+15. An Aether chain: Power and Flux go into the refinery (Ra), and an Aether conduit, in its own colour, goes to the Spire (Sr).
+16. The one Flux node feeds this chain. An Overclocker would also want it, so running both means sharing Flux over a border link.
 
 ## 5. Main menu
 

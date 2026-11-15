@@ -93,6 +93,12 @@ first. Gold (next section) is never produced by the factory.
   a higher-tier collector. Proposed target for the rebalance: a fully
   boosted collector of one tier produces less than an unboosted collector
   of the next tier.
+- **SC-13a [PROPOSED]** **Refining pays an efficiency premium.** A refined
+  chain should give roughly +25-35% more per raw item than a base chain
+  (issue #378). Refining adds no supply, it only concentrates it: a
+  collector still fully feeds exactly one consumer of its own tier (issue
+  #145), and for a two-input building, one collector of each input. The
+  premium pays for the refinery's space, gold, delay and breach weakness.
 - **SC-13 [PROPOSED]** **Balance levers under scarcity.** The numbers that
   set the game's balance are now, in order: each collector tier's flow
   rate; the number of nodes per plot; each building's cost per production
