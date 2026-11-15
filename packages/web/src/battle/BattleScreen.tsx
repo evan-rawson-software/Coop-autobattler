@@ -606,6 +606,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
                 opponent={opponent}
                 moments={moments}
                 rewardText={props.reward(won)}
+                endsRun={props.endsRun === true}
                 won={won}
                 tps={tps}
               />

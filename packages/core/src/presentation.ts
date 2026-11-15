@@ -604,6 +604,8 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   battleReady: [],
   battleContinueEvent: [],
   battleContinue: [],
+  battleContinueRunOver: [],
+  battleLastLife: [],
   battleReadyDone: [],
   uiCameraPanel: [],
   uiCameraCenter: [],

@@ -24,6 +24,8 @@ export interface ResultCardProps {
   readonly moments: readonly Moment[];
   readonly rewardText: string;
   readonly won: boolean;
+  /** This defeat uses the last life: no gold to show, the run is over. */
+  readonly endsRun?: boolean;
   readonly tps: number;
 }
 
@@ -73,9 +75,15 @@ export function ResultCard(props: ResultCardProps) {
           <span>{why.tip}</span>
         </div>
       )}
-      <p class="result-reward" data-field="reward">
-        {props.rewardText}
-      </p>
+      {props.endsRun === true && !won ? (
+        <p class="result-reward result-last-life" data-field="last-life">
+          {t('battleLastLife')}
+        </p>
+      ) : (
+        <p class="result-reward" data-field="reward">
+          {props.rewardText}
+        </p>
+      )}
       <div class="result-tiles">
         <div class="stat-tile">
           <span class="tile-label">

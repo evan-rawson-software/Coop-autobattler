@@ -54,6 +54,8 @@ export interface BattleViewProps {
   readonly onReady: () => Promise<boolean>;
   /** What the Ready button says; "Continue" when absent. */
   readonly continueText?: string;
+  /** A lost battle that uses the last life: the run is over after it. */
+  readonly endsRun?: boolean;
   /**
    * Whether the viewing player is Ready, as the run holds it. When given it
    * decides how the Ready button reads, so it survives the screen being
