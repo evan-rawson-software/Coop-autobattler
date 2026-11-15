@@ -33,6 +33,14 @@
       "name": "Foundry",
       "description": "Consumes {res_a} and {res_b} together to cast heavy units. Needs both at once; without one it waits."
     },
+    "bld_refinery_ab": {
+      "name": "Composite Refinery",
+      "description": "Combines {res_a} and {res_b} into Composite and sends it down its output conduit. Needs both at once; without one it waits."
+    },
+    "bld_refinery_bc": {
+      "name": "Aether Refinery",
+      "description": "Combines {res_b} and {res_c} into Aether and sends it down its output conduit. Needs both at once; without one it waits."
+    },
     "bld_wall_i": {
       "name": "Wall (I)",
       "description": "Blocks enemy movement. Covers four cells in a I shape; rotate it to fit."
@@ -180,6 +188,7 @@
       "merger": "Merges {ins} inputs into one flow",
       "crossover": "Lets two flows cross without mixing",
       "unit_producer": "Trains 1 {unit} per {cost} {resource}",
+      "refinery": "Makes {count} {output} every {seconds} s from its inputs",
       "wall": "Blocks movement",
       "gate": "Blocks enemies, lets your units pass",
       "turret": "Fires {damage} damage up to {range} cells every {seconds} s",
@@ -193,6 +202,7 @@
       "unit_producer": "Units",
       "defense": "Defense",
       "economy": "Economy",
+      "refinery": "Refinery",
       "core": "Core"
     },
     "needs": {
@@ -326,6 +336,7 @@
       "sealedHint": "Open a path or add a gate.",
       "selectionNote": "Next opponent not chosen yet: {cause} Retrying on your next action.",
       "shotsWord": "shots",
+      "batchesWord": "batches",
       "statusBorderHalf": "Border link added. Waiting for your neighbour.",
       "statusBuildingWord": "building",
       "statusCancelled": "Cancelled.",

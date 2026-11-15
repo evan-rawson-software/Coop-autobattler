@@ -8,6 +8,7 @@ const KIND_VARS = [
   'unit_producer',
   'defense',
   'economy',
+  'refinery',
   'core',
 ] as const;
 

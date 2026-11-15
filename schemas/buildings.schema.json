@@ -136,6 +136,44 @@
         }
       }
     },
+    "tierRefinery": {
+      "description": "A refinery tier (CB-5d): items of each input resource consumed per batch, the time between batches and the items one batch makes. The core loader checks that costs names exactly the resources of the inputs.",
+      "type": "object",
+      "required": [
+        "health",
+        "price",
+        "costs",
+        "productionIntervalTicks",
+        "outputPerBatch"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "health": { "$ref": "#/$defs/health" },
+        "price": { "$ref": "#/$defs/nonNegative" },
+        "costs": {
+          "description": "Resource units of each input resource consumed per batch. Each at most 1000000 (MAX_TIER_COST in the core).",
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 2,
+          "propertyNames": { "pattern": "^res_[a-z0-9_]+$" },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        },
+        "productionIntervalTicks": {
+          "description": "Minimum ticks between two batches.",
+          "$ref": "#/$defs/positive"
+        },
+        "outputPerBatch": {
+          "description": "Items of the output resource one batch makes. At most 1000 (MAX_OUTPUT_PER_BATCH in the core).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        }
+      }
+    },
     "tierCore": {
       "description": "The core is not bought, so it has no price.",
       "type": "object",
@@ -152,13 +190,14 @@
       "properties": {
         "id": { "type": "string", "pattern": "^bld_[a-z0-9_]+$" },
         "kind": {
-          "description": "CB-9. 'refinery' is deliberately absent until refining is built.",
+          "description": "CB-9. A refinery (CB-5d) takes one or two resources and puts a refined resource on its output conduit.",
           "enum": [
             "source",
             "route",
             "unit_producer",
             "defense",
             "economy",
+            "refinery",
             "core"
           ]
         },
@@ -196,6 +235,11 @@
         },
         "routeType": { "enum": ["splitter", "merger", "crossover"] },
         "unit": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" },
+        "output": {
+          "description": "Refinery only: the refined resource it makes. Its refinedFrom must be, as a set, the resources of the building's inputs (the core loader checks this).",
+          "type": "string",
+          "pattern": "^res_[a-z0-9_]+$"
+        },
         "defenseType": { "enum": ["wall", "gate", "turret"] },
         "effect": {
           "type": "object",
@@ -230,6 +274,7 @@
               },
               "routeType": false,
               "unit": false,
+              "output": false,
               "defenseType": false,
               "effect": false
             }
@@ -253,6 +298,7 @@
                 "items": { "$ref": "#/$defs/tierBase" }
               },
               "unit": false,
+              "output": false,
               "defenseType": false,
               "effect": false
             }
@@ -275,6 +321,7 @@
                 "maxItems": 3,
                 "items": { "$ref": "#/$defs/tierUnitProducer" }
               },
+              "output": false,
               "routeType": false,
               "defenseType": false,
               "effect": false
@@ -294,6 +341,7 @@
               "defenseType": true,
               "routeType": false,
               "unit": false,
+              "output": false,
               "effect": false
             }
           }
@@ -359,7 +407,32 @@
               },
               "routeType": false,
               "unit": false,
+              "output": false,
               "defenseType": false
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": { "kind": { "const": "refinery" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "type": "object",
+            "required": ["output"],
+            "properties": {
+              "output": true,
+              "tiers": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": { "$ref": "#/$defs/tierRefinery" }
+              },
+              "routeType": false,
+              "unit": false,
+              "defenseType": false,
+              "effect": false
             }
           }
         },
@@ -380,6 +453,7 @@
               },
               "routeType": false,
               "unit": false,
+              "output": false,
               "defenseType": false,
               "effect": false
             }

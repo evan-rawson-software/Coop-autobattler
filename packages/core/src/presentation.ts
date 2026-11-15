@@ -70,6 +70,7 @@ export const TEMPLATE_SLOTS: Readonly<Record<string, readonly string[]>> = {
   merger: ['ins'],
   crossover: [],
   unit_producer: ['unit', 'cost', 'resource'],
+  refinery: ['count', 'output', 'seconds'],
   wall: [],
   gate: [],
   turret: ['damage', 'range', 'seconds'],
@@ -140,6 +141,7 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   unitsWord: [],
   stepsWord: [],
   shotsWord: [],
+  batchesWord: [],
   phaseBuild: [],
   phaseCorePlacement: [],
   phaseEventChoice: [],
@@ -716,6 +718,7 @@ const KIND_LABEL_KEYS = [
   'unit_producer',
   'defense',
   'economy',
+  'refinery',
   'core',
 ] as const;
 

@@ -375,6 +375,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     'Next opponent not chosen yet: @cause Retrying on your next action.',
   ],
   ['shotsWord', {}, 'shots'],
+  ['batchesWord', {}, 'batches'],
   ['stepsWord', {}, 'steps'],
   ['tableSupplied', {}, 'supplied'],
   ['tableUnderSupplied', {}, 'Under-supplied'],

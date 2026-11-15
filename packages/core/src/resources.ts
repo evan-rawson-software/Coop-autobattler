@@ -9,11 +9,17 @@ export type Rarity = 'common' | 'rare';
 export interface ResourceDef {
   readonly id: ResourceId;
   readonly name: string;
-  readonly rarity: Rarity;
+  /** Base resources only (a resource without `refinedFrom`); map generation reads it. */
+  readonly rarity?: Rarity;
   readonly color?: string;
   readonly icon?: string;
   /** Present on refined resources only: one or two source resource IDs. */
   readonly refinedFrom?: readonly ResourceId[];
+}
+
+/** A base resource: no `refinedFrom`, and so always a `rarity`. */
+export interface BaseResourceDef extends ResourceDef {
+  readonly rarity: Rarity;
 }
 
 export interface ResourceConfig {
@@ -22,7 +28,7 @@ export interface ResourceConfig {
   /** Every resource, in file order. */
   list(): readonly ResourceDef[];
   /** Resources without `refinedFrom`, in file order. */
-  listBase(): readonly ResourceDef[];
+  listBase(): readonly BaseResourceDef[];
   /** Display name for an ID; throws if the ID is unknown. */
   displayName(id: ResourceId): string;
 }
@@ -45,7 +51,10 @@ const KNOWN_KEYS = new Set([
 
 function makeConfig(defs: readonly ResourceDef[]): ResourceConfig {
   const byId = new Map(defs.map((d) => [d.id, d]));
-  const base = defs.filter((d) => d.refinedFrom === undefined);
+  const base = defs.filter(
+    (d): d is BaseResourceDef =>
+      d.refinedFrom === undefined && d.rarity !== undefined,
+  );
   return {
     get: (id) => byId.get(id),
     list: () => defs,
@@ -95,9 +104,17 @@ export function loadResources(data: unknown): ResourceLoadResult {
     if (typeof name !== 'string' || name.trim() === '') {
       errors.push(`${label}: missing or empty "name".`);
     }
-    if (typeof rarity !== 'string' || !RARITIES.includes(rarity)) {
+    // A resource is base exactly when it has no `refinedFrom`: base resources
+    // need a rarity, refined ones have none.
+    if (refinedFrom === undefined) {
+      if (typeof rarity !== 'string' || !RARITIES.includes(rarity)) {
+        errors.push(
+          `${label}: unknown rarity ${JSON.stringify(rarity)}; expected one of ${RARITIES.join(', ')}.`,
+        );
+      }
+    } else if (rarity !== undefined) {
       errors.push(
-        `${label}: unknown rarity ${JSON.stringify(rarity)}; expected one of ${RARITIES.join(', ')}.`,
+        `${label}: a refined resource (with "refinedFrom") has no "rarity".`,
       );
     }
     if (
@@ -133,13 +150,15 @@ export function loadResources(data: unknown): ResourceLoadResult {
     if (
       typeof id === 'string' &&
       typeof name === 'string' &&
-      typeof rarity === 'string' &&
-      RARITIES.includes(rarity)
+      (refinedFrom !== undefined ||
+        (typeof rarity === 'string' && RARITIES.includes(rarity)))
     ) {
       defs.push({
         id,
         name,
-        rarity: rarity as Rarity,
+        ...(typeof rarity === 'string' && RARITIES.includes(rarity)
+          ? { rarity: rarity as Rarity }
+          : {}),
         ...(typeof color === 'string' ? { color } : {}),
         ...(typeof icon === 'string' ? { icon } : {}),
         ...(Array.isArray(refinedFrom)

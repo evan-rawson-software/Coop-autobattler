@@ -2526,6 +2526,23 @@ function destroyBuilding(
   sim.ramps = sim.ramps.filter(
     (r) => !(r.side === b.side && r.building === b.id),
   );
+  // A destroyed refinery loses the items of its output store (CB-9a): one
+  // `lost` event each, at the tick of destruction. (`rebuildFlow` counts them
+  // in `retired.lost`.)
+  const gone = sim.boards[b.side === 0 ? 0 : 1].refineries?.find(
+    (r) => r.building === b.id,
+  );
+  if (gone !== undefined) {
+    for (let i = 0; i < gone.store; i++) {
+      ctx.events?.push({
+        tick,
+        type: 'lost',
+        side: b.side,
+        building: b.id,
+        resource: gone.resource,
+      });
+    }
+  }
   const { sim: board, plan } = rebuildFlow(
     sim.boards[b.side === 0 ? 0 : 1],
     newTeam,

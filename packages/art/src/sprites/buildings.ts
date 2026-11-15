@@ -13,6 +13,7 @@ const KIND_RAMP: Readonly<Record<string, Ramp>> = {
   unit_producer: ['R', 'm', 'M'],
   defense: ['0', '2', '4'],
   economy: ['0', 's', 'S'],
+  refinery: ['0', 't', 'T'],
   core: ['1', '3', '5'],
 };
 
@@ -241,6 +242,23 @@ function hangarSprite(): Pix {
   p.rect(18, 11, 2, 10, 'y');
   p.rect(12, 15, 8, 2, 'y');
   arrow(p, 15, 27, 'n', 'T');
+  return p;
+}
+
+/** A refinery: a vat on the plate, the input door south and the output arrow north. */
+function refinerySprite(): Pix {
+  const p = new Pix(32, 32);
+  plate(p, 1, 1, 30, 30, KIND_RAMP['refinery'] as Ramp);
+  p.ellipse(16, 15, 9.5, 8.5, 'K');
+  p.ellipse(16, 15, 8.5, 7.5, '2');
+  p.ellipse(16, 15, 6.5, 5.5, '4');
+  p.ellipse(16, 15, 3.5, 3, '6');
+  p.set(13, 12, '6');
+  // Input door facing south, output arrow on the north edge.
+  p.rect(11, 25, 10, 5, 'K');
+  p.rect(12, 26, 8, 4, '1');
+  arrow(p, 15, 27, 'n', 'T');
+  arrow(p, 15, 2, 'n', 'y');
   return p;
 }
 
@@ -583,6 +601,8 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_crossover: crossoverSprite,
   bld_barracks: barracksSprite,
   bld_foundry: barracksSprite,
+  bld_refinery_ab: refinerySprite,
+  bld_refinery_bc: refinerySprite,
   bld_gate: gateSprite,
   bld_turret: turretSprite,
   bld_overclocker: () => economySprite(gearIcon),

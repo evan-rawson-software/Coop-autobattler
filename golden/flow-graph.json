@@ -1881,5 +1881,639 @@
         "hash": "5fb455c3"
       }
     }
+  },
+  {
+    "id": "flow-graph.refinery-ab-chain",
+    "kind": "flow-graph",
+    "description": "Two tier 3 collectors feed a tier 3 Composite refinery on its south and west inputs; its north output feeds a test consumer of the refined resource (a building defined in the vector, `extraBuildings`: no shipped building takes a refined resource yet). The refinery node has kind `refinery`; its output conduit has the refined resource, the two input conduits the base resources.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_b"
+          },
+          {
+            "x": 5,
+            "y": 2,
+            "resource": "res_a"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 5,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_refinery_ab",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 5,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_test_sink_ab",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 5,
+          "y": 10,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 4
+            },
+            {
+              "x": 3,
+              "y": 5
+            },
+            {
+              "x": 4,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 3,
+            "side": "north"
+          },
+          "to": {
+            "building": 4,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 5,
+              "y": 7
+            },
+            {
+              "x": 5,
+              "y": 8
+            },
+            {
+              "x": 5,
+              "y": 9
+            }
+          ]
+        }
+      ],
+      "extraBuildings": [
+        {
+          "id": "bld_test_sink_ab",
+          "kind": "unit_producer",
+          "unit": "unit_soldier",
+          "footprint": {
+            "width": 1,
+            "height": 1
+          },
+          "inputs": [
+            {
+              "side": "south",
+              "resource": "res_ab_refined"
+            }
+          ],
+          "outputs": [],
+          "tiers": [
+            {
+              "health": 20,
+              "price": 0,
+              "costPerUnit": 1,
+              "productionIntervalTicks": 10
+            },
+            {
+              "health": 20,
+              "price": 0,
+              "costPerUnit": 1,
+              "productionIntervalTicks": 10
+            },
+            {
+              "health": 20,
+              "price": 0,
+              "costPerUnit": 1,
+              "productionIntervalTicks": 10
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "graph": {
+          "nodes": [
+            {
+              "key": "1",
+              "building": 1,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_a",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 4
+                }
+              ]
+            },
+            {
+              "key": "2",
+              "building": 2,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_b",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 8
+                }
+              ]
+            },
+            {
+              "key": "3",
+              "building": 3,
+              "channel": null,
+              "def": "bld_refinery_ab",
+              "kind": "refinery",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 4,
+                  "requires": "res_a"
+                },
+                {
+                  "side": "west",
+                  "conduit": 8,
+                  "requires": "res_b"
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 12
+                }
+              ]
+            },
+            {
+              "key": "4",
+              "building": 4,
+              "channel": null,
+              "def": "bld_test_sink_ab",
+              "kind": "consumer",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 12,
+                  "requires": "res_ab_refined"
+                }
+              ],
+              "outputs": []
+            }
+          ],
+          "edges": [
+            {
+              "conduitId": 4,
+              "linkedConduit": null,
+              "from": "1",
+              "to": "3",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 2,
+              "resource": "res_a"
+            },
+            {
+              "conduitId": 8,
+              "linkedConduit": null,
+              "from": "2",
+              "to": "3",
+              "fromSide": "north",
+              "toSide": "west",
+              "length": 4,
+              "resource": "res_b"
+            },
+            {
+              "conduitId": 12,
+              "linkedConduit": null,
+              "from": "3",
+              "to": "4",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 3,
+              "resource": "res_ab_refined"
+            }
+          ],
+          "order": ["1", "2", "3", "4"],
+          "brokenLinks": []
+        },
+        "hash": "6eaf04e2"
+      }
+    }
+  },
+  {
+    "id": "flow-graph.refinery-bc-chain",
+    "kind": "flow-graph",
+    "description": "Two tier 3 collectors feed a tier 3 Aether refinery on its south and west inputs; its north output feeds a test consumer of the refined resource (a building defined in the vector, `extraBuildings`: no shipped building takes a refined resource yet). The refinery node has kind `refinery`; its output conduit has the refined resource, the two input conduits the base resources.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_c"
+          },
+          {
+            "x": 5,
+            "y": 2,
+            "resource": "res_b"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 5,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_refinery_bc",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 5,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_test_sink_bc",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 5,
+          "y": 10,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 3,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 4
+            },
+            {
+              "x": 3,
+              "y": 5
+            },
+            {
+              "x": 4,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 3,
+            "side": "north"
+          },
+          "to": {
+            "building": 4,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 5,
+              "y": 7
+            },
+            {
+              "x": 5,
+              "y": 8
+            },
+            {
+              "x": 5,
+              "y": 9
+            }
+          ]
+        }
+      ],
+      "extraBuildings": [
+        {
+          "id": "bld_test_sink_bc",
+          "kind": "unit_producer",
+          "unit": "unit_soldier",
+          "footprint": {
+            "width": 1,
+            "height": 1
+          },
+          "inputs": [
+            {
+              "side": "south",
+              "resource": "res_bc_refined"
+            }
+          ],
+          "outputs": [],
+          "tiers": [
+            {
+              "health": 20,
+              "price": 0,
+              "costPerUnit": 1,
+              "productionIntervalTicks": 10
+            },
+            {
+              "health": 20,
+              "price": 0,
+              "costPerUnit": 1,
+              "productionIntervalTicks": 10
+            },
+            {
+              "health": 20,
+              "price": 0,
+              "costPerUnit": 1,
+              "productionIntervalTicks": 10
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "graph": {
+          "nodes": [
+            {
+              "key": "1",
+              "building": 1,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_b",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 4
+                }
+              ]
+            },
+            {
+              "key": "2",
+              "building": 2,
+              "channel": null,
+              "def": "bld_extractor",
+              "kind": "source",
+              "produces": "res_c",
+              "inputs": [],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 8
+                }
+              ]
+            },
+            {
+              "key": "3",
+              "building": 3,
+              "channel": null,
+              "def": "bld_refinery_bc",
+              "kind": "refinery",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 4,
+                  "requires": "res_b"
+                },
+                {
+                  "side": "west",
+                  "conduit": 8,
+                  "requires": "res_c"
+                }
+              ],
+              "outputs": [
+                {
+                  "side": "north",
+                  "conduit": 12
+                }
+              ]
+            },
+            {
+              "key": "4",
+              "building": 4,
+              "channel": null,
+              "def": "bld_test_sink_bc",
+              "kind": "consumer",
+              "produces": null,
+              "inputs": [
+                {
+                  "side": "south",
+                  "conduit": 12,
+                  "requires": "res_bc_refined"
+                }
+              ],
+              "outputs": []
+            }
+          ],
+          "edges": [
+            {
+              "conduitId": 4,
+              "linkedConduit": null,
+              "from": "1",
+              "to": "3",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 2,
+              "resource": "res_b"
+            },
+            {
+              "conduitId": 8,
+              "linkedConduit": null,
+              "from": "2",
+              "to": "3",
+              "fromSide": "north",
+              "toSide": "west",
+              "length": 4,
+              "resource": "res_c"
+            },
+            {
+              "conduitId": 12,
+              "linkedConduit": null,
+              "from": "3",
+              "to": "4",
+              "fromSide": "north",
+              "toSide": "south",
+              "length": 3,
+              "resource": "res_bc_refined"
+            }
+          ],
+          "order": ["1", "2", "3", "4"],
+          "brokenLinks": []
+        },
+        "hash": "89194776"
+      }
+    }
   }
 ]

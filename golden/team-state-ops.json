@@ -6995,5 +6995,601 @@
         "hash": "a0805593"
       }
     }
+  },
+  {
+    "id": "team-state-ops.refined-conduit-mismatch",
+    "kind": "team-state-ops",
+    "description": "A conduit leaving a refinery carries its output resource (CB-5b): Composite from the Composite refinery is refused with resource_mismatch at the Aether refinery's input (either one) and at a Barracks (Ore). A Flux collector then feeds the same Aether refinery's west input without trouble.",
+    "input": {
+      "seed": 1,
+      "partySize": 1,
+      "map": {
+        "width": 24,
+        "height": 16,
+        "partySize": 1,
+        "plotWidth": 24,
+        "features": [],
+        "nodes": [
+          {
+            "x": 3,
+            "y": 2,
+            "resource": "res_b"
+          },
+          {
+            "x": 5,
+            "y": 2,
+            "resource": "res_a"
+          },
+          {
+            "x": 8,
+            "y": 2,
+            "resource": "res_c"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 5,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 3,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 3,
+          "x": 8,
+          "y": 2,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_refinery_ab",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 4,
+          "x": 5,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_refinery_bc",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 5,
+          "x": 10,
+          "y": 8,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_barracks",
+          "tier": 3,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 6,
+          "x": 3,
+          "y": 10,
+          "rotation": 0
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 1,
+            "side": "north"
+          },
+          "to": {
+            "building": 4,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 2,
+            "side": "north"
+          },
+          "to": {
+            "building": 4,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 4
+            },
+            {
+              "x": 3,
+              "y": 5
+            },
+            {
+              "x": 4,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 4,
+            "side": "north"
+          },
+          "to": {
+            "building": 5,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 5,
+              "y": 7
+            },
+            {
+              "x": 5,
+              "y": 8
+            },
+            {
+              "x": 6,
+              "y": 8
+            },
+            {
+              "x": 7,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 9,
+              "y": 8
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 4,
+            "side": "north"
+          },
+          "to": {
+            "building": 6,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 5,
+              "y": 7
+            },
+            {
+              "x": 5,
+              "y": 8
+            },
+            {
+              "x": 5,
+              "y": 9
+            },
+            {
+              "x": 4,
+              "y": 9
+            },
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 4,
+            "side": "north"
+          },
+          "to": {
+            "building": 5,
+            "side": "south"
+          },
+          "cells": [
+            {
+              "x": 5,
+              "y": 7
+            },
+            {
+              "x": 6,
+              "y": 7
+            },
+            {
+              "x": 7,
+              "y": 7
+            },
+            {
+              "x": 8,
+              "y": 7
+            },
+            {
+              "x": 9,
+              "y": 7
+            },
+            {
+              "x": 10,
+              "y": 7
+            }
+          ]
+        },
+        {
+          "op": "addConduit",
+          "actor": 0,
+          "from": {
+            "building": 3,
+            "side": "north"
+          },
+          "to": {
+            "building": 5,
+            "side": "west"
+          },
+          "cells": [
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 4
+            },
+            {
+              "x": 8,
+              "y": 5
+            },
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 7
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 9,
+              "y": 8
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 4
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 5
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 6
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 4
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 8
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "resource_mismatch"
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "resource_mismatch"
+          },
+          {
+            "op": "addConduit",
+            "ok": false,
+            "reason": "resource_mismatch"
+          },
+          {
+            "op": "addConduit",
+            "ok": true,
+            "id": 12
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 24,
+            "height": 16,
+            "partySize": 1,
+            "plotWidth": 24,
+            "features": [],
+            "nodes": [
+              {
+                "x": 3,
+                "y": 2,
+                "resource": "res_b"
+              },
+              {
+                "x": 5,
+                "y": 2,
+                "resource": "res_a"
+              },
+              {
+                "x": 8,
+                "y": 2,
+                "resource": "res_c"
+              }
+            ]
+          },
+          "cores": [null],
+          "buildings": [
+            {
+              "id": 1,
+              "def": "bld_extractor",
+              "tier": 3,
+              "x": 5,
+              "y": 2,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 2,
+              "def": "bld_extractor",
+              "tier": 3,
+              "x": 3,
+              "y": 2,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 3,
+              "def": "bld_extractor",
+              "tier": 3,
+              "x": 8,
+              "y": 2,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 4,
+              "def": "bld_refinery_ab",
+              "tier": 3,
+              "x": 5,
+              "y": 5,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 5,
+              "def": "bld_refinery_bc",
+              "tier": 3,
+              "x": 10,
+              "y": 8,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 6,
+              "def": "bld_barracks",
+              "tier": 3,
+              "x": 3,
+              "y": 10,
+              "rotation": 0,
+              "owner": 0
+            }
+          ],
+          "stash": [],
+          "nextId": 7,
+          "nextConduitId": [4],
+          "conduits": [
+            {
+              "id": 4,
+              "owner": 0,
+              "from": {
+                "building": 1,
+                "side": "north"
+              },
+              "to": {
+                "building": 4,
+                "side": "south"
+              },
+              "cells": [
+                {
+                  "x": 5,
+                  "y": 3
+                },
+                {
+                  "x": 5,
+                  "y": 4
+                }
+              ]
+            },
+            {
+              "id": 8,
+              "owner": 0,
+              "from": {
+                "building": 2,
+                "side": "north"
+              },
+              "to": {
+                "building": 4,
+                "side": "west"
+              },
+              "cells": [
+                {
+                  "x": 3,
+                  "y": 3
+                },
+                {
+                  "x": 3,
+                  "y": 4
+                },
+                {
+                  "x": 3,
+                  "y": 5
+                },
+                {
+                  "x": 4,
+                  "y": 5
+                }
+              ]
+            },
+            {
+              "id": 12,
+              "owner": 0,
+              "from": {
+                "building": 3,
+                "side": "north"
+              },
+              "to": {
+                "building": 5,
+                "side": "west"
+              },
+              "cells": [
+                {
+                  "x": 8,
+                  "y": 3
+                },
+                {
+                  "x": 8,
+                  "y": 4
+                },
+                {
+                  "x": 8,
+                  "y": 5
+                },
+                {
+                  "x": 8,
+                  "y": 6
+                },
+                {
+                  "x": 8,
+                  "y": 7
+                },
+                {
+                  "x": 8,
+                  "y": 8
+                },
+                {
+                  "x": 9,
+                  "y": 8
+                }
+              ]
+            }
+          ]
+        },
+        "hash": "96a17e50"
+      }
+    }
   }
 ]

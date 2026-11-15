@@ -22,6 +22,9 @@
  * `content/units.json` that are added to the content for this run (a unit too
  * wide for a gap, a target dummy), and `report: "positions"`, which adds
  * `positions` to the result: `[[id, px, py], ...]` of the living units.
+ * `extraBuildings` is a list of building definitions in the format of
+ * `content/buildings.json`, added for this run (a consumer of a refined
+ * resource, which no shipped building is yet).
  *
  * An optional `checkpointEvery` (a positive integer) adds `checkpoints` to the
  * output: at every multiple of it that the battle reaches (not tick 0), an
@@ -44,6 +47,7 @@ import {
   type MapgenConfig,
   type SimConfig,
 } from '@game/core';
+import { withExtraBuildings } from './extra-buildings.js';
 import type { SimulationFn } from './prng.js';
 
 function field(input: Json, key: string): Json | undefined {
@@ -88,7 +92,7 @@ export function makeArenaSimKind(
 ): SimulationFn {
   return (input: Json) => {
     const extra = field(input, 'extraUnits');
-    const content: ArenaContent =
+    const withUnits: ArenaContent =
       extra === undefined
         ? shipped
         : {
@@ -97,6 +101,10 @@ export function makeArenaSimKind(
               units: [...shipped.units.list(), ...(extra as Json[])],
             }),
           };
+    const content = withExtraBuildings(
+      withUnits,
+      field(input, 'extraBuildings'),
+    );
     const gapRows = nonNegative(field(input, 'gapRows'), 'gapRows');
     const ticks = nonNegative(field(input, 'ticks'), 'ticks');
     const a = field(input, 'teamA');

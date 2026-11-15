@@ -18,6 +18,18 @@
       "name": "Flux",
       "rarity": "rare",
       "color": "#8a5cf6"
+    },
+    {
+      "id": "res_ab_refined",
+      "name": "Composite",
+      "refinedFrom": ["res_a", "res_b"],
+      "color": "#d9663a"
+    },
+    {
+      "id": "res_bc_refined",
+      "name": "Aether",
+      "refinedFrom": ["res_b", "res_c"],
+      "color": "#3fc7c0"
     }
   ]
 }

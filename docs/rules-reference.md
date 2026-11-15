@@ -54,6 +54,18 @@ that way.
   the order of the tier's `costs` after `sortedKeys`, and are only ever read
   by index, never by iterating a dictionary. `costs` itself is an object read
   sorted by key; a port stores it as a sorted list of `(resource, cost)`.
+- **Refinery state.** `BoardSim.refineries` exists only on a board that has a
+  refinery (CB-5d): a port keeps the field optional (or keeps it and leaves
+  it out of the hash when empty) so that the state hash of every other board
+  is unchanged. A refinery's counters are the per-resource list described
+  above; its output store is a plain count. Items made in a batch are
+  logged as one `produced` event each, and a refinery acts in step 3a of
+  `stepFlow` (after the sources), in building ID order, in every consumer mode.
+- **Resources without a rarity.** A resource is a *base* resource exactly when
+  it has no `refinedFrom`. Only base resources have a `rarity` and only base
+  resources are placed on maps (`listBase`, in file order); a port must not
+  give a refined resource a default rarity. Adding a refined resource to
+  `resources.json` after the base ones leaves every map unchanged.
 - **Indexes.** `x[i] ?? 0` on a typed array is a type-checker formality: the
   index is in range by construction. Where an index can be -1 (no unit, no
   building), the code checks `i >= 0` before reading; a port must keep those
@@ -277,6 +289,7 @@ on purpose: PvE threats (below) are not limited by them in rounds 1 to
 | `MAX_DAMAGE`           | 1 000 000 000 000   | `damage` of a unit and of a turret tier; run-time scaled unit damage      |
 | `MAX_BREACH_BASE_COST` | 1 000 000           | `breachBaseCost` and `breachHealthPerCost` in `sim.json`                  |
 | `MAX_TIER_COST`        | 1 000 000           | each value of `costs` of a unit producer tier (CB-5e); at most four of them |
+| `MAX_OUTPUT_PER_BATCH` | 1 000               | `outputPerBatch` of a refinery tier (CB-5d)                               |
 | `MAX_ARENA_CELLS`      | 8 192               | arena cells (`width * height`) for which a breach field is computed       |
 | `MAX_TICK_DAMAGE`      | 2^52                | most damage one target takes in one tick (the sum saturates here)         |
 | `MAX_HIT`              | 2^51                | most one hit may deal after Overload scaling                              |
@@ -296,6 +309,13 @@ resource, at most one resource per input (so at most four); the combined cost
 `4 * 1 000 000`. `productionIntervalTicks` and the one-cost `costPerUnit`
 keep their bound of an integer of at least 1. `needPer1000 = floor(1000 * cost
 / interval)` is at most `1000 * 4 * 1e6`, far below 2^53.
+
+A refinery tier's `costs` (CB-5d) is checked like those of a unit producer: one
+integer from 1 to `MAX_TIER_COST` per input resource, at most one per input (a
+refinery has one or two inputs). `outputPerBatch` is an integer from 1 to
+`MAX_OUTPUT_PER_BATCH` and `productionIntervalTicks` an integer of at least 1,
+so `refineryOutputPer1000 = floor(1000 * outputPerBatch / interval)` is at most
+`1e6` and the output store never holds more than 1000 items.
 
 A loader reports a value above its cap like any other bad field (for example
 `"health" must be at most 1000000000000 (got 3000000000000)`), and the schemas
@@ -963,6 +983,9 @@ Each conduit carries at most one resource type, set by what feeds it.
 
 - A conduit leaving a **source** carries the source's node resource
   (`sourceResource`).
+- A conduit leaving a **refinery** (CB-5d) carries the refinery's `output`
+  resource, a refined resource, whatever its inputs carry (even when none of
+  them is connected).
 - A conduit leaving a **splitter** carries what the splitter's input conduit
   carries, or `null` when the splitter has no input conduit or that conduit is
   itself undetermined.
@@ -986,7 +1009,10 @@ recomputed (connecting an upstream piece can determine types far downstream),
 and the addition is rejected with `resource_mismatch` if any consumer input
 receives a determined resource different from the one its definition names for
 that side, or any merger has two inputs with different determined resources.
-Consumers are all buildings with inputs except route buildings.
+Consumers are all buildings with inputs except route buildings (a refinery is
+one: a refined conduit is refused at the input of another refinery or of any
+building that takes another resource, Composite into an Aether refinery
+included; Composite and Aether never mix in a merger).
 
 Because sources take their resource from their node, moving a source to a
 different node could change types; this is fine because moving detaches the
@@ -1019,7 +1045,8 @@ state with a loop or an unknown definition; validate untrusted states first):
   - `key`: the instance ID as a decimal string, or `"<id>.<input side>"` for a
     crossover channel (for example `"7.south"`).
   - `channel`: the channel's input side for a crossover node, else `null`.
-  - `kind`: `source`, `splitter`, `merger`, `crossover` or `consumer`.
+  - `kind`: `source`, `splitter`, `merger`, `crossover`, `refinery` or
+    `consumer`.
   - `produces`: a source's node resource, else `null`.
   - `inputs`: `{ side, conduit, requires }` per input side, `conduit` the ID of
     the conduit attached there or `null`, `requires` the resource that input
@@ -1047,7 +1074,15 @@ Input as for `team-state-ops` (`seed`, `partySize`, `ops`). The result is
 Vectors: `golden/flow-graph.json`. The conduit rejection reasons, a network with
 a splitter, a merger and a crossover, a merger mismatch that only appears when
 an upstream source is connected last, and a loop are covered by vectors in
-`golden/team-state-ops.json`.
+`golden/team-state-ops.json`. The input may also give `extraBuildings` (building
+definitions in the format of `content/buildings.json`, added for the run).
+Issue #381 adds `flow-graph.refinery-ab-chain` and `flow-graph.refinery-bc-chain`
+(collectors, a refinery, a refined conduit and a test consumer of the refined
+resource from `extraBuildings`: the refinery node has kind `refinery` and the
+output edge carries the refined resource) and
+`team-state-ops.refined-conduit-mismatch` (Composite is refused with
+`resource_mismatch` at both inputs of an Aether refinery and at a Barracks, and
+a Flux collector then feeds the Aether refinery).
 
 ## Tick order
 
@@ -1067,7 +1102,9 @@ battle tick" below, which adds units, production, combat and destruction.
 Economy buildings (in-battle ramp) and Overload are described under "One
 battle tick"; the only thing they add to this single-board flow is the optional
 **source interval modifier** (step 3 below), one value per player index, 0 in a
-dry run.
+dry run. A **refinery** (CB-5d, "Refineries" below) is part of this flow: it
+takes, makes and releases items inside `stepFlow` (step 3a), in every consumer
+mode.
 
 ### Constants (`content/sim.json`)
 
@@ -1115,9 +1152,18 @@ of the team state and `sim.json` only. Fields, with every list in a fixed order:
   key), `building`, `held` (the one-item holding cell, `null` when empty),
   `pointer` (starts 0) and the counter `lost`.
 - `consumers`: one per placed building that has input sides and is not a source
-  or route, by building ID: `building` and `inputs`, one per input side
-  clockwise from north: `side`, `resource` (what that side requires), `count`
-  (the input buffer, starts 0) and the counters `delivered` and `consumed`.
+  or route (a refinery included), by building ID: `building` and `inputs`, one
+  per input side clockwise from north: `side`, `resource` (what that side
+  requires), `count` (the input buffer, starts 0) and the counters `delivered`
+  and `consumed`.
+- `refineries` (CB-5d): present **only on a board that has a refinery** (so the
+  state, and its hash, of every other board is unchanged), one per placed
+  refinery (connected or not) in building ID order: `building`, `resource` (its
+  output resource), `counters` (one per input resource, sorted by resource ID,
+  the order of the tier's `costs`; start 0), `cooldown` (starts 0), `store`
+  (items made and not yet released, the output store; starts 0), `stalled` (0
+  or 1, starts 0) and the counters `produced`, `lost`, `batches` and
+  `stalledTicks` (start 0).
 
 The compiled wiring (which conduit feeds which input, and the processing
 orders below) is derived from the team state by the same code and is not part
@@ -1141,7 +1187,9 @@ Input `i` is ready when its conduit exists and
 - it is a direct connection (`L = 0`) from a **route building** (a splitter,
   merger or crossover channel) whose **holding cell holds an item**; or
 - it is a direct connection from a **source** whose `countdown` is at most 1
-  (it produces this tick if it can place the item).
+  (it produces this tick if it can place the item); or
+- it is a direct connection from a **refinery** whose `store` is not 0 (it
+  releases an item this tick if it can place it).
 
 That input is the merger's _winner_ for this tick; if no input is ready the
 merger has no winner. When several inputs are ready on the same tick, including
@@ -1225,8 +1273,50 @@ max(1, floor(intervalTicks * 100 / (100 + P)))` and `P` is the board's
    failing tick). Production is delayed, not lost; nothing is counted as
    `produced` until the item is placed.
 
-**Consumers.** With `consumers: "drain"` (tests and dry runs), after step 3
-every consumer input's `count` is added to its `consumed` counter and set to 0.
+**3a. Refineries produce.** In building ID order, for each refinery (after
+every source, so an item a source or a conduit put into its input buffer this
+tick can be taken at once). Let `costs` be its tier's `costs` entries sorted
+by resource ID, `counters` its counters in the same order:
+
+1. **Intake**, as for a two-input consumer (step 2.1 of "One battle tick" and
+   `intakeByResource`): go through its inputs clockwise from north; the input
+   of resource `r` takes `min(buffer count, cost_r - counter_r)` items
+   (`takeFromBuffer` on that side, which adds them to that input's `consumed`)
+   into `counter_r`. This happens every tick, whatever the store holds or the
+   cooldown is: a counter simply stays full, so a full counter, a full buffer
+   and a backed-up conduit hold an input back, as for a unit producer.
+2. **Release.** If `store > 0`, offer one item of the output resource to the
+   output conduit by the rule of a source's waiting item in step 3 (a refinery
+   has one output side; push onto its conduit as in step 2). If it is placed:
+   `store` decreases by 1 and `stalled = 0`. If the output side has no conduit
+   the item is sent into nothing: `store` decreases by 1, `lost` increases and
+   `{tick: T, type: "lost", building, resource}` is recorded (`produced` was
+   counted when the batch was made). Otherwise (the conduit is full or the
+   output is an open border half, PP-4) the item waits: if `stalled` was 0 it
+   becomes 1 and `{tick: T, type: "stalled", building}` is recorded (only on
+   the first failing tick), and `stalledTicks` increases by 1. At most one
+   item leaves per tick.
+3. **Batch.** If every counter equals its cost, `cooldown = 0` **and
+   `store = 0`** (after the release of step 2, so the last item of a store and
+   the next batch can share a tick): every counter becomes 0, `cooldown =
+   productionIntervalTicks`, `store = outputPerBatch`, `produced` increases by
+   `outputPerBatch`, `batches` by 1, and one `{tick: T, type: "produced",
+   building, resource}` event per item (`outputPerBatch` of them) is recorded
+   with the output resource. A batch does not wait for the conduit: it only
+   needs an empty store, so while the store holds items no new batch starts.
+4. If `cooldown > 0` it decreases by 1 (after step 3, so a batch made this
+   tick counts this tick as the first of its interval).
+
+The first item of a batch is released on the **next** tick (step 3a.2 runs
+before step 3a.3), which is also why a direct connection into a merger is
+"ready" (step 0) by its `store`. The Overclocker's `source_speed` modifier is
+read only by step 3 (sources): a refinery's `productionIntervalTicks` is never
+scaled. A refinery is paced in every consumer mode: in `drain` mode (below) its
+buffers are not drained and in `need` mode it has no pacer.
+
+**Consumers.** With `consumers: "drain"` (tests and dry runs), after step 3a
+every consumer input's `count` is added to its `consumed` counter and set to 0,
+except for a refinery's inputs.
 With `"hold"` buffers stay as they are; later issues remove units from them
 with `takeFromBuffer` (below).
 
@@ -1295,6 +1385,67 @@ performed and no item is split. A path stops accepting when its consumer is at
 top speed with a full store ("Top speed, need and store" under "One battle
 tick").
 
+### Refineries (CB-5d, CB-5f)
+
+A **refinery** is a building of kind `refinery`: a consumer that turns the
+resources it takes into one new resource and puts it on a conduit. The rules
+here hold for every refinery; the two shipped ones are content. Its definition
+(`content/buildings.json`, `schemas/buildings.schema.json`) has:
+
+- `output`: the ID of a **refined** resource, one whose `refinedFrom` is, as a
+  set, the set of the resources of the building's inputs (the loader rejects
+  anything else, so a refinery of Composite takes Ore and Power).
+- one or two inputs, each naming a resource, and exactly one output side;
+- per tier `health`, `price`, `costs` (an integer from 1 to `MAX_TIER_COST`
+  for **every** input resource and no other, read sorted by resource ID like
+  the `costs` of a two-input unit producer), `productionIntervalTicks` (at least
+  1) and `outputPerBatch` (an integer from 1 to `MAX_OUTPUT_PER_BATCH`, 1000).
+  A refinery tier has no `costPerUnit`.
+
+Rules (step 3a of `stepFlow`, "One tick: `stepFlow`"):
+
+- **Intake and waiting** are those of a two-input consumer: one counter per
+  input resource, each filled up to its cost, a full counter holding its input
+  back. Items taken count as `consumed`.
+- **Batch.** When every counter is full, the cooldown is 0 and the output
+  store is empty: counters to 0, cooldown to `productionIntervalTicks`,
+  `outputPerBatch` items of the output resource into the store (they count as
+  `produced`, with one `produced` event each).
+- **Release.** Every tick one item of the store, if any, is offered to the
+  output conduit by the rule of a source's waiting item. If the conduit cannot
+  accept it the item waits, the refinery is **stalled** (`stalled` event on
+  the first tick, `stalledTicks` counts) and no new batch starts until the
+  store is empty; so a backed-up output stops the intake (counters, buffers
+  and input conduits fill) until it frees. At most one item leaves per tick,
+  so a refinery whose `outputPerBatch` is larger than its interval cannot
+  release a whole batch in time: the store stays non-empty and batches follow
+  one per `outputPerBatch` ticks. An output side with no conduit sends each
+  item into nothing: `lost`.
+- **Speed.** The top speed is one batch per `productionIntervalTicks`; the
+  output at top speed is `refineryOutputPer1000 = floor(1000 * outputPerBatch /
+  interval)` items per 1000 ticks and each input is needed at
+  `needPer1000By = floor(1000 * cost_r / interval)`. With less than that
+  arriving the refinery follows its slowest input: it makes a batch whenever
+  every counter has filled, so its output is limited by the input that takes
+  longest to fill its counter, never more than the top speed.
+  The Overclocker (`source_speed`) speeds up collectors only; a refinery is
+  not scaled.
+- **Typing (CB-5b).** A conduit leaving a refinery carries its `output`
+  resource ("Resource typing"). A refined conduit feeds only a building whose
+  input names that refined resource (any other input, including the input of
+  another refinery, gives `resource_mismatch`); splitters, mergers and
+  crossovers carry it like any resource, and a merger never mixes Composite
+  with Aether or with a base resource. No shipped building takes a refined
+  resource yet, so a vector that needs a consumer defines one with
+  `extraBuildings`.
+- **Border links (PP-4)** carry refined resources like any resource; a link
+  may feed a refinery input or leave a refinery's output.
+- A refinery is **not a unit producer**: it makes no units, `sealedProducers`
+  never lists it, and it is not in the shop's offers or the bot's builds yet.
+
+The flow graph node of a refinery has `kind` `refinery`; its `outputs` has
+one entry.
+
 ### Consumer seam
 
 `takeFromBuffer(sim, buildingId, sideOrResource, n)` returns whether `n` units
@@ -1310,6 +1461,8 @@ next `stepFlow`.
 
 ### Events
 
+A refinery logs `produced` (one per item of a batch, with the output
+resource), `lost` (an item sent into nothing) and `stalled`.
 `{tick, type, ...}` with `type` one of `produced` (`building`, `resource`),
 `delivered` (`building`, `side`, `resource`), `lost` (`building`, `resource`)
 and `stalled` (`building`); `schemas/sim-event.schema.json`. Movement along
@@ -1319,9 +1472,14 @@ within a tick appear in the order the steps produce them.
 ### Conservation
 
 At the end of every tick: items produced = items in conduit slots + items in
-route holding cells + items in consumer buffers + items consumed + items lost
-(`flowTotals`). A source's waiting (stalled) item is not yet counted as
-produced.
+route holding cells + items in refinery output stores + items in consumer
+buffers + items consumed + items lost (`flowTotals`; its `held` is the items in
+route holding cells and refinery stores together). A source's waiting
+(stalled) item is not yet counted as produced. The items a refinery takes are
+`consumed` when it takes them from a buffer, and the items it makes are
+`produced` when its batch is made, so a refined item is a new item in the
+count: a chain of collectors, a refinery and a consumer of its output
+balances at every tick.
 
 ### Dry run (CB-43)
 
@@ -1347,6 +1505,18 @@ resource (`floor(1000 * cost_r / interval)`); its `needPer1000` is the one of
 the summed cost. The pacer follows the intake and produce rules of step 2 for
 a two-input consumer: one counter per resource, a production only when every
 counter is full and the cooldown is 0, then every counter back to 0.
+A **refinery** has no pacer (it paces itself in every mode, step 3a): its
+entry in `needs` is `{building, needPer1000, needPer1000By, productions,
+outputPer1000}` with `needPer1000` the helper value of the summed cost,
+`needPer1000By` the need of each input, `productions` the **batches** made and
+`outputPer1000` the output at top speed (`refineryOutputPer1000`). When the
+board has a refinery the result also has `refineries`, one entry per refinery
+in building order `{building, resource, produced, batches, lost, stalledTicks,
+ratePer1000}`, with `ratePer1000` the items made per 1000 ticks over the last
+`w` ticks (as above): the refinery's real output, limited by its slowest
+input (a refinery fed 50 Power per 1000 ticks, costing 3 per batch of 2, shows
+33). A board without a refinery has no `refineries` entry. In `"drain"` mode a
+refinery's own input buffers are not drained.
 The delivered `ratePer1000` is as above, so a consumer fed at or above its
 need shows a rate equal to its need (over a window that is a whole number of
 intervals). The pacer state (`progress`, `cooldown`, `productions` per
@@ -1370,7 +1540,13 @@ consumer input `{building, side, resource, count, delivered, consumed}`; in
 mode `"need"` it also has `pacers`, one `{building, progress, cooldown,
 productions}` per consumer (a two-input consumer's entry also has `counters`,
 the list of its per-resource counters sorted by resource ID, and `progress`
-is their sum). The event log of the run is the vector's event log (`eventLogHash`).
+is their sum; a refinery has none). On a board with a refinery the result also
+has `refineries`, one `{building, resource, counters, cooldown, store, stalled,
+produced, lost, batches, stalledTicks}` per refinery. An optional
+`extraBuildings` list (building definitions in the format of
+`content/buildings.json`) is added to the content for the run (the kinds
+`flow-graph` and `arena-sim` accept it too; an ID that already exists is an
+error). The event log of the run is the vector's event log (`eventLogHash`).
 Vectors: `golden/flow-sim.json` (a long conduit, a splitter, a merger, a
 crossover with two resources, a dead end, a full-buffer backpressure case, and a
 merger with a direct input and a conduit input behind a slow consumer, a
@@ -1398,7 +1574,19 @@ Foundry follows Power), `foundry-tier1-need`, `foundry-mixed-network` (Ore
 shared through a splitter with a Barracks) and
 `foundry-border-link-feeds-power` (one input fed over a border link, PP-4).
 Without the cooldown rule of the production step the two `top-speed` vectors
-change.
+change. Nine vectors with the refineries (issue #381, CB-5d; no shipped
+building takes Composite or Aether, so each ends its chain at a one-input test
+consumer defined in the vector with `extraBuildings`: a unit producer of
+soldiers that takes the refined resource, one per 10 ticks) pin them:
+`refinery-ab-chain-need` and `refinery-bc-chain-need` (two tier 3 collectors,
+a tier 3 refinery, a refined conduit, the consumer: 66 items per 1000 ticks),
+`refinery-ab-tier1-need` (the collectors back up behind a tier 1 refinery),
+`refinery-ab-one-input-missing`, `refinery-ab-output-backs-up` (the consumer
+is not paced: the store holds, the refinery is stalled, intake stops),
+`refinery-ab-unconnected-output` (every item lost, never stalled),
+`refinery-ab-direct-output` (a conduit of length 0), `refinery-ab-chain-drain`
+and `refinery-bc-flux-border-link` (the Aether refinery of one player takes
+Flux from another over a border link).
 
 ### Mid-battle removal
 
@@ -1414,10 +1602,17 @@ that conservation still holds:
 - Items in removed conduit slots, a removed route's holding cell, and a removed
   consumer's input buffers are **lost**. A removed unit producer's `progress`
   (for a two-input producer every one of its counters) is dropped with it;
-  those items were already counted as `consumed`.
+  those items were already counted as `consumed`. A destroyed **refinery**
+  loses the items of its output store (they count as lost, and everything
+  downstream of it is cut like any destroyed building's conduits, CB-9a); its
+  counters were taken from its buffers already and are dropped. In a battle
+  (`stepArena`, destruction in step 6) one `lost` event per item of the store
+  is logged with the refinery's `building`, the output resource and the tick
+  of the destruction.
 - The counters of removed parts move to `retired`: a removed source's
   `produced` and `lost`; a removed route's `lost`; a removed consumer's
-  `consumed`; plus the lost items above. `BoardSim.retired`
+  `consumed`; a removed refinery's `produced` and `lost`; plus the lost items
+  above. `BoardSim.retired`
   (`{produced, lost, consumed}`) exists only after the first removal that
   moved a non-zero amount (so a state that never lost a building has the same
   shape and hash as before) and `flowTotals` adds it in.
@@ -2466,7 +2661,7 @@ corner cell between a healthy and a damaged wall of equal maximum health that
 attacks the healthy one because the breach step prices buildings by maximum
 health).
 
-Vectors added with the circle model (issue #59): `arena-sim.separation-converging-soldiers` (four soldiers converging on one target: equal and unequal priority in the separation pass), `arena-sim.choke-point` (twelve soldiers through a wall line with a one-cell gap), `arena-sim.producer-held-at-blocked-exit` (a barracks whose only exit is occupied holds its unit, stops drawing, the source stalls) and `arena-sim.wide-unit-blocked-by-gap` (an ogre with a collision diameter of 320 waits in front of a one-cell gap that a soldier passes). Vectors added with ranged units and flyers (issue #59 part 2): `arena-sim.ranged-fires-from-range-and-holds`, `arena-sim.flyer-crosses-lake-line`, `arena-sim.melee-cannot-hit-flyer` and `arena-sim.ranged-and-flyers-mirror-restore` (mirrored rosters with all four unit types, saved and restored three times). Vectors added with the flyer follow-ups: `arena-sim.walled-hangar-spawns-drones` (a Hangar walled in on every side spawns drones that fly out), `arena-sim.flyer-crosses-walls-and-buildings` (a drone passes a wall line and a row of Barracks without attacking them) and `arena-sim.flyer-retargets-by-distance` (after its Core falls a drone takes the nearer Core where the ground tie rule would take the higher index). Two optional inputs make them possible: `extraUnits`, a list of unit definitions in the format of `content/units.json` added to the content for the run, and `report: "positions"`, which adds `positions` (`[[id, px, py], ...]` of the living units) to the result. Vectors added with two-input consumers (issue #380, CB-5e): `arena-sim.foundry-spawns-heavies`, `arena-sim.foundry-ore-only-spawns-nothing`, `arena-sim.foundry-mixed-network` (a Foundry and a Barracks sharing Ore through a splitter; saved and restored twice), `arena-sim.foundry-border-link-feeds-power` (Power over a border link, PP-4; saved and restored) and `arena-sim.foundry-destroyed-mid-battle` (the Foundry is the weak point of a sealed base and is destroyed while holding a full Power counter; "Mid-battle removal"; saved and restored twice).
+Vectors added with the circle model (issue #59): `arena-sim.separation-converging-soldiers` (four soldiers converging on one target: equal and unequal priority in the separation pass), `arena-sim.choke-point` (twelve soldiers through a wall line with a one-cell gap), `arena-sim.producer-held-at-blocked-exit` (a barracks whose only exit is occupied holds its unit, stops drawing, the source stalls) and `arena-sim.wide-unit-blocked-by-gap` (an ogre with a collision diameter of 320 waits in front of a one-cell gap that a soldier passes). Vectors added with ranged units and flyers (issue #59 part 2): `arena-sim.ranged-fires-from-range-and-holds`, `arena-sim.flyer-crosses-lake-line`, `arena-sim.melee-cannot-hit-flyer` and `arena-sim.ranged-and-flyers-mirror-restore` (mirrored rosters with all four unit types, saved and restored three times). Vectors added with the flyer follow-ups: `arena-sim.walled-hangar-spawns-drones` (a Hangar walled in on every side spawns drones that fly out), `arena-sim.flyer-crosses-walls-and-buildings` (a drone passes a wall line and a row of Barracks without attacking them) and `arena-sim.flyer-retargets-by-distance` (after its Core falls a drone takes the nearer Core where the ground tie rule would take the higher index). Two optional inputs make them possible: `extraUnits`, a list of unit definitions in the format of `content/units.json` added to the content for the run, and `report: "positions"`, which adds `positions` (`[[id, px, py], ...]` of the living units) to the result. Vectors added with two-input consumers (issue #380, CB-5e): `arena-sim.foundry-spawns-heavies`, `arena-sim.foundry-ore-only-spawns-nothing`, `arena-sim.foundry-mixed-network` (a Foundry and a Barracks sharing Ore through a splitter; saved and restored twice), `arena-sim.foundry-border-link-feeds-power` (Power over a border link, PP-4; saved and restored) and `arena-sim.foundry-destroyed-mid-battle` (the Foundry is the weak point of a sealed base and is destroyed while holding a full Power counter; "Mid-battle removal"; saved and restored twice). Vectors added with the refineries (issue #381, CB-5d), each with a test consumer defined by `extraBuildings` (a list of building definitions in the format of `content/buildings.json`, added to the content for the run, because no shipped building takes a refined resource): `arena-sim.refinery-ab-feeds-units` and `arena-sim.refinery-bc-feeds-units` (a chain of two collectors, a refinery and the consumer, which spawns soldiers; saved and restored) and `arena-sim.refinery-destroyed-mid-battle` (a refinery is the weak point of a sealed base, stalled and holding two items when it is destroyed; the items are lost with two `lost` events and its conduits go with it; saved and restored twice).
 
 The team scripts of this kind and of `team-state-ops` may give an explicit
 `map` (in the map format) instead of `seed` and `partySize`; the vectors that
@@ -3783,7 +3978,8 @@ no unit radii at all (it does not know which unit a producer makes at this
 stage of the code), and that is the stated approximation. (The heavy unit's
 collision diameter is 110, so it also fits.) The check does not read a
 producer's costs, so a two-input producer (CB-5e, the Foundry) is a unit
-producer like any other here.
+producer like any other here. A refinery (CB-5d) is not a unit producer and is
+never listed.
 
 The summary steps are not checked. `sealedProducers(state, deps)` in the session
 package gives the same list for a screen.
@@ -4365,6 +4561,7 @@ player grows by raising tiers, by economy buildings or through a border link.
 | Collector `intervalTicks` | `buildings.json` | 20 / 14 / 10 (unchanged) | integer >= 1; a higher tier is never slower |
 | Barracks `costPerUnit` / `productionIntervalTicks` | `buildings.json` | 5 / 5 / 5 items per 100 / 70 / 50 ticks (need 0.50 / 0.71 / 1.00 per second) | integers >= 1 |
 | Foundry `costs` / `productionIntervalTicks` (issue #380, proposed, to be tuned) | `buildings.json` | `res_a` 5 and `res_b` 5 per unit, every tier, per 100 / 70 / 50 ticks (need 0.50 / 0.71 / 1.00 per resource per second, 50 / 71 / 100 per 1000 ticks); price 40 / 85 / 150, health 70 / 105 / 140; makes `unit_heavy` (health 70, damage 14, attack cooldown 10, move cooldown 6, radius 84, collision radius 55, reach 66) | each cost an integer from 1 to `MAX_TIER_COST`; not in the shop yet |
+| Refineries `bld_refinery_ab` (Composite from `res_a` + `res_b`) and `bld_refinery_bc` (Aether from `res_b` + `res_c`): `costs` / `productionIntervalTicks` / `outputPerBatch` (issue #381, proposed, to be tuned) | `buildings.json` | 3 of each input per batch of 2 items, every tier, per 60 / 42 / 30 ticks (need 50 / 71 / 100 per input per 1000 ticks, output 33 / 47 / 66 per 1000 ticks); price 35 / 75 / 130, health 60 / 90 / 120; 2x2, the first input south, the second west, the output north | `costs` as for the Foundry, `outputPerBatch` 1 to `MAX_OUTPUT_PER_BATCH`; not in the shop or the bot yet |
 | Turret `cooldownTicks` / `costPerShot` / `damage` | `buildings.json` | 10 / 7 / 5 ticks, 1 item per shot, damage 5 / 8 / 10 (need 1.00 / 1.42 / 2.00 while firing: two collectors of its tier) | integers >= 1 |
 | Overclocker `costPerStep` / `stepIntervalTicks` / `stepPercent` x `maxSteps` | `buildings.json` | 2 / 3 / 4 items per step, a step per 40 / 42 / 40 ticks, 2x5 / 3x5 / 5x5 = +10 / +15 / +25 percent | fits under `maxSourceSpeedPercent` |
 | Armory `costPerStep` / `stepIntervalTicks` / `stepPercent` x `maxSteps` | `buildings.json` | 4 / 5 / 6 items per step, a step per 80 / 70 / 60 ticks, 5x5 / 7x5 / 10x5 = +25 / +35 / +50 percent | fits under `maxUnitStrengthPercent` |
