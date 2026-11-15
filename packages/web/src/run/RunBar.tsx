@@ -10,6 +10,7 @@ import { createStore, useStore } from '../app-state.js';
 import { ActingSwitch } from '../shell/ActingSwitch.js';
 import type { BuildSession } from '../build/session.js';
 import { barLivesText } from './bar-lives.js';
+import { resultShown } from '../battle/result-shown.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 
 const noStore = createStore<{ acting: number }>({ acting: 0 });
@@ -24,6 +25,7 @@ export function RunBar(props: {
   session?: BuildSession;
 }) {
   const { state } = props;
+  const shown = useStore(resultShown);
   const view = useStore(props.session?.store ?? noStore);
   const acting = props.session === undefined ? 0 : view.acting;
   const gold = state.perPlayer[acting]?.gold ?? 0;
@@ -35,7 +37,7 @@ export function RunBar(props: {
     <span class="run-bar" id="run-bar">
       <span data-field="bar-lives">
         <SpriteIcon name="ui_icon_heart" scale={1} class="bar-icon" />
-        {barLivesText(state, props.lifeCost ?? 1, props.maxLives)}
+        {barLivesText(state, props.lifeCost ?? 1, props.maxLives, shown)}
       </span>
       {showGold ? (
         <span data-field="bar-gold" data-gold={gold}>

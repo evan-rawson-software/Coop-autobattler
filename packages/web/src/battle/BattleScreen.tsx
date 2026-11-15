@@ -8,6 +8,7 @@
 import { hashJson, type TeamState } from '@game/core';
 import { Component, type ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { resultShown } from './result-shown.js';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
 import { describeUnitAt } from './unit-hover.js';
@@ -437,6 +438,17 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
       window.clearTimeout(t);
     };
   }, [phase, pb]);
+
+  // Tell the run's top bar whether the result card is open.
+  useEffect(() => {
+    resultShown.set(phase === 'summary');
+  }, [phase]);
+  useEffect(
+    () => () => {
+      resultShown.set(false);
+    },
+    [],
+  );
 
   // The playback loop.
   useEffect(() => {

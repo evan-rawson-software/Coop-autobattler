@@ -23,4 +23,22 @@ describe('barLivesText', () => {
       barLivesText({ step: 'pvp_summary', lives: 5, pending: null }, 1, 5),
     ).toBe('Lives 5 / 5');
   });
+  test('while the result card is not open the bar shows the lives before the battle', () => {
+    expect(
+      barLivesText(
+        { step: 'pvp_summary', lives: 5, pending: lost },
+        1,
+        5,
+        false,
+      ),
+    ).toBe('Lives 5 / 5');
+    expect(
+      barLivesText(
+        { step: 'pvp_summary', lives: 5, pending: lost },
+        1,
+        5,
+        true,
+      ),
+    ).toBe('Lives 4 / 5 (−1)');
+  });
 });
