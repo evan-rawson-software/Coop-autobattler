@@ -453,9 +453,11 @@ export { type EnemyPath, previewEnemyPaths } from './enemy-paths.js';
 // PvE threats (see "PvE threats")
 export {
   type ArchetypePick,
+  type BossPickInput,
   buildStronghold,
   generateThreat,
   pickArchetypes,
+  pickBoss,
   scaleShare,
   type Stronghold,
   type StrongholdBuilding,

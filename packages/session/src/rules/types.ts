@@ -18,6 +18,7 @@ import type {
   MapgenConfig,
   Rng,
   RewardsConfig,
+  ThreatsConfig,
   TeamState,
 } from '@game/core';
 
@@ -105,6 +106,11 @@ export type OpponentKind = 'pve' | 'ghost' | 'boss';
 export interface Opponent {
   readonly kind: OpponentKind;
   readonly label: string;
+  /**
+   * The archetype ID of a boss battle (kind `boss`). Optional: absent for
+   * other opponents and in saves made before the boss was chosen in the shop.
+   */
+  readonly boss?: string;
 }
 
 export interface BattleResult {
@@ -138,6 +144,12 @@ export interface PvpOpponentChoice {
   /** The ghost owner's label, or `the boss`. */
   readonly label: string;
   readonly ghost: GhostSnapshot | null;
+  /**
+   * The archetype ID of the boss, fixed with the opponent (kind `boss`,
+   * issue #397). Optional: absent for a ghost and in older saves, where the
+   * archetype is drawn at battle time as before.
+   */
+  readonly boss?: string;
 }
 
 export interface PveRecord {
@@ -533,6 +545,11 @@ export interface GhostRules {
   /** For the value bound and the modifier checks of `validateGhostSnapshot`. */
   readonly economy: EconomyConfig;
   readonly events: EventsConfig;
+  /**
+   * For choosing the boss in the shop (issue #397). Set by `createGameDeps`;
+   * without it the boss is not fixed in the shop and is drawn at battle time.
+   */
+  readonly threats?: ThreatsConfig;
 }
 
 export interface RunDeps {

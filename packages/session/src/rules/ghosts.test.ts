@@ -254,6 +254,7 @@ describe('matching and selection', () => {
       kind: 'boss',
       label: BOSS_LABEL,
       ghost: null,
+      boss: 'arch_boss',
     });
     const done = await playUntil(b, atPvpSummary(1));
     expect(done.thisRound.pvp?.opponent.kind).toBe('boss');

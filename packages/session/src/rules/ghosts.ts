@@ -23,6 +23,7 @@ import {
   ghostKey,
   canonicalJsonOrNull,
   hashJson,
+  pickBoss,
   validateGhostSnapshot,
   GHOST_MAX_LABEL_LENGTH,
   GHOST_SNAPSHOT_FORMAT_VERSION,
@@ -31,6 +32,8 @@ import {
   type GhostSnapshot,
   type GhostValidationContext,
   type Json,
+  type Rng,
+  type ThreatsConfig,
   sortedKeys,
 } from '@game/core';
 import { drawStream, streamLabels } from './streams.js';
@@ -278,6 +281,53 @@ export function selectionPending(
   );
 }
 
+/**
+ * The boss met in the run's most recent boss battle (not just the last
+ * round), from the round records; undefined when there was none or the
+ * record predates the boss ID.
+ */
+export function previousBossOf(state: RunState): string | undefined {
+  const rounds = [...state.history, state.thisRound];
+  for (let i = rounds.length - 1; i >= 0; i--) {
+    const o = rounds[i]?.pvp?.opponent;
+    if (o !== undefined && o.kind === 'boss' && o.boss !== undefined) {
+      return o.boss;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * The boss fixed for this round's PvP battle (issue #397): `pickBoss` with
+ * the round, the party size and `previousBossOf`, on the stream
+ * `ghost:r<round>` -> child `boss`. A child draws nothing from its parent, so
+ * the ghost draw on the same stream is unchanged. `rng` is that stream.
+ */
+function bossChoice(
+  state: RunState,
+  stream: Rng,
+  threats: ThreatsConfig | undefined,
+): PvpOpponentChoice {
+  const choice: PvpOpponentChoice = {
+    round: state.round,
+    kind: 'boss',
+    label: BOSS_LABEL,
+    ghost: null,
+  };
+  if (threats === undefined) return choice;
+  const previousBoss = previousBossOf(state);
+  const boss = pickBoss(
+    {
+      round: state.round,
+      partySize: state.players.length,
+      ...(previousBoss === undefined ? {} : { previousBoss }),
+    },
+    threats,
+    stream.child('boss'),
+  );
+  return { ...choice, boss };
+}
+
 export interface GhostSelection {
   /** The state with the generator advanced and `pvpOpponent` set. */
   readonly state: RunState;
@@ -328,6 +378,7 @@ export function selectGhost(
   state: RunState,
   raw: readonly unknown[],
   ctx: GhostValidationContext,
+  threats?: ThreatsConfig,
 ): GhostSelection {
   const candidates = eligibleGhosts(
     raw.slice(0, MAX_GHOST_CANDIDATES),
@@ -341,7 +392,7 @@ export function selectGhost(
       : candidates[d.stream.nextInt(candidates.length)];
   const choice: PvpOpponentChoice =
     picked === undefined
-      ? { round: state.round, kind: 'boss', label: BOSS_LABEL, ghost: null }
+      ? bossChoice(state, d.stream, threats)
       : {
           round: state.round,
           kind: 'ghost',
@@ -384,7 +435,9 @@ export const selectGhostHandler: IntentHandler = {
     if (vctx === null) return { ok: false, reason: 'unknown_intent' };
     if (state.leg !== 'pve') return { ok: false, reason: 'wrong_step' };
     if (hasSelection(state)) return { ok: false, reason: 'already_selected' };
-    if (ctx.replay === true) return replaySelection(ctx, vctx);
+    if (ctx.replay === true) {
+      return replaySelection(ctx, vctx, deps.ghosts?.threats);
+    }
     const list = intent['candidates'];
     if (!Array.isArray(list) || list.length > MAX_GHOST_CANDIDATES) {
       return {
@@ -395,7 +448,12 @@ export const selectGhostHandler: IntentHandler = {
     }
     let sel: GhostSelection;
     try {
-      sel = selectGhost(state, list as readonly unknown[], vctx);
+      sel = selectGhost(
+        state,
+        list as readonly unknown[],
+        vctx,
+        deps.ghosts?.threats,
+      );
     } catch (e) {
       // Never throw out of a handler: report it, the controller records a
       // selection failure.
@@ -443,6 +501,7 @@ function mismatch(detail: string): HandlerResult {
 function replaySelection(
   ctx: HandlerContext,
   vctx: GhostValidationContext,
+  threats: ThreatsConfig | undefined,
 ): HandlerResult {
   const { state, intent } = ctx;
   const keys = sortedKeys(intent);
@@ -471,12 +530,7 @@ function replaySelection(
     if (index !== null || chosen !== null || chosenHash !== null) {
       return mismatch('a boss selection must have no index and no snapshot');
     }
-    const choice: PvpOpponentChoice = {
-      round: state.round,
-      kind: 'boss',
-      label: BOSS_LABEL,
-      ghost: null,
-    };
+    const choice = bossChoice(state, d.stream, threats);
     return {
       ok: true,
       state: { ...d.state, pvpOpponent: choice },

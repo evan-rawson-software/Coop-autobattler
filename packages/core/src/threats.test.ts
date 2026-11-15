@@ -5,6 +5,7 @@ import {
   buildStronghold,
   generateThreat,
   pickArchetypes,
+  pickBoss,
   scaleShare,
   threatSummary,
   type ThreatInput,
@@ -18,6 +19,7 @@ import {
   type ThreatType,
   type ThreatsConfig,
 } from './threats.js';
+import { Rng } from './rng.js';
 import { content, got, mapgen, threats } from './testing/support.js';
 
 /** The budget formula computed independently with BigInt. */
@@ -168,6 +170,35 @@ describe('the loader', () => {
       /safe budget limit/,
     );
     expect(loadThreats(null, ctx).ok).toBe(false);
+  });
+
+  test('boss gating fields: required for a boss, rejected otherwise, bounded', () => {
+    const errs = (f: (a: Record<string, unknown>[]) => void): string => {
+      const r = loadThreats(
+        edit((d) => {
+          f(d['archetypes'] as Record<string, unknown>[]);
+        }),
+        ctx,
+      );
+      return r.ok ? '' : r.errors.join('\n');
+    };
+    const bossIx = threats.archetypes.findIndex((a) => a.bossOnly);
+    const boss = (a: Record<string, unknown>[]) =>
+      a[bossIx] as Record<string, unknown>;
+    expect(errs((a) => delete boss(a)['fromRound'])).toMatch(/fromRound/);
+    expect(errs((a) => delete boss(a)['minPartySize'])).toMatch(/minPartySize/);
+    expect(errs((a) => (boss(a)['fromRound'] = 0))).toMatch(/fromRound/);
+    expect(errs((a) => (boss(a)['minPartySize'] = 5))).toMatch(
+      /at most maxPartySize/,
+    );
+    expect(errs((a) => (boss(a)['minPartySize'] = 1.5))).toMatch(
+      /minPartySize/,
+    );
+    expect(
+      errs((a) => ((a[0] as Record<string, unknown>)['fromRound'] = 1)),
+    ).toMatch(/only allowed when "bossOnly" is true/);
+    // A boss roster needs one boss from round 1 for one player.
+    expect(errs((a) => (boss(a)['fromRound'] = 2))).toMatch(/always be drawn/);
   });
 
   test('easy, medium and hard multipliers must increase strictly', () => {
@@ -525,6 +556,57 @@ describe('pickArchetypes and threatSummary', () => {
     expect(
       threatSummary({ ...p, type: 'easy', waves: [] }, content),
     ).toMatchObject({ level: 1, firstWaveTick: null, totalUnits: 0 });
+  });
+});
+
+describe('pickBoss', () => {
+  const arch = threats.archetypes.find((a) => a.bossOnly);
+  const roster: ThreatsConfig = {
+    ...threats,
+    archetypes: [
+      { ...got(arch), id: 'arch_a', fromRound: 1, minPartySize: 1 },
+      { ...got(arch), id: 'arch_b', fromRound: 3, minPartySize: 1 },
+      { ...got(arch), id: 'arch_c', fromRound: 5, minPartySize: 2 },
+    ],
+  };
+  const pick = (
+    round: number,
+    partySize: number,
+    seed: number,
+    previousBoss?: string,
+  ) =>
+    pickBoss(
+      {
+        round,
+        partySize,
+        ...(previousBoss === undefined ? {} : { previousBoss }),
+      },
+      roster,
+      Rng.fromSeed(seed),
+    );
+  const seen = (f: (seed: number) => string) =>
+    [...new Set(Array.from({ length: 60 }, (_, i) => f(i)))].sort();
+
+  test('round and party size gate the eligible list', () => {
+    expect(seen((i) => pick(2, 4, i))).toEqual(['arch_a']);
+    expect(seen((i) => pick(3, 4, i))).toEqual(['arch_a', 'arch_b']);
+    expect(seen((i) => pick(5, 1, i))).toEqual(['arch_a', 'arch_b']);
+    expect(seen((i) => pick(5, 2, i))).toEqual(['arch_a', 'arch_b', 'arch_c']);
+  });
+
+  test('the previous boss is excluded unless it is the only one', () => {
+    expect(seen((i) => pick(3, 1, i, 'arch_a'))).toEqual(['arch_b']);
+    expect(seen((i) => pick(5, 2, i, 'arch_b'))).toEqual(['arch_a', 'arch_c']);
+    expect(seen((i) => pick(1, 1, i, 'arch_a'))).toEqual(['arch_a']);
+  });
+
+  test('is one nextInt on the rng and is pure', () => {
+    const a = Rng.fromSeed(9);
+    const b = Rng.fromSeed(9);
+    expect(pickBoss({ round: 5, partySize: 2 }, roster, a)).toBe(
+      ['arch_a', 'arch_b', 'arch_c'][b.nextInt(3)],
+    );
+    expect(a.getState()).toEqual(b.getState());
   });
 });
 

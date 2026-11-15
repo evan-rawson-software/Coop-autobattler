@@ -180,6 +180,16 @@
             "description": "True: never offered by pickArchetypes (used as a boss).",
             "type": "boolean"
           },
+          "fromRound": {
+            "description": "Required when bossOnly is true, rejected otherwise: the first round this boss can be drawn.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "minPartySize": {
+            "description": "Required when bossOnly is true, rejected otherwise: the smallest party size that can meet this boss (at most maxPartySize).",
+            "type": "integer",
+            "minimum": 1
+          },
           "waveSharePercent": {
             "description": "Percent of the budget spent on waves; the rest goes to the stronghold.",
             "type": "integer",

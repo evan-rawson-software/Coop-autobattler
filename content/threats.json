@@ -109,6 +109,8 @@
     {
       "id": "arch_boss",
       "bossOnly": true,
+      "fromRound": 1,
+      "minPartySize": 1,
       "waveSharePercent": 55,
       "waves": {
         "firstTick": 200,

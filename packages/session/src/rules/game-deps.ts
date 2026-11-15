@@ -121,6 +121,7 @@ export function createGameDeps(
               : { ownerLabel: overrides.ghosts.ownerLabel }),
             economy: configs.economy,
             events: configs.events,
+            threats: configs.threats,
           },
         }),
   };

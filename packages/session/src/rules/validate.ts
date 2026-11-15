@@ -549,7 +549,9 @@ function validBattleRecord(v: unknown, pve: boolean): boolean {
   return (
     isRecord(o) &&
     (o['kind'] === 'pve' || o['kind'] === 'ghost' || o['kind'] === 'boss') &&
-    typeof o['label'] === 'string'
+    typeof o['label'] === 'string' &&
+    (o['boss'] === undefined ||
+      (o['kind'] === 'boss' && typeof o['boss'] === 'string'))
   );
 }
 
@@ -597,6 +599,24 @@ function checkGhostFields(
     if (o['ghost'] !== null || o['label'] !== BOSS_LABEL) {
       err('pvpOpponent: a boss has no ghost and the label "the boss".');
     }
+    const boss = o['boss'];
+    if (boss !== undefined) {
+      if (typeof boss !== 'string') {
+        err('pvpOpponent.boss: must be a string.');
+      } else {
+        const threats = deps.ghosts?.threats;
+        if (
+          threats !== undefined &&
+          !threats.archetypes.some((a) => a.id === boss && a.bossOnly)
+        ) {
+          err('pvpOpponent.boss: not a boss-only archetype.');
+        }
+      }
+    }
+    return;
+  }
+  if ('boss' in o) {
+    err('pvpOpponent: only a boss opponent has a "boss".');
     return;
   }
   const ctx = ghostContext(deps);
