@@ -79,6 +79,11 @@ export interface ArchetypeDef {
   readonly stronghold: StrongholdTemplate;
   /** Boss-only archetypes: Core bursts at health thresholds (MM-9d). */
   readonly brood?: BroodTemplate;
+  /**
+   * Boss-only archetypes with `minPartySize` of at least 2: the boss Cores
+   * share one health pool (MM-9d, "Linked Cores"). Absent when false.
+   */
+  readonly linkedCores?: true;
 }
 
 export interface RingLayoutConfig {
@@ -529,6 +534,7 @@ export function loadThreats(
         'waves',
         'stronghold',
         'brood',
+        'linkedCores',
       ]),
       at,
       errors,
@@ -560,6 +566,26 @@ export function loadThreats(
       for (const k of ['fromRound', 'minPartySize']) {
         if (k in e) {
           errors.push(`${at}: "${k}" is only allowed when "bossOnly" is true.`);
+        }
+      }
+    }
+    let linkedCores = false;
+    if (e['linkedCores'] !== undefined) {
+      if (typeof e['linkedCores'] !== 'boolean') {
+        errors.push(`${at}: "linkedCores" must be true or false.`);
+      } else if (e['linkedCores']) {
+        linkedCores = true;
+        if (e['bossOnly'] !== true) {
+          errors.push(
+            `${at}: "linkedCores" is only allowed when "bossOnly" is true.`,
+          );
+        } else if (minPartySize !== undefined && minPartySize < 2) {
+          errors.push(
+            `${at}: "linkedCores" needs "minPartySize" of at least 2 (one Core has nothing to share).`,
+          );
+        }
+        if (e['brood'] !== undefined) {
+          errors.push(`${at}: "linkedCores" cannot be combined with "brood".`);
         }
       }
     }
@@ -772,6 +798,7 @@ export function loadThreats(
         waves,
         stronghold,
         ...(brood === undefined ? {} : { brood }),
+        ...(linkedCores ? { linkedCores: true as const } : {}),
       });
     }
   });

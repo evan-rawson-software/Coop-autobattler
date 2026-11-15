@@ -66,6 +66,7 @@ describe('generated threats stay within the content bounds', () => {
     for (const arch of threats.archetypes) {
       for (const type of THREAT_TYPES) {
         for (const size of SIZES) {
+          if (size < (arch.minPartySize ?? 1)) continue;
           const team = party(size);
           for (let round = 1; round <= ROUNDS; round++) {
             const t = profile(arch.id, type, size, round);
@@ -98,6 +99,7 @@ describe('generated threats stay within the content bounds', () => {
   test('sampled boss threats simulate to the end', () => {
     for (const arch of threats.archetypes) {
       for (const size of [1, 4]) {
+        if (size < (arch.minPartySize ?? 1)) continue;
         for (const round of [30, 42, ROUNDS]) {
           const t = profile(arch.id, 'boss', size, round);
           const r = simulatePveBattle(

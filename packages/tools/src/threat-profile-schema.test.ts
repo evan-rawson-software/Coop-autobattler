@@ -52,6 +52,7 @@ describe('threat-profile.schema.json', () => {
     for (const arch of threats.archetypes) {
       for (const type of THREAT_TYPES) {
         for (const partySize of [1, 4]) {
+          if (partySize < (arch.minPartySize ?? 1)) continue;
           for (const round of [1, 7, 15, 40]) {
             const profile = generateThreat(
               { seed: round, round, type, partySize, archetype: arch.id },

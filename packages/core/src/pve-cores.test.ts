@@ -57,7 +57,7 @@ describe('one Core per player (PP-14)', () => {
   test('every threat, boss included, has one Core per plot, health split evenly, clamp never reached', () => {
     for (const arch of threats.archetypes) {
       for (const type of THREAT_TYPES) {
-        for (let size = 1; size <= 4; size++) {
+        for (let size = arch.minPartySize ?? 1; size <= 4; size++) {
           for (let round = 1; round <= ROUNDS; round++) {
             const p = profile(arch.id, type, size, round);
             const where = `${arch.id} ${type} ${String(size)}p r${String(round)}`;
@@ -122,7 +122,7 @@ describe('one Core per player (PP-14)', () => {
 
   test('every building stands inside one plot and belongs to it; every stronghold builds (rounds 1 to 63)', () => {
     for (const arch of threats.archetypes) {
-      for (let size = 1; size <= 4; size++) {
+      for (let size = arch.minPartySize ?? 1; size <= 4; size++) {
         for (let round = 1; round <= 63; round++) {
           const p = profile(arch.id, 'hard', size, round);
           const state = buildStronghold(p, content, mapgen);

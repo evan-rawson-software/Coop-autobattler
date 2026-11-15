@@ -66,6 +66,20 @@ that way.
   Core-major; a burst counts as a wave in the strength conversion. The state
   has no `bursting` field unless a side has bursts (a state hash of any other
   battle must not change).
+- **Linked Cores.** A side with `linkedCores` keeps its Cores' own `hp` as
+  they are while the pool stands; every sum, comparison and overkill below
+  reads the pool instead, and the pool is the only thing damage touches. Sum
+  the tick's damage on all of the side's Cores first (the saturating sum of
+  "Integer math conventions" over the Cores in player order, attacks and
+  decay together; a separate saturating sum of the attacks alone for the
+  `buildingDamageDealt` credit), then subtract once. The decay is added once
+  (to the lowest living Core) and logged once. When the pool is 0 or below,
+  set every living Core of the side to 0 in that step (player order); the
+  first of them carries the overkill, the others 0, so the generic "sum the
+  overkill of the Cores destroyed in the latest tick" needs no special case.
+  Rung 1 of the ladder still counts Cores standing (all of them, or none), and
+  rung 2 reads the pool as `sumHp`. The state gets a `linkedPools` list only
+  when a side has `linkedCores`.
 - **Per-resource counters.** A two-input consumer (CB-5e) keeps one counter per
   resource. They are a plain list ordered by resource ID (code point order),
   the order of the tier's `costs` after `sortedKeys`, and are only ever read
@@ -360,6 +374,17 @@ at most `maxPartySize * 5` Core-and-threshold pairs, each with one entry per
 composition unit, `count` at least 1 (bounded by `maxUnitsPerWavePerPlot *
 partySize`); the strength they share is bounded like a wave's (step 8 of
 "Generation").
+
+An archetype's optional `linkedCores` (MM-9d, "Linked Cores") is a boolean,
+allowed only when `bossOnly` is true and, when it is `true`, only with
+`minPartySize` of at least 2 and without `brood` (the loader rejects each
+other combination: "only allowed when \"bossOnly\" is true", "\"minPartySize\" of
+at least 2", "cannot be combined with \"brood\""; `threats.schema.json` has
+the type and the boss-only note). The profile's `stronghold.sharedHealth` is
+the sum of the Cores' `health`, each at most `MAX_HEALTH` and at most
+`maxPartySize` Cores, so at most `8 * 1e12`, an exact integer. A linked pool
+starts as the sum of its Cores' starting health (`coreHealths`, at most
+`MAX_HEALTH` each), so the same bound holds in a battle.
 
 A tier's `costs` (CB-5e) holds one integer from 1 to `MAX_TIER_COST` per
 resource, at most one resource per input (so at most four); the combined cost
@@ -1940,7 +1965,11 @@ state at tick 0:
   counters");
 - `sideOptions`: present **only** when a side was given options (PvE battles, see
   "Side options"); a ghost battle's state has no such field, so its hash is
-  unchanged.
+  unchanged;
+- `linkedPools`: present **only** when a side has the `linkedCores` option
+  (Linked Cores, MM-9d): `{side, hp, remaining}` per such side, initially the
+  sum of that side's Cores' starting health for both `hp` and `remaining`
+  (see "Linked Cores").
 
 Everything else (the grid, the compiled wiring, cached fields) is derived from
 this state by `createArenaContext(sim, content, simConfig, {events?})`, so a
@@ -2219,6 +2248,33 @@ exactly like the original.
    applied together with the unit attacks) and recorded as
    `overload_core_damage {side, core, damage}` after the `unit_attacked` events, for **every** living Core in the order side 0 then side 1, ascending player index (each takes the full amount; a destroyed Core takes nothing). A
    Core that is already destroyed takes nothing and records nothing.
+   **Linked Cores (MM-9d; only a side with the `linkedCores` option).** The
+   Cores of such a side take no damage themselves: all damage to any of them
+   goes to the side's shared pool, once. For each such side, the damage of
+   the tick on its Cores is gathered in player order: `D` is the saturating
+   sum (`addDamage`, cap `2^52`) of the per-Core sums of this step (unit
+   attacks and the Overload decay) and `A` the saturating sum of the attack
+   hits alone. Hits on different Cores in the same tick therefore add up. The
+   Overload decay is **not** applied per Core: on an Overload beat the
+   decay amount is added once, to the lowest living Core of the side (the
+   other side's Cores still take it each), and one `overload_core_damage` is
+   recorded for it, naming that Core. Then, instead of the per-Core
+   application: the side with the pool `h` before this tick has `A' = min(A,
+   h)` added to the other side's `buildingDamageDealt` (the same rule as for
+   a building, the pool being the building), `remaining = h - D` (unclamped)
+   and `pool = max(0, remaining)`. If the pool is now 0, every living Core of
+   the side gets `hp = 0` in this step, in player order, and its `remaining`
+   is `remaining` of the pool for the first of them (the lowest player index
+   that was alive) and 0 for the others; step 6 then destroys them all in the
+   usual way (so all fall in one tick, `core_destroyed` in Core order, and
+   each fall tick is the current tick). While the pool is above 0 the Cores'
+   own `hp` and `remaining` stay at their starting value. Events: the
+   `unit_attacked` of a hit on a Core of such a side, and its
+   `overload_core_damage`, carry the extra field `pool`: the pool's value at
+   the start of the tick (before any damage of the tick; hits of one tick all
+   show the same value). The field is absent for a side without the option.
+   A Core burst (below) is not used together with the pool (the loader
+   rejects the combination).
    **Core bursts (MM-9d; only a side with the `bursts` option).** After all
    damage of the tick has been applied to the Cores (unit attacks, Overload
    decay, and for the party's Cores everything else), for each Core of that
@@ -2696,6 +2752,19 @@ Overload guarantees that battles end. Constants (`content/sim.json`):
   (13 beats take 455, 14 take 525), so with the standard constants it falls
   at tick 3100 (start 1800), that is 3 minutes 10 seconds, and the battle
   ends at `endTick` 3101 at the latest.
+- **Linked Cores (MM-9d).** A side with `linkedCores` takes the decay once
+  from its pool, not once per Core: on a beat the amount `level *
+  overloadCoreDamageStep` is added to the side's damage of the tick a single
+  time (step 4), so the pool falls by `5 * n * (n + 1) / 2` after `n` beats.
+  The pool is therefore a single Core of that total health for the deadline:
+  `overloadDeadline(simConfig, poolStartingHealth)` is the tick the decay
+  alone empties it (a screen passes the pool, the sum, as one entry of
+  `overloadOutcome`'s list for that side, not one entry per Core), and as
+  always other damage makes it earlier. In PvE this is the intended deadline:
+  the party's Cores (not linked) each take the full decay, so the pool, being
+  larger than any single Core, outlasts the party's Cores unless the party
+  damages it; the party must break the pool before its own Cores' deadline
+  (3100 ticks for the standard 500 health) or the stronghold wins.
 - **PvE: the deadline is intended (CB-12, CB-29, #43).**
   In a PvE battle side 1's Cores are the stronghold's, whose total health is
   `coreHealthPerBudget` times the budget, at least `minCoreHealth` per Core,
@@ -2740,7 +2809,7 @@ shot is recorded in step 3, before the step 4 attack events):
 | `unit_spawned`       | `unit`, `side`, `def`, `px`, `py` (the centre, sub-cell units), `building` (the producer's ID, or 0 for a scheduled wave, see "Side options"), `owner`, `target` (PP-11) |
 | `unit_retargeted`    | `unit`, `target` (the new target Core, a player index, or -1); recorded after the destruction events of step 6 |
 | `burst_released`     | `side`, `core` (the Core, a player index), `thresholdPercent`, `units` (a list of `{unit, count}` in composition order); recorded in step 4 after the damage, one per Core and fired threshold (Core ascending, threshold descending), see "Core bursts" |
-| `unit_attacked`      | `unit`, `target`, `damage`                                      |
+| `unit_attacked`      | `unit`, `target`, `damage`; and `pool` (the shared pool at the start of the tick) when the target is a Core of a side with `linkedCores` |
 | `splash`             | `attacker` (the unit with `splash`), `x`, `y` (the primary target's centre, sub-cell units), `targets` (a list of `{unit, damage}` of the secondary targets in unit id order, damage after their armor; may be empty); recorded right after the attacker's `unit_attacked` event, only when the attack was on a unit |
 | `turret_fired`       | `side` (the owner), `building` (the turret), `unit`, `damage`   |
 | `unit_died`          | `unit`                                                          |
@@ -2750,7 +2819,7 @@ shot is recorded in step 3, before the step 4 attack events):
 | `ramp_step`          | `side`, `building`, `effect`, `steps` (the new step count)      |
 | `overload_started`   | (none)                                                          |
 | `overload_level`     | `level` (the new level)                                         |
-| `overload_core_damage` | `side`, `core`, `damage`                                      |
+| `overload_core_damage` | `side`, `core`, `damage`; and `pool` (as above) for a side with `linkedCores`, which has one such event per beat, naming its lowest living Core |
 | `zone_revealed`      | `zone` (the neutral zone); recorded by a battle at tick 0, first in the log |
 | `battle_ended`       | `winner`, `reason`; recorded by a battle as its last event, `tick` is the last tick that ran |
 
@@ -3126,6 +3195,22 @@ most `2^52 - hp`, and two Cores whose sums both saturated differ only by their
 the sum of the overkill of its Cores that were destroyed in the **latest**
 tick, in player order, saturating at `2^52` (`sumOverkill`).
 
+**Linked Cores (MM-9d).** For a side with `linkedCores` the shared pool takes
+the place of the Cores' health, and the same rules apply to it as to one Core
+(per step 4 of "One battle tick"): `remaining = hp - min(2^52, exact sum of
+the tick's damage on all its Cores)` with `hp` the pool before the tick, the
+pool clamped at 0 for display, overkill = `-remaining` once the pool is 0 (0
+if it ended exactly at 0). The overkill is counted **once**: the first Core to
+fall (the lowest player index) carries the pool's `remaining` and the other
+Cores of the side 0, so the side's overkill (`sumOverkill` over the Cores
+destroyed in the latest tick) equals the pool's. The Cores' own `hp` stays at
+their starting health while the pool stands, so `cores[p].health` of the
+battle summary shows that number (it is for layout and display) and 0 once
+they fell. Everything below that reads "the side's Core health" (`sumHp`,
+`coreHealth` of the summary) reads the pool instead (a living pool value, 0
+when it fell) and never the sum of the Cores. `coreMaxHealth` (`sumMax`) is
+the sum of the Cores' starting health, which is the pool's starting value.
+
 **Part of the saved state (issue #157).** Each Core entry of the `health`
 list carries `remaining` (the unclamped health after the latest tick that
 damaged it; equal to `hp` while the Core stands, so the value starts as the
@@ -3148,7 +3233,10 @@ number of living Cores of side `s`.
 
 1. **One side has no Core left** (`standing[s] = 0`, the other has some): the
    other side wins, `reason: "core_destroyed"`. Losing some but not all Cores
-   ends nothing.
+   ends nothing. For a side with `linkedCores` all Cores fall in the tick the
+   pool reaches 0 and none before, so the party wins exactly when the pool is
+   empty, in the tick it empties (with the Overload decay as one more
+   source of damage: see "Overload"); a side's party Cores are never linked.
 2. **Both sides lost their last Core in this tick**: the ladder decides,
    starting at rung 3.
 3. **Time limit**: `maxBattleTicks` (12000) ticks have been simulated and
@@ -3165,9 +3253,9 @@ defender wins no tie.
 
 | Rung | The winner has | `reason` |
 | ---- | -------------- | -------- |
-| 1 | more Cores standing | `time_limit` |
-| 2 | the larger share of total Core health, `sumHp / sumMax`, compared exactly with `compareFractions` | `time_limit` |
-| 3 | less overkill (above) | `tiebreak_overkill` |
+| 1 | more Cores standing (a linked side has all of its Cores or none) | `time_limit` |
+| 2 | the larger share of total Core health, `sumHp / sumMax`, compared exactly with `compareFractions` (a linked side's `sumHp` is its pool, counted once; `sumMax` the sum of its Cores' starting health) | `time_limit` |
+| 3 | less overkill (above; a linked side's is the pool's, once) | `tiebreak_overkill` |
 | 4 | more building damage dealt (`buildingDamageDealt`) | `tiebreak_building_damage` |
 | 5 | more units killed (`unitsKilled`) | `tiebreak_kills` |
 | 6 | otherwise the attacker, side 0 | `tiebreak_attacker` |
@@ -3192,7 +3280,11 @@ a field of `ArenaSim`; the kills are derived from `unitsDied`):
   health once). Turret shots hit units only. Damage to units is never counted
   here. If a Core takes attack damage and decay in the same tick, the decay
   does not reduce the credited attack damage (`min(A, h)` is computed with the
-  attacks alone).
+  attacks alone). **Linked Cores:** the Cores of a side with `linkedCores`
+  count as one building: `A` is the saturating sum of the tick's attacks on
+  all of them and `h` the pool before the tick, so a tick's credit is
+  `min(A, pool)` once (never more than the pool had, whatever the number of
+  Cores hit).
 - **`unitsKilled[s]`**: the number of enemy units that died from side `s`'s
   damage. A unit takes damage only from the other side's units and turrets (no
   unit attacks its own side, Overload does not damage units), so every unit
@@ -3382,6 +3474,16 @@ identically; with none the field is absent.
   leave). Burst units are ordinary wave units afterwards (they retarget like
   any unit when their Core falls).
 
+- **`linkedCores`** (Linked Cores, MM-9d): a boolean. When `true` the side's
+  Cores share one health pool: `linkedPools` gets `{side, hp, remaining}` with
+  `hp = remaining` = the sum of the Cores' starting health (their
+  `coreHealths` entries, saturating `addInt`, so at most `8 * MAX_HEALTH`).
+  The damage rules are in "One battle tick", step 4 ("Linked Cores"), the
+  readers of Core health in "Core health and overkill", "End conditions" and
+  "Tiebreak counters". `false` or absent changes nothing (no `linkedPools`
+  field, so the state hash of every other battle is unchanged). A PvE threat
+  has it exactly when its profile has `stronghold.sharedHealth`.
+
 Everything else (unit behaviour, aggro, breach logic, Overload, end conditions
 and the tiebreak ladder) is unchanged.
 
@@ -3429,7 +3531,8 @@ player, rounds 1 to 15: 100, 125, 156, 195, 243, 303, 378, 472, 590, 737, 921,
   waves: [{ tick, unit, count }],
   stronghold: { cores: [{ x, y, health }],
                 buildings: [{ def, tier, x, y, rotation }],
-                bursts?: [{ core, thresholdPercent, unit, count }] } }
+                bursts?: [{ core, thresholdPercent, unit, count }],
+                sharedHealth?: number } }
 ```
 
 `cores[p]` is the Core of plot `p`: the position of its lowest cell, in the
@@ -3440,7 +3543,13 @@ profiles and hashes are unchanged: each entry says that Core `core` releases
 `count` units of `unit` when its health falls to `thresholdPercent` of its
 starting health (one entry per unit type of the burst, ordered by `core`,
 then the archetype's threshold order, then composition order). The battle
-reads them as the `bursts` side option.
+reads them as the `bursts` side option. `sharedHealth` (Linked Cores, MM-9d)
+is present only for an archetype with `linkedCores` and absent for every
+other archetype (their profiles and hashes are unchanged): the total health
+of the Cores, the sum of the `health` fields computed after any clamp. The
+per-Core `health` fields stay for layout and display; the battle reads
+`sharedHealth` as the `linkedCores` side option (the pool itself starts as the
+sum of the Cores' starting health, which is the same number).
 
 It is everything the battle needs; there are no hidden inputs. `waves` are in
 tick order (the units of one wave share a tick, one entry per unit type);
@@ -3457,7 +3566,8 @@ composition: [{unit, weight}], signature?}` and `stronghold`
 `{coreHealthPerBudget, wallSharePercent, turretSharePercent, layout}`.
 `bossOnly` archetypes are never offered by `pickArchetypes`; they have
 `fromRound` and `minPartySize` (see "Choosing and summarising", `pickBoss`) and
-may have `brood` `{thresholdsPercent: [..], sharePercent}` (Core bursts, below).
+may have `brood` `{thresholdsPercent: [..], sharePercent}` (Core bursts, below)
+or `linkedCores: true` (Linked Cores, below).
 Shipped values:
 
 | Archetype | Wave share | Waves (first tick, interval, count, growth) | Composition | Stronghold (Core per budget, walls, turrets, layout) |
@@ -3467,6 +3577,7 @@ Shipped values:
 | Escalator | 75 | 100, 75, 8, 160 | soldier 3 : raider 1 | 300, 25, 15, `line` |
 | Boss | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Brood stronghold (`arch_boss_brood`, boss only, from round 3, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
+| Linked Cores (`arch_boss_linked`, boss only, from round 5, party size 2 or more) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 
 Rusher tests defence (early frequent waves, a small open Core); Fortress tests
 ramp and siege (late light waves, a big walled Core with turrets); Escalator
@@ -3475,7 +3586,10 @@ every-Nth-wave signature being all raiders (a fast swarm of small, weak units; s
 `brood: {thresholdsPercent: [75, 50, 25], sharePercent: 30}`: each of its Cores
 releases a burst of units when it falls to 75, 50 and 25 percent of its
 starting health (MM-9d). Its burst budget comes out of the stronghold budget,
-so its Cores are smaller than the Boss's. Unit
+so its Cores are smaller than the Boss's. The Linked Cores stronghold also has
+the Boss's waves and stronghold exactly (no budget is set aside; the Cores
+have the Boss's size), plus `linkedCores: true`: its Cores share one health
+pool (below). Unit
 prices for spending wave budget are `unitCost` in `threats.json` (soldier 10,
 raider 8, archer 14, drone 16; about 2 times the producer's tier 1 `costPerUnit`
 of 5, 4, 7 and 8, rounded). Building prices for the stronghold are the **tier 1** prices of the
@@ -3489,7 +3603,10 @@ building content (tier 1 only for now).
 A pure function. Randomness: `T = Rng.fromSeed(seed).child("threat")
 .child(round)` (a string label, then an integer label; nothing is drawn from
 the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
-`partySize` is 1 to `min(maxPartySize, mapgen.maxPartySize)`.
+`partySize` is 1 to `min(maxPartySize, mapgen.maxPartySize)`, and at least the
+archetype's `minPartySize` (a boss-only archetype that needs a bigger party,
+Linked Cores with 2, is an error for a smaller one, a `RangeError`, like any
+other invalid input; `pickBoss` never offers it then).
 
 1. `B = budget(...)`; `waveBudget = floor(B * waveSharePercent / 100)`;
    `S = B - waveBudget`. **Brood.** An archetype with `brood` sets
@@ -3587,6 +3704,12 @@ the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
    a Core is clamped the Cores no longer add up to `total`). This is only a
    safety net: with the shipped content neither clamp is reached in rounds 1
    to `maxThreatRound` (see "Content bounds").
+9. **Shared health** (only with `linkedCores`). `stronghold.sharedHealth` is
+   the sum of the final `cores[p].health` (after step 8's clamp). Nothing else
+   about the profile changes: Linked Cores spends the budget exactly as the
+   Boss does (waves, walls, turrets, Core health, one Core per plot at the
+   layout's position, health split as in step 7); only the battle reads the
+   Cores as one pool.
 
 ### Layouts (in `threat-layouts.ts`; parameters in `threats.json`)
 
@@ -3808,6 +3931,21 @@ a Core destroyed by a hit that crosses all its lines) and
 `golden/reference-matrix.json` (the `pve-battle` kind again: the siege board
 against each archetype at round 1, and every reference board against each
 archetype at round 5 (medium) and round 10 (hard)).
+
+Linked Cores vectors (issue #399): three `threat-gen` cases for
+`arch_boss_linked` (party sizes 2, 3 and 4; a party of 1 is an error, not a
+vector) and six `pve-battle` cases with `team` scripts for two and four plots:
+`party2-vs-linked-r5` and `party4-vs-linked-r5` (several Cores hit in the same
+tick, all Cores falling in the tick the pool empties), `party2-vs-linked-r5-overkill-once`
+(Cores set to 7 and 9: the overkill against the pool, counted once) and three
+time-limit cases, `party2-vs-linked-time-limit-pool-share-party-wins`,
+`...-pool-share-boss-wins` (rung 2 reading the pool) and
+`...-time-limit-cores-standing` (rung 1). The time-limit cases use two test-only
+inputs of the `pve-battle` kind: `coreHealths` (above) and
+`partyCoreHealthPercent`, a `core_health_percent` run modifier on the party's
+team so its Cores outlast the Overload decay. The `boss-pick` vector 2 now
+draws `arch_boss_linked` (it joined the eligible bosses at round 5 with four
+players).
 
 ### Decided simplifications
 
@@ -4354,7 +4492,7 @@ no longer drawn here: it is `state.pvpOpponent.boss`, chosen in the shop (see
 "Ghosts", "Selection"). Only a state whose `pvpOpponent` has no `boss` (a save
 made before issue #397, or a run without `threats` in its ghost rules) keeps
 the old draw: `rng.child("archetype").pick(list)` on the battle stream, `list`
-being the boss-only archetypes in file order, else all archetypes. The result's
+being the boss-only archetypes in file order, else all archetypes, keeping only those whose `minPartySize` is at most the party size (a solo run never draws Linked Cores). The result's
 `opponent` then carries `boss: <archetype id>` and the round record stores it. The battle seed is the first `nextU32` of
 the battle stream. `BattleResult.detail` is `{ version, kind, round, seed,
 source, teamHash, summary }`: no event log. `source` is `{type: "option"}`

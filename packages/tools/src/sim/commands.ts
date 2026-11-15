@@ -240,9 +240,15 @@ function burstsText(threat: ThreatProfile): string {
   return `, ${String(units)} burst units in ${String(groups.size)} bursts`;
 }
 
+/** `, shared pool N` for a Linked Cores threat; empty otherwise. */
+function poolText(threat: ThreatProfile): string {
+  const pool = threat.stronghold.sharedHealth;
+  return pool === undefined ? '' : `, shared Core pool ${String(pool)}`;
+}
+
 function threatLine(ctx: SimContext, threat: ThreatProfile): string {
   const s = threatSummary(threat, ctx.content);
-  return `Threat: ${threat.archetype} ${threat.type} round ${String(threat.round)}: ${String(s.totalUnits)} units in ${String(threat.waves.length)} waves (first at tick ${String(s.firstWaveTick ?? 0)}), strength +${String(threat.unitStrengthPercent)}%, Core ${String(s.coreHealth)}, ${String(s.walls)} walls, ${String(s.turrets)} turrets${burstsText(threat)}`;
+  return `Threat: ${threat.archetype} ${threat.type} round ${String(threat.round)}: ${String(s.totalUnits)} units in ${String(threat.waves.length)} waves (first at tick ${String(s.firstWaveTick ?? 0)}), strength +${String(threat.unitStrengthPercent)}%, Core ${String(s.coreHealth)}, ${String(s.walls)} walls, ${String(s.turrets)} turrets${burstsText(threat)}${poolText(threat)}`;
 }
 
 export function pveCommand(

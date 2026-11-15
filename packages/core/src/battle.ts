@@ -8,6 +8,7 @@
 import type { ArenaContent } from './arena.js';
 import {
   isCoreHealth,
+  poolOf,
   createArenaContext,
   createArenaSim,
   stepArena,
@@ -308,7 +309,10 @@ export function startBattle(
   };
   const standing = (s: 0 | 1): number =>
     coreMax[s].filter((c) => coreHpOf(s, c.player) > 0).length;
+  // A side with linked Cores (MM-9d) has one shared pool: its health counts
+  // once, not per Core.
   const sumHp = (s: 0 | 1): number =>
+    poolOf(sim, s)?.hp ??
     coreMax[s].reduce((t, c) => addInt(t, coreHpOf(s, c.player)), 0);
   const sumMax = (s: 0 | 1): number =>
     coreMax[s].reduce((t, c) => addInt(t, c.max), 0);

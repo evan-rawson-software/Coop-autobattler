@@ -391,6 +391,8 @@ export {
   runArena,
   type ScheduledWave,
   type SideBurst,
+  type LinkedPoolSim,
+  poolOf,
   type BurstingSim,
   type SideOptions,
   spawnUnitForTest,

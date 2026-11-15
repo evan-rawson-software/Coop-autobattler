@@ -394,7 +394,10 @@ export function stageCommand(ctx: SimContext, args: StageArgs): CommandOutput {
   const core = stageCore(ctx);
   const regular = ctx.threats.archetypes.filter((a) => !a.bossOnly);
   const bossOnly = ctx.threats.archetypes.filter((a) => a.bossOnly);
-  const bosses = bossOnly.length > 0 ? bossOnly : ctx.threats.archetypes;
+  // The stage boards are solo: a boss that needs a bigger party is left out.
+  const bosses = (
+    bossOnly.length > 0 ? bossOnly : ctx.threats.archetypes
+  ).filter((a) => (a.minPartySize ?? 1) <= 1);
   const seeds = Array.from({ length: args.seeds }, (_, i) => i + 1);
   const lines = [
     `Stage boards: solo, generated map of seed ${String(STAGE_MAP_SEED)}, Core at (${String(core.x)}, ${String(core.y)}) (${core.note}); rounds 1..${String(args.rounds)}, ${String(args.seeds)} seed${args.seeds === 1 ? '' : 's'} (1..${String(args.seeds)}) per threat`,

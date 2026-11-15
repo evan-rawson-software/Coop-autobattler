@@ -140,10 +140,15 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
     mapgen: setup.mapgen,
   };
 
-  /** Archetypes a boss may use: the boss-only ones, else all. */
-  function bossArchetypes(): string[] {
+  /**
+   * Archetypes a boss may use: the boss-only ones, else all; in both cases
+   * only those the party is big enough for (`minPartySize`, MM-9d).
+   */
+  function bossArchetypes(partySize: number): string[] {
     const boss = setup.threats.archetypes.filter((a) => a.bossOnly);
-    const pool = boss.length > 0 ? boss : setup.threats.archetypes;
+    const pool = (boss.length > 0 ? boss : setup.threats.archetypes).filter(
+      (a) => (a.minPartySize ?? 1) <= partySize,
+    );
     return pool.map((a) => a.id);
   }
 
@@ -219,7 +224,8 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
             type: 'boss',
             partySize: state.players.length,
             archetype:
-              fixedBoss ?? rng.child('archetype').pick(bossArchetypes()),
+              fixedBoss ??
+              rng.child('archetype').pick(bossArchetypes(state.players.length)),
           };
           source = {
             type: 'generated',

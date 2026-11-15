@@ -167,6 +167,11 @@
       "name": "Brood",
       "description": "The boss's Cores release a burst of units each time they fall below three quarters, half and a quarter of their health.",
       "tests": "defense at home"
+    },
+    "arch_boss_linked": {
+      "name": "Bonded",
+      "description": "The boss's Cores share one health pool: every Core you hit hurts them all, and they fall together.",
+      "tests": "teamwork across plots"
     }
   },
   "events": {

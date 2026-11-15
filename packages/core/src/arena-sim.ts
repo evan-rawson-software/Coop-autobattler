@@ -175,6 +175,12 @@ export type ArenaEvent =
       readonly unit: number;
       readonly target: UnitTarget;
       readonly damage: number;
+      /**
+       * Only when the target is a Core of a side with `linkedCores` (MM-9d):
+       * the shared pool's health at the start of this tick, before any of the
+       * tick's damage.
+       */
+      readonly pool?: number;
     }
   | {
       readonly tick: number;
@@ -237,6 +243,12 @@ export type ArenaEvent =
       readonly side: number;
       readonly core: number;
       readonly damage: number;
+      /**
+       * Only for a side with `linkedCores` (MM-9d): the decay is taken from
+       * the shared pool once, and this single event names the lowest living
+       * Core; `pool` is the pool's health at the start of this tick.
+       */
+      readonly pool?: number;
     }
   | {
       readonly tick: number;
@@ -288,6 +300,19 @@ export interface CoreHealthSim {
   remaining: number;
   /** The tick the Core was destroyed in, or null while it stands. */
   fellTick: number | null;
+}
+
+/**
+ * The shared health pool of a side with `linkedCores` (MM-9d). The Cores of
+ * the side keep their own `health` entries for layout and display, but take no
+ * damage themselves: the pool does, and every Core falls when it reaches 0.
+ */
+export interface LinkedPoolSim {
+  readonly side: number;
+  /** The shared health, 0 once the Cores have fallen. */
+  hp: number;
+  /** The health after all damage of the latest tick, NOT clamped at 0. */
+  remaining: number;
 }
 
 /** A placed building in the `health` list. */
@@ -412,6 +437,11 @@ export interface SideOptions {
    * in release order within a Core and threshold: the order of the profile.
    */
   readonly bursts?: readonly SideBurst[];
+  /**
+   * The side's Cores share one health pool (MM-9d, "Linked Cores"): see the
+   * rules reference. The pool starts as the sum of the Cores' starting health.
+   */
+  readonly linkedCores?: boolean;
 }
 
 export interface ArenaSim {
@@ -442,6 +472,11 @@ export interface ArenaSim {
    * when a side has `bursts` (so every other state is unchanged).
    */
   bursting?: BurstingSim[];
+  /**
+   * The shared health pool of each side with `linkedCores`, by side. Present
+   * only then (so every other state is unchanged).
+   */
+  linkedPools?: LinkedPoolSim[];
   /** Units spawned, by side. */
   readonly spawned: [number, number];
   /** Units that died, by side. */
@@ -977,6 +1012,15 @@ export function createArenaSim(
   const hasBursts =
     given !== undefined &&
     [given[0], given[1]].some((o) => (o?.bursts?.length ?? 0) > 0);
+  const linkedPools: LinkedPoolSim[] = [];
+  for (const side of [0, 1] as const) {
+    if (given?.[side]?.linkedCores !== true) continue;
+    let hp = 0;
+    for (const h of health) {
+      if (isCoreHealth(h) && h.side === side) hp = addInt(hp, h.hp);
+    }
+    linkedPools.push({ side, hp, remaining: hp });
+  }
   return {
     tick: 0,
     nextUnitId: 1,
@@ -995,6 +1039,7 @@ export function createArenaSim(
     units: [],
     entering: [],
     ...(hasBursts ? { bursting: [] } : {}),
+    ...(linkedPools.length > 0 ? { linkedPools } : {}),
     spawned: [0, 0],
     unitsDied: [0, 0],
     buildingDamageDealt: [0, 0],
@@ -2729,8 +2774,8 @@ export function stepArena(sim: ArenaSim, ctx: ArenaContext): void {
 
   // 4. Resolve attacks simultaneously, with the Overload Core decay, then
   // apply the damage.
-  resolveAttacks(ctx, units, tick, level);
-  if (beat) addOverloadDecay(ctx, tick, level);
+  resolveAttacks(sim, ctx, units, tick, level);
+  if (beat) addOverloadDecay(sim, ctx, tick, level);
   applyDamage(sim, ctx, units, tick);
 
   // 5. Move and separate.
@@ -2803,6 +2848,7 @@ function decideAll(
  * damage tables (nothing is applied yet) and logged.
  */
 function resolveAttacks(
+  sim: ArenaSim,
   ctx: ArenaContext,
   units: readonly UnitSim[],
   tick: number,
@@ -2851,12 +2897,15 @@ function resolveAttacks(
           : { kind: 'building', side: b.side, building: b.id };
     }
     u.attackCooldown = stats.attackCooldownTicks;
+    const pool =
+      target.kind === 'core' ? poolOf(sim, target.side)?.hp : undefined;
     events?.push({
       tick,
       type: 'unit_attacked',
       unit: u.id,
       target,
       damage,
+      ...(pool === undefined ? {} : { pool }),
     });
     if (splash !== undefined && centre !== undefined) {
       events?.push({
@@ -2933,6 +2982,7 @@ function splashHits(
 
 /** Step 4, on an Overload beat: every living Core takes the decay. */
 function addOverloadDecay(
+  sim: ArenaSim,
   ctx: ArenaContext,
   tick: number,
   level: number,
@@ -2944,8 +2994,14 @@ function addOverloadDecay(
   // Every living Core takes the full amount: side 0 then side 1, players in
   // ascending order (PP-9).
   for (const side of [0, 1]) {
+    // A linked side (MM-9d) takes the decay once, from the shared pool: it is
+    // added to the lowest living Core, and step 4 sums the Cores' damage.
+    const pool = poolOf(sim, side);
+    let done = false;
     (arena.coreRef[side] ?? []).forEach((ref, core) => {
       if (ref < 0 || arena.buildings[ref]?.alive !== true) return;
+      if (pool !== undefined && done) return;
+      done = true;
       ctx.buildingDamage[ref] = addDamage(ctx.buildingDamage[ref] ?? 0, decay);
       events?.push({
         tick,
@@ -2953,6 +3009,7 @@ function addOverloadDecay(
         side,
         core,
         damage: decay,
+        ...(pool === undefined ? {} : { pool: pool.hp }),
       });
     });
   }
@@ -2972,11 +3029,25 @@ function applyDamage(
     const u = units[i];
     if (dmg > 0 && u !== undefined) u.hp -= dmg;
   }
+  // Linked Cores (MM-9d): their damage is summed per side, in Core order, and
+  // taken from the shared pool below, once.
+  const pooled: { dmg: number; attack: number }[] = [
+    { dmg: 0, attack: 0 },
+    { dmg: 0, attack: 0 },
+  ];
   for (let r = 0; r < ctx.buildingDamage.length; r++) {
     const dmg = ctx.buildingDamage[r] ?? 0;
     if (dmg === 0) continue;
     const h = sim.health[ctx.healthIndex[r] ?? 0];
     if (h === undefined) continue;
+    if (isCoreHealth(h) && poolOf(sim, h.side) !== undefined) {
+      const acc = pooled[h.side === 0 ? 0 : 1];
+      if (acc !== undefined) {
+        acc.dmg = addDamage(acc.dmg, dmg);
+        acc.attack = addDamage(acc.attack, ctx.attackDamage[r] ?? 0);
+      }
+      continue;
+    }
     // Damage dealt to buildings (tiebreak): the attacks only, at most the
     // health the building had, credited to the other side.
     const applied = Math.min(ctx.attackDamage[r] ?? 0, h.hp);
@@ -2995,7 +3066,43 @@ function applyDamage(
     }
     h.hp = Math.max(0, remaining);
   }
+  for (const side of [0, 1] as const) {
+    const pool = poolOf(sim, side);
+    const acc = pooled[side];
+    if (pool === undefined || acc === undefined || acc.dmg === 0) continue;
+    // Building damage dealt: the attacks alone, at most the pool's health.
+    const applied = Math.min(acc.attack, pool.hp);
+    if (applied > 0) {
+      const dealer = side === 0 ? 1 : 0;
+      sim.buildingDamageDealt[dealer] = addInt(
+        sim.buildingDamageDealt[dealer],
+        applied,
+      );
+    }
+    pool.remaining = pool.hp - acc.dmg;
+    pool.hp = Math.max(0, pool.remaining);
+    if (pool.hp > 0) continue;
+    // The pool is empty: every Core of the side falls in this tick. The first
+    // living Core (lowest player index) carries the overkill, the others 0.
+    let first = true;
+    for (const h of sim.health) {
+      if (!isCoreHealth(h) || h.side !== side || h.hp <= 0) continue;
+      h.hp = 0;
+      h.remaining = first ? pool.remaining : 0;
+      const row = ctx.coreRemaining[side];
+      if (row !== undefined) row[h.core] = h.remaining;
+      first = false;
+    }
+  }
   if (before !== undefined) releaseBursts(sim, ctx, before, tick);
+}
+
+/** The shared pool of a side with `linkedCores`, or undefined. */
+export function poolOf(
+  sim: Pick<ArenaSim, 'linkedPools'>,
+  side: number,
+): LinkedPoolSim | undefined {
+  return sim.linkedPools?.find((p) => p.side === side);
 }
 
 /** Every Core's current health, by side and player index. */

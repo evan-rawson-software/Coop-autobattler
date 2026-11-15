@@ -303,6 +303,7 @@ describe('generateThreat', () => {
     for (const arch of threats.archetypes) {
       for (const type of THREAT_TYPES) {
         for (const party of [1, 2, 3, 4]) {
+          if (party < (arch.minPartySize ?? 1)) continue;
           for (const round of [1, 2, 3, 5, 8, 12, 15, 20, 30]) {
             const p = generateThreat(
               {
@@ -384,12 +385,13 @@ describe('generateThreat', () => {
       const small = { ...threats, maxUnitsPerWavePerPlot: perPlot };
       for (const arch of threats.archetypes) {
         for (let round = 4; round <= 30; round++) {
+          const party = arch.minPartySize ?? 1;
           const p = generateThreat(
             {
               seed: round,
               round,
               type: 'hard',
-              partySize: 1,
+              partySize: party,
               archetype: arch.id,
             },
             content,
@@ -401,7 +403,7 @@ describe('generateThreat', () => {
           }
           for (const total of perTick.values()) {
             expect(total, `${arch.id} r${String(round)}`).toBeLessThanOrEqual(
-              perPlot,
+              perPlot * party,
             );
           }
         }
@@ -450,7 +452,7 @@ describe('generateThreat', () => {
             seed: round,
             round,
             type: 'medium',
-            partySize: 1,
+            partySize: arch.minPartySize ?? 1,
             archetype: arch.id,
           },
           content,
