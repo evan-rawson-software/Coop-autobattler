@@ -13,10 +13,12 @@ concurrency:
 env:
   CI_RELAXED_TIMING: '1'
 
+# The checks run as parallel jobs; `check` at the end passes only when all of
+# them pass, so it stays the one status to look at.
 jobs:
-  check:
+  static:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -28,9 +30,39 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm format:check
-      - run: pnpm test
-      - run: pnpm build
       - run: pnpm validate:content
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Each package's test files are split in two; a shard with no files in
+      # a package passes (--passWithNoTests).
+      - run: pnpm -r run test --shard=${{ matrix.shard }}/2
+
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
       - id: playwright
         run: echo "version=$(pnpm --filter @game/web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@v4
@@ -58,6 +90,18 @@ jobs:
           pnpm golden:update
           git status --porcelain
           test -z "$(git status --porcelain)"
+
+  check:
+    needs: [static, test, smoke]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: All checks passed
+        run: |
+          test "${{ needs.static.result }}" = success
+          test "${{ needs.test.result }}" = success
+          test "${{ needs.smoke.result }}" = success
 
   bot:
     runs-on: ubuntu-latest

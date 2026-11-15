@@ -46,8 +46,11 @@ resources by ID or through the `core` loader; a test in `packages/tools`
 fails if a display name appears as a string literal in source. To register
 another content file, add a row to `packages/tools/src/registry.ts`.
 
-CI (`.github/workflows/ci.yml`) runs install with a frozen lockfile, then
-typecheck, lint, format:check, test, and build.
+CI (`.github/workflows/ci.yml`) installs with a frozen lockfile and runs its
+checks as parallel jobs: `static` (typecheck, lint, format:check,
+validate:content), `test` (the unit tests in two shards, `--shard=1/2` and
+`2/2`), `smoke` (build, smoke and the golden-files check) and `bot`. The `check`
+job passes only when `static`, `test` and `smoke` all pass.
 
 ## Battle runner (`pnpm sim`)
 
@@ -205,8 +208,8 @@ Violations fail `pnpm typecheck` or `pnpm lint`.
 
 Every change to `main` is built and published as a static site to GitHub Pages
 by `.github/workflows/deploy.yml` (it can also be run by hand from the Actions
-tab via "Run workflow"). Tests run first, so a failing build is never
-published. The site is plain static files with relative asset URLs, so it works
+tab via "Run workflow"). It runs only the content check and the build: the
+tests already ran in CI on the pull request, and CI runs again on `main`. The site is plain static files with relative asset URLs, so it works
 from a sub-path and on any other static host.
 
 - URL pattern: `https://<owner>.github.io/<repo>/`. For this repository:
