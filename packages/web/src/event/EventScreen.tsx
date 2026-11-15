@@ -11,6 +11,7 @@ import { reasonMessage } from '../build/reasons.js';
 import { gameConfigs } from '../build/setup.js';
 import { content } from '../content.js';
 import type { RunHandle } from '../run/handle.js';
+import { Panel } from '../shell/AppShell.js';
 import { GameFrame } from '../shell/GameFrame.js';
 import '../choice/choice.css';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
@@ -86,12 +87,14 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
               <span data-field="payout">{header.payout}</span>
             </div>
           )}
-          <p class="tray-text" data-field="next">
-            {screenText(
-              screenTexts,
-              run.leg === 'pve' ? 'eventNextRival' : 'eventNextBuild',
-            )}
-          </p>
+          <Panel class="event-next">
+            <p class="tray-text" data-field="next">
+              {screenText(
+                screenTexts,
+                run.leg === 'pve' ? 'eventNextRival' : 'eventNextBuild',
+              )}
+            </p>
+          </Panel>
           {error === null ? null : (
             <p class="error" role="alert">
               {error}
