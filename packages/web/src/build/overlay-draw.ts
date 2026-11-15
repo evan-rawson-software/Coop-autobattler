@@ -691,7 +691,14 @@ export function drawBuildOverlay(
   if (d.ui.tool === 'conduit') {
     const dr = d.ui.draft;
     const arrow = (m: SideMarker, kind: 'out' | 'in', alpha: number): void => {
-      const color = kind === 'out' ? col.accent : col.ok;
+      // An input takes the colour of the resource it needs, so the two sides
+      // of a Foundry or a refinery tell which resource goes where.
+      const color =
+        kind === 'out'
+          ? col.accent
+          : ((m.resource === undefined
+              ? undefined
+              : d.content.resources.get(m.resource)?.color) ?? col.ok);
       for (const c of m.cells) {
         const p = centre(c);
         const q = centre({ x: c.x + STEP[m.side].x, y: c.y + STEP[m.side].y });

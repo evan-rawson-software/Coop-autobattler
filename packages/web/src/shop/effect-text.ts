@@ -8,7 +8,12 @@
  * for resources, which `formatText` replaces with the configured display
  * name (TA-27a). Neither sentences nor resource names appear in this file.
  */
-import { formatText, type BuildingDef, type SimConfig } from '@game/core';
+import {
+  costEntries,
+  formatText,
+  type BuildingDef,
+  type SimConfig,
+} from '@game/core';
 import type { WebContent } from '../content.js';
 
 /** A key of `templates.effects` in the presentation file. */
@@ -63,7 +68,10 @@ export function templateKey(def: BuildingDef): EffectTemplateKey {
     case 'route':
       return def.routeType;
     case 'unit_producer':
-      return 'unit_producer';
+      // Two costs at once (the Foundry) read as each cost with its resource.
+      return costEntries(def, 1) === undefined
+        ? 'unit_producer'
+        : 'unit_producer_costs';
     case 'defense':
       return def.defenseType;
     case 'economy':
@@ -104,6 +112,9 @@ export function effectText(
     case 'unit_producer': {
       const x = def.tiers[tier - 1];
       if (x !== undefined) values['cost'] = String(x.costPerUnit);
+      values['costs'] = (costEntries(def, tier) ?? [])
+        .map((e) => `${String(e.cost)} {${e.resource}}`)
+        .join(' + ');
       values['unit'] = content.presentation.get(def.unit)?.name ?? def.unit;
       break;
     }

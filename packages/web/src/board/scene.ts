@@ -45,6 +45,11 @@ export interface Notch {
   readonly kind: 'in' | 'out';
   /** The resource colour an input requires, if any. */
   readonly color: string | null;
+  /**
+   * An input of a building that takes two different resources (the Foundry,
+   * a refinery): drawn larger and outlined, so each side's colour is plain.
+   */
+  readonly multi?: boolean;
 }
 
 export interface SceneBuilding {
@@ -219,6 +224,10 @@ function buildBoard(
     const rect = boxToView(frame, first.x, first.y, last.x, last.y);
     const sides = occ.absoluteSides(b);
     const notches: Notch[] = [];
+    const multi =
+      new Set(
+        sides.inputs.map((i) => i.resource).filter((r) => r !== undefined),
+      ).size > 1;
     for (const side of SIDES) {
       const step = sideStep(frame, side);
       for (const inp of sides.inputs) {
@@ -235,6 +244,7 @@ function buildBoard(
               inp.resource === undefined
                 ? null
                 : resourceColor(content, inp.resource),
+            ...(multi ? { multi: true } : {}),
           });
         }
       }

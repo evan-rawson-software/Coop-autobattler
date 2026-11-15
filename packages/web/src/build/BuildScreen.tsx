@@ -648,6 +648,17 @@ export function BuildView(props: {
       >
         New run (seed)
       </button>
+      <button
+        type="button"
+        id="dev-demo-refining"
+        onClick={() => {
+          const n = Math.floor(Number(seedText));
+          if (Number.isFinite(n) && n >= 0 && n <= 0xffffffff)
+            void ctl.demoRefining(n);
+        }}
+      >
+        Demo: refining chains
+      </button>
       {run !== null ? (
         <span class="muted" data-field="run-info">
           <SpriteIcon name="ui_icon_heart" scale={1} class="bar-icon" />

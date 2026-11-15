@@ -245,20 +245,102 @@ function hangarSprite(): Pix {
   return p;
 }
 
-/** A refinery: a vat on the plate, the input door south and the output arrow north. */
-function refinerySprite(): Pix {
+/** A Foundry: a crucible of molten metal under a chimney. */
+function foundrySprite(): Pix {
+  const p = new Pix(32, 32);
+  barracksPlate(p);
+  // Chimney at the top right, with a plume of heat.
+  p.rect(21, 3, 4, 8, 'K');
+  p.rect(22, 3, 2, 8, '2');
+  p.rect(22, 3, 1, 8, '3');
+  p.set(23, 2, 'O');
+  // Crucible: iron bowl of molten metal.
+  p.ellipse(14, 13, 7.5, 5.5, 'K');
+  p.ellipse(14, 13, 6.5, 4.5, '2');
+  p.ellipse(14, 13, 5, 3.2, 'O');
+  p.ellipse(14, 12.5, 3.2, 1.8, 'y');
+  p.set(12, 12, '6');
+  p.line(9, 9, 6, 8, '4');
+  p.line(19, 9, 21, 8, '4');
+  return p;
+}
+
+/** A Golem forge: a boulder with glowing eyes on an anvil block. */
+function golemForgeSprite(): Pix {
+  const p = new Pix(32, 32);
+  barracksPlate(p);
+  p.rect(9, 15, 14, 4, 'K');
+  p.rect(10, 16, 12, 3, '1');
+  p.ellipse(16, 11, 7.5, 6.5, 'K');
+  p.ellipse(16, 11, 6.5, 5.5, 'r');
+  p.ellipse(15, 10, 4.5, 3.5, 'q');
+  p.ellipse(14, 9, 2.5, 1.8, 'p');
+  p.rect(12, 10, 2, 2, 'T');
+  p.rect(18, 10, 2, 2, 'T');
+  p.line(16, 5, 17, 8, 'R');
+  p.line(20, 14, 22, 12, 'R');
+  return p;
+}
+
+/** A Spire: a slim crystal tower on a dark plate. */
+function spireSprite(): Pix {
+  const p = new Pix(32, 32);
+  plate(p, 1, 1, 30, 30, ['0', 's', 'S']);
+  for (const [x, y] of [
+    [3, 3],
+    [28, 3],
+    [3, 28],
+    [28, 28],
+  ] as const)
+    p.set(x, y, '4');
+  // Tower base and shaft.
+  p.rect(10, 19, 12, 4, 'K');
+  p.rect(11, 20, 10, 3, '2');
+  p.rect(13, 12, 6, 8, 'K');
+  p.rect(14, 12, 4, 8, '3');
+  p.rect(14, 12, 1, 8, '5');
+  // Crystal on top: a pointed diamond.
+  const rows = [1, 2, 3, 4, 5, 5, 4, 3, 2, 1];
+  rows.forEach((w, i) => {
+    p.rect(16 - w, 2 + i, 2 * w, 1, 'K');
+    if (w > 1) p.rect(17 - w, 2 + i, 2 * w - 2, 1, i < 5 ? 'T' : 't');
+  });
+  p.rect(14, 5, 2, 3, '6');
+  // Input door facing south.
+  p.rect(11, 25, 10, 5, 'K');
+  p.rect(12, 26, 8, 4, '1');
+  arrow(p, 15, 27, 'n', 'T');
+  return p;
+}
+
+/**
+ * A refinery: a vat on the plate, the input door south and the output arrow
+ * north. `fill` is the vat's liquid (the compound), and the studs on the south
+ * and west edges (where the inputs are) take the input colours.
+ */
+function refinerySprite(
+  fill: string,
+  fillDark: string,
+  inSouth: string,
+  inWest: string,
+): Pix {
   const p = new Pix(32, 32);
   plate(p, 1, 1, 30, 30, KIND_RAMP['refinery'] as Ramp);
   p.ellipse(16, 15, 9.5, 8.5, 'K');
   p.ellipse(16, 15, 8.5, 7.5, '2');
-  p.ellipse(16, 15, 6.5, 5.5, '4');
-  p.ellipse(16, 15, 3.5, 3, '6');
+  p.ellipse(16, 15, 6.5, 5.5, fillDark);
+  p.ellipse(16, 15, 4.5, 3.8, fill);
   p.set(13, 12, '6');
   // Input door facing south, output arrow on the north edge.
   p.rect(11, 25, 10, 5, 'K');
   p.rect(12, 26, 8, 4, '1');
   arrow(p, 15, 27, 'n', 'T');
-  arrow(p, 15, 2, 'n', 'y');
+  arrow(p, 15, 2, 'n', fill);
+  // Input studs: south (door) and west edge.
+  p.rect(13, 28, 6, 1, inSouth);
+  p.rect(2, 13, 2, 6, inWest);
+  p.rect(2, 14, 1, 4, 'K');
+  p.rect(2, 14, 1, 4, inWest);
   return p;
 }
 
@@ -600,11 +682,12 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_merger: mergerSprite,
   bld_crossover: crossoverSprite,
   bld_barracks: barracksSprite,
-  bld_foundry: barracksSprite,
-  bld_golem_forge: barracksSprite,
-  bld_spire: barracksSprite,
-  bld_refinery_ab: refinerySprite,
-  bld_refinery_bc: refinerySprite,
+  bld_foundry: foundrySprite,
+  bld_golem_forge: golemForgeSprite,
+  bld_spire: spireSprite,
+  // Fill and stud colours stand in for the compound and its two inputs.
+  bld_refinery_ab: () => refinerySprite('M', 'm', 'o', 'y'),
+  bld_refinery_bc: () => refinerySprite('T', 't', 'y', 'S'),
   bld_gate: gateSprite,
   bld_turret: turretSprite,
   bld_overclocker: () => economySprite(gearIcon),

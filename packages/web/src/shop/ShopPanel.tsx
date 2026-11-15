@@ -4,10 +4,16 @@
  * `ShopView`; the Build screen holds the state and sends the intents.
  */
 import type { ComponentChildren } from 'preact';
+import { useStore } from '../app-state.js';
 import { screenText, screenTexts } from '../build/texts.js';
 import './shop.css';
 import type { HeldBonus } from '../event/view-model.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
+import {
+  dismissRefineryHint,
+  offersRefinery,
+  refineryHintSeen,
+} from './refinery-hint.js';
 import type { OfferGroup, ShopView } from './view-model.js';
 
 const t = (key: string, values: Record<string, string> = {}): string =>
@@ -73,13 +79,49 @@ function Offer(props: { group: OfferGroup; onBuy: (slot: number) => void }) {
             {t('uiShopCopies', { count: String(group.copies) })}
           </p>
         ) : null}
+        {o.io === null ? null : (
+          <ul class="offer-io" data-field="io">
+            {o.io.inputs.map((f) => (
+              <li
+                key={f.resource}
+                class="io-chip"
+                data-resource={f.resource}
+                style={{ '--res': f.color }}
+              >
+                <SpriteIcon name={`node_${f.resource}`} size={16} />
+                {f.name}
+              </li>
+            ))}
+            {o.io.output === null ? null : (
+              <>
+                <li class="io-arrow" aria-hidden="true">
+                  →
+                </li>
+                <li
+                  class="io-chip io-out"
+                  data-resource={o.io.output.resource}
+                  style={{ '--res': o.io.output.color }}
+                >
+                  <SpriteIcon name={`node_${o.io.output.resource}`} size={16} />
+                  {o.io.output.name}
+                </li>
+              </>
+            )}
+          </ul>
+        )}
         {o.uses === null ? null : <p data-field="uses">{o.uses}</p>}
+        {o.makes === null ? null : <p data-field="makes">{o.makes}</p>}
         {o.collects === null ? null : (
           <p class="offer-rate" data-field="rate">
             {o.collects}
           </p>
         )}
         {o.effect === '' ? null : <p data-field="effect">{o.effect}</p>}
+        {o.notes.map((n, i) => (
+          <p class="offer-note" data-field="note" key={i}>
+            {n}
+          </p>
+        ))}
         <p class="offer-health" data-field="health">
           {o.health}
         </p>
@@ -110,6 +152,7 @@ export function ShopPanel(props: {
   children?: ComponentChildren;
 }) {
   const { sv } = props;
+  const hintSeen = useStore(refineryHintSeen);
   return (
     <section class="shop-panel" id="shop-screen" aria-label={t('uiShopTitle')}>
       <div class="shop-head">
@@ -137,6 +180,18 @@ export function ShopPanel(props: {
           </button>
         </div>
       </div>
+      {!hintSeen && offersRefinery(sv.groups) ? (
+        <p class="shop-hint" data-field="refinery-hint">
+          {t('refineryHint')}{' '}
+          <button
+            type="button"
+            data-action="dismiss-hint"
+            onClick={dismissRefineryHint}
+          >
+            {t('uiPhaseGotIt')}
+          </button>
+        </p>
+      ) : null}
       <ul class="offers" id="offers">
         {sv.groups.map((g) => (
           <Offer key={g.card.slot} group={g} onBuy={props.onBuy} />

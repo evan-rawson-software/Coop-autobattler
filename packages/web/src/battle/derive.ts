@@ -12,7 +12,9 @@ import {
   type PlacedBuilding,
   conduitTouches,
 } from '@game/core';
+import { downstreamOf } from '../build/refining.js';
 import { screenText, screenTexts } from '../build/texts.js';
+import { resourceName } from '../build/view-model.js';
 import type { WebContent } from '../content.js';
 import type { Playback, BattleRecord } from './playback.js';
 
@@ -246,11 +248,35 @@ export function deriveMoments(
         ref.def.kind === 'refinery' ||
         ref.def.kind === 'economy'
       ) {
+        // A destroyed refinery says what it starves: the consumers its
+        // output conduit led to, which get no more of its compound.
+        const fed =
+          ref.def.kind === 'refinery'
+            ? downstreamOf(record.initialTeams[side], content, e.building)
+                .map((id) =>
+                  record.initialTeams[side].buildings.find((b) => b.id === id),
+                )
+                .flatMap((b) => {
+                  const d =
+                    b === undefined ? undefined : content.buildings.get(b.def);
+                  return d === undefined
+                    ? []
+                    : [buildingName(content, d).toLowerCase()];
+                })
+            : [];
         out.push({
           tick: e.tick + 1,
           kind: 'production',
           side,
-          text: `${who} ${name} destroyed`,
+          text:
+            ref.def.kind === 'refinery' && fed.length > 0
+              ? screenText(screenTexts, 'battleLogStarves', {
+                  who,
+                  name,
+                  fed: [...new Set(fed)].join(' and '),
+                  resource: resourceName(content, ref.def.output),
+                })
+              : `${who} ${name} destroyed`,
           focus,
         });
       }

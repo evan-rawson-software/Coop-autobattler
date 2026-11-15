@@ -463,3 +463,22 @@ li[data-check='ok'] .check-text strong {
   margin: 0.15rem 0 0;
   font-size: 0.85rem;
 }
+
+/* Refining chains in the flow preview, and the per-input supply lines. */
+.dry-table .chain-table caption {
+  text-align: left;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.dry-table .chain-table .bad,
+.input-supply .bad {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.input-supply {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+}

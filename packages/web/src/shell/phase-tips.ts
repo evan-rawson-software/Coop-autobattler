@@ -5,6 +5,7 @@
  */
 import { createStore } from '../app-state.js';
 import { DEFAULT_PREFIX } from '../run/local-storage-store.js';
+import { resetRefineryHint } from '../shop/refinery-hint.js';
 import { PHASE_ORDER, type PhaseId } from './phase.js';
 
 export const PHASE_TIPS_KEY = `${DEFAULT_PREFIX}phase-tips-seen`;
@@ -48,4 +49,5 @@ export function markTipSeen(phase: PhaseId): void {
 export function resetTips(): void {
   seenTipsStore.set([]);
   write([]);
+  resetRefineryHint();
 }
