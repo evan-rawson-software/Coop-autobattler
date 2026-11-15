@@ -602,6 +602,14 @@ export function arenaOf(sim: ArenaSim, content: ArenaContent): Arena {
   return arena;
 }
 
+/**
+ * A hit on a unit with `armor` (CB-5h): `max(1, hit - armor)` for a hit above
+ * 0; a hit of 0 stays 0. Applied last, per hit, after Overload scaling.
+ */
+export function armorHit(hit: number, armor: number): number {
+  return hit > 0 && armor > 0 ? Math.max(1, hit - armor) : hit;
+}
+
 /** Adds one hit to the damage a target takes this tick (saturating, exact). */
 function addDamage(sum: number, hit: number): number {
   return addSaturating(sum, hit, MAX_TICK_DAMAGE);
@@ -1857,14 +1865,15 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (target === undefined) continue;
     t.charge = 0;
     t.cooldown = info.cooldownTicks;
-    ctx.unitDamage[best] = addDamage(ctx.unitDamage[best] ?? 0, info.damage);
+    const dealt = armorHit(info.damage, defOf(ctx, target).armor);
+    ctx.unitDamage[best] = addDamage(ctx.unitDamage[best] ?? 0, dealt);
     ctx.events?.push({
       tick,
       type: 'turret_fired',
       side: t.side,
       building: t.building,
       unit: target.id,
-      damage: info.damage,
+      damage: dealt,
     });
   }
 }
@@ -2689,15 +2698,15 @@ function resolveAttacks(
     if (u === undefined || (act !== ACT_UNIT && act !== ACT_BUILDING)) continue;
     if (u.attackCooldown > 0) continue; // holds position
     const stats = unitStats(u.side, defOf(ctx, u));
-    const damage = mulPct(
-      u.damage,
-      100 + level * cfg.overloadDamageStepPercent,
-    );
+    // Damage order (CB-5h): spawn damage, then Overload, then (later) the
+    // splash percent, then the target's armor (only for a hit on a unit).
+    let damage = mulPct(u.damage, 100 + level * cfg.overloadDamageStepPercent);
     const arg = ctx.arg[i] ?? 0;
     let target: UnitTarget;
     if (act === ACT_UNIT) {
       const t = units[arg];
       if (t === undefined) continue;
+      damage = armorHit(damage, defOf(ctx, t).armor);
       ctx.unitDamage[arg] = addDamage(ctx.unitDamage[arg] ?? 0, damage);
       target = { kind: 'unit', unit: t.id };
     } else {

@@ -76,6 +76,12 @@
         "attackType": {
           "description": "melee units cannot hit flying units; ranged units can. For a ranged unit, reach is its range.",
           "enum": ["melee", "ranged"]
+        },
+        "armor": {
+          "description": "Taken off every hit on this unit; a hit above 0 always deals at least 1 (CB-5h). Optional, 0 when absent. At most 1000 (MAX_ARMOR in the core).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
         }
       }
     }

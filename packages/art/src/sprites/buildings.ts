@@ -601,6 +601,7 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_crossover: crossoverSprite,
   bld_barracks: barracksSprite,
   bld_foundry: barracksSprite,
+  bld_golem_forge: barracksSprite,
   bld_refinery_ab: refinerySprite,
   bld_refinery_bc: refinerySprite,
   bld_gate: gateSprite,

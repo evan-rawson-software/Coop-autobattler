@@ -38,6 +38,19 @@
       "attackType": "melee"
     },
     {
+      "id": "unit_golem",
+      "health": 260,
+      "damage": 6,
+      "attackCooldownTicks": 14,
+      "moveCooldownTicks": 10,
+      "radius": 110,
+      "collisionRadius": 80,
+      "reach": 80,
+      "flying": false,
+      "attackType": "melee",
+      "armor": 3
+    },
+    {
       "id": "unit_archer",
       "health": 30,
       "damage": 5,

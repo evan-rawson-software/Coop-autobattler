@@ -38,3 +38,5 @@ resources of its inputs) and each tier gives `costs` (a cost for every input
 resource), `productionIntervalTicks` and `outputPerBatch`. Resources without
 `refinedFrom` are base resources and need a `rarity`; refined resources have
 none and are never placed on maps.
+A unit may give `armor` (an integer, 0 when absent): it is taken off every hit
+on that unit, and a hit above 0 always deals at least 1.

@@ -432,6 +432,34 @@
       ]
     },
     {
+      "id": "bld_golem_forge",
+      "kind": "unit_producer",
+      "unit": "unit_golem",
+      "footprint": { "width": 2, "height": 2 },
+      "inputs": [{ "resource": "res_ab_refined", "side": "south" }],
+      "outputs": [],
+      "tiers": [
+        {
+          "health": 70,
+          "price": 45,
+          "costPerUnit": 4,
+          "productionIntervalTicks": 120
+        },
+        {
+          "health": 105,
+          "price": 90,
+          "costPerUnit": 4,
+          "productionIntervalTicks": 84
+        },
+        {
+          "health": 140,
+          "price": 160,
+          "costPerUnit": 4,
+          "productionIntervalTicks": 60
+        }
+      ]
+    },
+    {
       "id": "bld_refinery_ab",
       "kind": "refinery",
       "output": "res_ab_refined",
