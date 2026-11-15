@@ -1783,19 +1783,20 @@ export async function runRunSmoke({
   );
   {
     const pvpCells = await page
-      .locator('#round-table tbody tr td:nth-child(4)')
+      .locator('#round-table tbody tr td:nth-child(3)')
       .allInnerTexts();
-    const pvpResults = await page
-      .locator('#round-table tbody tr td:nth-child(5)')
-      .allInnerTexts();
+    const pvpResults = (
+      await page
+        .locator('#round-table tbody tr td:nth-child(3) .result')
+        .allInnerTexts()
+    ).map((r) => r.trim());
     check(
-      pvpCells.some((t) =>
-        /^Rival party( \((weak|medium|strong)\))?$/.test(t),
-      ) && pvpCells.some((t) => /^the boss/.test(t)),
+      pvpCells.some((t) => /^Lost( · Rival party.*)?$/.test(t.trim())) &&
+        pvpCells.some((t) => /^Lost · the boss/.test(t.trim())),
       `Run over: the table names each round's opponent, a bundled ghost and the boss (${pvpCells.join(' | ')})`,
     );
     check(
-      pvpResults.filter((r) => r === 'L').length === 5,
+      pvpResults.filter((r) => r === 'Lost').length === 5,
       `Run over: 5 lost PvP battles for 5 lives (${pvpResults.join(', ')})`,
     );
   }
@@ -1809,6 +1810,23 @@ export async function runRunSmoke({
     'Run over: battle records',
   );
   await shot('run-14-run-over');
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await settle();
+  {
+    const wrapped = await page.evaluate(
+      () =>
+        [...document.querySelectorAll('#panel-this-run .stats dd')].filter(
+          (dd) =>
+            dd.getClientRects()[0].height >
+            1.6 * parseFloat(getComputedStyle(dd).lineHeight),
+        ).length,
+    );
+    check(
+      wrapped === 0,
+      `Run over at 1280x800: every This run value fits on one line (${wrapped} wrap)`,
+    );
+    await shot('run-14b-run-over-1280');
+  }
   await page.setViewportSize({ width: 1366, height: 768 });
   await settle();
   const sc2 = await noHScroll(1366);

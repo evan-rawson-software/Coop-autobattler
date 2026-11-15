@@ -24,7 +24,6 @@ import {
   factoryCounts,
   headline,
   resultText,
-  resultTip,
   roundRows,
   runStats,
 } from './view-model.js';
@@ -253,22 +252,24 @@ export function RunOverScreen(props: {
                   <tr>
                     <th>{screenText(screenTexts, 'runOverColRound')}</th>
                     <th>{screenText(screenTexts, 'runOverColPve')}</th>
-                    <th />
                     <th>{screenText(screenTexts, 'runOverColPvp')}</th>
-                    <th />
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.round} data-round={r.round}>
                       <td>{r.round}</td>
-                      <td>{r.pve}</td>
-                      <td class={r.pveResult} title={resultTip(r.pveResult)}>
-                        {resultText(r.pveResult)}
+                      <td data-field="pve-cell">
+                        <span class={`result ${r.pveResult}`}>
+                          {resultText(r.pveResult)}
+                        </span>
+                        {r.pveResult === '—' ? null : ` · ${r.pve}`}
                       </td>
-                      <td>{r.pvp}</td>
-                      <td class={r.pvpResult} title={resultTip(r.pvpResult)}>
-                        {resultText(r.pvpResult)}
+                      <td data-field="pvp-cell">
+                        <span class={`result ${r.pvpResult}`}>
+                          {resultText(r.pvpResult)}
+                        </span>
+                        {r.pvpDetail === null ? null : ` · ${r.pvpDetail}`}
                       </td>
                     </tr>
                   ))}

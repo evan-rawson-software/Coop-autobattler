@@ -68,6 +68,8 @@ export interface RoundRow {
   /** "the boss (Fortress)", "Ghost · label" (bundled ones say so), or "—". */
   readonly pvp: string;
   readonly pvpResult: 'won' | 'lost' | '—';
+  /** The rival's name when it says more than the column heading, else null. */
+  readonly pvpDetail: string | null;
 }
 
 function capital(s: string): string {
@@ -91,20 +93,18 @@ export function resultText(result: 'won' | 'lost' | '—'): string {
   );
 }
 
-/** The tooltip spelling out a result mark; none for the empty mark. */
-export function resultTip(result: 'won' | 'lost' | '—'): string | undefined {
-  return result === 'won'
-    ? screenText(screenTexts, 'runOverWonTip')
-    : result === 'lost'
-      ? screenText(screenTexts, 'runOverLostTip')
-      : undefined;
-}
-
 export function roundRows(history: readonly RoundRecord[]): RoundRow[] {
   const none = screenText(screenTexts, 'runOverNone');
+  const generic = screenText(screenTexts, 'runOverColPvp');
   return history.map((r): RoundRow => {
     const pve = r.pve;
     const pvp = r.pvp;
+    const pvpName =
+      pvp === null
+        ? none
+        : pvp.opponent.kind === 'boss'
+          ? bossName(opponentName('boss', pvp.opponent.label))
+          : opponentName(pvp.opponent.kind, pvp.opponent.label);
     return {
       round: r.round,
       pve:
@@ -115,13 +115,9 @@ export function roundRows(history: readonly RoundRecord[]): RoundRow[] {
               name: opponentName(pve.opponent.kind, pve.opponent.label),
             }),
       pveResult: mark(pve),
-      pvp:
-        pvp === null
-          ? none
-          : pvp.opponent.kind === 'boss'
-            ? bossName(opponentName('boss', pvp.opponent.label))
-            : opponentName(pvp.opponent.kind, pvp.opponent.label),
+      pvp: pvpName,
       pvpResult: mark(pvp),
+      pvpDetail: pvp === null || pvpName === generic ? null : pvpName,
     };
   });
 }
