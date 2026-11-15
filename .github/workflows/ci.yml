@@ -51,9 +51,16 @@ jobs:
       # a package passes (--passWithNoTests).
       - run: pnpm -r run test --shard=${{ matrix.shard }}/2
 
+  # The smoke script is split in two parts that run in parallel (SMOKE_PART):
+  # `main` (page, camera, performance, build and battle checks) and `flows`
+  # (worker, shop, sprites, art, run and tutorial).
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [main, flows]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -76,16 +83,20 @@ jobs:
         run: pnpm --filter @game/web exec playwright install-deps chromium
       - run: pnpm smoke
         timeout-minutes: 12
+        env:
+          SMOKE_PART: ${{ matrix.part }}
       - uses: actions/upload-artifact@v4
         if: failure()
         timeout-minutes: 3
         continue-on-error: true
         with:
-          name: smoke-output
+          name: smoke-output-${{ matrix.part }}
           path: packages/web/smoke-output/*.png
           if-no-files-found: ignore
           retention-days: 3
+      # The goldens do not depend on the part, so one of them checks them.
       - name: Golden files are up to date
+        if: matrix.part == 'main'
         run: |
           pnpm golden:update
           git status --porcelain

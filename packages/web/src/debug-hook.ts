@@ -11,6 +11,11 @@ import type { Selection } from './board/render.js';
 export interface DebugHook {
   camera?: () => Camera;
   viewport?: () => { w: number; h: number };
+  /**
+   * Canvas-relative screen point at the centre of one cell of a placed
+   * building that is inside the viewport, or null when none is.
+   */
+  buildingScreenPoint?: () => { x: number; y: number } | null;
   hovered?: () => Hit | null;
   selection?: () => Selection | null;
   /** View-space rectangle (cells) of the own Core, or null when unplaced. */
