@@ -20,6 +20,8 @@ import {
   tierPrice,
 } from '@game/core';
 import {
+  chainPlaceable,
+  isChainPiece,
   planLayout,
   plotRoom,
   wouldPlace,
@@ -119,7 +121,8 @@ function isWallDef(
 
 const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
   rush: {
-    description: 'Extractors feeding barracks, no defenses, hard PvE.',
+    description:
+      'Extractors feeding barracks and Golems, no defenses, hard PvE.',
     core: 'front',
     want: {
       bld_barracks: 10,
@@ -129,6 +132,10 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       bld_overclocker: 3,
       bld_turret: 1,
       bld_splitter: 6,
+      // Golems as a front line (issue #384).
+      bld_refinery_ab: 6,
+      bld_golem_forge: 6,
+      bld_foundry: 3,
     },
     tierBonus: 1,
     maxBuys: 8,
@@ -149,20 +156,25 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
         'bld_turret',
       ],
       links: true,
+      reserve: { res_a: 1, res_b: 1 },
     },
     roles: true,
   },
   fortify: {
-    description: 'Turrets and walls around the Core, then a slow ramp.',
+    description:
+      'Turrets and walls around the Core, casters, then a slow ramp.',
     core: 'back',
     want: {
       bld_turret: 10,
       ...wantWalls(8),
       bld_extractor: 7,
       bld_gate: 4,
-      bld_overclocker: 5,
       bld_range: 6,
       bld_barracks: 4,
+      // The Aether chain: casters behind the walls (issue #384).
+      bld_refinery_bc: 8,
+      bld_spire: 8,
+      bld_foundry: 3,
     },
     tierBonus: 2,
     maxBuys: 8,
@@ -187,6 +199,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
         'bld_barracks',
         'bld_armory',
       ],
+      reserve: { res_b: 1, res_c: 1 },
     },
   },
   siege: {
@@ -201,6 +214,7 @@ const STRATEGIES: Readonly<Record<BotStrategyName, Strategy>> = {
       bld_overclocker: 2,
       bld_hangar: 3,
       bld_splitter: 5,
+      bld_foundry: 4,
     },
     tierBonus: 6,
     maxBuys: 5,
@@ -322,6 +336,8 @@ class Driver {
   accepted = 0;
   /** Border-link halves the bot has drawn. */
   linkHalves = 0;
+  /** Round in which each player bought the first piece of a chain. */
+  readonly chainSince = new Map<number, number>();
   readonly battles: BattleStat[] = [];
   trackBattles = false;
   readonly rejected: Rejection[] = [];
@@ -420,18 +436,40 @@ function buildScore(s: Strategy, def: string, tier: number, rng: Rng): number {
   return base === 0 ? 0 : base * 10 + tier * s.tierBonus;
 }
 
+/** The consumer each refinery feeds (issue #384). */
+const REFINERY_USER: Readonly<Record<string, string>> = {
+  bld_refinery_ab: 'bld_golem_forge',
+  bld_refinery_bc: 'bld_spire',
+};
+/** The refineries of `REFINERY_USER`, in a fixed order. */
+const REFINERIES: readonly string[] = ['bld_refinery_ab', 'bld_refinery_bc'];
+
+/** The other half of a refining chain, or undefined (the Foundry stands alone). */
+function chainPartner(def: string): string | undefined {
+  return REFINERY_USER[def] ?? REFINERIES.find((r) => REFINERY_USER[r] === def);
+}
+
 /**
- * Buildings the bot cannot wire yet (two inputs, refined resources; issue
- * #384): it never buys them, so nothing waits in the stash for a layout that
- * cannot place it.
+ * Rounds up to which a chain-minded strategy keeps nodes free for its chain;
+ * after that the nodes go to ordinary collectors.
  */
-const UNSUPPORTED = new Set([
-  'bld_foundry',
-  'bld_refinery_ab',
-  'bld_refinery_bc',
-  'bld_golem_forge',
-  'bld_spire',
-]);
+const RESERVE_ROUNDS = 9;
+
+function withoutReserve(style: LayoutStyle): LayoutStyle {
+  return {
+    connect: style.connect,
+    walls: style.walls,
+    placeLeftovers: style.placeLeftovers,
+    priority: style.priority,
+    ...(style.links === undefined ? {} : { links: style.links }),
+  };
+}
+
+/** Rounds a bot with half a chain saves gold for the other half. */
+const CHAIN_SAVE_ROUNDS = 4;
+
+/** Re-rolls a bot with half a chain in the stash may make, whatever its style. */
+const CHAIN_REROLLS = 20;
 
 const CONSUMERS = [
   'bld_barracks',
@@ -477,6 +515,69 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       const walls = owned.filter((b) =>
         isWallDef(d.deps.content, b.def),
       ).length;
+      const stashed = (def: string): number =>
+        d.state.team.stash.filter((b) => b.owner === p && b.def === def).length;
+      const ownedDef = (def: string): number =>
+        owned.filter((b) => b.def === def).length;
+      // Collectors a chain on the board uses are not for consumers; those a
+      // complete chain (or a Foundry) in the stash is waiting for are bought
+      // for it (issue #384).
+      let pendingExtractors = 2 * stashed('bld_foundry');
+      let halfChain = false;
+      // Gold a re-roll keeps for the missing pieces and the two collectors.
+      let chainReserve = 0;
+      // Half a chain in the stash: gold is saved for its other half (for a
+      // few rounds only, so a chain that never completes costs little).
+      let savingFor: string | undefined;
+      for (const ref of REFINERIES) {
+        const user = REFINERY_USER[ref] ?? '';
+        if (stashed(ref) > 0 && stashed(user) > 0) pendingExtractors += 2;
+        // A chain the strategy wants and does not have yet: re-roll for the
+        // missing pieces, keeping the gold to buy them and their collectors.
+        if (
+          (s.want[ref] ?? 0) > 0 &&
+          !s.random &&
+          s.layout.connect &&
+          d.state.round >= 3 &&
+          ownedDef(ref) + ownedDef(user) === stashed(ref) + stashed(user)
+        ) {
+          const missing = [ref, user].filter((def) => stashed(def) === 0);
+          if (missing.length > 0) {
+            halfChain = true;
+            if (missing.length === 1) savingFor = missing[0];
+            chainReserve = Math.max(
+              chainReserve,
+              missing.reduce(
+                (sum, def) => sum + tierPrice(d.deps.content, def, 1),
+                2 * tierPrice(d.deps.content, 'bld_extractor', 1),
+              ),
+            );
+          }
+        }
+      }
+      // A strategy without a chain of its own re-rolls for a Foundry it
+      // does not have.
+      if (
+        (s.want.bld_foundry ?? 0) > 0 &&
+        !REFINERIES.some((r) => (s.want[r] ?? 0) > 0) &&
+        !s.random &&
+        s.layout.connect &&
+        d.state.round >= 3 &&
+        ownedDef('bld_foundry') === 0
+      ) {
+        halfChain = true;
+        chainReserve = Math.max(
+          chainReserve,
+          tierPrice(d.deps.content, 'bld_foundry', 1) +
+            2 * tierPrice(d.deps.content, 'bld_extractor', 1),
+        );
+      }
+      const chainBoard = d.state.team.buildings.filter(
+        (b) =>
+          b.owner === p &&
+          (d.deps.content.buildings.get(b.def)?.kind === 'refinery' ||
+            b.def === 'bld_foundry'),
+      ).length;
       const room = plotRoom(
         d.state.team,
         p,
@@ -514,6 +615,12 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       const splittersWaiting = d.state.team.stash.filter(
         (b) => b.owner === p && b.def === 'bld_splitter',
       ).length;
+      const sourcesFree = Math.max(
+        0,
+        sources -
+          2 * chainBoard -
+          Math.min(extractorsWaiting, pendingExtractors),
+      );
       const shareNext = splitters * 2 < users && splittersWaiting === 0;
       // What the layout step would do with a bought offer, asked of the
       // layout code itself on a copy of the team (issue #178).
@@ -555,6 +662,11 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
       // their own.
       const role = s.roles === true && n >= 2 ? (p % 2 === 0 ? 1 : 2) : 0;
       const slack = role === 0 ? 1 : 3;
+      const since = d.chainSince.get(p);
+      const saving =
+        savingFor !== undefined &&
+        since !== undefined &&
+        d.state.round - since <= CHAIN_SAVE_ROUNDS;
       let best = -1;
       let bestScore = 0;
       data.offers.forEach((o, slot) => {
@@ -566,7 +678,8 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
           // out those no plot cell can take, so it may hold one more consumer
           // for its neighbours' spare collectors to feed.
           const more = role === 2 ? slack + 1 : 1;
-          if (o.def === 'bld_extractor' && sources >= users + extra) score = 0;
+          if (o.def === 'bld_extractor' && sourcesFree >= users + extra)
+            score = 0;
           if (CONSUMERS.includes(o.def) && users >= sources + more) {
             score = 0;
           }
@@ -680,6 +793,64 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
             }
           }
         }
+        if (s.random) {
+          // The weak bot buys a Foundry at random but never the refining
+          // buildings, which it could not wire.
+          if (isChainPiece(d.deps.content, o.def) && o.def !== 'bld_foundry') {
+            score = 0;
+          }
+        } else if (isChainPiece(d.deps.content, o.def)) {
+          // A chain piece: bought when the whole chain would be placed on
+          // this plot, and only one of each; the collectors it needs are
+          // paid for once its partner is in the stash.
+          const partner = chainPartner(o.def);
+          const complete = partner === undefined || stashed(partner) > 0;
+          const ext = tierPrice(d.deps.content, 'bld_extractor', 1);
+          if (
+            !s.layout.connect ||
+            ownedDef(o.def) > 0 ||
+            (partner !== undefined &&
+              d.state.team.buildings.some(
+                (b) => b.owner === p && b.def === partner,
+              )) ||
+            (complete && o.price + 2 * ext > me.gold) ||
+            !chainPlaceable(
+              d.state.team,
+              p,
+              d.deps.content,
+              d.state.team.map.plotWidth,
+              s.layout,
+              [
+                { def: o.def, tier: o.tier },
+                ...(partner !== undefined && !complete
+                  ? [{ def: partner, tier: 1 }]
+                  : []),
+                { def: 'bld_extractor', tier: 1 },
+                { def: 'bld_extractor', tier: 1 },
+              ],
+            )
+          ) {
+            score = 0;
+          }
+        } else if (
+          o.def === 'bld_extractor' &&
+          s.layout.connect &&
+          pendingExtractors > extractorsWaiting
+        ) {
+          // Collectors for a chain waiting in the stash.
+          score =
+            (s.want[o.def] ?? 0) > 0 && extractorsWaiting < openNodes
+              ? 1000 + buildScore(s, o.def, o.tier, rng)
+              : 0;
+        }
+        if (
+          saving &&
+          o.def !== savingFor &&
+          o.def !== 'bld_extractor' &&
+          me.gold - o.price < chainReserve
+        ) {
+          score = 0;
+        }
         if (
           s.wallCap !== undefined &&
           isWallDef(d.deps.content, o.def) &&
@@ -689,22 +860,32 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
         }
         // A style that does not connect places no collector at all.
         if (o.def === 'bld_extractor' && !s.layout.connect) score = 0;
-        if (UNSUPPORTED.has(o.def)) score = 0;
         if (score > bestScore) {
           bestScore = score;
           best = slot;
         }
       });
       if (best >= 0) {
-        if (d.send(p, { type: 'buy', slot: best })) buys++;
-        else break;
+        const bought = data.offers[best]?.def;
+        if (d.send(p, { type: 'buy', slot: best })) {
+          buys++;
+          if (
+            bought !== undefined &&
+            isChainPiece(d.deps.content, bought) &&
+            !d.chainSince.has(p)
+          ) {
+            d.chainSince.set(p, d.state.round);
+          }
+        } else break;
         continue;
       }
       const cost = opts.rerollCost;
       if (
         cost !== undefined &&
-        rerolls < s.maxRerolls &&
-        me.gold >= cost + rerollReserve(d, s, consumersWaiting) &&
+        rerolls < Math.max(s.maxRerolls, halfChain ? CHAIN_REROLLS : 0) &&
+        me.gold >=
+          cost +
+            Math.max(rerollReserve(d, s, consumersWaiting), chainReserve) &&
         d.send(p, { type: 'reroll' })
       ) {
         rerolls++;
@@ -891,7 +1072,14 @@ export function playBotRun(
     }
     if (d.accepted > cap) throw new Error('bot: too many intents');
     const before = d.state.actionCounter;
-    playStep(d, strategy, rng, options);
+    playStep(
+      d,
+      d.state.round > RESERVE_ROUNDS
+        ? { ...strategy, layout: withoutReserve(strategy.layout) }
+        : strategy,
+      rng,
+      options,
+    );
     if (d.state.actionCounter === before) {
       stuck++;
       if (stuck >= 3) {

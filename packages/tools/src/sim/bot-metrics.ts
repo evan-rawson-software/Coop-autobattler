@@ -54,6 +54,8 @@ export interface BattleMetrics {
   readonly producerWaiting: number;
   /** Units the party's producers made. */
   readonly unitsMade: number;
+  /** The same by unit definition: soldiers, heavies, Golems, casters. */
+  readonly spawned: Readonly<Record<string, number>>;
   /** Units they could have made at top speed: sum of floor(life / interval). */
   readonly unitsTopSpeed: number;
   readonly turretTicks: number;
@@ -257,6 +259,7 @@ export function measureBattle(
   let turretTicks = 0;
   let turretWaiting = 0;
   let unitsMade = 0;
+  const spawned: Record<string, number> = {};
   while (!battle.isOver()) {
     const sim = battle.sim;
     const readyProducers = new Map<number, boolean>();
@@ -278,7 +281,10 @@ export function measureBattle(
       const e = battle.eventLog[i] as ArenaEvent;
       if (e.type === 'unit_spawned' && e.side === 0) {
         acted.add(e.building);
-        if (producers.has(e.building)) unitsMade++;
+        if (producers.has(e.building)) {
+          unitsMade++;
+          spawned[e.def] = (spawned[e.def] ?? 0) + 1;
+        }
       } else if (e.type === 'turret_fired' && e.side === 0) {
         fired.add(e.building);
       }
@@ -327,6 +333,7 @@ export function measureBattle(
     producerTicks,
     producerWaiting,
     unitsMade,
+    spawned,
     unitsTopSpeed,
     turretTicks,
     turretWaiting,
@@ -401,6 +408,20 @@ export function metricLines(
       sum((m) => m.unitsTopSpeed),
     )} (${String(sum((m) => m.unitsMade))} of ${String(sum((m) => m.unitsTopSpeed))})`,
   ];
+  const made = new Map<string, number>();
+  for (const m of ms) {
+    for (const [unit, n] of Object.entries(m.spawned)) {
+      made.set(unit, (made.get(unit) ?? 0) + n);
+    }
+  }
+  lines.push(
+    `  Units made by type: ${
+      [...made]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([unit, n]) => `${unit.replace('unit_', '')} ${String(n)}`)
+        .join(', ') || '-'
+    }`,
+  );
   const multi = ms.filter((m) => m.partySize >= 2);
   if (multi.length === 0) {
     lines.push('  First Core lost: - (needs a party of 2 or more)');

@@ -41,6 +41,12 @@ export interface LayoutStyle {
   readonly priority: readonly string[];
   /** Share supply with a neighbour through border links (PP-4). */
   readonly links?: boolean;
+  /**
+   * Nodes kept free of plain collectors, by resource, until the player has a
+   * Foundry or a refinery on the board: the refining chains need nodes of two
+   * resources, and the bot's own economy would take them first (issue #384).
+   */
+  readonly reserve?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -325,6 +331,42 @@ export function nearby(env: Env, around: Cell, w: number): Cell[] {
   );
 }
 
+/**
+ * Every way to place a stashed consumer near a placed source and connect
+ * them, nearest position first.
+ */
+function* consumerPlacements(
+  env: Env,
+  plan: Plan,
+  sourceId: number,
+  consumerId: number,
+  wantSide?: Side,
+  wantInput?: Side,
+): Generator<Plan> {
+  const s = plan.team.buildings.find((b) => b.id === sourceId);
+  const c = plan.team.stash.find((b) => b.id === consumerId);
+  if (s === undefined || c === undefined) return;
+  const outSide =
+    wantSide ?? occupancy(plan.team, env.content).absoluteSides(s).outputs[0];
+  if (outSide === undefined) return;
+  const sb = boxOf(env, s);
+  const start = outsideCell(s, sb.w, sb.h, outSide, 0);
+  const size = sizeOf(env, c.def);
+  for (const pos of nearby(env, start, size.w)) {
+    const placed = withPlace(env, plan, consumerId, pos.x, pos.y);
+    if (placed === null) continue;
+    const done = withConduit(
+      env,
+      placed,
+      sourceId,
+      consumerId,
+      wantSide,
+      wantInput,
+    );
+    if (done !== null && sealsNothingNew(env, done.team)) yield done;
+  }
+}
+
 /** Place a stashed consumer near a placed source and connect them. */
 function placeConsumerNear(
   env: Env,
@@ -332,27 +374,36 @@ function placeConsumerNear(
   sourceId: number,
   consumerId: number,
   wantSide?: Side,
+  wantInput?: Side,
 ): Plan | null {
-  const s = plan.team.buildings.find((b) => b.id === sourceId);
-  const c = plan.team.stash.find((b) => b.id === consumerId);
-  if (s === undefined || c === undefined) return null;
-  const outSide =
-    wantSide ?? occupancy(plan.team, env.content).absoluteSides(s).outputs[0];
-  if (outSide === undefined) return null;
-  const sb = boxOf(env, s);
-  const start = outsideCell(s, sb.w, sb.h, outSide, 0);
-  const size = sizeOf(env, c.def);
-  for (const pos of nearby(env, start, size.w)) {
-    const placed = withPlace(env, plan, consumerId, pos.x, pos.y);
-    if (placed === null) continue;
-    const done = withConduit(env, placed, sourceId, consumerId, wantSide);
-    if (done !== null && sealsNothingNew(env, done.team)) return done;
+  for (const done of consumerPlacements(
+    env,
+    plan,
+    sourceId,
+    consumerId,
+    wantSide,
+    wantInput,
+  )) {
+    return done;
   }
   return null;
 }
 
 /** Nodes of a resource inside the player's plot, free of anything. */
-export function freeNodes(env: Env, team: TeamState, resource: string): Cell[] {
+export function freeNodes(
+  env: Env,
+  team: TeamState,
+  resource: string,
+  /** The chain step may use the nodes kept back for it. */
+  forChain = false,
+): Cell[] {
+  const kept = forChain ? [] : reservedNodes(env, team);
+  return plotNodes(env, team, resource).filter(
+    (n) => !kept.some((k) => k.x === n.x && k.y === n.y),
+  );
+}
+
+function plotNodes(env: Env, team: TeamState, resource: string): Cell[] {
   const nodes: Cell[] = [];
   for (const n of team.map.nodes) {
     if (n.resource === resource && n.x >= env.x0 && n.x < env.x1) {
@@ -360,6 +411,33 @@ export function freeNodes(env: Env, team: TeamState, resource: string): Cell[] {
     }
   }
   return nodes;
+}
+
+/**
+ * The nodes the style keeps back for a refining chain (`LayoutStyle.reserve`)
+ * while the player has no Foundry or refinery on the board: the last nodes
+ * of each resource in reading order.
+ */
+function reservedNodes(env: Env, team: TeamState): Cell[] {
+  if (env.style.reserve === undefined) return [];
+  const built = team.buildings.some(
+    (b) =>
+      b.owner === env.player &&
+      (defOf(env, b.def)?.kind === 'refinery' || b.def === 'bld_foundry'),
+  );
+  if (built) return [];
+  const out: Cell[] = [];
+  const reserve = env.style.reserve;
+  for (const resource of Object.getOwnPropertyNames(reserve).sort((a, b) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  )) {
+    const keep = reserve[resource] ?? 0;
+    const nodes = plotNodes(env, team, resource).sort(
+      (a, b) => a.y - b.y || a.x - b.x,
+    );
+    out.push(...nodes.slice(Math.max(0, nodes.length - keep)));
+  }
+  return out;
 }
 
 function attached(team: TeamState): Set<number> {
@@ -470,8 +548,22 @@ function placeLoose(env: Env, plan: Plan, id: number): Plan | null {
   if (kind === 'source') return null;
   // Walls and gates keep to every other cell so the screen has gaps.
   const spaced = kind === 'defense' && item.def !== 'bld_turret';
+  const kept = reservedNodes(env, plan.team);
   for (const pos of scanCells(env, plan.team, size.w, size.h)) {
     if (spaced && (pos.x + pos.y) % 2 !== 0) continue;
+    // Nothing loose goes on or around a node kept for a chain: the collector
+    // there needs its output side and a way out.
+    if (
+      kept.some(
+        (k) =>
+          k.x + 1 >= pos.x &&
+          k.x - 1 < pos.x + size.w &&
+          k.y + 3 >= pos.y &&
+          k.y - 1 < pos.y + size.h,
+      )
+    ) {
+      continue;
+    }
     const placed = withPlace(env, plan, id, pos.x, pos.y);
     if (placed !== null && sealsNothingNew(env, placed.team)) return placed;
   }
@@ -808,6 +900,210 @@ function connectShare(
   return null;
 }
 
+/** The resources a refinery makes (refined resources). */
+function refinedResources(content: Content): Set<string> {
+  const out = new Set<string>();
+  for (const d of content.buildings.list()) {
+    const o = (d as { output?: unknown }).output;
+    if (d.kind === 'refinery' && typeof o === 'string') out.add(o);
+  }
+  return out;
+}
+
+/**
+ * Buildings the plain one-collector layout must not touch (issue #384): a
+ * refinery, a building with two inputs (the Foundry) and a consumer of a
+ * refined resource (the Golem forge, the Spire). They are wired as a whole by
+ * the chain step, or stay in the stash.
+ */
+export function isChainPiece(content: Content, def: string): boolean {
+  const d = content.buildings.get(def);
+  if (d === undefined || d.kind === 'route' || d.kind === 'source') {
+    return false;
+  }
+  if (d.kind === 'refinery' || d.inputs.length >= 2) return true;
+  const r = d.inputs[0]?.resource;
+  return r !== undefined && refinedResources(content).has(r);
+}
+
+/** Free collectors of a resource: placed and unwired, or a stashed one put on a free node. */
+function* collectorStarts(
+  env: Env,
+  plan: Plan,
+  resource: string,
+  near?: Cell,
+): Generator<{ plan: Plan; id: number }> {
+  const t = plan.team;
+  const taken = attached(t);
+  for (const b of t.buildings) {
+    if (
+      b.owner === env.player &&
+      defOf(env, b.def)?.kind === 'source' &&
+      !taken.has(b.id) &&
+      resourceOf(env, t, b) === resource
+    ) {
+      yield { plan, id: b.id };
+    }
+  }
+  const stash = t.stash.find(
+    (b) => b.owner === env.player && defOf(env, b.def)?.kind === 'source',
+  );
+  if (stash === undefined) return;
+  let nodes = shuffle(freeNodes(env, t, resource, true), env.rng);
+  if (near !== undefined) {
+    nodes = nodes
+      .map((node, seq) => ({ node, seq }))
+      .sort(
+        (a, b) =>
+          Math.abs(a.node.x - near.x) +
+            Math.abs(a.node.y - near.y) -
+            (Math.abs(b.node.x - near.x) + Math.abs(b.node.y - near.y)) ||
+          a.seq - b.seq,
+      )
+      .map((e) => e.node);
+  }
+  for (const node of nodes) {
+    const placed = withPlace(env, plan, stash.id, node.x, node.y);
+    if (placed !== null) yield { plan: placed, id: stash.id };
+  }
+}
+
+/** Most collector choices tried for one two-input building. */
+const WIRE_TRIES = 150;
+
+/**
+ * Place a stashed two-input building and give each input its own collector
+ * of the right resource (a placed free one, or a stashed one on a free
+ * node). Conduits never cross (CB-3g): each route avoids the cells of the
+ * ones before it. `finish` completes the plan (the chain's next piece) and
+ * may refuse it; the first plan it accepts is returned, else null. Nothing
+ * is returned half-wired.
+ */
+function wireTwo(
+  env: Env,
+  plan: Plan,
+  id: number,
+  finish: (p: Plan) => Plan | null,
+): Plan | null {
+  const item = plan.team.stash.find((b) => b.id === id);
+  const inputs = item === undefined ? [] : (defOf(env, item.def)?.inputs ?? []);
+  const in0 = inputs[0];
+  const in1 = inputs[1];
+  if (in0?.resource === undefined || in1?.resource === undefined) return null;
+  let tries = 0;
+  // Anchor the building next to either input's collector first: whichever
+  // fits the plot.
+  for (const [first, second] of [
+    [in0, in1],
+    [in1, in0],
+  ] as const) {
+    if (first.resource === undefined || second.resource === undefined) continue;
+    for (const s1 of collectorStarts(env, plan, first.resource)) {
+      for (const p1 of consumerPlacements(
+        env,
+        s1.plan,
+        s1.id,
+        id,
+        undefined,
+        first.side,
+      )) {
+        const c = p1.team.buildings.find((b) => b.id === id);
+        if (c === undefined) continue;
+        for (const s2 of collectorStarts(env, p1, second.resource, c)) {
+          if (tries++ >= WIRE_TRIES) return null;
+          const p2 = withConduit(
+            env,
+            s2.plan,
+            s2.id,
+            id,
+            undefined,
+            second.side,
+          );
+          if (p2 === null || !sealsNothingNew(env, p2.team)) continue;
+          const done = finish(p2);
+          if (done !== null) return done;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/** Wire a refinery to its two collectors and its consumer, all or nothing. */
+function connectChain(
+  env: Env,
+  plan: Plan,
+  refineryId: number,
+  userId: number,
+): Plan | null {
+  return wireTwo(env, plan, refineryId, (p) => {
+    const done = placeConsumerNear(env, p, refineryId, userId);
+    return done !== null && sealsNothingNew(env, done.team) ? done : null;
+  });
+}
+
+/**
+ * The chain step of the layout: every Foundry in the stash with two
+ * collectors, every refinery with the consumer of its output. A chain that
+ * does not fit whole stays in the stash and changes nothing.
+ */
+function planChains(env: Env, start: Plan): Plan {
+  let plan = start;
+  const stashed = () => plan.team.stash.filter((b) => b.owner === env.player);
+  for (const f of stashed()) {
+    const d = defOf(env, f.def);
+    if (d === undefined || d.kind === 'refinery' || d.inputs.length < 2) {
+      continue;
+    }
+    const done = wireTwo(env, plan, f.id, (p) => p);
+    if (done !== null) plan = done;
+  }
+  for (const r of stashed()) {
+    const out = (defOf(env, r.def) as { output?: string } | undefined)?.output;
+    if (defOf(env, r.def)?.kind !== 'refinery' || out === undefined) continue;
+    const user = stashed().find(
+      (b) =>
+        defOf(env, b.def)?.kind === 'unit_producer' &&
+        defOf(env, b.def)?.inputs.length === 1 &&
+        defOf(env, b.def)?.inputs[0]?.resource === out,
+    );
+    if (user === undefined) continue;
+    const done = connectChain(env, plan, r.id, user.id);
+    if (done !== null) plan = done;
+  }
+  return plan;
+}
+
+/**
+ * Would a refinery chain (or a Foundry) be placed whole on the player's plot?
+ * A dry run of the layout with `extra` (the offer, the partner piece it
+ * lacks, two collectors) added to the stash: true when every chain piece of
+ * `extra` gets a place on the board.
+ */
+export function chainPlaceable(
+  team: TeamState,
+  player: number,
+  content: Content,
+  plotWidth: number,
+  style: LayoutStyle,
+  extra: readonly { def: string; tier: number }[],
+): boolean {
+  const trial = withStashed(team, player, extra);
+  const intents = planLayout(
+    trial,
+    player,
+    content,
+    plotWidth,
+    { ...style, placeLeftovers: false },
+    Rng.fromSeed(1),
+  );
+  const placed = new Set<number>();
+  for (const i of intents) if (i.type === 'place_building') placed.add(i.id);
+  return trial.stash
+    .filter((b) => b.id >= team.nextId && isChainPiece(content, b.def))
+    .every((b) => placed.has(b.id));
+}
+
 function consumersOf(env: Env, team: TeamState, rank: (d: string) => number) {
   return [...team.buildings, ...team.stash]
     .filter((b) => {
@@ -817,7 +1113,8 @@ function consumersOf(env: Env, team: TeamState, rank: (d: string) => number) {
         d !== undefined &&
         d.kind !== 'route' &&
         d.kind !== 'source' &&
-        d.inputs.length > 0
+        d.inputs.length > 0 &&
+        !isChainPiece(env.content, b.def)
       );
     })
     .sort(
@@ -954,7 +1251,8 @@ export function planLayout(
     return i === -1 ? style.priority.length : i;
   };
   if (style.connect) {
-    const consumers = consumersOf(env, team, rank);
+    plan = planChains(env, plan);
+    const consumers = consumersOf(env, plan.team, rank);
     for (const c of consumers) {
       if (attached(plan.team).has(c.id)) continue;
       const input = defOf(env, c.def)?.inputs[0];
