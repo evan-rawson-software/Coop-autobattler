@@ -1356,6 +1356,22 @@ try {
           (reach.before.every(Boolean) || reach.scrollable),
         `build at 1280x720: the Selected panel's buttons are in view or reachable by scrolling the rail (${JSON.stringify(reach)})`,
       );
+      // Issue #352: no bare text between the rail's panels.
+      const loose = await page.evaluate(() =>
+        [...document.querySelectorAll('.frame-info > *')]
+          .filter(
+            (e) =>
+              !e.classList.contains('panel') &&
+              !e.classList.contains('info-spacer') &&
+              e.textContent.trim() !== '',
+          )
+          .map((e) => e.className || e.tagName),
+      );
+      check(
+        loose.length === 0 &&
+          (await page.locator('.frame-info > .panel .key-hints').count()) === 1,
+        `build: every item in the info rail is a panel, Keys included (${JSON.stringify(loose)})`,
+      );
       await page.keyboard.press('Escape');
       await settle();
     }

@@ -21,7 +21,7 @@ import { useContext, useEffect, useRef } from 'preact/hooks';
 import { StorageNotes } from '../run/StorageNotes.js';
 import { screenText, screenTexts } from '../build/texts.js';
 import { MapRail, type MapRailProps } from './MapRail.js';
-import { TopBar, type TabDef } from './AppShell.js';
+import { Panel, TopBar, type TabDef } from './AppShell.js';
 import { PhaseInfoTop } from './PhaseStepper.js';
 import { TutorialContext, targetOf } from '../tutorial/context.js';
 import { TutorialChecklist } from '../tutorial/TutorialCard.js';
@@ -88,21 +88,22 @@ export function Kbd(props: { children: ComponentChildren; class?: string }) {
 /** The key hints line, the same everywhere the tools show. */
 export function KeyHints() {
   return (
-    <p class="key-hints" data-field="key-hints">
-      <span class="key-hints-label">{t('uiKeyHintLabel')}</span>
-      <span>
-        <Kbd>1</Kbd>–<Kbd>9</Kbd> {t('uiKeySlots')}
-      </span>
-      <span>
-        <Kbd>R</Kbd> {t('uiKeyRotate')}
-      </span>
-      <span>
-        <Kbd>C</Kbd> {t('uiKeyConduit')}
-      </span>
-      <span>
-        <Kbd>Esc</Kbd> {t('uiKeyCancel')}
-      </span>
-    </p>
+    <Panel title={t('uiKeyHintLabel')} class="key-hints-panel">
+      <p class="key-hints" data-field="key-hints">
+        <span>
+          <Kbd>1</Kbd>–<Kbd>9</Kbd> {t('uiKeySlots')}
+        </span>
+        <span>
+          <Kbd>R</Kbd> {t('uiKeyRotate')}
+        </span>
+        <span>
+          <Kbd>C</Kbd> {t('uiKeyConduit')}
+        </span>
+        <span>
+          <Kbd>Esc</Kbd> {t('uiKeyCancel')}
+        </span>
+      </p>
+    </Panel>
   );
 }
 

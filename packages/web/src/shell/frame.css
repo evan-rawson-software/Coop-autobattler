@@ -224,13 +224,6 @@
   color: var(--ink-muted);
 }
 
-.key-hints-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 /* ---- Tools and inventory slots in the tray ---- */
 
 .tray-tools {
@@ -463,8 +456,7 @@
   cursor: pointer;
 }
 
-.phase-next {
-  flex: 0 0 auto;
+.phase-next p {
   margin: 0;
   font-weight: 600;
   font-size: 0.9rem;

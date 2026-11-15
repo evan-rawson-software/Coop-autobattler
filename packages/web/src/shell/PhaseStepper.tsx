@@ -13,6 +13,7 @@ import {
   type PhaseId,
   type StepId,
 } from './phase.js';
+import { Panel } from './AppShell.js';
 import { markTipSeen, seenTipsStore } from './phase-tips.js';
 import { TutorialContext } from '../tutorial/context.js';
 import { TutorialCard } from '../tutorial/TutorialCard.js';
@@ -133,9 +134,11 @@ export function PhaseInfoTop(props: { framePhase?: string }) {
         <PhaseBox phase={info.phase} />
       ) : null}
       {info.next === null ? null : (
-        <p class="phase-next" data-field="next-phase">
-          {t('uiPhaseNext', { phase: phaseName(info.next) })}
-        </p>
+        <Panel class="phase-next">
+          <p data-field="next-phase">
+            {t('uiPhaseNext', { phase: phaseName(info.next) })}
+          </p>
+        </Panel>
       )}
     </>
   );

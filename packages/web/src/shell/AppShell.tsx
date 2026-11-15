@@ -130,14 +130,17 @@ export function Dock(props: {
 }
 
 export function Panel(props: {
-  title: string;
+  /** Omit for a panel that is only a short note. */
+  title?: string;
   children?: ComponentChildren;
   class?: string;
   id?: string;
 }) {
   return (
     <section class={`panel ${props.class ?? ''}`} id={props.id}>
-      <h2 class="panel-title">{props.title}</h2>
+      {props.title === undefined ? null : (
+        <h2 class="panel-title">{props.title}</h2>
+      )}
       <div class="panel-body">{props.children}</div>
     </section>
   );
