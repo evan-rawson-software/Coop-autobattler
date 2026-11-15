@@ -273,6 +273,11 @@
           "type": "integer",
           "minimum": 0
         },
+        "pool": {
+          "description": "Only when the target is a Core of a side with linked Cores (MM-9d): the shared pool's health at the start of the tick, before the tick's damage.",
+          "type": "integer",
+          "minimum": 0
+        },
         "target": {
           "oneOf": [
             {
@@ -591,6 +596,11 @@
         "damage": {
           "type": "integer",
           "minimum": 1
+        },
+        "pool": {
+          "description": "Only for a side with linked Cores (MM-9d): the decay is taken from the shared pool once, so this is the only decay event of the side that beat, naming its lowest living Core; `pool` is the pool's health at the start of the tick.",
+          "type": "integer",
+          "minimum": 0
         },
         "tick": {
           "type": "integer",

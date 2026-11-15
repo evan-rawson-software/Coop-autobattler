@@ -25,7 +25,11 @@ import {
 
 const config = { sim: simConfig, mapgen };
 const configs = { threats, mapgen };
-const ARCHETYPES = threats.archetypes.map((a) => a.id);
+// The single-player sweeps: an archetype that needs a bigger party (Linked)
+// cannot be generated for party size 1.
+const ARCHETYPES = threats.archetypes
+  .filter((a) => (a.minPartySize ?? 1) <= 1)
+  .map((a) => a.id);
 
 const boards = Object.fromEntries(
   REFERENCE_BOARDS.map((n) => [n, buildReferenceBoard(n, content, mapgen)]),

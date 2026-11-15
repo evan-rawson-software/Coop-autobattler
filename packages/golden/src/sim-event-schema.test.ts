@@ -192,6 +192,48 @@ describe('sim-event.schema.json', () => {
     ).toBe(false);
   }, 60_000);
 
+  test('every event of the Linked Cores pve-battle vectors validates, the pool field included', () => {
+    const content = loadAllContentOrThrow({
+      resources: rawResources,
+      terrain: rawTerrain,
+      units: rawUnits,
+      buildings: rawBuildings,
+      presentation: rawPresentationEn,
+    });
+    const kind = makePveBattleKind(
+      content,
+      loadMapgenOrThrow(rawMapgen, { terrain: content.terrain }),
+      loadSimConfigOrThrow(rawSim),
+      loadThreatsOrThrow(rawThreats, {
+        units: content.units,
+        buildings: content.buildings,
+      }),
+    );
+    const pve = JSON.parse(
+      readFileSync(path.join(repoRoot, 'golden', 'pve-battle.json'), 'utf8'),
+    ) as { id: string; input: never }[];
+    let pools = 0;
+    for (const v of pve.filter(
+      (x) => x.id.includes('-linked-r5') || x.id.includes('time-limit-pool'),
+    )) {
+      for (const e of kind(v.input).eventLog ?? []) {
+        expect(validate(e), JSON.stringify(e)).toBe(true);
+        if ('pool' in (e as object)) pools += 1;
+      }
+    }
+    expect(pools).toBeGreaterThan(0);
+    expect(
+      validate({
+        tick: 5,
+        type: 'unit_attacked',
+        unit: 1,
+        target: { kind: 'core', side: 1, core: 0 },
+        damage: 6,
+        pool: -1,
+      }),
+    ).toBe(false);
+  }, 120_000);
+
   test('malformed events are rejected', () => {
     expect(validate({ tick: 1, type: 'produced', building: 2 })).toBe(false);
     expect(validate({ tick: -1, type: 'stalled', building: 2 })).toBe(false);

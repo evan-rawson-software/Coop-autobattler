@@ -63,6 +63,9 @@ export function threatSideOptions(threat: ThreatProfile): SideOptions {
     threat.stronghold.bursts.length === 0
       ? {}
       : { bursts: threat.stronghold.bursts.map((b) => ({ ...b })) }),
+    ...(threat.stronghold.sharedHealth === undefined
+      ? {}
+      : { linkedCores: true }),
   };
 }
 

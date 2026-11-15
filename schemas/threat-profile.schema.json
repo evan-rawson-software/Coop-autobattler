@@ -68,6 +68,11 @@
             }
           }
         },
+        "sharedHealth": {
+          "description": "Optional (present only for an archetype with `linkedCores`, MM-9d). The shared health pool of the Cores: the sum of their `health` fields. Damage to any Core is taken from it once; all Cores fall when it reaches 0.",
+          "type": "integer",
+          "minimum": 1
+        },
         "bursts": {
           "description": "Optional (absent for every archetype without `brood`). Units each Core releases when its health falls to a threshold: ordered by core, then threshold (descending, as listed in the archetype), then composition order. One entry per unit type with a count above 0.",
           "type": "array",

@@ -190,6 +190,10 @@
             "type": "integer",
             "minimum": 1
           },
+          "linkedCores": {
+            "description": "Optional, only when bossOnly is true and minPartySize is at least 2, and not together with brood. The boss Cores share one health pool (MM-9d, Linked Cores).",
+            "type": "boolean"
+          },
           "brood": {
             "description": "Optional, only when bossOnly is true. Core bursts (MM-9d): sharePercent of the stronghold budget is set aside before walls, turrets and Core health; each boss Core releases its share of it as units when its health falls to each threshold.",
             "type": "object",

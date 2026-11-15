@@ -4,11 +4,12 @@
  * `threat-gen`: input `{ seed, round, type, partySize, archetype }`; result
  * `{ profile, hash }` with `hash = hashJson(profile)`.
  *
- * `pve-battle`: input `{ team, threat, seed, coreHealths? }` where `team` is a
+ * `pve-battle`: input `{ team, threat, seed, coreHealths?, partyCoreHealthPercent? }` where `team` is a
  * `team-state-ops` script and `threat` is a `threat-gen` input. The optional
  * `coreHealths` (test only) replaces the generated starting health of the
  * stronghold's Cores by player index, so a scenario can make a Core fall in
- * one hit. Result on
+ * one hit; the optional `partyCoreHealthPercent` (test only) gives the party's
+ * Cores that many percent more health. Result on
  * success: `{ ok: true, result, summary (no timeline), threatHash, zone,
  * stateHash, events }`; the event log is the vector's event log. On a refused
  * battle `{ ok: false, error: { code, message } }`.
@@ -25,6 +26,7 @@ import {
   type Json,
   type MapgenConfig,
   type SimConfig,
+  type TeamState,
   type ThreatInput,
   type ThreatsConfig,
   type ThreatType,
@@ -94,7 +96,37 @@ export function makePveBattleKind(
         'pve-battle: team, threat and a numeric seed are required',
       );
     }
-    const team = runTeamStateOps(script, content, mapgen).state;
+    const scripted = runTeamStateOps(script, content, mapgen).state;
+    // Test-only: `partyCoreHealthPercent` gives the party's Cores that many
+    // percent more health (as a run modifier would), so a battle can reach the
+    // time limit instead of ending with the Overload decay.
+    const bonus = o['partyCoreHealthPercent'];
+    if (
+      bonus !== undefined &&
+      (typeof bonus !== 'number' || !Number.isInteger(bonus) || bonus < 1)
+    ) {
+      throw new TypeError(
+        'pve-battle: partyCoreHealthPercent must be a positive integer',
+      );
+    }
+    const team: TeamState =
+      typeof bonus === 'number'
+        ? {
+            ...scripted,
+            modifiers: [
+              {
+                id: 'mod_golden_core_health',
+                effects: Array.from(
+                  { length: Math.ceil(bonus / 1000) },
+                  (_, i) => ({
+                    kind: 'core_health_percent' as const,
+                    percent: Math.min(1000, bonus - i * 1000),
+                  }),
+                ),
+              },
+            ],
+          }
+        : scripted;
     const generated = generateThreat(threatInput(o['threat']), content, {
       threats,
       mapgen,
@@ -120,6 +152,14 @@ export function makePveBattleKind(
             ...c,
             health: (override[p] as number | undefined) ?? c.health,
           })),
+          ...(generated.stronghold.sharedHealth === undefined
+            ? {}
+            : {
+                sharedHealth: generated.stronghold.cores.reduce(
+                  (a, c, p) => a + ((override[p] as number | undefined) ?? c.health),
+                  0,
+                ),
+              }),
         },
       };
     }

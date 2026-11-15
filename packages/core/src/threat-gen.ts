@@ -7,7 +7,7 @@
 
 import type { ArenaContent } from './arena.js';
 import type { BuildingConfig, BuildingId } from './buildings.js';
-import { divFloor, mulPct } from './int.js';
+import { addInt, divFloor, mulPct } from './int.js';
 import { MAX_HEALTH } from './limits.js';
 import { coreFootprint } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
@@ -72,6 +72,11 @@ export interface Stronghold {
   readonly buildings: readonly StrongholdBuilding[];
   /** Absent for an archetype without `brood`. */
   readonly bursts?: readonly StrongholdBurst[];
+  /**
+   * Only for an archetype with `linkedCores` (MM-9d): the shared health pool of
+   * the Cores, the sum of their `health` fields.
+   */
+  readonly sharedHealth?: number;
 }
 
 export interface ThreatProfile {
@@ -187,6 +192,11 @@ export function generateThreat(
   if (arch === undefined) {
     throw new RangeError(
       `generateThreat: unknown archetype "${input.archetype}".`,
+    );
+  }
+  if (arch.minPartySize !== undefined && partySize < arch.minPartySize) {
+    throw new RangeError(
+      `generateThreat: ${arch.id} needs a party of at least ${String(arch.minPartySize)}.`,
     );
   }
   const budget = threatBudget(threats, round, type, partySize);
@@ -449,6 +459,10 @@ export function generateThreat(
     mulPct(strongholdBudget - spent, sh.coreHealthPerBudget),
   );
 
+  const coreList = cores.map((c, p) => ({
+    ...c,
+    health: Math.min(MAX_HEALTH, shareOf(coreTotal, p, partySize)),
+  }));
   return {
     archetype: input.archetype,
     type,
@@ -458,12 +472,12 @@ export function generateThreat(
     unitStrengthPercent,
     waves,
     stronghold: {
-      cores: cores.map((c, p) => ({
-        ...c,
-        health: Math.min(MAX_HEALTH, shareOf(coreTotal, p, partySize)),
-      })),
+      cores: coreList,
       buildings,
       ...(arch.brood === undefined ? {} : { bursts: burstList }),
+      ...(arch.linkedCores === true
+        ? { sharedHealth: coreList.reduce((a, c) => addInt(a, c.health), 0) }
+        : {}),
     },
   };
 }

@@ -17,7 +17,7 @@
   {
     "id": "boss-pick.02-shipped-r7-p4",
     "kind": "boss-pick",
-    "description": "Round 7 with four players, the previous boss being arch_boss: the other shipped boss, arch_boss_brood, is drawn.",
+    "description": "Round 7 with four players, the previous boss being arch_boss: arch_boss_brood or arch_boss_linked is drawn (here arch_boss_linked).",
     "input": {
       "seed": 2,
       "round": 7,
@@ -26,7 +26,7 @@
     },
     "expected": {
       "result": {
-        "boss": "arch_boss_brood"
+        "boss": "arch_boss_linked"
       }
     }
   },
