@@ -216,6 +216,20 @@ export function brokenStep(
   return null;
 }
 
+/**
+ * The coach tells the player to keep the spare Extractor until step 4, so
+ * until then the checklist drops the inventory reminders ("You have 2
+ * Extractors to place", "N buildings in the inventory") that would say the
+ * opposite. From step 4 on they show again.
+ */
+export function withoutHeldReminders<T extends { readonly kind: string }>(
+  problems: readonly T[],
+  n: StepNo | null,
+): readonly T[] {
+  if (n === null || n >= 4) return problems;
+  return problems.filter((p) => p.kind !== 'stash' && p.kind !== 'free_nodes');
+}
+
 /** The inventory defs that are usable at a step; null means all. */
 export function allowedDefs(
   n: StepNo | null,

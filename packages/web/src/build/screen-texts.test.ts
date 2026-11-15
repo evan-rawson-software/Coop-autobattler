@@ -859,7 +859,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'choiceOverloadShared',
     { at: '3:00' },
-    'At 3:00 both Cores start losing health (Overload). Hover a card to see whose falls first.',
+    'At 3:00 both Cores start losing health (Overload).',
   ],
   ['choiceFight', {}, 'Fight'],
   ['eventTrayPick', {}, 'Pick one. It applies right away.'],
@@ -974,7 +974,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'tutClosingBody',
     {},
-    "That's a round. Next: pick a reward, then shop for the rival party battle. Losing to a rival party costs a life.",
+    "That's your first battle. Next: pick a reward, then shop for the rival party battle. Losing to a rival party costs a life.",
   ],
   [
     'tutClosingLost',
@@ -1061,24 +1061,16 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['uiTrayNothing', {}, 'Nothing to do here'],
   [
     'overloadStronghold',
-    { at: '@at', when: '@when' },
-    'At @at both Cores start losing health (Overload). Theirs falls first, at @when.',
+    { when: '@when' },
+    'Overload: theirs falls first, at @when.',
   ],
   [
     'overloadYours',
-    { at: '@at', when: '@when' },
-    'At @at both Cores start losing health (Overload). Yours falls first, at @when.',
+    { when: '@when' },
+    'Overload: yours falls first, at @when.',
   ],
-  [
-    'overloadBoth',
-    { at: '@at', when: '@when' },
-    'At @at both Cores start losing health (Overload). Both fall at @when.',
-  ],
-  [
-    'overloadNeither',
-    { at: '@at' },
-    'At @at both Cores start losing health (Overload). Neither falls before the time limit.',
-  ],
+  ['overloadBoth', { when: '@when' }, 'Overload: both fall at @when.'],
+  ['overloadNeither', {}, 'Overload: neither falls before the time limit.'],
   ['uiShopUses', { needs: 'Ore' }, 'Uses: Ore'],
   ['uiShopHealth', { health: '60' }, 'Health 60'],
   ['rateGetsNeeds', { gets: '0.25', needs: '0.50' }, '0.25/0.50/s'],

@@ -134,7 +134,6 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
                   data-action="select"
                   data-difficulty={c.id}
                   aria-pressed={c.id === target}
-                  title={c.overload}
                   disabled={busy}
                   onClick={() => {
                     setMarked(c.id);
@@ -174,6 +173,9 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
                       <li key={f}>{f}</li>
                     ))}
                   </ul>
+                  <p class="pve-overload" data-field="overload">
+                    {c.overload}
+                  </p>
                 </button>
               </li>
             ))}
