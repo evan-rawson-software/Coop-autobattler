@@ -8,7 +8,12 @@ import type { TeamState } from '@game/core';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { WebContent } from '../content.js';
 import { registerDebug } from '../debug-hook.js';
-import { screenToWorld, type Camera, type Viewport } from './camera.js';
+import {
+  screenToWorld,
+  worldToScreen,
+  type Camera,
+  type Viewport,
+} from './camera.js';
 import type { CameraController } from './controller.js';
 import {
   gestureReduce,
@@ -313,6 +318,21 @@ export function BoardView(props: BoardViewProps) {
       ownCoreRect: () =>
         live.current.scene.boards.find((b) => b.frame.id === 'own')?.core
           ?.rect ?? null,
+      buildingScreenPoint: () => {
+        const vp = controller.viewport;
+        for (const b of live.current.scene.boards) {
+          for (const sb of b.buildings) {
+            const c = sb.cells[0];
+            if (c === undefined) continue;
+            const p = worldToScreen(controller.camera, vp, {
+              x: c.x + 0.5,
+              y: c.y + 0.5,
+            });
+            if (p.x >= 0 && p.y >= 0 && p.x < vp.w && p.y < vp.h) return p;
+          }
+        }
+        return null;
+      },
       hovered: () => live.current.hover,
       selection: () => live.current.selection,
       drawStats: () => {

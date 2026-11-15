@@ -49,8 +49,12 @@ another content file, add a row to `packages/tools/src/registry.ts`.
 CI (`.github/workflows/ci.yml`) installs with a frozen lockfile and runs its
 checks as parallel jobs: `static` (typecheck, lint, format:check,
 validate:content), `test` (the unit tests in two shards, `--shard=1/2` and
-`2/2`), `smoke` (build, smoke and the golden-files check) and `bot`. The `check`
-job passes only when `static`, `test` and `smoke` all pass.
+`2/2`), `smoke` and `bot`. `smoke` is a matrix of two parallel jobs, each with
+its own build and browser (`SMOKE_PART=main` for the page, camera, performance,
+build and battle checks; `SMOKE_PART=flows` for the worker, shop, sprites, art,
+run and tutorial checks); the `main` job also runs the golden-files check, and
+each uploads its screenshots as `smoke-output-<part>` on failure. The `check`
+job passes only when `static`, `test` and `smoke` (both parts) all pass.
 
 ## Battle runner (`pnpm sim`)
 
@@ -142,7 +146,9 @@ it with Playwright: page checks, camera and selection checks, a performance
 run, and screenshots into `packages/web/smoke-output/` (git-ignored). It uses
 the pinned Playwright and Chromium from Playwright's browser path
 (`PLAYWRIGHT_BROWSERS_PATH`, or `pnpm --filter @game/web exec playwright
-install chromium`). CI installs it and runs it on every push.
+install chromium`). CI installs it and runs it on every push. With
+`SMOKE_PART=main` or `SMOKE_PART=flows` set, `pnpm smoke` runs only that half
+(unset runs both); the halves share no state.
 
 `pnpm check` runs the whole CI chain in order and stops at the first failure:
 typecheck, lint, format check, test, build, content validation, smoke, then
