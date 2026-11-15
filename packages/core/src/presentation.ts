@@ -469,8 +469,6 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   runOverNone: [],
   runOverWon: [],
   runOverLost: [],
-  runOverWonTip: [],
-  runOverLostTip: [],
   runOverPveRow: ['difficulty', 'name'],
   runOverTally: ['won', 'lost'],
   runOverByDifficultyCounts: ['easy', 'medium', 'hard'],

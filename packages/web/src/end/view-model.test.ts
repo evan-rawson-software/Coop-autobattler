@@ -103,6 +103,7 @@ describe('round by round', () => {
         pveResult: 'won',
         pvp: 'Rival party',
         pvpResult: 'won',
+        pvpDetail: null,
       },
       {
         round: 2,
@@ -110,8 +111,16 @@ describe('round by round', () => {
         pveResult: 'lost',
         pvp: 'the boss',
         pvpResult: 'lost',
+        pvpDetail: 'the boss',
       },
-      { round: 3, pve: '—', pveResult: '—', pvp: '—', pvpResult: '—' },
+      {
+        round: 3,
+        pve: '—',
+        pveResult: '—',
+        pvp: '—',
+        pvpResult: '—',
+        pvpDetail: null,
+      },
     ]);
   });
 

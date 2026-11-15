@@ -12,7 +12,8 @@
 
 .over-head {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
+  text-align: center;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.4rem 1rem;
@@ -40,7 +41,10 @@
 
 .over-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.5fr) minmax(0, 1.5fr);
+  grid-template-columns: minmax(max-content, 1fr) minmax(0, 1.4fr) minmax(
+      0,
+      1.3fr
+    );
   gap: 0.8rem;
   flex: 1 1 auto;
   min-height: 14rem;
@@ -63,6 +67,7 @@
 
 .stats dd {
   margin: 0;
+  white-space: nowrap;
 }
 
 .final-board {
@@ -86,12 +91,14 @@
   border-bottom: 1px solid var(--border);
 }
 
-.rounds td.won {
+.rounds .result.won {
   color: var(--ok);
+  font-weight: 600;
 }
 
-.rounds td.lost {
+.rounds .result.lost {
   color: var(--bad);
+  font-weight: 600;
 }
 
 .over-next {
