@@ -225,12 +225,12 @@ export function drawCoreOverlay(
     }
     ctx.globalAlpha = 1;
     ring(v.cells, color, 2.5);
-    label(
-      v.cells,
-      v.ok || v.problem === null
-        ? screenText(screenTexts, 'coreFits')
-        : `${screenText(screenTexts, 'coreNoFit')} · ${shortProblem(v.problem)}`,
-      color,
-    );
+    // A spot that fits is described once, by the status line under the board.
+    if (!v.ok && v.problem !== null)
+      label(
+        v.cells,
+        `${screenText(screenTexts, 'coreNoFit')} · ${shortProblem(v.problem)}`,
+        color,
+      );
   }
 }

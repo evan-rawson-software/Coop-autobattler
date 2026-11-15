@@ -136,8 +136,8 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     { name: 'Mill', resource: 'Ore' },
     'Mill receives no Ore in the dry run.',
   ],
-  ['problemStashMany', { count: '3' }, '3 buildings in the stash.'],
-  ['problemStashOne', { count: '3' }, '3 building in the stash.'],
+  ['problemStashMany', { count: '3' }, '3 buildings in the inventory.'],
+  ['problemStashOne', { count: '3' }, '3 building in the inventory.'],
   ['rateOnBoard', { rate: '0.40' }, '0.40/s'],
   ['readyLock', {}, 'Ready. Unready to make changes.'],
   ['linkActive', {}, 'carrying'],
@@ -161,7 +161,23 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['statusBorderHalf', {}, 'Border link added. Waiting for your neighbour.'],
   ['statusBuildingWord', {}, 'building'],
   ['statusCancelled', {}, 'Cancelled.'],
-  ['statusChooseCore', {}, "Place your Core. It can't be moved later."],
+  [
+    'problemLostOutputMany',
+    { count: '2', names: 'Extractors (Ore)' },
+    '2 Extractors (Ore) have no conduit: their output is lost.',
+  ],
+  [
+    'problemNoConduitAnyMany',
+    { count: '2', names: 'Extractors' },
+    '2 Extractors have no conduit into an input.',
+  ],
+  [
+    'problemNoConduitResourceMany',
+    { count: '2', names: 'Extractors', resource: 'Ore' },
+    '2 Extractors have no conduit into their Ore input.',
+  ],
+  ['uiCheckRepeat', { text: 'Oops.', count: '3' }, 'Oops. (3 times)'],
+  ['statusChooseCore', {}, 'Choose where your Core goes.'],
   ['statusClickHint', {}, 'R rotates · Esc cancels.'],
   ['statusConduitAddedMany', { count: '3' }, 'Conduit added (3 cells).'],
   ['statusConduitAddedOne', { count: '3' }, 'Conduit added (3 cell).'],
@@ -171,7 +187,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     'Drag cell by cell to an input side and release. Esc cancels.',
   ],
   ['statusConduitErased', {}, 'Conduit erased.'],
-  ['statusCoreFixed', {}, 'The Core cannot be moved or stashed.'],
+  ['statusCoreFixed', {}, 'The Core cannot be moved or put in the inventory.'],
   ['statusCoreNoInput', {}, 'The Core has no input side.'],
   ['statusCoreNoOutput', {}, 'The Core has no output side.'],
   ['statusCorePlaced', {}, 'Core placed.'],
@@ -249,16 +265,16 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     'Redo refused: Because. History cleared.',
   ],
   ['statusRedone', {}, 'Redone.'],
-  ['statusReturned', { name: 'Mill' }, 'Returned Mill to the stash.'],
+  ['statusReturned', { name: 'Mill' }, 'Returned Mill to the inventory.'],
   [
     'statusReturnedDetachedMany',
     { name: 'Mill', count: '3' },
-    'Returned Mill to the stash. 3 conduits were detached.',
+    'Returned Mill to the inventory. 3 conduits were detached.',
   ],
   [
     'statusReturnedDetachedOne',
     { name: 'Mill', count: '3' },
-    'Returned Mill to the stash. 3 conduit was detached.',
+    'Returned Mill to the inventory. 3 conduit was detached.',
   ],
   ['statusRotated', {}, 'Rotated.'],
   [
@@ -271,7 +287,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     { count: '3' },
     'Rotated. 3 conduit was detached.',
   ],
-  ['statusSelectReturn', {}, 'Select a building to return to the stash.'],
+  ['statusSelectReturn', {}, 'Select a building to return to the inventory.'],
   ['statusSelectRotate', {}, 'Select a building to rotate.'],
   ['statusStarting', {}, 'Starting a run.'],
   [
@@ -428,7 +444,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['uiSwitchAnnounce', { name: 'Ann' }, 'Now playing as Ann'],
   ['uiShopNotEnoughGold', {}, 'Not enough gold.'],
   ['uiShopNoSuchOffer', {}, 'That offer is gone.'],
-  ['uiShopNotInStash', {}, 'That building is not in your stash.'],
+  ['uiShopNotInStash', {}, 'That building is not in your inventory.'],
   ['uiShopNotOwner', {}, 'That building belongs to another player.'],
   [
     'uiShopStale',
@@ -891,7 +907,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'tutStep1Body',
     {},
-    'Click anywhere in the **green area** to choose where your Core goes. You can change your mind until you press the big button at the bottom right.',
+    'Choose where your Core goes, then press **Place Core**.',
   ],
   ['tutStep2Head', {}, 'Mine some Ore'],
   [
@@ -914,7 +930,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'tutStep4Body',
     {},
-    'Drag a **Turret** from the tray next to your Core. Turn on **Enemy paths** to see where enemies will walk.',
+    'Drag a **Turret** from the tray next to your Core. **Enemy paths** are on: the red dashes are where enemies walk.',
   ],
   [
     'tutStep4Power',
@@ -976,7 +992,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     {},
     'You lost this one. Step 4 was not done: a Turret near your Core only fires when a conduit brings it Power.',
   ],
-  ['tutClosingDone', {}, 'Finish the tutorial'],
+  ['tutClosingDone', {}, 'Close'],
   ['tutListTitle', {}, 'Your first base'],
   ['tutList1', {}, 'Place your Core'],
   ['tutList2', {}, 'Mine Ore with an Extractor'],
@@ -1011,7 +1027,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'uiKitRandomWallTip',
     {},
-    'Walls come in random shapes. You see them in the stash after you place the Core.',
+    'Walls come in random shapes. You see them in the inventory after you place the Core.',
   ],
   ['uiPrimaryPlaceCoreSub', {}, 'and start building'],
   ['coreTitle', {}, 'Place your Core'],
@@ -1020,9 +1036,13 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     {},
     'The Core is the heart of your base. If enemies destroy it, you lose the battle.',
   ],
-  ['coreClickPre', {}, 'Click a spot in the '],
+  ['coreClickPre', {}, 'Click the '],
   ['coreClickGreen', {}, 'green area'],
-  ['coreClickPost', {}, ". It can't be moved later."],
+  [
+    'coreClickPost',
+    {},
+    ". You can change the spot until you press Place Core. After that it's fixed.",
+  ],
   ['coreNextLabel', {}, 'What happens next'],
   ['coreNextPre', {}, 'You move to '],
   ['coreNextBuild', {}, 'Build'],
@@ -1032,7 +1052,6 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
     ' and place the buildings shown below the board. Nothing fights until you press Ready.',
   ],
   ['coreFrontLabel', {}, 'Front edge \u00b7 enemies arrive here'],
-  ['coreFits', {}, 'Fits here'],
   ['coreNoFit', {}, "Doesn't fit"],
   ['uiTrayRulesLabel', {}, 'Rules for every opponent'],
   ['uiTrayNothing', {}, 'Nothing to do here'],
@@ -1113,12 +1132,12 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   [
     'runOverFactoryCountsOne',
     { count: '1', tier: '0', stash: '2' },
-    '1 building placed · 0 at tier 3 · 2 in stash',
+    '1 building placed · 0 at tier 3 · 2 in inventory',
   ],
   [
     'runOverFactoryCountsMany',
     { count: '5', tier: '2', stash: '0' },
-    '5 buildings placed · 2 at tier 3 · 0 in stash',
+    '5 buildings placed · 2 at tier 3 · 0 in inventory',
   ],
   ['runOverPanelRounds', {}, 'Round by round'],
   ['runOverNoBattle', {}, 'No battle was fought.'],
@@ -1259,14 +1278,14 @@ describe('the controller picks One for 1 and Many otherwise', () => {
   test('one detached conduit uses the singular text', async () => {
     const name = buildingName(content, 'bld_extractor');
     expect(await returned('bld_extractor')).toBe(
-      `Returned ${name} to the stash. 1 conduit was detached.`,
+      `Returned ${name} to the inventory. 1 conduit was detached.`,
     );
   });
 
   test('two detached conduits use the plural text', async () => {
     const name = buildingName(content, 'bld_splitter');
     expect(await returned('bld_splitter')).toBe(
-      `Returned ${name} to the stash. 2 conduits were detached.`,
+      `Returned ${name} to the inventory. 2 conduits were detached.`,
     );
   });
 });

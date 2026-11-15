@@ -58,6 +58,15 @@
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
+  /* On: filled, with a bar under the icon. */
+  box-shadow: inset 0 -3px 0 var(--accent-ink);
+}
+
+/* Keyboard focus is a plain ink ring, so a focused button that is off does
+   not look like the filled, accent-coloured on state. */
+.rail-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
 }
 
 .rail-btn:disabled {

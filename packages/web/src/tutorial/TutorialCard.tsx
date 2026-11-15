@@ -227,7 +227,7 @@ export function TutorialCard(props: {
           {closing ? (
             <button
               type="button"
-              class="tut-finish"
+              class="text-link tut-finish"
               data-action="tutorial-finish"
               onClick={() => {
                 finishTutorial(runId);

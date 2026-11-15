@@ -338,3 +338,20 @@ describe('why there is no route', () => {
     );
   });
 });
+
+describe('the tool after a battle (issue #328)', () => {
+  test('a Build step that follows another step starts on Select', async () => {
+    const s = await buildRun();
+    const ctl = new BuildController();
+    ctl.attach(s);
+    const inner = ctl as unknown as { lastStep: string; afterState(): void };
+    ctl.setTool('conduit');
+    // Still in the same Build step: the tool stays.
+    inner.afterState();
+    expect(ctl.model.get().ui.tool).toBe('conduit');
+    // The run was in a battle step before this Build step began.
+    inner.lastStep = 'battle';
+    inner.afterState();
+    expect(ctl.model.get().ui.tool).toBe('select');
+  });
+});

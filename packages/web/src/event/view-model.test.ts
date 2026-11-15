@@ -236,7 +236,7 @@ describe('follow-ups', () => {
     const cards = (v?.options ?? []).filter((o) => !o.skip);
     expect(cards.length).toBeGreaterThan(0);
     for (const o of cards) {
-      expect(o.building?.where).toMatch(/^(Board \(\d+, \d+\)|In stash)$/);
+      expect(o.building?.where).toMatch(/^(Board \(\d+, \d+\)|In inventory)$/);
       expect(o.building?.newTier).toBe((o.building?.tier ?? 0) + 1);
       expect(o.lines).toContain(`${String(o.building?.price)} gold`);
     }

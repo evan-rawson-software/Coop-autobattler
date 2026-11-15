@@ -190,7 +190,7 @@
 .game-frame[data-tut-target='conduit'] [data-tool='conduit'],
 .game-frame[data-tut-target='fight'] #pve-fight,
 .game-frame[data-tut-target='fight'] .pve-card.selected,
-.game-frame[data-tut-target='speed'] #panel-speed {
+.game-frame[data-tut-target='speed'] #panel-speed .segmented {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
   animation: tut-pulse 1.6s ease-out infinite;
@@ -209,7 +209,7 @@
   .game-frame[data-tut-target] [data-tool='conduit'],
   .game-frame[data-tut-target] #pve-fight,
   .game-frame[data-tut-target] .pve-card.selected,
-  .game-frame[data-tut-target] #panel-speed {
+  .game-frame[data-tut-target] #panel-speed .segmented {
     animation: none;
   }
 }

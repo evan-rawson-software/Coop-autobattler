@@ -466,8 +466,8 @@ describe('problem texts agree with their count', () => {
         .filter((p) => p.kind === 'stash')
         .map((p) => p.text);
     expect(stash(0)).toEqual([]);
-    expect(stash(1)[0]).toMatch(/^1 building in the stash/);
-    expect(stash(2)[0]).toMatch(/^2 buildings in the stash/);
+    expect(stash(1)[0]).toMatch(/^1 building in the inventory/);
+    expect(stash(2)[0]).toMatch(/^2 buildings in the inventory/);
   });
 
   test('free nodes: nothing at 0; the noun follows the stashed count', () => {

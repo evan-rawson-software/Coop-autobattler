@@ -8,6 +8,7 @@
 
 import type { TeamState } from '@game/core';
 import type { WebContent } from '../content.js';
+import { plural } from '../plural.js';
 import { screenText, screenTexts, type ScreenTexts } from './texts.js';
 import {
   buildingName,
@@ -36,6 +37,14 @@ export interface Checklist {
   readonly items: readonly CheckItem[];
   /** Satisfied checks that were left out to keep the list short. */
   readonly okHidden: number;
+}
+
+/** "Extractor (Ore)" becomes "Extractors (Ore)": the noun takes the s. */
+function pluralName(n: number, name: string): string {
+  const m = /^(.*?)( \(.*\))$/.exec(name);
+  return m === null
+    ? plural(n, name)
+    : `${plural(n, m[1] as string)}${m[2] as string}`;
 }
 
 /** The fix line of each problem kind (null: the problem text says it). */
@@ -77,12 +86,34 @@ export function deriveChecklist(
 ): Checklist {
   const warnings: CheckItem[] = [];
   const reminders: CheckItem[] = [];
+  // Identical lines are one line with a count ("2 Extractors have no conduit").
+  const seen = new Map<string, Problem[]>();
   for (const p of problems) {
+    const same = seen.get(p.text);
+    if (same === undefined) seen.set(p.text, [p]);
+    else same.push(p);
+  }
+  for (const p of problems) {
+    const same = seen.get(p.text) ?? [p];
+    if (same[0] !== p) continue;
+    const n = same.length;
+    let text = p.text;
+    if (n > 1) {
+      const g = p.group;
+      text =
+        g === undefined
+          ? screenText(texts, 'uiCheckRepeat', { text, count: String(n) })
+          : screenText(texts, g.key, {
+              count: String(n),
+              names: pluralName(n, g.name),
+              resource: g.resource ?? '',
+            });
+    }
     const key = FIX_KEY[p.kind];
     const item: CheckItem = {
       id: p.id,
       state: isReminder(p) ? 'hint' : 'warn',
-      text: p.text,
+      text,
       fix: key === null ? null : screenText(texts, key),
       problem: p,
     };

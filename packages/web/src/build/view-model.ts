@@ -299,6 +299,15 @@ export interface Problem {
   readonly building: number | null;
   /** Stash entry to pick up when clicked (to place it), if any. */
   readonly pick?: number;
+  /**
+   * For problems that name a building: how to word several identical ones as
+   * one line (the checklist groups them by `text`).
+   */
+  readonly group?: {
+    readonly key: string;
+    readonly name: string;
+    readonly resource?: string;
+  };
 }
 
 /**
@@ -357,6 +366,14 @@ export function deriveProblems(
                 }),
           focus: first,
           building: b.id,
+          group:
+            inp.resource === undefined
+              ? { key: 'problemNoConduitAnyMany', name: name(b) }
+              : {
+                  key: 'problemNoConduitResourceMany',
+                  name: name(b),
+                  resource: resourceName(content, inp.resource),
+                },
         });
       }
     }
@@ -383,6 +400,13 @@ export function deriveProblems(
               : `${name(b)} (${resourceName(content, res)}) has no conduit: its output is lost.`,
           focus: first,
           building: b.id,
+          group: {
+            key: 'problemLostOutputMany',
+            name:
+              res === undefined
+                ? name(b)
+                : `${name(b)} (${resourceName(content, res)})`,
+          },
         });
       }
     }
