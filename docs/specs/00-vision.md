@@ -148,7 +148,9 @@ does not block systems work.
 | Source (collector) | A building on a resource node that produces that node's resource at a flow rate set by its tier. |
 | Need | The most a building can consume per second: the cost of one production divided by the shortest time between two productions. |
 | Store | The small amount of resources a building can hold: enough for one production, plus a few items waiting at its inputs. Empty at the start of every battle. |
-| Resource | What sources extract from nodes and other buildings consume. Three base kinds (Ore, Power, Flux for now), each with a refined form made by a refinery and needed by rarer, stronger buildings. |
+| Resource | What sources extract from nodes and other buildings consume. Three base kinds (Ore, Power, Flux for now), each with a refined form made by a refinery and needed by rarer, stronger buildings. The first version has two compounds, Composite (Ore + Power) and Aether (Power + Flux). |
+| Armor | A unit stat: a flat amount taken off every hit the unit takes, never below 1 damage. |
+| Area damage | A unit stat: when the unit hits a target, other units near the target take a percent of the hit too. Units only, no friendly fire. |
 | Plot | One player's own area of the board (shown to players as "your area"). A player builds only in their own plot. Plots are the same size and sit side by side. |
 | Ramp | The factory getting stronger over the course of one battle; what "economy" buildings provide. |
 | Threat | A PvE opponent: scripted waves of units plus a stronghold to attack, not a factory. |

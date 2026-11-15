@@ -91,40 +91,88 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   building therefore needs a separate conduit for each resource to reach
   it, which — with no crossing (CB-3g) — is where layout skill is tested
   hardest, and part of what makes those rarer buildings a commitment.
-- **CB-5d [DECIDED/PROPOSED detail]** **Refined resources.** Decided:
-  refined resources exist, and the rarer, stronger buildings need them.
-  Proposed detail:
-  - A **refinery** is a building (bought like any other) that takes
-    resources in and puts a refined resource out, at a loss (e.g. 3 in, 1
-    out) and after a delay.
-  - **Common refineries take one resource. Rarer refineries take two
-    different resources to make a single refined resource** [DECIDED].
-  - Proposed set of refined resources, with working names, all defined in
-    the same configuration file as the base resources and renameable there
-    (TA-27a):
+- **CB-5d [DECIDED]** **Refined resources** (issue #378). Refined resources
+  exist, and the rarer, stronger buildings need them. Owner decisions:
+  1. **Only compounds for now.** The first version has two rare, two-input
+     refineries. The one-input refineries (Alloy, Surge, Essence) and the
+     Ore + Flux compound come later. A compound cannot be refined further.
+  2. **The payoff is both a role and efficiency.** Each refined building has
+     a role no base building has, and gives roughly +25-35% more per raw
+     item than a base chain (SC-13a). Refining adds no supply, it only
+     concentrates it; the premium pays for the refinery's space, gold,
+     delay and weakness to a breach.
+  3. **Shops offer refineries and refined buildings from round 3.**
+  4. **One two-input base building: the Foundry**, needing Ore and Power,
+     training a heavy unit (a bruiser: medium health, high damage). It
+     shares the two-input rules (CB-5e) with the refineries.
+  5. **Ore + Power makes Composite, which feeds the Golem forge.** The Golem
+     is a big, tanky front-line unit: huge health, flat armor that cuts
+     every hit, low damage, very slow (CB-5g). An anti-building role was
+     considered and rejected.
+  6. **Power + Flux makes Aether, which feeds the Spire.** The Spire trains
+     a ranged caster with area damage, which is fragile (CB-5h). Flux has
+     one node per plot and the Overclocker also wants it, so an Aether chain
+     is a real choice, and a reason to share Flux over a border link (CB-5i).
 
-    | Refined | Made from | Refinery |
-    |---------|-----------|----------|
-    | Alloy | Ore | Common |
-    | Surge | Power | Common |
-    | Essence | Flux | Common |
-    | *(compound A)* | Ore + Power | Rare |
-    | *(compound B)* | Ore + Flux | Rare |
-    | *(compound C)* | Power + Flux | Rare |
+  The long-term plan is the full table below, with working names, all
+  defined in the same configuration file as the base resources and
+  renameable there (TA-27a). **The first version has only the two compounds
+  marked "first version".**
 
-    The compounds feed the strongest buildings in the game. Not all six
-    need to exist in the first playable.
+  | Refined | Made from | Refinery | When |
+  |---------|-----------|----------|------|
+  | Alloy | Ore | Common | Later |
+  | Surge | Power | Common | Later |
+  | Essence | Flux | Common | Later |
+  | Composite (`res_ab_refined`) | Ore + Power | Rare | First version |
+  | Aether (`res_bc_refined`) | Power + Flux | Rare | First version |
+  | *(compound)* | Ore + Flux | Rare | Later |
+
   - A two-input refinery needs a conduit for each input (CB-5b), so it has
-    to sit where two networks can reach it without crossing — the hardest
+    to sit where two networks can reach it without crossing, the hardest
     placement problem in the game, by design.
   - Refining is **one step deep**: refined resources are not refined
     further. This keeps factories legible while still creating real chains.
-  - A refined resource is its own conduit type (CB-5b), so a refined
-    building needs source → conduit → refinery → conduit → building, all
+  - A refined resource is its own conduit type and colour (CB-5b), so a
+    refined building needs source, conduit, refinery, conduit, building, all
     without crossing anything else. Refined buildings are stronger partly
     because they are slower to come online in a battle and harder to fit.
   - A destroyed refinery cuts everything downstream of it (CB-9a), which is
     what makes a breach through a factory costly.
+  - **Proposed content** [PROPOSED, working names]: `bld_refinery_ab`
+    (2x2, Ore + Power, makes Composite); `bld_refinery_bc` (2x2, Power +
+    Flux, makes Aether); `bld_foundry` (2x2, Ore + Power, trains
+    `unit_heavy`); `bld_golem_forge` (2x2, takes Composite, trains
+    `unit_golem`); `bld_spire` (2x2, takes Aether, trains `unit_caster`).
+    The roles counter each other: casters beat swarms, the Golem's armor
+    shrugs off splash, and fast melee units catch fragile casters.
+- **CB-5e [PROPOSED]** **Two-input consumers.** A building that takes two
+  resources (the Foundry, both refineries) has a cost per input resource
+  and produces only when it holds every cost. Each input has its own conduit
+  (CB-5b) and its own part of the store (CB-10b). Its need is stated per
+  resource (CB-10a). The rebalance principle (SC-13a) holds: for a
+  two-input building, one collector of each input resource fully feeds it.
+- **CB-5f [PROPOSED]** **The refinery's batch and output.** A refinery
+  consumes one batch of each input, and after its minimum production time
+  emits refined items into its output conduit. Its output buffer is small:
+  when the buffer is full (the conduit has backed up, CB-9e) the refinery
+  stalls and draws no more input. Refining makes fewer items than it takes
+  in, set so that a refined chain beats a base chain per raw item (SC-13a).
+- **CB-5g [PROPOSED]** **The Golem and armor.** Armor is a flat amount taken
+  off every hit the unit takes: damage dealt is `max(1, damage - armor)`.
+  The Golem has huge health, high armor, low damage and a very low speed, so
+  it leads a push and soaks up fire. Many weak hits do almost nothing to it;
+  a few strong hits still hurt.
+- **CB-5h [PROPOSED]** **The caster and area damage.** A caster is a ranged
+  unit (CB-16b) with area damage: when it hits a target, other units within
+  a radius of the target take a percent of the hit as well. Area damage hits
+  units only, never buildings, and never friendly units. A caster is
+  fragile, so it needs a front line to stand behind. Order of damage
+  modifiers: `unit_strength` at spawn (CB-24a), then Overload (CB-12), then
+  the splash percent, then armor (CB-5g), applied to each unit hit.
+- **CB-5i [PROPOSED]** **The Flux trade-off.** A plot has one Flux node, and
+  both the Overclocker and the Aether refinery want Flux. Running both means
+  sharing Flux with a partner over a border link (CB-9d, PP-4).
 - **CB-5c** Where the rare nodes are, and how far they sit from good
   defensive ground and from the player's Core, is the main way plots differ
   in character.
@@ -211,9 +259,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 |------|------|----------|
 | **Source** (collector) | Built on a resource node; produces that node's resource at a flow rate set by its tier | Extractor |
 | **Route** | Splits, joins, or crosses conduits | Splitter (one in, several out); Merger (several in, one out); Crossover (two conduits pass at 90°) |
-| **Refinery** | Turns one resource (common) or two (rare) into a refined resource | Smelter (Ore → Alloy) |
+| **Refinery** | Turns one resource (common) or two (rare) into a refined resource | Composite refinery (Ore + Power → Composite); Aether refinery (Power + Flux → Aether); Smelter (Ore → Alloy, later) |
 | **Modifier** | Changes the flow passing through | Booster (more per tick); Buffer (stores, then releases a burst) |
-| **Unit producer** | Consumes resources → spawns units | Barracks (cheap swarm); Foundry (slow, heavy unit); Siege works (anti-building) |
+| **Unit producer** | Consumes resources → spawns units | Barracks (cheap swarm); Foundry (Ore + Power, heavy bruiser); Golem forge (Composite, tanky front-liner); Spire (Aether, area-damage caster) |
 | **Defense** | Blocks or kills enemy units | Wall; Gate; Turret (needs Power to fire); Repair station |
 | **Economy** | Consumes resources (often Flux) → the factory gets stronger for the rest of this battle | Overclocker (sources faster, up to a low cap, SC-12); Refit bay (later units spawn stronger); Reactor (becomes a new source once fed enough) |
 | **Core** | One per player: that player's health. Fixed position (CB-3e). Needs no resources. | — |
@@ -332,8 +380,9 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   gates, Splitters and other route buildings, and the Core need nothing.
   There is no cap on the number of walls for now. Refineries and modifiers
   (CB-9), which are not in the content yet, consume resources by their
-  nature: when they are added they get a cost and a minimum time between
-  productions like any consumer (CB-10a).
+  nature: when they are added they get a cost per input resource and a
+  minimum time between productions like any consumer (CB-10a, CB-5e,
+  CB-5f).
 - **CB-10d [DECIDED]** **Under-supplied buildings wait.** A building that
   gets less than its need collects what arrives until it has the full cost
   of one production, then produces at full strength. It is slower, never
@@ -458,6 +507,10 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   units occupy space, only so many can reach a target at once: bodies form
   the front line. Two enemies that both fight share the push that separates
   them (issue #103).
+- **CB-16d [PROPOSED]** **Armor and area damage are unit stats**, next to
+  health, damage, reach and speed. Armor is flat damage reduction per hit
+  (CB-5g); area damage is a radius and a percent of the hit passed to other
+  units near the target (CB-5h).
 - **CB-16b [DECIDED]** **Ranged units.** A unit is melee or ranged. A ranged
   unit attacks from a distance (its reach is its range, edge to edge) and
   stops to fire while it has a target in range. Placeholder: the Archer, from
@@ -751,7 +804,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 
 ## First playable content budget
 
-- **CB-50** Three base resources (refining and points of interest come
+- **CB-50** Three base resources (refining, issue #378, and points of interest come
   after the first playable, TA-41a); ~15 buildings across the kinds; 3–4 unit types;
   lakes and cliffs; 3 PvE archetypes; 1 boss. Enough to validate the loop;
   no more.

@@ -63,7 +63,7 @@ tune them, as cheaply as possible. It is a prototype, not the product.
   produces are a main output of this phase.
 - **TA-41a [DECIDED]** **Refining and points of interest are left out of the
   first playable build** and added afterwards, once the core loop can be
-  played. The first build has the three base resources, conduits, base
+  played (refining is now being added, issue #378). The first build has the three base resources, conduits, base
   buildings, units, the neutral zone with terrain only, and PvE threats.
   Formats and the resource configuration file must leave room for both so
   adding them is not a rewrite.
@@ -595,7 +595,7 @@ Still unconfirmed:
   playback.
 - **W3 — PvP step:** local ghost pool, matching, snapshot validation, boss
   fallback; scripted bot; bundled bot ghosts.
-- **W3b — Refining and points of interest** (TA-41a).
+- **W3b — Refining (issue #378) and points of interest** (TA-41a).
 - **W4 — Tune:** balance harness, content iteration, more event types,
   playtests. Ends at the exit criteria (TA-53).
 
