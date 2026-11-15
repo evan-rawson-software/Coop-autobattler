@@ -79,8 +79,8 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
   );
   check(
     /Place your Core/.test(await card.locator('h3').innerText()) &&
-      (await card.locator('p strong').first().innerText()) === 'green area',
-    'tutorial: step 1 names the green area',
+      (await card.locator('p strong').first().innerText()) === 'Place Core',
+    'tutorial: step 1 points at Place Core',
   );
   check(
     (await card.locator('.tut-progress li').count()) === 6 &&

@@ -369,6 +369,7 @@ export class BuildController {
 
   /** The player this device acts as (the session's acting player). */
   private lastActing = ME;
+  private lastStep = 'none';
 
   private actor(): number {
     return this.session?.acting ?? ME;
@@ -408,6 +409,24 @@ export class BuildController {
         moving: null,
         draft: null,
       };
+    }
+    // A tool picked in an earlier Build (the Conduit tool, say) does not
+    // carry over: a Build or Shop step that follows another step starts on
+    // Select, so the first click on a building selects it.
+    const step = this.session?.run.step ?? 'none';
+    if (step !== this.lastStep) {
+      const entering = isEditStep(step) && !isEditStep(this.lastStep);
+      this.lastStep = step;
+      if (entering && this.ui.tool !== 'select') {
+        this.ui = {
+          ...this.ui,
+          tool: 'select',
+          held: null,
+          moving: null,
+          draft: null,
+          attempt: null,
+        };
+      }
     }
     const team = this.team();
     let sel = this.ui.selection;

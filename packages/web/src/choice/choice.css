@@ -146,18 +146,33 @@ h4.pve-archetype {
   border-radius: 4px;
 }
 
-.event-card.selected {
+/* Selected (opponent and event cards alike): accent frame, a tinted card and
+   a check mark in the header. Hover is only a faint tint, never this look. */
+.event-card.selected,
+.pve-card.selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
+}
+
+.pve-card.selected .pve-card-head::after,
+.event-card.selected .event-card-head::after {
+  content: '\2713';
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .event-card.voted {
   border-color: var(--ink-muted);
-}
-
-.pve-card.selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .pve-card-head,
@@ -251,7 +266,7 @@ button.event-card {
 
 button.pve-card:hover:not(:disabled),
 button.event-card:hover:not(:disabled) {
-  border-color: var(--accent);
+  background: color-mix(in srgb, var(--ink) 6%, var(--surface-2));
 }
 
 button.pve-card:disabled,

@@ -251,7 +251,7 @@ export interface BuildingOption {
   readonly id: number;
   readonly name: string;
   readonly placed: boolean;
-  /** "On the board at column 4, row 7" or "In your stash". */
+  /** "On the board at column 4, row 7" or "In your inventory". */
   readonly where: string;
   readonly tier: number;
   readonly newTier: number;
@@ -364,7 +364,7 @@ export function followUpView(
       const placedB = run.team.buildings.find((b) => b.id === raw['building']);
       const where =
         placedB === undefined
-          ? 'In stash'
+          ? 'In inventory'
           : `Board (${String(placedB.x)}, ${String(placedB.y)})`;
       const name = buildingName(content, def);
       // Identical stash buildings are one row that upgrades the first of them.

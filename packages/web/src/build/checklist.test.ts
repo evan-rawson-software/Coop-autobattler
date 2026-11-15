@@ -172,3 +172,36 @@ describe('Next fight', () => {
     expect(nextFightOf(null)).toBeNull();
   });
 });
+
+describe('identical warnings are grouped', () => {
+  test('identical lost-output lines become one line with a count', async () => {
+    const s = await buildRun();
+    const team = s.run.team;
+    const ids = stashIds(team, 'bld_extractor');
+    expect(ids.length).toBeGreaterThanOrEqual(2);
+    for (const id of ids.slice(0, 2)) {
+      await placeAt(s, id, firstFit(s.run.team, id));
+    }
+    const problems = deriveProblems(s.run.team, content, null);
+    const raw = problems.filter((p) => p.kind === 'lost_output');
+    expect(raw.length).toBe(2);
+    const list = deriveChecklist(s.run.team, content, problems, null, 0);
+    const lines = list.items.filter((i) => i.problem?.kind === 'lost_output');
+    if (raw[0]?.text === raw[1]?.text) {
+      expect(lines).toHaveLength(1);
+      expect(lines[0]?.text).toMatch(/^2 Extractors .* have no conduit/);
+    } else {
+      expect(lines).toHaveLength(2);
+    }
+  });
+
+  test('a single warning keeps its own text', async () => {
+    const s = await buildRun();
+    const id = stashIds(s.run.team, 'bld_extractor')[0] as number;
+    await placeAt(s, id, firstFit(s.run.team, id));
+    const problems = deriveProblems(s.run.team, content, null);
+    const list = deriveChecklist(s.run.team, content, problems, null, 0);
+    const p = problems.find((x) => x.kind === 'lost_output');
+    expect(list.items.find((i) => i.id === p?.id)?.text).toBe(p?.text);
+  });
+});
