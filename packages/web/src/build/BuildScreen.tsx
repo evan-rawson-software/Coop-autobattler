@@ -232,8 +232,11 @@ export function BuildView(props: {
             tut === null ? problems : withoutHeldReminders(problems, tut.n),
             flow,
             acting,
+            undefined,
+            undefined,
+            tut !== null,
           ),
-    [team, step, problems, flow, acting, tut?.n],
+    [team, step, problems, flow, acting, tut?.n, tut === null],
   );
   const fresh = useMemo(
     () => (run === null ? new Set<number>() : newStashIds(run)),

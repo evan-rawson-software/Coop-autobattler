@@ -48,6 +48,25 @@ describe('the Before you fight checklist', () => {
     expect(list.items.some((i) => i.id === 'all-placed')).toBe(false);
   });
 
+  test('in the tutorial the inventory reminder is a plain note', async () => {
+    const s = await buildRun();
+    const team = s.run.team;
+    const problems = deriveProblems(team, content, null);
+    const list = deriveChecklist(
+      team,
+      content,
+      problems,
+      null,
+      0,
+      4,
+      undefined,
+      true,
+    );
+    const stash = list.items.find((i) => i.problem?.kind === 'stash');
+    expect(stash?.state).toBe('info');
+    expect(stash?.fix).toBeNull();
+  });
+
   test('a building with no conduit is a warning with a fix, before reminders', async () => {
     const s = await buildRun();
     const bk = stashIds(s.run.team, 'bld_barracks')[0] as number;

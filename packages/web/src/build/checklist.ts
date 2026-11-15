@@ -94,6 +94,8 @@ export function deriveChecklist(
   acting: number,
   maxOk = 4,
   texts: ScreenTexts = screenTexts,
+  /** Reminders read as plain notes (the tutorial: leftovers are optional). */
+  remindersAsInfo = false,
 ): Checklist {
   const warnings: CheckItem[] = [];
   const reminders: CheckItem[] = [];
@@ -122,14 +124,18 @@ export function deriveChecklist(
             });
     }
     const key = FIX_KEY[p.kind];
+    const info = isInfo(p) || (remindersAsInfo && isReminder(p));
     const item: CheckItem = {
       id: p.id,
-      state: isInfo(p) ? 'info' : isReminder(p) ? 'hint' : 'warn',
+      state: info ? 'info' : isReminder(p) ? 'hint' : 'warn',
       text,
-      fix: key === null ? null : screenText(texts, key),
+      fix:
+        key === null || (remindersAsInfo && isReminder(p))
+          ? null
+          : screenText(texts, key),
       problem: p,
     };
-    (isInfo(p) ? infos : isReminder(p) ? reminders : warnings).push(item);
+    (info ? infos : isReminder(p) ? reminders : warnings).push(item);
   }
 
   const ok: CheckItem[] = [];
