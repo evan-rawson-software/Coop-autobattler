@@ -723,8 +723,15 @@ export function OverlayLegend(props: { model: Model }) {
 }
 
 const WARNING_TITLE = 'Warning: something is wrong with your factory';
+const INFO_TITLE = 'Note: this works, only slower (not an error)';
 const HINT_TITLE = 'Reminder: something is not used yet (not an error)';
 
+const INFO = (
+  <>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5M12 8h.01" />
+  </>
+);
 const TICK = <path d="M5 12l5 5 9-10" />;
 const WARN = (
   <>
@@ -749,9 +756,15 @@ function CheckMark(props: { state: CheckState }) {
       aria-hidden="true"
     >
       <title>
-        {s === 'warn' ? WARNING_TITLE : s === 'hint' ? HINT_TITLE : ''}
+        {s === 'warn'
+          ? WARNING_TITLE
+          : s === 'hint'
+            ? HINT_TITLE
+            : s === 'info'
+              ? INFO_TITLE
+              : ''}
       </title>
-      {s === 'ok' ? TICK : WARN}
+      {s === 'ok' ? TICK : s === 'info' ? INFO : WARN}
     </svg>
   );
 }

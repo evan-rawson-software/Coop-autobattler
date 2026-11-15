@@ -62,7 +62,7 @@ import {
   ToolsTray,
   groupStash,
 } from './panels.js';
-import { deriveChecklist } from './checklist.js';
+import { deriveChecklist, isWarning } from './checklist.js';
 import { newStashIds } from './new-items.js';
 import { nextFight } from './next-fight.js';
 import { displayRound } from '../shell/phase.js';
@@ -492,7 +492,12 @@ export function BuildView(props: {
                 content,
                 data.current.flow,
                 problemScope(ctl.session?.run ?? null, data.current.acting),
-              ).map((p) => ({ id: p.id, kind: p.kind, text: p.text })),
+              ).map((p) => ({
+                id: p.id,
+                kind: p.kind,
+                text: p.text,
+                warning: isWarning(p),
+              })),
         legalCore: () => [...ctl.legalCorePositions],
         acting: () => data.current.acting,
         partnerCores: () => [...ctl.partnerCores()],

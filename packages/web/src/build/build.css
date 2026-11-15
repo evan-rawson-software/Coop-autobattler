@@ -416,6 +416,10 @@ button.check:hover {
   color: var(--warn);
 }
 
+.check-mark.info {
+  color: var(--ink-muted);
+}
+
 .check-mark.ok {
   color: var(--ok);
 }

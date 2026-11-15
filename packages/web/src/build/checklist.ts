@@ -18,8 +18,9 @@ import {
   type ProblemKind,
 } from './view-model.js';
 
-/** `warn` is a mistake, `hint` a reminder (not an error), `ok` is fine. */
-export type CheckState = 'warn' | 'hint' | 'ok';
+/** `warn` is a mistake, `hint` a reminder (not an error), `info` a
+ * neutral note (partly fed, still works), `ok` is fine. */
+export type CheckState = 'warn' | 'hint' | 'info' | 'ok';
 
 export interface CheckItem {
   readonly id: string;
@@ -33,7 +34,7 @@ export interface CheckItem {
 }
 
 export interface Checklist {
-  /** Warnings, then reminders, then the satisfied checks (at most `maxOk`). */
+  /** Warnings, then reminders, then notes, then the satisfied checks (at most `maxOk`). */
   readonly items: readonly CheckItem[];
   /** Satisfied checks that were left out to keep the list short. */
   readonly okHidden: number;
@@ -51,7 +52,7 @@ function pluralName(n: number, name: string): string {
 const FIX_KEY: Readonly<Record<ProblemKind, string | null>> = {
   missing_input: 'uiFixMissingInput',
   starved: 'uiFixStarved',
-  under_supplied: 'uiFixUnderSupplied',
+  under_supplied: null,
   lost_output: 'uiFixLostOutput',
   output_faces_edge: null,
   stalled_output: 'uiFixStalled',
@@ -63,6 +64,16 @@ const FIX_KEY: Readonly<Record<ProblemKind, string | null>> = {
 /** A reminder is not an error: something is unused, not broken. */
 export function isReminder(p: Problem): boolean {
   return p.kind === 'stash' || p.kind === 'free_nodes';
+}
+
+/** Partly fed is information, not a mistake: the building still works. */
+export function isInfo(p: Problem): boolean {
+  return p.kind === 'under_supplied';
+}
+
+/** Only these stop something working; they alone are warnings. */
+export function isWarning(p: Problem): boolean {
+  return !isReminder(p) && !isInfo(p);
 }
 
 /** Does the building have an input with no conduit into it? */
@@ -86,6 +97,7 @@ export function deriveChecklist(
 ): Checklist {
   const warnings: CheckItem[] = [];
   const reminders: CheckItem[] = [];
+  const infos: CheckItem[] = [];
   // Identical lines are one line with a count ("2 Extractors have no conduit").
   const seen = new Map<string, Problem[]>();
   for (const p of problems) {
@@ -112,12 +124,12 @@ export function deriveChecklist(
     const key = FIX_KEY[p.kind];
     const item: CheckItem = {
       id: p.id,
-      state: isReminder(p) ? 'hint' : 'warn',
+      state: isInfo(p) ? 'info' : isReminder(p) ? 'hint' : 'warn',
       text,
       fix: key === null ? null : screenText(texts, key),
       problem: p,
     };
-    (isReminder(p) ? reminders : warnings).push(item);
+    (isInfo(p) ? infos : isReminder(p) ? reminders : warnings).push(item);
   }
 
   const ok: CheckItem[] = [];
@@ -157,7 +169,7 @@ export function deriveChecklist(
     });
   }
   return {
-    items: [...warnings, ...reminders, ...ok.slice(0, maxOk)],
+    items: [...warnings, ...reminders, ...infos, ...ok.slice(0, maxOk)],
     okHidden: Math.max(0, ok.length - maxOk),
   };
 }

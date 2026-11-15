@@ -471,8 +471,20 @@ export function deriveProblems(
         kind: 'under_supplied',
         text: screenText(texts, 'problemUnderSupplied', {
           name: name(b),
+          // Never 0% or 100%: the building is partly fed.
+          percent: String(
+            Math.min(99, Math.max(1, Math.round((u.gets / u.needs) * 100))),
+          ),
           gets: formatHundredths(u.gets),
           needs: formatHundredths(u.needs),
+          resource:
+            [
+              ...new Set(
+                flow.dry.consumers
+                  .filter((c) => c.building === b.id)
+                  .map((c) => resourceName(content, c.resource)),
+              ),
+            ].join(' and ') || 'input',
         }),
         focus: occ.cellsOf(b)[0] ?? { x: b.x, y: b.y },
         building: b.id,
