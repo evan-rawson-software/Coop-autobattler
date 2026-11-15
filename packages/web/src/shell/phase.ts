@@ -168,6 +168,8 @@ export interface PhaseInfo {
   readonly leg: Leg;
   /** Set on a battle result screen. */
   readonly next: PhaseId | null;
+  /** The player has placed a building (the Build tip then collapses). */
+  readonly placed?: boolean;
 }
 
 /** Set by the run screen; absent outside a run (no stepper then). */

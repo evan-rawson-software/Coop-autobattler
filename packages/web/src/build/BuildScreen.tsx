@@ -250,6 +250,8 @@ export function BuildView(props: {
     [run, step, shared, acting],
   );
   const tut = useBuildTutorial();
+  // The coach card covers the map key and the keys; the next fight waits for step 5.
+  const inTutorialBuild = tut !== null;
   const sealedIds = gate?.sealed.ids ?? [];
   const sealedKey = sealedIds.join(',');
 
@@ -923,7 +925,7 @@ export function BuildView(props: {
             }}
           />
         ) : null}
-        <OverlayLegend model={model} />
+        {inTutorialBuild ? null : <OverlayLegend model={model} />}
         <BorderLinksPanel
           run={run}
           ctl={ctl}
@@ -933,8 +935,10 @@ export function BuildView(props: {
         />
         <PartyPanel run={run} ctl={ctl} gate={gate} acting={acting} />
         <div class="info-spacer" />
-        <KeyHints />
-        {next === null ? null : <NextFightPanel fight={next} />}
+        {inTutorialBuild ? null : <KeyHints />}
+        {next === null || (tut?.n != null && tut.n < 5) ? null : (
+          <NextFightPanel fight={next} />
+        )}
       </>
     );
 

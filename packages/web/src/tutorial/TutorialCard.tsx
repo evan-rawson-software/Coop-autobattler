@@ -5,12 +5,12 @@
  * rail and never cover the board.
  */
 import type { ComponentChildren } from 'preact';
-import { useState } from 'preact/hooks';
+import { useContext, useState } from 'preact/hooks';
 import { useStore } from '../app-state.js';
 import { screenText, screenTexts } from '../build/texts.js';
 import { PhaseBox } from '../shell/PhaseStepper.js';
 import { seenTipsStore } from '../shell/phase-tips.js';
-import type { PhaseId } from '../shell/phase.js';
+import { PhaseContext, type PhaseId } from '../shell/phase.js';
 import { doneOf, positionOf, type TutorialInfo } from './context.js';
 import {
   STEP_NUMBERS,
@@ -115,6 +115,7 @@ export function TutorialCard(props: {
   const { info, phase } = props;
   const [asking, setAsking] = useState(false);
   const seen = useStore(seenTipsStore);
+  const placed = useContext(PhaseContext)?.placed === true;
   const battleDone = props.framePhase === 'result';
   const pos = positionOf(info, battleDone);
   if (pos.kind === 'off') return null;
@@ -200,7 +201,9 @@ export function TutorialCard(props: {
         </div>
       ) : (
         <>
-          {seen.includes(phase) ? null : <PhaseBox phase={phase} />}
+          {seen.includes(phase) || (phase === 'build' && placed) ? null : (
+            <PhaseBox phase={phase} />
+          )}
           <h3 class="tut-heading" data-field="tutorial-heading">
             {text.head}
           </h3>

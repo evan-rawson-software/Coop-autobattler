@@ -118,7 +118,9 @@ export function PhaseInfoTop(props: { framePhase?: string }) {
   const tutorial = useContext(TutorialContext);
   const seen = useStore(seenTipsStore);
   if (info === null) return null;
-  const showTip = !seen.includes(info.phase);
+  const showTip =
+    !seen.includes(info.phase) &&
+    !(info.phase === 'build' && info.placed === true);
   return (
     <>
       {tutorial !== null ? (
