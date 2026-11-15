@@ -7,6 +7,9 @@
  */
 
 import type { BuiltinReason } from '@game/session';
+import { formatText } from '@game/core';
+import { content } from '../content.js';
+import { mismatchWanted } from './refining.js';
 import { screenText, screenTexts } from './texts.js';
 
 export type KnownReason =
@@ -121,6 +124,14 @@ export function reasonMessage(
     return screenText(screenTexts, 'reasonPlayerToAct', {
       text,
       number: String(Number(who[1]) + 1),
+    });
+  }
+  // A refused conduit at a building input that takes another resource says
+  // which resource that side wants (`detail` "... which takes res_x").
+  const wanted = code === 'resource_mismatch' ? mismatchWanted(detail) : null;
+  if (wanted !== null && content.resources.get(wanted) !== undefined) {
+    return screenText(screenTexts, 'reasonMismatchWants', {
+      resource: formatText(`{${wanted}}`, content.resources),
     });
   }
   // The offending cell (`detail` "(x, y)") is marked on the board, not worded.

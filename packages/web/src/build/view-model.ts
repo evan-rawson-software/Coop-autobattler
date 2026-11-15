@@ -466,26 +466,50 @@ export function deriveProblems(
         partnerCounts.set(b.owner, (partnerCounts.get(b.owner) ?? 0) + 1);
         continue;
       }
+      // A two-input building names the input that is short, with its own
+      // figures: its need and what it gets of that resource alone.
+      const shorts = u.inputs?.filter((i) => i.short) ?? [];
       out.push({
         id: `under:${String(b.id)}`,
         kind: 'under_supplied',
-        text: screenText(texts, 'problemUnderSupplied', {
-          name: name(b),
-          // Never 0% or 100%: the building is partly fed.
-          percent: String(
-            Math.min(99, Math.max(1, Math.round((u.gets / u.needs) * 100))),
-          ),
-          gets: formatHundredths(u.gets),
-          needs: formatHundredths(u.needs),
-          resource:
-            [
-              ...new Set(
-                flow.dry.consumers
-                  .filter((c) => c.building === b.id)
-                  .map((c) => resourceName(content, c.resource)),
-              ),
-            ].join(' and ') || 'input',
-        }),
+        text:
+          shorts.length > 0
+            ? screenText(texts, 'problemShortInput', {
+                name: name(b),
+                percent: String(
+                  Math.min(
+                    99,
+                    Math.max(1, Math.round((u.gets / u.needs) * 100)),
+                  ),
+                ),
+                resource: shorts
+                  .map((i) => resourceName(content, i.resource))
+                  .join(' and '),
+                gets: formatHundredths(shorts.reduce((n, i) => n + i.gets, 0)),
+                needs: formatHundredths(
+                  shorts.reduce((n, i) => n + i.needs, 0),
+                ),
+              })
+            : screenText(texts, 'problemUnderSupplied', {
+                name: name(b),
+                // Never 0% or 100%: the building is partly fed.
+                percent: String(
+                  Math.min(
+                    99,
+                    Math.max(1, Math.round((u.gets / u.needs) * 100)),
+                  ),
+                ),
+                gets: formatHundredths(u.gets),
+                needs: formatHundredths(u.needs),
+                resource:
+                  [
+                    ...new Set(
+                      flow.dry.consumers
+                        .filter((c) => c.building === b.id)
+                        .map((c) => resourceName(content, c.resource)),
+                    ),
+                  ].join(' and ') || 'input',
+              }),
         focus: occ.cellsOf(b)[0] ?? { x: b.x, y: b.y },
         building: b.id,
       });

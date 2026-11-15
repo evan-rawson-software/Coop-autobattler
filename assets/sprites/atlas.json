@@ -294,9 +294,9 @@
         "#bfa5fa"
       ],
       "res_ab_refined": [
-        "#713824",
-        "#d9663a",
-        "#eaab93"
+        "#782f4c",
+        "#e8548a",
+        "#f2a1bf"
       ],
       "res_bc_refined": [
         "#246967",
@@ -1513,7 +1513,7 @@
       "category": "unit",
       "id": "unit_heavy",
       "tintable": true,
-      "note": "Heavy melee ground unit (soldier art for now). Neutral greys in the team parts (tint keys)."
+      "note": "Heavy melee ground unit: broad pauldrons, great-helm, hammer. Neutral greys in the team parts (tint keys)."
     },
     "unit_heavy.walk": {
       "sheet": "units",
@@ -1530,7 +1530,7 @@
       "category": "unit",
       "id": "unit_heavy",
       "tintable": true,
-      "note": "Heavy melee ground unit (soldier art for now). Neutral greys in the team parts (tint keys)."
+      "note": "Heavy melee ground unit: broad pauldrons, great-helm, hammer. Neutral greys in the team parts (tint keys)."
     },
     "unit_heavy.attack": {
       "sheet": "units",
@@ -1547,7 +1547,7 @@
       "category": "unit",
       "id": "unit_heavy",
       "tintable": true,
-      "note": "Heavy melee ground unit (soldier art for now). Neutral greys in the team parts (tint keys)."
+      "note": "Heavy melee ground unit: broad pauldrons, great-helm, hammer. Neutral greys in the team parts (tint keys)."
     },
     "unit_heavy@a": {
       "sheet": "units",
@@ -1563,7 +1563,7 @@
       ],
       "category": "unit",
       "id": "unit_heavy",
-      "note": "Heavy melee ground unit (soldier art for now). Side A, faces north (up the screen), narrow gold plume."
+      "note": "Heavy melee ground unit: broad pauldrons, great-helm, hammer. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_heavy@a.walk": {
       "sheet": "units",
@@ -1579,7 +1579,7 @@
       ],
       "category": "unit",
       "id": "unit_heavy",
-      "note": "Heavy melee ground unit (soldier art for now). Side A, faces north (up the screen), narrow gold plume."
+      "note": "Heavy melee ground unit: broad pauldrons, great-helm, hammer. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_heavy@a.attack": {
       "sheet": "units",
@@ -1595,7 +1595,7 @@
       ],
       "category": "unit",
       "id": "unit_heavy",
-      "note": "Heavy melee ground unit (soldier art for now). Side A, faces north (up the screen), narrow gold plume."
+      "note": "Heavy melee ground unit: broad pauldrons, great-helm, hammer. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_heavy@b": {
       "sheet": "units",
@@ -1611,7 +1611,7 @@
       ],
       "category": "unit",
       "id": "unit_heavy",
-      "note": "Heavy melee ground unit (soldier art for now). Side B, faces south (flipped vertically), wide bone horns."
+      "note": "Heavy melee ground unit: broad pauldrons, great-helm, hammer. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_heavy@b.walk": {
       "sheet": "units",
@@ -1627,7 +1627,7 @@
       ],
       "category": "unit",
       "id": "unit_heavy",
-      "note": "Heavy melee ground unit (soldier art for now). Side B, faces south (flipped vertically), wide bone horns."
+      "note": "Heavy melee ground unit: broad pauldrons, great-helm, hammer. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_heavy@b.attack": {
       "sheet": "units",
@@ -1643,7 +1643,7 @@
       ],
       "category": "unit",
       "id": "unit_heavy",
-      "note": "Heavy melee ground unit (soldier art for now). Side B, faces south (flipped vertically), wide bone horns."
+      "note": "Heavy melee ground unit: broad pauldrons, great-helm, hammer. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_golem": {
       "sheet": "units",
@@ -1660,7 +1660,7 @@
       "category": "unit",
       "id": "unit_golem",
       "tintable": true,
-      "note": "Armored heavy melee ground unit (soldier art for now). Neutral greys in the team parts (tint keys)."
+      "note": "Armored heavy melee ground unit: stone body, boulder fists; drawn at its larger radius. Neutral greys in the team parts (tint keys)."
     },
     "unit_golem.walk": {
       "sheet": "units",
@@ -1677,7 +1677,7 @@
       "category": "unit",
       "id": "unit_golem",
       "tintable": true,
-      "note": "Armored heavy melee ground unit (soldier art for now). Neutral greys in the team parts (tint keys)."
+      "note": "Armored heavy melee ground unit: stone body, boulder fists; drawn at its larger radius. Neutral greys in the team parts (tint keys)."
     },
     "unit_golem.attack": {
       "sheet": "units",
@@ -1694,7 +1694,7 @@
       "category": "unit",
       "id": "unit_golem",
       "tintable": true,
-      "note": "Armored heavy melee ground unit (soldier art for now). Neutral greys in the team parts (tint keys)."
+      "note": "Armored heavy melee ground unit: stone body, boulder fists; drawn at its larger radius. Neutral greys in the team parts (tint keys)."
     },
     "unit_golem@a": {
       "sheet": "units",
@@ -1710,7 +1710,7 @@
       ],
       "category": "unit",
       "id": "unit_golem",
-      "note": "Armored heavy melee ground unit (soldier art for now). Side A, faces north (up the screen), narrow gold plume."
+      "note": "Armored heavy melee ground unit: stone body, boulder fists; drawn at its larger radius. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_golem@a.walk": {
       "sheet": "units",
@@ -1726,7 +1726,7 @@
       ],
       "category": "unit",
       "id": "unit_golem",
-      "note": "Armored heavy melee ground unit (soldier art for now). Side A, faces north (up the screen), narrow gold plume."
+      "note": "Armored heavy melee ground unit: stone body, boulder fists; drawn at its larger radius. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_golem@a.attack": {
       "sheet": "units",
@@ -1742,7 +1742,7 @@
       ],
       "category": "unit",
       "id": "unit_golem",
-      "note": "Armored heavy melee ground unit (soldier art for now). Side A, faces north (up the screen), narrow gold plume."
+      "note": "Armored heavy melee ground unit: stone body, boulder fists; drawn at its larger radius. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_golem@b": {
       "sheet": "units",
@@ -1758,7 +1758,7 @@
       ],
       "category": "unit",
       "id": "unit_golem",
-      "note": "Armored heavy melee ground unit (soldier art for now). Side B, faces south (flipped vertically), wide bone horns."
+      "note": "Armored heavy melee ground unit: stone body, boulder fists; drawn at its larger radius. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_golem@b.walk": {
       "sheet": "units",
@@ -1774,7 +1774,7 @@
       ],
       "category": "unit",
       "id": "unit_golem",
-      "note": "Armored heavy melee ground unit (soldier art for now). Side B, faces south (flipped vertically), wide bone horns."
+      "note": "Armored heavy melee ground unit: stone body, boulder fists; drawn at its larger radius. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_golem@b.attack": {
       "sheet": "units",
@@ -1790,7 +1790,7 @@
       ],
       "category": "unit",
       "id": "unit_golem",
-      "note": "Armored heavy melee ground unit (soldier art for now). Side B, faces south (flipped vertically), wide bone horns."
+      "note": "Armored heavy melee ground unit: stone body, boulder fists; drawn at its larger radius. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_archer": {
       "sheet": "units",
@@ -2101,7 +2101,7 @@
       "category": "unit",
       "id": "unit_caster",
       "tintable": true,
-      "note": "Fragile ranged ground unit with area damage (archer art for now). Neutral greys in the team parts (tint keys)."
+      "note": "Fragile ranged ground unit with area damage: hooded robe, staff with an orb. Neutral greys in the team parts (tint keys)."
     },
     "unit_caster.walk": {
       "sheet": "units",
@@ -2118,7 +2118,7 @@
       "category": "unit",
       "id": "unit_caster",
       "tintable": true,
-      "note": "Fragile ranged ground unit with area damage (archer art for now). Neutral greys in the team parts (tint keys)."
+      "note": "Fragile ranged ground unit with area damage: hooded robe, staff with an orb. Neutral greys in the team parts (tint keys)."
     },
     "unit_caster.attack": {
       "sheet": "units",
@@ -2135,7 +2135,7 @@
       "category": "unit",
       "id": "unit_caster",
       "tintable": true,
-      "note": "Fragile ranged ground unit with area damage (archer art for now). Neutral greys in the team parts (tint keys)."
+      "note": "Fragile ranged ground unit with area damage: hooded robe, staff with an orb. Neutral greys in the team parts (tint keys)."
     },
     "unit_caster@a": {
       "sheet": "units",
@@ -2151,7 +2151,7 @@
       ],
       "category": "unit",
       "id": "unit_caster",
-      "note": "Fragile ranged ground unit with area damage (archer art for now). Side A, faces north (up the screen), narrow gold plume."
+      "note": "Fragile ranged ground unit with area damage: hooded robe, staff with an orb. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_caster@a.walk": {
       "sheet": "units",
@@ -2167,7 +2167,7 @@
       ],
       "category": "unit",
       "id": "unit_caster",
-      "note": "Fragile ranged ground unit with area damage (archer art for now). Side A, faces north (up the screen), narrow gold plume."
+      "note": "Fragile ranged ground unit with area damage: hooded robe, staff with an orb. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_caster@a.attack": {
       "sheet": "units",
@@ -2183,7 +2183,7 @@
       ],
       "category": "unit",
       "id": "unit_caster",
-      "note": "Fragile ranged ground unit with area damage (archer art for now). Side A, faces north (up the screen), narrow gold plume."
+      "note": "Fragile ranged ground unit with area damage: hooded robe, staff with an orb. Side A, faces north (up the screen), narrow gold plume."
     },
     "unit_caster@b": {
       "sheet": "units",
@@ -2199,7 +2199,7 @@
       ],
       "category": "unit",
       "id": "unit_caster",
-      "note": "Fragile ranged ground unit with area damage (archer art for now). Side B, faces south (flipped vertically), wide bone horns."
+      "note": "Fragile ranged ground unit with area damage: hooded robe, staff with an orb. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_caster@b.walk": {
       "sheet": "units",
@@ -2215,7 +2215,7 @@
       ],
       "category": "unit",
       "id": "unit_caster",
-      "note": "Fragile ranged ground unit with area damage (archer art for now). Side B, faces south (flipped vertically), wide bone horns."
+      "note": "Fragile ranged ground unit with area damage: hooded robe, staff with an orb. Side B, faces south (flipped vertically), wide bone horns."
     },
     "unit_caster@b.attack": {
       "sheet": "units",
@@ -2231,7 +2231,7 @@
       ],
       "category": "unit",
       "id": "unit_caster",
-      "note": "Fragile ranged ground unit with area damage (archer art for now). Side B, faces south (flipped vertically), wide bone horns."
+      "note": "Fragile ranged ground unit with area damage: hooded robe, staff with an orb. Side B, faces south (flipped vertically), wide bone horns."
     },
     "fx_hit_spark": {
       "sheet": "effects",

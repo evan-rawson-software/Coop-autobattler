@@ -23,7 +23,7 @@
       "id": "res_ab_refined",
       "name": "Composite",
       "refinedFrom": ["res_a", "res_b"],
-      "color": "#d9663a"
+      "color": "#e8548a"
     },
     {
       "id": "res_bc_refined",

@@ -44,6 +44,8 @@ export interface DrawIndex {
     Map<number, readonly Pt[]>,
   ];
   readonly boardLabels: readonly { text: string; rect: ViewRect }[];
+  /** Each side's refinery building IDs (their batches show as a pulse). */
+  readonly refineries?: readonly [ReadonlySet<number>, ReadonlySet<number>];
 }
 
 export function makeDrawIndex(
@@ -65,9 +67,13 @@ export function makeDrawIndex(
     new Map<number, readonly Pt[]>(),
   ];
   const boardLabels: { text: string; rect: ViewRect }[] = [];
+  const refineries: [Set<number>, Set<number>] = [new Set(), new Set()];
   for (const b of initial.boards) {
     const side = b.frame.id === 'own' ? 0 : 1;
-    for (const s of b.buildings) rects[side].set(s.instance.id, s.rect);
+    for (const s of b.buildings) {
+      rects[side].set(s.instance.id, s.rect);
+      if (s.def.kind === 'refinery') refineries[side].add(s.instance.id);
+    }
     cores[side] = b.cores.map((c) => c?.rect ?? null);
     for (const c of b.conduits) conduits[side].set(c.id, c.cells);
     // A link is one flow edge under its sending half's id; its slots run
@@ -83,7 +89,13 @@ export function makeDrawIndex(
       rect: { x: b.frame.ox, y: b.frame.oy, w: b.frame.w, h: b.frame.h },
     });
   }
-  return { rects, coreRects: cores, conduitCells: conduits, boardLabels };
+  return {
+    rects,
+    coreRects: cores,
+    conduitCells: conduits,
+    boardLabels,
+    refineries,
+  };
 }
 
 export interface BattleDrawData {
@@ -99,6 +111,15 @@ const LIFE_SHOT = 3;
 const LIFE_SPAWN = 5;
 const LIFE_DESTROY = 14;
 const LIFE_RAMP = 16;
+// A refinery batch pulses; an item going in is a brief dot; an armored hit
+// keeps its shield mark a little longer than the spark; a caster's shot flies
+// for LIFE_PROJECTILE ticks, then its blast spreads for LIFE_BLAST.
+const LIFE_BATCH = 12;
+const LIFE_ITEM = 4;
+const LIFE_ARMOR = 8;
+const LIFE_PROJECTILE = 3;
+const LIFE_BLAST = 8;
+const LIFE_FLASH = 6;
 const LIFE_MAX = 16;
 
 const FONT = '600 {s}px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
@@ -107,6 +128,7 @@ const FONT = '600 {s}px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
 let idToIndex = new Int32Array(0);
 const tmp: Pt = { x: 0, y: 0 };
 const tmp2: Pt = { x: 0, y: 0 };
+const tmp3: Pt = { x: 0, y: 0 };
 
 /** One unit type on one side: the cut-out frames of its three animations. */
 interface UnitArt {
@@ -305,6 +327,48 @@ function rectCentre(r: ViewRect | null | undefined, out: Pt): boolean {
   return true;
 }
 
+/**
+ * The mark of a hit that armor reduced: a small grey shield with the damage
+ * that got through, rising a little as it fades (CB-5h). Plain hits show only
+ * the spark.
+ */
+function drawArmorMark(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  damage: number,
+  p: number,
+  z: number,
+  ink: string,
+): void {
+  const w = Math.max(4, z * 0.16);
+  const h = Math.max(5, z * 0.2);
+  const rise = z * 0.5 * p;
+  const top = y - z * 0.35 - rise;
+  ctx.save();
+  ctx.globalAlpha = 1 - p;
+  ctx.beginPath();
+  ctx.moveTo(x - w, top);
+  ctx.lineTo(x + w, top);
+  ctx.lineTo(x + w, top + h * 0.6);
+  ctx.lineTo(x, top + h * 1.3);
+  ctx.lineTo(x - w, top + h * 0.6);
+  ctx.closePath();
+  ctx.fillStyle = '#9aa5b1';
+  ctx.fill();
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  if (z >= 14) {
+    ctx.font = FONT.replace('{s}', String(Math.max(9, Math.min(13, z * 0.32))));
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#8a95a1';
+    ctx.fillText(String(damage), x + w + 2, top + h * 0.5);
+  }
+  ctx.restore();
+}
+
 export function drawBattleOverlay(
   ctx: CanvasRenderingContext2D,
   o: OverlayContext,
@@ -492,6 +556,16 @@ export function drawBattleOverlay(
     out.y = oy + out.y * z;
     return true;
   };
+  // Whether unit `id` is on the board and wears armor.
+  const armored = (id: number): boolean => {
+    const i = idToIndex[id] ?? -1;
+    const t = i >= 0 ? units[i] : undefined;
+    return (
+      t !== undefined &&
+      t.id === id &&
+      (content.units.get(t.def)?.armor ?? 0) > 0
+    );
+  };
   const base = ctx.getTransform();
   const clock = (tick + frac) / pb.ticksPerSecond;
   if (fx?.shadow) {
@@ -600,6 +674,22 @@ export function drawBattleOverlay(
     const age = tick - 1 - e.tick + frac; // 0 .. life
     switch (e.type) {
       case 'unit_attacked': {
+        if (
+          e.target.kind === 'unit' &&
+          age < LIFE_ARMOR &&
+          armored(e.target.unit) &&
+          targetPoint(e, tmp3)
+        ) {
+          drawArmorMark(
+            ctx,
+            tmp3.x,
+            tmp3.y,
+            e.damage,
+            age / LIFE_ARMOR,
+            z,
+            theme.ink,
+          );
+        }
         if (age >= LIFE_ATTACK) break;
         const ai = idToIndex[e.unit] ?? -1;
         const a = ai >= 0 ? units[ai] : undefined;
@@ -635,6 +725,22 @@ export function drawBattleOverlay(
         break;
       }
       case 'turret_fired': {
+        if (age < LIFE_ARMOR && armored(e.unit)) {
+          const ti = idToIndex[e.unit] ?? -1;
+          const t = ti >= 0 ? units[ti] : undefined;
+          if (t !== undefined && t.id === e.unit) {
+            pxOf(t, tmp3);
+            drawArmorMark(
+              ctx,
+              tmp3.x,
+              tmp3.y,
+              e.damage,
+              age / LIFE_ARMOR,
+              z,
+              theme.ink,
+            );
+          }
+        }
         if (age >= LIFE_SHOT) break;
         const side = e.side === 0 ? 0 : 1;
         if (!rectCentre(index.rects[side].get(e.building), tmp)) break;
@@ -695,21 +801,127 @@ export function drawBattleOverlay(
         break;
       }
       case 'splash': {
-        if (age >= LIFE_SHOT) break;
-        // A ring that grows to about one cell around the blast centre.
-        const p = age / LIFE_SHOT;
+        // The caster's shot flies to the target, then a blast of the splash
+        // radius spreads there; every unit it hits flashes.
+        const cx = ox + (e.x / CELL_UNITS) * z;
+        const cy = oy + (geo.height - e.y / CELL_UNITS) * z;
+        const ai = idToIndex[e.attacker] ?? -1;
+        const a = ai >= 0 ? units[ai] : undefined;
+        const caster = a !== undefined && a.id === e.attacker ? a : undefined;
+        if (age < LIFE_PROJECTILE && caster !== undefined) {
+          pxOf(caster, tmp);
+          const q = age / LIFE_PROJECTILE;
+          const px = tmp.x + (cx - tmp.x) * q;
+          const py = tmp.y + (cy - tmp.y) * q;
+          ctx.globalAlpha = 0.5;
+          ctx.strokeStyle = theme.hover;
+          ctx.lineWidth = Math.max(2, z * 0.08);
+          ctx.beginPath();
+          ctx.moveTo(tmp.x + (px - tmp.x) * 0.4, tmp.y + (py - tmp.y) * 0.4);
+          ctx.lineTo(px, py);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          ctx.beginPath();
+          ctx.arc(px, py, Math.max(3, z * 0.13), 0, Math.PI * 2);
+          ctx.fillStyle = theme.hover;
+          ctx.fill();
+          ctx.strokeStyle = theme.outline;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+        const born = LIFE_PROJECTILE - 1;
+        if (age >= born && age < born + LIFE_BLAST) {
+          const p = (age - born) / LIFE_BLAST;
+          const sub =
+            (caster === undefined
+              ? undefined
+              : content.units.get(caster.def)?.splash?.radiusSub) ?? CELL_UNITS;
+          const rad =
+            (sub / CELL_UNITS) * z * (0.35 + 0.65 * Math.min(1, p * 2));
+          ctx.beginPath();
+          ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+          ctx.globalAlpha = 0.28 * (1 - p);
+          ctx.fillStyle = theme.hover;
+          ctx.fill();
+          ctx.globalAlpha = 1 - p;
+          ctx.strokeStyle = theme.hover;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+        if (age >= born && age < born + LIFE_FLASH) {
+          const p = (age - born) / LIFE_FLASH;
+          for (const hit of e.targets) {
+            const ti = idToIndex[hit.unit] ?? -1;
+            const t = ti >= 0 ? units[ti] : undefined;
+            if (t === undefined || t.id !== hit.unit) continue;
+            pxOf(t, tmp2);
+            ctx.globalAlpha = 0.7 * (1 - p);
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(tmp2.x, tmp2.y, Math.max(3, radiusOf(t)), 0, Math.PI * 2);
+            ctx.fill();
+            if (armored(hit.unit)) {
+              drawArmorMark(ctx, tmp2.x, tmp2.y, hit.damage, p, z, theme.ink);
+            }
+          }
+        }
+        break;
+      }
+      case 'produced':
+      case 'delivered': {
+        // A refinery at work: each item that goes in is a dot at the building,
+        // and a finished batch is a pulse of the compound's colour. The
+        // compound itself then travels down the output conduit as items.
+        const side = e.side === 0 ? 0 : 1;
+        if (index.refineries?.[side].has(e.building) !== true) break;
+        const rr = index.rects[side].get(e.building);
+        if (rr === undefined) break;
+        const color = content.resources.get(e.resource)?.color ?? theme.hover;
+        const x = ox + rr.x * z;
+        const y = oy + rr.y * z;
+        if (e.type === 'delivered') {
+          if (age >= LIFE_ITEM) break;
+          const p = age / LIFE_ITEM;
+          ctx.globalAlpha = 1 - p;
+          ctx.fillStyle = color;
+          ctx.strokeStyle = theme.outline;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(
+            x + (rr.w * z) / 2,
+            y + (rr.h * z) / 2,
+            Math.max(3, z * 0.2) * (1 - p * 0.5),
+            0,
+            Math.PI * 2,
+          );
+          ctx.fill();
+          ctx.stroke();
+          break;
+        }
+        if (age >= LIFE_BATCH) break;
+        const prev = log[i - 1];
+        if (
+          prev !== undefined &&
+          prev.type === 'produced' &&
+          prev.tick === e.tick &&
+          prev.building === e.building
+        ) {
+          break; // One pulse per batch, not per item of the batch.
+        }
+        const p = age / LIFE_BATCH;
+        ctx.globalAlpha = 0.45 * (1 - p);
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, rr.w * z, rr.h * z);
         ctx.globalAlpha = 1 - p;
-        ctx.strokeStyle = theme.hover;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(
-          ox + (e.x / CELL_UNITS) * z,
-          oy + (geo.height - e.y / CELL_UNITS) * z,
-          z * (0.2 + 0.8 * p),
-          0,
-          Math.PI * 2,
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(2, z * 0.1);
+        const grow = z * 0.35 * p;
+        ctx.strokeRect(
+          x - grow,
+          y - grow,
+          rr.w * z + 2 * grow,
+          rr.h * z + 2 * grow,
         );
-        ctx.stroke();
         break;
       }
       case 'building_destroyed':

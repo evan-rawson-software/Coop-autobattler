@@ -144,7 +144,14 @@ function describeBoardCell(
     const def = content.buildings.get(found.def);
     if (def === undefined) return null;
     const stats = cardStats(content, simConfig, def, found.tier, texts);
-    const lines = [stats.effect, stats.uses, stats.collects, stats.health]
+    const lines = [
+      stats.effect,
+      stats.uses,
+      stats.makes,
+      stats.collects,
+      ...stats.notes,
+      stats.health,
+    ]
       .filter((l): l is string => l !== null && l !== '')
       .slice();
     return {

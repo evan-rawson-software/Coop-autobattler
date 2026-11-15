@@ -21,6 +21,8 @@ export interface SideMarker {
   readonly side: Side;
   /** The cells just outside that side (one per edge cell). */
   readonly cells: readonly Cell[];
+  /** An input marker: the resource that side takes, when it names one. */
+  readonly resource?: string;
 }
 
 export function freeOutputSides(
@@ -74,8 +76,18 @@ export function sideMarkers(
         ? freeOutputSides(team, content, b)
         : freeInputSides(team, content, b);
     const cells = occ.cellsOf(b);
+    const taking = occ.absoluteSides(b).inputs;
     for (const side of sides) {
-      out.push({ building: b.id, side, cells: outsideCells(cells, side) });
+      const resource =
+        kind === 'in'
+          ? taking.find((i) => i.side === side)?.resource
+          : undefined;
+      out.push({
+        building: b.id,
+        side,
+        cells: outsideCells(cells, side),
+        ...(resource === undefined ? {} : { resource }),
+      });
     }
   }
   return out;

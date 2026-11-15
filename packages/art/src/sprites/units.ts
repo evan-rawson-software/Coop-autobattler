@@ -326,11 +326,116 @@ function dronePost(p: Pix, c: Ctx): void {
   }
 }
 
+// ---- Heavy -------------------------------------------------------------
+
+const HEAVY_TORSO: Grid = [
+  '.xxxxxxxxxx.',
+  'xZZxxxxxxxXX',
+  'xZxxxxxxxxXX',
+  'xxxxxxxxxxXX',
+  'xxxxxxxxxxXX',
+  'xxxxxxxxxXXX',
+  '.xxxxxxxXXX.',
+  '..XXXXXXXX..',
+];
+/** Broad steel pauldrons: the heavy reads wider than a soldier. */
+const HEAVY_PAULDRON: Grid = ['5555', '4443', '3332'];
+/** Closed great-helm with a dark visor slit. */
+const HEAVY_HELM: Grid = ['.5555.', '544443', '511113', '443332', '.3222.'];
+
+function heavy(L: Layers, c: Ctx): void {
+  const lunge = c.atk === 2 ? -2 : c.atk === 1 ? 1 : 0;
+  const bob = c.step === -1 ? -1 : 0;
+  const dy = lunge + bob;
+  const s = c.step;
+  L.back.rect(4, 12 + s, 3, 3, '1');
+  L.back.rect(9, 12 - s, 3, 3, '1');
+  // A big hammer on the right: head up on the wind-up, down on the strike.
+  const top = c.atk === 2 ? 0 : c.atk === 1 ? 1 : 3;
+  const haft = c.atk === 2 ? 9 : c.atk === 1 ? 11 : 13;
+  for (let y = top + 3; y <= haft; y++) L.back.set(14, y + bob, 'o');
+  L.back.stamp(['.555.', '56665', '55455'], 12, top + bob);
+  L.body.stamp(HEAVY_TORSO, 2, 5 + dy);
+  L.front.stamp(HEAVY_PAULDRON, 0, 5 + dy);
+  L.front.stamp(mirror(HEAVY_PAULDRON), 12, 5 + dy);
+  sideCue(L.front, c.side, 5, 3 + dy, 6);
+  L.front.stamp(HEAVY_HELM, 5, 3 + dy);
+}
+
+// ---- Golem -------------------------------------------------------------
+
+/** Stone body (rock ramp) with a team-coloured rune plate on the chest. */
+const GOLEM_BODY: Grid = [
+  '..rrrrrrrr..',
+  '.rqqqqpqqqr.',
+  'rqqppqqqqqrR',
+  'rqqqxZZxqqrR',
+  'rqqqxxxXqqrR',
+  'rqqqqXXqqqrR',
+  '.rqqqqqqqrR.',
+  '..RRRRRRRR..',
+];
+
+function golem(L: Layers, c: Ctx): void {
+  const lunge = c.atk === 2 ? -2 : c.atk === 1 ? 1 : 0;
+  const bob = c.step === -1 ? -1 : 0;
+  const dy = lunge + bob;
+  const s = c.step;
+  // Stumpy legs, stepping slowly.
+  L.back.rect(3, 12 + s, 4, 3, 'R');
+  L.back.rect(9, 12 - s, 4, 3, 'R');
+  L.body.stamp(GOLEM_BODY, 2, 5 + dy);
+  // Boulder fists: raised on the wind-up, slammed forward on the strike.
+  const fy = c.atk === 1 ? 2 : c.atk === 2 ? 1 : 7;
+  L.front.stamp(['.rqr.', 'rqppr', 'rqqqR', '.RRR.'], 0, fy + bob);
+  L.front.stamp(['.rqr.', 'rqppr', 'rqqqR', '.RRR.'], 11, fy + bob);
+  // Small head sunk into the shoulders, glowing eyes.
+  sideCue(L.front, c.side, 5, 3 + dy, 6);
+  L.front.stamp(['.rrrr.', 'rqqqqR', 'rTqqTR', 'rqqqqR', '.RRRR.'], 5, 3 + dy);
+}
+
+// ---- Caster ------------------------------------------------------------
+
+const CASTER_ROBE: Grid = [
+  '...xxxxxx...',
+  '..xZZxxxxX..',
+  '.xZxxxxxxXX.',
+  '.xxxxxxxxXX.',
+  'xxxxxxxxxxXX',
+  'xxxxxxxxxXXX',
+  '.xxxxxxxXXX.',
+  '..XXXXXXXX..',
+];
+/** Pointed hood in the team colour. */
+const CASTER_HOOD: Grid = ['..xx..', '.xZxx.', 'xZxxxX', 'x1111X', '.XXXX.'];
+
+function caster(L: Layers, c: Ctx): void {
+  const lean = c.atk === 2 ? -1 : 0;
+  const bob = c.step === -1 ? -1 : 0;
+  const dy = lean + bob;
+  const s = c.step;
+  L.back.rect(5, 13 + s, 2, 2, '1');
+  L.back.rect(9, 13 - s, 2, 2, '1');
+  // Staff on the right with a glowing orb; the orb flares on the cast.
+  for (let y = 4; y <= 14; y++) L.back.set(13, y + bob, 'o');
+  const orb = c.atk === 2 ? '6' : c.atk === 1 ? 'y' : 'T';
+  L.front.stamp(['.TT.', 'T66T', 'T66T', '.TT.'], 11, 0 + bob);
+  L.front.rect(12, 1 + bob, 2, 2, orb);
+  if (c.atk === 2) {
+    L.front.set(10, 0, 'y');
+    L.front.set(15, 3, 'y');
+    L.front.set(10, 4, 'y');
+  }
+  L.body.stamp(CASTER_ROBE, 2, 6 + dy);
+  sideCue(L.front, c.side, 5, 4 + dy, 6);
+  L.front.stamp(CASTER_HOOD, 5, 4 + dy);
+}
+
 const DRAWERS: Readonly<Record<string, (L: Layers, c: Ctx) => void>> = {
   unit_soldier: soldier,
-  unit_heavy: soldier,
-  unit_golem: soldier,
-  unit_caster: archer,
+  unit_heavy: heavy,
+  unit_golem: golem,
+  unit_caster: caster,
   unit_raider: raider,
   unit_archer: archer,
   unit_drone: drone,
@@ -340,10 +445,11 @@ const DRAWERS: Readonly<Record<string, (L: Layers, c: Ctx) => void>> = {
 const ART_ONLY: readonly string[] = ['unit_archer', 'unit_drone'];
 const NOTES: Readonly<Record<string, string>> = {
   unit_soldier: 'Melee ground unit.',
-  unit_heavy: 'Heavy melee ground unit (soldier art for now).',
+  unit_heavy: 'Heavy melee ground unit: broad pauldrons, great-helm, hammer.',
   unit_caster:
-    'Fragile ranged ground unit with area damage (archer art for now).',
-  unit_golem: 'Armored heavy melee ground unit (soldier art for now).',
+    'Fragile ranged ground unit with area damage: hooded robe, staff with an orb.',
+  unit_golem:
+    'Armored heavy melee ground unit: stone body, boulder fists; drawn at its larger radius.',
   unit_raider: 'Fast melee ground unit.',
   unit_archer: 'Ranged ground unit.',
   unit_drone: 'Flying unit; place fx_shadow under it.',

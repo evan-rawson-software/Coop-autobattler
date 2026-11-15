@@ -28,6 +28,7 @@ import type { NextFight } from './next-fight.js';
 import { halfFlow } from './overlay-marks.js';
 import { buildingRate, formatHundredths } from './rates.js';
 import { cardStats } from './card-stats.js';
+import { chainRows } from './refining.js';
 import { playerName, screenText, screenTexts } from './texts.js';
 import { useEffect } from 'preact/hooks';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
@@ -494,6 +495,34 @@ export function InspectorPanel(props: {
                     )}
               </p>
             ) : null}
+            {supply?.inputs === undefined ? null : (
+              <ul class="input-supply" data-field="input-supply">
+                {supply.inputs.map((i) => (
+                  <li
+                    key={i.resource}
+                    data-resource={i.resource}
+                    data-short={i.short ? 'true' : 'false'}
+                    class={i.short ? 'bad' : ''}
+                  >
+                    {screenText(screenTexts, 'chainGot', {
+                      resource: resourceName(content, i.resource),
+                      gets: formatHundredths(i.gets),
+                      needs: formatHundredths(i.needs),
+                    })}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {stats.makes === null ? null : (
+              <p data-field="makes">
+                {stats.makes}
+                {supply?.output === undefined
+                  ? ''
+                  : screenText(screenTexts, 'inspectorMakesNow', {
+                      rate: formatHundredths(supply.output.gets),
+                    })}
+              </p>
+            )}
             {stats.collects !== null ? (
               <p data-field="collects">
                 {figs?.produces?.resource != null && collectRate !== null
@@ -512,6 +541,11 @@ export function InspectorPanel(props: {
             {stats.effect !== '' ? (
               <p data-field="effect">{stats.effect}</p>
             ) : null}
+            {stats.notes.map((n, i) => (
+              <p class="muted" data-field="note" key={i}>
+                {n}
+              </p>
+            ))}
             {figs?.derived != null ? (
               <p class="muted" data-field="derived">
                 {screenText(screenTexts, 'uiInspectorDerived', {
@@ -873,6 +907,7 @@ export function DryRunTable(props: {
     [],
   );
   const secs = dry.ticks / simConfig.ticksPerSecond;
+  const chains = chainRows(team, content, flow.supply, flow.starved);
   return (
     <div
       class="dry-table"
@@ -973,7 +1008,13 @@ export function DryRunTable(props: {
                     )}
                   </td>
                   <td data-field="need-rate">
-                    {sup === undefined ? '-' : formatHundredths(sup.needs)}
+                    {sup === undefined
+                      ? '-'
+                      : formatHundredths(
+                          // A two-input building: this resource's own need.
+                          sup.inputs?.find((i) => i.resource === c.resource)
+                            ?.needs ?? sup.needs,
+                        )}
                   </td>
                   <td data-field="supply">
                     {sup === undefined
@@ -991,6 +1032,80 @@ export function DryRunTable(props: {
           )}
         </tbody>
       </table>
+      {chains.length === 0 ? null : (
+        <table class="chain-table" data-field="chains">
+          <caption>{screenText(screenTexts, 'uiChainTitle')}</caption>
+          <thead>
+            <tr>
+              <th>{screenText(screenTexts, 'uiChainRefinery')}</th>
+              <th>{screenText(screenTexts, 'uiChainTakes')}</th>
+              <th>{screenText(screenTexts, 'uiChainMakes')}</th>
+              <th>{screenText(screenTexts, 'uiChainFeeds')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chains.map((row) => (
+              <tr
+                key={row.refinery}
+                data-chain={row.refinery}
+                {...rowHover(row.refinery)}
+              >
+                <td>{name(row.refinery)}</td>
+                <td data-field="chain-takes">
+                  {(row.takes ?? []).map((i) => (
+                    <div
+                      key={i.resource}
+                      class={i.short ? 'bad' : ''}
+                      data-short={i.short ? 'true' : 'false'}
+                    >
+                      {screenText(screenTexts, 'chainGot', {
+                        resource: resourceName(content, i.resource),
+                        gets: formatHundredths(i.gets),
+                        needs: formatHundredths(i.needs),
+                      })}
+                    </div>
+                  ))}
+                </td>
+                <td data-field="chain-makes">
+                  {row.makes === undefined
+                    ? '-'
+                    : screenText(screenTexts, 'chainGot', {
+                        resource: resourceName(content, row.makes.resource),
+                        gets: formatHundredths(row.makes.gets),
+                        needs: formatHundredths(row.makes.max),
+                      })}
+                </td>
+                <td data-field="chain-feeds">
+                  {row.feeds.length === 0
+                    ? screenText(screenTexts, 'chainNoFeed')
+                    : row.feeds.map((f) => (
+                        <div
+                          key={f.building}
+                          class={f.state === 'full' ? '' : 'bad'}
+                          data-state={f.state}
+                        >
+                          {f.state === 'full'
+                            ? screenText(screenTexts, 'chainFed', {
+                                name: name(f.building),
+                              })
+                            : f.state === 'starved'
+                              ? screenText(screenTexts, 'chainStarved', {
+                                  name: name(f.building),
+                                })
+                              : screenText(screenTexts, 'chainShort', {
+                                  name: name(f.building),
+                                  resource: f.short
+                                    .map((r) => resourceName(content, r))
+                                    .join(' and '),
+                                })}
+                        </div>
+                      ))}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
       {props.onTicks === undefined ? null : (
         <label class="inline-field">
           {t('uiOverlayDryTicks')}

@@ -54,6 +54,7 @@ import {
   formatSampleHash,
   opponentOptions,
   parseSampleHash,
+  REFINING_BOARD,
   type SampleSelection,
 } from './samples.js';
 import { screenText, screenTexts } from '../build/texts.js';
@@ -770,7 +771,7 @@ export function BattleSampleScreen() {
             });
           }}
         >
-          {REFERENCE_BOARDS.map((b) => (
+          {[...REFERENCE_BOARDS, REFINING_BOARD].map((b) => (
             <option key={b} value={b}>
               {b}
             </option>

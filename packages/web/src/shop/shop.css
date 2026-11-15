@@ -290,3 +290,50 @@ button.danger {
     animation-duration: 0.01s;
   }
 }
+
+/* Inputs and output of a two-input building or a refinery: one chip per
+   resource, in its colour, with its icon. */
+.offer-io {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin: 2px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.io-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px 1px 3px;
+  border: 2px solid var(--res, var(--border));
+  border-radius: 10px;
+  font-size: 0.82rem;
+  background: var(--surface);
+}
+
+.io-chip.io-out {
+  border-style: dashed;
+}
+
+.io-arrow {
+  color: var(--ink-muted);
+  font-weight: 700;
+}
+
+.offer-note {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+}
+
+.shop-hint {
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}

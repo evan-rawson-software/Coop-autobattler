@@ -436,18 +436,22 @@ function drawBoard(
       const py = n.dx;
       const edgeX = cx + n.dx * z * 0.5;
       const edgeY = cy + n.dy * z * 0.5;
-      const half = u * 0.2;
+      // A side of a two-resource building is drawn larger, with a strong
+      // outline, so which side takes which resource is plain at a glance.
+      const big = n.kind === 'in' && n.multi === true;
+      const half = u * (big ? 0.3 : 0.2);
       ctx.beginPath();
       if (n.kind === 'in') {
         // Triangle pointing into the building.
+        const depth = u * (big ? 0.42 : 0.26);
         ctx.moveTo(edgeX + px * half + n.dx * 0, edgeY + py * half);
         ctx.lineTo(edgeX - px * half, edgeY - py * half);
-        ctx.lineTo(edgeX - n.dx * u * 0.26, edgeY - n.dy * u * 0.26);
+        ctx.lineTo(edgeX - n.dx * depth, edgeY - n.dy * depth);
         ctx.closePath();
         ctx.fillStyle = n.color ?? theme.boardBg;
         ctx.fill();
-        ctx.strokeStyle = theme.outline;
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = big ? theme.ink : theme.outline;
+        ctx.lineWidth = big ? 2 : 1;
         ctx.stroke();
       } else {
         // Arrow pointing out of the building.

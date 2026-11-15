@@ -18,6 +18,8 @@ import {
   type TeamState,
 } from '@game/core';
 import type { WebContent } from '../content.js';
+import { isBackedUp } from './overlay-marks.js';
+import { upstreamSources } from './refining.js';
 import { screenText, screenTexts, type ScreenTexts } from './texts.js';
 
 /** `125` -> `"1.25"`. */
@@ -80,12 +82,30 @@ const MIN_WINDOW = 300;
 
 export type SupplyState = 'full' | 'under';
 
+/** One input resource of a two-input consumer against its need (CB-5e). */
+export interface SupplyInput {
+  readonly resource: string;
+  /** Hundredths per second needed at top speed, and received. */
+  readonly needs: number;
+  readonly gets: number;
+  /** Receives less than it needs (more than the one-delivery slack). */
+  readonly short: boolean;
+}
+
 export interface Supply {
   readonly building: number;
   readonly state: SupplyState;
   /** Hundredths per second needed and received (dry run, second half). */
   readonly needs: number;
   readonly gets: number;
+  /** Two-input consumers only (a Foundry, a refinery): each resource alone. */
+  readonly inputs?: readonly SupplyInput[];
+  /** A refinery only: what it makes against its top speed (hundredths/s). */
+  readonly output?: {
+    readonly resource: string;
+    readonly max: number;
+    readonly gets: number;
+  };
 }
 
 /**
@@ -121,11 +141,61 @@ export function supplyOf(
     const got = needRun.consumers
       .filter((c) => c.building === n.building)
       .reduce((sum, c) => sum + c.ratePer1000, 0);
+    const perSecond = (per1000: number): number =>
+      Math.floor((per1000 * ticksPerSecond) / 10);
+    const inputs =
+      n.needPer1000By === undefined
+        ? undefined
+        : n.needPer1000By.map((e): SupplyInput => {
+            const have = needRun.consumers
+              .filter(
+                (c) => c.building === n.building && c.resource === e.resource,
+              )
+              .reduce((sum, c) => sum + c.ratePer1000, 0);
+            // In the paced run every input is held to the slowest one, so a
+            // low rate alone does not say which input is short. The short one
+            // is the one whose collectors never back up: what they make all
+            // goes through, and there is no more of it.
+            const side = n.needPer1000By === undefined ? undefined : e.resource;
+            const feeding = needRun.consumers.find(
+              (c) => c.building === n.building && c.resource === side,
+            );
+            const upstream =
+              feeding === undefined
+                ? []
+                : upstreamSources(team, content, n.building, feeding.side);
+            const backedUp =
+              upstream.length > 0 &&
+              upstream.every((id) =>
+                needRun.sources.some(
+                  (src) =>
+                    src.building === id &&
+                    isBackedUp(src.stalledTicks, needRun.ticks),
+                ),
+              );
+            return {
+              resource: e.resource,
+              needs: perSecond(e.needPer1000),
+              gets: perSecond(have),
+              short: have + slack < e.needPer1000 && !backedUp,
+            };
+          });
+    const made = needRun.refineries?.find((r) => r.building === n.building);
     out.push({
       building: n.building,
       state: finished || got + slack >= n.needPer1000 ? 'full' : 'under',
       needs: needHundredthsPerSecond(def, b.tier, ticksPerSecond),
       gets: Math.floor((got * ticksPerSecond) / 10),
+      ...(inputs === undefined ? {} : { inputs }),
+      ...(made === undefined || n.outputPer1000 === undefined
+        ? {}
+        : {
+            output: {
+              resource: made.resource,
+              max: perSecond(n.outputPer1000),
+              gets: perSecond(made.ratePer1000),
+            },
+          }),
     });
   }
   return out;

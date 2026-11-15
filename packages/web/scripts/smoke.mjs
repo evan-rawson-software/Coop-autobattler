@@ -2040,6 +2040,94 @@ try {
         'battle: the seed input and the pickers follow a hand-edited hash',
       );
 
+      // Refining chains (issue #385): the Build screen's dev strip lays out
+      // both refining chains and a Foundry; the screen shows them, the flow
+      // preview lists each chain, and the same team plays a battle. Any console
+      // error fails the final check.
+      {
+        await page.goto(baseUrl + '#build');
+        await page.reload();
+        await page.waitForFunction(() => window.__debug?.build !== undefined);
+        await page.click('#dev-demo-refining');
+        await page.waitForFunction(
+          () =>
+            window.__debug.build
+              .team()
+              ?.buildings?.some((b) => b.def === 'bld_refinery_bc'),
+          undefined,
+          { timeout: slow(30000) },
+        );
+        const demo = await page.evaluate(() => window.__debug.build.team());
+        const defsOf = new Set(demo.buildings.map((b) => b.def));
+        check(
+          [
+            'bld_refinery_ab',
+            'bld_refinery_bc',
+            'bld_foundry',
+            'bld_golem_forge',
+            'bld_spire',
+          ].every((d) => defsOf.has(d)) && demo.conduits.length >= 8,
+          `refining: the demo build has both chains and a Foundry (${[...defsOf].length} building kinds, ${demo.conduits.length} conduits)`,
+        );
+        await page.click('[data-overlay="flow"]');
+        await page.click('[data-overlay="dry"]');
+        await page.waitForSelector('#dry-table');
+        await settle();
+        const chains = await page.locator('[data-field="chains"] tbody tr');
+        check(
+          (await chains.count()) === 2,
+          'refining: the flow preview lists both chains',
+        );
+        const chainText = await page
+          .locator('[data-field="chains"]')
+          .innerText();
+        check(
+          /Composite/.test(chainText) && /Aether/.test(chainText),
+          `refining: the chains name both compounds and what they feed ("${chainText.replace(/\s+/g, ' ').slice(0, 90)}")`,
+        );
+        const refinery = demo.buildings.find(
+          (b) => b.def === 'bld_refinery_ab',
+        );
+        const at = await page.evaluate(
+          (c) => window.__debug.build.cellToScreen(c.x, c.y),
+          refinery,
+        );
+        await page.mouse.click(at.x, at.y);
+        await page.waitForSelector('#panel-inspector [data-field="makes"]');
+        const refInsp = await page.locator('#panel-inspector').innerText();
+        check(
+          /Uses \S+ [\d.]+\/s and \S+ [\d.]+\/s/.test(refInsp) &&
+            /Makes Composite [\d.]+\/s/.test(refInsp) &&
+            /at a loss/.test(refInsp),
+          `refining: the refinery shows each need per second, its output and the loss ("${refInsp.replace(/\s+/g, ' ').slice(0, 120)}")`,
+        );
+        await waitFrames(page, 12);
+        await shot('build-7-refining-chains');
+        await shotDark('build-7-refining-chains-dark');
+
+        await open('#battle?p=refine&o=pve:arch_rusher:3:medium&s=1');
+        await waitPhase('playing');
+        await page.click('#speed-4');
+        await page.waitForFunction(() => window.__debug?.battle?.tick() > 160);
+        const refScene = await page.evaluate(() =>
+          window.__debug.battle.scene(),
+        );
+        check(
+          refScene[0].buildings > 8 && refScene[0].conduits > 0,
+          `refining: the battle shows the refining board (${JSON.stringify(refScene[0].kinds)})`,
+        );
+        await shot('battle-5-refining-chains');
+        // The units the chains train, then the end of the battle (or enough of it).
+        await page.waitForFunction(
+          () =>
+            window.__debug?.battle?.tick() > 320 ||
+            window.__debug?.battle?.phase?.() === 'summary',
+          undefined,
+          { timeout: slow(30000) },
+        );
+        await shot('battle-6-refining-units');
+      }
+
       // Leaving the screen removes its debug hooks.
       await page.evaluate(() => {
         window.location.hash = '#build';

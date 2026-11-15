@@ -5,6 +5,7 @@
  * comes back. Nothing here mutates state.
  */
 
+import type { KitEntry } from '@game/core';
 import {
   createEconomyDeps,
   createMemorySaveStore,
@@ -111,9 +112,15 @@ export class BuildSession {
     seed: number,
     now: () => number = Date.now,
     players: readonly string[] = ['You'],
+    /** A starting kit to use instead of the economy's (the dev demos). */
+    kit?: readonly KitEntry[],
   ): Promise<BuildSession> {
     runCounter += 1;
-    const deps = createEconomyDeps(content, content.mapgen, economy);
+    const deps = createEconomyDeps(
+      content,
+      content.mapgen,
+      kit === undefined ? economy : { ...economy, startingKit: kit },
+    );
     const r = await startRun(
       {
         runId: `dev-${String(seed)}-${String(runCounter)}`,

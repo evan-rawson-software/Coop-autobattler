@@ -25,6 +25,7 @@ import { createStore, type Store } from '../app-state.js';
 import type { BoardPointerEvent } from '../board/BoardView.js';
 import { content } from '../content.js';
 import { extendPath, proposePath } from './autoroute.js';
+import { REFINING_DEMO_KIT, planRefiningDemo } from './demo-layout.js';
 import { dragStep, type DragBlock } from './drag-path.js';
 import { noRouteMessage, placedMessage } from './route-reasons.js';
 import { ownHalfAt, ownSpotAt } from './border-links.js';
@@ -302,6 +303,44 @@ export class BuildController {
     this.session = null;
     this.emit();
     this.attach(await BuildSession.start(seed));
+  }
+
+  /**
+   * A dev run with both refining chains and a Foundry already built (the dev
+   * strip's demo): the Core is placed and the chains are laid out through the
+   * session, so every step is checked by `core` like any other edit.
+   */
+  async demoRefining(seed: number): Promise<void> {
+    this.unsub?.();
+    this.seed = seed;
+    this.shared = false;
+    this.ui = {
+      ...INITIAL_UI,
+      status: { text: tx('statusStarting'), kind: 'info' },
+    };
+    this.session = null;
+    this.emit();
+    const s = await BuildSession.start(
+      seed,
+      Date.now,
+      ['You'],
+      REFINING_DEMO_KIT,
+    );
+    const pos = listLegalCorePositions(
+      s.run.team.map,
+      content,
+      content.mapgen,
+      0,
+    )[0];
+    if (pos !== undefined) {
+      await s.dispatch({ type: 'place_core', x: pos.x, y: pos.y });
+      await s.dispatch({ type: 'ready' });
+      for (const a of planRefiningDemo(s.run.team, content).actions) {
+        const r = await s.act(a);
+        if (!r.ok) break;
+      }
+    }
+    this.attach(s);
   }
 
   /**

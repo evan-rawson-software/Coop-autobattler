@@ -17,13 +17,19 @@ import {
   type ThreatType,
 } from '@game/core';
 import { content } from '../content.js';
+import { refiningDemoTeam } from '../build/demo-layout.js';
+import { DEFAULT_SEED } from '../build/setup.js';
 import { buildSampleTeam } from '../sample-team.js';
 import { archetypeText, bossLabel } from '../run/display-text.js';
 import { threatsConfig } from './setup.js';
 import type { BattleDescription, OpponentInfo } from './types.js';
 
+/** The party's board of a sample: a reference board, or the refining demo. */
+export type SampleBoard = ReferenceBoardName | typeof REFINING_BOARD;
+export const REFINING_BOARD = 'refine';
+
 export interface SampleSelection {
-  readonly player: ReferenceBoardName;
+  readonly player: SampleBoard;
   /** An `OpponentOption` ID. */
   readonly opponent: string;
   readonly seed: number;
@@ -76,8 +82,8 @@ export const DEFAULT_SELECTION: SampleSelection = {
   tick: 0,
 };
 
-const isBoard = (v: string | null): v is ReferenceBoardName =>
-  REFERENCE_BOARDS.some((b) => b === v);
+const isBoard = (v: string | null): v is SampleBoard =>
+  v === REFINING_BOARD || REFERENCE_BOARDS.some((b) => b === v);
 
 /** Read a selection from a URL hash; anything missing or unknown is default. */
 export function parseSampleHash(hash: string): SampleSelection {
@@ -123,7 +129,10 @@ export interface Sample {
 
 /** Build the battle a selection names. Deterministic in the selection. */
 export function buildSample(sel: SampleSelection): Sample {
-  const team = buildReferenceBoard(sel.player, content, content.mapgen);
+  const team =
+    sel.player === REFINING_BOARD
+      ? refiningDemoTeam(DEFAULT_SEED, content)
+      : buildReferenceBoard(sel.player, content, content.mapgen);
   const [kind, a, b, c] = sel.opponent.split(':');
   if (kind === 'pve' && a !== undefined && b !== undefined && c !== undefined) {
     const round = Number(b);
@@ -185,7 +194,7 @@ export function buildSample(sel: SampleSelection): Sample {
       reward: (w) => sampleReward('versus', w),
     };
   }
-  const ghostBoard = isBoard(a ?? null) ? (a as ReferenceBoardName) : 'rush';
+  const ghostBoard = REFERENCE_BOARDS.find((b) => b === a) ?? 'rush';
   const teamB = buildReferenceBoard(ghostBoard, content, content.mapgen);
   return {
     battle: {

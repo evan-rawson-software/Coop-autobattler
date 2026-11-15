@@ -23,7 +23,7 @@ import {
 import type { WebContent } from '../content.js';
 import { isEditStep } from '../build/session.js';
 import { buildingName } from '../build/view-model.js';
-import { cardStats } from '../build/card-stats.js';
+import { cardStats, type CardStats } from '../build/card-stats.js';
 import { kindLabel } from './effect-text.js';
 import { archetypeText } from '../run/display-text.js';
 import { count } from '../plural.js';
@@ -43,6 +43,12 @@ export interface OfferCard {
     readonly uses: string | null;
     /** "Collects 0.50/s" for an extractor; null otherwise. */
     readonly collects: string | null;
+    /** "Makes Composite 0.67/s" for a refinery; null otherwise. */
+    readonly makes: string | null;
+    /** Plain-words lines: a refinery's loss, armor, area damage. */
+    readonly notes: readonly string[];
+    /** Inputs and output with resource colours; null for most buildings. */
+    readonly io: CardStats['io'];
     readonly effect: string;
     /** "Health 60". */
     readonly health: string;
@@ -202,6 +208,9 @@ export function buildShopView(
         tier: o.tier,
         uses: stats?.uses ?? null,
         collects: stats?.collects ?? null,
+        makes: stats?.makes ?? null,
+        notes: stats?.notes ?? [],
+        io: stats?.io ?? null,
         effect: stats?.effect ?? '',
         health: stats?.health ?? '',
         price: o.price,
