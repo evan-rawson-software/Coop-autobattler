@@ -13,12 +13,12 @@
     "buildings": {
       "file": "buildings.png",
       "w": 320,
-      "h": 116
+      "h": 148
     },
     "units": {
       "file": "units.png",
       "w": 320,
-      "h": 68
+      "h": 84
     },
     "effects": {
       "file": "effects.png",
@@ -783,9 +783,25 @@
       "id": "bld_hangar",
       "note": "2x2 tiles."
     },
-    "bld_wall_i": {
+    "bld_foundry": {
       "sheet": "buildings",
       "x": 167,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        16,
+        16
+      ],
+      "category": "building",
+      "id": "bld_foundry",
+      "note": "2x2 tiles."
+    },
+    "bld_wall_i": {
+      "sheet": "buildings",
+      "x": 200,
       "y": 0,
       "w": 64,
       "h": 16,
@@ -801,7 +817,7 @@
     },
     "bld_wall_o": {
       "sheet": "buildings",
-      "x": 232,
+      "x": 265,
       "y": 0,
       "w": 32,
       "h": 32,
@@ -817,8 +833,8 @@
     },
     "bld_wall_t": {
       "sheet": "buildings",
-      "x": 265,
-      "y": 0,
+      "x": 0,
+      "y": 33,
       "w": 48,
       "h": 32,
       "frames": 1,
@@ -833,7 +849,7 @@
     },
     "bld_wall_s": {
       "sheet": "buildings",
-      "x": 0,
+      "x": 49,
       "y": 33,
       "w": 48,
       "h": 32,
@@ -849,7 +865,7 @@
     },
     "bld_wall_z": {
       "sheet": "buildings",
-      "x": 49,
+      "x": 98,
       "y": 33,
       "w": 48,
       "h": 32,
@@ -865,7 +881,7 @@
     },
     "bld_wall_l": {
       "sheet": "buildings",
-      "x": 98,
+      "x": 147,
       "y": 33,
       "w": 32,
       "h": 48,
@@ -881,7 +897,7 @@
     },
     "bld_wall_j": {
       "sheet": "buildings",
-      "x": 131,
+      "x": 180,
       "y": 33,
       "w": 32,
       "h": 48,
@@ -897,7 +913,7 @@
     },
     "bld_wall_block": {
       "sheet": "buildings",
-      "x": 164,
+      "x": 213,
       "y": 33,
       "w": 16,
       "h": 16,
@@ -913,7 +929,7 @@
     },
     "bld_gate": {
       "sheet": "buildings",
-      "x": 181,
+      "x": 230,
       "y": 33,
       "w": 16,
       "h": 16,
@@ -929,7 +945,7 @@
     },
     "bld_turret": {
       "sheet": "buildings",
-      "x": 198,
+      "x": 247,
       "y": 33,
       "w": 16,
       "h": 16,
@@ -945,7 +961,7 @@
     },
     "bld_overclocker": {
       "sheet": "buildings",
-      "x": 215,
+      "x": 264,
       "y": 33,
       "w": 16,
       "h": 16,
@@ -961,7 +977,7 @@
     },
     "bld_armory": {
       "sheet": "buildings",
-      "x": 232,
+      "x": 281,
       "y": 33,
       "w": 16,
       "h": 16,
@@ -977,8 +993,8 @@
     },
     "bld_core": {
       "sheet": "buildings",
-      "x": 249,
-      "y": 33,
+      "x": 0,
+      "y": 82,
       "w": 32,
       "h": 32,
       "frames": 1,
@@ -993,8 +1009,8 @@
     },
     "bld_turret_base": {
       "sheet": "buildings",
-      "x": 282,
-      "y": 33,
+      "x": 33,
+      "y": 82,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1008,8 +1024,8 @@
     },
     "bld_turret_head": {
       "sheet": "buildings",
-      "x": 299,
-      "y": 33,
+      "x": 50,
+      "y": 82,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1023,7 +1039,7 @@
     },
     "tier_pips": {
       "sheet": "buildings",
-      "x": 0,
+      "x": 67,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1038,7 +1054,7 @@
     },
     "tier_trim_1x1": {
       "sheet": "buildings",
-      "x": 49,
+      "x": 116,
       "y": 82,
       "w": 16,
       "h": 16,
@@ -1053,7 +1069,7 @@
     },
     "tier_trim_2x2": {
       "sheet": "buildings",
-      "x": 82,
+      "x": 149,
       "y": 82,
       "w": 32,
       "h": 32,
@@ -1068,8 +1084,8 @@
     },
     "bld_wall_auto": {
       "sheet": "buildings",
-      "x": 147,
-      "y": 82,
+      "x": 0,
+      "y": 115,
       "w": 16,
       "h": 16,
       "frames": 16,
@@ -1376,10 +1392,157 @@
       "id": "unit_raider",
       "note": "Fast melee ground unit. Side B, faces south (flipped vertically), wide bone horns."
     },
-    "unit_archer": {
+    "unit_heavy": {
       "sheet": "units",
       "x": 199,
       "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_heavy",
+      "tintable": true,
+      "note": "Heavy melee ground unit (soldier art for now). Neutral greys in the team parts (tint keys)."
+    },
+    "unit_heavy.walk": {
+      "sheet": "units",
+      "x": 216,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_heavy",
+      "tintable": true,
+      "note": "Heavy melee ground unit (soldier art for now). Neutral greys in the team parts (tint keys)."
+    },
+    "unit_heavy.attack": {
+      "sheet": "units",
+      "x": 249,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_heavy",
+      "tintable": true,
+      "note": "Heavy melee ground unit (soldier art for now). Neutral greys in the team parts (tint keys)."
+    },
+    "unit_heavy@a": {
+      "sheet": "units",
+      "x": 282,
+      "y": 17,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_heavy",
+      "note": "Heavy melee ground unit (soldier art for now). Side A, faces north (up the screen), narrow gold plume."
+    },
+    "unit_heavy@a.walk": {
+      "sheet": "units",
+      "x": 0,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_heavy",
+      "note": "Heavy melee ground unit (soldier art for now). Side A, faces north (up the screen), narrow gold plume."
+    },
+    "unit_heavy@a.attack": {
+      "sheet": "units",
+      "x": 33,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_heavy",
+      "note": "Heavy melee ground unit (soldier art for now). Side A, faces north (up the screen), narrow gold plume."
+    },
+    "unit_heavy@b": {
+      "sheet": "units",
+      "x": 66,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_heavy",
+      "note": "Heavy melee ground unit (soldier art for now). Side B, faces south (flipped vertically), wide bone horns."
+    },
+    "unit_heavy@b.walk": {
+      "sheet": "units",
+      "x": 83,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 6,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_heavy",
+      "note": "Heavy melee ground unit (soldier art for now). Side B, faces south (flipped vertically), wide bone horns."
+    },
+    "unit_heavy@b.attack": {
+      "sheet": "units",
+      "x": 116,
+      "y": 34,
+      "w": 16,
+      "h": 16,
+      "frames": 2,
+      "fps": 8,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "unit",
+      "id": "unit_heavy",
+      "note": "Heavy melee ground unit (soldier art for now). Side B, faces south (flipped vertically), wide bone horns."
+    },
+    "unit_archer": {
+      "sheet": "units",
+      "x": 149,
+      "y": 34,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1395,8 +1558,8 @@
     },
     "unit_archer.walk": {
       "sheet": "units",
-      "x": 216,
-      "y": 17,
+      "x": 166,
+      "y": 34,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1412,8 +1575,8 @@
     },
     "unit_archer.attack": {
       "sheet": "units",
-      "x": 249,
-      "y": 17,
+      "x": 199,
+      "y": 34,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1429,8 +1592,8 @@
     },
     "unit_archer@a": {
       "sheet": "units",
-      "x": 282,
-      "y": 17,
+      "x": 232,
+      "y": 34,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1445,7 +1608,7 @@
     },
     "unit_archer@a.walk": {
       "sheet": "units",
-      "x": 0,
+      "x": 249,
       "y": 34,
       "w": 16,
       "h": 16,
@@ -1461,7 +1624,7 @@
     },
     "unit_archer@a.attack": {
       "sheet": "units",
-      "x": 33,
+      "x": 282,
       "y": 34,
       "w": 16,
       "h": 16,
@@ -1477,8 +1640,8 @@
     },
     "unit_archer@b": {
       "sheet": "units",
-      "x": 66,
-      "y": 34,
+      "x": 0,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1493,8 +1656,8 @@
     },
     "unit_archer@b.walk": {
       "sheet": "units",
-      "x": 83,
-      "y": 34,
+      "x": 17,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1509,8 +1672,8 @@
     },
     "unit_archer@b.attack": {
       "sheet": "units",
-      "x": 116,
-      "y": 34,
+      "x": 50,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1525,8 +1688,8 @@
     },
     "unit_drone": {
       "sheet": "units",
-      "x": 149,
-      "y": 34,
+      "x": 83,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1542,8 +1705,8 @@
     },
     "unit_drone.walk": {
       "sheet": "units",
-      "x": 166,
-      "y": 34,
+      "x": 100,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1559,8 +1722,8 @@
     },
     "unit_drone.attack": {
       "sheet": "units",
-      "x": 199,
-      "y": 34,
+      "x": 133,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1576,8 +1739,8 @@
     },
     "unit_drone@a": {
       "sheet": "units",
-      "x": 232,
-      "y": 34,
+      "x": 166,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 1,
@@ -1592,8 +1755,8 @@
     },
     "unit_drone@a.walk": {
       "sheet": "units",
-      "x": 249,
-      "y": 34,
+      "x": 183,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1608,8 +1771,8 @@
     },
     "unit_drone@a.attack": {
       "sheet": "units",
-      "x": 282,
-      "y": 34,
+      "x": 216,
+      "y": 51,
       "w": 16,
       "h": 16,
       "frames": 2,
@@ -1624,7 +1787,7 @@
     },
     "unit_drone@b": {
       "sheet": "units",
-      "x": 0,
+      "x": 249,
       "y": 51,
       "w": 16,
       "h": 16,
@@ -1640,7 +1803,7 @@
     },
     "unit_drone@b.walk": {
       "sheet": "units",
-      "x": 17,
+      "x": 266,
       "y": 51,
       "w": 16,
       "h": 16,
@@ -1656,8 +1819,8 @@
     },
     "unit_drone@b.attack": {
       "sheet": "units",
-      "x": 50,
-      "y": 51,
+      "x": 0,
+      "y": 68,
       "w": 16,
       "h": 16,
       "frames": 2,

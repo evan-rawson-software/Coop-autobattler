@@ -70,8 +70,8 @@ function errorsOf(...defs: Record<string, unknown>[]): string {
 describe('real content', () => {
   test('loads everything through loadAllContent', () => {
     const content = loadAllContentOrThrow(raw);
-    expect(content.buildings.list().length).toBe(20);
-    expect(content.units.list().length).toBe(4);
+    expect(content.buildings.list().length).toBe(21);
+    expect(content.units.list().length).toBe(5);
     expect(content.terrain.list().length).toBe(2);
     const turret = content.buildings.get('bld_turret');
     expect(turret?.kind).toBe('defense');

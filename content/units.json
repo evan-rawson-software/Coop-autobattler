@@ -26,6 +26,18 @@
       "attackType": "melee"
     },
     {
+      "id": "unit_heavy",
+      "health": 70,
+      "damage": 14,
+      "attackCooldownTicks": 10,
+      "moveCooldownTicks": 6,
+      "radius": 84,
+      "collisionRadius": 55,
+      "reach": 66,
+      "flying": false,
+      "attackType": "melee"
+    },
+    {
       "id": "unit_archer",
       "health": 30,
       "damage": 5,

@@ -137,6 +137,37 @@
       ]
     },
     {
+      "id": "bld_foundry",
+      "kind": "unit_producer",
+      "unit": "unit_heavy",
+      "footprint": { "width": 2, "height": 2 },
+      "inputs": [
+        { "resource": "res_a", "side": "south" },
+        { "resource": "res_b", "side": "west" }
+      ],
+      "outputs": [],
+      "tiers": [
+        {
+          "health": 70,
+          "price": 40,
+          "costs": { "res_a": 5, "res_b": 5 },
+          "productionIntervalTicks": 100
+        },
+        {
+          "health": 105,
+          "price": 85,
+          "costs": { "res_a": 5, "res_b": 5 },
+          "productionIntervalTicks": 70
+        },
+        {
+          "health": 140,
+          "price": 150,
+          "costs": { "res_a": 5, "res_b": 5 },
+          "productionIntervalTicks": 50
+        }
+      ]
+    },
+    {
       "id": "bld_wall_i",
       "kind": "defense",
       "defenseType": "wall",

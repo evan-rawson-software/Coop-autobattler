@@ -60,13 +60,30 @@
       }
     },
     "tierUnitProducer": {
+      "description": "Exactly one of costPerUnit (one cost for every resource the building takes, counted alike) and costs (a cost per resource, CB-5e; the core loader checks that every resource in costs is the resource of an input and every input resource is in costs).",
       "type": "object",
-      "required": ["health", "price", "costPerUnit", "productionIntervalTicks"],
+      "required": ["health", "price", "productionIntervalTicks"],
+      "oneOf": [
+        { "required": ["costPerUnit"], "properties": { "costPerUnit": true } },
+        { "required": ["costs"], "properties": { "costs": true } }
+      ],
       "additionalProperties": false,
       "properties": {
         "health": { "$ref": "#/$defs/health" },
         "price": { "$ref": "#/$defs/nonNegative" },
         "costPerUnit": { "$ref": "#/$defs/positive" },
+        "costs": {
+          "description": "Resource units of each resource consumed to spawn one unit. Each at most 1000000 (MAX_TIER_COST in the core).",
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 4,
+          "propertyNames": { "pattern": "^res_[a-z0-9_]+$" },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        },
         "productionIntervalTicks": {
           "description": "Minimum ticks between two units made by this producer (PP-6).",
           "$ref": "#/$defs/positive"

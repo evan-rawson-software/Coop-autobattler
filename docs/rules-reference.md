@@ -49,6 +49,11 @@ that way.
   (`sortedInts`, `sortedIntEntries`, `sortedKeys`). Object keys are likewise
   only read sorted by code point. A lint rule enforces this in `core`,
   `session/src/rules` and `session/src/bot`.
+- **Per-resource counters.** A two-input consumer (CB-5e) keeps one counter per
+  resource. They are a plain list ordered by resource ID (code point order),
+  the order of the tier's `costs` after `sortedKeys`, and are only ever read
+  by index, never by iterating a dictionary. `costs` itself is an object read
+  sorted by key; a port stores it as a sorted list of `(resource, cost)`.
 - **Indexes.** `x[i] ?? 0` on a typed array is a type-checker formality: the
   index is in range by construction. Where an index can be -1 (no unit, no
   building), the code checks `i >= 0` before reading; a port must keep those
@@ -271,6 +276,7 @@ on purpose: PvE threats (below) are not limited by them in rounds 1 to
 | `MAX_HEALTH`           | 1 000 000 000 000   | `health` of every building tier (Core included) and unit; run-time health |
 | `MAX_DAMAGE`           | 1 000 000 000 000   | `damage` of a unit and of a turret tier; run-time scaled unit damage      |
 | `MAX_BREACH_BASE_COST` | 1 000 000           | `breachBaseCost` and `breachHealthPerCost` in `sim.json`                  |
+| `MAX_TIER_COST`        | 1 000 000           | each value of `costs` of a unit producer tier (CB-5e); at most four of them |
 | `MAX_ARENA_CELLS`      | 8 192               | arena cells (`width * height`) for which a breach field is computed       |
 | `MAX_TICK_DAMAGE`      | 2^52                | most damage one target takes in one tick (the sum saturates here)         |
 | `MAX_HIT`              | 2^51                | most one hit may deal after Overload scaling                              |
@@ -283,6 +289,13 @@ on purpose: PvE threats (below) are not limited by them in rounds 1 to
 upper bound; a value above the last round just never offers the entry); the
 loader and `economy.schema.json` reject 0, negative and non-integer values, and
 the loader also rejects a list in which no entry has `fromRound` 1.
+
+A tier's `costs` (CB-5e) holds one integer from 1 to `MAX_TIER_COST` per
+resource, at most one resource per input (so at most four); the combined cost
+`costPerUnit` the loader derives from it is their sum, at most
+`4 * 1 000 000`. `productionIntervalTicks` and the one-cost `costPerUnit`
+keep their bound of an integer of at least 1. `needPer1000 = floor(1000 * cost
+/ interval)` is at most `1000 * 4 * 1e6`, far below 2^53.
 
 A loader reports a value above its cap like any other bad field (for example
 `"health" must be at most 1000000000000 (got 3000000000000)`), and the schemas
@@ -1289,7 +1302,9 @@ were available and, if so, removes them (adding `n` to `consumed`); if not it
 removes nothing. `sideOrResource` is an absolute side (`north` ...) or a
 resource ID; for a resource it draws from the inputs that take that resource,
 clockwise from north, and the sum must cover `n`. An unknown building or side
-gives `false`. What a consumer does with the units (spawning, firing, upgrades)
+gives `false`. A two-input consumer (CB-5e) always takes by side: its intake
+(step 2.1) calls `takeFromBuffer` once per input, so each resource is drawn
+only from its own input. What a consumer does with the units (spawning, firing, upgrades)
 belongs to later issues, which call this function between ticks, before the
 next `stepFlow`.
 
@@ -1326,6 +1341,12 @@ cooldown, the upper bound of its need; an economy building stops after
 `maxSteps` steps and then takes nothing), then its cooldown counts down by 1.
 The result gains `needs`: per consumer `{building, needPer1000, productions}`,
 with `needPer1000` the helper below and `productions` the count during the run.
+For a two-input consumer (CB-5e) the entry also has `needPer1000By`, a list
+sorted by resource ID of `{resource, needPer1000}` with the need of each
+resource (`floor(1000 * cost_r / interval)`); its `needPer1000` is the one of
+the summed cost. The pacer follows the intake and produce rules of step 2 for
+a two-input consumer: one counter per resource, a production only when every
+counter is full and the cooldown is 0, then every counter back to 0.
 The delivered `ratePer1000` is as above, so a consumer fed at or above its
 need shows a rate equal to its need (over a window that is a whole number of
 intervals). The pacer state (`progress`, `cooldown`, `productions` per
@@ -1347,7 +1368,9 @@ hash of the final state, `flow` the conservation totals, `sources` a list of
 `{building, key, lost, held}` and `consumers` a list with one entry per
 consumer input `{building, side, resource, count, delivered, consumed}`; in
 mode `"need"` it also has `pacers`, one `{building, progress, cooldown,
-productions}` per consumer. The event log of the run is the vector's event log (`eventLogHash`).
+productions}` per consumer (a two-input consumer's entry also has `counters`,
+the list of its per-resource counters sorted by resource ID, and `progress`
+is their sum). The event log of the run is the vector's event log (`eventLogHash`).
 Vectors: `golden/flow-sim.json` (a long conduit, a splitter, a merger, a
 crossover with two resources, a dead end, a full-buffer backpressure case, and a
 merger with a direct input and a conduit input behind a slow consumer, a
@@ -1366,6 +1389,14 @@ remainder (about 90 per 1000 ticks)), `need-top-speed-all-backs-up` (a tier 3 an
 collector, 171 per 1000 ticks, into two tier 1 barracks: both reach their top
 speed, the collectors stall, nothing is lost)
 and `need-three-way-unconnected` (one of the three outputs has no conduit).
+Six vectors with the Foundry (issue #380, CB-5e; one-cost buildings are
+unchanged) pin two-input consumers: `foundry-ore-only` (Power never arrives:
+the Ore counter fills, the Ore buffer fills, the collector stalls, nothing is
+produced), `foundry-both-inputs-top-speed` (one production per interval),
+`foundry-power-slow-ore-backs-up` (Ore stalls while Power still arrives; the
+Foundry follows Power), `foundry-tier1-need`, `foundry-mixed-network` (Ore
+shared through a splitter with a Barracks) and
+`foundry-border-link-feeds-power` (one input fed over a border link, PP-4).
 Without the cooldown rule of the production step the two `top-speed` vectors
 change.
 
@@ -1381,7 +1412,9 @@ building ID and input side; `tick` is kept). What is removed is accounted so
 that conservation still holds:
 
 - Items in removed conduit slots, a removed route's holding cell, and a removed
-  consumer's input buffers are **lost**.
+  consumer's input buffers are **lost**. A removed unit producer's `progress`
+  (for a two-input producer every one of its counters) is dropped with it;
+  those items were already counted as `consumed`.
 - The counters of removed parts move to `retired`: a removed source's
   `produced` and `lost`; a removed route's `lost`; a removed consumer's
   `consumed`; plus the lost items above. `BoardSim.retired`
@@ -1652,13 +1685,25 @@ exactly like the original.
       `min(input buffer count, costPerUnit - progress)` items
       (`takeFromBuffer`) and add them to `progress` (all resources count
       alike). So `progress` never exceeds `costPerUnit`; the rest stays in the
-      buffer. A producer that holds a finished unit (step 2 below could not
+      buffer. **Two-input producer (CB-5e; the tier has `costs` instead of
+      `costPerUnit`):** `progress` is one counter per resource, in a list
+      ordered by resource ID. Go through the inputs clockwise from north as
+      above; the input of resource `r` takes `min(input buffer count, cost_r -
+      counter_r)` items (`takeFromBuffer` on that side) and adds them to
+      `counter_r` (an input never feeds another resource's counter; two inputs
+      of one resource share its counter, in input order). So `counter_r` never
+      exceeds `cost_r`. A full counter takes nothing more: that input's buffer
+      and conduit fill and back up, even while the other resource is still
+      arriving. In step 2.2 and elsewhere `progress` of such a producer means
+      the sum of its counters, and `progress = costPerUnit` (the sum of the
+      costs) holds exactly when every counter is full. A producer that holds a finished unit (step 2 below could not
       place it, or its cooldown is running) takes nothing, so its buffers fill
       and its conduits back up (the source stalls), exactly like a fully
       charged turret.
    2. **Produce.** At most once per tick: if `progress = costPerUnit` (the
       building's tier) **and `cooldown = 0`** and the unit finds a **spawn
-      position**, set `progress = 0`, set `cooldown = productionIntervalTicks`
+      position**, set `progress = 0` (every counter of a two-input producer to
+      0), set `cooldown = productionIntervalTicks`
       and spawn one unit of the producer's `unit` type there. The **spawn cells** are the
       cells 4-adjacent to the producer's footprint that are open for the
       producer's side (not blocked and not covered by a building that blocks
@@ -1690,7 +1735,7 @@ exactly like the original.
       `(m, 0)`, `(0, -m)`, `(-m, m)`, `(m, m)`, `(-m, -m)`, `(m, -m)` (own
       frame `+y` points at the enemy; for side 1 both components are negated,
       the arena rotation). If no cell has a free position the unit is **held**:
-      nothing is spawned and `progress` stays at `costPerUnit` and `cooldown`
+      nothing is spawned and `progress` (every counter) stays full and `cooldown`
       at 0, so step 2.1 takes nothing on later ticks until the unit can be
       placed. Only
       the cells next to the producer are tried, so a jam at the exit holds the
@@ -2008,16 +2053,25 @@ buildings and the Core have no inputs and consume nothing (CB-10c).
   ticks (helper `needPer1000(building, tier)`; 0 for a building that consumes
   nothing). Screens show items per second with two decimals, rounded down:
   `floor(100 * cost * ticksPerSecond / interval)` hundredths
-  (`needHundredthsPerSecond`). A turret has this need only while it fires: a
+  (`needHundredthsPerSecond`). For a two-input consumer (CB-5e) `cost` in
+  these two formulas is the sum of its costs (a combined figure for screens),
+  and each resource has its own need `floor(1000 * cost_r / interval)` (helper
+  `needPer1000By`, sorted by resource ID): 50 / 71 / 100 per resource for the
+  Foundry at tiers 1 / 2 / 3. A turret has this need only while it fires: a
   charged, idle turret takes nothing; an economy building at `maxSteps` takes
   nothing.
 - **Under-supplied buildings wait** (CB-10d): `progress` or `charge` keeps
-  what has arrived and the production happens when the full cost is there. It
+  what has arrived and the production happens when the full cost is there (for
+  a two-input consumer, when every resource's counter is full: a Foundry with
+  Ore and no Power never produces). It
   is a full production (same unit, same shot, same step); nothing is produced
   at reduced strength and no building switches off.
 - **Store** (CB-10b). A building holds at most `cost` in `progress` or
   `charge`, plus `inputBufferUnits` in each input buffer. When both are full
-  it refuses items ("Accepting"), its conduit fills and the flow backs up.
+  it refuses items ("Accepting"), its conduit fills and the flow backs up. A
+  two-input consumer holds at most `cost_r` per resource: when the counter of
+  one resource and its input buffer are full, that resource's conduit backs up
+  even while the other resource is still arriving.
 - **Cold start** (CB-11): `progress`, `charge`, `cooldown` and every buffer
   are 0 at tick 0 of every battle.
 
@@ -2412,7 +2466,7 @@ corner cell between a healthy and a damaged wall of equal maximum health that
 attacks the healthy one because the breach step prices buildings by maximum
 health).
 
-Vectors added with the circle model (issue #59): `arena-sim.separation-converging-soldiers` (four soldiers converging on one target: equal and unequal priority in the separation pass), `arena-sim.choke-point` (twelve soldiers through a wall line with a one-cell gap), `arena-sim.producer-held-at-blocked-exit` (a barracks whose only exit is occupied holds its unit, stops drawing, the source stalls) and `arena-sim.wide-unit-blocked-by-gap` (an ogre with a collision diameter of 320 waits in front of a one-cell gap that a soldier passes). Vectors added with ranged units and flyers (issue #59 part 2): `arena-sim.ranged-fires-from-range-and-holds`, `arena-sim.flyer-crosses-lake-line`, `arena-sim.melee-cannot-hit-flyer` and `arena-sim.ranged-and-flyers-mirror-restore` (mirrored rosters with all four unit types, saved and restored three times). Vectors added with the flyer follow-ups: `arena-sim.walled-hangar-spawns-drones` (a Hangar walled in on every side spawns drones that fly out), `arena-sim.flyer-crosses-walls-and-buildings` (a drone passes a wall line and a row of Barracks without attacking them) and `arena-sim.flyer-retargets-by-distance` (after its Core falls a drone takes the nearer Core where the ground tie rule would take the higher index). Two optional inputs make them possible: `extraUnits`, a list of unit definitions in the format of `content/units.json` added to the content for the run, and `report: "positions"`, which adds `positions` (`[[id, px, py], ...]` of the living units) to the result.
+Vectors added with the circle model (issue #59): `arena-sim.separation-converging-soldiers` (four soldiers converging on one target: equal and unequal priority in the separation pass), `arena-sim.choke-point` (twelve soldiers through a wall line with a one-cell gap), `arena-sim.producer-held-at-blocked-exit` (a barracks whose only exit is occupied holds its unit, stops drawing, the source stalls) and `arena-sim.wide-unit-blocked-by-gap` (an ogre with a collision diameter of 320 waits in front of a one-cell gap that a soldier passes). Vectors added with ranged units and flyers (issue #59 part 2): `arena-sim.ranged-fires-from-range-and-holds`, `arena-sim.flyer-crosses-lake-line`, `arena-sim.melee-cannot-hit-flyer` and `arena-sim.ranged-and-flyers-mirror-restore` (mirrored rosters with all four unit types, saved and restored three times). Vectors added with the flyer follow-ups: `arena-sim.walled-hangar-spawns-drones` (a Hangar walled in on every side spawns drones that fly out), `arena-sim.flyer-crosses-walls-and-buildings` (a drone passes a wall line and a row of Barracks without attacking them) and `arena-sim.flyer-retargets-by-distance` (after its Core falls a drone takes the nearer Core where the ground tie rule would take the higher index). Two optional inputs make them possible: `extraUnits`, a list of unit definitions in the format of `content/units.json` added to the content for the run, and `report: "positions"`, which adds `positions` (`[[id, px, py], ...]` of the living units) to the result. Vectors added with two-input consumers (issue #380, CB-5e): `arena-sim.foundry-spawns-heavies`, `arena-sim.foundry-ore-only-spawns-nothing`, `arena-sim.foundry-mixed-network` (a Foundry and a Barracks sharing Ore through a splitter; saved and restored twice), `arena-sim.foundry-border-link-feeds-power` (Power over a border link, PP-4; saved and restored) and `arena-sim.foundry-destroyed-mid-battle` (the Foundry is the weak point of a sealed base and is destroyed while holding a full Power counter; "Mid-battle removal"; saved and restored twice).
 
 The team scripts of this kind and of `team-state-ops` may give an explicit
 `map` (in the map format) instead of `seed` and `partySize`; the vectors that
@@ -3726,7 +3780,10 @@ holds for every unit of part 1 (soldier 94, raider 78), so for them the cell
 rule is exact; for a hypothetical unit wider than a cell the check would say
 "not sealed" for a pocket whose only exit is too narrow for it. The check uses
 no unit radii at all (it does not know which unit a producer makes at this
-stage of the code), and that is the stated approximation.
+stage of the code), and that is the stated approximation. (The heavy unit's
+collision diameter is 110, so it also fits.) The check does not read a
+producer's costs, so a two-input producer (CB-5e, the Foundry) is a unit
+producer like any other here.
 
 The summary steps are not checked. `sealedProducers(state, deps)` in the session
 package gives the same list for a screen.
@@ -4307,6 +4364,7 @@ player grows by raising tiers, by economy buildings or through a border link.
 | ------ | ----- | ------------------------ | ---------- |
 | Collector `intervalTicks` | `buildings.json` | 20 / 14 / 10 (unchanged) | integer >= 1; a higher tier is never slower |
 | Barracks `costPerUnit` / `productionIntervalTicks` | `buildings.json` | 5 / 5 / 5 items per 100 / 70 / 50 ticks (need 0.50 / 0.71 / 1.00 per second) | integers >= 1 |
+| Foundry `costs` / `productionIntervalTicks` (issue #380, proposed, to be tuned) | `buildings.json` | `res_a` 5 and `res_b` 5 per unit, every tier, per 100 / 70 / 50 ticks (need 0.50 / 0.71 / 1.00 per resource per second, 50 / 71 / 100 per 1000 ticks); price 40 / 85 / 150, health 70 / 105 / 140; makes `unit_heavy` (health 70, damage 14, attack cooldown 10, move cooldown 6, radius 84, collision radius 55, reach 66) | each cost an integer from 1 to `MAX_TIER_COST`; not in the shop yet |
 | Turret `cooldownTicks` / `costPerShot` / `damage` | `buildings.json` | 10 / 7 / 5 ticks, 1 item per shot, damage 5 / 8 / 10 (need 1.00 / 1.42 / 2.00 while firing: two collectors of its tier) | integers >= 1 |
 | Overclocker `costPerStep` / `stepIntervalTicks` / `stepPercent` x `maxSteps` | `buildings.json` | 2 / 3 / 4 items per step, a step per 40 / 42 / 40 ticks, 2x5 / 3x5 / 5x5 = +10 / +15 / +25 percent | fits under `maxSourceSpeedPercent` |
 | Armory `costPerStep` / `stepIntervalTicks` / `stepPercent` x `maxSteps` | `buildings.json` | 4 / 5 / 6 items per step, a step per 80 / 70 / 60 ticks, 5x5 / 7x5 / 10x5 = +25 / +35 / +50 percent | fits under `maxUnitStrengthPercent` |
@@ -4919,7 +4977,9 @@ and in the random stream used for the layout.
 - **Ready.** `sealedProducers(team, content)` is unchanged and still reads
   the whole board. `ready` from player `p` is rejected with `sealed_producer`
   only while the list contains a producer **owned by `p`**; `detail` lists
-  those ids only. Another player's sealed producer does not block `p`.
+  those ids only. Another player's sealed producer does not block `p`. The
+  check never reads a producer's cost, so a two-input producer (CB-5e) is
+  listed like any other.
 
 ### PP-16. Party votes and run streams
 
