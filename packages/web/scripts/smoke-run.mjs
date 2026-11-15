@@ -1275,9 +1275,16 @@ export async function runRunSmoke({
   const pvpWon =
     (await page.locator('[data-field="result-word"]').innerText()) ===
     'Victory';
+  const pvpChip = pvpWon
+    ? ''
+    : await page.locator('#result-banner .life-chip').innerText();
   check(
-    pvpWon ? /gold/.test(pvpReward) : /life/.test(pvpReward),
-    `PvP summary: ${pvpWon ? 'a win pays gold' : 'a loss states the life it costs'} ("${pvpReward}")`,
+    pvpWon
+      ? /gold/.test(pvpReward)
+      : /life/.test(pvpChip) &&
+          /gold/.test(pvpReward) &&
+          !/life/.test(pvpReward),
+    `PvP summary: ${pvpWon ? 'a win pays gold' : 'a loss states the life it costs once, in the pill'} ("${pvpChip}" / "${pvpReward}")`,
   );
   const lives0 = (await R.state()).lives;
   {

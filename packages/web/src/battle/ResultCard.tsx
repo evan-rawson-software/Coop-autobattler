@@ -50,6 +50,11 @@ export function ResultCard(props: ResultCardProps) {
     return doubleFall ? { ...out, cause: fallback } : out;
   }, [rec, content, moments, tps, won, own, foe, coreName]);
   const chip = lifeChip(props.opponent.kind !== 'pve', won, props.rewardText);
+  // The pill already says "−1 life": the line under it keeps only the rest.
+  const rewardText =
+    chip?.lost === true
+      ? props.rewardText.split(' · ').slice(1).join(' · ')
+      : props.rewardText;
   return (
     <section
       class={`result-card ${won ? 'won' : 'lost'}`}
@@ -79,9 +84,9 @@ export function ResultCard(props: ResultCardProps) {
         <p class="result-reward result-last-life" data-field="last-life">
           {t('battleLastLife')}
         </p>
-      ) : (
+      ) : rewardText === '' ? null : (
         <p class="result-reward" data-field="reward">
-          {props.rewardText}
+          {rewardText}
         </p>
       )}
       <div class="result-tiles">

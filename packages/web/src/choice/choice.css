@@ -304,6 +304,20 @@ button.event-card[data-affordable='false'] {
   margin: 0;
 }
 
+/* Room above the header so the key clears the icon. */
+.event-card {
+  padding-top: 1.6rem;
+}
+
+/* Titles take two lines in every card of a row (a wrapped title must not push
+   that card's divider and text lower than its neighbours). */
+.event-cards.follow .event-card-head h2 {
+  line-height: 1.2;
+  min-height: 2.4em;
+  display: flex;
+  align-items: center;
+}
+
 /* A card's number key, in its corner; the card the primary button will take. */
 .pve-card,
 .event-card {
