@@ -342,6 +342,36 @@ describe('a scripted solo run', () => {
   });
 });
 
+describe('offers from a round (issue #383)', () => {
+  const REFINING = [
+    'bld_foundry',
+    'bld_refinery_ab',
+    'bld_golem_forge',
+    'bld_refinery_bc',
+    'bld_spire',
+  ];
+
+  test('the Foundry, the refineries, the Golem forge and the Spire never appear in rounds 1-2 and do from round 3', () => {
+    const deps = depsFor();
+    const early = new Set<string>();
+    const late = new Set<string>();
+    for (let seed = 1; seed <= 12; seed++) {
+      let s = toShop(start(deps, ['Ann'], seed), deps);
+      for (let i = 0; i < 10 && s.round <= 4; i++) {
+        const into = s.round >= 3 ? late : early;
+        for (const o of shopOf(s).offers) {
+          if (o !== null) into.add(o.def);
+        }
+        s = toShop(readyAll(s, deps), deps);
+      }
+    }
+    for (const def of REFINING) {
+      expect(early.has(def), `${def} early`).toBe(false);
+      expect(late.has(def), `${def} late`).toBe(true);
+    }
+  });
+});
+
 describe('configuration', () => {
   test('an alternate economy changes kit, gold, income and offers', () => {
     const alt: EconomyConfig = {

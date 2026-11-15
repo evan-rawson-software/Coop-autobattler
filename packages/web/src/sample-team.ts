@@ -135,9 +135,12 @@ export function buildSampleTeam(
   const walls = defs.filter(
     (d) => d.kind === 'defense' && d.defenseType === 'wall',
   );
-  // Only buildings the shop sells (a building not offered yet, such as the
-  // Foundry, is left out so that it does not change the sample boards).
-  const sold = new Set(economy.offerWeights.map((w) => w.def));
+  // Only buildings the shop sells from round 1 (the ones offered from a later
+  // round, such as the Foundry, are left out: the sample boards and the smoke
+  // thresholds that read them stay as they were).
+  const sold = new Set(
+    economy.offerWeights.filter((w) => w.fromRound === 1).map((w) => w.def),
+  );
   const others = defs.filter(
     (d) =>
       d.kind !== 'source' &&

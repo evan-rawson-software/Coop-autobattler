@@ -354,7 +354,8 @@ describe('the shop shows at most two different wall shapes', () => {
       const expected: string[] = [];
       const seen = new Set<string>();
       for (let slot = 0; slot < heavy.shopOfferCount; slot++) {
-        const all = heavy.offerWeights;
+        // Round 1: the entries offered from a later round have weight 0.
+        const all = heavy.offerWeights.filter((w) => w.fromRound <= 1);
         // Pick by cumulative weight, as pickWeightedIndex does.
         let pick: (typeof all)[number] | undefined;
         const total = all.reduce((a, w) => a + w.weight, 0);

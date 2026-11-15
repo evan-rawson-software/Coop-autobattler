@@ -80,7 +80,9 @@ describe('loadEconomy', () => {
     ).toContain('"weight"');
   });
   test('fromRound defaults to 1 and is validated', () => {
-    const r = loadEconomy(economyJson, ctx);
+    const bare = clone(economyJson) as unknown as Record<string, unknown>;
+    for (const w of bare['offerWeights'] as Rows) delete w['fromRound'];
+    const r = loadEconomy(bare, ctx);
     expect(r.ok && r.config.offerWeights.every((w) => w.fromRound === 1)).toBe(
       true,
     );
@@ -268,13 +270,14 @@ describe('rollOffers', () => {
         expect(Math.abs(observed - expected)).toBeLessThan(0.012);
         if (w === 0) expect(tiers[i]).toBe(0);
       });
-      const wsum = economy.offerWeights.reduce((a, w) => a + w.weight, 0);
-      for (const w of economy.offerWeights) {
+      const active = economy.offerWeights.filter((w) => w.fromRound <= round);
+      const wsum = active.reduce((a, w) => a + w.weight, 0);
+      for (const w of active) {
         const observed = (byDef.get(w.def) ?? 0) / total;
         expect(Math.abs(observed - w.weight / wsum)).toBeLessThan(0.012);
       }
       for (const def of byDef.keys()) {
-        expect(economy.offerWeights.some((w) => w.def === def)).toBe(true);
+        expect(active.some((w) => w.def === def)).toBe(true);
       }
     }
   });
