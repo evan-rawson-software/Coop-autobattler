@@ -28,3 +28,7 @@ describe rotation 0, and each bought building has exactly three tiers. The
 `core` building is not bought: it has one `tiers` entry holding only `health`.
 Route buildings (splitter, merger, crossover) name no resource on their inputs
 because they carry whatever they are fed.
+A unit producer tier gives either `costPerUnit` (one cost for every resource it
+takes, counted alike) or `costs` (a cost per resource, for a building with one
+input per resource, such as the Foundry); never both. Every resource in `costs`
+needs an input and every input resource needs a cost.

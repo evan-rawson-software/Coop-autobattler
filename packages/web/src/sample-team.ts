@@ -21,6 +21,7 @@ import {
   type Side,
   type TeamState,
 } from '@game/core';
+import { economy } from './build/setup.js';
 import type { WebContent } from './content.js';
 
 export interface SampleOptions {
@@ -134,8 +135,15 @@ export function buildSampleTeam(
   const walls = defs.filter(
     (d) => d.kind === 'defense' && d.defenseType === 'wall',
   );
+  // Only buildings the shop sells (a building not offered yet, such as the
+  // Foundry, is left out so that it does not change the sample boards).
+  const sold = new Set(economy.offerWeights.map((w) => w.def));
   const others = defs.filter(
-    (d) => d.kind !== 'source' && d.kind !== 'core' && !walls.includes(d),
+    (d) =>
+      d.kind !== 'source' &&
+      d.kind !== 'core' &&
+      !walls.includes(d) &&
+      sold.has(d.id),
   );
   const tier = (): number => 1 + rng.nextInt(3);
   const rot = (): number => rng.pick(ROTATIONS);

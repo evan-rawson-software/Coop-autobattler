@@ -120,6 +120,7 @@ export function makeFlowSimKind(
       result['pacers'] = ctx.pacers.map((p) => ({
         building: p.building,
         progress: p.progress,
+        ...(p.counters === undefined ? {} : { counters: [...p.counters] }),
         cooldown: p.cooldown,
         productions: p.productions,
       }));

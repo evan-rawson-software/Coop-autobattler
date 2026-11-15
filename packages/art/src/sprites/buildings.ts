@@ -582,6 +582,7 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_merger: mergerSprite,
   bld_crossover: crossoverSprite,
   bld_barracks: barracksSprite,
+  bld_foundry: barracksSprite,
   bld_gate: gateSprite,
   bld_turret: turretSprite,
   bld_overclocker: () => economySprite(gearIcon),

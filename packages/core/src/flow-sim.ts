@@ -10,7 +10,14 @@
 
 import { buildFlowGraph, SIDE_ORDER } from './conduits.js';
 import type { Side, SourceBuildingDef } from './buildings.js';
-import { needPer1000, productionOf, rotateBuilding } from './buildings.js';
+import {
+  costEntries,
+  needPer1000,
+  needPer1000By,
+  productionOf,
+  rotateBuilding,
+  type CostEntry,
+} from './buildings.js';
 import { divFloor, mulDiv } from './int.js';
 import { queryMap } from './map.js';
 import type { ResourceId } from './resources.js';
@@ -191,8 +198,15 @@ export interface ConsumerPacer {
   readonly interval: number;
   /** Productions allowed in all (an economy building's `maxSteps`), or -1. */
   readonly limit: number;
-  /** Items collected towards the next production (0 .. cost). */
+  /**
+   * Items collected towards the next production (0 .. cost). For a two-input
+   * consumer (`costs` present) the sum of `counters`.
+   */
   progress: number;
+  /** Two-input consumer (CB-5e): the cost of each resource, sorted by ID. */
+  readonly costs?: readonly CostEntry[];
+  /** One counter per entry of `costs` (0 .. that cost); same order. */
+  counters?: number[];
   /** Ticks until the next production is allowed. */
   cooldown: number;
   /** Productions so far. */
@@ -507,8 +521,10 @@ function makePacers(
     const p = b && def && productionOf(def, b.tier);
     if (b === undefined || def === undefined || p === undefined) continue;
     const tier = def.kind === 'economy' ? def.tiers[b.tier - 1] : undefined;
+    const costs = costEntries(def, b.tier);
     pacers.push({
       building: c.building,
+      ...(costs === undefined ? {} : { costs, counters: costs.map(() => 0) }),
       cost: p.cost,
       interval: p.interval,
       limit: tier === undefined ? -1 : tier.maxSteps,
@@ -868,6 +884,22 @@ export function stepFlow(sim: BoardSim, ctx: FlowContext): void {
 function paceConsumer(sim: BoardSim, p: ConsumerPacer): void {
   const consumer = sim.consumers.find((c) => c.building === p.building);
   const open = p.limit < 0 || p.productions < p.limit;
+  if (p.costs !== undefined && p.counters !== undefined) {
+    // Two-input consumer (CB-5e): one counter per resource.
+    if (consumer !== undefined && open) {
+      intakeByResource(sim, p.building, p.costs, p.counters);
+    }
+    const full = p.costs.every((e, k) => p.counters?.[k] === e.cost);
+    p.progress = p.counters.reduce((a, n) => a + n, 0);
+    if (open && full && p.cooldown === 0) {
+      p.counters.fill(0);
+      p.progress = 0;
+      p.cooldown = p.interval;
+      p.productions += 1;
+    }
+    if (p.cooldown > 0) p.cooldown -= 1;
+    return;
+  }
   if (consumer !== undefined && open && p.progress < p.cost) {
     for (const input of consumer.inputs) {
       const n = Math.min(input.count, p.cost - p.progress);
@@ -882,6 +914,33 @@ function paceConsumer(sim: BoardSim, p: ConsumerPacer): void {
     p.productions += 1;
   }
   if (p.cooldown > 0) p.cooldown -= 1;
+}
+
+/**
+ * Intake of a two-input consumer (CB-5e): go through the building's inputs
+ * clockwise from north; each takes `min(buffer count, cost_r - counter_r)`
+ * items (`takeFromBuffer`) of its own resource `r` into that resource's
+ * counter. `counters[k]` belongs to `costs[k]`. Returns the items taken.
+ */
+export function intakeByResource(
+  sim: BoardSim,
+  building: number,
+  costs: readonly CostEntry[],
+  counters: number[],
+): number {
+  const consumer = sim.consumers.find((c) => c.building === building);
+  if (consumer === undefined) return 0;
+  let taken = 0;
+  for (const input of consumer.inputs) {
+    const k = costs.findIndex((e) => e.resource === input.resource);
+    if (k < 0) continue;
+    const n = Math.min(input.count, (costs[k]?.cost ?? 0) - (counters[k] ?? 0));
+    if (n > 0 && takeFromBuffer(sim, building, input.side, n)) {
+      counters[k] = (counters[k] ?? 0) + n;
+      taken += n;
+    }
+  }
+  return taken;
 }
 
 function lose(
@@ -1012,6 +1071,14 @@ export interface DryRunNeed {
   readonly building: number;
   /** Items per 1000 ticks at top speed (`needPer1000`). */
   readonly needPer1000: number;
+  /**
+   * Two-input consumer only (CB-5e): the need of each resource, sorted by
+   * resource ID (`needPer1000By`). Absent for a one-cost consumer.
+   */
+  readonly needPer1000By?: readonly {
+    readonly resource: ResourceId;
+    readonly needPer1000: number;
+  }[];
   /** Productions made during the run. */
   readonly productions: number;
 }
@@ -1071,6 +1138,9 @@ export function dryRunFlow(
     return {
       building: p.building,
       needPer1000: b && def ? needPer1000(def, b.tier) : 0,
+      ...(p.costs !== undefined && b && def
+        ? { needPer1000By: needPer1000By(def, b.tier) }
+        : {}),
       productions: p.productions,
     };
   });

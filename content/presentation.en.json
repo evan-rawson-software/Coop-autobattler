@@ -29,6 +29,10 @@
       "name": "Hangar",
       "description": "Consumes {res_b} to build drones, flying units that cross walls and lakes and shoot ground and air targets."
     },
+    "bld_foundry": {
+      "name": "Foundry",
+      "description": "Consumes {res_a} and {res_b} together to cast heavy units. Needs both at once; without one it waits."
+    },
     "bld_wall_i": {
       "name": "Wall (I)",
       "description": "Blocks enemy movement. Covers four cells in a I shape; rotate it to fit."
@@ -90,6 +94,10 @@
     "unit_raider": {
       "name": "Raider",
       "description": "Small, fast and fragile: marches on the enemy Core like a soldier."
+    },
+    "unit_heavy": {
+      "name": "Heavy",
+      "description": "A slow-built bruiser: far tougher and harder-hitting than a soldier. Marches on the enemy Core and attacks whatever blocks the way."
     },
     "unit_archer": {
       "name": "Archer",

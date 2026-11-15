@@ -40,6 +40,7 @@ import { MotionScratch } from './unit-motion.js';
 import {
   createBoardSim,
   createFlowContext,
+  intakeByResource,
   rebuildFlow,
   stepFlow,
   takeFromBuffer,
@@ -47,7 +48,12 @@ import {
   type FlowContext,
   type SimEvent,
 } from './flow-sim.js';
-import type { EconomyEffectType, Side } from './buildings.js';
+import {
+  costEntries,
+  type CostEntry,
+  type EconomyEffectType,
+  type Side,
+} from './buildings.js';
 import {
   addInt,
   addSaturating,
@@ -292,8 +298,17 @@ export interface RampSim {
 export interface ProducerSim {
   readonly side: number;
   readonly building: number;
-  /** Resource units collected towards the next unit (0 .. costPerUnit). */
+  /**
+   * Resource units collected towards the next unit (0 .. costPerUnit). For a
+   * two-input producer (CB-5e) the sum of `counters`.
+   */
   progress: number;
+  /**
+   * Two-input producer only (CB-5e): one counter per resource, sorted by
+   * resource ID, the same order as the tier's `costs` entries
+   * (0 .. that resource's cost). Absent on a one-cost producer.
+   */
+  counters?: number[];
   /** Ticks until the next unit may be made (PP-6). */
   cooldown: number;
 }
@@ -437,6 +452,8 @@ interface ProducerInfo {
   readonly ref: number;
   readonly unit: UnitId;
   readonly cost: number;
+  /** Two-input producer (CB-5e): the cost of each resource, sorted by ID. */
+  readonly costs?: readonly CostEntry[];
   readonly interval: number;
   /** The building's owner: the owner of the units it makes (PP-11). */
   readonly owner: number;
@@ -660,10 +677,12 @@ export function createArenaContext(
       if (def.kind === 'unit_producer') {
         const tier = def.tiers[p.tier - 1];
         if (tier === undefined) continue;
+        const costs = costEntries(def, p.tier);
         producers.set(bkey(side, p.id), {
           ref,
           unit: def.unit,
           cost: tier.costPerUnit,
+          ...(costs === undefined ? {} : { costs }),
           interval: tier.productionIntervalTicks,
           owner: p.owner,
         });
@@ -849,10 +868,14 @@ export function createArenaSim(
   const producers: ProducerSim[] = [];
   for (const b of arena.buildings) {
     if (b.kind === 'unit_producer') {
+      const placed = teams[b.side]?.buildings.find((x) => x.id === b.id);
+      const def = placed && content.buildings.get(placed.def);
+      const costs = placed && def && costEntries(def, placed.tier);
       producers.push({
         side: b.side,
         building: b.id,
         progress: 0,
+        ...(costs === undefined ? {} : { counters: costs.map(() => 0) }),
         cooldown: 0,
       });
     }
@@ -1495,10 +1518,17 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     // Intake (PP-6): at most `cost - progress` items, so `progress` never
     // exceeds the cost. A producer holding a finished unit takes nothing: its
     // buffers fill and its conduits back up.
-    if (p.progress < info.cost) {
+    // A two-input producer (CB-5e) keeps one counter per resource and takes
+    // each input's items into its own resource's counter.
+    const counters = info.costs === undefined ? undefined : p.counters;
+    if (info.costs !== undefined && counters !== undefined) {
+      intakeByResource(board, p.building, info.costs, counters);
+      p.progress = counters.reduce((a, n) => a + n, 0);
+    } else if (p.progress < info.cost) {
       p.progress += intake(board, p.building, info.cost - p.progress);
     }
-    // A unit is made only when the cost is there and the cooldown is over.
+    // A unit is made only when the cost is there (every counter full) and the
+    // cooldown is over.
     if (p.progress < info.cost || p.cooldown > 0) continue;
     const unitDef = ctx.content.units.get(info.unit);
     if (unitDef === undefined) throw new Error(`Unknown unit "${info.unit}".`);
@@ -1530,6 +1560,7 @@ function produce(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     const pos = spawnPosition(sim, ctx, p.side, cells, unitDef);
     if (pos === null) continue; // held: no free position at the exit
     p.progress = 0;
+    counters?.fill(0);
     p.cooldown = info.interval;
     addUnit(
       sim,

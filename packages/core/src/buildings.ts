@@ -15,7 +15,7 @@
 
 import { sortedKeys } from './hash.js';
 import { mulDiv } from './int.js';
-import { MAX_DAMAGE, MAX_HEALTH } from './limits.js';
+import { MAX_DAMAGE, MAX_HEALTH, MAX_TIER_COST } from './limits.js';
 import type { ResourceConfig, ResourceId } from './resources.js';
 import type { UnitConfig, UnitId } from './units.js';
 import {
@@ -105,8 +105,18 @@ export interface SourceTier extends TierBase {
   readonly intervalTicks: number;
 }
 export interface UnitProducerTier extends TierBase {
-  /** Resource units consumed to spawn one unit. */
+  /**
+   * Resource units consumed to spawn one unit. For a tier with `costs` it is
+   * the sum of the per-resource costs (derived at load; a combined figure for
+   * screens, never read by the rules).
+   */
   readonly costPerUnit: number;
+  /**
+   * Two-input form (CB-5e): the cost of each resource, instead of one cost
+   * for all resources alike. Absent on a one-cost tier. Read it sorted by
+   * resource ID (`costEntries`).
+   */
+  readonly costs?: Readonly<Record<ResourceId, number>>;
   /** Minimum ticks between two units made (PP-6). */
   readonly productionIntervalTicks: number;
 }
@@ -510,6 +520,54 @@ function describeRange(range: readonly [number, number], noun: string): string {
   return `${String(min)} to ${plural(max)}`;
 }
 
+/**
+ * The `costs` object of a two-input tier (CB-5e): resource ID -> integer from
+ * 1 to `MAX_TIER_COST`, at least one resource, every one the resource of
+ * some input of the building and every input resource listed.
+ */
+function readCosts(
+  raw: unknown,
+  inputs: readonly BuildingInput[],
+  where: string,
+  ctx: BuildingLoadContext,
+  errors: string[],
+): Record<string, number> | undefined {
+  if (!isRecord(raw)) {
+    errors.push(`${where}: "costs" must be an object of resource ID to cost.`);
+    return undefined;
+  }
+  const keys = sortedKeys(raw);
+  const before = errors.length;
+  if (keys.length < 1) {
+    errors.push(`${where}: "costs" needs at least one resource.`);
+  }
+  const out: Record<string, number> = {};
+  for (const key of keys) {
+    if (
+      !RESOURCE_ID_PATTERN.test(key) ||
+      ctx.resources.get(key) === undefined
+    ) {
+      errors.push(`${where}: costs: unknown resource ID "${key}".`);
+      continue;
+    }
+    if (!inputs.some((i) => i.resource === key)) {
+      errors.push(
+        `${where}: costs: resource "${key}" has no input on the building.`,
+      );
+    }
+    const v = readInt(raw, key, 1, `${where} costs`, errors, MAX_TIER_COST);
+    if (v !== undefined) out[key] = v;
+  }
+  for (const input of inputs) {
+    if (input.resource !== undefined && !(input.resource in raw)) {
+      errors.push(
+        `${where}: costs: the input on the ${input.side} side takes "${input.resource}", which has no cost.`,
+      );
+    }
+  }
+  return errors.length > before ? undefined : out;
+}
+
 function parseBuilding(
   entry: unknown,
   at: string,
@@ -774,6 +832,8 @@ function parseBuilding(
     kind === undefined ? undefined : tierFields(kind, defenseType);
   const wantedCount = kind === 'core' ? 1 : 3;
   const tierRecords: Record<string, number>[] = [];
+  // Per tier, the `costs` of a two-input unit producer (CB-5e), else undefined.
+  const tierCosts: (Record<string, number> | undefined)[] = [];
   const rawTiers = entry['tiers'];
   if (!Array.isArray(rawTiers)) {
     errors.push(`${label}: "tiers" must be a list.`);
@@ -792,23 +852,52 @@ function parseBuilding(
         }
         const rec: Record<string, number> = {};
         let ok = true;
-        for (const key of sortedKeys(wantedFields)) {
-          const min = wantedFields[key] ?? 0;
+        let costs: Record<string, number> | undefined;
+        let fields = wantedFields;
+        if (kind === 'unit_producer' && 'costs' in raw) {
+          // Exactly one of `costPerUnit` and `costs` (CB-5e).
+          if ('costPerUnit' in raw) {
+            ok = false;
+            errors.push(
+              `${where}: give exactly one of "costPerUnit" and "costs", not both.`,
+            );
+          }
+          fields = { ...wantedFields };
+          delete fields['costPerUnit'];
+          costs = readCosts(raw['costs'], inputs, where, ctx, errors);
+          if (costs === undefined) ok = false;
+        }
+        for (const key of sortedKeys(fields)) {
+          const min = fields[key] ?? 0;
           const max = TIER_MAX[key];
           const value = readInt(raw, key, min, where, errors, max);
           if (value === undefined) ok = false;
           else rec[key] = value;
         }
         for (const key of sortedKeys(raw)) {
-          if (!(key in wantedFields)) {
+          if (key === 'costs' && kind === 'unit_producer') continue;
+          if (!(key in fields) && !(key === 'costPerUnit' && costs)) {
             ok = false;
             errors.push(
               `${where}: field "${key}" is not valid for ${kind === 'defense' && defenseType !== undefined ? defenseType : String(kind)}; expected ${sortedKeys(wantedFields).join(', ')}.`,
             );
           }
         }
-        if (ok) tierRecords.push(rec);
+        if (ok) {
+          tierRecords.push(rec);
+          tierCosts.push(costs);
+        }
       });
+    }
+  }
+
+  if (kind === 'unit_producer' && tierCosts.length === wantedCount) {
+    // One form for the whole building, and the same resources in every tier.
+    const keys = tierCosts.map((c) => (c ? sortedKeys(c).join(',') : null));
+    if (keys.some((k) => k !== keys[0])) {
+      errors.push(
+        `${label}: every tier must use the same cost form ("costPerUnit" or "costs") and, for "costs", the same resources.`,
+      );
     }
   }
 
@@ -853,11 +942,18 @@ function parseBuilding(
         kind,
         unit,
         tiers: toTiers3(
-          mapTiers((t) => ({
-            ...base(t),
-            costPerUnit: num(t, 'costPerUnit'),
-            productionIntervalTicks: num(t, 'productionIntervalTicks'),
-          })),
+          tierRecords.map((t, i): UnitProducerTier => {
+            const costs = tierCosts[i];
+            return {
+              ...base(t),
+              costPerUnit:
+                costs === undefined
+                  ? num(t, 'costPerUnit')
+                  : sortedKeys(costs).reduce((n, k) => n + (costs[k] ?? 0), 0),
+              ...(costs === undefined ? {} : { costs }),
+              productionIntervalTicks: num(t, 'productionIntervalTicks'),
+            };
+          }),
         ),
       };
     case 'defense':
@@ -980,9 +1076,54 @@ export function productionOf(
   }
 }
 
+/** One resource of a two-input consumer and what it costs per production. */
+export interface CostEntry {
+  readonly resource: ResourceId;
+  readonly cost: number;
+}
+
+/**
+ * The per-resource costs of a unit producer tier in the two-input form
+ * (CB-5e), sorted by resource ID (code point order); `undefined` for every
+ * other consumer and for a one-cost tier, which counts all its resources
+ * alike. This order is the order of the counters in a battle.
+ */
+export function costEntries(
+  def: BuildingDef,
+  tier: number,
+): readonly CostEntry[] | undefined {
+  if (def.kind !== 'unit_producer') return undefined;
+  const costs = def.tiers[tier - 1]?.costs;
+  if (costs === undefined) return undefined;
+  return sortedKeys(costs).map((resource) => ({
+    resource,
+    cost: costs[resource] ?? 0,
+  }));
+}
+
+/**
+ * Items per 1000 ticks a two-input consumer takes of each of its resources at
+ * its top speed (CB-5e): `floor(1000 * cost_r / interval)`, sorted by
+ * resource ID; empty for a one-cost consumer (use `needPer1000`).
+ */
+export function needPer1000By(
+  def: BuildingDef,
+  tier: number,
+): readonly { readonly resource: ResourceId; readonly needPer1000: number }[] {
+  const p = productionOf(def, tier);
+  const entries = costEntries(def, tier);
+  if (p === undefined || entries === undefined) return [];
+  return entries.map((e) => ({
+    resource: e.resource,
+    needPer1000: mulDiv(1000, e.cost, p.interval),
+  }));
+}
+
 /**
  * Items per 1000 ticks a consumer takes at its top speed (PP-6):
  * `floor(1000 * cost / interval)`; 0 for a building that consumes nothing.
+ * For a two-input consumer `cost` is the sum of its costs: a combined figure
+ * (`needPer1000By` gives each resource).
  */
 export function needPer1000(def: BuildingDef, tier: number): number {
   const p = productionOf(def, tier);
