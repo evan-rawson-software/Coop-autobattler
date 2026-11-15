@@ -57,6 +57,9 @@ export const MAX_DAMAGE = MAX_HEALTH;
 /** Largest `armor` of a unit (CB-5h). */
 export const MAX_ARMOR = 1000;
 
+/** Largest `splash.radiusSub` of a unit: two cells, in sub-cell units (CB-5h). */
+export const MAX_SPLASH_RADIUS = 480;
+
 /** Largest cost of one resource in a unit producer's `costs` (CB-5e). At most
  * four inputs, so the sum stays far below 2^53. */
 export const MAX_TIER_COST = 1_000_000;

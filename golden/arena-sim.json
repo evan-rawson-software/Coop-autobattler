@@ -15518,5 +15518,718 @@
       },
       "eventLogHash": "bd5104b6"
     }
+  },
+  {
+    "id": "arena-sim.spire-chain-casters",
+    "kind": "arena-sim",
+    "description": "The full chain: a tier 3 Power collector and a tier 3 Flux collector feed a tier 3 Aether refinery, whose output feeds a tier 3 Spire; casters (splash 50 percent within one cell) walk alone against a base that makes soldiers. Saved and restored mid-battle.",
+    "input": {
+      "gapRows": 4,
+      "ticks": 1500,
+      "teamA": {
+        "seed": 1,
+        "partySize": 1,
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": [
+            {
+              "x": 3,
+              "y": 2,
+              "resource": "res_c"
+            },
+            {
+              "x": 5,
+              "y": 2,
+              "resource": "res_b"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 8,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 5,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 3,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_refinery_bc",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 5,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_spire",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 5,
+            "y": 10,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 3,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 5,
+                "y": 4
+              }
+            ]
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 2,
+              "side": "north"
+            },
+            "to": {
+              "building": 3,
+              "side": "west"
+            },
+            "cells": [
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 4,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 5,
+                "y": 7
+              },
+              {
+                "x": 5,
+                "y": 8
+              },
+              {
+                "x": 5,
+                "y": 9
+              }
+            ]
+          }
+        ]
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 1,
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": [
+            {
+              "x": 9,
+              "y": 8,
+              "resource": "res_a"
+            }
+          ]
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 3,
+            "y": 3
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 9,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 9,
+            "y": 12,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": [
+              {
+                "x": 9,
+                "y": 9
+              },
+              {
+                "x": 9,
+                "y": 10
+              },
+              {
+                "x": 9,
+                "y": 11
+              }
+            ]
+          }
+        ]
+      },
+      "report": "positions",
+      "restoreAt": [500]
+    },
+    "expected": {
+      "result": {
+        "tick": 1500,
+        "stateHash": "6dcd76b3",
+        "events": 1545,
+        "sides": [
+          {
+            "spawned": 24,
+            "alive": 17,
+            "unitsDied": 7,
+            "buildingDamageDealt": 500,
+            "buildingsDestroyed": 0,
+            "coreHealth": [0]
+          },
+          {
+            "spawned": 29,
+            "alive": 9,
+            "unitsDied": 20,
+            "buildingDamageDealt": 500,
+            "buildingsDestroyed": 0,
+            "coreHealth": [0]
+          }
+        ],
+        "positions": [
+          [1, 2364, 609],
+          [5, 2472, 584],
+          [8, 4152, 6799],
+          [11, 4087, 6867],
+          [19, 3942, 6969],
+          [22, 4018, 6922],
+          [24, 3915, 7062],
+          [26, 3858, 7149],
+          [30, 2876, 4316],
+          [32, 3474, 5170],
+          [33, 1320, 3009],
+          [34, 3490, 5073],
+          [35, 1320, 3121],
+          [36, 3568, 5140],
+          [37, 1209, 3006],
+          [38, 3397, 5090],
+          [39, 1430, 3006],
+          [40, 3548, 5233],
+          [41, 1320, 2923],
+          [42, 3403, 5233],
+          [44, 1239, 3087],
+          [46, 1401, 3087],
+          [48, 1234, 2923],
+          [50, 1407, 2923],
+          [52, 1560, 3000],
+          [53, 3233, 5168]
+        ]
+      },
+      "eventLogHash": "636b5644"
+    }
+  },
+  {
+    "id": "arena-sim.caster-splash-cluster",
+    "kind": "arena-sim",
+    "description": "A caster shoots a soldier in a tight group: neighbours within one cell (a soldier, a drone, a Golem, whose armor cuts its share to 1) take 50 percent of the hit, the soldier 241 away and the caster's own soldier do not.",
+    "input": {
+      "gapRows": 4,
+      "ticks": 120,
+      "teamA": {
+        "seed": 1,
+        "partySize": 1,
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 8,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 1,
+        "map": {
+          "width": 24,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 24,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 8,
+            "y": 0
+          }
+        ]
+      },
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_caster",
+          "px": 1500,
+          "py": 4000
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "px": 1500,
+          "py": 4600
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "px": 1700,
+          "py": 4600
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "px": 1500,
+          "py": 4840
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "px": 1259,
+          "py": 4600
+        },
+        {
+          "side": 1,
+          "def": "unit_drone",
+          "px": 1500,
+          "py": 4760
+        },
+        {
+          "side": 1,
+          "def": "unit_golem",
+          "px": 1650,
+          "py": 4760
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "px": 1380,
+          "py": 4600
+        }
+      ],
+      "report": "positions"
+    },
+    "expected": {
+      "result": {
+        "tick": 120,
+        "stateHash": "2d30f3fc",
+        "events": 27,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 0,
+            "unitsDied": 2,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 0,
+            "coreHealth": [484]
+          },
+          {
+            "spawned": 6,
+            "alive": 6,
+            "unitsDied": 0,
+            "buildingDamageDealt": 16,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          }
+        ],
+        "positions": [
+          [2, 2022, 890],
+          [3, 1969, 727],
+          [4, 2125, 953],
+          [5, 1942, 831],
+          [6, 1940, 1102],
+          [7, 1929, 2290]
+        ]
+      },
+      "eventLogHash": "f2d7517a"
+    }
+  },
+  {
+    "id": "arena-sim.caster-hits-wall-only",
+    "kind": "arena-sim",
+    "description": "Casters against a closed wall line: they hit the wall (a building), so there is no splash event.",
+    "input": {
+      "gapRows": 4,
+      "ticks": 600,
+      "teamA": {
+        "seed": 1,
+        "partySize": 1,
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 8,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "seed": 1,
+        "partySize": 1,
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 8,
+            "y": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 0,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 1,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 2,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 3,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 4,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 5,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 7,
+            "x": 6,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 8,
+            "x": 7,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 9,
+            "x": 8,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 10,
+            "x": 9,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 11,
+            "x": 10,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 12,
+            "x": 11,
+            "y": 8,
+            "rotation": 0
+          }
+        ]
+      },
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_caster",
+          "x": 3,
+          "y": 20
+        },
+        {
+          "side": 0,
+          "def": "unit_caster",
+          "x": 4,
+          "y": 20
+        },
+        {
+          "side": 0,
+          "def": "unit_caster",
+          "x": 5,
+          "y": 20
+        }
+      ],
+      "report": "positions"
+    },
+    "expected": {
+      "result": {
+        "tick": 600,
+        "stateHash": "92f369d0",
+        "events": 87,
+        "sides": [
+          {
+            "spawned": 3,
+            "alive": 3,
+            "unitsDied": 0,
+            "buildingDamageDealt": 747,
+            "buildingsDestroyed": 0,
+            "coreHealth": [500]
+          },
+          {
+            "spawned": 0,
+            "alive": 0,
+            "unitsDied": 0,
+            "buildingDamageDealt": 0,
+            "buildingsDestroyed": 3,
+            "coreHealth": [473]
+          }
+        ],
+        "positions": [
+          [1, 838, 7399],
+          [2, 914, 7441],
+          [3, 988, 7395]
+        ]
+      },
+      "eventLogHash": "5c900bc3"
+    }
   }
 ]

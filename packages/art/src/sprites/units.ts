@@ -330,6 +330,7 @@ const DRAWERS: Readonly<Record<string, (L: Layers, c: Ctx) => void>> = {
   unit_soldier: soldier,
   unit_heavy: soldier,
   unit_golem: soldier,
+  unit_caster: archer,
   unit_raider: raider,
   unit_archer: archer,
   unit_drone: drone,
@@ -340,6 +341,8 @@ const ART_ONLY: readonly string[] = ['unit_archer', 'unit_drone'];
 const NOTES: Readonly<Record<string, string>> = {
   unit_soldier: 'Melee ground unit.',
   unit_heavy: 'Heavy melee ground unit (soldier art for now).',
+  unit_caster:
+    'Fragile ranged ground unit with area damage (archer art for now).',
   unit_golem: 'Armored heavy melee ground unit (soldier art for now).',
   unit_raider: 'Fast melee ground unit.',
   unit_archer: 'Ranged ground unit.',

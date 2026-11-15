@@ -82,6 +82,24 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 1000
+        },
+        "splash": {
+          "description": "Area damage (CB-5h): when this unit attacks a unit, every other opposing unit whose centre is within radiusSub (sub-cell units, 240 per cell) of the target's centre takes percent percent of the hit (rounded down, before armor), then its own armor applies. Optional.",
+          "type": "object",
+          "required": ["radiusSub", "percent"],
+          "additionalProperties": false,
+          "properties": {
+            "radiusSub": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 480
+            },
+            "percent": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
         }
       }
     }

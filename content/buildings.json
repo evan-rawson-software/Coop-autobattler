@@ -460,6 +460,34 @@
       ]
     },
     {
+      "id": "bld_spire",
+      "kind": "unit_producer",
+      "unit": "unit_caster",
+      "footprint": { "width": 2, "height": 2 },
+      "inputs": [{ "resource": "res_bc_refined", "side": "south" }],
+      "outputs": [],
+      "tiers": [
+        {
+          "health": 70,
+          "price": 50,
+          "costPerUnit": 4,
+          "productionIntervalTicks": 120
+        },
+        {
+          "health": 105,
+          "price": 95,
+          "costPerUnit": 4,
+          "productionIntervalTicks": 84
+        },
+        {
+          "health": 140,
+          "price": 170,
+          "costPerUnit": 4,
+          "productionIntervalTicks": 60
+        }
+      ]
+    },
+    {
       "id": "bld_refinery_ab",
       "kind": "refinery",
       "output": "res_ab_refined",

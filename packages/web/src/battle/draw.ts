@@ -694,6 +694,24 @@ export function drawBattleOverlay(
         ctx.stroke();
         break;
       }
+      case 'splash': {
+        if (age >= LIFE_SHOT) break;
+        // A ring that grows to about one cell around the blast centre.
+        const p = age / LIFE_SHOT;
+        ctx.globalAlpha = 1 - p;
+        ctx.strokeStyle = theme.hover;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(
+          ox + (e.x / CELL_UNITS) * z,
+          oy + (geo.height - e.y / CELL_UNITS) * z,
+          z * (0.2 + 0.8 * p),
+          0,
+          Math.PI * 2,
+        );
+        ctx.stroke();
+        break;
+      }
       case 'building_destroyed':
       case 'core_destroyed':
       case 'conduit_destroyed': {

@@ -807,7 +807,7 @@ describe('property: conservation', () => {
       let lost = 0;
       let stalledTicks = 0;
       let heldSeen = 0;
-      for (let seed = 1; seed <= 60; seed++) {
+      for (let seed = 1; seed <= 200; seed++) {
         const state = randomNetwork(seed);
         wired += state.conduits.length;
         const mode = seed % 2 === 0 ? 'hold' : 'drain';
