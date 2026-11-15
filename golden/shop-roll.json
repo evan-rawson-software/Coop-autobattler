@@ -421,5 +421,134 @@
         ]
       }
     }
+  },
+  {
+    "id": "shop-roll.14-p1-r2-from-round",
+    "kind": "shop-roll",
+    "description": "Test economy: an entry with fromRound 3 has weight 0 in round 2, so it is not offered.",
+    "input": {
+      "seed": 40,
+      "before": ["kit", "pve_options:r1"],
+      "round": 2,
+      "leg": "pve",
+      "players": 1,
+      "rerolls": 0,
+      "offerWeights": [
+        {
+          "def": "bld_extractor",
+          "weight": 3
+        },
+        {
+          "def": "bld_gate",
+          "weight": 2
+        },
+        {
+          "def": "bld_turret",
+          "weight": 5,
+          "fromRound": 3
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r2:pve",
+        "runState": [297422849, 734030827, 1255600137, 2775814962],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_gate t1 8", "1 bld_extractor t1 10", "2 bld_extractor t1 10", "3 bld_extractor t1 10", "4 bld_extractor t1 10"]
+            ],
+            "stream": [3270674093, 1379742919, 2633520258, 3327740618]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.15-p1-r3-from-round",
+    "kind": "shop-roll",
+    "description": "Test economy: the same entry is offered from its round (round 3).",
+    "input": {
+      "seed": 40,
+      "before": ["kit", "pve_options:r1"],
+      "round": 3,
+      "leg": "pve",
+      "players": 1,
+      "rerolls": 0,
+      "offerWeights": [
+        {
+          "def": "bld_extractor",
+          "weight": 3
+        },
+        {
+          "def": "bld_gate",
+          "weight": 2
+        },
+        {
+          "def": "bld_turret",
+          "weight": 5,
+          "fromRound": 3
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r3:pve",
+        "runState": [297422849, 734030827, 1255600137, 2775814962],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_extractor t1 10", "1 bld_gate t2 16", "2 bld_turret t1 15", "3 bld_gate t1 8", "4 bld_turret t1 15"]
+            ],
+            "stream": [2801554829, 3345023747, 3029580950, 1037883284]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.16-p1-r2-from-round-rerolls",
+    "kind": "shop-roll",
+    "description": "Test economy: gated in round 2 across three re-rolls (the re-rolls use the same gated weights).",
+    "input": {
+      "seed": 40,
+      "before": ["kit", "pve_options:r1"],
+      "round": 2,
+      "leg": "pve",
+      "players": 1,
+      "rerolls": 3,
+      "offerWeights": [
+        {
+          "def": "bld_extractor",
+          "weight": 3
+        },
+        {
+          "def": "bld_gate",
+          "weight": 2
+        },
+        {
+          "def": "bld_turret",
+          "weight": 5,
+          "fromRound": 3
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r2:pve",
+        "runState": [297422849, 734030827, 1255600137, 2775814962],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_gate t1 8", "1 bld_extractor t1 10", "2 bld_extractor t1 10", "3 bld_extractor t1 10", "4 bld_extractor t1 10"],
+              ["0 bld_gate t1 8", "1 bld_gate t1 8", "2 bld_extractor t1 10", "3 bld_extractor t1 10", "4 bld_extractor t1 10"],
+              ["0 bld_gate t1 8", "1 bld_extractor t1 10", "2 bld_extractor t1 10", "3 bld_gate t1 8", "4 bld_gate t1 8"],
+              ["0 bld_gate t1 8", "1 bld_extractor t1 10", "2 bld_extractor t1 10", "3 bld_extractor t1 10", "4 bld_gate t1 8"]
+            ],
+            "stream": [217434936, 4238642317, 1356204105, 741453712]
+          }
+        ]
+      }
+    }
   }
 ]

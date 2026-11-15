@@ -87,7 +87,8 @@ function isWallDef(content: ShopContent, def: BuildingId): boolean {
 /**
  * Roll a full set of offers. For slot 0 up to `shopOfferCount - 1`, in this
  * order: one draw picks the building by `offerWeights` (one `nextInt(sum of
- * weights)`); if that building is a wall (a `defense` of `defenseType`
+ * weights)`; an entry whose `fromRound` is above `round` counts as weight 0);
+ * if that building is a wall (a `defense` of `defenseType`
  * `wall`) that is not yet among the earlier offers' defs and two different
  * wall defs are already offered, one more draw picks again by `offerWeights`
  * with every wall def not already offered removed (one `nextInt(sum of the
@@ -102,19 +103,25 @@ export function rollOffers(
   content: ShopContent,
   economy: EconomyConfig,
 ): ShopOffer[] {
-  const buildingWeights = economy.offerWeights.map((w) => w.weight);
+  // An entry whose `fromRound` is above this round has weight 0 in every
+  // draw of this roll (it stays in the list, so the order is unchanged).
+  const gated = economy.offerWeights.map((w) => ({
+    def: w.def,
+    weight: w.fromRound > round ? 0 : w.weight,
+  }));
+  const buildingWeights = gated.map((w) => w.weight);
   const tierWeights = tierOddsFor(round, economy.tierOdds).weights;
   const offers: ShopOffer[] = [];
   const wallDefs = new Set<BuildingId>();
   for (let slot = 0; slot < economy.shopOfferCount; slot++) {
-    let entry = economy.offerWeights[pickWeightedIndex(rng, buildingWeights)];
+    let entry = gated[pickWeightedIndex(rng, buildingWeights)];
     if (entry === undefined) throw new RangeError('offerWeights is empty');
     if (
       isWallDef(content, entry.def) &&
       !wallDefs.has(entry.def) &&
       wallDefs.size >= MAX_WALL_SHAPES_PER_SHOP
     ) {
-      const allowed = economy.offerWeights.filter(
+      const allowed = gated.filter(
         (w) => !isWallDef(content, w.def) || wallDefs.has(w.def),
       );
       entry =
