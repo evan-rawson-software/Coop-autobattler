@@ -53,6 +53,19 @@ that way.
   (`sortedInts`, `sortedIntEntries`, `sortedKeys`). Object keys are likewise
   only read sorted by code point. A lint rule enforces this in `core`,
   `session/src/rules` and `session/src/bot`.
+- **Core bursts.** The line is `floor(starting * t / 100)` in integer
+  arithmetic (no floating point), compared as "health before the tick's damage
+  above the line and health after it at or below it"; use the Core's
+  *starting* health (its `coreHealths` entry), not a maximum that a modifier
+  changed. A threshold fires once, in step 4 after all damage, in the order
+  Core ascending then threshold descending, and the units enter in the next
+  tick's Production step, after the producers and before the scheduled waves,
+  using the producer spawn-cell key (class, distance, tie key) around the Core.
+  The `bursting` queue keeps its order and entries that find no room stay in
+  place. The burst split uses `share()` over `partySize * thresholds` slots,
+  Core-major; a burst counts as a wave in the strength conversion. The state
+  has no `bursting` field unless a side has bursts (a state hash of any other
+  battle must not change).
 - **Per-resource counters.** A two-input consumer (CB-5e) keeps one counter per
   resource. They are a plain list ordered by resource ID (code point order),
   the order of the tier's `costs` after `sortedKeys`, and are only ever read
@@ -336,6 +349,17 @@ file that has boss-only archetypes but none with `fromRound` 1 and
 `minPartySize` 1, so a boss can always be drawn. A file with no boss-only
 archetype at all is still accepted: every archetype is then a boss candidate,
 with no gating.
+
+An archetype's optional `brood` (MM-9d, "Core bursts") is allowed only when
+`bossOnly` is true (rejected otherwise). `brood.thresholdsPercent` is a list of
+1 to 5 integers, each from 1 to 99, **strictly descending**; `brood.sharePercent`
+is an integer from 1 to 60. Both the loader and `threats.schema.json` enforce
+this (the loader messages: "strictly descending", "must be an integer from 1 to
+99", "1 to 5 thresholds", "at most 60"). The profile's `stronghold.bursts` has
+at most `maxPartySize * 5` Core-and-threshold pairs, each with one entry per
+composition unit, `count` at least 1 (bounded by `maxUnitsPerWavePerPlot *
+partySize`); the strength they share is bounded like a wave's (step 8 of
+"Generation").
 
 A tier's `costs` (CB-5e) holds one integer from 1 to `MAX_TIER_COST` per
 resource, at most one resource per input (so at most four); the combined cost
@@ -2005,7 +2029,9 @@ exactly like the original.
       is smaller than some `costPerUnit` values, so the progress counter is
       what makes those producers work.)
 
-   After all unit producers, the **scheduled waves** enter (see "Side options").
+   After all unit producers, the **burst units** leave their Cores (a state
+   with no `bursts` option skips this), then the **scheduled waves** enter (see
+   "Side options", `bursts` and `scheduledWaves`).
    Then, **turret charging**: for each living turret,
    side 0 first and each side in instance-ID order, if `charge < costPerShot`
    (the turret's tier), go through its inputs clockwise from north and, for
@@ -2193,6 +2219,28 @@ exactly like the original.
    applied together with the unit attacks) and recorded as
    `overload_core_damage {side, core, damage}` after the `unit_attacked` events, for **every** living Core in the order side 0 then side 1, ascending player index (each takes the full amount; a destroyed Core takes nothing). A
    Core that is already destroyed takes nothing and records nothing.
+   **Core bursts (MM-9d; only a side with the `bursts` option).** After all
+   damage of the tick has been applied to the Cores (unit attacks, Overload
+   decay, and for the party's Cores everything else), for each Core of that
+   side that has bursts, in ascending player index, and for each of its
+   thresholds `t` in descending order: let `starting` be that Core's starting
+   health (its `coreHealths` entry) and `line = floor(starting * t / 100)`
+   (integer division of the exact product; `starting * t` is below 2^53 since
+   `starting <= MAX_HEALTH` and `t <= 99`). The threshold **fires** iff the
+   Core's health before this tick's damage was **above** `line` and its health
+   after it (not below 0) is **at or below** `line`. So a hit that crosses
+   several lines fires each of them in this one step, highest threshold first,
+   and a Core brought to 0 fires every threshold it was still above (every
+   threshold not fired before, since health only ever falls); a threshold
+   fires at most once, and a Core that starts at or below a line never fires
+   it. A firing appends the burst's units to the side's `bursting` queue, in
+   the profile's order (the composition order: entry `i` of the burst, its
+   `count` units one after the other) and records `burst_released {side,
+   core, thresholdPercent, units: [{unit, count}]}` (one event per Core and
+   threshold, in the order they fired). Nothing spawns in this tick: the
+   queue is walked in the Production step of the **next** tick (a step taken
+   in a tick takes effect from the next tick). The event comes before the
+   `core_destroyed` event of step 6 when the same hit destroys the Core.
 5. **Move and separate** (soft collision, issue #82). Every unit keeps its
    decision from step 3; the units that were killed in step 4 still move
    (decisions were simultaneous). The step works on arrays indexed by position
@@ -2691,6 +2739,7 @@ shot is recorded in step 3, before the step 4 attack events):
 | -------------------- | --------------------------------------------------------------- |
 | `unit_spawned`       | `unit`, `side`, `def`, `px`, `py` (the centre, sub-cell units), `building` (the producer's ID, or 0 for a scheduled wave, see "Side options"), `owner`, `target` (PP-11) |
 | `unit_retargeted`    | `unit`, `target` (the new target Core, a player index, or -1); recorded after the destruction events of step 6 |
+| `burst_released`     | `side`, `core` (the Core, a player index), `thresholdPercent`, `units` (a list of `{unit, count}` in composition order); recorded in step 4 after the damage, one per Core and fired threshold (Core ascending, threshold descending), see "Core bursts" |
 | `unit_attacked`      | `unit`, `target`, `damage`                                      |
 | `splash`             | `attacker` (the unit with `splash`), `x`, `y` (the primary target's centre, sub-cell units), `targets` (a list of `{unit, damage}` of the secondary targets in unit id order, damage after their armor; may be empty); recorded right after the attacker's `unit_attacked` event, only when the attack was on a unit |
 | `turret_fired`       | `side` (the owner), `building` (the turret), `unit`, `damage`   |
@@ -3307,6 +3356,32 @@ identically; with none the field is absent.
   side can reach added; otherwise the battle does not start (a `RangeError`
   from `createArenaSim`), see "Content bounds".
 
+- **`bursts`** (Core bursts, MM-9d "Brood"): a list `{core, thresholdPercent,
+  unit, count}`, in release order (by Core, then threshold descending as the
+  archetype lists them, then composition order), with `count >= 1` and `core`
+  a player index of the side. When any side has a non-empty `bursts` the state
+  carries a `bursting` queue (`[{side, core, unit}]`, initially `[]`); with
+  none the field is absent, so every other state is unchanged. The trigger is
+  in "One battle tick", step 4. **Leaving the Core.** In the Production step of
+  every tick, after all unit producers and before the scheduled waves, the
+  `bursting` queue is walked once in order. Each entry leaves its Core like a
+  producer's unit (step 2.2) with the Core as the "producer": its `owner` is
+  the Core's player index (the plot), its target is the Core opposite that
+  plot if it stands (else the nearest by the same rule as a producer), the
+  spawn cells are the cells 4-adjacent to the Core's footprint ordered by
+  (class, distance, tie key) for that target (the same key and tie key as a
+  producer's, no new rule), and the position is the first free offset in the
+  first spawn cell that has one. The unit has no producer and no ramp bonus
+  (`unit_spawned` has `building = 0`) and the side's `unitStrengthPercent`.
+  An entry with no free position stays in the queue, **in its place**, and
+  tries again next tick; the entries behind it are still tried this tick (so
+  the order of waiting entries never changes); none is dropped. If the Core
+  has been destroyed its footprint cells are open and units still leave from
+  them; if the battle has ended nothing spawns any more (a one-Core stronghold
+  whose Core falls ends the battle that tick, so its last bursts never
+  leave). Burst units are ordinary wave units afterwards (they retarget like
+  any unit when their Core falls).
+
 Everything else (unit behaviour, aggro, breach logic, Overload, end conditions
 and the tiebreak ladder) is unchanged.
 
@@ -3353,12 +3428,19 @@ player, rounds 1 to 15: 100, 125, 156, 195, 243, 303, 378, 472, 590, 737, 921,
 { archetype, type, round, partySize, budget, unitStrengthPercent,
   waves: [{ tick, unit, count }],
   stronghold: { cores: [{ x, y, health }],
-                buildings: [{ def, tier, x, y, rotation }] } }
+                buildings: [{ def, tier, x, y, rotation }],
+                bursts?: [{ core, thresholdPercent, unit, count }] } }
 ```
 
 `cores[p]` is the Core of plot `p`: the position of its lowest cell, in the
 stronghold's board coordinates, and its health. There are exactly `partySize`
-Cores.
+Cores. `bursts` (Core bursts, MM-9d) is present only for an archetype with
+`brood` (then non-empty) and absent for every other archetype, so their
+profiles and hashes are unchanged: each entry says that Core `core` releases
+`count` units of `unit` when its health falls to `thresholdPercent` of its
+starting health (one entry per unit type of the burst, ordered by `core`,
+then the archetype's threshold order, then composition order). The battle
+reads them as the `bursts` side option.
 
 It is everything the battle needs; there are no hidden inputs. `waves` are in
 tick order (the units of one wave share a tick, one entry per unit type);
@@ -3374,7 +3456,8 @@ stronghold), `waves` `{firstTick, intervalTicks, count, growthPercent,
 composition: [{unit, weight}], signature?}` and `stronghold`
 `{coreHealthPerBudget, wallSharePercent, turretSharePercent, layout}`.
 `bossOnly` archetypes are never offered by `pickArchetypes`; they have
-`fromRound` and `minPartySize` (see "Choosing and summarising", `pickBoss`).
+`fromRound` and `minPartySize` (see "Choosing and summarising", `pickBoss`) and
+may have `brood` `{thresholdsPercent: [..], sharePercent}` (Core bursts, below).
 Shipped values:
 
 | Archetype | Wave share | Waves (first tick, interval, count, growth) | Composition | Stronghold (Core per budget, walls, turrets, layout) |
@@ -3383,11 +3466,16 @@ Shipped values:
 | Fortress | 20 | 600, 400, 3, 130 | soldier | 300, 30, 25, `ring` |
 | Escalator | 75 | 100, 75, 8, 160 | soldier 3 : raider 1 | 300, 25, 15, `line` |
 | Boss | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
+| Brood stronghold (`arch_boss_brood`, boss only, from round 3, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 
 Rusher tests defence (early frequent waves, a small open Core); Fortress tests
 ramp and siege (late light waves, a big walled Core with turrets); Escalator
 tests speed (waves that grow fast, a wall line); Boss mixes all of it, its
-every-Nth-wave signature being all raiders (a fast swarm of small, weak units; since issue #66 raiders no longer prefer any building, they are ordinary units with different numbers: health 25, damage 8, radius 0.25 cell, move cooldown 4). Unit
+every-Nth-wave signature being all raiders (a fast swarm of small, weak units; since issue #66 raiders no longer prefer any building, they are ordinary units with different numbers: health 25, damage 8, radius 0.25 cell, move cooldown 4). The Brood stronghold has the Boss's waves and stronghold exactly, plus
+`brood: {thresholdsPercent: [75, 50, 25], sharePercent: 30}`: each of its Cores
+releases a burst of units when it falls to 75, 50 and 25 percent of its
+starting health (MM-9d). Its burst budget comes out of the stronghold budget,
+so its Cores are smaller than the Boss's. Unit
 prices for spending wave budget are `unitCost` in `threats.json` (soldier 10,
 raider 8, archer 14, drone 16; about 2 times the producer's tier 1 `costPerUnit`
 of 5, 4, 7 and 8, rounded). Building prices for the stronghold are the **tier 1** prices of the
@@ -3404,7 +3492,10 @@ the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
 `partySize` is 1 to `min(maxPartySize, mapgen.maxPartySize)`.
 
 1. `B = budget(...)`; `waveBudget = floor(B * waveSharePercent / 100)`;
-   `S = B - waveBudget`.
+   `S = B - waveBudget`. **Brood.** An archetype with `brood` sets
+   `burstBudget = floor(S * sharePercent / 100)` aside **before** walls,
+   turrets and Core health, which use `S' = S - burstBudget` wherever
+   steps 7 and the rest say `S` (an archetype without `brood` has `S' = S`).
 2. **Wave sizes.** `s_0 = 100`, `s_(k+1) = floor(s_k * growthPercent / 100)`
    for `k = 0 .. count - 1`; `sum` is their total. Wave `k` has budget `W_k =
    floor(waveBudget * s_k / sum)` (computed as quotient and remainder of
@@ -3449,12 +3540,29 @@ the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
    budget (rounding, the one-unit minimum), while the unit count stays small
    however high the budget grows. The strength is applied to health and damage
    as in `unitStats`.
+   **Bursts** (only with `brood`; `T` thresholds, `N = partySize`). The
+   burst budget is split over the `N * T` slots, slot `i = core * T + j` (Core
+   `core`, the archetype's `j`-th threshold: Core-major, thresholds in the order
+   listed): `b_i = share(burstBudget, i)` with the `share` of step 7 taken over
+   `N * T` instead of `N` (`floor(burstBudget / (N*T))`, plus 1 for the first
+   `burstBudget mod (N*T)` slots). A burst becomes units exactly as a wave of
+   budget `b_i` does with the archetype's `composition` at its template weights:
+   no jitter, no signature, no ranged mix, no random draw; the budget of an
+   entry is `floor(b_i * weight / weightSum)` (overflow-safe as in step 2), its
+   count `floor(that / cost)`, and a burst whose every count is 0 gets 1 unit
+   of the highest-weight entry (first on ties). Each burst then counts as
+   **one wave for the strength conversion**: `m` in step 5 is the largest of
+   all waves **and** bursts, `cap` is the same, and every burst's counts are
+   scaled with the waves' (same `floor(n * cap / m)`, same minimum of one unit
+   of the first entry). `stronghold.bursts` lists, for each slot in slot order,
+   each composition entry with a count above 0, as `{core, thresholdPercent,
+   unit, count}`.
 6. Waves are listed per wave tick (`firstTick + k * intervalTicks`), one entry
    per composition entry (and per appended archer or drone entry) with a
    non-zero count.
 7. **Stronghold** (`N = partySize`, `share(total, p) = floor(total / N) + (1 if
    p < total mod N else 0)`).
-   - `wallsTotal = min(floor(floor(S * wallSharePercent / 100) / wallPrice),
+   - `wallsTotal = min(floor(floor(S' * wallSharePercent / 100) / wallPrice),
      maxWallsPerPlot * N)`; `turretsTotal` likewise with the turret price and
      `maxTurretsPerPlot`. Plot `p` may place up to `share(wallsTotal, p)`
      walls and `share(turretsTotal, p)` turrets.
@@ -3465,8 +3573,8 @@ the parents), `wavesRng = T.child("waves")`, `holdRng = T.child("stronghold")`.
      is moved by `p * plotWidth`. So `ring` and `open` are one set per plot,
      and `line` has its one gap per plot, drawn from that plot's stream.
    - `spent` is the price of everything placed, over all plots. `total =
-     max(minCoreHealth * N, floor((S - spent) * coreHealthPerBudget / 100))`:
-     every unspent point of the stronghold budget, including what a full
+     max(minCoreHealth * N, floor((S' - spent) * coreHealthPerBudget / 100))`:
+     every unspent point of the stronghold budget (after the burst share), including what a full
      layout or the building caps could not absorb, becomes Core health. It is
      split evenly: `cores[p].health = share(total, p)`, so the shares differ by
      at most 1, the extra points go to the lowest plot indices, and they add
@@ -3684,13 +3792,19 @@ convention: the hash of the whole event log (see "Golden vectors").
 
 `threat-gen`: input `{seed, round, type, partySize, archetype}`; result
 `{profile, hash}` (`hash` = hash of the profile). `pve-battle`: input `{team,
-threat, seed}` with `team` a `team-state-ops` script and `threat` a
+threat, seed, coreHealths?}` (`coreHealths`, test only: replaces the generated
+starting health of the stronghold Cores by player index, so a Core can fall
+fast enough to cross several burst lines in one tick) with `team` a `team-state-ops` script and `threat` a
 `threat-gen` input; result `{ok: true, result, summary (without timeline),
 threatHash, zone, stateHash, events}` or `{ok: false, error: {code, message}}`;
 the event log is the vector's event log. Vectors: `golden/threat-gen.json`
 (every archetype at rounds 1, 5 and 10, a four-plot Escalator, a round beyond
 the budget clamp) and `golden/pve-battle.json` (each reference board against
 each archetype at round 1, and two battles the party loses) and
+Brood vectors (issue #398): three `threat-gen` cases for `arch_boss_brood`
+and three `pve-battle` cases (the four-plot party at round 3; one Core set to 12
+health so two bursts fire in one tick; four Cores set to 7, 10, 3 and 12 with
+a Core destroyed by a hit that crosses all its lines) and
 `golden/reference-matrix.json` (the `pve-battle` kind again: the siege board
 against each archetype at round 1, and every reference board against each
 archetype at round 5 (medium) and round 10 (hard)).

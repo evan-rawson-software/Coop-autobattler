@@ -162,6 +162,11 @@
       "name": "Boss",
       "description": "A strong stronghold with steady waves and a signature unit every few waves.",
       "tests": "everything at once"
+    },
+    "arch_boss_brood": {
+      "name": "Brood",
+      "description": "The boss's Cores release a burst of units each time they fall below three quarters, half and a quarter of their health.",
+      "tests": "defense at home"
     }
   },
   "events": {

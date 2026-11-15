@@ -396,10 +396,11 @@ describe('sweep of reference boards against every threat', () => {
     expect(blocks[2]).toBeGreaterThan(blocks[3] ?? 0);
     expect(blocks[4]).toBe(0);
     // With threats growing 25 percent per round (issue #145) the wins fall
-    // off slowly: 215, 121, 12 and none from round 16 on (the last win is
+    // off slowly: 270, 155, 15 and none from round 16 on (the last win is
     // the rush board's, in round 13, since waves hold archers and drones; it
-    // was round 16 before the Escalator's waves came forward).
-    expect(blocks).toEqual([215, 121, 12, 0, 0]);
+    // was round 16 before the Escalator's waves came forward). The counts
+    // include the Brood boss (issue #398); without it they were 215, 121, 12.
+    expect(blocks).toEqual([270, 155, 15, 0, 0]);
   }, 300_000);
 
   test('archetypes test what they should (criterion 3)', () => {

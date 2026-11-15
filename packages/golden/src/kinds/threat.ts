@@ -4,8 +4,11 @@
  * `threat-gen`: input `{ seed, round, type, partySize, archetype }`; result
  * `{ profile, hash }` with `hash = hashJson(profile)`.
  *
- * `pve-battle`: input `{ team, threat, seed }` where `team` is a
- * `team-state-ops` script and `threat` is a `threat-gen` input. Result on
+ * `pve-battle`: input `{ team, threat, seed, coreHealths? }` where `team` is a
+ * `team-state-ops` script and `threat` is a `threat-gen` input. The optional
+ * `coreHealths` (test only) replaces the generated starting health of the
+ * stronghold's Cores by player index, so a scenario can make a Core fall in
+ * one hit. Result on
  * success: `{ ok: true, result, summary (no timeline), threatHash, zone,
  * stateHash, events }`; the event log is the vector's event log. On a refused
  * battle `{ ok: false, error: { code, message } }`.
@@ -92,10 +95,34 @@ export function makePveBattleKind(
       );
     }
     const team = runTeamStateOps(script, content, mapgen).state;
-    const threat = generateThreat(threatInput(o['threat']), content, {
+    const generated = generateThreat(threatInput(o['threat']), content, {
       threats,
       mapgen,
     });
+    // Test-only override: `coreHealths` replaces the generated starting health
+    // of the stronghold Cores (by player index; fewer entries keep the rest).
+    const override = o['coreHealths'];
+    let threat = generated;
+    if (override !== undefined) {
+      if (
+        !Array.isArray(override) ||
+        override.some((h) => typeof h !== 'number' || !Number.isInteger(h) || h < 1)
+      ) {
+        throw new TypeError(
+          'pve-battle: coreHealths must be a list of positive integers',
+        );
+      }
+      threat = {
+        ...generated,
+        stronghold: {
+          ...generated.stronghold,
+          cores: generated.stronghold.cores.map((c, p) => ({
+            ...c,
+            health: (override[p] as number | undefined) ?? c.health,
+          })),
+        },
+      };
+    }
     const started = startPveBattle({ team, threat, seed }, content, {
       sim: simConfig,
       mapgen,

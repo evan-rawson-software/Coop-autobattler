@@ -201,6 +201,58 @@ describe('the loader', () => {
     expect(errs((a) => (boss(a)['fromRound'] = 2))).toMatch(/always be drawn/);
   });
 
+  test('brood: thresholds strictly descending, 1 to 99, at most 5; share 1 to 60; boss-only', () => {
+    const broodIx = threats.archetypes.findIndex((a) => a.brood !== undefined);
+    expect(broodIx).toBeGreaterThan(0);
+    const errs = (f: (b: Record<string, unknown>) => void): string => {
+      const r = loadThreats(
+        edit((d) => {
+          const a = (d['archetypes'] as Record<string, unknown>[])[broodIx];
+          f(a as Record<string, unknown>);
+        }),
+        ctx,
+      );
+      return r.ok ? '' : r.errors.join('\n');
+    };
+    const brood = (a: Record<string, unknown>) =>
+      a['brood'] as Record<string, unknown>;
+    expect(errs(() => undefined)).toBe('');
+    expect(errs((a) => (brood(a)['thresholdsPercent'] = [50, 75]))).toMatch(
+      /strictly descending/,
+    );
+    expect(errs((a) => (brood(a)['thresholdsPercent'] = [50, 50]))).toMatch(
+      /strictly descending/,
+    );
+    expect(errs((a) => (brood(a)['thresholdsPercent'] = [100, 50]))).toMatch(
+      /1 to 99/,
+    );
+    expect(errs((a) => (brood(a)['thresholdsPercent'] = [50, 0]))).toMatch(
+      /1 to 99/,
+    );
+    expect(errs((a) => (brood(a)['thresholdsPercent'] = []))).toMatch(
+      /1 to 5 thresholds/,
+    );
+    expect(
+      errs((a) => (brood(a)['thresholdsPercent'] = [90, 80, 70, 60, 50, 40])),
+    ).toMatch(/1 to 5 thresholds/);
+    expect(errs((a) => (brood(a)['sharePercent'] = 61))).toMatch(/at most 60/);
+    expect(errs((a) => (brood(a)['sharePercent'] = 0))).toMatch(/sharePercent/);
+    expect(errs((a) => (brood(a)['extra'] = 1))).toMatch(/unknown field/);
+    // Not on an archetype that is not boss-only.
+    const r = loadThreats(
+      edit((d) => {
+        (d['archetypes'] as Record<string, unknown>[])[0] = {
+          ...((d['archetypes'] as Record<string, unknown>[])[0] ?? {}),
+          brood: { thresholdsPercent: [50], sharePercent: 10 },
+        };
+      }),
+      ctx,
+    );
+    expect(r.ok ? '' : r.errors.join()).toMatch(
+      /"brood" is only allowed when "bossOnly" is true/,
+    );
+  });
+
   test('easy, medium and hard multipliers must increase strictly', () => {
     const errorsFor = (easy: number, medium: number, hard: number) => {
       const r = loadThreats(
@@ -619,5 +671,66 @@ describe('scaleShare', () => {
     expect(BigInt(scaleShare(big + 1, 5, 7))).toBe(
       ((BigInt(big) + 1n) * 5n) / 7n,
     );
+  });
+});
+
+describe('brood bursts (MM-9d)', () => {
+  const brood = got(threats.archetypes.find((a) => a.id === 'arch_boss_brood'));
+  const make = (partySize: number, round: number) =>
+    generateThreat(
+      { seed: 7, round, type: 'boss', partySize, archetype: brood.id },
+      content,
+      configs,
+    );
+
+  test('only the brood archetype has bursts; the others have none', () => {
+    for (const a of threats.archetypes) {
+      const p = generateThreat(
+        { seed: 7, round: 6, type: 'boss', partySize: 2, archetype: a.id },
+        content,
+        configs,
+      );
+      expect('bursts' in p.stronghold).toBe(a.brood !== undefined);
+    }
+  });
+
+  test('bursts are listed by Core, then threshold, then composition; one entry per unit type', () => {
+    const p = make(2, 5);
+    const bursts = got(p.stronghold.bursts);
+    const keys = bursts.map((b) => [b.core, b.thresholdPercent]);
+    const ths = got(brood.brood).thresholdsPercent;
+    expect(keys).toEqual(
+      [0, 1].flatMap((c) => ths.map((t) => [c, t])).slice(0, keys.length),
+    );
+    for (const b of bursts) expect(b.count).toBeGreaterThan(0);
+  });
+
+  test('the burst share comes out of the stronghold budget before walls, turrets and Core health', () => {
+    const plain = generateThreat(
+      {
+        seed: 7,
+        round: 8,
+        type: 'boss',
+        partySize: 1,
+        archetype: 'arch_boss',
+      },
+      content,
+      configs,
+    );
+    const p = make(1, 8);
+    // Same waves; the Core is smaller by the burst share (30 percent of S).
+    expect(p.waves).toEqual(plain.waves);
+    expect(p.budget).toBe(plain.budget);
+    const sum = (x: typeof p) =>
+      x.stronghold.cores.reduce((a, c) => a + c.health, 0);
+    expect(sum(p)).toBeLessThan(sum(plain));
+  });
+
+  test('four Cores and three thresholds make twelve bursts', () => {
+    // Round 14, 4 players: 12 slots, two soldiers each at strength +234.
+    const p = make(4, 14);
+    const total = got(p.stronghold.bursts).reduce((a, b) => a + b.count, 0);
+    expect(p.stronghold.bursts).toHaveLength(12);
+    expect(total).toBe(24);
   });
 });

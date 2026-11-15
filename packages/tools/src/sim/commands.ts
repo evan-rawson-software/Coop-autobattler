@@ -229,9 +229,20 @@ export function makeThreat(
   }
 }
 
+/** `, N burst units in M bursts` for a Brood threat; empty otherwise. */
+function burstsText(threat: ThreatProfile): string {
+  const bursts = threat.stronghold.bursts;
+  if (bursts === undefined || bursts.length === 0) return '';
+  const units = bursts.reduce((a, b) => a + b.count, 0);
+  const groups = new Set(
+    bursts.map((b) => `${String(b.core)}:${String(b.thresholdPercent)}`),
+  );
+  return `, ${String(units)} burst units in ${String(groups.size)} bursts`;
+}
+
 function threatLine(ctx: SimContext, threat: ThreatProfile): string {
   const s = threatSummary(threat, ctx.content);
-  return `Threat: ${threat.archetype} ${threat.type} round ${String(threat.round)}: ${String(s.totalUnits)} units in ${String(threat.waves.length)} waves (first at tick ${String(s.firstWaveTick ?? 0)}), strength +${String(threat.unitStrengthPercent)}%, Core ${String(s.coreHealth)}, ${String(s.walls)} walls, ${String(s.turrets)} turrets`;
+  return `Threat: ${threat.archetype} ${threat.type} round ${String(threat.round)}: ${String(s.totalUnits)} units in ${String(threat.waves.length)} waves (first at tick ${String(s.firstWaveTick ?? 0)}), strength +${String(threat.unitStrengthPercent)}%, Core ${String(s.coreHealth)}, ${String(s.walls)} walls, ${String(s.turrets)} turrets${burstsText(threat)}`;
 }
 
 export function pveCommand(

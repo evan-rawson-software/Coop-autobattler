@@ -10,11 +10,12 @@ import { buildSaveRecord, createGameDeps, playBotRun } from '@game/session';
 import { loadSimContext } from '../../tools/src/sim/context.ts';
 
 // Optional arguments: strategy, seed, party size, run id. The defaults give the
-// party that beats the boss; `siege 1 2` gives one
-// that loses to it (both found by playing the bot on, nothing edited).
+// party that beats the boss (`rush 2 2`); `siege 4 2` gives one that loses to
+// it (both found by playing the bot on, nothing edited; the seeds changed when
+// the Brood boss joined the draw from round 3, issue #398).
 const [
   STRATEGY = 'rush',
-  SEED_ARG = '1',
+  SEED_ARG = '2',
   PARTY_ARG = '2',
   RUN_ID = 'smoke-no-ghost-boss',
 ] = process.argv.slice(2);

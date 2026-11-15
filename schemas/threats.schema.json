@@ -190,6 +190,27 @@
             "type": "integer",
             "minimum": 1
           },
+          "brood": {
+            "description": "Optional, only when bossOnly is true. Core bursts (MM-9d): sharePercent of the stronghold budget is set aside before walls, turrets and Core health; each boss Core releases its share of it as units when its health falls to each threshold.",
+            "type": "object",
+            "required": ["thresholdsPercent", "sharePercent"],
+            "additionalProperties": false,
+            "properties": {
+              "thresholdsPercent": {
+                "description": "Percent of the Core's starting health, strictly descending, each 1 to 99, at most 5.",
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 5,
+                "items": { "type": "integer", "minimum": 1, "maximum": 99 }
+              },
+              "sharePercent": {
+                "description": "Percent of the stronghold budget set aside for the bursts.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60
+              }
+            }
+          },
           "waveSharePercent": {
             "description": "Percent of the budget spent on waves; the rest goes to the stronghold.",
             "type": "integer",
