@@ -3875,8 +3875,11 @@ gives exactly the result of a roll over the list without the gated entries.
 The round is the round of the shop being entered (re-rolls use the same
 round). At least one entry must have `fromRound` 1, so that the sum of the
 weights is positive in every round. Nothing else reads `offerWeights`: the
-starting kit and the events do not draw from it. The shipped content sets no
-`fromRound`; `shop-roll.14` to `shop-roll.16` pin it with a test list given in
+starting kit and the events do not draw from it. The shipped content sets `fromRound` 3 on its
+last five entries (issue #383, appended at the end of the list so that rolls of
+rounds 1 and 2 are unchanged): `bld_foundry` weight 6, `bld_refinery_ab` 4,
+`bld_golem_forge` 4, `bld_refinery_bc` 4, `bld_spire` 4; every other entry has
+round 1. `shop-roll.14` to `shop-roll.16` pin it with a test list given in
 the vector input as `offerWeights` (`{def, weight, fromRound?}` entries that
 replace the shipped list).
 

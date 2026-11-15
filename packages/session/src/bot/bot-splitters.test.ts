@@ -79,8 +79,10 @@ describe('Splitter placement (#178)', () => {
       );
     }
     // The ratio means nothing if nothing is bought.
-    expect(bought).toBeGreaterThanOrEqual(100);
-    expect(placedAll).toBeGreaterThanOrEqual(98);
+    // Issue #383: from round 3 the shop also offers five refining
+    // buildings the bot never buys, so a little less is bought (92 of 99).
+    expect(bought).toBeGreaterThanOrEqual(95);
+    expect(placedAll).toBeGreaterThanOrEqual(90);
     expect(placedAll / bought).toBeGreaterThanOrEqual(0.9);
   });
 
@@ -163,7 +165,9 @@ describe('shop buys only what can be placed (#178)', () => {
     const limit = {
       rush: { 1: 10, 2: 36, 4: 77 },
       fortify: { 1: 7, 2: 16, 4: 30 },
-      siege: { 1: 1, 2: 4, 4: 8 },
+      // Issue #383: the five refining buildings dilute the shop from round 3;
+      // siege party 2 now measures 7, party 4 9.
+      siege: { 1: 1, 2: 8, 4: 10 },
     } as const;
     const wanted = ['bld_extractor', 'bld_splitter', ...CONSUMER_DEFS];
     for (const strategy of ['rush', 'fortify', 'siege'] as const) {

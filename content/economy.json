@@ -45,7 +45,12 @@
     { "def": "bld_overclocker", "weight": 6 },
     { "def": "bld_armory", "weight": 12 },
     { "def": "bld_range", "weight": 16 },
-    { "def": "bld_hangar", "weight": 12 }
+    { "def": "bld_hangar", "weight": 12 },
+    { "def": "bld_foundry", "weight": 6, "fromRound": 3 },
+    { "def": "bld_refinery_ab", "weight": 4, "fromRound": 3 },
+    { "def": "bld_golem_forge", "weight": 4, "fromRound": 3 },
+    { "def": "bld_refinery_bc", "weight": 4, "fromRound": 3 },
+    { "def": "bld_spire", "weight": 4, "fromRound": 3 }
   ],
   "tierOdds": [
     { "fromRound": 1, "weights": [100, 0, 0] },

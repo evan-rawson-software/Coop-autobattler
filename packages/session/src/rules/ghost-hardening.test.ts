@@ -612,6 +612,28 @@ describe('item 3: tier plausibility', () => {
     ).toBe(true);
   });
 
+  test('the refining buildings are accepted at their prices, also in rounds 1 and 2 (issue #383)', () => {
+    const ctx = ctxOf();
+    const defs = [
+      'bld_foundry',
+      'bld_refinery_ab',
+      'bld_refinery_bc',
+      'bld_golem_forge',
+      'bld_spire',
+    ];
+    for (const def of defs) {
+      for (const round of [1, 2, 3, 5]) {
+        const bound = ghostValueBound(round, 1, content, econ, events);
+        expect(tierPrice(content, def, 1)).toBeLessThanOrEqual(bound.limit);
+        const r = validateGhostSnapshot(
+          forged(round, [{ def, tier: 1, owner: 0 }]),
+          ctx,
+        );
+        expect(r.ok, `${def} round ${String(round)}`).toBe(true);
+      }
+    }
+  });
+
   test('the bound is per owner: raises of one player do not pay for another', () => {
     const ctx = ctxOf(
       makeGameDeps({

@@ -420,6 +420,19 @@ function buildScore(s: Strategy, def: string, tier: number, rng: Rng): number {
   return base === 0 ? 0 : base * 10 + tier * s.tierBonus;
 }
 
+/**
+ * Buildings the bot cannot wire yet (two inputs, refined resources; issue
+ * #384): it never buys them, so nothing waits in the stash for a layout that
+ * cannot place it.
+ */
+const UNSUPPORTED = new Set([
+  'bld_foundry',
+  'bld_refinery_ab',
+  'bld_refinery_bc',
+  'bld_golem_forge',
+  'bld_spire',
+]);
+
 const CONSUMERS = [
   'bld_barracks',
   'bld_turret',
@@ -676,6 +689,7 @@ function shop(d: Driver, s: Strategy, rng: Rng, opts: BotOptions): void {
         }
         // A style that does not connect places no collector at all.
         if (o.def === 'bld_extractor' && !s.layout.connect) score = 0;
+        if (UNSUPPORTED.has(o.def)) score = 0;
         if (score > bestScore) {
           bestScore = score;
           best = slot;
