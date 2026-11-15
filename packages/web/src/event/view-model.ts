@@ -249,9 +249,11 @@ export interface FollowOption {
 
 export interface BuildingOption {
   readonly id: number;
+  /** The building definition id (its icon). */
+  readonly def: string;
   readonly name: string;
   readonly placed: boolean;
-  /** "On the board at column 4, row 7" or "In your inventory". */
+  /** "On the board" or "In inventory". */
   readonly where: string;
   readonly tier: number;
   readonly newTier: number;
@@ -362,10 +364,7 @@ export function followUpView(
         typeof raw['newTier'] === 'number' ? raw['newTier'] : tier + 1;
       const price = typeof raw['price'] === 'number' ? raw['price'] : 0;
       const placedB = run.team.buildings.find((b) => b.id === raw['building']);
-      const where =
-        placedB === undefined
-          ? 'In inventory'
-          : `Board (${String(placedB.x)}, ${String(placedB.y)})`;
+      const where = placedB === undefined ? 'In inventory' : 'On the board';
       const name = buildingName(content, def);
       // Identical stash buildings are one row that upgrades the first of them.
       if (placedB === undefined) {
@@ -411,6 +410,7 @@ export function followUpView(
         skip: false,
         building: {
           id: typeof raw['building'] === 'number' ? raw['building'] : -1,
+          def,
           name,
           placed: placedB !== undefined,
           where,
