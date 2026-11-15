@@ -106,6 +106,19 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 2px;
+  scrollbar-width: thin;
+}
+
+/* Short windows: the rail's panels sit closer together, so a selected
+   building's buttons stay in view (issue #351). */
+@media (max-height: 800px) {
+  .frame-info {
+    gap: 6px;
+  }
+
+  .frame-info .panel-body {
+    padding: 0.35rem 0.7rem;
+  }
 }
 
 .frame-info > .panel {

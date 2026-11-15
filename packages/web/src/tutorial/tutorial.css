@@ -213,3 +213,20 @@
     animation: none;
   }
 }
+
+/* Short windows: a tighter coach card and checklist leave room for the panels
+   below them, such as Selected with its buttons (issue #351). */
+@media (max-height: 800px) {
+  .tutorial-card {
+    padding: 0.45rem 0.7rem;
+    gap: 4px;
+  }
+
+  .tut-checklist {
+    padding: 0.35rem 0.7rem;
+  }
+
+  .tut-checklist ol {
+    gap: 1px;
+  }
+}
