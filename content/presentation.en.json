@@ -651,6 +651,8 @@
       "battleReady": "Ready",
       "battleContinueEvent": "Continue to reward",
       "battleContinue": "Continue",
+      "battleContinueRunOver": "See run summary",
+      "battleLastLife": "That was your last life. The run is over.",
       "battleReadyDone": "Ready ✓",
       "uiCameraPanel": "Camera",
       "uiCameraCenter": "Center",

@@ -840,6 +840,8 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['battleReady', {}, 'Ready'],
   ['battleReadyDone', {}, 'Ready ✓'],
   ['battleContinue', {}, 'Continue'],
+  ['battleContinueRunOver', {}, 'See run summary'],
+  ['battleLastLife', {}, 'That was your last life. The run is over.'],
   ['battleContinueEvent', {}, 'Continue to reward'],
   ['battleNoBuildings', {}, 'You had no buildings on the board.'],
   ['battleStrengthUnit', {}, 'Total health of all units'],

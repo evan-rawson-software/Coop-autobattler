@@ -1723,6 +1723,30 @@ export async function runRunSmoke({
         );
       }
     }
+    if (s.step === 'pvp_summary' && s.lives === 1) {
+      await page.waitForFunction(() => window.__debug?.battle?.phase, null, {
+        timeout: slow(20000),
+      });
+      if (
+        (await page.evaluate(() => window.__debug.battle.phase())) === 'playing'
+      ) {
+        await page.click('#skip');
+      }
+      await page.waitForFunction(
+        () => window.__debug?.battle?.phase() === 'summary',
+      );
+      const card = await page.locator('#result-banner').innerText();
+      if (/Defeat/.test(card)) {
+        const btn = await page.locator('#battle-ready').innerText();
+        check(
+          /last life\. The run is over/.test(card) &&
+            !/gold/.test(card) &&
+            /^See run summary/.test(btn),
+          `last-life defeat card says the run is over, shows no gold, button "${btn.trim()}"`,
+        );
+        await shot('run-last-life-defeat');
+      }
+    }
     await advance().catch(async (e) => {
       // The last battle's Ready can end the run: the screen is then Run over.
       if (!(await page.locator('#run-over').count())) throw e;

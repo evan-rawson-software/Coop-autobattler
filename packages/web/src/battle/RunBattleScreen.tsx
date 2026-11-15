@@ -66,7 +66,7 @@ export function RunBattleScreen(props: { run: RunHandle }) {
   const endsRun =
     b.kind === 'pvp' && !b.won && run.lives - deps.rules.pvpLossLifeCost <= 0;
   const continueText = endsRun
-    ? screenText(screenTexts, 'battleContinue')
+    ? screenText(screenTexts, 'battleContinueRunOver')
     : screenText(screenTexts, 'battleContinueEvent');
   return (
     <BattleView
@@ -88,6 +88,7 @@ export function RunBattleScreen(props: { run: RunHandle }) {
       }}
       onReady={ready}
       continueText={continueText}
+      endsRun={endsRun}
       topBarExtra={
         error === null ? undefined : (
           <span class="error" role="alert">
