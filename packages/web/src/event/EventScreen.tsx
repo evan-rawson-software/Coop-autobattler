@@ -302,20 +302,20 @@ export function EventResolveScreen(props: { run: RunHandle }) {
                   }}
                 >
                   <span class="slot-key">{i + 1}</span>
-                  {shrine ? (
-                    <header class="event-card-head">
-                      <span class="event-icon" aria-hidden="true">
+                  <header class="event-card-head">
+                    <span class="event-icon" aria-hidden="true">
+                      {o.building === null ? (
                         <SpriteIcon
                           name="ui_event_shrine"
                           scale={2}
                           fallback="✦"
                         />
-                      </span>
-                      <h2 data-field="title">{o.title}</h2>
-                    </header>
-                  ) : (
+                      ) : (
+                        <SpriteIcon name={o.building.def} size={40} />
+                      )}
+                    </span>
                     <h2 data-field="title">{o.title}</h2>
-                  )}
+                  </header>
                   {o.building === null ? null : (
                     <p class="workshop-where" data-field="where">
                       {o.building.where}

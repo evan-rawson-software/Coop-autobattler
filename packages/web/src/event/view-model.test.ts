@@ -236,7 +236,7 @@ describe('follow-ups', () => {
     const cards = (v?.options ?? []).filter((o) => !o.skip);
     expect(cards.length).toBeGreaterThan(0);
     for (const o of cards) {
-      expect(o.building?.where).toMatch(/^(Board \(\d+, \d+\)|In inventory)$/);
+      expect(o.building?.where).toMatch(/^(On the board|In inventory)$/);
       expect(o.building?.newTier).toBe((o.building?.tier ?? 0) + 1);
       expect(o.lines).toContain(`${String(o.building?.price)} gold`);
     }
@@ -284,12 +284,16 @@ describe('follow-ups', () => {
     expect(v?.options.at(-1)?.affordable).toBe(true);
   });
 
-  test('identical buildings are told apart by their board position', () => {
+  test('a placed building reads "On the board", with no coordinates', () => {
     const s = pickEvent('workshop') as RunState;
     const v = followUpView(s, config, content, 0, realDeps());
-    const placed = (v?.options ?? []).filter((o) => o.building?.placed);
-    const wheres = placed.map((o) => o.building?.where);
-    expect(new Set(wheres).size).toBe(wheres.length);
+    for (const o of v?.options ?? []) {
+      if (o.building === null) continue;
+      expect(o.lines.join(' ')).not.toMatch(/\(\d+, \d+\)/);
+      expect(o.building.where).toBe(
+        o.building.placed ? 'On the board' : 'In inventory',
+      );
+    }
   });
 
   test('with a party, a chosen player sees who is still choosing, not what', () => {
