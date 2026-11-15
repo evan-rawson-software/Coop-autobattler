@@ -594,7 +594,6 @@ export const SCREEN_TEXT_SLOTS: Readonly<Record<string, readonly string[]>> = {
   choiceTitle: [],
   choiceRewardUnit: [],
   choiceRewardUnitEach: [],
-  choiceBest: [],
   choiceStakes: [],
   choiceOverloadShared: ['at'],
   eventTrayPick: [],

@@ -641,7 +641,6 @@
       "choiceTitle": "Choose an opponent",
       "choiceRewardUnit": "gold if you win",
       "choiceRewardUnitEach": "gold each if you win",
-      "choiceBest": "Best for your first fight",
       "choiceStakes": "Losing this battle costs no life. You just don't get the gold.",
       "choiceOverloadShared": "At {at} both Cores start losing health (Overload). Hover a card to see whose falls first.",
       "eventTrayPick": "Pick one. It applies right away.",

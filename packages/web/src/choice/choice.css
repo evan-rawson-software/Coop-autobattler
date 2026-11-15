@@ -9,22 +9,11 @@
   justify-content: center;
   gap: 1rem;
   padding: 1rem 1.25rem;
-  /* The board, dimmed: a faint grid under a wash of the surface colour. */
-  background-color: var(--surface);
-  background-image:
-    linear-gradient(
-      color-mix(in srgb, var(--border) 45%, transparent) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--border) 45%, transparent) 1px,
-      transparent 1px
-    );
-  background-size: 36px 36px;
+  background: var(--surface);
 }
 
-.pve-cards > li {
+.pve-cards > li,
+.event-cards > li {
   display: flex;
 }
 
@@ -64,16 +53,6 @@
 h4.pve-archetype {
   margin: 0;
   font-size: 1.1rem;
-}
-
-.pve-badge {
-  margin-left: auto;
-  padding: 0.1rem 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--accent-ink);
-  background: var(--accent);
-  border-radius: 999px;
 }
 
 .pve-card .facts {
@@ -120,7 +99,7 @@ h4.pve-archetype {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.1rem;
   flex: 0 1 auto;
-  align-items: start;
+  align-items: stretch;
   min-height: 0;
 }
 
@@ -224,7 +203,15 @@ h4.pve-archetype {
   background: var(--border);
 }
 
-.pip.on {
+.pips[data-level='1'] .pip.on {
+  background: var(--ok);
+}
+
+.pips[data-level='2'] .pip.on {
+  background: var(--warn);
+}
+
+.pips[data-level='3'] .pip.on {
   background: var(--bad);
 }
 

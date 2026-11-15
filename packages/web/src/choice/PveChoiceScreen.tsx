@@ -48,7 +48,6 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
   const votedId = v?.cards.find((c) => c.voted)?.id ?? null;
   const target = marked ?? votedId;
   const targetCard = v?.cards.find((c) => c.id === target);
-  const firstFight = run.round === 1 && isTutorialRun(props.run.runId);
 
   if (v === null) {
     return (
@@ -159,11 +158,6 @@ export function PveChoiceScreen(props: { run: RunHandle }) {
                         <span key={n} class={n <= c.level ? 'pip on' : 'pip'} />
                       ))}
                     </span>
-                    {firstFight && c.difficulty === 'Easy' ? (
-                      <span class="pve-badge" data-field="best">
-                        {screenText(screenTexts, 'choiceBest')}
-                      </span>
-                    ) : null}
                   </header>
                   <div class="pve-reward">
                     <strong data-field="reward">{c.rewardAmount}</strong>
