@@ -41,6 +41,10 @@
       "name": "Aether Refinery",
       "description": "Combines {res_b} and {res_c} into Aether and sends it down its output conduit. Needs both at once; without one it waits."
     },
+    "bld_golem_forge": {
+      "name": "Golem forge",
+      "description": "Consumes {res_ab_refined} to raise golems: huge, slow, armored units that shrug off weak hits."
+    },
     "bld_wall_i": {
       "name": "Wall (I)",
       "description": "Blocks enemy movement. Covers four cells in a I shape; rotate it to fit."
@@ -106,6 +110,10 @@
     "unit_heavy": {
       "name": "Heavy",
       "description": "A slow-built bruiser: far tougher and harder-hitting than a soldier. Marches on the enemy Core and attacks whatever blocks the way."
+    },
+    "unit_golem": {
+      "name": "Golem",
+      "description": "Huge and slow, with armor 3: every hit on it deals 3 less (at least 1). Marches on the enemy Core and attacks whatever blocks the way."
     },
     "unit_archer": {
       "name": "Archer",

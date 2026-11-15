@@ -3,6 +3,7 @@
 import { addInt, divFloor, mulInt } from './int.js';
 import {
   CELL_UNITS,
+  MAX_ARMOR,
   MAX_DAMAGE,
   MAX_HEALTH,
   MAX_UNIT_RADIUS,
@@ -52,6 +53,11 @@ export interface UnitDef {
    * unit's `reach` is its range).
    */
   readonly attackType: AttackType;
+  /**
+   * Taken off every hit on this unit, at least 1 left for a hit above 0
+   * (CB-5h). Optional in the file; 0 when absent.
+   */
+  readonly armor: number;
 }
 
 /** Sub-cell units a unit walks per tick: `floor(CELL_UNITS / moveCooldownTicks)`. */
@@ -94,6 +100,7 @@ const KNOWN_KEYS = new Set([
   'reach',
   'flying',
   'attackType',
+  'armor',
 ]);
 
 /** Validate parsed unit data (the contents of units.json). */
@@ -154,6 +161,10 @@ export function loadUnits(data: unknown): UnitLoadResult {
     } else if (flying === true && attackType !== 'ranged') {
       errors.push(`${label}: a "flying" unit must have attackType "ranged".`);
     }
+    const armor =
+      entry['armor'] === undefined
+        ? 0
+        : readInt(entry, 'armor', 0, label, errors, MAX_ARMOR);
     rejectUnknownKeys(entry, KNOWN_KEYS, label, errors);
     if (
       errors.length === before &&
@@ -166,6 +177,7 @@ export function loadUnits(data: unknown): UnitLoadResult {
       collisionRadius !== undefined &&
       reach !== undefined &&
       flying !== undefined &&
+      armor !== undefined &&
       (attackType === 'melee' || attackType === 'ranged')
     ) {
       defs.push({
@@ -179,6 +191,7 @@ export function loadUnits(data: unknown): UnitLoadResult {
         reach,
         flying,
         attackType,
+        armor,
       });
     }
   });
