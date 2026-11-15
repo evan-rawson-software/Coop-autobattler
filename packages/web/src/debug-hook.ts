@@ -139,7 +139,13 @@ export interface BuildDebug {
   counts: () => { undo: number; redo: number; actions: number };
   /** Client pixel position of the centre of a board cell. */
   cellToScreen: (x: number, y: number) => { x: number; y: number } | null;
-  problems: () => readonly { id: string; kind: string; text: string }[];
+  problems: () => readonly {
+    id: string;
+    kind: string;
+    text: string;
+    /** A warning (not a reminder or a partly-fed note). */
+    warning: boolean;
+  }[];
   legalCore: () => readonly { x: number; y: number }[];
   acting: () => number;
   /** Border link halves with their state (joined, open, same_kind). */

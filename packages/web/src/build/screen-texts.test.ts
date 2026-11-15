@@ -349,8 +349,14 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['playerFallback', { number: '@number' }, 'Player @number'],
   [
     'problemUnderSupplied',
-    { name: '@name', gets: '@gets', needs: '@needs' },
-    '@name gets @gets/s of the @needs/s it needs.',
+    {
+      name: '@name',
+      percent: '@percent',
+      gets: '@gets',
+      needs: '@needs',
+      resource: '@resource',
+    },
+    '@name runs at @percent% (@gets of @needs @resource/s).',
   ],
   [
     'reasonPlayerToAct',
@@ -592,7 +598,6 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['uiCheckMore', { n: '@n' }, 'and @n more'],
   ['uiFixMissingInput', {}, 'Drag a conduit into it from a source.'],
   ['uiFixStarved', {}, 'Check where its conduit starts.'],
-  ['uiFixUnderSupplied', {}, 'Feed it from another source.'],
   ['uiFixLostOutput', {}, 'Drag a conduit from it to a building.'],
   ['uiFixStalled', {}, 'Send its output to another building too.'],
   ['uiFixBroken', {}, 'Fix the border link below.'],

@@ -92,7 +92,7 @@ describe('texts come from the presentation file', () => {
         .filter((p) => p.kind === 'under_supplied')
         .map((p) => p.text);
     const [own, partner] = text(content);
-    expect(own).toContain('gets 0.10/s of the 0.50/s it needs.');
+    expect(own).toContain('runs at 20% (0.10 of 0.50 input/s).');
     expect(partner).toBe('Player 2 has 1 under-supplied building.');
     const edited = text(
       withScreens({

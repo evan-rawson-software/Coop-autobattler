@@ -2,7 +2,7 @@ import type { Cell } from '@game/core';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { content } from '../content.js';
 import { proposePath } from './autoroute.js';
-import { deriveChecklist, unpowered } from './checklist.js';
+import { deriveChecklist, isWarning, unpowered } from './checklist.js';
 import { newStashIds, noteRound, resetNewItems } from './new-items.js';
 import { nextFightOf } from './next-fight.js';
 import { simConfig } from './setup.js';
@@ -115,6 +115,28 @@ describe('the Before you fight checklist', () => {
     const list = deriveChecklist(team, content, [], null, 0, 4);
     expect(list.items).toEqual([]);
     expect(list.okHidden).toBe(0);
+  });
+});
+
+describe('a partly fed building is information, not a warning', () => {
+  test('under_supplied is an info line without a fix and is no warning', () => {
+    const problems = [
+      {
+        id: 'under:3',
+        kind: 'under_supplied' as const,
+        text: 'Turret runs at 50% (0.50 of 1.00 Power/s).',
+        focus: { x: 1, y: 1 },
+        building: 3,
+      },
+    ];
+    const team = { buildings: [], stash: [] } as never;
+    const list = deriveChecklist(team, content, problems, null, 0);
+    expect(list.items[0]?.state).toBe('info');
+    expect(list.items[0]?.fix).toBeNull();
+    expect(problems.some(isWarning)).toBe(false);
+    expect(
+      isWarning({ ...(problems[0] as (typeof problems)[0]), kind: 'starved' }),
+    ).toBe(true);
   });
 });
 

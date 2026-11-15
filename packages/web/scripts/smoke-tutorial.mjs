@@ -382,19 +382,11 @@ export async function runTutorialSmoke({ page, baseUrl, check, shot, settle }) {
       (await page.locator('.tut-checklist li.done').count()) === 4,
     `tutorial: a powered Turret finishes step 4 (${await title()})`,
   );
-  // The coach card never says the base is ready while a blocking warning is
-  // listed. Under-supply doesn't block: the tutorial's lone Power Extractor
-  // leaves the Turret under-supplied, and the card still says ready.
+  // The coach card never says the base is ready while a warning is listed.
+  // Partly fed is a note, not a warning: the tutorial's lone Power Extractor
+  // leaves the Turret at 50%, and the card still says ready.
   const warnings = await page.evaluate(
-    () =>
-      window.__debug.build
-        .problems()
-        .filter(
-          (p) =>
-            p.kind !== 'stash' &&
-            p.kind !== 'free_nodes' &&
-            p.kind !== 'under_supplied',
-        ).length,
+    () => window.__debug.build.problems().filter((p) => p.warning).length,
   );
   const cardText = await card.innerText();
   check(
