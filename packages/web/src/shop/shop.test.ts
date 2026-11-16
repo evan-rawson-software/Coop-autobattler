@@ -169,6 +169,38 @@ describe('the shop route setup', () => {
     }
   });
 
+  test('a boss next battle names the boss, its mechanic and a counter', async () => {
+    const run = await loadShopRun({ next: 'pvp', seed: 11 });
+    const base = run.session.run;
+    const fixed = (
+      boss?: string,
+      kind: 'boss' | 'ghost' = 'boss',
+    ): RunState => ({
+      ...base,
+      pvpOpponent: {
+        round: base.round,
+        kind,
+        label: 'the boss',
+        ghost: null,
+        ...(boss === undefined ? {} : { boss }),
+      },
+    });
+    const view = nextBattleView(fixed('arch_boss_pylons'), run.deps);
+    expect(view?.title).toBe('Boss battle next');
+    expect(view?.boss).toBe(true);
+    expect(view?.bossInfo?.name).toBe('Pylons');
+    expect(view?.bossInfo?.mechanic).toMatch(/pylons/);
+    expect(view?.bossInfo?.counter).toMatch(/^Counter: Bring enough units/);
+    // A save from before the boss was chosen: a generic boss line.
+    const older = nextBattleView(fixed(), run.deps);
+    expect(older?.boss).toBe(true);
+    expect(older?.bossInfo?.id).toBeNull();
+    // A ghost says nothing more than "Rival party".
+    const ghost = nextBattleView(fixed(undefined, 'ghost'), run.deps);
+    expect(ghost?.title).toBe('Rival party');
+    expect(ghost?.bossInfo).toBeNull();
+  });
+
   test('the shop view lists only the viewer own offers', async () => {
     const { s } = await shopSession();
     const v = buildShopView(s.run, ME, ctx);

@@ -16,6 +16,12 @@ import { downstreamOf } from '../build/refining.js';
 import { screenText, screenTexts } from '../build/texts.js';
 import { resourceName } from '../build/view-model.js';
 import type { WebContent } from '../content.js';
+import {
+  burstUnitsText,
+  bossMarks,
+  sharedPool,
+  standingPylons,
+} from './boss.js';
 import type { Playback, BattleRecord } from './playback.js';
 
 export type Side = 0 | 1;
@@ -106,6 +112,10 @@ export type MomentKind =
   | 'turret'
   | 'junction'
   | 'production'
+  | 'burst'
+  | 'pylon'
+  | 'shield'
+  | 'champion'
   | 'core_half'
   | 'core_quarter'
   | 'core_destroyed';
@@ -154,6 +164,18 @@ export function placed(record: BattleRecord, side: Side): number {
   return record.initialTeams[side].cores.filter((c) => c !== null).length;
 }
 
+/** "Core", or "Core 2" when the side placed several. */
+function coreWord(
+  record: BattleRecord,
+  coreName: string,
+  side: Side,
+  player: number,
+): string {
+  return placed(record, side) > 1
+    ? `${coreName} ${String(player + 1)}`
+    : coreName;
+}
+
 function coreFocus(
   record: BattleRecord,
   content: WebContent,
@@ -189,6 +211,7 @@ export function deriveMoments(
   const index = buildingIndex(record, content);
   const out: Moment[] = [];
   const firstWall: [boolean, boolean] = [false, false];
+  const champions = new Set<string>();
   out.push({
     tick: 0,
     kind: 'zone',
@@ -280,6 +303,65 @@ export function deriveMoments(
           focus,
         });
       }
+    } else if (e.type === 'burst_released') {
+      const side: Side = e.side === 0 ? 0 : 1;
+      out.push({
+        tick: e.tick + 1,
+        kind: 'burst',
+        side,
+        text: screenText(screenTexts, 'battleLogBurst', {
+          who: labels.side[side],
+          core: coreWord(record, labels.coreName, side, e.core),
+          percent: String(e.thresholdPercent),
+          units: burstUnitsText(e.units, content),
+        }),
+        focus: coreFocus(record, content, g, side, e.core),
+      });
+    } else if (e.type === 'pylon_destroyed' && e.standing > 0) {
+      // The last pylon is told by the shield line that follows it.
+      const side: Side = e.side === 0 ? 0 : 1;
+      out.push({
+        tick: e.tick + 1,
+        kind: 'pylon',
+        side,
+        text: screenText(screenTexts, 'battleLogPylonDown', {
+          who: labels.side[side],
+          count: String(e.standing),
+        }),
+        focus: coreFocus(record, content, g, side, e.core),
+      });
+    } else if (e.type === 'core_shield_down') {
+      const side: Side = e.side === 0 ? 0 : 1;
+      out.push({
+        tick: e.tick + 1,
+        kind: 'shield',
+        side,
+        text: screenText(screenTexts, 'battleLogShieldDown', {
+          who: labels.side[side],
+          core: coreWord(record, labels.coreName, side, e.core),
+        }),
+        focus: coreFocus(record, content, g, side, e.core),
+      });
+    } else if (
+      e.type === 'unit_spawned' &&
+      record.champions[e.unit] !== undefined
+    ) {
+      // One line per wave: the first champion of a tick and unit type.
+      const key = `${String(e.tick)}:${e.def}`;
+      if (champions.has(key)) continue;
+      champions.add(key);
+      const side: Side = e.side === 0 ? 0 : 1;
+      out.push({
+        tick: e.tick + 1,
+        kind: 'champion',
+        side,
+        text: screenText(screenTexts, 'battleLogChampion', {
+          who: labels.side[side],
+          unit: (content.presentation.get(e.def)?.name ?? e.def).toLowerCase(),
+          health: String(record.champions[e.unit] ?? 0),
+        }),
+        focus: null,
+      });
     } else if (e.type === 'core_destroyed') {
       const side: Side = e.side === 0 ? 0 : 1;
       out.push({
@@ -348,6 +430,8 @@ export interface CoreNow {
   readonly player: number;
   readonly hp: number;
   readonly max: number;
+  /** Boss burst thresholds (percent of health) drawn on its bar, high to low. */
+  readonly marks?: readonly number[];
 }
 
 export interface SideStats {
@@ -355,6 +439,14 @@ export interface SideStats {
   readonly coreMax: number;
   /** Each placed Core's health now, by player. */
   readonly cores: readonly CoreNow[];
+  /**
+   * The shared pool of linked Cores (MM-9d): one health for all of them, whose
+   * own `cores` entries then only say whether each still stands. Null for any
+   * other side.
+   */
+  readonly pool: { readonly hp: number; readonly max: number } | null;
+  /** Pylons standing and in all (MM-9d, "Pylons"); null for any other side. */
+  readonly pylons: { readonly standing: number; readonly total: number } | null;
   readonly unitsAlive: number;
   readonly unitsLost: number;
   readonly rampSteps: number;
@@ -430,21 +522,33 @@ function computeSideStats(
   const seconds = window / ticksPerSecond;
   const coreHp =
     rec.coreHp[side][Math.min(tick, rec.coreHp[side].length - 1)] ?? 0;
+  const marks = side === 1 ? bossMarks(sim) : null;
   const cores: CoreNow[] = [];
   sim.health.forEach((h, i) => {
     if (isCoreHealth(h) && h.side === side) {
+      const burst = marks?.bursts.get(h.core);
       cores.push({
         player: h.core,
         hp: Math.max(0, h.hp),
         max: rec.initialHealth[i]?.hp ?? 0,
+        ...(burst === undefined ? {} : { marks: burst }),
       });
     }
   });
   cores.sort((a, b) => a.player - b.player);
+  const pylons =
+    marks === null || marks.pylons.length === 0
+      ? null
+      : {
+          standing: standingPylons(marks, sim.health),
+          total: marks.pylons.length,
+        };
   return {
     coreHp,
     coreMax: rec.coreMax[side],
     cores,
+    pool: sharedPool(sim, rec, side),
+    pylons,
     unitsAlive: alive,
     unitsLost: sim.unitsDied[side],
     rampSteps: ramp,

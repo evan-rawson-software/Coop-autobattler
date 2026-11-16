@@ -103,7 +103,9 @@ export function roundRows(history: readonly RoundRecord[]): RoundRow[] {
       pvp === null
         ? none
         : pvp.opponent.kind === 'boss'
-          ? bossName(opponentName('boss', pvp.opponent.label))
+          ? bossName(
+              opponentName('boss', pvp.opponent.boss ?? pvp.opponent.label),
+            )
           : opponentName(pvp.opponent.kind, pvp.opponent.label);
     return {
       round: r.round,

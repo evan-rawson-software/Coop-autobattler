@@ -1270,6 +1270,19 @@ export function NextFightPanel(props: { fight: NextFight }) {
       <p class="next-title" data-field="next-title">
         {props.fight.title}
       </p>
+      {props.fight.boss === null ? null : (
+        <>
+          <p class="next-boss" data-field="next-boss">
+            {props.fight.boss.name}
+          </p>
+          <p class="next-boss-line" data-field="next-boss-mechanic">
+            {props.fight.boss.mechanic}
+          </p>
+          <p class="next-boss-line" data-field="next-boss-counter">
+            {props.fight.boss.counter}
+          </p>
+        </>
+      )}
       <p class="muted next-stakes" data-field="next-stakes">
         {props.fight.stakes}
       </p>

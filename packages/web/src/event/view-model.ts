@@ -102,7 +102,7 @@ export function battleHeader(
   if (rec === null) return null;
   const who =
     rec.opponent.kind === 'boss'
-      ? bossName(opponentName('boss', rec.opponent.label))
+      ? bossName(opponentName('boss', rec.opponent.boss ?? rec.opponent.label))
       : opponentName(rec.opponent.kind, rec.opponent.label);
   const cost = deps.rules.pvpLossLifeCost;
   const loss = rewards === undefined ? null : rewards.pvpLoss;

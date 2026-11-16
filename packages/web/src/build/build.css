@@ -459,6 +459,16 @@ li[data-check='ok'] .check-text strong {
   font-weight: 700;
 }
 
+.frame-info .next-boss {
+  margin: 0.2rem 0 0;
+  font-weight: 700;
+}
+
+.frame-info .next-boss-line {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+}
+
 .frame-info .next-stakes {
   margin: 0.15rem 0 0;
   font-size: 0.85rem;

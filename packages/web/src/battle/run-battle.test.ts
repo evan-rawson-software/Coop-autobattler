@@ -52,6 +52,9 @@ describe('the battle of a run', () => {
     if (!r.ok) return;
     expect(r.value.kind).toBe('pvp');
     expect(r.value.opponent).toMatchObject({ kind: 'boss', label: 'Boss' });
+    // The boss met is the one the round record keeps.
+    expect(r.value.opponent.boss).toBe(run.thisRound.pvp?.opponent.boss);
+    expect(r.value.opponent.boss).toMatch(/^arch_boss/);
     expect(r.value.battle.kind).toBe('pve');
     const made = simulateRecord(r.value.battle, content, battleConfig);
     expect(made.ok).toBe(true);
