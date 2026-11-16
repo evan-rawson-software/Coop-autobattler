@@ -57,7 +57,10 @@ export {
   drillHandler,
   pactHandler,
   richVeinHandler,
+  blueprintHandler,
+  BLUEPRINT_PROMPT,
   RICH_VEIN_PROMPT,
+  blueprintChoice,
   richVeinChoice,
   richVeinCell,
   type ChooseResult,
@@ -79,11 +82,16 @@ export {
   fixedBattle,
   stubBattle,
 } from './rules/defaults.js';
-export { SHOP_EFFECT_KINDS, shopEffectCount } from './rules/shop-effects.js';
+export {
+  SHOP_EFFECT_KINDS,
+  heldOfferDef,
+  shopEffectCount,
+} from './rules/shop-effects.js';
 export {
   createEconomyDeps,
   economyHandlers,
   economyHooks,
+  heldSlot,
   playerShopLabel,
   readShop,
   type ShopData,

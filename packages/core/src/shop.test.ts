@@ -10,6 +10,8 @@ import { listLegalCorePositions } from './map.js';
 import { Rng } from './rng.js';
 import {
   buyOffer,
+  offerWeightsAt,
+  rareOfferDefs,
   rerollOffers,
   rollOffers,
   sellFromStash,
@@ -436,5 +438,44 @@ describe('alternate configuration', () => {
     expect(
       rerollOffers({ gold: 6, offers }, Rng.fromSeed(1), 1, content, alt),
     ).toEqual({ ok: false, reason: 'not_enough_gold' });
+  });
+});
+
+describe('offerWeightsAt and rareOfferDefs (Blueprint, RS-4i5)', () => {
+  test('offerWeightsAt gates by fromRound and keeps the file order', () => {
+    const late = economy.offerWeights.filter((w) => w.fromRound > 1);
+    expect(late.length).toBeGreaterThan(0);
+    const early = offerWeightsAt(economy, 1);
+    expect(early.map((w) => w.def)).toEqual(
+      economy.offerWeights.map((w) => w.def),
+    );
+    for (const w of late) {
+      expect(early.find((e) => e.def === w.def)?.weight).toBe(0);
+      expect(
+        offerWeightsAt(economy, w.fromRound).find((e) => e.def === w.def)
+          ?.weight,
+      ).toBe(w.weight);
+    }
+  });
+
+  test('rare = in the roll at this round and weight at most the limit, once each', () => {
+    const rows = (list: [string, number, number][]) => ({
+      offerWeights: list.map(([def, weight, fromRound]) => ({
+        def,
+        weight,
+        fromRound,
+      })),
+    });
+    const e = rows([
+      ['bld_a', 10, 1],
+      ['bld_b', 2, 1],
+      ['bld_c', 3, 4],
+      ['bld_b', 2, 1],
+      ['bld_d', 4, 1],
+    ]);
+    expect(rareOfferDefs(e, 1, 4)).toEqual(['bld_b', 'bld_d']);
+    expect(rareOfferDefs(e, 4, 4)).toEqual(['bld_b', 'bld_c', 'bld_d']);
+    expect(rareOfferDefs(e, 4, 2)).toEqual(['bld_b']);
+    expect(rareOfferDefs(e, 4, 1)).toEqual([]);
   });
 });

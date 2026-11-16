@@ -373,6 +373,56 @@ describe('follow-ups', () => {
     ).toBe('Drill skipped.');
   });
 
+  test('a Blueprint card, its follow-up options with tier 1 prices, and its notices', () => {
+    const offer = {
+      id: 'evt_blueprint',
+      event: 'evt_blueprint',
+      type: 'blueprint',
+      blueprints: [['bld_refinery_ab', 'bld_spire', 'bld_crossover']],
+    };
+    const card = eventCards(
+      withOffers(reachStep('event_choice'), [offer]),
+      0,
+    )[0];
+    expect(card?.title).toBe('Blueprint');
+    expect(card?.lines.join(' ')).toMatch(/held for you in your next shop/);
+    const r = {
+      ...playUntil(newRun(1), (x) => x.step === 'event_choice'),
+      pending: { options: [offer] },
+    };
+    const s = send(r, { type: 'vote', choice: 'evt_blueprint' });
+    expect(s.step).toBe('event_resolve');
+    const v = followUpView(s, config, content, 0, realDeps());
+    expect(v?.blueprint).toBe(true);
+    expect(v?.prompt).toBe('Choose a building to hold in your next shop');
+    expect(
+      (v?.options ?? []).map((o) => [o.id, o.blueprintDef, o.skip]),
+    ).toEqual([
+      ['p0:bld_refinery_ab', 'bld_refinery_ab', false],
+      ['p0:bld_spire', 'bld_spire', false],
+      ['p0:bld_crossover', 'bld_crossover', false],
+      ['skip', null, true],
+    ]);
+    const spire = v?.options.find((o) => o.id === 'p0:bld_spire');
+    const price = content.buildings.get('bld_spire')?.tiers[0];
+    expect(price !== undefined && 'price' in price).toBe(true);
+    expect(spire?.lines.at(-1)).toBe(
+      `Tier 1 · ${String((price as { price: number }).price)} gold`,
+    );
+    expect(v?.options.find((o) => o.skip)?.title).toBe('Skip (no blueprint)');
+    expect(
+      appliedNotice(
+        [{ player: 0, result: 'blueprint', def: 'bld_spire' }],
+        0,
+        content,
+        'blueprint',
+      ),
+    ).toBe('Spire will be held in your next shop.');
+    expect(
+      appliedNotice([{ player: 0, result: 'skip' }], 0, content, 'blueprint'),
+    ).toBe('Blueprint skipped.');
+  });
+
   test('a Rich vein gives the cell picker my legal cells, and words its notices', () => {
     let r = playUntil(newRun(1), (x) => x.step === 'event_choice');
     r = {
@@ -663,6 +713,7 @@ describe('follow-ups', () => {
         skip: false,
         building: null,
         stacks: false,
+        blueprintDef: null,
       },
     ]);
   });

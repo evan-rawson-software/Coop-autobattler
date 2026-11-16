@@ -223,6 +223,9 @@ The rule for a change that makes saved data unreadable:
   `addedNodes` list of the team state (nodes added by the Rich vein event,
   issue #414), which covers both the run state and ghost snapshots: it is
   omitted when empty, so records without it stay readable and hash as before.
+  The Blueprint event (issue #412) adds one more entry shape to `nextShop`,
+  `{kind: "held_offer", def}`: it is the same optional field, present only
+  between the event and the end of that shop, so no format number is raised.
   (The optional
   `fromRound` on a modifier or event definition is content, not saved data.)
 - The major version is raised once for the whole design change (this is

@@ -252,3 +252,20 @@ describe('acting player', () => {
     expect(s.run.perPlayer[0]?.ready).toBe(true);
   });
 });
+
+describe('the event notice follows the viewing player', () => {
+  test("each seat reads its own result, not the last actor's", async () => {
+    const s = await pair();
+    (s as unknown as { notice: unknown }).notice = {
+      applied: [
+        { player: 0, result: 'blueprint', def: 'bld_refinery_ab' },
+        { player: 1, result: 'blueprint', def: 'bld_golem_forge' },
+      ],
+      type: 'blueprint',
+    };
+    s.setActing(1);
+    expect(s.store.get().notice).toMatch(/^Golem forge/);
+    s.setActing(0);
+    expect(s.store.get().notice).toMatch(/^Composite Refinery/);
+  });
+});

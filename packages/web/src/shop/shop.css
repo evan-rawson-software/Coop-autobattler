@@ -323,3 +323,11 @@ button.danger {
   font-size: 0.85rem;
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
 }
+
+/* The Blueprint's held slot (RS-4i5). */
+.offer-blueprint {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}

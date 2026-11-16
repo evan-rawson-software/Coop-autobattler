@@ -1951,5 +1951,493 @@
         "stateHash": "0e20b59b"
       }
     }
+  },
+  {
+    "id": "run-replay.s1-p1-blueprint",
+    "kind": "run-replay",
+    "description": "1 player(s): Blueprint at the round 3 event, each player takes the first building offered, then one re-roll and a purchase of the held slot (slot 5) by player 1; the held offer sits after the five rolled offers throughout.",
+    "input": {
+      "seed": 1,
+      "players": ["Ann"],
+      "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "place_core",
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_blueprint"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "event_choose",
+            "choice": "p0:bld_spire"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "reroll"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "buy",
+            "slot": 5
+          }
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "step": "shop",
+        "round": 3,
+        "actions": 23,
+        "gold": [34],
+        "shops": [
+          ["0 bld_extractor t1 10", "1 bld_wall_i t1 8", "2 bld_hangar t2 60", "3 bld_spire t1 50", "4 bld_turret t1 15", null]
+        ],
+        "rng": [2956792176, 801330319, 2974328144, 4138882869],
+        "stateHash": "7416c51f"
+      }
+    }
+  },
+  {
+    "id": "run-replay.s16-p2-blueprint",
+    "kind": "run-replay",
+    "description": "2 player(s): Blueprint at the round 3 event, each player takes the first building offered, then one re-roll and a purchase of the held slot (slot 5) by player 1; the held offer sits after the five rolled offers throughout.",
+    "input": {
+      "seed": 16,
+      "players": ["Ann", "Bo"],
+      "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "place_core",
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "place_core",
+            "x": 24,
+            "y": 0
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_blueprint"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_blueprint"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "event_choose",
+            "choice": "p0:bld_refinery_ab"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "event_choose",
+            "choice": "p1:bld_wall_l"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "reroll"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "buy",
+            "slot": 5
+          }
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "step": "shop",
+        "round": 3,
+        "actions": 44,
+        "gold": [49, 85],
+        "shops": [
+          ["0 bld_refinery_ab t1 35", "1 bld_range t1 24", "2 bld_golem_forge t1 45", "3 bld_barracks t1 20", "4 bld_splitter t1 5", null],
+          ["0 bld_turret t1 15", "1 bld_turret t2 35", "2 bld_merger t1 5", "3 bld_spire t1 50", "4 bld_extractor t1 10", "5 bld_wall_l t1 8"]
+        ],
+        "rng": [625884006, 2448930022, 2460517141, 769292368],
+        "stateHash": "de41c251"
+      }
+    }
   }
 ]

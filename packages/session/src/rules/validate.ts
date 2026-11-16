@@ -11,6 +11,7 @@ import {
   placeCore,
   validateTeamState,
   sortedKeys,
+  type Content,
 } from '@game/core';
 import { ghostContext, BOSS_LABEL } from './ghosts.js';
 import {
@@ -26,7 +27,13 @@ import {
   DEFAULT_WORKSHOP_PERCENT,
   workshopOptionProblem,
 } from './workshop-option.js';
-import { DRILL_PROMPT, RICH_VEIN_PROMPT, richVeinCell } from './events.js';
+import {
+  BLUEPRINT_PROMPT,
+  DRILL_PROMPT,
+  RICH_VEIN_PROMPT,
+  blueprintChoice,
+  richVeinCell,
+} from './events.js';
 import { isInteger, isRecord } from './json-guards.js';
 import { nextShopProblem } from './shop-effects.js';
 
@@ -73,6 +80,18 @@ function validShop(v: unknown): boolean {
         o['tier'] <= 3 &&
         isInteger(o['price']) &&
         o['price'] >= 0),
+  );
+}
+
+/** A building with a purchasable tier 1 that is not a boss-only pylon. */
+function heldDefOk(content: Pick<Content, 'buildings'>, def: string): boolean {
+  const b = content.buildings.get(def);
+  const t = b?.tiers[0];
+  return (
+    b !== undefined &&
+    t !== undefined &&
+    'price' in t &&
+    !(b.kind === 'defense' && b.defenseType === 'pylon')
   );
 }
 
@@ -380,6 +399,17 @@ function check(
         err(
           `perPlayer[${String(i)}].nextShop: ${nextShopProblem(p['nextShop']) ?? `not possible in step "${st}"`}.`,
         );
+      } else if (
+        'nextShop' in p &&
+        (p['nextShop'] as { kind?: unknown; def?: unknown }[]).some(
+          (e) =>
+            e.kind === 'held_offer' &&
+            (typeof e.def !== 'string' || !heldDefOk(deps.content, e.def)),
+        )
+      ) {
+        err(
+          `perPlayer[${String(i)}].nextShop: the held_offer building must be one the shop can sell at tier 1.`,
+        );
       } else if (p['ready'] && !READY_STEPS.includes(st)) {
         err(`perPlayer[${String(i)}]: ready is not possible in step "${st}".`);
       }
@@ -548,6 +578,27 @@ function check(
           err('pending.followUp.perPlayer: a Rich vein follow-up needs true.');
         } else if (team.ok) {
           checkRichVeinOptions(opts, p['offer'], team.state, n, deps, err);
+        }
+      }
+      if (fu['prompt'] === BLUEPRINT_PROMPT) {
+        if (!per) {
+          err('pending.followUp.perPlayer: a Blueprint follow-up needs true.');
+        } else {
+          opts.forEach((o, i) => {
+            if (
+              !isRecord(o) ||
+              !isInteger(o['player']) ||
+              o['player'] < 0 ||
+              o['player'] >= n ||
+              typeof o['def'] !== 'string' ||
+              deps.content.buildings.get(o['def']) === undefined ||
+              o['id'] !== blueprintChoice(o['player'], o['def'])
+            ) {
+              err(
+                `pending.followUp.options[${String(i)}]: must be {id: "p<player>:<building>", player, def: a building}.`,
+              );
+            }
+          });
         }
       }
       (fu['votes'] as unknown[]).forEach((v, i) => {

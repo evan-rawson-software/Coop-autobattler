@@ -316,7 +316,10 @@ function EventListResolve(props: { run: RunHandle }) {
   const options = v?.options ?? [];
   const cards = options.filter((o) => !o.skip);
   const skip = options.find((o) => o.skip);
-  const shrine = cards.length > 0 && cards.every((o) => o.building === null);
+  const shrine =
+    cards.length > 0 &&
+    cards.every((o) => o.building === null && o.blueprintDef === null);
+  const blueprint = v?.blueprint === true;
   // Workshop: a row is only selected until the button confirms it.
   const [picked, setPicked] = useState<string | null>(null);
   const selected = picked ?? v?.voted ?? null;
@@ -325,8 +328,9 @@ function EventListResolve(props: { run: RunHandle }) {
 
   const upgradePrimary = {
     id: 'confirm-upgrade',
-    label:
-      v?.free === true
+    label: blueprint
+      ? 'Take blueprint'
+      : v?.free === true
         ? 'Raise · Free'
         : confirmPrice === null
           ? 'Upgrade'
@@ -390,7 +394,7 @@ function EventListResolve(props: { run: RunHandle }) {
               choose(skip.id);
             }}
           >
-            Skip (no upgrade)
+            {skip.title}
           </button>
         )
       }
@@ -448,7 +452,9 @@ function EventListResolve(props: { run: RunHandle }) {
                   <span class="slot-key">{i + 1}</span>
                   <header class="event-card-head">
                     <span class="event-icon" aria-hidden="true">
-                      {o.building === null ? (
+                      {o.blueprintDef !== null ? (
+                        <SpriteIcon name={o.blueprintDef} size={40} />
+                      ) : o.building === null ? (
                         <SpriteIcon
                           name="ui_event_shrine"
                           scale={2}

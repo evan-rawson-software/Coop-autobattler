@@ -510,6 +510,8 @@ export {
   buyOffer,
   type PlayerShop,
   isPylonDef,
+  offerWeightsAt,
+  rareOfferDefs,
   rerollOffers,
   rollOffers,
   sellFromStash,

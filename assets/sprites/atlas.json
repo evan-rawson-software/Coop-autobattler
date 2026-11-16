@@ -2602,6 +2602,21 @@
       ],
       "category": "ui",
       "note": "Event type rich_vein."
+    },
+    "ui_event_blueprint": {
+      "sheet": "ui",
+      "x": 51,
+      "y": 65,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Event type blueprint."
     }
   },
   "planned": []

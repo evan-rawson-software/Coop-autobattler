@@ -83,18 +83,22 @@ export interface PlayerInfo {
   readonly name: string;
 }
 
-/** The kinds of next-shop effect (RS-4i1); Blueprint adds `held_offer`. */
-export type ShopEffectKind = 'extra_offers' | 'free_rerolls';
+/** The kinds of next-shop effect with a `count` (RS-4i1). */
+export type CountedShopEffectKind = 'extra_offers' | 'free_rerolls';
+
+/** All kinds of next-shop effect; Blueprint adds `held_offer` (RS-4i5). */
+export type ShopEffectKind = CountedShopEffectKind | 'held_offer';
 
 /**
  * An effect on a player's next shop. `extra_offers`: that many offers more
  * than `shopOfferCount` in every roll of that shop. `free_rerolls`: that many
- * re-rolls still cost 0.
+ * re-rolls still cost 0. `held_offer` (Blueprint): the building `def` is
+ * offered in one fixed extra slot at tier 1 and the normal price; re-rolls
+ * keep it, and it goes when it is bought or the shop ends.
  */
-export interface ShopEffect {
-  readonly kind: ShopEffectKind;
-  readonly count: number;
-}
+export type ShopEffect =
+  | { readonly kind: CountedShopEffectKind; readonly count: number }
+  | { readonly kind: 'held_offer'; readonly def: string };
 
 export interface PlayerRunState {
   readonly gold: number;

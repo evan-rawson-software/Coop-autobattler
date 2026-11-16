@@ -21,6 +21,7 @@ import {
   rerollOffers,
   rollOffers,
   sellFromStash,
+  tierPrice,
   type Content,
   type EconomyConfig,
   type MapgenConfig,
@@ -28,7 +29,12 @@ import {
   type ShopOffer,
 } from '@game/core';
 import { createDeps } from './defaults.js';
-import { shopEffectCount, useShopEffect } from './shop-effects.js';
+import {
+  clearHeldOffer,
+  heldOfferDef,
+  shopEffectCount,
+  useShopEffect,
+} from './shop-effects.js';
 import type {
   BattleResolver,
   Effect,
@@ -72,6 +78,33 @@ function withShop(
   data: ShopData,
 ): PlayerRunState {
   return { ...p, gold, shop: data as unknown as Json };
+}
+
+/**
+ * The slot of a player's held offer (Blueprint, RS-4i5): the first slot after
+ * the shop's rolled offers, `shopOfferCount` plus the extra offers of this
+ * shop. It is the same in every roll of the shop.
+ */
+export function heldSlot(p: PlayerRunState, economy: EconomyConfig): number {
+  return economy.shopOfferCount + shopEffectCount(p, 'extra_offers');
+}
+
+/**
+ * `offers` (a fresh roll of `heldSlot` offers) with the player's held offer
+ * added in its fixed slot: tier 1 at the normal price. Draws nothing. Without
+ * a held offer, or if the building cannot be sold at tier 1, `offers` as is.
+ */
+function withHeldOffer(
+  offers: ShopOffer[],
+  p: PlayerRunState,
+  content: Content,
+): ShopOffer[] {
+  const def = heldOfferDef(p);
+  if (def === null || content.buildings.get(def) === undefined) return offers;
+  return [
+    ...offers,
+    { slot: offers.length, def, tier: 1, price: tierPrice(content, def, 1) },
+  ];
 }
 
 /** `startingKit` and `onShopEnter` for the given economy. */
@@ -121,12 +154,16 @@ export function economyHooks(
       return {
         perPlayer: state.perPlayer.map((p, i) => {
           const stream = rng.child(playerShopLabel(i));
-          const offers = rollOffers(
-            stream,
-            state.round,
+          const offers = withHeldOffer(
+            rollOffers(
+              stream,
+              state.round,
+              content,
+              economy,
+              shopEffectCount(p, 'extra_offers'),
+            ),
+            p,
             content,
-            economy,
-            shopEffectCount(p, 'extra_offers'),
           );
           return withShop(p, p.gold + economy.baseIncomePerShop, {
             offers,
@@ -196,10 +233,16 @@ export function economyHandlers(
         { slot, owner: player },
       );
       if (!r.ok) return bad(r.reason, r.detail);
+      // The held offer is bought once: its effect goes with the purchase.
+      const held = heldOfferDef(me) !== null && slot === heldSlot(me, economy);
+      const bought = withShop(me, r.shop.gold, {
+        ...data,
+        offers: r.shop.offers,
+      });
       const next = replacePlayer(
         { ...state, team: r.team },
         player,
-        withShop(me, r.shop.gold, { ...data, offers: r.shop.offers }),
+        held ? clearHeldOffer(bought) : bought,
       );
       const offer = data.offers[slot] as ShopOffer;
       return {
@@ -212,6 +255,7 @@ export function economyHandlers(
             def: offer.def,
             tier: offer.tier,
             price: offer.price,
+            ...(held ? { held: true } : {}),
           }),
         ],
       };
@@ -278,7 +322,11 @@ export function economyHandlers(
           state,
           player,
           withShop(paid, r.shop.gold, {
-            offers: r.shop.offers,
+            offers: withHeldOffer(
+              [...r.shop.offers] as ShopOffer[],
+              me,
+              content,
+            ),
             stream: stream.getState(),
           }),
         ),

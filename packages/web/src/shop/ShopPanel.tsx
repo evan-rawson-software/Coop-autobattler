@@ -69,6 +69,11 @@ function Offer(props: { group: OfferGroup; onBuy: (slot: number) => void }) {
             {t('uiShopKindTier', { kind: o.kindLabel, tier: String(o.tier) })}
           </span>
         </div>
+        {card.held ? (
+          <p class="offer-blueprint" data-field="blueprint">
+            {t('uiShopBlueprint')}
+          </p>
+        ) : null}
         {group.copies > 1 ? (
           <p
             class="offer-copies"
