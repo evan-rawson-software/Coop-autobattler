@@ -145,6 +145,23 @@
         }
       }
     },
+    "addedNodes": {
+      "description": "Resource nodes added by the Rich vein event (RS-4i4), in the order added; the generated nodes stay in map.nodes. Omitted when there are none. Each is in its owner's plot on a buildable cell that is not on the front row, a generated node or a Core; at most mapgen.maxAddedNodesPerPlot per plot; rounds do not decrease.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["x", "y", "resource", "owner", "round"],
+        "additionalProperties": false,
+        "properties": {
+          "x": { "type": "integer", "minimum": 0 },
+          "y": { "type": "integer", "minimum": 0 },
+          "resource": { "type": "string", "pattern": "^res_[a-z0-9_]+$" },
+          "owner": { "type": "integer", "minimum": 0 },
+          "round": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
     "conduits": {
       "description": "Conduits, sorted by ascending id. Each runs from a side of one placed building to a side of another building of the same owner; cells is the ordered path from the cell just outside the from side to the cell just outside the to side, empty for a direct connection. A half of a border link (PP-4) has a border spot in place of one building end: a sending half ends at a border spot, a receiving half starts at one, and its path ends (starts) on the owner's border cell of the spot.",
       "type": "array",

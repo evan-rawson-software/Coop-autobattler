@@ -5,6 +5,7 @@
  */
 
 import {
+  allNodes,
   hashJson,
   previewEnemyPaths,
   sellValue,
@@ -426,7 +427,7 @@ export function BuildView(props: {
                 buildings: t.buildings,
                 stash: t.stash,
                 conduits: t.conduits,
-                nodes: t.map.nodes,
+                nodes: allNodes(t),
                 features: t.map.features,
                 width: t.map.width,
                 height: t.map.height,

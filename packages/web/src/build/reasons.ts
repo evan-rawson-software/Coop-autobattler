@@ -19,7 +19,12 @@ export type KnownReason =
   | 'ghost_selection_pending'
   | 'already_selected'
   | 'replay_mismatch'
-  | 'core_not_placed';
+  | 'core_not_placed'
+  | 'node_here'
+  | 'front_row'
+  | 'plot_full'
+  | 'unknown_resource'
+  | 'invalid_round';
 
 /** The message of a reason code, from the presentation file. */
 const reason = (code: KnownReason): string =>
@@ -45,6 +50,12 @@ export const REASON_MESSAGES: Readonly<Record<KnownReason, string>> = {
   core_not_placed: reason('core_not_placed'),
   blocked: reason('blocked'),
   on_node: reason('on_node'),
+  // Rich vein
+  node_here: reason('node_here'),
+  front_row: reason('front_row'),
+  plot_full: reason('plot_full'),
+  unknown_resource: reason('unknown_resource'),
+  invalid_round: reason('invalid_round'),
   too_far_forward: reason('too_far_forward'),
   // Stash
   unknown_definition: reason('unknown_definition'),

@@ -6,6 +6,7 @@
  * chains out instead of breaking anything.
  */
 import {
+  allNodes,
   addToStash,
   createTeamState,
   generateMap,
@@ -102,7 +103,7 @@ function tryChain(
     ['west', chain.west],
   ];
   for (const [side, resource] of inputs) {
-    const free = state.map.nodes
+    const free = allNodes(state)
       .filter(
         (n) =>
           n.resource === resource &&

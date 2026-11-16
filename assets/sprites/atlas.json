@@ -2587,6 +2587,21 @@
       ],
       "category": "ui",
       "note": "Event type pact."
+    },
+    "ui_event_rich_vein": {
+      "sheet": "ui",
+      "x": 34,
+      "y": 65,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Event type rich_vein."
     }
   },
   "planned": []

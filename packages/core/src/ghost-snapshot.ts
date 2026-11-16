@@ -88,6 +88,7 @@ function entryLength(sample: unknown): number {
  *                  + 2 * conduit entry without cells)       (a conduit has two distinct side ends)
  *               + conduit cells: cells * cell entry         (cells not holding a building)
  *   stash       N * stash entry
+ *   added nodes partySize * maxAddedNodesPerPlot * added node entry
  *   modifiers   (2 * round - 1) * longest modifier entry
  *   margin      GHOST_MAX_BYTES_MARGIN
  *
@@ -140,6 +141,12 @@ export function ghostMaxSerializedSize(
     to: end,
   });
   const cellEntry = entryLength(coord);
+  const addedEntry = entryLength({
+    ...coord,
+    owner: partySize,
+    resource: resourceId,
+    round: GHOST_MAX_ROUND,
+  });
 
   let items = cells;
   if (ctx.economy !== undefined && ctx.events !== undefined) {
@@ -179,6 +186,7 @@ export function ghostMaxSerializedSize(
       placed * (building + 2 * conduit) +
       cells * cellEntry +
       items * stashEntry +
+      partySize * mapgen.maxAddedNodesPerPlot * addedEntry +
       (2 * round - 1) * modifier +
       GHOST_MAX_BYTES_MARGIN,
   );
@@ -906,6 +914,24 @@ function plausibility(
         `team: player ${String(owner)} has ${String(n)} tiers above the shop's tier ${String(tiers.shopTier)}, at most ${String(tiers.upgradesPerOwner)} possible by round ${String(s.round)} (Workshop raises).`,
       );
     }
+  }
+  // Added nodes come only from a Rich vein event (RS-4i4): the cells, the
+  // owner's plot, the cap and the order were checked with the team state; here
+  // each must be from a round in which that event could have run.
+  const addedNodes = s.team.addedNodes ?? [];
+  if (addedNodes.length > 0) {
+    const first = Math.min(
+      ...ctx.events.events
+        .filter((e) => e.type === 'rich_vein')
+        .map((e) => e.fromRound ?? 1),
+    );
+    addedNodes.forEach((n, i) => {
+      if (n.round < first || n.round > s.round) {
+        errors.push(
+          `addedNodes[${String(i)}]: added in round ${String(n.round)}, but Rich vein is offered from round ${Number.isFinite(first) ? String(first) : 'never'} and the snapshot is from round ${String(s.round)}.`,
+        );
+      }
+    });
   }
   const held = s.team.modifiers ?? [];
   const events = 2 * s.round - 1;

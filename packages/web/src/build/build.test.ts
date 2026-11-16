@@ -123,6 +123,12 @@ describe('reason messages', () => {
       'blocked',
       'on_node',
       'too_far_forward',
+      // AddNodeReason
+      'node_here',
+      'front_row',
+      'plot_full',
+      'unknown_resource',
+      'invalid_round',
       // StashReason
       'unknown_definition',
       'core_not_allowed',

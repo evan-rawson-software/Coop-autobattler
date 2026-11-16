@@ -219,7 +219,11 @@ The rule for a change that makes saved data unreadable:
   next shop, such as Market day): records without it mean none. A negative
   `percent` on a held modifier's effect (a drawback, issue #413) is a change of
   the allowed values (-90 to 1000, never 0), not of the shape, so old records
-  stay readable and no format number is raised. (The optional
+  stay readable and no format number is raised. The fifth is the optional
+  `addedNodes` list of the team state (nodes added by the Rich vein event,
+  issue #414), which covers both the run state and ghost snapshots: it is
+  omitted when empty, so records without it stay readable and hash as before.
+  (The optional
   `fromRound` on a modifier or event definition is content, not saved data.)
 - The major version is raised once for the whole design change (this is
   done). Further format changes inside #124 (multi-Core battles, border

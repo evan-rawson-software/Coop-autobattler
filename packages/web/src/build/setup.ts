@@ -22,7 +22,10 @@ export const economy: EconomyConfig = loadEconomyOrThrow(rawEconomy, {
 export const gameConfigs: GameConfigs = {
   mapgen: content.mapgen,
   economy,
-  events: loadEventsOrThrow(rawEvents, { units: content.units }),
+  events: loadEventsOrThrow(rawEvents, {
+    units: content.units,
+    resources: content.resources,
+  }),
   threats: loadThreatsOrThrow(rawThreats, {
     units: content.units,
     buildings: content.buildings,

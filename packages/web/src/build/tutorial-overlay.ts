@@ -6,6 +6,7 @@
  * `tutorialMarks` decided; nothing here changes the game.
  */
 import {
+  allNodes,
   occupancy,
   type Cell,
   type PlacedBuilding,
@@ -70,7 +71,7 @@ export function tutorialMarks(
     mine.find(
       (b) =>
         b.def === defs.extractor &&
-        team.map.nodes.some(
+        allNodes(team).some(
           (k) =>
             k.x === b.x &&
             k.y === b.y &&

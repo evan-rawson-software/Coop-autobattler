@@ -218,6 +218,11 @@
       "name": "Pact",
       "icon": "☠",
       "flavour": ""
+    },
+    "rich_vein": {
+      "name": "Rich vein",
+      "icon": "◆",
+      "flavour": ""
     }
   },
   "modifiers": {
@@ -387,6 +392,11 @@
       "reason_not_owner": "That belongs to another player.",
       "reason_not_ready": "Not ready yet.",
       "reason_on_node": "The Core cannot sit on a resource node.",
+      "reason_node_here": "There is already a resource node here.",
+      "reason_front_row": "The front row cannot hold a new node.",
+      "reason_plot_full": "Your area has all the added nodes it can take.",
+      "reason_unknown_resource": "That resource cannot be added as a node.",
+      "reason_invalid_round": "That round is not valid for a new node.",
       "reason_out_of_bounds": "Outside the board.",
       "reason_outside_own_plot": "Must be inside your own area.",
       "reason_overlaps_building": "Another building is in the way.",

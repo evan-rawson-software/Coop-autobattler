@@ -9,7 +9,7 @@
 
 import {
   occupancy,
-  queryMap,
+  queryTeamMap,
   type Cell,
   type PlacedBuilding,
   type TeamState,
@@ -32,7 +32,7 @@ export function cellProblem(
   actor: number,
   cell: Cell,
 ): CellProblem | null {
-  const q = queryMap(team.map, content.terrain);
+  const q = queryTeamMap(team, content.terrain);
   if (!q.isInBounds(cell.x, cell.y)) {
     return { reason: 'out_of_bounds', building: null };
   }

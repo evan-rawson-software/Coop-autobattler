@@ -47,6 +47,9 @@ export interface NeutralZoneConfig {
   readonly maxAttempts: number;
 }
 
+/** Highest `maxAddedNodesPerPlot` the loader accepts. */
+export const MAX_ADDED_NODES_PER_PLOT = 16;
+
 export interface MapgenConfig {
   readonly plotWidth: number;
   readonly plotDepth: number;
@@ -55,6 +58,11 @@ export interface MapgenConfig {
   readonly nodesPerPlot: { readonly common: number; readonly rare: number };
   readonly lakes: MapgenLakes;
   readonly cliffs: MapgenCliffs;
+  /**
+   * Most nodes the Rich vein event may add to one plot per run (RS-4i4). Not
+   * read by map generation. `0` means the event can never be offered.
+   */
+  readonly maxAddedNodesPerPlot: number;
   /** Minimum share of a plot's cells that must be buildable, in percent. */
   readonly minBuildablePercent: number;
   /** Rows at the back of the board kept free of features. */
@@ -84,6 +92,7 @@ const TOP_KEYS = new Set([
   'plotDepth',
   'maxPartySize',
   'nodesPerPlot',
+  'maxAddedNodesPerPlot',
   'lakes',
   'cliffs',
   'minBuildablePercent',
@@ -242,6 +251,15 @@ export function loadMapgen(
   const coreFrontClearance = int('coreFrontClearance', 0);
   const placementTries = int('placementTries', 1);
   const maxAttempts = int('maxAttempts', 1);
+  const maxAddedNodesPerPlot = int('maxAddedNodesPerPlot', 0);
+  if (
+    maxAddedNodesPerPlot !== undefined &&
+    maxAddedNodesPerPlot > MAX_ADDED_NODES_PER_PLOT
+  ) {
+    errors.push(
+      `mapgen: "maxAddedNodesPerPlot" must be at most ${String(MAX_ADDED_NODES_PER_PLOT)}.`,
+    );
+  }
   if (minBuildablePercent !== undefined && minBuildablePercent > 100) {
     errors.push('mapgen: "minBuildablePercent" must be at most 100.');
   }
@@ -345,6 +363,7 @@ export function loadMapgen(
     coreFrontClearance === undefined ||
     placementTries === undefined ||
     maxAttempts === undefined ||
+    maxAddedNodesPerPlot === undefined ||
     typeof nodeCommon !== 'number' ||
     typeof nodeRare !== 'number' ||
     lakes === undefined ||
@@ -360,6 +379,7 @@ export function loadMapgen(
       plotDepth,
       maxPartySize,
       nodesPerPlot: { common: nodeCommon, rare: nodeRare },
+      maxAddedNodesPerPlot,
       lakes,
       cliffs,
       minBuildablePercent,

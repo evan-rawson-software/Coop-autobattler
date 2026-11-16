@@ -5,6 +5,7 @@
  */
 
 import {
+  allNodes,
   conduitResource,
   occupancy,
   type BuildingDef,
@@ -200,7 +201,7 @@ function buildBoard(
       feature: f.feature,
     };
   });
-  const nodes = state.map.nodes.map((n) => {
+  const nodes = allNodes(state).map((n) => {
     const v = cellToView(frame, n.x, n.y);
     const def = content.resources.get(n.resource);
     return {

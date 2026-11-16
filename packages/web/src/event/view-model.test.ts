@@ -255,6 +255,26 @@ describe('event cards', () => {
     ]);
   });
 
+  test('a Rich vein card names the resource: "Rich vein: Power"', () => {
+    const c = eventCards(
+      withOffers(run, [
+        {
+          id: 'evt_rich_vein',
+          event: 'evt_rich_vein',
+          type: 'rich_vein',
+          resource: 'res_b',
+        },
+      ]),
+      0,
+      config,
+      content,
+    )[0];
+    expect(c?.title).toBe('Rich vein: Power');
+    expect(c?.lines).toEqual([
+      'Add one Power node to a free cell of your area.',
+    ]);
+  });
+
   test('the count can be 1, 2 or 3: the view never assumes three', () => {
     const offer = (n: number): Json => ({
       id: `evt_windfall#${String(n)}`,
@@ -351,6 +371,67 @@ describe('follow-ups', () => {
     expect(
       appliedNotice([{ player: 0, result: 'skip' }], 0, content, 'drill'),
     ).toBe('Drill skipped.');
+  });
+
+  test('a Rich vein gives the cell picker my legal cells, and words its notices', () => {
+    let r = playUntil(newRun(1), (x) => x.step === 'event_choice');
+    r = {
+      ...r,
+      pending: {
+        options: [
+          {
+            id: 'evt_rich_vein',
+            event: 'evt_rich_vein',
+            type: 'rich_vein',
+            resource: 'res_c',
+          },
+        ],
+      },
+    };
+    const s = send(r, { type: 'vote', choice: 'evt_rich_vein' });
+    expect(s.step).toBe('event_resolve');
+    const v = followUpView(s, config, content, 0, realDeps());
+    expect(v?.eventTitle).toBe('Rich vein');
+    expect(v?.prompt).toBe('Add a resource node');
+    expect(v?.vein?.resourceName).toBe('Flux');
+    expect(v?.vein?.cells.length).toBeGreaterThan(20);
+    expect(v?.vein?.chosen).toBeNull();
+    expect((v?.options ?? []).map((o) => [o.id, o.skip, o.title])).toEqual([
+      ['skip', true, 'Skip (no node)'],
+    ]);
+    // A chosen cell is read back from the player's vote.
+    const first = v?.vein?.cells[0];
+    const after = send(s, {
+      type: 'event_choose',
+      choice: `c${String(first?.x)}_${String(first?.y)}`,
+    });
+    const picked = after.step === 'event_resolve' ? after : null;
+    if (picked !== null) {
+      expect(
+        followUpView(picked, config, content, 0, realDeps())?.vein?.chosen,
+      ).toEqual(first);
+    }
+    const node = {
+      player: 0,
+      result: 'node',
+      x: 1,
+      y: 1,
+      resource: 'res_c',
+    };
+    expect(appliedNotice([node], 0, content, 'rich_vein')).toBe(
+      'Added a Flux node.',
+    );
+    expect(
+      appliedNotice([{ player: 0, result: 'skip' }], 0, content, 'rich_vein'),
+    ).toBe('Rich vein skipped.');
+    expect(
+      appliedNotice(
+        [{ player: 0, result: 'skip', dropped: true, reason: 'x' }],
+        0,
+        content,
+        'rich_vein',
+      ),
+    ).toBe('Node skipped.');
   });
 
   test('a Workshop asks which of my buildings, with where, tiers, price and Skip', () => {

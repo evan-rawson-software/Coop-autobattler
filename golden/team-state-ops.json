@@ -7591,5 +7591,715 @@
         "hash": "96a17e50"
       }
     }
+  },
+  {
+    "id": "team-state-ops.added-nodes",
+    "kind": "team-state-ops",
+    "description": "Rich vein (RS-4i4): nodes added to a plot (accepted and each rejection: a node or feature or Core or building already there, the front row, another plot, an unknown resource or round, the cap of 3 per plot), then an extractor built on an added node and a wall refused on one (node_reserved). The state carries addedNodes in the order added.",
+    "input": {
+      "seed": 1,
+      "partySize": 2,
+      "ops": [
+        {
+          "op": "placeCore",
+          "actor": 0,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "op": "placeCore",
+          "actor": 1,
+          "x": 24,
+          "y": 0
+        },
+        {
+          "op": "addNode",
+          "owner": 0,
+          "x": 6,
+          "y": 6,
+          "resource": "res_b",
+          "round": 3
+        },
+        {
+          "op": "addNode",
+          "owner": 0,
+          "x": 6,
+          "y": 6,
+          "resource": "res_a",
+          "round": 3
+        },
+        {
+          "op": "addNode",
+          "owner": 0,
+          "x": 4,
+          "y": 0,
+          "resource": "res_a",
+          "round": 3
+        },
+        {
+          "op": "addNode",
+          "owner": 0,
+          "x": 2,
+          "y": 3,
+          "resource": "res_a",
+          "round": 3
+        },
+        {
+          "op": "addNode",
+          "owner": 0,
+          "x": 5,
+          "y": 15,
+          "resource": "res_a",
+          "round": 3
+        },
+        {
+          "op": "addNode",
+          "owner": 0,
+          "x": 30,
+          "y": 5,
+          "resource": "res_a",
+          "round": 3
+        },
+        {
+          "op": "addNode",
+          "owner": 0,
+          "x": 0,
+          "y": 0,
+          "resource": "res_a",
+          "round": 3
+        },
+        {
+          "op": "addNode",
+          "owner": 0,
+          "x": 48,
+          "y": 5,
+          "resource": "res_a",
+          "round": 3
+        },
+        {
+          "op": "addNode",
+          "owner": 0,
+          "x": 10,
+          "y": 11,
+          "resource": "res_ab_refined",
+          "round": 3
+        },
+        {
+          "op": "addNode",
+          "owner": 0,
+          "x": 10,
+          "y": 11,
+          "resource": "res_a",
+          "round": 0
+        },
+        {
+          "op": "addNode",
+          "owner": 1,
+          "x": 30,
+          "y": 5,
+          "resource": "res_c",
+          "round": 4
+        },
+        {
+          "op": "addNode",
+          "owner": 1,
+          "x": 30,
+          "y": 5,
+          "resource": "res_c",
+          "round": 4
+        },
+        {
+          "op": "addNode",
+          "owner": 5,
+          "x": 30,
+          "y": 5,
+          "resource": "res_c",
+          "round": 4
+        },
+        {
+          "op": "addNode",
+          "owner": 0,
+          "x": 8,
+          "y": 8,
+          "resource": "res_a",
+          "round": 4
+        },
+        {
+          "op": "addNode",
+          "owner": 0,
+          "x": 9,
+          "y": 9,
+          "resource": "res_c",
+          "round": 5
+        },
+        {
+          "op": "addNode",
+          "owner": 0,
+          "x": 10,
+          "y": 10,
+          "resource": "res_a",
+          "round": 5
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 1,
+          "x": 6,
+          "y": 6,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall_block",
+          "tier": 1,
+          "owner": 0
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 0,
+          "id": 2,
+          "x": 8,
+          "y": 8,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_extractor",
+          "tier": 1,
+          "owner": 1
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 1,
+          "id": 3,
+          "x": 30,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addToStash",
+          "def": "bld_wall_block",
+          "tier": 1,
+          "owner": 1
+        },
+        {
+          "op": "placeFromStash",
+          "actor": 1,
+          "id": 4,
+          "x": 35,
+          "y": 5,
+          "rotation": 0
+        },
+        {
+          "op": "addNode",
+          "owner": 1,
+          "x": 35,
+          "y": 5,
+          "resource": "res_a",
+          "round": 5
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "results": [
+          {
+            "op": "placeCore",
+            "ok": true
+          },
+          {
+            "op": "placeCore",
+            "ok": true
+          },
+          {
+            "op": "addNode",
+            "ok": true
+          },
+          {
+            "op": "addNode",
+            "ok": false,
+            "reason": "node_here"
+          },
+          {
+            "op": "addNode",
+            "ok": false,
+            "reason": "node_here"
+          },
+          {
+            "op": "addNode",
+            "ok": false,
+            "reason": "blocked_by_feature"
+          },
+          {
+            "op": "addNode",
+            "ok": false,
+            "reason": "front_row"
+          },
+          {
+            "op": "addNode",
+            "ok": false,
+            "reason": "outside_own_plot"
+          },
+          {
+            "op": "addNode",
+            "ok": false,
+            "reason": "overlaps_core"
+          },
+          {
+            "op": "addNode",
+            "ok": false,
+            "reason": "out_of_bounds"
+          },
+          {
+            "op": "addNode",
+            "ok": false,
+            "reason": "unknown_resource"
+          },
+          {
+            "op": "addNode",
+            "ok": false,
+            "reason": "invalid_round"
+          },
+          {
+            "op": "addNode",
+            "ok": true
+          },
+          {
+            "op": "addNode",
+            "ok": false,
+            "reason": "node_here"
+          },
+          {
+            "op": "addNode",
+            "ok": false,
+            "reason": "invalid_owner"
+          },
+          {
+            "op": "addNode",
+            "ok": true
+          },
+          {
+            "op": "addNode",
+            "ok": true
+          },
+          {
+            "op": "addNode",
+            "ok": false,
+            "reason": "plot_full"
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 2
+          },
+          {
+            "op": "placeFromStash",
+            "ok": false,
+            "reason": "node_reserved"
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 3
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addToStash",
+            "ok": true,
+            "id": 4
+          },
+          {
+            "op": "placeFromStash",
+            "ok": true
+          },
+          {
+            "op": "addNode",
+            "ok": false,
+            "reason": "overlaps_building"
+          }
+        ],
+        "state": {
+          "map": {
+            "width": 48,
+            "height": 16,
+            "partySize": 2,
+            "plotWidth": 24,
+            "features": [
+              {
+                "x": 2,
+                "y": 3,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 2,
+                "y": 4,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 2,
+                "y": 5,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 2,
+                "y": 6,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 13,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 14,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 26,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 6,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 2,
+                "y": 7,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 14,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 15,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 7,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 12,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 13,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 14,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 15,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 28,
+                "y": 8,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 42,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 43,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 44,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 45,
+                "y": 8,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 15,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 16,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 28,
+                "y": 9,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 9,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 15,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 26,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 27,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 28,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 29,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 30,
+                "y": 10,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 10,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 27,
+                "y": 11,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 11,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 27,
+                "y": 12,
+                "feature": "ter_lake"
+              },
+              {
+                "x": 40,
+                "y": 12,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 40,
+                "y": 13,
+                "feature": "ter_cliff"
+              },
+              {
+                "x": 40,
+                "y": 14,
+                "feature": "ter_cliff"
+              }
+            ],
+            "nodes": [
+              {
+                "x": 4,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 11,
+                "y": 0,
+                "resource": "res_b"
+              },
+              {
+                "x": 34,
+                "y": 1,
+                "resource": "res_a"
+              },
+              {
+                "x": 1,
+                "y": 2,
+                "resource": "res_c"
+              },
+              {
+                "x": 4,
+                "y": 3,
+                "resource": "res_b"
+              },
+              {
+                "x": 11,
+                "y": 3,
+                "resource": "res_a"
+              },
+              {
+                "x": 46,
+                "y": 5,
+                "resource": "res_b"
+              },
+              {
+                "x": 21,
+                "y": 6,
+                "resource": "res_a"
+              },
+              {
+                "x": 38,
+                "y": 9,
+                "resource": "res_a"
+              },
+              {
+                "x": 43,
+                "y": 9,
+                "resource": "res_a"
+              },
+              {
+                "x": 22,
+                "y": 10,
+                "resource": "res_a"
+              },
+              {
+                "x": 34,
+                "y": 10,
+                "resource": "res_b"
+              },
+              {
+                "x": 47,
+                "y": 12,
+                "resource": "res_b"
+              },
+              {
+                "x": 34,
+                "y": 15,
+                "resource": "res_c"
+              }
+            ]
+          },
+          "cores": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 24,
+              "y": 0
+            }
+          ],
+          "buildings": [
+            {
+              "id": 1,
+              "def": "bld_extractor",
+              "tier": 1,
+              "x": 6,
+              "y": 6,
+              "rotation": 0,
+              "owner": 0
+            },
+            {
+              "id": 3,
+              "def": "bld_extractor",
+              "tier": 1,
+              "x": 30,
+              "y": 5,
+              "rotation": 0,
+              "owner": 1
+            },
+            {
+              "id": 4,
+              "def": "bld_wall_block",
+              "tier": 1,
+              "x": 35,
+              "y": 5,
+              "rotation": 0,
+              "owner": 1
+            }
+          ],
+          "stash": [
+            {
+              "id": 2,
+              "def": "bld_wall_block",
+              "tier": 1,
+              "owner": 0
+            }
+          ],
+          "nextId": 5,
+          "nextConduitId": [1, 1],
+          "conduits": [],
+          "addedNodes": [
+            {
+              "x": 6,
+              "y": 6,
+              "resource": "res_b",
+              "owner": 0,
+              "round": 3
+            },
+            {
+              "x": 30,
+              "y": 5,
+              "resource": "res_c",
+              "owner": 1,
+              "round": 4
+            },
+            {
+              "x": 8,
+              "y": 8,
+              "resource": "res_a",
+              "owner": 0,
+              "round": 4
+            },
+            {
+              "x": 9,
+              "y": 9,
+              "resource": "res_c",
+              "owner": 0,
+              "round": 5
+            }
+          ]
+        },
+        "hash": "40f4d006"
+      }
+    }
   }
 ]

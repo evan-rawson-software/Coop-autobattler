@@ -57,7 +57,14 @@ export interface EventsLoadContext {
     get(id: string): unknown;
     list(): readonly { readonly id: string }[];
   };
+  /** When given, `resourceWeights` must name base resources of this file. */
+  readonly resources?: {
+    listBase(): readonly { readonly id: string }[];
+  };
 }
+
+/** Highest weight one resource may have in a `resourceWeights` table. */
+export const MAX_RESOURCE_WEIGHT = 1000;
 
 export type EventParams = Readonly<Record<string, number | string>>;
 
@@ -69,6 +76,12 @@ export interface EventDef {
   readonly weight: number;
   /** First round the event may be offered (at least 1); absent means 1. */
   readonly fromRound?: number;
+  /**
+   * Rich vein only (RS-4i4): the weight of each base resource in the draw of
+   * the offer's resource, by resource ID (integers 1 to
+   * `MAX_RESOURCE_WEIGHT`). Absent for every other event.
+   */
+  readonly resourceWeights?: Readonly<Record<string, number>>;
   readonly params: EventParams;
 }
 
@@ -84,6 +97,7 @@ export type EventsLoadResult = LoadResult<EventsConfig>;
 const KEYS = new Set(['$schema', 'offerCount', 'events', 'modifiers']);
 const EVENT_ID = /^evt_[a-z0-9_]+$/;
 const TYPE_ID = /^[a-z][a-z0-9_]*$/;
+const RESOURCE_ID = /^res_[a-z0-9_]+$/;
 
 export function findEvent(
   config: EventsConfig,
@@ -125,7 +139,14 @@ export function loadEvents(
       }
       rejectUnknownKeys(
         e,
-        new Set(['id', 'type', 'weight', 'fromRound', 'params']),
+        new Set([
+          'id',
+          'type',
+          'weight',
+          'fromRound',
+          'resourceWeights',
+          'params',
+        ]),
         at,
         errors,
       );
@@ -146,6 +167,49 @@ export function loadEvents(
         e['fromRound'] === undefined
           ? undefined
           : readInt(e, 'fromRound', 1, at, errors, MAX_EVENT_FROM_ROUND);
+      let resourceWeights: Record<string, number> | undefined;
+      let weightsOk = true;
+      const rawWeights = e['resourceWeights'];
+      if (rawWeights !== undefined) {
+        resourceWeights = {};
+        if (!isRecord(rawWeights) || sortedKeys(rawWeights).length === 0) {
+          errors.push(`${at}: "resourceWeights" must be a non-empty object.`);
+          weightsOk = false;
+        } else {
+          for (const k of sortedKeys(rawWeights)) {
+            const v = rawWeights[k];
+            if (!RESOURCE_ID.test(k)) {
+              errors.push(
+                `${at}.resourceWeights: "${k}" must match ${String(RESOURCE_ID)}.`,
+              );
+              weightsOk = false;
+            } else if (
+              typeof v !== 'number' ||
+              !Number.isInteger(v) ||
+              v < 1 ||
+              v > MAX_RESOURCE_WEIGHT
+            ) {
+              errors.push(
+                `${at}.resourceWeights: "${k}" must be an integer from 1 to ${String(MAX_RESOURCE_WEIGHT)}.`,
+              );
+              weightsOk = false;
+            } else {
+              resourceWeights[k] = v;
+            }
+          }
+        }
+      }
+      if (resourceWeights !== undefined && context.resources !== undefined) {
+        const base = context.resources.listBase().map((r) => r.id);
+        for (const k of sortedKeys(resourceWeights)) {
+          if (!base.includes(k)) {
+            errors.push(
+              `${at}.resourceWeights: "${k}" is not a base resource.`,
+            );
+            weightsOk = false;
+          }
+        }
+      }
       const params: Record<string, number | string> = {};
       const rawParams = e['params'];
       if (rawParams !== undefined) {
@@ -171,13 +235,17 @@ export function loadEvents(
         typeof id === 'string' &&
         typeof type === 'string' &&
         weight !== undefined &&
+        weightsOk &&
         (e['fromRound'] === undefined || eventFrom !== undefined)
       ) {
-        events.push(
-          eventFrom === undefined
-            ? { id, type, weight, params }
-            : { id, type, weight, fromRound: eventFrom, params },
-        );
+        events.push({
+          id,
+          type,
+          weight,
+          ...(eventFrom === undefined ? {} : { fromRound: eventFrom }),
+          ...(resourceWeights === undefined ? {} : { resourceWeights }),
+          params,
+        });
       }
     });
   }

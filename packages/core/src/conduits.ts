@@ -15,7 +15,7 @@ import {
   type Side,
 } from './buildings.js';
 import { isRecord, rejectUnknownKeys } from './load-util.js';
-import { queryMap, type Cell, type GameMap, type MapQuery } from './map.js';
+import { queryTeamMap, type Cell, type GameMap, type MapQuery } from './map.js';
 import type { ResourceId } from './resources.js';
 import {
   buildingEnd,
@@ -113,7 +113,7 @@ function makeView(state: TeamState, content: TeamContent): View {
   }
   return {
     state,
-    q: queryMap(map, content.terrain),
+    q: queryTeamMap(state, content.terrain),
     byId,
     cellOwner,
     coreKeys,

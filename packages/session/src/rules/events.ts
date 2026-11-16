@@ -26,6 +26,8 @@
  */
 import {
   Rng,
+  addNode,
+  addableNodeCells,
   findModifier,
   MAX_SHOP_EFFECT_COUNT,
   heldModifierIds,
@@ -36,6 +38,7 @@ import {
   type Content,
   type EventDef,
   type EventsConfig,
+  type MapgenConfig,
 } from '@game/core';
 import { tally, voteResolvedEffect } from './machine.js';
 import { addShopEffect } from './shop-effects.js';
@@ -73,6 +76,11 @@ export interface EventContext {
   readonly state: RunState;
   readonly content: Content;
   readonly config: EventsConfig;
+  /**
+   * The map rules (added-node cap and front margin). Absent when the hooks
+   * were built without them: Rich vein is then never available.
+   */
+  readonly mapgen?: MapgenConfig;
 }
 
 /** A choice the party still has to make after picking an event. */
@@ -152,6 +160,17 @@ export interface EventHandler {
     player: number,
     option: Json,
   ): string | null;
+  /**
+   * Per-player follow-ups with a very large choice space (Rich vein): the
+   * option a choice id names for `player`, when it is not one of the stored
+   * options, or undefined. The result is then handed to `checkChoice`.
+   */
+  optionOf?(
+    ctx: EventContext,
+    offer: EventOffer,
+    player: number,
+    choice: string,
+  ): Json | undefined;
   /**
    * Per-player follow-ups: apply every player's choice, in player order.
    * `picks[i]` is player i's chosen option, or null for `skip`. A stored
@@ -597,6 +616,164 @@ export const pactHandler: EventHandler = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Rich vein (RS-4i4): every player may add a resource node to their own plot
+
+/** The follow-up prompt of Rich vein. */
+export const RICH_VEIN_PROMPT = 'rich_vein_cell';
+
+const CELL_CHOICE = /^c(0|[1-9][0-9]{0,5})_(0|[1-9][0-9]{0,5})$/;
+
+/** The choice id of a cell: `c<x>_<y>`. */
+export function richVeinChoice(x: number, y: number): string {
+  return `c${String(x)}_${String(y)}`;
+}
+
+/** The cell a Rich vein choice id names, or null. */
+export function richVeinCell(
+  choice: string,
+): { readonly x: number; readonly y: number } | null {
+  const m = CELL_CHOICE.exec(choice);
+  return m === null ? null : { x: Number(m[1]), y: Number(m[2]) };
+}
+
+function offerResource(offer: EventOffer): string {
+  const r = offer['resource'];
+  return typeof r === 'string' ? r : '';
+}
+
+export const richVeinHandler: EventHandler = {
+  type: 'rich_vein',
+  canAskFollowUp: true,
+  checkParams: (def) =>
+    def.resourceWeights === undefined ? '"resourceWeights" is required' : null,
+  // Some player is under the cap and has a legal cell.
+  available: (ctx) =>
+    ctx.mapgen !== undefined &&
+    ctx.state.players.some(
+      (_p, i) =>
+        ctx.mapgen !== undefined &&
+        addableNodeCells(ctx.state.team, ctx.content, ctx.mapgen, i).length > 0,
+    ),
+  // One base resource, weighted, drawn from the offer's child stream.
+  instantiate(ctx, def, rng) {
+    const weights = def.resourceWeights ?? {};
+    const ids = ctx.content.resources
+      .listBase()
+      .map((r) => r.id)
+      .filter((id) => (weights[id] ?? 0) > 0);
+    const i = pickWeightedIndex(
+      rng,
+      ids.map((id) => weights[id] ?? 0),
+    );
+    return { resource: ids[i] ?? '' };
+  },
+  resolve(ctx) {
+    const { state, mapgen } = ctx;
+    const options: Json[] = [];
+    const initialVotes: (string | null)[] = [];
+    for (let player = 0; player < state.players.length; player++) {
+      const cells =
+        mapgen === undefined
+          ? []
+          : addableNodeCells(state.team, ctx.content, mapgen, player);
+      // A player with no legal cell has only `skip`: already chosen.
+      initialVotes.push(cells.length > 0 ? null : SKIP_CHOICE);
+      if (cells.length > 0) {
+        options.push({
+          id: `cells${String(player)}`,
+          player,
+          cells: cells.map((c): Json => [c.x, c.y]),
+        });
+      }
+    }
+    return {
+      patch: {},
+      followUp: {
+        prompt: RICH_VEIN_PROMPT,
+        options,
+        perPlayer: true,
+        initialVotes,
+      },
+    };
+  },
+  optionOf(_ctx, _offer, player, choice) {
+    const cell = richVeinCell(choice);
+    return cell === null ? undefined : { id: choice, player, ...cell };
+  },
+  checkChoice({ state, content, mapgen }, offer, player, option) {
+    if (!isRecord(option) || option['player'] !== player) return 'not_owner';
+    const x = option['x'];
+    const y = option['y'];
+    if (
+      mapgen === undefined ||
+      typeof x !== 'number' ||
+      typeof y !== 'number'
+    ) {
+      return 'invalid_choice';
+    }
+    const r = addNode(state.team, content, mapgen, {
+      owner: player,
+      x,
+      y,
+      resource: offerResource(offer),
+      round: state.round,
+    });
+    return r.ok ? null : r.reason;
+  },
+  chooseEach({ state, content, mapgen }, offer, picks) {
+    // Each stored pick is re-checked against the team as it is now (after the
+    // earlier players' nodes). One that is no longer legal is applied as a
+    // skip, never rejected.
+    let team = state.team;
+    const applied: Json[] = [];
+    for (let player = 0; player < picks.length; player++) {
+      const pick = picks[player];
+      if (pick === null || pick === undefined) {
+        applied.push({ player, result: 'skip' });
+        continue;
+      }
+      const x = isRecord(pick) ? pick['x'] : undefined;
+      const y = isRecord(pick) ? pick['y'] : undefined;
+      if (
+        mapgen === undefined ||
+        !isRecord(pick) ||
+        pick['player'] !== player ||
+        typeof x !== 'number' ||
+        typeof y !== 'number'
+      ) {
+        applied.push({
+          player,
+          result: 'skip',
+          dropped: true,
+          reason: 'invalid_choice',
+        });
+        continue;
+      }
+      const resource = offerResource(offer);
+      const r = addNode(team, content, mapgen, {
+        owner: player,
+        x,
+        y,
+        resource,
+        round: state.round,
+      });
+      if (!r.ok) {
+        applied.push({
+          player,
+          result: 'skip',
+          dropped: true,
+          reason: r.reason,
+        });
+        continue;
+      }
+      team = r.state;
+      applied.push({ player, result: 'node', x, y, resource });
+    }
+    return { ok: true, patch: { team }, applied };
+  },
+};
+
 /** The event types shipped with the game. Add a type by adding a handler. */
 export const defaultEventHandlers: EventHandlers = {
   workshop: workshopHandler,
@@ -605,6 +782,7 @@ export const defaultEventHandlers: EventHandlers = {
   windfall: windfallHandler,
   market_day: marketDayHandler,
   pact: pactHandler,
+  rich_vein: richVeinHandler,
 };
 
 // ---------------------------------------------------------------------------
@@ -663,10 +841,16 @@ export function eventHooks(
   content: Content,
   config: EventsConfig,
   handlers: EventHandlers = defaultEventHandlers,
+  mapgen?: MapgenConfig,
 ): Pick<RunHooks, 'eventOffers' | 'resolveEvent'> {
   return {
     eventOffers(state, rng): readonly Json[] {
-      const ctx: EventContext = { state, content, config };
+      const ctx: EventContext = {
+        state,
+        content,
+        config,
+        ...(mapgen === undefined ? {} : { mapgen }),
+      };
       // The pool: definitions whose first round has come (RS-4g) and whose
       // handler says available. Decided before the draw.
       const available = config.events.filter(
@@ -712,7 +896,10 @@ export function eventHooks(
       if (offer === null || handler === undefined) {
         throw new Error('resolveEvent: the offer has no handler.');
       }
-      const r = handler.resolve({ state, content, config }, offer);
+      const r = handler.resolve(
+        { state, content, config, ...(mapgen === undefined ? {} : { mapgen }) },
+        offer,
+      );
       if (r.followUp === null) return { patch: r.patch, followUp: null };
       if (
         handler.canAskFollowUp !== true ||
@@ -780,7 +967,9 @@ function choosePerPlayer(
     return { ok: false, reason: 'invalid_intent', detail: 'no chooseEach' };
   }
   if (choice !== SKIP_CHOICE) {
-    const option = options.find((o) => idOfOption(o) === choice);
+    const option =
+      options.find((o) => idOfOption(o) === choice) ??
+      handler.optionOf?.(ctx, offer, player, choice);
     if (option === undefined) return { ok: false, reason: 'invalid_choice' };
     const problem = handler.checkChoice?.(ctx, offer, player, option) ?? null;
     if (problem !== null) return { ok: false, reason: problem };
@@ -796,10 +985,12 @@ function choosePerPlayer(
   if (votes.some((v) => v === null)) {
     return { ok: true, state: withVote, effects };
   }
-  const picks = votes.map((v): Json | null =>
-    v === SKIP_CHOICE
+  const picks = votes.map((v, i): Json | null =>
+    v === SKIP_CHOICE || typeof v !== 'string'
       ? null
-      : (options.find((o) => idOfOption(o) === v) ?? null),
+      : (options.find((o) => idOfOption(o) === v) ??
+        handler.optionOf?.(ctx, offer, i, v) ??
+        null),
   );
   const r = handler.chooseEach(ctx, offer, picks);
   if (!r.ok) return { ok: false, reason: r.reason };
@@ -839,7 +1030,14 @@ export function eventChooseHandlers(
   content: Content,
   config: EventsConfig,
   handlers: EventHandlers = defaultEventHandlers,
+  mapgen?: MapgenConfig,
 ): Readonly<Record<string, IntentHandler>> {
+  const withMap = (state: RunState): EventContext => ({
+    state,
+    content,
+    config,
+    ...(mapgen === undefined ? {} : { mapgen }),
+  });
   const event_choose: IntentHandler = {
     steps: ['event_resolve'],
     handle({ state, player, intent }): HandlerResult {
@@ -860,7 +1058,7 @@ export function eventChooseHandlers(
       const options = fu['options'] as readonly Json[];
       if (fu['perPlayer'] === true) {
         return choosePerPlayer(
-          { state, content, config },
+          withMap(state),
           handlerFor(handlers, offer.type),
           offer,
           player,
@@ -895,7 +1093,7 @@ export function eventChooseHandlers(
           detail: 'no choose handler',
         };
       }
-      const r = handler.choose({ state, content, config }, offer, chosen);
+      const r = handler.choose(withMap(state), offer, chosen);
       if (!r.ok) return { ok: false, reason: r.reason };
       effects.push(voteResolvedEffect('event', votes, t));
       effects.push({

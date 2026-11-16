@@ -6,6 +6,7 @@
  * decides or changes an outcome.
  */
 
+import { allNodes } from '@game/core';
 import { screenText, screenTexts } from '../build/texts.js';
 import type { WebContent } from '../content.js';
 import { buildingName, clock, geometryOf, type Moment } from './derive.js';
@@ -101,7 +102,7 @@ export function resultFacts(
         (b) =>
           b.owner === 0 &&
           b.def === sourceDef.id &&
-          team0.map.nodes.some(
+          allNodes(team0).some(
             (n) => n.x === b.x && n.y === b.y && n.resource === need,
           ),
       )

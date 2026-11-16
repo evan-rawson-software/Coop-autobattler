@@ -9,6 +9,7 @@
     "plotDepth",
     "maxPartySize",
     "nodesPerPlot",
+    "maxAddedNodesPerPlot",
     "lakes",
     "cliffs",
     "minBuildablePercent",
@@ -26,6 +27,12 @@
     "plotWidth": { "type": "integer", "minimum": 1 },
     "plotDepth": { "type": "integer", "minimum": 1 },
     "maxPartySize": { "type": "integer", "minimum": 1 },
+    "maxAddedNodesPerPlot": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 16,
+      "description": "Most nodes the Rich vein event may add to one plot per run."
+    },
     "nodesPerPlot": {
       "type": "object",
       "description": "Resource nodes per plot for each base resource of that rarity.",

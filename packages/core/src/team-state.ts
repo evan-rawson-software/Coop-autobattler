@@ -24,9 +24,12 @@ import {
 } from './buildings.js';
 import { isRecord, isSafeInt, rejectUnknownKeys } from './load-util.js';
 import {
+  compareCells,
   loadMap,
   queryMap,
+  queryTeamMap,
   validateCorePosition,
+  type AddedNode,
   type Cell,
   type CorePositionProblem,
   type GameMap,
@@ -137,6 +140,13 @@ export interface TeamState {
    * states without modifiers keep their hashes.
    */
   readonly modifiers?: readonly TeamModifier[];
+  /**
+   * Resource nodes added by the Rich vein event (RS-4i4), in the order added;
+   * the generated ones stay in `map.nodes`. Read through `allNodes`. Omitted
+   * (not an empty list) when there are none, so states without added nodes
+   * keep their hashes.
+   */
+  readonly addedNodes?: readonly AddedNode[];
 }
 
 /** What the team-state code needs from the loaded content. */
@@ -269,7 +279,7 @@ function makeContext(
   occupiedByOther: (x: number, y: number) => boolean,
   conduitKeys: ReadonlySet<number>,
 ): RuleContext {
-  const q = queryMap(state.map, content.terrain);
+  const q = queryTeamMap(state, content.terrain);
   const coreKeys = new Set<number>();
   for (const c of allCoreCells(state.cores, content)) {
     coreKeys.add(cellKey(state.map, c.x, c.y));
@@ -745,7 +755,7 @@ export interface Occupancy {
  * definition is unknown; run `validateTeamState` on untrusted data first.
  */
 export function occupancy(state: TeamState, content: TeamContent): Occupancy {
-  const q = queryMap(state.map, content.terrain);
+  const q = queryTeamMap(state, content.terrain);
   const defOf = (b: PlacedBuilding): BuildingDef => {
     const def = content.buildings.get(b.def);
     if (def === undefined) throw new Error(`Unknown building "${b.def}".`);
@@ -786,6 +796,278 @@ export function occupancy(state: TeamState, content: TeamContent): Occupancy {
 }
 
 // ---------------------------------------------------------------------------
+// Added nodes (Rich vein, RS-4i4)
+
+export type AddNodeReason =
+  | 'invalid_owner'
+  | 'unknown_resource'
+  | 'invalid_round'
+  | 'out_of_bounds'
+  | 'outside_own_plot'
+  | 'front_row'
+  | 'blocked_by_feature'
+  | 'node_here'
+  | 'overlaps_core'
+  | 'overlaps_building'
+  | 'overlaps_conduit'
+  | 'plot_full';
+
+/**
+ * The cell rules of an added node that do not depend on the buildings: in
+ * bounds, in the owner's plot, not on the plot's front `frontMargin` rows, no
+ * natural feature that blocks building, no generated node, no added node,
+ * not a Core cell. `taken` holds the keys of generated and added nodes.
+ */
+function nodeCellProblem(
+  map: GameMap,
+  q: MapQuery,
+  config: MapgenConfig,
+  taken: ReadonlySet<number>,
+  coreKeys: ReadonlySet<number>,
+  owner: number,
+  x: number,
+  y: number,
+): AddNodeReason | null {
+  if (!q.isInBounds(x, y)) return 'out_of_bounds';
+  if (q.plotOf(x) !== owner) return 'outside_own_plot';
+  if (y > map.height - 1 - config.frontMargin) return 'front_row';
+  if (!q.isBuildable(x, y)) return 'blocked_by_feature';
+  const k = cellKey(map, x, y);
+  if (taken.has(k)) return 'node_here';
+  if (coreKeys.has(k)) return 'overlaps_core';
+  return null;
+}
+
+function nodeKeys(state: TeamState): Set<number> {
+  const keys = new Set<number>();
+  for (const n of state.map.nodes) keys.add(cellKey(state.map, n.x, n.y));
+  for (const n of state.addedNodes ?? []) {
+    keys.add(cellKey(state.map, n.x, n.y));
+  }
+  return keys;
+}
+
+function coreKeysOf(state: TeamState, content: TeamContent): Set<number> {
+  const keys = new Set<number>();
+  for (const c of allCoreCells(state.cores, content)) {
+    keys.add(cellKey(state.map, c.x, c.y));
+  }
+  return keys;
+}
+
+/** How many nodes were added to a player's plot. */
+export function addedNodeCount(state: TeamState, owner: number): number {
+  let n = 0;
+  for (const a of state.addedNodes ?? []) if (a.owner === owner) n++;
+  return n;
+}
+
+/**
+ * Every cell where `owner` may add a node now, in `(y, x)` order: the cell
+ * rules of `nodeCellProblem`, plus no placed building and no conduit on it.
+ * Empty once the plot holds `maxAddedNodesPerPlot` added nodes.
+ */
+export function addableNodeCells(
+  state: TeamState,
+  content: TeamContent,
+  config: MapgenConfig,
+  owner: number,
+): Cell[] {
+  if (!isOwner(owner, state.map.partySize)) return [];
+  if (addedNodeCount(state, owner) >= config.maxAddedNodesPerPlot) return [];
+  const map = state.map;
+  const q = queryTeamMap(state, content.terrain);
+  const taken = nodeKeys(state);
+  const coreKeys = coreKeysOf(state, content);
+  const occ = occupancy(state, content);
+  const onConduit = conduitCellKeys(map, state.conduits);
+  const out: Cell[] = [];
+  const x0 = owner * map.plotWidth;
+  for (let y = 0; y <= map.height - 1 - config.frontMargin; y++) {
+    for (let x = x0; x < x0 + map.plotWidth; x++) {
+      if (
+        nodeCellProblem(map, q, config, taken, coreKeys, owner, x, y) ===
+          null &&
+        occ.buildingAt(x, y) === null &&
+        !onConduit.has(cellKey(map, x, y))
+      ) {
+        out.push({ x, y });
+      }
+    }
+  }
+  return out.sort(compareCells);
+}
+
+/**
+ * Add a node of `resource` to `owner`'s plot at `(x, y)` (Rich vein). Rules,
+ * first failure reported: invalid_owner, unknown_resource (not a base
+ * resource), invalid_round, then the cell rules (out_of_bounds,
+ * outside_own_plot, front_row, blocked_by_feature, node_here, overlaps_core),
+ * overlaps_building, overlaps_conduit, and plot_full (the plot already holds
+ * `maxAddedNodesPerPlot` added nodes).
+ */
+export function addNode(
+  state: TeamState,
+  content: TeamContent,
+  config: MapgenConfig,
+  args: {
+    readonly owner: number;
+    readonly x: number;
+    readonly y: number;
+    readonly resource: ResourceId;
+    readonly round: number;
+  },
+): OpResult<AddNodeReason> {
+  const { owner, x, y, resource, round } = args;
+  const map = state.map;
+  if (!isOwner(owner, map.partySize))
+    return { ok: false, reason: 'invalid_owner' };
+  if (!content.resources.listBase().some((r) => r.id === resource)) {
+    return { ok: false, reason: 'unknown_resource', detail: resource };
+  }
+  if (!isSafeInt(round) || round < 1)
+    return { ok: false, reason: 'invalid_round' };
+  if (!isSafeInt(x) || !isSafeInt(y))
+    return { ok: false, reason: 'out_of_bounds' };
+  const q = queryTeamMap(state, content.terrain);
+  const cell = nodeCellProblem(
+    map,
+    q,
+    config,
+    nodeKeys(state),
+    coreKeysOf(state, content),
+    owner,
+    x,
+    y,
+  );
+  if (cell !== null) return { ok: false, reason: cell };
+  if (occupancy(state, content).buildingAt(x, y) !== null) {
+    return { ok: false, reason: 'overlaps_building' };
+  }
+  if (conduitCellKeys(map, state.conduits).has(cellKey(map, x, y))) {
+    return { ok: false, reason: 'overlaps_conduit' };
+  }
+  if (addedNodeCount(state, owner) >= config.maxAddedNodesPerPlot) {
+    return { ok: false, reason: 'plot_full' };
+  }
+  return {
+    ok: true,
+    state: {
+      ...state,
+      addedNodes: [
+        ...(state.addedNodes ?? []),
+        { x, y, resource, owner, round },
+      ],
+    },
+  };
+}
+
+const ADDED_NODE_KEYS = new Set(['x', 'y', 'resource', 'owner', 'round']);
+
+/** Parse the `addedNodes` field of untrusted data (shape only). */
+function parseAddedNodes(
+  raw: unknown,
+  errors: string[],
+): readonly AddedNode[] | undefined {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    errors.push('addedNodes: must be a non-empty list, or omitted.');
+    return undefined;
+  }
+  const out: AddedNode[] = [];
+  (raw as unknown[]).forEach((e, i) => {
+    const at = `addedNodes[${String(i)}]`;
+    if (!isRecord(e)) {
+      errors.push(`${at}: must be an object.`);
+      return;
+    }
+    rejectUnknownKeys(e, ADDED_NODE_KEYS, at, errors);
+    if (
+      isSafeInt(e['x']) &&
+      isSafeInt(e['y']) &&
+      isSafeInt(e['owner']) &&
+      isSafeInt(e['round']) &&
+      typeof e['resource'] === 'string'
+    ) {
+      out.push({
+        x: e['x'],
+        y: e['y'],
+        resource: e['resource'],
+        owner: e['owner'],
+        round: e['round'],
+      });
+    } else {
+      errors.push(
+        `${at}: "x", "y", "owner" and "round" must be integers and "resource" a resource ID.`,
+      );
+    }
+  });
+  return out;
+}
+
+/**
+ * Re-check the added nodes of a state: each in its owner's plot on a legal
+ * cell, no cell twice, a base resource, at most `maxAddedNodesPerPlot` per
+ * plot, rounds not decreasing. (A building or conduit on the cell is judged
+ * by the placement rules, which see the node.)
+ */
+function checkAddedNodes(
+  nodes: readonly AddedNode[],
+  map: GameMap,
+  content: TeamContent,
+  config: MapgenConfig,
+  coresOk: boolean,
+  coreKeys: ReadonlySet<number>,
+  errors: string[],
+): void {
+  const q = queryMap(map, content.terrain);
+  const taken = new Set<number>();
+  for (const n of map.nodes) taken.add(cellKey(map, n.x, n.y));
+  const perOwner = new Map<number, number>();
+  const base = new Set(content.resources.listBase().map((r) => r.id));
+  let lastRound = 0;
+  nodes.forEach((n, i) => {
+    const at = `addedNodes[${String(i)}]`;
+    if (!isOwner(n.owner, map.partySize)) {
+      errors.push(
+        `${at}: "owner" must be an integer from 0 to ${String(map.partySize - 1)}.`,
+      );
+      return;
+    }
+    if (!base.has(n.resource)) {
+      errors.push(`${at}: "${n.resource}" is not a base resource.`);
+    }
+    if (n.round < 1) errors.push(`${at}: "round" must be at least 1.`);
+    if (n.round < lastRound) errors.push(`${at}: rounds must not decrease.`);
+    lastRound = Math.max(lastRound, n.round);
+    const problem = nodeCellProblem(
+      map,
+      q,
+      config,
+      taken,
+      coresOk ? coreKeys : new Set<number>(),
+      n.owner,
+      n.x,
+      n.y,
+    );
+    if (problem !== null) {
+      errors.push(
+        `${at}: illegal cell (${String(n.x)}, ${String(n.y)}): ${problem}.`,
+      );
+    } else {
+      taken.add(cellKey(map, n.x, n.y));
+    }
+    const count = (perOwner.get(n.owner) ?? 0) + 1;
+    perOwner.set(n.owner, count);
+    if (count === config.maxAddedNodesPerPlot + 1) {
+      errors.push(
+        `${at}: player ${String(n.owner)} has more than ${String(config.maxAddedNodesPerPlot)} added nodes.`,
+      );
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Whole-state validation
 
 export type ValidateTeamStateResult =
@@ -801,6 +1083,7 @@ const STATE_KEYS = new Set([
   'nextConduitId',
   'conduits',
   'modifiers',
+  'addedNodes',
 ]);
 const PLACED_KEYS = new Set([
   'id',
@@ -885,7 +1168,8 @@ function validateInner(
     return undefined;
   }
   const map = mapResult.config;
-  const q = queryMap(map, content.terrain);
+  const addedNodes = parseAddedNodes(data['addedNodes'], errors);
+  const q = queryMap(map, content.terrain, addedNodes ?? []);
 
   // Cores
   const cores: (Cell | null)[] = [];
@@ -1046,6 +1330,17 @@ function validateInner(
       coreKeys.add(cellKey(map, c.x, c.y));
     }
   }
+  if (addedNodes !== undefined) {
+    checkAddedNodes(
+      addedNodes,
+      map,
+      content,
+      config,
+      coresOk,
+      coreKeys,
+      errors,
+    );
+  }
   const index = new Map<number, number>(); // cell -> array position
   placed.forEach((b, i) => {
     const def = defs.get(b.id);
@@ -1144,5 +1439,6 @@ function validateInner(
     nextConduitId,
     conduits,
     ...(modifiers === undefined ? {} : { modifiers }),
+    ...(addedNodes === undefined ? {} : { addedNodes }),
   };
 }
