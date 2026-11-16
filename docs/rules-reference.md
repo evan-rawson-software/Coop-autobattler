@@ -607,7 +607,7 @@ before, round, leg, players, rerolls}` and optionally `offerWeights` (a list of
 `{def, weight, fromRound?}` that replaces the shipped list for this vector) and
 `extraOffers` (default 0: every roll and re-roll makes that many offers more than
 `shopOfferCount`, Market day; `shop-roll.17` and `shop-roll.18`; the vectors
-`run-replay.s1-p1-market-day` and `run-replay.s1-p2-market-day` play Market day
+`run-replay.s2-p1-market-day` and `run-replay.s1-p2-market-day` play Market day
 through its shop). Start at `rootRng(seed)`, draw each
 label in `before` in order, then draw `shop:r<round>:<leg>`. For each player
 `i`, roll the offers from that stream's child `p<i>`, then re-roll `rerolls`
@@ -4755,7 +4755,7 @@ example a small and a big Windfall); they compete for a single place. The
 definitions whose first round has come (`round >= fromRound`; `fromRound`
 defaults to 1, `round` is `RunState.round`, the round of the event step) and
 whose handler says `available` (Workshop: some owned building
-below tier 3; Shrine: at least one modifier can be taken; Windfall and Market
+below tier 3 that a player can pay for; Drill: some owned collector below tier 3; Shrine: at least one modifier can be taken; Windfall and Market
 day: always) form the pool, in file order. Both conditions are checked before
 the draw, so the number of draws is still the number of offers, and where no
 `fromRound` is above the round the draws are those of the pool without it
@@ -4847,6 +4847,37 @@ any number of offers from 1 to `offerCount`. More event types will come later.
     result: 'upgrade', building, def, newTier, price }` (the price charged), or
     `{ player, result: 'skip', dropped: true, reason }` when a chosen upgrade
     was dropped (`not_enough_gold`, `invalid_choice`, `cannot_raise`).
+- **Drill** (no params; `fromRound` 2 in the shipped file; RS-4i2): every
+  player may raise ONE of their own collectors by one tier for free. It is the
+  Workshop's follow-up with two differences, a filter and a price; the code is
+  shared (`upgradeHandler`, `workshopOptions`/`workshopOptionProblem` with an
+  `only` filter on the building definition).
+  - *Available* when, at the moment the offers are generated, some player owns
+    a building (placed or in the stash) whose definition has `kind: "source"`
+    (a collector) and whose tier is below 3. The offer carries no data beyond
+    `{ id, event, type }`.
+  - *Follow-up.* `pending.followUp = { prompt: "drill_building", perPlayer:
+    true, options, votes }`, exactly as for the Workshop (option shape, player
+    then instance order, `skip` always allowed, `votes[i]` is the only record
+    of who has chosen), but `options` lists only that player's collectors
+    below tier 3, each with `price: 0` and `affordable: true`. A player with
+    no such collector starts with `"skip"` already chosen. The price is 0
+    (the Workshop price formula with percent 0), so `not_enough_gold` cannot
+    happen; `not_owner` and `invalid_choice` are as in the Workshop, and a
+    building that is not a collector is `invalid_choice`.
+  - *Applying.* When every player has chosen, in player order, `raiseTier` on
+    each chosen collector, no gold taken, then the shop. A stored pick that no
+    longer holds (the collector was sold, is now tier 3, or is not a
+    collector) is applied as a skip with `dropped: true, reason:
+    "invalid_choice"`. `event_resolved` carries `choices` and `applied` as for
+    the Workshop (`price` is 0).
+  - *Random streams.* None: no draw, and no other stream moves.
+  - *validateRunState* checks each option of a `drill_building` follow-up like
+    the Workshop's (structure only) and also that the building is a collector;
+    `perPlayer` must be true.
+  - Notes for a port: the saved shape is the Workshop's (no new field, no
+    format change); a ghost's tier bound counts Drill raises like Workshop
+    raises (`type` `workshop` or `drill` in the configured events).
 - **Shrine** (`params.choices`, default 3): available when a modifier is
   *eligible*. A modifier is eligible when `round >= fromRound` (`fromRound`
   defaults to 1; `round` is `RunState.round`, the round of the event step,
@@ -5125,11 +5156,11 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
 5. **Value bound**: the sum of the shop prices (at the building's tier) of
    every building, placed or stashed, is at most the bound below.
 6. **Tier bound**: for every owner, the number of tiers above the highest tier
-   the shop could have sold is at most the number of Workshop raises possible.
+   the shop could have sold is at most the number of Workshop or Drill raises possible.
    Exactly, with `shopTier(r)` the highest tier with a non-zero weight in any
    `economy.tierOdds` row with `fromRound <= r` (and at least the tier of every
    starting-kit entry, and 1), and `raises(r) = 2r - 1` if `events.json` has an
-   event of type `workshop` (the event steps before this round's PvP battle:
+   event of type `workshop` or `drill` (the event steps before this round's PvP battle:
    two per earlier round plus this round's PvE event; each Workshop raises one
    building per player by one tier), else 0: for each owner,
    `sum over its buildings (placed and stashed) of max(0, tier - shopTier(r))
@@ -5151,6 +5182,7 @@ The value bound, for `n` players at the start of the PvP battle of round `r`:
                + best pveWin * r                  best PvE win of each round up to r
                + best PvP gold * (r - 1)          PvP win or loss gold of the rounds before
                + maxEventGold * (2r - 1)          every event a Windfall
+               + drillStep * (2 * (r - f) + 1)    free Drill raises, if a Drill event exists (f its fromRound, r >= f)
                + kit                              price of the starting kit
     limit = n * (per player gold + kit)
 
@@ -5162,18 +5194,25 @@ every building and tier of the shipped content, so no chain of upgrades can
 manufacture value. (An earlier version added 25% for "Workshop upgrades that
 turn gold into slightly more value"; that was wrong and the margin was
 removed. A fuzz of seeded runs that buy, re-roll and upgrade shows no false
-rejection and a highest value-to-limit ratio of at most 1.) With the current content
-(starting gold 10, income 5, hard win 13, PvP win 8, Windfall 4, kit worth 67):
+rejection and a highest value-to-limit ratio of at most 1.) A Drill raises a
+collector for free, which does add value without costing gold, so the bound
+counts it: `drillStep` is the largest `price(t+1) - price(t)` (t = 1, 2) of any
+collector (`kind` `source`; 25 in the shipped content), and `2 * (r - f) + 1`
+is the number of event steps from the Drill's `fromRound` `f` up to the PvP
+battle of round `r` (the PvE event of rounds `f..r` and the PvP event of
+rounds `f..r-1`); 0 without a Drill event. With the current content
+(starting gold 10, income 5, hard win 13, PvP win 8, Windfall 4, Drill from round 2,
+kit worth 67):
 
 | Party | Round | Gold per player | Limit |
 | ----- | ----- | --------------- | ----- |
 | 1     | 1     | 32              | 99    |
-| 1     | 2     | 71              | 138   |
-| 1     | 3     | 110             | 177   |
-| 1     | 5     | 188             | 255   |
-| 1     | 8     | 305             | 372   |
-| 1     | 12    | 461             | 528   |
-| 2     | 3     | 110             | 354   |
+| 1     | 2     | 96              | 163   |
+| 1     | 3     | 185             | 252   |
+| 1     | 5     | 363             | 430   |
+| 1     | 8     | 630             | 697   |
+| 1     | 12    | 986             | 1053  |
+| 2     | 3     | 185             | 504   |
 
 The bound is the installed version's, which is also the ghost's version
 (MM-15), so no tolerance for runs that spanned an update is needed yet (MM-17).

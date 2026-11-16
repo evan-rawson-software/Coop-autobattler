@@ -202,6 +202,17 @@ describe('event cards', () => {
     ]);
   });
 
+  test('a Drill card says it raises a collector for free', () => {
+    const c = eventCards(
+      withOffers(run, [{ id: 'evt_drill', event: 'evt_drill', type: 'drill' }]),
+      0,
+    )[0];
+    expect(c?.title).toBe('Drill');
+    expect(c?.lines).toEqual([
+      'Raise one of your collectors by one tier, free.',
+    ]);
+  });
+
   test('the count can be 1, 2 or 3: the view never assumes three', () => {
     const offer = (n: number): Json => ({
       id: `evt_windfall#${String(n)}`,
@@ -247,6 +258,58 @@ describe('follow-ups', () => {
     }
     return null;
   }
+
+  test('a Drill lists only my collectors, free, and words its notices', () => {
+    let s: RunState | null = null;
+    for (let seed = 1; seed < 40 && s === null; seed++) {
+      let r = playUntil(newRun(seed), (x) => x.step === 'pve_choice');
+      r = playUntil({ ...r, round: 2 }, (x) => x.step === 'event_choice');
+      const offer = (
+        r.pending as unknown as { options: { id: string; type: string }[] }
+      ).options.find((o) => o.type === 'drill');
+      if (offer === undefined) continue;
+      r = send(r, { type: 'vote', choice: offer.id });
+      if (r.step === 'event_resolve') s = r;
+    }
+    if (s === null) {
+      // Not offered by the default path: force the offer.
+      let r = playUntil(newRun(1), (x) => x.step === 'event_choice');
+      r = {
+        ...r,
+        pending: {
+          options: [{ id: 'evt_drill', event: 'evt_drill', type: 'drill' }],
+        },
+      };
+      s = send(r, { type: 'vote', choice: 'evt_drill' });
+    }
+    const v = followUpView(s, config, content, 0, realDeps());
+    expect(v?.eventTitle).toBe('Drill');
+    expect(v?.free).toBe(true);
+    expect(v?.prompt).toBe('Raise a collector');
+    const cards = (v?.options ?? []).filter((o) => !o.skip);
+    expect(cards.length).toBeGreaterThan(0);
+    for (const c of cards) {
+      expect(c.lines).toContain('Free');
+      expect(c.lines.join(' ')).not.toMatch(/gold/);
+      expect(c.affordable).toBe(true);
+    }
+    expect((v?.options ?? []).find((o) => o.skip)?.title).toBe(
+      'Skip (no raise)',
+    );
+    const up = {
+      player: 0,
+      result: 'upgrade',
+      def: 'bld_extractor',
+      newTier: 2,
+      price: 0,
+    };
+    expect(appliedNotice([up], 0, content, 'drill')).toMatch(
+      /^Raised .* to tier 2\.$/,
+    );
+    expect(
+      appliedNotice([{ player: 0, result: 'skip' }], 0, content, 'drill'),
+    ).toBe('Drill skipped.');
+  });
 
   test('a Workshop asks which of my buildings, with where, tiers, price and Skip', () => {
     const s = pickEvent('workshop');

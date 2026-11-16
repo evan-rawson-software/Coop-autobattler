@@ -212,10 +212,16 @@ export class BuildSession {
       if (intent.type === 'ready') this.notice = null;
       for (const e of r.effects) {
         if (e.type === 'custom' && e.name === 'event_resolved') {
-          const applied = (e.data as { applied?: unknown }).applied;
+          const data = e.data as { applied?: unknown; type?: unknown };
+          const applied = data.applied;
           if (Array.isArray(applied)) {
             this.notice =
-              appliedNotice(applied, this.actingPlayer, content) ?? this.notice;
+              appliedNotice(
+                applied,
+                this.actingPlayer,
+                content,
+                typeof data.type === 'string' ? data.type : undefined,
+              ) ?? this.notice;
           }
         }
       }

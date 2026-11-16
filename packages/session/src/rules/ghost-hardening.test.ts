@@ -526,7 +526,9 @@ describe('item 3: tier plausibility', () => {
     // No Workshop event configured: no raises. Odds changed: the tier moves.
     const noWorkshop = {
       ...events,
-      events: events.events.filter((e) => e.type !== 'workshop'),
+      events: events.events.filter(
+        (e) => e.type !== 'workshop' && e.type !== 'drill',
+      ),
     };
     expect(ghostTierBound(5, econ, noWorkshop).upgradesPerOwner).toBe(0);
     const early = {

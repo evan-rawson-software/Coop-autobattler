@@ -216,10 +216,31 @@ function marketDay(): Pix {
   return p;
 }
 
+function drill(): Pix {
+  const p = new Pix(16, 16);
+  // A drill bit pointing down: a shaft with two thread notches and a tip.
+  p.rect(6, 2, 4, 3, '4');
+  p.rect(6, 2, 1, 3, '5');
+  p.rect(5, 5, 6, 2, '4');
+  p.rect(5, 5, 6, 1, '5');
+  p.rect(6, 7, 4, 2, '3');
+  p.rect(7, 9, 2, 2, '3');
+  p.line(6, 8, 9, 8, 'o');
+  p.line(6, 6, 10, 6, '3');
+  p.set(7, 11, '4');
+  p.set(8, 12, 'o');
+  p.set(4, 13, 'y');
+  p.set(11, 13, 'y');
+  p.set(8, 14, 'y');
+  p.outline('K');
+  return p;
+}
+
 const EVENT_ICONS: Readonly<Record<string, () => Pix>> = {
   workshop,
   shrine,
   windfall,
+  drill,
   market_day: marketDay,
 };
 

@@ -25,6 +25,7 @@ import {
   DEFAULT_WORKSHOP_PERCENT,
   workshopOptionProblem,
 } from './workshop-option.js';
+import { DRILL_PROMPT } from './events.js';
 import { isInteger, isRecord } from './json-guards.js';
 import { nextShopProblem } from './shop-effects.js';
 
@@ -125,6 +126,26 @@ export function validateRunState(
   }
   if (errors.length > 0) return { ok: false, errors };
   return { ok: true, state: data as RunState };
+}
+
+/** The structure of each option of a per-player raise follow-up (Workshop, Drill). */
+function checkUpgradeOptions(
+  opts: readonly unknown[],
+  team: Parameters<typeof workshopOptionProblem>[0],
+  n: number,
+  only: ((def: string) => boolean) | undefined,
+  err: (msg: string) => void,
+): void {
+  opts.forEach((o, i) => {
+    const player = isRecord(o) ? o['player'] : undefined;
+    const problem =
+      isInteger(player) && player >= 0 && player < n
+        ? workshopOptionProblem(team, player, o, only)
+        : 'player: must be a player index';
+    if (problem !== null) {
+      err(`pending.followUp.options[${String(i)}]: ${problem}.`);
+    }
+  });
 }
 
 function check(
@@ -422,16 +443,19 @@ function check(
         if (!isInteger(pct) || pct < 1 || pct > 100) {
           err('pending.offer.workshopPricePercent: must be an integer 1-100.');
         } else if (team.ok) {
-          opts.forEach((o, i) => {
-            const player = isRecord(o) ? o['player'] : undefined;
-            const problem =
-              isInteger(player) && player >= 0 && player < n
-                ? workshopOptionProblem(team.state, player, o)
-                : 'player: must be a player index';
-            if (problem !== null) {
-              err(`pending.followUp.options[${String(i)}]: ${problem}.`);
-            }
-          });
+          checkUpgradeOptions(opts, team.state, n, undefined, err);
+        }
+      } else if (fu['prompt'] === DRILL_PROMPT) {
+        if (!per) {
+          err('pending.followUp.perPlayer: a Drill follow-up needs true.');
+        } else if (team.ok) {
+          checkUpgradeOptions(
+            opts,
+            team.state,
+            n,
+            (def) => deps.content.buildings.get(def)?.kind === 'source',
+            err,
+          );
         }
       }
       (fu['votes'] as unknown[]).forEach((v, i) => {

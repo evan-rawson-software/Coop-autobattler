@@ -293,6 +293,40 @@ function maxEventGold(events: EventsConfig): number {
   return max;
 }
 
+/**
+ * Gold-equivalent value one player can gain from Drill events by the start of
+ * the PvP battle of `round`: a Drill raises one collector one tier for free,
+ * which adds `price(t+1) - price(t)` of building value without costing gold.
+ * Each Drill event step from its `fromRound` on can do that once, at the best
+ * case the largest such step of any collector. 0 without a Drill event.
+ * Event steps before the PvP battle of `round` from round `from`: the PvE
+ * event of each round `from..round` and the PvP event of each round before
+ * `round`, i.e. `2 * (round - from) + 1` (0 if `round < from`).
+ */
+function drillValue(
+  round: number,
+  content: Content,
+  events: EventsConfig,
+): number {
+  let from = Infinity;
+  for (const e of events.events) {
+    if (e.type === 'drill') from = Math.min(from, e.fromRound ?? 1);
+  }
+  if (round < from) return 0;
+  let step = 0;
+  for (const def of content.buildings.list()) {
+    if (def.kind !== 'source') continue;
+    for (let t = 1; t < 3; t++) {
+      const a = def.tiers[t - 1];
+      const b = def.tiers[t];
+      if (a !== undefined && b !== undefined && 'price' in a && 'price' in b) {
+        step = Math.max(step, b.price - a.price);
+      }
+    }
+  }
+  return step * (2 * (round - from) + 1);
+}
+
 export interface GhostValueBound {
   /** Gold one player can have received by the start of the PvP battle of the round. */
   readonly goldPerPlayer: number;
@@ -312,6 +346,7 @@ export interface GhostValueBound {
  *   + bestPveWin * round                           best PvE reward in each round up to this one
  *   + bestPvpGold * (round - 1)                    best PvP reward in the rounds before
  *   + maxEventGold * (2 * round - 1)               every event a Windfall
+ *   + drill value                                  free collector raises (Drill), 0 without one
  *   + kit                                          price of the starting kit
  *
  * times the party size. There is no margin: every gold source is counted at
@@ -336,7 +371,8 @@ export function ghostValueBound(
     Math.max(rewards.pveWin.easy, rewards.pveWin.medium, rewards.pveWin.hard) *
       round +
     Math.max(rewards.pvpWin, rewards.pvpLoss) * (round - 1) +
-    maxEventGold(events) * shops;
+    maxEventGold(events) * shops +
+    drillValue(round, content, events);
   let kitPerPlayer = 0;
   for (const k of economy.startingKit) {
     // A `pick` entry is bounded by its dearest choice.
@@ -370,8 +406,8 @@ export interface GhostTierBound {
  *    offers tiers by the row `tierOddsFor(r)`; shops of later rounds are not
  *    reached), at least the tier of every kit entry, at least 1.
  *  - `upgradesPerOwner`: `2 * round - 1` (the event steps before the PvP
- *    battle of `round`) if some configured event has type `workshop`, else 0.
- *    Each Workshop event raises at most one building per player by one tier.
+ *    battle of `round`) if some configured event has type `workshop` or `drill`, else 0.
+ *    Each Workshop or Drill event raises at most one building per player by one tier.
  *
  * A snapshot passes if, for every owner, the sum over that owner's buildings
  * (placed and stashed) of `max(0, tier - shopTier)` is at most
@@ -392,8 +428,11 @@ export function ghostTierBound(
       if (w > 0) shopTier = Math.max(shopTier, i + 1);
     });
   }
-  const workshop = events.events.some((e) => e.type === 'workshop');
-  return { shopTier, upgradesPerOwner: workshop ? 2 * round - 1 : 0 };
+  // Workshop and Drill each raise at most one building per player per event step.
+  const raises = events.events.some(
+    (e) => e.type === 'workshop' || e.type === 'drill',
+  );
+  return { shopTier, upgradesPerOwner: raises ? 2 * round - 1 : 0 };
 }
 
 // ---------------------------------------------------------------------------

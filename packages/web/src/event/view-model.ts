@@ -9,6 +9,7 @@
 import { playerName, screenText, screenTexts } from '../build/texts.js';
 import { findModifier, type BuildingDef, type EventsConfig } from '@game/core';
 import {
+  DRILL_PROMPT,
   SKIP_CHOICE,
   eventFollowUp,
   openVote,
@@ -167,6 +168,8 @@ export function eventCards(run: RunState, player: number): EventCard[] {
           ? 'Pay gold to upgrade a building one tier.'
           : `Pay gold to upgrade a building by ${count(tiers, 'tier')}.`,
       ];
+    } else if (type === 'drill') {
+      lines = ['Raise one of your collectors by one tier, free.'];
     } else if (type === 'shrine') {
       lines = ['Gain a lasting bonus for your walls, turrets, units or Core.'];
     } else if (type === 'windfall') {
@@ -242,6 +245,8 @@ export interface FollowUpView {
   readonly voted: string | null;
   /** True if each player chooses for themselves (Workshop). */
   readonly perPlayer: boolean;
+  /** True if the raise costs nothing (Drill): rows say Free, not a price. */
+  readonly free: boolean;
   /** Per player: has chosen (never what). */
   readonly chosen: readonly {
     readonly player: number;
@@ -293,6 +298,7 @@ export function upgradeGains(
 
 const PROMPTS: Readonly<Record<string, string>> = {
   workshop_building: 'Upgrade a building',
+  [DRILL_PROMPT]: 'Raise a collector',
   shrine_modifier: 'Choose a bonus',
 };
 
@@ -325,6 +331,7 @@ export function followUpView(
   const p = pendingRecord(run);
   const offer = isRecord(p['offer']) ? p['offer'] : {};
   const gold = run.perPlayer[player]?.gold ?? 0;
+  const free = f.prompt === DRILL_PROMPT;
   const options: FollowOption[] = [];
   for (const raw of f.options) {
     if (!isRecord(raw) || typeof raw['id'] !== 'string') continue;
@@ -375,7 +382,7 @@ export function followUpView(
           where,
           `Tier ${String(tier)} → ${String(newTier)}`,
           ...(gains === '' ? [] : [gains]),
-          `${String(price)} gold`,
+          free ? 'Free' : `${String(price)} gold`,
         ],
         affordable: reason === null && raw['affordable'] !== false,
         disabledReason: reason,
@@ -421,7 +428,7 @@ export function followUpView(
   if (f.perPlayer) {
     options.push({
       id: SKIP_CHOICE,
-      title: 'Skip (no upgrade)',
+      title: free ? 'Skip (no raise)' : 'Skip (no upgrade)',
       lines: [],
       affordable: true,
       disabledReason: null,
@@ -468,6 +475,7 @@ export function followUpView(
     options,
     voted: f.mine,
     perPlayer: f.perPlayer,
+    free,
     chosen,
     waiting,
   };
@@ -485,22 +493,28 @@ export function appliedNotice(
   applied: readonly Json[],
   player: number,
   content: WebContent,
+  /** The event type (`drill`, `workshop`); absent means the Workshop. */
+  type?: string,
 ): string | null {
+  const drill = type === 'drill';
   for (const a of applied) {
     if (!isRecord(a) || a['player'] !== player) continue;
     if (a['result'] === 'upgrade') {
       const def = str(a['def']) ?? '';
       const tier = typeof a['newTier'] === 'number' ? a['newTier'] : 0;
       const price = typeof a['price'] === 'number' ? a['price'] : 0;
-      return `Upgraded ${buildingName(content, def)} to tier ${String(tier)} (−${String(price)} gold).`;
+      return drill
+        ? `Raised ${buildingName(content, def)} to tier ${String(tier)}.`
+        : `Upgraded ${buildingName(content, def)} to tier ${String(tier)} (−${String(price)} gold).`;
     }
     if (a['dropped'] === true) {
       const why = str(a['reason']);
+      if (drill) return 'Raise skipped.';
       return why === 'not_enough_gold'
         ? 'Upgrade skipped: not enough gold.'
         : 'Upgrade skipped.';
     }
-    return 'Workshop skipped.';
+    return drill ? 'Drill skipped.' : 'Workshop skipped.';
   }
   return null;
 }

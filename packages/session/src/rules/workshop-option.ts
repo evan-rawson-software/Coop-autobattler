@@ -31,6 +31,8 @@ export function workshopOptionProblem(
   team: TeamState,
   player: number,
   option: unknown,
+  /** Only buildings whose definition passes (default: all, as the Workshop). */
+  only?: (def: string) => boolean,
 ): string | null {
   if (typeof option !== 'object' || option === null || Array.isArray(option)) {
     return 'not an object';
@@ -45,6 +47,7 @@ export function workshopOptionProblem(
   const b = placed ?? team.stash.find((x) => x.id === id);
   if (b === undefined) return 'no such building';
   if (b.owner !== player) return 'building belongs to another player';
+  if (only !== undefined && !only(b.def)) return 'building is not allowed';
   if (b.tier >= 3 || o['def'] !== b.def || o['tier'] !== b.tier) {
     return 'def or tier does not match the building';
   }

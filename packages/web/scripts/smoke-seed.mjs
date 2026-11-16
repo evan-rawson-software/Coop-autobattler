@@ -10,10 +10,11 @@ import { buildSaveRecord, createGameDeps, playBotRun } from '@game/session';
 import { loadSimContext } from '../../tools/src/sim/context.ts';
 
 // Optional arguments: strategy, seed, party size, run id. The defaults give the
-// party that beats the boss (`rush 2 2`); `siege 10 2` gives one that loses to
+// party that beats the boss (`rush 2 2`); `siege 12 2` gives one that loses to
 // it (both found by playing the bot on, nothing edited; the seeds changed when
 // the Brood boss joined the draw from round 3, issue #398, and `siege 4 2`
-// became `siege 10 2` when Market day joined the event pool, issue #410).
+// became `siege 10 2` when Market day joined the event pool, issue #410, and
+// `siege 12 2` when Drill did, issue #411).
 const [
   STRATEGY = 'rush',
   SEED_ARG = '2',

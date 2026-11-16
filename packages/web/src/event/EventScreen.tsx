@@ -187,9 +187,11 @@ export function EventResolveScreen(props: { run: RunHandle }) {
   const upgradePrimary = {
     id: 'confirm-upgrade',
     label:
-      confirmPrice === null
-        ? 'Upgrade'
-        : `Upgrade · ${String(confirmPrice)} gold`,
+      v?.free === true
+        ? 'Raise · Free'
+        : confirmPrice === null
+          ? 'Upgrade'
+          : `Upgrade · ${String(confirmPrice)} gold`,
     class: 'primary',
     disabled:
       busy ||
