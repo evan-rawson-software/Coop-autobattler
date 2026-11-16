@@ -450,11 +450,15 @@ describe('the event step', () => {
     const def = gameConfigs.events.events.find((e) => e.type === 'shrine');
     if (def === undefined) throw new Error('no shrine');
     const data = shrineHandler.instantiate(ctx, def, Rng.fromSeed(5));
-    // Only the stackable modifiers remain.
+    // Only the stackable modifiers remain (there are more than the offer
+    // holds), drawn in file order.
     const stackable = gameConfigs.events.modifiers
       .filter((m) => m.stackable)
       .map((m) => m.id);
-    expect(data['modifiers']).toEqual(stackable);
+    expect(stackable.length).toBeGreaterThan(3);
+    const offered = data['modifiers'] as string[];
+    expect(offered).toHaveLength(3);
+    expect(offered).toEqual(stackable.filter((id) => offered.includes(id)));
     // With none held, the offer has three.
     const fresh = shrineHandler.instantiate(
       { ...ctx, state: s },
@@ -1007,17 +1011,16 @@ describe('event offers: one per type, up to three (issue #48)', () => {
   const offersFor = (s: RunState, seed: number) =>
     hooks.eventOffers(s, Rng.fromSeed(seed)) as Record<string, Json>[];
 
-  test('Workshop unavailable and only three modifiers eligible: a Shrine and the Windfall', () => {
-    // Five modifiers; two non-stackable ones held leaves three.
+  test('Workshop unavailable, three non-stackable held: a Shrine drawing three of the five stackable, and the Windfall', () => {
     const state = holding(tier3(atEvent), [
-      'mod_stout_walls',
-      'mod_sharp_turrets',
+      'mod_sharpshooters',
+      'mod_hornet_swarm',
+      'mod_vanguard',
     ]);
-    const eligible = [
-      'mod_fortified_core',
-      'mod_drilled_troops',
-      'mod_reinforced_frames',
-    ];
+    const stackable = gameConfigs.events.modifiers
+      .filter((m) => m.stackable)
+      .map((m) => m.id);
+    expect(stackable).toHaveLength(5);
     for (let seed = 1; seed <= 300; seed++) {
       const offers = offersFor(state, seed);
       expect(offers.map((o) => o['type']).sort()).toEqual([
@@ -1025,7 +1028,10 @@ describe('event offers: one per type, up to three (issue #48)', () => {
         'windfall',
       ]);
       const shrine = offers.find((o) => o['type'] === 'shrine');
-      expect(shrine?.['modifiers']).toEqual(eligible);
+      const offered = shrine?.['modifiers'] as string[];
+      expect(offered).toHaveLength(3);
+      // File order, only stackable ones.
+      expect(offered).toEqual(stackable.filter((id) => offered.includes(id)));
     }
   });
 
@@ -1117,11 +1123,27 @@ describe('event offers: one per type, up to three (issue #48)', () => {
     const nonStackable = gameConfigs.events.modifiers
       .filter((m) => !m.stackable)
       .map((m) => m.id);
-    // Three non-stackable held: one non-stackable and the stackable one left.
-    const two = holding(state, nonStackable.slice(0, 3));
-    const left = [nonStackable[3] as string, ...stackable];
+    // A configuration of two non-stackable modifiers and one stackable one.
+    const small = eventHooks(
+      content,
+      loadEventsOrThrow({
+        offerCount: 3,
+        events: gameConfigs.events.events.map((e) => ({ ...e })),
+        modifiers: gameConfigs.events.modifiers
+          .filter(
+            (m) =>
+              m.id === stackable[0] || nonStackable.slice(0, 2).includes(m.id),
+          )
+          .map((m) => ({ ...m })),
+      }),
+    );
+    const smallOffers = (s: RunState, seed: number) =>
+      small.eventOffers(s, Rng.fromSeed(seed)) as Record<string, Json>[];
+    // One non-stackable held: one non-stackable and the stackable one left.
+    const one = holding(state, [nonStackable[0] as string]);
+    const left = [nonStackable[1] as string, stackable[0] as string];
     for (let seed = 1; seed <= 50; seed++) {
-      const shrine = offersFor(two, seed).find((o) => o['type'] === 'shrine');
+      const shrine = smallOffers(one, seed).find((o) => o['type'] === 'shrine');
       expect([...(shrine?.['modifiers'] as string[])].sort()).toEqual(
         [...left].sort(),
       );
@@ -1140,6 +1162,118 @@ describe('event offers: one per type, up to three (issue #48)', () => {
       ) as Record<string, Json>[];
       expect(offers.map((o) => o['type'])).toEqual(['windfall']);
     }
+  });
+
+  describe('Shrine gating by round (fromRound, #423)', () => {
+    const effect = [{ kind: 'core_health_percent', percent: 5 }];
+    const gated = loadEventsOrThrow({
+      offerCount: 3,
+      events: gameConfigs.events.events.map((e) => ({ ...e })),
+      modifiers: [
+        { id: 'mod_early', stackable: false, effects: effect },
+        { id: 'mod_late', stackable: false, fromRound: 3, effects: effect },
+        { id: 'mod_later', stackable: true, fromRound: 5, effects: effect },
+      ],
+    });
+    const gatedHooks = eventHooks(content, gated);
+    const at = (round: number): RunState => ({
+      ...tier3(atEvent),
+      round,
+    });
+    const shrineAt = (s: RunState, seed: number) =>
+      (
+        gatedHooks.eventOffers(s, Rng.fromSeed(seed)) as Record<string, Json>[]
+      ).find((o) => o['type'] === 'shrine')?.['modifiers'];
+
+    test('only modifiers unlocked at the round are offered, in file order', () => {
+      for (let seed = 1; seed <= 40; seed++) {
+        expect(shrineAt(at(1), seed)).toEqual(['mod_early']);
+        expect(shrineAt(at(2), seed)).toEqual(['mod_early']);
+        expect(shrineAt(at(3), seed)).toEqual(['mod_early', 'mod_late']);
+        expect(shrineAt(at(5), seed)).toEqual([
+          'mod_early',
+          'mod_late',
+          'mod_later',
+        ]);
+      }
+    });
+
+    test('a gated modifier already held is not offered again unless it stacks', () => {
+      const held = (ids: string[]): RunState => ({
+        ...at(6),
+        team: {
+          ...at(6).team,
+          modifiers: gated.modifiers
+            .filter((m) => ids.includes(m.id))
+            .map((m) => ({ id: m.id, effects: m.effects })),
+        },
+      });
+      expect(shrineAt(held(['mod_early', 'mod_late', 'mod_later']), 1)).toEqual(
+        ['mod_later'],
+      );
+    });
+
+    test('no Shrine while every unlocked modifier is held or still locked', () => {
+      const onlyLate = eventHooks(
+        content,
+        loadEventsOrThrow({
+          offerCount: 3,
+          events: gameConfigs.events.events.map((e) => ({ ...e })),
+          modifiers: [
+            { id: 'mod_late', stackable: false, fromRound: 3, effects: effect },
+          ],
+        }),
+      );
+      const types = (round: number) =>
+        (
+          onlyLate.eventOffers(at(round), Rng.fromSeed(1)) as Record<
+            string,
+            Json
+          >[]
+        )
+          .map((o) => o['type'])
+          .sort();
+      expect(types(2)).toEqual(['windfall']);
+      expect(types(3)).toEqual(['shrine', 'windfall']);
+    });
+
+    test('choosing a modifier before its round is refused', () => {
+      const ctx = { state: at(2), content, config: gated };
+      const r = shrineHandler.choose?.(
+        ctx,
+        { id: 'x', event: 'x', type: 'shrine' },
+        {
+          id: 'mod_late',
+        },
+      );
+      expect(r).toEqual({ ok: false, reason: 'not_unlocked' });
+      const ok = shrineHandler.choose?.(
+        { ...ctx, state: at(3) },
+        { id: 'x', event: 'x', type: 'shrine' },
+        { id: 'mod_late' },
+      );
+      expect(ok?.ok).toBe(true);
+    });
+
+    test('with no fromRound anywhere, the round does not change the offer', () => {
+      const plain = eventHooks(
+        content,
+        loadEventsOrThrow({
+          offerCount: 3,
+          events: gameConfigs.events.events.map((e) => ({ ...e })),
+          modifiers: gameConfigs.events.modifiers.map((m) => ({
+            id: m.id,
+            stackable: m.stackable,
+            effects: m.effects,
+          })),
+        }),
+      );
+      for (let seed = 1; seed <= 40; seed++) {
+        const a = plain.eventOffers(at(1), Rng.fromSeed(seed));
+        const b = plain.eventOffers(at(9), Rng.fromSeed(seed));
+        expect(b).toEqual(a);
+      }
+    });
   });
 
   describe('several definitions of one type', () => {
@@ -1364,10 +1498,10 @@ describe('event follow-ups', () => {
 describe('a Shrine modifier changes the outcome of a real battle', () => {
   // A modifier far stronger than the shipped ones, so that the party's thin
   // board (it never wins without help) wins a battle it would have lost. The
-  // seed was found by searching seeds 1 to 40 (again for issue #291, when the kit walls became random shapes): at this
+  // seed was found by searching seeds 1 to 40 (again for issue #291, when the kit walls became random shapes, and for issue #423, when more modifiers became offerable): at this
   // seed the Shrine offers it and the second PvE battle flips from a loss to
   // a win.
-  const SEED = 23;
+  const SEED = 6;
   const events = loadEventsOrThrow({
     offerCount: 3,
     events: gameConfigs.events.events.map((e) => ({ ...e })),

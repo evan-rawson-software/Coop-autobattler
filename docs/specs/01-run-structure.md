@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v5.1
+Status: Draft v5.2
 
 ## Core loop
 
@@ -58,7 +58,7 @@ Lobby -> Map + Core placement ->
     their own gold, or skip. The party votes on the event; each player then
     chooses for themselves, and it is offered only if some player can afford
     an upgrade.
-  - **Shrine** — choose one of several run modifiers.
+  - **Shrine** — choose one of several run modifiers (RS-4k).
   - **Windfall** — every player gets some gold at once. No follow-up.
   - **Market day** — each player's next shop has one extra offer and a free
     first re-roll (RS-4i1).
@@ -126,6 +126,42 @@ Lobby -> Map + Core placement ->
 - **RS-4j [DECIDED]** Held run modifiers are always visible. Once taken, a
   modifier is shown on every run screen (the run bar), with the effects
   totalled and drawbacks marked (issue #418).
+- **RS-4k [PROPOSED]** The **Shrine** offers up to three run modifiers. Like
+  an event (RS-4g), a modifier may have a first round (`fromRound`) and is
+  offered only from that round on. The Shrine pool is the modifiers that are
+  unlocked at the current round and are either not yet held or stackable;
+  **pacts are never offered by the Shrine** (RS-4i6). The Shrine is available
+  when the pool is not empty, and its offers are drawn from the pool at
+  random.
+- **RS-4l [PROPOSED]** The modifier list, with first numbers (configuration).
+  Stacks are summed, never compounded (RS-4e).
+
+  | Modifier | Effect | Stacks | From round |
+  | --- | --- | --- | --- |
+  | Stout walls | +25% wall health | yes | 1 |
+  | Sharp turrets | +20% turret damage | yes | 1 |
+  | Fortified Core | +20% Core health | yes | 1 |
+  | Drilled troops | +10% unit strength | yes | 1 |
+  | Reinforced frames | +10% health, all buildings | yes | 1 |
+  | Sharpshooters | +25% archer strength | no | 1 |
+  | Hornet swarm | +25% drone strength | no | 1 |
+  | Vanguard | +20% soldier and raider strength | no | 1 |
+  | Quick march | +10% unit move speed | yes | 1 |
+  | Rapid fire | +15% unit attack speed | no | 2 |
+  | Tithe | +1 gold per shop for every player | yes | 1 |
+  | Scrap dealer | sell refund 50% to 75% for every player | no | 1 |
+  | Stone skin | +1 Golem armor | no | 3 |
+  | Wide arcs | +50% caster splash | no | 3 |
+  | Claimstakers | points of interest captured 50% faster | no | 1 |
+
+  A strength modifier may name unit types; it then applies only to those
+  (Sharpshooters, Hornet swarm and Vanguard). Gold modifiers are party-wide:
+  they act for every player, whoever took them. "Supply" (faster collectors)
+  was considered and left out.
+- **RS-4m [DECIDED]** A modifier whose feature is not built yet is not in the
+  content. A feature-linked modifier (move speed, attack speed, gold per shop,
+  sell refund, Golem armor, caster splash, points of interest) enters the
+  content only once its feature has landed.
 
 ## Shop
 

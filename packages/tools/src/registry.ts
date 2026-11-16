@@ -132,7 +132,9 @@ export const contentRegistry: readonly ContentEntry[] = [
     key: 'events',
     contentFile: 'events.json',
     schemaFile: 'events.schema.json',
-    load: (data) => wrap(loadEvents(data)),
+    needs: ['units'],
+    load: (data, loaded) =>
+      wrap(loadEvents(data, { units: need(loaded, 'units') })),
   },
   {
     key: 'threats',

@@ -74,7 +74,7 @@ import {
   MAX_TICK_DAMAGE,
 } from './limits.js';
 import { maxHealthOf } from './max-health.js';
-import { modifierPercent } from './modifiers.js';
+import { modifierPercent, unitStrengthPercent } from './modifiers.js';
 import { cappedBonus, isOverloadBeat, overloadLevel } from './ramp.js';
 import type { Cell } from './map.js';
 import type { NeutralZone } from './neutral-zone.js';
@@ -1033,11 +1033,14 @@ export function createArenaSim(
       const def = content.buildings.get(p.def);
       return def?.kind === 'economy' && def.effect.type === 'unit_strength';
     });
-    const strength = addInt(
-      addInt(base, modifierPercent(team, 'unit_strength_percent')),
-      hasRamp ? simConfig.maxUnitStrengthPercent : 0,
-    );
+    const rampMax = hasRamp ? simConfig.maxUnitStrengthPercent : 0;
     for (const def of content.units.list()) {
+      // Worst case per unit type: untargeted plus the targeted effects that
+      // list this type.
+      const strength = addInt(
+        addInt(base, unitStrengthPercent(team, def.id)),
+        rampMax,
+      );
       const stats = unitStats(0, def, strength);
       // Overload at the last possible tick scales every hit; one hit must
       // stay within MAX_HIT so the per-tick damage sums are exact.
@@ -1058,7 +1061,14 @@ export function createArenaSim(
         'Scheduled wave healthPercent',
       );
       const def = content.units.get(w.unit);
-      if (def !== undefined) unitStats(0, def, strength, w.healthPercent);
+      if (def !== undefined) {
+        unitStats(
+          0,
+          def,
+          addInt(addInt(base, unitStrengthPercent(team, def.id)), rampMax),
+          w.healthPercent,
+        );
+      }
     }
   }
   assertWithin(
@@ -1872,11 +1882,12 @@ function spawnStrength(
   ctx: ArenaContext,
   side: number,
   owner: number | null,
+  unitId: string,
 ): number {
   return (
     (owner === null ? 0 : rampBonus(sim, ctx, side, 'unit_strength', owner)) +
     (sim.sideOptions?.[side === 0 ? 0 : 1]?.unitStrengthPercent ?? 0) +
-    modifierPercent(sim.teams[side === 0 ? 0 : 1], 'unit_strength_percent')
+    unitStrengthPercent(sim.teams[side === 0 ? 0 : 1], unitId)
   );
 }
 
@@ -1897,7 +1908,7 @@ function addUnit(
   const stats = unitStats(
     side,
     unitDef,
-    spawnStrength(sim, ctx, side, rampOwner),
+    spawnStrength(sim, ctx, side, rampOwner, unitDef.id),
     healthPercent,
   );
   const unit: UnitSim = {
@@ -2237,7 +2248,7 @@ export function spawnUnitForTest(
   const stats = unitStats(
     args.side,
     def,
-    spawnStrength(sim, ctx, args.side, owner),
+    spawnStrength(sim, ctx, args.side, owner, def.id),
   );
   const unit: UnitSim = {
     id: sim.nextUnitId,

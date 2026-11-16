@@ -16231,5 +16231,133 @@
       },
       "eventLogHash": "5c900bc3"
     }
+  },
+  {
+    "id": "arena-sim.targeted-unit-strength",
+    "kind": "arena-sim",
+    "description": "Each side has a targeted strength modifier: side 0 Sharpshooters (+25% archer), side 1 Vanguard (+20% soldier and raider). Each side fields an archer and a soldier at the same cells; only the listed types are stronger, so the battle is not symmetric (the state hash and Core health pin the numbers).",
+    "input": {
+      "gapRows": 4,
+      "teamA": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "teamB": {
+        "map": {
+          "width": 12,
+          "height": 16,
+          "partySize": 1,
+          "plotWidth": 12,
+          "features": [],
+          "nodes": []
+        },
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 5,
+            "y": 0
+          }
+        ]
+      },
+      "ticks": 400,
+      "report": "positions",
+      "units": [
+        {
+          "side": 0,
+          "def": "unit_archer",
+          "x": 3,
+          "y": 22
+        },
+        {
+          "side": 0,
+          "def": "unit_soldier",
+          "x": 8,
+          "y": 22
+        },
+        {
+          "side": 1,
+          "def": "unit_archer",
+          "x": 3,
+          "y": 13
+        },
+        {
+          "side": 1,
+          "def": "unit_soldier",
+          "x": 8,
+          "y": 13
+        }
+      ],
+      "modifiersA": [
+        {
+          "id": "mod_sharpshooters",
+          "effects": [
+            {
+              "kind": "unit_strength_percent",
+              "percent": 25,
+              "units": ["unit_archer"]
+            }
+          ]
+        }
+      ],
+      "modifiersB": [
+        {
+          "id": "mod_vanguard",
+          "effects": [
+            {
+              "kind": "unit_strength_percent",
+              "percent": 20,
+              "units": ["unit_soldier", "unit_raider"]
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "tick": 400,
+        "stateHash": "48b0f18d",
+        "events": 136,
+        "sides": [
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 408,
+            "buildingsDestroyed": 0,
+            "coreHealth": [94]
+          },
+          {
+            "spawned": 2,
+            "alive": 2,
+            "unitsDied": 0,
+            "buildingDamageDealt": 406,
+            "buildingsDestroyed": 0,
+            "coreHealth": [92]
+          }
+        ],
+        "positions": [
+          [1, 868, 7468],
+          [2, 1640, 8035],
+          [3, 1204, 1236],
+          [4, 1640, 605]
+        ]
+      },
+      "eventLogHash": "5b37c435"
+    }
   }
 ]

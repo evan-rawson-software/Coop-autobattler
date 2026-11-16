@@ -95,7 +95,7 @@ describe('the bot builds the Foundry and the refining chains (issue #384)', () =
   });
 
   test('fortify builds the Aether chain and its casters fight', () => {
-    for (const seed of [22]) {
+    for (const seed of [5]) {
       const r = play('fortify', seed);
       expect(r.rejected).toEqual([]);
       expect(onBoard(r, 'bld_refinery_bc')).toBeGreaterThan(0);

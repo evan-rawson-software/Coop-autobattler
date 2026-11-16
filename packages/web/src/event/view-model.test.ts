@@ -382,11 +382,19 @@ describe('follow-ups', () => {
     }
   });
 
+  const STACKING = new Set([
+    'mod_stout_walls',
+    'mod_sharp_turrets',
+    'mod_fortified_core',
+    'mod_drilled_troops',
+    'mod_reinforced_frames',
+  ]);
+
   test('only a stackable bonus carries the stacks flag', () => {
     const s = pickEvent('shrine') as RunState;
     const v = followUpView(s, config, content, 0, realDeps());
     for (const o of v?.options ?? []) {
-      expect(o.stacks).toBe(o.id === 'mod_drilled_troops');
+      expect(o.stacks).toBe(STACKING.has(o.id));
       expect(o.lines).not.toContain('Stacks');
     }
   });

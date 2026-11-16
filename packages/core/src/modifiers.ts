@@ -44,7 +44,15 @@ export type ModifierEffect =
       readonly percent: number;
     }
   | { readonly kind: 'core_health_percent'; readonly percent: number }
-  | { readonly kind: 'unit_strength_percent'; readonly percent: number }
+  | {
+      readonly kind: 'unit_strength_percent';
+      readonly percent: number;
+      /**
+       * The unit types it applies to, in the order of content/units.json, no
+       * duplicates, at least one. Absent: every unit type.
+       */
+      readonly units?: readonly string[];
+    }
   | { readonly kind: 'turret_damage_percent'; readonly percent: number };
 
 /** A modifier as held by a team: ID and the effects it had when taken. */
@@ -54,6 +62,7 @@ export interface TeamModifier {
 }
 
 export const MODIFIER_ID = /^mod_[a-z0-9_]+$/;
+const UNIT_ID = /^unit_[a-z0-9_]+$/;
 
 /** Highest percent a single effect may give (keeps products in range). */
 export const MAX_MODIFIER_PERCENT = 1000;
@@ -75,7 +84,9 @@ export function parseModifierEffect(
   const allowed =
     kind === 'building_health_percent'
       ? new Set(['kind', 'target', 'percent'])
-      : new Set(['kind', 'percent']);
+      : kind === 'unit_strength_percent'
+        ? new Set(['kind', 'percent', 'units'])
+        : new Set(['kind', 'percent']);
   for (const key of sortedKeys(raw)) {
     if (!allowed.has(key)) errors.push(`${at}: unknown field "${key}".`);
   }
@@ -105,11 +116,34 @@ export function parseModifierEffect(
       ? { kind, target: target as ModifierTarget, percent }
       : undefined;
   }
-  if (
-    kind === 'core_health_percent' ||
-    kind === 'unit_strength_percent' ||
-    kind === 'turret_damage_percent'
-  ) {
+  if (kind === 'unit_strength_percent') {
+    const rawUnits = raw['units'];
+    let units: readonly string[] | undefined;
+    let unitsOk = true;
+    if (rawUnits !== undefined) {
+      const list = Array.isArray(rawUnits) ? (rawUnits as unknown[]) : [];
+      const ids = list.filter((u): u is string => typeof u === 'string');
+      if (
+        !Array.isArray(rawUnits) ||
+        list.length === 0 ||
+        ids.length !== list.length ||
+        !ids.every((u) => UNIT_ID.test(u))
+      ) {
+        errors.push(
+          `${at}: "units" must be a non-empty array of unit IDs (${String(UNIT_ID)}).`,
+        );
+        unitsOk = false;
+      } else if (new Set(ids).size !== ids.length) {
+        errors.push(`${at}: "units" must not list a unit twice.`);
+        unitsOk = false;
+      } else {
+        units = ids;
+      }
+    }
+    if (!percentOk || !unitsOk) return undefined;
+    return units === undefined ? { kind, percent } : { kind, percent, units };
+  }
+  if (kind === 'core_health_percent' || kind === 'turret_damage_percent') {
     return percentOk ? { kind, percent } : undefined;
   }
   errors.push(
@@ -199,6 +233,32 @@ export function modifierPercent(
       } catch {
         throw new RangeError(
           `Modifier ${kind}: the percent sum must be an integer within the safe bound ${String(Number.MAX_SAFE_INTEGER)} (adding ${String(e.percent)} to ${String(total)}).`,
+        );
+      }
+    }
+  }
+  return total;
+}
+
+/**
+ * Sum of the `unit_strength_percent` effects that apply to unit type
+ * `unitId`: every effect without `units`, plus every effect whose `units`
+ * lists it. Checked like `modifierPercent`.
+ */
+export function unitStrengthPercent(
+  team: HasModifiers,
+  unitId: string,
+): number {
+  let total = 0;
+  for (const m of team.modifiers ?? []) {
+    for (const e of m.effects) {
+      if (e.kind !== 'unit_strength_percent') continue;
+      if (e.units !== undefined && !e.units.includes(unitId)) continue;
+      try {
+        total = addInt(total, e.percent);
+      } catch {
+        throw new RangeError(
+          `Modifier unit_strength_percent: the percent sum must be an integer within the safe bound ${String(Number.MAX_SAFE_INTEGER)} (adding ${String(e.percent)} to ${String(total)}).`,
         );
       }
     }

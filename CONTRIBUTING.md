@@ -212,6 +212,10 @@ The rule for a change that makes saved data unreadable:
   because records without it stay readable. The second is the optional `boss`
   (the archetype ID of a boss opponent, on `pvpOpponent` and the round record's
   PvP opponent): records without it stay readable and keep the old behaviour.
+  The third is the optional `units` on a `unit_strength_percent` effect of a
+  held modifier (the unit types it applies to): records without it stay
+  readable and mean every unit type, as before. (The optional `fromRound` on a
+  modifier definition is content, not saved data.)
 - The major version is raised once for the whole design change (this is
   done). Further format changes inside #124 (multi-Core battles, border
   links, per-player placement) raise the format numbers only. Nobody holds a

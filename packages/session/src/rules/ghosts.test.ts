@@ -448,6 +448,43 @@ describe('validation', () => {
     throw new Error('no legal extractor cell');
   }
 
+  test('a held modifier must be unlocked by the snapshot round (fromRound)', async () => {
+    const { ctx, good } = await setup();
+    const held = {
+      ...clone(good),
+      team: {
+        ...clone(good.team),
+        modifiers: [
+          {
+            id: 'mod_sharpshooters',
+            effects: [
+              {
+                kind: 'unit_strength_percent',
+                percent: 25,
+                units: ['unit_archer'],
+              },
+            ],
+          },
+        ],
+      },
+    };
+    expect(validateGhostSnapshot(clone(held), ctx).ok).toBe(true);
+    const gated = {
+      ...ctx,
+      events: {
+        ...ctx.events,
+        modifiers: ctx.events.modifiers.map((m) =>
+          m.id === 'mod_sharpshooters'
+            ? { ...m, fromRound: good.round + 1 }
+            : m,
+        ),
+      },
+    };
+    const r = validateGhostSnapshot(clone(held), gated);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/not offered before round/);
+  });
+
   test('the control snapshots are valid', async () => {
     const { ctx, good } = await setup();
     expect(validateGhostSnapshot(clone(good), ctx).ok).toBe(true);
@@ -566,6 +603,36 @@ describe('validation', () => {
         ],
       },
     };
+    bad['targeted modifier without its units'] = {
+      ...clone(good),
+      team: {
+        ...clone(good.team),
+        modifiers: [
+          {
+            id: 'mod_sharpshooters',
+            effects: [{ kind: 'unit_strength_percent', percent: 25 }],
+          },
+        ],
+      },
+    };
+    bad['targeted modifier with other units'] = {
+      ...clone(good),
+      team: {
+        ...clone(good.team),
+        modifiers: [
+          {
+            id: 'mod_sharpshooters',
+            effects: [
+              {
+                kind: 'unit_strength_percent',
+                percent: 25,
+                units: ['unit_drone'],
+              },
+            ],
+          },
+        ],
+      },
+    };
     bad['unplaced Core'] = {
       ...clone(good),
       team: { ...clone(good.team), cores: [null] },
@@ -587,8 +654,8 @@ describe('validation', () => {
     const mixed = selectGhost(
       pre,
       [
-        ...all,
         { ...clone(good), owner: { id: 'good', label: 'Good' }, runId: 'rg' },
+        ...all,
       ],
       ctx,
     );

@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v5.1
+Status: Draft v5.2
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.
@@ -171,3 +171,11 @@ first. Gold (next section) is never produced by the factory.
   effect (a Pact, RS-4i6). **[PROPOSED]** The total for any stat has a floor: it
   never takes the stat below a minimum. The floor value is set in content and
   tested.
+  **[PROPOSED]** The modifiers, their numbers, which stack and the round each
+  unlocks at are the table in RS-4l. All five of the first modifiers stack; the
+  new ones are mostly one-time, with a few small stackable ones (Quick march,
+  Tithe). A modifier may have a first round (`fromRound`), and the Shrine pool
+  is the modifiers that are unlocked and either not held or stackable (RS-4k);
+  pacts are never offered by it. Stacks are summed, not compounded (RS-4e).
+  Gold modifiers are party-wide and act for every player. A modifier linked to
+  a feature enters the content only once the feature has landed (RS-4m).

@@ -44,7 +44,7 @@ export const baseDeps: RunDeps = createDeps(content, mapgenConfig);
 export const gameConfigs: GameConfigs = {
   mapgen: mapgenConfig,
   economy: loadEconomyOrThrow(economyJson, { buildings: content.buildings }),
-  events: loadEventsOrThrow(eventsJson),
+  events: loadEventsOrThrow(eventsJson, { units: content.units }),
   threats: loadThreatsOrThrow(threatsJson, {
     units: content.units,
     buildings: content.buildings,

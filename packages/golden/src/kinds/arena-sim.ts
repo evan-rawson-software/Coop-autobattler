@@ -26,6 +26,10 @@
  * `content/buildings.json`, added for this run (a consumer of a refined
  * resource, which no shipped building is yet).
  *
+ * Optional `modifiersA` and `modifiersB` give a side's run modifiers, a list of
+ * `{ id, effects }` (the form held in a team state, see `TeamState.modifiers`),
+ * so a scenario can show what a modifier does in a battle.
+ *
  * An optional `checkpointEvery` (a positive integer) adds `checkpoints` to the
  * output: at every multiple of it that the battle reaches (not tick 0), an
  * entry `{ tick, alive: [side 0, side 1], coreHealth: [side 0, side 1],
@@ -37,6 +41,7 @@ import {
   hashJson,
   isCoreHealth,
   loadUnitsOrThrow,
+  parseTeamModifiers,
   runTeamStateOps,
   spawnUnitForTest,
   stepArena,
@@ -46,6 +51,7 @@ import {
   type Json,
   type MapgenConfig,
   type SimConfig,
+  type TeamState,
 } from '@game/core';
 import { withExtraBuildings } from './extra-buildings.js';
 import type { SimulationFn } from './prng.js';
@@ -62,6 +68,17 @@ function nonNegative(v: Json | undefined, what: string): number {
     throw new TypeError(`arena-sim: ${what} must be a non-negative integer`);
   }
   return v;
+}
+
+/** The team with the run modifiers `raw` (if given), parsed and checked. */
+function withModifiers(team: TeamState, raw: Json | undefined): TeamState {
+  if (raw === undefined) return team;
+  const errors: string[] = [];
+  const modifiers = parseTeamModifiers(raw, errors);
+  if (modifiers === undefined) {
+    throw new TypeError(`arena-sim: modifiers: ${errors.join(' ')}`);
+  }
+  return { ...team, modifiers };
 }
 
 /** Per-side summary of a battle state. */
@@ -112,8 +129,14 @@ export function makeArenaSimKind(
     if (a === undefined || b === undefined) {
       throw new TypeError('arena-sim: teamA and teamB are required');
     }
-    const teamA = runTeamStateOps(a, content, mapgen).state;
-    const teamB = runTeamStateOps(b, content, mapgen).state;
+    const teamA = withModifiers(
+      runTeamStateOps(a, content, mapgen).state,
+      field(input, 'modifiersA'),
+    );
+    const teamB = withModifiers(
+      runTeamStateOps(b, content, mapgen).state,
+      field(input, 'modifiersB'),
+    );
     let sim = createArenaSim(teamA, teamB, gapRows, content, simConfig);
     const damaged = field(input, 'buildingHealth');
     if (damaged !== undefined) {

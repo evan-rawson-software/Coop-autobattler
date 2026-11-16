@@ -69,6 +69,16 @@ const TARGET_WORDS: Readonly<Record<string, string>> = {
   economy: 'Economy buildings',
 };
 
+/** "archer", "soldier and raider": the units' display names, lower-cased. */
+function unitNames(ids: readonly string[]): string {
+  const names = ids.map((id) =>
+    (content.presentation.get(id)?.name ?? titleCase(id)).toLowerCase(),
+  );
+  return names.length <= 2
+    ? names.join(' and ')
+    : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1] ?? ''}`;
+}
+
 /** What one effect does, from its data. */
 export function effectLine(effect: ModifierEffect): string {
   switch (effect.kind) {
@@ -77,7 +87,9 @@ export function effectLine(effect: ModifierEffect): string {
     case 'core_health_percent':
       return `Your Core: +${String(effect.percent)}% health`;
     case 'unit_strength_percent':
-      return `Your units: +${String(effect.percent)}% strength`;
+      return effect.units === undefined
+        ? `Your units: +${String(effect.percent)}% strength`
+        : `+${String(effect.percent)}% ${unitNames(effect.units)} strength`;
     case 'turret_damage_percent':
       return `Turrets: +${String(effect.percent)}% damage`;
   }
