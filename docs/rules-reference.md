@@ -556,6 +556,11 @@ middle:
   nodes are weighted: Ore and Power common, Flux rare, which is
   `nodesPerPlot.common` 3 against `nodesPerPlot.rare` 1 per base resource of
   that rarity (shipped: 3, 3, 1).
+- Blueprint's `params.choices` (issue #412) is an integer from 1 to
+  `MAX_BLUEPRINT_CHOICES` (10) and `params.maxOfferWeight` an integer from 1 to
+  1000 (checked at wiring). A saved `held_offer` entry (see "Next-shop
+  effects") names a building of `buildings.json` whose tier 1 has a price and
+  that is not a boss-only pylon.
 - **Added nodes** (`content/mapgen.json`): `maxAddedNodesPerPlot` is an integer
   from 0 to `MAX_ADDED_NODES_PER_PLOT` (16); shipped 3. Map generation does not
   read it. 0 means Rich vein is never available and no state may hold an added
@@ -4594,17 +4599,20 @@ shown, and reloading or replaying never changes them.
   back bought slots. While the player has a `free_rerolls` effect (see
   "Next-shop effects") the re-roll costs 0 (the `rerolled` effect then has
   `cost` 0) and uses one of them up. Every roll of the shop, re-rolls included,
-  makes `shopOfferCount + extra_offers` offers.
+  makes `shopOfferCount + extra_offers` offers. While the player has a
+  `held_offer` the offers have one more entry after those, the held slot (see
+  "Next-shop effects"): a re-roll keeps it as it was.
 - Buy and re-roll are legal only in the `shop` step (`wrong_step` elsewhere,
   including the first `build`). None of these can be undone.
 
 ### Next-shop effects (RS-4i1)
 
-`perPlayer[i].nextShop` is an OPTIONAL list of `{kind, count}` (absent means
-none; the saved format number did not change, records without it are read as
-having none). Kinds: `extra_offers` (`count` = offers more than
-`shopOfferCount`) and `free_rerolls` (`count` = re-rolls that cost 0). At most
-one entry per kind; `count` is an integer from 1 to 10. An event adds entries
+`perPlayer[i].nextShop` is an OPTIONAL list of `{kind, count}` or `{kind:
+"held_offer", def}` (absent means none; the saved format number did not change,
+records without it are read as having none). Kinds: `extra_offers` (`count` =
+offers more than `shopOfferCount`), `free_rerolls` (`count` = re-rolls that
+cost 0) and `held_offer` (`def` = a building ID, Blueprint). At most one entry
+per kind; `count` is an integer from 1 to 10. An event adds entries
 (counts of one kind are summed, capped at 10) when it is applied, so they are
 set before the shop step is entered. The shop reads them: entering the shop
 rolls `shopOfferCount + extra_offers` offers from the same shop stream (more
@@ -4612,14 +4620,33 @@ draws of the same stream, the wall-shape limit applying to the whole set), and
 each re-roll rolls the same number. A free re-roll takes one off `free_rerolls`
 (the entry is removed at 0), so a save and reload in the shop keeps what is
 left. The effects are removed for every player when the shop step ends, and
-also when the run ends (abandon, defeat). `validateRunState` checks the
-structure only: a list, each entry with `kind` one of the two and `count` an
-integer from 1 to 10, no repeated kind, and the key present only in the steps
-`event_resolve` and `shop`. A later event (Blueprint's held offer) adds a kind
-here and a rule for the shop to read it.
+also when the run ends (abandon, defeat). `validateRunState` checks: a list, each entry
+either `{kind, count}` with `kind` `extra_offers` or `free_rerolls` and `count`
+an integer from 1 to 10, or `{kind: "held_offer", def}` with exactly those two
+keys and `def` a building with a purchasable tier 1 that is not a pylon; no
+repeated kind; and the key present only in the steps `event_resolve` and
+`shop`.
+
+*Held offer* (Blueprint, RS-4i5). The held slot is the slot with index
+`shopOfferCount + extra_offers` (the count of the player's `extra_offers`
+effect, 0 if none), the first after the rolled offers. Entering the shop rolls
+the offers as usual, then, if the player has a `held_offer`, appends
+`{ slot: <that index>, def, tier: 1, price: tier 1 price of def }` to `offers`;
+nothing is drawn for it, so the shop stream is exactly where it would be
+without it. A re-roll rolls the offers (from the stored stream, as usual) and
+appends the same entry again while the effect exists, so a re-roll never
+replaces it. Buying the held slot is an ordinary buy (the building goes to the
+buyer's stash, the slot becomes `null`) and, in the same step, removes the
+`held_offer` entry, so it can be bought once and a later re-roll does not bring
+it back; the `bought` effect carries `held: true` then (the field is absent on
+every other purchase). It is removed with the other effects when the shop step
+ends. A save and reload in the shop keeps the entry and the appended offer.
 
 Notes for a port: do not write `nextShop` when it is empty; treat an absent key
-as an empty list on load.
+as an empty list on load. The held slot is found by index and by the presence
+of the effect, there is no flag on the offer; Market day and Blueprint cannot
+both apply to one shop today (one event is taken per event step), but the index
+rule above gives `shopOfferCount + extra_offers + 1` offers if they ever do.
 
 ## PvE options, rewards, events and run modifiers
 
@@ -4849,7 +4876,7 @@ example a small and a big Windfall); they compete for a single place. The
 definitions whose first round has come (`round >= fromRound`; `fromRound`
 defaults to 1, `round` is `RunState.round`, the round of the event step) and
 whose handler says `available` (Workshop: some owned building
-below tier 3 that a player can pay for; Drill: some owned collector below tier 3; Shrine: at least one modifier can be taken; Pact: some pact is not held; Rich vein: some player is under the cap and has a legal cell; Windfall and Market
+below tier 3 that a player can pay for; Drill: some owned collector below tier 3; Shrine: at least one modifier can be taken; Pact: some pact is not held; Rich vein: some player is under the cap and has a legal cell; Blueprint: some building is rare at this round; Windfall and Market
 day: always) form the pool, in file order. Both conditions are checked before
 the draw, so the number of draws is still the number of offers, and where no
 `fromRound` is above the round the draws are those of the pool without it
@@ -5022,6 +5049,58 @@ any number of offers from 1 to `offerCount`. More event types will come later.
     is the Workshop's; the one new idea is that the choice space is a cell
     set, so the options hold lists of cells and the choice id is parsed, not
     looked up.
+- **Blueprint** (`params.choices`, 3, and `params.maxOfferWeight`, 4; `fromRound`
+  3 in the shipped file; RS-4i5, issue #412): every player may choose one rare
+  building to be held in their next shop.
+  - *Rare* at round `r`: a building whose `offerWeights` entry has weight at most
+    `maxOfferWeight` and is in the shop's roll at `r`. "In the roll" is the
+    shop's own gate: `offerWeightsAt(economy, round)` is the `offerWeights` list
+    with the weight of every entry whose `fromRound` is above `round` set to 0,
+    and `rollOffers` draws from exactly that list; the rare list is its entries
+    with weight from 1 to `maxOfferWeight`, in `offerWeights` order, each
+    building once (`rareOfferDefs`). With the shipped content (`maxOfferWeight`
+    4) the rare buildings from round 3 are, in order: `bld_crossover`,
+    `bld_wall_i`, `bld_wall_o`, `bld_wall_t`, `bld_wall_s`, `bld_wall_z`,
+    `bld_wall_l`, `bld_wall_j`, `bld_refinery_ab`, `bld_golem_forge`,
+    `bld_refinery_bc`, `bld_spire` (twelve; the last four, which start at round
+    3, are the refineries and the refined buildings). In rounds 1 and 2 the last
+    four are not in the roll, so they are not rare then.
+  - *Available* when the hooks know the shop rules (`createGameDeps` passes
+    them; without them the event is never available) and at least one rare
+    building exists at this round.
+  - *Offer.* `{ id, event, type: "blueprint", blueprints }` with `blueprints[i]`
+    the list for player `i`: up to `choices` distinct rare buildings (fewer if
+    fewer are rare), drawn WITHOUT replacement with `pickWeightedIndex` over
+    their `offerWeights` weights (the pool in the order above; a drawn building
+    is removed from the pool, then the next draw), from the stream
+    `<event id>:<index>` of the offer stream `.child(player)` (one stream per
+    player; no other stream moves, and player `i`'s list does not depend on the
+    number of players). The lists are drawn before the vote and stored.
+  - *Follow-up.* `pending.followUp = { prompt: "blueprint_building", perPlayer:
+    true, options, votes }`, `options` = for each player and each building of
+    their list `{ id: "p<player>:<def>", player, def }`. Every player has at
+    least one option (a player with none would start with `skip` chosen). The
+    choice is an option id of the player's own (`not_owner` for another
+    player's, `invalid_choice` for any id that is not an option) or `skip`; it
+    is stored at once and can be changed until the last player has chosen.
+  - *Applying.* When every player has chosen, in player order: the player
+    gets the `held_offer` `{kind: "held_offer", def}` in `nextShop` (replacing
+    an earlier one; there is none today). A stored pick whose `def` is no
+    longer in that player's list, or is unknown, is applied as a skip with
+    `dropped: true` and reason `invalid_choice`. A skip changes nothing for that
+    player and never affects the others. `event_resolved` carries `choices` and
+    `applied`: `{ player, result: 'blueprint', def }`, `{ player, result: 'skip'
+    }` or the dropped form. Then the shop (see "Next-shop effects" for the held
+    slot: tier 1, normal price, kept by re-rolls, bought once, gone when the shop
+    ends).
+  - *validateRunState* checks a `blueprint_building` follow-up: `perPlayer`
+    true and every option `{ id: "p<player>:<def>", player, def }` with `player`
+    in range and `def` a building; a stored vote must be `skip` or an option of
+    that player. The `nextShop` entry is checked as described there.
+  - Notes for a port: nothing is added to the team state or the ghost snapshot,
+    so no hash moves; the only saved data is the optional `held_offer` entry.
+    The rare test and the shop roll share one gate function, so a content
+    change to `fromRound` or a weight moves both together.
 - **Shrine** (`params.choices`, default 3): available when a modifier is
   *eligible*. A modifier is eligible when `round >= fromRound` (`fromRound`
   defaults to 1; `round` is `RunState.round`, the round of the event step,

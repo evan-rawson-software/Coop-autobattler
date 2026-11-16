@@ -91,10 +91,13 @@ function wiring(r: BotRunResult, id: number): { into: number; out: number } {
 // Foundry 13. Rich vein (#414) joins it from round 3 (the bot skips it, but the
 // pool, and so the draws, change), so they were searched again, over 1 to 250
 // (the first seed that builds each): rush Composite 4, fortify Aether 244,
-// Foundry 44. The fortify chain is rare (none in 1 to 243).
+// Foundry 44. The fortify chain is rare (none in 1 to 243). Blueprint (#412) joins
+// from round 3 as well, so they were searched again, over 1 to 236 (the first seed
+// that builds each): rush Composite 26, fortify Aether 236, Foundry 43. The
+// fortify chain is still rare (none in 1 to 235).
 describe('the bot builds the Foundry and the refining chains (issue #384)', () => {
   test('rush builds the Composite chain and its Golems fight', () => {
-    for (const seed of [4]) {
+    for (const seed of [26]) {
       const r = play('rush', seed);
       expect(r.rejected).toEqual([]);
       expect(onBoard(r, 'bld_refinery_ab')).toBeGreaterThan(0);
@@ -104,7 +107,7 @@ describe('the bot builds the Foundry and the refining chains (issue #384)', () =
   });
 
   test('fortify builds the Aether chain and its casters fight', () => {
-    for (const seed of [244]) {
+    for (const seed of [236]) {
       const r = play('fortify', seed);
       expect(r.rejected).toEqual([]);
       expect(onBoard(r, 'bld_refinery_bc')).toBeGreaterThan(0);
@@ -114,7 +117,7 @@ describe('the bot builds the Foundry and the refining chains (issue #384)', () =
   });
 
   test('a Foundry is built and its heavies fight', () => {
-    const r = play('rush', 44);
+    const r = play('rush', 43);
     expect(r.rejected).toEqual([]);
     expect(onBoard(r, 'bld_foundry')).toBeGreaterThan(0);
     expect(r.spawned['unit_heavy'] ?? 0).toBeGreaterThan(0);

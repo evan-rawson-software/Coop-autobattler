@@ -223,6 +223,11 @@
       "name": "Rich vein",
       "icon": "◆",
       "flavour": ""
+    },
+    "blueprint": {
+      "name": "Blueprint",
+      "icon": "▤",
+      "flavour": ""
     }
   },
   "modifiers": {
@@ -639,6 +644,7 @@
       "uiShopMarketOffers": "{count} extra offers",
       "uiShopMarketFreeReroll": "first re-roll free",
       "uiShopMarketFreeRerolls": "first {count} re-rolls free",
+      "uiShopBlueprint": "Blueprint",
       "uiShopClose": "Close shop",
       "uiShopPrice": "{price} g",
       "uiShopKindTier": "{kind} · T{tier}",

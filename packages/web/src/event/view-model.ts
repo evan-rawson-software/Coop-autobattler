@@ -9,11 +9,13 @@
 import { playerName, screenText, screenTexts } from '../build/texts.js';
 import {
   findModifier,
+  tierPrice,
   type BuildingDef,
   type Cell,
   type EventsConfig,
 } from '@game/core';
 import {
+  BLUEPRINT_PROMPT,
   DRILL_PROMPT,
   RICH_VEIN_PROMPT,
   SKIP_CHOICE,
@@ -27,6 +29,7 @@ import {
 import type { WebContent } from '../content.js';
 import { buildingName, resourceName } from '../build/view-model.js';
 import { buildingRate, formatHundredths } from '../build/rates.js';
+import { kindLabel } from '../shop/effect-text.js';
 import { simConfig } from '../build/setup.js';
 import {
   archetypeText,
@@ -183,6 +186,10 @@ export function eventCards(
       const name = content === undefined ? res : resourceName(content, res);
       title = `${text.name}: ${name}`;
       lines = [`Add one ${name} node to a free cell of your area.`];
+    } else if (type === 'blueprint') {
+      lines = [
+        'Choose a rare building: it is held for you in your next shop, at tier 1 and the normal price.',
+      ];
     } else if (type === 'pact') {
       // The pact the offer names: benefit lines, then the drawback lines.
       const id = typeof raw['pact'] === 'string' ? raw['pact'] : '';
@@ -251,6 +258,8 @@ export interface FollowOption {
   readonly building: BuildingOption | null;
   /** A bonus that can be taken again, the bonuses adding up. */
   readonly stacks: boolean;
+  /** Blueprint: the building this option holds in the next shop, else null. */
+  readonly blueprintDef: string | null;
 }
 
 export interface BuildingOption {
@@ -291,6 +300,8 @@ export interface FollowUpView {
   readonly free: boolean;
   /** Rich vein: the cell picker's data, else null. */
   readonly vein: VeinView | null;
+  /** True for a Blueprint follow-up (pick a building to hold, or skip). */
+  readonly blueprint: boolean;
   /** Per player: has chosen (never what). */
   readonly chosen: readonly {
     readonly player: number;
@@ -344,6 +355,7 @@ const PROMPTS: Readonly<Record<string, string>> = {
   workshop_building: 'Upgrade a building',
   [DRILL_PROMPT]: 'Raise a collector',
   [RICH_VEIN_PROMPT]: 'Add a resource node',
+  [BLUEPRINT_PROMPT]: 'Choose a building to hold in your next shop',
   shrine_modifier: 'Choose a bonus',
 };
 
@@ -406,7 +418,25 @@ export function followUpView(
     const id = raw['id'];
     const def = str(raw['def']);
     const tier = typeof raw['tier'] === 'number' ? raw['tier'] : null;
-    if (def !== null && tier !== null) {
+    if (f.prompt === BLUEPRINT_PROMPT && def !== null) {
+      // One rare building offered to this player: tier 1 at the shop price.
+      const bdef = content.buildings.get(def);
+      const price = bdef === undefined ? null : tierPrice(content, def, 1);
+      options.push({
+        id,
+        title: buildingName(content, def),
+        lines: [
+          ...(bdef === undefined ? [] : [kindLabel(content, bdef.kind)]),
+          price === null ? 'Tier 1' : `Tier 1 · ${String(price)} gold`,
+        ],
+        affordable: true,
+        disabledReason: null,
+        skip: false,
+        building: null,
+        stacks: false,
+        blueprintDef: def,
+      });
+    } else if (def !== null && tier !== null) {
       const newTier =
         typeof raw['newTier'] === 'number' ? raw['newTier'] : tier + 1;
       const price = typeof raw['price'] === 'number' ? raw['price'] : 0;
@@ -467,6 +497,7 @@ export function followUpView(
           count: 1,
         },
         stacks: false,
+        blueprintDef: null,
       });
     } else if (findModifier(config, id) !== undefined) {
       const m = modifierLine(config, id);
@@ -479,6 +510,7 @@ export function followUpView(
         skip: false,
         building: null,
         stacks: m.stacks,
+        blueprintDef: null,
       });
     } else {
       options.push({
@@ -490,6 +522,7 @@ export function followUpView(
         skip: false,
         building: null,
         stacks: false,
+        blueprintDef: null,
       });
     }
   }
@@ -499,15 +532,18 @@ export function followUpView(
       title:
         vein !== null
           ? 'Skip (no node)'
-          : free
-            ? 'Skip (no raise)'
-            : 'Skip (no upgrade)',
+          : f.prompt === BLUEPRINT_PROMPT
+            ? 'Skip (no blueprint)'
+            : free
+              ? 'Skip (no raise)'
+              : 'Skip (no upgrade)',
       lines: [],
       affordable: true,
       disabledReason: null,
       skip: true,
       building: null,
       stacks: false,
+      blueprintDef: null,
     });
   }
   const chosen = f.chosen.map((done, i) => ({
@@ -550,6 +586,7 @@ export function followUpView(
     perPlayer: f.perPlayer,
     free,
     vein,
+    blueprint: f.prompt === BLUEPRINT_PROMPT,
     chosen,
     waiting,
   };
@@ -573,6 +610,12 @@ export function appliedNotice(
   const drill = type === 'drill';
   for (const a of applied) {
     if (!isRecord(a) || a['player'] !== player) continue;
+    if (type === 'blueprint') {
+      if (a['result'] === 'blueprint') {
+        return `${buildingName(content, str(a['def']) ?? '')} will be held in your next shop.`;
+      }
+      return 'Blueprint skipped.';
+    }
     if (type === 'rich_vein') {
       if (a['result'] === 'node') {
         const res = resourceName(content, str(a['resource']) ?? '');

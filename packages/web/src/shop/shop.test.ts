@@ -333,6 +333,56 @@ describe('Market day in the shop view', () => {
   });
 });
 
+describe('the Blueprint slot in the shop view', () => {
+  test('the held slot is marked, last, and never grouped with an identical offer', async () => {
+    const { s } = await shopSession();
+    const def = 'bld_spire';
+    const n = economy.shopOfferCount;
+    const price = 9;
+    const withHeld = (offers: unknown[], heldDef = def): RunState => ({
+      ...s.run,
+      perPlayer: s.run.perPlayer.map((p) => ({
+        ...p,
+        nextShop: [{ kind: 'held_offer' as const, def: heldDef }],
+        shop: {
+          ...(p.shop as Record<string, unknown>),
+          offers,
+        } as never,
+      })),
+    });
+    const base = Array.from({ length: n }, (_, slot) => ({
+      slot,
+      def: 'bld_barracks',
+      tier: 1,
+      price: 4,
+    }));
+    // The held building is also rolled in an ordinary slot: two cards, not one group.
+    const offers = [
+      { slot: 0, def, tier: 1, price },
+      ...base.slice(1),
+      { slot: n, def, tier: 1, price },
+    ];
+    const v = buildShopView(withHeld(offers), ME, ctx);
+    expect(v.offers.map((c) => c.held)).toEqual(offers.map((_o, i) => i === n));
+    const spires = v.groups.filter((g) => g.card.offer?.def === def);
+    expect(spires.map((g) => [g.card.slot, g.copies, g.card.held])).toEqual([
+      [0, 1, false],
+      [n, 1, true],
+    ]);
+    // Once it is bought the slot is empty and nothing is marked.
+    const bought = buildShopView(
+      withHeld([...offers.slice(0, n), null]),
+      ME,
+      ctx,
+    );
+    expect(bought.offers.every((c) => !c.held)).toBe(true);
+    // Without the effect nothing is marked.
+    expect(buildShopView(s.run, ME, ctx).offers.some((c) => c.held)).toBe(
+      false,
+    );
+  });
+});
+
 describe('undo never reverses a purchase, sale or re-roll', () => {
   test('a buy clears the undo history of earlier board edits', async () => {
     const { s } = await shopSession();

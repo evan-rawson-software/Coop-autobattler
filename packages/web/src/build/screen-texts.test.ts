@@ -709,6 +709,7 @@ const TABLE: readonly (readonly [string, Record<string, string>, string])[] = [
   ['uiShopMarketOffers', { count: '2' }, '2 extra offers'],
   ['uiShopMarketFreeReroll', {}, 'first re-roll free'],
   ['uiShopMarketFreeRerolls', { count: '2' }, 'first 2 re-rolls free'],
+  ['uiShopBlueprint', {}, 'Blueprint'],
   ['uiShopClose', {}, 'Close shop'],
   ['uiShopPrice', { price: '30' }, '30 g'],
   ['uiShopKindTier', { kind: 'Units', tier: '1' }, 'Units · T1'],

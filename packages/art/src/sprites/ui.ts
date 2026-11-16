@@ -268,6 +268,20 @@ function richVein(): Pix {
   return p;
 }
 
+function blueprint(): Pix {
+  const p = new Pix(16, 16);
+  // A rolled plan: a sheet with a drawn square, a line and a dot.
+  p.rect(3, 2, 10, 12, '6');
+  p.rect(3, 2, 10, 1, '5');
+  p.rect(5, 4, 4, 4, '3');
+  p.rect(6, 5, 2, 2, '6');
+  p.line(5, 10, 11, 10, '3');
+  p.line(5, 12, 9, 12, '3');
+  p.set(11, 5, 'y');
+  p.outline('K');
+  return p;
+}
+
 const EVENT_ICONS: Readonly<Record<string, () => Pix>> = {
   workshop,
   shrine,
@@ -276,6 +290,7 @@ const EVENT_ICONS: Readonly<Record<string, () => Pix>> = {
   market_day: marketDay,
   pact,
   rich_vein: richVein,
+  blueprint,
 };
 
 export function uiSprites(): SpriteDef[] {

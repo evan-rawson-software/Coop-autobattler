@@ -12,6 +12,7 @@ import {
   startRun,
   type DispatchResult,
   type Intent,
+  type Json,
   type RunController,
   type RunState,
 } from '@game/session';
@@ -73,7 +74,11 @@ export class BuildSession {
   readonly store: Store<SessionView>;
   private stepAnchor: string;
   private lockedDetail: string | null = null;
-  private notice: string | null = null;
+  /** The last event result; the notice is worded for whoever is viewing. */
+  private notice: {
+    readonly applied: readonly Json[];
+    readonly type: string | undefined;
+  } | null = null;
 
   private lastStamp = 0;
   private actingPlayer = ME;
@@ -153,7 +158,15 @@ export class BuildSession {
       run: this.controller.state,
       undoCount: this.stack.undoCount,
       redoCount: this.stack.redoCount,
-      notice: this.notice,
+      notice:
+        this.notice === null
+          ? null
+          : appliedNotice(
+              this.notice.applied,
+              this.actingPlayer,
+              content,
+              this.notice.type,
+            ),
       acting: this.actingPlayer,
     };
   }
@@ -215,13 +228,10 @@ export class BuildSession {
           const data = e.data as { applied?: unknown; type?: unknown };
           const applied = data.applied;
           if (Array.isArray(applied)) {
-            this.notice =
-              appliedNotice(
-                applied,
-                this.actingPlayer,
-                content,
-                typeof data.type === 'string' ? data.type : undefined,
-              ) ?? this.notice;
+            this.notice = {
+              applied,
+              type: typeof data.type === 'string' ? data.type : undefined,
+            };
           }
         }
       }

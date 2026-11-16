@@ -2101,11 +2101,166 @@ export async function runRunSmoke({
   }
 
   // ---------------------------------------------------------------------
+  // Blueprint (issue #412): a real save of a party of two at the Blueprint
+  // follow-up (made in Node, see smoke-blueprint-seed.mjs). Each player picks
+  // one of their three buildings; the shop then shows it in a fixed extra slot
+  // marked "Blueprint" that a re-roll keeps and a purchase empties, and the
+  // layout holds at 1280x720.
+  {
+    const record = JSON.parse(
+      execFileSync(
+        'pnpm',
+        ['exec', 'tsx', path.join(webDir, 'scripts/smoke-blueprint-seed.mjs')],
+        { cwd: path.resolve(webDir, '../..'), maxBuffer: 1 << 26 },
+      ).toString('utf8'),
+    );
+    const id = record.runId;
+    await goMenu();
+    await page.evaluate(
+      async ([rec, runId]) => {
+        const db = await new Promise((res, rej) => {
+          const r = indexedDB.open('coop-autobattler', 1);
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+        });
+        await new Promise((res) => {
+          const tx = db.transaction('saves', 'readwrite');
+          tx.objectStore('saves').put(rec, runId);
+          tx.oncomplete = res;
+        });
+        db.close();
+      },
+      [record, id],
+    );
+    await page.reload();
+    await page.waitForSelector(`[data-run="${id}"]`);
+    await page.click(`[data-run="${id}"] [data-action="resume"]`);
+    await waitStep('event_resolve');
+    await page.waitForSelector('[data-action="choose-option"]');
+    const names = await page
+      .locator(
+        '[data-action="choose-option"]:not([data-option="skip"]) [data-field="title"]',
+      )
+      .allInnerTexts();
+    check(
+      names.length === 3 && !names.some((n) => /bld_/.test(n)),
+      `blueprint: player 1 is offered three buildings by name (${names.join(', ')})`,
+    );
+    await shot('run-8c-blueprint-choice');
+    await page.click('[data-option="p0:bld_refinery_ab"]');
+    await page.click('#confirm-upgrade:not([disabled])');
+    await page.waitForFunction(
+      () => document.querySelector('[data-field="waiting"]') !== null,
+    );
+    await page.click('#acting-switch [data-action="act-as"][data-player="1"]');
+    await page.waitForFunction(() => window.__debug?.run?.state().acting === 1);
+    await page.waitForSelector('[data-option="p1:bld_golem_forge"]');
+    check(
+      (await page.locator('[data-option="p0:bld_refinery_ab"]').count()) === 0,
+      "blueprint: player 2 does not see player 1's options",
+    );
+    await page.click('[data-option="p1:bld_golem_forge"]');
+    await page.click('#confirm-upgrade:not([disabled])');
+    await waitStep('shop');
+    await page.click('#acting-switch [data-action="act-as"][data-player="0"]');
+    await page.waitForFunction(() => window.__debug?.run?.state().acting === 0);
+    await openShop(page);
+    await settle();
+    // Identical offers are drawn as one card with a copies count, so the
+    // slots are the sum of the copies; the held card is never merged.
+    const held = () =>
+      page.evaluate(() => {
+        const lis = [...document.querySelectorAll('#offers li.offer')];
+        return {
+          count: lis.reduce(
+            (n, li) => n + Number(li.getAttribute('data-copies') ?? 1),
+            0,
+          ),
+          last: lis.length - 1,
+          marked: lis
+            .filter((li) => li.querySelector('[data-field="blueprint"]'))
+            .map((li) => [lis.indexOf(li), li.getAttribute('data-def')]),
+        };
+      });
+    let h = await held();
+    const wantCount = 5 + 1;
+    check(
+      h.count === wantCount &&
+        h.marked.length === 1 &&
+        h.marked[0][0] === h.last &&
+        h.marked[0][1] === 'bld_refinery_ab',
+      `blueprint: the shop has ${wantCount} offers and the last one is the marked Refinery (${JSON.stringify(h)})`,
+    );
+    for (const height of [800, 720]) {
+      await page.setViewportSize({ width: 1280, height });
+      await settle();
+      const fit = await page.evaluate(() => {
+        const last = [...document.querySelectorAll('#offers li.offer')].pop();
+        const r = last.getBoundingClientRect();
+        const p = document.querySelector('#offers').getBoundingClientRect();
+        return {
+          inside: r.left >= p.left - 1 && r.right <= p.right + 1,
+          noPageScroll:
+            document.documentElement.scrollWidth <= window.innerWidth,
+        };
+      });
+      check(
+        fit.inside && fit.noPageScroll,
+        `blueprint: the held offer sits inside the offers list at 1280x${height}`,
+      );
+      await shot(`run-8c-blueprint-shop-1280x${height}`);
+    }
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await settle();
+    const goldBefore = await page
+      .locator('[data-field="bar-gold"]')
+      .getAttribute('data-gold');
+    await page.click('#reroll');
+    await page.waitForFunction(
+      (g) =>
+        document
+          .querySelector('[data-field="bar-gold"]')
+          ?.getAttribute('data-gold') !== g,
+      goldBefore,
+    );
+    await settle();
+    h = await held();
+    check(
+      h.count === wantCount &&
+        h.marked.length === 1 &&
+        h.marked[0][1] === 'bld_refinery_ab',
+      'blueprint: a re-roll keeps the held offer in its slot',
+    );
+    await reloadSame('the Blueprint shop');
+    await page.waitForSelector('#shop-toggle');
+    await openShop(page);
+    await settle();
+    h = await held();
+    check(
+      h.count === wantCount && h.marked.length === 1,
+      'blueprint: a reload in the shop keeps the held offer',
+    );
+    const marked = page.locator(
+      '#offers li.offer:has([data-field="blueprint"])',
+    );
+    await marked.locator('[data-action="buy"]').click();
+    await page.waitForFunction(
+      () => document.querySelectorAll('#offers li.offer.sold').length > 0,
+    );
+    h = await held();
+    check(
+      h.marked.length === 0 &&
+        (await page.locator('#offers li.offer.sold').count()) === 1,
+      'blueprint: buying the held offer empties its slot and the mark goes',
+    );
+  }
+
+  // ---------------------------------------------------------------------
   // The boss with no setting: a real save of a party of two, alive at round 7
   // (made in Node by the real bot, see smoke-seed.mjs), whose PvP opponent the
   // browser selects from an empty bucket, since the bundled ghosts stop at
   // round 6.
-  for (const seedArgs of [[], ['siege', '9', '2']]) {
+  for (const seedArgs of [[], ['siege', '2', '2']]) {
     // The second save is a party the siege bot made, which
     // loses to the boss: the loss branch of the checks below. It keeps the
     // run id: the first run left a round 7 ghost in the browser's pool, which

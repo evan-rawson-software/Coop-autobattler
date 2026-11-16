@@ -31,17 +31,20 @@ import {
   findModifier,
   MAX_SHOP_EFFECT_COUNT,
   heldModifierIds,
+  offerWeightsAt,
   pickWeightedIndex,
+  rareOfferDefs,
   raiseTier,
   withModifier,
   workshopOptions,
   type Content,
+  type EconomyConfig,
   type EventDef,
   type EventsConfig,
   type MapgenConfig,
 } from '@game/core';
 import { tally, voteResolvedEffect } from './machine.js';
-import { addShopEffect } from './shop-effects.js';
+import { addShopEffect, setHeldOffer } from './shop-effects.js';
 import {
   DEFAULT_WORKSHOP_PERCENT,
   currentWorkshopPrice,
@@ -81,6 +84,11 @@ export interface EventContext {
    * were built without them: Rich vein is then never available.
    */
   readonly mapgen?: MapgenConfig;
+  /**
+   * The shop rules (offer weights). Absent when the hooks were built without
+   * them: Blueprint is then never available.
+   */
+  readonly economy?: EconomyConfig;
 }
 
 /** A choice the party still has to make after picking an event. */
@@ -774,6 +782,154 @@ export const richVeinHandler: EventHandler = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Blueprint (RS-4i5): each player picks a rare building held in their next shop
+
+/** The follow-up prompt of Blueprint. */
+export const BLUEPRINT_PROMPT = 'blueprint_building';
+
+/** Most buildings one player may be offered (`choices`). */
+export const MAX_BLUEPRINT_CHOICES = 10;
+
+function blueprintParam(
+  def: EventDef,
+  key: string,
+  max: number,
+): string | null {
+  const v = def.params[key];
+  return typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= max
+    ? null
+    : `"${key}" must be an integer from 1 to ${String(max)}`;
+}
+
+/** The choice id of building `def` for `player`: `p<player>:<def>`. */
+export function blueprintChoice(player: number, def: string): string {
+  return `p${String(player)}:${def}`;
+}
+
+/** The buildings the offer holds for `player`, as stored (empty if none). */
+function blueprintsOf(offer: EventOffer, player: number): string[] {
+  const all: Json | undefined = offer['blueprints'];
+  const mine = Array.isArray(all)
+    ? (all[player] as Json | undefined)
+    : undefined;
+  return Array.isArray(mine)
+    ? mine.filter((d): d is string => typeof d === 'string')
+    : [];
+}
+
+export const blueprintHandler: EventHandler = {
+  type: 'blueprint',
+  canAskFollowUp: true,
+  checkParams: (def) =>
+    blueprintParam(def, 'choices', MAX_BLUEPRINT_CHOICES) ??
+    blueprintParam(def, 'maxOfferWeight', 1000),
+  // At least one rare building: one the shop can offer at this round (the
+  // same `fromRound` gate the shop roll uses) with a weight at most
+  // `maxOfferWeight`.
+  available: (ctx, def) =>
+    ctx.economy !== undefined &&
+    rareOfferDefs(
+      ctx.economy,
+      ctx.state.round,
+      intParam(def, 'maxOfferWeight', 0),
+    ).length > 0,
+  // Per player, up to `choices` distinct rare buildings drawn without
+  // replacement, weighted by their offer weight, from `rng.child(player)`
+  // (`rng` is the offer's child stream `<event id>:<index>`).
+  instantiate(ctx, def, rng) {
+    const economy = ctx.economy;
+    if (economy === undefined) return { blueprints: [] };
+    const weights = offerWeightsAt(economy, ctx.state.round);
+    const pool = rareOfferDefs(
+      economy,
+      ctx.state.round,
+      intParam(def, 'maxOfferWeight', 0),
+    ).map((d) => ({
+      def: d,
+      weight: weights.find((w) => w.def === d)?.weight ?? 0,
+    }));
+    const n = Math.min(intParam(def, 'choices', 3), pool.length);
+    const blueprints: Json[] = ctx.state.players.map((_p, player) => {
+      const stream = rng.child(player);
+      let left = pool;
+      const picked: string[] = [];
+      while (picked.length < n) {
+        const i = pickWeightedIndex(
+          stream,
+          left.map((e) => e.weight),
+        );
+        const e = left[i];
+        if (e === undefined) break;
+        picked.push(e.def);
+        left = left.filter((x) => x.def !== e.def);
+      }
+      return picked;
+    });
+    return { blueprints };
+  },
+  resolve(ctx, offer) {
+    const { state } = ctx;
+    const options: Json[] = [];
+    const initialVotes: (string | null)[] = [];
+    for (let player = 0; player < state.players.length; player++) {
+      const mine = blueprintsOf(offer, player);
+      // A player with nothing offered has only `skip`: already chosen.
+      initialVotes.push(mine.length > 0 ? null : SKIP_CHOICE);
+      for (const def of mine) {
+        options.push({ id: blueprintChoice(player, def), player, def });
+      }
+    }
+    return {
+      patch: {},
+      followUp: {
+        prompt: BLUEPRINT_PROMPT,
+        options,
+        perPlayer: true,
+        initialVotes,
+      },
+    };
+  },
+  checkChoice(_ctx, offer, player, option) {
+    if (!isRecord(option) || option['player'] !== player) return 'not_owner';
+    const def = option['def'];
+    return typeof def === 'string' && blueprintsOf(offer, player).includes(def)
+      ? null
+      : 'invalid_choice';
+  },
+  chooseEach({ state, content }, offer, picks) {
+    // Each pick must still name a building of that player's list and one the
+    // shop can sell at tier 1; one that does not is applied as a skip.
+    const applied: Json[] = [];
+    const perPlayer = state.perPlayer.map((p, player): PlayerRunState => {
+      const pick = picks[player];
+      if (pick === null || pick === undefined) {
+        applied.push({ player, result: 'skip' });
+        return p;
+      }
+      const def = isRecord(pick) ? pick['def'] : undefined;
+      if (
+        !isRecord(pick) ||
+        pick['player'] !== player ||
+        typeof def !== 'string' ||
+        !blueprintsOf(offer, player).includes(def) ||
+        content.buildings.get(def) === undefined
+      ) {
+        applied.push({
+          player,
+          result: 'skip',
+          dropped: true,
+          reason: 'invalid_choice',
+        });
+        return p;
+      }
+      applied.push({ player, result: 'blueprint', def });
+      return setHeldOffer(p, def);
+    });
+    return { ok: true, patch: { perPlayer }, applied };
+  },
+};
+
 /** The event types shipped with the game. Add a type by adding a handler. */
 export const defaultEventHandlers: EventHandlers = {
   workshop: workshopHandler,
@@ -783,6 +939,7 @@ export const defaultEventHandlers: EventHandlers = {
   market_day: marketDayHandler,
   pact: pactHandler,
   rich_vein: richVeinHandler,
+  blueprint: blueprintHandler,
 };
 
 // ---------------------------------------------------------------------------
@@ -842,6 +999,7 @@ export function eventHooks(
   config: EventsConfig,
   handlers: EventHandlers = defaultEventHandlers,
   mapgen?: MapgenConfig,
+  economy?: EconomyConfig,
 ): Pick<RunHooks, 'eventOffers' | 'resolveEvent'> {
   return {
     eventOffers(state, rng): readonly Json[] {
@@ -850,6 +1008,7 @@ export function eventHooks(
         content,
         config,
         ...(mapgen === undefined ? {} : { mapgen }),
+        ...(economy === undefined ? {} : { economy }),
       };
       // The pool: definitions whose first round has come (RS-4g) and whose
       // handler says available. Decided before the draw.
@@ -897,7 +1056,13 @@ export function eventHooks(
         throw new Error('resolveEvent: the offer has no handler.');
       }
       const r = handler.resolve(
-        { state, content, config, ...(mapgen === undefined ? {} : { mapgen }) },
+        {
+          state,
+          content,
+          config,
+          ...(mapgen === undefined ? {} : { mapgen }),
+          ...(economy === undefined ? {} : { economy }),
+        },
         offer,
       );
       if (r.followUp === null) return { patch: r.patch, followUp: null };
@@ -1031,12 +1196,14 @@ export function eventChooseHandlers(
   config: EventsConfig,
   handlers: EventHandlers = defaultEventHandlers,
   mapgen?: MapgenConfig,
+  economy?: EconomyConfig,
 ): Readonly<Record<string, IntentHandler>> {
   const withMap = (state: RunState): EventContext => ({
     state,
     content,
     config,
     ...(mapgen === undefined ? {} : { mapgen }),
+    ...(economy === undefined ? {} : { economy }),
   });
   const event_choose: IntentHandler = {
     steps: ['event_resolve'],

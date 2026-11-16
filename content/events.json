@@ -45,6 +45,13 @@
       "weight": 6,
       "fromRound": 3,
       "resourceWeights": { "res_a": 3, "res_b": 3, "res_c": 1 }
+    },
+    {
+      "id": "evt_blueprint",
+      "type": "blueprint",
+      "weight": 6,
+      "fromRound": 3,
+      "params": { "choices": 3, "maxOfferWeight": 4 }
     }
   ],
   "modifiers": [

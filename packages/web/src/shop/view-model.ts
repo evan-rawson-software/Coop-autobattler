@@ -13,6 +13,8 @@ import {
 } from '@game/core';
 import {
   nextBattleInfo,
+  heldOfferDef,
+  heldSlot,
   pvpOpponentInfo,
   readShop,
   shopEffectCount,
@@ -59,6 +61,8 @@ export interface OfferCard {
   readonly canBuy: boolean;
   /** Why Buy is disabled; null when it is enabled or the slot is empty. */
   readonly reason: string | null;
+  /** True for the Blueprint's held slot (marked "Blueprint", never grouped). */
+  readonly held: boolean;
 }
 
 /**
@@ -125,7 +129,9 @@ const CLOSED = 'The shop is closed.';
 export function groupOffers(cards: readonly OfferCard[]): OfferGroup[] {
   const slotsOf = new Map<string, number[]>();
   const keyOf = (c: OfferCard): string | null =>
-    c.offer === null ? null : `${c.offer.def}:${String(c.offer.tier)}`;
+    c.offer === null
+      ? null
+      : `${c.offer.def}:${String(c.offer.tier)}${c.held ? ':held' : ''}`;
   for (const c of cards) {
     const k = keyOf(c);
     if (k !== null) slotsOf.set(k, [...(slotsOf.get(k) ?? []), c.slot]);
@@ -221,8 +227,12 @@ export function buildShopView(
   const open = run.step === 'shop';
   const gold = me?.gold ?? 0;
   const data = me === undefined ? null : readShop(me);
+  const heldDef = me === undefined ? null : heldOfferDef(me);
+  const heldAt = me === undefined ? -1 : heldSlot(me, ctx.economy);
   const cards: OfferCard[] = (data?.offers ?? []).map((o, slot) => {
-    if (o === null) return { slot, offer: null, canBuy: false, reason: null };
+    if (o === null) {
+      return { slot, offer: null, canBuy: false, reason: null, held: false };
+    }
     const def = ctx.content.buildings.get(o.def);
     const stats =
       def === undefined
@@ -248,6 +258,7 @@ export function buildShopView(
       },
       canBuy: reason === null && gold >= o.price,
       reason,
+      held: heldDef !== null && slot === heldAt,
     };
   });
   const extra = me === undefined ? 0 : shopEffectCount(me, 'extra_offers');

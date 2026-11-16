@@ -91,6 +91,41 @@ export function isPylonDef(content: ShopContent, def: BuildingId): boolean {
 }
 
 /**
+ * The offer weights of one round: `offerWeights` in file order, an entry
+ * whose `fromRound` is above `round` with weight 0. The one place that says
+ * what the shop can offer at a round: `rollOffers` draws from it and the
+ * Blueprint event's "rare" test reads it (RS-4i5).
+ */
+export function offerWeightsAt(
+  economy: Pick<EconomyConfig, 'offerWeights'>,
+  round: number,
+): { readonly def: BuildingId; readonly weight: number }[] {
+  return economy.offerWeights.map((w) => ({
+    def: w.def,
+    weight: w.fromRound > round ? 0 : w.weight,
+  }));
+}
+
+/**
+ * The rare buildings of a round (Blueprint, RS-4i5): those the shop can offer
+ * at `round` (weight above 0 in `offerWeightsAt`) whose weight is at most
+ * `maxWeight`, in `offerWeights` order, each once.
+ */
+export function rareOfferDefs(
+  economy: Pick<EconomyConfig, 'offerWeights'>,
+  round: number,
+  maxWeight: number,
+): BuildingId[] {
+  const out: BuildingId[] = [];
+  for (const w of offerWeightsAt(economy, round)) {
+    if (w.weight > 0 && w.weight <= maxWeight && !out.includes(w.def)) {
+      out.push(w.def);
+    }
+  }
+  return out;
+}
+
+/**
  * Roll a full set of offers. For slot 0 up to `shopOfferCount + extraOffers - 1`
  * (`extraOffers` is 0 unless a next-shop effect adds offers, RS-4i1), in this
  * order: one draw picks the building by `offerWeights` (one `nextInt(sum of
@@ -115,10 +150,7 @@ export function rollOffers(
 ): ShopOffer[] {
   // An entry whose `fromRound` is above this round has weight 0 in every
   // draw of this roll (it stays in the list, so the order is unchanged).
-  const gated = economy.offerWeights.map((w) => ({
-    def: w.def,
-    weight: w.fromRound > round ? 0 : w.weight,
-  }));
+  const gated = offerWeightsAt(economy, round);
   const buildingWeights = gated.map((w) => w.weight);
   const tierWeights = tierOddsFor(round, economy.tierOdds).weights;
   const offers: ShopOffer[] = [];

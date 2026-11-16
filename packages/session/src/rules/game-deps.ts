@@ -95,7 +95,13 @@ export function createGameDeps(
         threatConfigs,
         configs.economy.rewards,
       ),
-      ...eventHooks(content, configs.events, eventHandlers, configs.mapgen),
+      ...eventHooks(
+        content,
+        configs.events,
+        eventHandlers,
+        configs.mapgen,
+        configs.economy,
+      ),
       ...rewardHooks(configs.economy.rewards),
       ...overrides.hooks,
     },
@@ -106,6 +112,7 @@ export function createGameDeps(
         configs.events,
         eventHandlers,
         configs.mapgen,
+        configs.economy,
       ),
       ...(overrides.ghosts === undefined
         ? {}
