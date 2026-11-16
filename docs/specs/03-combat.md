@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v5.1
+Status: Draft v5.2
 
 ## Direction
 
@@ -258,11 +258,11 @@ Everything below is [PROPOSED] detail unless marked otherwise.
 | Kind | Role | Examples |
 |------|------|----------|
 | **Source** (collector) | Built on a resource node; produces that node's resource at a flow rate set by its tier | Extractor |
-| **Route** | Splits, joins, or crosses conduits | Splitter (one in, several out); Merger (several in, one out); Crossover (two conduits pass at 90°) |
+| **Route** | Splits, joins, or crosses conduits | Splitter (one in, several out); Merger (several in, one out); Crossover (two conduits pass at 90°); Tunnel (two 1x1 ends, carries a conduit under buildings) |
 | **Refinery** | Turns one resource (common) or two (rare) into a refined resource | Composite refinery (Ore + Power → Composite); Aether refinery (Power + Flux → Aether); Smelter (Ore → Alloy, later) |
 | **Modifier** | Changes the flow passing through | Booster (more per tick); Buffer (stores, then releases a burst) |
-| **Unit producer** | Consumes resources → spawns units | Barracks (cheap swarm); Foundry (Ore + Power, heavy bruiser); Golem forge (Composite, tanky front-liner); Spire (Aether, area-damage caster) |
-| **Defense** | Blocks or kills enemy units | Wall; Gate; Turret (needs Power to fire); Repair station |
+| **Unit producer** | Consumes resources → spawns units | Barracks (cheap swarm); Grand barracks (3x3, two soldiers at a time); Lancer hall (1x3, long-reach melee); Foundry (Ore + Power, heavy bruiser); Golem forge (Composite, tanky front-liner); Spire (Aether, area-damage caster) |
+| **Defense** | Blocks or kills enemy units | Wall; Gate; Turret (needs Power to fire); Mortar (2x2 turret, long range and splash, blind spot up close); Repair station |
 | **Economy** | Consumes resources (often Flux) → the factory gets stronger for the rest of this battle | Overclocker (sources faster, up to a low cap, SC-12); Refit bay (later units spawn stronger); Reactor (becomes a new source once fed enough) |
 | **Core** | One per player: that player's health. Fixed position (CB-3e). Needs no resources. | — |
 
@@ -289,6 +289,45 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   - **Route buildings can be destroyed** like any other building [DECIDED].
   - Like all battle damage, destroyed conduits and buildings are restored
     for the next battle (CB-11).
+- **CB-9f [PROPOSED]** **Four new base buildings** (working names; theme
+  issue #393 renames them; issue #437). All four consume resources (V-15), help
+  only their owner (PP-8) and are placed only in their owner's plot (CP-27,
+  CP-28). Each is offered in the shop from a given round (EC-3a). Footprints
+  are chosen so that where a building goes is a real decision.
+
+  | Building | Kind | Footprint | From round | Input |
+  |---|---|---|---|---|
+  | Lancer hall | Unit producer | 1x3 | 2 | Ore |
+  | Tunnel | Route | two 1x1 ends | 3 | none of its own (carries any one resource) |
+  | Mortar | Defense (turret) | 2x2 | 3 | Ore |
+  | Grand barracks | Unit producer | 3x3 | 5 | Ore |
+
+  The Lancer hall trains the Lancer (CB-16e); it is long and thin, so it fits
+  along walls and plot edges and is awkward elsewhere. The Mortar is a turret
+  with long range and splash (CB-18b); it wants the back of the plot, behind
+  other defences. The Grand barracks trains two soldiers at a time (CB-13a);
+  it needs a 3x3 hole and a Merger feeding it (CB-10f). The Tunnel is
+  described in CB-9g. Considered and left out: adjacency boosters, a repair
+  station, a Bulwark turret.
+- **CB-9g [PROPOSED]** **The Tunnel.** A Tunnel is a route building made of
+  two separate 1x1 pieces, an **entrance** and an **exit**, placed together
+  as a pair.
+  - It carries **one conduit** of **one resource** (CB-5b) from the entrance
+    to the exit, at the same speed as any conduit, under up to **5 cells**
+    [PROPOSED] (N = 5) in a **straight line**. Entrance and exit are in the
+    same row or column, with at most N cells between them.
+  - The cells in between may hold buildings, conduits or natural features;
+    the Tunnel does not occupy them and nothing there is changed.
+  - It **cannot cross a plot border**: both ends and every cell between them
+    lie in the owner's plot. It is not a border link (CB-9d).
+  - It is part of a conduit network (CB-9a): a conduit runs into the entrance
+    and another leaves the exit, and the pair counts as one stretch of
+    conduit. The no-loop rule (CB-9c) still holds: the editor refuses a
+    Tunnel that would close a loop, and shows why.
+  - Destroying either end destroys the pair and the conduits attached to
+    them (CB-9a). A Tunnel needs no resources itself (CB-10c).
+  - The build screen shows the exit's legal cells as soon as the entrance is
+    placed, and marks the range.
 - **CB-9d [DECIDED]** **Border links.** Two players whose plots share a
   border can join their factories there.
   - A **border spot** is one row of the border line between two neighbouring
@@ -375,6 +414,11 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   feeding it backs up (CB-9e). Store sizes are tuning numbers, to be set in
   the rebalance. Nothing in a store carries over to the next battle
   (CB-11).
+- **CB-10f [PROPOSED]** **The Grand barracks exception.** The rebalance
+  principle (SC-13a) is that a collector fully feeds exactly one consumer of
+  its own tier. The Grand barracks is the stated exception: it is fed by
+  exactly two collectors of its tier, joined by a Merger (CB-9) or by two
+  conduits. One collector alone feeds it only half the time (CB-10d).
 - **CB-10c [DECIDED]** **Which buildings need resources.** Only buildings
   that do something: unit producers, turrets, and economy buildings. Walls,
   gates, Splitters and other route buildings, and the Core need nothing.
@@ -426,6 +470,13 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   input means more units only up to the building's top speed; beyond that,
   more output takes more or better buildings, and the supply to run them.
   Stronger units come from economy buildings (the factory's ramp).
+- **CB-13a [PROPOSED]** **Several units per production.** A unit producer may
+  spawn more than one unit each time it produces. The Grand barracks spawns
+  two soldiers per production, for a cost of about 75% of two Barracks
+  productions (about 25% more efficient per Ore). Its need is high enough
+  that it takes two collectors' worth of Ore (CB-10f). The units appear as
+  CB-16a says, one after the other; if only one fits, that one is spawned
+  and the other is held.
 - **CB-14** **Movement.** Units are **circles** with a position finer than a
   cell and a radius that depends on their type (stronger units can be
   larger). Units collide **softly**: two units, friend or foe, that overlap
@@ -511,6 +562,11 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   health, damage, reach and speed. Armor is flat damage reduction per hit
   (CB-5g); area damage is a radius and a percent of the hit passed to other
   units near the target (CB-5h).
+- **CB-16e [PROPOSED]** **The Lancer.** A melee unit (CB-16) with a long
+  reach (a few cells, edge to edge, more than other melee units), low health
+  and moderate damage. It stands behind a front line of other units and hits
+  over them. It still cannot hit flying units (CB-16b). Trained by the
+  Lancer hall from Ore (CB-9f). Numbers [PROPOSED], set in content.
 - **CB-16b [DECIDED]** **Ranged units.** A unit is melee or ranged. A ranged
   unit attacks from a distance (its reach is its range, edge to edge) and
   stops to fire while it has a target in range. Placeholder: the Archer, from
@@ -548,6 +604,15 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   units in range (CB-18a) and need Power. A turret shoots any enemy unit in
   range, in its owner's plot or a teammate's. **Gates** block enemies but
   let all of the party's units through, whoever owns the gate or the unit.
+- **CB-18b [PROPOSED]** **Minimum range and splash (the Mortar).** A turret
+  may have a **minimum range**: a blind spot around it, in which it cannot
+  target a unit, and a **maximum range** beyond it. It may also have splash:
+  when its shot hits a unit, other units within a radius of that unit take a
+  percent of the hit, by the area-damage rule of CB-5h (units only, never
+  buildings, never friendly units; same order of damage modifiers). The
+  Mortar has a long maximum range, splash and a blind spot of a few cells
+  (numbers [PROPOSED], set in content). The build screen draws both rings.
+  CB-18a (where a turret can shoot) still applies.
 - **CB-18a [DECIDED]** **Where a turret can shoot.** A turret can target an
   enemy unit, flying or not, that is on the party's own board or in the
   neutral zone, and is in range. It can never target a unit on the enemy's

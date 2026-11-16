@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v5.2
+Status: Draft v5.3
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.
@@ -100,7 +100,9 @@ first. Gold (next section) is never produced by the factory.
   chain should give roughly +25-35% more per raw item than a base chain
   (issue #378). Refining adds no supply, it only concentrates it: a
   collector still fully feeds exactly one consumer of its own tier (issue
-  #145), and for a two-input building, one collector of each input. The
+  #145), and for a two-input building, one collector of each input. The one
+  stated exception is the Grand barracks (CB-9f), which is fed by exactly two
+  collectors of its tier (CB-10f). The
   premium pays for the refinery's space, gold, delay and breach weakness.
 - **SC-13 [PROPOSED]** **Balance levers under scarcity.** The numbers that
   set the game's balance are now, in order: each collector tier's flow
@@ -146,6 +148,20 @@ first. Gold (next section) is never produced by the factory.
 - **EC-3 [PROPOSED]** Shop offers are per player and drawn from tiered pools
   whose odds of higher-tier buildings improve with the round number (CB-26a). Whether building pools are finite and
   shared within the party (contested draws) or infinite is **[OPEN]** (Q5).
+- **EC-3a [PROPOSED]** **The four new buildings in the shop** (CB-9f,
+  issue #437). Each is offered from a round, through the shop's per-offer
+  `fromRound` (issue #383): before that round its weight is 0. Simple pieces
+  come early, puzzle pieces later. Each is offered at the tier shown, and
+  gains better tiers like any building (CB-26a).
+
+  | Building | From round | Offered at tier |
+  |---|---|---|
+  | Lancer hall | 2 | 1 |
+  | Tunnel | 3 | 1 |
+  | Mortar | 3 | 2 |
+  | Grand barracks | 5 | 2 |
+
+  Weights and prices are tuning numbers.
 - **EC-4 [PROPOSED]** **Party-size economy**: every player earns full income
   at every party size. PvE threats scale by the same
   factor, so no discount curve is needed. Battle
