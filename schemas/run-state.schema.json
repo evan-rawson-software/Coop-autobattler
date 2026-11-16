@@ -129,6 +129,20 @@
         "properties": {
           "gold": { "type": "integer", "minimum": 0 },
           "ready": { "type": "boolean" },
+          "nextShop": {
+            "description": "Optional (absent means none): effects on this player's next shop, set by an event (Market day) and cleared when that shop ends. Only in steps event_resolve and shop. One entry per kind.",
+            "type": "array",
+            "maxItems": 2,
+            "items": {
+              "type": "object",
+              "required": ["kind", "count"],
+              "additionalProperties": false,
+              "properties": {
+                "kind": { "enum": ["extra_offers", "free_rerolls"] },
+                "count": { "type": "integer", "minimum": 1, "maximum": 10 }
+              }
+            }
+          },
           "shop": {
             "description": "This player's shop: null before a shop was entered, else the offers (null once bought) and the saved state of the player's shop RNG stream.",
             "oneOf": [

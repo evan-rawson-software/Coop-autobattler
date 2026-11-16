@@ -1218,7 +1218,10 @@ describe('event offers: one per type, up to three (issue #48)', () => {
         content,
         loadEventsOrThrow({
           offerCount: 3,
-          events: gameConfigs.events.events.map((e) => ({ ...e })),
+          // Only the events open in every round (Market day opens in round 2).
+          events: gameConfigs.events.events
+            .filter((e) => e.fromRound === undefined)
+            .map((e) => ({ ...e })),
           modifiers: [
             { id: 'mod_late', stackable: false, fromRound: 3, effects: effect },
           ],
@@ -1260,7 +1263,9 @@ describe('event offers: one per type, up to three (issue #48)', () => {
         content,
         loadEventsOrThrow({
           offerCount: 3,
-          events: gameConfigs.events.events.map((e) => ({ ...e })),
+          events: gameConfigs.events.events
+            .filter((e) => e.fromRound === undefined)
+            .map((e) => ({ ...e })),
           modifiers: gameConfigs.events.modifiers.map((m) => ({
             id: m.id,
             stackable: m.stackable,

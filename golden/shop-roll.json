@@ -550,5 +550,72 @@
         ]
       }
     }
+  },
+  {
+    "id": "shop-roll.17-p2-r2-extra-offers",
+    "kind": "shop-roll",
+    "description": "Market day: 2 players, round 2 shop with one extra offer (6 offers), then two re-rolls that keep the count.",
+    "input": {
+      "seed": 3,
+      "before": ["kit", "pve_options:r1"],
+      "round": 2,
+      "leg": "pve",
+      "players": 2,
+      "rerolls": 2,
+      "extraOffers": 1
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r2:pve",
+        "runState": [2060989077, 4276876868, 1455723132, 3077646185],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_merger t1 5", "1 bld_wall_z t1 8", "2 bld_range t1 24", "3 bld_hangar t1 30", "4 bld_hangar t1 30", "5 bld_range t1 24"],
+              ["0 bld_gate t1 8", "1 bld_crossover t1 8", "2 bld_gate t1 8", "3 bld_overclocker t1 30", "4 bld_hangar t1 30", "5 bld_range t1 24"],
+              ["0 bld_hangar t1 30", "1 bld_hangar t1 30", "2 bld_wall_t t1 8", "3 bld_hangar t1 30", "4 bld_merger t1 5", "5 bld_turret t1 15"]
+            ],
+            "stream": [3708538753, 496519937, 4122058918, 263385321]
+          },
+          {
+            "rolls": [
+              ["0 bld_range t1 24", "1 bld_armory t1 30", "2 bld_armory t1 30", "3 bld_barracks t1 20", "4 bld_extractor t1 10", "5 bld_barracks t1 20"],
+              ["0 bld_range t1 24", "1 bld_merger t1 5", "2 bld_barracks t1 20", "3 bld_armory t1 30", "4 bld_extractor t1 10", "5 bld_turret t1 15"],
+              ["0 bld_extractor t1 10", "1 bld_range t1 24", "2 bld_turret t1 15", "3 bld_turret t1 15", "4 bld_barracks t1 20", "5 bld_overclocker t1 30"]
+            ],
+            "stream": [2946144622, 3661036790, 2431091325, 2332946021]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "shop-roll.18-p1-r2-extra-offers-3",
+    "kind": "shop-roll",
+    "description": "Three extra offers (8 offers): the wall-shape limit still applies to the whole set.",
+    "input": {
+      "seed": 9,
+      "before": ["kit", "pve_options:r1"],
+      "round": 2,
+      "leg": "pve",
+      "players": 1,
+      "rerolls": 1,
+      "extraOffers": 3
+    },
+    "expected": {
+      "result": {
+        "label": "shop:r2:pve",
+        "runState": [2491563190, 3940902057, 1743330492, 2016117637],
+        "players": [
+          {
+            "rolls": [
+              ["0 bld_gate t1 8", "1 bld_barracks t1 20", "2 bld_splitter t1 5", "3 bld_hangar t1 30", "4 bld_extractor t1 10", "5 bld_extractor t1 10", "6 bld_armory t1 30", "7 bld_range t1 24"],
+              ["0 bld_barracks t1 20", "1 bld_splitter t1 5", "2 bld_barracks t1 20", "3 bld_merger t1 5", "4 bld_merger t1 5", "5 bld_wall_t t1 8", "6 bld_hangar t1 30", "7 bld_barracks t1 20"]
+            ],
+            "stream": [509064230, 402989084, 3024865861, 4128673288]
+          }
+        ]
+      }
+    }
   }
 ]

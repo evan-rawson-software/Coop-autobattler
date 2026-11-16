@@ -181,7 +181,9 @@ export {
   findModifier,
   loadEvents,
   loadEventsOrThrow,
+  MAX_EVENT_FROM_ROUND,
   MAX_MODIFIER_FROM_ROUND,
+  MAX_SHOP_EFFECT_COUNT,
   type ModifierDef,
 } from './events.js';
 export {

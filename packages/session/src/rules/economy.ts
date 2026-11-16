@@ -28,6 +28,7 @@ import {
   type ShopOffer,
 } from '@game/core';
 import { createDeps } from './defaults.js';
+import { shopEffectCount, useShopEffect } from './shop-effects.js';
 import type {
   BattleResolver,
   Effect,
@@ -120,7 +121,13 @@ export function economyHooks(
       return {
         perPlayer: state.perPlayer.map((p, i) => {
           const stream = rng.child(playerShopLabel(i));
-          const offers = rollOffers(stream, state.round, content, economy);
+          const offers = rollOffers(
+            stream,
+            state.round,
+            content,
+            economy,
+            shopEffectCount(p, 'extra_offers'),
+          );
           return withShop(p, p.gold + economy.baseIncomePerShop, {
             offers,
             stream: stream.getState(),
@@ -252,25 +259,35 @@ export function economyHandlers(
       const data = readShop(me);
       if (data === null) return bad('no_such_offer');
       const stream = Rng.fromState(data.stream);
+      // A free re-roll (Market day) costs 0 and is used up; the extra offers
+      // of the shop stay for every re-roll in it.
+      const free = shopEffectCount(me, 'free_rerolls') > 0;
       const r = rerollOffers(
         { gold: me.gold, offers: data.offers },
         stream,
         state.round,
         content,
         economy,
+        { extraOffers: shopEffectCount(me, 'extra_offers'), free },
       );
       if (!r.ok) return bad(r.reason, r.detail);
+      const paid = free ? useShopEffect(me, 'free_rerolls') : me;
       return {
         ok: true,
         state: replacePlayer(
           state,
           player,
-          withShop(me, r.shop.gold, {
+          withShop(paid, r.shop.gold, {
             offers: r.shop.offers,
             stream: stream.getState(),
           }),
         ),
-        effects: [custom('rerolled', { player, cost: economy.rerollCost })],
+        effects: [
+          custom('rerolled', {
+            player,
+            cost: free ? 0 : economy.rerollCost,
+          }),
+        ],
       };
     },
   };

@@ -213,8 +213,34 @@ describe('loadEvents', () => {
       'workshop',
       'shrine',
       'windfall',
+      'market_day',
+    ]);
+    expect(events.events.map((e) => e.fromRound)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      2,
     ]);
     expect(events.modifiers.length).toBeGreaterThanOrEqual(3);
+  });
+
+  test('an event fromRound is an integer from 1 to 1000, or absent', () => {
+    const load = (fromRound: unknown) =>
+      loadEvents({
+        offerCount: 1,
+        events: [{ id: 'evt_a', type: 'x', weight: 1, fromRound }],
+        modifiers: [],
+      });
+    const ok = load(3);
+    expect(ok.ok && ok.config.events[0]?.fromRound).toBe(3);
+    const none = loadEvents({
+      offerCount: 1,
+      events: [{ id: 'evt_a', type: 'x', weight: 1 }],
+      modifiers: [],
+    });
+    expect(none.ok && 'fromRound' in (none.config.events[0] ?? {})).toBe(false);
+    for (const bad of [0, 1001, 1.5, '2'])
+      expect(load(bad).ok, String(bad)).toBe(false);
   });
 
   test('reports problems', () => {

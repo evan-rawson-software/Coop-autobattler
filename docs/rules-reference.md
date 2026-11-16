@@ -545,6 +545,10 @@ middle:
   100) <= MAX_HEALTH` and `floor(damage * (100 + P) / 100) <= MAX_DAMAGE`
   (a unit with 0 damage does not limit on damage). The same per-type `P`
   covers the units of a scheduled wave.
+- **Event definitions** (`content/events.json`): `fromRound`, if present, is an
+  integer from 1 to 1000 (absent means 1). Market day's `params.extraOffers`
+  and `params.freeRerolls` are integers from 1 to `MAX_SHOP_EFFECT_COUNT` (10),
+  which also bounds the `count` of a saved next-shop effect.
 - **Modifier definitions** (`content/events.json`): `fromRound`, if present,
   is an integer from 1 to 1000 (absent means 1); a `unit_strength_percent`
   effect's `units`, if present, is a non-empty list of unit IDs with no
@@ -600,7 +604,11 @@ same list, and the final state), `prng-child` (the parent state and the first
 
 `shop-roll` (see "Run random streams" and "Shops and gold"): input `{seed,
 before, round, leg, players, rerolls}` and optionally `offerWeights` (a list of
-`{def, weight, fromRound?}` that replaces the shipped list for this vector). Start at `rootRng(seed)`, draw each
+`{def, weight, fromRound?}` that replaces the shipped list for this vector) and
+`extraOffers` (default 0: every roll and re-roll makes that many offers more than
+`shopOfferCount`, Market day; `shop-roll.17` and `shop-roll.18`; the vectors
+`run-replay.s1-p1-market-day` and `run-replay.s1-p2-market-day` play Market day
+through its shop). Start at `rootRng(seed)`, draw each
 label in `before` in order, then draw `shop:r<round>:<leg>`. For each player
 `i`, roll the offers from that stream's child `p<i>`, then re-roll `rerolls`
 times from the same child. The result lists each player's rolls (offers as
@@ -4445,8 +4453,10 @@ positive sum `T`. Draw `x = rng.nextInt(T)` (one draw). Return the first index
 
 ### Offer roll
 
-`rollOffers(rng, round)` makes `shopOfferCount` offers, for slot 0, 1, ... in
-order. Per slot, exactly two draws, in this order:
+`rollOffers(rng, round, extraOffers)` makes `shopOfferCount + extraOffers`
+offers (`extraOffers` is 0 unless a next-shop effect adds offers, see "Next-shop
+effects"), for slot 0, 1, ... in order. Per slot, exactly two draws, in this
+order:
 
 1. the building: `pickWeightedIndex` over `offerWeights` (file order), where
    an entry whose `fromRound` is greater than the current round has weight 0
@@ -4520,9 +4530,35 @@ shown, and reloading or replaying never changes them.
 - Re-roll `{}`: needs `gold >= rerollCost` (`not_enough_gold`). Pays it and
   replaces all of that player's offers with a roll from the next draws of that
   player's stored shop stream (so two re-rolls differ). A re-roll also brings
-  back bought slots.
+  back bought slots. While the player has a `free_rerolls` effect (see
+  "Next-shop effects") the re-roll costs 0 (the `rerolled` effect then has
+  `cost` 0) and uses one of them up. Every roll of the shop, re-rolls included,
+  makes `shopOfferCount + extra_offers` offers.
 - Buy and re-roll are legal only in the `shop` step (`wrong_step` elsewhere,
   including the first `build`). None of these can be undone.
+
+### Next-shop effects (RS-4i1)
+
+`perPlayer[i].nextShop` is an OPTIONAL list of `{kind, count}` (absent means
+none; the saved format number did not change, records without it are read as
+having none). Kinds: `extra_offers` (`count` = offers more than
+`shopOfferCount`) and `free_rerolls` (`count` = re-rolls that cost 0). At most
+one entry per kind; `count` is an integer from 1 to 10. An event adds entries
+(counts of one kind are summed, capped at 10) when it is applied, so they are
+set before the shop step is entered. The shop reads them: entering the shop
+rolls `shopOfferCount + extra_offers` offers from the same shop stream (more
+draws of the same stream, the wall-shape limit applying to the whole set), and
+each re-roll rolls the same number. A free re-roll takes one off `free_rerolls`
+(the entry is removed at 0), so a save and reload in the shop keeps what is
+left. The effects are removed for every player when the shop step ends, and
+also when the run ends (abandon, defeat). `validateRunState` checks the
+structure only: a list, each entry with `kind` one of the two and `count` an
+integer from 1 to 10, no repeated kind, and the key present only in the steps
+`event_resolve` and `shop`. A later event (Blueprint's held offer) adds a kind
+here and a rule for the shop to read it.
+
+Notes for a port: do not write `nextShop` when it is empty; treat an absent key
+as an empty list on load.
 
 ## PvE options, rewards, events and run modifiers
 
@@ -4707,7 +4743,7 @@ package gives the same list for a screen.
 
 ### Events (RS-4)
 
-`content/events.json` lists event definitions `{ id, type, weight,
+`content/events.json` lists event definitions `{ id, type, weight, fromRound?,
 params }` and modifier definitions `{ id, stackable, fromRound?, effects }`,
 and `offerCount` (3). The `type` names a handler in the session package; the
 handler decides availability, extra offer data, what happens on pick, and how a
@@ -4716,9 +4752,16 @@ follow-up choice is applied. Adding a type is data plus one handler.
 Offers (stream `event_offers:r<r>:<leg>`): **never two offers of the same
 type** (issue #48). The content may hold several definitions of one type (for
 example a small and a big Windfall); they compete for a single place. The
-definitions whose handler says `available` (Workshop: some owned building
-below tier 3; Shrine: at least one modifier can be taken; Windfall: always)
-form the pool, in file order. The draw sequence is: one `pickWeightedIndex`
+definitions whose first round has come (`round >= fromRound`; `fromRound`
+defaults to 1, `round` is `RunState.round`, the round of the event step) and
+whose handler says `available` (Workshop: some owned building
+below tier 3; Shrine: at least one modifier can be taken; Windfall and Market
+day: always) form the pool, in file order. Both conditions are checked before
+the draw, so the number of draws is still the number of offers, and where no
+`fromRound` is above the round the draws are those of the pool without it
+(round 1 offers did not change when Market day was added). A definition with an
+always-available handler must have `fromRound` 1 or none (wiring throws
+otherwise), so the step always has an offer. The draw sequence is: one `pickWeightedIndex`
 over the weights of the pool; the picked definition is offered, and it and
 every other definition of the same type are removed from the pool; repeat
 until `offerCount` offers exist or the pool is empty. There is exactly one
@@ -4821,6 +4864,15 @@ any number of offers from 1 to `offerCount`. More event types will come later.
   (`already_held`).
 - **Windfall** (`params.gold`): no follow-up; every player gets that much gold
   at once.
+- **Market day** (`params.extraOffers`, 1, and `params.freeRerolls`, 1; integers
+  from 1 to 10, checked at wiring and by the schema; `fromRound` 2 in the shipped
+  file; RS-4i1): always available from its round. The offer stores both numbers.
+  No follow-up and no random draw: on pick, every player gets the effects
+  `extra_offers` and `free_rerolls` in `nextShop` (see "Next-shop effects"), and
+  the shop that follows has one more offer and a free first re-roll. A shop
+  after that one has neither.
+  Notes for a port: the effects live in the per-player state, not in the team
+  state, so ghosts and team hashes are not affected.
 
 After the party votes for an offer (the usual party vote, see "Party votes"
 above), a handler with no follow-up applies at once and the step goes to the

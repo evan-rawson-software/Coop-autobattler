@@ -179,6 +179,29 @@ describe('event cards', () => {
     expect(c?.lines).toEqual(['+4 gold.']);
   });
 
+  test('a Market day states its extra offers and free re-rolls', () => {
+    const card = (extra: number, free: number) =>
+      eventCards(
+        withOffers(run, [
+          {
+            id: 'evt_market_day',
+            event: 'evt_market_day',
+            type: 'market_day',
+            extraOffers: extra,
+            freeRerolls: free,
+          },
+        ]),
+        0,
+      )[0];
+    expect(card(1, 1)?.title).toBe('Market day');
+    expect(card(1, 1)?.lines).toEqual([
+      'Your next shop has 1 extra offer and a free first re-roll.',
+    ]);
+    expect(card(2, 3)?.lines).toEqual([
+      'Your next shop has 2 extra offers and 3 free re-rolls.',
+    ]);
+  });
+
   test('the count can be 1, 2 or 3: the view never assumes three', () => {
     const offer = (n: number): Json => ({
       id: `evt_windfall#${String(n)}`,

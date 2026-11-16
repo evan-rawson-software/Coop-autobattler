@@ -83,9 +83,28 @@ export interface PlayerInfo {
   readonly name: string;
 }
 
+/** The kinds of next-shop effect (RS-4i1); Blueprint adds `held_offer`. */
+export type ShopEffectKind = 'extra_offers' | 'free_rerolls';
+
+/**
+ * An effect on a player's next shop. `extra_offers`: that many offers more
+ * than `shopOfferCount` in every roll of that shop. `free_rerolls`: that many
+ * re-rolls still cost 0.
+ */
+export interface ShopEffect {
+  readonly kind: ShopEffectKind;
+  readonly count: number;
+}
+
 export interface PlayerRunState {
   readonly gold: number;
   readonly ready: boolean;
+  /**
+   * Effects on this player's next shop; absent means none. Set by an event,
+   * read by the shop, removed when the shop step ends. Optional, so records
+   * made before it existed stay readable.
+   */
+  readonly nextShop?: readonly ShopEffect[];
   /** This player's shop offers. Opaque; owned by W2-2. */
   readonly shop: Json;
 }

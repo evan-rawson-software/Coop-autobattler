@@ -172,6 +172,14 @@ export function eventCards(run: RunState, player: number): EventCard[] {
     } else if (type === 'windfall') {
       const gold = num(raw['gold'], 0);
       lines = [`+${String(gold)} gold.`];
+    } else if (type === 'market_day') {
+      const extra = num(raw['extraOffers'], 0);
+      const free = num(raw['freeRerolls'], 0);
+      lines = [
+        `Your next shop has ${count(extra, 'extra offer')} and ${
+          free === 1 ? 'a free first re-roll' : `${String(free)} free re-rolls`
+        }.`,
+      ];
     } else {
       // An event type this screen does not know: show its data as it is.
       lines = Object.entries(raw)

@@ -75,7 +75,8 @@ function shopEconomy(
 
 /**
  * `shop-roll`: input `{seed, before, round, leg, players, rerolls}` and optionally
- * `offerWeights` (a test economy, see `shopEconomy`). The run
+ * `offerWeights` (a test economy, see `shopEconomy`) and `extraOffers` (more
+ * offers than `shopOfferCount` in every roll, Market day, default 0). The run
  * generator starts at `rootRng(seed)`; each label in `before` is drawn from it
  * in order (as the step machine does earlier in a run); then the shop stream
  * `shop:r<round>:<leg>` is drawn. Player `i` rolls from its child `p<i>`, then
@@ -101,8 +102,9 @@ export function makeShopRollKind(
     const players: Json[] = [];
     for (let p = 0; p < num(o, 'players'); p++) {
       const rng = drawn.stream.child(`p${String(p)}`);
+      const extra = o['extraOffers'] === undefined ? 0 : num(o, 'extraOffers');
       const rolls: Json[] = [
-        rollOffers(rng, round, content, economy).map(offerRow),
+        rollOffers(rng, round, content, economy, extra).map(offerRow),
       ];
       for (let r = 0; r < num(o, 'rerolls'); r++) {
         const again = rerollOffers(
@@ -111,6 +113,7 @@ export function makeShopRollKind(
           round,
           content,
           economy,
+          { extraOffers: extra },
         );
         if (!again.ok) throw new Error(again.reason);
         rolls.push(again.shop.offers.map(offerRow));

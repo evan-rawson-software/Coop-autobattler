@@ -2542,6 +2542,21 @@
       ],
       "category": "ui",
       "note": "Event type windfall."
+    },
+    "ui_event_market_day": {
+      "sheet": "ui",
+      "x": 293,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Event type market_day."
     }
   },
   "planned": []

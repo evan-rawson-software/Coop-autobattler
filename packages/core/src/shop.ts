@@ -91,7 +91,8 @@ export function isPylonDef(content: ShopContent, def: BuildingId): boolean {
 }
 
 /**
- * Roll a full set of offers. For slot 0 up to `shopOfferCount - 1`, in this
+ * Roll a full set of offers. For slot 0 up to `shopOfferCount + extraOffers - 1`
+ * (`extraOffers` is 0 unless a next-shop effect adds offers, RS-4i1), in this
  * order: one draw picks the building by `offerWeights` (one `nextInt(sum of
  * weights)`; an entry whose `fromRound` is above `round` counts as weight 0);
  * if that building is a wall (a `defense` of `defenseType`
@@ -110,6 +111,7 @@ export function rollOffers(
   round: number,
   content: ShopContent,
   economy: EconomyConfig,
+  extraOffers = 0,
 ): ShopOffer[] {
   // An entry whose `fromRound` is above this round has weight 0 in every
   // draw of this roll (it stays in the list, so the order is unchanged).
@@ -121,7 +123,7 @@ export function rollOffers(
   const tierWeights = tierOddsFor(round, economy.tierOdds).weights;
   const offers: ShopOffer[] = [];
   const wallDefs = new Set<BuildingId>();
-  for (let slot = 0; slot < economy.shopOfferCount; slot++) {
+  for (let slot = 0; slot < economy.shopOfferCount + extraOffers; slot++) {
     let entry = gated[pickWeightedIndex(rng, buildingWeights)];
     if (entry === undefined) throw new RangeError('offerWeights is empty');
     if (
@@ -234,8 +236,9 @@ export function sellFromStash(
 }
 
 /**
- * Pay `rerollCost` and replace all offers with a fresh roll from `rng`. On
- * failure nothing is drawn from `rng`.
+ * Pay `rerollCost` (0 if `free`) and replace all offers with a fresh roll of
+ * `shopOfferCount + extraOffers` offers from `rng`. On failure nothing is
+ * drawn from `rng`.
  */
 export function rerollOffers(
   shop: PlayerShop,
@@ -243,15 +246,17 @@ export function rerollOffers(
   round: number,
   content: ShopContent,
   economy: EconomyConfig,
+  opts: { readonly extraOffers?: number; readonly free?: boolean } = {},
 ): { readonly ok: true; readonly shop: PlayerShop } | ShopFailure {
-  if (shop.gold < economy.rerollCost) {
+  const cost = opts.free === true ? 0 : economy.rerollCost;
+  if (shop.gold < cost) {
     return { ok: false, reason: 'not_enough_gold' };
   }
   return {
     ok: true,
     shop: {
-      gold: shop.gold - economy.rerollCost,
-      offers: rollOffers(rng, round, content, economy),
+      gold: shop.gold - cost,
+      offers: rollOffers(rng, round, content, economy, opts.extraOffers ?? 0),
     },
   };
 }

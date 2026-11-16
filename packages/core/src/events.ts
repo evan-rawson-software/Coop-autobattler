@@ -36,6 +36,15 @@ export interface ModifierDef {
 /** Highest `fromRound` a modifier definition may have. */
 export const MAX_MODIFIER_FROM_ROUND = 1000;
 
+/** Highest `fromRound` an event definition may have. */
+export const MAX_EVENT_FROM_ROUND = 1000;
+
+/**
+ * Most that one next-shop effect may carry: extra offers or free re-rolls
+ * (`params` of Market day, and the `count` of a saved shop effect).
+ */
+export const MAX_SHOP_EFFECT_COUNT = 10;
+
 /** What `loadEvents` may check against other content. */
 export interface EventsLoadContext {
   /** When given, `units` of unit-strength effects must name these units. */
@@ -53,6 +62,8 @@ export interface EventDef {
   readonly type: string;
   /** Relative weight in the offer draw (at least 1). */
   readonly weight: number;
+  /** First round the event may be offered (at least 1); absent means 1. */
+  readonly fromRound?: number;
   readonly params: EventParams;
 }
 
@@ -109,7 +120,7 @@ export function loadEvents(
       }
       rejectUnknownKeys(
         e,
-        new Set(['id', 'type', 'weight', 'params']),
+        new Set(['id', 'type', 'weight', 'fromRound', 'params']),
         at,
         errors,
       );
@@ -126,6 +137,10 @@ export function loadEvents(
         errors.push(`${at}: "type" must match ${String(TYPE_ID)}.`);
       }
       const weight = readInt(e, 'weight', 1, at, errors);
+      const eventFrom =
+        e['fromRound'] === undefined
+          ? undefined
+          : readInt(e, 'fromRound', 1, at, errors, MAX_EVENT_FROM_ROUND);
       const params: Record<string, number | string> = {};
       const rawParams = e['params'];
       if (rawParams !== undefined) {
@@ -150,9 +165,14 @@ export function loadEvents(
       if (
         typeof id === 'string' &&
         typeof type === 'string' &&
-        weight !== undefined
+        weight !== undefined &&
+        (e['fromRound'] === undefined || eventFrom !== undefined)
       ) {
-        events.push({ id, type, weight, params });
+        events.push(
+          eventFrom === undefined
+            ? { id, type, weight, params }
+            : { id, type, weight, fromRound: eventFrom, params },
+        );
       }
     });
   }

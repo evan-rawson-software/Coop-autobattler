@@ -18,6 +18,7 @@ import { effectText, needsText, templateKey } from './effect-text.js';
 import {
   buildShopView,
   nextBattleView,
+  marketNote,
   readyLabel,
   saleQuote,
   type ShopContext,
@@ -288,6 +289,47 @@ describe('buying, selling, re-rolling', () => {
     const after = buildShopView(s.run, ME, ctx);
     expect(after.gold).toBe(mid.gold - economy.rerollCost);
     expect(after.offers.every((c) => c.offer !== null)).toBe(true);
+  });
+});
+
+describe('Market day in the shop view', () => {
+  test('the note names the extra offers and free re-rolls; the re-roll shows 0 while free', async () => {
+    const { s } = await shopSession();
+    const none = buildShopView(s.run, ME, ctx);
+    expect(none.marketNote).toBeNull();
+    expect(none.reroll.cost).toBe(economy.rerollCost);
+    const run: RunState = {
+      ...s.run,
+      perPlayer: s.run.perPlayer.map((p) => ({
+        ...p,
+        nextShop: [
+          { kind: 'extra_offers' as const, count: 1 },
+          { kind: 'free_rerolls' as const, count: 1 },
+        ],
+      })),
+    };
+    const v = buildShopView(run, ME, ctx);
+    expect(v.marketNote).toBe('Market day: 1 extra offer, first re-roll free');
+    expect(v.reroll.cost).toBe(0);
+    // Once the free re-roll is used up only the offers are named.
+    const used: RunState = {
+      ...run,
+      perPlayer: run.perPlayer.map((p) => ({
+        ...p,
+        nextShop: [{ kind: 'extra_offers' as const, count: 1 }],
+      })),
+    };
+    expect(buildShopView(used, ME, ctx).marketNote).toBe(
+      'Market day: 1 extra offer',
+    );
+    expect(buildShopView(used, ME, ctx).reroll.cost).toBe(economy.rerollCost);
+  });
+
+  test('plurals and an empty note', () => {
+    expect(marketNote(2, 3)).toBe(
+      'Market day: 2 extra offers, first 3 re-rolls free',
+    );
+    expect(marketNote(0, 0)).toBeNull();
   });
 });
 

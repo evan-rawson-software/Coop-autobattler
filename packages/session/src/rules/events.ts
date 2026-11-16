@@ -27,6 +27,7 @@
 import {
   Rng,
   findModifier,
+  MAX_SHOP_EFFECT_COUNT,
   heldModifierIds,
   pickWeightedIndex,
   raiseTier,
@@ -37,6 +38,7 @@ import {
   type EventsConfig,
 } from '@game/core';
 import { tally, voteResolvedEffect } from './machine.js';
+import { addShopEffect } from './shop-effects.js';
 import {
   DEFAULT_WORKSHOP_PERCENT,
   currentWorkshopPrice,
@@ -110,7 +112,10 @@ export interface EventHandler {
   readonly type: string;
   /** A problem with an event definition's params, or null. Checked at wiring. */
   checkParams?(def: EventDef): string | null;
-  /** Can this event be offered now? (A Workshop needs a raisable building.) */
+  /**
+   * Can this event be offered now? (A Workshop needs a raisable building.)
+   * Only asked for definitions whose `fromRound` has come (RS-4g).
+   */
   available(ctx: EventContext, def: EventDef): boolean;
   /**
    * True if `available` is true in every state (a Windfall). Wiring requires
@@ -458,11 +463,55 @@ export const windfallHandler: EventHandler = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Market day: each player's next shop has extra offers and free re-rolls
+
+function shopCountProblem(def: EventDef, key: string): string | null {
+  const v = def.params[key];
+  return typeof v === 'number' &&
+    Number.isInteger(v) &&
+    v >= 1 &&
+    v <= MAX_SHOP_EFFECT_COUNT
+    ? null
+    : `"${key}" must be an integer from 1 to ${String(MAX_SHOP_EFFECT_COUNT)}`;
+}
+
+export const marketDayHandler: EventHandler = {
+  type: 'market_day',
+  checkParams: (def) =>
+    shopCountProblem(def, 'extraOffers') ??
+    shopCountProblem(def, 'freeRerolls'),
+  available: () => true,
+  instantiate: (_ctx, def) => ({
+    extraOffers: intParam(def, 'extraOffers', 0),
+    freeRerolls: intParam(def, 'freeRerolls', 0),
+  }),
+  resolve({ state }, offer) {
+    const extra =
+      typeof offer['extraOffers'] === 'number' ? offer['extraOffers'] : 0;
+    const free =
+      typeof offer['freeRerolls'] === 'number' ? offer['freeRerolls'] : 0;
+    return {
+      patch: {
+        perPlayer: state.perPlayer.map((p) =>
+          addShopEffect(
+            addShopEffect(p, 'extra_offers', extra),
+            'free_rerolls',
+            free,
+          ),
+        ),
+      },
+      followUp: null,
+    };
+  },
+};
+
 /** The event types shipped with the game. Add a type by adding a handler. */
 export const defaultEventHandlers: EventHandlers = {
   workshop: workshopHandler,
   shrine: shrineHandler,
   windfall: windfallHandler,
+  market_day: marketDayHandler,
 };
 
 // ---------------------------------------------------------------------------
@@ -495,6 +544,16 @@ export function checkEventHandlers(
       );
     }
   }
+  for (const def of config.events) {
+    if (
+      handlerFor(handlers, def.type)?.alwaysAvailable === true &&
+      (def.fromRound ?? 1) > 1
+    ) {
+      problems.push(
+        `event "${def.id}": an always-available event must not have a "fromRound" above 1.`,
+      );
+    }
+  }
   const sure = config.events.some(
     (d) => handlerFor(handlers, d.type)?.alwaysAvailable === true,
   );
@@ -515,8 +574,12 @@ export function eventHooks(
   return {
     eventOffers(state, rng): readonly Json[] {
       const ctx: EventContext = { state, content, config };
+      // The pool: definitions whose first round has come (RS-4g) and whose
+      // handler says available. Decided before the draw.
       const available = config.events.filter(
-        (d) => handlerFor(handlers, d.type)?.available(ctx, d) === true,
+        (d) =>
+          state.round >= (d.fromRound ?? 1) &&
+          handlerFor(handlers, d.type)?.available(ctx, d) === true,
       );
       // Weighted draws from the pool of available definitions: one
       // `pickWeightedIndex` draw per offer made, none wasted. After a pick,

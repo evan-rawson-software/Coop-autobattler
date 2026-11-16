@@ -178,6 +178,11 @@ export function ShopPanel(props: {
           </button>
         </div>
       </div>
+      {sv.marketNote === null ? null : (
+        <p class="shop-market" data-field="market-day">
+          {sv.marketNote}
+        </p>
+      )}
       {!hintSeen && offersRefinery(sv.groups) ? (
         <p class="shop-hint" data-field="refinery-hint">
           {t('refineryHint')}{' '}
