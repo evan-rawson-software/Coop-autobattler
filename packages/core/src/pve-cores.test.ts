@@ -87,11 +87,18 @@ describe('one Core per player (PP-14)', () => {
             const full =
               p.budget - Math.floor((p.budget * arch.waveSharePercent) / 100);
             // A Brood boss sets its burst share aside first (MM-9d).
+            // A Pylons boss sets its pylon share aside first, and gets it back
+            // when no pylon fits (MM-9d).
+            const pylonShare =
+              arch.pylons === undefined
+                ? 0
+                : Math.floor((full * arch.pylons.sharePercent) / 100);
             const stronghold =
               full -
               (arch.brood === undefined
                 ? 0
-                : Math.floor((full * arch.brood.sharePercent) / 100));
+                : Math.floor((full * arch.brood.sharePercent) / 100)) -
+              ((p.stronghold.pylons ?? []).length > 0 ? pylonShare : 0);
             const spent = p.stronghold.buildings.reduce(
               (a, b) =>
                 a +

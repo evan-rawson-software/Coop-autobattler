@@ -84,6 +84,12 @@ function isWallDef(content: ShopContent, def: BuildingId): boolean {
   return d !== undefined && d.kind === 'defense' && d.defenseType === 'wall';
 }
 
+/** A boss-only pylon (MM-9d): never offered, never bought. */
+export function isPylonDef(content: ShopContent, def: BuildingId): boolean {
+  const d = content.buildings.get(def);
+  return d !== undefined && d.kind === 'defense' && d.defenseType === 'pylon';
+}
+
 /**
  * Roll a full set of offers. For slot 0 up to `shopOfferCount - 1`, in this
  * order: one draw picks the building by `offerWeights` (one `nextInt(sum of
@@ -95,7 +101,9 @@ function isWallDef(content: ShopContent, def: BuildingId): boolean {
  * remaining weights)`), and that second pick stands. Then one draw picks the
  * tier by the applicable `tierOdds` row (one `nextInt(sum of its weights)`).
  * Duplicates across slots are allowed. Each roll (first roll and re-roll)
- * starts with no offers, so the limit holds per set of offers.
+ * starts with no offers, so the limit holds per set of offers. A boss-only
+ * pylon is never offered: the economy loader refuses it in `offerWeights`, and
+ * a roll that would pick one throws a RangeError.
  */
 export function rollOffers(
   rng: Rng,
@@ -133,6 +141,9 @@ export function rollOffers(
         ];
       if (entry === undefined) throw new RangeError('offerWeights is empty');
     }
+    if (isPylonDef(content, entry.def)) {
+      throw new RangeError(`"${entry.def}" is boss-only and cannot be offered`);
+    }
     if (isWallDef(content, entry.def)) wallDefs.add(entry.def);
     const tier = pickWeightedIndex(rng, tierWeights) + 1;
     offers.push({
@@ -159,6 +170,9 @@ export function buyOffer(
   const offer = Number.isInteger(args.slot) ? shop.offers[args.slot] : null;
   if (offer === undefined || offer === null) {
     return { ok: false, reason: 'no_such_offer' };
+  }
+  if (isPylonDef(content, offer.def)) {
+    return { ok: false, reason: 'no_such_offer', detail: 'boss_only' };
   }
   if (shop.gold < offer.price) return { ok: false, reason: 'not_enough_gold' };
   const added = addToStash(team, content, {

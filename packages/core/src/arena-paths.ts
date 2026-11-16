@@ -177,7 +177,8 @@ export function fieldStep(
  * One step on a breach route from cell index `here` (distance `> 0`): the
  * passable neighbour minimising (its distance + the cost of entering it),
  * ties by tie key. The result may be covered by an enemy building. -1 when
- * there is none.
+ * there is none. `goal` is the arena ref of the goal Core, or the refs of the
+ * goal set (pylons, MM-9d): none of them is ever entered.
  */
 export function breachStep(
   arena: Arena,
@@ -187,7 +188,7 @@ export function breachStep(
   hpOf: (ref: number) => number,
   base: number,
   perCost: number,
-  goal: number,
+  goal: number | readonly number[],
 ): number {
   const { width } = arena.geom;
   return bestNeighbour(
@@ -204,9 +205,29 @@ export function breachStep(
 }
 
 /**
+ * The standing pylons (MM-9d) that shield the Core of player `core` of side
+ * `owner`, in the order of the side options. Empty for every ordinary Core.
+ */
+export function standingPylons(
+  arena: Arena,
+  owner: number,
+  core: number,
+): ArenaBuilding[] {
+  const out: ArenaBuilding[] = [];
+  for (const p of arena.pylons) {
+    if (p.side !== owner || p.core !== core) continue;
+    const b = arena.buildings[p.ref];
+    if (b !== undefined && b.alive) out.push(b);
+  }
+  return out;
+}
+
+/**
  * The goal set of a side's units heading for the enemy Core of player `core`
  * (PP-11): that Core while it stands, else nothing. Units never prefer other
- * buildings (issue #66).
+ * buildings (issue #66), with one exception: while the Core is shielded by
+ * pylons (MM-9d) the goal set is its standing pylons instead, so a unit's
+ * nearest goal is the nearest pylon by the movement field.
  */
 export function goalBuildings(
   arena: Arena,
@@ -215,7 +236,23 @@ export function goalBuildings(
 ): ArenaBuilding[] {
   const ref = arena.coreRef[1 - side]?.[core] ?? -1;
   const coreB = ref >= 0 ? arena.buildings[ref] : undefined;
-  return coreB !== undefined && coreB.alive ? [coreB] : [];
+  if (coreB === undefined || !coreB.alive) return [];
+  const pylons = standingPylons(arena, 1 - side, core);
+  return pylons.length > 0 ? pylons : [coreB];
+}
+
+/**
+ * The arena refs a breach route never enters (see `breachPassable`): the goal
+ * buildings, and the target Core itself while pylons shield it (MM-9d), since
+ * hitting a shielded Core does nothing.
+ */
+export function goalRefs(arena: Arena, side: number, core: number): number[] {
+  const refs = goalBuildings(arena, side, core).map((b) => b.ref);
+  const coreRef = arena.coreRef[1 - side]?.[core] ?? -1;
+  if (coreRef >= 0 && !refs.includes(coreRef) && refs.length > 0) {
+    refs.push(coreRef);
+  }
+  return refs;
 }
 
 export interface Field {
@@ -337,13 +374,14 @@ export function breachPassable(
   arena: Arena,
   side: number,
   cell: number,
-  goal: number,
+  goal: number | readonly number[],
 ): boolean {
   if (arena.blocked[cell] === 1) return false;
   if (openFor(arena, side, cell)) return true;
   const ref = arena.occupant[cell] ?? -1;
   const b = ref >= 0 ? arena.buildings[ref] : undefined;
-  return b !== undefined && b.side !== side && ref !== goal;
+  if (b === undefined || b.side === side) return false;
+  return typeof goal === 'number' ? ref !== goal : !goal.includes(ref);
 }
 
 /**
@@ -368,9 +406,10 @@ export function computeBreach(
   // distance below stays a safe integer.
   assertWithin(n, 1, MAX_ARENA_CELLS, 'Breach: arena cell count');
   const dist = new Float64Array(n).fill(-1);
-  const goal = arena.coreRef[1 - side]?.[core] ?? -1;
-  const goalB = goal >= 0 ? arena.buildings[goal] : undefined;
-  if (goalB === undefined || !goalB.alive) return dist;
+  // The goal set: the Core, or its standing pylons while it is shielded.
+  const goalSet = goalBuildings(arena, side, core);
+  if (goalSet.length === 0) return dist;
+  const goal = goalRefs(arena, side, core);
 
   // Binary min-heap of (distance, cell) pairs, ordered by distance and then
   // by cell index, held in two parallel arrays (no packed key, so a distance
@@ -428,15 +467,17 @@ export function computeBreach(
     return topK;
   };
 
-  for (const c of goalB.cells) {
-    for (const [dx, dy] of NEIGHBORS) {
-      const x = c.x + dx;
-      const y = c.y + dy;
-      if (x < 0 || y < 0 || x >= width || y >= height) continue;
-      const k = y * width + x;
-      if (dist[k] !== -1 || !breachPassable(arena, side, k, goal)) continue;
-      dist[k] = 0;
-      push(0, k);
+  for (const goalB of goalSet) {
+    for (const c of goalB.cells) {
+      for (const [dx, dy] of NEIGHBORS) {
+        const x = c.x + dx;
+        const y = c.y + dy;
+        if (x < 0 || y < 0 || x >= width || y >= height) continue;
+        const k = y * width + x;
+        if (dist[k] !== -1 || !breachPassable(arena, side, k, goal)) continue;
+        dist[k] = 0;
+        push(0, k);
+      }
     }
   }
   while (heapD.length > 0) {

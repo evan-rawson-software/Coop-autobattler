@@ -56,7 +56,7 @@ function pickTurrets(cands: readonly Candidate[], n: number, rng: Rng): Cell[] {
 }
 
 /** Chebyshev distance from a cell to the Core's footprint (0 inside it). */
-function coreDistance(
+export function coreDistance(
   core: Cell,
   b: LayoutBoard,
   x: number,

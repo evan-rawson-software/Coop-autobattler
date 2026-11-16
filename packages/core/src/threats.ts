@@ -67,6 +67,26 @@ export const MAX_BROOD_THRESHOLDS = 5;
 /** The largest `brood.sharePercent`. */
 export const MAX_BROOD_SHARE_PERCENT = 60;
 
+/**
+ * A boss's pylons (MM-9d): `perPlot` pylons around each boss Core, at
+ * Chebyshev distance `minDistance` to `maxDistance` from the Core's footprint.
+ * `sharePercent` of the stronghold budget is spent on their health first.
+ * While one of a Core's pylons stands, the Core takes no damage.
+ */
+export interface PylonsTemplate {
+  readonly perPlot: number;
+  readonly sharePercent: number;
+  readonly minDistance: number;
+  readonly maxDistance: number;
+}
+
+/** The most pylons per plot one archetype may list. */
+export const MAX_PYLONS_PER_PLOT = 8;
+/** The largest `pylons.sharePercent`. */
+export const MAX_PYLONS_SHARE_PERCENT = 60;
+/** The largest `pylons.maxDistance` (cells from the Core's footprint). */
+export const MAX_PYLONS_DISTANCE = 8;
+
 export interface ArchetypeDef {
   readonly id: ArchetypeId;
   readonly bossOnly: boolean;
@@ -84,6 +104,8 @@ export interface ArchetypeDef {
    * share one health pool (MM-9d, "Linked Cores"). Absent when false.
    */
   readonly linkedCores?: true;
+  /** Boss-only archetypes: boss Cores shielded by pylons (MM-9d). */
+  readonly pylons?: PylonsTemplate;
 }
 
 export interface RingLayoutConfig {
@@ -535,6 +557,7 @@ export function loadThreats(
         'stronghold',
         'brood',
         'linkedCores',
+        'pylons',
       ]),
       at,
       errors,
@@ -586,6 +609,71 @@ export function loadThreats(
         }
         if (e['brood'] !== undefined) {
           errors.push(`${at}: "linkedCores" cannot be combined with "brood".`);
+        }
+      }
+    }
+    let pylons: PylonsTemplate | undefined;
+    if (e['pylons'] !== undefined) {
+      const pr = e['pylons'];
+      const pat = `${at}.pylons`;
+      if (e['bossOnly'] !== true) {
+        errors.push(`${at}: "pylons" is only allowed when "bossOnly" is true.`);
+      } else if (!isRecord(pr)) {
+        errors.push(`${pat}: must be an object.`);
+      } else {
+        if (e['brood'] !== undefined) {
+          errors.push(`${at}: "pylons" cannot be combined with "brood".`);
+        }
+        if (e['linkedCores'] === true) {
+          errors.push(`${at}: "pylons" cannot be combined with "linkedCores".`);
+        }
+        rejectUnknownKeys(
+          pr,
+          new Set(['perPlot', 'sharePercent', 'minDistance', 'maxDistance']),
+          pat,
+          errors,
+        );
+        const perPlot = readInt(pr, 'perPlot', 1, pat, errors);
+        if (perPlot !== undefined && perPlot > MAX_PYLONS_PER_PLOT) {
+          errors.push(
+            `${pat}: "perPlot" must be at most ${String(MAX_PYLONS_PER_PLOT)}.`,
+          );
+        }
+        const share = readInt(pr, 'sharePercent', 1, pat, errors);
+        if (share !== undefined && share > MAX_PYLONS_SHARE_PERCENT) {
+          errors.push(
+            `${pat}: "sharePercent" must be at most ${String(MAX_PYLONS_SHARE_PERCENT)}.`,
+          );
+        }
+        const minD = readInt(pr, 'minDistance', 1, pat, errors);
+        const maxD = readInt(pr, 'maxDistance', 1, pat, errors);
+        if (maxD !== undefined && maxD > MAX_PYLONS_DISTANCE) {
+          errors.push(
+            `${pat}: "maxDistance" must be at most ${String(MAX_PYLONS_DISTANCE)}.`,
+          );
+        }
+        if (minD !== undefined && maxD !== undefined && minD > maxD) {
+          errors.push(`${pat}: "minDistance" must be at most "maxDistance".`);
+        }
+        if (
+          !context.buildings
+            .list()
+            .some((b) => b.kind === 'defense' && b.defenseType === 'pylon')
+        ) {
+          errors.push(`${pat}: the content has no pylon building.`);
+        }
+        if (
+          perPlot !== undefined &&
+          share !== undefined &&
+          minD !== undefined &&
+          maxD !== undefined
+        ) {
+          pylons = {
+            perPlot,
+            sharePercent: share,
+            minDistance: minD,
+            maxDistance: maxD,
+          };
         }
       }
     }
@@ -799,6 +887,7 @@ export function loadThreats(
         stronghold,
         ...(brood === undefined ? {} : { brood }),
         ...(linkedCores ? { linkedCores: true as const } : {}),
+        ...(pylons === undefined ? {} : { pylons }),
       });
     }
   });

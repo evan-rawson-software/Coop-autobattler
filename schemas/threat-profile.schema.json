@@ -92,6 +92,21 @@
             }
           }
         },
+        "pylons": {
+          "description": "Optional (absent for every archetype without `pylons`). The boss pylons (MM-9d), sorted by (y, x); they are placed after `buildings` and get the next instance IDs, in this order. `core` is the player index of the Core each one belongs to (the plot it stands in); `health` is its starting health.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["core", "x", "y", "health"],
+            "additionalProperties": false,
+            "properties": {
+              "core": { "type": "integer", "minimum": 0 },
+              "x": { "type": "integer", "minimum": 0 },
+              "y": { "type": "integer", "minimum": 0 },
+              "health": { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
         "buildings": {
           "description": "Buildings sorted by (y, x); they get instance IDs 1, 2, ... in this order.",
           "type": "array",

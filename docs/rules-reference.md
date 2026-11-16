@@ -53,6 +53,20 @@ that way.
   (`sortedInts`, `sortedIntEntries`, `sortedKeys`). Object keys are likewise
   only read sorted by code point. A lint rule enforces this in `core`,
   `session/src/rules` and `session/src/bot`.
+- **Pylons.** The goal swap lives in the goal set, not in `chooseTarget`: the
+  unit's `target` stays the Core's player index, and the goal set
+  (`goalBuildings`) is the Core's standing pylons while any stands (so the
+  movement field, the breach field, the walk to the goal at distance 0, the
+  flyer's walk to the goal and rule b all follow, and everything is recomputed
+  when a pylon is destroyed, which drops the cached fields like any
+  destruction). A breach route never enters the shielded Core or a goal
+  pylon. The shield filters unit attacks only; the Overload decay is not
+  blocked. The generator's pylon placement uses the real movement field (an
+  arena built from the profile) to avoid sealing a Core, and an integer-only
+  sector rule (no angles, no floating point) to spread the pylons; draws come
+  only from `holdRng.child(p).child("pylons")`, never from a stream the
+  layouts use. The `pylons` side option and the `ArenaPylon` list exist only in
+  a battle that has them (a state hash of any other battle must not change).
 - **Core bursts.** The line is `floor(starting * t / 100)` in integer
   arithmetic (no floating point), compared as "health before the tick's damage
   above the line and health after it at or below it"; use the Core's
@@ -385,6 +399,26 @@ the sum of the Cores' `health`, each at most `MAX_HEALTH` and at most
 `maxPartySize` Cores, so at most `8 * 1e12`, an exact integer. A linked pool
 starts as the sum of its Cores' starting health (`coreHealths`, at most
 `MAX_HEALTH` each), so the same bound holds in a battle.
+
+An archetype's optional `pylons` (MM-9d, "Pylons") is an object, allowed only
+when `bossOnly` is true and not together with `brood` or `linkedCores` (the
+loader rejects each: "only allowed when \"bossOnly\" is true", "cannot be
+combined with \"brood\"", "cannot be combined with \"linkedCores\""): `perPlot`
+an integer from 1 to `MAX_PYLONS_PER_PLOT = 8`, `sharePercent` from 1 to
+`MAX_PYLONS_SHARE_PERCENT = 60`, `minDistance` from 1 and `maxDistance` from 1
+to `MAX_PYLONS_DISTANCE = 8`, `minDistance <= maxDistance`; the content must
+have a pylon building (a defense of `defenseType` `pylon`). The profile has at
+most `perPlot * maxPartySize = 32` pylons, each with `health` from 1 to
+`MAX_HEALTH` (the generator clamps it; with the shipped content, rounds 1 to
+`maxThreatRound`, the clamp is not reached), and the battle checks a pylon's
+side option health the same way as a Core's (a `RangeError` from
+`createArenaSim`, "Side option pylons"). A pylon's own tier health in
+`buildings.json` is an ordinary building health (1 to `MAX_HEALTH`) that a
+battle replaces. The pylon building is never offered, bought or owned: the
+economy loader rejects it in `offerWeights`, in `startingKit` (also inside a
+`pick`) with the message "is a boss-only pylon and cannot be bought, offered or
+owned", `rollOffers` throws a `RangeError` if it is ever asked to roll one, and
+`buyOffer` refuses an offer of one (`no_such_offer`, detail `boss_only`).
 
 A tier's `costs` (CB-5e) holds one integer from 1 to `MAX_TIER_COST` per
 resource, at most one resource per input (so at most four); the combined cost
@@ -2132,6 +2166,18 @@ exactly like the original.
      (CB-15c); with several in reach: the unit's target Core if it is one of
      them, else the one with the smallest `buildingDist2`, ties by `(|q -
      opposite(owner)|, -q)`. The unit's `target` does not change.
+     **Pylons (MM-9d).** A Core with a standing pylon (a side option, "Side
+     options") is **shielded** and is not a candidate: each of its standing
+     pylons is one instead, with that Core's `q` in the key (so the unit's
+     target Core's pylons come first, then by `buildingDist2`, then `(|q -
+     opposite(owner)|, -q)`; between pylons of one Core with equal
+     `buildingDist2` the first in the side options' order stays). The unit
+     targets the pylon like a Core (`ACT_BUILDING` on its building; a pylon is
+     an ordinary building for damage, health and destruction). A ranged unit
+     therefore shoots a pylon in reach from where it stands, as it would the
+     Core. Nothing aims at a shielded Core: a unit that did would stand in
+     place (a holder) hitting nothing, and a whole wave could be held there
+     by one corner of the Core.
    - **c0. Fly.** A flying unit that reaches c ignores the movement and breach
      fields: its heading is the vector to the centre of the cell of its target
      Core nearest to it (the same cell as in "Goals and movement fields", "at
@@ -2248,6 +2294,19 @@ exactly like the original.
    applied together with the unit attacks) and recorded as
    `overload_core_damage {side, core, damage}` after the `unit_attacked` events, for **every** living Core in the order side 0 then side 1, ascending player index (each takes the full amount; a destroyed Core takes nothing). A
    Core that is already destroyed takes nothing and records nothing.
+   **Shield (MM-9d, "Pylons"; only a side with the `pylons` option).** A Core
+   is **shielded** while at least one pylon of its player index is alive at the
+   start of the step (a pylon is alive until step 6 destroys it, so a pylon
+   brought to 0 by this tick's damage still shields the tick it falls). A hit
+   by a unit on a shielded Core adds nothing to the Core's damage (neither to
+   `buildingDamage`, nor to `A`, so nothing to `buildingDamageDealt`); the
+   `unit_attacked` event is still recorded and is followed by `core_hit_blocked
+   {unit, side, core, damage}`. The **Overload decay is not blocked** (see
+   "Overload"). The shipped decision rules never choose a shielded Core (rule
+   b), so the blocked hit is a safety net for any other way a unit's attack
+   could land on one; it is part of the rules so a port that adds such a way
+   keeps the shield. Pylons are damaged like any building (unit attacks only:
+   turrets shoot units).
    **Linked Cores (MM-9d; only a side with the `linkedCores` option).** The
    Cores of such a side take no damage themselves: all damage to any of them
    goes to the side's shared pool, once. For each such side, the damage of
@@ -2410,6 +2469,15 @@ exactly like the original.
      to call, and Core decay skips a destroyed Core; the battle-end rule is
      checked after the tick by the code in "Battles"). Any number of Cores of both sides can fall in
      the same tick.
+   - A destroyed **pylon** (MM-9d) is destroyed like any building
+     (`building_destroyed`); right after it, `pylon_destroyed {side, building,
+     core, standing}` is recorded, `standing` being the pylons of that Core
+     still alive after this step's destruction (all the tick's destroyed
+     buildings are removed in health-list order, so a second pylon falling in
+     the same tick sees the first as gone), and when `standing` is 0 also
+     `core_shield_down {side, core}`: from the next tick on the Core takes
+     hits, and its units' goal set is the Core again (the fields are dropped
+     below).
    - After any destruction every cached movement field and breach field is
      dropped. Then, at the end of this step, every living unit, in unit-`id`
      order, whose target Core now has health 0 gets `target =
@@ -2478,7 +2546,20 @@ except where rule b says otherwise.
 
 - The **goal set** of a unit is its target Core. A destroyed Core is not a
   goal; with no goal (`target = -1`) the unit waits. The goal building is the
-  Core.
+  Core. **Pylons (MM-9d).** While the target Core is shielded, that is while
+  at least one pylon of that Core's player index (the side options' `pylons`,
+  see "Side options") is alive, the goal set is **its standing pylons**
+  instead, all of them (in the order of the side options), and the Core itself
+  is not a goal: this is the one place the unit's target is read through the
+  shield (PP-11's `chooseTarget` still returns the Core's player index;
+  `goalBuildings(arena, side, core)` is what changes). The movement field of
+  that Core is then the field towards the nearest pylon (a distance 0 cell is
+  an open cell sharing an edge with any standing pylon), so "the nearest
+  standing pylon by the movement field, then the tie key" is `fieldStep`'s
+  ordinary choice; when the last pylon is destroyed the fields are dropped
+  with every destruction and the goal set is the Core again. A Core that is
+  not shielded, and every ordinary battle (no pylons), behave exactly as
+  before.
 - Which buildings block which side's units is one predicate (`blocksUnit`): a
   living building blocks the units of both sides, **except** that a gate
   (`defenseType` `gate`) does not block the units of its own side. A cell is
@@ -2523,7 +2604,13 @@ except where rule b says otherwise.
   field, stop it).
 - The unit's **goal building** (rule b) is any living enemy Core when the gap
   from the unit's circle to the Core's nearest cell is at most `reach`, the
-  target Core first (step 3b).
+  target Core first (step 3b). A Core shielded by pylons (MM-9d) is not a goal
+  building: each of its standing pylons stands in its place with the Core's
+  key (the same target-first rule, the same distance comparison; among the
+  pylons of one Core the smaller gap first, then the earlier in the side
+  options' order), so a ranged unit shoots a pylon in reach like any goal and
+  no unit attacks a shielded Core (it would only stand there: see "Units,
+  combat and destruction").
 - **Tie key.** Wherever two cells tie (equal score in `fieldStep`, equal
   cost in `breachStep`, equal distance among spawn cells), the preferred one
   is the most **forward** one, then the lowest `x`, **in the board frame of
@@ -2543,7 +2630,11 @@ except where rule b says otherwise.
   towards the target Core. Passable cells are open cells and cells covered by
   an enemy building other than the target Core (an enemy Core that is not the
   target is passable and costs like any building); terrain, the unit's own
-  side's blocking buildings and the target Core's own cells are impassable. Entering an open cell
+  side's blocking buildings and the target Core's own cells are impassable.
+  **Pylons (MM-9d):** while the target Core is shielded the breach field's
+  distance 0 cells are the passable cells 4-adjacent to any standing pylon (the
+  goal set), and neither a pylon of the goal set nor the shielded Core is ever
+  entered. Entering an open cell
   costs 1; entering a cell covered by an enemy building costs
   `breachBaseCost + ceil(maxHealth / breachHealthPerCost)` (at most 1.000001e12: see
   "Content bounds" for why every distance stays exact), where `maxHealth` is
@@ -2765,6 +2856,15 @@ Overload guarantees that battles end. Constants (`content/sim.json`):
   larger than any single Core, outlasts the party's Cores unless the party
   damages it; the party must break the pool before its own Cores' deadline
   (3100 ticks for the standard 500 health) or the stronghold wins.
+- **Pylons (MM-9d).** The decay is **not blocked** by a shield: a Core whose
+  pylons stand still takes the full decay on every beat (it is added to the
+  Core's damage of the tick as before, logged as `overload_core_damage`, and
+  the shield only filters unit attacks, step 4). The deadline above is
+  therefore unchanged for a Pylons boss: the decay alone destroys its Core at
+  the same tick, pylons standing or not, and so the battle still ends. (The
+  alternative, blocking it, would let a party that cannot break the pylons
+  neither win nor lose before the time limit.) A pylon takes no decay: only
+  Cores do.
 - **PvE: the deadline is intended (CB-12, CB-29, #43).**
   In a PvE battle side 1's Cores are the stronghold's, whose total health is
   `coreHealthPerBudget` times the budget, at least `minCoreHealth` per Core,
@@ -2810,10 +2910,13 @@ shot is recorded in step 3, before the step 4 attack events):
 | `unit_retargeted`    | `unit`, `target` (the new target Core, a player index, or -1); recorded after the destruction events of step 6 |
 | `burst_released`     | `side`, `core` (the Core, a player index), `thresholdPercent`, `units` (a list of `{unit, count}` in composition order); recorded in step 4 after the damage, one per Core and fired threshold (Core ascending, threshold descending), see "Core bursts" |
 | `unit_attacked`      | `unit`, `target`, `damage`; and `pool` (the shared pool at the start of the tick) when the target is a Core of a side with `linkedCores` |
+| `core_hit_blocked`   | `unit`, `side`, `core`, `damage`: a unit's hit on a Core shielded by a standing pylon did nothing (MM-9d); recorded in step 4 right after the `unit_attacked` of the same hit (an event only: the shipped targeting never aims at a shielded Core, see "Units, combat and destruction") |
 | `splash`             | `attacker` (the unit with `splash`), `x`, `y` (the primary target's centre, sub-cell units), `targets` (a list of `{unit, damage}` of the secondary targets in unit id order, damage after their armor; may be empty); recorded right after the attacker's `unit_attacked` event, only when the attack was on a unit |
 | `turret_fired`       | `side` (the owner), `building` (the turret), `unit`, `damage`   |
 | `unit_died`          | `unit`                                                          |
 | `building_destroyed` | `side`, `building`                                              |
+| `pylon_destroyed`    | `side`, `building`, `core` (the player index of the Core it shielded), `standing` (the pylons of that Core still alive); recorded in step 6 right after the pylon's `building_destroyed` (MM-9d) |
+| `core_shield_down`   | `side`, `core`; recorded right after the `pylon_destroyed` whose `standing` is 0 (MM-9d) |
 | `conduit_destroyed`  | `side`, `conduit`                                               |
 | `core_destroyed`     | `side`, `core`                                                  |
 | `ramp_step`          | `side`, `building`, `effect`, `steps` (the new step count)      |
@@ -3484,6 +3587,27 @@ identically; with none the field is absent.
   field, so the state hash of every other battle is unchanged). A PvE threat
   has it exactly when its profile has `stronghold.sharedHealth`.
 
+- **`pylons`** (Pylons, MM-9d): a list `{building, core, health}`: the side's
+  building with instance ID `building` is a **pylon** of the Core with player
+  index `core`, and starts the battle with `health` (an integer from 1 to
+  `MAX_HEALTH`, checked at setup; it replaces the tier's health, as
+  `coreHealths` does for a Core; the team's building-health modifiers are
+  applied on top as for any building, but the stronghold has none). The
+  building must be a `bld_pylon`-type defense (`defenseType` `pylon`) that is
+  placed in the team state; a pylon never needs power, and does nothing
+  but stand: it has no inputs, produces nothing and is never shot by turrets
+  (they only hit units). While at least one pylon of a Core is alive the Core
+  is **shielded**: (1) it takes no damage from unit attacks ("One battle tick",
+  step 4, "Shield"), (2) the goal set of the other side's units heading for it
+  is its standing pylons, and rule b attacks a pylon in reach in its place
+  ("Goals and movement fields"). The pylon list is read when the context is
+  built (`arenaOf`): a list `ArenaPylon {ref, side, core}` in the order of the
+  side options, side 0 first; the state has no field of its own for it, and
+  with no `pylons` option in a battle every rule is unchanged (the state hash
+  of any other battle must not change). A PvE threat has it exactly when its
+  profile has a non-empty `stronghold.pylons`: `building` is `buildings.length
+  + 1 + i` for the `i`-th pylon of the list, the IDs `buildStronghold` gives.
+
 Everything else (unit behaviour, aggro, breach logic, Overload, end conditions
 and the tiebreak ladder) is unchanged.
 
@@ -3532,6 +3656,7 @@ player, rounds 1 to 15: 100, 125, 156, 195, 243, 303, 378, 472, 590, 737, 921,
   stronghold: { cores: [{ x, y, health }],
                 buildings: [{ def, tier, x, y, rotation }],
                 bursts?: [{ core, thresholdPercent, unit, count }],
+                pylons?: [{ core, x, y, health }],
                 sharedHealth?: number } }
 ```
 
@@ -3549,7 +3674,15 @@ other archetype (their profiles and hashes are unchanged): the total health
 of the Cores, the sum of the `health` fields computed after any clamp. The
 per-Core `health` fields stay for layout and display; the battle reads
 `sharedHealth` as the `linkedCores` side option (the pool itself starts as the
-sum of the Cores' starting health, which is the same number).
+sum of the Cores' starting health, which is the same number). `pylons`
+(Pylons, MM-9d) is present only for an archetype with `pylons` (it may be
+empty when no cell fits) and absent for every other archetype (their profiles
+and hashes are unchanged): each entry is a pylon at board cell `(x, y)` with
+starting `health`, belonging to the Core of player `core` (the plot its `x` is
+in); the list is sorted by `(y, x)` and `buildStronghold` places the pylons
+after the buildings, so they get the instance IDs `buildings.length + 1`, ...
+in list order, as `bld_pylon` tier 1 owned by `core`. The battle reads them as
+the `pylons` side option (`building` = that ID).
 
 It is everything the battle needs; there are no hidden inputs. `waves` are in
 tick order (the units of one wave share a tick, one entry per unit type);
@@ -3567,7 +3700,8 @@ composition: [{unit, weight}], signature?}` and `stronghold`
 `bossOnly` archetypes are never offered by `pickArchetypes`; they have
 `fromRound` and `minPartySize` (see "Choosing and summarising", `pickBoss`) and
 may have `brood` `{thresholdsPercent: [..], sharePercent}` (Core bursts, below)
-or `linkedCores: true` (Linked Cores, below).
+`linkedCores: true` (Linked Cores, below) or `pylons` `{perPlot, sharePercent,
+minDistance, maxDistance}` (Pylons, below).
 Shipped values:
 
 | Archetype | Wave share | Waves (first tick, interval, count, growth) | Composition | Stronghold (Core per budget, walls, turrets, layout) |
@@ -3578,6 +3712,7 @@ Shipped values:
 | Boss | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Brood stronghold (`arch_boss_brood`, boss only, from round 3, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Linked Cores (`arch_boss_linked`, boss only, from round 5, party size 2 or more) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
+| Pylons (`arch_boss_pylons`, boss only, from round 7, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 
 Rusher tests defence (early frequent waves, a small open Core); Fortress tests
 ramp and siege (late light waves, a big walled Core with turrets); Escalator
@@ -3589,7 +3724,12 @@ starting health (MM-9d). Its burst budget comes out of the stronghold budget,
 so its Cores are smaller than the Boss's. The Linked Cores stronghold also has
 the Boss's waves and stronghold exactly (no budget is set aside; the Cores
 have the Boss's size), plus `linkedCores: true`: its Cores share one health
-pool (below). Unit
+pool (below). The Pylons stronghold has the Boss's waves and stronghold, plus
+`pylons: {perPlot: 3, sharePercent: 25, minDistance: 2, maxDistance: 4}`: three
+pylons around each Core, paid from a quarter of the stronghold budget, and a
+Core takes no damage while one of its pylons stands (MM-9d); like Brood, its
+Cores are smaller than the Boss's (the budget is spent on the pylons first).
+Unit
 prices for spending wave budget are `unitCost` in `threats.json` (soldier 10,
 raider 8, archer 14, drone 16; about 2 times the producer's tier 1 `costPerUnit`
 of 5, 4, 7 and 8, rounded). Building prices for the stronghold are the **tier 1** prices of the
@@ -3613,6 +3753,10 @@ other invalid input; `pickBoss` never offers it then).
    `burstBudget = floor(S * sharePercent / 100)` aside **before** walls,
    turrets and Core health, which use `S' = S - burstBudget` wherever
    steps 7 and the rest say `S` (an archetype without `brood` has `S' = S`).
+   **Pylons.** An archetype with `pylons` likewise sets `pylonBudget =
+   floor(S * sharePercent / 100)` aside (`S` here is the stronghold budget
+   before any set-aside, `B - waveBudget`; the two options are never combined),
+   so `S' = S - pylonBudget`; it is spent on the pylons' health in step 7.
 2. **Wave sizes.** `s_0 = 100`, `s_(k+1) = floor(s_k * growthPercent / 100)`
    for `k = 0 .. count - 1`; `sum` is their total. Wave `k` has budget `W_k =
    floor(waveBudget * s_k / sum)` (computed as quotient and remainder of
@@ -3689,8 +3833,53 @@ other invalid input; `pickBoss` never offers it then).
      (`plotWidth` by `plotDepth`) around that plot's Core, then every position
      is moved by `p * plotWidth`. So `ring` and `open` are one set per plot,
      and `line` has its one gap per plot, drawn from that plot's stream.
+   - **Pylons** (only with `pylons`; after the layouts of all plots, before
+     Core health). Let the *occupied* cells be the Core footprints, the placed
+     walls and the placed turrets of all plots (gap cells are free). For plot
+     `p = 0 .. N - 1` in order, with the stream `holdRng.child(p).child
+     ("pylons")` (a fresh stream, so the layout draws above are untouched),
+     `perPlot` sectors `s = 0 .. perPlot - 1` and the plot's Core footprint:
+     the **candidates** are the cells of the plot's own columns
+     (`p * plotWidth .. (p + 1) * plotWidth - 1`) with `0 <= y <= plotDepth - 2`
+     (never the front row), not occupied, and at Chebyshev distance `d` from
+     the footprint with `minDistance <= d <= maxDistance` (the distance of the
+     layouts' `turretMinDistance`: 0 inside the footprint). A candidate's
+     **sector** is `floor(perPlot * pos / (8 * m))` with, for the offset `(vx,
+     vy) = (2 * x - cx2, 2 * y - cy2)` from the Core's centre (`cx2 = 2 *
+     coreX + coreWidth - 1`, `cy2` likewise, so both stay integers; local
+     plot coordinates), `m = max(|vx|, |vy|)` and `pos` the position along the
+     clockwise walk round the square of half-side `m` that holds the cell,
+     starting at its back-left corner `(-m, -m)` (`y = 0` is the back): the
+     first matching of `vy = -m: pos = vx + m`; `vx = m: pos = 3m + vy`; `vy =
+     m: pos = 5m - vx`; else (`vx = -m`) `pos = 7m - vy` (`pos` runs over `0 ..
+     8m - 1`). So the sectors are `perPlot` equal arcs of the ring round the
+     Core, the first starting at the back-left corner. For each sector in
+     order: list its candidates by `(y, x)`, shuffle them once with
+     `rng.shuffle` (also when it has one), and take the first that is still not
+     occupied (an earlier pylon of this plot took a cell) and does not **seal
+     the Core**; a sector with no such cell gets no pylon. *Sealing:* the
+     check builds the arena of the stronghold as the battle does (the boss
+     board as side 0, an empty party board below it with no gap rows; the
+     Cores, walls and turrets placed so far as buildings, a pylon as a
+     building) and asks the movement field of the party's side towards that
+     plot's Core (`computeField(arena, 1, p)`, the goal being the Core, not
+     its pylons): the candidate is refused iff, before it, some front-row cell
+     (`y = plotDepth - 1`, any column) had a distance and, with it added, no
+     front-row cell has one. (If the walls and turrets alone already seal the
+     Core, every candidate passes.) A pylon taken is added to the occupied
+     cells at once, so the later sectors and plots see it.
+     The result is sorted by `(y, x)`; let `n` be its length and `P` the
+     pylon budget. If `n > 0` the `i`-th (in that order) has `health =
+     min(MAX_HEALTH, max(1, share'(P, i)))` with `share'` the `share` formula
+     over `n` instead of `N`; if `n = 0` the whole `pylonBudget` is returned to
+     the Core health below (`S' + P`). The pylons are not walls or turrets for
+     the totals above and take no part in `spent`: their budget is spent (set
+     aside) in step 1. The content's pylon tiers (`bld_pylon`: health 100, 200,
+     400) are only the placed building's own stats, which the side option
+     replaces.
    - `spent` is the price of everything placed, over all plots. `total =
-     max(minCoreHealth * N, floor((S' - spent) * coreHealthPerBudget / 100))`:
+     max(minCoreHealth * N, floor((S' - spent) * coreHealthPerBudget / 100))`
+     (`S' + P` instead of `S'` when no pylon was placed):
      every unspent point of the stronghold budget (after the burst share), including what a full
      layout or the building caps could not absorb, becomes Core health. It is
      split evenly: `cores[p].health = share(total, p)`, so the shares differ by
@@ -3947,6 +4136,21 @@ team so its Cores outlast the Overload decay. The `boss-pick` vector 2 now
 draws `arch_boss_linked` (it joined the eligible bosses at round 5 with four
 players).
 
+Pylons vectors (issue #400): three `threat-gen` cases for `arch_boss_pylons`
+(`boss-pylons-r7-solo`, `-r12-party3`, `-r30-party4`) and four `pve-battle`
+cases: `rush-vs-pylons-r7` and `rush-archers-vs-pylons-r7` (the soldiers, then
+the archers, take the three pylons before the Core, `core_shield_down` and
+then `core_destroyed`), `party2-vs-pylons-r7` (two Cores with their own
+pylons, the shields falling at different ticks) and
+`core-only-vs-pylons-r1-overload-ignores-shield` (a party with only a Core,
+given 100000 percent more health: the pylons stand to the end and the Overload
+decay destroys the shielded Core at tick 2400). No vector has a
+`core_hit_blocked` event: the decision rules never aim at a shielded Core, so
+only a unit test of the event schema covers it. `boss-pick` vector 2 draws
+`arch_boss_linked` as before (its description now lists
+`arch_boss_pylons` among the eligible bosses at round 7), and vector 18 is
+new (round 7, solo: Brood or Pylons, here Pylons).
+
 ### Decided simplifications
 
 - Tier 1 buildings only, and the first wall and the first turret building in
@@ -4002,6 +4206,15 @@ broken as follows:
   several: the unit's target Core, else the nearest by `buildingDist2`, ties by
   `(|q - opposite(owner)|, -q)`, PP-11); in breach mode
   the building covering the next breach cell.
+- **Shielded Cores (MM-9d).** A Core with a standing pylon is not a building
+  to hit: its pylons are (rule b), so of the buildings in reach the party's
+  unit takes the unit's target Core's pylons first, then the nearest. If a hit
+  lands on a shielded Core anyway (the shipped decisions never choose one), it
+  does nothing: no damage, no `buildingDamageDealt`, a `core_hit_blocked`
+  event after its `unit_attacked`. The shield is read at the start of step 4,
+  so a pylon that falls in step 6 of a tick still shields during that tick and
+  the Core is hittable from the next one. The Overload decay is not a unit
+  hit and is never blocked.
 - **Which target Core** (PP-11, `chooseTarget`): the Core opposite the owner's
   plot while it stands; else the smallest `(class, distance, |q -
   opposite(owner)|, -q)`: the nearer by movement field, then breach field,
@@ -4492,7 +4705,7 @@ no longer drawn here: it is `state.pvpOpponent.boss`, chosen in the shop (see
 "Ghosts", "Selection"). Only a state whose `pvpOpponent` has no `boss` (a save
 made before issue #397, or a run without `threats` in its ghost rules) keeps
 the old draw: `rng.child("archetype").pick(list)` on the battle stream, `list`
-being the boss-only archetypes in file order, else all archetypes, keeping only those whose `minPartySize` is at most the party size (a solo run never draws Linked Cores). The result's
+being the boss-only archetypes in file order, else all archetypes, keeping only those whose `minPartySize` is at most the party size (a solo run never draws Linked Cores; no boss is drawn before its `fromRound`, so Brood from round 3, Linked Cores from round 5 and Pylons from round 7). The result's
 `opponent` then carries `boss: <archetype id>` and the round record stores it. The battle seed is the first `nextU32` of
 the battle stream. `BattleResult.detail` is `{ version, kind, round, seed,
 source, teamHash, summary }`: no event log. `source` is `{type: "option"}`

@@ -66,6 +66,17 @@ export function threatSideOptions(threat: ThreatProfile): SideOptions {
     ...(threat.stronghold.sharedHealth === undefined
       ? {}
       : { linkedCores: true }),
+    ...(threat.stronghold.pylons === undefined ||
+    threat.stronghold.pylons.length === 0
+      ? {}
+      : {
+          // `buildStronghold` gives the pylons the IDs after the buildings.
+          pylons: threat.stronghold.pylons.map((p, i) => ({
+            building: threat.stronghold.buildings.length + 1 + i,
+            core: p.core,
+            health: p.health,
+          })),
+        }),
   };
 }
 

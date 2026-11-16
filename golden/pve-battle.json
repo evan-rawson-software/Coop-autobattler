@@ -9725,6 +9725,1057 @@
     }
   },
   {
+    "id": "pve-battle.rush-vs-pylons-r7",
+    "kind": "pve-battle",
+    "description": "The rush board against a round 7 boss Pylons stronghold (one Core, three pylons of 100 health or less): the soldiers go for the pylons first (nothing aims at the Core while one stands), a pylon_destroyed event follows each pylon's building_destroyed, the last one also gives core_shield_down, and only then is the Core hit and destroyed.",
+    "input": {
+      "team": {
+        "seed": 5,
+        "partySize": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 11,
+            "y": 5
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 10,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 9,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 21,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 21,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 8,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 8,
+            "y": 9,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 7,
+            "x": 10,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 8,
+            "x": 13,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 9,
+            "x": 9,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 10,
+            "x": 14,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 11,
+            "x": 9,
+            "y": 7,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 5,
+              "side": "north"
+            },
+            "to": {
+              "building": 6,
+              "side": "south"
+            },
+            "cells": []
+          }
+        ]
+      },
+      "threat": {
+        "seed": 101,
+        "round": 7,
+        "type": "boss",
+        "partySize": 1,
+        "archetype": "arch_boss_pylons"
+      },
+      "seed": 101
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "core_destroyed",
+          "endTick": 443
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 20,
+              "unitsLost": 4,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
+              "coreHealth": 500,
+              "coreMaxHealth": 500,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 431,
+              "unitsKilled": 1
+            },
+            {
+              "unitsSpawned": 1,
+              "unitsLost": 1,
+              "buildingsLost": 3,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 380,
+                  "overkill": 4,
+                  "destroyedTick": 442
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 380,
+              "coreOverkill": 4,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 4
+            }
+          ]
+        },
+        "threatHash": "1519b204",
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [],
+          "pointsOfInterest": []
+        },
+        "stateHash": "b3eaa98a",
+        "events": 402
+      },
+      "eventLogHash": "621f1e70"
+    }
+  },
+  {
+    "id": "pve-battle.rush-archers-vs-pylons-r7",
+    "kind": "pve-battle",
+    "description": "The rush board with its Barracks replaced by Ranges, against the same round 7 boss Pylons stronghold: the archers (ranged, long reach) shoot the pylons from where they stand, as they would any goal, and the shield comes down before the Core is attacked.",
+    "input": {
+      "team": {
+        "seed": 5,
+        "partySize": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 11,
+            "y": 5
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 10,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_range",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 9,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 21,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_range",
+            "tier": 3,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 21,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 8,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_range",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 8,
+            "y": 9,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 7,
+            "x": 10,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 8,
+            "x": 13,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 9,
+            "x": 9,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 2,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 10,
+            "x": 14,
+            "y": 8,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_wall_block",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 11,
+            "x": 9,
+            "y": 7,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 5,
+              "side": "north"
+            },
+            "to": {
+              "building": 6,
+              "side": "south"
+            },
+            "cells": []
+          }
+        ]
+      },
+      "threat": {
+        "seed": 101,
+        "round": 7,
+        "type": "boss",
+        "partySize": 1,
+        "archetype": "arch_boss_pylons"
+      },
+      "seed": 101
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "core_destroyed",
+          "endTick": 416
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 18,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 500,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
+              "coreHealth": 500,
+              "coreMaxHealth": 500,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 431,
+              "unitsKilled": 1
+            },
+            {
+              "unitsSpawned": 1,
+              "unitsLost": 1,
+              "buildingsLost": 3,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 380,
+                  "overkill": 5,
+                  "destroyedTick": 415
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 380,
+              "coreOverkill": 5,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            }
+          ]
+        },
+        "threatHash": "1519b204",
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [],
+          "pointsOfInterest": []
+        },
+        "stateHash": "9c519947",
+        "events": 370
+      },
+      "eventLogHash": "18a94262"
+    }
+  },
+  {
+    "id": "pve-battle.party2-vs-pylons-r7",
+    "kind": "pve-battle",
+    "description": "The two-plot party against a round 7 boss Pylons stronghold with two Cores: each Core has its own three pylons, and its shield falls (core_shield_down) when its own last pylon does, at different ticks.",
+    "input": {
+      "team": {
+        "seed": 5,
+        "partySize": 2,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 11,
+            "y": 5
+          },
+          {
+            "op": "placeCore",
+            "actor": 1,
+            "x": 36,
+            "y": 5
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 1,
+            "x": 21,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 2,
+            "x": 21,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 1,
+              "side": "north"
+            },
+            "to": {
+              "building": 2,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 3,
+            "x": 14,
+            "y": 4,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 4,
+            "x": 14,
+            "y": 5,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 3,
+              "side": "north"
+            },
+            "to": {
+              "building": 4,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 5,
+            "x": 17,
+            "y": 12,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 0
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 0,
+            "id": 6,
+            "x": 17,
+            "y": 13,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 0,
+            "from": {
+              "building": 5,
+              "side": "north"
+            },
+            "to": {
+              "building": 6,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 7,
+            "x": 29,
+            "y": 1,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 8,
+            "x": 29,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 1,
+            "from": {
+              "building": 7,
+              "side": "north"
+            },
+            "to": {
+              "building": 8,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 9,
+            "x": 39,
+            "y": 2,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 10,
+            "x": 39,
+            "y": 3,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 1,
+            "from": {
+              "building": 9,
+              "side": "north"
+            },
+            "to": {
+              "building": 10,
+              "side": "south"
+            },
+            "cells": []
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_extractor",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 11,
+            "x": 25,
+            "y": 12,
+            "rotation": 0
+          },
+          {
+            "op": "addToStash",
+            "def": "bld_barracks",
+            "tier": 1,
+            "owner": 1
+          },
+          {
+            "op": "placeFromStash",
+            "actor": 1,
+            "id": 12,
+            "x": 25,
+            "y": 13,
+            "rotation": 0
+          },
+          {
+            "op": "addConduit",
+            "actor": 1,
+            "from": {
+              "building": 11,
+              "side": "north"
+            },
+            "to": {
+              "building": 12,
+              "side": "south"
+            },
+            "cells": []
+          }
+        ]
+      },
+      "threat": {
+        "seed": 101,
+        "round": 7,
+        "type": "boss",
+        "partySize": 2,
+        "archetype": "arch_boss_pylons"
+      },
+      "seed": 101
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "core_destroyed",
+          "endTick": 775
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 28,
+              "unitsLost": 17,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 500,
+                  "overkill": 6,
+                  "destroyedTick": 689
+                },
+                {
+                  "player": 1,
+                  "health": 492,
+                  "maxHealth": 500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
+              "coreHealth": 492,
+              "coreMaxHealth": 1000,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 846,
+              "unitsKilled": 3
+            },
+            {
+              "unitsSpawned": 14,
+              "unitsLost": 3,
+              "buildingsLost": 6,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 372,
+                  "overkill": 0,
+                  "destroyedTick": 560
+                },
+                {
+                  "player": 1,
+                  "health": 0,
+                  "maxHealth": 372,
+                  "overkill": 18,
+                  "destroyedTick": 774
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 744,
+              "coreOverkill": 18,
+              "rampSteps": 0,
+              "buildingDamageDealt": 508,
+              "unitsKilled": 17
+            }
+          ]
+        },
+        "threatHash": "cef4e46f",
+        "zone": {
+          "width": 48,
+          "depth": 7,
+          "features": [
+            {
+              "x": 27,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 28,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 29,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 30,
+              "y": 5,
+              "feature": "ter_cliff"
+            },
+            {
+              "x": 31,
+              "y": 5,
+              "feature": "ter_cliff"
+            }
+          ],
+          "pointsOfInterest": []
+        },
+        "stateHash": "9244007a",
+        "events": 970
+      },
+      "eventLogHash": "442c53b5"
+    }
+  },
+  {
+    "id": "pve-battle.core-only-vs-pylons-r1-overload-ignores-shield",
+    "kind": "pve-battle",
+    "description": "A party with only a Core, given 100000 percent more health (test option), against a round 1 boss Pylons stronghold: nobody attacks the pylons, so all three stand to the end, and the Overload decay (not blocked by the shield) destroys the shielded Core at tick 2400.",
+    "input": {
+      "team": {
+        "seed": 5,
+        "partySize": 1,
+        "ops": [
+          {
+            "op": "placeCore",
+            "actor": 0,
+            "x": 11,
+            "y": 5
+          }
+        ]
+      },
+      "threat": {
+        "seed": 101,
+        "round": 1,
+        "type": "boss",
+        "partySize": 1,
+        "archetype": "arch_boss_pylons"
+      },
+      "seed": 101,
+      "partyCoreHealthPercent": 100000
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "result": {
+          "winner": 0,
+          "reason": "core_destroyed",
+          "endTick": 2401
+        },
+        "summary": {
+          "sides": [
+            {
+              "unitsSpawned": 0,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 491051,
+                  "maxHealth": 500500,
+                  "overkill": 0,
+                  "destroyedTick": null
+                }
+              ],
+              "coresStanding": 1,
+              "coreHealth": 491051,
+              "coreMaxHealth": 500500,
+              "coreOverkill": 0,
+              "rampSteps": 0,
+              "buildingDamageDealt": 0,
+              "unitsKilled": 0
+            },
+            {
+              "unitsSpawned": 7,
+              "unitsLost": 0,
+              "buildingsLost": 0,
+              "cores": [
+                {
+                  "player": 0,
+                  "health": 0,
+                  "maxHealth": 132,
+                  "overkill": 8,
+                  "destroyedTick": 2400
+                }
+              ],
+              "coresStanding": 0,
+              "coreHealth": 0,
+              "coreMaxHealth": 132,
+              "coreOverkill": 8,
+              "rampSteps": 0,
+              "buildingDamageDealt": 9309,
+              "unitsKilled": 0
+            }
+          ]
+        },
+        "threatHash": "83804d30",
+        "zone": {
+          "width": 24,
+          "depth": 7,
+          "features": [],
+          "pointsOfInterest": []
+        },
+        "stateHash": "e9474a36",
+        "events": 1095
+      },
+      "eventLogHash": "054b91c0"
+    }
+  },
+  {
     "id": "pve-battle.party4-vs-fortress-r2",
     "kind": "pve-battle",
     "description": "The same four-plot party against a round 2 medium arch_fortress stronghold with four ring sets.",

@@ -194,6 +194,33 @@
             "description": "Optional, only when bossOnly is true and minPartySize is at least 2, and not together with brood. The boss Cores share one health pool (MM-9d, Linked Cores).",
             "type": "boolean"
           },
+          "pylons": {
+            "description": "Optional, only when bossOnly is true, and not together with brood or linkedCores. Pylons (MM-9d): sharePercent of the stronghold budget is spent first on the health of perPlot pylons around each boss Core, at Chebyshev distance minDistance to maxDistance from its footprint. A boss Core takes no damage while one of its pylons stands.",
+            "type": "object",
+            "required": [
+              "perPlot",
+              "sharePercent",
+              "minDistance",
+              "maxDistance"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "perPlot": { "type": "integer", "minimum": 1, "maximum": 8 },
+              "sharePercent": {
+                "description": "Percent of the stronghold budget spent on pylon health.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60
+              },
+              "minDistance": { "type": "integer", "minimum": 1, "maximum": 8 },
+              "maxDistance": {
+                "description": "At least minDistance.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8
+              }
+            }
+          },
           "brood": {
             "description": "Optional, only when bossOnly is true. Core bursts (MM-9d): sharePercent of the stronghold budget is set aside before walls, turrets and Core health; each boss Core releases its share of it as units when its health falls to each threshold.",
             "type": "object",

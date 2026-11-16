@@ -240,7 +240,7 @@
           "type": "string",
           "pattern": "^res_[a-z0-9_]+$"
         },
-        "defenseType": { "enum": ["wall", "gate", "turret"] },
+        "defenseType": { "enum": ["wall", "gate", "turret", "pylon"] },
         "effect": {
           "type": "object",
           "required": ["type"],
@@ -372,7 +372,7 @@
             "type": "object",
             "properties": {
               "kind": { "const": "defense" },
-              "defenseType": { "enum": ["wall", "gate"] }
+              "defenseType": { "enum": ["wall", "gate", "pylon"] }
             },
             "required": ["kind", "defenseType"]
           },

@@ -391,6 +391,7 @@ export {
   runArena,
   type ScheduledWave,
   type SideBurst,
+  type SidePylon,
   type LinkedPoolSim,
   poolOf,
   type BurstingSim,
@@ -466,6 +467,7 @@ export {
   type Stronghold,
   type StrongholdBuilding,
   type StrongholdBurst,
+  type StrongholdPylon,
   type ThreatConfigs,
   type ThreatContent,
   type ThreatInput,
@@ -475,6 +477,7 @@ export {
   type ThreatWave,
 } from './threat-gen.js';
 export { layoutStronghold } from './threat-layouts.js';
+export { pylonSector } from './threat-pylons.js';
 export {
   type PveBattle,
   type PveBattleInput,
@@ -490,6 +493,7 @@ export {
 export {
   buyOffer,
   type PlayerShop,
+  isPylonDef,
   rerollOffers,
   rollOffers,
   sellFromStash,

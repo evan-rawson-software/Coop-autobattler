@@ -17,7 +17,7 @@
   {
     "id": "boss-pick.02-shipped-r7-p4",
     "kind": "boss-pick",
-    "description": "Round 7 with four players, the previous boss being arch_boss: arch_boss_brood or arch_boss_linked is drawn (here arch_boss_linked).",
+    "description": "Round 7 with four players, the previous boss being arch_boss: arch_boss_brood, arch_boss_linked or arch_boss_pylons is drawn (here arch_boss_linked).",
     "input": {
       "seed": 2,
       "round": 7,
@@ -516,6 +516,22 @@
     "expected": {
       "result": {
         "boss": "arch_c"
+      }
+    }
+  },
+  {
+    "id": "boss-pick.18-shipped-r7-p1",
+    "kind": "boss-pick",
+    "description": "Round 7 solo, the previous boss being arch_boss: arch_boss_brood or arch_boss_pylons is drawn (arch_boss_linked needs two players); here arch_boss_pylons.",
+    "input": {
+      "seed": 1,
+      "round": 7,
+      "partySize": 1,
+      "previousBoss": "arch_boss"
+    },
+    "expected": {
+      "result": {
+        "boss": "arch_boss_pylons"
       }
     }
   }
