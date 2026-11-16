@@ -1,9 +1,11 @@
 import {
   generateThreat,
   hashJson,
+  parseTeamModifiers,
   runTeamStateOps,
   type BattleInput,
   type Json,
+  type TeamState,
   type ThreatInput,
 } from '@game/core';
 import { describe, expect, test } from 'vitest';
@@ -55,8 +57,17 @@ interface Vector {
   };
 }
 
-const team = (script: Json) =>
-  runTeamStateOps(script, content, content.mapgen).state;
+const team = (script: Json, modifiers?: Json) =>
+  withMods(runTeamStateOps(script, content, content.mapgen).state, modifiers);
+
+/** The team holding the vector's run modifiers (`modifiersA`/`modifiersB`). */
+function withMods(state: TeamState, modifiers: Json | undefined): TeamState {
+  if (modifiers === undefined) return state;
+  const errors: string[] = [];
+  const parsed = parseTeamModifiers(modifiers, errors);
+  if (parsed === undefined) throw new Error(errors.join(' '));
+  return { ...state, modifiers: parsed };
+}
 
 function describeVector(kind: 'battle' | 'pve', v: Vector): BattleDescription {
   const input = v.input;
@@ -65,8 +76,8 @@ function describeVector(kind: 'battle' | 'pve', v: Vector): BattleDescription {
     return {
       kind: 'versus',
       input: {
-        teamA: team(input['teamA'] as Json),
-        teamB: team(input['teamB'] as Json),
+        teamA: team(input['teamA'] as Json, input['modifiersA']),
+        teamB: team(input['teamB'] as Json, input['modifiersB']),
         seed,
         // Scenario vectors (waves, free power) carry their side options.
         ...(input['sideOptions'] === undefined

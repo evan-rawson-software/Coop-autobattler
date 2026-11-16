@@ -253,8 +253,9 @@
             },
             "percent": {
               "type": "integer",
-              "minimum": 1,
-              "maximum": 1000
+              "minimum": -90,
+              "maximum": 1000,
+              "not": { "const": 0 }
             }
           }
         },
@@ -268,8 +269,9 @@
             },
             "percent": {
               "type": "integer",
-              "minimum": 1,
-              "maximum": 1000
+              "minimum": -90,
+              "maximum": 1000,
+              "not": { "const": 0 }
             },
             "units": {
               "description": "The unit types the bonus applies to: unit IDs in the order of the units file, no duplicates. Absent means every unit type.",
@@ -293,8 +295,9 @@
             },
             "percent": {
               "type": "integer",
-              "minimum": 1,
-              "maximum": 1000
+              "minimum": -90,
+              "maximum": 1000,
+              "not": { "const": 0 }
             }
           }
         }

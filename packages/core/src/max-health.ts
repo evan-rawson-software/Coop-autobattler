@@ -16,7 +16,8 @@ import type { TeamState } from './team-state.js';
  * `coreHealths` entry, or a pylon's `pylons` entry, when the side options give
  * one), raised by the team's modifiers: for the Core
  * `core_health_percent`, for any other building `building_health_percent`
- * matching its defense type or kind. Rounded down. Throws a RangeError when
+ * matching its defense type or kind. The percent sum is first raised to
+ * `minModifierSumPercent` (the sim config's bound, EC-8). Rounded down. Throws a RangeError when
  * the result exceeds MAX_HEALTH, when the percent sum is too large to scale
  * the health exactly, or when an override is out of range, so a bad
  * combination fails at battle setup, never mid-battle.
@@ -25,6 +26,7 @@ export function maxHealthOf(
   team: TeamState | undefined,
   b: ArenaBuilding,
   content: ArenaContent,
+  minModifierSumPercent: number,
   healthOverride?: number,
 ): number {
   const def = content.buildings.get(b.def);
@@ -46,9 +48,14 @@ export function maxHealthOf(
       b.kind === 'core' ? 'core_health_percent' : 'building_health_percent';
     const pct =
       b.kind === 'core'
-        ? modifierPercent(team, kind)
-        : modifierPercent(team, kind, b.defenseType ?? b.kind);
-    if (pct > 0) {
+        ? modifierPercent(team, kind, minModifierSumPercent)
+        : modifierPercent(
+            team,
+            kind,
+            minModifierSumPercent,
+            b.defenseType ?? b.kind,
+          );
+    if (pct !== 0) {
       // Largest percent sum for which hp * (100 + pct) stays a safe integer.
       const room =
         hp === 0
@@ -74,7 +81,11 @@ export function maxHealthOf(
  * The maximum health of a Core of `team` with no side options: the Core
  * definition's tier, raised by `core_health_percent` (as `maxHealthOf`).
  */
-export function coreMaxHealth(team: TeamState, content: ArenaContent): number {
+export function coreMaxHealth(
+  team: TeamState,
+  content: ArenaContent,
+  minModifierSumPercent: number,
+): number {
   const coreDef = content.buildings.list().find((d) => d.kind === 'core');
   const core: ArenaBuilding = {
     ref: 0,
@@ -87,5 +98,5 @@ export function coreMaxHealth(team: TeamState, content: ArenaContent): number {
     cells: [],
     alive: true,
   };
-  return maxHealthOf(team, core, content);
+  return maxHealthOf(team, core, content, minModifierSumPercent);
 }

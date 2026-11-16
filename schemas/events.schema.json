@@ -75,6 +75,10 @@
             "minimum": 1,
             "maximum": 1000
           },
+          "pact": {
+            "description": "True for a pact: a modifier with a benefit and a drawback (at least one positive and one negative effect, not stackable) that only the Pact event gives; the Shrine never offers it.",
+            "const": true
+          },
           "effects": {
             "type": "array",
             "minItems": 1,
@@ -85,6 +89,13 @@
     }
   },
   "$defs": {
+    "percent": {
+      "description": "An integer from -90 to 1000, never 0. A negative percent is a drawback; the simulation raises a sum below minModifierSumPercent (sim.json) to it.",
+      "type": "integer",
+      "minimum": -90,
+      "maximum": 1000,
+      "not": { "const": 0 }
+    },
     "effect": {
       "description": "One effect of a modifier; the simulation applies percent bonuses in integers, rounded down.",
       "oneOf": [
@@ -106,7 +117,7 @@
                 "economy"
               ]
             },
-            "percent": { "type": "integer", "minimum": 1, "maximum": 1000 }
+            "percent": { "$ref": "#/$defs/percent" }
           }
         },
         {
@@ -115,7 +126,7 @@
           "additionalProperties": false,
           "properties": {
             "kind": { "const": "unit_strength_percent" },
-            "percent": { "type": "integer", "minimum": 1, "maximum": 1000 },
+            "percent": { "$ref": "#/$defs/percent" },
             "units": {
               "description": "The unit types the bonus applies to: unit IDs in the order of the units file, no duplicates. Absent means every unit type.",
               "type": "array",
@@ -133,7 +144,7 @@
             "kind": {
               "enum": ["core_health_percent", "turret_damage_percent"]
             },
-            "percent": { "type": "integer", "minimum": 1, "maximum": 1000 }
+            "percent": { "$ref": "#/$defs/percent" }
           }
         }
       ]

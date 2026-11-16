@@ -79,7 +79,7 @@ export function previewEnemyPaths(
     if (b === undefined) return 0;
     // The same maximum health the simulation prices a breach by, with the
     // team's health modifiers (a building not placed by the team has none).
-    return maxHealthOf(team, b, content);
+    return maxHealthOf(team, b, content, simConfig.minModifierSumPercent);
   };
   const base = simConfig.breachBaseCost;
   const per = simConfig.breachHealthPerCost;

@@ -210,6 +210,8 @@ export {
   type HasModifiers,
   heldModifierIds,
   MAX_MODIFIER_PERCENT,
+  MIN_MODIFIER_PERCENT,
+  clampModifierSum,
   MODIFIER_EFFECT_KINDS,
   MODIFIER_ID,
   MODIFIER_TARGETS,

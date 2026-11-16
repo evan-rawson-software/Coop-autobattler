@@ -424,13 +424,13 @@ export const drillHandler: EventHandler = upgradeHandler({
 /**
  * Modifier IDs the party could take now, in file order: unlocked at the
  * current round (`fromRound`, default 1) and either not held or stackable.
- * Pacts (#413) are never offered by the Shrine: there is no pact flag yet, so
- * nothing to exclude; add the check here when pacts exist.
+ * Pacts (`pact: true`, RS-4i6) are never offered by the Shrine.
  */
 function eligibleModifiers(ctx: EventContext): string[] {
   const held = new Set(heldModifierIds(ctx.state.team));
   const round = ctx.state.round;
   return ctx.config.modifiers
+    .filter((m) => m.pact !== true)
     .filter((m) => round >= (m.fromRound ?? 1))
     .filter((m) => m.stackable || !held.has(m.id))
     .map((m) => m.id);
@@ -557,6 +557,46 @@ export const marketDayHandler: EventHandler = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Pact (RS-4i6): a strong modifier with a drawback, taken without a follow-up
+
+/** Pacts the party does not hold yet, in file order (each is held once). */
+function freePacts(ctx: EventContext): string[] {
+  const held = new Set(heldModifierIds(ctx.state.team));
+  return ctx.config.modifiers
+    .filter((m) => m.pact === true && !held.has(m.id))
+    .map((m) => m.id);
+}
+
+export const pactHandler: EventHandler = {
+  type: 'pact',
+  // Some pact is not held.
+  available: (ctx) => freePacts(ctx).length > 0,
+  // One pact, drawn from the offer's child stream, named in the offer.
+  instantiate(ctx, _def, rng) {
+    const free = freePacts(ctx);
+    return { pact: rng.pick(free) };
+  },
+  // Voting for the Pact takes it: the modifier is added like a Shrine's.
+  resolve({ state, config }, offer) {
+    const id = typeof offer['pact'] === 'string' ? offer['pact'] : '';
+    const def = findModifier(config, id);
+    if (
+      def === undefined ||
+      def.pact !== true ||
+      heldModifierIds(state.team).includes(id)
+    ) {
+      return { patch: {}, followUp: null };
+    }
+    return {
+      patch: {
+        team: withModifier(state.team, { id: def.id, effects: def.effects }),
+      },
+      followUp: null,
+    };
+  },
+};
+
 /** The event types shipped with the game. Add a type by adding a handler. */
 export const defaultEventHandlers: EventHandlers = {
   workshop: workshopHandler,
@@ -564,6 +604,7 @@ export const defaultEventHandlers: EventHandlers = {
   shrine: shrineHandler,
   windfall: windfallHandler,
   market_day: marketDayHandler,
+  pact: pactHandler,
 };
 
 // ---------------------------------------------------------------------------

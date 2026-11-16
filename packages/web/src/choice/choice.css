@@ -191,6 +191,11 @@ h4.pve-archetype {
   margin: 0;
 }
 
+.event-lines .event-drawback {
+  color: var(--warn);
+  font-weight: 600;
+}
+
 .label {
   font-size: 0.72rem;
   letter-spacing: 0.08em;

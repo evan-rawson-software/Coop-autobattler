@@ -213,6 +213,11 @@
       "name": "Market day",
       "icon": "¤",
       "flavour": ""
+    },
+    "pact": {
+      "name": "Pact",
+      "icon": "☠",
+      "flavour": ""
     }
   },
   "modifiers": {
@@ -239,6 +244,15 @@
     },
     "mod_vanguard": {
       "name": "Vanguard"
+    },
+    "mod_pact_fury": {
+      "name": "Pact of fury"
+    },
+    "mod_pact_bastion": {
+      "name": "Pact of the bastion"
+    },
+    "mod_pact_overcharge": {
+      "name": "Pact of overcharge"
     }
   },
   "templates": {

@@ -549,7 +549,12 @@ middle:
   integer from 1 to 1000 (absent means 1). Market day's `params.extraOffers`
   and `params.freeRerolls` are integers from 1 to `MAX_SHOP_EFFECT_COUNT` (10),
   which also bounds the `count` of a saved next-shop effect.
-- **Modifier definitions** (`content/events.json`): `fromRound`, if present,
+- **Modifier definitions** (`content/events.json`): every effect's `percent`
+  is an integer from `MIN_MODIFIER_PERCENT` (-90) to `MAX_MODIFIER_PERCENT`
+  (1000), never 0 (the loader, `events.schema.json`, a team state's parser and
+  `team-state.schema.json` all check it). `pact`, if present, is `true`, and a
+  pact has at least one positive and one negative effect and is not stackable.
+  `minModifierSumPercent` (`sim.json`) is an integer from -99 to 0. `fromRound`, if present,
   is an integer from 1 to 1000 (absent means 1); a `unit_strength_percent`
   effect's `units`, if present, is a non-empty list of unit IDs with no
   duplicates, each a unit of `units.json`, **in the order of `units.json`**
@@ -4600,9 +4605,11 @@ purchases and the starting kit do).
 `TeamState.modifiers` is an optional list `{ id, effects }` in the order taken;
 it is omitted (never an empty list) when there are none, so states without
 modifiers hash as before. A modifier's effects are copied into the team state
-when it is taken. Effects (percent is an integer 1 to 1000; the simulation
-uses `floor(value * (100 + sum) / 100)`, summing all effects of a kind and
-target held by the side). Stackable modifiers have **no cap** (issue #49):
+when it is taken. Effects (percent is an integer from -90 to 1000, never 0, a
+negative percent being a drawback, RS-4i6; the simulation uses
+`floor(value * (100 + sum) / 100)`, summing all effects of a kind and
+target held by the side, with the sum first raised to `minModifierSumPercent`
+if it is lower, see below). Stackable modifiers have **no cap** (issue #49):
 bonuses of the same kind (and target) are summed, then applied once, never
 compounded, so each extra stack is worth relatively less than the one before:
 
@@ -4612,6 +4619,21 @@ compounded, so each extra stack is worth relatively less than the one before:
 | `core_health_percent` | to the maximum (and so the starting) Core health (after a side-option Core override) |
 | `unit_strength_percent` (optional `units`: unit IDs) | added to the unit strength percent at each spawn (health and damage, see the unit stats seam in "The arena"); side-wide, and it comes only from run modifiers, never from an economy building (PP-8). A unit of type `u` spawns with the sum of the side's effects with no `units` plus those whose `units` list `u`, summed and applied once (never one application per effect). Without `units` an effect applies to every unit type, as before; a battle whose modifiers have no `units` is bit-identical to one before the field existed |
 | `turret_damage_percent` | to the damage of each of the side's turrets, when the arena context is built |
+
+**The sum floor** (EC-8). `minModifierSumPercent` (`sim.json`, an integer from
+-99 to 0, shipped -50) bounds the sum: `sum = max(sum, minModifierSumPercent)`,
+taken per kind and target (for `building_health_percent` the sum of the effects
+whose target is `all` or the building's defense type or kind; for
+`unit_strength_percent` per unit type: the untargeted effects plus those
+listing the type), before `floor(value * (100 + sum) / 100)`. Only the
+modifier sum is clamped: the side's base `unitStrengthPercent` and the ramp
+bonus are added after it. A sum that is not below the bound is unchanged, so a
+battle whose modifiers are all positive is bit-identical to one before
+negative effects existed. The check at setup (`createArenaSim`: the largest
+strength per unit type, health and damage bounds) uses the clamped sum.
+`maxHealthOf`, `coreMaxHealth` and the turret damage take the bound as an
+argument (from `SimConfig`), so the Build screen's preview and the simulation
+agree.
 
 Each side's modifiers come from its own team state (`TeamState.modifiers`):
 the party's from the run, and a ghost from `findPvpOpponent` brings its own,
@@ -4633,6 +4655,18 @@ optional `fromRound` (the first round the Shrine may offer it, default 1):
 | `mod_hornet_swarm` | `unit_strength_percent` +25, `units: [unit_drone]` | no | 1 |
 | `mod_vanguard` | `unit_strength_percent` +20, `units: [unit_soldier, unit_raider]` | no | 1 |
 
+**Pacts** (issue #413, RS-4i6). A modifier definition may carry `pact: true`
+(optional, absent means false). The loader requires a pact to be not
+stackable and to have at least one positive and one negative effect. The
+Shrine never offers a pact (see "Events (RS-4)"); a pact enters the team only
+through the Pact event.
+
+| Pact | Benefit | Drawback |
+| --- | --- | --- |
+| `mod_pact_fury` | `unit_strength_percent` +20 | `core_health_percent` -15 |
+| `mod_pact_bastion` | `building_health_percent` `all` +30 | `unit_strength_percent` -10 |
+| `mod_pact_overcharge` | `turret_damage_percent` +40 | `building_health_percent` `turret` -20 |
+
 Planned, and entering the content only when the feature each needs has
 landed: quick march (+10% unit move speed, stacks), rapid fire (+15% unit
 attack speed, from round 2), tithe (+1 gold per shop for every player,
@@ -4645,7 +4679,11 @@ the Shrine.
 Notes for a port: read `units` as an optional array; the sum for a unit type
 is `sum(percent of effects where units is absent or contains the unit's id)`,
 computed per spawn, in integers, with the same checked addition as
-`modifierPercent`.
+`modifierPercent`, then `max(sum, minModifierSumPercent)`. A percent may be
+negative: read it as a signed integer and keep the floor division of
+`floor(value * (100 + sum) / 100)` (the factor is at least 50, so no overflow
+beyond the positive case, and the floor is the usual round-down of a
+non-negative product).
 
 ### Party votes (CP-16)
 
@@ -4755,7 +4793,7 @@ example a small and a big Windfall); they compete for a single place. The
 definitions whose first round has come (`round >= fromRound`; `fromRound`
 defaults to 1, `round` is `RunState.round`, the round of the event step) and
 whose handler says `available` (Workshop: some owned building
-below tier 3 that a player can pay for; Drill: some owned collector below tier 3; Shrine: at least one modifier can be taken; Windfall and Market
+below tier 3 that a player can pay for; Drill: some owned collector below tier 3; Shrine: at least one modifier can be taken; Pact: some pact is not held; Windfall and Market
 day: always) form the pool, in file order. Both conditions are checked before
 the draw, so the number of draws is still the number of offers, and where no
 `fromRound` is above the round the draws are those of the pool without it
@@ -4881,10 +4919,9 @@ any number of offers from 1 to `offerCount`. More event types will come later.
 - **Shrine** (`params.choices`, default 3): available when a modifier is
   *eligible*. A modifier is eligible when `round >= fromRound` (`fromRound`
   defaults to 1; `round` is `RunState.round`, the round of the event step,
-  the same value the offer stream's name uses), it is not a pact (no pact
-  exists yet: pacts, issue #413, are never offered by the Shrine; the
-  eligibility check is the place to exclude them), and it is either not held
-  or stackable. The eligible list is in file order. The offer lists up to
+  the same value the offer stream's name uses), it is not a pact (`pact:
+  true`: pacts, issue #413, are never offered by the Shrine), and it is either
+  not held or stackable. The eligible list is in file order. The offer lists up to
   `choices` of them: `rng.shuffle` of the eligible list on the offer's child
   stream, the first `choices` kept, then put back in file order. So with no
   `fromRound` in the file the draw is the same as before, and the child
@@ -4904,6 +4941,25 @@ any number of offers from 1 to `offerCount`. More event types will come later.
   after that one has neither.
   Notes for a port: the effects live in the per-player state, not in the team
   state, so ghosts and team hashes are not affected.
+
+- **Pact** (no params; `fromRound` 4 in the shipped file; RS-4i6): *available*
+  when at least one modifier with `pact: true` is not held (a pact is held at
+  most once per run). The offer is `{ id, event, type: "pact", pact:
+  <modifier id> }`: the one pact is `rng.pick(free pacts in file order)` on the
+  offer's child stream `<event id>:<index>` (one `nextInt(n)`; no other stream
+  moves). Both its benefit and its drawback are shown from the modifier
+  definition. *No follow-up*: voting for the Pact takes it, on pick the
+  modifier `{ id, effects }` is added to `TeamState.modifiers` exactly as the
+  Shrine adds one (an offer whose pact is no longer free, or unknown, changes
+  nothing). Not voting for it (the party takes another event) is the skip; an
+  offer set always has another event because the Windfall is always
+  available. Because nothing but this event gives a pact, the party never
+  holds a pact twice.
+  *validateRunState* needs nothing new: the held modifier is validated as any
+  modifier (percent -90 to 1000, never 0). The saved shape is unchanged.
+  Notes for a port: a pact is an ordinary modifier with a negative effect
+  among its effects; the pact filter exists only in the Shrine's eligibility
+  check and the Pact's availability and draw.
 
 After the party votes for an offer (the usual party vote, see "Party votes"
 above), a handler with no follow-up applies at once and the step goes to the
@@ -5173,7 +5229,12 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
    effects (including `units`, compared as canonical JSON), a non-stackable
    one is held once, its `fromRound` (default 1) is at most the snapshot's
    `round`, and there are at most `2 * round - 1` of them (one per event step
-   that can have happened by then).
+   that can have happened by then). A pact (`pact: true`) is also held only
+   from the first `fromRound` of a `pact` event in `events.json` (no such event:
+   never). Negative effects need no special rule: the effects must equal the
+   definition (so a drawback cannot be dropped or weakened), a pact is one of
+   the `2 * round - 1` slots like any modifier, and the value and tier bounds do not
+   read modifiers, so a drawback neither passes nor hides extra power.
 
 The value bound, for `n` players at the start of the PvP battle of round `r`:
 
@@ -5421,6 +5482,7 @@ player grows by raising tiers, by economy buildings or through a border link.
 | Armory `costPerStep` / `stepIntervalTicks` / `stepPercent` x `maxSteps` | `buildings.json` | 4 / 5 / 6 items per step, a step per 80 / 70 / 60 ticks, 5x5 / 7x5 / 10x5 = +25 / +35 / +50 percent | fits under `maxUnitStrengthPercent` |
 | `inputBufferUnits` (items waiting at each input) | `sim.json` | 4 (unchanged) | integer >= 1, small |
 | `maxSourceSpeedPercent` (collector speed-up cap) | `sim.json` | 25 | SC-12: a tier 1 collector boosted to 0.62 per second stays below an unboosted tier 2 (0.71), tier 2 boosted to 0.91 below tier 3 (1.00) |
+| `minModifierSumPercent` (floor of a modifier percent sum) | `sim.json` | -50 | EC-8: with drawbacks of -90 allowed, a stat never drops below half or reaches 0 |
 | `maxUnitStrengthPercent` (Armory cap per player) | `sim.json` | 100 | an Armory costs supply only while it charges, so it has its own limit |
 | Core health | `buildings.json` | 500 (decided) | per Core |
 | `nodesPerPlot` | `mapgen.json` | 3 common, 1 rare (unchanged) | the same for every plot |

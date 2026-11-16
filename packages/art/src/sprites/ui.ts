@@ -236,12 +236,28 @@ function drill(): Pix {
   return p;
 }
 
+function pact(): Pix {
+  const p = new Pix(16, 16);
+  // A scroll with a red wax seal: the contract.
+  p.rect(3, 2, 10, 11, '6');
+  p.rect(3, 2, 10, 1, '5');
+  p.rect(2, 2, 1, 3, '4');
+  p.rect(13, 11, 1, 3, '4');
+  p.line(5, 5, 10, 5, '3');
+  p.line(5, 7, 9, 7, '3');
+  p.ellipse(9.5, 10.5, 2.2, 2.2, 'M');
+  p.set(9, 10, 'm');
+  p.outline('K');
+  return p;
+}
+
 const EVENT_ICONS: Readonly<Record<string, () => Pix>> = {
   workshop,
   shrine,
   windfall,
   drill,
   market_day: marketDay,
+  pact,
 };
 
 export function uiSprites(): SpriteDef[] {

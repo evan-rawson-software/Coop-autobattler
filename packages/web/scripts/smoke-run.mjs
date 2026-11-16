@@ -1990,7 +1990,7 @@ export async function runRunSmoke({
   // (made in Node by the real bot, see smoke-seed.mjs), whose PvP opponent the
   // browser selects from an empty bucket, since the bundled ghosts stop at
   // round 6.
-  for (const seedArgs of [[], ['siege', '12', '2']]) {
+  for (const seedArgs of [[], ['siege', '10', '2']]) {
     // The second save is a party the siege bot made, which
     // loses to the boss: the loss branch of the checks below. It keeps the
     // run id: the first run left a round 7 ghost in the browser's pool, which

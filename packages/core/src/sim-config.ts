@@ -32,6 +32,13 @@ export interface SimConfig {
   readonly maxSourceSpeedPercent: number;
   /** Global cap on the summed `unit_strength` bonus of one player (each owner on a side is capped on their own), percent (SC-8, PP-8). */
   readonly maxUnitStrengthPercent: number;
+  /**
+   * Lowest sum, in percent, of the run-modifier effects of one kind and target
+   * (for unit strength: per unit type) that the simulation applies (EC-8). A
+   * lower sum is raised to it before `floor(value * (100 + sum) / 100)`, so
+   * drawbacks never take a value below half. A number from -99 to 0.
+   */
+  readonly minModifierSumPercent: number;
   /** First tick at which Overload applies (CB-12). */
   readonly overloadStartTick: number;
   /** Ticks between Overload levels. */
@@ -59,6 +66,7 @@ const KEYS = new Set([
   'separationCap',
   'maxSourceSpeedPercent',
   'maxUnitStrengthPercent',
+  'minModifierSumPercent',
   'overloadStartTick',
   'overloadIntervalTicks',
   'overloadDamageStepPercent',
@@ -130,6 +138,14 @@ export function loadSimConfig(data: unknown): SimConfigLoadResult {
     'sim',
     errors,
   );
+  const minModifierSumPercent = readInt(
+    data,
+    'minModifierSumPercent',
+    -99,
+    'sim',
+    errors,
+    0,
+  );
   const overloadStartTick = readInt(
     data,
     'overloadStartTick',
@@ -172,6 +188,7 @@ export function loadSimConfig(data: unknown): SimConfigLoadResult {
     timelineSampleTicks === undefined ||
     maxSourceSpeedPercent === undefined ||
     maxUnitStrengthPercent === undefined ||
+    minModifierSumPercent === undefined ||
     overloadStartTick === undefined ||
     overloadIntervalTicks === undefined ||
     overloadDamageStepPercent === undefined ||
@@ -198,6 +215,7 @@ export function loadSimConfig(data: unknown): SimConfigLoadResult {
       separationCap,
       maxSourceSpeedPercent,
       maxUnitStrengthPercent,
+      minModifierSumPercent,
       overloadStartTick,
       overloadIntervalTicks,
       overloadDamageStepPercent,

@@ -14,6 +14,7 @@
     "separationCap",
     "maxSourceSpeedPercent",
     "maxUnitStrengthPercent",
+    "minModifierSumPercent",
     "overloadStartTick",
     "overloadIntervalTicks",
     "overloadDamageStepPercent",
@@ -73,6 +74,12 @@
       "description": "Global cap, in percent, on the summed unit_strength bonus of one side (SC-8). A unit spawned under bonus P gets health and damage mulPct(base, 100 + P).",
       "type": "integer",
       "minimum": 0
+    },
+    "minModifierSumPercent": {
+      "description": "Lowest sum, in percent, of the run-modifier effects of one kind and target (unit strength: per unit type) the simulation applies (EC-8). A lower sum is raised to this before floor(value * (100 + sum) / 100), so drawbacks never take a value below half.",
+      "type": "integer",
+      "minimum": -99,
+      "maximum": 0
     },
     "overloadStartTick": {
       "description": "First battle tick of Overload level 1 (CB-12).",
