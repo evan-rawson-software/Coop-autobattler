@@ -29,6 +29,20 @@ export interface ModifierDef {
   /** May be taken again while already held. */
   readonly stackable: boolean;
   readonly effects: readonly ModifierEffect[];
+  /** First round the Shrine may offer it (at least 1); absent means 1. */
+  readonly fromRound?: number;
+}
+
+/** Highest `fromRound` a modifier definition may have. */
+export const MAX_MODIFIER_FROM_ROUND = 1000;
+
+/** What `loadEvents` may check against other content. */
+export interface EventsLoadContext {
+  /** When given, `units` of unit-strength effects must name these units. */
+  readonly units?: {
+    get(id: string): unknown;
+    list(): readonly { readonly id: string }[];
+  };
 }
 
 export type EventParams = Readonly<Record<string, number | string>>;
@@ -70,7 +84,10 @@ export function findModifier(
 }
 
 /** Validate parsed events data (the contents of events.json). */
-export function loadEvents(data: unknown): EventsLoadResult {
+export function loadEvents(
+  data: unknown,
+  context: EventsLoadContext = {},
+): EventsLoadResult {
   if (!isRecord(data)) {
     return { ok: false, errors: ['Events file must be an object.'] };
   }
@@ -152,7 +169,12 @@ export function loadEvents(data: unknown): EventsLoadResult {
         errors.push(`${at}: must be an object.`);
         return;
       }
-      rejectUnknownKeys(m, new Set(['id', 'stackable', 'effects']), at, errors);
+      rejectUnknownKeys(
+        m,
+        new Set(['id', 'stackable', 'fromRound', 'effects']),
+        at,
+        errors,
+      );
       const id = m['id'];
       if (typeof id !== 'string' || !MODIFIER_ID.test(id)) {
         errors.push(`${at}: "id" must match ${String(MODIFIER_ID)}.`);
@@ -162,6 +184,10 @@ export function loadEvents(data: unknown): EventsLoadResult {
         seenMods.add(id);
       }
       const stackable = readBool(m, 'stackable', at, errors);
+      const fromRound =
+        m['fromRound'] === undefined
+          ? undefined
+          : readInt(m, 'fromRound', 1, at, errors, MAX_MODIFIER_FROM_ROUND);
       const list = m['effects'];
       const effects: ModifierEffect[] = [];
       if (!Array.isArray(list) || list.length === 0) {
@@ -173,11 +199,46 @@ export function loadEvents(data: unknown): EventsLoadResult {
             `${at}.effects[${String(j)}]`,
             errors,
           );
-          if (effect !== undefined) effects.push(effect);
+          if (effect !== undefined) {
+            effects.push(effect);
+            if (effect.kind === 'unit_strength_percent') {
+              const known = context.units;
+              const listed = effect.units ?? [];
+              if (known !== undefined) {
+                let unknown = false;
+                for (const u of listed) {
+                  if (known.get(u) === undefined) {
+                    unknown = true;
+                    errors.push(
+                      `${at}.effects[${String(j)}]: unknown unit "${u}".`,
+                    );
+                  }
+                }
+                const order = known.list().map((d) => d.id);
+                const idx = listed.map((u) => order.indexOf(u));
+                if (
+                  !unknown &&
+                  idx.some((x, k) => k > 0 && x < (idx[k - 1] ?? 0))
+                ) {
+                  errors.push(
+                    `${at}.effects[${String(j)}]: "units" must follow the order of the units file.`,
+                  );
+                }
+              }
+            }
+          }
         });
       }
-      if (typeof id === 'string' && stackable !== undefined) {
-        modifiers.push({ id, stackable, effects });
+      if (
+        typeof id === 'string' &&
+        stackable !== undefined &&
+        (m['fromRound'] === undefined || fromRound !== undefined)
+      ) {
+        modifiers.push(
+          fromRound === undefined
+            ? { id, stackable, effects }
+            : { id, stackable, fromRound, effects },
+        );
       }
     });
   }
@@ -189,6 +250,9 @@ export function loadEvents(data: unknown): EventsLoadResult {
 }
 
 /** Like loadEvents, but throws one Error listing every problem. */
-export function loadEventsOrThrow(data: unknown): EventsConfig {
-  return unwrapOrThrow('events configuration', loadEvents(data));
+export function loadEventsOrThrow(
+  data: unknown,
+  context: EventsLoadContext = {},
+): EventsConfig {
+  return unwrapOrThrow('events configuration', loadEvents(data, context));
 }

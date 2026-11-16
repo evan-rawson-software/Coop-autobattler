@@ -365,10 +365,17 @@ export const workshopHandler: EventHandler = {
 // ---------------------------------------------------------------------------
 // Shrine: take one of several run modifiers
 
-/** Modifier IDs the party could take now, in file order. */
+/**
+ * Modifier IDs the party could take now, in file order: unlocked at the
+ * current round (`fromRound`, default 1) and either not held or stackable.
+ * Pacts (#413) are never offered by the Shrine: there is no pact flag yet, so
+ * nothing to exclude; add the check here when pacts exist.
+ */
 function eligibleModifiers(ctx: EventContext): string[] {
   const held = new Set(heldModifierIds(ctx.state.team));
+  const round = ctx.state.round;
   return ctx.config.modifiers
+    .filter((m) => round >= (m.fromRound ?? 1))
     .filter((m) => m.stackable || !held.has(m.id))
     .map((m) => m.id);
 }
@@ -405,6 +412,9 @@ export const shrineHandler: EventHandler = {
     const def =
       typeof id === 'string' ? findModifier(ctx.config, id) : undefined;
     if (def === undefined) return { ok: false, reason: 'invalid_choice' };
+    if (ctx.state.round < (def.fromRound ?? 1)) {
+      return { ok: false, reason: 'not_unlocked' };
+    }
     if (!def.stackable && heldModifierIds(ctx.state.team).includes(def.id)) {
       return { ok: false, reason: 'already_held' };
     }

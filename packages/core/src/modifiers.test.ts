@@ -1,11 +1,14 @@
 import { describe, expect, test } from 'vitest';
-import { createArenaSim } from './arena-sim.js';
+import { createArenaSim, spawnUnitForTest } from './arena-sim.js';
+import { startArenaBattle } from './arena-sim.js';
 import { loadEconomy, loadEconomyOrThrow } from './economy.js';
 import { findModifier, loadEvents, loadEventsOrThrow } from './events.js';
 import { hashJson } from './hash.js';
 import {
   heldModifierIds,
   modifierPercent,
+  parseModifierEffect,
+  unitStrengthPercent,
   withModifier,
   type TeamModifier,
 } from './modifiers.js';
@@ -303,5 +306,152 @@ describe('modifier percent sums are checked', () => {
     expect(() => createArenaSim(big, base, 4, content, simConfig)).toThrow(
       RangeError,
     );
+  });
+});
+
+describe('per-unit-type strength and round gating (#423)', () => {
+  const sharp = modifier('mod_sharpshooters');
+  const vanguard = modifier('mod_vanguard');
+  const drilled = modifier('mod_drilled_troops');
+
+  test('the shipped stackable and targeted modifiers', () => {
+    const stack = (id: string) => findModifier(events, id)?.stackable;
+    for (const id of [
+      'mod_stout_walls',
+      'mod_sharp_turrets',
+      'mod_fortified_core',
+      'mod_drilled_troops',
+      'mod_reinforced_frames',
+    ]) {
+      expect(stack(id), id).toBe(true);
+    }
+    for (const id of [
+      'mod_sharpshooters',
+      'mod_hornet_swarm',
+      'mod_vanguard',
+    ]) {
+      expect(stack(id), id).toBe(false);
+    }
+    expect(sharp.effects).toEqual([
+      { kind: 'unit_strength_percent', percent: 25, units: ['unit_archer'] },
+    ]);
+    expect(vanguard.effects).toEqual([
+      {
+        kind: 'unit_strength_percent',
+        percent: 20,
+        units: ['unit_soldier', 'unit_raider'],
+      },
+    ]);
+  });
+
+  test('unitStrengthPercent sums untargeted effects and those listing the unit', () => {
+    let team = withModifier({}, sharp);
+    team = withModifier(team, vanguard);
+    team = withModifier(team, drilled);
+    team = withModifier(team, drilled);
+    expect(unitStrengthPercent(team, 'unit_archer')).toBe(45);
+    expect(unitStrengthPercent(team, 'unit_soldier')).toBe(40);
+    expect(unitStrengthPercent(team, 'unit_raider')).toBe(40);
+    expect(unitStrengthPercent(team, 'unit_drone')).toBe(20);
+    expect(unitStrengthPercent({}, 'unit_archer')).toBe(0);
+  });
+
+  test('units are validated: non-empty, unit IDs, no duplicates', () => {
+    const at = (units: unknown) => {
+      const errors: string[] = [];
+      const e = parseModifierEffect(
+        { kind: 'unit_strength_percent', percent: 5, units },
+        'e',
+        errors,
+      );
+      return { e, errors };
+    };
+    expect(at(['unit_archer']).e).toEqual({
+      kind: 'unit_strength_percent',
+      percent: 5,
+      units: ['unit_archer'],
+    });
+    for (const bad of [
+      [],
+      'unit_archer',
+      ['archer'],
+      [1],
+      ['unit_a', 'unit_a'],
+    ]) {
+      const r = at(bad);
+      expect(r.e, JSON.stringify(bad)).toBeUndefined();
+      expect(r.errors.join(), JSON.stringify(bad)).toMatch(/units/);
+    }
+    // Only this effect kind takes `units`.
+    const errors: string[] = [];
+    parseModifierEffect(
+      { kind: 'core_health_percent', percent: 5, units: ['unit_archer'] },
+      'e',
+      errors,
+    );
+    expect(errors.join()).toMatch(/unknown field "units"/);
+  });
+
+  test('a targeted bonus changes only the listed unit types at spawn', () => {
+    const board = buildReferenceBoard('poor', content, mapgen);
+    const plain = startArenaBattle(board, board, 4, content, simConfig);
+    const boosted = startArenaBattle(
+      withModifier(board, sharp),
+      board,
+      4,
+      content,
+      simConfig,
+    );
+    const stats = (b: typeof plain, def: string, x: number) => {
+      const u = spawnUnitForTest(b.sim, b.ctx, { side: 0, def, x, y: 20 });
+      return [u.hp, u.damage];
+    };
+    expect(stats(boosted, 'unit_soldier', 1)).toEqual(
+      stats(plain, 'unit_soldier', 1),
+    );
+    expect(stats(boosted, 'unit_archer', 4)).not.toEqual(
+      stats(plain, 'unit_archer', 4),
+    );
+  });
+
+  test('loadEvents: fromRound bounds, unknown units, units order', () => {
+    const mod = (extra: object, effect: object = {}) => ({
+      offerCount: 1,
+      events: [{ id: 'evt_a', type: 'x', weight: 1 }],
+      modifiers: [
+        {
+          id: 'mod_a',
+          stackable: false,
+          ...extra,
+          effects: [
+            {
+              kind: 'unit_strength_percent',
+              percent: 5,
+              units: ['unit_soldier', 'unit_raider'],
+              ...effect,
+            },
+          ],
+        },
+      ],
+    });
+    const errorsOf = (data: object) => {
+      const r = loadEvents(data, { units: content.units });
+      return r.ok ? [] : r.errors.join('\n');
+    };
+    expect(errorsOf(mod({}))).toEqual([]);
+    const ok = loadEvents(mod({ fromRound: 3 }), { units: content.units });
+    expect(ok.ok && ok.config.modifiers[0]?.fromRound).toBe(3);
+    for (const bad of [0, -1, 1.5, '2', 1001]) {
+      expect(errorsOf(mod({ fromRound: bad })), String(bad)).toMatch(
+        /fromRound/,
+      );
+    }
+    expect(errorsOf(mod({}, { units: ['unit_nope'] }))).toMatch(
+      /unknown unit "unit_nope"/,
+    );
+    expect(
+      errorsOf(mod({}, { units: ['unit_raider', 'unit_soldier'] })),
+    ).toMatch(/order of the units file/);
+    expect(errorsOf(mod({}, { units: [] }))).toMatch(/units/);
   });
 });

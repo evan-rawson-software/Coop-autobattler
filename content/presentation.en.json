@@ -220,6 +220,15 @@
     },
     "mod_reinforced_frames": {
       "name": "Reinforced frames"
+    },
+    "mod_sharpshooters": {
+      "name": "Sharpshooters"
+    },
+    "mod_hornet_swarm": {
+      "name": "Hornet swarm"
+    },
+    "mod_vanguard": {
+      "name": "Vanguard"
     }
   },
   "templates": {

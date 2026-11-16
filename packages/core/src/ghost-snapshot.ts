@@ -885,6 +885,11 @@ function plausibility(
     if (canonicalJson(def.effects) !== canonicalJson(m.effects)) {
       errors.push(`modifiers[${String(i)}]: effects differ from "${m.id}".`);
     }
+    if ((def.fromRound ?? 1) > s.round) {
+      errors.push(
+        `modifiers[${String(i)}]: "${m.id}" is not offered before round ${String(def.fromRound ?? 1)}, held at round ${String(s.round)}.`,
+      );
+    }
     if (!def.stackable && seen.has(m.id)) {
       errors.push(`modifiers[${String(i)}]: "${m.id}" cannot be held twice.`);
     }

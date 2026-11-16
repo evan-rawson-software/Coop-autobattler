@@ -536,13 +536,32 @@ middle:
   must not exceed `MAX_HEALTH` and `MAX_DAMAGE`; otherwise `unitStats` throws a
   `RangeError` naming the unit. For each side, `createArenaSim` checks every
   unit type up front with `P` = the side's `unitStrengthPercent` option, plus
-  its `unit_strength_percent` modifiers, plus the largest ramp bonus the side
-  can reach: `maxUnitStrengthPercent` if it has a `unit_strength` economy
+  the sum of its `unit_strength_percent` effects that apply to that unit type
+  (those with no `units` plus those whose `units` list the type), plus the
+  largest ramp bonus the side can reach: `maxUnitStrengthPercent` if it has a `unit_strength` economy
   building, otherwise 0 (each owner is capped alone, so this bound holds for
   every owner). `maxStrengthPercent(unit)` (in `units.ts`) is the
   largest `P` a unit allows: the largest `P` with `floor(health * (100 + P) /
   100) <= MAX_HEALTH` and `floor(damage * (100 + P) / 100) <= MAX_DAMAGE`
-  (a unit with 0 damage does not limit on damage).
+  (a unit with 0 damage does not limit on damage). The same per-type `P`
+  covers the units of a scheduled wave.
+- **Modifier definitions** (`content/events.json`): `fromRound`, if present,
+  is an integer from 1 to 1000 (absent means 1); a `unit_strength_percent`
+  effect's `units`, if present, is a non-empty list of unit IDs with no
+  duplicates, each a unit of `units.json`, **in the order of `units.json`**
+  (the loader rejects any other order, so every definition has one canonical
+  form and a held effect compares equal to it, see "Ghosts"). `units` is
+  allowed on no other effect kind. A team state parses `units` the same way,
+  except that the unit IDs are not checked against `units.json` and their
+  order is not checked (a held effect must equal its definition anyway).
+  **Stacking has no cap** (issue #423): the percent sum of a kind is bounded
+  only by the existing checks above (`MAX_HEALTH`, `MAX_DAMAGE`, the safe
+  integer range). Checked for ten stacks of every health modifier: the
+  highest-health building is a tier-3 wall at 600, with `wall` +25% and `all`
+  +10% held ten times each the percent sum is 350 and the health is
+  `600 * 450 / 100 = 2700`; the Core (500) with `core_health_percent` +20%
+  ten times is 1500. Even a thousand stacks stay far below `MAX_HEALTH`
+  (1e12), so no cap on the summed percent is needed.
 - The Overload hit and Core decay at the last possible tick must not exceed
   `MAX_HIT` (see the table).
 - **Generated threats stay far below these bounds.** With the shipped content,
@@ -4555,13 +4574,42 @@ compounded, so each extra stack is worth relatively less than the one before:
 | --- | --- |
 | `building_health_percent` (`target`: `all`, `wall`, `gate`, `turret`, `source`, `route`, `unit_producer`, `economy`) | to the maximum (and so the starting) health of matching placed buildings (not the Core; a defense matches its defense type, so `wall` matches every wall shape, issue #291; others their kind; `all` matches every building); at tick 0 in `createArenaSim` |
 | `core_health_percent` | to the maximum (and so the starting) Core health (after a side-option Core override) |
-| `unit_strength_percent` | added to the unit strength percent at each spawn (health and damage, see the unit stats seam in "The arena"); side-wide, and it comes only from run modifiers, never from an economy building (PP-8) |
+| `unit_strength_percent` (optional `units`: unit IDs) | added to the unit strength percent at each spawn (health and damage, see the unit stats seam in "The arena"); side-wide, and it comes only from run modifiers, never from an economy building (PP-8). A unit of type `u` spawns with the sum of the side's effects with no `units` plus those whose `units` list `u`, summed and applied once (never one application per effect). Without `units` an effect applies to every unit type, as before; a battle whose modifiers have no `units` is bit-identical to one before the field existed |
 | `turret_damage_percent` | to the damage of each of the side's turrets, when the arena context is built |
 
 Each side's modifiers come from its own team state (`TeamState.modifiers`):
 the party's from the run, and a ghost from `findPvpOpponent` brings its own,
 which apply to side 1. Generated threats (PvE options and the PvP boss) have
 none. An extractor-speed kind is not implemented.
+
+**The modifier list** (issue #423; numbers are proposals, see EC-8 in the
+spec). Definitions are in `content/events.json`, in file order, with an
+optional `fromRound` (the first round the Shrine may offer it, default 1):
+
+| Modifier | Effect | Stacks | `fromRound` |
+| --- | --- | --- | --- |
+| `mod_stout_walls` | `building_health_percent` `wall` +25 | yes | 1 |
+| `mod_sharp_turrets` | `turret_damage_percent` +20 | yes | 1 |
+| `mod_fortified_core` | `core_health_percent` +20 | yes | 1 |
+| `mod_drilled_troops` | `unit_strength_percent` +10 | yes | 1 |
+| `mod_reinforced_frames` | `building_health_percent` `all` +10 | yes | 1 |
+| `mod_sharpshooters` | `unit_strength_percent` +25, `units: [unit_archer]` | no | 1 |
+| `mod_hornet_swarm` | `unit_strength_percent` +25, `units: [unit_drone]` | no | 1 |
+| `mod_vanguard` | `unit_strength_percent` +20, `units: [unit_soldier, unit_raider]` | no | 1 |
+
+Planned, and entering the content only when the feature each needs has
+landed: quick march (+10% unit move speed, stacks), rapid fire (+15% unit
+attack speed, from round 2), tithe (+1 gold per shop for every player,
+stacks), scrap dealer (sell refund 50% to 75% for every player), stone skin
+(+1 Golem armor, from round 3), wide arcs (+50% caster splash, from round 3)
+and claimstakers (points of interest captured 50% faster). Gold modifiers are
+party-wide and act for every player. Pacts (issue #413) are never offered by
+the Shrine.
+
+Notes for a port: read `units` as an optional array; the sum for a unit type
+is `sum(percent of effects where units is absent or contains the unit's id)`,
+computed per spawn, in integers, with the same checked addition as
+`modifierPercent`.
 
 ### Party votes (CP-16)
 
@@ -4660,7 +4708,7 @@ package gives the same list for a screen.
 ### Events (RS-4)
 
 `content/events.json` lists event definitions `{ id, type, weight,
-params }` and modifier definitions `{ id, stackable, effects }`,
+params }` and modifier definitions `{ id, stackable, fromRound?, effects }`,
 and `offerCount` (3). The `type` names a handler in the session package; the
 handler decides availability, extra offer data, what happens on pick, and how a
 follow-up choice is applied. Adding a type is data plus one handler.
@@ -4756,11 +4804,21 @@ any number of offers from 1 to `offerCount`. More event types will come later.
     result: 'upgrade', building, def, newTier, price }` (the price charged), or
     `{ player, result: 'skip', dropped: true, reason }` when a chosen upgrade
     was dropped (`not_enough_gold`, `invalid_choice`, `cannot_raise`).
-- **Shrine** (`params.choices`, default 3): available when a modifier can be
-  taken. The offer lists up to `choices` modifier IDs, a random subset of the
-  modifiers not already held (stackable ones are always eligible), in file
-  order. The follow-up options are those modifiers; the chosen one is added to
-  `TeamState.modifiers`.
+- **Shrine** (`params.choices`, default 3): available when a modifier is
+  *eligible*. A modifier is eligible when `round >= fromRound` (`fromRound`
+  defaults to 1; `round` is `RunState.round`, the round of the event step,
+  the same value the offer stream's name uses), it is not a pact (no pact
+  exists yet: pacts, issue #413, are never offered by the Shrine; the
+  eligibility check is the place to exclude them), and it is either not held
+  or stackable. The eligible list is in file order. The offer lists up to
+  `choices` of them: `rng.shuffle` of the eligible list on the offer's child
+  stream, the first `choices` kept, then put back in file order. So with no
+  `fromRound` in the file the draw is the same as before, and the child
+  stream is the only one used (no other stream moves). The follow-up options
+  are those modifiers; the chosen one is added to `TeamState.modifiers`. A
+  choice for a modifier whose `fromRound` is above the current round is
+  refused (`not_unlocked`), as is a non-stackable one already held
+  (`already_held`).
 - **Windfall** (`params.gold`): no follow-up; every player gets that much gold
   at once.
 
@@ -5029,8 +5087,10 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
    fits the bound; from round 2 a tier 3 is reachable by two raises
    (`ghostTierBound`).
 7. **Modifiers**: each is known to `events.json`, has exactly its defined
-   effects, a non-stackable one is held once, and there are at most `2 * round
-   - 1` of them (one per event step that can have happened by then).
+   effects (including `units`, compared as canonical JSON), a non-stackable
+   one is held once, its `fromRound` (default 1) is at most the snapshot's
+   `round`, and there are at most `2 * round - 1` of them (one per event step
+   that can have happened by then).
 
 The value bound, for `n` players at the start of the PvP battle of round `r`:
 

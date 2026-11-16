@@ -59,7 +59,7 @@ export function loadSimContext(): SimContext {
   const economy = loadEconomyOrThrow(rawEconomy, {
     buildings: content.buildings,
   });
-  const events = loadEventsOrThrow(rawEvents);
+  const events = loadEventsOrThrow(rawEvents, { units: content.units });
   cached = { content, mapgen, sim, threats, economy, events };
   return cached;
 }

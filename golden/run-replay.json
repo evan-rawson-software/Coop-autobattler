@@ -729,7 +729,7 @@
           "player": 0,
           "intent": {
             "type": "event_choose",
-            "choice": "mod_sharp_turrets"
+            "choice": "mod_sharpshooters"
           }
         },
         {
@@ -770,7 +770,7 @@
           ["0 bld_hangar t1 30", "1 bld_armory t1 30", "2 bld_extractor t1 10", "3 bld_barracks t1 20", "4 bld_turret t1 15"]
         ],
         "rng": [4017906222, 1048198776, 252071946, 525099987],
-        "stateHash": "54746262"
+        "stateHash": "5f0c4b12"
       }
     }
   },
@@ -1161,21 +1161,21 @@
           "player": 0,
           "intent": {
             "type": "event_choose",
-            "choice": "mod_stout_walls"
+            "choice": "mod_hornet_swarm"
           }
         },
         {
           "player": 1,
           "intent": {
             "type": "event_choose",
-            "choice": "mod_stout_walls"
+            "choice": "mod_hornet_swarm"
           }
         },
         {
           "player": 2,
           "intent": {
             "type": "event_choose",
-            "choice": "mod_stout_walls"
+            "choice": "mod_hornet_swarm"
           }
         }
       ]
@@ -1193,7 +1193,7 @@
           ["0 bld_turret t1 15", "1 bld_hangar t1 30", "2 bld_turret t1 15", "3 bld_merger t1 5", "4 bld_range t1 24"]
         ],
         "rng": [4183173375, 1530242370, 2692292519, 2946822902],
-        "stateHash": "136b8dab"
+        "stateHash": "6904d409"
       }
     }
   },
@@ -1275,7 +1275,7 @@
           "player": 0,
           "intent": {
             "type": "event_choose",
-            "choice": "mod_stout_walls"
+            "choice": "mod_vanguard"
           }
         }
       ]
@@ -1291,7 +1291,7 @@
           ["0 bld_extractor t1 10", "1 bld_armory t1 30", "2 bld_barracks t1 20", "3 bld_extractor t1 10", "4 bld_hangar t1 30"]
         ],
         "rng": [2782579401, 4181980959, 2945516258, 1625768006],
-        "stateHash": "6da3bed2"
+        "stateHash": "9817910d"
       }
     }
   }

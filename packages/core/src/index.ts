@@ -175,11 +175,13 @@ export {
   type EventDef,
   type EventParams,
   type EventsConfig,
+  type EventsLoadContext,
   type EventsLoadResult,
   findEvent,
   findModifier,
   loadEvents,
   loadEventsOrThrow,
+  MAX_MODIFIER_FROM_ROUND,
   type ModifierDef,
 } from './events.js';
 export {
@@ -212,6 +214,7 @@ export {
   type ModifierEffect,
   type ModifierEffectKind,
   modifierPercent,
+  unitStrengthPercent,
   type ModifierTarget,
   parseModifierEffect,
   parseTeamModifiers,

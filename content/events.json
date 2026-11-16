@@ -24,19 +24,19 @@
   "modifiers": [
     {
       "id": "mod_stout_walls",
-      "stackable": false,
+      "stackable": true,
       "effects": [
         { "kind": "building_health_percent", "target": "wall", "percent": 25 }
       ]
     },
     {
       "id": "mod_sharp_turrets",
-      "stackable": false,
+      "stackable": true,
       "effects": [{ "kind": "turret_damage_percent", "percent": 20 }]
     },
     {
       "id": "mod_fortified_core",
-      "stackable": false,
+      "stackable": true,
       "effects": [{ "kind": "core_health_percent", "percent": 20 }]
     },
     {
@@ -46,9 +46,42 @@
     },
     {
       "id": "mod_reinforced_frames",
-      "stackable": false,
+      "stackable": true,
       "effects": [
         { "kind": "building_health_percent", "target": "all", "percent": 10 }
+      ]
+    },
+    {
+      "id": "mod_sharpshooters",
+      "stackable": false,
+      "effects": [
+        {
+          "kind": "unit_strength_percent",
+          "percent": 25,
+          "units": ["unit_archer"]
+        }
+      ]
+    },
+    {
+      "id": "mod_hornet_swarm",
+      "stackable": false,
+      "effects": [
+        {
+          "kind": "unit_strength_percent",
+          "percent": 25,
+          "units": ["unit_drone"]
+        }
+      ]
+    },
+    {
+      "id": "mod_vanguard",
+      "stackable": false,
+      "effects": [
+        {
+          "kind": "unit_strength_percent",
+          "percent": 20,
+          "units": ["unit_soldier", "unit_raider"]
+        }
       ]
     }
   ]
