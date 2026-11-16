@@ -86,6 +86,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
 .chart-a { fill: none; stroke: var(--ally); stroke-width: 2; } .chart-e { fill: none; stroke: var(--enemy); stroke-width: 2; }
 .card { fill: var(--sheet); stroke: var(--ink); stroke-width: 1.2; } .card.pick { stroke: var(--accent); stroke-width: 3; }
 .rule { stroke: var(--line); }
+.ring { fill: var(--accent); fill-opacity: 0.12; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 5 4; } .blind { fill: var(--ink); fill-opacity: 0.28; stroke: var(--ink); stroke-width: 1.2; }
 .bl { font-size: 9.5px; }
 .plot { fill: none; stroke: var(--muted); stroke-dasharray: 6 5; }
 .big .t { font-size: 14px; } .big .ts { font-size: 12px; } .big .th { font-size: 15px; } .big .tb { font-size: 20px; }
@@ -230,6 +231,18 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>A Composite chain: an Ore conduit and a Power conduit come into the refinery (Rc) from two sides, and a Composite conduit, in its own colour, goes to the Golem forge (Gf). The Foundry (Fo) also takes Ore and Power. The small text on each shows its need per second for each input (O = Ore, P = Power, F = Flux).</li>
       <li>An Aether chain: Power and Flux go into the refinery (Ra), and an Aether conduit goes to the Spire (Sr).</li>
       <li>The one Flux node feeds this chain; an Overclocker would need to share it, for example over a border link.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>4b. Build: new footprints</h2>
+    <p>Four new buildings (working names) with unusual footprints, so where they go is a real decision. The image shows four placement previews on the Build screen. Green cells are legal and red are not.</p>
+    <div class="sheet"><svg id="s-footprints" viewBox="0 0 960 540" role="img" aria-label="Build previews for the four new buildings: a 1 by 3 Lancer hall along a plot edge, a 3 by 3 Grand barracks fed by a Merger from two extractors, a Tunnel entrance with its exit preview and range, and a Mortar with its range ring and blind spot."></svg></div>
+    <ol class="notes">
+      <li>Lancer hall (1×3, from round 2). The green column along the plot edge is a legal spot; inside the plot it needs a free strip 1 wide and 3 long.</li>
+      <li>Grand barracks (3×3, from round 5). It needs a 3×3 hole, and a Merger joins two Ore extractors to feed it.</li>
+      <li>Tunnel (two 1×1 ends, from round 3). The entrance is placed; the exit must be in a straight line, at most 5 cells away. Buildings and conduits in between stay where they are. A farther cell is red.</li>
+      <li>Mortar (2×2, from round 3). The dashed ring is its longest range; the shaded middle is the blind spot where it cannot shoot.</li>
     </ol>
   </section>
 
@@ -758,6 +771,68 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     // marks
     mark(s, 318, 420, 1, 11); mark(s, 318, 584, 2, 11); mark(s, bx + 450, by + 290, 3, 11); mark(s, bx + 150, by + 165, 4, 11); mark(s, bx + 284, by + 262, 5, 11);
     mark(s, 790, by - 12, 6, 11); mark(s, bx + 424, by + 38, 7, 11); mark(s, 782, 420, 8, 11); mark(s, 782, 626, 12, 11); mark(s, 1246, 420, 9, 11); mark(s, 1246, 584, 10, 11); mark(s, 200, by + 40, 11, 11); mark(s, l1[0] - 14, l1[1] + 20, 13, 11); mark(s, bx + 15.2 * S, by + 15.2 * S, 14, 11); mark(s, bx + 18.2 * S, by + 4.7 * S, 15, 11); mark(s, bx + 23.3 * S, by + 6.2 * S, 16, 11);
+  })();
+
+  // ================= 4b. BUILD: NEW FOOTPRINTS =================
+  (function () {
+    var s = document.getElementById("s-footprints");
+    topbar(s, "Round 5 · Build", "Four new buildings: working names", "Your plot");
+    var S = 18, COLS = 12, ROWS = 10;
+    function panel(x, y, title, n) {
+      R(s, x, y, 448, 226, "panel"); T(s, x + 12, y + 22, title, "th"); mark(s, x + 428, y + 18, n);
+      var gx = x + 12, gy = y + 34;
+      R(s, gx, gy, COLS * S, ROWS * S, "ground");
+      for (var i = 1; i < COLS; i++) el(s, "line", { x1: gx + i * S, y1: gy, x2: gx + i * S, y2: gy + ROWS * S, class: "gridl" });
+      for (var j = 1; j < ROWS; j++) el(s, "line", { x1: gx, y1: gy + j * S, x2: gx + COLS * S, y2: gy + j * S, class: "gridl" });
+      return {
+        gx: gx, gy: gy, tx: gx + COLS * S + 14,
+        cell: function (c, r, w, h, cls, label, lc) {
+          R(s, gx + c * S + 1, gy + r * S + 1, (w || 1) * S - 2, (h || 1) * S - 2, cls);
+          if (label) T(s, gx + (c + (w || 1) / 2) * S, gy + (r + (h || 1) / 2) * S + 3.5, label, lc || "bl", "middle");
+        },
+        pt: function (c, r) { return (gx + (c + 0.5) * S) + "," + (gy + (r + 0.5) * S); },
+        line: function (cls, pts) { el(s, "polyline", { class: "cond " + cls, points: pts.map(function (q) { return gx + (q[0] + 0.5) * S + "," + (gy + (q[1] + 0.5) * S); }).join(" ") }); }
+      };
+    }
+    // 1. Lancer hall, 1x3 along the plot edge
+    var a = panel(24, 48, "LANCER HALL · 1×3 · Ore", 1);
+    for (var r = 0; r < ROWS; r++) a.cell(0, r, 1, 1, "vok");
+    a.cell(2, 1, 2, 2, "bld", "Bk"); a.cell(5, 0, 2, 2, "bld", "Tu"); a.cell(3, 5, 2, 2, "bld", "Fo");
+    a.cell(7, 4, 3, 1, "wall"); a.cell(8, 7, 2, 2, "bld", "Ex");
+    a.cell(0, 3, 1, 3, "vok-k"); a.cell(0, 3, 1, 3, "sel", "Lh", "bl");
+    lines(s, a.tx, a.gy + 18, ["Preview of a 1×3", "Lancer hall on the", "edge column.", "", "Green: legal cells.", "Inside the plot it", "needs a 1-wide strip", "3 long, so the edge", "is the natural fit."], "ts", 14);
+    // 2. Grand barracks, 3x3 with a Merger from two extractors
+    var b = panel(480, 48, "GRAND BARRACKS · 3×3 · Ore", 2);
+    b.line("c-ore", [[1, 1], [1, 3], [2, 3]]); b.line("c-ore", [[4, 1], [4, 3], [3, 3]]); b.line("c-ore", [[2, 3], [2, 5], [4, 5]]);
+    b.cell(1, 1, 1, 1, "bld", "Ex"); b.cell(4, 1, 1, 1, "bld", "Ex"); b.cell(2, 3, 1, 1, "bld", "Mg");
+    b.cell(4, 4, 3, 3, "vok-k"); b.cell(4, 4, 3, 3, "sel", "Gb", "bl");
+    b.cell(8, 1, 2, 2, "bld", "Tu"); b.cell(8, 6, 2, 2, "bld", "Bk"); b.cell(0, 6, 2, 2, "bld", "Fo");
+    lines(s, b.tx, b.gy + 18, ["A 3×3 hole, with", "a Merger (Mg)", "joining two Ore", "extractors (Ex):", "one collector", "alone feeds it", "half the time."], "ts", 14);
+    // 3. Tunnel
+    var c = panel(24, 290, "TUNNEL · two 1×1 ends", 3);
+    c.line("c-ore", [[0, 4], [1, 4]]); c.line("c-ore", [[4, 3], [4, 9]]);
+    c.cell(1, 4, 1, 1, "bld", "Tn"); c.cell(2, 3, 2, 2, "bld", "Bk");
+    c.cell(5, 4, 1, 1, "vok"); c.cell(6, 4, 1, 1, "vok"); c.cell(7, 4, 1, 1, "vok-k"); c.cell(7, 4, 1, 1, "sel", "Tn", "bl");
+    c.cell(8, 4, 1, 1, "vbad-k", "×", "lowt");
+    el(s, "line", { x1: c.gx + 2 * S, y1: c.gy + 2.4 * S, x2: c.gx + 7 * S, y2: c.gy + 2.4 * S, class: "rule", "stroke-width": 2, style: "stroke:var(--accent)" });
+    el(s, "line", { x1: c.gx + 2 * S, y1: c.gy + 2.1 * S, x2: c.gx + 2 * S, y2: c.gy + 2.7 * S, class: "rule", "stroke-width": 2, style: "stroke:var(--accent)" });
+    el(s, "line", { x1: c.gx + 7 * S, y1: c.gy + 2.1 * S, x2: c.gx + 7 * S, y2: c.gy + 2.7 * S, class: "rule", "stroke-width": 2, style: "stroke:var(--accent)" });
+    T(s, c.gx + 4.5 * S, c.gy + 1.7 * S, "up to 5 cells", "ts", "middle");
+    c.cell(2, 6, 1, 1, "wall"); c.cell(3, 6, 1, 1, "wall");
+    lines(s, c.tx, c.gy + 18, ["Entrance placed.", "Exit preview in the", "same row, at most 5", "cells away.", "", "A building and a", "conduit in between", "stay as they are.", "Red: too far."], "ts", 14);
+    // 4. Mortar
+    var d = panel(480, 290, "MORTAR · 2×2 · Ore", 4);
+    var cx = d.gx + 3 * S, cy = d.gy + 7 * S;
+    var cp = el(s, "clipPath", { id: "fp-clip" }); R(cp, d.gx, d.gy, COLS * S, ROWS * S, "");
+    var g = el(s, "g", { "clip-path": "url(#fp-clip)" });
+    el(g, "circle", { cx: cx, cy: cy, r: 8 * S, class: "ring" });
+    el(g, "circle", { cx: cx, cy: cy, r: 2.6 * S, class: "blind" });
+    d.cell(2, 6, 2, 2, "bld", "Mo");
+    d.cell(6, 8, 2, 1, "bld", "Ex"); d.cell(0, 2, 6, 1, "wall"); d.cell(7, 2, 1, 1, "bld", "Tu");
+    units(s, [[d.gx + 4.5 * S, d.gy + 1.5 * S], [d.gx + 6 * S, d.gy + 1 * S], [d.gx + 8.5 * S, d.gy + 5.5 * S]], "u-e", 4);
+    units(s, [[d.gx + 4.3 * S, d.gy + 5.6 * S]], "u-e", 4);
+    lines(s, d.tx, d.gy + 18, ["Dashed ring: the", "longest range.", "", "Shaded centre: the", "blind spot. The unit", "inside it is safe.", "", "Best at the back."], "ts", 14);
+    T(s, d.tx, d.gy + 140, "Splash hits units only.", "ts tm");
   })();
 
   // ================= 5. MAIN MENU =================

@@ -27,7 +27,7 @@ battle (1, 8) → 2 event → 3 shop + 4 build → … → 9 run over.
 - `screens.html` — all the wireframes on one page, with the callouts. Open
   it in a browser. The screens are drawn by a script in the page, so edit
   that script to change them, then re-export the images.
-- `1-battle.png` to `9-run-over.png` — the same screens as images, plus `1b-battle-boss.png` (the boss marks, after the Battle screen) and `2b-caravan.png`, `2c-rich-vein.png` and `2d-blueprint.png` (the event follow-ups, after the Event choice screen).
+- `1-battle.png` to `9-run-over.png` — the same screens as images, plus `1b-battle-boss.png` (the boss marks, after the Battle screen) and `2b-caravan.png`, `2c-rich-vein.png` and `2d-blueprint.png` (the event follow-ups, after the Event choice screen), and `4b-build-footprints.png` (placement previews for the four new buildings, after the Build screen).
 
 Not drawn: the lobby for forming a party, settings, and the screens for the
 deferred feature of points of interest. Refining (issue #378) is drawn on the
@@ -36,7 +36,7 @@ Shop, Build and Battle screens.
 Map legend: **Ex** extractor, **Bk** barracks, **Fo** foundry, **Tu** turret,
 **Sp** splitter, **Ar** armory (an economy building), **Rc** Composite refinery
 (Ore + Power), **Ra** Aether refinery (Power + Flux), **Gf** Golem forge, **Sr**
-Spire, solid blocks are
+Spire, **Lh** Lancer hall, **Gb** Grand barracks, **Mo** Mortar, **Mg** Merger, **Tn** Tunnel ends, solid blocks are
 walls, and **O / P / F** diamonds are Ore, Power, and Flux nodes. Conduits
 are coloured by resource.
 
@@ -158,6 +158,17 @@ Where the factory is laid out. Everything of yours except your Core can be moved
 14. A Composite chain: an Ore conduit and a Power conduit come into the refinery (Rc) from two sides, and a Composite conduit, in its own colour, goes to the Golem forge (Gf). The Power here comes over a border link. The small text on each two-input building (Foundry, both refineries) is its need per second for each input (O = Ore, P = Power, F = Flux).
 15. An Aether chain: Power and Flux go into the refinery (Ra), and an Aether conduit, in its own colour, goes to the Spire (Sr).
 16. The one Flux node feeds this chain. An Overclocker would also want it, so running both means sharing Flux over a border link.
+
+## 4b. Build: new footprints
+
+Four new base buildings (CB-9f, issue #437), with working names. Their shapes make the layout a real decision: a 1×3, a 3×3, a two-piece Tunnel and a turret with a blind spot. The image shows four placement previews on the Build screen. As always, each helps only its owner and goes only in its owner's plot.
+
+![Build footprints wireframe](4b-build-footprints.png)
+
+1. Lancer hall (1×3, from round 2). The green column along the plot edge is a legal spot; inside the plot it needs a free strip 1 wide and 3 long.
+2. Grand barracks (3×3, from round 5). It needs a 3×3 hole, and a Merger (Mg) joins two Ore extractors to feed it (CB-10f).
+3. Tunnel (two 1×1 ends, from round 3). The entrance is placed; the exit preview must be in a straight line, at most 5 cells away (CB-9g). Buildings and conduits in between stay where they are. A farther cell is red.
+4. Mortar (2×2, from round 3). The dashed ring is its longest range; the shaded middle is the blind spot where it cannot shoot (CB-18b).
 
 ## 5. Main menu
 
