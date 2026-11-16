@@ -80,6 +80,13 @@ function isTyping(target: EventTarget | null): boolean {
   );
 }
 
+/** A control marked `data-keeps-space` presses itself with Space. */
+function ownsSpace(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element && target.closest('[data-keeps-space]') !== null
+  );
+}
+
 /** A key cap: `Space`, `R`, `1`. */
 export function Kbd(props: { children: ComponentChildren; class?: string }) {
   return <kbd class={`kbd ${props.class ?? ''}`}>{props.children}</kbd>;
@@ -141,7 +148,8 @@ export function GameFrame(props: GameFrameProps) {
       if (e.defaultPrevented || e.altKey) return;
       const p = latest.current;
       if (e.key === ' ' || e.code === 'Space') {
-        if (isTyping(e.target) || e.ctrlKey || e.metaKey) return;
+        if (isTyping(e.target) || ownsSpace(e.target) || e.ctrlKey || e.metaKey)
+          return;
         // Not the focused button's own press: the primary button is pressed.
         e.preventDefault();
         e.stopPropagation();
@@ -155,7 +163,11 @@ export function GameFrame(props: GameFrameProps) {
     };
     // A button's own Space press happens on key up: keep it from firing.
     const onUp = (e: KeyboardEvent): void => {
-      if ((e.key === ' ' || e.code === 'Space') && !isTyping(e.target)) {
+      if (
+        (e.key === ' ' || e.code === 'Space') &&
+        !isTyping(e.target) &&
+        !ownsSpace(e.target)
+      ) {
         e.preventDefault();
       }
     };

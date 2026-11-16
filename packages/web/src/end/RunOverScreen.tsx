@@ -13,6 +13,7 @@ import { screenText, screenTexts } from '../build/texts.js';
 import { content } from '../content.js';
 import { clearRunTicks } from '../battle/run-battle.js';
 import { registerDebug, unregisterDebug } from '../debug-hook.js';
+import { BonusList } from '../run/BonusList.js';
 import { createNewRun, randomSeed } from '../run/run-store.js';
 import { localIsoDate } from '../date.js';
 import { runHash, seedFromHash } from '../run/router.js';
@@ -239,6 +240,15 @@ export function RunOverScreen(props: {
               )}
             </p>
           </Panel>
+
+          {(state.team.modifiers?.length ?? 0) === 0 ? null : (
+            <Panel
+              title={screenText(screenTexts, 'uiBonuses')}
+              id="panel-bonuses"
+            >
+              <BonusList modifiers={state.team.modifiers} />
+            </Panel>
+          )}
 
           <Panel
             title={screenText(screenTexts, 'runOverPanelRounds')}

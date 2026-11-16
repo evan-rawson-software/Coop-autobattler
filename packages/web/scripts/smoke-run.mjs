@@ -1243,6 +1243,40 @@ export async function runRunSmoke({
       (await page.locator('#run-bar').count()) === 1,
     'shop step: the Build screen shows on the same run',
   );
+  // A Shrine bonus is held for the rest of the run: the run bar says so.
+  const checkBonusItem = async (where) => {
+    if (withFollow.type !== 'shrine') return;
+    const item = page.locator('[data-field="bar-bonuses"] button');
+    check(
+      (await item.count()) === 1 &&
+        /^Bonuses: \d+$/.test((await item.getAttribute('aria-label')) ?? ''),
+      `${where}: the run bar shows the held Bonuses item`,
+    );
+  };
+  await checkBonusItem('shop step');
+  if (withFollow.type === 'shrine') {
+    await page.click('[data-field="bar-bonuses"] button');
+    const pop = await page
+      .locator('[data-field="bonus-popover"]')
+      .innerText()
+      .catch(() => '');
+    check(
+      /\+\d+%/.test(pop) && !/mod_/.test(pop),
+      'shop step: the Bonuses popover lists totals and the bonus in words',
+    );
+    await page.keyboard.press('Escape');
+    await page
+      .waitForSelector('[data-field="bonus-popover"]', { state: 'detached' })
+      .catch(() => undefined);
+    check(
+      (await page.locator('[data-field="bonus-popover"]').count()) === 0,
+      'shop step: Escape closes the Bonuses popover',
+    );
+    check(
+      (await page.locator('#panel-bonuses').count()) === 0,
+      'shop step: the shop panel has no Bonuses list of its own',
+    );
+  }
   await placeKit();
   await sealedScenario();
   {
@@ -1285,6 +1319,7 @@ export async function runRunSmoke({
       `PvP battle: the bar keeps the lives from before the battle while it plays ("${playing.trim()}")`,
     );
   }
+  await checkBonusItem('PvP battle');
   await page.click('#skip');
   await page.waitForFunction(
     () => window.__debug?.battle?.phase() === 'summary',

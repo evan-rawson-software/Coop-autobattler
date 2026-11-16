@@ -28,6 +28,7 @@ import type { Playback, PlaybackSpeed } from './playback.js';
 import { resultFacts } from './result-why.js';
 import { SPEEDS } from './playback.js';
 import type { OpponentInfo } from './types.js';
+import { OpponentBonuses } from '../run/BonusList.js';
 
 const t = (key: string, values: Record<string, string> = {}): string =>
   screenText(screenTexts, key, values);
@@ -304,6 +305,8 @@ export function BattleRail(props: {
   readonly overloadTick: number;
   readonly tps: number;
   readonly revealed: boolean;
+  /** The opponent's modifiers, shown once the battle has started. */
+  readonly opponentModifiers?: OpponentInfo['modifiers'];
   readonly statsOpen: boolean;
   readonly onToggleStats: () => void;
   /** The drawer's contents; rendered only while open. */
@@ -354,6 +357,9 @@ export function BattleRail(props: {
           </span>
         </p>
       </section>
+      {props.revealed ? (
+        <OpponentBonuses modifiers={props.opponentModifiers} />
+      ) : null}
       <section
         class={`rail-section feed-section${props.statsOpen ? ' stats-open' : ''}`}
         aria-label="Happening now"
@@ -797,6 +803,7 @@ export function BattleSummaryView(props: SummaryProps) {
             })}
           </li>
         </ul>
+        <OpponentBonuses modifiers={opponent.modifiers} />
         <button
           type="button"
           class="link-button"

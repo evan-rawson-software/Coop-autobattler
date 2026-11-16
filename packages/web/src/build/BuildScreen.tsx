@@ -33,7 +33,6 @@ import { GameFrame, KeyHints } from '../shell/GameFrame.js';
 import type { MapRailProps } from '../shell/MapRail.js';
 import { ActingSwitch } from '../shell/ActingSwitch.js';
 import { useFading, useNoticeTimeout } from '../shell/status.js';
-import { heldBonuses } from '../event/view-model.js';
 import {
   SellControl,
   SellStrip,
@@ -74,7 +73,7 @@ import { useBuildTutorial } from '../tutorial/context.js';
 import { highlightDef, withoutHeldReminders } from '../tutorial/steps.js';
 import { drawTutorialMarks, tutorialMarks } from './tutorial-overlay.js';
 import { ME, isEditStep } from './session.js';
-import { DEFAULT_SEED, economy, gameConfigs, simConfig } from './setup.js';
+import { DEFAULT_SEED, economy, simConfig } from './setup.js';
 import { layoutHash } from './undo.js';
 import { screenText, screenTexts } from './texts.js';
 import {
@@ -295,10 +294,6 @@ export function BuildView(props: {
         ? buildShopView(run, acting, shopCtx, shared.deps)
         : null,
     [inShop, run, acting, shared],
-  );
-  const bonuses = useMemo(
-    () => (inShop && run !== null ? heldBonuses(run, gameConfigs.events) : []),
-    [inShop, run],
   );
   // What Sell would remove: the selected building, or the picked slot.
   const sellTarget: SellTarget | null = useMemo(() => {
@@ -910,7 +905,6 @@ export function BuildView(props: {
       // stays as it is, so pieces can be placed while it is open.
       <ShopPanel
         sv={sv}
-        bonuses={bonuses}
         onBuy={onBuy}
         onReroll={() => {
           void ctl.reroll();

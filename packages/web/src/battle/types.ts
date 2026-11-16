@@ -1,7 +1,7 @@
 /** Shared types of the battle screen. */
 
 import type { ComponentChildren } from 'preact';
-import type { BattleInput, PveBattleInput } from '@game/core';
+import type { BattleInput, PveBattleInput, TeamModifier } from '@game/core';
 
 /**
  * What to play: a team-versus-team battle (a ghost or a boss board) or a PvE
@@ -25,6 +25,8 @@ export interface OpponentInfo {
    * recorded which (MM-9d); absent for an older save.
    */
   readonly boss?: string;
+  /** The run modifiers a ghost opponent carries; absent for any other. */
+  readonly modifiers?: readonly TeamModifier[];
 }
 
 export interface BattleViewProps {

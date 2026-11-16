@@ -40,4 +40,10 @@ describe('effectLine', () => {
       'Turrets: +20% damage',
     );
   });
+
+  test('a negative percent reads with a real minus sign', () => {
+    expect(effectLine({ kind: 'core_health_percent', percent: -15 })).toBe(
+      'Your Core: −15% health',
+    );
+  });
 });
