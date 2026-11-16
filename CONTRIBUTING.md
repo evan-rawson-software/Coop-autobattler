@@ -214,8 +214,10 @@ The rule for a change that makes saved data unreadable:
   PvP opponent): records without it stay readable and keep the old behaviour.
   The third is the optional `units` on a `unit_strength_percent` effect of a
   held modifier (the unit types it applies to): records without it stay
-  readable and mean every unit type, as before. (The optional `fromRound` on a
-  modifier definition is content, not saved data.)
+  readable and mean every unit type, as before. The fourth is the optional
+  per-player `nextShop` of the run state (effects of an event on that player's
+  next shop, such as Market day): records without it mean none. (The optional
+  `fromRound` on a modifier or event definition is content, not saved data.)
 - The major version is raised once for the whole design change (this is
   done). Further format changes inside #124 (multi-Core battles, border
   links, per-player placement) raise the format numbers only. Nobody holds a

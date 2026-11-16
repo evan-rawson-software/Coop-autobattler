@@ -19,6 +19,13 @@
       "type": "windfall",
       "weight": 6,
       "params": { "gold": 4 }
+    },
+    {
+      "id": "evt_market_day",
+      "type": "market_day",
+      "weight": 6,
+      "fromRound": 2,
+      "params": { "extraOffers": 1, "freeRerolls": 1 }
     }
   ],
   "modifiers": [

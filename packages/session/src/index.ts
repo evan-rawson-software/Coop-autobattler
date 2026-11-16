@@ -72,6 +72,7 @@ export {
   fixedBattle,
   stubBattle,
 } from './rules/defaults.js';
+export { SHOP_EFFECT_KINDS, shopEffectCount } from './rules/shop-effects.js';
 export {
   createEconomyDeps,
   economyHandlers,

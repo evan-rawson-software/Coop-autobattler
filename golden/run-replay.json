@@ -1294,5 +1294,335 @@
         "stateHash": "9817910d"
       }
     }
+  },
+  {
+    "id": "run-replay.s1-p1-market-day",
+    "kind": "run-replay",
+    "description": "1 player(s): Market day at the round 2 event, then two re-rolls in the next shop (the first free, the second paid), six offers throughout.",
+    "input": {
+      "seed": 1,
+      "players": ["Ann"],
+      "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "place_core",
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_market_day"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "reroll"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "reroll"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "step": "shop",
+        "round": 2,
+        "actions": 15,
+        "gold": [52],
+        "shops": [
+          ["0 bld_crossover t1 8", "1 bld_merger t1 5", "2 bld_turret t1 15", "3 bld_hangar t1 30", "4 bld_wall_t t1 8", "5 bld_overclocker t1 30"]
+        ],
+        "rng": [733700114, 3032039541, 3556752480, 1764203217],
+        "stateHash": "70ebe705"
+      }
+    }
+  },
+  {
+    "id": "run-replay.s1-p2-market-day",
+    "kind": "run-replay",
+    "description": "2 player(s): Market day at the round 2 event, then two re-rolls in the next shop (the first free, the second paid), six offers throughout.",
+    "input": {
+      "seed": 1,
+      "players": ["Ann", "Bo"],
+      "actions": [
+        {
+          "player": 0,
+          "intent": {
+            "type": "place_core",
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "place_core",
+            "x": 24,
+            "y": 0
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_windfall"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "easy"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "ready"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_market_day"
+          }
+        },
+        {
+          "player": 1,
+          "intent": {
+            "type": "vote",
+            "choice": "evt_market_day"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "reroll"
+          }
+        },
+        {
+          "player": 0,
+          "intent": {
+            "type": "reroll"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "result": {
+        "ok": true,
+        "step": "shop",
+        "round": 2,
+        "actions": 28,
+        "gold": [52, 53],
+        "shops": [
+          ["0 bld_merger t1 5", "1 bld_turret t1 15", "2 bld_extractor t1 10", "3 bld_range t1 24", "4 bld_barracks t1 20", "5 bld_turret t1 15"],
+          ["0 bld_turret t1 15", "1 bld_extractor t1 10", "2 bld_crossover t1 8", "3 bld_gate t1 8", "4 bld_wall_z t1 8", "5 bld_wall_s t1 8"]
+        ],
+        "rng": [2844930618, 4069157601, 885434733, 2750679439],
+        "stateHash": "60ce5ff9"
+      }
+    }
   }
 ]

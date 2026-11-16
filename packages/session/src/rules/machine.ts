@@ -24,6 +24,7 @@ import {
   hasSelection,
   snapshotOf,
 } from './ghosts.js';
+import { clearNextShop } from './shop-effects.js';
 import { STEP_INTENTS, lockedWhileReady } from './step-table.js';
 import { drawStream, rootRng, streamLabels } from './streams.js';
 import { parseVersion } from './version.js';
@@ -370,6 +371,13 @@ function readBattle(s: RunState): BattleResult | null {
 }
 
 /** End the run. The unfinished round, if anything was fought, is recorded. */
+/** No player has next-shop effects (the shop ended, or the run did). */
+function clearShopEffects(s: RunState): RunState {
+  return s.perPlayer.some((p) => p.nextShop !== undefined)
+    ? { ...s, perPlayer: s.perPlayer.map(clearNextShop) }
+    : s;
+}
+
 function finish(
   s: RunState,
   reason: 'defeated' | 'abandoned',
@@ -381,7 +389,7 @@ function finish(
       ? [...s.history, { round: s.round, ...s.thisRound }]
       : s.history;
   const next: RunState = {
-    ...s,
+    ...clearShopEffects(s),
     history,
     thisRound: { pve: null, pvp: null },
     outcome: { reason, round: s.round },
@@ -488,6 +496,8 @@ function completeStep(s: RunState, deps: RunDeps, fx: Effect[]): RunState {
     case 'event_resolve':
       return enter(s, 'shop', deps, fx);
     case 'shop': {
+      // The shop is over: its event effects (Market day) end with it.
+      s = clearShopEffects(s);
       if (s.leg === 'pve') return enter(s, 'pvp_battle', deps, fx);
       // The second shop of the round ends it.
       const next: RunState = {

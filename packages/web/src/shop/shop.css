@@ -306,6 +306,15 @@ button.danger {
   color: var(--ink-muted);
 }
 
+.shop-market {
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
 .shop-hint {
   margin: 0;
   padding: 6px 8px;

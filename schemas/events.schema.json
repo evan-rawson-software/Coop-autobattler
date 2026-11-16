@@ -24,6 +24,12 @@
           "id": { "type": "string", "pattern": "^evt_[a-z0-9_]+$" },
           "type": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
           "weight": { "type": "integer", "minimum": 1 },
+          "fromRound": {
+            "description": "The first round this event may be offered. Absent means 1. An always-available event (Windfall) must not set it above 1.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
           "params": {
             "description": "Numbers and strings read by the event type's handler.",
             "type": "object",
@@ -33,6 +39,18 @@
                 "type": "integer",
                 "minimum": 1,
                 "maximum": 100
+              },
+              "extraOffers": {
+                "description": "Market day only: how many more offers than shopOfferCount each player's next shop makes.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10
+              },
+              "freeRerolls": {
+                "description": "Market day only: how many re-rolls in each player's next shop cost 0.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10
               }
             },
             "additionalProperties": {

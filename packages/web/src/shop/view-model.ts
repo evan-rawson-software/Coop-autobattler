@@ -15,6 +15,7 @@ import {
   nextBattleInfo,
   pvpOpponentInfo,
   readShop,
+  shopEffectCount,
   type NextBattleInfo,
   type PveOptionView,
   type RunDeps,
@@ -102,6 +103,8 @@ export interface ShopView {
   readonly ready: boolean;
   readonly readyCount: number;
   readonly playerCount: number;
+  /** "Market day: 1 extra offer, first re-roll free" while it applies, else null. */
+  readonly marketNote: string | null;
   /** Lock and sealed-producer state (see `build/lock.ts`). */
   readonly gate: Gate | null;
   /** Why the Ready button is disabled (a sealed producer); null otherwise. */
@@ -171,6 +174,33 @@ export function stashRows(team: TeamState, ctx: ShopContext): StashRow[] {
     }));
 }
 
+/** What Market day gives this shop, as one line; null when it gives nothing. */
+export function marketNote(extra: number, free: number): string | null {
+  const parts: string[] = [];
+  const n = String(extra);
+  if (extra > 0) {
+    parts.push(
+      screenText(
+        screenTexts,
+        extra === 1 ? 'uiShopMarketOffer' : 'uiShopMarketOffers',
+        { count: n },
+      ),
+    );
+  }
+  if (free > 0) {
+    parts.push(
+      free === 1
+        ? screenText(screenTexts, 'uiShopMarketFreeReroll')
+        : screenText(screenTexts, 'uiShopMarketFreeRerolls', {
+            count: String(free),
+          }),
+    );
+  }
+  return parts.length === 0
+    ? null
+    : screenText(screenTexts, 'uiShopMarketDay', { effects: parts.join(', ') });
+}
+
 export function buildShopView(
   run: RunState,
   player: number,
@@ -220,7 +250,9 @@ export function buildShopView(
       reason,
     };
   });
-  const cost = ctx.economy.rerollCost;
+  const extra = me === undefined ? 0 : shopEffectCount(me, 'extra_offers');
+  const free = me === undefined ? 0 : shopEffectCount(me, 'free_rerolls');
+  const cost = free > 0 ? 0 : ctx.economy.rerollCost;
   const rerollReason = !open
     ? CLOSED
     : lock('reroll') !== null
@@ -245,6 +277,7 @@ export function buildShopView(
     ready: me?.ready === true,
     readyCount: run.perPlayer.filter((p) => p.ready).length,
     playerCount: run.players.length,
+    marketNote: open ? marketNote(extra, free) : null,
     gate,
     readyBlock: gate?.readyBlock ?? null,
     sellBlock: open ? lock('sell') : CLOSED,

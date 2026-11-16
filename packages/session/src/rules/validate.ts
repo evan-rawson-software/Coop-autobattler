@@ -26,6 +26,7 @@ import {
   workshopOptionProblem,
 } from './workshop-option.js';
 import { isInteger, isRecord } from './json-guards.js';
+import { nextShopProblem } from './shop-effects.js';
 
 export type ValidateRunStateResult =
   | { readonly ok: true; readonly state: RunState }
@@ -98,6 +99,9 @@ const KEYS = [
   'actionLog',
   'outcome',
 ];
+
+/** The steps in which next-shop effects exist: set by an event, gone after the shop. */
+const NEXT_SHOP_STEPS: readonly Step[] = ['event_resolve', 'shop'];
 
 const READY_STEPS: readonly Step[] = [
   'core_placement',
@@ -261,6 +265,14 @@ function check(
       } else if (!validShop(p['shop'])) {
         err(
           `perPlayer[${String(i)}].shop: must be null or {offers, stream} with offers {slot, def, tier, price} or null.`,
+        );
+      } else if (
+        'nextShop' in p &&
+        (nextShopProblem(p['nextShop']) !== null ||
+          !NEXT_SHOP_STEPS.includes(st))
+      ) {
+        err(
+          `perPlayer[${String(i)}].nextShop: ${nextShopProblem(p['nextShop']) ?? `not possible in step "${st}"`}.`,
         );
       } else if (p['ready'] && !READY_STEPS.includes(st)) {
         err(`perPlayer[${String(i)}]: ready is not possible in step "${st}".`);

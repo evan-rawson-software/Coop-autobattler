@@ -198,10 +198,29 @@ function windfall(): Pix {
   return p;
 }
 
+function marketDay(): Pix {
+  const p = new Pix(16, 16);
+  // A stall: striped awning, two posts, a counter with a coin on it.
+  for (let x = 2; x < 14; x += 2) {
+    p.rect(x, 3, 2, 4, 'o');
+    p.rect(x + 1, 3, 1, 4, '6');
+  }
+  p.rect(2, 7, 12, 1, '3');
+  p.rect(3, 8, 1, 5, '3');
+  p.rect(12, 8, 1, 5, '3');
+  p.rect(2, 11, 12, 2, '4');
+  p.rect(2, 11, 12, 1, '5');
+  p.ellipse(8, 9.5, 1.6, 1.6, 'y');
+  p.set(8, 9, '6');
+  p.outline('K');
+  return p;
+}
+
 const EVENT_ICONS: Readonly<Record<string, () => Pix>> = {
   workshop,
   shrine,
   windfall,
+  market_day: marketDay,
 };
 
 export function uiSprites(): SpriteDef[] {
