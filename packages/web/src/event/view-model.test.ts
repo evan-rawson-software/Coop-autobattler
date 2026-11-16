@@ -164,6 +164,48 @@ describe('event cards', () => {
     ]);
   });
 
+  test('a Pact shows its benefit and, apart, its drawback', () => {
+    const cards = [
+      'mod_pact_fury',
+      'mod_pact_bastion',
+      'mod_pact_overcharge',
+    ].map(
+      (pact) =>
+        eventCards(
+          withOffers(run, [
+            { id: 'evt_pact', event: 'evt_pact', type: 'pact', pact },
+          ]),
+          0,
+          config,
+        )[0],
+    );
+    expect(cards.map((c) => c?.lines)).toEqual([
+      ['Your units: +20% strength'],
+      ['All buildings except the Core: +30% health'],
+      ['Turrets: +40% damage'],
+    ]);
+    expect(cards.map((c) => c?.drawbacks)).toEqual([
+      ['Your Core: −15% health'],
+      ['Your units: −10% strength'],
+      ['Turrets: −20% health'],
+    ]);
+    expect(cards[0]?.title).toBe('Pact');
+    // Other events have no drawback line.
+    const [w] = eventCards(
+      withOffers(run, [
+        {
+          id: 'evt_windfall',
+          event: 'evt_windfall',
+          type: 'windfall',
+          gold: 4,
+        },
+      ]),
+      0,
+      config,
+    );
+    expect(w?.drawbacks).toEqual([]);
+  });
+
   test('a Windfall states its gold', () => {
     const [c] = eventCards(
       withOffers(run, [

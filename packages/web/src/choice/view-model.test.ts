@@ -123,7 +123,13 @@ describe('the Overload line', () => {
   });
   test('the party Core is read from content', () => {
     const run = reachStep('pve_choice');
-    expect(coreMaxHealth(run.team, realDeps().content)).toBe(500);
+    expect(
+      coreMaxHealth(
+        run.team,
+        realDeps().content,
+        simConfig.minModifierSumPercent,
+      ),
+    ).toBe(500);
   });
 });
 

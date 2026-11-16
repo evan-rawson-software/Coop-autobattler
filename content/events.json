@@ -32,6 +32,12 @@
       "weight": 6,
       "fromRound": 2,
       "params": { "extraOffers": 1, "freeRerolls": 1 }
+    },
+    {
+      "id": "evt_pact",
+      "type": "pact",
+      "weight": 6,
+      "fromRound": 4
     }
   ],
   "modifiers": [
@@ -94,6 +100,37 @@
           "kind": "unit_strength_percent",
           "percent": 20,
           "units": ["unit_soldier", "unit_raider"]
+        }
+      ]
+    },
+    {
+      "id": "mod_pact_fury",
+      "stackable": false,
+      "pact": true,
+      "effects": [
+        { "kind": "unit_strength_percent", "percent": 20 },
+        { "kind": "core_health_percent", "percent": -15 }
+      ]
+    },
+    {
+      "id": "mod_pact_bastion",
+      "stackable": false,
+      "pact": true,
+      "effects": [
+        { "kind": "building_health_percent", "target": "all", "percent": 30 },
+        { "kind": "unit_strength_percent", "percent": -10 }
+      ]
+    },
+    {
+      "id": "mod_pact_overcharge",
+      "stackable": false,
+      "pact": true,
+      "effects": [
+        { "kind": "turret_damage_percent", "percent": 40 },
+        {
+          "kind": "building_health_percent",
+          "target": "turret",
+          "percent": -20
         }
       ]
     }

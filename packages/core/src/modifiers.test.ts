@@ -134,12 +134,12 @@ describe('modifiers travel in team state and change battles', () => {
       withModifier(base, modifier('mod_drilled_troops')),
       modifier('mod_drilled_troops'),
     );
-    expect(modifierPercent(twice, 'unit_strength_percent')).toBe(20);
+    expect(modifierPercent(twice, 'unit_strength_percent', -50)).toBe(20);
     expect(heldModifierIds(twice)).toEqual([
       'mod_drilled_troops',
       'mod_drilled_troops',
     ]);
-    expect(modifierPercent(base, 'unit_strength_percent')).toBe(0);
+    expect(modifierPercent(base, 'unit_strength_percent', -50)).toBe(0);
   });
 
   test('a team without modifiers has no modifiers field', () => {
@@ -215,6 +215,7 @@ describe('loadEvents', () => {
       'windfall',
       'drill',
       'market_day',
+      'pact',
     ]);
     expect(events.events.map((e) => e.fromRound)).toEqual([
       undefined,
@@ -222,6 +223,7 @@ describe('loadEvents', () => {
       undefined,
       2,
       2,
+      4,
     ]);
     expect(events.modifiers.length).toBeGreaterThanOrEqual(3);
   });
@@ -306,14 +308,14 @@ describe('modifier percent sums are checked', () => {
       withModifier({}, huge('core_health_percent')),
       huge('core_health_percent'),
     );
-    expect(() => modifierPercent(team, 'core_health_percent')).toThrow(
+    expect(() => modifierPercent(team, 'core_health_percent', -50)).toThrow(
       RangeError,
     );
-    expect(() => modifierPercent(team, 'core_health_percent')).toThrow(
+    expect(() => modifierPercent(team, 'core_health_percent', -50)).toThrow(
       /core_health_percent.*9007199254740991/,
     );
     // Other kinds are unaffected.
-    expect(modifierPercent(team, 'unit_strength_percent')).toBe(0);
+    expect(modifierPercent(team, 'unit_strength_percent', -50)).toBe(0);
   });
 
   test('an extreme stack fails at battle setup naming the kind, not a generic message', () => {
@@ -377,11 +379,11 @@ describe('per-unit-type strength and round gating (#423)', () => {
     team = withModifier(team, vanguard);
     team = withModifier(team, drilled);
     team = withModifier(team, drilled);
-    expect(unitStrengthPercent(team, 'unit_archer')).toBe(45);
-    expect(unitStrengthPercent(team, 'unit_soldier')).toBe(40);
-    expect(unitStrengthPercent(team, 'unit_raider')).toBe(40);
-    expect(unitStrengthPercent(team, 'unit_drone')).toBe(20);
-    expect(unitStrengthPercent({}, 'unit_archer')).toBe(0);
+    expect(unitStrengthPercent(team, 'unit_archer', -50)).toBe(45);
+    expect(unitStrengthPercent(team, 'unit_soldier', -50)).toBe(40);
+    expect(unitStrengthPercent(team, 'unit_raider', -50)).toBe(40);
+    expect(unitStrengthPercent(team, 'unit_drone', -50)).toBe(20);
+    expect(unitStrengthPercent({}, 'unit_archer', -50)).toBe(0);
   });
 
   test('units are validated: non-empty, unit IDs, no duplicates', () => {
@@ -481,5 +483,154 @@ describe('per-unit-type strength and round gating (#423)', () => {
       errorsOf(mod({}, { units: ['unit_raider', 'unit_soldier'] })),
     ).toMatch(/order of the units file/);
     expect(errorsOf(mod({}, { units: [] }))).toMatch(/units/);
+  });
+});
+
+describe('negative effects and the sum floor (#413)', () => {
+  const min = simConfig.minModifierSumPercent;
+  const eff = (percent: number): TeamModifier => ({
+    id: 'mod_x',
+    effects: [{ kind: 'core_health_percent', percent }],
+  });
+
+  test('percent is an integer from -90 to 1000, never 0', () => {
+    const ok = (percent: unknown): boolean => {
+      const errors: string[] = [];
+      return (
+        parseModifierEffect(
+          { kind: 'core_health_percent', percent },
+          'e',
+          errors,
+        ) !== undefined && errors.length === 0
+      );
+    };
+    expect(ok(-90)).toBe(true);
+    expect(ok(-1)).toBe(true);
+    expect(ok(1000)).toBe(true);
+    expect(ok(-91)).toBe(false);
+    expect(ok(0)).toBe(false);
+    expect(ok(1001)).toBe(false);
+    expect(ok(-1.5)).toBe(false);
+  });
+
+  test('saved team state accepts a negative percent and rejects -91 and 0', () => {
+    const base = buildReferenceBoard('rush', content, mapgen);
+    const ok = (percent: number) =>
+      validateTeamState({ ...base, modifiers: [eff(percent)] }, content, mapgen)
+        .ok;
+    expect(ok(-15)).toBe(true);
+    expect(ok(-91)).toBe(false);
+    expect(ok(0)).toBe(false);
+  });
+
+  test('sums with mixed signs add up, and a low sum is raised to the floor', () => {
+    const sum = (...p: number[]) =>
+      modifierPercent(
+        p.reduce<{ modifiers?: readonly TeamModifier[] }>(
+          (t, x) => withModifier(t, eff(x)),
+          {},
+        ),
+        'core_health_percent',
+        min,
+      );
+    expect(min).toBe(-50);
+    expect(sum(30, -15)).toBe(15);
+    expect(sum(-20, -20)).toBe(-40);
+    expect(sum(-40, -30)).toBe(-50);
+    expect(sum(-90, 20)).toBe(-50);
+    expect(sum(-90, 50)).toBe(-40);
+    expect(sum()).toBe(0);
+  });
+
+  test('the Core health is floor(value * (100 + sum) / 100) with the sum clamped', () => {
+    const base = buildReferenceBoard('rush', content, mapgen);
+    const coreHp = (mods: readonly number[]) =>
+      createArenaSim(
+        mods.reduce((t, x) => withModifier(t, eff(x)), base),
+        base,
+        4,
+        content,
+        simConfig,
+      ).health.find((h) => h.side === 0 && 'core' in h)?.hp ?? 0;
+    const plain = coreHp([]);
+    expect(coreHp([-15])).toBe(Math.floor((plain * 85) / 100));
+    expect(coreHp([-40, -30])).toBe(Math.floor(plain / 2));
+    expect(coreHp([-90])).toBe(Math.floor(plain / 2));
+    expect(coreHp([-90, 60])).toBe(Math.floor((plain * 70) / 100));
+    expect(coreHp([20, -15])).toBe(Math.floor((plain * 105) / 100));
+  });
+
+  test('unit strength: untargeted plus targeted, clamped per unit type', () => {
+    const team = withModifier(
+      withModifier(
+        {},
+        {
+          id: 'mod_a',
+          effects: [{ kind: 'unit_strength_percent', percent: -40 }],
+        },
+      ),
+      {
+        id: 'mod_b',
+        effects: [
+          {
+            kind: 'unit_strength_percent',
+            percent: -30,
+            units: ['unit_archer'],
+          },
+        ],
+      },
+    );
+    expect(unitStrengthPercent(team, 'unit_archer', min)).toBe(-50);
+    expect(unitStrengthPercent(team, 'unit_soldier', min)).toBe(-40);
+  });
+
+  test('a turret drawback lowers the turret health only; shipped pacts are well formed', () => {
+    const base = buildReferenceBoard('fortify', content, mapgen);
+    const turretHp = (t: typeof base) =>
+      createArenaSim(t, base, 4, content, simConfig)
+        .health.filter((h) => h.side === 0 && 'building' in h)
+        .map((h) => h.hp);
+    const withPact = withModifier(base, modifier('mod_pact_overcharge'));
+    const a = turretHp(base);
+    const b = turretHp(withPact);
+    expect(b.length).toBe(a.length);
+    expect(b.some((x, i) => x < (a[i] ?? 0))).toBe(true);
+    expect(b.every((x, i) => x <= (a[i] ?? 0))).toBe(true);
+    const pacts = events.modifiers.filter((m) => m.pact === true);
+    expect(pacts.map((m) => m.id)).toEqual([
+      'mod_pact_fury',
+      'mod_pact_bastion',
+      'mod_pact_overcharge',
+    ]);
+    for (const m of pacts) {
+      expect(m.stackable).toBe(false);
+      expect(m.effects.some((e) => e.percent > 0)).toBe(true);
+      expect(m.effects.some((e) => e.percent < 0)).toBe(true);
+    }
+  });
+
+  test('loadEvents: pact needs a benefit and a drawback and is not stackable', () => {
+    const load = (pact: unknown, stackable: boolean, percents: number[]) =>
+      loadEvents({
+        offerCount: 1,
+        events: [{ id: 'evt_a', type: 'x', weight: 1 }],
+        modifiers: [
+          {
+            id: 'mod_p',
+            stackable,
+            pact,
+            effects: percents.map((percent) => ({
+              kind: 'core_health_percent',
+              percent,
+            })),
+          },
+        ],
+      });
+    expect(load(true, false, [20, -10]).ok).toBe(true);
+    expect(load(true, false, [20]).ok).toBe(false);
+    expect(load(true, false, [-10]).ok).toBe(false);
+    expect(load(true, true, [20, -10]).ok).toBe(false);
+    expect(load(false, false, [20, -10]).ok).toBe(false);
+    expect(load(undefined, false, [20]).ok).toBe(true);
   });
 });

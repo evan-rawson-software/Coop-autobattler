@@ -3,7 +3,12 @@
  * applies and the list of held modifiers with their stacks. Pure data in,
  * display data out; the text comes from `effectLine` and the presentation.
  */
-import type { ModifierEffect, TeamModifier } from '@game/core';
+import {
+  clampModifierSum,
+  type ModifierEffect,
+  type TeamModifier,
+} from '@game/core';
+import { simConfig } from '../build/setup.js';
 import { effectLine, modifierName } from './display-text.js';
 
 /** One line of the bonuses list; a drawback (a negative percent) is flagged. */
@@ -48,7 +53,8 @@ function totalKey(e: ModifierEffect): string {
 /**
  * The effects summed per kind and target (a targeted unit strength apart from
  * the untargeted one), each applied once (RS-4e). First appearance orders
- * them; a sum of zero says nothing and is left out.
+ * them; a sum of zero says nothing and is left out. A sum below the content's
+ * `minModifierSumPercent` is shown at that bound, as the simulation applies it.
  */
 export function totalEffects(
   modifiers: readonly TeamModifier[],
@@ -64,7 +70,12 @@ export function totalEffects(
       );
     }
   }
-  return [...sums.values()].filter((e) => e.percent !== 0);
+  return [...sums.values()]
+    .map((e) => ({
+      ...e,
+      percent: clampModifierSum(e.percent, simConfig.minModifierSumPercent),
+    }))
+    .filter((e) => e.percent !== 0);
 }
 
 /** The modifiers grouped by id in the order first taken, with their counts. */

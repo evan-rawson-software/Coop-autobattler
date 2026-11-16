@@ -55,6 +55,7 @@ export {
   windfallHandler,
   workshopHandler,
   drillHandler,
+  pactHandler,
   type ChooseResult,
   type EventContext,
   type EventHandler,

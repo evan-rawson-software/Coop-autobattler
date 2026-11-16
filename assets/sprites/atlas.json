@@ -2572,6 +2572,21 @@
       ],
       "category": "ui",
       "note": "Event type market_day."
+    },
+    "ui_event_pact": {
+      "sheet": "ui",
+      "x": 17,
+      "y": 65,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Event type pact."
     }
   },
   "planned": []

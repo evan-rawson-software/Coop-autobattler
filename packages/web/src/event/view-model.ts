@@ -132,6 +132,8 @@ export interface EventCard {
   readonly title: string;
   /** What it does, one sentence each, from the offer's data. */
   readonly lines: readonly string[];
+  /** Drawbacks (a Pact's negative effects), shown apart in a warning style. */
+  readonly drawbacks: readonly string[];
   readonly icon: string;
   readonly flavour: string;
   readonly voted: boolean;
@@ -152,7 +154,11 @@ function num(v: Json | undefined, fallback: number): number {
 }
 
 /** The cards of the open event vote, in offer order (1 to 3 of them). */
-export function eventCards(run: RunState, player: number): EventCard[] {
+export function eventCards(
+  run: RunState,
+  player: number,
+  config?: EventsConfig,
+): EventCard[] {
   const vote = openVote(run);
   const mine = vote?.choices[player] ?? null;
   const cards: EventCard[] = [];
@@ -161,7 +167,16 @@ export function eventCards(run: RunState, player: number): EventCard[] {
     const type = typeof raw['type'] === 'string' ? raw['type'] : 'unknown';
     const text = eventText(type);
     let lines: string[];
-    if (type === 'workshop') {
+    let drawbacks: string[] = [];
+    if (type === 'pact') {
+      // The pact the offer names: benefit lines, then the drawback lines.
+      const id = typeof raw['pact'] === 'string' ? raw['pact'] : '';
+      const def = config === undefined ? undefined : findModifier(config, id);
+      const effects = def?.effects ?? [];
+      lines = effects.filter((e) => e.percent > 0).map(effectLine);
+      drawbacks = effects.filter((e) => e.percent < 0).map(effectLine);
+      if (lines.length === 0) lines = [modifierName(id)];
+    } else if (type === 'workshop') {
       const tiers = num(raw['tiers'], 1);
       lines = [
         tiers === 1
@@ -194,6 +209,7 @@ export function eventCards(run: RunState, player: number): EventCard[] {
       type,
       title: text.name,
       lines,
+      drawbacks,
       icon: text.icon,
       flavour: text.flavour,
       voted: mine === raw['id'],

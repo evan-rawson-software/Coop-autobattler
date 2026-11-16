@@ -63,7 +63,7 @@ describe('Splitter placement (#178)', () => {
   // 56/63). With Market day (#410) in the event pool from round 2 the bot
   // meets other events and shops: 90 of 98 (15/16, 27/31, 48/51), so the
   // floor per party size is 0.85 (party 2 is 87%). With Drill (#411) as well:
-  // 71 of 78 (12/13, 22/25, 37/40). The ratio is the point: a Splitter that is
+  // 71 of 78 (12/13, 22/25, 37/40); with Pact (#413) 74 of 80 (12/13, 21/22, 41/45). The ratio is the point: a Splitter that is
   // bought is placed.
   test('rush: Splitters are bought and nearly all are placed, at every party size', () => {
     let bought = 0;
@@ -172,11 +172,15 @@ describe('shop buys only what can be placed (#178)', () => {
     const limit = {
       // Issue #384: collectors bought for a chain wait in the stash until
       // its pieces arrive (rush party 2 measures 42, party 4 86).
-      rush: { 1: 10, 2: 45, 4: 90 },
+      // Pact (#413) is in the event pool from round 4, so the bot meets other
+      // events: measured rush 11 / 38 / 80, fortify 3 / 7 / 13, siege 0 / 2 /
+      // 12 (only rush party 1, 10 -> 12, and siege party 4, 10 -> 14, needed
+      // a new limit).
+      rush: { 1: 12, 2: 45, 4: 90 },
       fortify: { 1: 7, 2: 16, 4: 30 },
       // Issue #383: the five refining buildings dilute the shop from round 3;
       // siege party 2 now measures 7, party 4 9.
-      siege: { 1: 1, 2: 8, 4: 10 },
+      siege: { 1: 1, 2: 8, 4: 14 },
     } as const;
     const wanted = ['bld_extractor', 'bld_splitter', ...CONSUMER_DEFS];
     for (const strategy of ['rush', 'fortify', 'siege'] as const) {

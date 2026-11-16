@@ -929,6 +929,23 @@ function plausibility(
         `modifiers[${String(i)}]: "${m.id}" is not offered before round ${String(def.fromRound ?? 1)}, held at round ${String(s.round)}.`,
       );
     }
+    if (def.pact === true) {
+      // A pact comes only from a Pact event (RS-4i6). Its drawback counts as
+      // part of the pact: the effects must equal the definition (checked
+      // above), so a drawback can be neither dropped nor used to hide extra
+      // power, and a pact takes one of the 2 * round - 1 modifier slots like
+      // any other modifier.
+      const first = Math.min(
+        ...ctx.events.events
+          .filter((e) => e.type === 'pact')
+          .map((e) => e.fromRound ?? 1),
+      );
+      if (first > s.round) {
+        errors.push(
+          `modifiers[${String(i)}]: pact "${m.id}" is not offered before round ${String(first)}, held at round ${String(s.round)}.`,
+        );
+      }
+    }
     if (!def.stackable && seen.has(m.id)) {
       errors.push(`modifiers[${String(i)}]: "${m.id}" cannot be held twice.`);
     }

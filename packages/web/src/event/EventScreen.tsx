@@ -26,7 +26,10 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const header = useMemo(() => battleHeader(run, deps), [run, deps]);
-  const cards = useMemo(() => eventCards(run, acting), [run, acting]);
+  const cards = useMemo(
+    () => eventCards(run, acting, gameConfigs.events),
+    [run, acting],
+  );
 
   const choose = (id: string): void => {
     if (busy) return;
@@ -139,6 +142,11 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
                   <div class="event-lines" data-field="does">
                     {c.lines.map((l) => (
                       <p key={l}>{l}</p>
+                    ))}
+                    {c.drawbacks.map((l) => (
+                      <p key={l} class="event-drawback" data-field="drawback">
+                        {l}
+                      </p>
                     ))}
                   </div>
                   {c.flavour === '' ? null : <p class="muted">{c.flavour}</p>}

@@ -185,8 +185,9 @@ first. Gold (next section) is never produced by the factory.
 - **EC-8 [PROPOSED]** Run modifiers that affect combat are part of team state
   (CB-32) and therefore travel with snapshots. A modifier may have a negative
   effect (a Pact, RS-4i6). **[PROPOSED]** The total for any stat has a floor: it
-  never takes the stat below a minimum. The floor value is set in content and
-  tested.
+  never takes the stat below a minimum: the sum of the effects of one kind
+  and target is raised to **-50%** (`minModifierSumPercent`) before it is
+  applied. The floor value is set in content and tested.
   **[PROPOSED]** The modifiers, their numbers, which stack and the round each
   unlocks at are the table in RS-4l. All five of the first modifiers stack; the
   new ones are mostly one-time, with a few small stackable ones (Quick march,

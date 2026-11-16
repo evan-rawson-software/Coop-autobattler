@@ -68,6 +68,12 @@ const UNIT_ID = /^unit_[a-z0-9_]+$/;
 export const MAX_MODIFIER_PERCENT = 1000;
 
 /**
+ * Lowest percent a single effect may have: a drawback (RS-4i6). A percent is
+ * an integer from this to `MAX_MODIFIER_PERCENT`, never 0.
+ */
+export const MIN_MODIFIER_PERCENT = -90;
+
+/**
  * Parse one effect from untrusted data. Pushes readable errors and returns
  * undefined when it is not valid.
  */
@@ -94,11 +100,12 @@ export function parseModifierEffect(
   const percentOk =
     typeof percent === 'number' &&
     Number.isInteger(percent) &&
-    percent >= 1 &&
+    percent !== 0 &&
+    percent >= MIN_MODIFIER_PERCENT &&
     percent <= MAX_MODIFIER_PERCENT;
   if (!percentOk) {
     errors.push(
-      `${at}: "percent" must be an integer from 1 to ${String(MAX_MODIFIER_PERCENT)}.`,
+      `${at}: "percent" must be an integer from ${String(MIN_MODIFIER_PERCENT)} to ${String(MAX_MODIFIER_PERCENT)}, not 0.`,
     );
   }
   if (kind === 'building_health_percent') {
@@ -207,13 +214,23 @@ export interface HasModifiers {
 }
 
 /**
- * Sum of the percents of effects of `kind` (and `target`, if given), checked:
- * a sum beyond the safe-integer bound (2^53 - 1) throws a RangeError naming
- * the kind and the bound.
+ * The sum a battle applies: `sum` raised to `minSum` (the content's
+ * `minModifierSumPercent`, at most 0) if it is lower. A sum that is not below
+ * the bound is returned as it is, so all-positive modifiers are unaffected.
+ */
+export function clampModifierSum(sum: number, minSum: number): number {
+  return sum < minSum ? minSum : sum;
+}
+
+/**
+ * Sum of the percents of effects of `kind` (and `target`, if given), raised
+ * to `minSum` if lower (EC-8), checked: a sum beyond the safe-integer bound
+ * (2^53 - 1) throws a RangeError naming the kind and the bound.
  */
 export function modifierPercent(
   team: HasModifiers,
   kind: ModifierEffectKind,
+  minSum: number,
   target?: string,
 ): number {
   let total = 0;
@@ -237,17 +254,19 @@ export function modifierPercent(
       }
     }
   }
-  return total;
+  return clampModifierSum(total, minSum);
 }
 
 /**
  * Sum of the `unit_strength_percent` effects that apply to unit type
  * `unitId`: every effect without `units`, plus every effect whose `units`
- * lists it. Checked like `modifierPercent`.
+ * lists it, raised to `minSum` if lower (EC-8). Checked like
+ * `modifierPercent`.
  */
 export function unitStrengthPercent(
   team: HasModifiers,
   unitId: string,
+  minSum: number,
 ): number {
   let total = 0;
   for (const m of team.modifiers ?? []) {
@@ -263,7 +282,7 @@ export function unitStrengthPercent(
       }
     }
   }
-  return total;
+  return clampModifierSum(total, minSum);
 }
 
 /** The ids of the modifiers a team holds, in the order taken. */

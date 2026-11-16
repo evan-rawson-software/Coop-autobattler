@@ -31,6 +31,11 @@ export interface ModifierDef {
   readonly effects: readonly ModifierEffect[];
   /** First round the Shrine may offer it (at least 1); absent means 1. */
   readonly fromRound?: number;
+  /**
+   * True for a pact (RS-4i6): a modifier with a drawback that only the Pact
+   * event gives. The Shrine never offers it. Absent means false.
+   */
+  readonly pact?: true;
 }
 
 /** Highest `fromRound` a modifier definition may have. */
@@ -191,7 +196,7 @@ export function loadEvents(
       }
       rejectUnknownKeys(
         m,
-        new Set(['id', 'stackable', 'fromRound', 'effects']),
+        new Set(['id', 'stackable', 'fromRound', 'pact', 'effects']),
         at,
         errors,
       );
@@ -208,6 +213,11 @@ export function loadEvents(
         m['fromRound'] === undefined
           ? undefined
           : readInt(m, 'fromRound', 1, at, errors, MAX_MODIFIER_FROM_ROUND);
+      let pact = false;
+      if (m['pact'] !== undefined) {
+        if (m['pact'] === true) pact = true;
+        else errors.push(`${at}: "pact" must be true when present.`);
+      }
       const list = m['effects'];
       const effects: ModifierEffect[] = [];
       if (!Array.isArray(list) || list.length === 0) {
@@ -249,16 +259,30 @@ export function loadEvents(
           }
         });
       }
+      if (pact && Array.isArray(list) && effects.length === list.length) {
+        // A pact has a benefit and a drawback, and is held once (RS-4i6).
+        if (!effects.some((e) => e.percent > 0)) {
+          errors.push(`${at}: a pact needs at least one positive effect.`);
+        }
+        if (!effects.some((e) => e.percent < 0)) {
+          errors.push(`${at}: a pact needs at least one negative effect.`);
+        }
+        if (stackable === true) {
+          errors.push(`${at}: a pact must not be stackable.`);
+        }
+      }
       if (
         typeof id === 'string' &&
         stackable !== undefined &&
         (m['fromRound'] === undefined || fromRound !== undefined)
       ) {
-        modifiers.push(
-          fromRound === undefined
-            ? { id, stackable, effects }
-            : { id, stackable, fromRound, effects },
-        );
+        modifiers.push({
+          id,
+          stackable,
+          ...(fromRound === undefined ? {} : { fromRound }),
+          ...(pact ? { pact: true as const } : {}),
+          effects,
+        });
       }
     });
   }

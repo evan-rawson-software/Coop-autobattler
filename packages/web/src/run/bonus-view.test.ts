@@ -71,3 +71,19 @@ describe('bonusView', () => {
     expect(bonusView([stout, undo]).totals).toEqual([]);
   });
 });
+
+describe('totals with a drawback (#413)', () => {
+  test('a sum below the floor is shown at the floor, as the simulation applies it', () => {
+    const core = (percent: number) => ({
+      id: 'mod_x',
+      effects: [{ kind: 'core_health_percent' as const, percent }],
+    });
+    expect(totalEffects([core(20), core(-15)])).toEqual([
+      { kind: 'core_health_percent', percent: 5 },
+    ]);
+    expect(totalEffects([core(-40), core(-30)])).toEqual([
+      { kind: 'core_health_percent', percent: -50 },
+    ]);
+    expect(totalEffects([core(-15), core(15)])).toEqual([]);
+  });
+});

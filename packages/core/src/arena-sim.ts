@@ -812,8 +812,12 @@ function addDamage(sum: number, hit: number): number {
 }
 
 /** A turret tier's damage with the team's `turret_damage_percent`, checked. */
-function turretDamageOf(team: TeamState, damage: number): number {
-  const pct = modifierPercent(team, 'turret_damage_percent');
+function turretDamageOf(
+  team: TeamState,
+  damage: number,
+  minSum: number,
+): number {
+  const pct = modifierPercent(team, 'turret_damage_percent', minSum);
   // Largest percent sum for which damage * (100 + pct) stays a safe integer.
   const room =
     damage === 0
@@ -865,6 +869,7 @@ export function createArenaContext(
       sim.teams[side],
       b,
       content,
+      simConfig.minModifierSumPercent,
       healthOverrideOf(sim.sideOptions?.[side], b),
     );
   }
@@ -904,7 +909,11 @@ export function createArenaContext(
         if (tier === undefined) continue;
         turrets.set(bkey(side, p.id), {
           ref,
-          damage: turretDamageOf(team, tier.damage),
+          damage: turretDamageOf(
+            team,
+            tier.damage,
+            simConfig.minModifierSumPercent,
+          ),
           rangeCells: tier.rangeCells,
           cooldownTicks: tier.cooldownTicks,
           costPerShot: tier.costPerShot,
@@ -1012,6 +1021,7 @@ export function createArenaSim(
       teams[side],
       b,
       content,
+      simConfig.minModifierSumPercent,
       healthOverrideOf(options.sideOptions?.[side], b),
     );
     health.push(
@@ -1038,7 +1048,10 @@ export function createArenaSim(
       // Worst case per unit type: untargeted plus the targeted effects that
       // list this type.
       const strength = addInt(
-        addInt(base, unitStrengthPercent(team, def.id)),
+        addInt(
+          base,
+          unitStrengthPercent(team, def.id, simConfig.minModifierSumPercent),
+        ),
         rampMax,
       );
       const stats = unitStats(0, def, strength);
@@ -1065,7 +1078,17 @@ export function createArenaSim(
         unitStats(
           0,
           def,
-          addInt(addInt(base, unitStrengthPercent(team, def.id)), rampMax),
+          addInt(
+            addInt(
+              base,
+              unitStrengthPercent(
+                team,
+                def.id,
+                simConfig.minModifierSumPercent,
+              ),
+            ),
+            rampMax,
+          ),
           w.healthPercent,
         );
       }
@@ -1084,7 +1107,9 @@ export function createArenaSim(
       const def = content.buildings.get(p.def);
       if (def?.kind === 'defense' && def.defenseType === 'turret') {
         const tier = def.tiers[p.tier - 1];
-        if (tier !== undefined) turretDamageOf(team, tier.damage);
+        if (tier !== undefined) {
+          turretDamageOf(team, tier.damage, simConfig.minModifierSumPercent);
+        }
       }
     }
   }
@@ -1887,7 +1912,11 @@ function spawnStrength(
   return (
     (owner === null ? 0 : rampBonus(sim, ctx, side, 'unit_strength', owner)) +
     (sim.sideOptions?.[side === 0 ? 0 : 1]?.unitStrengthPercent ?? 0) +
-    unitStrengthPercent(sim.teams[side === 0 ? 0 : 1], unitId)
+    unitStrengthPercent(
+      sim.teams[side === 0 ? 0 : 1],
+      unitId,
+      ctx.simConfig.minModifierSumPercent,
+    )
   );
 }
 

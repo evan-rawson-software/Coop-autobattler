@@ -80,6 +80,7 @@ describe('simulation config', () => {
       separationCap: 40,
       maxSourceSpeedPercent: 25,
       maxUnitStrengthPercent: 100,
+      minModifierSumPercent: -50,
       overloadStartTick: 1800,
       overloadIntervalTicks: 100,
       overloadDamageStepPercent: 20,

@@ -101,7 +101,11 @@ export function pveChoiceView(
   const vote = openVote(run);
   const mine = vote?.choices[player] ?? null;
   const overloadAt = overloadClock(sim);
-  const partyMax = coreMaxHealth(run.team, deps.content);
+  const partyMax = coreMaxHealth(
+    run.team,
+    deps.content,
+    sim.minModifierSumPercent,
+  );
   const cards = info.options.map((o): PveCard => {
     const text = archetypeText(o.archetype);
     return {

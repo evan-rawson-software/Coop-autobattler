@@ -3,7 +3,9 @@
  * is a `team-state-ops` script, plus an optional `sideOptions`: `[side0, side1]`
  * where each is `null` or an object of the arena side options (`scheduledWaves`,
  * `freePower`, `unitStrengthPercent`, `coreHealths`; see "Side options"), so a
- * scenario can bring waves of units or turrets that need no supply. Result on success: `{ ok: true, result,
+ * scenario can bring waves of units or turrets that need no supply. Optional `modifiersA` and `modifiersB` give a side's run
+ * modifiers, a list of `{ id, effects }` as held in a team state
+ * (`TeamState.modifiers`). Result on success: `{ ok: true, result,
  * summary, zone, stateHash, events }` where `summary` has no timeline,
  * `stateHash` is the hash of the final `ArenaSim` and `events` the number of
  * events; the event log is the vector's event log. On a refused battle:
@@ -11,6 +13,7 @@
  */
 import {
   hashJson,
+  parseTeamModifiers,
   runTeamStateOps,
   sortedKeys,
   startBattle,
@@ -20,6 +23,7 @@ import {
   type ScheduledWave,
   type SideOptions,
   type SimConfig,
+  type TeamState,
 } from '@game/core';
 import type { SimulationFn } from './prng.js';
 
@@ -140,6 +144,17 @@ export function parseSideOptionsPair(
   return [side(0), side(1)];
 }
 
+/** The team with the run modifiers `raw` (if given), parsed and checked. */
+function withModifiers(team: TeamState, raw: Json | undefined): TeamState {
+  if (raw === undefined) return team;
+  const errors: string[] = [];
+  const modifiers = parseTeamModifiers(raw, errors);
+  if (modifiers === undefined) {
+    throw new TypeError(`battle: modifiers: ${errors.join(' ')}`);
+  }
+  return { ...team, modifiers };
+}
+
 export function makeBattleKind(
   content: ArenaContent,
   mapgen: MapgenConfig,
@@ -154,8 +169,14 @@ export function makeBattleKind(
         'battle: teamA, teamB and a numeric seed are required',
       );
     }
-    const teamA = runTeamStateOps(a, content, mapgen).state;
-    const teamB = runTeamStateOps(b, content, mapgen).state;
+    const teamA = withModifiers(
+      runTeamStateOps(a, content, mapgen).state,
+      field(input, 'modifiersA'),
+    );
+    const teamB = withModifiers(
+      runTeamStateOps(b, content, mapgen).state,
+      field(input, 'modifiersB'),
+    );
     const given = field(input, 'sideOptions');
     const sideOptions =
       given === undefined ? {} : { sideOptions: parseSideOptionsPair(given) };

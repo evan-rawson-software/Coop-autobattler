@@ -85,10 +85,13 @@ function wiring(r: BotRunResult, id: number): { into: number; out: number } {
 // Fixed seeds found to build each chain (the bot is deterministic). Market day
 // (#410) changed which events the bot is offered from round 2, so the seeds
 // were searched again: 8 for both chains, 66 for the Foundry. Drill (#411)
-// changed them again: rush Composite 51, fortify Aether 8, Foundry 3.
+// changed them again: rush Composite 51, fortify Aether 8, Foundry 3. Pact
+// (#413) joins the pool from round 4, so the first seeds that build each chain
+// were searched again over 1 to 80: rush Composite 27, fortify Aether 26,
+// Foundry 13.
 describe('the bot builds the Foundry and the refining chains (issue #384)', () => {
   test('rush builds the Composite chain and its Golems fight', () => {
-    for (const seed of [51]) {
+    for (const seed of [27]) {
       const r = play('rush', seed);
       expect(r.rejected).toEqual([]);
       expect(onBoard(r, 'bld_refinery_ab')).toBeGreaterThan(0);
@@ -98,7 +101,7 @@ describe('the bot builds the Foundry and the refining chains (issue #384)', () =
   });
 
   test('fortify builds the Aether chain and its casters fight', () => {
-    for (const seed of [8]) {
+    for (const seed of [26]) {
       const r = play('fortify', seed);
       expect(r.rejected).toEqual([]);
       expect(onBoard(r, 'bld_refinery_bc')).toBeGreaterThan(0);
@@ -108,7 +111,7 @@ describe('the bot builds the Foundry and the refining chains (issue #384)', () =
   });
 
   test('a Foundry is built and its heavies fight', () => {
-    const r = play('rush', 3);
+    const r = play('rush', 13);
     expect(r.rejected).toEqual([]);
     expect(onBoard(r, 'bld_foundry')).toBeGreaterThan(0);
     expect(r.spawned['unit_heavy'] ?? 0).toBeGreaterThan(0);
