@@ -19,7 +19,7 @@
  * The party votes with `{ type: 'event_choose', choice: <option id> }`; the
  * winner is the unanimous choice or, if the votes are split, one player's vote
  * picked at random (as for every other vote). A follow-up with `perPlayer:
- * true` (the Workshop) is not a party vote: every option carries the `player`
+ * true` (the Workshop, the Drill) is not a party vote: every option carries the `player`
  * who may take it, each player chooses for themselves (or `skip`), and the
  * choices are applied together, in player order, once the last player has
  * chosen. Events never add a building to a stash.
@@ -204,6 +204,9 @@ function toOffer(v: Json): EventOffer | null {
 /** The id of the choice that takes no upgrade. */
 export const SKIP_CHOICE = 'skip';
 
+/** The follow-up prompt of the Drill (the Workshop's is `workshop_building`). */
+export const DRILL_PROMPT = 'drill_building';
+
 function workshopPercent(def: EventDef): number {
   return intParam(def, 'workshopPricePercent', 80);
 }
@@ -213,159 +216,207 @@ function offerPercent(offer: EventOffer): number {
   return typeof v === 'number' ? v : DEFAULT_WORKSHOP_PERCENT;
 }
 
-/** True if some player owns a raisable building they can pay for. */
-function anyAffordable(ctx: EventContext, percent: number): boolean {
-  return ctx.state.players.some((_p, i) =>
-    workshopOptions(
-      ctx.state.team,
-      i,
-      ctx.state.perPlayer[i]?.gold ?? 0,
-      ctx.content,
-      percent,
-    ).some((o) => o.affordable),
-  );
+/** What differs between the per-player "raise one building" events. */
+interface UpgradeEventSpec {
+  readonly type: string;
+  /** The follow-up prompt code. */
+  readonly prompt: string;
+  /** The share of the shop price a raise costs, from the definition. */
+  percentOfDef(def: EventDef): number;
+  /** The same, from the stored offer. */
+  percentOfOffer(offer: EventOffer): number;
+  /** Which building definitions may be raised (all, or only collectors). */
+  only(content: Content): ((def: string) => boolean) | undefined;
+  checkParams?(def: EventDef): string | null;
+  /** Extra data stored in the offer. */
+  instantiate(def: EventDef): Readonly<Record<string, Json>>;
 }
 
-export const workshopHandler: EventHandler = {
+/**
+ * A per-player follow-up in which each player may raise one of their own
+ * buildings by one tier (Workshop, Drill). Options, validation and
+ * application are shared; the spec gives the filter and the price.
+ */
+function upgradeHandler(spec: UpgradeEventSpec): EventHandler {
+  const optionsOf = (
+    ctx: EventContext,
+    player: number,
+    percent: number,
+  ): ReturnType<typeof workshopOptions> =>
+    workshopOptions(
+      ctx.state.team,
+      player,
+      ctx.state.perPlayer[player]?.gold ?? 0,
+      ctx.content,
+      percent,
+      spec.only(ctx.content),
+    );
+  return {
+    type: spec.type,
+    canAskFollowUp: true,
+    ...(spec.checkParams === undefined
+      ? {}
+      : { checkParams: (def: EventDef) => spec.checkParams?.(def) ?? null }),
+    // Some player owns a raisable building they can pay for.
+    available: (ctx, def) =>
+      ctx.state.players.some((_p, i) =>
+        optionsOf(ctx, i, spec.percentOfDef(def)).some((o) => o.affordable),
+      ),
+    instantiate: (_ctx, def) => spec.instantiate(def),
+    resolve(ctx, offer) {
+      const { state } = ctx;
+      const percent = spec.percentOfOffer(offer);
+      const options: Json[] = [];
+      const initialVotes: (string | null)[] = [];
+      let any = false;
+      for (let player = 0; player < state.players.length; player++) {
+        const mine = optionsOf(ctx, player, percent);
+        const canAct = mine.some((o) => o.affordable);
+        any = any || canAct;
+        // A player with nothing they can pay for has only `skip`: already chosen.
+        initialVotes.push(canAct ? null : SKIP_CHOICE);
+        for (const o of mine) {
+          options.push({
+            id: `b${String(o.building)}`,
+            player,
+            building: o.building,
+            def: o.def,
+            tier: o.tier,
+            newTier: o.newTier,
+            price: o.price,
+            placed: o.placed,
+            affordable: o.affordable,
+          });
+        }
+      }
+      return {
+        patch: {},
+        // Nobody can act: no options, so the step is skipped.
+        followUp: {
+          prompt: spec.prompt,
+          options: any ? options : [],
+          perPlayer: true,
+          initialVotes,
+        },
+      };
+    },
+    checkChoice({ state, content }, offer, player, option) {
+      // The structure is checked against the actual building; the stored price
+      // and `affordable` are ignored. The price charged is computed now from
+      // current content, against the player's gold at this moment.
+      if (!isRecord(option) || option['player'] !== player) return 'not_owner';
+      if (
+        workshopOptionProblem(
+          state.team,
+          player,
+          option,
+          spec.only(content),
+        ) !== null
+      ) {
+        return 'invalid_choice';
+      }
+      const price = currentWorkshopPrice(
+        content,
+        spec.percentOfOffer(offer),
+        option['def'] as string,
+        option['tier'] as number,
+      );
+      if (price === null) return 'invalid_choice';
+      const gold = state.perPlayer[player]?.gold ?? 0;
+      return gold >= price ? null : 'not_enough_gold';
+    },
+    chooseEach({ state, content }, offer, picks) {
+      // Every stored pick is re-checked against current content and the
+      // player's current gold. One that no longer holds (cannot be paid, the
+      // building is no longer eligible) is applied as a skip: no charge, no
+      // upgrade. Nobody's submission is rejected for another player's pick.
+      let team = state.team;
+      let perPlayer = state.perPlayer;
+      const applied: Json[] = [];
+      for (let player = 0; player < picks.length; player++) {
+        const pick = picks[player];
+        if (pick === null || pick === undefined) {
+          applied.push({ player, result: 'skip' });
+          continue;
+        }
+        const dropped = (reason: string): Json => ({
+          player,
+          result: 'skip',
+          dropped: true,
+          reason,
+        });
+        const me = perPlayer[player];
+        if (
+          me === undefined ||
+          !isRecord(pick) ||
+          pick['player'] !== player ||
+          workshopOptionProblem(team, player, pick, spec.only(content)) !== null
+        ) {
+          applied.push(dropped('invalid_choice'));
+          continue;
+        }
+        const id = pick['building'] as number;
+        const price = currentWorkshopPrice(
+          content,
+          spec.percentOfOffer(offer),
+          pick['def'] as string,
+          pick['tier'] as number,
+        );
+        if (price === null) {
+          applied.push(dropped('invalid_choice'));
+          continue;
+        }
+        if (me.gold < price) {
+          applied.push(dropped('not_enough_gold'));
+          continue;
+        }
+        const r = raiseTier(team, { id });
+        if (!r.ok) {
+          applied.push(dropped('cannot_raise'));
+          continue;
+        }
+        team = r.state;
+        perPlayer = perPlayer.map((p, i) =>
+          i === player ? { ...p, gold: p.gold - price } : p,
+        );
+        applied.push({
+          player,
+          result: 'upgrade',
+          building: id,
+          def: pick['def'] as string,
+          newTier: pick['newTier'] as number,
+          price,
+        });
+      }
+      return { ok: true, patch: { team, perPlayer }, applied };
+    },
+  };
+}
+
+export const workshopHandler: EventHandler = upgradeHandler({
   type: 'workshop',
-  canAskFollowUp: true,
+  prompt: 'workshop_building',
+  percentOfDef: workshopPercent,
+  percentOfOffer: offerPercent,
+  only: () => undefined,
   checkParams(def) {
     const p = def.params['workshopPricePercent'];
     return typeof p === 'number' && Number.isInteger(p) && p >= 1 && p <= 100
       ? null
       : '"workshopPricePercent" must be an integer from 1 to 100';
   },
-  available: (ctx, def) => anyAffordable(ctx, workshopPercent(def)),
-  instantiate: (_ctx, def) => ({
-    workshopPricePercent: workshopPercent(def),
-  }),
-  resolve(ctx, offer) {
-    const { state, content } = ctx;
-    const percent = offerPercent(offer);
-    const options: Json[] = [];
-    const initialVotes: (string | null)[] = [];
-    let any = false;
-    for (let player = 0; player < state.players.length; player++) {
-      const mine = workshopOptions(
-        state.team,
-        player,
-        state.perPlayer[player]?.gold ?? 0,
-        content,
-        percent,
-      );
-      const canAct = mine.some((o) => o.affordable);
-      any = any || canAct;
-      // A player with nothing they can pay for has only `skip`: already chosen.
-      initialVotes.push(canAct ? null : SKIP_CHOICE);
-      for (const o of mine) {
-        options.push({
-          id: `b${String(o.building)}`,
-          player,
-          building: o.building,
-          def: o.def,
-          tier: o.tier,
-          newTier: o.newTier,
-          price: o.price,
-          placed: o.placed,
-          affordable: o.affordable,
-        });
-      }
-    }
-    return {
-      patch: {},
-      // Nobody can act: no options, so the step is skipped.
-      followUp: {
-        prompt: 'workshop_building',
-        options: any ? options : [],
-        perPlayer: true,
-        initialVotes,
-      },
-    };
-  },
-  checkChoice({ state, content }, offer, player, option) {
-    // The structure is checked against the actual building; the stored price
-    // and `affordable` are ignored. The price charged is computed now from
-    // current content, against the player's gold at this moment.
-    if (!isRecord(option) || option['player'] !== player) return 'not_owner';
-    if (workshopOptionProblem(state.team, player, option) !== null) {
-      return 'invalid_choice';
-    }
-    const price = currentWorkshopPrice(
-      content,
-      offerPercent(offer),
-      option['def'] as string,
-      option['tier'] as number,
-    );
-    if (price === null) return 'invalid_choice';
-    const gold = state.perPlayer[player]?.gold ?? 0;
-    return gold >= price ? null : 'not_enough_gold';
-  },
-  chooseEach({ state, content }, offer, picks) {
-    // Every stored pick is re-checked against current content and the
-    // player's current gold. One that no longer holds (cannot be paid, the
-    // building is no longer eligible) is applied as a skip: no charge, no
-    // upgrade. Nobody's submission is rejected for another player's pick.
-    let team = state.team;
-    let perPlayer = state.perPlayer;
-    const applied: Json[] = [];
-    for (let player = 0; player < picks.length; player++) {
-      const pick = picks[player];
-      if (pick === null || pick === undefined) {
-        applied.push({ player, result: 'skip' });
-        continue;
-      }
-      const dropped = (reason: string): Json => ({
-        player,
-        result: 'skip',
-        dropped: true,
-        reason,
-      });
-      const me = perPlayer[player];
-      if (
-        me === undefined ||
-        !isRecord(pick) ||
-        pick['player'] !== player ||
-        workshopOptionProblem(team, player, pick) !== null
-      ) {
-        applied.push(dropped('invalid_choice'));
-        continue;
-      }
-      const id = pick['building'] as number;
-      const price = currentWorkshopPrice(
-        content,
-        offerPercent(offer),
-        pick['def'] as string,
-        pick['tier'] as number,
-      );
-      if (price === null) {
-        applied.push(dropped('invalid_choice'));
-        continue;
-      }
-      if (me.gold < price) {
-        applied.push(dropped('not_enough_gold'));
-        continue;
-      }
-      const r = raiseTier(team, { id });
-      if (!r.ok) {
-        applied.push(dropped('cannot_raise'));
-        continue;
-      }
-      team = r.state;
-      perPlayer = perPlayer.map((p, i) =>
-        i === player ? { ...p, gold: p.gold - price } : p,
-      );
-      applied.push({
-        player,
-        result: 'upgrade',
-        building: id,
-        def: pick['def'] as string,
-        newTier: pick['newTier'] as number,
-        price,
-      });
-    }
-    return { ok: true, patch: { team, perPlayer }, applied };
-  },
-};
+  instantiate: (def) => ({ workshopPricePercent: workshopPercent(def) }),
+});
+
+/** Drill (RS-4i2): the same follow-up, for collectors only, at price 0. */
+export const drillHandler: EventHandler = upgradeHandler({
+  type: 'drill',
+  prompt: DRILL_PROMPT,
+  percentOfDef: () => 0,
+  percentOfOffer: () => 0,
+  only: (content) => (def) => content.buildings.get(def)?.kind === 'source',
+  instantiate: () => ({}),
+});
 
 // ---------------------------------------------------------------------------
 // Shrine: take one of several run modifiers
@@ -509,6 +560,7 @@ export const marketDayHandler: EventHandler = {
 /** The event types shipped with the game. Add a type by adding a handler. */
 export const defaultEventHandlers: EventHandlers = {
   workshop: workshopHandler,
+  drill: drillHandler,
   shrine: shrineHandler,
   windfall: windfallHandler,
   market_day: marketDayHandler,

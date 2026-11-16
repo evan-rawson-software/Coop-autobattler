@@ -21,6 +21,12 @@
       "params": { "gold": 4 }
     },
     {
+      "id": "evt_drill",
+      "type": "drill",
+      "weight": 8,
+      "fromRound": 2
+    },
+    {
       "id": "evt_market_day",
       "type": "market_day",
       "weight": 6,

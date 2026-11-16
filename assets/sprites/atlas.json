@@ -28,7 +28,7 @@
     "ui": {
       "file": "ui.png",
       "w": 320,
-      "h": 64
+      "h": 84
     }
   },
   "autotile": {
@@ -2543,10 +2543,25 @@
       "category": "ui",
       "note": "Event type windfall."
     },
-    "ui_event_market_day": {
+    "ui_event_drill": {
       "sheet": "ui",
       "x": 293,
       "y": 0,
+      "w": 16,
+      "h": 16,
+      "frames": 1,
+      "fps": 0,
+      "anchor": [
+        8,
+        8
+      ],
+      "category": "ui",
+      "note": "Event type drill."
+    },
+    "ui_event_market_day": {
+      "sheet": "ui",
+      "x": 0,
+      "y": 65,
       "w": 16,
       "h": 16,
       "frames": 1,

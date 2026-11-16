@@ -701,11 +701,21 @@ describe('validation', () => {
     // startingGold 10, income 5 per shop, PvE hard 13, PvP win 8, Windfall 4.
     // round 1: 10 + 5*1 + 13*1 + 8*0 + 4*1 = 32 gold.
     expect(table[0]?.[1]).toBe(32);
-    // round 2: 10 + 5*3 + 13*2 + 8*1 + 4*3 = 71.
-    expect(table[1]?.[1]).toBe(71);
-    // No margin: the limit is players * (gold + kit) = 71 + 79.
-    expect(table[1]?.[3]).toBe(71 + 79);
+    // round 2: 10 + 5*3 + 13*2 + 8*1 + 4*3 = 71, plus one Drill step (from
+    // round 2) worth the largest free collector raise, 25.
+    expect(table[1]?.[1]).toBe(71 + 25);
+    // No margin: the limit is players * (gold + kit) = 96 + 79.
+    expect(table[1]?.[3]).toBe(71 + 25 + 79);
     // A party of two has twice the bound.
+    // Without a Drill event there is no free raise to count.
+    const noDrill = {
+      ...gameConfigs.events,
+      events: gameConfigs.events.events.filter((x) => x.type !== 'drill'),
+    };
+    expect(ghostValueBound(2, 1, content, e, noDrill).goldPerPlayer).toBe(71);
+    expect(
+      ghostValueBound(1, 1, content, e, gameConfigs.events).goldPerPlayer,
+    ).toBe(32);
     const two = ghostValueBound(3, 2, content, e, gameConfigs.events);
     const one = ghostValueBound(3, 1, content, e, gameConfigs.events);
     expect(two.limit).toBe(2 * one.limit);

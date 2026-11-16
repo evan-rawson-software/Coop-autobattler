@@ -224,9 +224,21 @@ function maximalBoard(round: number): GhostSnapshot {
     held.push({ id: stackable.id, effects: stackable.effects });
   }
   team = { ...team, modifiers: held };
-  // Still maximal: every owner is within one wall of the per-owner limit.
+  // Still maximal: every owner is within one wall of the per-owner limit, or
+  // has no free cell left in their plot (the value bound, with free Drill
+  // raises, can allow more than the board holds).
   for (let owner = 0; owner < partySize; owner++) {
     const spendOf = spentBy.get(owner) ?? 0;
+    let room = false;
+    for (let y = 0; y < height && !room; y++) {
+      for (let x = 0; x < width; x++) {
+        if (q.plotOf(x) === owner && free(x, y)) {
+          room = true;
+          break;
+        }
+      }
+    }
+    if (!room) continue;
     expect(
       perOwner - spendOf,
       `round ${String(round)} owner ${String(owner)}: spend ${String(spendOf)} of ${String(perOwner)}`,

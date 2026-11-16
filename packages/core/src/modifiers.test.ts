@@ -213,12 +213,14 @@ describe('loadEvents', () => {
       'workshop',
       'shrine',
       'windfall',
+      'drill',
       'market_day',
     ]);
     expect(events.events.map((e) => e.fromRound)).toEqual([
       undefined,
       undefined,
       undefined,
+      2,
       2,
     ]);
     expect(events.modifiers.length).toBeGreaterThanOrEqual(3);

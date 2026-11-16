@@ -73,6 +73,8 @@ export function workshopOptions(
   gold: number,
   content: ShopContent,
   percent: number,
+  /** Only buildings whose definition passes (default: all, as the Workshop). */
+  only?: (def: BuildingId) => boolean,
 ): WorkshopOption[] {
   const out: WorkshopOption[] = [];
   const add = (
@@ -80,6 +82,7 @@ export function workshopOptions(
     placed: boolean,
   ): void => {
     if (b.owner !== player || b.tier >= 3) return;
+    if (only !== undefined && !only(b.def)) return;
     const def = content.buildings.get(b.def);
     const next = def === undefined ? undefined : def.tiers[b.tier];
     if (next === undefined || !('price' in next)) return;

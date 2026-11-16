@@ -204,6 +204,11 @@
       "icon": "$",
       "flavour": ""
     },
+    "drill": {
+      "name": "Drill",
+      "icon": "▲",
+      "flavour": ""
+    },
     "market_day": {
       "name": "Market day",
       "icon": "¤",

@@ -62,8 +62,9 @@ describe('Splitter placement (#178)', () => {
   // #145 (more producers and Armories on offer) 100 of 111 (14/14, 30/34,
   // 56/63). With Market day (#410) in the event pool from round 2 the bot
   // meets other events and shops: 90 of 98 (15/16, 27/31, 48/51), so the
-  // floor per party size is 0.85 (party 2 is 87%). The ratio is the point: a
-  // Splitter that is bought is placed.
+  // floor per party size is 0.85 (party 2 is 87%). With Drill (#411) as well:
+  // 71 of 78 (12/13, 22/25, 37/40). The ratio is the point: a Splitter that is
+  // bought is placed.
   test('rush: Splitters are bought and nearly all are placed, at every party size', () => {
     let bought = 0;
     let placedAll = 0;
@@ -83,9 +84,10 @@ describe('Splitter placement (#178)', () => {
     }
     // The ratio means nothing if nothing is bought.
     // Issue #383: from round 3 the shop also offers five refining
-    // buildings the bot never buys, so a little less is bought (92 of 99).
-    expect(bought).toBeGreaterThanOrEqual(95);
-    expect(placedAll).toBeGreaterThanOrEqual(90);
+    // buildings the bot never buys, so a little less is bought (92 of 99); with
+    // Drill (#411) 71 of 78.
+    expect(bought).toBeGreaterThanOrEqual(75);
+    expect(placedAll).toBeGreaterThanOrEqual(68);
     expect(placedAll / bought).toBeGreaterThanOrEqual(0.9);
   });
 
