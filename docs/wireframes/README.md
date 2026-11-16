@@ -21,13 +21,13 @@ a neighbour across the plot border; there is no giving); the images and
 `screens.html` are redrawn with the screens themselves.
 
 Order in a run: 5 main menu → 6 Core placement → 4 build → then each round:
-7 PvE choice → 1 battle → 8 summary → 2 event → 3 shop + 4 build → PvP
+7 PvE choice → 1 battle → 8 summary → 2 event (and 2b to 2d, if the event has a follow-up) → 3 shop + 4 build → PvP
 battle (1, 8) → 2 event → 3 shop + 4 build → … → 9 run over.
 
 - `screens.html` — all the wireframes on one page, with the callouts. Open
   it in a browser. The screens are drawn by a script in the page, so edit
   that script to change them, then re-export the images.
-- `1-battle.png` to `9-run-over.png` — the same screens as images, plus `1b-battle-boss.png` (the boss marks, after the Battle screen).
+- `1-battle.png` to `9-run-over.png` — the same screens as images, plus `1b-battle-boss.png` (the boss marks, after the Battle screen) and `2b-caravan.png`, `2c-rich-vein.png` and `2d-blueprint.png` (the event follow-ups, after the Event choice screen).
 
 Not drawn: the lobby for forming a party, settings, and the screens for the
 deferred feature of points of interest. Refining (issue #378) is drawn on the
@@ -82,6 +82,42 @@ After every battle the party picks one of up to three events. It opens with the 
 2. Up to three offered events (never two of the same type). Each says exactly what it does before you choose.
 3. Votes from each player. The highlighted card is your own vote; you can change it until the last player has voted.
 4. Who has voted and how a split vote is settled (one vote is picked at random). There is no time limit; the event resolves once everyone has voted.
+5. A drawback has its own marked line, shown before the vote (RS-4f). It is opt-in: take both or skip, and skipping never harms the party (a Pact).
+6. An offer names what it needs up front, such as the resource of a Rich vein, and may show the first round it appears from (RS-4g).
+
+## 2b. Caravan draft
+
+A Caravan is a draft, not a vote (CP-16). It lists one more reward than there are players. Players choose one each, in turn; each reward is taken once and the last one is left. The order rotates from one Caravan to the next (RS-4h). Rewards are placeholders.
+
+![Caravan draft wireframe](2b-caravan.png)
+
+1. The reward list: players + 1 rewards. A taken reward shows who took it.
+2. The party-wide reward (at most one) is marked and says it applies to everyone.
+3. Whose turn it is. You choose only when it is your turn.
+4. The order for this Caravan, and for the next.
+5. Rewards go to the player who took them. Nothing comes from a teammate (CP-29).
+
+## 2c. Rich vein
+
+Each player may add one node of the named resource on an empty cell of their own plot, or skip (RS-4i4). The type is random and is stated on the offer before the vote.
+
+![Rich vein wireframe](2c-rich-vein.png)
+
+1. Your own plot. The green cells are the legal ones: empty, buildable cells.
+2. The resource type for this vein, named before the vote.
+3. Nodes added so far this run: at most 3 per plot.
+4. Skip. Skipping costs nothing.
+
+## 2d. Blueprint
+
+Each player chooses one of three rare buildings eligible at this round (RS-4i5). It is not free: it waits in the next shop.
+
+![Blueprint wireframe](2d-blueprint.png)
+
+1. Three rare buildings. Each card shows what it needs and what it does, as in the shop.
+2. Your pick. Each player picks for themselves.
+3. The note: the building is held in a fixed slot of your next shop that re-rolls do not replace, and it is still paid for.
+4. The refining chain it helps finish, named on the card.
 
 ## 3. Shop
 
@@ -97,6 +133,7 @@ The shop always follows the event. Each player has their own offers and their ow
 6. What comes next. PvE options are shown ahead of time. A ghost opponent never is. When the opponent is a boss, the panel names the boss, gives one line on its mechanic and one line of counter advice, so you can build against it (MM-11). The image shows a boss; names are placeholders.
 7. A small live view of the board that jumps to the Build tab.
 8. Ready is available on both tabs.
+9. Held run modifiers: a small chip in the run bar, effects totalled, drawbacks marked with "!" (RS-4j). It is on every run screen; it is drawn on this one only.
 
 ## 4. Build
 

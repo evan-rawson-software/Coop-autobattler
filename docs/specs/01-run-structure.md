@@ -1,6 +1,6 @@
 # 01 — Run Structure
 
-Status: Draft v5.0
+Status: Draft v5.1
 
 ## Core loop
 
@@ -50,32 +50,82 @@ Lobby -> Map + Core placement ->
 
 - **RS-4 [DECIDED]** An event follows every battle. Events are separate from
   the shop: the shop is its own guaranteed step, not an event type.
-- **RS-4a [DECIDED as a starting set; to be refined later]** An event is a
-  short non-combat moment that changes the run in some way other than
-  buying. Starting types:
+- **RS-4a [DECIDED]** An event is a short non-combat moment that changes the
+  run in some way other than buying. The set is nine types (the numbers in
+  RS-4i are PROPOSED, and the names are working names):
   - **Workshop** — every player may raise one building they own by one
     tier (never above tier 3), paying 80% of that tier's shop price from
     their own gold, or skip. The party votes on the event; each player then
     chooses for themselves, and it is offered only if some player can afford
     an upgrade.
   - **Shrine** — choose one of several run modifiers.
-  - **Gamble** — stake gold for a chance at more.
-  - **Salvage** — trade a building in for gold, at a better rate than
-    selling.
-  - **Survey** — extra information about the coming PvE battles, beyond the
-    archetype and reward already shown. It never reveals a PvP opponent
-    (RS-6a).
+  - **Windfall** — every player gets some gold at once. No follow-up.
+  - **Market day** — each player's next shop has one extra offer and a free
+    first re-roll (RS-4i1).
+  - **Drill** — each player may raise one of their own collectors by one tier
+    for free (RS-4i2).
+  - **Caravan** — a draft of rewards: each player takes one in turn
+    (RS-4h, RS-4i3).
+  - **Rich vein** — each player may add one resource node of a named type to
+    their own plot (RS-4i4).
+  - **Blueprint** — each player picks one of three rare buildings and finds it
+    in their next shop (RS-4i5).
+  - **Pact** — one strong run modifier paired with a drawback; take both or
+    skip (RS-4i6).
+
+  Considered, not planned: Gamble (stake gold for a chance at more), Salvage
+  (trade a building in for gold), Survey (extra information about the coming
+  PvE battles), Clear ground and Mercenaries.
 - **RS-4b [DECIDED]** At each event step the **party picks one of up to
   three offered events** (never two of the same type). The choice is made by party vote (CP-16).
 - **RS-4d [DECIDED]** Up to three events are offered, drawn at random from
-  the event types available at that depth, and never two of the same type.
+  the event types available at that depth (RS-4g), and never two of the same type.
   When fewer types are available the party is offered fewer (two, or one).
   Each offer shows what it does before the party chooses.
 - **RS-4e [DECIDED]** Stackable run modifiers have no cap. Bonuses of the same
   kind are summed and applied once (never compounded), so each extra stack is
   worth relatively less.
-- **RS-4c [PROPOSED]** The first playable can ship with one or two event
-  types; the step exists from the start so the loop has its final shape.
+- **RS-4f [DECIDED]** Drawbacks are opt-in. An event may pair a benefit with
+  a cost, but the cost is shown before the vote, and skipping never harms the
+  party. There are no forced costs and no curses.
+- **RS-4g [DECIDED]** An event definition may have a first round
+  (`fromRound`). It is offered only from that round on. This is what "available
+  at that depth" means in RS-4d.
+- **RS-4h [DECIDED]** **Caravan** is a draft, not a vote on rewards. It lists
+  `players + 1` rewards (solo: 2). Players choose one each in turn, each reward
+  can be taken once, and the last one is left. The order players choose in
+  rotates from one Caravan to the next. At most one reward is party-wide; the
+  rest go to the player who took them, from the event and not from a teammate
+  (CP-29).
+- **RS-4i [PROPOSED]** The new events, with their numbers. Each is offered only
+  from its first round (RS-4g), and the numbers are configuration.
+  - **RS-4i1 [PROPOSED] Market day** (from round 2). Each player's next shop,
+    the one right after this event, has one extra offer and a free first
+    re-roll. No follow-up.
+  - **RS-4i2 [PROPOSED] Drill** (from round 2). Each player may raise one of
+    their own collectors by one tier for free, or skip. Offered only when some
+    player has a collector below tier 3. Follow-up per player, like the
+    Workshop.
+  - **RS-4i3 [PROPOSED] Caravan** (from round 2). Rewards: gold, a free tier-1
+    building for the stash, a free tier raise of one of your buildings, a new
+    resource node (only once Rich vein exists), and at most one party-wide run
+    modifier. The draft follows RS-4h.
+  - **RS-4i4 [PROPOSED] Rich vein** (from round 3). The offer names a resource
+    type before the vote. The type is random, weighted like map nodes (CB-5a:
+    Ore and Power common, Flux rare). Each player may add one node of that type
+    on an empty cell of their own plot, or skip. At most 3 added nodes per plot
+    per run.
+  - **RS-4i5 [PROPOSED] Blueprint** (from round 3). Each player chooses one of
+    3 rare buildings eligible at this round. It is held in a fixed slot of
+    their next shop that re-rolls do not replace, and it is still paid for. It
+    helps finish a refining chain.
+  - **RS-4i6 [PROPOSED] Pact** (from round 4). One strong run modifier paired
+    with a drawback, for example +20% unit strength and -15% Core health. Take
+    both or skip; the party vote on the event is the choice. Each pact can be
+    taken once per run.
+- **RS-4j [DECIDED]** Held run modifiers are always visible. Once taken, a
+  modifier is shown on every run screen (the run bar), with the effects
+  totalled and drawbacks marked (issue #418).
 
 ## Shop
 

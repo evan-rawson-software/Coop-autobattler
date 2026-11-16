@@ -1,6 +1,6 @@
 # 02 — Co-op & Party
 
-Status: Draft v5.0
+Status: Draft v5.1
 
 ## Party basics
 
@@ -28,7 +28,7 @@ Status: Draft v5.0
   owns plot `p`, counted from the left. Solo plays on one plot.
   Everything therefore scales linearly from 1 to 4 players.
 - **CP-6 [PROPOSED]** The party's **team state** is that one board: its map
-  (terrain, resource nodes, natural features), one Core position per player,
+  (terrain, resource nodes, natural features; Rich vein can add nodes, RS-4i4), one Core position per player,
   buildings with owner, tier, position and orientation, every conduit with
   its owner (border links included), and run modifiers. It is what combat
   consumes and what a snapshot stores (CB-32, MM-1).
@@ -85,7 +85,9 @@ Status: Draft v5.0
   (CP-21i). Each building shows who owns it. (Replaces CP-13.)
 - **CP-29 [DECIDED]** **No giving.** Players cannot give each other gold or
   buildings. Border links (CP-30) are the only way to help a partner
-  directly. (Replaces CP-11 and EC-4a.)
+  directly. (Replaces CP-11 and EC-4a.) A reward an event gives one player
+  (Caravan, Drill, Rich vein, Blueprint; RS-4i) is not giving: it comes from
+  the event, and nothing leaves a teammate.
 - **CP-14 [DECIDED]** Resource nodes belong to the plot they are in: only
   that plot's player can build a source on them. (Replaces the earlier
   "nodes belong to the party as a whole".)
@@ -109,7 +111,8 @@ Status: Draft v5.0
   one player's vote is picked at random, each player's vote being one
   equally likely ticket (an option with 3 of 4 votes wins 75% of the time).
   The host has no tie-break. Where a Core goes is no longer a party choice
-  (CP-26).
+  (CP-26). A Caravan draft (RS-4h) is not a vote: each player chooses for
+  themselves, in turn. CP-17 (no timers) applies to it.
 
 ## Building together
 

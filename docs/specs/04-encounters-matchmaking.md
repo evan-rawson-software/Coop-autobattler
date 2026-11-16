@@ -1,6 +1,6 @@
 # 04 — Encounters & Matchmaking
 
-Status: Draft v5.0
+Status: Draft v5.1
 
 ## Encounter types
 
@@ -193,8 +193,9 @@ rows. See `docs/rules-reference.md`, "Bundled ghosts".
   schema, legal placement on its own map (sources on nodes, nothing on
   natural features, every building and conduit inside its owner's plot, one
   valid Core position per player inside that player's plot, legal border
-  links), a map that the generator could
-  have produced, and a plausibility bound on total power for its round
+  links), the generated map plus at most 3
+  added nodes per plot (Rich vein, RS-4i4), each on a buildable cell of that
+  plot, and a plausibility bound on total power for its round
   (TA-22). The generator and the numbers used for these checks are the
   installed version's; a snapshot from a run that spanned an update is
   given more tolerance on the power bound. A snapshot that fails is skipped and another is drawn.

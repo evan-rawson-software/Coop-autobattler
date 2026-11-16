@@ -1,6 +1,6 @@
 # 05 — Scaling & Economy
 
-Status: Draft v5.0
+Status: Draft v5.1
 
 All numbers here are placeholders for tuning. The *shapes* of the curves are
 the specification.
@@ -167,4 +167,7 @@ first. Gold (next section) is never produced by the factory.
 - **EC-9 [PROPOSED]** Base income per round is deliberately small relative to
   PvE rewards, so that PvE results are what drive a party's growth.
 - **EC-8 [PROPOSED]** Run modifiers that affect combat are part of team state
-  (CB-32) and therefore travel with snapshots.
+  (CB-32) and therefore travel with snapshots. A modifier may have a negative
+  effect (a Pact, RS-4i6). **[PROPOSED]** The total for any stat has a floor: it
+  never takes the stat below a minimum. The floor value is set in content and
+  tested.
