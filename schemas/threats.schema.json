@@ -194,6 +194,26 @@
             "description": "Optional, only when bossOnly is true and minPartySize is at least 2, and not together with brood. The boss Cores share one health pool (MM-9d, Linked Cores).",
             "type": "boolean"
           },
+          "champion": {
+            "description": "Optional, only when bossOnly is true, and not together with brood, linkedCores or pylons. Champion (MM-9d, Warlord): in every wave sharePercent of the wave budget buys one unit of `unit` per boss plot, with healthPercent percent of its health (scaled down to what the share buys, never below 100). The unit must have a unitCost.",
+            "type": "object",
+            "required": ["unit", "healthPercent", "sharePercent"],
+            "additionalProperties": false,
+            "properties": {
+              "unit": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" },
+              "healthPercent": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 1000
+              },
+              "sharePercent": {
+                "description": "Percent of each wave's budget spent on the champions.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60
+              }
+            }
+          },
           "pylons": {
             "description": "Optional, only when bossOnly is true, and not together with brood or linkedCores. Pylons (MM-9d): sharePercent of the stronghold budget is spent first on the health of perPlot pylons around each boss Core, at Chebyshev distance minDistance to maxDistance from its footprint. A boss Core takes no damage while one of its pylons stands.",
             "type": "object",

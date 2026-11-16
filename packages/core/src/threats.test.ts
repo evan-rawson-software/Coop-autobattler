@@ -387,6 +387,9 @@ describe('generateThreat', () => {
     for (const perPlot of [1, 2, 3, 5]) {
       const small = { ...threats, maxUnitsPerWavePerPlot: perPlot };
       for (const arch of threats.archetypes) {
+        // A champion archetype needs room for the champions (the loader asks
+        // for at least 2 per plot).
+        if (arch.champion !== undefined && perPlot < 2) continue;
         for (let round = 4; round <= 30; round++) {
           const party = arch.minPartySize ?? 1;
           const p = generateThreat(
@@ -461,12 +464,22 @@ describe('generateThreat', () => {
           content,
           configs,
         );
-        const waveBudget = Math.floor((p.budget * arch.waveSharePercent) / 100);
-        const power = p.waves.reduce(
-          (a, w) =>
-            a + (w.count * cost(w.unit) * (100 + p.unitStrengthPercent)) / 100,
-          0,
+        // The champions are paid from their own share of the wave budget (and
+        // are never worth less than a plain unit): leave them out and the
+        // share out.
+        const waveBudget = Math.floor(
+          (Math.floor((p.budget * arch.waveSharePercent) / 100) *
+            (100 - (arch.champion?.sharePercent ?? 0))) /
+            100,
         );
+        const power = p.waves
+          .filter((w) => w.healthPercent === undefined)
+          .reduce(
+            (a, w) =>
+              a +
+              (w.count * cost(w.unit) * (100 + p.unitStrengthPercent)) / 100,
+            0,
+          );
         expect(power).toBeGreaterThan(waveBudget * 0.5);
         expect(power).toBeLessThan(waveBudget * 1.5);
       }

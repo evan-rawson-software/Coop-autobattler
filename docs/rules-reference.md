@@ -67,6 +67,16 @@ that way.
   only from `holdRng.child(p).child("pylons")`, never from a stream the
   layouts use. The `pylons` side option and the `ArenaPylon` list exist only in
   a battle that has them (a state hash of any other battle must not change).
+- **Champions.** `unitStats(side, def, strengthPercent, healthPercent)` has
+  two nested floors for health: `mulPct(mulPct(health, 100 + P), hp)`, never
+  `health * (100 + P) * hp / 10000`. `healthPercent` rides the wave entry into
+  the `entering` queue and is applied at the entry's spawn; the champion entry
+  is listed first in its tick, so it is queued first and enters first (lowest
+  unit ID of the wave) when there is room. The wave index `j` of the start
+  column counts the champion entries (they are ordinary entries of the list),
+  so the other entries of a Warlord's waves start further along than a
+  Boss's. The champion price formula uses the unit's `unitCost` and the wave
+  budget only, never the strength percent.
 - **Core bursts.** The line is `floor(starting * t / 100)` in integer
   arithmetic (no floating point), compared as "health before the tick's damage
   above the line and health after it at or below it"; use the Core's
@@ -419,6 +429,26 @@ economy loader rejects it in `offerWeights`, in `startingKit` (also inside a
 `pick`) with the message "is a boss-only pylon and cannot be bought, offered or
 owned", `rollOffers` throws a `RangeError` if it is ever asked to roll one, and
 `buyOffer` refuses an offer of one (`no_such_offer`, detail `boss_only`).
+
+An archetype's optional `champion` (MM-9d, "Warlord") is an object `{unit,
+healthPercent, sharePercent}`, allowed only when `bossOnly` is true and not
+together with `brood`, `linkedCores` or `pylons` (the loader rejects each:
+"only allowed when \"bossOnly\" is true", "cannot be combined with
+\"brood\"", "\"linkedCores\"", "\"pylons\""). `unit` must be a known unit
+with a `unitCost` entry ("has no unitCost"); `healthPercent` an integer from
+`MIN_CHAMPION_HEALTH_PERCENT = 100` to `MAX_CHAMPION_HEALTH_PERCENT = 1000`;
+`sharePercent` from 1 to `MAX_CHAMPION_SHARE_PERCENT = 60`; and `mulPct(unit
+health, healthPercent)` must not exceed `MAX_HEALTH` (loader error "exceeds the
+maximum"). A wave entry's `healthPercent` (profile, side option
+`scheduledWaves`) is an integer of at least 100; the battle checks at setup
+that `unitStats(unit, strength, healthPercent)` stays within `MAX_HEALTH`
+(`RangeError` from `createArenaSim`), and the generator lowers
+`unitStrengthPercent` so that `floor(floor(h * (100 + P) / 100) * hp / 100) <=
+MAX_HEALTH` holds for the archetype's `healthPercent` `hp` (largest `P` for
+which `floor(h * (100 + P) / 100) <= floor((100 * MAX_HEALTH + 99) / hp)`). A
+champion counts toward the wave cap like any unit (step 5 below). The loader rejects a `maxUnitsPerWavePerPlot` below 2 when any archetype has a `champion`. With the
+shipped content (Golem health 260, at most 600 percent) the clamp is not
+reached in rounds 1 to `maxThreatRound`.
 
 A tier's `costs` (CB-5e) holds one integer from 1 to `MAX_TIER_COST` per
 resource, at most one resource per input (so at most four); the combined cost
@@ -1791,10 +1821,16 @@ issue #82): see "Unit geometry" and step 5 of the tick. There is no
 
 A unit also stores `damage`, its attack damage **fixed at spawn**. All reads
 of a unit's stats (health, damage, range, cooldowns) go through one function,
-`unitStats(side, def, strengthPercent)`. With `strengthPercent = P` above 0 it
-returns the definition with `health = mulPct(health, 100 + P)` and
-`damage = mulPct(damage, 100 + P)` (rounded down); everything else is
-unchanged. A scaled `health` above `MAX_HEALTH` or `damage` above `MAX_DAMAGE`
+`unitStats(side, def, strengthPercent, healthPercent = 100)`. With
+`strengthPercent = P` above 0 it returns the definition with `health =
+mulPct(health, 100 + P)` and `damage = mulPct(damage, 100 + P)` (rounded
+down); everything else is unchanged. A `healthPercent = hp` other than 100
+(a champion, MM-9d "Warlord", passed only for a scheduled-wave entry that has
+one) is applied **after** the strength percent and to health only: `health =
+mulPct(mulPct(health, 100 + P), hp)` (two roundings down; with `P = 0` just
+`mulPct(health, hp)`); damage, armor and every other stat are unchanged, and a
+result above `MAX_HEALTH` is a `RangeError`. With `P = 0` and `hp = 100` the
+definition is returned as is. A scaled `health` above `MAX_HEALTH` or `damage` above `MAX_DAMAGE`
 is an error (`RangeError`), see "Content bounds". A spawn passes the side's
 current `unit_strength` bonus (see "In-battle ramp"; plus the side's
 `unitStrengthPercent` option, see "Side options"), and the unit starts with
@@ -3494,7 +3530,11 @@ When any side has options the state carries them in `sideOptions` (a pair
 indexed by side, `{}` for a side without), so a saved state continues
 identically; with none the field is absent.
 
-- **`scheduledWaves`**: a list `{tick, unit, count}`. In the Production step of
+- **`scheduledWaves`**: a list `{tick, unit, count, healthPercent?}` (an
+  entry's optional `healthPercent`, MM-9d "Warlord", an integer of at least
+  100, is copied to each queued `entering` entry and passed to `unitStats` when
+  the unit spawns, see "Units"; absent means 100 and the entry is
+  byte-identical to before). In the Production step of
   tick `tick` (after all unit producers of both sides, side 0's waves before
   side 1's, waves in list order), the wave's `count` units are appended to the
   state's `entering` queue as `{side, unit, col}` (unit `i` after unit `i - 1`).
@@ -3652,7 +3692,7 @@ player, rounds 1 to 15: 100, 125, 156, 195, 243, 303, 378, 472, 590, 737, 921,
 
 ```
 { archetype, type, round, partySize, budget, unitStrengthPercent,
-  waves: [{ tick, unit, count }],
+  waves: [{ tick, unit, count, healthPercent? }],
   stronghold: { cores: [{ x, y, health }],
                 buildings: [{ def, tier, x, y, rotation }],
                 bursts?: [{ core, thresholdPercent, unit, count }],
@@ -3684,6 +3724,11 @@ after the buildings, so they get the instance IDs `buildings.length + 1`, ...
 in list order, as `bld_pylon` tier 1 owned by `core`. The battle reads them as
 the `pylons` side option (`building` = that ID).
 
+A wave entry's `healthPercent` (Warlord, MM-9d) is present only on the
+champion entries of an archetype with `champion` (one per wave tick, listed
+first in its tick; `unit` is the champion unit, `count` is `partySize`) and
+absent from every other entry, so every other profile and hash is unchanged.
+
 It is everything the battle needs; there are no hidden inputs. `waves` are in
 tick order (the units of one wave share a tick, one entry per unit type);
 `stronghold.buildings` are sorted by `(y, x)` and get instance IDs 1, 2, ... in
@@ -3700,8 +3745,9 @@ composition: [{unit, weight}], signature?}` and `stronghold`
 `bossOnly` archetypes are never offered by `pickArchetypes`; they have
 `fromRound` and `minPartySize` (see "Choosing and summarising", `pickBoss`) and
 may have `brood` `{thresholdsPercent: [..], sharePercent}` (Core bursts, below)
-`linkedCores: true` (Linked Cores, below) or `pylons` `{perPlot, sharePercent,
-minDistance, maxDistance}` (Pylons, below).
+`linkedCores: true` (Linked Cores, below), `pylons` `{perPlot, sharePercent,
+minDistance, maxDistance}` (Pylons, below) or `champion` `{unit, healthPercent,
+sharePercent}` (Warlord, below).
 Shipped values:
 
 | Archetype | Wave share | Waves (first tick, interval, count, growth) | Composition | Stronghold (Core per budget, walls, turrets, layout) |
@@ -3713,6 +3759,7 @@ Shipped values:
 | Brood stronghold (`arch_boss_brood`, boss only, from round 3, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Linked Cores (`arch_boss_linked`, boss only, from round 5, party size 2 or more) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Pylons (`arch_boss_pylons`, boss only, from round 7, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
+| Warlord (`arch_boss_warlord`, boss only, from round 9, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 
 Rusher tests defence (early frequent waves, a small open Core); Fortress tests
 ramp and siege (late light waves, a big walled Core with turrets); Escalator
@@ -3729,10 +3776,21 @@ pool (below). The Pylons stronghold has the Boss's waves and stronghold, plus
 pylons around each Core, paid from a quarter of the stronghold budget, and a
 Core takes no damage while one of its pylons stands (MM-9d); like Brood, its
 Cores are smaller than the Boss's (the budget is spent on the pylons first).
+The Warlord has the Boss's waves and stronghold exactly (the stronghold budget
+is not touched, its Cores have the Boss's size), plus `champion: {unit:
+"unit_golem", healthPercent: 600, sharePercent: 35}`: 35 percent of every
+wave's budget buys one champion Golem per boss plot (up to 600 percent of a
+Golem's health), which leads the wave (MM-9d); the composition is bought from
+the other 65 percent. There is no aura or other rule: the champion is a
+plain, sturdy Golem.
 Unit
 prices for spending wave budget are `unitCost` in `threats.json` (soldier 10,
 raider 8, archer 14, drone 16; about 2 times the producer's tier 1 `costPerUnit`
-of 5, 4, 7 and 8, rounded). Building prices for the stronghold are the **tier 1** prices of the
+of 5, 4, 7 and 8, rounded; golem 50, only bought as a champion: the soldier and
+raider cost about 1 per 2.4 to 3 points of health times damage per tick, and the
+Golem's 260 health at 6 damage per 14 ticks is about 111 of those points, so
+about 43, raised to 50 for its armor 3. No archetype's composition, signature
+or ranged mix names the Golem, so no other threat buys one). Building prices for the stronghold are the **tier 1** prices of the
 first building of defense type `wall` **with a one-cell footprint** (strongholds
 place walls cell by cell, so the tetromino shapes are not used; `bld_wall_block`)
 and of the first building of defense type `turret` in the
@@ -3760,7 +3818,16 @@ other invalid input; `pickBoss` never offers it then).
 2. **Wave sizes.** `s_0 = 100`, `s_(k+1) = floor(s_k * growthPercent / 100)`
    for `k = 0 .. count - 1`; `sum` is their total. Wave `k` has budget `W_k =
    floor(waveBudget * s_k / sum)` (computed as quotient and remainder of
-   `waveBudget` by `sum`, so nothing overflows).
+   `waveBudget` by `sum`, so nothing overflows). **Champion.** An archetype
+   with `champion` `{unit, healthPercent: H, sharePercent: Q}` first sets
+   `C_k = floor(W_k * Q / 100)` aside and uses `W_k - C_k` as the wave's budget
+   in steps 3 and 4 (an archetype without `champion` has `C_k = 0`, `W_k`
+   unchanged). With `N = partySize`, `c = unitCost[unit]`, `per = floor(C_k /
+   N)` and `full = floor(c * H / 100)`: the wave's champion health percent is
+   `h_k = H` if `per >= full`, else `max(100, floor(per * 100 / c))`. (So it
+   is never below a plain unit's health and never above `H`; what `C_k` buys
+   beyond `H` or beyond the floor of 100 is not spent on anything.) The
+   champion's price ignores the strength percent of step 5.
 3. **Composition.** For wave `k` (0-based): if the archetype has a `signature`
    and `(k + 1) mod everyNthWave = 0`, the composition is the signature unit
    alone (weight 1, no random draw). Otherwise each entry's weight becomes
@@ -3790,7 +3857,9 @@ other invalid input; `pickBoss` never offers it then).
    If every entry of a wave has `n = 0`, the entry with the highest weight
    (first on ties) gets 1: every wave has at least one unit.
 5. **Strength conversion.** `cap = maxUnitsPerWavePerPlot * partySize` (12 per
-   plot). Let `m` be the largest wave (sum of `n` over a wave's entries). If `m
+   plot; for an archetype with `champion`, `cap` is `N` less, the champions that
+   every wave has, which are never scaled: `m` is the largest wave without them,
+   so a wave has at most `maxUnitsPerWavePerPlot * partySize` units with them). Let `m` be the largest wave (sum of `n` over a wave's entries). If `m
    <= cap`, `unitStrengthPercent = 0`. Otherwise `unitStrengthPercent =
    ceil(100 * m / cap) - 100`, and every `n` becomes `floor(n * cap / m)`; a
    wave left with no unit gets 1 of its first entry. A ranged entry (archer or
@@ -3820,7 +3889,10 @@ other invalid input; `pickBoss` never offers it then).
    unit, count}`.
 6. Waves are listed per wave tick (`firstTick + k * intervalTicks`), one entry
    per composition entry (and per appended archer or drone entry) with a
-   non-zero count.
+   non-zero count. With `champion`, each tick's first entry is `{tick, unit:
+   champion unit, count: partySize, healthPercent: h_k}`, before the composition
+   entries (so the champions queue first and enter first, see "Side options",
+   `scheduledWaves`).
 7. **Stronghold** (`N = partySize`, `share(total, p) = floor(total / N) + (1 if
    p < total mod N else 0)`).
    - `wallsTotal = min(floor(floor(S' * wallSharePercent / 100) / wallPrice),
@@ -3888,7 +3960,9 @@ other invalid input; `pickBoss` never offers it then).
 8. **Content bounds.** After steps 1 to 7: each `cores[p].health =
    min(MAX_HEALTH, cores[p].health)` and `unitStrengthPercent =
    min(unitStrengthPercent, L)`, where `L` is the smallest
-   `maxStrengthPercent` over all unit types (see "Content bounds"). The unit
+   `maxStrengthPercent` over all unit types (see "Content bounds"; for a
+   `champion` also at most the largest `P` that keeps the champion's health
+   after its health percent within `MAX_HEALTH`). The unit
    counts are not changed; the excess strength or health budget is lost (when
    a Core is clamped the Cores no longer add up to `total`). This is only a
    safety net: with the shipped content neither clamp is reached in rounds 1
@@ -4150,6 +4224,14 @@ only a unit test of the event schema covers it. `boss-pick` vector 2 draws
 `arch_boss_linked` as before (its description now lists
 `arch_boss_pylons` among the eligible bosses at round 7), and vector 18 is
 new (round 7, solo: Brood or Pylons, here Pylons).
+
+Warlord vectors (issue #401): four `threat-gen` cases for `arch_boss_warlord`
+(`boss-warlord-r9-solo`: every champion a plain Golem because the share cannot
+buy more; `-r12-solo` and `-r20-solo`: the health percent rising with the wave
+size up to 600; `-r30-party4`: four champions per wave at the full 600, cap
+11 per plot for the rest) and two `pve-battle` cases (`rush-vs-warlord-r9`,
+`rush-vs-warlord-r20`). `boss-pick` is unchanged: the Warlord joins the
+eligible bosses at round 9 and no vector draws a boss from round 9.
 
 ### Decided simplifications
 
@@ -5109,7 +5191,11 @@ label: 'the boss', ghost: null, boss: <archetype id> }` and the battle
 generates the boss threat of that archetype for the round. `boss` is optional
 in the saved format (like `startedAt`, no format number changed): a
 `pvpOpponent` or round-record opponent without it is valid and means the old
-behaviour, the archetype drawn at battle time. Validation requires a string,
+behaviour, the archetype drawn at battle time. That draw (also used when the
+rules have no threats file for the shop's choice, e.g. headless bot runs) is
+`pickBoss` with the same round, party size and previous boss as the shop's
+draw, on the battle stream's child `archetype` (one `nextInt`), so it obeys
+`fromRound`, `minPartySize` and the no-back-to-back rule too. Validation requires a string,
 a boss-only archetype when the content is known, and rejects `boss` on a ghost
 opponent. The run's round record shows the opponent as `ghost` (label: the
 owner's label) or `boss` (with the archetype ID in `boss`). The ghost snapshot

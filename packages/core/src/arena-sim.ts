@@ -416,6 +416,8 @@ export interface EnteringSim {
   readonly side: number;
   readonly unit: UnitId;
   readonly col: number;
+  /** A champion's health percent (see `ScheduledWave.healthPercent`). */
+  readonly healthPercent?: number;
 }
 
 /**
@@ -456,6 +458,12 @@ export interface ScheduledWave {
   readonly tick: number;
   readonly unit: UnitId;
   readonly count: number;
+  /**
+   * Champions (MM-9d, "Warlord"): the units of this wave spawn with this
+   * percent of their health, applied after the strength percent (`unitStats`).
+   * Absent means 100.
+   */
+  readonly healthPercent?: number;
 }
 
 /**
@@ -577,10 +585,20 @@ export function unitStats(
   _side: number,
   def: UnitDef,
   strengthPercent = 0,
+  healthPercent = 100,
 ): UnitDef {
-  if (strengthPercent === 0) return def;
+  if (strengthPercent === 0 && healthPercent === 100) return def;
   // Scaled stats are held to the content bound (limits.ts): a strength so
   // large that a unit would exceed it is an error, not a wrapped number.
+  const scaled2 = (value: number, pct: number, what: string): number => {
+    const v = mulPct(value, pct);
+    if (v > MAX_HEALTH) {
+      throw new RangeError(
+        `Unit ${def.id}: ${what} ${String(v)} (health percent ${String(pct)}) exceeds the maximum ${String(MAX_HEALTH)}.`,
+      );
+    }
+    return v;
+  };
   const scaled = (value: number, what: string, max: number): number => {
     const v = mulPct(value, addInt(100, strengthPercent));
     if (v > max) {
@@ -590,9 +608,15 @@ export function unitStats(
     }
     return v;
   };
+  // Champions: the health percent follows the strength percent (health only).
+  const strengthened = scaled(def.health, 'scaled health', MAX_HEALTH);
+  const scaledHealth =
+    healthPercent === 100
+      ? strengthened
+      : scaled2(strengthened, healthPercent, 'champion health');
   return {
     ...def,
-    health: scaled(def.health, 'scaled health', MAX_HEALTH),
+    health: scaledHealth,
     damage: scaled(def.damage, 'scaled damage', MAX_DAMAGE),
   };
 }
@@ -1022,6 +1046,19 @@ export function createArenaSim(
         addInt(100, mulInt(maxLevel, simConfig.overloadDamageStepPercent)),
       );
       assertWithin(hit, 0, MAX_HIT, `Unit ${def.id}: Overload hit`);
+    }
+    // Champions (MM-9d): the health percent of a wave is a whole percent of at
+    // least 100, and the health it gives must stay within the bound too.
+    for (const w of options.sideOptions?.[side]?.scheduledWaves ?? []) {
+      if (w.healthPercent === undefined) continue;
+      assertWithin(
+        w.healthPercent,
+        100,
+        Number.MAX_SAFE_INTEGER,
+        'Scheduled wave healthPercent',
+      );
+      const def = content.units.get(w.unit);
+      if (def !== undefined) unitStats(0, def, strength, w.healthPercent);
     }
   }
   assertWithin(
@@ -1855,11 +1892,13 @@ function addUnit(
   tick: number,
   who: { owner: number; target: number },
   rampOwner: number | null,
+  healthPercent = 100,
 ): void {
   const stats = unitStats(
     side,
     unitDef,
     spawnStrength(sim, ctx, side, rampOwner),
+    healthPercent,
   );
   const unit: UnitSim = {
     id: sim.nextUnitId,
@@ -1928,7 +1967,14 @@ function queueWaves(sim: ArenaSim, tick: number): void {
           divFloor((2 * i + 1) * width, 2 * w.count) + WAVE_START_STRIDE * j,
           width,
         );
-        sim.entering.push({ side, unit: w.unit, col });
+        sim.entering.push({
+          side,
+          unit: w.unit,
+          col,
+          ...(w.healthPercent === undefined
+            ? {}
+            : { healthPercent: w.healthPercent }),
+        });
       }
     });
   }
@@ -2006,6 +2052,7 @@ function enterWaves(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
         tick,
         { owner, target },
         null,
+        e.healthPercent,
       );
     }
   }

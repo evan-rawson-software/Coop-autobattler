@@ -40,7 +40,12 @@
         "properties": {
           "tick": { "type": "integer", "minimum": 0 },
           "unit": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" },
-          "count": { "type": "integer", "minimum": 1 }
+          "count": { "type": "integer", "minimum": 1 },
+          "healthPercent": {
+            "description": "Optional (only on the champion entries of an archetype with `champion`, listed first in their tick). The percent of its health (after the strength percent) each unit of the entry spawns with; at least 100.",
+            "type": "integer",
+            "minimum": 100
+          }
         }
       }
     },
