@@ -251,6 +251,23 @@ function pact(): Pix {
   return p;
 }
 
+function richVein(): Pix {
+  const p = new Pix(16, 16);
+  // A rock face with a bright vein of ore running through it.
+  p.rect(2, 4, 12, 9, '4');
+  p.rect(2, 4, 12, 1, '5');
+  p.rect(2, 12, 12, 1, '3');
+  p.line(4, 11, 7, 8, 'y');
+  p.line(7, 8, 9, 8, 'y');
+  p.line(9, 8, 12, 5, 'y');
+  p.set(5, 10, '6');
+  p.set(10, 7, '6');
+  p.set(7, 6, '3');
+  p.set(11, 10, '3');
+  p.outline('K');
+  return p;
+}
+
 const EVENT_ICONS: Readonly<Record<string, () => Pix>> = {
   workshop,
   shrine,
@@ -258,6 +275,7 @@ const EVENT_ICONS: Readonly<Record<string, () => Pix>> = {
   drill,
   market_day: marketDay,
   pact,
+  rich_vein: richVein,
 };
 
 export function uiSprites(): SpriteDef[] {

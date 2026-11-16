@@ -1986,11 +1986,126 @@ export async function runRunSmoke({
   );
 
   // ---------------------------------------------------------------------
+  // Rich vein (issue #414): a real save of a party of two at the cell
+  // follow-up of a Rich vein (made in Node, see smoke-vein-seed.mjs). Each
+  // player marks a legal cell of their own plot and confirms; the saved team
+  // then holds both added nodes, in the owners' plots.
+  {
+    const record = JSON.parse(
+      execFileSync(
+        'pnpm',
+        ['exec', 'tsx', path.join(webDir, 'scripts/smoke-vein-seed.mjs')],
+        { cwd: path.resolve(webDir, '../..'), maxBuffer: 1 << 26 },
+      ).toString('utf8'),
+    );
+    const id = record.runId;
+    await goMenu();
+    await page.evaluate(
+      async ([rec, runId]) => {
+        const db = await new Promise((res, rej) => {
+          const r = indexedDB.open('coop-autobattler', 1);
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+        });
+        await new Promise((res) => {
+          const tx = db.transaction('saves', 'readwrite');
+          tx.objectStore('saves').put(rec, runId);
+          tx.oncomplete = res;
+        });
+        db.close();
+      },
+      [record, id],
+    );
+    await page.reload();
+    await page.waitForSelector(`[data-run="${id}"]`);
+    await page.click(`[data-run="${id}"] [data-action="resume"]`);
+    await waitStep('event_resolve');
+    await page.waitForSelector('#vein-board canvas');
+    await settle();
+    const hint = await page
+      .locator('#vein-board [data-field="vein-hint"]')
+      .innerText();
+    check(
+      /Power node/.test(hint) && !/res_|mod_/.test(hint),
+      `rich vein: the picker names the resource ("${hint}")`,
+    );
+    const picked = [];
+    for (const p of [0, 1]) {
+      if (p === 1) {
+        await page.click(
+          '#acting-switch [data-action="act-as"][data-player="1"]',
+        );
+        await page.waitForFunction(
+          () => window.__debug?.run?.state().acting === 1,
+        );
+        await page.waitForSelector('#vein-board canvas');
+        await settle();
+      }
+      const plotWidth = await page.evaluate(() =>
+        window.__debug.placement.plotWidth(),
+      );
+      const legal = await page.evaluate(() => window.__debug.placement.legal());
+      check(
+        legal.length > 0 &&
+          legal.every((c) => Math.floor(c.x / plotWidth) === p),
+        `rich vein: player ${p + 1} is offered ${legal.length} cell(s), all in their own plot`,
+      );
+      const cell = legal[Math.floor(legal.length / 2)];
+      const at = await page.evaluate(
+        ([x, y]) => window.__debug.placement.cellToScreen(x, y),
+        [cell.x, cell.y],
+      );
+      await page.mouse.click(at.x, at.y);
+      await page.waitForFunction(
+        ([x, y]) => {
+          const s = window.__debug.placement.selected();
+          return s !== null && s.x === x && s.y === y;
+        },
+        [cell.x, cell.y],
+      );
+      if (p === 0) await shot('run-8b-rich-vein-picker');
+      await page.click('#confirm-vein:not([disabled])');
+      picked.push(cell);
+      if (p === 0) {
+        await page.waitForFunction(
+          () => document.querySelector('[data-field="waiting"]') !== null,
+        );
+      }
+    }
+    await waitStep('shop');
+    const saved = await page.evaluate(async (runId) => {
+      const db = await new Promise((res, rej) => {
+        const r = indexedDB.open('coop-autobattler', 1);
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      });
+      const rec = await new Promise((res) => {
+        const r = db.transaction('saves').objectStore('saves').get(runId);
+        r.onsuccess = () => res(r.result);
+      });
+      db.close();
+      return rec.state.team.addedNodes ?? null;
+    }, id);
+    check(
+      Array.isArray(saved) &&
+        saved.length === 2 &&
+        saved.every(
+          (n, i) =>
+            n.owner === i &&
+            n.resource === 'res_b' &&
+            n.x === picked[i].x &&
+            n.y === picked[i].y,
+        ),
+      'rich vein: the saved team holds one Power node for each player, on the chosen cells',
+    );
+  }
+
+  // ---------------------------------------------------------------------
   // The boss with no setting: a real save of a party of two, alive at round 7
   // (made in Node by the real bot, see smoke-seed.mjs), whose PvP opponent the
   // browser selects from an empty bucket, since the bundled ghosts stop at
   // round 6.
-  for (const seedArgs of [[], ['siege', '10', '2']]) {
+  for (const seedArgs of [[], ['siege', '9', '2']]) {
     // The second save is a party the siege bot made, which
     // loses to the boss: the loss branch of the checks below. It keeps the
     // run id: the first run left a round 7 ghost in the browser's pool, which

@@ -7,10 +7,17 @@
  * hard-coded number. There can be one, two or three cards.
  */
 import { playerName, screenText, screenTexts } from '../build/texts.js';
-import { findModifier, type BuildingDef, type EventsConfig } from '@game/core';
+import {
+  findModifier,
+  type BuildingDef,
+  type Cell,
+  type EventsConfig,
+} from '@game/core';
 import {
   DRILL_PROMPT,
+  RICH_VEIN_PROMPT,
   SKIP_CHOICE,
+  richVeinCell,
   eventFollowUp,
   openVote,
   type Json,
@@ -18,7 +25,7 @@ import {
   type RunState,
 } from '@game/session';
 import type { WebContent } from '../content.js';
-import { buildingName } from '../build/view-model.js';
+import { buildingName, resourceName } from '../build/view-model.js';
 import { buildingRate, formatHundredths } from '../build/rates.js';
 import { simConfig } from '../build/setup.js';
 import {
@@ -158,6 +165,7 @@ export function eventCards(
   run: RunState,
   player: number,
   config?: EventsConfig,
+  content?: WebContent,
 ): EventCard[] {
   const vote = openVote(run);
   const mine = vote?.choices[player] ?? null;
@@ -168,7 +176,14 @@ export function eventCards(
     const text = eventText(type);
     let lines: string[];
     let drawbacks: string[] = [];
-    if (type === 'pact') {
+    let title = text.name;
+    if (type === 'rich_vein') {
+      // The offer names the resource: "Rich vein: Power".
+      const res = typeof raw['resource'] === 'string' ? raw['resource'] : '';
+      const name = content === undefined ? res : resourceName(content, res);
+      title = `${text.name}: ${name}`;
+      lines = [`Add one ${name} node to a free cell of your area.`];
+    } else if (type === 'pact') {
       // The pact the offer names: benefit lines, then the drawback lines.
       const id = typeof raw['pact'] === 'string' ? raw['pact'] : '';
       const def = config === undefined ? undefined : findModifier(config, id);
@@ -207,7 +222,7 @@ export function eventCards(
     cards.push({
       id: raw['id'],
       type,
-      title: text.name,
+      title,
       lines,
       drawbacks,
       icon: text.icon,
@@ -253,6 +268,17 @@ export interface BuildingOption {
   readonly count: number;
 }
 
+/** The cell picker of a Rich vein follow-up, for one player. */
+export interface VeinView {
+  /** The resource of the node (its ID, and its name). */
+  readonly resource: string;
+  readonly resourceName: string;
+  /** Cells this player may add the node to, in `(y, x)` order. */
+  readonly cells: readonly Cell[];
+  /** The cell this player has chosen, or null (not chosen, or skipped). */
+  readonly chosen: Cell | null;
+}
+
 export interface FollowUpView {
   readonly eventTitle: string;
   readonly prompt: string;
@@ -263,6 +289,8 @@ export interface FollowUpView {
   readonly perPlayer: boolean;
   /** True if the raise costs nothing (Drill): rows say Free, not a price. */
   readonly free: boolean;
+  /** Rich vein: the cell picker's data, else null. */
+  readonly vein: VeinView | null;
   /** Per player: has chosen (never what). */
   readonly chosen: readonly {
     readonly player: number;
@@ -315,6 +343,7 @@ export function upgradeGains(
 const PROMPTS: Readonly<Record<string, string>> = {
   workshop_building: 'Upgrade a building',
   [DRILL_PROMPT]: 'Raise a collector',
+  [RICH_VEIN_PROMPT]: 'Add a resource node',
   shrine_modifier: 'Choose a bonus',
 };
 
@@ -349,7 +378,30 @@ export function followUpView(
   const gold = run.perPlayer[player]?.gold ?? 0;
   const free = f.prompt === DRILL_PROMPT;
   const options: FollowOption[] = [];
-  for (const raw of f.options) {
+  let vein: VeinView | null = null;
+  if (f.prompt === RICH_VEIN_PROMPT) {
+    const resource = str(offer['resource']) ?? '';
+    const cells: Cell[] = [];
+    for (const raw of f.options) {
+      if (!isRecord(raw) || !Array.isArray(raw['cells'])) continue;
+      for (const c of raw['cells']) {
+        if (
+          Array.isArray(c) &&
+          typeof c[0] === 'number' &&
+          typeof c[1] === 'number'
+        ) {
+          cells.push({ x: c[0], y: c[1] });
+        }
+      }
+    }
+    vein = {
+      resource,
+      resourceName: resourceName(content, resource),
+      cells,
+      chosen: f.mine === null ? null : richVeinCell(f.mine),
+    };
+  }
+  for (const raw of vein === null ? f.options : []) {
     if (!isRecord(raw) || typeof raw['id'] !== 'string') continue;
     const id = raw['id'];
     const def = str(raw['def']);
@@ -444,7 +496,12 @@ export function followUpView(
   if (f.perPlayer) {
     options.push({
       id: SKIP_CHOICE,
-      title: free ? 'Skip (no raise)' : 'Skip (no upgrade)',
+      title:
+        vein !== null
+          ? 'Skip (no node)'
+          : free
+            ? 'Skip (no raise)'
+            : 'Skip (no upgrade)',
       lines: [],
       affordable: true,
       disabledReason: null,
@@ -492,6 +549,7 @@ export function followUpView(
     voted: f.mine,
     perPlayer: f.perPlayer,
     free,
+    vein,
     chosen,
     waiting,
   };
@@ -509,12 +567,19 @@ export function appliedNotice(
   applied: readonly Json[],
   player: number,
   content: WebContent,
-  /** The event type (`drill`, `workshop`); absent means the Workshop. */
+  /** The event type (`drill`, `rich_vein`, ...); absent means the Workshop. */
   type?: string,
 ): string | null {
   const drill = type === 'drill';
   for (const a of applied) {
     if (!isRecord(a) || a['player'] !== player) continue;
+    if (type === 'rich_vein') {
+      if (a['result'] === 'node') {
+        const res = resourceName(content, str(a['resource']) ?? '');
+        return `Added a ${res} node.`;
+      }
+      return a['dropped'] === true ? 'Node skipped.' : 'Rich vein skipped.';
+    }
     if (a['result'] === 'upgrade') {
       const def = str(a['def']) ?? '';
       const tier = typeof a['newTier'] === 'number' ? a['newTier'] : 0;

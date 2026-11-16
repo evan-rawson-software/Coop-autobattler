@@ -182,6 +182,7 @@ export {
   loadEvents,
   loadEventsOrThrow,
   MAX_EVENT_FROM_ROUND,
+  MAX_RESOURCE_WEIGHT,
   MAX_MODIFIER_FROM_ROUND,
   MAX_SHOP_EFFECT_COUNT,
   type ModifierDef,
@@ -263,6 +264,10 @@ export {
   type MapQuery,
   queryMap,
   type ResourceNode,
+  type AddedNode,
+  allNodes,
+  queryTeamMap,
+  type HasNodes,
   validateCorePosition,
 } from './map.js';
 export {
@@ -271,6 +276,10 @@ export {
   generateMapWithStats,
 } from './generate-map.js';
 export {
+  addableNodeCells,
+  addedNodeCount,
+  addNode,
+  type AddNodeReason,
   addToStash,
   type AddToStashResult,
   type AnyReason,

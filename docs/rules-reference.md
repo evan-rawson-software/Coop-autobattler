@@ -548,7 +548,18 @@ middle:
 - **Event definitions** (`content/events.json`): `fromRound`, if present, is an
   integer from 1 to 1000 (absent means 1). Market day's `params.extraOffers`
   and `params.freeRerolls` are integers from 1 to `MAX_SHOP_EFFECT_COUNT` (10),
-  which also bounds the `count` of a saved next-shop effect.
+  which also bounds the `count` of a saved next-shop effect. Rich vein's
+  `resourceWeights` (issue #414) is a non-empty object from resource ID to an
+  integer from 1 to `MAX_RESOURCE_WEIGHT` (1000); every key must be a base
+  resource of `resources.json` (the loader, given the resources, and
+  `events.schema.json`; a refined resource is rejected). It mirrors how map
+  nodes are weighted: Ore and Power common, Flux rare, which is
+  `nodesPerPlot.common` 3 against `nodesPerPlot.rare` 1 per base resource of
+  that rarity (shipped: 3, 3, 1).
+- **Added nodes** (`content/mapgen.json`): `maxAddedNodesPerPlot` is an integer
+  from 0 to `MAX_ADDED_NODES_PER_PLOT` (16); shipped 3. Map generation does not
+  read it. 0 means Rich vein is never available and no state may hold an added
+  node.
 - **Modifier definitions** (`content/events.json`): every effect's `percent`
   is an integer from `MIN_MODIFIER_PERCENT` (-90) to `MAX_MODIFIER_PERCENT`
   (1000), never 0 (the loader, `events.schema.json`, a team state's parser and
@@ -685,12 +696,14 @@ no node on a feature cell.
 ### Parameters (`content/mapgen.json`)
 
 `plotWidth`, `plotDepth`, `maxPartySize`; `nodesPerPlot.common` and
-`nodesPerPlot.rare`; `lakes` (`feature`, `countMin`, `countMax`, `sizeMin`,
+`nodesPerPlot.rare`; `maxAddedNodesPerPlot` (Rich vein, read by the team
+state and the event, not by generation); `lakes` (`feature`, `countMin`, `countMax`, `sizeMin`,
 `sizeMax`); `cliffs` (`feature`, `countMin`, `countMax`, `lengthMin`,
 `lengthMax`); `minBuildablePercent`; `backMargin`, `frontMargin` (at least 1),
 `sideMargin` (at least 1); `coreFrontClearance`; `placementTries`;
 `maxAttempts`. Starting values: 24, 16, 4; 3 and 1; lakes 1 to 2 of 6 to 14
-cells; cliffs 1 to 2 of 4 to 8 cells; 80; 2, 1, 1; 8; 30; 64.
+cells; cliffs 1 to 2 of 4 to 8 cells; 80; 2, 1, 1; 8; 30; 64;
+`maxAddedNodesPerPlot` 3.
 
 The file also holds the `neutralZone` object used only by battles (see "The
 neutral zone"); board generation does not read it.
@@ -824,7 +837,7 @@ never changes its input.
 ### Format (plain JSON, `schemas/team-state.schema.json`)
 
 ```
-{ map, cores, buildings, stash, nextId, nextConduitId, conduits, modifiers? }
+{ map, cores, buildings, stash, nextId, nextConduitId, conduits, modifiers?, addedNodes? }
 ```
 
 - `map`: the map format above.
@@ -854,6 +867,48 @@ never changes its input.
 
 - `modifiers` (optional): run modifiers `{ id, effects }` taken so far; omitted
   when there are none. See "PvE options, rewards, events and run modifiers".
+- `addedNodes` (optional, issue #414, RS-4i4): resource nodes added by the Rich
+  vein event, `{ x, y, resource, owner, round }`, in the order added (rounds do
+  not decrease); omitted, never an empty list, when there are none, so a state
+  without added nodes serialises and hashes as before and **no format number is
+  raised** (old states and snapshots stay readable; see CONTRIBUTING). The
+  generated nodes stay in `map.nodes`; the map is never changed, so a ghost's
+  map still equals `generateMap(mapSeed, partySize)`.
+
+  **`allNodes(team)`** is the one merge of the two: `map.nodes` followed by the
+  added nodes (as `{ x, y, resource }`) in the order added; it is
+  `map.nodes` itself when none was added. `queryTeamMap(team, terrain)` is
+  `queryMap` with them (`nodeAt` sees both). Everything that reads nodes
+  (placement `source_needs_node` and `node_reserved`, `occupancy`'s
+  `sourceResource`, the conduit and flow views, the bot, the web board, hover
+  info and tutorial checks) goes through one of the two; `map.nodes` is read
+  directly only by map generation, the map loader and the golden `map-gen`.
+
+  **Rules for an added node** (`addNode(state, content, mapgen, { owner, x, y,
+  resource, round })`; the first failure is reported): `invalid_owner` (not a
+  player index), `unknown_resource` (not a base resource), `invalid_round` (not
+  an integer of at least 1), then the cell: `out_of_bounds`,
+  `outside_own_plot` (`x` not in the owner's columns), `front_row` (`y >
+  height - 1 - frontMargin`; so the plot's front `frontMargin` rows are out),
+  `blocked_by_feature` (a feature that blocks building), `node_here` (a
+  generated or an added node is on the cell), `overlaps_core` (a Core cell),
+  then `overlaps_building` (a placed building), `overlaps_conduit` (a conduit
+  cell), and `plot_full` (the owner already has `maxAddedNodesPerPlot` added
+  nodes). `addableNodeCells(state, content, mapgen, owner)` lists the cells for
+  which every cell rule holds, in `(y, x)` order, and is empty at the cap. A
+  node on a buildable cell, so a source can be built on it exactly as on a
+  generated one; any other building on it is `node_reserved`.
+
+  **validateTeamState** parses `addedNodes` hostilely (non-empty list of exact
+  `{ x, y, resource, owner, round }` objects, integers except `resource`) and
+  re-checks every entry: owner in range, a base resource, `round >= 1` and not
+  below the previous entry's, the cell rules above that do not depend on
+  buildings (bounds, plot, front row, feature, a generated node or an earlier
+  added node on the cell, the Core), and at most `maxAddedNodesPerPlot` per
+  owner. Buildings and conduits are then checked against the map with the added
+  nodes, so a building that needs a node (a source) may stand on one and a
+  building that must not (anything else) may not. A conduit may cross an added
+  node as it may a generated one.
 
 Buildings of kind `core` never appear in `buildings` or `stash`.
 
@@ -1026,7 +1081,8 @@ Input `{ "seed": u32, "partySize": 1..4, "ops": [...] }`. The map is the
 `op` field and its arguments: `addToStash` (`def`, `tier`, `owner`),
 `placeCore` (`actor`, `x`, `y`), `placeFromStash` and `moveBuilding` (`actor`,
 `id`, `x`, `y`, `rotation`), `returnToStash` and `removeFromStash` (`actor`,
-`id`), `addConduit` (`actor`, `from` and `to`, each `{ building, side }`, and
+`id`), `addNode` (`owner`, `x`, `y`, `resource`, `round`; Rich vein, issue
+#414), `addConduit` (`actor`, `from` and `to`, each `{ building, side }`, and
 `cells`, a list of `{ x, y }`) and `eraseConduit` (`actor`, `id`). A rejected op leaves
 the state as it was and the run continues. Result `{ "results": [...],
 "state": <final state>, "hash": <hash of the final state> }`, with one entry
@@ -4782,7 +4838,7 @@ package gives the same list for a screen.
 ### Events (RS-4)
 
 `content/events.json` lists event definitions `{ id, type, weight, fromRound?,
-params }` and modifier definitions `{ id, stackable, fromRound?, effects }`,
+resourceWeights?, params }` (`resourceWeights` only for Rich vein) and modifier definitions `{ id, stackable, fromRound?, effects }`,
 and `offerCount` (3). The `type` names a handler in the session package; the
 handler decides availability, extra offer data, what happens on pick, and how a
 follow-up choice is applied. Adding a type is data plus one handler.
@@ -4793,7 +4849,7 @@ example a small and a big Windfall); they compete for a single place. The
 definitions whose first round has come (`round >= fromRound`; `fromRound`
 defaults to 1, `round` is `RunState.round`, the round of the event step) and
 whose handler says `available` (Workshop: some owned building
-below tier 3 that a player can pay for; Drill: some owned collector below tier 3; Shrine: at least one modifier can be taken; Pact: some pact is not held; Windfall and Market
+below tier 3 that a player can pay for; Drill: some owned collector below tier 3; Shrine: at least one modifier can be taken; Pact: some pact is not held; Rich vein: some player is under the cap and has a legal cell; Windfall and Market
 day: always) form the pool, in file order. Both conditions are checked before
 the draw, so the number of draws is still the number of offers, and where no
 `fromRound` is above the round the draws are those of the pool without it
@@ -4916,6 +4972,56 @@ any number of offers from 1 to `offerCount`. More event types will come later.
   - Notes for a port: the saved shape is the Workshop's (no new field, no
     format change); a ghost's tier bound counts Drill raises like Workshop
     raises (`type` `workshop` or `drill` in the configured events).
+- **Rich vein** (`resourceWeights` on the definition: `{ res_a: 3, res_b: 3,
+  res_c: 1 }`; `fromRound` 3 in the shipped file; RS-4i4, issue #414): every
+  player may add ONE resource node to their own plot.
+  - *Available* when `maxAddedNodesPerPlot` is known to the hooks (it is when
+    they are built by `createGameDeps`; without map rules the event is never
+    available) and some player is under the cap with at least one cell in
+    `addableNodeCells` (see "Team state and placement").
+  - *Offer.* `{ id, event, type: "rich_vein", resource }`: `resource` is the
+    base resource ID drawn with `pickWeightedIndex` over `resourceWeights` of
+    the base resources in resource-file order (`listBase`) that have a weight,
+    on the offer's child stream `<event id>:<index>` (one draw; no other
+    stream moves). It is drawn before the vote so the card can name it.
+  - *Follow-up.* `pending.followUp = { prompt: "rich_vein_cell", perPlayer:
+    true, options, votes }`. `options` has one entry per player that has a
+    legal cell, `{ id: "cells<player>", player, cells: [[x, y], ...] }` (the
+    legal cells at that moment, `(y, x)` order); a player with none starts
+    with `"skip"` already chosen, and if nobody has a cell there are no
+    options and the step goes straight to the shop. The choice is a string
+    `c<x>_<y>` (decimal, no leading zeros, at most 6 digits each) or `skip`; it
+    is not one of the stored options (the handler's `optionOf` builds it).
+    `checkChoice` runs `addNode` for that player at that cell and refuses with
+    its reason (`front_row`, `outside_own_plot`, `blocked_by_feature`,
+    `node_here`, `overlaps_core`, `overlaps_building`, `overlaps_conduit`,
+    `out_of_bounds`, `plot_full`, `unknown_resource`, `invalid_round`;
+    `invalid_choice` for a malformed id). A choice is stored at once and can be
+    changed until the last player has chosen; only the submitting player's
+    choice is checked then.
+  - *Applying.* When every player has chosen, in player order: `addNode` with
+    `round = RunState.round` on the team as it is after the earlier players'
+    nodes. A pick that is no longer legal is applied as a skip with
+    `dropped: true` and the `addNode` reason (`invalid_choice` for a pick that
+    names no cell), never rejected. `event_resolved` carries `choices` and
+    `applied`: `{ player, result: 'node', x, y, resource }`, `{ player, result:
+    'skip' }` or `{ player, result: 'skip', dropped: true, reason }`. Then the
+    shop.
+  - *validateRunState* checks a `rich_vein_cell` follow-up: `perPlayer` true,
+    the offer's `resource` a base resource, each option `{ id:
+    "cells<player>", player, cells }` with at most one per player and every
+    listed cell in `addableNodeCells` for that player now, and a stored vote
+    that is `skip` or a cell listed for that player. The team's `addedNodes`
+    are validated as part of the team.
+  - *Ghosts.* Beside the team-state checks, every added node's `round` must be
+    from the first `fromRound` of a `rich_vein` event in `events.json` (no such
+    event: none allowed) up to the snapshot's round; the size limit has a term
+    `partySize * maxAddedNodesPerPlot * addedNodeEntry`.
+  - Notes for a port: nothing is stored in the map; all reads of nodes use
+    the merge of the generated and the added list. The per-player machinery
+    is the Workshop's; the one new idea is that the choice space is a cell
+    set, so the options hold lists of cells and the choice id is parsed, not
+    looked up.
 - **Shrine** (`params.choices`, default 3): available when a modifier is
   *eligible*. A modifier is eligible when `round >= fromRound` (`fromRound`
   defaults to 1; `round` is `RunState.round`, the round of the event step,
@@ -5178,6 +5284,7 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
                                 + 2 * conduitEntry)      ... with two conduit ends per side pair
              + cells * conduitCellEntry                  (or a conduit cell)
              + N * stashEntry                            (the whole value bound in the stash)
+             + partySize * maxAddedNodesPerPlot * addedNodeEntry   (Rich vein)
              + (2 * round - 1) * modifierEntry           (one modifier per event step)
              + 4096                                      (margin: ids, labels, counters)
 
@@ -5207,6 +5314,15 @@ Every candidate, and a ghost inside a loaded run state, must pass all of:
    #131, at least one; the snapshot's `team.cores` has one entry per player)
    and the map's party size equal `partySize`.
 3. **Map**: `team.map` equals `generateMap(mapSeed, partySize)`.
+   Nodes added by Rich vein (issue #414, MM-17) are not in the map: they are the
+   team's optional `addedNodes`, so a ghost's map is still exactly the
+   generated one. The generated map plus the added nodes is accepted when each
+   added node passes the team-state rules (its owner's plot, a buildable cell
+   off the plot's front row, not on a feature, node or Core, a base resource,
+   at most `maxAddedNodesPerPlot` per plot, rounds not decreasing) and its
+   `round` lies from the first `fromRound` of a `rich_vein` event up to the
+   snapshot's round (no such event in the events file: none accepted). A node
+   written into `map.nodes` instead fails the map comparison.
 4. **Numbers**: `wins + losses = round - 1`, `lives <= startingLives` and
    `losses * pvpLossLifeCost = startingLives - lives`.
 5. **Value bound**: the sum of the shop prices (at the building's tier) of

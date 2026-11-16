@@ -16,7 +16,15 @@ import { GameFrame } from '../shell/GameFrame.js';
 import '../choice/choice.css';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import { screenText, screenTexts } from '../build/texts.js';
-import { battleHeader, eventCards, followUpView } from './view-model.js';
+import { richVeinChoice, SKIP_CHOICE } from '@game/session';
+import type { Cell } from '@game/core';
+import { VeinPicker } from './VeinPicker.js';
+import {
+  battleHeader,
+  eventCards,
+  followUpView,
+  type FollowUpView,
+} from './view-model.js';
 
 export function EventChoiceScreen(props: { run: RunHandle }) {
   const { session, deps } = props.run;
@@ -27,7 +35,7 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
   const [busy, setBusy] = useState(false);
   const header = useMemo(() => battleHeader(run, deps), [run, deps]);
   const cards = useMemo(
-    () => eventCards(run, acting, gameConfigs.events),
+    () => eventCards(run, acting, gameConfigs.events, content),
     [run, acting],
   );
 
@@ -160,7 +168,130 @@ export function EventChoiceScreen(props: { run: RunHandle }) {
   );
 }
 
+/**
+ * The follow-up of the picked event: the Rich vein cell picker, or the
+ * Workshop, Drill and Shrine lists.
+ */
 export function EventResolveScreen(props: { run: RunHandle }) {
+  const { session, deps } = props.run;
+  const view = useStore(session.store);
+  const v = useMemo(
+    () =>
+      followUpView(view.run, gameConfigs.events, content, view.acting, deps),
+    [view.run, view.acting, deps],
+  );
+  return v?.vein == null ? (
+    <EventListResolve run={props.run} />
+  ) : (
+    <VeinResolve run={props.run} v={v} />
+  );
+}
+
+/** Rich vein: pick a cell of your own plot for the new node, or skip. */
+function VeinResolve(props: { run: RunHandle; v: FollowUpView }) {
+  const { session } = props.run;
+  const view = useStore(session.store);
+  const run = view.run;
+  const acting = view.acting;
+  const { v } = props;
+  const vein = v.vein as NonNullable<FollowUpView['vein']>;
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  // The cell marked on the board; the button sends it.
+  const [marked, setMarked] = useState<Cell | null>(null);
+  const shown = marked ?? vein.chosen;
+  const send = (choice: string): void => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    void session.dispatch({ type: 'event_choose', choice }).then((r) => {
+      setBusy(false);
+      if (r.ok) setMarked(null);
+      else setError(reasonMessage(r.reason, r.detail));
+    });
+  };
+  const sameAsVote =
+    shown !== null &&
+    vein.chosen !== null &&
+    shown.x === vein.chosen.x &&
+    shown.y === vein.chosen.y;
+  return (
+    <GameFrame
+      phase="event"
+      title={`Round ${String(run.round)} · ${v.eventTitle}`}
+      primary={{
+        id: 'confirm-vein',
+        label: `Add ${vein.resourceName} node`,
+        class: 'primary',
+        disabled: busy || shown === null || sameAsVote,
+        attrs: { 'data-action': 'confirm-vein' },
+        onPress: () => {
+          if (shown !== null) send(richVeinChoice(shown.x, shown.y));
+        },
+      }}
+      tray={
+        <button
+          type="button"
+          data-action="choose-option"
+          data-option={SKIP_CHOICE}
+          class={v.voted === SKIP_CHOICE ? 'selected' : undefined}
+          disabled={busy}
+          onClick={() => {
+            setMarked(null);
+            send(SKIP_CHOICE);
+          }}
+        >
+          Skip (no node)
+        </button>
+      }
+      info={
+        <>
+          <div class="choice-banner panel">
+            <strong data-field="prompt">{v.prompt}</strong>
+          </div>
+          {v.waiting == null ? null : (
+            <p class="muted" role="status" data-field="waiting">
+              {v.waiting}
+            </p>
+          )}
+          {v.chosen.length < 2 ? null : (
+            <ul class="follow-chosen" data-field="chosen">
+              {v.chosen.map((c) => (
+                <li key={c.player}>
+                  {c.name}: {c.status}
+                </li>
+              ))}
+            </ul>
+          )}
+          {error === null ? null : (
+            <p class="error" role="alert">
+              {error}
+            </p>
+          )}
+        </>
+      }
+      board={
+        vein.cells.length === 0 ? (
+          <div class="choice-screen" id="event-resolve">
+            <p class="muted" data-field="no-cells">
+              No free cell for a node in your area.
+            </p>
+          </div>
+        ) : (
+          <VeinPicker
+            run={run}
+            acting={acting}
+            vein={vein}
+            marked={shown}
+            onMark={setMarked}
+          />
+        )
+      }
+    />
+  );
+}
+
+function EventListResolve(props: { run: RunHandle }) {
   const { session, deps } = props.run;
   const view = useStore(session.store);
   const run = view.run;

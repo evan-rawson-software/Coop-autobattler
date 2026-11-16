@@ -9,6 +9,7 @@
  *   5 Press Ready, pick a fight   6 Watch the battle
  */
 import {
+  allNodes,
   occupancy,
   type BuildingDef,
   type Cell,
@@ -103,7 +104,7 @@ export function tutorialFacts(
     mine.some(
       (b) =>
         b.def === defs.extractor &&
-        team.map.nodes.some(
+        allNodes(team).some(
           (n) =>
             n.x === b.x &&
             n.y === b.y &&
@@ -283,7 +284,7 @@ function closeFreeNodes(
   const core = coreCellsOf(team, content, player);
   const dist = (n: Cell): number =>
     core.length === 0 ? 0 : Math.min(...core.map((c) => chebyshev(n, c)));
-  return team.map.nodes
+  return allNodes(team)
     .filter(
       (n) =>
         (resource === null || n.resource === resource) &&
@@ -333,7 +334,7 @@ export function powerNearCore(
   const need = turretResource(content);
   if (need === null) return false;
   const core = coreCellsOf(team, content, player);
-  return team.map.nodes.some(
+  return allNodes(team).some(
     (n) =>
       n.resource === need &&
       core.some((c) => chebyshev(n, c) <= TURRET_NEAR_CORE + 4),

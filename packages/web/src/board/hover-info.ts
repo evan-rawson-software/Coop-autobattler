@@ -8,6 +8,7 @@
  */
 
 import {
+  allNodes,
   buildingEnd,
   conduitResource,
   formatText,
@@ -182,7 +183,7 @@ function describeBoardCell(
     return conduitInfo(content, b.state, conduit, board, texts);
   }
 
-  const node = b.state.map.nodes.find((n) => n.x === x && n.y === y);
+  const node = allNodes(b.state).find((n) => n.x === x && n.y === y);
   if (node !== undefined) {
     const source = content.buildings.list().find((d) => d.kind === 'source');
     const resource = resourceName(content, node.resource);

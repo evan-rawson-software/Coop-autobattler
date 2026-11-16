@@ -5,6 +5,7 @@
  */
 
 import {
+  allNodes,
   formatText,
   generateMap,
   type GameMap,
@@ -369,7 +370,7 @@ function describe(hit: Hit, own: TeamState, enemy: TeamState | null): string[] {
     (f) => f.x === hit.x && f.y === hit.y,
   );
   if (feature) lines.push(`Terrain: ${name(feature.feature)}`);
-  const node = state.map.nodes.find((n) => n.x === hit.x && n.y === hit.y);
+  const node = allNodes(state).find((n) => n.x === hit.x && n.y === hit.y);
   if (node)
     lines.push(
       `Resource node: ${content.resources.displayName(node.resource)}`,

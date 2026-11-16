@@ -30,6 +30,17 @@
             "minimum": 1,
             "maximum": 1000
           },
+          "resourceWeights": {
+            "description": "Rich vein only: the weight of each base resource in the draw of the offer's resource, by resource ID (Ore and Power common, Flux rare, like map nodes). Every key must be a base resource of the resources file.",
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": { "pattern": "^res_[a-z0-9_]+$" },
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          },
           "params": {
             "description": "Numbers and strings read by the event type's handler.",
             "type": "object",

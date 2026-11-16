@@ -38,6 +38,13 @@
       "type": "pact",
       "weight": 6,
       "fromRound": 4
+    },
+    {
+      "id": "evt_rich_vein",
+      "type": "rich_vein",
+      "weight": 6,
+      "fromRound": 3,
+      "resourceWeights": { "res_a": 3, "res_b": 3, "res_c": 1 }
     }
   ],
   "modifiers": [

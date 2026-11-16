@@ -63,8 +63,11 @@ describe('Splitter placement (#178)', () => {
   // 56/63). With Market day (#410) in the event pool from round 2 the bot
   // meets other events and shops: 90 of 98 (15/16, 27/31, 48/51), so the
   // floor per party size is 0.85 (party 2 is 87%). With Drill (#411) as well:
-  // 71 of 78 (12/13, 22/25, 37/40); with Pact (#413) 74 of 80 (12/13, 21/22, 41/45). The ratio is the point: a Splitter that is
-  // bought is placed.
+  // 71 of 78 (12/13, 22/25, 37/40); with Pact (#413) 74 of 80 (12/13, 21/22, 41/45);
+  // with Rich vein (#414, from round 3) 76 of 85 (12/13, 24/27, 40/45): 89.4%,
+  // so the overall floor is 0.88 (it was 0.9; every party size is still above
+  // the 0.85 floor below). The ratio is the point: a Splitter that is bought is
+  // placed.
   test('rush: Splitters are bought and nearly all are placed, at every party size', () => {
     let bought = 0;
     let placedAll = 0;
@@ -88,7 +91,7 @@ describe('Splitter placement (#178)', () => {
     // Drill (#411) 71 of 78.
     expect(bought).toBeGreaterThanOrEqual(75);
     expect(placedAll).toBeGreaterThanOrEqual(68);
-    expect(placedAll / bought).toBeGreaterThanOrEqual(0.9);
+    expect(placedAll / bought).toBeGreaterThanOrEqual(0.88);
   });
 
   // Siege buys few Splitters (its barracks and armories are high tier), so
@@ -140,9 +143,11 @@ describe('shop buys only what can be placed (#178)', () => {
   test('consumers the layout cannot feed are not left in the stash', () => {
     // Consumers left in the stash, summed over SEEDS at party sizes 1 / 2 / 4
     // after 6 rounds. Measured: rush 2 / 9 / 24, fortify 0 / 0 / 0 (2 / 11 / 27 for rush
-    // with the shop weights and the tetromino walls of issue #291).
+    // with the shop weights and the tetromino walls of issue #291). With Rich
+    // vein (#414) in the event pool from round 3: rush 3 / 7 / 30, fortify
+    // 1 / 0 / 0 (only rush party 4, 29 -> 31, needed a new limit).
     const limit = {
-      rush: { 1: 3, 2: 12, 4: 29 },
+      rush: { 1: 3, 2: 12, 4: 31 },
       fortify: { 1: 1, 2: 1, 4: 1 },
     } as const;
     for (const strategy of ['rush', 'fortify'] as const) {

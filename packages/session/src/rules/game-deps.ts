@@ -95,13 +95,18 @@ export function createGameDeps(
         threatConfigs,
         configs.economy.rewards,
       ),
-      ...eventHooks(content, configs.events, eventHandlers),
+      ...eventHooks(content, configs.events, eventHandlers, configs.mapgen),
       ...rewardHooks(configs.economy.rewards),
       ...overrides.hooks,
     },
     handlers: {
       ...economyHandlers(content, configs.economy),
-      ...eventChooseHandlers(content, configs.events, eventHandlers),
+      ...eventChooseHandlers(
+        content,
+        configs.events,
+        eventHandlers,
+        configs.mapgen,
+      ),
       ...(overrides.ghosts === undefined
         ? {}
         : { [SELECT_GHOST]: selectGhostHandler }),

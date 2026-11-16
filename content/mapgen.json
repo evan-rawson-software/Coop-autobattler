@@ -4,6 +4,7 @@
   "plotDepth": 16,
   "maxPartySize": 4,
   "nodesPerPlot": { "common": 3, "rare": 1 },
+  "maxAddedNodesPerPlot": 3,
   "lakes": {
     "feature": "ter_lake",
     "countMin": 1,

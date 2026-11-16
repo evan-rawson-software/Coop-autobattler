@@ -14,7 +14,8 @@ import {
   needPer1000,
   occupancy,
   placeFromStash,
-  queryMap,
+  queryTeamMap,
+  allNodes,
   returnToStash,
   rotateBuilding,
   sealedProducers,
@@ -159,7 +160,7 @@ export function freeCells(
   env: Env,
   team: TeamState,
 ): (x: number, y: number) => boolean {
-  const q = queryMap(team.map, env.content.terrain);
+  const q = queryTeamMap(team, env.content.terrain);
   const occ = occupancy(team, env.content);
   const used = new Set<number>();
   for (const c of team.conduits) {
@@ -405,7 +406,7 @@ export function freeNodes(
 
 function plotNodes(env: Env, team: TeamState, resource: string): Cell[] {
   const nodes: Cell[] = [];
-  for (const n of team.map.nodes) {
+  for (const n of allNodes(team)) {
     if (n.resource === resource && n.x >= env.x0 && n.x < env.x1) {
       nodes.push({ x: n.x, y: n.y });
     }
@@ -618,7 +619,7 @@ export function plotRoom(
   const occ = occupancy(team, content);
   const openNodes = new Map<string, number>();
   let openNodeTotal = 0;
-  for (const n of team.map.nodes) {
+  for (const n of allNodes(team)) {
     if (n.x < x0 || n.x >= x1 || occ.buildingAt(n.x, n.y) !== null) continue;
     openNodes.set(n.resource, (openNodes.get(n.resource) ?? 0) + 1);
     openNodeTotal++;

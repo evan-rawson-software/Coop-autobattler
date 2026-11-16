@@ -20,7 +20,7 @@ import {
   type CostEntry,
 } from './buildings.js';
 import { divFloor, mulDiv } from './int.js';
-import { queryMap } from './map.js';
+import { queryTeamMap } from './map.js';
 import type { ResourceId } from './resources.js';
 import type { SimConfig } from './sim-config.js';
 import type { TeamContent, TeamState } from './team-state.js';
@@ -339,7 +339,7 @@ function compile(
   simConfig: SimConfig,
 ): Compiled {
   const graph = buildFlowGraph(state, content);
-  const q = queryMap(state.map, content.terrain);
+  const q = queryTeamMap(state, content.terrain);
   const defOf = (id: string) => {
     const def = content.buildings.get(id);
     if (def === undefined) throw new Error(`Unknown building "${id}".`);

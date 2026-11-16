@@ -6,6 +6,7 @@
  */
 
 import {
+  allNodes,
   buildFlowGraph,
   dryRunFlow,
   occupancy,
@@ -551,7 +552,7 @@ export function deriveProblems(
     });
   }
 
-  const freeNodes = state.map.nodes.filter(
+  const freeNodes = allNodes(state).filter(
     (n) => occ.buildingAt(n.x, n.y) === null,
   );
   const sourceInStash = state.stash.find(

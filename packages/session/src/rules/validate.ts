@@ -5,6 +5,7 @@
  * this adds the checks a schema cannot express.
  */
 import {
+  addableNodeCells,
   checkGhostSnapshotShape,
   ghostKey,
   placeCore,
@@ -25,7 +26,7 @@ import {
   DEFAULT_WORKSHOP_PERCENT,
   workshopOptionProblem,
 } from './workshop-option.js';
-import { DRILL_PROMPT } from './events.js';
+import { DRILL_PROMPT, RICH_VEIN_PROMPT, richVeinCell } from './events.js';
 import { isInteger, isRecord } from './json-guards.js';
 import { nextShopProblem } from './shop-effects.js';
 
@@ -144,6 +145,90 @@ function checkUpgradeOptions(
         : 'player: must be a player index';
     if (problem !== null) {
       err(`pending.followUp.options[${String(i)}]: ${problem}.`);
+    }
+  });
+}
+
+/** Whether a Rich vein vote `c<x>_<y>` names a cell stored for that player. */
+function richVoteInOptions(
+  vote: string,
+  player: number,
+  opts: readonly unknown[],
+): boolean {
+  const cell = richVeinCell(vote);
+  if (cell === null) return false;
+  return opts.some(
+    (o) =>
+      isRecord(o) &&
+      o['player'] === player &&
+      Array.isArray(o['cells']) &&
+      (o['cells'] as unknown[]).some(
+        (c) =>
+          Array.isArray(c) &&
+          c.length === 2 &&
+          c[0] === cell.x &&
+          c[1] === cell.y,
+      ),
+  );
+}
+
+/**
+ * The structure of a Rich vein follow-up: the offer names a base resource,
+ * and each option is one player's list of cells, every one a legal cell of
+ * that player now (`addableNodeCells`), at most one option per player.
+ */
+function checkRichVeinOptions(
+  opts: readonly unknown[],
+  offer: unknown,
+  team: Parameters<typeof workshopOptionProblem>[0],
+  n: number,
+  deps: Pick<RunDeps, 'content' | 'mapgenConfig'>,
+  err: (msg: string) => void,
+): void {
+  const resource = isRecord(offer) ? offer['resource'] : undefined;
+  if (
+    typeof resource !== 'string' ||
+    !deps.content.resources.listBase().some((r) => r.id === resource)
+  ) {
+    err('pending.offer.resource: must be a base resource.');
+  }
+  const seen = new Set<number>();
+  opts.forEach((o, i) => {
+    const at = `pending.followUp.options[${String(i)}]`;
+    const player = isRecord(o) ? o['player'] : undefined;
+    if (
+      !isRecord(o) ||
+      !isInteger(player) ||
+      player < 0 ||
+      player >= n ||
+      o['id'] !== `cells${String(player)}` ||
+      !Array.isArray(o['cells'])
+    ) {
+      err(
+        `${at}: must be {id: "cells<player>", player, cells: [[x, y], ...]}.`,
+      );
+      return;
+    }
+    if (seen.has(player)) {
+      err(`${at}: a second option for player ${String(player)}.`);
+    }
+    seen.add(player);
+    const legal = new Set(
+      addableNodeCells(team, deps.content, deps.mapgenConfig, player).map(
+        (c) => `${String(c.x)},${String(c.y)}`,
+      ),
+    );
+    const cells = o['cells'] as unknown[];
+    if (cells.length === 0) err(`${at}: "cells" must not be empty.`);
+    for (const c of cells) {
+      if (
+        !Array.isArray(c) ||
+        c.length !== 2 ||
+        !legal.has(`${String(c[0])},${String(c[1])}`)
+      ) {
+        err(`${at}: cell ${JSON.stringify(c)} is not a legal node cell.`);
+        return;
+      }
     }
   });
 }
@@ -458,6 +543,13 @@ function check(
           );
         }
       }
+      if (fu['prompt'] === RICH_VEIN_PROMPT) {
+        if (!per) {
+          err('pending.followUp.perPlayer: a Rich vein follow-up needs true.');
+        } else if (team.ok) {
+          checkRichVeinOptions(opts, p['offer'], team.state, n, deps, err);
+        }
+      }
       (fu['votes'] as unknown[]).forEach((v, i) => {
         if (v === null) return;
         const known =
@@ -466,7 +558,9 @@ function check(
             ? v === 'skip' ||
               opts.some(
                 (o) => isRecord(o) && o['id'] === v && o['player'] === i,
-              )
+              ) ||
+              (fu['prompt'] === RICH_VEIN_PROMPT &&
+                richVoteInOptions(v, i, opts))
             : ids.includes(v));
         if (!known) {
           err(

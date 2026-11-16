@@ -36,6 +36,47 @@ export type ResourceNode = {
 };
 
 /**
+ * A node added during the run by the Rich vein event (RS-4i4), kept in the
+ * team state's optional `addedNodes` list, never in the map.
+ */
+export type AddedNode = ResourceNode & {
+  /** The player whose plot it is in. */
+  readonly owner: number;
+  /** The round of the event step that added it. */
+  readonly round: number;
+};
+
+/** What `allNodes` needs of a team state. */
+export interface HasNodes {
+  readonly map: GameMap;
+  readonly addedNodes?: readonly AddedNode[];
+}
+
+/**
+ * Every resource node of a team: the generated ones, then the added ones in
+ * the order added. The one place the two lists are merged; everything that
+ * reads nodes (placement, flow, rendering, the bot) goes through it, or
+ * through `queryTeamMap`.
+ */
+export function allNodes(team: HasNodes): readonly ResourceNode[] {
+  const added = team.addedNodes;
+  if (added === undefined || added.length === 0) return team.map.nodes;
+  return [
+    ...team.map.nodes,
+    ...added.map((n): ResourceNode => ({
+      x: n.x,
+      y: n.y,
+      resource: n.resource,
+    })),
+  ];
+}
+
+/** `queryMap` of a team's map with its added nodes. */
+export function queryTeamMap(team: HasNodes, terrain: TerrainConfig): MapQuery {
+  return queryMap(team.map, terrain, team.addedNodes ?? []);
+}
+
+/**
  * Plain JSON. `features` lists every cell with a natural feature, and
  * `nodes` every resource node, both sorted by `(y, x)`. Cells not listed are
  * open ground.
@@ -84,13 +125,22 @@ export interface MapQuery {
   plotOf(x: number): number;
 }
 
-/** Index the map once for fast queries. Throws on an unknown feature ID. */
-export function queryMap(map: GameMap, terrain: TerrainConfig): MapQuery {
+/**
+ * Index the map once for fast queries. Throws on an unknown feature ID.
+ * `extraNodes` (the team's added nodes, see `allNodes`) count as map nodes.
+ */
+export function queryMap(
+  map: GameMap,
+  terrain: TerrainConfig,
+  extraNodes: readonly ResourceNode[] = [],
+): MapQuery {
   const features = new Map<number, TerrainFeatureId>();
   const nodes = new Map<number, ResourceId>();
   const { width, height, plotWidth } = map;
   for (const f of map.features) features.set(f.y * width + f.x, f.feature);
   for (const n of map.nodes) nodes.set(n.y * width + n.x, n.resource);
+  // Nodes added during the run (Rich vein) read like generated ones.
+  for (const n of extraNodes) nodes.set(n.y * width + n.x, n.resource);
   const inBounds = (x: number, y: number): boolean =>
     Number.isInteger(x) &&
     Number.isInteger(y) &&

@@ -5,7 +5,8 @@
  * with an explicit map in the map format) where each op is `{ op, ...args }`
  * (`addToStash` {def, tier, owner}; `placeCore` {actor, x, y};
  * `placeFromStash` and `moveBuilding` {actor, id, x, y, rotation};
- * `returnToStash` and `removeFromStash` {actor, id}; `addConduit` {actor,
+ * `returnToStash` and `removeFromStash` {actor, id}; `addNode` {owner, x, y,
+ * resource, round} (Rich vein, an added resource node); `addConduit` {actor,
  * from: {building, side}, to: {building, side}, cells: [{x, y}]} and
  * `eraseConduit` {actor, id}). The map is `generateMap(seed, partySize)`. The
  * result has one entry per op (`{ op, ok: true }` plus `id` for addToStash
@@ -17,6 +18,7 @@ import { loadMapOrThrow, type MapContent } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
 import { addConduit, type ConduitEndArg } from './conduits.js';
 import {
+  addNode,
   addToStash,
   createTeamState,
   eraseConduit,
@@ -44,6 +46,14 @@ function int(o: Record<string, Json>, key: string): number {
   const v = o[key];
   if (typeof v !== 'number') {
     throw new TypeError(`team-state-ops: ${key} must be a number`);
+  }
+  return v;
+}
+
+function str(o: Record<string, Json>, key: string): string {
+  const v = o[key];
+  if (typeof v !== 'string') {
+    throw new TypeError(`team-state-ops: ${key} must be a string`);
   }
   return v;
 }
@@ -143,6 +153,15 @@ export function runTeamStateOps(
           outcome = removeFromStash(state, {
             actor: int(a, 'actor'),
             id: int(a, 'id'),
+          });
+          break;
+        case 'addNode':
+          outcome = addNode(state, content, config, {
+            owner: int(a, 'owner'),
+            x: int(a, 'x'),
+            y: int(a, 'y'),
+            resource: str(a, 'resource'),
+            round: int(a, 'round'),
           });
           break;
         case 'addConduit':
