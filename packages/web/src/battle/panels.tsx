@@ -2,6 +2,7 @@
 
 import type { BattleReason, BattleSideSummary } from '@game/core';
 import type { ComponentChildren } from 'preact';
+import { bossInfo } from '../run/boss-text.js';
 import { useMemo, useState } from 'preact/hooks';
 import { BoardView, type OverlayContext } from '../board/BoardView.js';
 import { CameraController } from '../board/controller.js';
@@ -41,16 +42,62 @@ export function CoreBars(props: {
   readonly hp: number;
   readonly max: number;
   readonly side: Side;
+  /** Linked Cores: the one shared health (see `SideStats.pool`). */
+  readonly pool?: SideStats['pool'];
+  /** Pylons standing and in all (see `SideStats.pylons`). */
+  readonly pylons?: SideStats['pylons'];
 }) {
   const { cores } = props;
-  if (cores.length <= 1) {
+  const pylons =
+    props.pylons === undefined || props.pylons === null ? null : (
+      <p
+        class="muted small pylon-count"
+        data-field={`pylons-${String(props.side)}`}
+      >
+        {t('battlePylonsCount', {
+          standing: String(props.pylons.standing),
+          total: String(props.pylons.total),
+        })}
+      </p>
+    );
+  if (props.pool !== undefined && props.pool !== null) {
+    // One bar for the whole side: every Core takes its damage from it.
     return (
-      <CoreBar
-        label={props.label}
-        hp={props.hp}
-        max={props.max}
-        side={props.side}
-      />
+      <div class="core-group shared" data-field={`cores-${String(props.side)}`}>
+        <CoreBar
+          label={t('battleSharedCores', { label: props.label })}
+          hp={props.pool.hp}
+          max={props.pool.max}
+          side={props.side}
+        />
+        <p class="muted small" data-field={`shared-${String(props.side)}`}>
+          {t('battleSharedChip')} ·{' '}
+          {cores
+            .map((c) =>
+              t(c.hp > 0 ? 'battleCoreStanding' : 'battleCoreFallen', {
+                label: props.label,
+                number: String(c.player + 1),
+              }),
+            )
+            .join(' · ')}
+        </p>
+        {pylons}
+      </div>
+    );
+  }
+  if (cores.length <= 1) {
+    const only = cores[0];
+    return (
+      <>
+        <CoreBar
+          label={props.label}
+          hp={props.hp}
+          max={props.max}
+          side={props.side}
+          {...(only?.marks === undefined ? {} : { marks: only.marks })}
+        />
+        {pylons}
+      </>
     );
   }
   const standing = cores.filter((c) => c.hp > 0).length;
@@ -81,9 +128,11 @@ export function CoreBars(props: {
             max={c.max}
             side={props.side}
             field={`core-hp-${String(props.side)}-${String(c.player)}`}
+            {...(c.marks === undefined ? {} : { marks: c.marks })}
           />
         </div>
       ))}
+      {pylons}
     </div>
   );
 }
@@ -95,6 +144,8 @@ export function CoreBar(props: {
   readonly side: Side;
   /** The `data-field` of the number; per side by default. */
   readonly field?: string;
+  /** Burst thresholds (percent of health) to mark on the bar (Brood). */
+  readonly marks?: readonly number[];
 }) {
   const pct = props.max <= 0 ? 0 : Math.round((props.hp / props.max) * 100);
   return (
@@ -114,6 +165,14 @@ export function CoreBar(props: {
           class={`bar-fill side-${String(props.side)}`}
           style={{ width: `${String(pct)}%` }}
         />
+        {(props.marks ?? []).map((m) => (
+          <span
+            key={m}
+            class={`bar-mark${pct <= m ? ' passed' : ''}`}
+            data-mark={m}
+            style={{ left: `${String(m)}%` }}
+          />
+        ))}
       </div>
       <span
         class="core-num"
@@ -271,6 +330,8 @@ export function BattleRail(props: {
           cores={mine.cores}
           hp={mine.coreHp}
           max={mine.coreMax}
+          pool={mine.pool}
+          pylons={mine.pylons}
           side={0}
         />
         <CoreBars
@@ -278,6 +339,8 @@ export function BattleRail(props: {
           cores={theirs.cores}
           hp={theirs.coreHp}
           max={theirs.coreMax}
+          pool={theirs.pool}
+          pylons={theirs.pylons}
           side={1}
         />
         <p class="alive-line" data-field="units-alive">
@@ -713,6 +776,14 @@ export function BattleSummaryView(props: SummaryProps) {
               .filter((x) => x !== null)
               .join(' ') || t('battleNoBreach')}
           </li>
+          {opponent.boss === undefined ? null : (
+            <li data-field="sum-boss">
+              {t('battleSumBoss', {
+                boss: bossInfo(opponent.boss).name,
+              })}{' '}
+              <span class="muted">{bossInfo(opponent.boss).mechanic}</span>
+            </li>
+          )}
           <li data-field="sum-units">
             {t('battleSumUnits', {
               own: String(own.unitsSpawned),

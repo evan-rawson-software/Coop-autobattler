@@ -25,11 +25,22 @@ From round 3 the shop can offer buildings that take two resources at once. A bui
 
 The first time the shop offers a refinery, a one-line hint explains the chain. The flow preview lists each refining chain: what reaches the refinery, what it makes per second, and whether the Golem forge or Spire behind it is fully fed or which input is short. If a refinery is destroyed in a battle, the battle log names what it starves.
 
+## Bosses (every PvP battle with no rival party)
+
+When the opponent is a computer-made boss, the Next fight panel of the shop and build screens names it, says in one line what is special about it, and gives one line of counter advice. The boss is fixed before you build, so you can build against it.
+
+- Boss: every third wave is a swarm of raiders. Defense against swarms.
+- Brood: each of its Cores bursts out units at 75%, 50% and 25% health (ticks on the Core bar, and a line in the log). Keep defense at home.
+- Bonded: its Cores share one health bar and fall together (a line joins them on the board).
+- Pylons: its Cores are shielded while pylons beside them stand (blue shield and lines on the board, a count in the side panel). The shield drops when the last pylon falls.
+- Warlord: each wave is led by a champion Golem, drawn larger with its own health bar.
+
 ## What to try
 
 - Play at least two runs back to back, and look for your first run's factory in the second.
 - Try each of the three strategies on different runs, and note how they differ.
 - Route resources with long and short conduits, and see what changes.
+- Look at which boss is next, then change your factory to counter it, and see whether the battle goes differently.
 - Look at the opponent's factory during a PvP battle and see why it won or lost.
 - Reload the page in the middle of a step to check your run comes back.
 - Build a refining chain (collectors into a refinery, then into a Golem forge or Spire) and compare it with two base buildings (Barracks) on the same collectors.
@@ -48,6 +59,7 @@ Open the `#debug` page (add `#debug` to the address) and use "Next PvP opponent"
 - Is a refining chain worth the effort compared with simply building more Barracks?
 - Do Golems feel tanky? Do casters feel strong against swarms?
 - Is two-input routing fun, or a chore?
+- Did you change what you built after seeing which boss was next?
 - Anything that confused you, broke, or looked wrong, with what you were doing at the time.
 
 Send it as a note on the issue tracker or in your own words.

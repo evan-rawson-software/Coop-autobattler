@@ -2128,6 +2128,71 @@ try {
         await shot('battle-6-refining-units');
       }
 
+      // The boss mechanics (issue #402): each boss battle is opened a few
+      // ticks before its moment, paused there and photographed.
+      const bossBattle = async (id, tick, field, shotName, dark = false) => {
+        await open(`#battle?p=rush&o=pve:${id}:3:boss&s=1&t=${tick}`);
+        await waitPhase('playing');
+        await page.click('#pause');
+        await waitFrames(page, 8);
+        const text = await page.locator(`[data-field="${field}"]`).innerText();
+        await shot(shotName);
+        if (dark) await shotDark(`${shotName}-dark`);
+        return text;
+      };
+      {
+        await bossBattle(
+          'arch_boss_brood',
+          262,
+          'core-hp-1',
+          'battle-7-boss-brood',
+          true,
+        ).catch(() => null);
+        const marks = await page.locator('.bar-mark').count();
+        const log = await page.locator('.feed-section').first().innerText();
+        check(
+          marks >= 3 && /burst at 75%: \d+ \w+/.test(log),
+          `boss Brood: the Core bar has the 75, 50 and 25 marks and the log names the burst (${marks} marks)`,
+        );
+        const linked = await bossBattle(
+          'arch_boss_linked',
+          300,
+          'shared-1',
+          'battle-8-boss-linked',
+        );
+        const sharedBars = await page
+          .locator('[data-field="cores-1"] .core-row')
+          .count();
+        check(
+          sharedBars === 1 && /Shared health/.test(linked),
+          `boss Linked: one shared health bar for the boss Cores (${sharedBars} bar, "${linked}")`,
+        );
+        const pylons = await bossBattle(
+          'arch_boss_pylons',
+          205,
+          'pylons-1',
+          'battle-9-boss-pylons',
+          true,
+        );
+        check(
+          /^Pylons [0-3]\/\d+$/.test(pylons.trim()) &&
+            !/^Pylons 3\/3$/.test(pylons.trim()),
+          `boss Pylons: the pylon count shows ("${pylons.trim()}")`,
+        );
+        await bossBattle(
+          'arch_boss_pylons',
+          268,
+          'pylons-1',
+          'battle-10-boss-shield-down',
+        );
+        await bossBattle(
+          'arch_boss_warlord',
+          262,
+          'core-hp-1',
+          'battle-11-boss-warlord',
+        ).catch(() => null);
+      }
+
       // Leaving the screen removes its debug hooks.
       await page.evaluate(() => {
         window.location.hash = '#build';

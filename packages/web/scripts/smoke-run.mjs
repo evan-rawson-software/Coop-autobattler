@@ -1730,6 +1730,7 @@ export async function runRunSmoke({
   let ended = false;
   let livesSeen = (await R.state()).lives;
   let bossShops = 0;
+  const bossShots = new Set();
   for (let i = 0; i < 90 && !ended; i++) {
     const s = await R.state().catch(() => null);
     if (s === null) break;
@@ -1755,6 +1756,28 @@ export async function runRunSmoke({
             /Lose [-−]1 life/.test(t),
           `shop (round ${s.round}): the boss is announced before the battle, a loss costs 1 life`,
         );
+        // The panel names the boss, its mechanic and a counter (MM-11).
+        const name = await page
+          .locator('#panel-next-fight [data-field="next-boss"]')
+          .innerText();
+        const mechanic = await page
+          .locator('#panel-next-fight [data-field="next-boss-mechanic"]')
+          .innerText();
+        const counter = await page
+          .locator('#panel-next-fight [data-field="next-boss-counter"]')
+          .innerText();
+        check(
+          /^(Boss|Brood|Bonded|Pylons|Warlord)$/.test(name) &&
+            mechanic.length > 20 &&
+            /^Counter: \S/.test(counter),
+          `shop (round ${s.round}): the boss panel names the boss, its mechanic and a counter ("${name}", "${counter}")`,
+        );
+        if (!bossShots.has(name) && bossShots.size < 2) {
+          await page.locator('#panel-next-fight').scrollIntoViewIfNeeded();
+          if (bossShots.size === 0) await shotDark('shop-boss-next-dark');
+          await shot(`shop-boss-next-${name.toLowerCase()}`);
+          bossShots.add(name);
+        }
       }
     }
     if (s.step === 'pvp_summary' && s.lives === 1) {

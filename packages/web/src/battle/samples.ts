@@ -129,11 +129,23 @@ export interface Sample {
 
 /** Build the battle a selection names. Deterministic in the selection. */
 export function buildSample(sel: SampleSelection): Sample {
-  const team =
+  const board =
     sel.player === REFINING_BOARD
       ? refiningDemoTeam(DEFAULT_SEED, content)
       : buildReferenceBoard(sel.player, content, content.mapgen);
   const [kind, a, b, c] = sel.opponent.split(':');
+  // A boss for a larger party (Linked Cores) needs a party that size: the
+  // sample then plays a ready-made team of that many players.
+  const need =
+    threatsConfig.archetypes.find((x) => x.id === a)?.minPartySize ?? 1;
+  const team =
+    kind === 'pve' && board.map.partySize < need
+      ? buildSampleTeam(
+          generateMap(sel.seed, need, content, content.mapgen),
+          content,
+          sel.seed,
+        )
+      : board;
   if (kind === 'pve' && a !== undefined && b !== undefined && c !== undefined) {
     const round = Number(b);
     const threat = generateThreat(
@@ -154,6 +166,7 @@ export function buildSample(sel: SampleSelection): Sample {
         name: `${archetypeText(a).name} threat, round ${String(round)}`,
         kind: boss ? 'boss' : 'pve',
         label: boss ? bossLabel() : archetypeText(a).name,
+        ...(boss ? { boss: a } : {}),
       },
       title: `Round ${String(round)} · Stronghold battle`,
       reward: (w) => sampleReward('pve', w),

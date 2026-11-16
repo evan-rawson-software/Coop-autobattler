@@ -4,6 +4,7 @@ import { content } from '../content.js';
 import { proposePath } from './autoroute.js';
 import { deriveChecklist, isWarning, unpowered } from './checklist.js';
 import { newStashIds, noteRound, resetNewItems } from './new-items.js';
+import { bossInfo } from '../run/boss-text.js';
 import { nextFightOf } from './next-fight.js';
 import { simConfig } from './setup.js';
 import { buildRun, firstFit, stashIds } from './test-helpers.js';
@@ -196,7 +197,7 @@ describe('Next fight', () => {
       round: 3,
       title: 'Rival party',
       boss: false,
-      bossNote: '',
+      bossInfo: null,
       options: [],
       pvp: { winGold, lossGold: null, lifeCost },
     }) as never;
@@ -205,8 +206,22 @@ describe('Next fight', () => {
     expect(nextFightOf(pvp(8, 1))).toEqual({
       title: 'Rival party',
       stakes: 'Win +8 gold · Lose −1 life',
+      boss: null,
     });
     expect(nextFightOf(pvp(null, 2))?.stakes).toBe('Win gold · Lose −2 lives');
+  });
+
+  test('a boss shows its name, mechanic and counter', () => {
+    const view = {
+      ...(pvp(null, 1) as object),
+      title: 'Boss battle next',
+      boss: true,
+      bossInfo: bossInfo('arch_boss_brood'),
+    } as never;
+    const fight = nextFightOf(view);
+    expect(fight?.title).toBe('Boss battle next');
+    expect(fight?.boss?.name).toBe('Brood');
+    expect(fight?.boss?.counter).toContain('Keep defense at home');
   });
 
   test('nothing known shows nothing', () => {

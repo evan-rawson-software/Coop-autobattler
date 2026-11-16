@@ -59,6 +59,26 @@
   border: 1px solid var(--border);
   border-radius: 3px;
   overflow: hidden;
+  position: relative;
+}
+
+/* A Brood Core releases a burst when its health falls to this mark. */
+.bar-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink);
+  box-shadow: 0 0 0 1px var(--surface);
+}
+
+.bar-mark.passed {
+  opacity: 0.45;
+}
+
+.pylon-count {
+  margin: 2px 0 0;
 }
 
 .bar-fill {

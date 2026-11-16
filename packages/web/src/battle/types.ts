@@ -20,6 +20,11 @@ export interface OpponentInfo {
   readonly kind: OpponentKind;
   /** A short kind label such as an archetype name; defaults per kind. */
   readonly label?: string;
+  /**
+   * The archetype ID of the boss, when the battle is against one and the run
+   * recorded which (MM-9d); absent for an older save.
+   */
+  readonly boss?: string;
 }
 
 export interface BattleViewProps {

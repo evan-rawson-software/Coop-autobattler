@@ -124,6 +124,24 @@ describe('round by round', () => {
     ]);
   });
 
+  test('a boss round names the boss recorded, not the label', () => {
+    const rows = roundRows([
+      {
+        round: 2,
+        pve: null,
+        pvp: {
+          won: true,
+          opponent: {
+            kind: 'boss',
+            label: 'arch_boss',
+            boss: 'arch_boss_brood',
+          },
+        },
+      },
+    ]);
+    expect(rows[0]?.pvp).toBe('the boss (Brood)');
+  });
+
   test('records of the run: tallies, difficulties, lives lost', () => {
     const s = runStats(finished(), 5);
     expect(s.pvp).toEqual({ won: 1, lost: 1 });

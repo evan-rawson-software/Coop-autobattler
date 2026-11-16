@@ -203,10 +203,13 @@ function describeStoredBattle(
   if (oppKind === 'ghost') {
     opponent = { name: ghostDisplayName(label), kind: 'ghost' };
   } else if (oppKind === 'boss') {
+    // The boss ID the round record keeps; older saves only have the label.
+    const boss = run.thisRound.pvp?.opponent.boss ?? label;
     opponent = {
-      name: bossName(archetypeText(label).name),
+      name: bossName(archetypeText(boss).name),
       kind: 'boss',
       label: bossLabel(),
+      boss,
     };
   } else {
     const arch = archetypeText(label).name;

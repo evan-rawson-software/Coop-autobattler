@@ -35,7 +35,7 @@ import {
   sideStats,
   type Moment,
 } from './derive.js';
-import { coreMaxima } from './derive.js';
+import { overloadMaxima } from './boss.js';
 import { drawBattleOverlay, linkMap, makeDrawIndex } from './draw.js';
 import {
   BattleSummaryView,
@@ -644,8 +644,8 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
       ? null
       : overloadLine(
           battleConfig.sim,
-          coreMaxima(record, 0),
-          coreMaxima(record, 1),
+          overloadMaxima(record, 0),
+          overloadMaxima(record, 1),
         );
   const overloadTick = battleConfig.sim.overloadStartTick;
 

@@ -26,6 +26,7 @@ import { buildingName } from '../build/view-model.js';
 import { cardStats, type CardStats } from '../build/card-stats.js';
 import { kindLabel } from './effect-text.js';
 import { archetypeText } from '../run/display-text.js';
+import { bossInfo, type BossInfo } from '../run/boss-text.js';
 import { count } from '../plural.js';
 import { gateFor, type Gate, type LockDeps } from '../build/lock.js';
 import { screenText, screenTexts } from '../build/texts.js';
@@ -300,8 +301,8 @@ export interface NextBattleView {
   }[];
   /** True when the rival battle is against the generated boss (PvP leg). */
   readonly boss: boolean;
-  /** One sentence on how the boss differs; '' unless `boss`. */
-  readonly bossNote: string;
+  /** The boss's name, mechanic and counter advice; null unless `boss`. */
+  readonly bossInfo: BossInfo | null;
   /** PvP only. */
   readonly pvp: {
     readonly winGold: number | null;
@@ -318,10 +319,6 @@ export function threatLine(o: PveOptionView): string {
   parts.push(`Core ${String(s.coreHealth)} health`);
   return parts.join(' · ');
 }
-
-/** What the boss really is: see "PvE threats" and "Ghosts" in the rules. */
-const BOSS_NOTE =
-  'A computer-made stronghold, not another party: waves of soldiers and fast raiders, with walls and turrets around its Core.';
 
 export function nextBattleView(
   run: RunState,
@@ -342,17 +339,19 @@ export function nextBattleView(
         rewardGold: o.reward.gold,
       })),
       boss: false,
-      bossNote: '',
+      bossInfo: null,
       pvp: null,
     };
   }
   const boss = pvpOpponentInfo(run)?.kind === 'boss';
+  // The archetype fixed with the opponent; absent in a save made before it was.
+  const bossId = boss ? run.pvpOpponent?.boss : undefined;
   return {
     kind: 'pvp',
     round: info.round,
     title: boss ? 'Boss battle next' : 'Rival party',
     boss,
-    bossNote: boss ? BOSS_NOTE : '',
+    bossInfo: boss ? bossInfo(bossId) : null,
     options: [],
     pvp: {
       winGold: info.stakes.winGold,

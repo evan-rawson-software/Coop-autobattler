@@ -5,6 +5,7 @@
  */
 
 import type { RunDeps, RunState } from '@game/session';
+import type { BossInfo } from '../run/boss-text.js';
 import { nextBattleView, type NextBattleView } from '../shop/view-model.js';
 import { screenText, screenTexts, type ScreenTexts } from './texts.js';
 
@@ -13,6 +14,8 @@ export interface NextFight {
   readonly title: string;
   /** The stakes, e.g. "Win +8 gold · Lose −1 life". */
   readonly stakes: string;
+  /** A boss's name, mechanic and counter advice; null for anyone else. */
+  readonly boss: BossInfo | null;
 }
 
 export function nextFightOf(
@@ -26,6 +29,7 @@ export function nextFightOf(
       stakes: screenText(texts, 'uiNextFightChoose', {
         n: String(v.options.length),
       }),
+      boss: null,
     };
   }
   const p = v.pvp;
@@ -39,7 +43,7 @@ export function nextFightOf(
       : screenText(texts, 'uiNextFightLoseMany', {
           lives: String(p.lifeCost),
         });
-  return { title: v.title, stakes: `${win} · ${lose}` };
+  return { title: v.title, stakes: `${win} · ${lose}`, boss: v.bossInfo };
 }
 
 export function nextFight(

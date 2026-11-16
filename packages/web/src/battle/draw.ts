@@ -11,6 +11,7 @@ import {
   isCoreHealth,
   type TeamContent,
   type ArenaEvent,
+  type ArenaSim,
   type TeamState,
   type UnitSim,
 } from '@game/core';
@@ -28,6 +29,10 @@ import {
 import { rampOf } from '../board/sprite-board.js';
 import { restFacing, type Playback } from './playback.js';
 import { spriteHalf, spriteReach } from './sprite-size.js';
+import { bossMarks } from './boss.js';
+
+type UnitsView = Pick<ArenaSim, 'health'>;
+import { screenText, screenTexts } from '../build/texts.js';
 
 type Pt = { x: number; y: number };
 
@@ -120,7 +125,15 @@ const LIFE_ARMOR = 8;
 const LIFE_PROJECTILE = 3;
 const LIFE_BLAST = 8;
 const LIFE_FLASH = 6;
+const LIFE_BURST = 12;
+const LIFE_SHIELD = 14;
+const LIFE_BLOCK = 3;
 const LIFE_MAX = 16;
+
+/** A boss Core's shield and the lines to its pylons. */
+const SHIELD = '#2e86de';
+/** How much larger a champion is drawn than a unit of its type. */
+const CHAMPION_SCALE = 1.7;
 
 const FONT = '600 {s}px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
 
@@ -369,6 +382,126 @@ function drawArmorMark(
   ctx.restore();
 }
 
+/**
+ * Pylons (MM-9d): while a Core has a pylon standing it wears a shield, and a
+ * line runs from each standing pylon to the Core it guards.
+ */
+function drawShields(
+  ctx: CanvasRenderingContext2D,
+  marks: ReturnType<typeof bossMarks>,
+  sim: UnitsView,
+  index: DrawIndex,
+  ox: number,
+  oy: number,
+  z: number,
+): void {
+  const alive = new Set<number>();
+  const cores = new Set<number>();
+  for (const h of sim.health) {
+    if (h.side !== 1 || h.hp <= 0) continue;
+    if (isCoreHealth(h)) cores.add(h.core);
+    else alive.add(h.building);
+  }
+  const lineW = Math.max(1.5, z * 0.08);
+  ctx.save();
+  ctx.strokeStyle = SHIELD;
+  ctx.lineWidth = lineW;
+  ctx.setLineDash([z * 0.25, z * 0.2]);
+  for (const p of marks.pylons) {
+    if (!alive.has(p.building) || !cores.has(p.core)) continue;
+    const a = index.rects[1].get(p.building);
+    const b = index.coreRects[1][p.core];
+    if (a === undefined || b === null || b === undefined) continue;
+    ctx.beginPath();
+    ctx.moveTo(ox + (a.x + a.w / 2) * z, oy + (a.y + a.h / 2) * z);
+    ctx.lineTo(ox + (b.x + b.w / 2) * z, oy + (b.y + b.h / 2) * z);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  const shielded = new Set<number>();
+  for (const p of marks.pylons) {
+    if (alive.has(p.building) && cores.has(p.core)) shielded.add(p.core);
+  }
+  for (const core of shielded) {
+    const r = index.coreRects[1][core];
+    if (r === null || r === undefined) continue;
+    const g = z * 0.25;
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = SHIELD;
+    ctx.fillRect(
+      ox + r.x * z - g,
+      oy + r.y * z - g,
+      r.w * z + 2 * g,
+      r.h * z + 2 * g,
+    );
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = Math.max(2.5, z * 0.14);
+    ctx.strokeRect(
+      ox + r.x * z - g,
+      oy + r.y * z - g,
+      r.w * z + 2 * g,
+      r.h * z + 2 * g,
+    );
+  }
+  ctx.restore();
+}
+
+/** Linked Cores (MM-9d): a line joins the Cores that share one health. */
+function drawCoreLink(
+  ctx: CanvasRenderingContext2D,
+  sim: UnitsView,
+  index: DrawIndex,
+  ox: number,
+  oy: number,
+  z: number,
+  color: string,
+  outline: string,
+  chip: string | null,
+): void {
+  const pts: (Pt | undefined)[] = [];
+  const rects = index.coreRects[1];
+  for (const h of sim.health) {
+    if (!isCoreHealth(h) || h.side !== 1 || h.hp <= 0) continue;
+    const r = rects[h.core];
+    if (r === null || r === undefined) continue;
+    pts[h.core] = { x: ox + (r.x + r.w / 2) * z, y: oy + (r.y + r.h / 2) * z };
+  }
+  const line = pts.filter((p): p is Pt => p !== undefined);
+  if (line.length < 2) return;
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (const [width, stroke] of [
+    [Math.max(4, z * 0.2), outline],
+    [Math.max(2, z * 0.1), color],
+  ] as const) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = width;
+    ctx.setLineDash(stroke === color ? [z * 0.3, z * 0.2] : []);
+    ctx.beginPath();
+    line.forEach((p, i) => {
+      if (i === 0) ctx.moveTo(p.x, p.y);
+      else ctx.lineTo(p.x, p.y);
+    });
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  const a = line[0];
+  const b = line[1];
+  if (chip !== null && a !== undefined && b !== undefined) {
+    ctx.font = FONT.replace('{s}', '12');
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2;
+    const w = ctx.measureText(chip).width + 10;
+    ctx.fillStyle = outline;
+    ctx.fillRect(mx - w / 2, my - 9, w, 18);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(chip, mx, my);
+  }
+  ctx.restore();
+}
+
 export function drawBattleOverlay(
   ctx: CanvasRenderingContext2D,
   o: OverlayContext,
@@ -465,6 +598,18 @@ export function drawBattleOverlay(
     ctx.stroke();
   }
 
+  // --- Boss marks under the units: the Pylons' shields and lines, and the
+  // link between linked Cores (MM-9d).
+  const marks = bossMarks(sim);
+  const pool = pb.record.linked[1]
+    ? Math.max(0, sim.linkedPools?.find((p) => p.side === 1)?.hp ?? 0)
+    : null;
+  if (marks.pylons.length > 0) drawShields(ctx, marks, sim, index, ox, oy, z);
+  if (marks.linked && z >= 4) {
+    const chip = z >= 8 ? screenText(screenTexts, 'battleSharedChip') : null;
+    drawCoreLink(ctx, sim, index, ox, oy, z, foe, theme.outline, chip);
+  }
+
   // --- Health bars of damaged buildings and the Cores ---------------------
   if (z >= 6) {
     const initial = pb.record.initialHealth;
@@ -482,10 +627,29 @@ export function drawBattleOverlay(
       const bw = r.w * z;
       const bx = ox + r.x * z;
       const by = oy + r.y * z - 6;
+      // Linked Cores take their damage from the shared pool: every bar shows it.
+      const frac =
+        isCore && side === 1 && pool !== null
+          ? pool / Math.max(1, pb.record.coreMax[1])
+          : h.hp / max;
       ctx.fillStyle = theme.outline;
       ctx.fillRect(bx, by, bw, 4);
       ctx.fillStyle = sideColor(side);
-      ctx.fillRect(bx + 0.5, by + 0.5, Math.max(0, (bw - 1) * (h.hp / max)), 3);
+      ctx.fillRect(bx + 0.5, by + 0.5, Math.max(0, (bw - 1) * frac), 3);
+      // A Brood Core's burst thresholds: a tick on its bar for each.
+      const ticks = isCore && side === 1 ? marks.bursts.get(h.core) : undefined;
+      if (ticks !== undefined) {
+        for (const m of ticks) {
+          const mx = bx + bw * (m / 100);
+          ctx.fillStyle = theme.ink;
+          ctx.globalAlpha = frac * 100 <= m ? 0.4 : 1;
+          ctx.fillRect(mx - 1, by - 2, 2, 8);
+          ctx.strokeStyle = theme.boardBg;
+          ctx.lineWidth = 1;
+          ctx.strokeRect(mx - 1.5, by - 2.5, 3, 9);
+          ctx.globalAlpha = 1;
+        }
+      }
     }
   }
 
@@ -580,6 +744,7 @@ export function drawBattleOverlay(
       ctx.drawImage(fx.shadow, tmp.x - h, tmp.y - h + h * 0.4, h * 2, h * 2);
     }
   }
+  const champions = pb.record.champions;
   let flat = 0;
   for (let i = 0; i < units.length; i++) {
     const u = units[i];
@@ -615,13 +780,15 @@ export function drawBattleOverlay(
       }
     }
     const k = (face - restFacing(u.side)) & 7;
+    // A champion (Warlord) is drawn larger than the unit it is made from.
+    const big = champions[u.id] !== undefined ? CHAMPION_SCALE : 1;
     if (k === 0) {
-      const h = spriteHalf(ur, false);
+      const h = spriteHalf(ur, false) * big;
       ctx.drawImage(img, tmp.x - h, tmp.y - h, h * 2, h * 2);
     } else {
       // A turned square pokes out of the circle: keep it inside the diameter
       // (but never below the minimum sprite size).
-      const h = spriteHalf(ur, (k & 1) === 1);
+      const h = spriteHalf(ur, (k & 1) === 1) * big;
       ctx.setTransform(base);
       ctx.translate(tmp.x, tmp.y);
       ctx.rotate(k * OCTANT);
@@ -661,6 +828,43 @@ export function drawBattleOverlay(
       ctx.fillRect(tmp.x - r, tmp.y - up - 5, r * 2, 3);
       ctx.fillStyle = sideColor(u.side);
       ctx.fillRect(tmp.x - r, tmp.y - up - 5, r * 2 * (u.hp / max), 3);
+    }
+  }
+
+  // A champion has its own health bar, whole or hurt, and a ring in its
+  // side's colour so it stands out in the crowd.
+  if (marks.champions) {
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i];
+      if (u === undefined) continue;
+      const max = champions[u.id];
+      if (max === undefined || max <= 0) continue;
+      pxOf(u, tmp);
+      const half = spriteHalf(radiusOf(u), false) * CHAMPION_SCALE;
+      ctx.strokeStyle = sideColor(u.side);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(
+        tmp.x,
+        tmp.y + half * 0.55,
+        half * 0.8,
+        half * 0.3,
+        0,
+        0,
+        Math.PI * 2,
+      );
+      ctx.stroke();
+      const bw = Math.max(24, half * 2);
+      const by = tmp.y - half - 8;
+      ctx.fillStyle = theme.outline;
+      ctx.fillRect(tmp.x - bw / 2 - 1, by - 1, bw + 2, 7);
+      ctx.fillStyle = sideColor(u.side);
+      ctx.fillRect(
+        tmp.x - bw / 2,
+        by,
+        Math.max(0, bw * Math.min(1, u.hp / max)),
+        5,
+      );
     }
   }
 
@@ -973,6 +1177,57 @@ export function drawBattleOverlay(
         ctx.moveTo(ox + tmp.x * z + k, oy + tmp.y * z - k);
         ctx.lineTo(ox + tmp.x * z - k, oy + tmp.y * z + k);
         ctx.stroke();
+        break;
+      }
+      case 'burst_released': {
+        // A Brood Core bursts: a flash on the Core and a ring that spreads.
+        if (age >= LIFE_BURST) break;
+        const rr = index.coreRects[e.side === 0 ? 0 : 1][e.core];
+        if (rr === null || rr === undefined) break;
+        const p = age / LIFE_BURST;
+        const x = ox + rr.x * z;
+        const y = oy + rr.y * z;
+        ctx.globalAlpha = 0.5 * (1 - p);
+        ctx.fillStyle = theme.hover;
+        ctx.fillRect(x, y, rr.w * z, rr.h * z);
+        ctx.globalAlpha = 1 - p;
+        ctx.strokeStyle = theme.hover;
+        ctx.lineWidth = Math.max(3, z * 0.15);
+        ctx.beginPath();
+        ctx.arc(
+          x + (rr.w * z) / 2,
+          y + (rr.h * z) / 2,
+          (Math.max(rr.w, rr.h) / 2 + 0.6 + 2.2 * p) * z,
+          0,
+          Math.PI * 2,
+        );
+        ctx.stroke();
+        break;
+      }
+      case 'core_shield_down':
+      case 'core_hit_blocked': {
+        // The shield drops: its ring spreads and fades. A blocked hit makes it
+        // flash for a moment.
+        const life = e.type === 'core_shield_down' ? LIFE_SHIELD : LIFE_BLOCK;
+        if (age >= life) break;
+        const rr = index.coreRects[e.side === 0 ? 0 : 1][e.core];
+        if (rr === null || rr === undefined) break;
+        const p = age / life;
+        const grow =
+          e.type === 'core_shield_down' ? z * (0.5 + 2 * p) : z * 0.3;
+        ctx.globalAlpha = (e.type === 'core_shield_down' ? 1 : 0.7) * (1 - p);
+        ctx.strokeStyle = SHIELD;
+        ctx.lineWidth = Math.max(3, z * 0.16);
+        ctx.setLineDash(
+          e.type === 'core_shield_down' ? [z * 0.3, z * 0.2] : [],
+        );
+        ctx.strokeRect(
+          ox + rr.x * z - grow,
+          oy + rr.y * z - grow,
+          rr.w * z + 2 * grow,
+          rr.h * z + 2 * grow,
+        );
+        ctx.setLineDash([]);
         break;
       }
       case 'ramp_step': {

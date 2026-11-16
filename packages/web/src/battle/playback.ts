@@ -29,6 +29,7 @@ import {
   type TeamState,
   type UnitSim,
   isCoreHealth,
+  poolOf,
 } from '@game/core';
 import type { WebContent } from '../content.js';
 import type { BattleDescription } from './types.js';
@@ -55,6 +56,17 @@ export interface BattleRecord {
    * `tickStart[a] .. tickStart[b]`.
    */
   readonly tickStart: Int32Array;
+  /**
+   * Whether each side's Cores share one health pool (MM-9d, "Linked Cores").
+   * The Cores of such a side take no damage themselves, so `coreHp` is the
+   * pool's health for it.
+   */
+  readonly linked: readonly [boolean, boolean];
+  /**
+   * The champions of the battle (MM-9d, "Warlord"): unit ID to the health it
+   * spawned with (a plain object, so the record can be hashed and cloned). Empty without a boss that has champions.
+   */
+  readonly champions: Readonly<Record<number, number>>;
   /** Milliseconds the up-front simulation took (measurement only). */
   readonly simMs: number;
 }
@@ -88,6 +100,23 @@ export function startDescribed(
 
 const now = (): number => performance.now();
 
+/**
+ * The champion waves of the second side (MM-9d, "Warlord"): a wave entry with
+ * a health percent. The first `count` units of that type that enter at or
+ * after its tick are its champions.
+ */
+function championWaves(
+  sim: ArenaSim,
+): { tick: number; unit: string; left: number }[] {
+  const out: { tick: number; unit: string; left: number }[] = [];
+  for (const w of sim.sideOptions?.[1].scheduledWaves ?? []) {
+    if (w.healthPercent !== undefined) {
+      out.push({ tick: w.tick, unit: w.unit, left: w.count });
+    }
+  }
+  return out.sort((a, b) => a.tick - b.tick);
+}
+
 /** Run a battle to its end and keep what the screen needs. */
 export function simulateRecord(
   desc: BattleDescription,
@@ -110,17 +139,42 @@ export function simulateRecord(
   sim.health.forEach((h, i) => {
     if (isCoreHealth(h)) coresAt[h.side === 0 ? 0 : 1]?.push(i);
   });
-  const hpOf = (side: 0 | 1): number =>
-    (coresAt[side] ?? []).reduce(
+  // A side whose Cores are linked loses health from the shared pool alone.
+  const linked: [boolean, boolean] = [
+    poolOf(sim, 0) !== undefined,
+    poolOf(sim, 1) !== undefined,
+  ];
+  const hpOf = (side: 0 | 1): number => {
+    const pool = poolOf(sim, side);
+    if (pool !== undefined) return pool.hp;
+    return (coresAt[side] ?? []).reduce(
       (t, i) => t + Math.max(0, sim.health[i]?.hp ?? 0),
       0,
     );
+  };
   const hp0: number[] = [hpOf(0)];
   const hp1: number[] = [hpOf(1)];
+  const champions: Record<number, number> = {};
+  const waves = championWaves(sim);
+  let seenEvents = 0;
   while (!battle.isOver()) {
     battle.step();
     hp0.push(hpOf(0));
     hp1.push(hpOf(1));
+    if (waves.length > 0) {
+      const log = battle.eventLog;
+      for (; seenEvents < log.length; seenEvents++) {
+        const e = log[seenEvents];
+        if (e?.type !== 'unit_spawned' || e.side !== 1) continue;
+        const wave = waves.find(
+          (w) => w.left > 0 && w.unit === e.def && w.tick <= e.tick,
+        );
+        if (wave === undefined) continue;
+        wave.left -= 1;
+        const u = sim.units.find((x) => x.id === e.unit);
+        if (u !== undefined) champions[u.id] = u.hp;
+      }
+    }
   }
   const result = battle.result();
   if (result === null) throw new Error('Battle ended without a result.');
@@ -145,6 +199,8 @@ export function simulateRecord(
       initialHealth,
       coreMax: [summary.sides[0].coreMaxHealth, summary.sides[1].coreMaxHealth],
       coreHp: [Int32Array.from(hp0), Int32Array.from(hp1)],
+      linked,
+      champions,
       tickStart,
       simMs: now() - t0,
     },
