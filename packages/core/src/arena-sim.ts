@@ -20,6 +20,9 @@ import {
   breachStep,
   computeBreach,
   computeField,
+  goalBuildings,
+  goalRefs,
+  standingPylons,
   fieldStep,
   openFor,
   tieKey,
@@ -161,6 +164,41 @@ export type ArenaEvent =
         readonly unit: UnitId;
         readonly count: number;
       }[];
+    }
+  | {
+      readonly tick: number;
+      /**
+       * A pylon (MM-9d) was destroyed; `standing` pylons of that Core remain.
+       * Recorded in step 6 right after its `building_destroyed`.
+       */
+      readonly type: 'pylon_destroyed';
+      readonly side: number;
+      readonly building: number;
+      /** The player index of the Core it shielded. */
+      readonly core: number;
+      readonly standing: number;
+    }
+  | {
+      readonly tick: number;
+      /**
+       * The last pylon of a Core was destroyed (MM-9d): the Core can be hurt
+       * from the next tick on. Recorded right after that `pylon_destroyed`.
+       */
+      readonly type: 'core_shield_down';
+      readonly side: number;
+      readonly core: number;
+    }
+  | {
+      readonly tick: number;
+      /**
+       * A unit's hit on a shielded Core did nothing (MM-9d). Recorded in step
+       * 4 right after the `unit_attacked` of the same hit.
+       */
+      readonly type: 'core_hit_blocked';
+      readonly unit: number;
+      readonly side: number;
+      readonly core: number;
+      readonly damage: number;
     }
   | {
       readonly tick: number;
@@ -401,6 +439,17 @@ export interface SideBurst {
   readonly count: number;
 }
 
+/**
+ * A pylon of a side (MM-9d): the building with this instance ID has `health`
+ * as its starting and maximum health (before modifiers) and shields the Core
+ * of player `core` while it stands (see `SideOptions.pylons`).
+ */
+export interface SidePylon {
+  readonly building: number;
+  readonly core: number;
+  readonly health: number;
+}
+
 /** One scheduled wave of a side (see `SideOptions.scheduledWaves`). */
 export interface ScheduledWave {
   /** The tick on which the units spawn (in the Production step). */
@@ -442,6 +491,12 @@ export interface SideOptions {
    * rules reference. The pool starts as the sum of the Cores' starting health.
    */
   readonly linkedCores?: boolean;
+  /**
+   * Pylons (MM-9d, "Pylons"): buildings of the side that shield its Cores. A
+   * Core takes no unit damage while a pylon of its player index stands; the
+   * party's units aim at the pylons first. See the rules reference.
+   */
+  readonly pylons?: readonly SidePylon[];
 }
 
 export interface ArenaSim {
@@ -682,6 +737,19 @@ function refOfHealth(arena: Arena, h: HealthSim): number {
     : (arena.byId[h.side]?.get(h.building) ?? -1);
 }
 
+/**
+ * The starting health a side's options give a building: a Core's
+ * `coreHealths` entry, or a pylon's `pylons` entry; undefined for any other.
+ */
+function healthOverrideOf(
+  options: SideOptions | null | undefined,
+  b: ArenaBuilding,
+): number | undefined {
+  if (b.kind === 'core') return options?.coreHealths?.[b.player];
+  if (b.defenseType !== 'pylon') return undefined;
+  return options?.pylons?.find((p) => p.building === b.id)?.health;
+}
+
 /** The arena of a state: destroyed Cores are taken out again. */
 export function arenaOf(sim: ArenaSim, content: ArenaContent): Arena {
   const arena = createArena(
@@ -695,6 +763,13 @@ export function arenaOf(sim: ArenaSim, content: ArenaContent): Arena {
     if (h.hp > 0) continue;
     const r = refOfHealth(arena, h);
     if (r >= 0) removeFromArena(arena, r);
+  }
+  // Pylons (MM-9d): in the order of the side options (side 0, then side 1).
+  for (const side of [0, 1] as const) {
+    for (const p of sim.sideOptions?.[side].pylons ?? []) {
+      const ref = arena.byId[side]?.get(p.building);
+      if (ref !== undefined) arena.pylons.push({ ref, side, core: p.core });
+    }
   }
   return arena;
 }
@@ -766,9 +841,7 @@ export function createArenaContext(
       sim.teams[side],
       b,
       content,
-      b.kind === 'core'
-        ? sim.sideOptions?.[side].coreHealths?.[b.player]
-        : undefined,
+      healthOverrideOf(sim.sideOptions?.[side], b),
     );
   }
   const producers = new Map<number, ProducerInfo>();
@@ -915,9 +988,7 @@ export function createArenaSim(
       teams[side],
       b,
       content,
-      b.kind === 'core'
-        ? options.sideOptions?.[side]?.coreHealths?.[b.player]
-        : undefined,
+      healthOverrideOf(options.sideOptions?.[side], b),
     );
     health.push(
       b.kind === 'core'
@@ -2382,6 +2453,8 @@ function decideContact(
   }
 }
 
+const EMPTY_BUILDINGS: readonly ArenaBuilding[] = [];
+
 /**
  * Decision pass 2 (rules a2 and b): chase the nearest visible enemy unit in
  * aggro range, else attack the Core when it is within reach.
@@ -2406,37 +2479,49 @@ function decideAim(
   }
   // Rule b (PP-11, CB-15c): any living enemy Core within reach. The unit's
   // target Core first, else the nearest; ties by the later parts of the
-  // target key, `(|q - opposite(owner)|, -q)`.
+  // target key, `(|q - opposite(owner)|, -q)`. A Core shielded by pylons
+  // (MM-9d) is not attacked: its standing pylons stand in its place, each
+  // with the Core's key, the nearest one first.
   const cores = arena.coreRef[1 - u.side] ?? [];
   const opp = cores.length - 1 - u.owner;
   let best = -1;
+  let bestRef = -1;
   let bestT = 0;
   let bestD = 0;
   let bestN = 0;
   for (let q = 0; q < cores.length; q++) {
-    const ref = cores[q] ?? -1;
-    const core = ref >= 0 ? arena.buildings[ref] : undefined;
-    if (core === undefined || !core.alive) continue;
-    const d = buildingDist2(u.px, u.py, core);
-    if (d > reachR * reachR) continue;
     const t = q === u.target ? 0 : 1;
     const near = Math.abs(q - opp);
-    if (
-      best < 0 ||
-      t < bestT ||
-      (t === bestT &&
-        (d < bestD ||
-          (d === bestD && (near < bestN || (near === bestN && q > best)))))
-    ) {
-      best = q;
-      bestT = t;
-      bestD = d;
-      bestN = near;
+    const coreRef = cores[q] ?? -1;
+    const coreB = coreRef >= 0 ? arena.buildings[coreRef] : undefined;
+    if (coreB === undefined || !coreB.alive) continue;
+    const group =
+      arena.pylons.length === 0
+        ? EMPTY_BUILDINGS
+        : standingPylons(arena, 1 - u.side, q);
+    const count = group.length === 0 ? 1 : group.length;
+    for (let g = 0; g < count; g++) {
+      const core = group.length === 0 ? coreB : (group[g] ?? coreB);
+      const d = buildingDist2(u.px, u.py, core);
+      if (d > reachR * reachR) continue;
+      if (
+        best < 0 ||
+        t < bestT ||
+        (t === bestT &&
+          (d < bestD ||
+            (d === bestD && (near < bestN || (near === bestN && q > best)))))
+      ) {
+        best = q;
+        bestRef = core.ref;
+        bestT = t;
+        bestD = d;
+        bestN = near;
+      }
     }
   }
   if (best >= 0) {
     ctx.action[i] = ACT_BUILDING;
-    ctx.arg[i] = cores[best] ?? -1;
+    ctx.arg[i] = bestRef;
     ctx.holds[i] = 1;
   }
 }
@@ -2526,24 +2611,28 @@ function moveAlong(
   moveTo(ctx, i, u.px + vx, u.py + vy);
 }
 
-/** Move towards the centre of the Core cell nearest to the unit. */
+/**
+ * Move towards the centre of the cell of the unit's goal buildings (its target
+ * Core, or that Core's standing pylons, MM-9d) that is nearest to the unit.
+ */
 function moveToCore(
   sim: ArenaSim,
   ctx: ArenaContext,
   i: number,
   u: UnitSim,
 ): void {
-  const core = ctx.arena.coreRef[1 - u.side]?.[u.target] ?? -1;
-  const b = core >= 0 ? ctx.arena.buildings[core] : undefined;
-  if (b === undefined || !b.alive) return;
+  const goals = goalBuildings(ctx.arena, u.side, u.target);
+  if (goals.length === 0) return;
   let bx = 0;
   let by = 0;
   let bestD = Number.MAX_SAFE_INTEGER;
   // Ties go to the first cell in the unit's own frame: side 1 reads the
-  // arena-ordered list from the end.
-  const n = b.cells.length;
+  // arena-ordered list (goal buildings by ref, each building's cells in
+  // arena order) from the end.
+  const cells = goals.flatMap((g) => g.cells);
+  const n = cells.length;
   for (let q = 0; q < n; q++) {
-    const c = b.cells[u.side === 0 ? q : n - 1 - q];
+    const c = cells[u.side === 0 ? q : n - 1 - q];
     if (c === undefined) continue;
     const d = boxDist2(u.px, u.py, c.x, c.y);
     if (d < bestD) {
@@ -2634,7 +2723,7 @@ function decideMove(
     (r) => ctx.maxHealth[r] ?? 0,
     ctx.simConfig.breachBaseCost,
     ctx.simConfig.breachHealthPerCost,
-    ctx.arena.coreRef[1 - u.side]?.[u.target] ?? -1,
+    goalRefs(ctx.arena, u.side, u.target),
   );
   if (k < 0) return;
   const occ = arena.occupant[k] ?? -1;
@@ -2676,6 +2765,28 @@ function destroyBuilding(
     side: b.side,
     building: b.id,
   });
+  // A pylon (MM-9d) also says which Core it shielded and how many remain; the
+  // last one takes the shield down.
+  const shielded = ctx.arena.pylons.find((p) => p.ref === ref);
+  if (shielded !== undefined) {
+    const standing = standingPylons(ctx.arena, b.side, shielded.core).length;
+    ctx.events?.push({
+      tick,
+      type: 'pylon_destroyed',
+      side: b.side,
+      building: b.id,
+      core: shielded.core,
+      standing,
+    });
+    if (standing === 0) {
+      ctx.events?.push({
+        tick,
+        type: 'core_shield_down',
+        side: b.side,
+        core: shielded.core,
+      });
+    }
+  }
   const team = sim.teams[b.side === 0 ? 0 : 1];
   const open = new Set(brokenLinks(team, ctx.content).map((l) => l.sending));
   const lost = new Set(conduitsLostWith(team.conduits, b.id, open));
@@ -2873,6 +2984,7 @@ function resolveAttacks(
     let damage = hit;
     const arg = ctx.arg[i] ?? 0;
     let target: UnitTarget;
+    let blocked = false;
     let splash: SplashHit[] | undefined;
     let centre: UnitSim | undefined;
     if (act === ACT_UNIT) {
@@ -2889,8 +3001,18 @@ function resolveAttacks(
     } else {
       const b = arena.buildings[arg];
       if (b === undefined) continue;
-      ctx.buildingDamage[arg] = addDamage(ctx.buildingDamage[arg] ?? 0, damage);
-      ctx.attackDamage[arg] = addDamage(ctx.attackDamage[arg] ?? 0, damage);
+      // A Core shielded by a standing pylon (MM-9d) takes nothing.
+      blocked =
+        b.kind === 'core' &&
+        arena.pylons.length > 0 &&
+        standingPylons(arena, b.side, b.player).length > 0;
+      if (!blocked) {
+        ctx.buildingDamage[arg] = addDamage(
+          ctx.buildingDamage[arg] ?? 0,
+          damage,
+        );
+        ctx.attackDamage[arg] = addDamage(ctx.attackDamage[arg] ?? 0, damage);
+      }
       target =
         b.kind === 'core'
           ? { kind: 'core', side: b.side, core: b.player }
@@ -2907,6 +3029,16 @@ function resolveAttacks(
       damage,
       ...(pool === undefined ? {} : { pool }),
     });
+    if (blocked && target.kind === 'core') {
+      events?.push({
+        tick,
+        type: 'core_hit_blocked',
+        unit: u.id,
+        side: target.side,
+        core: target.core,
+        damage,
+      });
+    }
     if (splash !== undefined && centre !== undefined) {
       events?.push({
         tick,

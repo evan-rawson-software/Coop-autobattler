@@ -319,7 +319,10 @@ describe('generateThreat', () => {
             expect(p.budget).toBe(bigBudget(threats, round, type, party));
             // The stronghold is valid (throws otherwise).
             const state = buildStronghold(p, content, mapgen);
-            expect(state.buildings).toHaveLength(p.stronghold.buildings.length);
+            expect(state.buildings).toHaveLength(
+              p.stronghold.buildings.length +
+                (p.stronghold.pylons?.length ?? 0),
+            );
             expect(state.map.width).toBe(party * mapgen.plotWidth);
             // Waves: in tick order, each wave tick's units within the cap.
             const perTick = new Map<number, number>();

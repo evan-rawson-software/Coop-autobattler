@@ -97,6 +97,10 @@
       "name": "Armory",
       "description": "Consumes {res_a} to make units spawned later in the battle stronger."
     },
+    "bld_pylon": {
+      "name": "Pylon",
+      "description": "Only a boss has these. While one stands, the boss Core it guards takes no damage."
+    },
     "bld_core": {
       "name": "Core",
       "description": "Your party's health. If it falls, the battle is lost."
@@ -172,6 +176,11 @@
       "name": "Bonded",
       "description": "The boss's Cores share one health pool: every Core you hit hurts them all, and they fall together.",
       "tests": "teamwork across plots"
+    },
+    "arch_boss_pylons": {
+      "name": "Pylons",
+      "description": "The boss's Cores take no damage while the pylons around them stand: destroy the pylons first.",
+      "tests": "target priority"
     }
   },
   "events": {
@@ -218,6 +227,7 @@
       "refinery": "Makes {count} {output} every {seconds} s from its inputs",
       "wall": "Blocks movement",
       "gate": "Blocks enemies, lets your units pass",
+      "pylon": "Shields a boss Core while it stands",
       "turret": "Fires {damage} damage up to {range} cells every {seconds} s",
       "source_speed": "+{step}% source speed up to +{max}%",
       "unit_strength": "+{step}% unit strength up to +{max}%",

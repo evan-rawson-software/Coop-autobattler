@@ -231,6 +231,53 @@
       }
     },
     {
+      "title": "pylon_destroyed",
+      "description": "A boss pylon (MM-9d) was destroyed, recorded in step 6 right after its building_destroyed. `standing` is how many pylons of that Core remain.",
+      "type": "object",
+      "required": ["tick", "type", "side", "building", "core", "standing"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "pylon_destroyed" },
+        "side": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "building": { "type": "integer", "minimum": 1 },
+        "core": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The player index of the Core it shielded."
+        },
+        "standing": { "type": "integer", "minimum": 0 },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "title": "core_shield_down",
+      "description": "The last pylon of a boss Core (MM-9d) was destroyed: the Core takes damage from the next tick on. Recorded right after that pylon_destroyed.",
+      "type": "object",
+      "required": ["tick", "type", "side", "core"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "core_shield_down" },
+        "side": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "core": { "type": "integer", "minimum": 0 },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "title": "core_hit_blocked",
+      "description": "A unit's hit on a boss Core that a pylon shields (MM-9d) did nothing, recorded in step 4 right after the unit_attacked of the same hit. The shipped targeting never aims at a shielded Core, so this appears only if a unit's hit lands on one anyway.",
+      "type": "object",
+      "required": ["tick", "type", "unit", "side", "core", "damage"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "core_hit_blocked" },
+        "unit": { "type": "integer", "minimum": 1 },
+        "side": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "core": { "type": "integer", "minimum": 0 },
+        "damage": { "type": "integer", "minimum": 0 },
+        "tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
       "title": "unit_retargeted",
       "description": "A unit's target Core was destroyed and it chose a new one (the nearest remaining enemy Core), recorded after the destruction events of the tick.",
       "type": "object",

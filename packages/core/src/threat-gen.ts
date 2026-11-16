@@ -13,6 +13,7 @@ import { coreFootprint } from './map.js';
 import type { MapgenConfig } from './mapgen.js';
 import { Rng } from './rng.js';
 import { layoutStronghold } from './threat-layouts.js';
+import { placePylons, type Occupier } from './threat-pylons.js';
 import {
   THREAT_TYPES,
   findArchetype,
@@ -66,12 +67,29 @@ export interface StrongholdBurst {
   readonly count: number;
 }
 
+/**
+ * One pylon of a boss stronghold (MM-9d, "Pylons"): it stands at `(x, y)`,
+ * belongs to the Core of player `core` (the plot it is in) and starts the
+ * battle with `health`.
+ */
+export interface StrongholdPylon {
+  readonly core: number;
+  readonly x: number;
+  readonly y: number;
+  readonly health: number;
+}
+
 export interface Stronghold {
   /** `cores[p]` is the Core of plot `p` (PP-14). */
   readonly cores: readonly StrongholdCore[];
   readonly buildings: readonly StrongholdBuilding[];
   /** Absent for an archetype without `brood`. */
   readonly bursts?: readonly StrongholdBurst[];
+  /**
+   * Only for an archetype with `pylons` (MM-9d): the pylons, sorted by
+   * `(y, x)`. `buildStronghold` places them after `buildings`.
+   */
+  readonly pylons?: readonly StrongholdPylon[];
   /**
    * Only for an archetype with `linkedCores` (MM-9d): the shared health pool of
    * the Cores, the sum of their `health` fields.
@@ -152,6 +170,14 @@ function defenseOf(
   throw new Error(`Threat: the content has no ${type} building.`);
 }
 
+/** ID of the first pylon building of the content. */
+function pylonOf(buildings: BuildingConfig): BuildingId {
+  for (const b of buildings.list()) {
+    if (b.kind === 'defense' && b.defenseType === 'pylon') return b.id;
+  }
+  throw new Error('Threat: the content has no pylon building.');
+}
+
 // ---------------------------------------------------------------------------
 // Generation
 
@@ -169,7 +195,9 @@ function defenseOf(
  * 4. Stronghold: wall and turret totals shared between the plots, one layout
  *    per plot (stream `holdRng.child(p)`), Core health split evenly. An
  *    archetype with `brood` first sets `sharePercent` of `S` aside for the
- *    bursts (turned into units in step 3's strength conversion).
+ *    bursts (turned into units in step 3's strength conversion); one with
+ *    `pylons` sets `sharePercent` of `S` aside for the pylons' health, which
+ *    are then placed around each Core (`placePylons`).
  * 5. Content bounds (a safety net): `unitStrengthPercent` is clamped to the
  *    largest value that keeps every unit type within MAX_HEALTH / MAX_DAMAGE,
  *    and the Core health to MAX_HEALTH. With the shipped content no threat of
@@ -208,7 +236,13 @@ export function generateThreat(
     arch.brood === undefined
       ? 0
       : mulPct(fullStrongholdBudget, arch.brood.sharePercent);
-  const strongholdBudget = fullStrongholdBudget - broodBudget;
+  // Pylons (MM-9d): the pylon budget is set aside the same way (it is spent on
+  // pylon health below; with no pylon placed it goes back to the Core).
+  const pylonBudget =
+    arch.pylons === undefined
+      ? 0
+      : mulPct(fullStrongholdBudget, arch.pylons.sharePercent);
+  const strongholdBudget = fullStrongholdBudget - broodBudget - pylonBudget;
 
   const root = Rng.fromSeed(seed).child('threat').child(round);
   const wavesRng = root.child('waves');
@@ -454,9 +488,60 @@ export function generateThreat(
       plan.walls.length * wall.price + plan.turrets.length * turret.price;
   }
   const buildings = placed.sort((a, b) => a.y - b.y || a.x - b.x);
+
+  // Pylons (MM-9d): placed around each Core after the walls and turrets (they
+  // never take a cell of either); sorted by (y, x), the budget set aside is
+  // split evenly over them in that order (`shareOf`), each pylon at least 1
+  // and at most MAX_HEALTH.
+  let pylonList: StrongholdPylon[] = [];
+  if (arch.pylons !== undefined) {
+    const occupiers: Occupier[] = [];
+    cores.forEach((c, p) => {
+      const cells = [];
+      for (let y = 0; y < fp.height; y++) {
+        for (let x = 0; x < fp.width; x++)
+          cells.push({ x: c.x + x, y: c.y + y });
+      }
+      occupiers.push({ cells, core: p, defenseType: null });
+    });
+    for (const b of buildings) {
+      const def = b.def === wall.id ? 'wall' : 'turret';
+      occupiers.push({
+        cells: [{ x: b.x, y: b.y }],
+        core: -1,
+        defenseType: def,
+      });
+    }
+    const spots = placePylons(
+      {
+        plotWidth: mapgen.plotWidth,
+        partySize,
+        depth: mapgen.plotDepth,
+        coreWidth: fp.width,
+        coreHeight: fp.height,
+      },
+      arch.pylons,
+      cores,
+      occupiers,
+      (p) => holdRng.child(p).child('pylons'),
+    ).sort((a, b) => a.y - b.y || a.x - b.x);
+    pylonList = spots.map((s, i) => ({
+      core: s.core,
+      x: s.x,
+      y: s.y,
+      health: Math.min(
+        MAX_HEALTH,
+        Math.max(1, shareOf(pylonBudget, i, spots.length)),
+      ),
+    }));
+  }
+  const unplacedPylonBudget = pylonList.length === 0 ? pylonBudget : 0;
   const coreTotal = Math.max(
     threats.minCoreHealth * partySize,
-    mulPct(strongholdBudget - spent, sh.coreHealthPerBudget),
+    mulPct(
+      strongholdBudget + unplacedPylonBudget - spent,
+      sh.coreHealthPerBudget,
+    ),
   );
 
   const coreList = cores.map((c, p) => ({
@@ -475,6 +560,7 @@ export function generateThreat(
       cores: coreList,
       buildings,
       ...(arch.brood === undefined ? {} : { bursts: burstList }),
+      ...(arch.pylons === undefined ? {} : { pylons: pylonList }),
       ...(arch.linkedCores === true
         ? { sharedHealth: coreList.reduce((a, c) => addInt(a, c.health), 0) }
         : {}),
@@ -491,7 +577,8 @@ export function generateThreat(
  * Cores placed (one per plot) and the listed buildings placed, built with the
  * ordinary team-state operations (so every placement rule is checked). The
  * buildings get instance IDs 1, 2, ... in list order and owner = the plot
- * they stand in. Throws if anything is rejected: that is a generator bug.
+ * they stand in; the pylons follow with the next IDs, in list order, owned by
+ * their Core's player. Throws if anything is rejected: that is a generator bug.
  */
 export function buildStronghold(
   profile: ThreatProfile,
@@ -541,6 +628,36 @@ export function buildStronghold(
     if (!placed.ok) {
       throw new Error(
         `Threat stronghold: ${b.def} at (${String(b.x)}, ${String(b.y)}) was rejected (${placed.reason}).`,
+      );
+    }
+    state = placed.state;
+  }
+  // The pylons (MM-9d) follow the listed buildings, so they get the next IDs.
+  const pylonDef =
+    (profile.stronghold.pylons ?? []).length > 0
+      ? pylonOf(content.buildings)
+      : '';
+  for (const b of profile.stronghold.pylons ?? []) {
+    const stash = addToStash(state, content, {
+      def: pylonDef,
+      tier: 1,
+      owner: b.core,
+    });
+    if (!stash.ok) {
+      throw new Error(
+        `Threat stronghold: a pylon was rejected (${stash.reason}).`,
+      );
+    }
+    const placed = placeFromStash(stash.state, content, {
+      actor: b.core,
+      id: stash.id,
+      x: b.x,
+      y: b.y,
+      rotation: 0,
+    });
+    if (!placed.ok) {
+      throw new Error(
+        `Threat stronghold: a pylon at (${String(b.x)}, ${String(b.y)}) was rejected (${placed.reason}).`,
       );
     }
     state = placed.state;

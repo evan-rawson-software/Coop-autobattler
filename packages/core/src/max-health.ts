@@ -12,8 +12,9 @@ import { modifierPercent, type ModifierEffectKind } from './modifiers.js';
 import type { TeamState } from './team-state.js';
 
 /**
- * The tier's health (the Core is tier 1), or `coreHealthOverride` for the Core
- * when the side options give one, raised by the team's modifiers: for the Core
+ * The tier's health (the Core is tier 1), or `healthOverride` (the Core's
+ * `coreHealths` entry, or a pylon's `pylons` entry, when the side options give
+ * one), raised by the team's modifiers: for the Core
  * `core_health_percent`, for any other building `building_health_percent`
  * matching its defense type or kind. Rounded down. Throws a RangeError when
  * the result exceeds MAX_HEALTH, when the percent sum is too large to scale
@@ -24,16 +25,21 @@ export function maxHealthOf(
   team: TeamState | undefined,
   b: ArenaBuilding,
   content: ArenaContent,
-  coreHealthOverride?: number,
+  healthOverride?: number,
 ): number {
   const def = content.buildings.get(b.def);
   const placed = team?.buildings.find((p) => p.id === b.id);
   const tier = b.kind === 'core' ? 0 : (placed?.tier ?? 1) - 1;
   let hp = def?.tiers[tier]?.health ?? 0;
-  if (b.kind === 'core' && coreHealthOverride !== undefined) {
-    // Checked: the Core health stays within the content bound.
-    assertWithin(coreHealthOverride, 1, MAX_HEALTH, 'Side option coreHealths');
-    hp = coreHealthOverride;
+  if (healthOverride !== undefined) {
+    // Checked: the health stays within the content bound.
+    assertWithin(
+      healthOverride,
+      1,
+      MAX_HEALTH,
+      b.kind === 'core' ? 'Side option coreHealths' : 'Side option pylons',
+    );
+    hp = healthOverride;
   }
   if (team !== undefined) {
     const kind: ModifierEffectKind =

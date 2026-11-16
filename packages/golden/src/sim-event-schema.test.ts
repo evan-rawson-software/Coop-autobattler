@@ -234,6 +234,56 @@ describe('sim-event.schema.json', () => {
     ).toBe(false);
   }, 120_000);
 
+  test('every event of the Pylons pve-battle vectors validates, the pylon events included', () => {
+    const content = loadAllContentOrThrow({
+      resources: rawResources,
+      terrain: rawTerrain,
+      units: rawUnits,
+      buildings: rawBuildings,
+      presentation: rawPresentationEn,
+    });
+    const kind = makePveBattleKind(
+      content,
+      loadMapgenOrThrow(rawMapgen, { terrain: content.terrain }),
+      loadSimConfigOrThrow(rawSim),
+      loadThreatsOrThrow(rawThreats, {
+        units: content.units,
+        buildings: content.buildings,
+      }),
+    );
+    const pve = JSON.parse(
+      readFileSync(path.join(repoRoot, 'golden', 'pve-battle.json'), 'utf8'),
+    ) as { id: string; input: never }[];
+    const seen = new Set<string>();
+    for (const v of pve.filter((x) => x.id.includes('-pylons-'))) {
+      for (const e of kind(v.input).eventLog ?? []) {
+        expect(validate(e), JSON.stringify(e)).toBe(true);
+        seen.add((e as { type: string }).type);
+      }
+    }
+    expect(seen.has('pylon_destroyed')).toBe(true);
+    expect(seen.has('core_shield_down')).toBe(true);
+    expect(
+      validate({
+        tick: 5,
+        type: 'core_hit_blocked',
+        unit: 3,
+        side: 1,
+        core: 0,
+        damage: 6,
+      }),
+    ).toBe(true);
+    expect(
+      validate({
+        tick: 5,
+        type: 'pylon_destroyed',
+        side: 1,
+        building: 4,
+        core: 0,
+      }),
+    ).toBe(false);
+  }, 120_000);
+
   test('malformed events are rejected', () => {
     expect(validate({ tick: 1, type: 'produced', building: 2 })).toBe(false);
     expect(validate({ tick: -1, type: 'stalled', building: 2 })).toBe(false);

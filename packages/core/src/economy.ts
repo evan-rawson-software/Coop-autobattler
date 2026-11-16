@@ -123,6 +123,12 @@ function checkDef(
     errors.push(`${at}: "${def}" is the Core and cannot be bought or owned.`);
     return undefined;
   }
+  if (b.kind === 'defense' && b.defenseType === 'pylon') {
+    errors.push(
+      `${at}: "${def}" is a boss-only pylon and cannot be bought, offered or owned.`,
+    );
+    return undefined;
+  }
   return def;
 }
 

@@ -317,6 +317,19 @@
       ]
     },
     {
+      "id": "bld_pylon",
+      "kind": "defense",
+      "defenseType": "pylon",
+      "footprint": { "width": 1, "height": 1 },
+      "inputs": [],
+      "outputs": [],
+      "tiers": [
+        { "health": 100, "price": 4 },
+        { "health": 200, "price": 9 },
+        { "health": 400, "price": 18 }
+      ]
+    },
+    {
       "id": "bld_gate",
       "kind": "defense",
       "defenseType": "gate",

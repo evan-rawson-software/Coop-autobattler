@@ -246,9 +246,17 @@ function poolText(threat: ThreatProfile): string {
   return pool === undefined ? '' : `, shared Core pool ${String(pool)}`;
 }
 
+/** `, N pylons` for a Pylons threat; empty otherwise. */
+function pylonsText(threat: ThreatProfile): string {
+  const pylons = threat.stronghold.pylons;
+  if (pylons === undefined) return '';
+  const hp = pylons.reduce((a, p) => a + p.health, 0);
+  return `, ${String(pylons.length)} pylons (${String(hp)} health)`;
+}
+
 function threatLine(ctx: SimContext, threat: ThreatProfile): string {
   const s = threatSummary(threat, ctx.content);
-  return `Threat: ${threat.archetype} ${threat.type} round ${String(threat.round)}: ${String(s.totalUnits)} units in ${String(threat.waves.length)} waves (first at tick ${String(s.firstWaveTick ?? 0)}), strength +${String(threat.unitStrengthPercent)}%, Core ${String(s.coreHealth)}, ${String(s.walls)} walls, ${String(s.turrets)} turrets${burstsText(threat)}${poolText(threat)}`;
+  return `Threat: ${threat.archetype} ${threat.type} round ${String(threat.round)}: ${String(s.totalUnits)} units in ${String(threat.waves.length)} waves (first at tick ${String(s.firstWaveTick ?? 0)}), strength +${String(threat.unitStrengthPercent)}%, Core ${String(s.coreHealth)}, ${String(s.walls)} walls, ${String(s.turrets)} turrets${burstsText(threat)}${poolText(threat)}${pylonsText(threat)}`;
 }
 
 export function pveCommand(

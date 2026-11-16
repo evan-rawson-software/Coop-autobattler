@@ -45,7 +45,11 @@ export type BuildingKind =
   | 'refinery'
   | 'core';
 export type RouteType = 'splitter' | 'merger' | 'crossover';
-export type DefenseType = 'wall' | 'gate' | 'turret';
+/**
+ * `pylon` is boss-only (MM-9d, "Pylons"): it is never offered, bought or
+ * placed by a player, and does nothing but stand.
+ */
+export type DefenseType = 'wall' | 'gate' | 'turret' | 'pylon';
 export type EconomyEffectType = 'source_speed' | 'unit_strength';
 
 /** One cell of a footprint, relative to the footprint's top-left corner. */
@@ -191,7 +195,7 @@ export interface UnitProducerBuildingDef extends BuildingCommon {
 }
 export interface WallOrGateBuildingDef extends BuildingCommon {
   readonly kind: 'defense';
-  readonly defenseType: 'wall' | 'gate';
+  readonly defenseType: 'wall' | 'gate' | 'pylon';
   readonly tiers: Tiers3<TierBase>;
 }
 export interface TurretBuildingDef extends BuildingCommon {
@@ -390,7 +394,7 @@ const KINDS: readonly string[] = [
   'core',
 ];
 const ROUTE_TYPES: readonly string[] = ['splitter', 'merger', 'crossover'];
-const DEFENSE_TYPES: readonly string[] = ['wall', 'gate', 'turret'];
+const DEFENSE_TYPES: readonly string[] = ['wall', 'gate', 'turret', 'pylon'];
 const EFFECT_TYPES: readonly string[] = ['source_speed', 'unit_strength'];
 
 const COMMON_KEYS = ['id', 'kind', 'footprint', 'tiers', 'inputs', 'outputs'];
@@ -525,7 +529,12 @@ function ioRule(kind: string, subtype: string | undefined): IoRule | undefined {
         resource: 'forbidden',
         inputs: none,
         outputs: none,
-        what: subtype === 'gate' ? 'a gate' : 'a wall',
+        what:
+          subtype === 'gate'
+            ? 'a gate'
+            : subtype === 'pylon'
+              ? 'a pylon'
+              : 'a wall',
       };
     case 'economy':
       return {

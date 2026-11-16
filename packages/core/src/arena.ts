@@ -57,6 +57,17 @@ export interface ArenaBuilding {
   alive: boolean;
 }
 
+/**
+ * A pylon (MM-9d): the building `ref` shields the Core of player `core` of
+ * `side` while it stands. Filled by `arenaOf` from the side options; empty for
+ * every ordinary battle.
+ */
+export interface ArenaPylon {
+  readonly ref: number;
+  readonly side: number;
+  readonly core: number;
+}
+
 export interface Arena {
   readonly geom: ArenaGeometry;
   /** Per cell (`y * width + x`): 1 when terrain or a gap cell blocks movement. */
@@ -71,6 +82,8 @@ export interface Arena {
    * was placed (PP-9).
    */
   readonly coreRef: number[][];
+  /** Boss pylons (MM-9d); empty unless the side options list some. */
+  readonly pylons: ArenaPylon[];
 }
 
 /** Cell index `y * width + x`. */
@@ -200,7 +213,7 @@ export function createArena(
       );
     }
   });
-  return { geom, blocked, occupant, buildings, byId, coreRef };
+  return { geom, blocked, occupant, buildings, byId, coreRef, pylons: [] };
 }
 
 /** Take a building out of the arena: its cells become open ground. */

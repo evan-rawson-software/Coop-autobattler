@@ -449,6 +449,17 @@ function gateSprite(): Pix {
   return p;
 }
 
+/** The boss pylon (MM-9d): a crystal on a plate, built from the existing ellipse and plate shapes. */
+function pylonSprite(): Pix {
+  const p = new Pix(16, 16);
+  plate(p, 1, 1, 14, 14, KIND_RAMP['defense'] as Ramp);
+  p.ellipse(8, 8, 4, 6, 'K');
+  p.ellipse(8, 8, 3, 5, 'M');
+  p.ellipse(8, 8, 2, 4, 'y');
+  p.ellipse(7.5, 6.5, 1, 2, '6');
+  return p;
+}
+
 function turretHead(): Pix {
   const p = new Pix(16, 16);
   // Barrel first (north), then the round housing over its root.
@@ -689,6 +700,7 @@ const MAKERS: Readonly<Record<string, () => Pix>> = {
   bld_refinery_ab: () => refinerySprite('M', 'm', 'o', 'y'),
   bld_refinery_bc: () => refinerySprite('T', 't', 'y', 'S'),
   bld_gate: gateSprite,
+  bld_pylon: pylonSprite,
   bld_turret: turretSprite,
   bld_overclocker: () => economySprite(gearIcon),
   bld_armory: () => economySprite(shieldIcon),
