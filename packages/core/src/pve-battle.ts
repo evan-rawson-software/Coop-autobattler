@@ -55,6 +55,9 @@ export function threatSideOptions(threat: ThreatProfile): SideOptions {
       tick: w.tick,
       unit: w.unit,
       count: w.count,
+      ...(w.healthPercent === undefined
+        ? {}
+        : { healthPercent: w.healthPercent }),
     })),
     freePower: true,
     unitStrengthPercent: threat.unitStrengthPercent,

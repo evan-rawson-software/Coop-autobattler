@@ -38,6 +38,11 @@ export interface ThreatWave {
   readonly tick: number;
   readonly unit: UnitId;
   readonly count: number;
+  /**
+   * Only on a champion entry (MM-9d, "Warlord"): the percent of its health
+   * each unit of the entry spawns with, applied after the strength percent.
+   */
+  readonly healthPercent?: number;
 }
 
 export interface StrongholdBuilding {
@@ -277,8 +282,30 @@ export function generateThreat(
   );
   let archerPool = 0;
   let dronePool = 0;
+  // The health percent of each wave's champions, by wave (Warlord only).
+  const champions: number[] = [];
   sizes.forEach((size, k) => {
-    const wb = scaleShare(waveBudget, size, sizeSum);
+    const wbFull = scaleShare(waveBudget, size, sizeSum);
+    // Champion (MM-9d): `sharePercent` of the wave budget is set aside for one
+    // champion per boss plot; the composition gets the rest.
+    const championBudget =
+      arch.champion === undefined
+        ? 0
+        : mulPct(wbFull, arch.champion.sharePercent);
+    const wb = wbFull - championBudget;
+    if (arch.champion !== undefined) {
+      // Price of one champion at the full health percent; if the plot's
+      // share (floor of the budget over the plots) does not buy it, the health
+      // percent is what it buys, never below 100.
+      const cost = costOf(arch.champion.unit);
+      const perPlot = divFloor(championBudget, partySize);
+      const full = mulPct(cost, arch.champion.healthPercent);
+      champions.push(
+        perPlot >= full
+          ? arch.champion.healthPercent
+          : Math.max(100, divFloor(perPlot * 100, cost)),
+      );
+    }
     const sig = tpl.signature;
     let comp: { unit: UnitId; weight: number }[];
     if (sig !== undefined && (k + 1) % sig.everyNthWave === 0) {
@@ -376,7 +403,11 @@ export function generateThreat(
 
   // Strength conversion: cap the largest wave (or burst) at
   // maxUnitsPerWavePerPlot * party.
-  const cap = threats.maxUnitsPerWavePerPlot * partySize;
+  // The champions (one per plot in every wave) count toward the cap: the
+  // other units of a wave share what is left of it.
+  const cap =
+    threats.maxUnitsPerWavePerPlot * partySize -
+    (arch.champion === undefined ? 0 : partySize);
   const scaled = [...planned, ...bursts.map((b) => b.wave)];
   const largest = Math.max(
     ...scaled.map((w) => w.entries.reduce((a, e) => a + e.n, 0)),
@@ -416,12 +447,35 @@ export function generateThreat(
       Number.MAX_SAFE_INTEGER,
     );
   unitStrengthPercent = Math.min(unitStrengthPercent, strengthLimit);
+  if (arch.champion !== undefined) {
+    // The champion's health, scaled by the strength and then by its health
+    // percent, also stays within MAX_HEALTH: `floor(floor(h * (100 + P) / 100)
+    // * hp / 100) <= M` iff `floor(h * (100 + P) / 100) <= floor((100 * M +
+    // 99) / hp)`.
+    const def = content.units.get(arch.champion.unit);
+    if (def !== undefined) {
+      const room = divFloor(100 * MAX_HEALTH + 99, arch.champion.healthPercent);
+      unitStrengthPercent = Math.min(
+        unitStrengthPercent,
+        divFloor(100 * room + 99, def.health) - 100,
+      );
+    }
+  }
   const waves: ThreatWave[] = [];
-  for (const w of planned) {
+  planned.forEach((w, k) => {
+    // The champions lead their wave: first entry of the tick.
+    if (arch.champion !== undefined) {
+      waves.push({
+        tick: w.tick,
+        unit: arch.champion.unit,
+        count: partySize,
+        healthPercent: champions[k] ?? 100,
+      });
+    }
     for (const e of w.entries) {
       if (e.n > 0) waves.push({ tick: w.tick, unit: e.unit, count: e.n });
     }
-  }
+  });
   const burstList: StrongholdBurst[] = [];
   for (const b of bursts) {
     for (const e of b.wave.entries) {

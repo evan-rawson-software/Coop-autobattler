@@ -254,9 +254,18 @@ function pylonsText(threat: ThreatProfile): string {
   return `, ${String(pylons.length)} pylons (${String(hp)} health)`;
 }
 
+/** `, N champions (health P%)` for a Warlord threat; empty otherwise. */
+function championsText(threat: ThreatProfile): string {
+  const champs = threat.waves.filter((w) => w.healthPercent !== undefined);
+  if (champs.length === 0) return '';
+  const total = champs.reduce((a, w) => a + w.count, 0);
+  const pcts = champs.map((w) => w.healthPercent ?? 100);
+  return `, ${String(total)} champions (health ${String(Math.min(...pcts))}% to ${String(Math.max(...pcts))}%)`;
+}
+
 function threatLine(ctx: SimContext, threat: ThreatProfile): string {
   const s = threatSummary(threat, ctx.content);
-  return `Threat: ${threat.archetype} ${threat.type} round ${String(threat.round)}: ${String(s.totalUnits)} units in ${String(threat.waves.length)} waves (first at tick ${String(s.firstWaveTick ?? 0)}), strength +${String(threat.unitStrengthPercent)}%, Core ${String(s.coreHealth)}, ${String(s.walls)} walls, ${String(s.turrets)} turrets${burstsText(threat)}${poolText(threat)}${pylonsText(threat)}`;
+  return `Threat: ${threat.archetype} ${threat.type} round ${String(threat.round)}: ${String(s.totalUnits)} units in ${String(threat.waves.length)} waves (first at tick ${String(s.firstWaveTick ?? 0)}), strength +${String(threat.unitStrengthPercent)}%, Core ${String(s.coreHealth)}, ${String(s.walls)} walls, ${String(s.turrets)} turrets${burstsText(threat)}${poolText(threat)}${pylonsText(threat)}${championsText(threat)}`;
 }
 
 export function pveCommand(

@@ -14,6 +14,8 @@
  */
 import {
   generateThreat,
+  pickBoss,
+  type Rng,
   hashJson,
   startBattle,
   startPveBattle,
@@ -29,6 +31,7 @@ import {
   type ThreatProfile,
   type ThreatsConfig,
 } from '@game/core';
+import { previousBossOf } from './ghosts.js';
 import { readPveOption } from './pve-options.js';
 import type {
   BattleInput,
@@ -141,15 +144,22 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
   };
 
   /**
-   * Archetypes a boss may use: the boss-only ones, else all; in both cases
-   * only those the party is big enough for (`minPartySize`, MM-9d).
+   * The boss of a save that did not fix one in the shop (no `boss` on
+   * `pvpOpponent`): the same draw as the shop's (`pickBoss`, with the
+   * round, the party size and the previous boss, MM-9b/MM-9c), on the
+   * battle stream's `archetype` child.
    */
-  function bossArchetypes(partySize: number): string[] {
-    const boss = setup.threats.archetypes.filter((a) => a.bossOnly);
-    const pool = (boss.length > 0 ? boss : setup.threats.archetypes).filter(
-      (a) => (a.minPartySize ?? 1) <= partySize,
+  function fallbackBoss(state: RunState, rng: Rng): string {
+    const previousBoss = previousBossOf(state);
+    return pickBoss(
+      {
+        round: state.round,
+        partySize: state.players.length,
+        ...(previousBoss === undefined ? {} : { previousBoss }),
+      },
+      setup.threats,
+      rng,
     );
-    return pool.map((a) => a.id);
   }
 
   function startFor(
@@ -223,9 +233,7 @@ export function createBattleResolver(setup: BattleSetup): BattleResolver {
             round: state.round,
             type: 'boss',
             partySize: state.players.length,
-            archetype:
-              fixedBoss ??
-              rng.child('archetype').pick(bossArchetypes(state.players.length)),
+            archetype: fixedBoss ?? fallbackBoss(state, rng.child('archetype')),
           };
           source = {
             type: 'generated',

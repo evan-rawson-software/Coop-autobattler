@@ -181,6 +181,11 @@
       "name": "Pylons",
       "description": "The boss's Cores take no damage while the pylons around them stand: destroy the pylons first.",
       "tests": "target priority"
+    },
+    "arch_boss_warlord": {
+      "name": "Warlord",
+      "description": "Every wave is led by a champion Golem with several times a Golem's health. Bring enough damage to bring it down.",
+      "tests": "burst damage"
     }
   },
   "events": {

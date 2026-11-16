@@ -5,7 +5,8 @@
 
 import type { BuildingConfig } from './buildings.js';
 import { sortedKeys } from './hash.js';
-import { divFloor, mulDiv } from './int.js';
+import { divFloor, mulDiv, mulPct } from './int.js';
+import { MAX_HEALTH } from './limits.js';
 import {
   isRecord,
   readInt,
@@ -87,6 +88,23 @@ export const MAX_PYLONS_SHARE_PERCENT = 60;
 /** The largest `pylons.maxDistance` (cells from the Core's footprint). */
 export const MAX_PYLONS_DISTANCE = 8;
 
+/**
+ * A boss's champion (MM-9d, "Warlord"): every wave one `unit` per boss plot
+ * with `healthPercent` percent of its health, paid from `sharePercent` of the
+ * wave's budget.
+ */
+export interface ChampionTemplate {
+  readonly unit: UnitId;
+  readonly healthPercent: number;
+  readonly sharePercent: number;
+}
+
+/** The smallest and largest `champion.healthPercent`. */
+export const MIN_CHAMPION_HEALTH_PERCENT = 100;
+export const MAX_CHAMPION_HEALTH_PERCENT = 1000;
+/** The largest `champion.sharePercent`. */
+export const MAX_CHAMPION_SHARE_PERCENT = 60;
+
 export interface ArchetypeDef {
   readonly id: ArchetypeId;
   readonly bossOnly: boolean;
@@ -106,6 +124,8 @@ export interface ArchetypeDef {
   readonly linkedCores?: true;
   /** Boss-only archetypes: boss Cores shielded by pylons (MM-9d). */
   readonly pylons?: PylonsTemplate;
+  /** Boss-only archetypes: every wave led by a champion unit (MM-9d). */
+  readonly champion?: ChampionTemplate;
 }
 
 export interface RingLayoutConfig {
@@ -558,6 +578,7 @@ export function loadThreats(
         'brood',
         'linkedCores',
         'pylons',
+        'champion',
       ]),
       at,
       errors,
@@ -609,6 +630,63 @@ export function loadThreats(
         }
         if (e['brood'] !== undefined) {
           errors.push(`${at}: "linkedCores" cannot be combined with "brood".`);
+        }
+      }
+    }
+    let champion: ChampionTemplate | undefined;
+    if (e['champion'] !== undefined) {
+      const cr = e['champion'];
+      const cat = `${at}.champion`;
+      if (e['bossOnly'] !== true) {
+        errors.push(
+          `${at}: "champion" is only allowed when "bossOnly" is true.`,
+        );
+      } else if (!isRecord(cr)) {
+        errors.push(`${cat}: must be an object.`);
+      } else {
+        for (const k of ['brood', 'linkedCores', 'pylons']) {
+          if (e[k] !== undefined && e[k] !== false) {
+            errors.push(`${at}: "champion" cannot be combined with "${k}".`);
+          }
+        }
+        rejectUnknownKeys(
+          cr,
+          new Set(['unit', 'healthPercent', 'sharePercent']),
+          cat,
+          errors,
+        );
+        const unit = readUnit(cr, cat, context, errors);
+        if (unit !== undefined && !priced(unit)) {
+          errors.push(`${cat}: unit "${unit}" has no unitCost.`);
+        }
+        const hp = readInt(
+          cr,
+          'healthPercent',
+          MIN_CHAMPION_HEALTH_PERCENT,
+          cat,
+          errors,
+        );
+        if (hp !== undefined && hp > MAX_CHAMPION_HEALTH_PERCENT) {
+          errors.push(
+            `${cat}: "healthPercent" must be at most ${String(MAX_CHAMPION_HEALTH_PERCENT)}.`,
+          );
+        }
+        const share = readInt(cr, 'sharePercent', 1, cat, errors);
+        if (share !== undefined && share > MAX_CHAMPION_SHARE_PERCENT) {
+          errors.push(
+            `${cat}: "sharePercent" must be at most ${String(MAX_CHAMPION_SHARE_PERCENT)}.`,
+          );
+        }
+        if (unit !== undefined && hp !== undefined) {
+          const def = context.units.get(unit);
+          if (def !== undefined && mulPct(def.health, hp) > MAX_HEALTH) {
+            errors.push(
+              `${cat}: the health of "${unit}" at ${String(hp)} percent exceeds the maximum ${String(MAX_HEALTH)}.`,
+            );
+          }
+        }
+        if (unit !== undefined && hp !== undefined && share !== undefined) {
+          champion = { unit, healthPercent: hp, sharePercent: share };
         }
       }
     }
@@ -888,6 +966,7 @@ export function loadThreats(
         ...(brood === undefined ? {} : { brood }),
         ...(linkedCores ? { linkedCores: true as const } : {}),
         ...(pylons === undefined ? {} : { pylons }),
+        ...(champion === undefined ? {} : { champion }),
       });
     }
   });
@@ -899,6 +978,16 @@ export function loadThreats(
   ) {
     errors.push(
       'threats: a boss-only archetype needs "fromRound" 1 and "minPartySize" 1, so a boss can always be drawn.',
+    );
+  }
+
+  if (
+    maxUnitsPerWavePerPlot !== undefined &&
+    maxUnitsPerWavePerPlot < 2 &&
+    archetypes.some((a) => a.champion !== undefined)
+  ) {
+    errors.push(
+      'threats: "maxUnitsPerWavePerPlot" must be at least 2 when an archetype has a "champion" (a champion counts toward the cap).',
     );
   }
 
