@@ -150,6 +150,45 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>Up to three offered events (never two of the same type). Each says exactly what it does before you choose.</li>
       <li>Votes from each player. The highlighted card is your own vote; you can change it until the last player has voted.</li>
       <li>Who has voted and how a split vote is settled (one vote is picked at random). There is no time limit; the event resolves once everyone has voted.</li>
+      <li>A drawback has its own marked line, shown before the vote. It is always opt-in: take both or skip, and skipping never harms the party (a Pact).</li>
+      <li>An offer names what it needs up front, such as the resource of a Rich vein, and may show the first round it appears from.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>2b. Caravan draft</h2>
+    <p>A Caravan is not a vote. It lists one more reward than there are players. Players choose one each, in turn; each reward is taken once and the last one is left. The order rotates from one Caravan to the next. At most one reward is party-wide. Rewards are placeholders.</p>
+    <div class="sheet"><svg id="s-caravan" viewBox="0 0 960 540" role="img" aria-label="Caravan draft wireframe: four rewards for three players, one taken, the turn marker and the choosing order."></svg></div>
+    <ol class="notes">
+      <li>The reward list: players + 1 rewards. A taken reward shows who took it. The last one is left over.</li>
+      <li>The party-wide reward (at most one) is marked and says it applies to everyone.</li>
+      <li>Whose turn it is. You choose only when it is your turn.</li>
+      <li>The order for this Caravan. It rotates from one Caravan to the next.</li>
+      <li>Rewards go to the player who took them. Nothing comes from a teammate.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>2c. Rich vein</h2>
+    <p>Each player may add one node of the named resource on an empty cell of their own plot, or skip. The type is random and is stated on the offer before the vote.</p>
+    <div class="sheet"><svg id="s-vein" viewBox="0 0 960 540" role="img" aria-label="Rich vein wireframe: the player's own plot with legal empty cells highlighted, the node type, a counter of added nodes and a Skip button."></svg></div>
+    <ol class="notes">
+      <li>Your own plot. The green cells are the legal ones: empty, buildable cells.</li>
+      <li>The resource type for this vein, named before the vote.</li>
+      <li>Nodes added so far this run: at most 3 per plot.</li>
+      <li>Skip. Skipping costs nothing.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>2d. Blueprint</h2>
+    <p>Each player chooses one of three rare buildings that are eligible at this round. It is not free: it waits in the next shop.</p>
+    <div class="sheet"><svg id="s-blueprint" viewBox="0 0 960 540" role="img" aria-label="Blueprint wireframe: three rare building cards, one picked, and a note about the fixed shop slot."></svg></div>
+    <ol class="notes">
+      <li>Three rare buildings. Each card shows what it needs and what it does, as in the shop.</li>
+      <li>Your pick. Each player picks for themselves.</li>
+      <li>The note: the building is held in a fixed slot of your next shop that re-rolls do not replace, and it is still paid for.</li>
+      <li>A refining chain it helps finish is named on the card.</li>
     </ol>
   </section>
 
@@ -166,6 +205,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
       <li>What comes next. PvE options are shown ahead of time. A ghost opponent never is. When the opponent is a boss, this panel names the boss, gives one line on its mechanic and one line of counter advice, so you can build against it (the sketch shows a boss; names are placeholders).</li>
       <li>A small live view of the board that jumps to the Build tab.</li>
       <li>Ready is available on both tabs.</li>
+      <li>Held run modifiers: a small chip in the run bar with the effects totalled and drawbacks marked with "!". It is on every run screen.</li>
     </ol>
   </section>
 
@@ -484,16 +524,17 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     T(s, 38, 73, "PvE battle won  ·  Hard  ·  Rusher", "th"); T(s, 922, 73, "+12 gold each", "t", "end");
     var cards = [
       ["Workshop", ["Raise one building the party", "owns by one tier."], ["Party chooses which building."], ["You"], true],
-      ["Shrine", ["Choose 1 of 3 run modifiers.", "Lasts until the run ends."], ["e.g. walls +25% health,", "extractors start faster."], ["Bo"], false],
-      ["Gamble", ["Stake some of your gold for", "an even chance to double it."], ["Each player decides for", "themselves."], [], false]
+      ["Pact", ["+20% unit strength", "for the rest of the run."], ["Take both, or skip."], ["Bo"], false, ["Drawback: -15% Core health"]],
+      ["Rich vein (round 3+)", ["Add one Ore node on an", "empty cell of your plot."], ["Each player chooses a cell", "or skips. Max 3 per plot."], [], false]
     ];
     cards.forEach(function (c, i) {
       var x = 40 + i * 300, y = 112, w = 280, h = 320;
       R(s, x, y, w, h, "card" + (c[4] ? " pick" : ""));
       R(s, x + 16, y + 16, 56, 56, "panel"); T(s, x + 44, y + 49, "icon", "ts tm", "middle");
-      T(s, x + 86, y + 52, c[0], "tb");
+      T(s, x + 86, y + 52, c[0], c[0].length > 8 ? "th" : "tb");
       el(s, "line", { x1: x + 16, y1: y + 90, x2: x + w - 16, y2: y + 90, class: "rule" });
       lines(s, x + 16, y + 116, c[1], "t", 17);
+      if (c[5]) { R(s, x + 16, y + 150, w - 32, 26, "btn"); T(s, x + 28, y + 167, "! " + c[5][0], "t"); }
       lines(s, x + 16, y + 196, c[2], "t tm", 17);
       el(s, "line", { x1: x + 16, y1: y + 252, x2: x + w - 16, y2: y + 252, class: "rule" });
       T(s, x + 16, y + 274, "VOTES", "ts tm");
@@ -502,7 +543,92 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     });
     R(s, 24, 456, 912, 60, "panel");
     T(s, 38, 482, "2 of 3 voted · waiting for Ana", "th"); T(s, 38, 502, "No time limit. Change your vote until everyone has voted. Unanimous wins; otherwise one vote is picked at random.", "ts tm");
-    mark(s, 30, 54, 1); mark(s, 320, 120, 2); mark(s, 306, 390, 3); mark(s, 30, 462, 4);
+    mark(s, 30, 54, 1); mark(s, 320, 120, 2); mark(s, 306, 390, 3); mark(s, 30, 462, 4); mark(s, 604, 163, 5); mark(s, 906, 120, 6);
+  })();
+
+  // ================= 2b. CARAVAN =================
+  (function () {
+    var s = document.getElementById("s-caravan");
+    topbar(s, "Round 4 · Event", "Caravan", "Lives 4 / 5");
+    T(s, 24, 66, "REWARDS · 4 for 3 players · choose one each, in turn", "th");
+    var rw = [
+      ["Gold", "+10 gold for you", "Ana", false],
+      ["Free building", "A tier-1 building to your stash", "", false],
+      ["Tier raise", "Raise one of your buildings", "", false],
+      ["Banner (party-wide)", "Run modifier: walls +10% health", "", true]
+    ];
+    rw.forEach(function (r, i) {
+      var x = 24 + i * 228, y = 84, w = 216, h = 190, taken = !!r[2];
+      R(s, x, y, w, h, "card" + (i === 1 ? " pick" : ""));
+      T(s, x + 14, y + 30, r[0], "th");
+      el(s, "line", { x1: x + 14, y1: y + 44, x2: x + w - 14, y2: y + 44, class: "rule" });
+      lines(s, x + 14, y + 68, [r[1]], "ts", 14);
+      if (r[3]) { R(s, x + 14, y + 100, w - 28, 24, "btn"); T(s, x + 24, y + 116, "! applies to everyone", "ts"); }
+      if (taken) { R(s, x, y, w, h, "veil"); T(s, x + w / 2, y + 150, "Taken by " + r[2], "t", "middle"); }
+      else { btn(s, x + 14, y + 140, w - 28, 32, i === 1 ? "Take this" : "Take", i === 1); }
+    });
+    mark(s, 24 + 190, 84 + 20, 1); mark(s, 24 + 3 * 228 + 190, 84 + 20, 2);
+    R(s, 24, 296, 440, 220, "panel"); T(s, 38, 322, "WHOSE TURN", "ts tm");
+    lines(s, 38, 350, ["1. Ana     took Gold", "2. You     choosing now", "3. Bo      waiting", "", "The last reward is left over."], "t", 24);
+    mark(s, 440, 312, 3);
+    R(s, 488, 296, 448, 220, "panel"); T(s, 502, 322, "ORDER", "ts tm");
+    lines(s, 502, 350, ["This Caravan:      Ana, You, Bo", "Next Caravan:      You, Bo, Ana", "", "Each reward goes to the player who", "took it. Nothing is taken from a", "teammate. No timer: take your time."], "t", 24);
+    mark(s, 912, 312, 4); mark(s, 912, 400, 5);
+  })();
+
+  // ================= 2c. RICH VEIN =================
+  (function () {
+    var s = document.getElementById("s-vein");
+    topbar(s, "Round 4 · Event", "Rich vein", "Lives 4 / 5");
+    var S = 20, bx = 40, by = 100;
+    T(s, bx, by - 14, "YOUR PLOT · front edge at the top", "ts tm");
+    board(s, bx, by, S, mine, false);
+    function hit(list, dp, fr) { return list.some(function (c) { return c[0] === dp && c[1] === fr; }); }
+    for (var fr = 0; fr < H; fr++) for (var dp = 0; dp < W; dp++) {
+      var busy = hit(mine.lake, dp, fr) || hit(mine.cliff, dp, fr) || hit(mine.nodes, dp, fr) || mine.bld.some(function (b) { return dp >= b[0] && dp < b[0] + b[2] && fr >= b[1] && fr < b[1] + b[3]; }) || hit(mine.walls, dp, fr) || (dp >= 2 && dp < 4 && fr >= 11 && fr < 13);
+      if (!busy) R(s, bx + fr * S, by + (W - 1 - dp) * S, S, S, "vok");
+    }
+    R(s, bx + 15 * S, by + (W - 1 - 6) * S, S, S, "sel");
+    mark(s, bx + 15 * S + 10, by + (W - 1 - 6) * S - 14, 1);
+    var px = 560;
+    R(s, px, 100, 360, 120, "panel"); T(s, px + 14, 126, "THE VEIN", "ts tm");
+    var q = [px + 40, 172], r = 14;
+    el(s, "path", { class: "n-power", d: "M" + q[0] + "," + (q[1] - r) + " L" + (q[0] + r) + "," + q[1] + " L" + q[0] + "," + (q[1] + r) + " L" + (q[0] - r) + "," + q[1] + " Z" });
+    T(s, px + 70, 168, "Power node", "tb"); T(s, px + 70, 190, "Type is random. Shown before the vote.", "ts tm");
+    mark(s, px + 342, 116, 2);
+    R(s, px, 236, 360, 80, "panel"); T(s, px + 14, 262, "ADDED THIS RUN", "ts tm"); T(s, px + 14, 292, "1 / 3 on your plot", "tb");
+    mark(s, px + 342, 252, 3);
+    btn(s, px, 336, 170, 40, "Place on selected cell", true); btn(s, px + 190, 336, 100, 40, "Skip");
+    mark(s, px + 342, 356, 4);
+    lines(s, px, 410, ["Green cells are legal: empty and buildable.", "Water, cliffs, walls, buildings and nodes", "are not. Only your own plot is open."], "ts tm", 16);
+  })();
+
+  // ================= 2d. BLUEPRINT =================
+  (function () {
+    var s = document.getElementById("s-blueprint");
+    topbar(s, "Round 4 · Event", "Blueprint", "Lives 4 / 5");
+    T(s, 24, 66, "CHOOSE ONE RARE BUILDING", "th");
+    var cs = [
+      ["Aether refinery", "Needs: Power + Flux", "Makes Aether", "Finishes the Aether chain", "36", false],
+      ["Spire", "Needs: Aether", "Trains a ranged caster", "Uses Aether output", "40", true],
+      ["Golem forge", "Needs: Composite", "Trains a Golem", "Uses Composite output", "34", false]
+    ];
+    cs.forEach(function (c, i) {
+      var x = 40 + i * 300, y = 90, w = 280, h = 280;
+      R(s, x, y, w, h, "card" + (c[5] ? " pick" : ""));
+      R(s, x + 16, y + 16, 56, 56, "panel"); T(s, x + 44, y + 49, "icon", "ts tm", "middle");
+      T(s, x + 86, y + 40, c[0], "th"); T(s, x + 86, y + 58, "Rare", "ts tm");
+      el(s, "line", { x1: x + 16, y1: y + 90, x2: x + w - 16, y2: y + 90, class: "rule" });
+      T(s, x + 16, y + 114, c[1], "t"); T(s, x + 16, y + 134, c[2], "t");
+      T(s, x + 16, y + 168, "Chain: " + c[3], "ts tm");
+      T(s, x + 16, y + 200, "Price in shop: " + c[4] + " gold", "t");
+      btn(s, x + 16, y + 224, w - 32, 36, c[5] ? "Picked" : "Pick", c[5]);
+    });
+    mark(s, 56, 82, 1); mark(s, 616, 82, 2);
+    R(s, 24, 392, 912, 110, "panel");
+    T(s, 38, 418, "WHAT HAPPENS NEXT", "ts tm");
+    lines(s, 38, 444, ["Your pick waits in a fixed slot of your next shop. Re-rolls do not replace it.", "It is still paid for at the shop price. Each player picks for themselves.", "Skipping is allowed and costs nothing."], "t", 20);
+    mark(s, 912, 408, 3); mark(s, 912, 100, 4);
   })();
 
   // ================= 3. SHOP =================
@@ -510,6 +636,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     var s = document.getElementById("s-shop");
     topbar(s, "Round 4 · Shop + Build", "", "1 of 3 ready  ·  Lives 4 / 5");
     btn(s, 380, 5, 96, 26, "Shop", true); btn(s, 482, 5, 96, 26, "Build");
+    R(s, 604, 7, 130, 22, "btn"); T(s, 610, 22, "+20% str, -15% Core !", "ts");
     T(s, 24, 62, "YOUR OFFERS", "ts tm");
     var offers = [
       ["Turret", "Defense · tier 1", "Needs: Power", ["Needs 0.50 / s at", "top speed (0.25", "shots / s)"], ["Shoots enemy units", "on your side."], "4"],
@@ -554,7 +681,7 @@ svg text { font-family: var(--font-mono); fill: var(--ink); white-space: pre; }
     board(mg, 0, 0, 6, mine, false, true);
     T(s, 716, 462, "8 buildings placed · 5 in stash", "ts tm");
     btn(s, 716, 478, 208, 34, "Go to Build");
-    mark(s, 590, 18, 1); mark(s, 160, 80, 2); mark(s, px + pw - 14, 62, 3); mark(s, px + pw - 14, 180, 4); mark(s, 450, 332, 5); mark(s, 678, 332, 6); mark(s, 922, 332, 7); mark(s, 678, 466, 8);
+    mark(s, 590, 18, 1); mark(s, 160, 80, 2); mark(s, px + pw - 14, 62, 3); mark(s, px + pw - 14, 180, 4); mark(s, 450, 332, 5); mark(s, 678, 332, 6); mark(s, 922, 332, 7); mark(s, 678, 466, 8); mark(s, 746, 18, 9);
   })();
 
   // ================= 4. BUILD =================

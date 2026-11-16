@@ -1,6 +1,6 @@
 # 03 — Combat: The Factory and the Battlefield
 
-Status: Draft v5.0
+Status: Draft v5.1
 
 ## Direction
 
@@ -702,7 +702,7 @@ Everything below is [PROPOSED] detail unless marked otherwise.
   decides outcomes. The same simulation runs in the host's game
   (authoritative, TA-6), in tests, and in balance tools.
 - **CB-32** A party is fully described by a serializable **team state**
-  (CP-6): the map (terrain, nodes, features), one Core
+  (CP-6): the map (terrain, nodes, features; nodes added by Rich vein, RS-4i4, are part of it), one Core
   position per player, every building with owner, tier, position and
   orientation, every conduit with its owner (border links included), and run
   modifiers that affect combat. This is exactly what a snapshot stores

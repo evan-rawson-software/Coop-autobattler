@@ -1,6 +1,6 @@
 # 07 — Open Questions
 
-Status: Draft v5.0
+Status: Draft v5.1
 
 Each question lists options and a recommendation. Answering Q2 unblocks backlog work on the simulation.
 
@@ -122,8 +122,8 @@ event → shop. A shop always follows the event. 5 lives; a PvE loss costs no
 life and gives no reward; a PvP loss costs a life. Remaining details:
 
 - Decided: the party picks one of up to three offered events, never two of the
-  same type (RS-4b). The
-  starting event types are those in RS-4a, to be refined later.
+  same type (RS-4b). The nine event types are in RS-4a, their numbers in
+  RS-4i.
 - **Boss fallback stakes.** Proposed: same as a PvP battle, costs a life on
   defeat (RS-5a). Decided (issue #394): this holds for every boss; the boss
   roster and its rules are MM-9a–MM-9e.
