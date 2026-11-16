@@ -218,3 +218,63 @@
   text-transform: uppercase;
   color: var(--ink-muted);
 }
+
+/* The Bonuses item of the run bar, its popover, and the lists it shows. */
+.bonus-item {
+  position: relative;
+}
+
+.bonus-button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.bonus-popover {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 40;
+  min-width: 15rem;
+  max-width: 22rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 0.6rem 0.8rem;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.3);
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.bonus-popover h3,
+.opponent-bonuses h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.85rem;
+}
+
+.bonus-lists h4 {
+  margin: 0.4rem 0 0.15rem;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  font-weight: normal;
+}
+
+.bonus-lists ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bonus-lists ul ul {
+  padding-left: 0.8rem;
+}
+
+.bonus-lists .bonus-negative {
+  color: var(--select);
+  font-weight: bold;
+}

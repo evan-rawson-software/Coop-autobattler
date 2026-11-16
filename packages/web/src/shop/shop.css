@@ -191,29 +191,6 @@ button.danger {
   color: var(--ink-muted);
 }
 
-.shop-bonuses {
-  font-size: 0.8rem;
-}
-
-.shop-bonuses h3 {
-  margin: 0 0 0.2rem;
-  font-size: 0.8rem;
-  color: var(--ink-muted);
-}
-
-.bonus-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.75rem;
-}
-
-.bonus-list li {
-  cursor: help;
-}
-
 .shop-foot {
   margin: auto 0 0;
   font-size: 0.8rem;

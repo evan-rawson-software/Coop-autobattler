@@ -79,19 +79,25 @@ function unitNames(ids: readonly string[]): string {
     : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1] ?? ''}`;
 }
 
+/** "+25%" or "−15%" (a real minus sign): a drawback reads as negative. */
+export function signedPercent(percent: number): string {
+  return `${percent < 0 ? '−' : '+'}${String(Math.abs(percent))}%`;
+}
+
 /** What one effect does, from its data. */
 export function effectLine(effect: ModifierEffect): string {
+  const pct = signedPercent(effect.percent);
   switch (effect.kind) {
     case 'building_health_percent':
-      return `${TARGET_WORDS[effect.target] ?? effect.target}: +${String(effect.percent)}% health`;
+      return `${TARGET_WORDS[effect.target] ?? effect.target}: ${pct} health`;
     case 'core_health_percent':
-      return `Your Core: +${String(effect.percent)}% health`;
+      return `Your Core: ${pct} health`;
     case 'unit_strength_percent':
       return effect.units === undefined
-        ? `Your units: +${String(effect.percent)}% strength`
-        : `+${String(effect.percent)}% ${unitNames(effect.units)} strength`;
+        ? `Your units: ${pct} strength`
+        : `${pct} ${unitNames(effect.units)} strength`;
     case 'turret_damage_percent':
-      return `Turrets: +${String(effect.percent)}% damage`;
+      return `Turrets: ${pct} damage`;
   }
 }
 

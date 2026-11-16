@@ -1,6 +1,6 @@
 /**
- * The bar every run screen shows: lives, gold (the round is in the title), the step, and a Menu
- * button. The run is saved after every action, so leaving is always safe.
+ * The bar every run screen shows: lives, gold (the round is in the title), the
+ * held Bonuses, the step, and a Menu button. The run is saved after every action, so leaving is always safe.
  */
 import type { RunState } from '@game/session';
 import { navigate } from '../app-state.js';
@@ -11,6 +11,7 @@ import { ActingSwitch } from '../shell/ActingSwitch.js';
 import type { BuildSession } from '../build/session.js';
 import { barLivesText } from './bar-lives.js';
 import { resultShown } from '../battle/result-shown.js';
+import { BonusesItem } from './BonusList.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 
 const noStore = createStore<{ acting: number }>({ acting: 0 });
@@ -45,6 +46,7 @@ export function RunBar(props: {
           Gold {gold}
         </span>
       ) : null}
+      <BonusesItem modifiers={state.team.modifiers} />
       {props.session === undefined ? null : (
         <ActingSwitch
           run={state}

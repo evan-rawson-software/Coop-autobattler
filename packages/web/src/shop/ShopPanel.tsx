@@ -7,7 +7,6 @@ import type { ComponentChildren } from 'preact';
 import { useStore } from '../app-state.js';
 import { screenText, screenTexts } from '../build/texts.js';
 import './shop.css';
-import type { HeldBonus } from '../event/view-model.js';
 import { SpriteIcon } from '../sprites/SpriteIcon.js';
 import {
   dismissRefineryHint,
@@ -142,10 +141,9 @@ function Offer(props: { group: OfferGroup; onBuy: (slot: number) => void }) {
   );
 }
 
-/** The shop panel of the info rail: header, offers, bonuses, the footnote. */
+/** The shop panel of the info rail: header, offers, the footnote. */
 export function ShopPanel(props: {
   sv: ShopView;
-  bonuses: readonly HeldBonus[];
   onBuy: (slot: number) => void;
   onReroll: () => void;
   onClose: () => void;
@@ -197,18 +195,6 @@ export function ShopPanel(props: {
           <Offer key={g.card.slot} group={g} onBuy={props.onBuy} />
         ))}
       </ul>
-      {props.bonuses.length === 0 ? null : (
-        <div class="shop-bonuses" id="panel-bonuses">
-          <h3>{t('uiShopBonuses')}</h3>
-          <ul class="bonus-list">
-            {props.bonuses.map((b) => (
-              <li key={b.id} data-bonus={b.id} title={b.effects.join('\n')}>
-                {b.count > 1 ? `${b.name} ×${String(b.count)}` : b.name}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
       {props.children}
       <p class="shop-foot" data-field="shop-footnote">
         {t('uiShopFootnote')}

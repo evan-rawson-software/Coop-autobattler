@@ -680,6 +680,7 @@ function BattleStage(props: BattleViewProps & { prep: Prep }) {
           overloadTick={overloadTick}
           tps={tps}
           revealed={revealed}
+          opponentModifiers={opponent.modifiers}
           statsOpen={statsOpen}
           onToggleStats={() => {
             setStatsOpen((o) => !o);
