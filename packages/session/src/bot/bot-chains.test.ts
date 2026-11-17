@@ -99,6 +99,12 @@ function wiring(r: BotRunResult, id: number): { into: number; out: number } {
 // draws change anyway) joins the pool, so they were searched again: rush
 // Composite over 1 to 60 and fortify Aether over 1 to 240 (the first seed that
 // builds each): rush Composite 17, fortify Aether 137, Foundry (rush) 31.
+// The bot takes the new events (#416: it now votes for and answers Market day,
+// Drill, Pact, Rich vein, Blueprint and the Caravan by its strategy), which
+// moved the draws of the fortify runs only: the fortify Aether seed was searched
+// again over 1 to 300 (chains on the board at the end of the run, no rejected
+// intent): 34, 95, 133, 153, 178, 227, 236 (137 no longer builds it). Rush
+// Composite 17 and Foundry 31 still build theirs.
 describe('the bot builds the Foundry and the refining chains (issue #384)', () => {
   test('rush builds the Composite chain and its Golems fight', () => {
     for (const seed of [17]) {
@@ -111,7 +117,7 @@ describe('the bot builds the Foundry and the refining chains (issue #384)', () =
   });
 
   test('fortify builds the Aether chain and its casters fight', () => {
-    for (const seed of [137]) {
+    for (const seed of [34]) {
       const r = play('fortify', seed);
       expect(r.rejected).toEqual([]);
       expect(onBoard(r, 'bld_refinery_bc')).toBeGreaterThan(0);

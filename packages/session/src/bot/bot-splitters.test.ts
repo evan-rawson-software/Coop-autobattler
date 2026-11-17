@@ -188,8 +188,11 @@ describe('shop buys only what can be placed (#178)', () => {
       // Pact (#413) is in the event pool from round 4, so the bot meets other
       // events: measured rush 11 / 38 / 80, fortify 3 / 7 / 13, siege 0 / 2 /
       // 12 (only rush party 1, 10 -> 12, and siege party 4, 10 -> 14, needed
-      // a new limit).
-      rush: { 1: 12, 2: 45, 4: 90 },
+      // a new limit). The bot takes the new events (#416; free offers and
+      // re-rolls of Market day, free buildings): measured rush 8 / 39 / 99
+      // (9 / 38 / 85 before, so only party 4, 90 -> 99, needed a new limit),
+      // fortify 4 / 7 / 12, siege 0 / 3 / 7.
+      rush: { 1: 12, 2: 45, 4: 99 },
       fortify: { 1: 7, 2: 16, 4: 30 },
       // Issue #383: the five refining buildings dilute the shop from round 3;
       // siege party 2 now measures 7, party 4 9.
