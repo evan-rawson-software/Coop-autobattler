@@ -52,6 +52,11 @@ export interface DrawIndex {
   readonly boardLabels: readonly { text: string; rect: ViewRect }[];
   /** Each side's refinery building IDs (their batches show as a pulse). */
   readonly refineries?: readonly [ReadonlySet<number>, ReadonlySet<number>];
+  /** Each side's turrets with splash: building ID to the blast radius in cells. */
+  readonly splashRadius?: readonly [
+    ReadonlyMap<number, number>,
+    ReadonlyMap<number, number>,
+  ];
 }
 
 export function makeDrawIndex(
@@ -74,11 +79,19 @@ export function makeDrawIndex(
   ];
   const boardLabels: { text: string; rect: ViewRect }[] = [];
   const refineries: [Set<number>, Set<number>] = [new Set(), new Set()];
+  const splashRadius: [Map<number, number>, Map<number, number>] = [
+    new Map<number, number>(),
+    new Map<number, number>(),
+  ];
   for (const b of initial.boards) {
     const side = b.frame.id === 'own' ? 0 : 1;
     for (const s of b.buildings) {
       rects[side].set(s.instance.id, s.rect);
       if (s.def.kind === 'refinery') refineries[side].add(s.instance.id);
+      if (s.def.kind === 'defense' && s.def.defenseType === 'turret') {
+        const r = s.def.tiers[s.instance.tier - 1]?.splashRadiusCells;
+        if (r !== undefined) splashRadius[side].set(s.instance.id, r);
+      }
     }
     cores[side] = b.cores.map((c) => c?.rect ?? null);
     for (const c of b.conduits) conduits[side].set(c.id, c.cells);
@@ -101,6 +114,7 @@ export function makeDrawIndex(
     conduitCells: conduits,
     boardLabels,
     refineries,
+    splashRadius,
   };
 }
 
@@ -960,8 +974,58 @@ export function drawBattleOverlay(
             );
           }
         }
-        if (age >= LIFE_SHOT) break;
         const side = e.side === 0 ? 0 : 1;
+        if (e.splash !== undefined) {
+          // A turret shell (the Mortar): when it lands a blast of the splash
+          // radius spreads round the target, and each unit it hits flashes.
+          const born = LIFE_SHOT - 1;
+          const radius = index.splashRadius?.[side].get(e.building) ?? 1;
+          const ci = idToIndex[e.unit] ?? -1;
+          const c = ci >= 0 ? units[ci] : undefined;
+          if (c !== undefined && c.id === e.unit && age >= born) {
+            if (age < born + LIFE_BLAST) {
+              const p = (age - born) / LIFE_BLAST;
+              pxOf(c, tmp2);
+              ctx.beginPath();
+              ctx.arc(
+                tmp2.x,
+                tmp2.y,
+                radius * z * (0.35 + 0.65 * Math.min(1, p * 2)),
+                0,
+                Math.PI * 2,
+              );
+              ctx.globalAlpha = 0.28 * (1 - p);
+              ctx.fillStyle = sideColor(side);
+              ctx.fill();
+              ctx.globalAlpha = 1 - p;
+              ctx.strokeStyle = sideColor(side);
+              ctx.lineWidth = 2;
+              ctx.stroke();
+            }
+            if (age < born + LIFE_FLASH) {
+              const p = (age - born) / LIFE_FLASH;
+              for (const hit of e.splash) {
+                const hi = idToIndex[hit.unit] ?? -1;
+                const h = hi >= 0 ? units[hi] : undefined;
+                if (h === undefined || h.id !== hit.unit) continue;
+                pxOf(h, tmp2);
+                ctx.globalAlpha = 0.7 * (1 - p);
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(
+                  tmp2.x,
+                  tmp2.y,
+                  Math.max(3, radiusOf(h)),
+                  0,
+                  Math.PI * 2,
+                );
+                ctx.fill();
+              }
+            }
+            ctx.globalAlpha = 1;
+          }
+        }
+        if (age >= LIFE_SHOT) break;
         if (!rectCentre(index.rects[side].get(e.building), tmp)) break;
         const ti = idToIndex[e.unit] ?? -1;
         const t = ti >= 0 ? units[ti] : undefined;

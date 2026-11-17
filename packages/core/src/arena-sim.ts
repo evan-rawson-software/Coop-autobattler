@@ -256,6 +256,15 @@ export type ArenaEvent =
       readonly building: number;
       readonly unit: number;
       readonly damage: number;
+      /**
+       * Only for a turret tier with splash (the Mortar, CB-18b): the other
+       * units the shot hit, in unit id order, with the damage each took (after
+       * armor). Empty when no other unit stood within the radius.
+       */
+      readonly splash?: readonly {
+        readonly unit: number;
+        readonly damage: number;
+      }[];
     }
   | {
       readonly tick: number;
@@ -853,6 +862,10 @@ interface TurretInfo {
   readonly rangeCells: number;
   readonly cooldownTicks: number;
   readonly costPerShot: number;
+  /** Blind spot in sub-cell units (CB-18b); 0 for none. */
+  readonly minRangeSub: number;
+  /** Splash of a shot (CB-18b): radius in sub-cell units and percent. */
+  readonly splash?: { readonly radiusSub: number; readonly percent: number };
 }
 
 interface RampInfo {
@@ -1143,6 +1156,16 @@ export function createArenaContext(
           rangeCells: tier.rangeCells,
           cooldownTicks: tier.cooldownTicks,
           costPerShot: tier.costPerShot,
+          minRangeSub: (tier.minRangeCells ?? 0) * S,
+          ...(tier.splashPercent === undefined ||
+          tier.splashRadiusCells === undefined
+            ? {}
+            : {
+                splash: {
+                  radiusSub: tier.splashRadiusCells * S,
+                  percent: tier.splashPercent,
+                },
+              }),
         });
       }
     }
@@ -2536,8 +2559,10 @@ function chargeRamps(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
  * `0 .. h + gapRows - 1`, side 1: rows `h .. H - 1`). In range: the squared distance from the unit's centre to
  * the nearest cell of the turret is at most `(rangeCells * CELL_UNITS +
  * radius)^2`, i.e. the gap from the unit's circle to the turret is at most
- * `rangeCells` cells. Nearest: smallest such squared distance; ties by lowest
- * unit ID. Damage joins the pending damage.
+ * `rangeCells` cells. A tier with `minRangeCells` ignores a unit whose centre's
+ * squared distance to the nearest cell is below `(minRangeCells * CELL_UNITS)^2`
+ * (CB-18b). Nearest: smallest such squared distance; ties by lowest unit ID.
+ * Damage joins the pending damage, and so does the tier's splash (CB-18b).
  */
 function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
   const geom = ctx.arena.geom;
@@ -2561,6 +2586,8 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
       const row = ownCellCoord(t.side, u.py, geom.height);
       if (row < rowLo || row > rowHi) continue;
       const d = buildingDist2(u.px, u.py, turret);
+      // The blind spot (CB-18b): the centre is closer than the minimum range.
+      if (d < info.minRangeSub * info.minRangeSub) continue;
       const reach = info.rangeCells * S + (ctx.brad[i] ?? 0);
       if (d <= reach * reach && d < bestD) {
         best = i;
@@ -2573,6 +2600,22 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     t.cooldown = info.cooldownTicks;
     const dealt = armorHit(info.damage, armorOf(ctx, target));
     ctx.unitDamage[best] = addDamage(ctx.unitDamage[best] ?? 0, dealt);
+    // Splash (CB-18b) by the rule of CB-5h, from the same snapshot: the
+    // percent of the shot's damage (before armor) with a minimum of 1, then
+    // each unit's own armor, summed into this tick's damage.
+    const splash =
+      info.splash === undefined
+        ? undefined
+        : splashHits(
+            ctx,
+            units,
+            t.side,
+            target,
+            best,
+            info.damage,
+            info.splash,
+            1,
+          );
     ctx.events?.push({
       tick,
       type: 'turret_fired',
@@ -2580,6 +2623,7 @@ function fireTurrets(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
       building: t.building,
       unit: target.id,
       damage: dealt,
+      ...(splash === undefined ? {} : { splash }),
     });
   }
 }
@@ -3901,7 +3945,7 @@ function resolveAttacks(
       target = { kind: 'unit', unit: t.id };
       const sp = splashOf(ctx, u);
       if (sp !== undefined) {
-        splash = splashHits(ctx, units, u, t, arg, hit, sp);
+        splash = splashHits(ctx, units, u.side, t, arg, hit, sp, 0);
         centre = t;
       }
     } else {
@@ -3996,14 +4040,17 @@ interface SplashHit {
 function splashHits(
   ctx: ArenaContext,
   units: readonly UnitSim[],
-  attacker: UnitSim,
+  attackerSide: number,
   primary: UnitSim,
   arg: number,
   hit: number,
   sp: { readonly radiusSub: number; readonly percent: number },
+  minPart: number,
 ): SplashHit[] {
   const out: SplashHit[] = [];
-  const part = mulPct(hit, sp.percent);
+  // A turret's splash is at least 1 (CB-18b); a unit's may be 0 and is then
+  // skipped (`minPart` 0).
+  const part = Math.max(minPart, mulPct(hit, sp.percent));
   if (part <= 0) return out;
   const { width, height } = ctx.arena.geom;
   const r2 = sp.radiusSub * sp.radiusSub;
@@ -4014,7 +4061,7 @@ function splashHits(
   const found: number[] = [];
   // Every unit of an enemy side of the attacker (CB-8e: the other side and
   // the neutral guards).
-  for (const es of ENEMY_SIDES[attacker.side] ?? []) {
+  for (const es of ENEMY_SIDES[attackerSide] ?? []) {
     const heads = ctx.heads[es];
     if (heads === undefined) continue;
     for (let y = gy0; y <= gy1; y++) {
@@ -4037,7 +4084,7 @@ function splashHits(
     const e = units[j];
     if (e === undefined) continue;
     const dealt = armorHit(part, armorOf(ctx, e));
-    hurtUnit(ctx, units, j, dealt, attacker.side);
+    hurtUnit(ctx, units, j, dealt, attackerSide);
     out.push({ unit: e.id, damage: dealt });
   }
   return out;

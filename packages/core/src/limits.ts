@@ -100,6 +100,9 @@ export const MAX_HIT = MAX_TICK_DAMAGE / 2;
 /** Sub-cell units per arena cell: positions, radii and reach are in these. */
 export const CELL_UNITS = 240;
 
+/** Largest `splashRadiusCells` of a turret tier: the unit splash maximum, in cells (CB-18b). */
+export const MAX_SPLASH_RADIUS_CELLS = MAX_SPLASH_RADIUS / CELL_UNITS;
+
 /** Largest `radius` and `collisionRadius` of a unit (two cells). */
 export const MAX_UNIT_RADIUS = 2 * CELL_UNITS;
 
