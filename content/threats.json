@@ -10,6 +10,7 @@
   },
   "maxPartySize": 4,
   "maxUnitsPerWavePerPlot": 12,
+  "focusCapPlots": 2,
   "maxWallsPerPlot": 60,
   "maxTurretsPerPlot": 6,
   "minCoreHealth": 30,
@@ -177,6 +178,29 @@
         "wallSharePercent": 40,
         "turretSharePercent": 30,
         "layout": "maze"
+      }
+    },
+    {
+      "id": "arch_focus",
+      "bossOnly": false,
+      "fromRound": 3,
+      "focus": true,
+      "waveSharePercent": 60,
+      "waves": {
+        "firstTick": 150,
+        "intervalTicks": 160,
+        "count": 7,
+        "growthPercent": 120,
+        "composition": [
+          { "unit": "unit_soldier", "weight": 2 },
+          { "unit": "unit_raider", "weight": 1 }
+        ]
+      },
+      "stronghold": {
+        "coreHealthPerBudget": 400,
+        "wallSharePercent": 20,
+        "turretSharePercent": 15,
+        "layout": "ring"
       }
     },
     {

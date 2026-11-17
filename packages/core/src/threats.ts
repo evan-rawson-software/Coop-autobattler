@@ -129,6 +129,11 @@ export interface ArchetypeDef {
   readonly pylons?: PylonsTemplate;
   /** Boss-only archetypes: every wave led by a champion unit (MM-9d). */
   readonly champion?: ChampionTemplate;
+  /**
+   * Focus (issue #433), not boss-only: each wave enters through one plot (the
+   * profile's waves get a `plot`). Absent when false.
+   */
+  readonly focus?: true;
 }
 
 export interface RingLayoutConfig {
@@ -184,6 +189,8 @@ export interface ThreatsConfig {
   readonly typeMultiplierPercent: Readonly<Record<ThreatType, number>>;
   readonly maxPartySize: number;
   readonly maxUnitsPerWavePerPlot: number;
+  /** A focused wave's cap counts at most this many plots (issue #433). */
+  readonly focusCapPlots: number;
   readonly maxWallsPerPlot: number;
   readonly maxTurretsPerPlot: number;
   readonly minCoreHealth: number;
@@ -338,6 +345,7 @@ const KEYS = new Set([
   'typeMultiplierPercent',
   'maxPartySize',
   'maxUnitsPerWavePerPlot',
+  'focusCapPlots',
   'maxWallsPerPlot',
   'maxTurretsPerPlot',
   'minCoreHealth',
@@ -419,6 +427,10 @@ export function loadThreats(
     'threats',
     errors,
   );
+  const focusCapPlots = readInt(data, 'focusCapPlots', 1, 'threats', errors);
+  if (focusCapPlots !== undefined && focusCapPlots > 64) {
+    errors.push('threats: "focusCapPlots" must be at most 64.');
+  }
   const maxWallsPerPlot = readInt(
     data,
     'maxWallsPerPlot',
@@ -682,6 +694,7 @@ export function loadThreats(
         'linkedCores',
         'pylons',
         'champion',
+        'focus',
       ]),
       at,
       errors,
@@ -734,6 +747,19 @@ export function loadThreats(
         }
         if (e['brood'] !== undefined) {
           errors.push(`${at}: "linkedCores" cannot be combined with "brood".`);
+        }
+      }
+    }
+    let focus = false;
+    if (e['focus'] !== undefined) {
+      if (typeof e['focus'] !== 'boolean') {
+        errors.push(`${at}: "focus" must be true or false.`);
+      } else if (e['focus']) {
+        focus = true;
+        if (e['bossOnly'] !== false) {
+          errors.push(
+            `${at}: "focus" is only allowed when "bossOnly" is false.`,
+          );
         }
       }
     }
@@ -1072,6 +1098,7 @@ export function loadThreats(
         ...(linkedCores ? { linkedCores: true as const } : {}),
         ...(pylons === undefined ? {} : { pylons }),
         ...(champion === undefined ? {} : { champion }),
+        ...(focus ? { focus: true as const } : {}),
       });
     }
   });
@@ -1110,6 +1137,7 @@ export function loadThreats(
     multipliers === undefined ||
     maxPartySize === undefined ||
     maxUnitsPerWavePerPlot === undefined ||
+    focusCapPlots === undefined ||
     maxWallsPerPlot === undefined ||
     maxTurretsPerPlot === undefined ||
     minCoreHealth === undefined ||
@@ -1124,6 +1152,7 @@ export function loadThreats(
     typeMultiplierPercent: multipliers,
     maxPartySize,
     maxUnitsPerWavePerPlot,
+    focusCapPlots,
     maxWallsPerPlot,
     maxTurretsPerPlot,
     minCoreHealth,

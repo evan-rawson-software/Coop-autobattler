@@ -496,6 +496,13 @@ champion counts toward the wave cap like any unit (step 5 below). The loader rej
 shipped content (Golem health 260, at most 600 percent) the clamp is not
 reached in rounds 1 to `maxThreatRound`.
 
+`focusCapPlots` (issue #433) is a required top-level integer of `threats.json`
+(1 to 64; shipped 2). An archetype's optional `focus` (issue #433) is a boolean,
+allowed only when `bossOnly` is false (the loader says "only allowed when
+\"bossOnly\" is false"); absent means false. A wave entry's `plot` (profile,
+side option `scheduledWaves`) is an integer from 0 to the plot count minus 1;
+the battle checks it at setup (`RangeError` from `createArenaSim`).
+
 A tier's `costs` (CB-5e) holds one integer from 1 to `MAX_TIER_COST` per
 resource, at most one resource per input (so at most four); the combined cost
 `costPerUnit` the loader derives from it is their sum, at most
@@ -4321,11 +4328,14 @@ When any side has options the state carries them in `sideOptions` (a pair
 indexed by side, `{}` for a side without), so a saved state continues
 identically; with none the field is absent.
 
-- **`scheduledWaves`**: a list `{tick, unit, count, healthPercent?}` (an
+- **`scheduledWaves`**: a list `{tick, unit, count, healthPercent?, plot?}` (an
   entry's optional `healthPercent`, MM-9d "Warlord", an integer of at least
   100, is copied to each queued `entering` entry and passed to `unitStats` when
   the unit spawns, see "Units"; absent means 100 and the entry is
-  byte-identical to before). In the Production step of
+  byte-identical to before; an entry's optional `plot`, issue #433 "Focus", an
+  integer from 0 to the plot count minus 1, limits where the wave enters, see
+  "Focus entries" below, and absent means the whole width, byte-identical to
+  before). In the Production step of
   tick `tick` (after all unit producers of both sides, side 0's waves before
   side 1's, waves in list order), the wave's `count` units are appended to the
   state's `entering` queue as `{side, unit, col}` (unit `i` after unit `i - 1`).
@@ -4365,6 +4375,21 @@ identically; with none the field is absent.
   `unit_spawned` with `building = 0`. Wave `count` is the total for the whole
   board, so a four-plot board simply gets wider waves. The queue is part of the
   state (`entering`), so a restored battle continues identically.
+  **Focus entries** (issue #433). A wave with `plot = q` works on the columns
+  `lo .. hi - 1` of plot `q`, `lo = q * plotWidth`, `hi = lo + plotWidth`, and
+  nothing else changes: unit `i` of wave `j` (`n = count`) wants the own-frame
+  column `col = lo + ((floor((2i + 1) * plotWidth / (2n)) + 7j) mod plotWidth)`
+  (the same spread and the same stride, inside the plot); the candidate columns
+  are `col`, `col - 1`, `col + 1`, ... as above but **only those in `lo ..
+  hi - 1`** (so the walk stops after `plotWidth` distances), the cells are
+  tried in the same order with the same offsets, and a unit with no room waits
+  in its place as before (it never enters another plot). The entry's `plot` is
+  copied to the queued entry; the unit's `owner` is therefore `q`, and its
+  target the Core of plot `q` chosen by PP-11 as before. The "failed radius"
+  shortcut above is kept per (collision radius, plot): a failure on the whole
+  width also fails every plot, a failure on one plot says nothing about the
+  others. With `plot = 0` and one plot (a party of 1) `lo = 0`, `hi = W` and
+  the entry is identical to one without `plot`.
 - **`freePower`**: every turret of the side is fully charged at all times: in
   the turret charging step, `charge` is set to `costPerShot` without touching
   the input buffers. No flow is needed (the PvE threat has no sources,
@@ -4483,7 +4508,7 @@ player, rounds 1 to 15: 100, 125, 156, 195, 243, 303, 378, 472, 590, 737, 921,
 
 ```
 { archetype, type, round, partySize, budget, unitStrengthPercent,
-  waves: [{ tick, unit, count, healthPercent? }],
+  waves: [{ tick, unit, count, healthPercent?, plot? }],
   stronghold: { cores: [{ x, y, health }],
                 buildings: [{ def, tier, x, y, rotation }],
                 bursts?: [{ core, thresholdPercent, unit, count }],
@@ -4520,6 +4545,12 @@ champion entries of an archetype with `champion` (one per wave tick, listed
 first in its tick; `unit` is the champion unit, `count` is `partySize`) and
 absent from every other entry, so every other profile and hash is unchanged.
 
+A wave entry's `plot` (Focus, issue #433) is present only on the entries of an
+archetype with `focus` (every entry of one wave tick has the same `plot`, 0 to
+`partySize - 1`) and absent from every other entry, so every other profile and
+hash is unchanged. The battle reads it as the `plot` of the `scheduledWaves`
+entry.
+
 It is everything the battle needs; there are no hidden inputs. `waves` are in
 tick order (the units of one wave share a tick, one entry per unit type);
 `stronghold.buildings` are sorted by `(y, x)` and get instance IDs 1, 2, ... in
@@ -4538,7 +4569,8 @@ composition: [{unit, weight}], signature?}` and `stronghold`
 may have `brood` `{thresholdsPercent: [..], sharePercent}` (Core bursts, below)
 `linkedCores: true` (Linked Cores, below), `pylons` `{perPlot, sharePercent,
 minDistance, maxDistance}` (Pylons, below) or `champion` `{unit, healthPercent,
-sharePercent}` (Warlord, below).
+sharePercent}` (Warlord, below). A plain archetype may have `focus: true`
+(Focus, below).
 Shipped values:
 
 | Archetype | Wave share | Waves (first tick, interval, count, growth) | Composition | Stronghold (Core per budget, walls, turrets, layout) |
@@ -4549,6 +4581,7 @@ Shipped values:
 | Skirmishers (`arch_skirmishers`, from round 2) | 50 | 150, 150, 6, 120 | archer 3 : soldier 1 | 300, 0, 45, `open` |
 | Swarm (`arch_swarm`, from round 1) | 80 | 80, 45, 14, 108 | raider | 500, 0, 10, `open` |
 | Maze (`arch_maze`, from round 2) | 25 | 400, 300, 4, 125 | soldier 2 : raider 1 | 300, 40, 30, `maze` |
+| Focus (`arch_focus`, from round 3, `focus`) | 60 | 150, 160, 7, 120 | soldier 2 : raider 1 | 400, 20, 15, `ring` |
 | Boss | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Brood (`arch_boss_brood`, boss only, from round 3, any party size) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
 | Bonded (`arch_boss_linked`, boss only, from round 5, party size 2 or more) | 55 | 200, 250, 6, 125 | soldier 3 : raider 1; every 3rd wave only raiders | 400, 20, 20, `ring` |
@@ -4584,6 +4617,16 @@ Its stronghold budget is three quarters of the budget; walls take 40 percent of
 it, turrets 30, and the rest becomes Core health. The wall cap is
 `layouts.maze.maxWallsPerPlot` (88), not `maxWallsPerPlot` (60): four full rows
 of 22 walls need it (the other option was fewer rows, which would not zig-zag).
+Focus (issue #433, from round 3) has normal waves (60 percent of the budget in
+seven waves from tick 150, 160 apart, soldier 2 : raider 1) against a `ring`
+stronghold (Core 400 per budget, 20 percent walls, 15 percent turrets), but each
+wave enters through one plot: see step 6 and the cap in step 5. In a party of 1
+every wave is plot 0, the whole width, so it plays as ordinary waves (the
+profile's waves carry `plot: 0`, which changes nothing in the battle). The
+stronghold is generated exactly as a `ring` of another archetype. **Notes for a
+port (Focus):** one flag on the template, one extra random stream (`wavesRng.child("focus")`,
+below) and the plot restriction of the entering walk in "Side options"; the
+wave sizes, composition and ranged mix are the ordinary ones.
 No per-archetype switch for the mix was needed. Swarm's waves are small
 (`growthPercent` 108, so the last wave is about 2.7 times the first): at party
 size 1, round 1 every wave is one raider; at round 10 the largest wave is 5
@@ -4683,7 +4726,10 @@ other invalid input; `pickBoss` never offers it then).
    If every entry of a wave has `n = 0`, the entry with the highest weight
    (first on ties) gets 1: every wave has at least one unit.
 5. **Strength conversion.** `cap = maxUnitsPerWavePerPlot * partySize` (12 per
-   plot; for an archetype with `champion`, `cap` is `N` less, the champions that
+   plot; for an archetype with `focus`, whose wave puts all its units in one
+   plot, `cap = maxUnitsPerWavePerPlot * min(partySize, focusCapPlots)`, 24 at
+   most: a party of 4 meets fewer, stronger units in one lane, the rest of the
+   budget becoming `unitStrengthPercent`; for an archetype with `champion`, `cap` is `N` less, the champions that
    every wave has, which are never scaled: `m` is the largest wave without them,
    so a wave has at most `maxUnitsPerWavePerPlot * partySize` units with them). Let `m` be the largest wave (sum of `n` over a wave's entries). If `m
    <= cap`, `unitStrengthPercent = 0`. Otherwise `unitStrengthPercent =
@@ -4719,6 +4765,14 @@ other invalid input; `pickBoss` never offers it then).
    champion unit, count: partySize, healthPercent: h_k}`, before the composition
    entries (so the champions queue first and enter first, see "Side options",
    `scheduledWaves`).
+   **Focus plots** (only with `focus`; `N = partySize`; one entry per wave tick,
+   `k = 0 ..` in tick order; `F = wavesRng.child("focus")`, a child label drawn
+   from nothing else, so `wavesRng`'s own draws are untouched): `plot_0 =
+   F.nextInt(N)`; for `k > 0`, `r = F.nextInt(N - 1)` and `plot_k = r + 1` if
+   `r >= plot_{k-1}`, else `r` (never the plot of the wave before). With `N = 1`
+   every `plot_k = 0` and nothing is drawn. Every entry of tick `k` (the
+   composition entries and the appended archer and drone entries) gets
+   `plot = plot_k`.
 7. **Stronghold** (`N = partySize`, `share(total, p) = floor(total / N) + (1 if
    p < total mod N else 0)`).
    - `wallsTotal = min(floor(floor(S' * wallSharePercent / 100) / wallPrice),
@@ -5107,6 +5161,11 @@ a Core destroyed by a hit that crosses all its lines) and
 `golden/reference-matrix.json` (the `pve-battle` kind again: the siege board
 against each archetype at round 1, and every reference board against each
 archetype at round 5 (medium) and round 10 (hard)).
+
+Focus vectors (issue #433): three `threat-gen` cases for `arch_focus` (medium
+round 5 with party 1, medium round 6 with party 2, hard round 10 with party 4:
+the plots, and a cap of two plots with four) and three `pve-battle` cases
+(`rush-vs-focus-r3`, solo; `party2-vs-focus-r5`; `party4-vs-focus-r6`).
 
 Bonded vectors (issue #399): three `threat-gen` cases for
 `arch_boss_linked` (party sizes 2, 3 and 4; a party of 1 is an error, not a

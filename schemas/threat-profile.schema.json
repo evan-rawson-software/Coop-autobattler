@@ -41,6 +41,11 @@
           "tick": { "type": "integer", "minimum": 0 },
           "unit": { "type": "string", "pattern": "^unit_[a-z0-9_]+$" },
           "count": { "type": "integer", "minimum": 1 },
+          "plot": {
+            "description": "Optional (Focus, issue #433). The wave enters only on the front-row cells of this plot's columns (0 to partySize - 1). Absent means the whole width.",
+            "type": "integer",
+            "minimum": 0
+          },
           "healthPercent": {
             "description": "Optional (only on the champion entries of an archetype with `champion`, listed first in their tick). The percent of its health (after the strength percent) each unit of the entry spawns with; at least 100.",
             "type": "integer",

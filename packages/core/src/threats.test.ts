@@ -606,8 +606,8 @@ describe('pickArchetypes and threatSummary', () => {
       }
     }
     // Rusher, Fortress, Escalator, Skirmishers (from round 2), Swarm and
-    // Maze (from round 2).
-    expect(seen.size).toBe(6);
+    // Maze (from round 2) and Focus (from round 3).
+    expect(seen.size).toBe(7);
   });
 
   test('wraps around when fewer than three archetypes exist', () => {
@@ -1085,5 +1085,177 @@ describe('Maze (issue #432)', () => {
       loadThreats(raw2, { units: content.units, buildings: content.buildings })
         .ok,
     ).toBe(false);
+  });
+});
+
+describe('Focus (issue #433)', () => {
+  const gen = (
+    round: number,
+    partySize: number,
+    type: ThreatType = 'medium',
+    seed = 7,
+  ) =>
+    generateThreat(
+      { seed, round, partySize, type, archetype: 'arch_focus' },
+      content,
+      configs,
+    );
+  /** The plot of each wave tick, in tick order. */
+  const plotsOf = (p: ReturnType<typeof gen>): number[] => {
+    const byTick = new Map<number, Set<number | undefined>>();
+    for (const w of p.waves) {
+      byTick.set(w.tick, (byTick.get(w.tick) ?? new Set()).add(w.plot));
+    }
+    return [...byTick.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([, set]) => {
+        expect(set.size).toBe(1);
+        return got([...set][0]);
+      });
+  };
+
+  test('the content has the issue numbers', () => {
+    const a = got(threats.archetypes.find((x) => x.id === 'arch_focus'));
+    expect(a.fromRound).toBe(3);
+    expect(a.focus).toBe(true);
+    expect(a.waveSharePercent).toBe(60);
+    expect(a.waves).toMatchObject({
+      firstTick: 150,
+      intervalTicks: 160,
+      count: 7,
+      growthPercent: 120,
+    });
+    expect(a.stronghold).toEqual({
+      coreHealthPerBudget: 400,
+      wallSharePercent: 20,
+      turretSharePercent: 15,
+      layout: 'ring',
+    });
+    expect(threats.focusCapPlots).toBe(2);
+    for (let seed = 1; seed <= 20; seed++) {
+      for (let round = 1; round <= 2; round++) {
+        const o = pickArchetypes(seed, round, threats);
+        expect([o.easy, o.medium, o.hard]).not.toContain('arch_focus');
+      }
+    }
+  });
+
+  test('every wave has one plot; none repeats the wave before; solo is plot 0', () => {
+    for (const seed of [1, 7, 99]) {
+      for (const party of [1, 2, 4]) {
+        for (let round = 3; round <= 20; round++) {
+          const plots = plotsOf(gen(round, party, 'medium', seed));
+          expect(plots).toHaveLength(7);
+          for (const [i, pl] of plots.entries()) {
+            expect(pl).toBeGreaterThanOrEqual(0);
+            expect(pl).toBeLessThan(party);
+            if (i > 0) {
+              if (party === 1) expect(pl).toBe(0);
+              else expect(pl).not.toBe(plots[i - 1]);
+            }
+          }
+          if (party === 2) {
+            // Two plots: they must alternate.
+            for (const [i, pl] of plots.entries()) {
+              expect(pl).toBe((got(plots[0]) + i) % 2);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  test('over many seeds every plot is used, and the first wave is drawn from all of them', () => {
+    const first = new Set<number>();
+    const all = new Set<number>();
+    for (let seed = 1; seed <= 60; seed++) {
+      const plots = plotsOf(gen(6, 4, 'medium', seed));
+      first.add(got(plots[0]));
+      for (const pl of plots) all.add(pl);
+    }
+    expect([...first].sort()).toEqual([0, 1, 2, 3]);
+    expect([...all].sort()).toEqual([0, 1, 2, 3]);
+  });
+
+  test('the plots come from a child stream: the wave sizes are those of the same waves without focus', () => {
+    const plain: ThreatsConfig = {
+      ...threats,
+      archetypes: threats.archetypes.map((a) => {
+        if (a.id !== 'arch_focus') return a;
+        return {
+          id: a.id,
+          bossOnly: a.bossOnly,
+          ...(a.fromRound === undefined ? {} : { fromRound: a.fromRound }),
+          waveSharePercent: a.waveSharePercent,
+          waves: a.waves,
+          stronghold: a.stronghold,
+        };
+      }),
+    };
+    for (const party of [1, 2]) {
+      const withFocus = gen(6, party);
+      const without = generateThreat(
+        {
+          seed: 7,
+          round: 6,
+          partySize: party,
+          type: 'medium',
+          archetype: 'arch_focus',
+        },
+        content,
+        { threats: plain, mapgen },
+      );
+      expect(without.waves.every((w) => w.plot === undefined)).toBe(true);
+      expect(
+        withFocus.waves.map((w) => ({
+          tick: w.tick,
+          unit: w.unit,
+          count: w.count,
+        })),
+      ).toEqual(without.waves);
+      expect(withFocus.stronghold).toEqual(without.stronghold);
+    }
+  });
+
+  test('a focused wave is capped at two plots, however big the party', () => {
+    const cap = threats.maxUnitsPerWavePerPlot * threats.focusCapPlots;
+    for (const party of [1, 2, 4]) {
+      for (const round of [8, 15, 25]) {
+        const p = gen(round, party, 'hard');
+        const perTick = new Map<number, number>();
+        for (const w of p.waves) {
+          perTick.set(w.tick, (perTick.get(w.tick) ?? 0) + w.count);
+        }
+        const biggest = Math.max(...perTick.values());
+        expect(biggest).toBeLessThanOrEqual(
+          threats.maxUnitsPerWavePerPlot * Math.min(party, 2),
+        );
+        expect(biggest).toBeLessThanOrEqual(cap);
+      }
+    }
+    // Four plots have more budget but the same cap as two: stronger units.
+    expect(gen(15, 4, 'hard').unitStrengthPercent).toBeGreaterThan(
+      gen(15, 2, 'hard').unitStrengthPercent,
+    );
+  });
+
+  test('the loader checks focus and focusCapPlots', () => {
+    const ctx = { units: content.units, buildings: content.buildings };
+    const clone = () =>
+      JSON.parse(JSON.stringify(threatsJson)) as Record<string, unknown> & {
+        archetypes: Record<string, unknown>[];
+      };
+    const a = clone();
+    delete a['focusCapPlots'];
+    expect(loadThreats(a, ctx).ok).toBe(false);
+    const b = clone();
+    b['focusCapPlots'] = 0;
+    expect(loadThreats(b, ctx).ok).toBe(false);
+    const c = clone();
+    got(c.archetypes.find((x) => x['id'] === 'arch_boss'))['focus'] = true;
+    expect(loadThreats(c, ctx).ok).toBe(false);
+    const d = clone();
+    got(d.archetypes.find((x) => x['id'] === 'arch_focus'))['focus'] = 'yes';
+    expect(loadThreats(d, ctx).ok).toBe(false);
   });
 });

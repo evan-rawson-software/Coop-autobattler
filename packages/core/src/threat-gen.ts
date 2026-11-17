@@ -43,6 +43,11 @@ export interface ThreatWave {
    * each unit of the entry spawns with, applied after the strength percent.
    */
   readonly healthPercent?: number;
+  /**
+   * Focus (issue #433): the wave enters through this plot's columns only (0 to
+   * `partySize - 1`). Absent means the whole width.
+   */
+  readonly plot?: number;
 }
 
 export interface StrongholdBuilding {
@@ -405,8 +410,13 @@ export function generateThreat(
   // maxUnitsPerWavePerPlot * party.
   // The champions (one per plot in every wave) count toward the cap: the
   // other units of a wave share what is left of it.
+  // A focused wave puts all its units in one plot: its cap counts at most
+  // `focusCapPlots` plots.
   const cap =
-    threats.maxUnitsPerWavePerPlot * partySize -
+    threats.maxUnitsPerWavePerPlot *
+      (arch.focus === true
+        ? Math.min(partySize, threats.focusCapPlots)
+        : partySize) -
     (arch.champion === undefined ? 0 : partySize);
   const scaled = [...planned, ...bursts.map((b) => b.wave)];
   const largest = Math.max(
@@ -461,8 +471,27 @@ export function generateThreat(
       );
     }
   }
+  // Focus: the plot of each wave, from the `focus` child of `wavesRng`: the
+  // first wave draws `nextInt(partySize)`, each later one `nextInt(partySize -
+  // 1)` shifted past the plot of the wave before (never the same plot twice in
+  // a row); in a party of one every wave is plot 0 and nothing is drawn.
+  const focusPlots: number[] = [];
+  if (arch.focus === true) {
+    const focusRng = wavesRng.child('focus');
+    planned.forEach((_w, k) => {
+      const prev = focusPlots[k - 1];
+      if (partySize === 1) focusPlots.push(0);
+      else if (prev === undefined) focusPlots.push(focusRng.nextInt(partySize));
+      else {
+        const r = focusRng.nextInt(partySize - 1);
+        focusPlots.push(r >= prev ? r + 1 : r);
+      }
+    });
+  }
   const waves: ThreatWave[] = [];
   planned.forEach((w, k) => {
+    const plot = focusPlots[k];
+    const plotField = plot === undefined ? {} : { plot };
     // The champions lead their wave: first entry of the tick.
     if (arch.champion !== undefined) {
       waves.push({
@@ -470,10 +499,13 @@ export function generateThreat(
         unit: arch.champion.unit,
         count: partySize,
         healthPercent: champions[k] ?? 100,
+        ...plotField,
       });
     }
     for (const e of w.entries) {
-      if (e.n > 0) waves.push({ tick: w.tick, unit: e.unit, count: e.n });
+      if (e.n > 0) {
+        waves.push({ tick: w.tick, unit: e.unit, count: e.n, ...plotField });
+      }
     }
   });
   const burstList: StrongholdBurst[] = [];

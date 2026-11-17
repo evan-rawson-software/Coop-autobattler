@@ -501,6 +501,8 @@ export interface EnteringSim {
   readonly col: number;
   /** A champion's health percent (see `ScheduledWave.healthPercent`). */
   readonly healthPercent?: number;
+  /** Only this plot's columns may be used (see `ScheduledWave.plot`). */
+  readonly plot?: number;
 }
 
 /**
@@ -547,6 +549,12 @@ export interface ScheduledWave {
    * Absent means 100.
    */
   readonly healthPercent?: number;
+  /**
+   * Focus (issue #433): the units of this wave enter only on the front-row
+   * cells of this plot's columns (own frame; 0 to the plot count - 1). Absent
+   * means the whole width.
+   */
+  readonly plot?: number;
 }
 
 /**
@@ -1266,6 +1274,14 @@ function assertStrengthBounds(
     // Champions (MM-9d): the health percent of a wave is a whole percent of at
     // least 100, and the health it gives must stay within the bound too.
     for (const w of sideOptions?.[side]?.scheduledWaves ?? []) {
+      if (w.plot !== undefined) {
+        assertWithin(
+          w.plot,
+          0,
+          divFloor(team.map.width, team.map.plotWidth) - 1,
+          'Scheduled wave plot',
+        );
+      }
       if (w.healthPercent === undefined) continue;
       assertWithin(
         w.healthPercent,
@@ -2319,20 +2335,26 @@ function queueWaves(sim: ArenaSim, tick: number): void {
   const options = sim.sideOptions;
   if (options === undefined) return;
   const width = sim.teams[0].map.width;
+  const plotWidth = sim.teams[0].map.plotWidth;
   for (const side of [0, 1] as const) {
     const waves = options[side].scheduledWaves;
     if (waves === undefined) continue;
     waves.forEach((w, j) => {
       if (w.tick !== tick) return;
       for (let i = 0; i < w.count; i++) {
-        const col = modFloor(
-          divFloor((2 * i + 1) * width, 2 * w.count) + WAVE_START_STRIDE * j,
-          width,
-        );
+        // Focus: the same spread, inside the plot's columns only.
+        const span = w.plot === undefined ? width : plotWidth;
+        const col =
+          (w.plot === undefined ? 0 : w.plot * plotWidth) +
+          modFloor(
+            divFloor((2 * i + 1) * span, 2 * w.count) + WAVE_START_STRIDE * j,
+            span,
+          );
         sim.entering.push({
           side,
           unit: w.unit,
           col,
+          ...(w.plot === undefined ? {} : { plot: w.plot }),
           ...(w.healthPercent === undefined
             ? {}
             : { healthPercent: w.healthPercent }),
@@ -2368,16 +2390,25 @@ function enterWaves(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     if (unitDef === undefined) throw new Error(`Unknown unit "${e.unit}".`);
     const side = e.side;
     const failedHere = side === 0 ? failed0 : failed1;
-    if (failedHere?.includes(unitDef.collisionRadius) === true) {
+    // The shortcut key: the radius and the plot (+1; 0 is the whole width). A
+    // failure on the whole width also fails every plot.
+    const failKey = unitDef.collisionRadius * 128 + (e.plot ?? -1) + 1;
+    if (
+      failedHere?.includes(failKey) === true ||
+      failedHere?.includes(unitDef.collisionRadius * 128) === true
+    ) {
       rest.push(e);
       continue;
     }
     const row = side === 0 ? boardHeight - 1 : height - boardHeight;
     let pos: { x: number; y: number } | null = null;
     let used = 0;
-    for (let d = 0; d < width && pos === null; d++) {
+    const plotWidth = sim.teams[side === 0 ? 0 : 1].map.plotWidth;
+    const lo = e.plot === undefined ? 0 : e.plot * plotWidth;
+    const hi = e.plot === undefined ? width : lo + plotWidth;
+    for (let d = 0; d < hi - lo && pos === null; d++) {
       for (const c of d === 0 ? [e.col] : [e.col - d, e.col + d]) {
-        if (c < 0 || c >= width) continue;
+        if (c < lo || c >= hi) continue;
         const cx = side === 0 ? c : width - 1 - c;
         if (!openFor(arena, side, row * width + cx)) continue;
         pos = freeInCell(sim, ctx, side, unitDef, cx, row);
@@ -2389,8 +2420,8 @@ function enterWaves(sim: ArenaSim, ctx: ArenaContext, tick: number): void {
     }
     if (pos === null) {
       rest.push(e);
-      if (side === 0) (failed0 ??= []).push(unitDef.collisionRadius);
-      else (failed1 ??= []).push(unitDef.collisionRadius);
+      if (side === 0) (failed0 ??= []).push(failKey);
+      else (failed1 ??= []).push(failKey);
     } else {
       // PP-11: the owner is the plot of the column it entered on; the target
       // is chosen from the entry cell.
